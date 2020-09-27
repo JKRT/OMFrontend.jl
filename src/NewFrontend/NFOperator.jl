@@ -887,7 +887,7 @@ function fromAbsyn(inOperator::Absyn.P_Operator.Operator)::Operator
       end
     end
   end
-  @assign outOperator = OPERATOR(Type.UNKNOWN(), op)
+  @assign outOperator = OPERATOR(TYPE_UNKNOWN(), op)
   return outOperator
 end
 

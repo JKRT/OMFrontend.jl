@@ -1191,7 +1191,7 @@ function evalBinaryAdd(exp1::Expression, exp2::Expression)::Expression
       _ => begin
         @assign exp = BINARY_EXPRESSION(
           exp1,
-          P_Operator.Operator.makeAdd(Type.UNKNOWN()),
+          P_Operator.Operator.makeAdd(TYPE_UNKNOWN()),
           exp2,
         )
         printFailedEvalError(getInstanceName(), exp, sourceInfo())
@@ -1232,7 +1232,7 @@ function evalBinarySub(exp1::Expression, exp2::Expression)::Expression
       _ => begin
         @assign exp = BINARY_EXPRESSION(
           exp1,
-          P_Operator.Operator.makeSub(Type.UNKNOWN()),
+          P_Operator.Operator.makeSub(TYPE_UNKNOWN()),
           exp2,
         )
         printFailedEvalError(getInstanceName(), exp, sourceInfo())
@@ -1273,7 +1273,7 @@ function evalBinaryMul(exp1::Expression, exp2::Expression)::Expression
       _ => begin
         @assign exp = BINARY_EXPRESSION(
           exp1,
-          P_Operator.Operator.makeMul(Type.UNKNOWN()),
+          P_Operator.Operator.makeMul(TYPE_UNKNOWN()),
           exp2,
         )
         printFailedEvalError(getInstanceName(), exp, sourceInfo())
@@ -1331,7 +1331,7 @@ function evalBinaryDiv(exp1::Expression, exp2::Expression, target::EvalTarget)::
       _ => begin
         @assign exp = BINARY_EXPRESSION(
           exp1,
-          P_Operator.Operator.makeDiv(Type.UNKNOWN()),
+          P_Operator.Operator.makeDiv(TYPE_UNKNOWN()),
           exp2,
         )
         printFailedEvalError(getInstanceName(), exp, sourceInfo())
@@ -1368,7 +1368,7 @@ function evalBinaryPow(exp1::Expression, exp2::Expression)::Expression
       _ => begin
         @assign exp = BINARY_EXPRESSION(
           exp1,
-          P_Operator.Operator.makePow(Type.UNKNOWN()),
+          P_Operator.Operator.makePow(TYPE_UNKNOWN()),
           exp2,
         )
         printFailedEvalError(getInstanceName(), exp, sourceInfo())
@@ -1446,7 +1446,7 @@ function evalBinaryMulVectorMatrix(vectorExp::Expression, matrixExp::Expression)
       _ => begin
         @assign exp = BINARY_EXPRESSION(
           vectorExp,
-          P_Operator.Operator.makeMul(Type.UNKNOWN()),
+          P_Operator.Operator.makeMul(TYPE_UNKNOWN()),
           matrixExp,
         )
         printFailedEvalError(getInstanceName(), exp, sourceInfo())
@@ -1474,7 +1474,7 @@ function evalBinaryMulMatrixVector(matrixExp::Expression, vectorExp::Expression)
       _ => begin
         @assign exp = BINARY_EXPRESSION(
           matrixExp,
-          P_Operator.Operator.makeMul(Type.UNKNOWN()),
+          P_Operator.Operator.makeMul(TYPE_UNKNOWN()),
           vectorExp,
         )
         printFailedEvalError(getInstanceName(), exp, sourceInfo())
@@ -1509,7 +1509,7 @@ function evalBinaryScalarProduct(exp1::Expression, exp2::Expression)::Expression
       _ => begin
         @assign exp = BINARY_EXPRESSION(
           exp1,
-          P_Operator.Operator.makeMul(Type.UNKNOWN()),
+          P_Operator.Operator.makeMul(TYPE_UNKNOWN()),
           exp2,
         )
         printFailedEvalError(getInstanceName(), exp, sourceInfo())
@@ -1559,7 +1559,7 @@ function evalBinaryMatrixProduct(exp1::Expression, exp2::Expression)::Expression
       _ => begin
         @assign exp = BINARY_EXPRESSION(
           exp1,
-          P_Operator.Operator.makeMul(Type.UNKNOWN()),
+          P_Operator.Operator.makeMul(TYPE_UNKNOWN()),
           exp2,
         )
         printFailedEvalError(getInstanceName(), exp, sourceInfo())
@@ -1590,7 +1590,7 @@ function evalBinaryPowMatrix(matrixExp::Expression, nExp::Expression)::Expressio
       _ => begin
         @assign exp = BINARY_EXPRESSION(
           matrixExp,
-          P_Operator.Operator.makePow(Type.UNKNOWN()),
+          P_Operator.Operator.makePow(TYPE_UNKNOWN()),
           nExp,
         )
         printFailedEvalError(getInstanceName(), exp, sourceInfo())
@@ -1679,7 +1679,7 @@ function evalUnaryMinus(exp1::Expression)::Expression
 
       _ => begin
         @assign exp = P_Expression.Expression.UNARY(
-          P_Operator.Operator.makeUMinus(Type.UNKNOWN()),
+          P_Operator.Operator.makeUMinus(TYPE_UNKNOWN()),
           exp1,
         )
         printFailedEvalError(getInstanceName(), exp, sourceInfo())
@@ -1796,7 +1796,7 @@ function evalLogicBinaryAnd(
       _ => begin
         @assign exp = P_Expression.Expression.LBINARY(
           exp1,
-          P_Operator.Operator.makeAnd(Type.UNKNOWN()),
+          P_Operator.Operator.makeAnd(TYPE_UNKNOWN()),
           exp2,
         )
         printFailedEvalError(getInstanceName(), exp, sourceInfo())
@@ -1842,7 +1842,7 @@ function evalLogicBinaryOr(
       _ => begin
         @assign exp = P_Expression.Expression.LBINARY(
           exp1,
-          P_Operator.Operator.makeOr(Type.UNKNOWN()),
+          P_Operator.Operator.makeOr(TYPE_UNKNOWN()),
           exp2,
         )
         printFailedEvalError(getInstanceName(), exp, sourceInfo())
@@ -1891,7 +1891,7 @@ function evalLogicUnaryNot(exp1::Expression)::Expression
 
       _ => begin
         @assign exp = P_Expression.Expression.LUNARY(
-          P_Operator.Operator.makeNot(Type.UNKNOWN()),
+          P_Operator.Operator.makeNot(TYPE_UNKNOWN()),
           exp1,
         )
         printFailedEvalError(getInstanceName(), exp, sourceInfo())
@@ -2022,7 +2022,7 @@ function evalRelationLess(exp1::Expression, exp2::Expression)::Bool
           getInstanceName(),
           P_Expression.Expression.RELATION(
             exp1,
-            P_Operator.Operator.makeLess(Type.UNKNOWN()),
+            P_Operator.Operator.makeLess(TYPE_UNKNOWN()),
             exp2,
           ),
           sourceInfo(),
@@ -2067,7 +2067,7 @@ function evalRelationLessEq(exp1::Expression, exp2::Expression)::Bool
           getInstanceName(),
           P_Expression.Expression.RELATION(
             exp1,
-            P_Operator.Operator.makeLessEq(Type.UNKNOWN()),
+            P_Operator.Operator.makeLessEq(TYPE_UNKNOWN()),
             exp2,
           ),
           sourceInfo(),
@@ -2112,7 +2112,7 @@ function evalRelationGreater(exp1::Expression, exp2::Expression)::Bool
           getInstanceName(),
           P_Expression.Expression.RELATION(
             exp1,
-            P_Operator.Operator.makeGreater(Type.UNKNOWN()),
+            P_Operator.Operator.makeGreater(TYPE_UNKNOWN()),
             exp2,
           ),
           sourceInfo(),
@@ -2157,7 +2157,7 @@ function evalRelationGreaterEq(exp1::Expression, exp2::Expression)::Bool
           getInstanceName(),
           P_Expression.Expression.RELATION(
             exp1,
-            P_Operator.Operator.makeGreaterEq(Type.UNKNOWN()),
+            P_Operator.Operator.makeGreaterEq(TYPE_UNKNOWN()),
             exp2,
           ),
           sourceInfo(),
@@ -2202,7 +2202,7 @@ function evalRelationEqual(exp1::Expression, exp2::Expression)::Bool
           getInstanceName(),
           P_Expression.Expression.RELATION(
             exp1,
-            P_Operator.Operator.makeEqual(Type.UNKNOWN()),
+            P_Operator.Operator.makeEqual(TYPE_UNKNOWN()),
             exp2,
           ),
           sourceInfo(),
@@ -2247,7 +2247,7 @@ function evalRelationNotEqual(exp1::Expression, exp2::Expression)::Bool
           getInstanceName(),
           P_Expression.Expression.RELATION(
             exp1,
-            P_Operator.Operator.makeNotEqual(Type.UNKNOWN()),
+            P_Operator.Operator.makeNotEqual(TYPE_UNKNOWN()),
             exp2,
           ),
           sourceInfo(),

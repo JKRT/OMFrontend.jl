@@ -26,8 +26,7 @@ const FLOW_STREAM_MASK = intBitOr(FLOW, STREAM)::Integer
 #=  potential/flow/stream =#
 const PREFIX_MASK = intBitOr(POTENTIAL, FLOW_STREAM_MASK)::Integer
 #=  Some kind of connector, where anything inside an expandable connector also counts. =#
-const CONNECTOR_MASK =
-  intBitOr(CONNECTOR, intBitOr(EXPANDABLE, POTENTIALLY_PRESENT))::Integer
+const CONNECTOR_MASK = intBitOr(CONNECTOR, intBitOr(EXPANDABLE, POTENTIALLY_PRESENT))::Integer
 #=  An element in an expandable connector. =#
 const UNDECLARED_MASK = intBitOr(VIRTUAL, POTENTIALLY_PRESENT)::Integer
 
@@ -39,15 +38,13 @@ function fromSCode(scodeCty::SCode.ConnectorType)::Integer
   local cty::Integer
   @assign cty = begin
     @match scodeCty begin
-      SCode.ConnectorType.POTENTIAL(__) => begin
+      SCode.POTENTIAL(__) => begin
         0
       end
-
-      SCode.ConnectorType.FLOW(__) => begin
+      SCode.FLOW(__) => begin
         FLOW
       end
-
-      SCode.ConnectorType.STREAM(__) => begin
+      SCode.STREAM(__) => begin
         STREAM
       end
     end
@@ -117,7 +114,7 @@ end
 function isFlowOrStream(cty::Integer)::Bool
   local isFlowOrStream::Bool
 
-  @assign isFlowOrStream = intBitAnd(cty, FLOW_STREAM_MASK) > 0
+  @assign isFlowOrStream = intBitAnd(cty, ConnectorType.FLOW_STREAM_MASK) > 0
   return isFlowOrStream
 end
 
@@ -145,8 +142,7 @@ end
      potentially present bits set, otherwise false. =#"""
 function isConnectorType(cty::Integer)::Bool
   local isConnector::Bool
-
-  @assign isConnector = intBitAnd(cty, CONNECTOR_MASK) > 0
+  @assign isConnector = intBitAnd(cty, ConnectorType.CONNECTOR_MASK) > 0
   return isConnector
 end
 
@@ -254,7 +250,9 @@ Parallelism = (() -> begin #= Enumeration =#
   GLOBAL = 2
   LOCAL = 3
   () -> (NON_PARALLEL; GLOBAL; LOCAL)
-end)()
+               end)()
+const ParallelismType = Integer
+
 Variability = (
   () -> begin #= Enumeration =#
     CONSTANT = 1
@@ -270,6 +268,8 @@ Variability = (
   end
 )()
 
+const VariabilityType = Integer
+
 Direction = (() -> begin #= Enumeration =#
              NONE = 1
              INPUT = 2
@@ -277,6 +277,7 @@ Direction = (() -> begin #= Enumeration =#
              () -> (NONE; INPUT; OUTPUT)
              end)()
 const DirectionType = Integer
+
 InnerOuter = (() -> begin #= Enumeration =#
               NOT_INNER_OUTER = 1
               INNER = 2
@@ -303,20 +304,17 @@ const VisibilityType = Integer
   end
 end
 
-function parallelismFromSCode(scodePar::SCode.Parallelism)::Parallelism
-  local par::Parallelism
-
+function parallelismFromSCode(scodePar::SCode.Parallelism)::ParallelismType
+  local par::ParallelismType
   @assign par = begin
     @match scodePar begin
-      SCode.Parallelism.PARGLOBAL(__) => begin
+      SCode.PARGLOBAL(__) => begin
         Parallelism.GLOBAL
       end
-
-      SCode.Parallelism.PARLOCAL(__) => begin
+      SCode.PARLOCAL(__) => begin
         Parallelism.LOCAL
       end
-
-      SCode.Parallelism.NON_PARALLEL(__) => begin
+      SCode.NON_PARALLEL(__) => begin
         Parallelism.NON_PARALLEL
       end
     end
@@ -409,22 +407,18 @@ end
 
 function variabilityFromSCode(scodeVar::SCode.Variability)
   local var
-
   @assign var = begin
     @match scodeVar begin
-      SCode.Variability.CONST(__) => begin
+      SCode.CONST(__) => begin
         Variability.CONSTANT
       end
-
-      SCode.Variability.PARAM(__) => begin
+      SCode.PARAM(__) => begin
         Variability.PARAMETER
       end
-
-      SCode.Variability.DISCRETE(__) => begin
+      SCode.DISCRETE(__) => begin
         Variability.DISCRETE
       end
-
-      SCode.Variability.VAR(__) => begin
+      SCode.VAR(__) => begin
         Variability.CONTINUOUS
       end
     end
@@ -649,14 +643,12 @@ function directionFromSCode(scodeDir::Absyn.Direction)
 
   @assign dir = begin
     @match scodeDir begin
-      Absyn.Direction.INPUT(__) => begin
+      Absyn.INPUT(__) => begin
         Direction.INPUT
       end
-
-      Absyn.Direction.OUTPUT(__) => begin
+      Absyn.OUTPUT(__) => begin
         Direction.OUTPUT
       end
-
       _ => begin
         Direction.NONE
       end
@@ -667,19 +659,16 @@ end
 
 function directionToDAE(dir)::DAE.VarDirection
   local ddir::DAE.VarDirection
-
   @assign ddir = begin
     @match dir begin
       Direction.INPUT => begin
-        DAE.VarDirection.INPUT()
+        DAE.INPUT()
       end
-
       Direction.OUTPUT => begin
-        DAE.VarDirection.OUTPUT()
+        DAE.OUTPUT()
       end
-
       _ => begin
-        DAE.VarDirection.BIDIR()
+        DAE.BIDIR()
       end
     end
   end
@@ -771,21 +760,17 @@ end
 
 function innerOuterFromSCode(scodeIO::Absyn.InnerOuter)
   local io
-
   @assign io = begin
     @match scodeIO begin
       Absyn.NOT_INNER_OUTER(__) => begin
         InnerOuter.NOT_INNER_OUTER
       end
-
       Absyn.INNER(__) => begin
         InnerOuter.INNER
       end
-
       Absyn.OUTER(__) => begin
         InnerOuter.OUTER
       end
-
       Absyn.INNER_OUTER(__) => begin
         InnerOuter.INNER_OUTER
       end

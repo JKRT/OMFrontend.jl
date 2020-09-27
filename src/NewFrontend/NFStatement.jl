@@ -782,7 +782,7 @@ function instStatement(scodeStmt::SCode.Statement, scope::InstNode, origin::ORIG
       SCode.ALG_ASSIGN(info = info)  => begin
         @assign exp1 = instExp(scodeStmt.assignComponent, scope, info)
         @assign exp2 = instExp(scodeStmt.value, scope, info)
-        ALG_ASSIGNMENT(exp1, exp2, Type.UNKNOWN(), makeSource(scodeStmt.comment, info))
+        ALG_ASSIGNMENT(exp1, exp2, TYPE_UNKNOWN(), makeSource(scodeStmt.comment, info))
       end
 
       SCode.ALG_FOR(info = info)  => begin

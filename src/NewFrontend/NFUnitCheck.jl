@@ -506,7 +506,7 @@ function makeNewCref(paramName::String, fnName::String)::Expression
   local outExp::Expression
 
   @assign outExp = CREF_EXPRESSION(
-    Type.UNKNOWN(),
+    TYPE_UNKNOWN(),
     STRING(
       paramName,
       STRING(

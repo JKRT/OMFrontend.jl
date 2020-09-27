@@ -1,4 +1,3 @@
-
 @UniontypeDecl NFRestriction
 
 @Uniontype NFRestriction begin

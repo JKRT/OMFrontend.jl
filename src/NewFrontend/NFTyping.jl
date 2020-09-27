@@ -1666,7 +1666,7 @@ function typeExpDim(
     @assign e = P_Expression.Expression.getBindingExp(exp)
     @assign (dim, error) = begin
       @match e begin
-        P_Expression.Expression.ARRAY(ty = Type.UNKNOWN(__)) => begin
+        P_Expression.Expression.ARRAY(ty = TYPE_UNKNOWN(__)) => begin
           typeArrayDim(e, dimIndex)
         end
 
@@ -2114,7 +2114,7 @@ function typeSubscript(
       end
 
       SUBSCRIPT_WHOLE(__) => begin
-        (Type.UNKNOWN(), P_Dimension.Dimension.variability(dimension))
+        (TYPE_UNKNOWN(), P_Dimension.Dimension.variability(dimension))
       end
 
       _ => begin
@@ -2152,14 +2152,14 @@ function typeArray(
   info::SourceInfo,
 )::Tuple{Expression, M_Type, Variability}
   local variability::Variability = Variability.CONSTANT
-  local arrayType::M_Type = Type.UNKNOWN()
+  local arrayType::M_Type = TYPE_UNKNOWN()
   local arrayExp::Expression
 
   local exp::Expression
   local expl::List{Expression} = nil
   local expl2::List{Expression} = nil
   local var::Variability
-  local ty1::M_Type = Type.UNKNOWN()
+  local ty1::M_Type = TYPE_UNKNOWN()
   local ty2::M_Type
   local ty3::M_Type
   local tys::List{M_Type} = nil
@@ -2223,14 +2223,14 @@ function typeMatrix(
   info::SourceInfo,
 )::Tuple{Expression, M_Type, Variability}
   local variability::Variability = Variability.CONSTANT
-  local arrayType::M_Type = Type.UNKNOWN()
+  local arrayType::M_Type = TYPE_UNKNOWN()
   local arrayExp::Expression
 
   local exp::Expression
   local expl::List{Expression} = nil
   local res::List{Expression} = nil
   local var::Variability
-  local ty::M_Type = Type.UNKNOWN()
+  local ty::M_Type = TYPE_UNKNOWN()
   local tys::List{M_Type} = nil
   local resTys::List{M_Type} = nil
   local n::Integer = 2
@@ -2276,7 +2276,7 @@ function typeMatrixComma(
   local expl::List{Expression} = nil
   local res::List{Expression} = nil
   local var::Variability
-  local ty::M_Type = Type.UNKNOWN()
+  local ty::M_Type = TYPE_UNKNOWN()
   local ty1::M_Type
   local ty2::M_Type
   local ty3::M_Type
@@ -2295,7 +2295,7 @@ function typeMatrixComma(
     for e in elements
       @assign (exp, ty1, var) = typeExp(e, origin, info)
       @assign expl = _cons(exp, expl)
-      if Type.isEqual(ty, Type.UNKNOWN())
+      if Type.isEqual(ty, TYPE_UNKNOWN())
         @assign ty = ty1
       else
         @assign (_, _, ty2, mk) = matchExpressions(
@@ -2443,7 +2443,7 @@ function typeTuple(
     Error.addSourceMessage(
       Error.RHS_TUPLE_EXPRESSION,
       list(P_Expression.Expression.toString(TUPLE_EXPRESSION(
-        Type.UNKNOWN(),
+        TYPE_UNKNOWN(),
         elements,
       ))),
       info,

@@ -15,19 +15,19 @@ end
   end
 
   @Record TYPED_DERIVED begin
-    ty::M_Type
+    ty::NFType
     baseClass::InstNode
     restriction::Restriction
   end
 
   @Record INSTANCED_BUILTIN begin
-    ty::M_Type
+    ty::NFType
     elements::ClassTree
     restriction::Restriction
   end
 
   @Record INSTANCED_CLASS begin
-    ty::M_Type
+    ty::NFType
     elements::ClassTree
     sections::Sections
     restriction::Restriction
@@ -463,9 +463,8 @@ function setType(ty::M_Type, cls::Class)::Class
   return cls
 end
 
-function getType(cls::Class, clsNode::InstNode)::M_Type
-  local ty::M_Type
-
+function getType(cls::Class, clsNode::InstNode)::NFType
+  local ty::NFType
   @assign ty = begin
     @match cls begin
       PARTIAL_BUILTIN(__) => begin
@@ -499,7 +498,7 @@ function getType(cls::Class, clsNode::InstNode)::M_Type
       end
 
       _ => begin
-        Type.UNKNOWN()
+        TYPE_UNKNOWN()
       end
     end
   end
@@ -919,7 +918,7 @@ function getSections(cls::Class)::Sections
       end
 
       _ => begin
-        P_Sections.Sections.EMPTY()
+        SECTIONS_EMPTY()
       end
     end
   end
@@ -949,9 +948,9 @@ function makeRecordConstructor(fields::List{<:InstNode}, out::InstNode)::Class
 
   @assign tree = fromRecordConstructor(fields, out)
   @assign cls = INSTANCED_CLASS(
-    Type.UNKNOWN(),
+    TYPE_UNKNOWN(),
     tree,
-    P_Sections.Sections.EMPTY(),
+    SECTIONS_EMPTY(),
     P_Restriction.Restriction.RECORD_CONSTRUCTOR(),
   )
   return cls

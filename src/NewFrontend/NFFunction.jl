@@ -1097,7 +1097,7 @@ function isTyped(fn::M_Function)::Bool
 
   @assign isTyped = begin
     @match fn.returnType begin
-      Type.UNKNOWN(__) => begin
+      TYPE_UNKNOWN(__) => begin
         false
       end
 
@@ -2231,7 +2231,7 @@ function new(path::Absyn.Path, node::InstNode)::M_Function
     outputs,
     locals,
     nil,
-    Type.UNKNOWN(),
+    TYPE_UNKNOWN(),
     attr,
     nil,
     P_Pointer.create(status),
@@ -2245,7 +2245,7 @@ function isValidParamState(cls::InstNode)::Bool
 
   @assign isValid = begin
     @match restriction(getClass(cls)) begin
-      P_Restriction.Restriction.RECORD(__) => begin
+      RESTRICTION_RECORD(__) => begin
         true
       end
 
@@ -2253,15 +2253,15 @@ function isValidParamState(cls::InstNode)::Bool
         true
       end
 
-      P_Restriction.Restriction.OPERATOR(__) => begin
+      RESTRICTION_OPERATOR(__) => begin
         true
       end
 
-      P_Restriction.Restriction.FUNCTION(__) => begin
+      RESTRICTION_FUNCTION(__) => begin
         true
       end
 
-      P_Restriction.Restriction.EXTERNAL_OBJECT(__) => begin
+      RESTRICTION_EXTERNAL_OBJECT(__) => begin
         true
       end
 
@@ -2780,7 +2780,7 @@ function getBody2(node::InstNode)::List{Statement}
         fn_body.statements
       end
 
-      INSTANCED_CLASS(sections = P_Sections.Sections.EMPTY(__)) => begin
+      INSTANCED_CLASS(sections = SECTIONS_EMPTY(__)) => begin
         nil
       end
 

@@ -14,7 +14,7 @@ Equation = NFEquation
 Algorithm = NFAlgorithm
 
 @Uniontype NFSections begin
-  @Record EMPTY begin
+  @Record SECTIONS_EMPTY begin
   end
   @Record EXTERNAL begin
     name::String

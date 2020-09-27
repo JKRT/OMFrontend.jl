@@ -331,7 +331,7 @@
                 Error.addSourceMessage(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list("array" + ListUtil.toString(posArgs, toString, "", "(", ", ", ")", true), "array(Any, Any, ...) => Any[:]"), info)
                 fail()
               end
-              @assign arrayExp = makeArray(Type.UNKNOWN(), posArgs)
+              @assign arrayExp = makeArray(TYPE_UNKNOWN(), posArgs)
           arrayExp
         end
 
@@ -346,7 +346,7 @@
               local tys3::List{M_Type}
               local dimsLst::List{List{Dimension}} = nil
               local dims::List{Dimension}
-              local resTy::M_Type = Type.UNKNOWN()
+              local resTy::M_Type = TYPE_UNKNOWN()
               local ty1::M_Type
               local ty2::M_Type
               local resTyToMatch::M_Type
@@ -361,7 +361,7 @@
               for arg in args
                 @match _cons(ty, tys2) = tys2
                 @assign dimsLst = _cons(Type.arrayDims(ty), dimsLst)
-                if Type.isEqual(resTy, Type.UNKNOWN())
+                if Type.isEqual(resTy, TYPE_UNKNOWN())
                   @assign resTy = Type.arrayElementType(ty)
                 else
                   @assign (_, _, ty1, mk) = TypeCheck.matchExpressions(P_Expression.Expression.INTEGER(0), Type.arrayElementType(ty), P_Expression.Expression.INTEGER(0), resTy)
@@ -398,11 +398,11 @@
                =#
                #=         Try to match the dimensions as well
                =#
-              @assign resTy = Type.UNKNOWN()
+              @assign resTy = TYPE_UNKNOWN()
               @assign tys2 = tys3
               for arg in args2
                 @match _cons(ty, tys2) = tys2
-                if Type.isEqual(resTy, Type.UNKNOWN())
+                if Type.isEqual(resTy, TYPE_UNKNOWN())
                   @assign resTy = ty
                 else
                   @assign (_, _, ty1, mk) = TypeCheck.matchExpressions(P_Expression.Expression.INTEGER(0), ty, P_Expression.Expression.INTEGER(0), resTy)

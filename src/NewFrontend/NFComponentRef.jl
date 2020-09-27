@@ -892,7 +892,7 @@ function getSubscriptedType(cref::ComponentRef)::M_Type
       end
 
       _ => begin
-        Type.UNKNOWN()
+        TYPE_UNKNOWN()
       end
     end
   end
@@ -911,7 +911,7 @@ function getComponentType(cref::ComponentRef)::M_Type
       end
 
       _ => begin
-        Type.UNKNOWN()
+        TYPE_UNKNOWN()
       end
     end
   end
@@ -1130,7 +1130,7 @@ function fromAbsyn(
   local cref::ComponentRef
   local sl::List{Subscript}
   @assign sl = List(SUBSCRIPT_RAW_SUBSCRIPT(s) for s in subs)
-  @assign cref = COMPONENT_REF_CREF(node, sl, Type.UNKNOWN(), Origin.CREF, restCref)
+  @assign cref = COMPONENT_REF_CREF(node, sl, TYPE_UNKNOWN(), Origin.CREF, restCref)
   return cref
 end
 

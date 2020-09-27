@@ -83,6 +83,10 @@ using ..BaseAvlTree #= Modelica extend clause =#
 Key = String
 Value = Entry
 
+#= Modelica extend clause =#
+include("../Util/baseAvlTreeCode.jl")
+include("../Util/baseAvlSetCode.jl")
+
 import ..LookupTree
 import ..InstNode
 EntryType = (() -> begin #= Enumeration =#
@@ -517,7 +521,7 @@ function applyLocalComponents(tree::ClassTree, func::FuncT)
     @match tree begin
       CLASS_TREE_INSTANTIATED_TREE(__) => begin
         for i in tree.localComponents
-          func(Mutable.access(arrayGetNoBoundsChecking(tree.components, i)))
+          func(P_Pointer.access(arrayGetNoBoundsChecking(tree.components, i)))
         end
         ()
       end
@@ -890,7 +894,6 @@ function mapRedeclareChains(tree::ClassTree, func::FuncT)
         )
         ()
       end
-
       _ => begin
         ()
       end

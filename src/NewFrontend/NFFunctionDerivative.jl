@@ -168,7 +168,7 @@ function getDerivativeAttributes(
   info::SourceInfo,
 )::Tuple{Expression, List{Tuple{Integer, ConditionType}}}
   local conditions::List{Tuple{Integer, ConditionType}} = nil
-  local order::Expression = P_Expression.Expression.EMPTY(Type.UNKNOWN())
+  local order::Expression = P_Expression.Expression.EMPTY(TYPE_UNKNOWN())
 
   local id::String
   local mod::SCode.Mod

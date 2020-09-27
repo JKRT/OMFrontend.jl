@@ -35,7 +35,7 @@ function flatten(classInst::InstNode, name::String)::FlatModel
   local alg::List{Algorithm}
   local ialg::List{Algorithm}
   local cmt::Option{SCode.Comment}
-  @assign sections = P_Sections.Sections.EMPTY()
+  @assign sections = SECTIONS_EMPTY()
   @assign cmt = SCodeUtil.getElementComment(definition(classInst))
   @assign (vars, sections) = flattenClass(
     getClass(classInst),

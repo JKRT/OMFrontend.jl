@@ -14,6 +14,7 @@ FunctionType = (() -> begin #= Enumeration =#
   () -> (FUNCTIONAL_PARAMETER; FUNCTION_REFERENCE; FUNCTIONAL_VARIABLE)  #= A variable that contains a function reference. =#
 end)()
 
+M_Type=NFType
 
 @UniontypeDecl NFType
 @Uniontype NFType begin
@@ -104,7 +105,7 @@ function sizeType(arrayTy::M_Type)::M_Type
   local sizeTy::M_Type
 
   if Type.isUnknown(arrayTy)
-    @assign sizeTy = Type.UNKNOWN()
+    @assign sizeTy = TYPE_UNKNOWN()
   else
     @assign sizeTy = Type.ARRAY(
       TYPE_INTEGER(),
@@ -245,30 +246,29 @@ function isDiscrete(ty::M_Type)::Bool
 
   @assign isDiscrete = begin
     @match ty begin
-      INTEGER(__) => begin
+      TYPE_INTEGER(__) => begin
         true
       end
 
-      STRING(__) => begin
+      TYPE_STRING(__) => begin
         true
       end
 
-      BOOLEAN(__) => begin
+      TYPE_BOOLEAN(__) => begin
         true
       end
 
-      ENUMERATION(__) => begin
+      TYPE_ENUMERATION(__) => begin
         true
       end
 
-      ARRAY(__) => begin
+      TYPE_ARRAY(__) => begin
         isDiscrete(ty.elementType)
       end
 
-      FUNCTION(__) => begin
+      TYPE_FUNCTION(__) => begin
         isDiscrete(P_Function.returnType(ty.fn))
       end
-
       _ => begin
         false
       end
@@ -430,7 +430,7 @@ function toDAE(ty::M_Type, makeTypeVars::Bool = true)::DAE.Type
         DAE.T_NORETCALL_DEFAULT
       end
 
-      Type.UNKNOWN(__) => begin
+      TYPE_UNKNOWN(__) => begin
         DAE.T_UNKNOWN_DEFAULT
       end
 
@@ -538,7 +538,7 @@ function toFlatString(ty::M_Type)::String
         "()"
       end
 
-      Type.UNKNOWN(__) => begin
+      TYPE_UNKNOWN(__) => begin
         "unknown()"
       end
 

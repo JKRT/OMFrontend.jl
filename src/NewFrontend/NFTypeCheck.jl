@@ -3305,7 +3305,7 @@ function matchExpressions(
         compatibleType
       end
 
-      Type.UNKNOWN(__) => begin
+      TYPE_UNKNOWN(__) => begin
         @assign matchKind = if allowUnknown
           MatchKind.EXACT
         else
@@ -3410,7 +3410,7 @@ function matchTypes(
         compatibleType
       end
 
-      Type.UNKNOWN(__) => begin
+      TYPE_UNKNOWN(__) => begin
         @assign matchKind = if allowUnknown
           MatchKind.EXACT
         else
@@ -3518,7 +3518,7 @@ function matchExpressions_cast(
         (compatibleType, matchKind)
       end
 
-      (Type.UNKNOWN(__), _) => begin
+      (TYPE_UNKNOWN(__), _) => begin
         (type2, if allowUnknown
           MatchKind.EXACT
         else
@@ -3526,7 +3526,7 @@ function matchExpressions_cast(
         end)
       end
 
-      (_, Type.UNKNOWN(__)) => begin
+      (_, TYPE_UNKNOWN(__)) => begin
         (type1, if allowUnknown
           MatchKind.EXACT
         else
@@ -3567,7 +3567,7 @@ function matchExpressions_cast(
       end
 
       _ => begin
-        (Type.UNKNOWN(), MatchKind.NOT_COMPATIBLE)
+        (TYPE_UNKNOWN(), MatchKind.NOT_COMPATIBLE)
       end
     end
   end
@@ -4094,7 +4094,7 @@ function matchTypes_cast(
         (compatibleType, matchKind)
       end
 
-      (Type.UNKNOWN(__), _) => begin
+      (TYPE_UNKNOWN(__), _) => begin
         (expectedType, if allowUnknown
           MatchKind.UNKNOWN_ACTUAL
         else
@@ -4102,7 +4102,7 @@ function matchTypes_cast(
         end)
       end
 
-      (_, Type.UNKNOWN(__)) => begin
+      (_, TYPE_UNKNOWN(__)) => begin
         (actualType, if allowUnknown
           MatchKind.UNKNOWN_EXPECTED
         else
@@ -4155,7 +4155,7 @@ function matchTypes_cast(
       end
 
       _ => begin
-        (Type.UNKNOWN(), MatchKind.NOT_COMPATIBLE)
+        (TYPE_UNKNOWN(), MatchKind.NOT_COMPATIBLE)
       end
     end
   end

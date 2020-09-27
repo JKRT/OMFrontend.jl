@@ -625,7 +625,7 @@ function toString(node::InstNode) ::String
   @assign name = begin
     @match node begin
       COMPONENT_NODE(__)  => begin
-        P_Component.toString(node.name, P_Pointer.access(node.component))
+        toString(node.name, P_Pointer.access(node.component))
       end
       CLASS_NODE(__)  => begin
         SCodeDump.unparseElementStr(node.definition)
@@ -641,7 +641,6 @@ end
 function checkIdentical(node1::InstNode, node2::InstNode)
   local n1::InstNode = resolveOuter(node1)
   local n2::InstNode = resolveOuter(node2)
-
   if referenceEq(n1, n2)
     return
   end
@@ -650,11 +649,9 @@ function checkIdentical(node1::InstNode, node2::InstNode)
       (CLASS_NODE(__), CLASS_NODE(__)) where (isIdentical(getClass(n1), getClass(n2)))  => begin
         ()
       end
-
-      (COMPONENT_NODE(__), COMPONENT_NODE(__)) where (P_Component.isIdentical(component(n1), component(n2)))  => begin
+      (COMPONENT_NODE(__), COMPONENT_NODE(__)) where (isIdentical(component(n1), component(n2)))  => begin
         ()
       end
-
       _  => begin
         Error.addMultiSourceMessage(Error.DUPLICATE_ELEMENTS_NOT_IDENTICAL, list(toString(n1), toString(n2)), list(info(n1), info(n2)))
         fail()
@@ -665,10 +662,8 @@ end
 
 function isSame(node1::InstNode, node2::InstNode) ::Bool
   local same::Bool = false
-
   local n1::InstNode = resolveOuter(node1)
   local n2::InstNode = resolveOuter(node2)
-
   if referenceEq(n1, n2)
     @assign same = true
     return same
@@ -804,7 +799,7 @@ function getInnerOuterCache(inNode::InstNode) ::CachedData
   @assign pack_cache = begin
     @match inNode begin
       CLASS_NODE(__)  => begin
-        P_CachedData.getInnerOuterCache(inNode.caches)
+        getInnerOuterCache(inNode.caches)
       end
 
       _  => begin
@@ -1298,7 +1293,7 @@ function componentApply(node::InstNode, func::FuncType, arg::ArgT)  where {ArgT}
   @assign () = begin
     @match node begin
       COMPONENT_NODE(__)  => begin
-        P_Pointer.update(node.component, func(arg, P_P_Pointer.access(node.component)))
+        P_Pointer.update(node.component, func(arg, P_Pointer.access(node.component)))
         ()
       end
     end
@@ -1996,13 +1991,11 @@ end
 
 function isEmpty(node::InstNode) ::Bool
   local isEmpty::Bool
-
   @assign isEmpty = begin
     @match node begin
       EMPTY_NODE(__)  => begin
         true
       end
-
       _  => begin
         false
       end

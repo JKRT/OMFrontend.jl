@@ -594,7 +594,7 @@ function optimizeStatement(stmt::Statement)::Statement
         #=  Make a mutable expression with a placeholder value.
         =#
         @assign iter_exp =
-          P_Expression.Expression.makeMutable(P_Expression.Expression.EMPTY(Type.UNKNOWN()))
+          P_Expression.Expression.makeMutable(P_Expression.Expression.EMPTY(TYPE_UNKNOWN()))
         #=  Replace the iterator with the expression in the body of the for loop.
         =#
         @assign stmt.body = List(

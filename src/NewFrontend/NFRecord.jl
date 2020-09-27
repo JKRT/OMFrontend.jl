@@ -105,7 +105,7 @@ function instDefaultConstructor(
       list(out_rec),
       locals,
       nil,
-      Type.UNKNOWN(),
+      TYPE_UNKNOWN(),
       attr,
       nil,
       status,

@@ -919,7 +919,7 @@ function typeOf(call::Call)::M_Type
       end
 
       _ => begin
-        Type.UNKNOWN()
+        TYPE_UNKNOWN()
       end
     end
   end

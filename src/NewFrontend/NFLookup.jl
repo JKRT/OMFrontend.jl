@@ -150,7 +150,7 @@ end
                        @assign () = begin
                          @match cls begin
                            PARTIAL_BUILTIN(ty = TYPE_COMPLEX(complexTy = ComplexType.EXTERNAL_OBJECT(constructor = constructor)))  => begin
-                             @assign cref = prefixCref(constructor, Type.UNKNOWN(), nil, cref)
+                             @assign cref = prefixCref(constructor, TYPE_UNKNOWN(), nil, cref)
                              @assign state = P_LookupState.FUNC()
                              ()
                            end
@@ -384,7 +384,7 @@ function lookupFirstIdent(name::String, scope::InstNode) ::Tuple{InstNode, Looku
   local node::InstNode
   try
     @assign node = lookupSimpleBuiltinName(name)
-    @assign state = PREDEF_CLASS()
+    @assign state = LOOKUP_STATE_PREDEF_CLASS()
   catch
     @assign node = lookupSimpleName(name, scope)
     @info "Our node was $node in lookupfirstIdent"
@@ -510,23 +510,23 @@ function lookupSimpleBuiltinCref(name::String, subs::List{<:Absyn.Subscript}) ::
   @assign (node, cref, state) = begin
     @match name begin
       "time"  => begin
-        (NFBuiltin.TIME, NFBuiltin.TIME_CREF, P_LookupState.PREDEF_COMP())
+        (NFBuiltin.TIME, NFBuiltin.TIME_CREF, PREDEF_COMP())
       end
 
       "Boolean"  => begin
-        (NFBuiltin.BOOLEAN_NODE, NFBuiltin.BOOLEAN_CREF, P_LookupState.PREDEF_CLASS())
+        (NFBuiltin.BOOLEAN_NODE, NFBuiltin.BOOLEAN_CREF, PREDEF_CLASS())
       end
 
       "Integer"  => begin
-        (NFBuiltinFuncs.INTEGER_NODE, NFBuiltinFuncs.INTEGER_CREF, P_LookupState.FUNC())
+        (NFBuiltinFuncs.INTEGER_NODE, NFBuiltinFuncs.INTEGER_CREF, FUNC())
       end
 
       "String"  => begin
-        (NFBuiltinFuncs.STRING_NODE, NFBuiltinFuncs.STRING_CREF, P_LookupState.FUNC())
+        (NFBuiltinFuncs.STRING_NODE, NFBuiltinFuncs.STRING_CREF, FUNC())
       end
 
       "Clock" where (Config.synchronousFeaturesAllowed())  => begin
-        (NFBuiltinFuncs.CLOCK_NODE, NFBuiltinFuncs.CLOCK_CREF, P_LookupState.FUNC())
+        (NFBuiltinFuncs.CLOCK_NODE, NFBuiltinFuncs.CLOCK_CREF, FUNC())
       end
     end
   end

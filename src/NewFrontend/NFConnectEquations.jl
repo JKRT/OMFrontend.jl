@@ -979,7 +979,7 @@ function evaluateInStream(
 
   @assign c = Connector.CONNECTOR(
     cref,
-    Type.UNKNOWN(),
+    TYPE_UNKNOWN(),
     Face.INSIDE,
     ConnectorType.STREAM,
     DAE.emptyElementSource,

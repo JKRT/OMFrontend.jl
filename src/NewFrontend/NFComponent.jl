@@ -343,7 +343,7 @@ function toString(name::String, component::Component)::String
       end
 
       UNTYPED_COMPONENT(__) => begin
-        toString(component.attributes, Type.UNKNOWN()) +
+        toString(component.attributes, TYPE_UNKNOWN()) +
         InstNode.name(component.classInst) +
         " " +
         name +
@@ -929,7 +929,7 @@ function isTyped(component::Component)::Bool
         true
       end
 
-      ITERATOR(ty = Type.UNKNOWN(__)) => begin
+      ITERATOR(ty = TYPE_UNKNOWN(__)) => begin
         false
       end
 
@@ -1006,7 +1006,7 @@ function getType(component::Component)::M_Type
       end
 
       _ => begin
-        Type.UNKNOWN()
+        TYPE_UNKNOWN()
       end
     end
   end
@@ -1014,16 +1014,14 @@ function getType(component::Component)::M_Type
 end
 
 function mergeModifier(modifier::Modifier, component::Component)::Component
-
   @assign component = begin
     @match component begin
       COMPONENT_DEF(__) => begin
-        @assign component.modifier = P_Modifier.merge(modifier, component.modifier)
+        @assign component.modifier = merge(modifier, component.modifier)
         component
       end
-
       TYPE_ATTRIBUTE(__) => begin
-        TYPE_ATTRIBUTE(component.ty, P_Modifier.merge(modifier, component.modifier))
+        TYPE_ATTRIBUTE(component.ty, merge(modifier, component.modifier))
       end
     end
   end

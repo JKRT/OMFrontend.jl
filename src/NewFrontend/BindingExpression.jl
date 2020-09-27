@@ -4097,7 +4097,7 @@ function dimensionCount(exp::Expression) ::Integer
 
   @assign dimCount = begin
     @match exp begin
-      ARRAY(ty = Type.UNKNOWN(__))  => begin
+      ARRAY(ty = TYPE_UNKNOWN(__))  => begin
         1 + dimensionCount(listHead(exp.elements))
       end
 
@@ -5918,7 +5918,7 @@ function typeOf(exp::Expression) ::M_Type
       end
 
       _  => begin
-        Type.UNKNOWN()
+        TYPE_UNKNOWN()
       end
     end
   end
@@ -7071,15 +7071,15 @@ function getType(binding::Binding)::M_Type
   @assign ty = begin
     @match binding begin
       UNBOUND(__) => begin
-        Type.UNKNOWN()
+        TYPE_UNKNOWN()
       end
 
       RAW_BINDING(__) => begin
-        Type.UNKNOWN()
+        TYPE_UNKNOWN()
       end
 
       UNTYPED_BINDING(__) => begin
-        Type.UNKNOWN()
+        TYPE_UNKNOWN()
       end
 
       TYPED_BINDING(__) => begin

@@ -1,0 +1,4 @@
+setCommandLineOptions("--profiling=all");
+loadFile("Influenza.mo");
+getErrorString();
+simulate(Influenza)

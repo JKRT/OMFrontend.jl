@@ -1,0 +1,1654 @@
+#= /*
+* This file is part of OpenModelica.
+*
+* Copyright (c) 1998-CurrentYear, Linköping University,
+* Department of Computer and Information Science,
+* SE-58183 Linköping, Sweden.
+*
+* All rights reserved.
+*
+* THIS PROGRAM IS PROVIDED UNDER THE TERMS OF GPL VERSION 3
+* AND THIS OSMC PUBLIC LICENSE (OSMC-PL).
+* ANY USE, REPRODUCTION OR DISTRIBUTION OF THIS PROGRAM CONSTITUTES RECIPIENT'S
+* ACCEPTANCE OF THE OSMC PUBLIC LICENSE.
+*
+* The OpenModelica software and the Open Source Modelica
+* Consortium (OSMC) Public License (OSMC-PL) are obtained
+* from Linköping University, either from the above address,
+* from the URLs: http:www.ida.liu.se/projects/OpenModelica or
+* http:www.openmodelica.org, and in the OpenModelica distribution.
+* GNU version 3 is obtained from: http:www.gnu.org/copyleft/gpl.html.
+*
+* This program is distributed WITHOUT ANY WARRANTY; without
+* even the implied warranty of  MERCHANTABILITY or FITNESS
+* FOR A PARTICULAR PURPOSE, EXCEPT AS EXPRESSLY SET FORTH
+* IN THE BY RECIPIENT SELECTED SUBSIDIARY LICENSE CONDITIONS
+* OF OSMC-PL.
+*
+* See the full OSMC Public License conditions for more details.
+*
+*/ =#
+
+@UniontypeDecl VariableConversionSettings
+
+
+import ..ComponentReference
+import ..Flags
+import ..Util
+import ..DAE
+
+function convert(
+  flatModel::FlatModel,
+  functions::FunctionTree,
+  name::String,
+  info::SourceInfo,
+)::Tuple{DAE.DAElist, DAE.FunctionTree}
+  local daeFunctions::DAE.FunctionTree
+  local dae::DAE.DAElist
+
+  local elems::List{DAE.Element}
+  local class_elem::DAE.Element
+
+  @assign daeFunctions = convertFunctionTree(functions)
+  @assign elems = convertVariables(flatModel.variables, nil)
+  @assign elems = convertEquations(flatModel.equations, elems)
+  @assign elems = convertInitialEquations(flatModel.initialEquations, elems)
+  @assign elems = convertAlgorithms(flatModel.algorithms, elems)
+  @assign elems = convertInitialAlgorithms(flatModel.initialAlgorithms, elems)
+  @assign class_elem =
+    DAE.COMP(name, elems, ElementSource.createElementSource(info), flatModel.comment)
+  @assign dae = DAE.DAE(list(class_elem))
+  return (dae, daeFunctions)
+end
+
+@Uniontype VariableConversionSettings begin
+  @Record VARIABLE_CONVERSION_SETTINGS begin
+
+    useLocalDirection::Bool
+    isFunctionParameter::Bool
+    addTypeToSource::Bool
+  end
+end
+
+const FUNCTION_VARIABLE_CONVERSION_SETTINGS =
+  VARIABLE_CONVERSION_SETTINGS(false, true, false)::VariableConversionSettings
+
+function convertVariables(
+  variables::List{<:Variable},
+  elements::List{<:DAE.Element},
+)::List{DAE.Element}
+
+  local settings::VariableConversionSettings
+
+  @assign settings = VariableConversionSettings.VARIABLE_CONVERSION_SETTINGS(
+    useLocalDirection = Flags.getConfigBool(Flags.USE_LOCAL_DIRECTION),
+    isFunctionParameter = false,
+    addTypeToSource = Flags.isSet(Flags.INFO_XML_OPERATIONS) ||
+                      Flags.isSet(Flags.VISUAL_XML),
+  )
+  for var in listReverse(variables)
+    @assign elements = _cons(convertVariable(var, settings), elements)
+  end
+  return elements
+end
+
+function convertVariable(var::Variable, settings::VariableConversionSettings)::DAE.Element
+  local daeVar::DAE.Element
+
+  local var_attr::Option{DAE.VariableAttributes}
+  local binding_exp::Option{DAE.Exp}
+
+  @assign binding_exp = toDAEExp(var.binding)
+  @assign var_attr = convertVarAttributes(var.typeAttributes, var.ty, var.attributes)
+  @assign daeVar = makeDAEVar(
+    var.name,
+    var.ty,
+    binding_exp,
+    var.attributes,
+    var.visibility,
+    var_attr,
+    var.comment,
+    settings,
+    var.info,
+  )
+  return daeVar
+end
+
+function makeDAEVar(
+  cref::ComponentRef,
+  ty::M_Type,
+  binding::Option{<:DAE.Exp},
+  attr::Attributes,
+  vis::VisibilityType,
+  vattr::Option{<:DAE.VariableAttributes},
+  comment::Option{<:SCode.Comment},
+  settings::VariableConversionSettings,
+  info::SourceInfo,
+)::DAE.Element
+  local var::DAE.Element
+
+  local dcref::DAE.P_ComponentRef.ComponentRef
+  local dty::DAE.Type
+  local source::DAE.ElementSource
+  local dir::DirectionType
+
+  @assign dcref = toDAE(cref)
+  @assign dty = Type.toDAE(if settings.isFunctionParameter
+    Type.arrayElementType(ty)
+  else
+    ty
+  end)
+  @assign source = ElementSource.createElementSource(info)
+  if settings.addTypeToSource
+    @assign source = addComponentTypeToSource(cref, source)
+  end
+  @assign var = begin
+    @match attr begin
+      P_Component.P_Attributes.ATTRIBUTES(__) => begin
+        #=  Strip input/output from non top-level components unless
+        =#
+        #=  --useLocalDirection=true has been set.
+        =#
+        if attr.direction == Direction.NONE || settings.useLocalDirection
+          @assign dir = attr.direction
+        else
+          @assign dir = getComponentDirection(attr.direction, cref)
+        end
+        DAE.VAR(
+          dcref,
+          P_Prefixes.variabilityToDAE(attr.variability),
+          P_Prefixes.directionToDAE(dir),
+          P_Prefixes.parallelismToDAE(attr.parallelism),
+          P_Prefixes.visibilityToDAE(vis),
+          dty,
+          binding,
+          ComponentReference.crefDims(dcref),
+          ConnectorType.toDAE(attr.connectorType),
+          source,
+          vattr,
+          comment,
+          Absyn.NOT_INNER_OUTER(),
+        )
+      end
+
+      _ => begin
+        DAE.VAR(
+          dcref,
+          DAE.VarKind.VARIABLE(),
+          DAE.VarDirection.BIDIR(),
+          DAE.VarParallelism.NON_PARALLEL(),
+          P_Prefixes.visibilityToDAE(vis),
+          dty,
+          binding,
+          nil,
+          DAE.ConnectorType.NON_CONNECTOR(),
+          source,
+          vattr,
+          comment,
+          Absyn.NOT_INNER_OUTER(),
+        )
+      end
+    end
+  end
+  return var
+end
+
+function addComponentTypeToSource(
+  cref::ComponentRef,
+  source::DAE.ElementSource,
+)::DAE.ElementSource
+
+  @assign source = begin
+    @match cref begin
+      CREF(__) => begin
+        @assign source = ElementSource.addElementSourceType(
+          source,
+          scopePath(classScope(getDerivedNode(parent(cref.node)))),
+        )
+        addComponentTypeToSource(cref.restCref, source)
+      end
+
+      _ => begin
+        source
+      end
+    end
+  end
+  return source
+end
+
+""" #= Returns the given direction if the cref refers to a top-level component or to
+   a component in a top-level connector, otherwise returns Direction.NONE. =#"""
+function getComponentDirection(dir::DirectionType, cref::ComponentRef)::DirectionType
+  local rest_cref::ComponentRef = rest(cref)
+  @assign dir = begin
+    @match rest_cref begin
+      EMPTY(__) => begin
+        dir
+      end
+      CREF(__) => begin
+        if isConnector(rest_cref.node)
+          getComponentDirection(dir, rest_cref)
+        else
+          Direction.NONE
+        end
+      end
+    end
+  end
+  return dir
+end
+
+function convertVarAttributes(
+  attrs::List{<:Tuple{<:String, Binding}},
+  ty::M_Type,
+  compAttrs::Attributes,
+)::Option{DAE.VariableAttributes}
+  local attributes::Option{DAE.VariableAttributes}
+
+  local is_final::Bool
+  local is_final_opt::Option{Bool}
+  local elTy::M_Type
+  local is_array::Bool = false
+
+  @assign is_final =
+    compAttrs.isFinal || compAttrs.variability == Variability.STRUCTURAL_PARAMETER
+  if listEmpty(attrs) && !is_final
+    @assign attributes = NONE()
+    return attributes
+  end
+  @assign is_final_opt = SOME(is_final)
+  @assign attributes = begin
+    @match Type.arrayElementType(ty) begin
+      TYPE_REAL(__) => begin
+        convertRealVarAttributes(attrs, is_final_opt)
+      end
+
+      TYPE_INTEGER(__) => begin
+        convertIntVarAttributes(attrs, is_final_opt)
+      end
+
+      TYPE_BOOLEAN(__) => begin
+        convertBoolVarAttributes(attrs, is_final_opt)
+      end
+
+      TYPE_STRING(__) => begin
+        convertStringVarAttributes(attrs, is_final_opt)
+      end
+
+      TYPE_ENUMERATION(__) => begin
+        convertEnumVarAttributes(attrs, is_final_opt)
+      end
+
+      _ => begin
+        NONE()
+      end
+    end
+  end
+  return attributes
+end
+
+function convertRealVarAttributes(
+  attrs::List{<:Tuple{<:String, Binding}},
+  isFinal::Option{<:Bool},
+)::Option{DAE.VariableAttributes}
+  local attributes::Option{DAE.VariableAttributes}
+
+  local name::String
+  local b::Binding
+  local quantity::Option{DAE.Exp} = NONE()
+  local unit::Option{DAE.Exp} = NONE()
+  local displayUnit::Option{DAE.Exp} = NONE()
+  local min::Option{DAE.Exp} = NONE()
+  local max::Option{DAE.Exp} = NONE()
+  local start::Option{DAE.Exp} = NONE()
+  local fixed::Option{DAE.Exp} = NONE()
+  local nominal::Option{DAE.Exp} = NONE()
+  local state_select::Option{DAE.StateSelect} = NONE()
+
+  for attr in attrs
+    @assign (name, b) = attr
+    @assign () = begin
+      @match name begin
+        "displayUnit" => begin
+          @assign displayUnit = convertVarAttribute(b)
+          ()
+        end
+
+        "fixed" => begin
+          @assign fixed = convertVarAttribute(b)
+          ()
+        end
+
+        "max" => begin
+          @assign max = convertVarAttribute(b)
+          ()
+        end
+
+        "min" => begin
+          @assign min = convertVarAttribute(b)
+          ()
+        end
+
+        "nominal" => begin
+          @assign nominal = convertVarAttribute(b)
+          ()
+        end
+
+        "quantity" => begin
+          @assign quantity = convertVarAttribute(b)
+          ()
+        end
+
+        "start" => begin
+          @assign start = convertVarAttribute(b)
+          ()
+        end
+
+        "stateSelect" => begin
+          @assign state_select = convertStateSelectAttribute(b)
+          ()
+        end
+
+        "unbounded" => begin
+          ()
+        end
+
+        "unit" => begin
+          #=  TODO: VAR_ATTR_REAL has no field for unbounded.
+          =#
+          @assign unit = convertVarAttribute(b)
+          ()
+        end
+
+        _ => begin
+          #=  The attributes should already be type checked, so we shouldn't get any
+          =#
+          #=  unknown attributes here.
+          =#
+          Error.assertion(
+            false,
+            getInstanceName() + " got unknown type attribute " + name,
+            sourceInfo(),
+          )
+          fail()
+        end
+      end
+    end
+  end
+  @assign attributes = SOME(DAE.VariableAttributes.VAR_ATTR_REAL(
+    quantity,
+    unit,
+    displayUnit,
+    min,
+    max,
+    start,
+    fixed,
+    nominal,
+    state_select,
+    NONE(),
+    NONE(),
+    NONE(),
+    NONE(),
+    isFinal,
+    NONE(),
+  ))
+  return attributes
+end
+
+function convertIntVarAttributes(
+  attrs::List{<:Tuple{<:String, Binding}},
+  isFinal::Option{<:Bool},
+)::Option{DAE.VariableAttributes}
+  local attributes::Option{DAE.VariableAttributes}
+
+  local name::String
+  local b::Binding
+  local quantity::Option{DAE.Exp} = NONE()
+  local min::Option{DAE.Exp} = NONE()
+  local max::Option{DAE.Exp} = NONE()
+  local start::Option{DAE.Exp} = NONE()
+  local fixed::Option{DAE.Exp} = NONE()
+
+  for attr in attrs
+    @assign (name, b) = attr
+    @assign () = begin
+      @match name begin
+        "quantity" => begin
+          @assign quantity = convertVarAttribute(b)
+          ()
+        end
+
+        "min" => begin
+          @assign min = convertVarAttribute(b)
+          ()
+        end
+
+        "max" => begin
+          @assign max = convertVarAttribute(b)
+          ()
+        end
+
+        "start" => begin
+          @assign start = convertVarAttribute(b)
+          ()
+        end
+
+        "fixed" => begin
+          @assign fixed = convertVarAttribute(b)
+          ()
+        end
+
+        _ => begin
+          #=  The attributes should already be type checked, so we shouldn't get any
+          =#
+          #=  unknown attributes here.
+          =#
+          Error.assertion(
+            false,
+            getInstanceName() + " got unknown type attribute " + name,
+            sourceInfo(),
+          )
+          fail()
+        end
+      end
+    end
+  end
+  @assign attributes = SOME(DAE.VariableAttributes.VAR_ATTR_INT(
+    quantity,
+    min,
+    max,
+    start,
+    fixed,
+    NONE(),
+    NONE(),
+    NONE(),
+    NONE(),
+    isFinal,
+    NONE(),
+  ))
+  return attributes
+end
+
+function convertBoolVarAttributes(
+  attrs::List{<:Tuple{<:String, Binding}},
+  isFinal::Option{<:Bool},
+)::Option{DAE.VariableAttributes}
+  local attributes::Option{DAE.VariableAttributes}
+
+  local name::String
+  local b::Binding
+  local quantity::Option{DAE.Exp} = NONE()
+  local start::Option{DAE.Exp} = NONE()
+  local fixed::Option{DAE.Exp} = NONE()
+
+  for attr in attrs
+    @assign (name, b) = attr
+    @assign () = begin
+      @match name begin
+        "quantity" => begin
+          @assign quantity = convertVarAttribute(b)
+          ()
+        end
+
+        "start" => begin
+          @assign start = convertVarAttribute(b)
+          ()
+        end
+
+        "fixed" => begin
+          @assign fixed = convertVarAttribute(b)
+          ()
+        end
+
+        _ => begin
+          #=  The attributes should already be type checked, so we shouldn't get any
+          =#
+          #=  unknown attributes here.
+          =#
+          Error.assertion(
+            false,
+            getInstanceName() + " got unknown type attribute " + name,
+            sourceInfo(),
+          )
+          fail()
+        end
+      end
+    end
+  end
+  @assign attributes = SOME(DAE.VariableAttributes.VAR_ATTR_BOOL(
+    quantity,
+    start,
+    fixed,
+    NONE(),
+    NONE(),
+    isFinal,
+    NONE(),
+  ))
+  return attributes
+end
+
+function convertStringVarAttributes(
+  attrs::List{<:Tuple{<:String, Binding}},
+  isFinal::Option{<:Bool},
+)::Option{DAE.VariableAttributes}
+  local attributes::Option{DAE.VariableAttributes}
+
+  local name::String
+  local b::Binding
+  local quantity::Option{DAE.Exp} = NONE()
+  local start::Option{DAE.Exp} = NONE()
+  local fixed::Option{DAE.Exp} = NONE()
+
+  for attr in attrs
+    @assign (name, b) = attr
+    @assign () = begin
+      @match name begin
+        "quantity" => begin
+          @assign quantity = convertVarAttribute(b)
+          ()
+        end
+
+        "start" => begin
+          @assign start = convertVarAttribute(b)
+          ()
+        end
+
+        "fixed" => begin
+          @assign fixed = convertVarAttribute(b)
+          ()
+        end
+
+        _ => begin
+          #=  The attributes should already be type checked, so we shouldn't get any
+          =#
+          #=  unknown attributes here.
+          =#
+          Error.assertion(
+            false,
+            getInstanceName() + " got unknown type attribute " + name,
+            sourceInfo(),
+          )
+          fail()
+        end
+      end
+    end
+  end
+  @assign attributes = SOME(DAE.VariableAttributes.VAR_ATTR_STRING(
+    quantity,
+    start,
+    fixed,
+    NONE(),
+    NONE(),
+    isFinal,
+    NONE(),
+  ))
+  return attributes
+end
+
+function convertEnumVarAttributes(
+  attrs::List{<:Tuple{<:String, Binding}},
+  isFinal::Option{<:Bool},
+)::Option{DAE.VariableAttributes}
+  local attributes::Option{DAE.VariableAttributes}
+
+  local name::String
+  local b::Binding
+  local quantity::Option{DAE.Exp} = NONE()
+  local min::Option{DAE.Exp} = NONE()
+  local max::Option{DAE.Exp} = NONE()
+  local start::Option{DAE.Exp} = NONE()
+  local fixed::Option{DAE.Exp} = NONE()
+
+  for attr in attrs
+    @assign (name, b) = attr
+    @assign () = begin
+      @match name begin
+        "fixed" => begin
+          @assign fixed = convertVarAttribute(b)
+          ()
+        end
+
+        "max" => begin
+          @assign max = convertVarAttribute(b)
+          ()
+        end
+
+        "min" => begin
+          @assign min = convertVarAttribute(b)
+          ()
+        end
+
+        "quantity" => begin
+          @assign quantity = convertVarAttribute(b)
+          ()
+        end
+
+        "start" => begin
+          @assign start = convertVarAttribute(b)
+          ()
+        end
+
+        _ => begin
+          #=  The attributes should already be type checked, so we shouldn't get any
+          =#
+          #=  unknown attributes here.
+          =#
+          Error.assertion(
+            false,
+            getInstanceName() + " got unknown type attribute " + name,
+            sourceInfo(),
+          )
+          fail()
+        end
+      end
+    end
+  end
+  @assign attributes = SOME(DAE.VariableAttributes.VAR_ATTR_ENUMERATION(
+    quantity,
+    min,
+    max,
+    start,
+    fixed,
+    NONE(),
+    NONE(),
+    isFinal,
+    NONE(),
+  ))
+  return attributes
+end
+
+function convertVarAttribute(binding::Binding)::Option{DAE.Exp}
+  local attribute::Option{DAE.Exp} =
+    SOME(P_Expression.Expression.toDAE(getTypedExp(binding)))
+  return attribute
+end
+
+function convertStateSelectAttribute(binding::Binding)::Option{DAE.StateSelect}
+  local stateSelect::Option{DAE.StateSelect}
+
+  local node::InstNode
+  local name::String
+  local exp::Expression =
+    P_Expression.Expression.getBindingExp(getTypedExp(binding))
+
+  @assign name = begin
+    @match exp begin
+      P_Expression.Expression.ENUM_LITERAL(__) => begin
+        exp.name
+      end
+
+      CREF_EXPRESSION(cref = CREF(node = node)) => begin
+        name(node)
+      end
+
+      _ => begin
+        Error.assertion(
+          false,
+          getInstanceName() +
+          " got invalid StateSelect expression " +
+          P_Expression.Expression.toString(exp),
+          sourceInfo(),
+        )
+        fail()
+      end
+    end
+  end
+  @assign stateSelect = SOME(lookupStateSelectMember(name))
+  return stateSelect
+end
+
+function lookupStateSelectMember(name::String)::DAE.StateSelect
+  local stateSelect::DAE.StateSelect
+
+  @assign stateSelect = begin
+    @match name begin
+      "never" => begin
+        DAE.StateSelect.NEVER()
+      end
+
+      "avoid" => begin
+        DAE.StateSelect.AVOID()
+      end
+
+      "default" => begin
+        DAE.StateSelect.DEFAULT()
+      end
+
+      "prefer" => begin
+        DAE.StateSelect.PREFER()
+      end
+
+      "always" => begin
+        DAE.StateSelect.ALWAYS()
+      end
+
+      _ => begin
+        Error.assertion(
+          false,
+          getInstanceName() + " got unknown StateSelect literal " + name,
+          sourceInfo(),
+        )
+        fail()
+      end
+    end
+  end
+  return stateSelect
+end
+
+function convertEquations(
+  equations::List{<:Equation},
+  elements::List{<:DAE.Element} = nil,
+)::List{DAE.Element}
+
+  for eq in listReverse(equations)
+    @assign elements = convertEquation(eq, elements)
+  end
+  return elements
+end
+
+function convertEquation(eq::Equation, elements::List{<:DAE.Element})::List{DAE.Element}
+
+  @assign elements = begin
+    local e1::DAE.Exp
+    local e2::DAE.Exp
+    local e3::DAE.Exp
+    local cr1::DAE.P_ComponentRef.ComponentRef
+    local cr2::DAE.P_ComponentRef.ComponentRef
+    local dims::List{DAE.P_Dimension.Dimension}
+    local body::List{DAE.Element}
+    @match eq begin
+      EQUATION_EQUALITY(__) => begin
+        @assign e1 = P_Expression.Expression.toDAE(eq.lhs)
+        @assign e2 = P_Expression.Expression.toDAE(eq.rhs)
+        _cons(
+          if Type.isComplex(eq.ty)
+            DAE.Element.COMPLEX_EQUATION(e1, e2, eq.source)
+          elseif (Type.isArray(eq.ty))
+            DAE.Element.ARRAY_EQUATION(
+              List(P_Dimension.Dimension.toDAE(d) for d in Type.arrayDims(eq.ty)),
+              e1,
+              e2,
+              eq.source,
+            )
+          else
+            DAE.Element.EQUATION(e1, e2, eq.source)
+          end,
+          elements,
+        )
+      end
+
+      EQUATION_CREF_EQUALITY(__) => begin
+        @assign cr1 = toDAE(eq.lhs)
+        @assign cr2 = toDAE(eq.rhs)
+        _cons(DAE.Element.EQUEQUATION(cr1, cr2, eq.source), elements)
+      end
+
+      EQUATION_ARRAY_EQUALITY(__) => begin
+        @assign e1 = P_Expression.Expression.toDAE(eq.lhs)
+        @assign e2 = P_Expression.Expression.toDAE(eq.rhs)
+        @assign dims = List(P_Dimension.Dimension.toDAE(d) for d in Type.arrayDims(eq.ty))
+        _cons(DAE.Element.ARRAY_EQUATION(dims, e1, e2, eq.source), elements)
+      end
+
+      EQUATION_FOR(__) => begin
+        _cons(convertForEquation(eq), elements)
+      end
+
+      EQUATION_IF(__) => begin
+        _cons(convertIfEquation(eq.branches, eq.source, isInitial = false), elements)
+      end
+
+      P_Equation.Equation.WHEN(__) => begin
+        _cons(convertWhenEquation(eq.branches, eq.source), elements)
+      end
+
+      P_Equation.Equation.ASSERT(__) => begin
+        @assign e1 = P_Expression.Expression.toDAE(eq.condition)
+        @assign e2 = P_Expression.Expression.toDAE(eq.message)
+        @assign e3 = P_Expression.Expression.toDAE(eq.level)
+        _cons(DAE.Element.ASSERT(e1, e2, e3, eq.source), elements)
+      end
+
+      P_Equation.Equation.TERMINATE(__) => begin
+        _cons(
+          DAE.Element.TERMINATE(P_Expression.Expression.toDAE(eq.message), eq.source),
+          elements,
+        )
+      end
+
+      EQUATION_REINIT(__) => begin
+        @assign cr1 =
+          toDAE(P_Expression.Expression.toCref(eq.cref))
+        @assign e1 = P_Expression.Expression.toDAE(eq.reinitExp)
+        _cons(DAE.Element.REINIT(cr1, e1, eq.source), elements)
+      end
+
+      P_Equation.Equation.NORETCALL(__) => begin
+        _cons(
+          DAE.Element.NORETCALL(P_Expression.Expression.toDAE(eq.exp), eq.source),
+          elements,
+        )
+      end
+
+      _ => begin
+        elements
+      end
+    end
+  end
+  return elements
+end
+
+function convertForEquation(forEquation::Equation)::DAE.Element
+  local forDAE::DAE.Element
+
+  local iterator::InstNode
+  local ty::M_Type
+  local range::Expression
+  local body::List{Equation}
+  local dbody::List{DAE.Element}
+  local source::DAE.ElementSource
+
+  @match EQUATION_FOR(
+    iterator = iterator,
+    range = SOME(range),
+    body = body,
+    source = source,
+  ) = forEquation
+  @assign dbody = convertEquations(body)
+  @match P_Component.ITERATOR(ty = ty) = component(iterator)
+  @assign forDAE = DAE.Element.FOR_EQUATION(
+    Type.toDAE(ty),
+    Type.isArray(ty),
+    name(iterator),
+    0,
+    P_Expression.Expression.toDAE(range),
+    dbody,
+    source,
+  )
+  return forDAE
+end
+
+function convertIfEquation(
+  ifBranches::List{<:Equation},
+  source::DAE.ElementSource,
+  isInitial::Bool,
+)::DAE.Element
+  local ifEquation::DAE.Element
+
+  local conds::List{Expression} = nil
+  local branches::List{List{Equation}} = nil
+  local dconds::List{DAE.Exp}
+  local dbranches::List{List{DAE.Element}}
+  local else_branch::List{DAE.Element}
+
+  for branch in ifBranches
+    @assign (conds, branches) = begin
+      @match branch begin
+        P_Equation.Equation.BRANCH(__) => begin
+          (_cons(branch.condition, conds), _cons(branch.body, branches))
+        end
+
+        P_Equation.Equation.INVALID_BRANCH(__) => begin
+          P_Equation.Equation.triggerErrors(branch)
+          fail()
+        end
+      end
+    end
+  end
+  @assign dbranches = if isInitial
+    List(convertInitialEquations(b) for b in branches)
+  else
+    List(convertEquations(b) for b in branches)
+  end
+  #=  Transform the last branch to an else-branch if its condition is true.
+  =#
+  if P_Expression.Expression.isTrue(listHead(conds))
+    @match _cons(else_branch, dbranches) = dbranches
+    @assign conds = listRest(conds)
+  else
+    @assign else_branch = nil
+  end
+  @assign dconds = listReverse(P_Expression.Expression.toDAE(c) for c in conds)
+  @assign dbranches = listReverseInPlace(dbranches)
+  @assign ifEquation = if isInitial
+    DAE.Element.INITIAL_IF_EQUATION(dconds, dbranches, else_branch, source)
+  else
+    DAE.Element.IF_EQUATION(dconds, dbranches, else_branch, source)
+  end
+  return ifEquation
+end
+
+function convertWhenEquation(
+  whenBranches::List{<:Equation},
+  source::DAE.ElementSource,
+)::DAE.Element
+  local whenEquation::DAE.Element
+
+  local cond::DAE.Exp
+  local els::List{DAE.Element}
+  local when_eq::Option{DAE.Element} = NONE()
+
+  for b in listReverse(whenBranches)
+    @assign when_eq = begin
+      @match b begin
+        P_Equation.Equation.BRANCH(__) => begin
+          @assign cond = P_Expression.Expression.toDAE(b.condition)
+          @assign els = convertEquations(b.body)
+          SOME(DAE.Element.WHEN_EQUATION(cond, els, when_eq, source))
+        end
+      end
+    end
+  end
+  @match SOME(whenEquation) = when_eq
+  return whenEquation
+end
+
+function convertInitialEquations(
+  equations::List{<:Equation},
+  elements::List{<:DAE.Element} = nil,
+)::List{DAE.Element}
+
+  for eq in listReverse(equations)
+    @assign elements = convertInitialEquation(eq, elements)
+  end
+  return elements
+end
+
+function convertInitialEquation(
+  eq::Equation,
+  elements::List{<:DAE.Element},
+)::List{DAE.Element}
+
+  @assign elements = begin
+    local e1::DAE.Exp
+    local e2::DAE.Exp
+    local e3::DAE.Exp
+    local cref::DAE.P_ComponentRef.ComponentRef
+    local dims::List{DAE.P_Dimension.Dimension}
+    local body::List{DAE.Element}
+    @match eq begin
+      EQUATION_EQUALITY(__) => begin
+        @assign e1 = P_Expression.Expression.toDAE(eq.lhs)
+        @assign e2 = P_Expression.Expression.toDAE(eq.rhs)
+        _cons(if Type.isComplex(eq.ty)
+          DAE.Element.INITIAL_COMPLEX_EQUATION(e1, e2, eq.source)
+        else
+          DAE.Element.INITIALEQUATION(e1, e2, eq.source)
+        end, elements)
+      end
+
+      EQUATION_ARRAY_EQUALITY(__) => begin
+        @assign e1 = P_Expression.Expression.toDAE(eq.lhs)
+        @assign e2 = P_Expression.Expression.toDAE(eq.rhs)
+        @assign dims = List(P_Dimension.Dimension.toDAE(d) for d in Type.arrayDims(eq.ty))
+        _cons(DAE.Element.INITIAL_ARRAY_EQUATION(dims, e1, e2, eq.source), elements)
+      end
+
+      EQUATION_FOR(__) => begin
+        _cons(convertForEquation(eq), elements)
+      end
+
+      EQUATION_IF(__) => begin
+        _cons(convertIfEquation(eq.branches, eq.source, isInitial = true), elements)
+      end
+
+      P_Equation.Equation.ASSERT(__) => begin
+        @assign e1 = P_Expression.Expression.toDAE(eq.condition)
+        @assign e2 = P_Expression.Expression.toDAE(eq.message)
+        @assign e3 = P_Expression.Expression.toDAE(eq.level)
+        _cons(DAE.Element.INITIAL_ASSERT(e1, e2, e3, eq.source), elements)
+      end
+
+      P_Equation.Equation.TERMINATE(__) => begin
+        _cons(
+          DAE.Element.INITIAL_TERMINATE(
+            P_Expression.Expression.toDAE(eq.message),
+            eq.source,
+          ),
+          elements,
+        )
+      end
+
+      P_Equation.Equation.NORETCALL(__) => begin
+        _cons(
+          DAE.Element.INITIAL_NORETCALL(P_Expression.Expression.toDAE(eq.exp), eq.source),
+          elements,
+        )
+      end
+
+      _ => begin
+        elements
+      end
+    end
+  end
+  return elements
+end
+
+function convertAlgorithms(
+  algorithms::List{<:Algorithm},
+  elements::List{<:DAE.Element},
+)::List{DAE.Element}
+
+  for alg in listReverse(algorithms)
+    @assign elements = convertAlgorithm(alg, elements)
+  end
+  return elements
+end
+
+function convertAlgorithm(alg::Algorithm, elements::List{<:DAE.Element})::List{DAE.Element}
+
+  local stmts::List{DAE.P_Statement.Statement}
+  local dalg::DAE.P_Algorithm.Algorithm
+  local src::DAE.ElementSource
+
+  @assign stmts = convertStatements(alg.statements)
+  @assign dalg = DAE.ALGORITHM_STMTS(stmts)
+  @assign elements = _cons(DAE.ALGORITHM(dalg, alg.source), elements)
+  return elements
+end
+
+function convertStatements(statements::List{<:Statement})::List{DAE.P_Statement.Statement}
+  local elements::List{DAE.P_Statement.Statement}
+
+  @assign elements = List(convertStatement(s) for s in statements)
+  return elements
+end
+
+function convertStatement(stmt::Statement)::DAE.P_Statement.Statement
+  local elem::DAE.P_Statement.Statement
+
+  @assign elem = begin
+    local e1::DAE.Exp
+    local e2::DAE.Exp
+    local e3::DAE.Exp
+    local ty::DAE.Type
+    local body::List{DAE.P_Statement.Statement}
+    @match stmt begin
+      P_Statement.Statement.ASSIGNMENT(__) => begin
+        convertAssignment(stmt)
+      end
+
+      P_Statement.Statement.FUNCTION_ARRAY_INIT(__) => begin
+        @assign ty = Type.toDAE(stmt.ty)
+        DAE.P_Statement.Statement.STMT_ARRAY_INIT(stmt.name, ty, stmt.source)
+      end
+
+      P_Statement.Statement.FOR(__) => begin
+        convertForStatement(stmt)
+      end
+
+      P_Statement.Statement.IF(__) => begin
+        convertIfStatement(stmt.branches, stmt.source)
+      end
+
+      P_Statement.Statement.WHEN(__) => begin
+        convertWhenStatement(stmt.branches, stmt.source)
+      end
+
+      P_Statement.Statement.ASSERT(__) => begin
+        @assign e1 = P_Expression.Expression.toDAE(stmt.condition)
+        @assign e2 = P_Expression.Expression.toDAE(stmt.message)
+        @assign e3 = P_Expression.Expression.toDAE(stmt.level)
+        DAE.P_Statement.Statement.STMT_ASSERT(e1, e2, e3, stmt.source)
+      end
+
+      P_Statement.Statement.TERMINATE(__) => begin
+        DAE.P_Statement.Statement.STMT_TERMINATE(
+          P_Expression.Expression.toDAE(stmt.message),
+          stmt.source,
+        )
+      end
+
+      P_Statement.Statement.NORETCALL(__) => begin
+        DAE.P_Statement.Statement.STMT_NORETCALL(
+          P_Expression.Expression.toDAE(stmt.exp),
+          stmt.source,
+        )
+      end
+
+      P_Statement.Statement.WHILE(__) => begin
+        @assign e1 = P_Expression.Expression.toDAE(stmt.condition)
+        @assign body = convertStatements(stmt.body)
+        DAE.P_Statement.Statement.STMT_WHILE(e1, body, stmt.source)
+      end
+
+      P_Statement.Statement.RETURN(__) => begin
+        DAE.P_Statement.Statement.STMT_RETURN(stmt.source)
+      end
+
+      P_Statement.Statement.BREAK(__) => begin
+        DAE.P_Statement.Statement.STMT_BREAK(stmt.source)
+      end
+
+      P_Statement.Statement.FAILURE(__) => begin
+        DAE.P_Statement.Statement.STMT_FAILURE(convertStatements(stmt.body), stmt.source)
+      end
+    end
+  end
+  return elem
+end
+
+function convertAssignment(stmt::Statement)::DAE.P_Statement.Statement
+  local daeStmt::DAE.P_Statement.Statement
+
+  local lhs::Expression
+  local rhs::Expression
+  local src::DAE.ElementSource
+  local ty::M_Type
+  local dty::DAE.Type
+  local dlhs::DAE.Exp
+  local drhs::DAE.Exp
+  local expl::List{Expression}
+
+  @match P_Statement.Statement.ASSIGNMENT(lhs, rhs, ty, src) = stmt
+  if Type.isTuple(ty)
+    @match TUPLE_EXPRESSION(elements = expl) = lhs
+    @assign daeStmt = begin
+      @match expl begin
+        nil() => begin
+          DAE.P_Statement.Statement.STMT_NORETCALL(P_Expression.Expression.toDAE(rhs), src)
+        end
+
+        lhs <| nil() => begin
+          #=  () := call(...) => call(...)
+          =#
+          #=  (lhs) := call(...) => lhs := TSUB[call(...), 1]
+          =#
+          @assign dty = Type.toDAE(ty)
+          @assign dlhs = P_Expression.Expression.toDAE(lhs)
+          @assign drhs = DAE.Exp.TSUB(P_Expression.Expression.toDAE(rhs), 1, dty)
+          if Type.isArray(ty)
+            @assign daeStmt =
+              DAE.P_Statement.Statement.STMT_ASSIGN_ARR(dty, dlhs, drhs, src)
+          else
+            @assign daeStmt = DAE.P_Statement.Statement.STMT_ASSIGN(dty, dlhs, drhs, src)
+          end
+          daeStmt
+        end
+
+        _ => begin
+          @assign dty = Type.toDAE(ty)
+          @assign drhs = P_Expression.Expression.toDAE(rhs)
+          DAE.P_Statement.Statement.STMT_TUPLE_ASSIGN(
+            dty,
+            List(P_Expression.Expression.toDAE(e) for e in expl),
+            drhs,
+            src,
+          )
+        end
+      end
+    end
+  else
+    @assign dty = Type.toDAE(ty)
+    @assign dlhs = P_Expression.Expression.toDAE(lhs)
+    @assign drhs = P_Expression.Expression.toDAE(rhs)
+    if Type.isArray(ty)
+      @assign daeStmt = DAE.P_Statement.Statement.STMT_ASSIGN_ARR(dty, dlhs, drhs, src)
+    else
+      @assign daeStmt = DAE.P_Statement.Statement.STMT_ASSIGN(dty, dlhs, drhs, src)
+    end
+  end
+  return daeStmt
+end
+
+function convertForStatement(forStmt::Statement)::DAE.P_Statement.Statement
+  local forDAE::DAE.P_Statement.Statement
+
+  local iterator::InstNode
+  local ty::M_Type
+  local range::Expression
+  local body::List{Statement}
+  local dbody::List{DAE.P_Statement.Statement}
+  local source::DAE.ElementSource
+
+  @match P_Statement.Statement.FOR(
+    iterator = iterator,
+    range = SOME(range),
+    body = body,
+    source = source,
+  ) = forStmt
+  @assign dbody = convertStatements(body)
+  @match P_Component.ITERATOR(ty = ty) = component(iterator)
+  @assign forDAE = DAE.P_Statement.Statement.STMT_FOR(
+    Type.toDAE(ty),
+    Type.isArray(ty),
+    name(iterator),
+    0,
+    P_Expression.Expression.toDAE(range),
+    dbody,
+    source,
+  )
+  return forDAE
+end
+
+function convertIfStatement(
+  ifBranches::List{<:Tuple{<:Expression, List{<:Statement}}},
+  source::DAE.ElementSource,
+)::DAE.P_Statement.Statement
+  local ifStatement::DAE.P_Statement.Statement
+
+  local cond::Expression
+  local dcond::DAE.Exp
+  local stmts::List{Statement}
+  local dstmts::List{DAE.P_Statement.Statement}
+  local first::Bool = true
+  local else_stmt::DAE.Else = DAE.Else.NOELSE()
+
+  for b in listReverse(ifBranches)
+    @assign (cond, stmts) = b
+    @assign dcond = P_Expression.Expression.toDAE(cond)
+    @assign dstmts = convertStatements(stmts)
+    if first && P_Expression.Expression.isTrue(cond)
+      @assign else_stmt = DAE.Else.ELSE(dstmts)
+    else
+      @assign else_stmt = DAE.Else.ELSEIF(dcond, dstmts, else_stmt)
+    end
+    @assign first = false
+  end
+  #=  This should always be an ELSEIF due to branch selection in earlier phases.
+  =#
+  @match DAE.Else.ELSEIF(dcond, dstmts, else_stmt) = else_stmt
+  @assign ifStatement = DAE.P_Statement.Statement.STMT_IF(dcond, dstmts, else_stmt, source)
+  return ifStatement
+end
+
+function convertWhenStatement(
+  whenBranches::List{<:Tuple{<:Expression, List{<:Statement}}},
+  source::DAE.ElementSource,
+)::DAE.P_Statement.Statement
+  local whenStatement::DAE.P_Statement.Statement
+
+  local cond::DAE.Exp
+  local stmts::List{DAE.P_Statement.Statement}
+  local when_stmt::Option{DAE.P_Statement.Statement} = NONE()
+
+  for b in listReverse(whenBranches)
+    @assign cond = P_Expression.Expression.toDAE(Util.tuple21(b))
+    @assign stmts = convertStatements(Util.tuple22(b))
+    @assign when_stmt =
+      SOME(DAE.P_Statement.Statement.STMT_WHEN(cond, nil, false, stmts, when_stmt, source))
+  end
+  @match SOME(whenStatement) = when_stmt
+  return whenStatement
+end
+
+function convertInitialAlgorithms(
+  algorithms::List{<:Algorithm},
+  elements::List{<:DAE.Element},
+)::List{DAE.Element}
+
+  for alg in listReverse(algorithms)
+    @assign elements = convertInitialAlgorithm(alg, elements)
+  end
+  return elements
+end
+
+function convertInitialAlgorithm(
+  alg::Algorithm,
+  elements::List{<:DAE.Element},
+)::List{DAE.Element}
+
+  local stmts::List{DAE.P_Statement.Statement}
+  local dalg::DAE.P_Algorithm.Algorithm
+
+  @assign stmts = convertStatements(alg.statements)
+  @assign dalg = DAE.ALGORITHM_STMTS(stmts)
+  @assign elements = _cons(DAE.INITIALALGORITHM(dalg, alg.source), elements)
+  return elements
+end
+
+function convertFunctionTree(funcs::FunctionTree)::DAE.FunctionTree
+  local dfuncs::DAE.FunctionTree
+
+  @assign dfuncs = begin
+    local left::DAE.FunctionTree
+    local right::DAE.FunctionTree
+    local fn::DAE.P_Function
+    @match funcs begin
+      FunctionTree.NODE(__) => begin
+        @assign fn = convertFunction(funcs.value)
+        @assign left = convertFunctionTree(funcs.left)
+        @assign right = convertFunctionTree(funcs.right)
+        DAE.FunctionTree.NODE(funcs.key, SOME(fn), funcs.height, left, right)
+      end
+
+      FunctionTree.LEAF(__) => begin
+        @assign fn = convertFunction(funcs.value)
+        DAE.FunctionTree.LEAF(funcs.key, SOME(fn))
+      end
+
+      FunctionTree.EMPTY(__) => begin
+        DAE.FunctionTree.EMPTY()
+      end
+    end
+  end
+  return dfuncs
+end
+
+function convertFunction(func::M_Function)::DAE.P_Function
+  local dfunc::DAE.P_Function
+
+  local cls::Class
+  local elems::List{DAE.Element}
+  local def::DAE.FunctionDefinition
+  local sections::Sections
+
+  @assign cls = getClass(P_Function.instance(func))
+  @assign dfunc = begin
+    @match cls begin
+      INSTANCED_CLASS(
+        sections = sections,
+        restriction = P_Restriction.Restriction.FUNCTION(__),
+      ) => begin
+        @assign elems = convertFunctionParams(func.inputs, nil)
+        @assign elems = convertFunctionParams(func.outputs, elems)
+        @assign elems = convertFunctionParams(func.locals, elems)
+        @assign def = begin
+          @match sections begin
+            P_Sections.Sections.SECTIONS(__) => begin
+              #=  A function with an algorithm section.
+              =#
+              @assign elems = convertAlgorithms(sections.algorithms, elems)
+              DAE.FunctionDefinition.FUNCTION_DEF(listReverse(elems))
+            end
+
+            P_Sections.Sections.EXTERNAL(__) => begin
+              convertExternalDecl(sections, listReverse(elems))
+            end
+
+            _ => begin
+              DAE.FunctionDefinition.FUNCTION_DEF(listReverse(elems))
+            end
+          end
+        end
+        #=  An external function.
+        =#
+        #=  A function without either algorithm or external section.
+        =#
+        P_Function.toDAE(func, def)
+      end
+
+      INSTANCED_CLASS(
+        restriction = P_Restriction.Restriction.RECORD_CONSTRUCTOR(__),
+      ) => begin
+        DAE.P_Function.RECORD_CONSTRUCTOR(
+          P_Function.name(func),
+          P_Function.makeDAEType(func),
+          DAE.emptyElementSource,
+        )
+      end
+
+      _ => begin
+        Error.assertion(false, getInstanceName() + " got unknown function", sourceInfo())
+        fail()
+      end
+    end
+  end
+  return dfunc
+end
+
+function convertFunctionParams(
+  params::List{<:InstNode},
+  elements::List{<:DAE.Element},
+)::List{DAE.Element}
+
+  for p in params
+    @assign elements = _cons(convertFunctionParam(p), elements)
+  end
+  return elements
+end
+
+function convertFunctionParam(node::InstNode)::DAE.Element
+  local element::DAE.Element
+  local comp::Component
+  local cls::Class
+  local info::SourceInfo
+  local var_attr::Option{DAE.VariableAttributes}
+  local cref::ComponentRef
+  local attr::Attributes
+  local ty::M_Type
+  local binding::Option{DAE.Exp}
+  local ty_attr::List{Tuple{String, Binding}}
+
+  @assign comp = component(node)
+  @assign element = begin
+    @match comp begin
+      P_Component.TYPED_COMPONENT(ty = ty, info = info, attributes = attr) => begin
+        @assign cref = fromNode(node, ty)
+        @assign binding = toDAEExp(comp.binding)
+        @assign cls = getClass(comp.classInst)
+        @assign ty_attr = List(
+          (P_Modifier.name(m), P_Modifier.binding(m))
+          for m in getTypeAttributes(cls)
+        )
+        @assign var_attr = convertVarAttributes(ty_attr, ty, attr)
+        makeDAEVar(
+          cref,
+          ty,
+          binding,
+          attr,
+          visibility(node),
+          var_attr,
+          comp.comment,
+          FUNCTION_VARIABLE_CONVERSION_SETTINGS,
+          info,
+        )
+      end
+
+      _ => begin
+        Error.assertion(false, getInstanceName() + " got untyped component.", sourceInfo())
+        fail()
+      end
+    end
+  end
+  return element
+end
+
+function convertExternalDecl(
+  extDecl::Sections,
+  parameters::List{<:DAE.Element},
+)::DAE.FunctionDefinition
+  local funcDef::DAE.FunctionDefinition
+  local decl::DAE.ExternalDecl
+  local args::List{DAE.ExtArg}
+  local ret_arg::DAE.ExtArg
+  @assign funcDef = begin
+    @match extDecl begin
+      P_Sections.Sections.EXTERNAL(__) => begin
+        @assign args = List(convertExternalDeclArg(e) for e in extDecl.args)
+        @assign ret_arg = convertExternalDeclOutput(extDecl.outputRef)
+        @assign decl = DAE.ExternalDecl.EXTERNALDECL(
+          extDecl.name,
+          args,
+          ret_arg,
+          extDecl.language,
+          extDecl.ann,
+        )
+        DAE.FunctionDefinition.FUNCTION_EXT(parameters, decl)
+      end
+    end
+  end
+  return funcDef
+end
+
+function convertExternalDeclArg(exp::Expression)::DAE.ExtArg
+  local arg::DAE.ExtArg
+  @assign arg = begin
+    local dir::Absyn.Direction
+    local cref::ComponentRef
+    local e::Expression
+    @match exp begin
+      CREF_EXPRESSION(cref = cref && CREF(__)) =>
+        begin
+          @assign dir =
+            P_Prefixes.directionToAbsyn(P_Component.direction(component(cref.node)))
+          DAE.ExtArg.EXTARG(
+            toDAE(cref),
+            dir,
+            Type.toDAE(exp.ty),
+          )
+        end
+
+      P_Expression.Expression.SIZE(
+        exp = CREF_EXPRESSION(
+          cref = cref && CREF(__),
+        ),
+        dimIndex = SOME(e),
+      ) => begin
+        DAE.ExtArg.EXTARGSIZE(
+          toDAE(cref),
+          Type.toDAE(cref.ty),
+          P_Expression.Expression.toDAE(e),
+        )
+      end
+
+      _ => begin
+        DAE.ExtArg.EXTARGEXP(
+          P_Expression.Expression.toDAE(exp),
+          Type.toDAE(P_Expression.Expression.typeOf(exp)),
+        )
+      end
+    end
+  end
+  return arg
+end
+
+function convertExternalDeclOutput(cref::ComponentRef)::DAE.ExtArg
+  local arg::DAE.ExtArg
+  @assign arg = begin
+    local dir::Absyn.Direction
+    @match cref begin
+      CREF(__) => begin
+        @assign dir =
+          P_Prefixes.directionToAbsyn(P_Component.direction(component(cref.node)))
+        DAE.ExtArg.EXTARG(toDAE(cref), dir, Type.toDAE(cref.ty))
+      end
+
+      _ => begin
+        DAE.ExtArg.NOEXTARG()
+      end
+    end
+  end
+  return arg
+end
+
+function makeTypeVars(complexCls::InstNode)::List{DAE.Var}
+  local typeVars::List{DAE.Var}
+  local comp::Component
+  local type_var::DAE.Var
+  @assign typeVars = begin
+    @match (@match getClass(complexCls) = cls) begin
+      INSTANCED_CLASS(restriction = P_Restriction.Restriction.RECORD(__)) => begin
+        List(makeTypeRecordVar(c) for c in getComponents(cls.elements))
+      end
+      INSTANCED_CLASS(elements = FLAT_TREE(__)) => begin
+        List(
+          makeTypeVar(c)
+          for
+          c in getComponents(cls.elements) if !isOnlyOuter(c)
+        )
+      end
+      _ => begin
+        nil
+      end
+    end
+  end
+  return typeVars
+end
+
+function makeTypeVar(component::InstNode)::DAE.Var
+  local typeVar::DAE.Var
+  local comp::Component
+  local attr::Attributes
+
+  @assign comp = component(resolveOuter(component))
+  @assign attr = P_Component.getAttributes(comp)
+  @assign typeVar = DAE.TYPES_VAR(
+    name(component),
+    P_Component.P_Attributes.toDAE(attr, visibility(component)),
+    Type.toDAE(P_Component.getType(comp)),
+    toDAE(P_Component.getBinding(comp)),
+    false,
+    NONE(),
+  )
+  return typeVar
+end
+
+function makeTypeRecordVar(component::InstNode)::DAE.Var
+  local typeVar::DAE.Var
+  local comp::Component
+  local attr::Attributes
+  local vis::VisibilityType
+  local binding::Binding
+  local bind_from_outside::Bool
+  local ty::M_Type
+  @assign comp = component(component)
+  @assign attr = P_Component.getAttributes(comp)
+  if P_Component.isConst(comp) && P_Component.hasBinding(comp)
+    @assign vis = Visibility.PROTECTED
+  else
+    @assign vis = visibility(component)
+  end
+  @assign binding = P_Component.getBinding(comp)
+  @assign binding = mapExp(binding, stripScopePrefixExp)
+  @assign bind_from_outside = parentCount(binding) > 1
+  @assign ty = P_Component.getType(comp)
+  @assign ty = Type.mapDims(ty, stripScopePrefixFromDim)
+  @assign typeVar = DAE.TYPES_VAR(
+    name(component),
+    P_Component.P_Attributes.toDAE(attr, vis),
+    Type.toDAE(ty),
+    toDAE(binding),
+    bind_from_outside,
+    NONE(),
+  )
+  return typeVar
+end
+
+function stripScopePrefixFromDim(dim::Dimension)::Dimension
+  @assign dim = P_Dimension.Dimension.mapExp(dim, stripScopePrefixCrefExp)
+  return dim
+end
+
+function stripScopePrefixExp(exp::Expression)::Expression
+  @assign exp = P_Expression.Expression.map(exp, stripScopePrefixCrefExp)
+  return exp
+end
+
+function stripScopePrefixCrefExp(exp::Expression)::Expression
+  @assign () = begin
+    @match exp begin
+      CREF_EXPRESSION(__) => begin
+        @assign exp.cref = stripScopePrefixCref(exp.cref)
+        ()
+      end
+
+      _ => begin
+        ()
+      end
+    end
+  end
+  return exp
+end
+
+function stripScopePrefixCref(cref::ComponentRef)::ComponentRef
+  if isSimple(cref)
+    return cref
+  end
+  @assign () = begin
+    @match cref begin
+      CREF(__) => begin
+        if isFromCref(cref.restCref)
+          @assign cref.restCref = stripScopePrefixCref(cref.restCref)
+        else
+          @assign cref.restCref = EMPTY()
+        end
+        ()
+      end
+
+      _ => begin
+        ()
+      end
+    end
+  end
+  return cref
+end

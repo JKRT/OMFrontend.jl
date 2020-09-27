@@ -1,0 +1,860 @@
+<?xml version = "1.0" encoding="UTF-8"?>
+
+<!-- description of the model interface using an extention of the FMI standard -->
+<fmiModelDescription
+  fmiVersion                          = "1.0"
+
+  modelName                           = "Influenza"
+  modelIdentifier                     = "Influenza"
+
+  OPENMODELICAHOME                    = "/usr/bin/.."
+
+  guid                                = "{5449cc5a-2bf2-40db-b0be-910f926f72f8}"
+
+  description                         = ""
+  generationTool                      = "OpenModelica Compiler OpenModelica 1.16.0~dev-599-gbf1c298"
+  generationDateAndTime               = "2020-09-13T20:58:36Z"
+
+  variableNamingConvention            = "structured"
+
+  numberOfEventIndicators             = "1"  cmt_numberOfEventIndicators             = "NG:       number of zero crossings,                           FMI"
+  numberOfTimeEvents                  = "0"  cmt_numberOfTimeEvents                  = "NG_SAM:   number of zero crossings that are samples,          OMC"
+
+  numberOfInputVariables              = "1"  cmt_numberOfInputVariables              = "NI:       number of inputvar on topmodel,                     OMC"
+  numberOfOutputVariables             = "0"  cmt_numberOfOutputVariables             = "NO:       number of outputvar on topmodel,                    OMC"
+
+  numberOfExternalObjects             = "0"  cmt_numberOfExternalObjects             = "NEXT:     number of external objects,                         OMC"
+  numberOfFunctions                   = "0"  cmt_numberOfFunctions                   = "NFUNC:    number of functions used by the simulation,         OMC"
+
+  numberOfContinuousStates            = "3"  cmt_numberOfContinuousStates            = "NX:       number of states,                                   FMI"
+  numberOfRealAlgebraicVariables      = "16"  cmt_numberOfRealAlgebraicVariables      = "NY:       number of real variables,                           OMC"
+  numberOfRealAlgebraicAliasVariables = "31"  cmt_numberOfRealAlgebraicAliasVariables = "NA:       number of alias variables,                          OMC"
+  numberOfRealParameters              = "19"  cmt_numberOfRealParameters              = "NP:       number of parameters,                               OMC"
+
+  numberOfIntegerAlgebraicVariables   = "0"  cmt_numberOfIntegerAlgebraicVariables   = "NYINT:    number of alg. int variables,                       OMC"
+  numberOfIntegerAliasVariables       = "0"  cmt_numberOfIntegerAliasVariables       = "NAINT:    number of alias int variables,                      OMC"
+  numberOfIntegerParameters           = "0"  cmt_numberOfIntegerParameters           = "NPINT:    number of int parameters,                           OMC"
+
+  numberOfStringAlgebraicVariables    = "0"  cmt_numberOfStringAlgebraicVariables    = "NYSTR:    number of alg. string variables,                    OMC"
+  numberOfStringAliasVariables        = "0"  cmt_numberOfStringAliasVariables        = "NASTR:    number of alias string variables,                   OMC"
+  numberOfStringParameters            = "0"  cmt_numberOfStringParameters            = "NPSTR:    number of string parameters,                        OMC"
+
+  numberOfBooleanAlgebraicVariables   = "0"  cmt_numberOfBooleanAlgebraicVariables   = "NYBOOL:   number of alg. bool variables,                      OMC"
+  numberOfBooleanAliasVariables       = "0"  cmt_numberOfBooleanAliasVariables       = "NABOOL:   number of alias bool variables,                     OMC"
+  numberOfBooleanParameters           = "0"  cmt_numberOfBooleanParameters           = "NPBOOL:   number of bool parameters,                          OMC" >
+
+
+  <!-- startTime, stopTime, tolerance are FMI specific, all others are OMC specific -->
+  <DefaultExperiment
+    startTime      = "0"
+    stopTime       = "1"
+    stepSize       = "0.002"
+    tolerance      = "1e-06"
+    solver        = "dassl"
+    outputFormat      = "mat"
+    variableFilter      = ".*" />
+
+  <!-- variables in the model -->
+  <ModelVariables>
+
+  <ScalarVariable
+    name = "Infected_Popul.p"
+    valueReference = "1000"
+    variability = "continuous" isDiscrete = "false"
+    causality = "local" isValueChangeable = "true"
+    alias = "noAlias"
+    classIndex = "0" classType = "rSta"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "9" startColumn = "3" endLine = "9" endColumn = "26" fileWritable = "true">
+    <Real start="50.0" fixed="true" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Non_Infected_Popul.p"
+    valueReference = "1001"
+    variability = "continuous" isDiscrete = "false"
+    causality = "local" isValueChangeable = "true"
+    alias = "noAlias"
+    classIndex = "1" classType = "rSta"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "9" startColumn = "3" endLine = "9" endColumn = "26" fileWritable = "true">
+    <Real start="100.0" fixed="true" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Sick_Popul.p"
+    valueReference = "1002"
+    variability = "continuous" isDiscrete = "false"
+    causality = "local" isValueChangeable = "true"
+    alias = "noAlias"
+    classIndex = "2" classType = "rSta"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "9" startColumn = "3" endLine = "9" endColumn = "26" fileWritable = "true">
+    <Real start="0.0" fixed="true" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "der(Infected_Popul.p)"
+    valueReference = "1003"
+    variability = "continuous" isDiscrete = "false"
+    causality = "local" isValueChangeable = "false"
+    alias = "noAlias"
+    classIndex = "0" classType = "rDer"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "9" startColumn = "3" endLine = "9" endColumn = "26" fileWritable = "true">
+    <Real fixed="false" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "der(Non_Infected_Popul.p)"
+    valueReference = "1004"
+    variability = "continuous" isDiscrete = "false"
+    causality = "local" isValueChangeable = "false"
+    alias = "noAlias"
+    classIndex = "1" classType = "rDer"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "9" startColumn = "3" endLine = "9" endColumn = "26" fileWritable = "true">
+    <Real fixed="false" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "der(Sick_Popul.p)"
+    valueReference = "1005"
+    variability = "continuous" isDiscrete = "false"
+    causality = "local" isValueChangeable = "false"
+    alias = "noAlias"
+    classIndex = "2" classType = "rDer"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "9" startColumn = "3" endLine = "9" endColumn = "26" fileWritable = "true">
+    <Real fixed="false" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "der(Activation.out_1)"
+    valueReference = "1006"
+    variability = "continuous" isDiscrete = "false"
+    causality = "local" isValueChangeable = "false"
+    alias = "noAlias"
+    classIndex = "0" classType = "rAlg"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "19" startColumn = "3" endLine = "19" endColumn = "20" fileWritable = "true">
+    <Real fixed="false" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "der(Immune_Popul.p)"
+    valueReference = "1007"
+    variability = "continuous" isDiscrete = "false"
+    causality = "local" isValueChangeable = "false"
+    alias = "noAlias"
+    classIndex = "1" classType = "rAlg"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "9" startColumn = "3" endLine = "9" endColumn = "26" fileWritable = "true">
+    <Real fixed="false" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Activation.out_1"
+    valueReference = "1008"
+    variability = "continuous" isDiscrete = "false"
+    causality = "local" isValueChangeable = "false"
+    alias = "noAlias"
+    classIndex = "2" classType = "rAlg"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "19" startColumn = "3" endLine = "19" endColumn = "20" fileWritable = "true">
+    <Real start="0.0" fixed="false" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Contacts_Wk.out_1"
+    valueReference = "1009"
+    variability = "continuous" isDiscrete = "false"
+    causality = "local" isValueChangeable = "false"
+    alias = "noAlias"
+    classIndex = "3" classType = "rAlg"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "36" startColumn = "3" endLine = "36" endColumn = "20" fileWritable = "true">
+    <Real start="10.0" fixed="false" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Contagious_Popul.out_1"
+    valueReference = "1010"
+    variability = "continuous" isDiscrete = "false"
+    causality = "local" isValueChangeable = "false"
+    alias = "noAlias"
+    classIndex = "4" classType = "rAlg"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "56" startColumn = "3" endLine = "56" endColumn = "20" fileWritable = "true">
+    <Real start="50.0" fixed="false" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Immune_Popul.in_2"
+    valueReference = "1011"
+    variability = "continuous" isDiscrete = "false"
+    causality = "local" isValueChangeable = "false"
+    alias = "noAlias"
+    classIndex = "5" classType = "rAlg"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "7" startColumn = "3" endLine = "7" endColumn = "18" fileWritable = "true">
+    <Real fixed="false" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Immune_Popul.p"
+    valueReference = "1012"
+    variability = "continuous" isDiscrete = "false"
+    causality = "local" isValueChangeable = "false"
+    alias = "noAlias"
+    classIndex = "6" classType = "rAlg"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "9" startColumn = "3" endLine = "9" endColumn = "26" fileWritable = "true">
+    <Real start="10.0" fixed="false" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Incubation.out_1"
+    valueReference = "1013"
+    variability = "continuous" isDiscrete = "false"
+    causality = "local" isValueChangeable = "false"
+    alias = "noAlias"
+    classIndex = "7" classType = "rAlg"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "19" startColumn = "3" endLine = "19" endColumn = "20" fileWritable = "true">
+    <Real start="50.0" fixed="false" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Infected_Popul.in_1"
+    valueReference = "1014"
+    variability = "continuous" isDiscrete = "false"
+    causality = "local" isValueChangeable = "false"
+    alias = "noAlias"
+    classIndex = "8" classType = "rAlg"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "6" startColumn = "3" endLine = "6" endColumn = "18" fileWritable = "true">
+    <Real start="80.125" fixed="false" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Infection_Rate.in_1"
+    valueReference = "1015"
+    variability = "continuous" isDiscrete = "false"
+    causality = "local" isValueChangeable = "false"
+    alias = "noAlias"
+    classIndex = "9" classType = "rAlg"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "63" startColumn = "3" endLine = "63" endColumn = "18" fileWritable = "true">
+    <Real start="80.125" fixed="false" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Introduction"
+    valueReference = "1016"
+    variability = "continuous" isDiscrete = "false"
+    causality = "input" isValueChangeable = "true"
+    inputIndex = "0"
+    alias = "noAlias"
+    classIndex = "10" classType = "rAlg"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "72" startColumn = "3" endLine = "72" endColumn = "31" fileWritable = "true">
+    <Real fixed="true" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Non_Contagious_Popul.out_1"
+    valueReference = "1017"
+    variability = "continuous" isDiscrete = "false"
+    causality = "local" isValueChangeable = "false"
+    alias = "noAlias"
+    classIndex = "11" classType = "rAlg"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "56" startColumn = "3" endLine = "56" endColumn = "20" fileWritable = "true">
+    <Real start="110.0" fixed="false" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Perc_Infected.in_2"
+    valueReference = "1018"
+    variability = "continuous" isDiscrete = "false"
+    causality = "local" isValueChangeable = "false"
+    alias = "noAlias"
+    classIndex = "12" classType = "rAlg"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "18" startColumn = "3" endLine = "18" endColumn = "18" fileWritable = "true">
+    <Real start="160.0" fixed="false" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Perc_Infected.out_1"
+    valueReference = "1019"
+    variability = "continuous" isDiscrete = "false"
+    causality = "local" isValueChangeable = "false"
+    alias = "noAlias"
+    classIndex = "13" classType = "rAlg"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "19" startColumn = "3" endLine = "19" endColumn = "20" fileWritable = "true">
+    <Real start="0.3125" fixed="false" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Temp1.out_1"
+    valueReference = "1020"
+    variability = "continuous" isDiscrete = "false"
+    causality = "local" isValueChangeable = "false"
+    alias = "noAlias"
+    classIndex = "14" classType = "rAlg"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "46" startColumn = "3" endLine = "46" endColumn = "20" fileWritable = "true">
+    <Real start="3.125" fixed="false" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Temp2.out_1"
+    valueReference = "1021"
+    variability = "continuous" isDiscrete = "false"
+    causality = "local" isValueChangeable = "false"
+    alias = "noAlias"
+    classIndex = "15" classType = "rAlg"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "46" startColumn = "3" endLine = "46" endColumn = "20" fileWritable = "true">
+    <Real start="3.125" fixed="false" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Activation.c"
+    valueReference = "1022"
+    variability = "parameter" isDiscrete = "true"
+    causality = "parameter" isValueChangeable = "true"
+    alias = "noAlias"
+    classIndex = "0" classType = "rPar"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "20" startColumn = "3" endLine = "20" endColumn = "24" fileWritable = "true">
+    <Real start="1.0" fixed="true" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Activation.in_2"
+    valueReference = "1023"
+    variability = "parameter" isDiscrete = "true"
+    causality = "calculatedParameter" isValueChangeable = "false"
+    alias = "noAlias"
+    classIndex = "1" classType = "rPar"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "18" startColumn = "3" endLine = "18" endColumn = "18" fileWritable = "true">
+    <Real fixed="true" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Contacts_Wk.c"
+    valueReference = "1024"
+    variability = "parameter" isDiscrete = "true"
+    causality = "parameter" isValueChangeable = "true"
+    alias = "noAlias"
+    classIndex = "2" classType = "rPar"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "37" startColumn = "3" endLine = "37" endColumn = "24" fileWritable = "true">
+    <Real start="0.1" fixed="true" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Contraction_Rate.c"
+    valueReference = "1025"
+    variability = "parameter" isDiscrete = "true"
+    causality = "parameter" isValueChangeable = "true"
+    alias = "noAlias"
+    classIndex = "3" classType = "rPar"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "28" startColumn = "3" endLine = "28" endColumn = "23" fileWritable = "true">
+    <Real start="1.0" fixed="true" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Contraction_Rate.out_1"
+    valueReference = "1026"
+    variability = "parameter" isDiscrete = "true"
+    causality = "calculatedParameter" isValueChangeable = "false"
+    alias = "noAlias"
+    classIndex = "4" classType = "rPar"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "27" startColumn = "3" endLine = "27" endColumn = "20" fileWritable = "true">
+    <Real fixed="true" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Cure_Rate.c"
+    valueReference = "1027"
+    variability = "parameter" isDiscrete = "true"
+    causality = "parameter" isValueChangeable = "true"
+    alias = "noAlias"
+    classIndex = "5" classType = "rPar"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "20" startColumn = "3" endLine = "20" endColumn = "24" fileWritable = "true">
+    <Real start="1.0" fixed="true" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Cure_Rate.in_2"
+    valueReference = "1028"
+    variability = "parameter" isDiscrete = "true"
+    causality = "calculatedParameter" isValueChangeable = "false"
+    alias = "noAlias"
+    classIndex = "6" classType = "rPar"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "18" startColumn = "3" endLine = "18" endColumn = "18" fileWritable = "true">
+    <Real fixed="true" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Immune_Period.c"
+    valueReference = "1029"
+    variability = "parameter" isDiscrete = "true"
+    causality = "parameter" isValueChangeable = "true"
+    alias = "noAlias"
+    classIndex = "7" classType = "rPar"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "28" startColumn = "3" endLine = "28" endColumn = "23" fileWritable = "true">
+    <Real start="1.0" fixed="true" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Immune_Period.out_1"
+    valueReference = "1030"
+    variability = "parameter" isDiscrete = "true"
+    causality = "calculatedParameter" isValueChangeable = "false"
+    alias = "noAlias"
+    classIndex = "8" classType = "rPar"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "27" startColumn = "3" endLine = "27" endColumn = "20" fileWritable = "true">
+    <Real fixed="true" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Incubation.c"
+    valueReference = "1031"
+    variability = "parameter" isDiscrete = "true"
+    causality = "parameter" isValueChangeable = "true"
+    alias = "noAlias"
+    classIndex = "9" classType = "rPar"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "20" startColumn = "3" endLine = "20" endColumn = "24" fileWritable = "true">
+    <Real start="1.0" fixed="true" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Incubation.in_2"
+    valueReference = "1032"
+    variability = "parameter" isDiscrete = "true"
+    causality = "calculatedParameter" isValueChangeable = "false"
+    alias = "noAlias"
+    classIndex = "10" classType = "rPar"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "18" startColumn = "3" endLine = "18" endColumn = "18" fileWritable = "true">
+    <Real fixed="true" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Perc_Infected.c"
+    valueReference = "1033"
+    variability = "parameter" isDiscrete = "true"
+    causality = "parameter" isValueChangeable = "true"
+    alias = "noAlias"
+    classIndex = "11" classType = "rPar"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "20" startColumn = "3" endLine = "20" endColumn = "24" fileWritable = "true">
+    <Real start="1.0" fixed="true" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Sickness_Duration.c"
+    valueReference = "1034"
+    variability = "parameter" isDiscrete = "true"
+    causality = "parameter" isValueChangeable = "true"
+    alias = "noAlias"
+    classIndex = "12" classType = "rPar"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "28" startColumn = "3" endLine = "28" endColumn = "23" fileWritable = "true">
+    <Real start="1.0" fixed="true" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Sickness_Duration.out_1"
+    valueReference = "1035"
+    variability = "parameter" isDiscrete = "true"
+    causality = "calculatedParameter" isValueChangeable = "false"
+    alias = "noAlias"
+    classIndex = "13" classType = "rPar"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "27" startColumn = "3" endLine = "27" endColumn = "20" fileWritable = "true">
+    <Real fixed="true" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Temp1.c"
+    valueReference = "1036"
+    variability = "parameter" isDiscrete = "true"
+    causality = "parameter" isValueChangeable = "true"
+    alias = "noAlias"
+    classIndex = "14" classType = "rPar"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "47" startColumn = "3" endLine = "47" endColumn = "24" fileWritable = "true">
+    <Real start="1.0" fixed="true" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Temp2.c"
+    valueReference = "1037"
+    variability = "parameter" isDiscrete = "true"
+    causality = "parameter" isValueChangeable = "true"
+    alias = "noAlias"
+    classIndex = "15" classType = "rPar"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "47" startColumn = "3" endLine = "47" endColumn = "24" fileWritable = "true">
+    <Real start="1.0" fixed="true" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Temp2.in_1"
+    valueReference = "1038"
+    variability = "parameter" isDiscrete = "true"
+    causality = "calculatedParameter" isValueChangeable = "false"
+    alias = "noAlias"
+    classIndex = "16" classType = "rPar"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "44" startColumn = "3" endLine = "44" endColumn = "18" fileWritable = "true">
+    <Real fixed="true" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Time_to_Breakdown.c"
+    valueReference = "1039"
+    variability = "parameter" isDiscrete = "true"
+    causality = "parameter" isValueChangeable = "true"
+    alias = "noAlias"
+    classIndex = "17" classType = "rPar"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "28" startColumn = "3" endLine = "28" endColumn = "23" fileWritable = "true">
+    <Real start="1.0" fixed="true" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Time_to_Breakdown.out_1"
+    valueReference = "1040"
+    variability = "parameter" isDiscrete = "true"
+    causality = "calculatedParameter" isValueChangeable = "false"
+    alias = "noAlias"
+    classIndex = "18" classType = "rPar"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "27" startColumn = "3" endLine = "27" endColumn = "20" fileWritable = "true">
+    <Real fixed="true" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Activation.in_1"
+    valueReference = "1041"
+    variability = "continuous" isDiscrete = "false"
+    causality = "local" isValueChangeable = "false"
+    alias = "alias" aliasVariable="Immune_Popul.p" aliasVariableId="12"
+    classIndex = "0" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "17" startColumn = "3" endLine = "17" endColumn = "18" fileWritable = "true">
+    <Real fixed="false" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Contacts_Wk.in_1"
+    valueReference = "1042"
+    variability = "continuous" isDiscrete = "false"
+    causality = "local" isValueChangeable = "false"
+    alias = "alias" aliasVariable="Non_Infected_Popul.p" aliasVariableId="1"
+    classIndex = "1" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "35" startColumn = "3" endLine = "35" endColumn = "18" fileWritable = "true">
+    <Real fixed="false" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Contagious_Popul.in_1"
+    valueReference = "1043"
+    variability = "continuous" isDiscrete = "false"
+    causality = "local" isValueChangeable = "false"
+    alias = "alias" aliasVariable="Infected_Popul.p" aliasVariableId="0"
+    classIndex = "2" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "54" startColumn = "3" endLine = "54" endColumn = "18" fileWritable = "true">
+    <Real fixed="false" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Contagious_Popul.in_2"
+    valueReference = "1044"
+    variability = "continuous" isDiscrete = "false"
+    causality = "local" isValueChangeable = "false"
+    alias = "alias" aliasVariable="Sick_Popul.p" aliasVariableId="2"
+    classIndex = "3" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "55" startColumn = "3" endLine = "55" endColumn = "18" fileWritable = "true">
+    <Real fixed="false" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Cure_Rate.in_1"
+    valueReference = "1045"
+    variability = "continuous" isDiscrete = "false"
+    causality = "local" isValueChangeable = "false"
+    alias = "alias" aliasVariable="Sick_Popul.p" aliasVariableId="2"
+    classIndex = "4" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "17" startColumn = "3" endLine = "17" endColumn = "18" fileWritable = "true">
+    <Real fixed="false" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Cure_Rate.out_1"
+    valueReference = "1046"
+    variability = "continuous" isDiscrete = "false"
+    causality = "local" isValueChangeable = "false"
+    alias = "alias" aliasVariable="Activation.out_1" aliasVariableId="8"
+    classIndex = "5" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "19" startColumn = "3" endLine = "19" endColumn = "20" fileWritable = "true">
+    <Real fixed="false" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Immune_Popul.in_1"
+    valueReference = "1047"
+    variability = "continuous" isDiscrete = "false"
+    causality = "local" isValueChangeable = "false"
+    alias = "alias" aliasVariable="Activation.out_1" aliasVariableId="8"
+    classIndex = "6" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "6" startColumn = "3" endLine = "6" endColumn = "18" fileWritable = "true">
+    <Real fixed="false" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Immune_Popul.out_1"
+    valueReference = "1048"
+    variability = "continuous" isDiscrete = "false"
+    causality = "local" isValueChangeable = "false"
+    alias = "alias" aliasVariable="Immune_Popul.p" aliasVariableId="12"
+    classIndex = "7" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "8" startColumn = "3" endLine = "8" endColumn = "20" fileWritable = "true">
+    <Real fixed="false" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Incubation.in_1"
+    valueReference = "1049"
+    variability = "continuous" isDiscrete = "false"
+    causality = "local" isValueChangeable = "false"
+    alias = "alias" aliasVariable="Infected_Popul.p" aliasVariableId="0"
+    classIndex = "8" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "17" startColumn = "3" endLine = "17" endColumn = "18" fileWritable = "true">
+    <Real fixed="false" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Infected_Popul.in_2"
+    valueReference = "1050"
+    variability = "continuous" isDiscrete = "false"
+    causality = "local" isValueChangeable = "false"
+    alias = "alias" aliasVariable="Incubation.out_1" aliasVariableId="13"
+    classIndex = "9" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "7" startColumn = "3" endLine = "7" endColumn = "18" fileWritable = "true">
+    <Real fixed="false" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Infected_Popul.out_1"
+    valueReference = "1051"
+    variability = "continuous" isDiscrete = "false"
+    causality = "local" isValueChangeable = "false"
+    alias = "alias" aliasVariable="Infected_Popul.p" aliasVariableId="0"
+    classIndex = "10" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "8" startColumn = "3" endLine = "8" endColumn = "20" fileWritable = "true">
+    <Real fixed="false" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Infection_Rate.in_2"
+    valueReference = "1052"
+    variability = "continuous" isDiscrete = "false"
+    causality = "local" isValueChangeable = "false"
+    alias = "alias" aliasVariable="Non_Infected_Popul.p" aliasVariableId="1"
+    classIndex = "11" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "64" startColumn = "3" endLine = "64" endColumn = "18" fileWritable = "true">
+    <Real fixed="false" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Infection_Rate.out_1"
+    valueReference = "1053"
+    variability = "continuous" isDiscrete = "false"
+    causality = "local" isValueChangeable = "false"
+    alias = "alias" aliasVariable="Infected_Popul.in_1" aliasVariableId="14"
+    classIndex = "12" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "65" startColumn = "3" endLine = "65" endColumn = "20" fileWritable = "true">
+    <Real fixed="false" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Non_Contagious_Popul.in_1"
+    valueReference = "1054"
+    variability = "continuous" isDiscrete = "false"
+    causality = "local" isValueChangeable = "false"
+    alias = "alias" aliasVariable="Non_Infected_Popul.p" aliasVariableId="1"
+    classIndex = "13" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "54" startColumn = "3" endLine = "54" endColumn = "18" fileWritable = "true">
+    <Real fixed="false" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Non_Contagious_Popul.in_2"
+    valueReference = "1055"
+    variability = "continuous" isDiscrete = "false"
+    causality = "local" isValueChangeable = "false"
+    alias = "alias" aliasVariable="Immune_Popul.p" aliasVariableId="12"
+    classIndex = "14" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "55" startColumn = "3" endLine = "55" endColumn = "18" fileWritable = "true">
+    <Real fixed="false" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Non_Infected_Popul.in_1"
+    valueReference = "1056"
+    variability = "continuous" isDiscrete = "false"
+    causality = "local" isValueChangeable = "false"
+    alias = "alias" aliasVariable="Activation.out_1" aliasVariableId="8"
+    classIndex = "15" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "6" startColumn = "3" endLine = "6" endColumn = "18" fileWritable = "true">
+    <Real fixed="false" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Non_Infected_Popul.in_2"
+    valueReference = "1057"
+    variability = "continuous" isDiscrete = "false"
+    causality = "local" isValueChangeable = "false"
+    alias = "alias" aliasVariable="Infected_Popul.in_1" aliasVariableId="14"
+    classIndex = "16" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "7" startColumn = "3" endLine = "7" endColumn = "18" fileWritable = "true">
+    <Real fixed="false" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Non_Infected_Popul.out_1"
+    valueReference = "1058"
+    variability = "continuous" isDiscrete = "false"
+    causality = "local" isValueChangeable = "false"
+    alias = "alias" aliasVariable="Non_Infected_Popul.p" aliasVariableId="1"
+    classIndex = "17" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "8" startColumn = "3" endLine = "8" endColumn = "20" fileWritable = "true">
+    <Real fixed="false" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Perc_Infected.in_1"
+    valueReference = "1059"
+    variability = "continuous" isDiscrete = "false"
+    causality = "local" isValueChangeable = "false"
+    alias = "alias" aliasVariable="Contagious_Popul.out_1" aliasVariableId="10"
+    classIndex = "18" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "17" startColumn = "3" endLine = "17" endColumn = "18" fileWritable = "true">
+    <Real fixed="false" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Sick_Popul.in_1"
+    valueReference = "1060"
+    variability = "continuous" isDiscrete = "false"
+    causality = "local" isValueChangeable = "false"
+    alias = "alias" aliasVariable="Incubation.out_1" aliasVariableId="13"
+    classIndex = "19" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "6" startColumn = "3" endLine = "6" endColumn = "18" fileWritable = "true">
+    <Real fixed="false" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Sick_Popul.in_2"
+    valueReference = "1061"
+    variability = "continuous" isDiscrete = "false"
+    causality = "local" isValueChangeable = "false"
+    alias = "alias" aliasVariable="Activation.out_1" aliasVariableId="8"
+    classIndex = "20" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "7" startColumn = "3" endLine = "7" endColumn = "18" fileWritable = "true">
+    <Real fixed="false" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Sick_Popul.out_1"
+    valueReference = "1062"
+    variability = "continuous" isDiscrete = "false"
+    causality = "local" isValueChangeable = "false"
+    alias = "alias" aliasVariable="Sick_Popul.p" aliasVariableId="2"
+    classIndex = "21" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "8" startColumn = "3" endLine = "8" endColumn = "20" fileWritable = "true">
+    <Real fixed="false" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Temp1.in_1"
+    valueReference = "1063"
+    variability = "continuous" isDiscrete = "false"
+    causality = "local" isValueChangeable = "false"
+    alias = "alias" aliasVariable="Perc_Infected.out_1" aliasVariableId="19"
+    classIndex = "22" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "44" startColumn = "3" endLine = "44" endColumn = "18" fileWritable = "true">
+    <Real fixed="false" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Temp1.in_2"
+    valueReference = "1064"
+    variability = "continuous" isDiscrete = "false"
+    causality = "local" isValueChangeable = "false"
+    alias = "alias" aliasVariable="Contacts_Wk.out_1" aliasVariableId="9"
+    classIndex = "23" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "45" startColumn = "3" endLine = "45" endColumn = "18" fileWritable = "true">
+    <Real fixed="false" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Temp2.in_2"
+    valueReference = "1065"
+    variability = "continuous" isDiscrete = "false"
+    causality = "local" isValueChangeable = "false"
+    alias = "alias" aliasVariable="Temp1.out_1" aliasVariableId="20"
+    classIndex = "24" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "45" startColumn = "3" endLine = "45" endColumn = "18" fileWritable = "true">
+    <Real fixed="false" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Temp3.in_1"
+    valueReference = "1066"
+    variability = "continuous" isDiscrete = "false"
+    causality = "local" isValueChangeable = "false"
+    alias = "alias" aliasVariable="Temp2.out_1" aliasVariableId="21"
+    classIndex = "25" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "54" startColumn = "3" endLine = "54" endColumn = "18" fileWritable = "true">
+    <Real fixed="false" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Temp3.in_2"
+    valueReference = "1067"
+    variability = "continuous" isDiscrete = "false"
+    causality = "local" isValueChangeable = "false"
+    alias = "alias" aliasVariable="Introduction" aliasVariableId="16"
+    classIndex = "26" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "55" startColumn = "3" endLine = "55" endColumn = "18" fileWritable = "true">
+    <Real fixed="false" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Temp3.out_1"
+    valueReference = "1068"
+    variability = "continuous" isDiscrete = "false"
+    causality = "local" isValueChangeable = "false"
+    alias = "alias" aliasVariable="Infection_Rate.in_1" aliasVariableId="15"
+    classIndex = "27" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "56" startColumn = "3" endLine = "56" endColumn = "20" fileWritable = "true">
+    <Real fixed="false" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Total_Popul.in_1"
+    valueReference = "1069"
+    variability = "continuous" isDiscrete = "false"
+    causality = "local" isValueChangeable = "false"
+    alias = "alias" aliasVariable="Contagious_Popul.out_1" aliasVariableId="10"
+    classIndex = "28" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "54" startColumn = "3" endLine = "54" endColumn = "18" fileWritable = "true">
+    <Real fixed="false" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Total_Popul.in_2"
+    valueReference = "1070"
+    variability = "continuous" isDiscrete = "false"
+    causality = "local" isValueChangeable = "false"
+    alias = "alias" aliasVariable="Non_Contagious_Popul.out_1" aliasVariableId="17"
+    classIndex = "29" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "55" startColumn = "3" endLine = "55" endColumn = "18" fileWritable = "true">
+    <Real fixed="false" useNominal="false" />
+  </ScalarVariable>
+  <ScalarVariable
+    name = "Total_Popul.out_1"
+    valueReference = "1071"
+    variability = "continuous" isDiscrete = "false"
+    causality = "local" isValueChangeable = "false"
+    alias = "alias" aliasVariable="Perc_Infected.in_2" aliasVariableId="18"
+    classIndex = "30" classType = "rAli"
+    isProtected = "false" hideResult = "false"
+    fileName = "/mnt/c/Users/johti17/Projects/Programming/JuliaPackages/HybridDAEParser/lib/Modelica/Influenza.mo" startLine = "56" startColumn = "3" endLine = "56" endColumn = "20" fileWritable = "true">
+    <Real fixed="false" useNominal="false" />
+  </ScalarVariable>
+
+
+
+  </ModelVariables>
+
+
+</fmiModelDescription>
+

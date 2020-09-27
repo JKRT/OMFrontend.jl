@@ -1,0 +1,1019 @@
+PredFn = Function
+PredFn = Function
+FoldFunc = Function
+FoldFunc = Function
+MapExpFn = Function
+MapFn = Function
+ApplyFn = Function
+@UniontypeDecl NFEquation
+ComponentRef = NFComponentRef
+import ..Util
+Equation = NFEquation
+
+@Uniontype NFEquation begin
+  @Record EQUATION_NORETCALL begin
+    exp::Expression
+    source::DAE.ElementSource
+  end
+
+  @Record EQUATION_REINIT begin
+    cref::Expression #= The variable to reinitialize. =#
+    reinitExp::Expression #= The new value of the variable. =#
+    source::DAE.ElementSource
+  end
+
+  @Record EQUATION_TERMINATE begin
+    message::Expression #= The message to display if the terminate triggers. =#
+    source::DAE.ElementSource
+  end
+
+  @Record EQUATION_ASSERT begin
+    condition::Expression #= The assert condition. =#
+    message::Expression #= The message to display if the assert fails. =#
+    level::Expression #= Error or warning =#
+    source::DAE.ElementSource
+  end
+
+  @Record EQUATION_WHEN begin
+    branches::List{Branch}
+    source::DAE.ElementSource
+  end
+
+  @Record EQUATION_IF begin
+    branches::List{Branch}
+    source::DAE.ElementSource
+  end
+
+  @Record EQUATION_FOR begin
+    iterator::InstNode
+    range::Option{Expression}
+    body::List{Equation} #= The body of the for loop. =#
+    source::DAE.ElementSource
+  end
+
+  @Record EQUATION_CONNECT begin
+    lhs::Expression
+    rhs::Expression
+    source::DAE.ElementSource
+  end
+
+  @Record EQUATION_ARRAY_EQUALITY begin
+    lhs::Expression
+    rhs::Expression
+    ty::M_Type
+    source::DAE.ElementSource
+  end
+
+  @Record EQUATION_CREF_EQUALITY begin
+    lhs::ComponentRef
+    rhs::ComponentRef
+    source::DAE.ElementSource
+  end
+
+  @Record EQUATION_EQUALITY begin
+    lhs::Expression #= The left hand side expression. =#
+    rhs::Expression #= The right hand side expression. =#
+    ty::M_Type
+    source::DAE.ElementSource
+  end
+end
+
+function isMultiLine(eq::Equation)::Bool
+  local singleLine::Bool
+  @assign singleLine = begin
+    @match eq begin
+      FOR(__) => begin
+        true
+      end
+
+      IF(__) => begin
+        true
+      end
+
+      WHEN(__) => begin
+        true
+      end
+
+      _ => begin
+        false
+      end
+    end
+  end
+  return singleLine
+end
+
+function toFlatStreamList(
+  eql::List{<:Equation},
+  indent::String,
+  s,
+)
+
+  local prev_multi_line::Bool = false
+  local multi_line::Bool
+  local first::Bool = true
+
+  for eq in eql
+    @assign multi_line = isMultiLine(eq)
+    if first
+      @assign first = false
+    elseif prev_multi_line || multi_line
+      @assign s = IOStream.append(s, "\\n")
+    end
+    @assign prev_multi_line = multi_line
+    @assign s = toFlatStream(eq, indent, s)
+    @assign s = IOStream.append(s, ";\\n")
+  end
+  #=  Improve human parsability by separating statements that spans multiple
+  =#
+  #=  lines (like if-equations) with newlines.
+  =#
+  return s
+end
+
+function toFlatStream(eq::Equation, indent::String, s)
+
+  @assign s = IOStream.append(s, indent)
+  @assign s = begin
+    @match eq begin
+      EQUALITY(__) => begin
+        @assign s = IOStream.append(s, P_Expression.Expression.toFlatString(eq.lhs))
+        @assign s = IOStream.append(s, " = ")
+        @assign s = IOStream.append(s, P_Expression.Expression.toFlatString(eq.rhs))
+        s
+      end
+
+      CREF_EQUALITY(__) => begin
+        @assign s = IOStream.append(s, toFlatString(eq.lhs))
+        @assign s = IOStream.append(s, " = ")
+        @assign s = IOStream.append(s, toFlatString(eq.rhs))
+        s
+      end
+
+      ARRAY_EQUALITY(__) => begin
+        @assign s = IOStream.append(s, P_Expression.Expression.toFlatString(eq.lhs))
+        @assign s = IOStream.append(s, " = ")
+        @assign s = IOStream.append(s, P_Expression.Expression.toFlatString(eq.rhs))
+        s
+      end
+
+      CONNECT(__) => begin
+        @assign s = IOStream.append(s, "connect(")
+        @assign s = IOStream.append(s, P_Expression.Expression.toFlatString(eq.lhs))
+        @assign s = IOStream.append(s, " = ")
+        @assign s = IOStream.append(s, P_Expression.Expression.toFlatString(eq.rhs))
+        @assign s = IOStream.append(s, ")")
+        s
+      end
+
+      FOR(__) => begin
+        @assign s = IOStream.append(s, "for ")
+        @assign s = IOStream.append(s, name(eq.iterator))
+        if isSome(eq.range)
+          @assign s = IOStream.append(s, " in ")
+          @assign s = IOStream.append(
+            s,
+            P_Expression.Expression.toFlatString(Util.getOption(eq.range)),
+          )
+        end
+        @assign s = IOStream.append(s, " loop\\n")
+        @assign s = toFlatStreamList(eq.body, indent + "  ", s)
+        @assign s = IOStream.append(s, indent)
+        @assign s = IOStream.append(s, "end for")
+        s
+      end
+
+      IF(__) => begin
+        @assign s = IOStream.append(s, "if ")
+        @assign s = toFlatStream(listHead(eq.branches), indent, s)
+        for b in listRest(eq.branches)
+          @assign s = IOStream.append(s, indent)
+          @assign s = IOStream.append(s, "elseif ")
+          @assign s = toFlatStream(b, indent, s)
+        end
+        @assign s = IOStream.append(s, indent)
+        @assign s = IOStream.append(s, "end if")
+        s
+      end
+
+      WHEN(__) => begin
+        @assign s = IOStream.append(s, "when ")
+        @assign s = toFlatStream(listHead(eq.branches), indent, s)
+        for b in listRest(eq.branches)
+          @assign s = IOStream.append(s, indent)
+          @assign s = IOStream.append(s, "elsewhen ")
+          @assign s = toFlatStream(b, indent, s)
+        end
+        @assign s = IOStream.append(s, indent)
+        @assign s = IOStream.append(s, "end when")
+        s
+      end
+
+      ASSERT(__) => begin
+        @assign s = IOStream.append(s, "assert(")
+        @assign s = IOStream.append(s, P_Expression.Expression.toFlatString(eq.condition))
+        @assign s = IOStream.append(s, ", ")
+        @assign s = IOStream.append(s, P_Expression.Expression.toFlatString(eq.message))
+        @assign s = IOStream.append(s, ", ")
+        @assign s = IOStream.append(s, P_Expression.Expression.toFlatString(eq.level))
+        @assign s = IOStream.append(s, ")")
+        s
+      end
+
+      TERMINATE(__) => begin
+        @assign s = IOStream.append(s, "terminate(")
+        @assign s = IOStream.append(s, P_Expression.Expression.toFlatString(eq.message))
+        @assign s = IOStream.append(s, ")")
+        s
+      end
+
+      REINIT(__) => begin
+        @assign s = IOStream.append(s, "reinit(")
+        @assign s = IOStream.append(s, P_Expression.Expression.toFlatString(eq.cref))
+        @assign s = IOStream.append(s, ", ")
+        @assign s = IOStream.append(s, P_Expression.Expression.toFlatString(eq.reinitExp))
+        @assign s = IOStream.append(s, ")")
+        s
+      end
+
+      NORETCALL(__) => begin
+        IOStream.append(s, P_Expression.Expression.toFlatString(eq.exp))
+      end
+
+      _ => begin
+        IOStream.append(s, "#UNKNOWN EQUATION#")
+      end
+    end
+  end
+  return s
+end
+
+function toStreamList(
+  eql::List{<:Equation},
+  indent::String,
+  s,
+)
+
+  local prev_multi_line::Bool = false
+  local multi_line::Bool
+  local first::Bool = true
+
+  for eq in eql
+    @assign multi_line = isMultiLine(eq)
+    if first
+      @assign first = false
+    elseif prev_multi_line || multi_line
+      @assign s = IOStream.append(s, "\\n")
+    end
+    @assign prev_multi_line = multi_line
+    @assign s = toStream(eq, indent, s)
+    @assign s = IOStream.append(s, ";\\n")
+  end
+  #=  Improve human parsability by separating statements that spans multiple
+  =#
+  #=  lines (like if-equations) with newlines.
+  =#
+  return s
+end
+
+function toStream(eq::Equation, indent::String, s)
+
+  @assign s = IOStream.append(s, indent)
+  @assign s = begin
+    @match eq begin
+      EQUALITY(__) => begin
+        @assign s = IOStream.append(s, P_Expression.Expression.toString(eq.lhs))
+        @assign s = IOStream.append(s, " = ")
+        @assign s = IOStream.append(s, P_Expression.Expression.toString(eq.rhs))
+        s
+      end
+
+      CREF_EQUALITY(__) => begin
+        @assign s = IOStream.append(s, toString(eq.lhs))
+        @assign s = IOStream.append(s, " = ")
+        @assign s = IOStream.append(s, toString(eq.rhs))
+        s
+      end
+
+      ARRAY_EQUALITY(__) => begin
+        @assign s = IOStream.append(s, P_Expression.Expression.toString(eq.lhs))
+        @assign s = IOStream.append(s, " = ")
+        @assign s = IOStream.append(s, P_Expression.Expression.toString(eq.rhs))
+        s
+      end
+
+      CONNECT(__) => begin
+        @assign s = IOStream.append(s, "connect(")
+        @assign s = IOStream.append(s, P_Expression.Expression.toString(eq.lhs))
+        @assign s = IOStream.append(s, " = ")
+        @assign s = IOStream.append(s, P_Expression.Expression.toString(eq.rhs))
+        @assign s = IOStream.append(s, ")")
+        s
+      end
+
+      FOR(__) => begin
+        @assign s = IOStream.append(s, "for ")
+        @assign s = IOStream.append(s, name(eq.iterator))
+        if isSome(eq.range)
+          @assign s = IOStream.append(s, " in ")
+          @assign s = IOStream.append(
+            s,
+            P_Expression.Expression.toString(Util.getOption(eq.range)),
+          )
+        end
+        @assign s = IOStream.append(s, " loop\\n")
+        @assign s = toStreamList(eq.body, indent + "  ", s)
+        @assign s = IOStream.append(s, indent)
+        @assign s = IOStream.append(s, "end for")
+        s
+      end
+
+      IF(__) => begin
+        @assign s = IOStream.append(s, "if ")
+        @assign s = toStream(listHead(eq.branches), indent, s)
+        for b in listRest(eq.branches)
+          @assign s = IOStream.append(s, indent)
+          @assign s = IOStream.append(s, "elseif ")
+          @assign s = toStream(b, indent, s)
+        end
+        @assign s = IOStream.append(s, indent)
+        @assign s = IOStream.append(s, "end if")
+        s
+      end
+
+      WHEN(__) => begin
+        @assign s = IOStream.append(s, "when ")
+        @assign s = toStream(listHead(eq.branches), indent, s)
+        for b in listRest(eq.branches)
+          @assign s = IOStream.append(s, indent)
+          @assign s = IOStream.append(s, "elsewhen ")
+          @assign s = toStream(b, indent, s)
+        end
+        @assign s = IOStream.append(s, indent)
+        @assign s = IOStream.append(s, "end when")
+        s
+      end
+
+      ASSERT(__) => begin
+        @assign s = IOStream.append(s, "assert(")
+        @assign s = IOStream.append(s, P_Expression.Expression.toString(eq.condition))
+        @assign s = IOStream.append(s, ", ")
+        @assign s = IOStream.append(s, P_Expression.Expression.toString(eq.message))
+        @assign s = IOStream.append(s, ", ")
+        @assign s = IOStream.append(s, P_Expression.Expression.toString(eq.level))
+        @assign s = IOStream.append(s, ")")
+        s
+      end
+
+      TERMINATE(__) => begin
+        @assign s = IOStream.append(s, "terminate(")
+        @assign s = IOStream.append(s, P_Expression.Expression.toString(eq.message))
+        @assign s = IOStream.append(s, ")")
+        s
+      end
+
+      REINIT(__) => begin
+        @assign s = IOStream.append(s, "reinit(")
+        @assign s = IOStream.append(s, P_Expression.Expression.toString(eq.cref))
+        @assign s = IOStream.append(s, ", ")
+        @assign s = IOStream.append(s, P_Expression.Expression.toString(eq.reinitExp))
+        @assign s = IOStream.append(s, ")")
+        s
+      end
+
+      NORETCALL(__) => begin
+        IOStream.append(s, P_Expression.Expression.toString(eq.exp))
+      end
+
+      _ => begin
+        IOStream.append(s, "#UNKNOWN EQUATION#")
+      end
+    end
+  end
+  return s
+end
+
+function toStringList(eql::List{<:Equation}, indent::String = "")::String
+  local str::String
+
+  local s
+
+  @assign s = IOStream.create(getInstanceName(), IOStream.IOStreamType.LIST())
+  @assign s = toStreamList(eql, indent, s)
+  @assign str = IOStream.string(s)
+  IOStream.delete(s)
+  return str
+end
+
+function toString(eq::Equation, indent::String = "")::String
+  local str::String
+
+  local s
+
+  @assign s = IOStream.create(getInstanceName(), IOStream.IOStreamType.LIST())
+  @assign s = toStream(eq, indent, s)
+  @assign str = IOStream.string(s)
+  IOStream.delete(s)
+  return str
+end
+
+function isConnect(eq::Equation)::Bool
+  local isConnect::Bool
+
+  @assign isConnect = begin
+    @match eq begin
+      CONNECT(__) => begin
+        true
+      end
+
+      _ => begin
+        false
+      end
+    end
+  end
+  return isConnect
+end
+
+function containsList(eql::List{<:Equation}, func::PredFn)::Bool
+  local res::Bool
+
+  for eq in eql
+    if contains(eq, func)
+      @assign res = true
+      return res
+    end
+  end
+  @assign res = false
+  return res
+end
+
+function contains(eq::Equation, func::PredFn)::Bool
+  local res::Bool
+
+  if func(eq)
+    @assign res = true
+    return res
+  end
+  @assign res = begin
+    @match eq begin
+      FOR(__) => begin
+        containsList(eq.body, func)
+      end
+
+      IF(__) => begin
+        for b in eq.branches
+          @assign () = begin
+            @match b begin
+              BRANCH(__) => begin
+                if containsList(b.body, func)
+                  @assign res = true
+                  return
+                end
+                ()
+              end
+
+              _ => begin
+                ()
+              end
+            end
+          end
+        end
+        false
+      end
+
+      WHEN(__) => begin
+        for b in eq.branches
+          @assign () = begin
+            @match b begin
+              BRANCH(__) => begin
+                if containsList(b.body, func)
+                  @assign res = true
+                  return
+                end
+                ()
+              end
+
+              _ => begin
+                ()
+              end
+            end
+          end
+        end
+        false
+      end
+
+      _ => begin
+        false
+      end
+    end
+  end
+  return res
+end
+
+function foldExp(eq::Equation, func::FoldFunc, arg::ArgT) where {ArgT}
+
+  @assign () = begin
+    @match eq begin
+      EQUATION_EQUALITY(__) => begin
+        @assign arg = func(eq.lhs, arg)
+        @assign arg = func(eq.rhs, arg)
+        ()
+      end
+
+      EQUATION_ARRAY_EQUALITY(__) => begin
+        @assign arg = func(eq.lhs, arg)
+        @assign arg = func(eq.rhs, arg)
+        ()
+      end
+
+      P_Equation.Equation.CONNECT(__) => begin
+        @assign arg = func(eq.lhs, arg)
+        @assign arg = func(eq.rhs, arg)
+        ()
+      end
+
+      EQUATION_FOR(__) => begin
+        @assign arg = foldExpList(eq.body, func, arg)
+        if isSome(eq.range)
+          @assign arg = func(Util.getOption(eq.range), arg)
+        end
+        ()
+      end
+
+      EQUATION_IF(__) => begin
+        for b in eq.branches
+          @assign () = begin
+            @match b begin
+              BRANCH(__) => begin
+                @assign arg = func(b.condition, arg)
+                @assign arg = foldExpList(b.body, func, arg)
+                ()
+              end
+
+              _ => begin
+                ()
+              end
+            end
+          end
+        end
+        ()
+      end
+
+      P_Equation.Equation.WHEN(__) => begin
+        for b in eq.branches
+          @assign () = begin
+            @match b begin
+              BRANCH(__) => begin
+                @assign arg = func(b.condition, arg)
+                @assign arg = foldExpList(b.body, func, arg)
+                ()
+              end
+
+              _ => begin
+                ()
+              end
+            end
+          end
+        end
+        ()
+      end
+
+      P_Equation.Equation.ASSERT(__) => begin
+        @assign arg = func(eq.condition, arg)
+        @assign arg = func(eq.message, arg)
+        @assign arg = func(eq.level, arg)
+        ()
+      end
+
+      P_Equation.Equation.TERMINATE(__) => begin
+        @assign arg = func(eq.message, arg)
+        ()
+      end
+
+      EQUATION_REINIT(__) => begin
+        @assign arg = func(eq.cref, arg)
+        @assign arg = func(eq.reinitExp, arg)
+        ()
+      end
+
+      P_Equation.Equation.NORETCALL(__) => begin
+        @assign arg = func(eq.exp, arg)
+        ()
+      end
+
+      _ => begin
+        ()
+      end
+    end
+  end
+  return arg
+end
+
+function foldExpList(eq::List{Equation}, func::FoldFunc, arg::ArgT) where {ArgT}
+
+  for e in eq
+    @assign arg = foldExp(e, func, arg)
+  end
+  return arg
+end
+
+function mapExpBranch(branch::Branch, func::MapExpFn)::Branch
+
+  local cond::Expression
+  local eql::List{Equation}
+
+  @assign branch = begin
+    @match branch begin
+      BRANCH(__) => begin
+        @assign cond = func(branch.condition)
+        @assign eql = List(mapExp(e, func) for e in branch.body)
+        BRANCH(cond, branch.conditionVar, eql)
+      end
+
+      _ => begin
+        branch
+      end
+    end
+  end
+  return branch
+end
+
+function mapExp(eq::Equation, func::MapExpFn)::Equation
+
+  @assign eq = begin
+    local e1::Expression
+    local e2::Expression
+    local e3::Expression
+    @match eq begin
+      EQUALITY(__) => begin
+        @assign e1 = func(eq.lhs)
+        @assign e2 = func(eq.rhs)
+        if referenceEq(e1, eq.lhs) && referenceEq(e2, eq.rhs)
+          eq
+        else
+          EQUALITY(e1, e2, eq.ty, eq.source)
+        end
+      end
+
+      ARRAY_EQUALITY(__) => begin
+        @assign e1 = func(eq.lhs)
+        @assign e2 = func(eq.rhs)
+        if referenceEq(e1, eq.lhs) && referenceEq(e2, eq.rhs)
+          eq
+        else
+          ARRAY_EQUALITY(e1, e2, eq.ty, eq.source)
+        end
+      end
+
+      CONNECT(__) => begin
+        @assign e1 = func(eq.lhs)
+        @assign e2 = func(eq.rhs)
+        if referenceEq(e1, eq.lhs) && referenceEq(e2, eq.rhs)
+          eq
+        else
+          CONNECT(e1, e2, eq.source)
+        end
+      end
+
+      FOR(__) => begin
+        @assign eq.body = List(mapExp(e, func) for e in eq.body)
+        @assign eq.range = Util.applyOption(eq.range, func)
+        eq
+      end
+
+      IF(__) => begin
+        @assign eq.branches = List(mapExpBranch(b, func) for b in eq.branches)
+        eq
+      end
+
+      WHEN(__) => begin
+        @assign eq.branches = List(mapExpBranch(b, func) for b in eq.branches)
+        eq
+      end
+
+      ASSERT(__) => begin
+        @assign e1 = func(eq.condition)
+        @assign e2 = func(eq.message)
+        @assign e3 = func(eq.level)
+        if referenceEq(e1, eq.condition) &&
+           referenceEq(e2, eq.message) &&
+           referenceEq(e3, eq.level)
+          eq
+        else
+          ASSERT(e1, e2, e3, eq.source)
+        end
+      end
+
+      TERMINATE(__) => begin
+        @assign e1 = func(eq.message)
+        if referenceEq(e1, eq.message)
+          eq
+        else
+          TERMINATE(e1, eq.source)
+        end
+      end
+
+      REINIT(__) => begin
+        @assign e1 = func(eq.cref)
+        @assign e2 = func(eq.reinitExp)
+        if referenceEq(e1, eq.cref) && referenceEq(e2, eq.reinitExp)
+          eq
+        else
+          REINIT(e1, e2, eq.source)
+        end
+      end
+
+      NORETCALL(__) => begin
+        @assign e1 = func(eq.exp)
+        if referenceEq(e1, eq.exp)
+          eq
+        else
+          NORETCALL(e1, eq.source)
+        end
+      end
+
+      _ => begin
+        eq
+      end
+    end
+  end
+  return eq
+end
+
+function mapExpList(eql::List{<:Equation}, func::MapExpFn)::List{Equation}
+
+  @assign eql = List(mapExp(eq, func) for eq in eql)
+  return eql
+end
+
+function map(eq::Equation, func::MapFn)::Equation
+
+  @assign () = begin
+    @match eq begin
+      FOR(__) => begin
+        @assign eq.body = List(map(e, func) for e in eq.body)
+        ()
+      end
+
+      IF(__) => begin
+        @assign eq.branches = List(
+          begin
+            @match b begin
+              BRANCH(__) => begin
+                @assign b.body = List(map(e, func) for e in b.body)
+                b
+              end
+
+              _ => begin
+                b
+              end
+            end
+          end for b in eq.branches
+        )
+        ()
+      end
+
+      WHEN(__) => begin
+        @assign eq.branches = List(
+          begin
+            @match b begin
+              BRANCH(__) => begin
+                @assign b.body = List(map(e, func) for e in b.body)
+                b
+              end
+
+              _ => begin
+                b
+              end
+            end
+          end for b in eq.branches
+        )
+        ()
+      end
+
+      _ => begin
+        ()
+      end
+    end
+  end
+  @assign eq = func(eq)
+  return eq
+end
+
+function apply(eq::Equation, func::ApplyFn)
+  @assign () = begin
+    @match eq begin
+      FOR(__) => begin
+        for e in eq.body
+          apply(e, func)
+        end
+        ()
+      end
+
+      IF(__) => begin
+        for b in eq.branches
+          @assign () = begin
+            @match b begin
+              BRANCH(__) => begin
+                for e in b.body
+                  apply(e, func)
+                end
+                ()
+              end
+
+              _ => begin
+                ()
+              end
+            end
+          end
+        end
+        ()
+      end
+
+      WHEN(__) => begin
+        for b in eq.branches
+          @assign () = begin
+            @match b begin
+              BRANCH(__) => begin
+                for e in b.body
+                  apply(e, func)
+                end
+                ()
+              end
+
+              _ => begin
+                ()
+              end
+            end
+          end
+        end
+        ()
+      end
+
+      _ => begin
+        ()
+      end
+    end
+  end
+  return func(eq)
+end
+
+function applyList(eql::List{<:Equation}, func::ApplyFn)
+  return for eq in eql
+    apply(eq, func)
+  end
+end
+
+function info(eq::Equation)::SourceInfo
+  local info::SourceInfo = ElementSource.getInfo(source(eq))
+  return info
+end
+
+function source(eq::Equation)::DAE.ElementSource
+  local source::DAE.ElementSource
+
+  @assign source = begin
+    @match eq begin
+      EQUALITY(__) => begin
+        eq.source
+      end
+
+      CREF_EQUALITY(__) => begin
+        eq.source
+      end
+
+      ARRAY_EQUALITY(__) => begin
+        eq.source
+      end
+
+      CONNECT(__) => begin
+        eq.source
+      end
+
+      FOR(__) => begin
+        eq.source
+      end
+
+      IF(__) => begin
+        eq.source
+      end
+
+      WHEN(__) => begin
+        eq.source
+      end
+
+      ASSERT(__) => begin
+        eq.source
+      end
+
+      TERMINATE(__) => begin
+        eq.source
+      end
+
+      REINIT(__) => begin
+        eq.source
+      end
+
+      NORETCALL(__) => begin
+        eq.source
+      end
+    end
+  end
+  return source
+end
+
+function makeIf(branches::List{<:Branch}, src::DAE.ElementSource)::Equation
+  local eq::Equation
+  @assign eq = IF(branches, src)
+  return eq
+end
+
+function makeBranch(
+  condition::Expression,
+  body::List{<:Equation},
+  condVar = Variability.CONTINUOUS,
+)::Branch
+  local branch::Branch
+  @assign branch = BRANCH(condition, condVar, body)
+  return branch
+end
+
+function makeEquality(
+  lhs::Expression,
+  rhs::Expression,
+  ty::M_Type,
+  src::DAE.ElementSource,
+)::Equation
+  local eq::Equation
+  @assign eq = EQUALITY(lhs, rhs, ty, src)
+  return eq
+end
+
+
+@UniontypeDecl Branch
+@Uniontype Branch begin
+  @Record INVALID_BRANCH begin
+    branch::Branch
+    errors::List
+  end
+  @Record BRANCH begin
+    condition::Expression
+    conditionVar
+    body::List
+  end
+end
+
+function triggerErrors(branch::Branch)
+  return @assign () = begin
+    @match branch begin
+      INVALID_BRANCH(__) => begin
+        Error.addTotalMessages(branch.errors)
+        fail()
+      end
+
+      _ => begin
+        ()
+      end
+    end
+  end
+end
+
+function toFlatStream(
+  branch::Branch,
+  indent::String,
+  s,
+)
+
+  @assign s = begin
+    @match branch begin
+      BRANCH(__) => begin
+        @assign s =
+          IOStream.append(s, P_Expression.Expression.toFlatString(branch.condition))
+        @assign s = IOStream.append(s, " then\\n")
+        @assign s = toFlatStreamList(branch.body, indent + "  ", s)
+        s
+      end
+
+      INVALID_BRANCH(__) => begin
+        toFlatStream(branch.branch, indent, s)
+      end
+    end
+  end
+  return s
+end
+
+function toStream(branch::Branch, indent::String, s)
+  @assign s = begin
+    @match branch begin
+      BRANCH(__) => begin
+        @assign s = IOStream.append(s, P_Expression.Expression.toString(branch.condition))
+        @assign s = IOStream.append(s, " then\\n")
+        @assign s = toStreamList(branch.body, indent + "  ", s)
+        s
+      end
+      INVALID_BRANCH(__) => begin
+        toStream(branch.branch, indent, s)
+      end
+    end
+  end
+  return s
+end

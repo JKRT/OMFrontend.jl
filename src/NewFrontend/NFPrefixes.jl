@@ -1,0 +1,956 @@
+
+@UniontypeDecl Replaceable
+
+M_Type = NFType
+
+module ConnectorType
+
+import ..Main.NFType
+
+M_Type = NFType
+
+using MetaModelica
+using ExportAll
+
+
+const NON_CONNECTOR = 0::Integer
+const POTENTIAL = intBitLShift(1, 0)::Integer #= A connector element without a prefix. =#
+const FLOW = intBitLShift(1, 1)::Integer #= A connector element with flow prefix. =#
+const STREAM = intBitLShift(1, 2)::Integer #= A connector element with stream prefix. =#
+const POTENTIALLY_PRESENT = intBitLShift(1, 3)::Integer #= An element declared inside an expandable connector. =#
+const VIRTUAL = intBitLShift(1, 4)::Integer #= A virtual connector used in a connection. =#
+const CONNECTOR = intBitLShift(1, 5)::Integer #= A non-expandable connector that contains elements. =#
+const EXPANDABLE = intBitLShift(1, 6)::Integer #= An expandable connector. =#
+#=  flow/stream =#
+const FLOW_STREAM_MASK = intBitOr(FLOW, STREAM)::Integer
+#=  potential/flow/stream =#
+const PREFIX_MASK = intBitOr(POTENTIAL, FLOW_STREAM_MASK)::Integer
+#=  Some kind of connector, where anything inside an expandable connector also counts. =#
+const CONNECTOR_MASK =
+  intBitOr(CONNECTOR, intBitOr(EXPANDABLE, POTENTIALLY_PRESENT))::Integer
+#=  An element in an expandable connector. =#
+const UNDECLARED_MASK = intBitOr(VIRTUAL, POTENTIALLY_PRESENT)::Integer
+
+@exportAll()
+end
+
+
+function fromSCode(scodeCty::SCode.ConnectorType)::Integer
+  local cty::Integer
+  @assign cty = begin
+    @match scodeCty begin
+      SCode.ConnectorType.POTENTIAL(__) => begin
+        0
+      end
+
+      SCode.ConnectorType.FLOW(__) => begin
+        FLOW
+      end
+
+      SCode.ConnectorType.STREAM(__) => begin
+        STREAM
+      end
+    end
+  end
+  return cty
+end
+
+function toDAE(cty::Integer)::DAE.ConnectorType
+  local dcty::DAE.ConnectorType
+
+  if intBitAnd(cty, POTENTIAL) > 0
+    @assign dcty = DAE.ConnectorType.POTENTIAL()
+  elseif intBitAnd(cty, FLOW) > 0
+    @assign dcty = DAE.ConnectorType.FLOW()
+  elseif intBitAnd(cty, STREAM) > 0
+    @assign dcty = DAE.ConnectorType.STREAM(NONE())
+  else
+    @assign dcty = DAE.ConnectorType.NON_CONNECTOR()
+  end
+  return dcty
+end
+
+function merge(
+  outerCty::Integer,
+  innerCty::Integer,
+  node::InstNode,
+  isClass::Bool = false,
+)::Integer
+  local cty::Integer
+
+  #=  If both the outer and the inner has flow or stream, give an error.
+  =#
+  if intBitAnd(outerCty, FLOW_STREAM_MASK) > 0 && intBitAnd(innerCty, FLOW_STREAM_MASK) > 0
+    printPrefixError(toString(outerCty), toString(innerCty), node)
+  end
+  @assign cty = intBitOr(outerCty, innerCty)
+  return cty
+end
+
+function isPotential(cty::Integer)::Bool
+  local isPotential::Bool
+
+  @assign isPotential = intBitAnd(cty, POTENTIAL) > 0
+  return isPotential
+end
+
+function setPotential(cty::Integer)::Integer
+
+  @assign cty = intBitOr(cty, POTENTIAL)
+  return cty
+end
+
+function isFlow(cty::Integer)::Bool
+  local isFlow::Bool
+
+  @assign isFlow = intBitAnd(cty, FLOW) > 0
+  return isFlow
+end
+
+function isStream(cty::Integer)::Bool
+  local isStream::Bool
+
+  @assign isStream = intBitAnd(cty, STREAM) > 0
+  return isStream
+end
+
+function isFlowOrStream(cty::Integer)::Bool
+  local isFlowOrStream::Bool
+
+  @assign isFlowOrStream = intBitAnd(cty, FLOW_STREAM_MASK) > 0
+  return isFlowOrStream
+end
+
+function unsetFlowStream(cty::Integer)::Integer
+
+  @assign cty = intBitAnd(cty, intBitNot(FLOW_STREAM_MASK))
+  return cty
+end
+
+""" #= Returns true if the connector type has the connector bit set, otherwise false. =#"""
+function isConnector(cty::Integer)::Bool
+  local isConnector::Bool
+
+  @assign isConnector = intBitAnd(cty, CONNECTOR) > 0
+  return isConnector
+end
+
+function setConnector(cty::Integer)::Integer
+
+  @assign cty = intBitOr(cty, CONNECTOR)
+  return cty
+end
+
+""" #= Returns treu if the connector type has the connector, expandable, or
+     potentially present bits set, otherwise false. =#"""
+function isConnectorType(cty::Integer)::Bool
+  local isConnector::Bool
+
+  @assign isConnector = intBitAnd(cty, CONNECTOR_MASK) > 0
+  return isConnector
+end
+
+function isExpandable(cty::Integer)::Bool
+  local isExpandable::Bool
+
+  @assign isExpandable = intBitAnd(cty, EXPANDABLE) > 0
+  return isExpandable
+end
+
+function setExpandable(cty::Integer)::Integer
+  @assign cty = intBitOr(cty, EXPANDABLE)
+  return cty
+end
+
+""" #= Returns true if the connector type has the potentially present or virtual
+     bits set, otherwise false. =#"""
+function isUndeclared(cty::Integer)::Bool
+  local isExpandableElement::Bool
+
+  @assign isExpandableElement = intBitAnd(cty, UNDECLARED_MASK) > 0
+  return isExpandableElement
+end
+
+function isVirtual(cty::Integer)::Bool
+  local isVirtual::Bool
+
+  @assign isVirtual = intBitAnd(cty, VIRTUAL) > 0
+  return isVirtual
+end
+
+function isPotentiallyPresent(cty::Integer)::Bool
+  local isPotentiallyPresent::Bool
+
+  @assign isPotentiallyPresent = intBitAnd(cty, POTENTIALLY_PRESENT) > 0
+  return isPotentiallyPresent
+end
+
+function setPresent(cty::Integer)::Integer
+
+  @assign cty = intBitAnd(cty, intBitNot(POTENTIALLY_PRESENT))
+  return cty
+end
+
+function toString(cty::Integer)::String
+  local str::String
+
+  if intBitAnd(cty, FLOW) > 0
+    @assign str = "flow"
+  elseif intBitAnd(cty, STREAM) > 0
+    @assign str = "stream"
+  elseif intBitAnd(cty, EXPANDABLE) > 0
+    @assign str = "expandable"
+  else
+    @assign str = ""
+  end
+  return str
+end
+
+function unparse(cty::Integer)::String
+  local str::String
+
+  if intBitAnd(cty, FLOW) > 0
+    @assign str = "flow "
+  elseif intBitAnd(cty, STREAM) > 0
+    @assign str = "stream "
+  else
+    @assign str = ""
+  end
+  return str
+end
+
+function toDebugString(cty::Integer)::String
+  local str::String
+
+  local strl::List{String} = nil
+
+  if intBitAnd(cty, POTENTIAL) > 0
+    @assign strl = _cons("potential", strl)
+  end
+  if intBitAnd(cty, FLOW) > 0
+    @assign strl = _cons("flow", strl)
+  end
+  if intBitAnd(cty, STREAM) > 0
+    @assign strl = _cons("stream", strl)
+  end
+  if intBitAnd(cty, POTENTIALLY_PRESENT) > 0
+    @assign strl = _cons("potentially present", strl)
+  end
+  if intBitAnd(cty, VIRTUAL) > 0
+    @assign strl = _cons("virtual", strl)
+  end
+  if intBitAnd(cty, CONNECTOR) > 0
+    @assign strl = _cons("connector", strl)
+  end
+  if intBitAnd(cty, EXPANDABLE) > 0
+    @assign strl = _cons("expandable", strl)
+  end
+  @assign str = stringDelimitList(strl, " ")
+  return str
+end
+
+Parallelism = (() -> begin #= Enumeration =#
+  NON_PARALLEL = 1
+  GLOBAL = 2
+  LOCAL = 3
+  () -> (NON_PARALLEL; GLOBAL; LOCAL)
+end)()
+Variability = (
+  () -> begin #= Enumeration =#
+    CONSTANT = 1
+    STRUCTURAL_PARAMETER = 2
+    PARAMETER = 3
+    NON_STRUCTURAL_PARAMETER = 4
+    DISCRETE = 5
+    IMPLICITLY_DISCRETE = 6
+    CONTINUOUS = 7
+    () -> (
+      CONSTANT; STRUCTURAL_PARAMETER; PARAMETER; NON_STRUCTURAL_PARAMETER; DISCRETE; IMPLICITLY_DISCRETE; CONTINUOUS
+    )
+  end
+)()
+
+Direction = (() -> begin #= Enumeration =#
+             NONE = 1
+             INPUT = 2
+             OUTPUT = 3
+             () -> (NONE; INPUT; OUTPUT)
+             end)()
+const DirectionType = Integer
+InnerOuter = (() -> begin #= Enumeration =#
+              NOT_INNER_OUTER = 1
+              INNER = 2
+              OUTER = 3
+              INNER_OUTER = 4
+              () -> (NOT_INNER_OUTER; INNER; OUTER; INNER_OUTER)
+              end)()
+
+
+Visibility = (() -> begin #= Enumeration =#
+              PUBLIC = 1
+              PROTECTED = 2
+              () -> (PUBLIC; PROTECTED)
+              end)()
+
+const VisibilityType = Integer
+
+@Uniontype Replaceable begin
+  @Record REPLACEABLE begin
+    constrainingClass::Option{InstNode}
+  end
+
+  @Record NOT_REPLACEABLE begin
+  end
+end
+
+function parallelismFromSCode(scodePar::SCode.Parallelism)::Parallelism
+  local par::Parallelism
+
+  @assign par = begin
+    @match scodePar begin
+      SCode.Parallelism.PARGLOBAL(__) => begin
+        Parallelism.GLOBAL
+      end
+
+      SCode.Parallelism.PARLOCAL(__) => begin
+        Parallelism.LOCAL
+      end
+
+      SCode.Parallelism.NON_PARALLEL(__) => begin
+        Parallelism.NON_PARALLEL
+      end
+    end
+  end
+  return par
+end
+
+
+function parallelismToDAE(par)::DAE.VarParallelism
+  local dpar::DAE.VarParallelism
+
+  @assign dpar = begin
+    @match par() begin
+      Parallelism.GLOBAL => begin
+        DAE.VarParallelism.PARGLOBAL()
+      end
+
+      Parallelism.LOCAL => begin
+        DAE.VarParallelism.PARLOCAL()
+      end
+
+      Parallelism.NON_PARALLEL => begin
+        DAE.VarParallelism.NON_PARALLEL()
+      end
+    end
+  end
+  return dpar
+end
+
+function parallelismString(par)::String
+  local str::String
+
+  @assign str = begin
+    @match par begin
+      Parallelism.GLOBAL => begin
+        "parglobal"
+      end
+
+      Parallelism.LOCAL => begin
+        "parlocal"
+      end
+
+      _ => begin
+        ""
+      end
+    end
+  end
+  return str
+end
+
+function unparseParallelism(par)::String
+  local str::String
+
+  @assign str = begin
+    @match par begin
+      Parallelism.GLOBAL => begin
+        "parglobal "
+      end
+
+      Parallelism.LOCAL => begin
+        "parlocal "
+      end
+
+      _ => begin
+        ""
+      end
+    end
+  end
+  return str
+end
+
+function mergeParallelism(
+  outerPar,
+  innerPar,
+  node::InstNode,
+)
+  local par
+
+  if outerPar == Parallelism.NON_PARALLEL
+    @assign par = innerPar
+  elseif innerPar == Parallelism.NON_PARALLEL
+    @assign par = outerPar
+  elseif innerPar == outerPar
+    @assign par = innerPar
+  else
+    printPrefixError(parallelismString(outerPar), parallelismString(innerPar), node)
+  end
+  return par
+end
+
+function variabilityFromSCode(scodeVar::SCode.Variability)
+  local var
+
+  @assign var = begin
+    @match scodeVar begin
+      SCode.Variability.CONST(__) => begin
+        Variability.CONSTANT
+      end
+
+      SCode.Variability.PARAM(__) => begin
+        Variability.PARAMETER
+      end
+
+      SCode.Variability.DISCRETE(__) => begin
+        Variability.DISCRETE
+      end
+
+      SCode.Variability.VAR(__) => begin
+        Variability.CONTINUOUS
+      end
+    end
+  end
+  return var
+end
+
+function variabilityToSCode(var)::SCode.Variability
+  local scodeVar::SCode.Variability
+
+  @assign scodeVar = begin
+    @match var begin
+      Variability.CONSTANT => begin
+        SCode.Variability.CONST()
+      end
+
+      Variability.STRUCTURAL_PARAMETER => begin
+        SCode.Variability.PARAM()
+      end
+
+      Variability.PARAMETER => begin
+        SCode.Variability.PARAM()
+      end
+
+      Variability.NON_STRUCTURAL_PARAMETER => begin
+        SCode.Variability.PARAM()
+      end
+
+      Variability.DISCRETE => begin
+        SCode.Variability.DISCRETE()
+      end
+
+      _ => begin
+        SCode.Variability.VAR()
+      end
+    end
+  end
+  return scodeVar
+end
+
+function variabilityToDAE(var)::DAE.VarKind
+  local varKind::DAE.VarKind
+
+  @assign varKind = begin
+    @match var begin
+      Variability.CONSTANT => begin
+        DAE.VarKind.CONST()
+      end
+
+      Variability.STRUCTURAL_PARAMETER => begin
+        DAE.VarKind.PARAM()
+      end
+
+      Variability.PARAMETER => begin
+        DAE.VarKind.PARAM()
+      end
+
+      Variability.NON_STRUCTURAL_PARAMETER => begin
+        DAE.VarKind.PARAM()
+      end
+
+      Variability.DISCRETE => begin
+        DAE.VarKind.DISCRETE()
+      end
+
+      _ => begin
+        DAE.VarKind.VARIABLE()
+      end
+    end
+  end
+  return varKind
+end
+
+function variabilityToDAEConst(var)::DAE.Const
+  local M_const::DAE.Const
+
+  @assign M_const = begin
+    @match var begin
+      Variability.CONSTANT => begin
+        DAE.Const.C_CONST()
+      end
+
+      Variability.STRUCTURAL_PARAMETER => begin
+        DAE.Const.C_PARAM()
+      end
+
+      Variability.PARAMETER => begin
+        DAE.Const.C_PARAM()
+      end
+
+      Variability.NON_STRUCTURAL_PARAMETER => begin
+        DAE.Const.C_PARAM()
+      end
+
+      _ => begin
+        DAE.Const.C_VAR()
+      end
+    end
+  end
+  return M_const
+end
+
+function variabilityString(var)::String
+  local str::String
+
+  @assign str = begin
+    @match var begin
+      Variability.CONSTANT => begin
+        "constant"
+      end
+
+      Variability.STRUCTURAL_PARAMETER => begin
+        "parameter"
+      end
+
+      Variability.PARAMETER => begin
+        "parameter"
+      end
+
+      Variability.NON_STRUCTURAL_PARAMETER => begin
+        "parameter"
+      end
+
+      Variability.DISCRETE => begin
+        "discrete"
+      end
+
+      Variability.IMPLICITLY_DISCRETE => begin
+        "discrete"
+      end
+
+      Variability.CONTINUOUS => begin
+        "continuous"
+      end
+    end
+  end
+  return str
+end
+
+function unparseVariability(var, ty::Integer)::String
+  local str::String
+
+  @assign str = begin
+    @match var begin
+      Variability.CONSTANT => begin
+        "constant "
+      end
+
+      Variability.STRUCTURAL_PARAMETER => begin
+        "parameter "
+      end
+
+      Variability.PARAMETER => begin
+        "parameter "
+      end
+
+      Variability.NON_STRUCTURAL_PARAMETER => begin
+        "parameter "
+      end
+
+      Variability.DISCRETE => begin
+        if Type.isDiscrete(ty)
+          ""
+        else
+          "discrete "
+        end
+      end
+
+      _ => begin
+        ""
+      end
+    end
+  end
+  return str
+end
+
+function variabilityMax(var1, var2)
+  local var = if var1 > var2
+    var1
+  else
+    var2
+  end
+  return var
+end
+
+function variabilityMin(var1, var2)
+  local var = if var1 > var2
+    var2
+  else
+    var1
+  end
+  return var
+end
+
+function effectiveVariability(inVar)
+  local outVar
+
+  @assign outVar = begin
+    @match inVar begin
+      Variability.STRUCTURAL_PARAMETER => begin
+        Variability.PARAMETER
+      end
+
+      Variability.NON_STRUCTURAL_PARAMETER => begin
+        Variability.PARAMETER
+      end
+
+      Variability.IMPLICITLY_DISCRETE => begin
+        Variability.DISCRETE
+      end
+
+      _ => begin
+        inVar
+      end
+    end
+  end
+  return outVar
+end
+
+function directionFromSCode(scodeDir::Absyn.Direction)
+  local dir
+
+  @assign dir = begin
+    @match scodeDir begin
+      Absyn.Direction.INPUT(__) => begin
+        Direction.INPUT
+      end
+
+      Absyn.Direction.OUTPUT(__) => begin
+        Direction.OUTPUT
+      end
+
+      _ => begin
+        Direction.NONE
+      end
+    end
+  end
+  return dir
+end
+
+function directionToDAE(dir)::DAE.VarDirection
+  local ddir::DAE.VarDirection
+
+  @assign ddir = begin
+    @match dir begin
+      Direction.INPUT => begin
+        DAE.VarDirection.INPUT()
+      end
+
+      Direction.OUTPUT => begin
+        DAE.VarDirection.OUTPUT()
+      end
+
+      _ => begin
+        DAE.VarDirection.BIDIR()
+      end
+    end
+  end
+  return ddir
+end
+
+function directionToAbsyn(dir)::Absyn.Direction
+  local adir::Absyn.Direction
+
+  @assign adir = begin
+    @match dir begin
+      Direction.INPUT => begin
+        Absyn.INPUT()
+      end
+
+      Direction.OUTPUT => begin
+        Absyn.OUTPUT()
+      end
+
+      _ => begin
+        Absyn.BIDIR()
+      end
+    end
+  end
+  return adir
+end
+
+function directionString(dir)::String
+  local str::String
+
+  @assign str = begin
+    @match dir begin
+      Direction.INPUT => begin
+        "input"
+      end
+
+      Direction.OUTPUT => begin
+        "output"
+      end
+
+      _ => begin
+        ""
+      end
+    end
+  end
+  return str
+end
+
+function unparseDirection(dir)::String
+  local str::String
+
+  @assign str = begin
+    @match dir begin
+      Direction.INPUT => begin
+        "input "
+      end
+
+      Direction.OUTPUT => begin
+        "output "
+      end
+
+      _ => begin
+        ""
+      end
+    end
+  end
+  return str
+end
+
+function mergeDirection(
+  outerDir,
+  innerDir,
+  node::InstNode,
+  allowSame::Bool = false,
+)
+  local dir
+
+  if outerDir == Direction.NONE
+    @assign dir = innerDir
+  elseif innerDir == Direction.NONE
+    @assign dir = outerDir
+  elseif allowSame && outerDir == innerDir
+    @assign dir = innerDir
+  else
+    printPrefixError(directionString(outerDir), directionString(innerDir), node)
+  end
+  return dir
+end
+
+function innerOuterFromSCode(scodeIO::Absyn.InnerOuter)
+  local io
+
+  @assign io = begin
+    @match scodeIO begin
+      Absyn.NOT_INNER_OUTER(__) => begin
+        InnerOuter.NOT_INNER_OUTER
+      end
+
+      Absyn.INNER(__) => begin
+        InnerOuter.INNER
+      end
+
+      Absyn.OUTER(__) => begin
+        InnerOuter.OUTER
+      end
+
+      Absyn.INNER_OUTER(__) => begin
+        InnerOuter.INNER_OUTER
+      end
+    end
+  end
+  return io
+end
+
+function innerOuterToAbsyn(inIO)::Absyn.InnerOuter
+  local outIO::Absyn.InnerOuter
+
+  @assign outIO = begin
+    @match inIO begin
+      InnerOuter.NOT_INNER_OUTER => begin
+        Absyn.NOT_INNER_OUTER()
+      end
+
+      InnerOuter.INNER => begin
+        Absyn.INNER()
+      end
+
+      InnerOuter.OUTER => begin
+        Absyn.OUTER()
+      end
+
+      InnerOuter.INNER_OUTER => begin
+        Absyn.INNER_OUTER()
+      end
+    end
+  end
+  return outIO
+end
+
+function innerOuterString(io)::String
+  local str::String
+
+  @assign str = begin
+    @match io begin
+      InnerOuter.INNER => begin
+        "inner"
+      end
+
+      InnerOuter.OUTER => begin
+        "outer"
+      end
+
+      InnerOuter.INNER_OUTER => begin
+        "inner outer"
+      end
+
+      _ => begin
+        ""
+      end
+    end
+  end
+  return str
+end
+
+function unparseInnerOuter(io)::String
+  local str::String
+
+  @assign str = begin
+    @match io begin
+      InnerOuter.INNER => begin
+        "inner "
+      end
+
+      InnerOuter.OUTER => begin
+        "outer "
+      end
+
+      InnerOuter.INNER_OUTER => begin
+        "inner outer "
+      end
+
+      _ => begin
+        ""
+      end
+    end
+  end
+  return str
+end
+
+function visibilityFromSCode(scodeVis::SCode.Visibility)
+  local vis
+  @assign vis = begin
+    @match scodeVis begin
+      SCode.PUBLIC(__) => begin
+        Visibility.PUBLIC
+      end
+      _ => begin
+        Visibility.PROTECTED
+      end
+    end
+  end
+  return vis
+end
+
+function visibilityToDAE(vis)::DAE.VarVisibility
+  local dvis::DAE.VarVisibility = if vis == Visibility.PUBLIC
+    DAE.PUBLIC()
+  else
+    DAE.VarVisibility.PROTECTED()
+  end
+  return dvis
+end
+
+function visibilityToSCode(vis)::SCode.Visibility
+  local scodeVis::SCode.Visibility = if vis == Visibility.PUBLIC
+    SCode.Visibility.PUBLIC()
+  else
+    SCode.Visibility.PROTECTED()
+  end
+  return scodeVis
+end
+
+function visibilityString(vis)::String
+  local str::String = if vis == Visibility.PUBLIC
+    "public"
+  else
+    "protected"
+  end
+  return str
+end
+
+function unparseVisibility(vis)::String
+  local str::String = if vis == Visibility.PROTECTED
+    "protected "
+  else
+    ""
+  end
+  return str
+end
+
+function mergeVisibility(outerVis, innerVis)::VisibilityType
+  local vis = if outerVis == Visibility.PROTECTED
+    outerVis
+  else
+    innerVis
+  end
+  return vis
+end
+
+function unparseReplaceable(repl::Replaceable)::String
+  local str::String
+
+  @assign str = begin
+    @match repl begin
+      Replaceable.REPLACEABLE(__) => begin
+        "replaceable "
+      end
+
+      _ => begin
+        ""
+      end
+    end
+  end
+  return str
+end
+
+function printPrefixError(outerPrefix::String, innerPrefix::String, node::InstNode)
+  Error.addSourceMessage(
+    Error.INVALID_TYPE_PREFIX,
+    list(outerPrefix, typeName(node), name(node), innerPrefix),
+    info(node),
+  )
+  return fail()
+end

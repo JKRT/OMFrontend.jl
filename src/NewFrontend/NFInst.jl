@@ -1561,7 +1561,7 @@ function checkDeclaredComponentAttributes(attr::Attributes, parentRestriction::R
 end
 
 function invalidComponentPrefixError(prefix::String, node::InstNode, restriction)
-  Error.addSourceMessage(Error.INVALID_COMPONENT_PREFIX, list(prefix, name(node), P_Restriction.Restriction.toString(restriction)), info(node))
+  Error.addSourceMessage(Error.INVALID_COMPONENT_PREFIX, list(prefix, name(node), toString(restriction)), info(node))
 end
 
 function assertNotInputOutput(dir, node::InstNode, restriction)
@@ -1898,7 +1898,7 @@ function instExpressions(node::InstNode, scope::InstNode = node, sections::Secti
         updateClass(cls, node)
         #=  Instantiate local equation/algorithm sections.
         =#
-        @assign sections = instSections(node, scope, sections, P_Restriction.Restriction.isFunction(cls.restriction))
+        @assign sections = instSections(node, scope, sections, isFunction(cls.restriction))
         @assign ty = makeComplexType(cls.restriction, node, cls)
         @assign inst_cls = INSTANCED_CLASS(ty, cls.elements, sections, cls.restriction)
         updateClass(inst_cls, node)
@@ -2030,19 +2030,17 @@ function instBuiltinAttribute(attribute::Modifier, node::InstNode) ::Modifier
   @assign () = begin
     local bindingVar::Binding
     @match attribute begin
-      MODIFIER(bindingVar = binding)  => begin
+      MODIFIER_MODIFIER(binding=bindingVar)  => begin
         @assign bindingVar = addParent(node, bindingVar)
-        @assign attribute.binding = instBinding(binding)
+        @assign attribute.binding = instBinding(bindingVar)
         ()
       end
-
-      REDECLARE(__)  => begin
+      MODIFIER_REDECLARE(__)  => begin
         #=  Redeclaration of builtin attributes is not allowed.
         =#
         Error.addSourceMessage(Error.INVALID_REDECLARE_IN_BASIC_TYPE, list(name(attribute)), info(attribute))
         fail()
       end
-
       _  => begin
         ()
       end
@@ -2099,23 +2097,21 @@ function instComponentExpressions(componentArg::InstNode)
   end
 end
 
-function instBinding(binding::Binding) ::Binding
-
-  @assign binding = begin
+function instBinding(bindingVar::Binding)::Binding
+  @assign bindingVar = begin
     local bind_exp::Expression
     @match binding begin
       RAW_BINDING(__)  => begin
-        @assign bind_exp = instExp(binding.bindingExp, binding.scope, binding.info)
-        @assign bind_exp = BINDING_EXP(bind_exp, TYPE_UNKNOWN(), TYPE_UNKNOWN(), binding.parents, binding.isEach)
-        UNTYPED_BINDING(bind_exp, false, binding.scope, binding.isEach, binding.info)
+        @assign bind_exp = instExp(bindingVar.bindingExp, bindingVar.scope, bindingVar.info)
+        @assign bind_exp = BINDING_EXP(bind_exp, TYPE_UNKNOWN(), TYPE_UNKNOWN(), bindingVar.parents, bindingVar.isEach)
+        UNTYPED_BINDING(bind_exp, false, bindingVar.scope, bindingVar.isEach, bindingVar.info)
       end
-
       _  => begin
-        binding
+        bindingVar
       end
     end
   end
-  binding
+  bindingVar
 end
 
 function instExpOpt(absynExp::Option{<:Absyn.Exp}, scope::InstNode, info::SourceInfo) ::Option{Expression}
@@ -2136,7 +2132,6 @@ end
 
 function instExp(absynExp::Absyn.Exp, scope::InstNode, info::SourceInfo) ::Expression
   local exp::Expression
-
   @assign exp = begin
     local e1::Expression
     local e2::Expression
@@ -2151,7 +2146,7 @@ function instExp(absynExp::Absyn.Exp, scope::InstNode, info::SourceInfo) ::Expre
       end
 
       Absyn.REAL(__)  => begin
-        Expression.REAL(stringReal(absynExp.value))
+        REAL_EXPRESSION(stringReal(absynExp.value))
       end
 
       Absyn.STRING(__)  => begin
@@ -2234,7 +2229,7 @@ function instExp(absynExp::Absyn.Exp, scope::InstNode, info::SourceInfo) ::Expre
       end
 
       Absyn.CALL(__)  => begin
-        P_Call.instantiate(absynExp.function_, absynExp.functionArgs, scope, info)
+        instantiate(absynExp.function_, absynExp.functionArgs, scope, info)
       end
 
       Absyn.PARTEVALFUNCTION(__)  => begin
@@ -2244,9 +2239,8 @@ function instExp(absynExp::Absyn.Exp, scope::InstNode, info::SourceInfo) ::Expre
       Absyn.END(__)  => begin
         Expression.END()
       end
-
       _  => begin
-        Error.assertion(false, getInstanceName() + " got unknown expression: " + Dump.printExpStr(absynExp), sourceInfo())
+        @error "UNKNOWN EXPRESSION!"
         fail()
       end
     end
@@ -2256,7 +2250,6 @@ end
 
 function instCref(absynCref::Absyn.ComponentRef, scope::InstNode, info::SourceInfo) ::Expression
   local crefExp::Expression
-
   local cref::ComponentRef
   local prefixed_cref::ComponentRef
   local found_scope::InstNode
@@ -2264,14 +2257,14 @@ function instCref(absynCref::Absyn.ComponentRef, scope::InstNode, info::SourceIn
   local comp::Component
   @assign (cref, found_scope) = begin
     @match absynCref begin
-      Absyn.ComponentRef.WILD(__)  => begin
-        (ComponentRef.WILD(), scope)
+      Absyn.WILD(__)  => begin
+        (COMPONENT_REF_WILD(), scope)
       end
-      Absyn.ComponentRef.ALLWILD(__)  => begin
-        (ComponentRef.WILD(), scope)
+      Absyn.ALLWILD(__)  => begin
+        (COMPONENT_REF_WILD(), scope)
       end
       _  => begin
-        Lookup.lookupComponent(absynCref, scope, info)
+        lookupComponent(absynCref, scope, info)
       end
     end
   end
@@ -2459,8 +2452,6 @@ function instSections(node::InstNode, scope::InstNode, sections::Sections, isFun
 end
 
 function instSections2(parts::SCode.ClassDef, scope::InstNode, sections::Sections, isFunction::Bool) ::Sections
-
-
   @assign sections = begin
     local eq::List{Equation}
     local ieq::List{Equation}
@@ -2470,7 +2461,7 @@ function instSections2(parts::SCode.ClassDef, scope::InstNode, sections::Section
     local origin::ORIGIN_Type
     local iorigin::ORIGIN_Type
     @match (parts, sections) begin
-      (_, P_Sections.Sections.EXTERNAL(__))  => begin
+      (_, SECTIONS_EXTERNAL(__))  => begin
         Error.addSourceMessage(Error.MULTIPLE_SECTIONS_IN_FUNCTION, list(name(scope)), info(scope))
         fail()
       end
@@ -2488,7 +2479,7 @@ function instSections2(parts::SCode.ClassDef, scope::InstNode, sections::Section
         @assign ieq = instEquations(parts.initialEquationLst, scope, iorigin)
         @assign alg = instAlgorithmSections(parts.normalAlgorithmLst, scope, origin)
         @assign ialg = instAlgorithmSections(parts.initialAlgorithmLst, scope, iorigin)
-        P_Sections.Sections.join(P_Sections.Sections.new(eq, ieq, alg, ialg), sections)
+        join(new(eq, ieq, alg, ialg), sections)
       end
     end
   end
@@ -2516,7 +2507,7 @@ function instExternalDecl(extDecl::SCode.ExternalDecl, scope::InstNode) ::Sectio
         else
           @assign ret_cref = ComponentRef.EMPTY()
         end
-        P_Sections.Sections.EXTERNAL(name, args, ret_cref, lang, extDecl.annotation_, isSome(extDecl.funcName))
+        SECTIONS_EXTERNAL(name, args, ret_cref, lang, extDecl.annotation_, isSome(extDecl.funcName))
       end
     end
   end
@@ -2559,7 +2550,7 @@ end
 
 function instEquations(scodeEql::List{<:SCode.Equation}, scope::InstNode, origin::ORIGIN_Type)::List{Equation}
   local instEql::List{Equation}
-  @assign instEql = List(instEquation(eq, scope, origin) for eq in scodeEql)
+  @assign instEql = list(instEquation(eq, scope, origin) for eq in scodeEql)
   instEql
 end
 
@@ -2594,13 +2585,13 @@ function instEEquation(scodeEq::SCode.EEquation, scope::InstNode, origin::ORIGIN
     local rhs_cr::ComponentRef
     local next_origin::ORIGIN_Type
     @match scodeEq begin
-      SCode.EEquation.EQ_EQUALS(info = info)  => begin
+      SCode.EQ_EQUALS(info = info)  => begin
         @assign exp1 = instExp(scodeEq.expLeft, scope, info)
         @assign exp2 = instExp(scodeEq.expRight, scope, info)
         Equation.EQUALITY(exp1, exp2, TYPE_UNKNOWN(), makeSource(scodeEq.comment, info))
       end
 
-      SCode.EEquation.EQ_CONNECT(info = info)  => begin
+      SCode.EQ_CONNECT(info = info)  => begin
         if flagSet(origin, ORIGIN_WHEN)
           Error.addSourceMessage(Error.CONNECT_IN_WHEN, list(Dump.printComponentRefStr(scodeEq.crefLeft), Dump.printComponentRefStr(scodeEq.crefRight)), info)
           fail()
@@ -2610,7 +2601,7 @@ function instEEquation(scodeEq::SCode.EEquation, scope::InstNode, origin::ORIGIN
         Equation.CONNECT(exp1, exp2, makeSource(scodeEq.comment, info))
       end
 
-      SCode.EEquation.EQ_FOR(info = info)  => begin
+      SCode.EQ_FOR(info = info)  => begin
         @assign oexp = instExpOpt(scodeEq.range, scope, info)
         checkIteratorShadowing(scodeEq.index, scope, scodeEq.info)
         @assign (for_scope, iter) = addIteratorToScope(scodeEq.index, scope, scodeEq.info)
@@ -2619,7 +2610,7 @@ function instEEquation(scodeEq::SCode.EEquation, scope::InstNode, origin::ORIGIN
         Equation.FOR(iter, oexp, eql, makeSource(scodeEq.comment, info))
       end
 
-      SCode.EEquation.EQ_IF(info = info)  => begin
+      SCode.EQ_IF(info = info)  => begin
         #=  Instantiate the conditions.
         =#
         @assign expl = List(instExp(c, scope, info) for c in scodeEq.condition)
@@ -2643,7 +2634,7 @@ function instEEquation(scodeEq::SCode.EEquation, scope::InstNode, origin::ORIGIN
         Equation.IF(listReverse(branches), makeSource(scodeEq.comment, info))
       end
 
-      SCode.EEquation.EQ_WHEN(info = info)  => begin
+      SCode.EQ_WHEN(info = info)  => begin
         if flagSet(origin, ORIGIN_WHEN)
           Error.addSourceMessageAndFail(Error.NESTED_WHEN, nil, info)
         elseif flagSet(origin, ORIGIN_INITIAL)
@@ -2661,19 +2652,19 @@ function instEEquation(scodeEq::SCode.EEquation, scope::InstNode, origin::ORIGIN
         Equation.WHEN(listReverse(branches), makeSource(scodeEq.comment, info))
       end
 
-      SCode.EEquation.EQ_ASSERT(info = info)  => begin
+      SCode.EQ_ASSERT(info = info)  => begin
         @assign exp1 = instExp(scodeEq.condition, scope, info)
         @assign exp2 = instExp(scodeEq.message, scope, info)
         @assign exp3 = instExp(scodeEq.level, scope, info)
         Equation.ASSERT(exp1, exp2, exp3, makeSource(scodeEq.comment, info))
       end
 
-      SCode.EEquation.EQ_TERMINATE(info = info)  => begin
+      SCode.EQ_TERMINATE(info = info)  => begin
         @assign exp1 = instExp(scodeEq.message, scope, info)
         Equation.TERMINATE(exp1, makeSource(scodeEq.comment, info))
       end
 
-      SCode.EEquation.EQ_REINIT(info = info)  => begin
+      SCode.EQ_REINIT(info = info)  => begin
         if flagNotSet(origin, ORIGIN_WHEN)
           Error.addSourceMessage(Error.REINIT_NOT_IN_WHEN, nil, info)
           fail()
@@ -2683,7 +2674,7 @@ function instEEquation(scodeEq::SCode.EEquation, scope::InstNode, origin::ORIGIN
         Equation.REINIT(exp1, exp2, makeSource(scodeEq.comment, info))
       end
 
-      SCode.EEquation.EQ_NORETCALL(info = info)  => begin
+      SCode.EQ_NORETCALL(info = info)  => begin
         @assign exp1 = instExp(scodeEq.exp, scope, info)
         Equation.NORETCALL(exp1, makeSource(scodeEq.comment, info))
       end
@@ -2985,7 +2976,7 @@ function isExpressionNotFixed(exp::Expression, requireFinal::Bool = false, maxDe
         isNotFixed
       end
 
-      P_Expression.Expression.CALL(__)  => begin
+      CALL_EXPRESSION(__)  => begin
         if P_Call.isImpure(exp.call) || P_Call.isExternal(exp.call)
           @assign isNotFixed = true
         else
@@ -3083,7 +3074,7 @@ function markStructuralParamsExpSize_traverser(exp::Expression)
   @assign () = begin
     local iters::List{Tuple{InstNode, Expression}}
     @match exp begin
-      P_Expression.Expression.CALL(call = P_Call.UNTYPED_ARRAY_CONSTRUCTOR(iters = iters))  => begin
+      CALL_EXPRESSION(call = P_Call.UNTYPED_ARRAY_CONSTRUCTOR(iters = iters))  => begin
         for iter in iters
           markStructuralParamsExp(Util.tuple22(iter))
         end

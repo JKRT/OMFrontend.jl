@@ -1290,7 +1290,7 @@ function typeTypeAttribute(
 
   @assign attribute = begin
     @match attribute begin
-      P_Modifier.MODIFIER(__) where {(!ModTable.isEmpty(attribute.subModifiers))} => begin
+      MODIFIER_MODIFIER(__) where {(!ModTable.isEmpty(attribute.subModifiers))} => begin
         #=  Modifier with submodifier, e.g. Real x(start(y = 1)), is an error.
         =#
         #=  Print an error for the first submodifier. The builtin attributes
@@ -1311,14 +1311,14 @@ function typeTypeAttribute(
         fail()
       end
 
-      P_Modifier.MODIFIER(__) where {(isUnbound(attribute.binding))} => begin
+      MODIFIER_MODIFIER(__) where {(isUnbound(attribute.binding))} => begin
         #=  Modifier with no binding, e.g. Real x(final start).
         =#
         checkBindingEach(attribute.binding)
         NFModifier.NOMOD()
       end
 
-      P_Modifier.MODIFIER(name = name, binding = binding) => begin
+      MODIFIER_MODIFIER(name = name, binding = binding) => begin
         #=  Normal modifier with no submodifiers.
         =#
         #=  Type and type check the attribute.
@@ -1379,7 +1379,7 @@ function typeExp(
         (exp, TYPE_INTEGER(), Variability.CONSTANT)
       end
 
-      P_Expression.Expression.REAL(__) => begin
+      P_Expression.REAL_EXPRESSION(__) => begin
         (exp, TYPE_REAL(), Variability.CONSTANT)
       end
 
@@ -1521,7 +1521,7 @@ function typeExp(
         typeIfExpression(exp, origin, info)
       end
 
-      P_Expression.Expression.CALL(__) => begin
+      CALL_EXPRESSION(__) => begin
         @assign (e1, ty, var1) = P_Call.typeCall(exp, origin, info)
         #=  If the call has multiple outputs and isn't alone on either side of an
         =#
@@ -3813,7 +3813,7 @@ function isNonConstantIfCondition(exp::Expression)::Bool
         isIterator(exp.cref)
       end
 
-      P_Expression.Expression.CALL(call = P_Call.TYPED_CALL(fn = fn)) => begin
+      CALL_EXPRESSION(call = P_Call.TYPED_CALL(fn = fn)) => begin
         begin
           @match AbsynUtil.pathFirstIdent(fn.path) begin
             "Connections" => begin

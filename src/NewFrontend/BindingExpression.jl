@@ -1079,7 +1079,7 @@ function makeOperatorRecordZero(recordNode::InstNode) ::Expression
   @assign op_node = lookupElement("'0'", getClass(recordNode))
   P_Function.P_Function.instFunctionNode(op_node)
   @match list(fn) = P_Function.P_Function.typeNodeCache(op_node)
-  @assign zeroExp = P_Expression.Expression.CALL(P_Call.makeTypedCall(fn, nil, Variability.CONSTANT))
+  @assign zeroExp = CALL_EXPRESSION(P_Call.makeTypedCall(fn, nil, Variability.CONSTANT))
   @assign zeroExp = Ceval.evalExp(zeroExp)
   zeroExp
 end
@@ -5171,12 +5171,12 @@ function applyIndexSubscriptRange2(startExp::Expression, stepExp::Option{<:Expre
         P_Expression.Expression.INTEGER(startExp.value + index - 1)
       end
 
-      (P_Expression.Expression.REAL(__), SOME(P_Expression.Expression.REAL(ridx)))  => begin
-        P_Expression.Expression.REAL(startExp.value + (index - 1) * ridx)
+      (P_Expression.REAL_EXPRESSION(__), SOME(P_Expression.REAL_EXPRESSION(ridx)))  => begin
+        P_Expression.REAL_EXPRESSION(startExp.value + (index - 1) * ridx)
       end
 
-      (P_Expression.Expression.REAL(__), _)  => begin
-        P_Expression.Expression.REAL(startExp.value + index - 1.0)
+      (P_Expression.REAL_EXPRESSION(__), _)  => begin
+        P_Expression.REAL_EXPRESSION(startExp.value + index - 1.0)
       end
 
       (P_Expression.Expression.BOOLEAN(__), _)  => begin

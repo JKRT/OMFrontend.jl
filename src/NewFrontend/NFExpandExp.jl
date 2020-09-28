@@ -821,7 +821,7 @@ function expandBuiltinGeneric2(
       end
 
       _ => begin
-        P_Expression.Expression.CALL(P_Call.TYPED_CALL(fn, ty, var, list(exp), attr))
+        CALL_EXPRESSION(P_Call.TYPED_CALL(fn, ty, var, list(exp), attr))
       end
     end
   end
@@ -896,7 +896,7 @@ function expandBuiltinCat(args::List{<:Expression}, call::Call)::Tuple{Expressio
     @assign exp =
       Ceval.evalBuiltinCat(listHead(args), expl, Ceval.P_EvalTarget.IGNORE_ERRORS())
   else
-    @assign exp = expandGeneric(P_Expression.Expression.CALL(call))
+    @assign exp = expandGeneric(CALL_EXPRESSION(call))
   end
   #=  This relies on the fact that Ceval.evalBuiltinCat doesn't actually do any
   =#
@@ -1214,7 +1214,7 @@ function expand(exp::Expression)::Tuple{Expression, Bool}
         expandRange(exp)
       end
 
-      P_Expression.Expression.CALL(__) => begin
+      CALL_EXPRESSION(__) => begin
         expandCall(exp.call, exp)
       end
 

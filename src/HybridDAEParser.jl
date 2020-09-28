@@ -79,8 +79,10 @@ include("./NewFrontend/NFLookupState.jl")
 include("./NewFrontend/NFComponentRef.jl")
 @exportAll
 include("./NewFrontend/NFBuiltin.jl")
+.import NFBuiltin
 include("./NewFrontend/BindingExpression.jl")
 include("./NewFrontend/NFDimension.jl")
+include("./NewFrontend/NFCall.jl")
 end
 
 function parseFile(file::String)::Absyn.Program

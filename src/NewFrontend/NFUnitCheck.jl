@@ -399,7 +399,7 @@ function foldEquation2(
     @match eq begin
       EQUATION_EQUALITY(
         lhs = lhs && TUPLE_EXPRESSION(__),
-        rhs = rhs && P_Expression.Expression.CALL(__),
+        rhs = rhs && CALL_EXPRESSION(__),
       ) where {(!P_Function.isBuiltin(P_Call.typedFunction(rhs.call)))} => begin
         @assign fn_name =
           AbsynUtil.pathString(AbsynUtil.makeNotFullyQualified(P_Call.functionName(rhs.call)))
@@ -421,7 +421,7 @@ function foldEquation2(
       end
 
       EQUATION_EQUALITY(
-        rhs = rhs && P_Expression.Expression.CALL(__),
+        rhs = rhs && CALL_EXPRESSION(__),
       ) where {(!P_Function.isBuiltin(P_Call.typedFunction(rhs.call)))} => begin
         @assign fn_name =
           AbsynUtil.pathString(AbsynUtil.makeNotFullyQualified(P_Call.functionName(rhs.call)))
@@ -846,7 +846,7 @@ function insertUnitInEquation(
       BINARY_EXPRESSION(
         exp1,
         P_Operator.Operator.OPERATOR(op = Op.POW),
-        exp2 && P_Expression.Expression.REAL(__),
+        exp2 && P_Expression.REAL_EXPRESSION(__),
       ) => begin
         #=  POW
         =#
@@ -862,7 +862,7 @@ function insertUnitInEquation(
       BINARY_EXPRESSION(
         exp1,
         P_Operator.Operator.OPERATOR(op = Op.POW),
-        exp2 && P_Expression.Expression.REAL(__),
+        exp2 && P_Expression.REAL_EXPRESSION(__),
       ) where {(Unit.isUnit(unit))} => begin
         @match (Unit.MASTER(varList = vars), htCr2U, htS2U, htU2S, fnCache, icu1) =
           insertUnitInEquation(exp1, Unit.MASTER(nil), htCr2U, htS2U, htU2S, fnCache)
@@ -875,14 +875,14 @@ function insertUnitInEquation(
       BINARY_EXPRESSION(
         exp1,
         P_Operator.Operator.OPERATOR(op = Op.POW),
-        P_Expression.Expression.REAL(__),
+        P_Expression.REAL_EXPRESSION(__),
       ) => begin
         @assign (_, htCr2U, htS2U, htU2S, fnCache, icu1) =
           insertUnitInEquation(exp1, Unit.MASTER(nil), htCr2U, htS2U, htU2S, fnCache)
         (Unit.MASTER(nil), icu1)
       end
 
-      P_Expression.Expression.CALL(__) => begin
+      CALL_EXPRESSION(__) => begin
         #=  Call
         =#
         @assign (op_unit, htCr2U, htS2U, htU2S, fnCache, icu1) =

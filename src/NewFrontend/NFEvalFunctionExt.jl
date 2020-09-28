@@ -712,7 +712,7 @@ function getExtRealValue(exp::Expression)::AbstractFloat
 
   @assign value = begin
     @match exp begin
-      P_Expression.Expression.REAL(__) => begin
+      P_Expression.REAL_EXPRESSION(__) => begin
         exp.value
       end
 

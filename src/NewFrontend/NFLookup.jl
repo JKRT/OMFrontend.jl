@@ -23,11 +23,12 @@ function lookupBaseClassName(name::Absyn.Path, scope::InstNode, info::SourceInfo
     Error.addSourceMessage(Error.LOOKUP_BASECLASS_ERROR, list(AbsynUtil.pathString(name), scopeName(scope)), info)
     fail()
   end
-  P_LookupState.assertClass(state, listHead(nodes), name, info)
+  assertClass(state, listHead(nodes), name, info)
   nodes
 end
 
-function lookupComponent(cref::Absyn.Path, scope::InstNode #= The scope to look in. =#, info::SourceInfo) ::Tuple{ComponentRef, InstNode}
+function lookupComponent(cref::Absyn.ComponentRef, scope::InstNode #= The scope to look in. =#, info::SourceInfo) ::Tuple{ComponentRef, InstNode}
+  @info "Calling lookup component! cref: $cref"
   local foundScope::InstNode #= The scope the cref was found in. =#
   local foundCref::ComponentRef
   local state::LookupState
@@ -37,14 +38,16 @@ function lookupComponent(cref::Absyn.Path, scope::InstNode #= The scope to look 
     @assign node = node(foundCref)
     @match false = isName(node)
   catch
-    Error.addSourceMessageAndFail(Error.LOOKUP_VARIABLE_ERROR, list(Dump.printComponentRefStr(cref), scopeName(scope)), info)
+    # Error.addSourceMessageAndFail(Error.LOOKUP_VARIABLE_ERROR, list(Dump.printComponentRefStr(cref), scopeName(scope)), info)
+    @error "Lookupvariable error for cref:$cref"
+    fail()
   end
   @assign state = fixTypenameState(node, state)
-  P_LookupState.assertComponent(state, node, cref, info)
+  assertComponent(state, node, cref, info)
   (foundCref, foundScope #= The scope the cref was found in. =#)
 end
 
-function lookupConnector(cref::Absyn.Path, scope::InstNode #= The scope to look in. =#, info::SourceInfo) ::Tuple{ComponentRef, InstNode}
+function lookupConnector(cref::Absyn.ComponentRef, scope::InstNode #= The scope to look in. =#, info::SourceInfo) ::Tuple{ComponentRef, InstNode}
   local foundScope::InstNode #= The scope the cref was found in. =#
   local foundCref::ComponentRef
 
@@ -91,7 +94,7 @@ end
 """ #= Looks up a component in the local scope, without searching in any enclosing
                  scopes. The found scope is returned since it can be different from the given
                  scope in the case where the cref refers to an outer component. =#"""
-                   function lookupLocalComponent(cref::Absyn.Path, scope::InstNode #= The scope to look in. =#, info::SourceInfo) ::Tuple{ComponentRef, InstNode}
+                   function lookupLocalComponent(cref::Absyn.ComponentRef, scope::InstNode #= The scope to look in. =#, info::SourceInfo) ::Tuple{ComponentRef, InstNode}
                      local foundScope::InstNode #= The scope the cref was found in. =#
                      local foundCref::ComponentRef
                      local state::LookupState
@@ -101,7 +104,7 @@ end
                      (foundCref, foundScope #= The scope the cref was found in. =#)
                    end
 
-function lookupFunctionName(cref::Absyn.Path, scope::InstNode #= The scope to look in. =#, info::SourceInfo) ::Tuple{ComponentRef, InstNode}
+function lookupFunctionName(cref::Absyn.ComponentRef, scope::InstNode #= The scope to look in. =#, info::SourceInfo) ::Tuple{ComponentRef, InstNode}
   local foundScope::InstNode
   local foundCref::ComponentRef
   local state::LookupState
@@ -118,7 +121,7 @@ function lookupFunctionName(cref::Absyn.Path, scope::InstNode #= The scope to lo
   (foundCref, foundScope)
 end
 
-function lookupFunctionNameSilent(cref::Absyn.Path, scope::InstNode #= The scope to look in. =#) ::Tuple{ComponentRef, InstNode}
+function lookupFunctionNameSilent(cref::Absyn.ComponentRef, scope::InstNode #= The scope to look in. =#) ::Tuple{ComponentRef, InstNode}
   local foundScope::InstNode
   local foundCref::ComponentRef
 
@@ -173,7 +176,7 @@ function lookupImport(name::Absyn.Path, scope::InstNode, info::SourceInfo) ::Ins
   element
 end
 
-function lookupCrefWithError(cref::Absyn.Path, scope::InstNode, info::SourceInfo, errMsg) ::Tuple{ComponentRef, InstNode, LookupState}
+function lookupCrefWithError(cref::Absyn.ComponentRef, scope::InstNode, info::SourceInfo, errMsg) ::Tuple{ComponentRef, InstNode, LookupState}
   local state::LookupState
   local foundScope::InstNode
   local foundCref::ComponentRef
@@ -190,7 +193,7 @@ end
 """ #= This function will look up an Absyn.ComponentRef in the given scope, and
                  construct a ComponentRef from the found nodes. The scope where the first part
                  of the cref was found will also be returned. =#"""
-                   function lookupCref(cref::Absyn.Path, scope::InstNode #= The scope to look in. =#) ::Tuple{ComponentRef, InstNode, LookupState}
+                   function lookupCref(cref::Absyn.ComponentRef, scope::InstNode #= The scope to look in. =#) ::Tuple{ComponentRef, InstNode, LookupState}
                      local state::LookupState
                      local foundScope::InstNode #= The scope where the first part of the cref was found. =#
                      local foundCref::ComponentRef
@@ -227,7 +230,7 @@ end
                    end
 
 """ #= Looks up a cref in the local scope without going into any enclosing scopes. =#"""
-function lookupLocalCref(cref::Absyn.Path, scope::InstNode #= The scope to look in. =#, info::SourceInfo) ::Tuple{ComponentRef, InstNode, LookupState}
+function lookupLocalCref(cref::Absyn.ComponentRef, scope::InstNode #= The scope to look in. =#, info::SourceInfo) ::Tuple{ComponentRef, InstNode, LookupState}
   local state::LookupState
   local foundScope::InstNode #= The scope where the first part of the cref was found. =#
   local foundCref::ComponentRef
@@ -506,7 +509,7 @@ function lookupSimpleBuiltinCref(name::String, subs::List{<:Absyn.Subscript}) ::
   local state::LookupState
   local cref::ComponentRef
   local node::InstNode
-
+  @info "Looking up $name in lookupSimpleBuiltinCref"
   @assign (node, cref, state) = begin
     @match name begin
       "time"  => begin
@@ -547,6 +550,7 @@ function lookupSimpleCref(name::String, subs::List{<:Absyn.Subscript}, scope::In
     @assign (node, cref, state) = lookupSimpleBuiltinCref(name, subs)
     @assign foundScope = topScope(foundScope)
   catch
+    @info "Searching for scope in lookupSimplecref.. with $(typeof(scope))"
     for i in 1:Global.recursionDepthLimit
       try
         @assign (node, is_import) = begin
@@ -554,15 +558,17 @@ function lookupSimpleCref(name::String, subs::List{<:Absyn.Subscript}, scope::In
             IMPLICIT_SCOPE(__)  => begin
               (lookupIterator(name, foundScope.locals), false)
             end
-
             CLASS_NODE(__)  => begin
-              lookupElement(name, getClass(foundScope))
+              @info "Hit CLASS_NODE. Fetching class"
+              c = getClass(foundScope)
+              @info "Class fetched. Looking up element"
+              e = lookupElement(name, c)
+              @info "After looking up element"
+              e
             end
-
             COMPONENT_NODE(__)  => begin
               lookupElement(name, getClass(foundScope))
             end
-
             INNER_OUTER_NODE(__)  => begin
               lookupElement(name, getClass(foundScope.innerNode))
             end
@@ -581,7 +587,8 @@ function lookupSimpleCref(name::String, subs::List{<:Absyn.Subscript}, scope::In
         @assign foundScope = parentScope(foundScope)
       end
     end
-#    Error.addMessage(Error.RECURSION_DEPTH_REACHED, list(String(Global.recursionDepthLimit), scopeName(foundScope)))
+    #    Error.addMessage(Error.RECURSION_DEPTH_REACHED, list(String(Global.recursionDepthLimit), scopeName(foundScope)))
+    @error "Recusrion depth reached failing.."
     fail()
   end
   (node, cref, foundScope, state)

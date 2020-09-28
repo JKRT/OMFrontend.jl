@@ -823,7 +823,7 @@ const CLOCK_BOOL =
       P_Slot.SLOT(
         "startInterval",
         SlotType.GENERIC,
-        SOME(P_Expression.Expression.REAL(0.0)),
+        SOME(P_Expression.REAL_EXPRESSION(0.0)),
         NONE(),
         2,
         SlotEvalStatus.NOT_EVALUATED,

@@ -442,7 +442,7 @@
                #=  We have all except dimension n having equal sizes; with matching types
                =#
               @assign ty = resTy
-              @assign callExp = P_Expression.Expression.CALL(P_Call.makeTypedCall(NFBuiltinFuncs.CAT, _cons(P_Expression.Expression.INTEGER(n), res), variability, resTy))
+              @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(NFBuiltinFuncs.CAT, _cons(P_Expression.Expression.INTEGER(n), res), variability, resTy))
           (callExp, ty)
         end
 
@@ -484,7 +484,7 @@
               @assign ty_call = P_Call.matchTypedNormalCall(call, origin, info)
               @assign ty = P_Call.typeOf(ty_call)
               @assign var = P_Call.variability(ty_call)
-              @assign callExp = P_Expression.Expression.CALL(ty_call)
+              @assign callExp = CALL_EXPRESSION(ty_call)
           (callExp, ty, var)
         end
 
@@ -529,7 +529,7 @@
                 for arg in matchedFunc.args
                   @assign var = P_Prefixes.variabilityMax(var, Util.tuple33(arg))
                 end
-                @assign callExp = P_Expression.Expression.CALL(P_Call.makeTypedCall(matchedFunc.func, List(Util.tuple31(a) for a in matchedFunc.args), var, outType))
+                @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(matchedFunc.func, List(Util.tuple31(a) for a in matchedFunc.args), var, outType))
                 return (callExp, outType, var)
               else
                 Error.addSourceMessage(Error.AMBIGUOUS_MATCHING_FUNCTIONS_NFINST, list(P_Call.typedString(call), P_Function.candidateFuncListString(List(mfn.func for mfn in matchedFunctions))), info)
@@ -553,7 +553,7 @@
 
               @assign argtycall = P_Call.typeMatchNormalCall(call, origin, info)
               @assign ty = P_Call.typeOf(argtycall)
-              @assign callExp = P_Expression.Expression.CALL(P_Call.unboxArgs(argtycall))
+              @assign callExp = CALL_EXPRESSION(P_Call.unboxArgs(argtycall))
           (callExp, ty, var)
         end
 
@@ -668,7 +668,7 @@
                 Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list("1", toString(fn_ref), "", toString(arg), Type.toString(ty), "Real"), info)
               end
               @match list(fn) = P_Function.typeRefCache(fn_ref)
-              @assign callExp = P_Expression.Expression.CALL(P_Call.makeTypedCall(fn, list(arg), variability, ty))
+              @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(fn, list(arg), variability, ty))
           (callExp, ty, variability)
         end
 
@@ -703,7 +703,7 @@
                 end
               end
               @match list(fn) = P_Function.typeRefCache(fn_ref)
-              @assign callExp = P_Expression.Expression.CALL(P_Call.makeTypedCall(fn, list(arg), variability, ty))
+              @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(fn, list(arg), variability, ty))
           (callExp, ty, variability)
         end
 
@@ -728,7 +728,7 @@
               @match (@match P_Call.ARG_TYPED_CALL(CREF(node = fn_node), args, _) = argtycall) = P_Call.typeNormalCall(call, origin, info)
               @assign argtycall = P_Call.matchTypedNormalCall(argtycall, origin, info)
               @assign ty = P_Call.typeOf(argtycall)
-              @assign callExp = P_Expression.Expression.CALL(P_Call.unboxArgs(argtycall))
+              @assign callExp = CALL_EXPRESSION(P_Call.unboxArgs(argtycall))
               @match list(arg) = args
               if ! isCref(Util.tuple31(arg))
                 Error.addSourceMessage(Error.ARGUMENT_MUST_BE_VARIABLE, list("First", "edge", "<REMOVE ME>"), info)
@@ -799,7 +799,7 @@
                 end
               end
               @assign fn = listHead(P_Function.typeRefCache(fn_ref))
-              @assign callExp = P_Expression.Expression.CALL(P_Call.makeTypedCall(fn, args, var, ty))
+              @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(fn, args, var, ty))
           (callExp, ty, var)
         end
 
@@ -824,7 +824,7 @@
               @assign (arg, ty, variability) = Typing.typeExp(listHead(args), origin, info)
               @assign ty = Type.arrayElementType(ty)
               @match list(fn) = P_Function.typeRefCache(fn_ref)
-              @assign callExp = P_Expression.Expression.CALL(P_Call.makeTypedCall(fn, list(arg), variability, ty))
+              @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(fn, list(arg), variability, ty))
           (callExp, ty, variability)
         end
 
@@ -849,7 +849,7 @@
               @assign (arg, ty, variability) = Typing.typeExp(listHead(args), origin, info)
               @assign ty = Type.arrayElementType(ty)
               @match list(fn) = P_Function.typeRefCache(fn_ref)
-              @assign callExp = P_Expression.Expression.CALL(P_Call.makeTypedCall(fn, list(arg), variability, ty))
+              @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(fn, list(arg), variability, ty))
           (callExp, ty, variability)
         end
 
@@ -898,7 +898,7 @@
                 Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list("2", toString(fn_ref), "", toString(arg2), Type.toString(ty2), "Real\\n  Real[:, ...]\\n  Real record\\n  Real record[:, ...]"), info)
               end
               @match list(fn) = P_Function.typeRefCache(fn_ref)
-              @assign callExp = P_Expression.Expression.CALL(P_Call.makeTypedCall(fn, list(arg1, arg2), var, ty))
+              @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(fn, list(arg1, arg2), var, ty))
           (callExp, ty, variability)
         end
 
@@ -969,7 +969,7 @@
               if evaluated
                 @assign callExp = Ceval.evalBuiltinFill(ty_args)
               else
-                @assign callExp = P_Expression.Expression.CALL(P_Call.makeTypedCall(NFBuiltinFuncs.FILL_FUNC, ty_args, variability, ty))
+                @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(NFBuiltinFuncs.FILL_FUNC, ty_args, variability, ty))
               end
           (callExp, ty, variability)
         end
@@ -1076,7 +1076,7 @@
               end
               @assign ty = Type.ARRAY(Type.arrayElementType(ty), list(vector_dim))
               @match list(fn) = P_Function.typeRefCache(fn_ref)
-              @assign callExp = P_Expression.Expression.CALL(P_Call.makeTypedCall(fn, list(arg), variability, ty))
+              @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(fn, list(arg), variability, ty))
           (callExp, ty, variability)
         end
 
@@ -1120,7 +1120,7 @@
                 end
                 @assign ty = Type.ARRAY(Type.arrayElementType(ty), list(dim1, dim2))
                 @match list(fn) = P_Function.typeRefCache(fn_ref)
-                @assign callExp = P_Expression.Expression.CALL(P_Call.makeTypedCall(fn, list(arg), variability, ty))
+                @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(fn, list(arg), variability, ty))
               end
                #=  matrix(A) where A is a scalar or vector returns promote(A, 2).
                =#
@@ -1192,7 +1192,7 @@
                 Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list("1", toString(fn_ref), "", toString(arg), Type.toString(ty), "Any[n, n]"), info)
               end
               @match list(fn) = P_Function.typeRefCache(fn_ref)
-              @assign callExp = P_Expression.Expression.CALL(P_Call.makeTypedCall(fn, list(arg), variability, ty))
+              @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(fn, list(arg), variability, ty))
           (callExp, ty, variability)
         end
 
@@ -1229,7 +1229,7 @@
                 end
               end
               @match list(fn) = P_Function.typeRefCache(fn_ref)
-              @assign callExp = P_Expression.Expression.CALL(P_Call.makeTypedCall(fn, list(arg), variability, ty))
+              @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(fn, list(arg), variability, ty))
           (callExp, ty, variability)
         end
 
@@ -1272,7 +1272,7 @@
               end
               @match list(fn) = P_Function.typeRefCache(fn_ref)
               @assign ty = TYPE_INTEGER()
-              @assign callExp = P_Expression.Expression.CALL(P_Call.makeTypedCall(fn, list(arg), var, ty))
+              @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(fn, list(arg), var, ty))
                #=  TODO: Check cardinality restrictions, 3.7.2.3.
                =#
               System.setUsesCardinality(true)
@@ -1306,7 +1306,7 @@
               checkConnectionsArgument(arg2, ty, fn_ref, 2, info)
               @match list(fn) = P_Function.typeRefCache(fn_ref)
               @assign ty = TYPE_NORETCALL()
-              @assign callExp = P_Expression.Expression.CALL(P_Call.makeTypedCall(fn, list(arg1, arg2), var, ty))
+              @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(fn, list(arg1, arg2), var, ty))
           (callExp, ty, var)
         end
 
@@ -1333,7 +1333,7 @@
               checkConnectionsArgument(arg, ty, fn_ref, 1, info)
               @match list(fn) = P_Function.typeRefCache(fn_ref)
               @assign ty = TYPE_BOOLEAN()
-              @assign callExp = P_Expression.Expression.CALL(P_Call.makeTypedCall(fn, list(arg), var, ty))
+              @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(fn, list(arg), var, ty))
           (callExp, ty, var)
         end
 
@@ -1381,7 +1381,7 @@
               end
               @match list(fn) = P_Function.typeRefCache(fn_ref)
               @assign ty = TYPE_NORETCALL()
-              @assign callExp = P_Expression.Expression.CALL(P_Call.makeTypedCall(fn, list(arg1, arg2), var, ty))
+              @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(fn, list(arg1, arg2), var, ty))
           (callExp, ty, var)
         end
 
@@ -1408,7 +1408,7 @@
               checkConnectionsArgument(arg, ty, fn_ref, 1, info)
               @match list(fn) = P_Function.typeRefCache(fn_ref)
               @assign ty = TYPE_NORETCALL()
-              @assign callExp = P_Expression.Expression.CALL(P_Call.makeTypedCall(fn, list(arg), var, ty))
+              @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(fn, list(arg), var, ty))
           (callExp, ty, var)
         end
 
@@ -1438,7 +1438,7 @@
               end
               @match list(fn) = P_Function.typeRefCache(fn_ref)
               @assign ty = TYPE_BOOLEAN()
-              @assign callExp = P_Expression.Expression.CALL(P_Call.makeTypedCall(fn, list(arg), var, ty))
+              @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(fn, list(arg), var, ty))
           (callExp, ty, var)
         end
 
@@ -1488,7 +1488,7 @@
               end
               @match list(fn) = P_Function.typeRefCache(fn_ref)
               @assign ty = TYPE_NORETCALL()
-              @assign callExp = P_Expression.Expression.CALL(P_Call.makeTypedCall(fn, list(arg1, arg2), var, ty))
+              @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(fn, list(arg1, arg2), var, ty))
           (callExp, ty, var)
         end
 
@@ -1551,7 +1551,7 @@
               @match list(fn) = P_Function.typeRefCache(fn_ref)
               assert(listLength(Type.arrayDims(ty1)) == listLength(Type.arrayDims(ty2)), "the first two parameters need to have the same size")
               @assign ty = Type.ARRAY(Type.TYPE_INTEGER(), Type.arrayDims(ty1))
-              @assign callExp = P_Expression.Expression.CALL(P_Call.makeTypedCall(fn, list(arg1, arg2), var, ty))
+              @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(fn, list(arg1, arg2), var, ty))
           (callExp, ty, var)
         end
 
@@ -1651,7 +1651,7 @@
               @match list(arg) = args
               @assign (arg, ty, variability) = Typing.typeExp(arg, ExpOrigin.setFlag(origin, ExpOrigin.NOEVENT), info)
               @match list(fn) = P_Function.typeRefCache(fn_ref)
-              @assign callExp = P_Expression.Expression.CALL(P_Call.makeTypedCall(fn, list(arg), variability, ty))
+              @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(fn, list(arg), variability, ty))
           (callExp, ty, variability)
         end
 
@@ -1687,7 +1687,7 @@
                   end
 
                   e1 <|  nil()  => begin
-                    P_Expression.Expression.CLKCONST(P_Expression.P_ClockKind.Expression.REAL_CLOCK(e1))
+                    P_Expression.Expression.CLKCONST(P_Expression.P_ClockKind.REAL_EXPRESSION_CLOCK(e1))
                   end
 
                   e1 <| e2 <|  nil()  => begin
@@ -1761,7 +1761,7 @@
                         @assign e = P_Expression.Expression.CAST(TYPE_REAL(), e)
                       end
                       @assign ty_call = P_Call.makeTypedCall(normalSample, list(e, P_Expression.Expression.CAST(TYPE_REAL(), e1)), Variability.PARAMETER, TYPE_BOOLEAN())
-                    (P_Expression.Expression.CALL(ty_call), TYPE_BOOLEAN(), Variability.PARAMETER)
+                    (CALL_EXPRESSION(ty_call), TYPE_BOOLEAN(), Variability.PARAMETER)
                   end
 
                   ((e, t, v) <| (e1, TYPE_REAL(__), v1) <|  nil(),  nil())  => begin
@@ -1771,7 +1771,7 @@
                         @assign e = P_Expression.Expression.CAST(TYPE_REAL(), e)
                       end
                       @assign ty_call = P_Call.makeTypedCall(normalSample, list(e, e1), Variability.PARAMETER, TYPE_BOOLEAN())
-                    (P_Expression.Expression.CALL(ty_call), TYPE_BOOLEAN(), Variability.PARAMETER)
+                    (CALL_EXPRESSION(ty_call), TYPE_BOOLEAN(), Variability.PARAMETER)
                   end
 
                   ((e, t, v) <|  nil(), ("interval", e1, TYPE_REAL(__), v1) <|  nil())  => begin
@@ -1781,28 +1781,28 @@
                         @assign e = P_Expression.Expression.CAST(TYPE_REAL(), e)
                       end
                       @assign ty_call = P_Call.makeTypedCall(normalSample, list(e, e1), Variability.PARAMETER, TYPE_BOOLEAN())
-                    (P_Expression.Expression.CALL(ty_call), TYPE_BOOLEAN(), Variability.PARAMETER)
+                    (CALL_EXPRESSION(ty_call), TYPE_BOOLEAN(), Variability.PARAMETER)
                   end
 
                   ((e, t, v) <|  nil(),  nil()) where (Config.synchronousFeaturesAllowed())  => begin
                        #=  sample(u) - inferred clock
                        =#
                       @assign ty_call = P_Call.makeTypedCall(clockedSample, list(e, P_Expression.Expression.CLKCONST(P_Expression.P_ClockKind.Expression.INFERRED_CLOCK())), v, t)
-                    (P_Expression.Expression.CALL(ty_call), t, v)
+                    (CALL_EXPRESSION(ty_call), t, v)
                   end
 
                   ((e, t, v) <| (e1, TYPE_CLOCK(__), v1) <|  nil(),  nil()) where (Config.synchronousFeaturesAllowed())  => begin
                        #=  sample(u, c) - specified clock
                        =#
                       @assign ty_call = P_Call.makeTypedCall(clockedSample, list(e, e1), v, t)
-                    (P_Expression.Expression.CALL(ty_call), t, v)
+                    (CALL_EXPRESSION(ty_call), t, v)
                   end
 
                   ((e, t, v) <|  nil(), ("c", e1, TYPE_CLOCK(__), v1) <|  nil()) where (Config.synchronousFeaturesAllowed())  => begin
                        #=  sample(u, Clock c = c) - specified clock
                        =#
                       @assign ty_call = P_Call.makeTypedCall(clockedSample, list(e, e1), v, t)
-                    (P_Expression.Expression.CALL(ty_call), t, v)
+                    (CALL_EXPRESSION(ty_call), t, v)
                   end
 
                   _  => begin
@@ -1860,7 +1860,7 @@
                           Error.addSourceMessageAndFail(Error.CONNECTOR_NON_PARAMETER_SUBSCRIPT, list(toString(arg.cref), toString(sub)), info)
                         end
                       end
-                    P_Expression.Expression.CALL(P_Call.makeTypedCall(fn, list(arg), var, arg.ty))
+                    CALL_EXPRESSION(P_Call.makeTypedCall(fn, list(arg), var, arg.ty))
                   end
 
                   P_Expression.Expression.ARRAY(__)  => begin
@@ -1921,7 +1921,7 @@
               @assign variability = var2
               @match list(fn) = P_Function.typeRefCache(fn_ref)
               if Flags.isSet(Flags.NF_API_DYNAMIC_SELECT)
-                @assign callExp = P_Expression.Expression.CALL(P_Call.makeTypedCall(fn, list(arg1, arg2), variability, ty1))
+                @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(fn, list(arg1, arg2), variability, ty1))
               else
                 @assign variability = var1
                 @assign callExp = arg1

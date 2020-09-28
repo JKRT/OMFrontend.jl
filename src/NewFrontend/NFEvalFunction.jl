@@ -183,7 +183,7 @@ function evaluateExternal(fn::M_Function, args::List{<:Expression})::Expression
   local ann::Option{SCode.Annotation}
   local ext_args::List{Expression}
 
-  @match P_Sections.Sections.EXTERNAL(
+  @match SECTIONS_EXTERNAL(
     name = name,
     args = ext_args,
     outputRef = output_ref,
@@ -1313,7 +1313,7 @@ function evaluateKnownExternal(name::String, args::List{<:Expression})::Expressi
         @assign (i, r) = ModelicaExternalC.Strings_scanReal(s1, i, b)
         TUPLE_EXPRESSION(
           TYPE_TUPLE(list(TYPE_INTEGER(), TYPE_REAL()), NONE()),
-          list(P_Expression.Expression.INTEGER(i), P_Expression.Expression.REAL(r)),
+          list(P_Expression.Expression.INTEGER(i), P_Expression.REAL_EXPRESSION(r)),
         )
       end
 
@@ -1492,7 +1492,7 @@ function evaluateModelicaIO_readRealMatrix(
   for r = 1:nrow
     @assign row = nil
     for c = 1:ncol
-      @assign row = _cons(P_Expression.Expression.REAL(matrix[r, c]), row)
+      @assign row = _cons(P_Expression.REAL_EXPRESSION(matrix[r, c]), row)
     end
     @assign rows = _cons(P_Expression.Expression.ARRAY(ty, row, literal = true), rows)
   end

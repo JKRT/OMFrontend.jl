@@ -664,7 +664,7 @@ function lookupElement(name::String, tree::ClassTree)::Tuple{InstNode, Bool}
   local element::InstNode
   local entry::LookupTree.Entry
   @info "Looking up element $name in class tree!"
-  @info "Our tree is $tree"
+  @info "Fetching from tree. Soon to report entry"
   @assign entry = LookupTree.get(lookupTree(tree), name)
   @info "Our entry is $entry"
   @assign (element, isImport) = resolveEntry(entry, tree)
@@ -763,14 +763,14 @@ end
 """ #= Copies elements from one array to another while removing the Mutable
        container for each element. =#"""
 function flattenElements(
-  elements::Array{<:Mutable{<:InstNode}},
+  elements::Array,
   flatElements::Array{<:InstNode},
 )
   return for i = 1:arrayLength(elements)
     arrayUpdateNoBoundsChecking(
       flatElements,
       i,
-      Mutable.access(arrayGetNoBoundsChecking(elements, i)),
+      P_Pointer.access(arrayGetNoBoundsChecking(elements, i)),
     )
   end
 end
@@ -2559,21 +2559,17 @@ end
 
 function lookupTree(ctree::ClassTree)::LookupTree.Tree
   local ltree::LookupTree.Tree
-
   @assign ltree = begin
     @match ctree begin
       CLASS_TREE_PARTIAL_TREE(__) => begin
         ctree.tree
       end
-
       CLASS_TREE_EXPANDED_TREE(__) => begin
         ctree.tree
       end
-
       CLASS_TREE_INSTANTIATED_TREE(__) => begin
         ctree.tree
       end
-
       CLASS_TREE_FLAT_TREE(__) => begin
         ctree.tree
       end

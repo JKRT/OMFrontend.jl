@@ -112,7 +112,7 @@ function generateEquations(sets::Array{<:List{<:Connector}})::List{Equation}
   =#
   @assign potfunc = generatePotentialEquations
   @assign flowThreshold =
-    P_Expression.Expression.REAL(Flags.getConfigReal(Flags.FLOW_THRESHOLD))
+    P_Expression.REAL_EXPRESSION(Flags.getConfigReal(Flags.FLOW_THRESHOLD))
   for set in sets
     @assign cty = getSetType(set)
     if ConnectorType.isPotential(cty)
@@ -149,7 +149,7 @@ function evaluateOperators(
     local call::Call
     local expanded::Bool
     @match exp begin
-      P_Expression.Expression.CALL(call = call) => begin
+      CALL_EXPRESSION(call = call) => begin
         begin
           @match call begin
             P_Call.TYPED_CALL(__) => begin
@@ -222,7 +222,7 @@ function evaluateOperators(
       BINARY_EXPRESSION(
         exp1 = CREF_EXPRESSION(__),
         operator = P_Operator.Operator.OPERATOR(op = Op.MUL),
-        exp2 = P_Expression.Expression.CALL(call = call && P_Call.TYPED_CALL(__)),
+        exp2 = CALL_EXPRESSION(call = call && P_Call.TYPED_CALL(__)),
       ) where {(AbsynUtil.isNamedPathIdent(P_Function.name(call.fn), "actualStream"))} =>
         begin
           evaluateActualStreamMul(
@@ -236,7 +236,7 @@ function evaluateOperators(
         end
 
       BINARY_EXPRESSION(
-        exp1 = P_Expression.Expression.CALL(call = call && P_Call.TYPED_CALL(__)),
+        exp1 = CALL_EXPRESSION(call = call && P_Call.TYPED_CALL(__)),
         operator = P_Operator.Operator.OPERATOR(op = Op.MUL),
         exp2 = CREF_EXPRESSION(__),
       ) where {(AbsynUtil.isNamedPathIdent(P_Function.name(call.fn), "actualStream"))} =>
@@ -415,7 +415,7 @@ function makeEqualityAssert(
   if Type.isReal(ty)
     @assign exp =
       BINARY_EXPRESSION(lhs_exp, P_Operator.Operator.makeSub(ty), rhs_exp)
-    @assign exp = P_Expression.Expression.CALL(P_Call.makeTypedCall(
+    @assign exp = CALL_EXPRESSION(P_Call.makeTypedCall(
       NFBuiltinFuncs.ABS_REAL,
       list(exp),
       P_Expression.Expression.variability(exp),
@@ -423,7 +423,7 @@ function makeEqualityAssert(
     @assign exp = P_Expression.Expression.RELATION(
       exp,
       P_Operator.Operator.makeLessEq(ty),
-      P_Expression.Expression.REAL(0.0),
+      P_Expression.REAL_EXPRESSION(0.0),
     )
   else
     @assign exp =
@@ -505,7 +505,7 @@ function generateFlowEquations(elements::List{<:Connector})::List{Equation}
     end
   end
   @assign equations =
-    list(EQUATION_EQUALITY(sum, P_Expression.Expression.REAL(0.0), c.ty, src))
+    list(EQUATION_EQUALITY(sum, P_Expression.REAL_EXPRESSION(0.0), c.ty, src))
   return equations
 end
 
@@ -813,7 +813,7 @@ end
 function makeInStreamCall(streamExp::Expression)::Expression
   local inStreamCall::Expression
 
-  @assign inStreamCall = P_Expression.Expression.CALL(P_Call.makeTypedCall(
+  @assign inStreamCall = CALL_EXPRESSION(P_Call.makeTypedCall(
     NFBuiltinFuncs.IN_STREAM,
     list(streamExp),
     P_Expression.Expression.variability(streamExp),
@@ -851,7 +851,7 @@ function makePositiveMaxCall(
   else
     @assign flow_threshold = flowThreshold
   end
-  @assign positiveMaxCall = P_Expression.Expression.CALL(P_Call.makeTypedCall(
+  @assign positiveMaxCall = CALL_EXPRESSION(P_Call.makeTypedCall(
     NFBuiltinFuncs.POSITIVE_MAX_REAL,
     list(flowExp, flow_threshold),
     Connector.variability(element),
@@ -866,7 +866,7 @@ function isStreamCall(exp::Expression)::Bool
   @assign streamCall = begin
     local name::String
     @match exp begin
-      P_Expression.Expression.CALL(__) => begin
+      CALL_EXPRESSION(__) => begin
         begin
           @match P_Function.name(P_Call.typedFunction(exp.call)) begin
             Absyn.IDENT("inStream") => begin
@@ -910,7 +910,7 @@ function evaluateOperatorReductionExp(
 
   @assign evalExp = begin
     @match exp begin
-      P_Expression.Expression.CALL(call = call && P_Call.TYPED_REDUCTION(__)) => begin
+      CALL_EXPRESSION(call = call && P_Call.TYPED_REDUCTION(__)) => begin
         @assign ty = P_Expression.Expression.typeOf(call.exp)
         for iter in call.iters
           @assign (iter_node, iter_exp) = iter
@@ -928,7 +928,7 @@ function evaluateOperatorReductionExp(
         end
         @assign iters = listReverseInPlace(iters)
         @assign arg = P_ExpandExp.ExpandExp.expandArrayConstructor(call.exp, ty, iters)
-        P_Expression.Expression.CALL(P_Call.makeTypedCall(
+        CALL_EXPRESSION(P_Call.makeTypedCall(
           call.fn,
           list(arg),
           call.var,
@@ -1064,7 +1064,7 @@ function generateInStreamExp(
         @assign exp = streamSumEquationExp(
           outside,
           inside,
-          P_Expression.Expression.REAL(flowThreshold),
+          P_Expression.REAL_EXPRESSION(flowThreshold),
         )
         #=  Evaluate any inStream calls that were generated.
         =#
@@ -1148,7 +1148,7 @@ function evaluateActualStream(
     @assign op =
       P_Operator.Operator.makeGreater(nodeType(flow_cr))
     @assign exp = P_Expression.Expression.IF(
-      P_Expression.Expression.RELATION(flow_exp, op, P_Expression.Expression.REAL(0.0)),
+      P_Expression.Expression.RELATION(flow_exp, op, P_Expression.REAL_EXPRESSION(0.0)),
       instream_exp,
       stream_exp,
     )
@@ -1229,7 +1229,7 @@ function evaluateFlowDirection(flowCref::ComponentRef)::Integer
         0
       end
 
-      (SOME(P_Expression.Expression.REAL(min_val)), NONE()) => begin
+      (SOME(P_Expression.REAL_EXPRESSION(min_val)), NONE()) => begin
         if min_val >= 0
           1
         else
@@ -1237,7 +1237,7 @@ function evaluateFlowDirection(flowCref::ComponentRef)::Integer
         end
       end
 
-      (NONE(), SOME(P_Expression.Expression.REAL(max_val))) => begin
+      (NONE(), SOME(P_Expression.REAL_EXPRESSION(max_val))) => begin
         if max_val <= 0
           -1
         else
@@ -1246,8 +1246,8 @@ function evaluateFlowDirection(flowCref::ComponentRef)::Integer
       end
 
       (
-        SOME(P_Expression.Expression.REAL(min_val)),
-        SOME(P_Expression.Expression.REAL(max_val)),
+        SOME(P_Expression.REAL_EXPRESSION(min_val)),
+        SOME(P_Expression.REAL_EXPRESSION(max_val)),
       ) => begin
         if min_val >= 0 && max_val >= min_val
           1
@@ -1282,7 +1282,7 @@ end
 function makeSmoothCall(arg::Expression, order::Integer)::Expression
   local callExp::Expression
 
-  @assign callExp = P_Expression.Expression.CALL(P_Call.makeTypedCall(
+  @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(
     NFBuiltinFuncs.SMOOTH,
     list(DAE.INTEGER(order), arg),
     P_Expression.Expression.variability(arg),

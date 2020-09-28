@@ -64,7 +64,7 @@ function inlineCallExp(callExp::Expression)::Expression
     local call::Call
     local shouldInline::Bool
     @match callExp begin
-      P_Expression.Expression.CALL(call = call && P_Call.TYPED_CALL(__)) => begin
+      CALL_EXPRESSION(call = call && P_Call.TYPED_CALL(__)) => begin
         @assign shouldInline = begin
           @match P_Call.inlineType(call) begin
             DAE.InlineType.BUILTIN_EARLY_INLINE(__) => begin
@@ -118,7 +118,7 @@ function inlineCall(call::Call)::Expression
         #=  statement and output and no local variables.
         =#
         if listLength(body) != 1 || listLength(outputs) != 1 || listLength(locals) > 0
-          @assign exp = P_Expression.Expression.CALL(call)
+          @assign exp = CALL_EXPRESSION(call)
           return
         end
         Error.assertion(
@@ -148,7 +148,7 @@ function inlineCall(call::Call)::Expression
       end
 
       _ => begin
-        P_Expression.Expression.CALL(call)
+        CALL_EXPRESSION(call)
       end
     end
   end
@@ -244,7 +244,7 @@ function getOutputExp(stmt::Statement, outputNode::InstNode, call::Call)::Expres
       end
 
       _ => begin
-        P_Expression.Expression.CALL(call)
+        CALL_EXPRESSION(call)
       end
     end
   end

@@ -423,7 +423,7 @@ function matchOverloadedBinaryOperator(
     @match _cons(matchedFunc, _) = exactMatches
     @assign fn = matchedFunc.func
     @assign outType = P_Function.returnType(fn)
-    @assign outExp = P_Expression.Expression.CALL(P_Call.makeTypedCall(
+    @assign outExp = CALL_EXPRESSION(P_Call.makeTypedCall(
       matchedFunc.func,
       List(Util.tuple31(a) for a in matchedFunc.args),
       P_Prefixes.variabilityMax(var1, var2),
@@ -1211,7 +1211,7 @@ function implicitConstructAndMatch(
   if listLength(matchedfuncs) == 1
     @match _cons((operfn, list(exp1, exp2), var), _) = matchedfuncs
     @assign outType = P_Function.returnType(operfn)
-    @assign outExp = P_Expression.Expression.CALL(P_Call.makeTypedCall(
+    @assign outExp = CALL_EXPRESSION(P_Call.makeTypedCall(
       operfn,
       list(exp1, exp2),
       var,
@@ -1262,7 +1262,7 @@ function implicitConstructAndMatch2(
     @assign fn_ref =
       P_Function.instFunction(Absyn.CREF_IDENT("'constructor'", nil), scope, paramInfo2)
     @assign e2 =
-      P_Expression.Expression.CALL(NFCall.UNTYPED_CALL(fn_ref, list(exp2), nil, scope))
+      CALL_EXPRESSION(NFCall.UNTYPED_CALL(fn_ref, list(exp2), nil, scope))
     @assign (e2, ty, var) = P_Call.typeCall(e2, 0, paramInfo1)
     @assign (_, _, mk) = matchTypes(paramType2, ty, e2, false)
     if mk == MatchKind.EXACT
@@ -2068,7 +2068,7 @@ function checkOverloadedUnaryOperator(
   if listLength(exactMatches) == 1
     @match _cons(matchedFunc, _) = exactMatches
     @assign outType = P_Function.returnType(matchedFunc.func)
-    @assign outExp = P_Expression.Expression.CALL(P_Call.makeTypedCall(
+    @assign outExp = CALL_EXPRESSION(P_Call.makeTypedCall(
       matchedFunc.func,
       List(Util.tuple31(a) for a in matchedFunc.args),
       var,
@@ -4291,7 +4291,7 @@ function getRangeTypeInt(
             var,
             P_Expression.Expression.variability(step_exp),
           )
-          @assign dim_exp = P_Expression.Expression.CALL(P_Call.makeTypedCall(
+          @assign dim_exp = CALL_EXPRESSION(P_Call.makeTypedCall(
             NFBuiltinFuncs.DIV_INT,
             list(dim_exp, step_exp),
             var,
@@ -4302,7 +4302,7 @@ function getRangeTypeInt(
           P_Operator.Operator.makeAdd(TYPE_INTEGER()),
           P_Expression.Expression.INTEGER(1),
         )
-        @assign dim_exp = P_Expression.Expression.CALL(P_Call.makeTypedCall(
+        @assign dim_exp = CALL_EXPRESSION(P_Call.makeTypedCall(
           NFBuiltinFuncs.MAX_INT,
           list(dim_exp, P_Expression.Expression.INTEGER(0)),
           var,
@@ -4330,7 +4330,7 @@ function getRangeTypeReal(
     local step_exp::Expression
     local var::Variability
     @match (startExp, stepExp, stopExp) begin
-      (P_Expression.Expression.REAL(__), NONE(), P_Expression.Expression.REAL(__)) =>
+      (P_Expression.REAL_EXPRESSION(__), NONE(), P_Expression.REAL_EXPRESSION(__)) =>
         begin
           P_Dimension.Dimension.fromInteger(Util.realRangeSize(
             startExp.value,
@@ -4340,9 +4340,9 @@ function getRangeTypeReal(
         end
 
       (
-        P_Expression.Expression.REAL(value = start),
-        SOME(P_Expression.Expression.REAL(value = step)),
-        P_Expression.Expression.REAL(__),
+        P_Expression.REAL_EXPRESSION(value = start),
+        SOME(P_Expression.REAL_EXPRESSION(value = step)),
+        P_Expression.REAL_EXPRESSION(__),
       ) => begin
         #=  Check that adding step to start actually produces a different value,
         =#
@@ -4386,15 +4386,15 @@ function getRangeTypeReal(
           @assign dim_exp = BINARY_EXPRESSION(
             dim_exp,
             P_Operator.Operator.makeAdd(TYPE_REAL()),
-            P_Expression.Expression.REAL(5e-15),
+            P_Expression.REAL_EXPRESSION(5e-15),
           )
         end
-        @assign dim_exp = P_Expression.Expression.CALL(P_Call.makeTypedCall(
+        @assign dim_exp = CALL_EXPRESSION(P_Call.makeTypedCall(
           NFBuiltinFuncs.FLOOR,
           list(dim_exp),
           var,
         ))
-        @assign dim_exp = P_Expression.Expression.CALL(P_Call.makeTypedCall(
+        @assign dim_exp = CALL_EXPRESSION(P_Call.makeTypedCall(
           NFBuiltinFuncs.INTEGER_REAL,
           list(dim_exp),
           var,

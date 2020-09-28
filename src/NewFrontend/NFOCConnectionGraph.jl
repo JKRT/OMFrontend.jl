@@ -176,7 +176,7 @@
               for eq in flatModel.equations
                 @assign eql = begin
                   @match eq begin
-                    P_Equation.Equation.NORETCALL(exp = P_Expression.Expression.CALL(call && P_Call.TYPED_CALL(arguments = lst)), source = source)  => begin
+                    P_Equation.Equation.NORETCALL(exp = CALL_EXPRESSION(call && P_Call.TYPED_CALL(arguments = lst)), source = source)  => begin
                       begin
                         @match identifyConnectionsOperator(P_Function.name(call.fn)) begin
                           ConnectionsOperator.ROOT  => begin
@@ -303,11 +303,11 @@
                         @assign ty2 = getComponentType(rhsArr)
                         @assign fcref_rhs = P_Function.lookupFunctionSimple("equalityConstraint", classScope(node(lhs)))
                         @assign (fcref_rhs, fn_node_rhs, _) = P_Function.instFunctionRef(fcref_rhs, ElementSource.getInfo(source))
-                        @assign expRHS = P_Expression.Expression.CALL(P_Call.UNTYPED_CALL(fcref_rhs, list(CREF_EXPRESSION(ty1, lhsArr), CREF_EXPRESSION(ty2, rhsArr)), nil, fn_node_rhs))
+                        @assign expRHS = CALL_EXPRESSION(P_Call.UNTYPED_CALL(fcref_rhs, list(CREF_EXPRESSION(ty1, lhsArr), CREF_EXPRESSION(ty2, rhsArr)), nil, fn_node_rhs))
                         @assign (expRHS, ty, var) = Typing.typeExp(expRHS, origin, ElementSource.getInfo(source))
                         @assign fcref_lhs = P_Function.lookupFunctionSimple("fill", topScope(node(clhs)))
                         @assign (fcref_lhs, fn_node_lhs, _) = P_Function.instFunctionRef(fcref_lhs, ElementSource.getInfo(source))
-                        @assign expLHS = P_Expression.Expression.CALL(P_Call.UNTYPED_CALL(fcref_lhs, _cons(P_Expression.Expression.REAL(0.0), ListUtil.map(Type.arrayDims(ty), P_Dimension.Dimension.sizeExp)), nil, fn_node_lhs))
+                        @assign expLHS = CALL_EXPRESSION(P_Call.UNTYPED_CALL(fcref_lhs, _cons(P_Expression.REAL_EXPRESSION(0.0), ListUtil.map(Type.arrayDims(ty), P_Dimension.Dimension.sizeExp)), nil, fn_node_lhs))
                         @assign (expLHS, ty, var) = Typing.typeExp(expLHS, origin, ElementSource.getInfo(source))
                         @assign replaceEq = EQUATION_EQUALITY(expRHS, expLHS, ty, source)
                         @assign eqsEqualityConstraint = list(replaceEq)
@@ -1215,7 +1215,7 @@
                   local call::Call
                   local str::String
                 @match exp begin
-                  P_Expression.Expression.CALL(call = call && P_Call.TYPED_CALL(__))  => begin
+                  CALL_EXPRESSION(call = call && P_Call.TYPED_CALL(__))  => begin
                     begin
                       @match identifyConnectionsOperator(P_Function.name(call.fn)) begin
                         ConnectionsOperator.ROOTED  => begin

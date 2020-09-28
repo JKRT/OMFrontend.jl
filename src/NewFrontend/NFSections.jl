@@ -16,7 +16,7 @@ Algorithm = NFAlgorithm
 @Uniontype NFSections begin
   @Record SECTIONS_EMPTY begin
   end
-  @Record EXTERNAL begin
+  @Record SECTIONS_EXTERNAL begin
     name::String
     args::List{Expression}
     outputRef::ComponentRef
@@ -90,7 +90,7 @@ function foldExp(sections::Sections, foldFn::FoldFn, arg::ArgT) where {ArgT}
           P_Algorithm.Algorithm.foldExpList(sections.initialAlgorithms, foldFn, arg)
         arg
       end
-      EXTERNAL(__) => begin
+      SECTIONS_EXTERNAL(__) => begin
         ListUtil.fold(sections.args, foldFn, arg)
       end
       _ => begin
@@ -115,7 +115,7 @@ function mapExp(sections::Sections, mapFn::MapFn)::Sections
         @assign ialg = P_Algorithm.Algorithm.mapExpList(sections.initialAlgorithms, mapFn)
         SECTIONS(eq, ieq, alg, ialg)
       end
-      EXTERNAL(__) => begin
+      SECTIONS_EXTERNAL(__) => begin
         @assign sections.args = List(mapFn(e) for e in sections.args)
         sections
       end

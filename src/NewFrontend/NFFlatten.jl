@@ -1348,7 +1348,7 @@ function isConnectEq(eq::Equation)::Bool
       end
 
       P_Equation.Equation.NORETCALL(
-        exp = P_Expression.Expression.CALL(call = P_Call.TYPED_CALL(fn = fn)),
+        exp = CALL_EXPRESSION(call = P_Call.TYPED_CALL(fn = fn)),
       ) => begin
         AbsynUtil.pathFirstIdent(P_Function.name(fn)) == "Connections"
       end
@@ -1924,7 +1924,7 @@ function collectExpFuncs_traverse(exp::Expression, funcs::FunctionTree)::Functio
   @assign () = begin
     local fn::M_Function
     @match exp begin
-      P_Expression.Expression.CALL(__) => begin
+      CALL_EXPRESSION(__) => begin
         @assign funcs = flattenFunction(P_Call.typedFunction(exp.call), funcs)
         ()
       end

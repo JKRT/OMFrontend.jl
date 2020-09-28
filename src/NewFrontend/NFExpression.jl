@@ -35,8 +35,8 @@ end
 @Uniontype NFExpression begin
   @Record BINDING_EXP begin
     exp::Expression
-    expType #= The actual type of exp. =#::M_Type
-    bindingType #= The type of the propagated binding. =#::M_Type
+    expType #= The actual type of exp. =#::NFType
+    bindingType #= The type of the propagated binding. =#::NFType
     parents::List{InstNode}
     isEach::Bool
   end
@@ -45,7 +45,7 @@ end
     fn::ComponentRef
     args::List{Expression}
     argNames::List{String}
-    ty::M_Type
+    ty::NFType
   end
 
   @Record CLKCONST_EXPRESSION begin

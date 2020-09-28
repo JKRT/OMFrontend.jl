@@ -1351,7 +1351,7 @@ function convertFunction(func::M_Function)::DAE.P_Function
               DAE.FunctionDefinition.FUNCTION_DEF(listReverse(elems))
             end
 
-            P_Sections.Sections.EXTERNAL(__) => begin
+            SECTIONS_EXTERNAL(__) => begin
               convertExternalDecl(sections, listReverse(elems))
             end
 
@@ -1453,7 +1453,7 @@ function convertExternalDecl(
   local ret_arg::DAE.ExtArg
   @assign funcDef = begin
     @match extDecl begin
-      P_Sections.Sections.EXTERNAL(__) => begin
+      SECTIONS_EXTERNAL(__) => begin
         @assign args = List(convertExternalDeclArg(e) for e in extDecl.args)
         @assign ret_arg = convertExternalDeclOutput(extDecl.outputRef)
         @assign decl = DAE.ExternalDecl.EXTERNALDECL(

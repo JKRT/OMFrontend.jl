@@ -219,7 +219,7 @@ function evalExp_impl(exp::Expression, target::EvalTarget)::Expression
         exp
       end
 
-      P_Expression.Expression.CALL(__) => begin
+      CALL_EXPRESSION(__) => begin
         evalCall(exp.call, target)
       end
 
@@ -918,9 +918,9 @@ function evalRangeExp(rangeExp::Expression)::Expression
         end
 
         (
-          P_Expression.Expression.REAL(__),
-          P_Expression.Expression.REAL(__),
-          P_Expression.Expression.REAL(__),
+          P_Expression.REAL_EXPRESSION(__),
+          P_Expression.REAL_EXPRESSION(__),
+          P_Expression.REAL_EXPRESSION(__),
         ) => begin
           @assign expl = evalRangeReal(start.value, step.value, stop.value)
           (TYPE_REAL(), expl)
@@ -942,7 +942,7 @@ function evalRangeExp(rangeExp::Expression)::Expression
             (TYPE_INTEGER(), expl)
           end
 
-        (P_Expression.Expression.REAL(__), P_Expression.Expression.REAL(__)) => begin
+        (P_Expression.REAL_EXPRESSION(__), P_Expression.REAL_EXPRESSION(__)) => begin
           @assign expl = evalRangeReal(start.value, 1.0, stop.value)
           (TYPE_REAL(), expl)
         end
@@ -997,13 +997,13 @@ function evalRangeReal(
   if steps == 0
     @assign result = nil
   elseif steps == 1
-    @assign result = list(P_Expression.Expression.REAL(start))
+    @assign result = list(P_Expression.REAL_EXPRESSION(start))
   else
-    @assign result = list(P_Expression.Expression.REAL(stop))
+    @assign result = list(P_Expression.REAL_EXPRESSION(stop))
     for i = (steps - 2):(-1):1
-      @assign result = _cons(P_Expression.Expression.REAL(start + i * step), result)
+      @assign result = _cons(P_Expression.REAL_EXPRESSION(start + i * step), result)
     end
-    @assign result = _cons(P_Expression.Expression.REAL(start), result)
+    @assign result = _cons(P_Expression.REAL_EXPRESSION(start), result)
   end
   return result
 end
@@ -1166,8 +1166,8 @@ function evalBinaryAdd(exp1::Expression, exp2::Expression)::Expression
         P_Expression.Expression.INTEGER(exp1.value + exp2.value)
       end
 
-      (P_Expression.Expression.REAL(__), P_Expression.Expression.REAL(__)) => begin
-        P_Expression.Expression.REAL(exp1.value + exp2.value)
+      (P_Expression.REAL_EXPRESSION(__), P_Expression.REAL_EXPRESSION(__)) => begin
+        P_Expression.REAL_EXPRESSION(exp1.value + exp2.value)
       end
 
       (P_Expression.Expression.STRING(__), P_Expression.Expression.STRING(__)) => begin
@@ -1211,8 +1211,8 @@ function evalBinarySub(exp1::Expression, exp2::Expression)::Expression
         P_Expression.Expression.INTEGER(exp1.value - exp2.value)
       end
 
-      (P_Expression.Expression.REAL(__), P_Expression.Expression.REAL(__)) => begin
-        P_Expression.Expression.REAL(exp1.value - exp2.value)
+      (P_Expression.REAL_EXPRESSION(__), P_Expression.REAL_EXPRESSION(__)) => begin
+        P_Expression.REAL_EXPRESSION(exp1.value - exp2.value)
       end
 
       (
@@ -1252,8 +1252,8 @@ function evalBinaryMul(exp1::Expression, exp2::Expression)::Expression
         P_Expression.Expression.INTEGER(exp1.value * exp2.value)
       end
 
-      (P_Expression.Expression.REAL(__), P_Expression.Expression.REAL(__)) => begin
-        P_Expression.Expression.REAL(exp1.value * exp2.value)
+      (P_Expression.REAL_EXPRESSION(__), P_Expression.REAL_EXPRESSION(__)) => begin
+        P_Expression.REAL_EXPRESSION(exp1.value * exp2.value)
       end
 
       (
@@ -1289,7 +1289,7 @@ function evalBinaryDiv(exp1::Expression, exp2::Expression, target::EvalTarget)::
 
   @assign exp = begin
     @match (exp1, exp2) begin
-      (_, P_Expression.Expression.REAL(0.0)) => begin
+      (_, P_Expression.REAL_EXPRESSION(0.0)) => begin
         if P_EvalTarget.hasInfo(target)
           Error.addSourceMessage(
             Error.DIVISION_BY_ZERO,
@@ -1310,8 +1310,8 @@ function evalBinaryDiv(exp1::Expression, exp2::Expression, target::EvalTarget)::
         exp
       end
 
-      (P_Expression.Expression.REAL(__), P_Expression.Expression.REAL(__)) => begin
-        P_Expression.Expression.REAL(exp1.value / exp2.value)
+      (P_Expression.REAL_EXPRESSION(__), P_Expression.REAL_EXPRESSION(__)) => begin
+        P_Expression.REAL_EXPRESSION(exp1.value / exp2.value)
       end
 
       (
@@ -1347,8 +1347,8 @@ function evalBinaryPow(exp1::Expression, exp2::Expression)::Expression
 
   @assign exp = begin
     @match (exp1, exp2) begin
-      (P_Expression.Expression.REAL(__), P_Expression.Expression.REAL(__)) => begin
-        P_Expression.Expression.REAL(exp1.value^exp2.value)
+      (P_Expression.REAL_EXPRESSION(__), P_Expression.REAL_EXPRESSION(__)) => begin
+        P_Expression.REAL_EXPRESSION(exp1.value^exp2.value)
       end
 
       (
@@ -1668,8 +1668,8 @@ function evalUnaryMinus(exp1::Expression)::Expression
         P_Expression.Expression.INTEGER(-exp1.value)
       end
 
-      P_Expression.Expression.REAL(__) => begin
-        P_Expression.Expression.REAL(-exp1.value)
+      P_Expression.REAL_EXPRESSION(__) => begin
+        P_Expression.REAL_EXPRESSION(-exp1.value)
       end
 
       P_Expression.Expression.ARRAY(__) => begin
@@ -1998,7 +1998,7 @@ function evalRelationLess(exp1::Expression, exp2::Expression)::Bool
         exp1.value < exp2.value
       end
 
-      (P_Expression.Expression.REAL(__), P_Expression.Expression.REAL(__)) => begin
+      (P_Expression.REAL_EXPRESSION(__), P_Expression.REAL_EXPRESSION(__)) => begin
         exp1.value < exp2.value
       end
 
@@ -2043,7 +2043,7 @@ function evalRelationLessEq(exp1::Expression, exp2::Expression)::Bool
         exp1.value <= exp2.value
       end
 
-      (P_Expression.Expression.REAL(__), P_Expression.Expression.REAL(__)) => begin
+      (P_Expression.REAL_EXPRESSION(__), P_Expression.REAL_EXPRESSION(__)) => begin
         exp1.value <= exp2.value
       end
 
@@ -2088,7 +2088,7 @@ function evalRelationGreater(exp1::Expression, exp2::Expression)::Bool
         exp1.value > exp2.value
       end
 
-      (P_Expression.Expression.REAL(__), P_Expression.Expression.REAL(__)) => begin
+      (P_Expression.REAL_EXPRESSION(__), P_Expression.REAL_EXPRESSION(__)) => begin
         exp1.value > exp2.value
       end
 
@@ -2133,7 +2133,7 @@ function evalRelationGreaterEq(exp1::Expression, exp2::Expression)::Bool
         exp1.value >= exp2.value
       end
 
-      (P_Expression.Expression.REAL(__), P_Expression.Expression.REAL(__)) => begin
+      (P_Expression.REAL_EXPRESSION(__), P_Expression.REAL_EXPRESSION(__)) => begin
         exp1.value >= exp2.value
       end
 
@@ -2178,7 +2178,7 @@ function evalRelationEqual(exp1::Expression, exp2::Expression)::Bool
         exp1.value == exp2.value
       end
 
-      (P_Expression.Expression.REAL(__), P_Expression.Expression.REAL(__)) => begin
+      (P_Expression.REAL_EXPRESSION(__), P_Expression.REAL_EXPRESSION(__)) => begin
         exp1.value == exp2.value
       end
 
@@ -2223,7 +2223,7 @@ function evalRelationNotEqual(exp1::Expression, exp2::Expression)::Bool
         exp1.value != exp2.value
       end
 
-      (P_Expression.Expression.REAL(__), P_Expression.Expression.REAL(__)) => begin
+      (P_Expression.REAL_EXPRESSION(__), P_Expression.REAL_EXPRESSION(__)) => begin
         exp1.value != exp2.value
       end
 
@@ -2349,12 +2349,12 @@ function evalCall(call::Call, target::EvalTarget)::Expression
         @assign c.arguments = List(evalExp_impl(arg, target) for arg in c.arguments)
         if P_Function.isBuiltin(c.fn)
           P_Expression.Expression.bindingExpMap(
-            P_Expression.Expression.CALL(c),
+            CALL_EXPRESSION(c),
             (target) -> evalBuiltinCallExp(target = target),
           )
         else
           P_Expression.Expression.bindingExpMap(
-            P_Expression.Expression.CALL(c),
+            CALL_EXPRESSION(c),
             evalNormalCallExp,
           )
         end
@@ -2383,7 +2383,7 @@ function evalBuiltinCallExp(callExp::Expression, target::EvalTarget)::Expression
   local fn::M_Function
   local args::List{Expression}
 
-  @match P_Expression.Expression.CALL(call = P_Call.TYPED_CALL(fn = fn, arguments = args)) =
+  @match CALL_EXPRESSION(call = P_Call.TYPED_CALL(fn = fn, arguments = args)) =
     callExp
   @assign result = evalBuiltinCall(fn, args, target)
   return result
@@ -2650,7 +2650,7 @@ function evalNormalCallExp(callExp::Expression)::Expression
   local fn::M_Function
   local args::List{Expression}
 
-  @match P_Expression.Expression.CALL(call = P_Call.TYPED_CALL(fn = fn, arguments = args)) =
+  @match CALL_EXPRESSION(call = P_Call.TYPED_CALL(fn = fn, arguments = args)) =
     callExp
   @assign result = evalNormalCall(fn, args)
   return result
@@ -2670,8 +2670,8 @@ function evalBuiltinAbs(arg::Expression)::Expression
         P_Expression.Expression.INTEGER(abs(arg.value))
       end
 
-      P_Expression.Expression.REAL(__) => begin
-        P_Expression.Expression.REAL(abs(arg.value))
+      P_Expression.REAL_EXPRESSION(__) => begin
+        P_Expression.REAL_EXPRESSION(abs(arg.value))
       end
 
       _ => begin
@@ -2690,7 +2690,7 @@ function evalBuiltinAcos(arg::Expression, target::EvalTarget)::Expression
 
   @assign result = begin
     @match arg begin
-      P_Expression.Expression.REAL(value = x) => begin
+      P_Expression.REAL_EXPRESSION(value = x) => begin
         if x < (-1.0) || x > 1.0
           if P_EvalTarget.hasInfo(target)
             Error.addSourceMessage(
@@ -2701,7 +2701,7 @@ function evalBuiltinAcos(arg::Expression, target::EvalTarget)::Expression
           end
           fail()
         end
-        P_Expression.Expression.REAL(acos(x))
+        P_Expression.REAL_EXPRESSION(acos(x))
       end
 
       _ => begin
@@ -2731,7 +2731,7 @@ function evalBuiltinAsin(arg::Expression, target::EvalTarget)::Expression
 
   @assign result = begin
     @match arg begin
-      P_Expression.Expression.REAL(value = x) => begin
+      P_Expression.REAL_EXPRESSION(value = x) => begin
         if x < (-1.0) || x > 1.0
           if P_EvalTarget.hasInfo(target)
             Error.addSourceMessage(
@@ -2742,7 +2742,7 @@ function evalBuiltinAsin(arg::Expression, target::EvalTarget)::Expression
           end
           fail()
         end
-        P_Expression.Expression.REAL(asin(x))
+        P_Expression.REAL_EXPRESSION(asin(x))
       end
 
       _ => begin
@@ -2762,9 +2762,9 @@ function evalBuiltinAtan2(args::List{<:Expression})::Expression
 
   @assign result = begin
     @match args begin
-      P_Expression.Expression.REAL(value = y) <|
-      P_Expression.Expression.REAL(value = x) <| nil() => begin
-        P_Expression.Expression.REAL(atan2(y, x))
+      P_Expression.REAL_EXPRESSION(value = y) <|
+      P_Expression.REAL_EXPRESSION(value = x) <| nil() => begin
+        P_Expression.REAL_EXPRESSION(atan2(y, x))
       end
 
       _ => begin
@@ -2781,8 +2781,8 @@ function evalBuiltinAtan(arg::Expression)::Expression
 
   @assign result = begin
     @match arg begin
-      P_Expression.Expression.REAL(__) => begin
-        P_Expression.Expression.REAL(atan(arg.value))
+      P_Expression.REAL_EXPRESSION(__) => begin
+        P_Expression.REAL_EXPRESSION(atan(arg.value))
       end
 
       _ => begin
@@ -2848,8 +2848,8 @@ function evalBuiltinCeil(arg::Expression)::Expression
 
   @assign result = begin
     @match arg begin
-      P_Expression.Expression.REAL(__) => begin
-        P_Expression.Expression.REAL(ceil(arg.value))
+      P_Expression.REAL_EXPRESSION(__) => begin
+        P_Expression.REAL_EXPRESSION(ceil(arg.value))
       end
 
       _ => begin
@@ -2866,8 +2866,8 @@ function evalBuiltinCosh(arg::Expression)::Expression
 
   @assign result = begin
     @match arg begin
-      P_Expression.Expression.REAL(__) => begin
-        P_Expression.Expression.REAL(cosh(arg.value))
+      P_Expression.REAL_EXPRESSION(__) => begin
+        P_Expression.REAL_EXPRESSION(cosh(arg.value))
       end
 
       _ => begin
@@ -2884,8 +2884,8 @@ function evalBuiltinCos(arg::Expression)::Expression
 
   @assign result = begin
     @match arg begin
-      P_Expression.Expression.REAL(__) => begin
-        P_Expression.Expression.REAL(cos(arg.value))
+      P_Expression.REAL_EXPRESSION(__) => begin
+        P_Expression.REAL_EXPRESSION(cos(arg.value))
       end
 
       _ => begin
@@ -2902,7 +2902,7 @@ function evalBuiltinDer(arg::Expression)::Expression
 
   @assign result = P_Expression.Expression.fillType(
     P_Expression.Expression.typeOf(arg),
-    P_Expression.Expression.REAL(0.0),
+    P_Expression.REAL_EXPRESSION(0.0),
   )
   return result
 end
@@ -2987,7 +2987,7 @@ function evalBuiltinDiv(args::List{<:Expression}, target::EvalTarget)::Expressio
         P_Expression.Expression.INTEGER(intDiv(ix, iy))
       end
 
-      P_Expression.Expression.REAL(rx) <| P_Expression.Expression.REAL(ry) <| nil() =>
+      P_Expression.REAL_EXPRESSION(rx) <| P_Expression.REAL_EXPRESSION(ry) <| nil() =>
         begin
           if ry == 0.0
             if P_EvalTarget.hasInfo(target)
@@ -3000,7 +3000,7 @@ function evalBuiltinDiv(args::List{<:Expression}, target::EvalTarget)::Expressio
             fail()
           end
           @assign rx = rx / ry
-          P_Expression.Expression.REAL(if rx < 0.0
+          P_Expression.REAL_EXPRESSION(if rx < 0.0
             ceil(rx)
           else
             floor(rx)
@@ -3021,8 +3021,8 @@ function evalBuiltinExp(arg::Expression)::Expression
 
   @assign result = begin
     @match arg begin
-      P_Expression.Expression.REAL(__) => begin
-        P_Expression.Expression.REAL(exp(arg.value))
+      P_Expression.REAL_EXPRESSION(__) => begin
+        P_Expression.REAL_EXPRESSION(exp(arg.value))
       end
 
       _ => begin
@@ -3077,8 +3077,8 @@ function evalBuiltinFloor(arg::Expression)::Expression
 
   @assign result = begin
     @match arg begin
-      P_Expression.Expression.REAL(__) => begin
-        P_Expression.Expression.REAL(floor(arg.value))
+      P_Expression.REAL_EXPRESSION(__) => begin
+        P_Expression.REAL_EXPRESSION(floor(arg.value))
       end
 
       _ => begin
@@ -3117,7 +3117,7 @@ function evalBuiltinInteger(arg::Expression)::Expression
         arg
       end
 
-      P_Expression.Expression.REAL(__) => begin
+      P_Expression.REAL_EXPRESSION(__) => begin
         P_Expression.Expression.INTEGER(realInt(arg.value))
       end
 
@@ -3155,7 +3155,7 @@ function evalBuiltinLog10(arg::Expression, target::EvalTarget)::Expression
 
   @assign result = begin
     @match arg begin
-      P_Expression.Expression.REAL(value = x) => begin
+      P_Expression.REAL_EXPRESSION(value = x) => begin
         if x <= 0.0
           if P_EvalTarget.hasInfo(target)
             Error.addSourceMessage(
@@ -3166,7 +3166,7 @@ function evalBuiltinLog10(arg::Expression, target::EvalTarget)::Expression
           end
           fail()
         end
-        P_Expression.Expression.REAL(log10(x))
+        P_Expression.REAL_EXPRESSION(log10(x))
       end
 
       _ => begin
@@ -3185,7 +3185,7 @@ function evalBuiltinLog(arg::Expression, target::EvalTarget)::Expression
 
   @assign result = begin
     @match arg begin
-      P_Expression.Expression.REAL(value = x) => begin
+      P_Expression.REAL_EXPRESSION(value = x) => begin
         if x <= 0.0
           if P_EvalTarget.hasInfo(target)
             Error.addSourceMessage(
@@ -3196,7 +3196,7 @@ function evalBuiltinLog(arg::Expression, target::EvalTarget)::Expression
           end
           fail()
         end
-        P_Expression.Expression.REAL(log(x))
+        P_Expression.REAL_EXPRESSION(log(x))
       end
 
       _ => begin
@@ -3292,7 +3292,7 @@ function evalBuiltinMax(args::List{<:Expression}, fn::M_Function)::Expression
           P_Expression.Expression.EMPTY(ty),
         )
         if P_Expression.Expression.isEmpty(result)
-          @assign result = P_Expression.Expression.CALL(P_Call.makeTypedCall(
+          @assign result = CALL_EXPRESSION(P_Call.makeTypedCall(
             fn,
             list(P_Expression.Expression.makeEmptyArray(ty)),
             Variability.CONSTANT,
@@ -3324,7 +3324,7 @@ function evalBuiltinMax2(exp1::Expression, exp2::Expression)::Expression
         end
       end
 
-      (P_Expression.Expression.REAL(__), P_Expression.Expression.REAL(__)) => begin
+      (P_Expression.REAL_EXPRESSION(__), P_Expression.REAL_EXPRESSION(__)) => begin
         if exp1.value < exp2.value
           exp2
         else
@@ -3389,7 +3389,7 @@ function evalBuiltinMin(args::List{<:Expression}, fn::M_Function)::Expression
           P_Expression.Expression.EMPTY(ty),
         )
         if P_Expression.Expression.isEmpty(result)
-          @assign result = P_Expression.Expression.CALL(P_Call.makeTypedCall(
+          @assign result = CALL_EXPRESSION(P_Call.makeTypedCall(
             fn,
             list(P_Expression.Expression.makeEmptyArray(ty)),
             Variability.CONSTANT,
@@ -3421,7 +3421,7 @@ function evalBuiltinMin2(exp1::Expression, exp2::Expression)::Expression
         end
       end
 
-      (P_Expression.Expression.REAL(__), P_Expression.Expression.REAL(__)) => begin
+      (P_Expression.REAL_EXPRESSION(__), P_Expression.REAL_EXPRESSION(__)) => begin
         if exp1.value > exp2.value
           exp2
         else
@@ -3488,7 +3488,7 @@ function evalBuiltinMod(args::List{<:Expression}, target::EvalTarget)::Expressio
         P_Expression.Expression.INTEGER(mod(x.value, y.value))
       end
 
-      (P_Expression.Expression.REAL(__), P_Expression.Expression.REAL(__)) => begin
+      (P_Expression.REAL_EXPRESSION(__), P_Expression.REAL_EXPRESSION(__)) => begin
         if y.value == 0.0
           if P_EvalTarget.hasInfo(target)
             Error.addSourceMessage(
@@ -3499,7 +3499,7 @@ function evalBuiltinMod(args::List{<:Expression}, target::EvalTarget)::Expressio
           end
           fail()
         end
-        P_Expression.Expression.REAL(mod(x.value, y.value))
+        P_Expression.REAL_EXPRESSION(mod(x.value, y.value))
       end
 
       _ => begin
@@ -3535,7 +3535,7 @@ function evalBuiltinProduct(arg::Expression)::Expression
             end
 
             TYPE_REAL(__) => begin
-              P_Expression.Expression.REAL(P_Expression.Expression.fold(
+              P_Expression.REAL_EXPRESSION(P_Expression.Expression.fold(
                 arg,
                 evalBuiltinProductReal,
                 1.0,
@@ -3583,7 +3583,7 @@ function evalBuiltinProductReal(exp::Expression, result::AbstractFloat)::Abstrac
 
   @assign result = begin
     @match exp begin
-      P_Expression.Expression.REAL(__) => begin
+      P_Expression.REAL_EXPRESSION(__) => begin
         result * exp.value
       end
 
@@ -3638,7 +3638,7 @@ function evalBuiltinRem(args::List{<:Expression}, target::EvalTarget)::Expressio
         P_Expression.Expression.INTEGER(x.value - div(x.value, y.value) * y.value)
       end
 
-      (P_Expression.Expression.REAL(__), P_Expression.Expression.REAL(__)) => begin
+      (P_Expression.REAL_EXPRESSION(__), P_Expression.REAL_EXPRESSION(__)) => begin
         if y.value == 0.0
           if P_EvalTarget.hasInfo(target)
             Error.addSourceMessage(
@@ -3649,7 +3649,7 @@ function evalBuiltinRem(args::List{<:Expression}, target::EvalTarget)::Expressio
           end
           fail()
         end
-        P_Expression.Expression.REAL(x.value - div(x.value, y.value) * y.value)
+        P_Expression.REAL_EXPRESSION(x.value - div(x.value, y.value) * y.value)
       end
 
       _ => begin
@@ -3685,7 +3685,7 @@ function evalBuiltinSign(arg::Expression)::Expression
 
   @assign result = begin
     @match arg begin
-      P_Expression.Expression.REAL(__) => begin
+      P_Expression.REAL_EXPRESSION(__) => begin
         P_Expression.Expression.INTEGER(if arg.value > 0
           1
         else
@@ -3723,8 +3723,8 @@ function evalBuiltinSinh(arg::Expression)::Expression
 
   @assign result = begin
     @match arg begin
-      P_Expression.Expression.REAL(__) => begin
-        P_Expression.Expression.REAL(sinh(arg.value))
+      P_Expression.REAL_EXPRESSION(__) => begin
+        P_Expression.REAL_EXPRESSION(sinh(arg.value))
       end
 
       _ => begin
@@ -3741,8 +3741,8 @@ function evalBuiltinSin(arg::Expression)::Expression
 
   @assign result = begin
     @match arg begin
-      P_Expression.Expression.REAL(__) => begin
-        P_Expression.Expression.REAL(sin(arg.value))
+      P_Expression.REAL_EXPRESSION(__) => begin
+        P_Expression.REAL_EXPRESSION(sin(arg.value))
       end
 
       _ => begin
@@ -3808,8 +3808,8 @@ function evalBuiltinSqrt(arg::Expression)::Expression
 
   @assign result = begin
     @match arg begin
-      P_Expression.Expression.REAL(__) => begin
-        P_Expression.Expression.REAL(sqrt(arg.value))
+      P_Expression.REAL_EXPRESSION(__) => begin
+        P_Expression.REAL_EXPRESSION(sqrt(arg.value))
       end
 
       _ => begin
@@ -3870,7 +3870,7 @@ function evalBuiltinString(args::List{<:Expression})::Expression
         P_Expression.Expression.STRING(str)
       end
 
-      P_Expression.Expression.REAL(r) <|
+      P_Expression.REAL_EXPRESSION(r) <|
       P_Expression.Expression.INTEGER(significant_digits) <|
       P_Expression.Expression.INTEGER(min_len) <|
       P_Expression.Expression.BOOLEAN(left_justified) <| nil() => begin
@@ -3891,7 +3891,7 @@ function evalBuiltinString(args::List{<:Expression})::Expression
         P_Expression.Expression.STRING(str)
       end
 
-      P_Expression.Expression.REAL(r) <| P_Expression.Expression.STRING(format) <| nil() => begin
+      P_Expression.REAL_EXPRESSION(r) <| P_Expression.Expression.STRING(format) <| nil() => begin
         @assign str = System.sprintff(format, r)
         P_Expression.Expression.STRING(str)
       end
@@ -3917,7 +3917,7 @@ function evalBuiltinSum(arg::Expression)::Expression
             end
 
             TYPE_REAL(__) => begin
-              P_Expression.Expression.REAL(P_Expression.Expression.fold(
+              P_Expression.REAL_EXPRESSION(P_Expression.Expression.fold(
                 arg,
                 evalBuiltinSumReal,
                 0.0,
@@ -3965,7 +3965,7 @@ function evalBuiltinSumReal(exp::Expression, result::AbstractFloat)::AbstractFlo
 
   @assign result = begin
     @match exp begin
-      P_Expression.Expression.REAL(__) => begin
+      P_Expression.REAL_EXPRESSION(__) => begin
         result + exp.value
       end
 
@@ -4030,8 +4030,8 @@ function evalBuiltinTanh(arg::Expression)::Expression
 
   @assign result = begin
     @match arg begin
-      P_Expression.Expression.REAL(__) => begin
-        P_Expression.Expression.REAL(tanh(arg.value))
+      P_Expression.REAL_EXPRESSION(__) => begin
+        P_Expression.REAL_EXPRESSION(tanh(arg.value))
       end
 
       _ => begin
@@ -4048,8 +4048,8 @@ function evalBuiltinTan(arg::Expression)::Expression
 
   @assign result = begin
     @match arg begin
-      P_Expression.Expression.REAL(__) => begin
-        P_Expression.Expression.REAL(tan(arg.value))
+      P_Expression.REAL_EXPRESSION(__) => begin
+        P_Expression.REAL_EXPRESSION(tan(arg.value))
       end
 
       _ => begin
@@ -4324,8 +4324,8 @@ function evalRealClock(args::List{<:Expression})::Expression
   @assign result = begin
     local interval::Expression
     @match args begin
-      interval && P_Expression.Expression.REAL(__) <| nil() => begin
-        P_Expression.Expression.CLKCONST(P_Expression.P_ClockKind.Expression.REAL_CLOCK(
+      interval && P_Expression.REAL_EXPRESSION(__) <| nil() => begin
+        P_Expression.Expression.CLKCONST(P_Expression.P_ClockKind.REAL_EXPRESSION_CLOCK(
           interval,
         ))
       end
@@ -4348,7 +4348,7 @@ function evalBooleanClock(args::List{<:Expression})::Expression
     @match args begin
       condition &&
       P_Expression.Expression.BOOLEAN(__) <| interval &&
-      P_Expression.Expression.REAL(__) <| nil() => begin
+      P_Expression.REAL_EXPRESSION(__) <| nil() => begin
         P_Expression.Expression.CLKCONST(P_Expression.P_ClockKind.Expression.BOOLEAN_CLOCK(
           condition,
           interval,

@@ -310,7 +310,7 @@ function isExternalFunction(cls::Class)::Bool
         isExternalFunction(getClass(cls.baseClass))
       end
 
-      INSTANCED_CLASS(sections = P_Sections.Sections.EXTERNAL(language = lang)) => begin
+      INSTANCED_CLASS(sections = SECTIONS_EXTERNAL(language = lang)) => begin
         lang != "builtin"
       end
 

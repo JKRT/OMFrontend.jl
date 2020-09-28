@@ -238,7 +238,7 @@ function collectFuncConstants(
               ()
             end
 
-            P_Sections.Sections.EXTERNAL(__) => begin
+            SECTIONS_EXTERNAL(__) => begin
               for arg in sections.args
                 @assign constants = collectExpConstants(arg, constants)
               end
@@ -356,7 +356,7 @@ function replaceFuncConstants(name::Absyn.Path, func::M_Function)::M_Function
               ()
             end
 
-            P_Sections.Sections.EXTERNAL(__) => begin
+            SECTIONS_EXTERNAL(__) => begin
               @assign sections.args =
                 List(replaceExpConstants(arg) for arg in sections.args)
               @assign cls.sections = sections

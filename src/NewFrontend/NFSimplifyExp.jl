@@ -95,7 +95,7 @@ function simplify(exp::Expression)::Expression
         exp
       end
 
-      P_Expression.Expression.CALL(__) => begin
+      CALL_EXPRESSION(__) => begin
         simplifyCall(exp)
       end
 
@@ -221,7 +221,7 @@ function simplifyCall(callExp::Expression)::Expression
   local builtin::Bool
   local is_pure::Bool
 
-  @match P_Expression.Expression.CALL(call = call) = callExp
+  @match CALL_EXPRESSION(call = call) = callExp
   @assign callExp = begin
     @match call begin
       P_Call.TYPED_CALL(arguments = args) where {(!P_Call.isExternal(call))} => begin
@@ -267,7 +267,7 @@ function simplifyCall(callExp::Expression)::Expression
                ListUtil.all(args, P_Expression.Expression.isLiteral)
           @assign callExp = simplifyCall2(call)
         else
-          @assign callExp = P_Expression.Expression.CALL(call)
+          @assign callExp = CALL_EXPRESSION(call)
         end
         #=  do not expand builtin calls if we should not scalarize
         =#
@@ -284,7 +284,7 @@ function simplifyCall(callExp::Expression)::Expression
         @assign call.exp = simplify(call.exp)
         @assign call.iters =
           List((Util.tuple21(i), simplify(Util.tuple22(i))) for i in call.iters)
-        P_Expression.Expression.CALL(call)
+        CALL_EXPRESSION(call)
       end
 
       _ => begin
@@ -312,7 +312,7 @@ function simplifyCall2(call::Call)::Expression
     else
       ErrorExt.rollBack(getInstanceName())
     end
-    @assign outExp = P_Expression.Expression.CALL(call)
+    @assign outExp = CALL_EXPRESSION(call)
   end
   return outExp
 end
@@ -344,7 +344,7 @@ function simplifyBuiltinCall(
       end
 
       _ => begin
-        P_Expression.Expression.CALL(call)
+        CALL_EXPRESSION(call)
       end
     end
   end
@@ -381,7 +381,7 @@ function simplifySumProduct(arg::Expression, call::Call, isSum::Bool)::Expressio
       end
     end
   else
-    @assign exp = P_Expression.Expression.CALL(call)
+    @assign exp = CALL_EXPRESSION(call)
   end
   return exp
 end
@@ -405,7 +405,7 @@ function simplifyTranspose(arg::Expression, call::Call)::Expression
       end
 
       _ => begin
-        P_Expression.Expression.CALL(call)
+        CALL_EXPRESSION(call)
       end
     end
   end
@@ -452,7 +452,7 @@ function simplifyArrayConstructor(call::Call)::Expression
 
       _ => begin
         @assign exp = simplify(exp)
-        P_Expression.Expression.CALL(P_Call.TYPED_ARRAY_CONSTRUCTOR(ty, var, exp, iters))
+        CALL_EXPRESSION(P_Call.TYPED_ARRAY_CONSTRUCTOR(ty, var, exp, iters))
       end
     end
   end
@@ -633,7 +633,7 @@ function simplifyBinaryMul(
         exp1
       end
 
-      P_Expression.Expression.REAL(value = 0.0) => begin
+      P_Expression.REAL_EXPRESSION(value = 0.0) => begin
         exp1
       end
 
@@ -641,7 +641,7 @@ function simplifyBinaryMul(
         exp2
       end
 
-      P_Expression.Expression.REAL(value = 1.0) => begin
+      P_Expression.REAL_EXPRESSION(value = 1.0) => begin
         exp2
       end
 
@@ -918,7 +918,7 @@ function simplifyCast(exp::Expression, ty::M_Type)::Expression
     local ety::M_Type
     @match (ty, exp) begin
       (TYPE_REAL(__), P_Expression.Expression.INTEGER(__)) => begin
-        P_Expression.Expression.REAL(intReal(exp.value))
+        P_Expression.REAL_EXPRESSION(intReal(exp.value))
       end
 
       (Type.ARRAY(elementType = TYPE_REAL(__)), P_Expression.Expression.ARRAY(__)) =>

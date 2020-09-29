@@ -34,11 +34,11 @@ end
     modifier::Modifier
   end
 
-  @Record ENUM_LITERAL begin
+  @Record ENUM_LITERAL_COMPONENT begin
     literal::Expression
   end
 
-  @Record ITERATOR begin
+  @Record ITERATOR_COMPONENT begin
     ty::M_Type
     variability
     info::SourceInfo
@@ -184,7 +184,7 @@ function getUnitAttribute(component::Component, defaultUnit::String = "")::Strin
   @assign unit = P_Expression.Expression.getBindingExp(getExp(binding))
   @assign unitString = begin
     @match unit begin
-      P_Expression.Expression.STRING(__) => begin
+      STRING_EXPRESSION(__) => begin
         unit.value
       end
 

@@ -184,7 +184,7 @@ function updateVariable(
       if Unit.isUnit(unit)
         @assign unit_str = Unit.unitString(unit, htU2S)
         @assign binding = FLAT_BINDING(
-          P_Expression.Expression.STRING(unit_str),
+          STRING_EXPRESSION(unit_str),
           Variability.CONSTANT,
         )
         @assign var.typeAttributes = _cons(("unit", binding), var.typeAttributes)
@@ -1410,7 +1410,7 @@ function convertUnitString2unit(
   @assign unit_exp = typedExp(unit_binding)
   @assign () = begin
     @match unit_exp begin
-      SOME(P_Expression.Expression.STRING(
+      SOME(STRING_EXPRESSION(
         value = unit_string,
       )) where {(!stringEmpty(unit_string))} => begin
         @assign (unit, htS2U, htU2S) = parse(unit_string, var.name, htS2U, htU2S)

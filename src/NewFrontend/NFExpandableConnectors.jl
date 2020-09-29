@@ -1,92 +1,3 @@
-module NFExpandableConnectors
-
-using MetaModelica
-using ExportAll
-
-#= /*
-* This file is part of OpenModelica.
-*
-* Copyright (c) 1998-CurrentYear, Linköping University,
-* Department of Computer and Information Science,
-* SE-58183 Linköping, Sweden.
-*
-* All rights reserved.
-*
-* THIS PROGRAM IS PROVIDED UNDER THE TERMS OF GPL VERSION 3
-* AND THIS OSMC PUBLIC LICENSE (OSMC-PL).
-* ANY USE, REPRODUCTION OR DISTRIBUTION OF THIS PROGRAM CONSTITUTES RECIPIENT'S
-* ACCEPTANCE OF THE OSMC PUBLIC LICENSE.
-*
-* The OpenModelica software and the Open Source Modelica
-* Consortium (OSMC) Public License (OSMC-PL) are obtained
-* from Linköping University, either from the above address,
-* from the URLs: http:www.ida.liu.se/projects/OpenModelica or
-* http:www.openmodelica.org, and in the OpenModelica distribution.
-* GNU version 3 is obtained from: http:www.gnu.org/copyleft/gpl.html.
-*
-* This program is distributed WITHOUT ANY WARRANTY; without
-* even the implied warranty of  MERCHANTABILITY or FITNESS
-* FOR A PARTICULAR PURPOSE, EXCEPT AS EXPRESSLY SET FORTH
-* IN THE BY RECIPIENT SELECTED SUBSIDIARY LICENSE CONDITIONS
-* OF OSMC-PL.
-*
-* See the full OSMC Public License conditions for more details.
-*
-*/ =#
-
-import ..NFFlatModel
-FlatModel = NFFlatModel
-import ..P_NFConnections
-P_Connections = P_NFConnections
-Connections = P_NFConnections.NFConnections
-
-import ArrayUtil
-import ..BaseHashSet
-import ..NFBinding
-= NFBinding
-Binding = NFBinding.Binding
-import ..NFComplexType
-ComplexType = NFComplexType
-import ..P_NFComponentRef
-P_ComponentRef = P_NFComponentRef
-ComponentRef = P_NFComponentRef.NFComponentRef
-import ..P_NFConnection
-P_Connection = P_NFConnection
-Connection = P_NFConnection.NFConnection
-import ..NFConnectionSets.ConnectionSets
-ConnectionSets = NFConnectionSets.ConnectionSets
-import ..P_NFConnector
-= P_NFConnector
-Connector = NFConnector
-import ..ElementSource
-import ..Error
-import ..ErrorTypes
-import ..P_NFExpression
-P_Expression = P_NFExpression
-Expression = P_NFExpression.NFExpression
-import ..MetaModelica.Dangerous.listReverseInPlace
-import ..NFClass.P_Class
-import ..NFClassTree.ree
-import ..NFComponent.P_Component
-import ..NFInstNode.P_InstNode
-import ..NFPrefixes.ConnectorType
-import ..NFPrefixes.Visibility
-import ..NFTypeCheck.MatchKind
-import ..NFPrefixes
-P_Prefixes = NFPrefixes
-Prefixes = NFPrefixes.Prefixes
-import ..NFTypeCheck
-TypeCheck = NFTypeCheck
-import ..P_NFType
-P_M_Type = P_NFType
-M_Type = NFType
-import ..NFTyping
-Typing = NFTyping
-import ..Util
-import ..P_NFVariable
-P_Variable = P_NFVariable
-Variable = P_NFVariable.NFVariable
-
 function elaborate(
   flatModel::FlatModel,
   connections::Connections,
@@ -163,19 +74,18 @@ module ExpandableSet
 using MetaModelica
 using ExportAll
 
-import ..BaseHashSet
-import ..P_NFConnector
-= P_NFConnector
-Connector = NFConnector
-import ..P_NFComponentRef
-P_ComponentRef = P_NFComponentRef
-ComponentRef = P_NFComponentRef.NFComponentRef
-using BaseHashSet #= Modelica extend clause =#
-Key = Connector
+import ..Main.NFConnector
+
+Value = Integer
+Key = NFConnector
+const Connector = NFConnector
+
+#= Modelica extend clause =#
+include("../Util/baseAvlTreeCode.jl")
+include("../Util/baseAvlSetCode.jl")
 
 function emptySet(size::Integer)::HashSet
   local set::HashSet
-
   @assign set = BaseHashSet.emptyHashSetWork(
     size,
     (hashConnector, Connector.isNodeNameEqual, Connector.toString),
@@ -532,7 +442,7 @@ function augmentExpandableConnector(
       @assign nodes = _cons(node, nodes)
       @assign ty = c.ty
       @assign elem_name = prefixCref(node, ty, nil, exp_name)
-      @assign var = P_Variable.Variable.VARIABLE(
+      @assign var = VARIABLE(
         elem_name,
         ty,
         NFBinding.EMPTY_BINDING,
@@ -637,13 +547,9 @@ function updateExpandableConnector(conn::Connector)::Tuple{Connector, M_Type}
 end
 
 function updatePotentiallyPresentVariable(var::Variable)::Variable
-
   if ConnectorType.isPotentiallyPresent(var.attributes.connectorType)
     @assign var.attributes =
       P_Component.getAttributes(component(node(var.name)))
   end
   return var
-end
-
-@exportAll()
 end

@@ -124,7 +124,7 @@ function collectRecordParams(
   local inputs::List{InstNode} = nil
   local comp::InstNode
   local comps::Array{InstNode}
-  local pcomps::Array{Mutable{InstNode}}
+  local pcomps::Array{Pointer{InstNode}}
   local tree::ClassTree
   @assign tree = classTree(getClass(recNode))
   @assign () = begin
@@ -139,7 +139,7 @@ function collectRecordParams(
       end
       INSTANTIATED_TREE(components = pcomps) => begin
         for i = arrayLength(pcomps):(-1):1
-          @assign comp = Mutable.access(pcomps[i])
+          @assign comp = P_Pointer.access(pcomps[i])
           @assign (inputs, locals) = collectRecordParam(comp, inputs, locals)
           @assign allParams = _cons(comp, allParams)
         end

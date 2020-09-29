@@ -881,20 +881,18 @@ end
 
 function instAlgorithmSections(algorithmSections::List{<:SCode.AlgorithmSection}, scope::InstNode, origin::ORIGIN_Type) ::List{Algorithm}
   local algs::List{Algorithm}
-
-  @assign algs = List(instAlgorithmSection(alg, scope, origin) for alg in algorithmSections)
+  @assign algs = list(instAlgorithmSection(alg, scope, origin) for alg in algorithmSections)
   algs
 end
 
 function instAlgorithmSection(algorithmSection::SCode.AlgorithmSection, scope::InstNode, origin::ORIGIN_Type) ::Algorithm
   local alg::Algorithm
-
-  @assign alg = P_Algorithm.Algorithm.ALGORITHM(instStatements(algorithmSection.statements, scope, origin), DAE.emptyElementSource)
+  @assign alg = ALGORITHM(instStatements(algorithmSection.statements, scope, origin), DAE.emptyElementSource)
   alg
 end
 
 function instStatements(scodeStmtl::List{<:SCode.Statement}, scope::InstNode, origin::ORIGIN_Type)::List{Statement}
   local statements::List{Statement}
-  @assign statements = List(instStatement(stmt, scope, origin) for stmt in scodeStmtl)
+  @assign statements = list(instStatement(stmt, scope, origin) for stmt in scodeStmtl)
   statements
 end

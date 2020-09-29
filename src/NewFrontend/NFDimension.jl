@@ -124,15 +124,15 @@ function sizeExp(dim::Dimension)::Expression
     local ty::M_Type
     @match dim begin
       INTEGER(__) => begin
-        P_Expression.Expression.INTEGER(dim.size)
+        INTEGER_EXPRESSION(dim.size)
       end
 
       BOOLEAN(__) => begin
-        P_Expression.Expression.INTEGER(2)
+        INTEGER_EXPRESSION(2)
       end
 
       DIMENSION_ENUM(enumType = ty && TYPE_ENUMERATION(__)) => begin
-        P_Expression.Expression.INTEGER(listLength(ty.literals))
+        INTEGER_EXPRESSION(listLength(ty.literals))
       end
 
       DIMENSION_EXP(__) => begin
@@ -151,7 +151,7 @@ function endExp(dim::Dimension, cref::ComponentRef, index::Integer)::Expression
     local ty::M_Type
     @match dim begin
       INTEGER(__) => begin
-        P_Expression.Expression.INTEGER(dim.size)
+        INTEGER_EXPRESSION(dim.size)
       end
 
       BOOLEAN(__) => begin
@@ -172,7 +172,7 @@ function endExp(dim::Dimension, cref::ComponentRef, index::Integer)::Expression
             TYPE_UNKNOWN(),
             stripSubscripts(cref),
           ),
-          SOME(P_Expression.Expression.INTEGER(index)),
+          SOME(INTEGER_EXPRESSION(index)),
         )
       end
     end
@@ -435,7 +435,7 @@ function add(a::Dimension, b::Dimension)::Dimension
           BINARY_EXPRESSION(
             b.exp,
             P_Operator.Operator.OPERATOR(TYPE_INTEGER(), P_NFOperator.Op.ADD),
-            P_Expression.Expression.INTEGER(a.size),
+            INTEGER_EXPRESSION(a.size),
           ),
           b.var,
         )
@@ -446,7 +446,7 @@ function add(a::Dimension, b::Dimension)::Dimension
           BINARY_EXPRESSION(
             a.exp,
             P_Operator.Operator.OPERATOR(TYPE_INTEGER(), P_NFOperator.Op.ADD),
-            P_Expression.Expression.INTEGER(b.size),
+            INTEGER_EXPRESSION(b.size),
           ),
           a.var,
         )

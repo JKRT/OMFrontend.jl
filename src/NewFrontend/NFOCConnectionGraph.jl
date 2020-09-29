@@ -192,7 +192,7 @@
                                     addPotentialRoot(cref, 0, print_trace, graph)
                                   end
 
-                                  CREF_EXPRESSION(cref = cref) <| P_Expression.Expression.INTEGER(priority) <|  nil()  => begin
+                                  CREF_EXPRESSION(cref = cref) <| INTEGER_EXPRESSION(priority) <|  nil()  => begin
                                     addPotentialRoot(cref, priority, print_trace, graph)
                                   end
                                 end
@@ -204,7 +204,7 @@
                               @assign graph = begin
                                 @match lst begin
                                   root && CREF_EXPRESSION(cref = cref) <|  nil()  => begin
-                                    addUniqueRoots(root, P_Expression.Expression.STRING(""), print_trace, graph)
+                                    addUniqueRoots(root, STRING_EXPRESSION(""), print_trace, graph)
                                   end
 
                                   root && CREF_EXPRESSION(cref = cref) <| msg <|  nil()  => begin
@@ -1300,7 +1300,7 @@
                                     if Flags.isSet(Flags.CGRAPH)
                                       print("- NFOCConnectionGraph.evalConnectionsOperatorsHelper: Connections.uniqueRootsIndicies(" + P_Expression.Expression.toString(uroots) + "," + P_Expression.Expression.toString(nodes) + "," + P_Expression.Expression.toString(message) + ")\\n")
                                     end
-                                    @assign lst = ListUtil.fill(P_Expression.Expression.INTEGER(1), listLength(lst))
+                                    @assign lst = ListUtil.fill(INTEGER_EXPRESSION(1), listLength(lst))
                                   P_Expression.Expression.makeArray(TYPE_INTEGER(), lst)
                                 end
                               end

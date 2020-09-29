@@ -90,7 +90,7 @@ const DUMMY_ELEMENT =
 #=  Default Integer parameter.
 =#
 const INT_COMPONENT =
-  P_Component.TYPED_COMPONENT(
+  TYPED_COMPONENT(
     NFInstNode.EMPTY_NODE(),
     TYPE_INTEGER(),
     NFBinding.EMPTY_BINDING,
@@ -111,7 +111,7 @@ const INT_PARAM =
 #=  Default Real parameter.
 =#
 const REAL_COMPONENT =
-  P_Component.TYPED_COMPONENT(
+  TYPED_COMPONENT(
     NFInstNode.EMPTY_NODE(),
     TYPE_REAL(),
     NFBinding.EMPTY_BINDING,
@@ -132,7 +132,7 @@ const REAL_PARAM =
 #=  Default Boolean parameter.
 =#
 const BOOL_COMPONENT =
-  P_Component.TYPED_COMPONENT(
+  TYPED_COMPONENT(
     NFInstNode.EMPTY_NODE(),
     TYPE_BOOLEAN(),
     NFBinding.EMPTY_BINDING,
@@ -153,7 +153,7 @@ const BOOL_PARAM =
 #=  Default String parameter.
 =#
 const STRING_COMPONENT =
-  P_Component.TYPED_COMPONENT(
+  TYPED_COMPONENT(
     NFInstNode.EMPTY_NODE(),
     TYPE_STRING(),
     NFBinding.EMPTY_BINDING,
@@ -174,7 +174,7 @@ const STRING_PARAM =
 #=  Default enumeration(:) parameter.
 =#
 const ENUM_COMPONENT =
-  P_Component.TYPED_COMPONENT(
+  TYPED_COMPONENT(
     NFInstNode.EMPTY_NODE(),
     TYPE_ENUMERATION_ANY(),
     NFBinding.EMPTY_BINDING,
@@ -289,7 +289,7 @@ const STRING_REAL =
       P_Slot.SLOT(
         "significantDigits",
         SlotType.NAMED,
-        SOME(P_Expression.Expression.INTEGER(6)),
+        SOME(INTEGER_EXPRESSION(6)),
         NONE(),
         2,
         SlotEvalStatus.NOT_EVALUATED,
@@ -297,7 +297,7 @@ const STRING_REAL =
       P_Slot.SLOT(
         "minimumLength",
         SlotType.NAMED,
-        SOME(P_Expression.Expression.INTEGER(0)),
+        SOME(INTEGER_EXPRESSION(0)),
         NONE(),
         3,
         SlotEvalStatus.NOT_EVALUATED,
@@ -371,7 +371,7 @@ const STRING_INT =
       P_Slot.SLOT(
         "minimumLength",
         SlotType.NAMED,
-        SOME(P_Expression.Expression.INTEGER(0)),
+        SOME(INTEGER_EXPRESSION(0)),
         NONE(),
         2,
         SlotEvalStatus.NOT_EVALUATED,
@@ -412,7 +412,7 @@ const STRING_BOOL =
       P_Slot.SLOT(
         "minimumLength",
         SlotType.NAMED,
-        SOME(P_Expression.Expression.INTEGER(0)),
+        SOME(INTEGER_EXPRESSION(0)),
         NONE(),
         2,
         SlotEvalStatus.NOT_EVALUATED,
@@ -453,7 +453,7 @@ const STRING_ENUM =
       P_Slot.SLOT(
         "minimumLength",
         SlotType.NAMED,
-        SOME(P_Expression.Expression.INTEGER(0)),
+        SOME(INTEGER_EXPRESSION(0)),
         NONE(),
         2,
         SlotEvalStatus.NOT_EVALUATED,
@@ -702,7 +702,7 @@ const SMOOTH =
     P_Pointer.createImmutable(0),
   )::M_Function
 const CLOCK_COMPONENT =
-  P_Component.TYPED_COMPONENT(
+  TYPED_COMPONENT(
     NFInstNode.EMPTY_NODE(),
     TYPE_CLOCK(),
     NFBinding.EMPTY_BINDING,
@@ -767,7 +767,7 @@ const CLOCK_INT =
       P_Slot.SLOT(
         "resolution",
         SlotType.GENERIC,
-        SOME(P_Expression.Expression.INTEGER(1)),
+        SOME(INTEGER_EXPRESSION(1)),
         NONE(),
         2,
         SlotEvalStatus.NOT_EVALUATED,

@@ -134,13 +134,11 @@ end
 
 function isEmpty(tree::Tree)::Bool
   local isEmpty::Bool
-
   @assign isEmpty = begin
     @match tree begin
       EMPTY(__) => begin
         true
       end
-
       _ => begin
         false
       end
@@ -225,24 +223,21 @@ end
    graphical view of the tree. =#"""
 function printTreeStr(inTree::Tree)::String
   local outString::String
-
   local left::Tree
   local right::Tree
-
   @assign outString = begin
     @match inTree begin
       EMPTY(__) => begin
         "EMPTY()"
       end
-
       LEAF(__) => begin
         printNodeStr(inTree)
       end
-
       NODE(left = left, right = right) => begin
         printTreeStr2(left, true, "") +
         printNodeStr(inTree) +
-        "\\n" +
+        "
+        " +
         printTreeStr2(right, false, "")
       end
     end
@@ -534,7 +529,8 @@ function printTreeStr2(inTree::Tree, isLeft::Bool, inIndent::String)::String
         ) +
         "────" +
         printNodeStr(inTree) +
-        "\\n" +
+        "
+        " +
         printTreeStr2(inTree.right, false, inIndent + (
           if isLeft
             " │   "

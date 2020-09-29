@@ -147,7 +147,7 @@ function makeRecordExp(clsNode::InstNode)::Expression
   local fields::Array{InstNode}
   local args::List{Expression}
   @assign cls = getClass(clsNode)
-  @match (@match TYPE_COMPLEX(complexTy = ComplexType.RECORD(ty_node)) = ty) =
+  @match (@match TYPE_COMPLEX(complexTy = COMPLEX_RECORD(ty_node)) = ty) =
     getType(cls, clsNode)
   @assign fields = getComponents(classTree(cls))
   @assign args = List(
@@ -327,14 +327,12 @@ function isExternalFunction(cls::Class)::Bool
 end
 
 function isFunction(cls::Class)::Bool
-  local isFunction::Bool = P_Restriction.Restriction.isFunction(restriction(cls))
-  return isFunction
+  local f::Bool = isFunction(restriction(cls))
+  return f
 end
 
 function isExternalObject(cls::Class)::Bool
-  local isExternalObject::Bool =
-    P_Restriction.Restriction.isExternalObject(restriction(cls))
-  return isExternalObject
+  return isExternalObject(restriction(cls))
 end
 
 function isExpandableConnectorClass(cls::Class)::Bool
@@ -813,12 +811,14 @@ function classTree(cls::Class)::ClassTree
       TYPED_DERIVED(__) => begin
         classTree(getClass(cls.baseClass))
       end
-
       _ => begin
         EMPTY_TREE()
       end
     end
   end
+  @info "Our resulting tree in class tree"
+  str = LookupTree.printTreeStr(lookupTree(tree))
+  @info str
   return tree
 end
 
@@ -994,3 +994,5 @@ function isEqual(prefs1::Prefixes, prefs2::Prefixes)::Bool
   local isEqual::Bool = valueEq(prefs1, prefs2)
   return isEqual
 end
+
+@exportAll

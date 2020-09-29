@@ -135,7 +135,7 @@ function simplify(exp::Expression)::Expression
         P_Expression.Expression.UNBOX(simplify(exp.exp), exp.ty)
       end
 
-      P_Expression.Expression.SUBSCRIPTED_EXP(__) => begin
+      SUBSCRIPTED_EXP_EXPRESSION(__) => begin
         simplifySubscriptedExp(exp)
       end
 
@@ -143,12 +143,12 @@ function simplify(exp::Expression)::Expression
         simplifyTupleElement(exp)
       end
 
-      P_Expression.Expression.BOX(__) => begin
-        P_Expression.Expression.BOX(simplify(exp.exp))
+      BOX_EXPRESSION(__) => begin
+        BOX_EXPRESSION(simplify(exp.exp))
       end
 
-      P_Expression.Expression.MUTABLE(__) => begin
-        simplify(Mutable.access(exp.exp))
+      MUTABLE_EXPRESSION(__) => begin
+        simplify(P_Pointer.access(exp.exp))
       end
 
       _ => begin
@@ -475,7 +475,7 @@ function simplifySize(sizeExp::Expression)::Expression
             P_Expression.Expression.toInteger(index),
           )
           if P_Dimension.Dimension.isKnown(dim)
-            @assign exp = P_Expression.Expression.INTEGER(P_Dimension.Dimension.size(dim))
+            @assign exp = INTEGER_EXPRESSION(P_Dimension.Dimension.size(dim))
           else
             @assign exp = P_Expression.Expression.SIZE(exp, SOME(index))
           end
@@ -629,7 +629,7 @@ function simplifyBinaryMul(
 
   @assign outExp = begin
     @match exp1 begin
-      P_Expression.Expression.INTEGER(value = 0) => begin
+      INTEGER_EXPRESSION(value = 0) => begin
         exp1
       end
 
@@ -637,7 +637,7 @@ function simplifyBinaryMul(
         exp1
       end
 
-      P_Expression.Expression.INTEGER(value = 1) => begin
+      INTEGER_EXPRESSION(value = 1) => begin
         exp2
       end
 
@@ -917,7 +917,7 @@ function simplifyCast(exp::Expression, ty::M_Type)::Expression
   @assign castExp = begin
     local ety::M_Type
     @match (ty, exp) begin
-      (TYPE_REAL(__), P_Expression.Expression.INTEGER(__)) => begin
+      (TYPE_REAL(__), INTEGER_EXPRESSION(__)) => begin
         P_Expression.REAL_EXPRESSION(intReal(exp.value))
       end
 
@@ -938,16 +938,14 @@ function simplifyCast(exp::Expression, ty::M_Type)::Expression
 end
 
 function simplifySubscriptedExp(subscriptedExp::Expression)::Expression
-
   local e::Expression
   local subs::List{Subscript}
-  local ty::M_Type
-
-  @match P_Expression.Expression.SUBSCRIPTED_EXP(e, subs, ty) = subscriptedExp
+  local ty::NFtype
+  @match SUBSCRIPTED_EXP_EXPRESSION(e, subs, ty) = subscriptedExp
   @assign subscriptedExp = simplify(e)
-  @assign subscriptedExp = P_Expression.Expression.applySubscripts(
-    List(simplify(s) for s in subs),
-    subscriptedExp,
+  @assign subscriptedExp = applySubscripts(
+    list(simplify(s) for s in subs),
+    subscriptedExp
   )
   return subscriptedExp
 end

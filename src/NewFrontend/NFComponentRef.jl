@@ -966,20 +966,18 @@ function rest(cref::ComponentRef)::ComponentRef
 end
 
 function firstName(cref::ComponentRef)::String
-  local name::String
-
-  @assign name = begin
+  local nameVar::String
+  @assign nameVar = begin
     @match cref begin
       COMPONENT_REF_CREF(__) => begin
         name(cref.node)
       end
-
       _ => begin
         ""
       end
     end
   end
-  return name
+  return nameVar
 end
 
 function updateNodeType(cref::ComponentRef)::ComponentRef
@@ -1096,7 +1094,6 @@ function fromAbsynCref(
   restCref::ComponentRef = COMPONENT_REF_EMPTY(),
 )::ComponentRef
   local cref::ComponentRef
-
   @assign cref = begin
     @match acref begin
       Absyn.CREF_IDENT(__) => begin
@@ -1129,14 +1126,14 @@ function fromAbsyn(
 )::ComponentRef
   local cref::ComponentRef
   local sl::List{Subscript}
-  @assign sl = List(SUBSCRIPT_RAW_SUBSCRIPT(s) for s in subs)
+  @assign sl = list(SUBSCRIPT_RAW_SUBSCRIPT(s) for s in subs)
   @assign cref = COMPONENT_REF_CREF(node, sl, TYPE_UNKNOWN(), Origin.CREF, restCref)
   return cref
 end
 
 function prefixScope(
   node::InstNode,
-  ty::M_Type,
+  ty::NFType,
   subs::List{<:Subscript},
   restCref::ComponentRef,
 )::ComponentRef

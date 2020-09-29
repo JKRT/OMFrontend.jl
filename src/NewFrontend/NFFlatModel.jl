@@ -64,7 +64,7 @@ function reconstructRecordInstance(
     @assign record_binding =
       FLAT_BINDING(record_exp, P_Component.variability(record_comp))
   end
-  @assign recordVar = P_Variable.Variable.VARIABLE(
+  @assign recordVar = VARIABLE(
     recordName,
     record_ty,
     record_binding,
@@ -158,7 +158,7 @@ function collectExpFlatTypes_traverse(exp::Expression, types::TypeTree)::TypeTre
 
   @assign types = begin
     @match exp begin
-      P_Expression.Expression.SUBSCRIPTED_EXP(__) => begin
+      SUBSCRIPTED_EXP_EXPRESSION(__) => begin
         @assign types = collectSubscriptedFlatType(exp.exp, exp.subscripts, exp.ty, types)
         types
       end
@@ -360,7 +360,7 @@ function collectFlatType(ty::M_Type, types::TypeTree)::TypeTree
         ()
       end
 
-      TYPE_COMPLEX(complexTy = ComplexType.RECORD(__)) => begin
+      TYPE_COMPLEX(complexTy = COMPLEX_RECORD(__)) => begin
         @assign types = TypeTree.add(types, scopePath(ty.cls), ty)
         ()
       end

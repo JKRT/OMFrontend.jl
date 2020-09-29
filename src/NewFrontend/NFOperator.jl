@@ -1,24 +1,64 @@
-module P_NFOperator
-
-using MetaModelica
-using ExportAll
-#= Forward declarations for uniontypes until Julia adds support for mutual recursion =#
 
 @UniontypeDecl NFOperator
-
-
-
-import ..DAE
-import ..AbsynUtil
-import Absyn
-import ..P_NFType
-P_M_Type = P_NFType
 M_Type = NFType
+
+Op = (
+  () -> begin #= Enumeration =#
+    ADD = 1
+    SUB = 2
+    MUL = 3
+    DIV = 4
+    POW = 5
+    ADD_EW = 6
+    SUB_EW = 7
+    MUL_EW = 8
+    DIV_EW = 9
+    POW_EW = 10
+    ADD_SCALAR_ARRAY = 11
+    ADD_ARRAY_SCALAR = 12
+    SUB_SCALAR_ARRAY = 13
+    SUB_ARRAY_SCALAR = 14
+    MUL_SCALAR_ARRAY = 15
+    MUL_ARRAY_SCALAR = 16
+    MUL_VECTOR_MATRIX = 17
+    MUL_MATRIX_VECTOR = 18
+    SCALAR_PRODUCT = 19
+    MATRIX_PRODUCT = 20
+    DIV_SCALAR_ARRAY = 21
+    DIV_ARRAY_SCALAR = 22
+    POW_SCALAR_ARRAY = 23
+    POW_ARRAY_SCALAR = 24
+    POW_MATRIX = 25
+    UMINUS = 26
+    AND = 27
+    OR = 28
+    NOT = 29
+    LESS = 30
+    LESSEQ = 31
+    GREATER = 32
+    GREATEREQ = 33
+    EQUAL = 34
+    NEQUAL = 35
+    USERDEFINED = 36
+    () -> (
+      ADD; SUB; MUL; DIV; POW; ADD_EW; SUB_EW; MUL_EW; DIV_EW; POW_EW; ADD_SCALAR_ARRAY; ADD_ARRAY_SCALAR; SUB_SCALAR_ARRAY; SUB_ARRAY_SCALAR; MUL_SCALAR_ARRAY; MUL_ARRAY_SCALAR; MUL_VECTOR_MATRIX; MUL_MATRIX_VECTOR; SCALAR_PRODUCT; MATRIX_PRODUCT; DIV_SCALAR_ARRAY; DIV_ARRAY_SCALAR; POW_SCALAR_ARRAY; POW_ARRAY_SCALAR; POW_MATRIX; UMINUS; AND; OR; NOT; LESS; LESSEQ; GREATER; GREATEREQ; EQUAL; NEQUAL; USERDEFINED
+    )
+  end
+)()
+
+const OpType = Integer
+
+
+@Uniontype NFOperator begin
+  @Record OPERATOR begin
+    ty::M_Type
+    op::OpType
+  end
+end
 
 function negate(op::Operator)::Operator
   local outOp::Operator
-
-  local neg_op::Op
+  local neg_op::OpType
 
   @assign neg_op = begin
     @match op.op begin
@@ -125,10 +165,10 @@ function stripEW(op::Operator)::Operator
   return op
 end
 
-function makeArrayScalar(ty::M_Type, op::Op)::Operator
+function makeArrayScalar(ty::M_Type, op::OpType)::Operator
   local outOp::Operator
 
-  local o::Op
+  local o::OpType
 
   @assign o = begin
     @match op begin
@@ -157,11 +197,9 @@ function makeArrayScalar(ty::M_Type, op::Op)::Operator
   return outOp
 end
 
-function makeScalarArray(ty::M_Type, op::Op)::Operator
+function makeScalarArray(ty::M_Type, op::OpType)::Operator
   local outOp::Operator
-
-  local o::Op
-
+  local o::OpType
   @assign o = begin
     @match op begin
       Op.ADD => begin
@@ -787,10 +825,9 @@ function toDAE(op::Operator)::Tuple{DAE.P_Operator.Operator, Bool}
   return (daeOp, swapArguments) #= The DAE structure only has array*scalar, not scalar*array, etc =#
 end
 
-function fromAbsyn(inOperator::Absyn.P_Operator.Operator)::Operator
+function fromAbsyn(inOperator::Absyn.Operator)::Operator
   local outOperator::Operator
-
-  local op::Op
+  local op::OpType
 
   @assign op = begin
     @match inOperator begin
@@ -894,66 +931,11 @@ end
 function compare(op1::Operator, op2::Operator)::Integer
   local comp::Integer
 
-  local o1::Op = op1.op
-  local o2::Op = op2.op
+  local o1::OpType = op1.op
+  local o2::OpType = op2.op
 
   #=  TODO: Compare the types instead if both operators are USERDEFINED.
   =#
   @assign comp = Util.intCompare(Integer(o1), Integer(o2))
   return comp
-end
-
-Op = (
-  () -> begin #= Enumeration =#
-    ADD = 1
-    SUB = 2
-    MUL = 3
-    DIV = 4
-    POW = 5
-    ADD_EW = 6
-    SUB_EW = 7
-    MUL_EW = 8
-    DIV_EW = 9
-    POW_EW = 10
-    ADD_SCALAR_ARRAY = 11
-    ADD_ARRAY_SCALAR = 12
-    SUB_SCALAR_ARRAY = 13
-    SUB_ARRAY_SCALAR = 14
-    MUL_SCALAR_ARRAY = 15
-    MUL_ARRAY_SCALAR = 16
-    MUL_VECTOR_MATRIX = 17
-    MUL_MATRIX_VECTOR = 18
-    SCALAR_PRODUCT = 19
-    MATRIX_PRODUCT = 20
-    DIV_SCALAR_ARRAY = 21
-    DIV_ARRAY_SCALAR = 22
-    POW_SCALAR_ARRAY = 23
-    POW_ARRAY_SCALAR = 24
-    POW_MATRIX = 25
-    UMINUS = 26
-    AND = 27
-    OR = 28
-    NOT = 29
-    LESS = 30
-    LESSEQ = 31
-    GREATER = 32
-    GREATEREQ = 33
-    EQUAL = 34
-    NEQUAL = 35
-    USERDEFINED = 36
-    () -> (
-      ADD; SUB; MUL; DIV; POW; ADD_EW; SUB_EW; MUL_EW; DIV_EW; POW_EW; ADD_SCALAR_ARRAY; ADD_ARRAY_SCALAR; SUB_SCALAR_ARRAY; SUB_ARRAY_SCALAR; MUL_SCALAR_ARRAY; MUL_ARRAY_SCALAR; MUL_VECTOR_MATRIX; MUL_MATRIX_VECTOR; SCALAR_PRODUCT; MATRIX_PRODUCT; DIV_SCALAR_ARRAY; DIV_ARRAY_SCALAR; POW_SCALAR_ARRAY; POW_ARRAY_SCALAR; POW_MATRIX; UMINUS; AND; OR; NOT; LESS; LESSEQ; GREATER; GREATEREQ; EQUAL; NEQUAL; USERDEFINED
-    )
-  end
-)()
-
-@Uniontype NFOperator begin
-  @Record OPERATOR begin
-
-    ty::M_Type
-    op::Op
-  end
-end
-
-@exportAll()
 end

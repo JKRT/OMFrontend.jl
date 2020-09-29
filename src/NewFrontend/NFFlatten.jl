@@ -39,7 +39,7 @@ function flatten(classInst::InstNode, name::String)::FlatModel
   @assign cmt = SCodeUtil.getElementComment(definition(classInst))
   @assign (vars, sections) = flattenClass(
     getClass(classInst),
-    EMPTY(),
+    COMPONENT_REF_EMPTY(),
     Visibility.PUBLIC,
     NONE(),
     nil,
@@ -48,20 +48,20 @@ function flatten(classInst::InstNode, name::String)::FlatModel
   @assign vars = listReverseInPlace(vars)
   @assign flatModel = begin
     @match sections begin
-      P_Sections.Sections.SECTIONS(__) => begin
+      SECTIONS(__) => begin
         @assign eql = listReverseInPlace(sections.equations)
         @assign ieql = listReverseInPlace(sections.initialEquations)
         @assign alg = listReverseInPlace(sections.algorithms)
         @assign ialg = listReverseInPlace(sections.initialAlgorithms)
-        FlatModel.FLAT_MODEL(name, vars, eql, ieql, alg, ialg, cmt)
+        FLAT_MODEL(name, vars, eql, ieql, alg, ialg, cmt)
       end
 
       _ => begin
-        FlatModel.FLAT_MODEL(name, vars, nil, nil, nil, nil, cmt)
+        FLAT_MODEL(name, vars, nil, nil, nil, nil, cmt)
       end
     end
   end
-  execStat(getInstanceName() + "(" + name + ")")
+#  execStat(getInstanceName() + "(" + name + ")")
   @assign flatModel = resolveConnections(flatModel, name)
   return flatModel
 end
@@ -96,7 +96,7 @@ function flattenClass(
   =#
   @assign () = begin
     @match cls begin
-      INSTANCED_CLASS(elements = FLAT_TREE(components = comps)) =>
+      INSTANCED_CLASS(elements = CLASS_TREE_FLAT_TREE(components = comps)) =>
         begin
           if isSome(binding)
             @match SOME(b) = binding
@@ -172,7 +172,7 @@ function flattenClass(
 end
 
 function flattenComponent(
-  component::InstNode,
+  inComponent::InstNode,
   prefix::ComponentRef,
   visibility::VisibilityType,
   outerBinding::Option{<:Binding},
@@ -189,24 +189,22 @@ function flattenComponent(
 
   #=  Remove components that are only outer.
   =#
-  if isOnlyOuter(component)
+  if isOnlyOuter(inComponent)
     return (vars, sections)
   end
-  @assign comp_node = resolveOuter(component)
+  @assign comp_node = resolveOuter(inComponent)
   @assign c = component(comp_node)
-  #=  print(\"->\" + stringAppendList(List.fill(\"  \", ComponentRef.depth(prefix))) + ComponentRef.toString(prefix) + \".\" + InstNode.name(component) + \"\\n\");
-  =#
   @assign () = begin
     @match c begin
-      P_Component.TYPED_COMPONENT(condition = condition, ty = ty) => begin
+      TYPED_COMPONENT(condition = condition, ty = ty) => begin
         #=  Delete the component if it has a condition that's false.
         =#
         if isDeletedComponent(condition, prefix)
-          deleteComponent(component)
+          deleteComponent(inComponent)
           return
         end
         @assign cls = getClass(c.classInst)
-        @assign vis = if isProtected(component)
+        @assign vis = if isProtected(inComponent)
           Visibility.PROTECTED
         else
           visibility
@@ -238,12 +236,13 @@ function flattenComponent(
         ()
       end
 
-      P_Component.DELETED_COMPONENT(__) => begin
+      DELETED_COMPONENT(__) => begin
         ()
       end
 
       _ => begin
-        Error.assertion(false, getInstanceName() + " got unknown component", sourceInfo())
+        #Error.assertion(false, getInstanceName() + " got unknown component", sourceInfo())
+        @error "Got unknown component!"
         fail()
       end
     end
@@ -326,7 +325,7 @@ function deleteClassComponents(clsNode::InstNode)
   return @assign () = begin
     @match cls begin
       INSTANCED_CLASS(
-        elements = FLAT_TREE(components = comps),
+        elements = CLASS_TREE_FLAT_TREE(components = comps),
       ) where {(!P_Restriction.Restriction.isType(cls.restriction))} => begin
         for c in comps
           deleteComponent(c)
@@ -346,20 +345,17 @@ function deleteClassComponents(clsNode::InstNode)
   end
 end
 
-function isComplexComponent(ty::M_Type)::Bool
+function isComplexComponent(ty::NFType)::Bool
   local isComplex::Bool
-
   @assign isComplex = begin
     @match ty begin
-      TYPE_COMPLEX(complexTy = ComplexType.EXTERNAL_OBJECT(__)) => begin
+      TYPE_COMPLEX(complexTy = EXTERNAL_OBJECT(__)) => begin
         false
       end
-
       TYPE_COMPLEX(__) => begin
         true
       end
-
-      Type.ARRAY(__) => begin
+      TYPE_ARRAY(__) => begin
         isComplexComponent(ty.elementType)
       end
 
@@ -372,7 +368,7 @@ function isComplexComponent(ty::M_Type)::Bool
 end
 
 function flattenSimpleComponent(
-  node::InstNode,
+  n::InstNode,
   comp::Component,
   visibility::VisibilityType,
   outerBinding::Option{<:Binding},
@@ -382,26 +378,23 @@ function flattenSimpleComponent(
   sections::Sections,
 )::Tuple{List{Variable}, Sections}
 
-  local comp_node::InstNode = node
+  local comp_node::InstNode = n
   local name::ComponentRef
   local binding::Binding
-  local ty::M_Type
+  local ty
   local cmt::Option{SCode.Comment}
   local info::SourceInfo
   local comp_attr::Attributes
   local vis::VisibilityType
   local eq::Equation
   local ty_attrs::List{Tuple{String, Binding}}
-  local var::Variability
+  local var::VariabilityType
   local unfix::Bool
-
-  @match P_Component.TYPED_COMPONENT(
-    ty = ty,
-    binding = binding,
-    attributes = comp_attr,
-    comment = cmt,
-    info = info,
-  ) = comp
+  ty = comp.ty
+  binding = comp.binding
+  comp_attr = comp.attributes
+  cmt = comp.comment
+  info = comp.info
   @assign var = comp_attr.variability
   if isSome(outerBinding)
     @match SOME(binding) = outerBinding
@@ -414,21 +407,21 @@ function flattenSimpleComponent(
   =#
   #=  move the binding into an equation. This avoids having to scalarize the binding.
   =#
-  if !Flags.isSet(Flags.NF_API)
-    if Type.isArray(ty) && isBound(binding) && var >= Variability.DISCRETE
-      @assign name = prefixCref(comp_node, ty, nil, prefix)
-      @assign eq = EQUATION_ARRAY_EQUALITY(
-        CREF_EXPRESSION(ty, name),
-        getTypedExp(binding),
-        ty,
-        ElementSource.createElementSource(info),
-      )
-      @assign sections = P_Sections.Sections.prependEquation(eq, sections)
-      @assign binding = NFBinding.EMPTY_BINDING
-    end
-  end
+  # if !Flags.isSet(Flags.NF_API)
+  #   if Type.isArray(ty) && isBound(binding) && var >= Variability.DISCRETE
+  #     @assign name = prefixCref(comp_node, ty, nil, prefix)
+  #     @assign eq = EQUATION_ARRAY_EQUALITY(
+  #       CREF_EXPRESSION(ty, name),
+  #       getTypedExp(binding),
+  #       ty,
+  #       ElementSource.createElementSource(info),
+  #     )
+  #     @assign sections = prependEquation(eq, sections)
+  #     @assign binding = NFBinding.EMPTY_BINDING
+  #   end
+  # end
   @assign name = prefixScope(comp_node, ty, nil, prefix)
-  @assign ty_attrs = List(flattenTypeAttribute(m, name) for m in typeAttrs)
+  @assign ty_attrs = list(flattenTypeAttribute(m, name) for m in typeAttrs)
   #=  Set fixed = true for parameters that are part of a record instance whose
   =#
   #=  binding couldn't be split and was moved to an initial equation.
@@ -447,7 +440,7 @@ function flattenSimpleComponent(
     )
   end
   @assign vars = _cons(
-    P_Variable.Variable.VARIABLE(
+    VARIABLE(
       name,
       ty,
       binding,
@@ -464,9 +457,7 @@ end
 
 function flattenTypeAttribute(attr::Modifier, prefix::ComponentRef)::Tuple{String, Binding}
   local outAttr::Tuple{String, Binding}
-
   local binding::Binding
-
   @assign binding = flattenBinding(P_Modifier.binding(attr), prefix, isTypeAttribute = true)
   @assign outAttr = (P_Modifier.name(attr), binding)
   return outAttr
@@ -563,8 +554,9 @@ function flattenComplexComponent(
     elseif binding_var == Variability.PARAMETER && P_Component.isFinal(comp)
       try
         @assign binding_exp =
-          P_Expression.Expression.stripBindingInfo(Ceval.evalExp(binding_exp))
-      catch
+          stripBindingInfo(Ceval.evalExp(binding_exp))
+      catch e
+        @error  "e"
       end
     else
       @assign binding_exp = SimplifyExp.simplify(binding_exp)
@@ -765,9 +757,9 @@ function vectorizeEquation(
         @match list(P_Dimension.Dimension.INTEGER(size = stop)) = dimensions
         @assign range = P_Expression.Expression.RANGE(
           Type.ARRAY(TYPE_INTEGER(), dimensions),
-          P_Expression.Expression.INTEGER(1),
+          INTEGER_EXPRESSION(1),
           NONE(),
-          P_Expression.Expression.INTEGER(stop),
+          INTEGER_EXPRESSION(stop),
         )
         @assign veqn = mapExp(
           eqn,
@@ -836,9 +828,9 @@ function vectorizeAlgorithm(
         @match list(P_Dimension.Dimension.INTEGER(size = stop)) = dimensions
         @assign range = P_Expression.Expression.RANGE(
           Type.ARRAY(TYPE_INTEGER(), dimensions),
-          P_Expression.Expression.INTEGER(1),
+          INTEGER_EXPRESSION(1),
           NONE(),
-          P_Expression.Expression.INTEGER(stop),
+          INTEGER_EXPRESSION(stop),
         )
         @error "Manually check this error. It has to do with higher order functions in the translation"
         # @assign body = P_Statement.Statement.mapExpList(
@@ -951,7 +943,6 @@ function flattenBinding(
   prefix::ComponentRef,
   isTypeAttribute::Bool = false,
 )::Binding
-
   @assign binding = begin
     local subs::List{Subscript}
     local accum_subs::List{Subscript}
@@ -963,7 +954,6 @@ function flattenBinding(
       UNBOUND(__) => begin
         binding
       end
-
       TYPED_BINDING(__) => begin
         if binding.isFlattened
           return
@@ -990,10 +980,10 @@ function flattenBinding(
         Error.addTotalMessages(binding.errors)
         fail()
       end
-
       _ => begin
-        Error.assertion(false, getInstanceName() + " got untyped binding.", sourceInfo())
-        fail()
+        #Error.assertion(false, getInstanceName() + " got untyped binding.", sourceInfo())
+        @error "Untyped binding!"
+#        fail()
       end
     end
   end
@@ -1119,13 +1109,13 @@ function flattenSections(
     local alg::List{Algorithm}
     local ialg::List{Algorithm}
     @match sections begin
-      P_Sections.Sections.SECTIONS(__) => begin
+      SECTIONS(__) => begin
         @assign eq = flattenEquations(sections.equations, prefix)
         @assign ieq = flattenEquations(sections.initialEquations, prefix)
         @assign alg = flattenAlgorithms(sections.algorithms, prefix)
         @assign ialg = flattenAlgorithms(sections.initialAlgorithms, prefix)
         @assign accumSections =
-          P_Sections.Sections.prepend(eq, ieq, alg, ialg, accumSections)
+          prepend(eq, ieq, alg, ialg, accumSections)
         ()
       end
 
@@ -1535,11 +1525,11 @@ function resolveConnections(flatModel::FlatModel, name::String)::FlatModel
   local csets::ConnectionSets.Sets
   local csets_array::Array{List{Connector}}
   local ctable::CardinalityTable.Table
-  local broken::P_Connections.Connections.BrokenEdges = nil
+  local broken::BrokenEdges = nil
 
   #=  get the connections from the model
   =#
-  @assign (flatModel, conns) = P_Connections.Connections.collect(flatModel)
+  @assign (flatModel, conns) = collect(flatModel)
   #=  Elaborate expandable connectors.
   =#
   @assign (flatModel, conns) = ExpandableConnectors.elaborate(flatModel, conns)
@@ -1619,7 +1609,7 @@ function evaluateBindingConnOp(
 
   @assign () = begin
     @match var begin
-      P_Variable.Variable.VARIABLE(
+      VARIABLE(
         binding = binding && TYPED_BINDING(bindingExp = exp),
       ) => begin
         @assign eval_exp = ConnectEquations.evaluateOperators(exp, sets, setsArray, ctable)
@@ -1662,7 +1652,7 @@ function collectComponentFuncs(var::Variable, funcs::FunctionTree)::FunctionTree
 
   @assign () = begin
     @match var begin
-      P_Variable.Variable.VARIABLE(__) => begin
+      VARIABLE(__) => begin
         @assign funcs = collectTypeFuncs(var.ty, funcs)
         @assign funcs = collectBindingFuncs(var.binding, funcs)
         for attr in var.typeAttributes
@@ -1715,7 +1705,7 @@ function collectTypeFuncs(ty::M_Type, funcs::FunctionTree)::FunctionTree
         ()
       end
 
-      TYPE_COMPLEX(complexTy = ComplexType.RECORD(constructor = con)) => begin
+      TYPE_COMPLEX(complexTy = COMPLEX_RECORD(constructor = con)) => begin
         #=  Collect record constructors.
         =#
         @assign funcs = collectStructor(con, funcs)
@@ -1939,7 +1929,7 @@ function collectExpFuncs_traverse(exp::Expression, funcs::FunctionTree)::Functio
         ()
       end
 
-      P_Expression.Expression.PARTIAL_FUNCTION_APPLICATION(__) => begin
+      PARTIAL_FUNCTION_APPLICATION_EXPRESSION(__) => begin
         for f in P_Function.getRefCache(exp.fn)
           @assign funcs = flattenFunction(f, funcs)
         end
@@ -1987,7 +1977,7 @@ function collectClassFunctions(clsNode::InstNode, funcs::FunctionTree)::Function
   @assign () = begin
     @match cls begin
       INSTANCED_CLASS(
-        elements = cls_tree && FLAT_TREE(__),
+        elements = cls_tree && CLASS_TREE_FLAT_TREE(__),
         sections = sections,
       ) => begin
         for c in cls_tree.components

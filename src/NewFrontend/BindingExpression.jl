@@ -292,7 +292,7 @@ function splitRecordCref(exp::Expression) ::Expression
       end
 
       ARRAY(__)  => begin
-        @assign outExp.elements = List(splitRecordCref(e) for e in outExp.elements)
+        @assign outExp.elements = list(splitRecordCref(e) for e in outExp.elements)
         outExp
       end
 
@@ -322,7 +322,7 @@ end
                        end
 
                        ARRAY(__)  => begin
-                         @assign expl = List(nthRecordElement(index, e) for e in recordExp.elements)
+                         @assign expl = list(nthRecordElement(index, e) for e in recordExp.elements)
                          makeArray(Type.setArrayElementType(recordExp.ty, typeOf(listHead(expl))), expl)
                        end
 
@@ -516,7 +516,7 @@ function makeImmutable(exp::Expression)::Expression
   @assign outExp = begin
     @match exp begin
       MUTABLE(__)  => begin
-        Mutable.access(exp.exp)
+        P_Pointer.access(exp.exp)
       end
 
       _  => begin
@@ -529,7 +529,7 @@ end
 
 function makeMutable(exp::Expression)::Expression
   local outExp::Expression
-  @assign outExp = MUTABLE(Mutable.create(exp))
+  @assign outExp = MUTABLE(P_Pointer.create(exp))
   outExp
 end
 
@@ -542,7 +542,6 @@ end
 
 function variability(exp::Expression) ::Variability
   local var::Variability
-
   @assign var = begin
     @match exp begin
       INTEGER(__)  => begin
@@ -979,12 +978,12 @@ function box(exp::Expression) ::Expression
 
   @assign boxedExp = begin
     @match exp begin
-      P_Expression.Expression.BOX(__)  => begin
+      BOX_EXPRESSION(__)  => begin
         exp
       end
 
       _  => begin
-        P_Expression.Expression.BOX(exp)
+        BOX_EXPRESSION(exp)
       end
     end
   end
@@ -2316,8 +2315,8 @@ function mapFoldShallow(exp::Expression, func::MapFunc, arg::ArgT)  where {ArgT}
       end
 
       MUTABLE(__)  => begin
-        @assign (e1, arg) = func(Mutable.access(exp.exp), arg)
-        Mutable.update(exp.exp, e1)
+        @assign (e1, arg) = func(P_Pointer.access(exp.exp), arg)
+        P_Pointer.update(exp.exp, e1)
         exp
       end
 
@@ -2719,8 +2718,8 @@ RECORD_ELEMENT(__)  => begin
 end
 
 MUTABLE(__)  => begin
-  @assign (e1, arg) = mapFold(Mutable.access(exp.exp), func, arg)
-  Mutable.update(exp.exp, e1)
+  @assign (e1, arg) = mapFold(P_Pointer.access(exp.exp), func, arg)
+  P_Pointer.update(exp.exp, e1)
   exp
 end
 
@@ -3012,7 +3011,7 @@ function apply(exp::Expression, func::ApplyFunc)
       end
 
       MUTABLE(__)  => begin
-        apply(Mutable.access(exp.exp), func)
+        apply(P_Pointer.access(exp.exp), func)
         ()
       end
 
@@ -3258,7 +3257,7 @@ function fold(exp::Expression, func::FoldFunc, arg::ArgT)  where {ArgT}
       end
 
       MUTABLE(__)  => begin
-        fold(Mutable.access(exp.exp), func, arg)
+        fold(P_Pointer.access(exp.exp), func, arg)
       end
 
       PARTIAL_FUNCTION_APPLICATION(__)  => begin
@@ -3680,7 +3679,7 @@ BOX(__)  => begin
 end
 
 MUTABLE(__)  => begin
-  Mutable.update(exp.exp, func(Mutable.access(exp.exp)))
+  P_Pointer.update(exp.exp, func(P_Pointer.access(exp.exp)))
   exp
 end
 
@@ -3749,7 +3748,6 @@ end
 
 function mapCall(call::Call, func::MapFunc) ::Call
   local outCall::Call
-
   @assign outCall = begin
     local args::List{Expression}
     local nargs::List{P_Function.NamedArg}
@@ -4065,7 +4063,7 @@ BOX(__)  => begin
 end
 
 MUTABLE(__)  => begin
-  Mutable.update(exp.exp, map(Mutable.access(exp.exp), func))
+  P_Pointer.update(exp.exp, map(P_Pointer.access(exp.exp), func))
   exp
 end
 
@@ -4748,7 +4746,7 @@ function toFlatString(exp::Expression) ::String
       end
 
       MUTABLE(__)  => begin
-        toFlatString(Mutable.access(exp.exp))
+        toFlatString(P_Pointer.access(exp.exp))
       end
 
       EMPTY(__)  => begin
@@ -4904,7 +4902,7 @@ function toString(exp::Expression) ::String
       end
 
       MUTABLE(__)  => begin
-        toString(Mutable.access(exp.exp))
+        toString(P_Pointer.access(exp.exp))
       end
 
       EMPTY(__)  => begin
@@ -5163,12 +5161,12 @@ function applyIndexSubscriptRange2(startExp::Expression, stepExp::Option{<:Expre
 
   @assign subscriptedExp = begin
     @match (startExp, stepExp) begin
-      (P_Expression.Expression.INTEGER(__), SOME(P_Expression.Expression.INTEGER(iidx)))  => begin
-        P_Expression.Expression.INTEGER(startExp.value + (index - 1) * iidx)
+      (INTEGER_EXPRESSION(__), SOME(INTEGER_EXPRESSION(iidx)))  => begin
+        INTEGER_EXPRESSION(startExp.value + (index - 1) * iidx)
       end
 
-      (P_Expression.Expression.INTEGER(__), _)  => begin
-        P_Expression.Expression.INTEGER(startExp.value + index - 1)
+      (INTEGER_EXPRESSION(__), _)  => begin
+        INTEGER_EXPRESSION(startExp.value + index - 1)
       end
 
       (P_Expression.REAL_EXPRESSION(__), SOME(P_Expression.REAL_EXPRESSION(ridx)))  => begin
@@ -5676,8 +5674,7 @@ function typeCastOpt(exp::Option{<:Expression}, ty::M_Type) ::Option{Expression}
   outExp
 end
 
-function setType(ty::M_Type, exp::Expression) ::Expression
-
+function setType(ty::NFType, exp::Expression) ::Expression
 
   @assign () = begin
     @match exp begin
@@ -5902,7 +5899,7 @@ function typeOf(exp::Expression) ::M_Type
       end
 
       MUTABLE(__)  => begin
-        typeOf(Mutable.access(exp.exp))
+        typeOf(P_Pointer.access(exp.exp))
       end
 
       EMPTY(__)  => begin
@@ -6014,7 +6011,7 @@ end
                      local subs::List{Subscript}
                      local clk1::ClockKind
                      local clk2::ClockKind
-                     local me::Mutable{Expression}
+                     local me::Pointer{Expression}
                      @match exp1 begin
                        INTEGER(__)  => begin
                          @match INTEGER(value = i) = exp2
@@ -6233,7 +6230,7 @@ end
 
 MUTABLE(__)  => begin
   @match MUTABLE(exp = me) = exp2
-  compare(Mutable.access(exp1.exp), Mutable.access(me))
+  compare(P_Pointer.access(exp1.exp), P_Pointer.access(me))
 end
 
 EMPTY(__)  => begin
@@ -7145,7 +7142,8 @@ function variability(binding::Binding)::Variability
       end
 
       _ => begin
-        Error.assertion(false, getInstanceName() + " got unknown binding", sourceInfo())
+        #Error.assertion(false, getInstanceName() + " got unknown binding", sourceInfo())
+        @error "Got Unknown binding!"
         fail()
       end
     end

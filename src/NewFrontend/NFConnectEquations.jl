@@ -95,7 +95,7 @@ import ..MetaModelica.Dangerous.listReverseInPlace
 import ..NFSimplifyExp
 SimplifyExp = NFSimplifyExp
 const EQ_ASSERT_STR =
-  P_Expression.Expression.STRING("Connected constants/parameters must be equal")::Expression
+  STRING_EXPRESSION("Connected constants/parameters must be equal")::Expression
 
 function generateEquations(sets::Array{<:List{<:Connector}})::List{Equation}
   local equations::List{Equation} = nil

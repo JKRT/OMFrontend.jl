@@ -650,12 +650,12 @@ end
 function assertComponent(
   endState::LookupState,
   node::InstNode,
-  name::Absyn.Path,
+  name::Absyn.ComponentRef,
   info::SourceInfo,
 )
   return assertState(
     endState,
-    P_LookupState.COMP(),
+    LOOKUP_STATE_COMP(),
     node,
     LOOKUP_STATE_NAME_CREF(name),
     info,

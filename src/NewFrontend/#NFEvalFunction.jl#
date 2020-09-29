@@ -183,7 +183,7 @@ function evaluateExternal(fn::M_Function, args::List{<:Expression})::Expression
   local ann::Option{SCode.Annotation}
   local ext_args::List{Expression}
 
-  @match P_Sections.Sections.EXTERNAL(
+  @match SECTIONS_EXTERNAL(
     name = name,
     args = ext_args,
     outputRef = output_ref,
@@ -594,7 +594,7 @@ function optimizeStatement(stmt::Statement)::Statement
         #=  Make a mutable expression with a placeholder value.
         =#
         @assign iter_exp =
-          P_Expression.Expression.makeMutable(P_Expression.Expression.EMPTY(Type.UNKNOWN()))
+          P_Expression.Expression.makeMutable(P_Expression.Expression.EMPTY(TYPE_UNKNOWN()))
         #=  Replace the iterator with the expression in the body of the for loop.
         =#
         @assign stmt.body = List(
@@ -757,12 +757,12 @@ function assignVariable(variable::Expression, value::Expression)
     local var::Expression
     local val::Expression
     local vals::List{Expression}
-    local var_ptr::Mutable{Expression}
+    local var_ptr::Pointer{Expression}
     #=  variable := value
     =#
     @match (variable, value) begin
-      (P_Expression.Expression.MUTABLE(exp = var_ptr), _) => begin
-        Mutable.update(var_ptr, assignExp(Mutable.access(var_ptr), value))
+      (MUTABLE_EXPRESSION(exp = var_ptr), _) => begin
+        P_Pointer.update(var_ptr, assignExp(P_Pointer.access(var_ptr), value))
         ()
       end
 
@@ -777,8 +777,8 @@ function assignVariable(variable::Expression, value::Expression)
       end
 
       (
-        P_Expression.Expression.SUBSCRIPTED_EXP(
-          exp = P_Expression.Expression.MUTABLE(exp = var_ptr),
+        SUBSCRIPTED_EXP_EXPRESSION(
+          exp = MUTABLE_EXPRESSION(exp = var_ptr),
         ),
         _,
       ) => begin
@@ -812,14 +812,14 @@ function assignVariable(variable::Expression, value::Expression)
 end
 
 function assignSubscriptedVariable(
-  variable::Mutable{<:Expression},
+  variable::Pointer{<:Expression},
   subscripts::List{<:Subscript},
   value::Expression,
 )
   local subs::List{Subscript}
 
   @assign subs = List(eval(s) for s in subscripts)
-  return Mutable.update(variable, assignArrayElement(Mutable.access(variable), subs, value))
+  return P_Pointer.update(variable, assignArrayElement(P_Pointer.access(variable), subs, value))
 end
 
 function assignArrayElement(
@@ -984,7 +984,7 @@ function evaluateFor(
   local ctrl::FlowControl
 
   local range_iter::RangeIterator
-  local iter_exp::Mutable{Expression}
+  local iter_exp::Pointer{Expression}
   local range_exp::Expression
   local value::Expression
   local body::List{Statement} = forBody
@@ -994,11 +994,11 @@ function evaluateFor(
   @assign range_exp = Ceval.evalExp(Util.getOption(range), P_EvalTarget.STATEMENT(source))
   @assign range_iter = P_RangeIterator.RangeIterator.fromExp(range_exp)
   if P_RangeIterator.RangeIterator.hasNext(range_iter)
-    @match EXP_NODE(exp = P_Expression.Expression.MUTABLE(exp = iter_exp)) =
+    @match EXP_NODE(exp = MUTABLE_EXPRESSION(exp = iter_exp)) =
       iterator
     while P_RangeIterator.RangeIterator.hasNext(range_iter)
       @assign (range_iter, value) = P_RangeIterator.RangeIterator.next(range_iter)
-      Mutable.update(iter_exp, value)
+      P_Pointer.update(iter_exp, value)
       @assign ctrl = evaluateStatements(body)
       if ctrl != FlowControl.NEXT
         if ctrl == FlowControl.BREAK
@@ -1062,7 +1062,7 @@ function evaluateAssert(condition::Expression, assertStmt::Statement)::FlowContr
     @assign () = begin
       @match (msg, lvl) begin
         (
-          P_Expression.Expression.STRING(__),
+          STRING_EXPRESSION(__),
           P_Expression.Expression.ENUM_LITERAL(name = "warning"),
         ) => begin
           Error.addSourceMessage(
@@ -1074,7 +1074,7 @@ function evaluateAssert(condition::Expression, assertStmt::Statement)::FlowContr
         end
 
         (
-          P_Expression.Expression.STRING(__),
+          STRING_EXPRESSION(__),
           P_Expression.Expression.ENUM_LITERAL(name = "error"),
         ) => begin
           Error.addSourceMessage(
@@ -1253,121 +1253,121 @@ function evaluateKnownExternal(name::String, args::List{<:Expression})::Expressi
     local r::AbstractFloat
     local dims::Integer[2]
     @match (name, args) begin
-      ("ModelicaInternal_countLines", P_Expression.Expression.STRING(s1) <| nil()) =>
+      ("ModelicaInternal_countLines", STRING_EXPRESSION(s1) <| nil()) =>
         begin
-          P_Expression.Expression.INTEGER(ModelicaExternalC.Streams_countLines(s1))
+          INTEGER_EXPRESSION(ModelicaExternalC.Streams_countLines(s1))
         end
 
-      ("ModelicaInternal_fullPathName", P_Expression.Expression.STRING(s1) <| nil()) =>
+      ("ModelicaInternal_fullPathName", STRING_EXPRESSION(s1) <| nil()) =>
         begin
-          P_Expression.Expression.STRING(ModelicaExternalC.File_fullPathName(s1))
+          STRING_EXPRESSION(ModelicaExternalC.File_fullPathName(s1))
         end
 
       (
         "ModelicaInternal_print",
-        P_Expression.Expression.STRING(s1) <| P_Expression.Expression.STRING(s2) <| nil(),
+        STRING_EXPRESSION(s1) <| STRING_EXPRESSION(s2) <| nil(),
       ) => begin
         ModelicaExternalC.Streams_print(s1, s2)
-        P_Expression.Expression.INTEGER(0)
+        INTEGER_EXPRESSION(0)
       end
 
       (
         "ModelicaInternal_readLine",
-        P_Expression.Expression.STRING(s1) <| P_Expression.Expression.INTEGER(i) <| nil(),
+        STRING_EXPRESSION(s1) <| INTEGER_EXPRESSION(i) <| nil(),
       ) => begin
         @assign (s1, b) = ModelicaExternalC.Streams_readLine(s1, i)
         TUPLE_EXPRESSION(
           TYPE_TUPLE(list(TYPE_STRING(), TYPE_BOOLEAN()), NONE()),
-          list(P_Expression.Expression.STRING(s1), P_Expression.Expression.BOOLEAN(b)),
+          list(STRING_EXPRESSION(s1), P_Expression.Expression.BOOLEAN(b)),
         )
       end
 
-      ("ModelicaInternal_stat", P_Expression.Expression.STRING(s1) <| nil()) => begin
+      ("ModelicaInternal_stat", STRING_EXPRESSION(s1) <| nil()) => begin
         @assign i = ModelicaExternalC.File_stat(s1)
         listGet(FILE_TYPE_LITERALS, i)
       end
 
-      ("ModelicaStreams_closeFile", P_Expression.Expression.STRING(s1) <| nil()) => begin
+      ("ModelicaStreams_closeFile", STRING_EXPRESSION(s1) <| nil()) => begin
         ModelicaExternalC.Streams_close(s1)
-        P_Expression.Expression.INTEGER(0)
+        INTEGER_EXPRESSION(0)
       end
 
       (
         "ModelicaStrings_compare",
-        P_Expression.Expression.STRING(s1) <|
-        P_Expression.Expression.STRING(s2) <| P_Expression.Expression.BOOLEAN(b) <| nil(),
+        STRING_EXPRESSION(s1) <|
+        STRING_EXPRESSION(s2) <| P_Expression.Expression.BOOLEAN(b) <| nil(),
       ) => begin
         @assign i = ModelicaExternalC.Strings_compare(s1, s2, b)
         listGet(COMPARE_LITERALS, i)
       end
 
-      ("ModelicaStrings_length", P_Expression.Expression.STRING(s1) <| nil()) => begin
-        P_Expression.Expression.INTEGER(stringLength(s1))
+      ("ModelicaStrings_length", STRING_EXPRESSION(s1) <| nil()) => begin
+        INTEGER_EXPRESSION(stringLength(s1))
       end
 
       (
         "ModelicaStrings_scanReal",
-        P_Expression.Expression.STRING(s1) <|
-        P_Expression.Expression.INTEGER(i) <| P_Expression.Expression.BOOLEAN(b) <| nil(),
+        STRING_EXPRESSION(s1) <|
+        INTEGER_EXPRESSION(i) <| P_Expression.Expression.BOOLEAN(b) <| nil(),
       ) => begin
         @assign (i, r) = ModelicaExternalC.Strings_scanReal(s1, i, b)
         TUPLE_EXPRESSION(
           TYPE_TUPLE(list(TYPE_INTEGER(), TYPE_REAL()), NONE()),
-          list(P_Expression.Expression.INTEGER(i), P_Expression.Expression.REAL(r)),
+          list(INTEGER_EXPRESSION(i), P_Expression.REAL_EXPRESSION(r)),
         )
       end
 
       (
         "ModelicaStrings_scanInteger",
-        P_Expression.Expression.STRING(s1) <|
-        P_Expression.Expression.INTEGER(i) <| P_Expression.Expression.BOOLEAN(b) <| nil(),
+        STRING_EXPRESSION(s1) <|
+        INTEGER_EXPRESSION(i) <| P_Expression.Expression.BOOLEAN(b) <| nil(),
       ) => begin
         @assign (i, i2) = ModelicaExternalC.Strings_scanInteger(s1, i, b)
         TUPLE_EXPRESSION(
           TYPE_TUPLE(list(TYPE_INTEGER(), TYPE_INTEGER()), NONE()),
-          list(P_Expression.Expression.INTEGER(i), P_Expression.Expression.INTEGER(i2)),
+          list(INTEGER_EXPRESSION(i), INTEGER_EXPRESSION(i2)),
         )
       end
 
       (
         "ModelicaStrings_scanString",
-        P_Expression.Expression.STRING(s1) <| P_Expression.Expression.INTEGER(i) <| nil(),
+        STRING_EXPRESSION(s1) <| INTEGER_EXPRESSION(i) <| nil(),
       ) => begin
         @assign (i, s2) = ModelicaExternalC.Strings_scanString(s1, i)
         TUPLE_EXPRESSION(
           TYPE_TUPLE(list(TYPE_INTEGER(), TYPE_STRING()), NONE()),
-          list(P_Expression.Expression.INTEGER(i), P_Expression.Expression.STRING(s2)),
+          list(INTEGER_EXPRESSION(i), STRING_EXPRESSION(s2)),
         )
       end
 
       (
         "ModelicaStrings_scanIdentifier",
-        P_Expression.Expression.STRING(s1) <| P_Expression.Expression.INTEGER(i) <| nil(),
+        STRING_EXPRESSION(s1) <| INTEGER_EXPRESSION(i) <| nil(),
       ) => begin
         @assign (i, s2) = ModelicaExternalC.Strings_scanIdentifier(s1, i)
         TUPLE_EXPRESSION(
           TYPE_TUPLE(list(TYPE_INTEGER(), TYPE_STRING()), NONE()),
-          list(P_Expression.Expression.INTEGER(i), P_Expression.Expression.STRING(s2)),
+          list(INTEGER_EXPRESSION(i), STRING_EXPRESSION(s2)),
         )
       end
 
       (
         "ModelicaStrings_skipWhiteSpace",
-        P_Expression.Expression.STRING(s1) <| P_Expression.Expression.INTEGER(i) <| nil(),
+        STRING_EXPRESSION(s1) <| INTEGER_EXPRESSION(i) <| nil(),
       ) => begin
-        P_Expression.Expression.INTEGER(ModelicaExternalC.Strings_skipWhiteSpace(s1, i))
+        INTEGER_EXPRESSION(ModelicaExternalC.Strings_skipWhiteSpace(s1, i))
       end
 
       (
         "ModelicaStrings_substring",
-        P_Expression.Expression.STRING(s1) <|
-        P_Expression.Expression.INTEGER(i) <| P_Expression.Expression.INTEGER(i2) <| nil(),
+        STRING_EXPRESSION(s1) <|
+        INTEGER_EXPRESSION(i) <| INTEGER_EXPRESSION(i2) <| nil(),
       ) => begin
-        P_Expression.Expression.STRING(System.substring(s1, i, i2))
+        STRING_EXPRESSION(System.substring(s1, i, i2))
       end
 
-      ("ModelicaStrings_hashString", P_Expression.Expression.STRING(s1) <| nil()) => begin
-        P_Expression.Expression.INTEGER(ModelicaExternalC.Strings_hashString(s1))
+      ("ModelicaStrings_hashString", STRING_EXPRESSION(s1) <| nil()) => begin
+        INTEGER_EXPRESSION(ModelicaExternalC.Strings_hashString(s1))
       end
 
       ("OpenModelica_regex", _) => begin
@@ -1376,14 +1376,14 @@ function evaluateKnownExternal(name::String, args::List{<:Expression})::Expressi
 
       (
         "ModelicaIO_readMatrixSizes",
-        P_Expression.Expression.STRING(s1) <| P_Expression.Expression.STRING(s2) <| nil(),
+        STRING_EXPRESSION(s1) <| STRING_EXPRESSION(s2) <| nil(),
       ) => begin
         @assign dims = ModelicaExternalC.ModelicaIO_readMatrixSizes(s1, s2)
         P_Expression.Expression.ARRAY(
           Type.ARRAY(TYPE_INTEGER(), list(P_Dimension.Dimension.fromInteger(2))),
           list(
-            P_Expression.Expression.INTEGER(dims[1]),
-            P_Expression.Expression.INTEGER(dims[2]),
+            INTEGER_EXPRESSION(dims[1]),
+            INTEGER_EXPRESSION(dims[2]),
           ),
           true,
         )
@@ -1391,10 +1391,10 @@ function evaluateKnownExternal(name::String, args::List{<:Expression})::Expressi
 
       (
         "ModelicaIO_readRealMatrix",
-        P_Expression.Expression.STRING(s1) <|
-        P_Expression.Expression.STRING(s2) <|
-        P_Expression.Expression.INTEGER(i) <|
-        P_Expression.Expression.INTEGER(i2) <| P_Expression.Expression.BOOLEAN(b) <| nil(),
+        STRING_EXPRESSION(s1) <|
+        STRING_EXPRESSION(s2) <|
+        INTEGER_EXPRESSION(i) <|
+        INTEGER_EXPRESSION(i2) <| P_Expression.Expression.BOOLEAN(b) <| nil(),
       ) => begin
         evaluateModelicaIO_readRealMatrix(s1, s2, i, i2, b)
       end
@@ -1428,19 +1428,19 @@ function evaluateOpenModelicaRegex(args::List{<:Expression})::Expression
 
   @assign result = begin
     @match args begin
-      P_Expression.Expression.STRING(str) <|
-      P_Expression.Expression.STRING(re) <|
-      P_Expression.Expression.INTEGER(i) <|
+      STRING_EXPRESSION(str) <|
+      STRING_EXPRESSION(re) <|
+      INTEGER_EXPRESSION(i) <|
       P_Expression.Expression.BOOLEAN(extended) <|
       P_Expression.Expression.BOOLEAN(insensitive) <| nil() => begin
         @assign (n, strs) = System.regex(str, re, i, extended, insensitive)
-        @assign expl = List(P_Expression.Expression.STRING(s) for s in strs)
+        @assign expl = List(STRING_EXPRESSION(s) for s in strs)
         @assign strs_ty =
           Type.ARRAY(TYPE_STRING(), list(P_Dimension.Dimension.fromInteger(i)))
         @assign strs_exp = P_Expression.Expression.makeArray(strs_ty, expl, true)
         TUPLE_EXPRESSION(
           TYPE_TUPLE(list(TYPE_INTEGER(), strs_ty), NONE()),
-          list(P_Expression.Expression.INTEGER(n), strs_exp),
+          list(INTEGER_EXPRESSION(n), strs_exp),
         )
       end
 
@@ -1492,7 +1492,7 @@ function evaluateModelicaIO_readRealMatrix(
   for r = 1:nrow
     @assign row = nil
     for c = 1:ncol
-      @assign row = _cons(P_Expression.Expression.REAL(matrix[r, c]), row)
+      @assign row = _cons(P_Expression.REAL_EXPRESSION(matrix[r, c]), row)
     end
     @assign rows = _cons(P_Expression.Expression.ARRAY(ty, row, literal = true), rows)
   end

@@ -690,7 +690,7 @@ function getExtIntValue(exp::Expression)::Integer
 
   @assign value = begin
     @match exp begin
-      P_Expression.Expression.INTEGER(__) => begin
+      INTEGER_EXPRESSION(__) => begin
         exp.value
       end
 
@@ -734,7 +734,7 @@ function getExtStringValue(exp::Expression)::String
 
   @assign value = begin
     @match exp begin
-      P_Expression.Expression.STRING(__) => begin
+      STRING_EXPRESSION(__) => begin
         exp.value
       end
 

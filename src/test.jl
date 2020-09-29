@@ -1,7 +1,6 @@
 import HybridDAEParser
-using BenchmarkTools
+#using BenchmarkTools
 p = HybridDAEParser.parseFile("example.mo")
-@info "test1"
 scodeProgram = HybridDAEParser.translateToSCode(p)
 @info "Translation to SCode"
 @info "SCode -> DAE"

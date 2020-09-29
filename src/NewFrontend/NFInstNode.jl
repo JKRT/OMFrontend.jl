@@ -705,18 +705,15 @@ end
 """ #= Returns true if two nodes references the same class or component,
                      otherwise false. =#"""
                        function refEqual(node1::InstNode, node2::InstNode) ::Bool
-                         local refEqual::Bool
-
-                         @assign refEqual = begin
+                         local refEqualIs::Bool
+                         @assign refEqualIs = begin
                            @match (node1, node2) begin
                              (CLASS_NODE(__), CLASS_NODE(__))  => begin
                                referenceEq(P_Pointer.access(node1.cls), P_Pointer.access(node2.cls))
                              end
-
                              (COMPONENT_NODE(__), COMPONENT_NODE(__))  => begin
                                referenceEq(P_Pointer.access(node1.component), P_Pointer.access(node2.component))
                              end
-
                              _  => begin
                                false
                              end
@@ -724,7 +721,7 @@ end
                          end
                          #=  Other nodes like ref nodes might be equal, but we neither know nor care.
                          =#
-                         refEqual
+                         refEqualIs
                        end
 
 function addIterator(iterator::InstNode, scope::InstNode) ::InstNode
@@ -795,13 +792,11 @@ end
 
 function getInnerOuterCache(inNode::InstNode) ::CachedData
   local pack_cache::CachedData
-
   @assign pack_cache = begin
     @match inNode begin
       CLASS_NODE(__)  => begin
         getInnerOuterCache(inNode.caches)
       end
-
       _  => begin
         Error.assertion(false, getInstanceName() + " got node without cache", sourceInfo())
         fail()
@@ -977,14 +972,13 @@ function resolveInner(node::InstNode) ::InstNode
 end
 
 function isInnerOuterNode(node::InstNode) ::Bool
+  @info "is inner outer node?"
   local isIO::Bool
-
   @assign isIO = begin
     @match node begin
       INNER_OUTER_NODE(__)  => begin
         true
       end
-
       _  => begin
         false
       end
@@ -999,7 +993,7 @@ function isOnlyOuter(node::InstNode) ::Bool
   @assign isOuter = begin
     @match node begin
       COMPONENT_NODE(__)  => begin
-        P_Component.isOnlyOuter(P_Pointer.access(node.component))
+        isOnlyOuter(P_Pointer.access(node.component))
       end
 
       CLASS_NODE(__)  => begin
@@ -1533,25 +1527,6 @@ function getClass(node::InstNode) ::Class
   cls
 end
 
-
-function getClassTest(node::InstNode) ::Class
-  local cls::Class
-  @assign cls = begin
-    @match node begin
-      CLASS_NODE(__)  => begin
-        @info "Node in test $node"
-        res = P_Pointer.access(node.cls)
-        @info "Res in test: $res"
-        res
-      end
-      COMPONENT_NODE(__)  => begin
-        getClass(classInstance(P_Pointer.access(node.component)))
-      end
-    end
-  end
-  cls
-end
-
 """ #= Sets the parent of a node if the node lacks a parent, otherwise does nothing. =#"""
 function setOrphanParent(parent::InstNode, node::InstNode) ::InstNode
   @assign () = begin
@@ -1753,8 +1728,7 @@ function parent(node::InstNode) ::InstNode
         node.parentScope
       end
       COMPONENT_NODE(__)  => begin
-        @info "node was: $node.name"
-        @info "Parent: $(node.parent)"
+        @info "node was: $(node.name)"
         node.parent
       end
       IMPLICIT_SCOPE(__)  => begin

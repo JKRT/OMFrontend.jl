@@ -480,7 +480,7 @@ function removeEmptyFunctionArguments(exp::Expression, isArg::Bool = false)::Exp
       @match exp begin
         CREF_EXPRESSION(__) where {(Type.isEmptyArray(exp.ty))} => begin
           @assign outExp =
-            P_Expression.Expression.fillType(exp.ty, P_Expression.Expression.INTEGER(0))
+            P_Expression.Expression.fillType(exp.ty, INTEGER_EXPRESSION(0))
           return
           ()
         end

@@ -1,108 +1,3 @@
-module NFTypeCheck
-
-using MetaModelica
-using ExportAll
-
-#= /*
-* This file is part of OpenModelica.
-*
-* Copyright (c) 1998-2014, Open Source Modelica Consortium (OSMC),
-* c/o Linköpings universitet, Department of Computer and Information Science,
-* SE-58183 Linköping, Sweden.
-*
-* All rights reserved.
-*
-* THIS PROGRAM IS PROVIDED UNDER THE TERMS OF GPL VERSION 3 LICENSE OR
-* THIS OSMC PUBLIC LICENSE (OSMC-PL) VERSION 1.2.
-* ANY USE, REPRODUCTION OR DISTRIBUTION OF THIS PROGRAM CONSTITUTES
-* RECIPIENT'S ACCEPTANCE OF THE OSMC PUBLIC LICENSE OR THE GPL VERSION 3,
-* ACCORDING TO RECIPIENTS CHOICE.
-*
-* The OpenModelica software and the Open Source Modelica
-* Consortium (OSMC) Public License (OSMC-PL) are obtained
-* from OSMC, either from the above address,
-* from the URLs: http:www.ida.liu.se/projects/OpenModelica or
-* http:www.openmodelica.org, and in the OpenModelica distribution.
-* GNU version 3 is obtained from: http:www.gnu.org/copyleft/gpl.html.
-*
-* This program is distributed WITHOUT ANY WARRANTY; without
-* even the implied warranty of  MERCHANTABILITY or FITNESS
-* FOR A PARTICULAR PURPOSE, EXCEPT AS EXPRESSLY SET FORTH
-* IN THE BY RECIPIENT SELECTED SUBSIDIARY LICENSE CONDITIONS OF OSMC-PL.
-*
-* See the full OSMC Public License conditions for more details.
-*
-*/ =#
-import DAE
-import ..P_NFDimension
-P_Dimension = P_NFDimension
-Dimension = P_NFDimension.NFDimension
-import ..P_NFExpression
-P_Expression = P_NFExpression
-Expression = P_NFExpression.NFExpression
-import ..NFInstNode.P_InstNode
-import ..NFBinding.P_Binding
-import ..NFPrefixes.Variability
-
-import ..Config
-import ..Debug
-import ..P_Expression
-P_DAEExpression = P_Expression
-DAEExpression = P_Expression.NFExpression
-import ..Error
-import ..ExpressionDump
-import ..Flags
-import ListUtil
-import ..Types
-import ..P_NFOperator
-P_Operator = P_NFOperator
-Operator = P_NFOperator.NFOperator
-import ..P_NFType
-P_M_Type = P_NFType
-M_Type = NFType
-import ..NFClass.P_Class
-= NFClass.P_Class
-Class = NFClass.Class
-import ..NFClassTree
-= NFClassTree
-ClassTree = NFClassTree.ClassTree
-import ..NFInstUtil
-InstUtil = NFInstUtil
-import ..NFPrefixes
-P_Prefixes = NFPrefixes
-Prefixes = NFPrefixes.Prefixes
-import ..P_NFRestriction
-P_Restriction = P_NFRestriction
-Restriction = P_NFRestriction.NFRestriction
-import ..NFComplexType
-ComplexType = NFComplexType
-import ..P_NFOperator.Op
-import ..NFTyping.ExpOrigin
-import ..NFFunction.P_Function
-import ..NFFunction.TypedArg
-import ..NFFunction.P_FunctionMatchKind
-import ..NFFunction.P_MatchedFunction
-import ..NFCall.P_Call
-import ..NFBuiltinCall
-BuiltinCall = NFBuiltinCall
-import ..NFCall.P_CallAttributes
-import ..P_NFComponentRef
-P_ComponentRef = P_NFComponentRef
-ComponentRef = P_NFComponentRef.NFComponentRef
-import ..ErrorExt
-import ..NFBuiltin
-import ..NFSimplifyExp
-SimplifyExp = NFSimplifyExp
-using MetaModelica.Dangerous
-import ..NFOperatorOverloading
-OperatorOverloading = NFOperatorOverloading
-import ..P_NFExpandExp
-P_ExpandExp = P_NFExpandExp
-ExpandExp = P_NFExpandExp.NFExpandExp
-import ..NFFunction.P_Slot
-import ..Util
-import ..NFComponent.P_Component
-
 MatchKind = (
   () -> begin #= Enumeration =#
     EXACT = 1  #= Exact match =#
@@ -118,38 +13,40 @@ MatchKind = (
   end
 )()
 
-function isCompatibleMatch(kind::MatchKind)::Bool
+const MatchKindType = Integer
+
+function isCompatibleMatch(kind::MatchKindType)::Bool
   local isCompatible::Bool = kind != MatchKind.NOT_COMPATIBLE
   return isCompatible
 end
 
-function isIncompatibleMatch(kind::MatchKind)::Bool
+function isIncompatibleMatch(kind::MatchKindType)::Bool
   local isIncompatible::Bool = kind == MatchKind.NOT_COMPATIBLE
   return isIncompatible
 end
 
-function isExactMatch(kind::MatchKind)::Bool
+function isExactMatch(kind::MatchKindType)::Bool
   local isCompatible::Bool = kind == MatchKind.EXACT
   return isCompatible
 end
 
-function isCastMatch(kind::MatchKind)::Bool
+function isCastMatch(kind::MatchKindType)::Bool
   local isCast::Bool = kind == MatchKind.CAST
   return isCast
 end
 
-function isGenericMatch(kind::MatchKind)::Bool
+function isGenericMatch(kind::MatchKindType)::Bool
   local isCast::Bool = kind == MatchKind.GENERIC
   return isCast
 end
 
-function isValidAssignmentMatch(kind::MatchKind)::Bool
+function isValidAssignmentMatch(kind::MatchKindType)::Bool
   local v::Bool =
     kind == MatchKind.EXACT || kind == MatchKind.CAST || kind == MatchKind.PLUG_COMPATIBLE
   return v
 end
 
-function isValidArgumentMatch(kind::MatchKind)::Bool
+function isValidArgumentMatch(kind::MatchKindType)::Bool
   local v::Bool =
     kind == MatchKind.EXACT ||
     kind == MatchKind.CAST ||
@@ -158,7 +55,7 @@ function isValidArgumentMatch(kind::MatchKind)::Bool
   return v
 end
 
-function isValidPlugCompatibleMatch(kind::MatchKind)::Bool
+function isValidPlugCompatibleMatch(kind::MatchKindType)::Bool
   local v::Bool = kind == MatchKind.EXACT || kind == MatchKind.PLUG_COMPATIBLE
   return v
 end
@@ -166,11 +63,11 @@ end
 function checkBinaryOperation(
   exp1::Expression,
   type1::M_Type,
-  var1::Variability,
+  var1::VariabilityType,
   operator::Operator,
   exp2::Expression,
   type2::M_Type,
-  var2::Variability,
+  var2::VariabilityType,
   info::SourceInfo,
 )::Tuple{Expression, M_Type}
   local resultType::M_Type
@@ -234,11 +131,11 @@ end
 function checkOverloadedBinaryOperator(
   exp1::Expression,
   type1::M_Type,
-  var1::Variability,
+  var1::VariabilityType,
   op::Operator,
   exp2::Expression,
   type2::M_Type,
-  var2::Variability,
+  var2::VariabilityType,
   info::SourceInfo,
 )::Tuple{Expression, M_Type}
   local outType::M_Type
@@ -301,11 +198,11 @@ end
 function matchOverloadedBinaryOperator(
   exp1::Expression,
   type1::M_Type,
-  var1::Variability,
+  var1::VariabilityType,
   op::Operator,
   exp2::Expression,
   type2::M_Type,
-  var2::Variability,
+  var2::VariabilityType,
   candidates::List{<:M_Function},
   info::SourceInfo,
   showErrors::Bool = true,
@@ -448,11 +345,11 @@ end
 function checkBinaryOperationBoxed(
   exp1::Expression,
   type1::M_Type,
-  var1::Variability,
+  var1::VariabilityType,
   op::Operator,
   exp2::Expression,
   type2::M_Type,
-  var2::Variability,
+  var2::VariabilityType,
   info::SourceInfo,
 )::Tuple{Expression, M_Type}
   local outType::M_Type
@@ -472,11 +369,11 @@ end
 function checkOverloadedBinaryArrayAddSub(
   exp1::Expression,
   type1::M_Type,
-  var1::Variability,
+  var1::VariabilityType,
   op::Operator,
   exp2::Expression,
   type2::M_Type,
-  var2::Variability,
+  var2::VariabilityType,
   candidates::List{<:M_Function},
   info::SourceInfo,
 )::Tuple{Expression, M_Type}
@@ -485,7 +382,7 @@ function checkOverloadedBinaryArrayAddSub(
 
   local e1::Expression
   local e2::Expression
-  local mk::MatchKind
+  local mk::MatchKindType
 
   #=  For addition or subtraction both sides must have the same type.
   =#
@@ -516,11 +413,11 @@ end
 function checkOverloadedBinaryArrayAddSub2(
   exp1::Expression,
   type1::M_Type,
-  var1::Variability,
+  var1::VariabilityType,
   op::Operator,
   exp2::Expression,
   type2::M_Type,
-  var2::Variability,
+  var2::VariabilityType,
   candidates::List{<:M_Function},
   info::SourceInfo,
 )::Tuple{Expression, M_Type}
@@ -613,11 +510,11 @@ end
 function checkOverloadedBinaryArrayMul(
   exp1::Expression,
   type1::M_Type,
-  var1::Variability,
+  var1::VariabilityType,
   op::Operator,
   exp2::Expression,
   type2::M_Type,
-  var2::Variability,
+  var2::VariabilityType,
   candidates::List{<:M_Function},
   info::SourceInfo,
 )::Tuple{Expression, M_Type}
@@ -711,11 +608,11 @@ end
 function checkOverloadedBinaryScalarArray(
   exp1::Expression,
   type1::M_Type,
-  var1::Variability,
+  var1::VariabilityType,
   op::Operator,
   exp2::Expression,
   type2::M_Type,
-  var2::Variability,
+  var2::VariabilityType,
   candidates::List{<:M_Function},
   info::SourceInfo,
 )::Tuple{Expression, M_Type}
@@ -739,11 +636,11 @@ end
 function checkOverloadedBinaryScalarArray2(
   exp1::Expression,
   type1::M_Type,
-  var1::Variability,
+  var1::VariabilityType,
   op::Operator,
   exp2::Expression,
   type2::M_Type,
-  var2::Variability,
+  var2::VariabilityType,
   candidates::List{<:M_Function},
   info::SourceInfo,
 )::Tuple{Expression, M_Type}
@@ -824,11 +721,11 @@ end
 function checkOverloadedBinaryArrayScalar(
   exp1::Expression,
   type1::M_Type,
-  var1::Variability,
+  var1::VariabilityType,
   op::Operator,
   exp2::Expression,
   type2::M_Type,
-  var2::Variability,
+  var2::VariabilityType,
   candidates::List{<:M_Function},
   info::SourceInfo,
 )::Tuple{Expression, M_Type}
@@ -852,11 +749,11 @@ end
 function checkOverloadedBinaryArrayScalar2(
   exp1::Expression,
   type1::M_Type,
-  var1::Variability,
+  var1::VariabilityType,
   op::Operator,
   exp2::Expression,
   type2::M_Type,
-  var2::Variability,
+  var2::VariabilityType,
   candidates::List{<:M_Function},
   info::SourceInfo,
 )::Tuple{Expression, M_Type}
@@ -938,11 +835,11 @@ end
 function checkOverloadedBinaryArrayDiv(
   exp1::Expression,
   type1::M_Type,
-  var1::Variability,
+  var1::VariabilityType,
   op::Operator,
   exp2::Expression,
   type2::M_Type,
-  var2::Variability,
+  var2::VariabilityType,
   candidates::List{<:M_Function},
   info::SourceInfo,
 )::Tuple{Expression, M_Type}
@@ -974,11 +871,11 @@ end
 function checkOverloadedBinaryArrayEW(
   exp1::Expression,
   type1::M_Type,
-  var1::Variability,
+  var1::VariabilityType,
   op::Operator,
   exp2::Expression,
   type2::M_Type,
-  var2::Variability,
+  var2::VariabilityType,
   candidates::List{<:M_Function},
   info::SourceInfo,
 )::Tuple{Expression, M_Type}
@@ -987,7 +884,7 @@ function checkOverloadedBinaryArrayEW(
 
   local e1::Expression
   local e2::Expression
-  local mk::MatchKind
+  local mk::MatchKindType
   local expl1::List{Expression}
   local expl2::List{Expression}
   local ty::M_Type
@@ -1020,11 +917,11 @@ end
 function checkOverloadedBinaryArrayEW2(
   exp1::Expression,
   type1::M_Type,
-  var1::Variability,
+  var1::VariabilityType,
   op::Operator,
   exp2::Expression,
   type2::M_Type,
-  var2::Variability,
+  var2::VariabilityType,
   candidates::List{<:M_Function},
   info::SourceInfo,
 )::Tuple{Expression, M_Type}
@@ -1148,8 +1045,8 @@ function implicitConstructAndMatch(
   local in1::InstNode
   local in2::InstNode
   local scope::InstNode
-  local mk1::MatchKind
-  local mk2::MatchKind
+  local mk1::MatchKindType
+  local mk2::MatchKindType
   local fn_ref::ComponentRef
   local operfn::M_Function
   local matchedfuncs::List{Tuple{M_Function, List{Expression}, Variability}} = nil
@@ -1158,7 +1055,7 @@ function implicitConstructAndMatch(
   local ty::M_Type
   local arg1_ty::M_Type
   local arg2_ty::M_Type
-  local var::Variability
+  local var::VariabilityType
   local matched::Bool
   local arg1_info::SourceInfo
   local arg2_info::SourceInfo
@@ -1249,8 +1146,8 @@ function implicitConstructAndMatch2(
   local fn_ref::ComponentRef
   local e1::Expression
   local e2::Expression
-  local mk::MatchKind
-  local var::Variability
+  local mk::MatchKindType
+  local var::VariabilityType
   local ty::M_Type
 
   @assign (e1, _, mk) = matchTypes(paramType1, type1, exp1, false)
@@ -1528,7 +1425,7 @@ function checkBinaryOperationAdd(
 
   local e1::Expression
   local e2::Expression
-  local mk::MatchKind
+  local mk::MatchKindType
   local valid::Bool
 
   @assign (e1, e2, resultType, mk) = matchExpressions(exp1, type1, exp2, type2, true)
@@ -1572,7 +1469,7 @@ function checkBinaryOperationSub(
 
   local e1::Expression
   local e2::Expression
-  local mk::MatchKind
+  local mk::MatchKindType
   local valid::Bool
 
   @assign (e1, e2, resultType, mk) = matchExpressions(exp1, type1, exp2, type2, true)
@@ -1620,8 +1517,8 @@ function checkBinaryOperationMul(
   local dim12::Dimension
   local dim21::Dimension
   local dim22::Dimension
-  local mk::MatchKind
-  local op::Op
+  local mk::MatchKindType
+  local op::OpType
   local valid::Bool
 
   @assign ty1 = Type.arrayElementType(type1)
@@ -1722,7 +1619,7 @@ function checkBinaryOperationDiv(
   local e2::Expression
   local ty1::M_Type
   local ty2::M_Type
-  local mk::MatchKind
+  local mk::MatchKindType
   local valid::Bool
   local op::Operator
 
@@ -1797,7 +1694,7 @@ function checkBinaryOperationPow(
 
   local e1::Expression
   local e2::Expression
-  local mk::MatchKind
+  local mk::MatchKindType
   local valid::Bool
   local op::Operator
 
@@ -1841,7 +1738,7 @@ function checkBinaryOperationPowEW(
   local e2::Expression
   local ty1::M_Type
   local ty2::M_Type
-  local mk::MatchKind
+  local mk::MatchKindType
   local valid::Bool
   local op::Operator
 
@@ -1898,7 +1795,7 @@ function checkBinaryOperationEW(
   type1::M_Type,
   exp2::Expression,
   type2::M_Type,
-  elemOp::Op,
+  elemOp::OpType,
   info::SourceInfo,
 )::Tuple{Expression, M_Type}
   local resultType::M_Type
@@ -1908,7 +1805,7 @@ function checkBinaryOperationEW(
   local e2::Expression
   local ty1::M_Type
   local ty2::M_Type
-  local mk::MatchKind
+  local mk::MatchKindType
   local valid::Bool
   local is_arr1::Bool
   local is_arr2::Bool
@@ -1984,7 +1881,7 @@ end
 function checkUnaryOperation(
   exp1::Expression,
   type1::M_Type,
-  var1::Variability,
+  var1::VariabilityType,
   operator::Operator,
   info::SourceInfo,
 )::Tuple{Expression, M_Type}
@@ -2023,7 +1920,7 @@ end
 function checkOverloadedUnaryOperator(
   inExp1::Expression,
   inType1::M_Type,
-  var::Variability,
+  var::VariabilityType,
   inOp::Operator,
   info::SourceInfo,
 )::Tuple{Expression, M_Type}
@@ -2091,11 +1988,11 @@ end
 function checkLogicalBinaryOperation(
   exp1::Expression,
   type1::M_Type,
-  var1::Variability,
+  var1::VariabilityType,
   operator::Operator,
   exp2::Expression,
   type2::M_Type,
-  var2::Variability,
+  var2::VariabilityType,
   info::SourceInfo,
 )::Tuple{Expression, M_Type}
   local resultType::M_Type
@@ -2103,7 +2000,7 @@ function checkLogicalBinaryOperation(
 
   local e1::Expression
   local e2::Expression
-  local mk::MatchKind
+  local mk::MatchKindType
 
   if Type.isComplex(Type.arrayElementType(type1)) ||
      Type.isComplex(Type.arrayElementType(type2))
@@ -2126,7 +2023,7 @@ end
 function checkLogicalUnaryOperation(
   exp1::Expression,
   type1::M_Type,
-  var1::Variability,
+  var1::VariabilityType,
   operator::Operator,
   info::SourceInfo,
 )::Tuple{Expression, M_Type}
@@ -2135,7 +2032,7 @@ function checkLogicalUnaryOperation(
 
   local e1::Expression
   local e2::Expression
-  local mk::MatchKind
+  local mk::MatchKindType
 
   if Type.isComplex(Type.arrayElementType(type1))
     @assign (outExp, resultType) =
@@ -2153,12 +2050,12 @@ end
 function checkRelationOperation(
   exp1::Expression,
   type1::M_Type,
-  var1::Variability,
+  var1::VariabilityType,
   operator::Operator,
   exp2::Expression,
   type2::M_Type,
-  var2::Variability,
-  origin::ORIGIN_Type
+  var2::VariabilityType,
+  origin::ORIGIN_Type,
   info::SourceInfo,
 )::Tuple{Expression, M_Type}
   local resultType::M_Type
@@ -2167,9 +2064,9 @@ function checkRelationOperation(
   local e1::Expression
   local e2::Expression
   local ty::M_Type
-  local mk::MatchKind
+  local mk::MatchKindType
   local valid::Bool
-  local o::Op
+  local o::OpType
 
   if Type.isComplex(Type.arrayElementType(type1)) ||
      Type.isComplex(Type.arrayElementType(type2))
@@ -3238,7 +3135,7 @@ function matchExpressions(
   type2::M_Type,
   allowUnknown::Bool = false,
 )::Tuple{Expression, Expression, M_Type, MatchKind}
-  local matchKind::MatchKind
+  local matchKind::MatchKindType
   local compatibleType::M_Type
 
   #=  Return true if the references are the same.
@@ -3343,7 +3240,7 @@ function matchTypes(
   expression::Expression,
   allowUnknown::Bool = false,
 )::Tuple{Expression, M_Type, MatchKind}
-  local matchKind::MatchKind
+  local matchKind::MatchKindType
   local compatibleType::M_Type
 
   #=  Return true if the references are the same.
@@ -3459,7 +3356,7 @@ function matchExpressions_cast(
   type2::M_Type,
   allowUnknown::Bool,
 )::Tuple{Expression, Expression, M_Type, MatchKind}
-  local matchKind::MatchKind
+  local matchKind::MatchKindType
   local compatibleType::M_Type
 
   @assign (compatibleType, matchKind) = begin
@@ -3580,7 +3477,7 @@ function matchComplexTypes(
   expression::Expression,
   allowUnknown::Bool,
 )::Tuple{Expression, M_Type, MatchKind}
-  local matchKind::MatchKind = MatchKind.NOT_COMPATIBLE
+  local matchKind::MatchKindType = MatchKind.NOT_COMPATIBLE
   local compatibleType::M_Type = actualType
 
   local cls1::Class
@@ -3596,7 +3493,7 @@ function matchComplexTypes(
   local e::Expression
   local elements::List{Expression}
   local matched_elements::List{Expression} = nil
-  local mk::MatchKind
+  local mk::MatchKindType
   local comp1::Component
   local comp2::Component
 
@@ -3713,12 +3610,12 @@ function matchComponentList(
   comps1::List{<:InstNode},
   comps2::List{<:InstNode},
   allowUnknown::Bool,
-)::MatchKind
-  local matchKind::MatchKind
+)::MatchKindType
+  local matchKind::MatchKindType
 
   local c2::InstNode
   local rest_c2::List{InstNode} = comps2
-  local dummy::Expression = P_Expression.Expression.INTEGER(0)
+  local dummy::Expression = INTEGER_EXPRESSION(0)
 
   if listLength(comps1) != listLength(comps2)
     @assign matchKind = MatchKind.NOT_COMPATIBLE
@@ -3746,7 +3643,7 @@ function matchFunctionTypes(
   expression::Expression,
   allowUnknown::Bool,
 )::Tuple{Expression, M_Type, MatchKind}
-  local matchKind::MatchKind = MatchKind.EXACT
+  local matchKind::MatchKindType = MatchKind.EXACT
   local compatibleType::M_Type = actualType
 
   local inputs1::List{InstNode}
@@ -3817,8 +3714,8 @@ function matchFunctionParameters(
   local pl1::List{InstNode} = params1
   local pl2::List{InstNode} = params2
   local p1::InstNode
-  local dummy::Expression = P_Expression.Expression.INTEGER(0)
-  local mk::MatchKind
+  local dummy::Expression = INTEGER_EXPRESSION(0)
+  local mk::MatchKindType
 
   for p2 in pl2
     if listEmpty(pl1)
@@ -3844,8 +3741,8 @@ function matchFunctionParameters(
   return matching
 end
 
-function matchEnumerationTypes(type1::M_Type, type2::M_Type)::MatchKind
-  local matchKind::MatchKind
+function matchEnumerationTypes(type1::M_Type, type2::M_Type)::MatchKindType
+  local matchKind::MatchKindType
 
   local lits1::List{String}
   local lits2::List{String}
@@ -3867,7 +3764,7 @@ function matchArrayExpressions(
   type2::M_Type,
   allowUnknown::Bool,
 )::Tuple{Expression, Expression, M_Type, MatchKind}
-  local matchKind::MatchKind
+  local matchKind::MatchKindType
   local compatibleType::M_Type
 
   local ety1::M_Type
@@ -3894,7 +3791,7 @@ function matchArrayTypes(
   expression::Expression,
   allowUnknown::Bool,
 )::Tuple{Expression, M_Type, MatchKind}
-  local matchKind::MatchKind
+  local matchKind::MatchKindType
   local compatibleType::M_Type
 
   local ety1::M_Type
@@ -3919,7 +3816,7 @@ function matchArrayDims(
   dims1::List{<:Dimension},
   dims2::List{<:Dimension},
   ty::M_Type,
-  matchKind::MatchKind,
+  matchKind::MatchKindType,
   allowUnknown::Bool,
 )::Tuple{M_Type, MatchKind}
 
@@ -3984,7 +3881,7 @@ function matchTupleTypes(
   expression::Expression,
   allowUnknown::Bool,
 )::Tuple{Expression, M_Type, MatchKind}
-  local matchKind::MatchKind = MatchKind.EXACT
+  local matchKind::MatchKindType = MatchKind.EXACT
   local compatibleType::M_Type = tupleType1
 
   local tyl1::List{M_Type}
@@ -4019,7 +3916,7 @@ function matchBoxedExpressions(
   type2::M_Type,
   allowUnknown::Bool,
 )::Tuple{Expression, Expression, M_Type, MatchKind}
-  local matchKind::MatchKind
+  local matchKind::MatchKindType
   local compatibleType::M_Type
 
   local e1::Expression
@@ -4043,7 +3940,7 @@ function matchTypes_cast(
   expression::Expression,
   allowUnknown::Bool = false,
 )::Tuple{Expression, M_Type, MatchKind}
-  local matchKind::MatchKind
+  local matchKind::MatchKindType
   local compatibleType::M_Type
 
   @assign (compatibleType, matchKind) = begin
@@ -4136,7 +4033,7 @@ function matchTypes_cast(
       end
 
       (_, TYPE_POLYMORPHIC(__)) => begin
-        @assign expression = P_Expression.Expression.BOX(expression)
+        @assign expression = BOX_EXPRESSION(expression)
         #=  matchKind := MatchKind.GENERIC(expectedType.b,actualType);
         =#
         (TYPE_METABOXED(actualType), MatchKind.GENERIC)
@@ -4236,16 +4133,16 @@ function getRangeTypeInt(
     local step::Integer
     local step_exp::Expression
     local dim_exp::Expression
-    local var::Variability
+    local var::VariabilityType
     @match (startExp, stepExp, stopExp) begin
-      (P_Expression.Expression.INTEGER(__), NONE(), P_Expression.Expression.INTEGER(__)) => begin
+      (INTEGER_EXPRESSION(__), NONE(), INTEGER_EXPRESSION(__)) => begin
         P_Dimension.Dimension.fromInteger(max(stopExp.value - startExp.value + 1, 0))
       end
 
       (
-        P_Expression.Expression.INTEGER(__),
-        SOME(P_Expression.Expression.INTEGER(value = step)),
-        P_Expression.Expression.INTEGER(__),
+        INTEGER_EXPRESSION(__),
+        SOME(INTEGER_EXPRESSION(value = step)),
+        INTEGER_EXPRESSION(__),
       ) => begin
         #=  Don't allow infinite ranges.
         =#
@@ -4258,7 +4155,7 @@ function getRangeTypeInt(
         ))
       end
 
-      (P_Expression.Expression.INTEGER(1), NONE(), _) => begin
+      (INTEGER_EXPRESSION(1), NONE(), _) => begin
         #=  Ranges like 1:n have size n.
         =#
         @assign dim_exp = SimplifyExp.simplify(stopExp)
@@ -4300,11 +4197,11 @@ function getRangeTypeInt(
         @assign dim_exp = BINARY_EXPRESSION(
           dim_exp,
           P_Operator.Operator.makeAdd(TYPE_INTEGER()),
-          P_Expression.Expression.INTEGER(1),
+          INTEGER_EXPRESSION(1),
         )
         @assign dim_exp = CALL_EXPRESSION(P_Call.makeTypedCall(
           NFBuiltinFuncs.MAX_INT,
-          list(dim_exp, P_Expression.Expression.INTEGER(0)),
+          list(dim_exp, INTEGER_EXPRESSION(0)),
           var,
         ))
         @assign dim_exp = SimplifyExp.simplify(dim_exp)
@@ -4328,7 +4225,7 @@ function getRangeTypeReal(
     local step::AbstractFloat
     local dim_exp::Expression
     local step_exp::Expression
-    local var::Variability
+    local var::VariabilityType
     @match (startExp, stepExp, stopExp) begin
       (P_Expression.REAL_EXPRESSION(__), NONE(), P_Expression.REAL_EXPRESSION(__)) =>
         begin
@@ -4402,7 +4299,7 @@ function getRangeTypeReal(
         @assign dim_exp = BINARY_EXPRESSION(
           dim_exp,
           P_Operator.Operator.makeAdd(TYPE_INTEGER()),
-          P_Expression.Expression.INTEGER(1),
+          INTEGER_EXPRESSION(1),
         )
         @assign dim_exp = SimplifyExp.simplify(dim_exp)
         P_Dimension.Dimension.fromExp(dim_exp, var)
@@ -4418,7 +4315,7 @@ function getRangeTypeBool(startExp::Expression, stopExp::Expression)::Dimension
   @assign dim = begin
     local sz::Integer
     local dim_exp::Expression
-    local var::Variability
+    local var::VariabilityType
     @match (startExp, stopExp) begin
       (P_Expression.Expression.BOOLEAN(__), P_Expression.Expression.BOOLEAN(__)) => begin
         @assign sz = if startExp.value == stopExp.value
@@ -4445,15 +4342,15 @@ function getRangeTypeBool(startExp::Expression, stopExp::Expression)::Dimension
               P_Operator.Operator.makeEqual(TYPE_BOOLEAN()),
               stopExp,
             ),
-            P_Expression.Expression.INTEGER(1),
+            INTEGER_EXPRESSION(1),
             P_Expression.Expression.IF(
               P_Expression.Expression.RELATION(
                 startExp,
                 P_Operator.Operator.makeLess(TYPE_BOOLEAN()),
                 stopExp,
               ),
-              P_Expression.Expression.INTEGER(2),
-              P_Expression.Expression.INTEGER(0),
+              INTEGER_EXPRESSION(2),
+              INTEGER_EXPRESSION(0),
             ),
           )
           @assign dim_exp = SimplifyExp.simplify(dim_exp)
@@ -4471,7 +4368,7 @@ function getRangeTypeEnum(startExp::Expression, stopExp::Expression)::Dimension
 
   @assign dim = begin
     local dim_exp::Expression
-    local var::Variability
+    local var::VariabilityType
     @match (startExp, stopExp) begin
       (P_Expression.Expression.ENUM_LITERAL(__), P_Expression.Expression.ENUM_LITERAL(__)) => begin
         P_Dimension.Dimension.fromInteger(max(stopExp.index - startExp.index + 1, 0))
@@ -4497,7 +4394,7 @@ function getRangeTypeEnum(startExp::Expression, stopExp::Expression)::Dimension
           @assign dim_exp = BINARY_EXPRESSION(
             dim_exp,
             P_Operator.Operator.makeAdd(TYPE_INTEGER()),
-            P_Expression.Expression.INTEGER(1),
+            INTEGER_EXPRESSION(1),
           )
           @assign dim_exp = SimplifyExp.simplify(dim_exp)
           @assign dim = P_Dimension.Dimension.fromExp(dim_exp, var)
@@ -4517,7 +4414,7 @@ function matchBinding(
 )::Binding
 
   @assign () = begin
-    local ty_match::MatchKind
+    local ty_match::MatchKindType
     local exp::Expression
     local ty::M_Type
     local exp_ty::M_Type
@@ -4567,11 +4464,12 @@ function matchBinding(
       end
 
       _ => begin
-        Error.assertion(
-          false,
-          getInstanceName() + " got untyped binding " + toString(binding),
-          sourceInfo(),
-        )
+        # Error.assertion(
+        #   false,
+        #   getInstanceName() + " got untyped binding " + toString(binding),
+        #   sourceInfo(),
+        # )
+        @error "Untyped binding"
         fail()
       end
     end
@@ -4590,7 +4488,7 @@ function printBindingTypeError(
   local comp_info::SourceInfo
   local bind_ty_str::String
   local comp_ty_str::String
-  local mk::MatchKind
+  local mk::MatchKindType
 
   @assign binding_info = getInfo(binding)
   @assign comp_info = info(component)
@@ -4803,7 +4701,4 @@ function checkSumComplexType(ty::M_Type, exp::Expression, info::SourceInfo)::Boo
     end
   end
   return valid
-end
-
-@exportAll()
 end

@@ -112,10 +112,43 @@ import ..Main.RESTRICTION_TYPE
 import ..Main.EMPTY_NODE_CACHE
 import ..Main.EMPTY_NODE
 import ..Main.BUILTIN_CLASS
+import ..Main.PARTIAL_BUILTIN
+import ..Main.CLASS_NODE
+import ..Main.RESTRICTION_TYPE
+import ..Main.EMPTY_NODE_CACHE
+#= Types =#
+import ..Main.TYPE_STRING
+import ..Main.TYPE_ATTRIBUTE
+import ..Main.TYPE_ENUMERATION
+import ..Main.TYPE_INTEGER
+import ..Main.TYPE_REAL
+import ..Main.TYPE_BOOLEAN
+#==#
 import ..LookupTree
+import ..InstNode
 
-import ..Main.PartialBuildin
-using ..Main
+import ..Main.NORMAL_COMP
+import ..Main.COMPONENT_NODE
+import ..Main.STATESELECT_TYPE
+
+import ..DuplicateTree
+
+import ..Main.CLASS_TREE_FLAT_TREE
+import ..Main.ClassTree
+
+import ..Main.Origin
+import ..Main.COMPONENT_REF_EMPTY
+import ..Main.COMPONENT_REF_CREF
+import ..Main.ComponentRef
+import ..Main.TYPE_ENUMERATION_ANY
+import ..Main.RESTRICTION_ENUMERATION
+import ..Main.ENUM_LITERAL_EXPRESSION
+import ..Main.Expression
+import ..Main.TYPE_CLOCK
+import ..Main.RESTRICTION_CLOCK
+import ..Main.TYPED_COMPONENT
+import ..Main.EMPTY_BINDING
+import ..Main.INPUT_ATTR
 
 const EMPTY_NODE_CACHE = listArrayLiteral(list(C_FUNCTION(nil, true, true)))::Array
 #=  InstNodes for the builtin types. These have empty class trees to prevent
@@ -192,6 +225,8 @@ const REAL_LOOKUP_TREE =
       ),
     ),
   )::LookupTree.Tree
+
+
 
 const STATESELECT_TYPE =
   TYPE_ENUMERATION(
@@ -485,6 +520,8 @@ const BOOLEAN_CLASS_TREE =
     listArray(nil),
     DuplicateTree.EMPTY(),
   )::ClassTree
+
+
 #=  TODO: #4895: This should be listArrayLiteral too, but causes compilation issues.
 =#
 const BOOLEAN_NODE =

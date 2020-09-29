@@ -60,7 +60,7 @@ function fromExp(exp::Expression)::Subscript
 
   @assign subscript = begin
     @match exp begin
-      P_Expression.Expression.INTEGER(__) => begin
+      INTEGER_EXPRESSION(__) => begin
         INDEX(exp)
       end
 
@@ -91,7 +91,7 @@ function first(dim::Dimension)::Subscript
   @assign sub = begin
     @match dim begin
       P_Dimension.Dimension.INTEGER(__) => begin
-        INDEX(P_Expression.Expression.INTEGER(1))
+        INDEX(INTEGER_EXPRESSION(1))
       end
 
       P_Dimension.Dimension.BOOLEAN(__) => begin

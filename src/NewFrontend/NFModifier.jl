@@ -380,7 +380,7 @@ function binding(modifier::Modifier)::Binding
         modifier.binding
       end
       _ => begin
-        NFBinding.EMPTY_BINDING
+        EMPTY_BINDING
       end
     end
   end

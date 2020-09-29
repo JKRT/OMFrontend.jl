@@ -57,7 +57,7 @@ end
   end
 
   @Record MUTABLE_EXPRESSION begin
-    exp::Mutable{Expression}
+    exp::Pointer{Expression}
   end
 
   @Record BOX_EXPRESSION begin
@@ -171,11 +171,11 @@ end
   end
 
   @Record TYPENAME_EXPRESSION begin
-    ty::M_Type
+    ty::NFType
   end
 
   @Record CREF_EXPRESSION begin
-    ty::M_Type
+    ty::NFType
     cref::ComponentRef
   end
 

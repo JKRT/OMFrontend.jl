@@ -151,7 +151,6 @@ function map1(
         @assign sections = SECTIONS(eq, ieq, alg, ialg)
         ()
       end
-
       _ => begin
         ()
       end
@@ -174,10 +173,10 @@ function map(
   @assign () = begin
     @match sections begin
       SECTIONS(__) => begin
-        @assign eq = List(eqFn(e) for e in sections.equations)
-        @assign ieq = List(ieqFn(e) for e in sections.initialEquations)
-        @assign alg = List(algFn(a) for a in sections.algorithms)
-        @assign ialg = List(ialgFn(a) for a in sections.initialAlgorithms)
+        @assign eq = list(eqFn(e) for e in sections.equations)
+        @assign ieq = list(ieqFn(e) for e in sections.initialEquations)
+        @assign alg = list(algFn(a) for a in sections.algorithms)
+        @assign ialg = list(ialgFn(a) for a in sections.initialAlgorithms)
         @assign sections = SECTIONS(eq, ieq, alg, ialg)
         ()
       end
@@ -194,11 +193,11 @@ function join(sections1::Sections, sections2::Sections)::Sections
 
   @assign sections = begin
     @match (sections1, sections2) begin
-      (EMPTY(__), _) => begin
+      (SECTIONS_EMPTY(__), _) => begin
         sections2
       end
 
-      (_, EMPTY(__)) => begin
+      (_, SECTIONS_EMPTY(__)) => begin
         sections1
       end
 
@@ -357,7 +356,7 @@ function new(
      listEmpty(initialEquations) &&
      listEmpty(algorithms) &&
      listEmpty(initialAlgorithms)
-    @assign sections = EMPTY()
+    @assign sections = SECTIONS_EMPTY()
   else
     @assign sections = SECTIONS(equations, initialEquations, algorithms, initialAlgorithms)
   end

@@ -68,7 +68,7 @@ ORIGIN_Type = Integer
 M_Type = Integer
 #=  Flag values:
 =#
-const ORIGIN_CLASS = 0::M_Type
+const ORIGIN_CLASS = 0
 #=  In class.
 =#
 const ORIGIN_FUNCTION = intBitLShift(1, 0)::M_Type
@@ -145,8 +145,8 @@ function isSingleExpression(origin::M_Type)::Bool
   return isSingle
 end
 
-function setFlag(origin::M_Type, flag::M_Type)::M_Type
-  local newOrigin::M_Type
+function setFlag(origin, flag)
+  local newOrigin
   @assign newOrigin = intBitOr(origin, flag)
   return newOrigin
 end
@@ -164,13 +164,14 @@ function flagNotSet(origin::M_Type, flag::M_Type)::Bool
 end
 
 function typeClass(cls::InstNode, name::String)
-  typeClassType(cls, NFBinding.EMPTY_BINDING, ORIGIN_CLASS, cls)
+  typeClassType(cls, EMPTY_BINDING, ORIGIN_CLASS, cls)
   typeComponents(cls, ORIGIN_CLASS)
-  execStat("NFTyping.typeComponents(" + name + ")")
+#  execStat("NFTyping.typeComponents(" + name + ")")
   typeBindings(cls, cls, ORIGIN_CLASS)
-  execStat("NFTyping.typeBindings(" + name + ")")
+#  execStat("NFTyping.typeBindings(" + name + ")")
   typeClassSections(cls, ORIGIN_CLASS)
-  return execStat("NFTyping.typeClassSections(" + name + ")")
+  #execStat("NFTyping.typeClassSections(" + name + ")")
+  return
 end
 
 function typeComponents(cls::InstNode, origin::ORIGIN_Type)
@@ -187,13 +188,13 @@ function typeComponents(cls::InstNode, origin::ORIGIN_Type)
         ()
       end
 
-      INSTANCED_CLASS(elements = cls_tree && FLAT_TREE(__)) => begin
+      INSTANCED_CLASS(elements = cls_tree && CLASS_TREE_FLAT_TREE(__)) => begin
         for c in cls_tree.components
           typeComponent(c, origin)
         end
         @assign () = begin
           @match c.ty begin
-            TYPE_COMPLEX(complexTy = ComplexType.RECORD(constructor = con)) => begin
+            TYPE_COMPLEX(complexTy = COMPLEX_RECORD(constructor = con)) => begin
               typeStructor(con)
               ()
             end
@@ -227,7 +228,7 @@ function typeComponents(cls::InstNode, origin::ORIGIN_Type)
 
       INSTANCED_BUILTIN(
         ty = TYPE_COMPLEX(
-          complexTy = ComplexType.EXTERNAL_OBJECT(constructor = con, destructor = de),
+          complexTy = COMPLEX_EXTERNAL_OBJECT(constructor = con, destructor = de),
         ),
       ) => begin
         typeStructor(con)
@@ -282,8 +283,8 @@ function typeClassType(
   componentBinding::Binding,
   origin::ORIGIN_Type,
   instanceNode::InstNode,
-)::M_Type
-  local ty::M_Type
+)::NFType
+  local ty::NFType
 
   local cls::Class
   local ty_cls::Class
@@ -296,7 +297,7 @@ function typeClassType(
   @assign ty = begin
     @match cls begin
       INSTANCED_CLASS(
-        restriction = P_Restriction.Restriction.CONNECTOR(isExpandable = is_expandable),
+        restriction = RESTRICTION_CONNECTOR(isExpandable = is_expandable),
       ) => begin
         @assign ty = TYPE_COMPLEX(clsNode, makeConnectorType(cls.elements, is_expandable))
         @assign cls.ty = ty
@@ -307,7 +308,7 @@ function typeClassType(
       INSTANCED_CLASS(
         ty = TYPE_COMPLEX(
           cls = ty_node,
-          complexTy = ComplexType.RECORD(constructor = node),
+          complexTy = COMPLEX_RECORD(constructor = node),
         ),
       ) => begin
         @assign ty = TYPE_COMPLEX(ty_node, makeRecordType(node))
@@ -317,7 +318,7 @@ function typeClassType(
       end
 
       INSTANCED_CLASS(
-        ty = TYPE_COMPLEX(complexTy = ComplexType.EXTENDS(node)),
+        ty = TYPE_COMPLEX(complexTy = COMPLEX_EXTENDS_TYPE(node)),
       ) => begin
         #=  A long class declaration of a type extending from a type has the type of the base class.
         =#
@@ -328,7 +329,7 @@ function typeClassType(
       end
 
       INSTANCED_CLASS(
-        restriction = P_Restriction.Restriction.FUNCTION(__),
+        restriction = RESTRICTION_FUNCTION(__),
       ) where {(isComponent(instanceNode))} => begin
         #=  A component of function type, i.e. a functional input parameter.
         =#
@@ -392,7 +393,7 @@ function makeConnectorType(ctree::ClassTree, isExpandable::Bool)::ComplexType
 
   if isExpandable
     for c in enumerateComponents(ctree)
-      @assign cty = P_Component.connectorType(component(c))
+      @assign cty = connectorType(component(c))
       if intBitAnd(cty, ConnectorType.EXPANDABLE) > 0
         @assign exps = _cons(c, exps)
       else
@@ -437,7 +438,7 @@ function makeRecordType(constructor::InstNode)::ComplexType
     @match cache begin
       C_FUNCTION(funcs = fn <| _) => begin
         @assign fields = Record.collectRecordFields(fn.node)
-        ComplexType.RECORD(constructor, fields)
+        COMPLEX_RECORD(constructor, fields)
       end
 
       _ => begin
@@ -453,15 +454,14 @@ function makeRecordType(constructor::InstNode)::ComplexType
   return recordTy
 end
 
-function typeComponent(component::InstNode, origin::ORIGIN_Type)::M_Type
-  local ty::M_Type
-
-  local node::InstNode = resolveOuter(component)
+function typeComponent(inComponent::InstNode, origin::ORIGIN_Type)::NFType
+  local ty::NFType
+  local node::InstNode = resolveOuter(inComponent)
   local c::Component = component(node)
 
   @assign ty = begin
     @match c begin
-      P_Component.UNTYPED_COMPONENT(__) => begin
+      UNTYPED_COMPONENT(__) => begin
         #=  An untyped component, type it.
         =#
         #=  Type the component's dimensions.
@@ -469,27 +469,26 @@ function typeComponent(component::InstNode, origin::ORIGIN_Type)::M_Type
         typeDimensions(c.dimensions, node, c.binding, origin, c.info)
         #=  Construct the type of the component and update the node with it.
         =#
-        @assign ty = typeClassType(c.classInst, c.binding, origin, component)
-        @assign ty = Type.liftArrayLeftList(ty, arrayList(c.dimensions))
-        updateComponent(P_Component.setType(ty, c), node)
+        @assign ty = typeClassType(c.classInst, c.binding, origin, inComponent)
+        @assign ty = liftArrayLeftList(ty, arrayList(c.dimensions))
+        updateComponent(setType(ty, c), node)
         #=  Check that flow/stream variables are Real.
         =#
-        checkComponentStreamAttribute(c.attributes.connectorType, ty, component)
+        checkComponentStreamAttribute(c.attributes.connectorType, ty, inComponent)
         #=  Type the component's children.
         =#
         typeComponents(c.classInst, origin)
         ty
       end
-
-      P_Component.TYPED_COMPONENT(__) => begin
+      TYPED_COMPONENT(__) => begin
         c.ty
       end
 
-      P_Component.ITERATOR(__) => begin
+      ITERATOR_COMPONENT(__) => begin
         c.ty
       end
 
-      P_Component.ENUM_LITERAL(literal = P_Expression.Expression.ENUM_LITERAL(ty = ty)) =>
+      ENUM_LITERAL_COMPONENT(literal = ENUM_LITERAL_EXPRESSION(ty = ty)) =>
         begin
           ty
         end
@@ -514,13 +513,13 @@ function typeComponent(component::InstNode, origin::ORIGIN_Type)::M_Type
 end
 
 function checkComponentStreamAttribute(
-  cty::ConnectorType.Type,
-  ty::M_Type,
+  cty::Integer,
+  ty::NFType,
   component::InstNode,
 )
-  local ety::M_Type
+  local ety::NFType
 
-  return if ConnectorType.isFlowOrStream(cty)
+  return if isFlowOrStream(cty)
     @assign ety = Type.arrayElementType(ty)
     if !(Type.isReal(ety) || Type.isComplex(ety))
       Error.addSourceMessageAndFail(
@@ -886,7 +885,7 @@ end
 function verifyDimension(dimension::Dimension, component::InstNode, info::SourceInfo)
   return @assign () = begin
     @match dimension begin
-      P_Dimension.Dimension.INTEGER(__) => begin
+      DIMENSION_INTEGER(__) => begin
         #=  Check that integer dimensions are not negative.
         =#
         if dimension.size < 0
@@ -937,18 +936,6 @@ function getRecordElementBinding(component::InstNode)::Tuple{Binding, Integer}
   else
     @assign binding = NFBinding.EMPTY_BINDING
   end
-  #=  Get the binding of the component's parent.
-  =#
-  #=  If the parent has no binding, try the parent's parent.
-  =#
-  #=  Otherwise type the binding, so we can safely look up the field name.
-  =#
-  #=  If the binding wasn't typed before, update the parent component with it
-  =#
-  #=  so we don't have to type it again.
-  =#
-  #=  If we found a binding, get the binding for the field from it.
-  =#
   return (binding, parentDims)
 end
 
@@ -960,14 +947,14 @@ function typeBindings(cls::InstNode, component::InstNode, origin::ORIGIN_Type)
   @assign c = getClass(cls)
   return @assign () = begin
     @match c begin
-      INSTANCED_CLASS(elements = cls_tree && FLAT_TREE(__)) => begin
+      INSTANCED_CLASS(elements = cls_tree && CLASS_TREE_FLAT_TREE(__)) => begin
         for c in cls_tree.components
           typeComponentBinding(c, origin)
         end
         ()
       end
 
-      INSTANCED_BUILTIN(elements = cls_tree && FLAT_TREE(__)) => begin
+      INSTANCED_BUILTIN(elements = cls_tree && CLASS_TREE_FLAT_TREE(__)) => begin
         for c in cls_tree.components
           typeComponentBinding(c, origin)
         end
@@ -996,11 +983,11 @@ function typeBindings(cls::InstNode, component::InstNode, origin::ORIGIN_Type)
 end
 
 function typeComponentBinding(
-  component::InstNode,
+  inComponent::InstNode,
   origin::ORIGIN_Type,
   typeChildren::Bool = true,
 )
-  local node::InstNode = resolveOuter(component)
+  local node::InstNode = resolveOuter(inComponent)
   local c::Component
   local binding::Binding
   local cls::InstNode
@@ -1013,13 +1000,13 @@ function typeComponentBinding(
   local attrs::Attributes
 
   @assign c = component(node)
-  return @assign () = begin
+  () = begin
     @match c begin
-      P_Component.TYPED_COMPONENT(
+      TYPED_COMPONENT(
         binding = UNTYPED_BINDING(__),
         attributes = attrs,
       ) => begin
-        @assign name = name(component)
+        @assign name = name(inComponent)
         @assign binding = c.binding
         ErrorExt.setCheckpoint(getInstanceName())
         try
@@ -1050,30 +1037,30 @@ function typeComponentBinding(
         end
         updateComponent(c, node)
         if typeChildren
-          typeBindings(c.classInst, component, origin)
+          typeBindings(c.classInst, inComponent, origin)
         end
         ()
       end
 
-      P_Component.TYPED_COMPONENT(__) => begin
+      TYPED_COMPONENT(__) => begin
         #=  A component without a binding, or with a binding that's already been typed.
         =#
         checkBindingEach(c.binding)
         if isTyped(c.binding)
           @assign c.binding =
-            matchBinding(c.binding, c.ty, name(component), node)
+            matchBinding(c.binding, c.ty, name(inComponent), node)
         end
         if isBound(c.condition)
           @assign c.condition = typeComponentCondition(c.condition, origin)
           updateComponent(c, node)
         end
         if typeChildren
-          typeBindings(c.classInst, component, origin)
+          typeBindings(c.classInst, inComponent, origin)
         end
         ()
       end
 
-      P_Component.UNTYPED_COMPONENT(
+      UNTYPED_COMPONENT(
         binding = UNTYPED_BINDING(__),
         attributes = attrs,
       ) => begin
@@ -1083,7 +1070,7 @@ function typeComponentBinding(
         =#
         #=  component. Type only the binding and let the case above handle the rest.
         =#
-        @assign name = name(component)
+        @assign name = name(inComponent)
         checkBindingEach(c.binding)
         @assign binding =
           typeBinding(c.binding, setFlag(origin, ORIGIN_BINDING))
@@ -1097,7 +1084,7 @@ function typeComponentBinding(
         ()
       end
 
-      P_Component.ENUM_LITERAL(__) => begin
+      ENUM_LITERAL_COMPONENT(__) => begin
         ()
       end
 
@@ -1107,7 +1094,7 @@ function typeComponentBinding(
 
       TYPE_ATTRIBUTE(__) => begin
         @assign c.modifier =
-          typeTypeAttribute(c.modifier, c.ty, parent(component), origin)
+          typeTypeAttribute(c.modifier, c.ty, parent(inComponent), origin)
         updateComponent(c, node)
         ()
       end
@@ -1172,7 +1159,6 @@ function checkComponentBindingVariability(
 end
 
 function typeBinding(binding::Binding, origin::ORIGIN_Type)::Binding
-
   @assign binding = begin
     local exp::Expression
     local ty::M_Type
@@ -1202,11 +1188,12 @@ function typeBinding(binding::Binding, origin::ORIGIN_Type)::Binding
       end
 
       _ => begin
-        Error.assertion(
-          false,
-          getInstanceName() + " got uninstantiated binding",
-          sourceInfo(),
-        )
+        # Error.assertion(
+        #   false,
+        #   getInstanceName() + " got uninstantiated binding",
+        #   sourceInfo(),
+        # )
+        @error "Uninstantiated binding!"
         fail()
       end
     end
@@ -1216,19 +1203,18 @@ end
 
 function checkBindingEach(binding::Binding)
   local parents::List{InstNode}
-
-  return if isEach(binding)
+  if isEach(binding)
     @assign parents = listRest(parents(binding))
     for parent in parents
-      if Type.isArray(getType(parent))
+      if isArray(getType(parent))
         return
       end
     end
-    Error.addStrictMessage(
-      Error.EACH_ON_NON_ARRAY,
-      list(name(listHead(parents))),
-      getInfo(binding),
-    )
+    # Error.addStrictMessage(
+    #   Error.EACH_ON_NON_ARRAY,
+    #   list(name(listHead(parents))),
+    #   getInfo(binding),
+    # )
   end
 end
 
@@ -1279,7 +1265,7 @@ end
 
 function typeTypeAttribute(
   attribute::Modifier,
-  ty::M_Type,
+  ty::NFType,
   component::InstNode,
   origin::ORIGIN_Type,
 )::Modifier
@@ -1287,7 +1273,6 @@ function typeTypeAttribute(
   local name::String
   local binding::Binding
   local mod_parent::InstNode
-
   @assign attribute = begin
     @match attribute begin
       MODIFIER_MODIFIER(__) where {(!ModTable.isEmpty(attribute.subModifiers))} => begin
@@ -1357,9 +1342,9 @@ function typeExp(
   exp::Expression,
   origin::ORIGIN_Type,
   info::SourceInfo,
-)::Tuple{Expression, M_Type, Variability}
-  local variability::Variability
-  local ty::M_Type
+)::Tuple{Expression, NFType, VariabilityType}
+  local variability::VariabilityType
+  local ty::NFType
 
   @assign (exp, ty, variability) = begin
     local e1::Expression
@@ -1375,23 +1360,23 @@ function typeExp(
     local cref::ComponentRef
     local next_origin::ORIGIN_Type
     @match exp begin
-      P_Expression.Expression.INTEGER(__) => begin
+      INTEGER_EXPRESSION(__) => begin
         (exp, TYPE_INTEGER(), Variability.CONSTANT)
       end
 
-      P_Expression.REAL_EXPRESSION(__) => begin
+      REAL_EXPRESSION(__) => begin
         (exp, TYPE_REAL(), Variability.CONSTANT)
       end
 
-      P_Expression.Expression.STRING(__) => begin
+      STRING_EXPRESSION(__) => begin
         (exp, TYPE_STRING(), Variability.CONSTANT)
       end
 
-      P_Expression.Expression.BOOLEAN(__) => begin
+      BOOLEAN_EXPRESSION(__) => begin
         (exp, TYPE_BOOLEAN(), Variability.CONSTANT)
       end
 
-      P_Expression.Expression.ENUM_LITERAL(__) => begin
+      ENUM_LITERAL_EXPRESSION(__) => begin
         (exp, exp.ty, Variability.CONSTANT)
       end
 
@@ -1399,7 +1384,7 @@ function typeExp(
         typeCrefExp(exp.cref, origin, info)
       end
 
-      P_Expression.Expression.TYPENAME(__) => begin
+      TYPENAME_EXPRESSION(__) => begin
         if flagNotSet(origin, ORIGIN_VALID_TYPENAME_SCOPE)
           Error.addSourceMessage(
             Error.INVALID_TYPENAME_USE,
@@ -1411,15 +1396,15 @@ function typeExp(
         (exp, exp.ty, Variability.CONSTANT)
       end
 
-      P_Expression.Expression.ARRAY(__) => begin
+      ARRAY_EXPRESSION(__) => begin
         typeArray(exp.elements, origin, info)
       end
 
-      P_Expression.Expression.MATRIX(__) => begin
+      MATRIX_EXPRESSION(__) => begin
         typeMatrix(exp.elements, origin, info)
       end
 
-      P_Expression.Expression.RANGE(__) => begin
+      RANGE_EXPRESSION(__) => begin
         typeRange(exp, origin, info)
       end
 
@@ -1427,11 +1412,11 @@ function typeExp(
         typeTuple(exp.elements, origin, info)
       end
 
-      P_Expression.Expression.SIZE(__) => begin
+      SIZE_EXPRESSION(__) => begin
         typeSize(exp, origin, info)
       end
 
-      P_Expression.Expression.END(__) => begin
+      END_EXPRESSION(__) => begin
         #=  end is replaced in subscripts before we get here, so any end still
         =#
         #=  left should be outside a subscript and thus illegal.
@@ -1457,7 +1442,7 @@ function typeExp(
         (exp, ty, P_Prefixes.variabilityMax(var1, var2))
       end
 
-      P_Expression.Expression.UNARY(__) => begin
+      UNARY_EXPRESSION(__) => begin
         @assign next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
         @assign (e1, ty1, var1) = typeExp(exp.exp, next_origin, info)
         @assign (exp, ty) =
@@ -1465,7 +1450,7 @@ function typeExp(
         (exp, ty, var1)
       end
 
-      P_Expression.Expression.LBINARY(__) => begin
+      LBINARY_EXPRESSION(__) => begin
         @assign next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
         @assign (e1, ty1, var1) = typeExp(exp.exp1, next_origin, info)
         @assign (e2, ty2, var2) = typeExp(exp.exp2, next_origin, info)
@@ -1522,52 +1507,51 @@ function typeExp(
       end
 
       CALL_EXPRESSION(__) => begin
-        @assign (e1, ty, var1) = P_Call.typeCall(exp, origin, info)
+        @assign (e1, ty, var1) = typeCall(exp, origin, info)
         #=  If the call has multiple outputs and isn't alone on either side of an
         =#
         #=  equation/algorithm, select the first output.
         =#
-        if Type.isTuple(ty) && !isSingleExpression(origin)
-          @assign ty = Type.firstTupleType(ty)
-          @assign e1 = P_Expression.Expression.tupleElement(e1, ty, 1)
+        if isTuple(ty) && !isSingleExpression(origin)
+          @assign ty = firstTupleType(ty)
+          @assign e1 = tupleElement(e1, ty, 1)
         end
         (e1, ty, var1)
       end
 
-      P_Expression.Expression.CAST(__) => begin
+      CAST_EXPRESSION(__) => begin
         @assign next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
         typeExp(exp.exp, next_origin, info)
       end
 
-      P_Expression.Expression.SUBSCRIPTED_EXP(__) => begin
-        (exp, exp.ty, P_Expression.Expression.variability(exp))
+      SUBSCRIPTED_EXP_EXPRESSION(__) => begin
+        (exp, exp.ty, variability(exp))
       end
 
-      P_Expression.Expression.MUTABLE(__) => begin
+      MUTABLE_EXPRESSION(__) => begin
         #=  Subscripted expressions are assumed to already be typed.
         =#
-        @assign e1 = Mutable.access(exp.exp)
+        @assign e1 = P_Pointer.access(exp.exp)
         @assign (e1, ty, variability) = typeExp(e1, origin, info)
-        @assign exp.exp = Mutable.create(e1)
+        @assign exp.exp = P_Pointer.create(e1)
         (exp, ty, variability)
       end
 
-      P_Expression.Expression.PARTIAL_FUNCTION_APPLICATION(__) => begin
-        P_Function.typePartialApplication(exp, origin, info)
+      PARTIAL_FUNCTION_APPLICATION_EXPRESSION(__) => begin
+        typePartialApplication(exp, origin, info)
       end
 
-      P_Expression.Expression.BINDING_EXP(__) => begin
+      BINDING_EXP_EXPRESSION(__) => begin
         typeBindingExp(exp, origin, info)
       end
-
       _ => begin
-        Error.assertion(
-          false,
-          getInstanceName() +
-          " got unknown expression: " +
-          P_Expression.Expression.toString(exp),
-          sourceInfo(),
-        )
+        # Error.assertion(
+        #   false,
+        #   getInstanceName() +
+        #   " got unknown expression: " +
+        #   P_Expression.Expression.toString(exp),
+        #   sourceInfo(),
+        # )
         fail()
       end
     end
@@ -1831,7 +1815,7 @@ function typeCrefDim(
                 dim_count
               end
 
-              P_Component.TYPED_COMPONENT(__) => begin
+              TYPED_COMPONENT(__) => begin
                 @assign dim_count = Type.dimensionCount(c.ty)
                 if index <= dim_count && index > 0
                   @assign dim = Type.nthDimension(c.ty, index)
@@ -1909,11 +1893,11 @@ function typeCref(
   origin::ORIGIN_Type,
   info::SourceInfo,
 )::Tuple{ComponentRef, M_Type, Variability, Variability}
-  local subsVariability::Variability
-  local nodeVariability::Variability
-  local ty::M_Type
+  local subsVariability::VariabilityType
+  local nodeVariability::VariabilityType
+  local ty::NFType
 
-  local subs_var::Variability
+  local subs_var::VariabilityType
 
   #=  Check that time isn't used in a function context.
   =#
@@ -1921,7 +1905,7 @@ function typeCref(
   =#
   #=        constant, then maybe we can use referenceEq here instead.
   =#
-  if ORIGIN_flagSet(origin, ORIGIN_FUNCTION) &&
+  if flagSet(origin, ORIGIN_FUNCTION) &&
      firstName(cref) == "time"
     Error.addSourceMessage(Error.EXP_INVALID_IN_FUNCTION, list("time"), info)
     fail()
@@ -1937,25 +1921,24 @@ function typeCref2(
   origin::ORIGIN_Type,
   info::SourceInfo,
   firstPart::Bool = true,
-)::Tuple{ComponentRef, Variability}
-  local subsVariability::Variability
-
+)::Tuple{ComponentRef, VariabilityType}
+  local subsVariability::VariabilityType
   @assign (cref, subsVariability) = begin
     local rest_cr::ComponentRef
-    local node_ty::M_Type
+    local node_ty::NFType
     local subs::List{Subscript}
-    local subs_var::Variability
-    local rest_var::Variability
+    local subs_var::VariabilityType
+    local rest_var::VariabilityType
     local node_origin::ORIGIN_Type
     local fn::M_Function
     @match cref begin
-      CREF(origin = Origin.SCOPE) => begin
+      COMPONENT_REF_CREF(origin = Origin.SCOPE) => begin
         @assign cref.ty = getType(cref.node)
         (cref, Variability.CONSTANT)
       end
 
-      CREF(node = COMPONENT_NODE(__)) => begin
-        if P_Component.hasCondition(component(cref.node)) && (
+      COMPONENT_REF_CREF(node = COMPONENT_NODE(__)) => begin
+        if hasCondition(component(cref.node)) && (
           flagNotSet(origin, ORIGIN_CONNECT) ||
           flagSet(origin, ORIGIN_SUBSCRIPT)
         )
@@ -1981,14 +1964,14 @@ function typeCref2(
         @assign (subs, subs_var) =
           typeSubscripts(cref.subscripts, node_ty, cref, origin, info)
         @assign (rest_cr, rest_var) = typeCref2(cref.restCref, origin, info, false)
-        @assign subsVariability = P_Prefixes.variabilityMax(subs_var, rest_var)
+        @assign subsVariability = variabilityMax(subs_var, rest_var)
         (
-          CREF(cref.node, subs, node_ty, cref.origin, rest_cr),
+          COMPONENT_REF_CREF(cref.node, subs, node_ty, cref.origin, rest_cr),
           subsVariability,
         )
       end
 
-      CREF(
+      COMPONENT_REF_CREF(
         node = CLASS_NODE(__),
       ) where {(firstPart && isFunction(cref.node))} => begin
         @match _cons(fn, _) = P_Function.typeNodeCache(cref.node)
@@ -1997,7 +1980,7 @@ function typeCref2(
         (cref, Variability.CONTINUOUS)
       end
 
-      CREF(node = CLASS_NODE(__)) => begin
+      COMPONENT_REF_CREF(node = CLASS_NODE(__)) => begin
         @assign cref.ty = getType(cref.node)
         (cref, Variability.CONSTANT)
       end
@@ -2012,12 +1995,12 @@ end
 
 function typeSubscripts(
   subscripts::List{<:Subscript},
-  crefType::M_Type,
+  crefType::NFType,
   cref::ComponentRef,
   origin::ORIGIN_Type,
   info::SourceInfo,
-)::Tuple{List{Subscript}, Variability}
-  local variability::Variability = Variability.CONSTANT
+)::Tuple{List{Subscript}, VariabilityType}
+  local variability::VariabilityType = Variability.CONSTANT
   local typedSubs::List{Subscript}
 
   local dims::List{Dimension}
@@ -2299,9 +2282,9 @@ function typeMatrixComma(
         @assign ty = ty1
       else
         @assign (_, _, ty2, mk) = matchExpressions(
-          P_Expression.Expression.INTEGER(0),
+          INTEGER_EXPRESSION(0),
           Type.arrayElementType(ty1),
-          P_Expression.Expression.INTEGER(0),
+          INTEGER_EXPRESSION(0),
           Type.arrayElementType(ty),
         )
         if isCompatibleMatch(mk)
@@ -2532,7 +2515,7 @@ function typeSize(
         if variability <= Variability.STRUCTURAL_PARAMETER &&
            !P_Expression.Expression.containsIterator(index, origin)
           @assign index = Ceval.evalExp(index, Ceval.P_EvalTarget.IGNORE_ERRORS())
-          @match P_Expression.Expression.INTEGER(iindex) = index
+          @match INTEGER_EXPRESSION(iindex) = index
           @assign (dim, oexp, ty_err) = typeExpDim(exp, iindex, next_origin, info)
           checkSizeTypingError(ty_err, exp, iindex, info)
           if P_Dimension.Dimension.isKnown(dim) && evaluate
@@ -2750,7 +2733,7 @@ function typeIfExpression(
     else
       @assign ifExp = P_Expression.Expression.IF(cond, tb2, fb2)
       @assign var =
-        P_Prefixes.variabilityMax(cond_var, P_Prefixes.variabilityMax(tb_var, fb_var))
+        variabilityMax(cond_var, variabilityMax(tb_var, fb_var))
     end
   end
   #=  If the condition is constant, always do branch selection.
@@ -2803,50 +2786,48 @@ function evaluateCondition(
   return condBool
 end
 
-function typeClassSections(classNode::InstNode, origin::ORIGIN_Type)
+function typeClassSections(classNode::InstNode, originArg::ORIGIN_Type)
   local cls::Class
   local typed_cls::Class
   local components::Array{InstNode}
   local sections::Sections
   local info::SourceInfo
   local initial_origin::Integer
-
   @assign cls = getClass(classNode)
-  return @assign _ = begin
+   _ = begin
     @match cls begin
       INSTANCED_CLASS(restriction = RESTRICTION_TYPE(__)) => begin
         ()
       end
 
       INSTANCED_CLASS(
-        elements = FLAT_TREE(components = components),
+        elements = CLASS_TREE_FLAT_TREE(components = components),
         sections = sections,
       ) => begin
         @assign sections = begin
           @match sections begin
             SECTIONS(__) => begin
-              initial_origin = setFlag(origin, ORIGIN_INITIAL)
-              # map(
-              #   sections,
-              #   (setFlag(origin, ORIGIN_EQUATION)) -> typeEquation(
-              #     setFlag(origin, ORIGIN_EQUATION),
-              #   ),
-              #   (setFlag(origin, ORIGIN_ALGORITHM)) -> typeAlgorithm(
-              #     setFlag(origin, ORIGIN_ALGORITHM),
-              #   ),
-              #   (setFlag(initial_origin, ORIGIN_EQUATION)) ->
-              #     typeEquation(
-              #       setFlag(initial_origin, ORIGIN_EQUATION),
-              #     ),
-              #   (setFlag(initial_origin, ORIGIN_ALGORITHM)) ->
-              #     typeAlgorithm(
-              #       setFlag(initial_origin, ORIGIN_ALGORITHM),
-              #     ),
-              # )
+              initial_origin = setFlag(originArg, ORIGIN_INITIAL)
+              map(
+                sections,
+                (x) -> typeEquation(x,
+                  setFlag(originArg, ORIGIN_EQUATION),
+                ),
+                (x) -> typeAlgorithm(x,
+                  setFlag(originArg, ORIGIN_ALGORITHM),
+                ),
+                (x) ->
+                typeEquation(x,
+                  setFlag(initial_origin, ORIGIN_EQUATION),
+                  ),
+                (x) ->
+                  typeAlgorithm(x,
+                    setFlag(initial_origin, ORIGIN_ALGORITHM),
+                  )
+              )
               @error "TODO"
             end
-
-            EXTERNAL(__) => begin
+            SECTIONS_EXTERNAL(__) => begin
               Error.addSourceMessage(
                 Error.TRANS_VIOLATION,
                 list(
@@ -2866,7 +2847,7 @@ function typeClassSections(classNode::InstNode, origin::ORIGIN_Type)
         end
         @assign typed_cls = setSections(sections, cls)
         for c in components
-          typeComponentSections(resolveOuter(c), origin)
+          typeComponentSections(resolveOuter(c), originArg)
         end
         updateClass(typed_cls, classNode)
         ()
@@ -2877,7 +2858,7 @@ function typeClassSections(classNode::InstNode, origin::ORIGIN_Type)
       end
 
       TYPED_DERIVED(__) => begin
-        typeClassSections(cls.baseClass, origin)
+        typeClassSections(cls.baseClass, originArg)
         ()
       end
 
@@ -2890,7 +2871,8 @@ function typeClassSections(classNode::InstNode, origin::ORIGIN_Type)
         fail()
       end
     end
-  end
+   end
+  return
 end
 
 function typeFunctionSections(classNode::InstNode, origin::ORIGIN_Type)
@@ -3100,7 +3082,7 @@ function makeDefaultExternalCall(extDecl::Sections, fnNode::InstNode)::Sections
                 @assign args = _cons(
                   P_Expression.Expression.SIZE(
                     exp,
-                    SOME(P_Expression.Expression.INTEGER(i)),
+                    SOME(INTEGER_EXPRESSION(i)),
                   ),
                   args,
                 )
@@ -3116,13 +3098,13 @@ function makeDefaultExternalCall(extDecl::Sections, fnNode::InstNode)::Sections
   return extDecl
 end
 
-function typeComponentSections(component::InstNode, origin::ORIGIN_Type)
+function typeComponentSections(c::InstNode, origin::ORIGIN_Type)
   local comp::Component
 
-  @assign comp = component(component)
+  @assign comp = component(c)
   return @assign () = begin
     @match comp begin
-      P_Component.TYPED_COMPONENT(__) => begin
+      TYPED_COMPONENT(__) => begin
         typeClassSections(comp.classInst, origin)
         ()
       end
@@ -3140,7 +3122,6 @@ function typeComponentSections(component::InstNode, origin::ORIGIN_Type)
 end
 
 function typeEquation(eq::Equation, origin::ORIGIN_Type)::Equation
-
   @assign eq = begin
     local cond::Expression
     local e1::Expression
@@ -3159,16 +3140,16 @@ function typeEquation(eq::Equation, origin::ORIGIN_Type)::Equation
     local next_origin::Integer
     local info::SourceInfo
     @match eq begin
-      EQUALITY(__) => begin
+      EQUATION_EQUALITY(__) => begin
         typeEqualityEquation(eq.lhs, eq.rhs, origin, eq.source)
       end
 
-      CONNECT(__) => begin
+      EQUATION_CONNECT(__) => begin
         typeConnect(eq.lhs, eq.rhs, origin, eq.source)
       end
 
-      FOR(__) => begin
-        @assign info = ElementSource.getInfo(eq.source)
+      EQUATION_FOR(__) => begin
+        @assign info = DAE.emptyElementSource
         if isSome(eq.range)
           @match SOME(e1) = eq.range
           @assign e1 = typeIterator(eq.iterator, e1, origin, structural = true)
@@ -3185,16 +3166,16 @@ function typeEquation(eq::Equation, origin::ORIGIN_Type)::Equation
         FOR(eq.iterator, SOME(e1), body, eq.source)
       end
 
-      IF(__) => begin
+      EQUATION_IF(__) => begin
         typeIfEquation(eq.branches, origin, eq.source)
       end
 
-      WHEN(__) => begin
+      EQUATION_WHEN(__) => begin
         typeWhenEquation(eq.branches, origin, eq.source)
       end
 
-      ASSERT(__) => begin
-        @assign info = ElementSource.getInfo(eq.source)
+      EQUATION_ASSERT(__) => begin
+        @assign info = DAE.emptyElementSource
         @assign next_origin = setFlag(origin, ORIGIN_ASSERT)
         @assign e1 = typeOperatorArg(
           eq.condition,
@@ -3226,8 +3207,8 @@ function typeEquation(eq::Equation, origin::ORIGIN_Type)::Equation
         ASSERT(e1, e2, e3, eq.source)
       end
 
-      TERMINATE(__) => begin
-        @assign info = ElementSource.getInfo(eq.source)
+      EQUATION_TERMINATE(__) => begin
+        @assign info = DAE.emptyElementSource
         @assign e1 = typeOperatorArg(
           eq.message,
           TYPE_STRING(),
@@ -3240,13 +3221,13 @@ function typeEquation(eq::Equation, origin::ORIGIN_Type)::Equation
         TERMINATE(e1, eq.source)
       end
 
-      REINIT(__) => begin
+      EQUATION_REINIT(__) => begin
         @assign (e1, e2) = typeReinit(eq.cref, eq.reinitExp, origin, eq.source)
         REINIT(e1, e2, eq.source)
       end
 
-      NORETCALL(__) => begin
-        @assign e1 = typeExp(eq.exp, origin, ElementSource.getInfo(eq.source))
+      EQUATION_NORETCALL(__) => begin
+        @assign e1 = typeExp(eq.exp, origin, DAE.emptyElementSource)
         NORETCALL(e1, eq.source)
       end
 
@@ -3650,7 +3631,7 @@ function typeEqualityEquation(
 )::Equation
   local eq::Equation
 
-  local info::SourceInfo = ElementSource.getInfo(source)
+  local info::SourceInfo = sourceInfo()
   local e1::Expression
   local e2::Expression
   local ty1::M_Type
@@ -3757,7 +3738,7 @@ function typeIfEquation(
     @match BRANCH(cond, var, eql) = b
     ErrorExt.setCheckpoint(getInstanceName())
     try
-      @assign eql = List(typeEquation(e, next_origin) for e in eql)
+      @assign eql = list(typeEquation(e, next_origin) for e in eql)
       @assign bl2 = _cons(makeBranch(cond, eql, var), bl2)
     catch
       @assign bl2 = _cons(
@@ -3879,7 +3860,7 @@ function typeWhenEquation(
         @assign next_origin = setFlag(origin, ORIGIN_CLOCKED)
       end
     end
-    @assign body = List(typeEquation(eq, next_origin) for eq in body)
+    @assign body = list(typeEquation(eq, next_origin) for eq in body)
     @assign accum_branches =
       _cons(makeBranch(cond, body, var), accum_branches)
   end

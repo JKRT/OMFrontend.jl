@@ -1412,7 +1412,7 @@ function convertFunctionParam(node::InstNode)::DAE.Element
   @assign comp = component(node)
   @assign element = begin
     @match comp begin
-      P_Component.TYPED_COMPONENT(ty = ty, info = info, attributes = attr) => begin
+      TYPED_COMPONENT(ty = ty, info = info, attributes = attr) => begin
         @assign cref = fromNode(node, ty)
         @assign binding = toDAEExp(comp.binding)
         @assign cls = getClass(comp.classInst)

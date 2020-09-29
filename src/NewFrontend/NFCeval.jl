@@ -268,7 +268,7 @@ function evalExp_impl(exp::Expression, target::EvalTarget)::Expression
         P_Expression.Expression.UNBOX(exp1, exp.ty)
       end
 
-      P_Expression.Expression.SUBSCRIPTED_EXP(__) => begin
+      SUBSCRIPTED_EXP_EXPRESSION(__) => begin
         evalSubscriptedExp(exp.exp, exp.subscripts, target)
       end
 
@@ -281,8 +281,8 @@ function evalExp_impl(exp::Expression, target::EvalTarget)::Expression
         evalRecordElement(exp, target)
       end
 
-      P_Expression.Expression.MUTABLE(__) => begin
-        @assign exp1 = evalExp_impl(Mutable.access(exp.exp), target)
+      MUTABLE_EXPRESSION(__) => begin
+        @assign exp1 = evalExp_impl(P_Pointer.access(exp.exp), target)
         exp1
       end
 
@@ -358,7 +358,7 @@ function evalExpPartial(
         outExp
       end
 
-      P_Expression.Expression.MUTABLE(__) => begin
+      MUTABLE_EXPRESSION(__) => begin
         #=  Don't evaluate mutable expressions. While they could technically be
         =#
         #=  evaluated they're usually used as mutable iterators.
@@ -699,8 +699,8 @@ function makeComponentBinding(
   @assign binding = begin
     @matchcontinue (component, cref) begin
       (
-        P_Component.TYPED_COMPONENT(
-          ty = TYPE_COMPLEX(complexTy = ComplexType.RECORD(rec_node)),
+        TYPED_COMPONENT(
+          ty = TYPE_COMPLEX(complexTy = COMPLEX_RECORD(rec_node)),
         ),
         _,
       ) => begin
@@ -719,9 +719,9 @@ function makeComponentBinding(
       end
 
       (
-        P_Component.TYPED_COMPONENT(
+        TYPED_COMPONENT(
           ty = ty && Type.ARRAY(
-            elementType = TYPE_COMPLEX(complexTy = ComplexType.RECORD(rec_node)),
+            elementType = TYPE_COMPLEX(complexTy = COMPLEX_RECORD(rec_node)),
           ),
         ),
         _,
@@ -905,14 +905,14 @@ function evalRangeExp(rangeExp::Expression)::Expression
     @assign (ty, expl) = begin
       @match (start, step, stop) begin
         (
-          P_Expression.Expression.INTEGER(__),
-          P_Expression.Expression.INTEGER(istep),
-          P_Expression.Expression.INTEGER(__),
+          INTEGER_EXPRESSION(__),
+          INTEGER_EXPRESSION(istep),
+          INTEGER_EXPRESSION(__),
         ) => begin
           #=  The compiler decided to randomly dislike using step.value here, hence istep.
           =#
           @assign expl = List(
-            P_Expression.Expression.INTEGER(i) for i = (start.value):istep:(stop.value)
+            INTEGER_EXPRESSION(i) for i = (start.value):istep:(stop.value)
           )
           (TYPE_INTEGER(), expl)
         end
@@ -935,10 +935,10 @@ function evalRangeExp(rangeExp::Expression)::Expression
   else
     @assign (ty, expl) = begin
       @match (start, stop) begin
-        (P_Expression.Expression.INTEGER(__), P_Expression.Expression.INTEGER(__)) =>
+        (INTEGER_EXPRESSION(__), INTEGER_EXPRESSION(__)) =>
           begin
             @assign expl =
-              List(P_Expression.Expression.INTEGER(i) for i = (start.value):(stop.value))
+              List(INTEGER_EXPRESSION(i) for i = (start.value):(stop.value))
             (TYPE_INTEGER(), expl)
           end
 
@@ -1162,16 +1162,16 @@ function evalBinaryAdd(exp1::Expression, exp2::Expression)::Expression
 
   @assign exp = begin
     @match (exp1, exp2) begin
-      (P_Expression.Expression.INTEGER(__), P_Expression.Expression.INTEGER(__)) => begin
-        P_Expression.Expression.INTEGER(exp1.value + exp2.value)
+      (INTEGER_EXPRESSION(__), INTEGER_EXPRESSION(__)) => begin
+        INTEGER_EXPRESSION(exp1.value + exp2.value)
       end
 
       (P_Expression.REAL_EXPRESSION(__), P_Expression.REAL_EXPRESSION(__)) => begin
         P_Expression.REAL_EXPRESSION(exp1.value + exp2.value)
       end
 
-      (P_Expression.Expression.STRING(__), P_Expression.Expression.STRING(__)) => begin
-        P_Expression.Expression.STRING(exp1.value + exp2.value)
+      (STRING_EXPRESSION(__), STRING_EXPRESSION(__)) => begin
+        STRING_EXPRESSION(exp1.value + exp2.value)
       end
 
       (
@@ -1207,8 +1207,8 @@ function evalBinarySub(exp1::Expression, exp2::Expression)::Expression
 
   @assign exp = begin
     @match (exp1, exp2) begin
-      (P_Expression.Expression.INTEGER(__), P_Expression.Expression.INTEGER(__)) => begin
-        P_Expression.Expression.INTEGER(exp1.value - exp2.value)
+      (INTEGER_EXPRESSION(__), INTEGER_EXPRESSION(__)) => begin
+        INTEGER_EXPRESSION(exp1.value - exp2.value)
       end
 
       (P_Expression.REAL_EXPRESSION(__), P_Expression.REAL_EXPRESSION(__)) => begin
@@ -1248,8 +1248,8 @@ function evalBinaryMul(exp1::Expression, exp2::Expression)::Expression
 
   @assign exp = begin
     @match (exp1, exp2) begin
-      (P_Expression.Expression.INTEGER(__), P_Expression.Expression.INTEGER(__)) => begin
-        P_Expression.Expression.INTEGER(exp1.value * exp2.value)
+      (INTEGER_EXPRESSION(__), INTEGER_EXPRESSION(__)) => begin
+        INTEGER_EXPRESSION(exp1.value * exp2.value)
       end
 
       (P_Expression.REAL_EXPRESSION(__), P_Expression.REAL_EXPRESSION(__)) => begin
@@ -1577,13 +1577,13 @@ function evalBinaryPowMatrix(matrixExp::Expression, nExp::Expression)::Expressio
 
   @assign exp = begin
     @match (matrixExp, nExp) begin
-      (P_Expression.Expression.ARRAY(__), P_Expression.Expression.INTEGER(value = 0)) =>
+      (P_Expression.Expression.ARRAY(__), INTEGER_EXPRESSION(value = 0)) =>
         begin
           @assign n = P_Dimension.Dimension.size(listHead(Type.arrayDims(matrixExp.ty)))
           P_Expression.Expression.makeIdentityMatrix(n, TYPE_REAL())
         end
 
-      (_, P_Expression.Expression.INTEGER(value = n)) => begin
+      (_, INTEGER_EXPRESSION(value = n)) => begin
         evalBinaryPowMatrix2(matrixExp, n)
       end
 
@@ -1664,8 +1664,8 @@ function evalUnaryMinus(exp1::Expression)::Expression
 
   @assign exp = begin
     @match exp1 begin
-      P_Expression.Expression.INTEGER(__) => begin
-        P_Expression.Expression.INTEGER(-exp1.value)
+      INTEGER_EXPRESSION(__) => begin
+        INTEGER_EXPRESSION(-exp1.value)
       end
 
       P_Expression.REAL_EXPRESSION(__) => begin
@@ -1994,7 +1994,7 @@ function evalRelationLess(exp1::Expression, exp2::Expression)::Bool
 
   @assign res = begin
     @match (exp1, exp2) begin
-      (P_Expression.Expression.INTEGER(__), P_Expression.Expression.INTEGER(__)) => begin
+      (INTEGER_EXPRESSION(__), INTEGER_EXPRESSION(__)) => begin
         exp1.value < exp2.value
       end
 
@@ -2006,7 +2006,7 @@ function evalRelationLess(exp1::Expression, exp2::Expression)::Bool
         exp1.value < exp2.value
       end
 
-      (P_Expression.Expression.STRING(__), P_Expression.Expression.STRING(__)) => begin
+      (STRING_EXPRESSION(__), STRING_EXPRESSION(__)) => begin
         stringCompare(exp1.value, exp2.value) < 0
       end
 
@@ -2039,7 +2039,7 @@ function evalRelationLessEq(exp1::Expression, exp2::Expression)::Bool
 
   @assign res = begin
     @match (exp1, exp2) begin
-      (P_Expression.Expression.INTEGER(__), P_Expression.Expression.INTEGER(__)) => begin
+      (INTEGER_EXPRESSION(__), INTEGER_EXPRESSION(__)) => begin
         exp1.value <= exp2.value
       end
 
@@ -2051,7 +2051,7 @@ function evalRelationLessEq(exp1::Expression, exp2::Expression)::Bool
         exp1.value <= exp2.value
       end
 
-      (P_Expression.Expression.STRING(__), P_Expression.Expression.STRING(__)) => begin
+      (STRING_EXPRESSION(__), STRING_EXPRESSION(__)) => begin
         stringCompare(exp1.value, exp2.value) <= 0
       end
 
@@ -2084,7 +2084,7 @@ function evalRelationGreater(exp1::Expression, exp2::Expression)::Bool
 
   @assign res = begin
     @match (exp1, exp2) begin
-      (P_Expression.Expression.INTEGER(__), P_Expression.Expression.INTEGER(__)) => begin
+      (INTEGER_EXPRESSION(__), INTEGER_EXPRESSION(__)) => begin
         exp1.value > exp2.value
       end
 
@@ -2096,7 +2096,7 @@ function evalRelationGreater(exp1::Expression, exp2::Expression)::Bool
         exp1.value > exp2.value
       end
 
-      (P_Expression.Expression.STRING(__), P_Expression.Expression.STRING(__)) => begin
+      (STRING_EXPRESSION(__), STRING_EXPRESSION(__)) => begin
         stringCompare(exp1.value, exp2.value) > 0
       end
 
@@ -2129,7 +2129,7 @@ function evalRelationGreaterEq(exp1::Expression, exp2::Expression)::Bool
 
   @assign res = begin
     @match (exp1, exp2) begin
-      (P_Expression.Expression.INTEGER(__), P_Expression.Expression.INTEGER(__)) => begin
+      (INTEGER_EXPRESSION(__), INTEGER_EXPRESSION(__)) => begin
         exp1.value >= exp2.value
       end
 
@@ -2141,7 +2141,7 @@ function evalRelationGreaterEq(exp1::Expression, exp2::Expression)::Bool
         exp1.value >= exp2.value
       end
 
-      (P_Expression.Expression.STRING(__), P_Expression.Expression.STRING(__)) => begin
+      (STRING_EXPRESSION(__), STRING_EXPRESSION(__)) => begin
         stringCompare(exp1.value, exp2.value) >= 0
       end
 
@@ -2174,7 +2174,7 @@ function evalRelationEqual(exp1::Expression, exp2::Expression)::Bool
 
   @assign res = begin
     @match (exp1, exp2) begin
-      (P_Expression.Expression.INTEGER(__), P_Expression.Expression.INTEGER(__)) => begin
+      (INTEGER_EXPRESSION(__), INTEGER_EXPRESSION(__)) => begin
         exp1.value == exp2.value
       end
 
@@ -2186,7 +2186,7 @@ function evalRelationEqual(exp1::Expression, exp2::Expression)::Bool
         exp1.value == exp2.value
       end
 
-      (P_Expression.Expression.STRING(__), P_Expression.Expression.STRING(__)) => begin
+      (STRING_EXPRESSION(__), STRING_EXPRESSION(__)) => begin
         stringCompare(exp1.value, exp2.value) == 0
       end
 
@@ -2219,7 +2219,7 @@ function evalRelationNotEqual(exp1::Expression, exp2::Expression)::Bool
 
   @assign res = begin
     @match (exp1, exp2) begin
-      (P_Expression.Expression.INTEGER(__), P_Expression.Expression.INTEGER(__)) => begin
+      (INTEGER_EXPRESSION(__), INTEGER_EXPRESSION(__)) => begin
         exp1.value != exp2.value
       end
 
@@ -2231,7 +2231,7 @@ function evalRelationNotEqual(exp1::Expression, exp2::Expression)::Bool
         exp1.value != exp2.value
       end
 
-      (P_Expression.Expression.STRING(__), P_Expression.Expression.STRING(__)) => begin
+      (STRING_EXPRESSION(__), STRING_EXPRESSION(__)) => begin
         stringCompare(exp1.value, exp2.value) != 0
       end
 
@@ -2666,8 +2666,8 @@ function evalBuiltinAbs(arg::Expression)::Expression
 
   @assign result = begin
     @match arg begin
-      P_Expression.Expression.INTEGER(__) => begin
-        P_Expression.Expression.INTEGER(abs(arg.value))
+      INTEGER_EXPRESSION(__) => begin
+        INTEGER_EXPRESSION(abs(arg.value))
       end
 
       P_Expression.REAL_EXPRESSION(__) => begin
@@ -2808,7 +2808,7 @@ function evalBuiltinCat(
   local es::List{Expression}
   local dims::List{Integer}
 
-  @match P_Expression.Expression.INTEGER(n) = argN
+  @match INTEGER_EXPRESSION(n) = argN
   @assign ty = P_Expression.Expression.typeOf(listHead(args))
   @assign nd = Type.dimensionCount(ty)
   if n > nd || n < 1
@@ -2973,7 +2973,7 @@ function evalBuiltinDiv(args::List{<:Expression}, target::EvalTarget)::Expressio
 
   @assign result = begin
     @match args begin
-      P_Expression.Expression.INTEGER(ix) <| P_Expression.Expression.INTEGER(iy) <| nil() => begin
+      INTEGER_EXPRESSION(ix) <| INTEGER_EXPRESSION(iy) <| nil() => begin
         if iy == 0
           if P_EvalTarget.hasInfo(target)
             Error.addSourceMessage(
@@ -2984,7 +2984,7 @@ function evalBuiltinDiv(args::List{<:Expression}, target::EvalTarget)::Expressio
           end
           fail()
         end
-        P_Expression.Expression.INTEGER(intDiv(ix, iy))
+        INTEGER_EXPRESSION(intDiv(ix, iy))
       end
 
       P_Expression.REAL_EXPRESSION(rx) <| P_Expression.REAL_EXPRESSION(ry) <| nil() =>
@@ -3051,7 +3051,7 @@ function evalBuiltinFill2(fillValue::Expression, dims::List{<:Expression})::Expr
   for d in listReverse(dims)
     @assign () = begin
       @match d begin
-        P_Expression.Expression.INTEGER(value = dim_size) => begin
+        INTEGER_EXPRESSION(value = dim_size) => begin
           ()
         end
 
@@ -3095,7 +3095,7 @@ function evalBuiltinIdentity(arg::Expression)::Expression
 
   @assign result = begin
     @match arg begin
-      P_Expression.Expression.INTEGER(__) => begin
+      INTEGER_EXPRESSION(__) => begin
         P_Expression.Expression.makeIdentityMatrix(arg.value, TYPE_INTEGER())
       end
 
@@ -3113,12 +3113,12 @@ function evalBuiltinInteger(arg::Expression)::Expression
 
   @assign result = begin
     @match arg begin
-      P_Expression.Expression.INTEGER(__) => begin
+      INTEGER_EXPRESSION(__) => begin
         arg
       end
 
       P_Expression.REAL_EXPRESSION(__) => begin
-        P_Expression.Expression.INTEGER(realInt(arg.value))
+        INTEGER_EXPRESSION(realInt(arg.value))
       end
 
       _ => begin
@@ -3136,7 +3136,7 @@ function evalBuiltinIntegerEnum(arg::Expression)::Expression
   @assign result = begin
     @match arg begin
       P_Expression.Expression.ENUM_LITERAL(__) => begin
-        P_Expression.Expression.INTEGER(arg.index)
+        INTEGER_EXPRESSION(arg.index)
       end
 
       _ => begin
@@ -3316,7 +3316,7 @@ function evalBuiltinMax2(exp1::Expression, exp2::Expression)::Expression
 
   @assign result = begin
     @match (exp1, exp2) begin
-      (P_Expression.Expression.INTEGER(__), P_Expression.Expression.INTEGER(__)) => begin
+      (INTEGER_EXPRESSION(__), INTEGER_EXPRESSION(__)) => begin
         if exp1.value < exp2.value
           exp2
         else
@@ -3413,7 +3413,7 @@ function evalBuiltinMin2(exp1::Expression, exp2::Expression)::Expression
 
   @assign result = begin
     @match (exp1, exp2) begin
-      (P_Expression.Expression.INTEGER(__), P_Expression.Expression.INTEGER(__)) => begin
+      (INTEGER_EXPRESSION(__), INTEGER_EXPRESSION(__)) => begin
         if exp1.value > exp2.value
           exp2
         else
@@ -3474,7 +3474,7 @@ function evalBuiltinMod(args::List{<:Expression}, target::EvalTarget)::Expressio
   @match list(x, y) = args
   @assign result = begin
     @match (x, y) begin
-      (P_Expression.Expression.INTEGER(__), P_Expression.Expression.INTEGER(__)) => begin
+      (INTEGER_EXPRESSION(__), INTEGER_EXPRESSION(__)) => begin
         if y.value == 0
           if P_EvalTarget.hasInfo(target)
             Error.addSourceMessage(
@@ -3485,7 +3485,7 @@ function evalBuiltinMod(args::List{<:Expression}, target::EvalTarget)::Expressio
           end
           fail()
         end
-        P_Expression.Expression.INTEGER(mod(x.value, y.value))
+        INTEGER_EXPRESSION(mod(x.value, y.value))
       end
 
       (P_Expression.REAL_EXPRESSION(__), P_Expression.REAL_EXPRESSION(__)) => begin
@@ -3514,7 +3514,7 @@ end
 function evalBuiltinOnes(args::List{<:Expression})::Expression
   local result::Expression
 
-  @assign result = evalBuiltinFill2(P_Expression.Expression.INTEGER(1), args)
+  @assign result = evalBuiltinFill2(INTEGER_EXPRESSION(1), args)
   return result
 end
 
@@ -3527,7 +3527,7 @@ function evalBuiltinProduct(arg::Expression)::Expression
         begin
           @match Type.arrayElementType(P_Expression.Expression.typeOf(arg)) begin
             TYPE_INTEGER(__) => begin
-              P_Expression.Expression.INTEGER(P_Expression.Expression.fold(
+              INTEGER_EXPRESSION(P_Expression.Expression.fold(
                 arg,
                 evalBuiltinProductInt,
                 1,
@@ -3563,7 +3563,7 @@ function evalBuiltinProductInt(exp::Expression, result::Integer)::Integer
 
   @assign result = begin
     @match exp begin
-      P_Expression.Expression.INTEGER(__) => begin
+      INTEGER_EXPRESSION(__) => begin
         result * exp.value
       end
 
@@ -3605,7 +3605,7 @@ function evalBuiltinPromote(arg::Expression, argN::Expression)::Expression
   local n::Integer
 
   if P_Expression.Expression.isInteger(argN)
-    @match P_Expression.Expression.INTEGER(n) = argN
+    @match INTEGER_EXPRESSION(n) = argN
     @assign result =
       P_Expression.Expression.promote(arg, P_Expression.Expression.typeOf(arg), n)
   else
@@ -3624,7 +3624,7 @@ function evalBuiltinRem(args::List{<:Expression}, target::EvalTarget)::Expressio
   @match list(x, y) = args
   @assign result = begin
     @match (x, y) begin
-      (P_Expression.Expression.INTEGER(__), P_Expression.Expression.INTEGER(__)) => begin
+      (INTEGER_EXPRESSION(__), INTEGER_EXPRESSION(__)) => begin
         if y.value == 0
           if P_EvalTarget.hasInfo(target)
             Error.addSourceMessage(
@@ -3635,7 +3635,7 @@ function evalBuiltinRem(args::List{<:Expression}, target::EvalTarget)::Expressio
           end
           fail()
         end
-        P_Expression.Expression.INTEGER(x.value - div(x.value, y.value) * y.value)
+        INTEGER_EXPRESSION(x.value - div(x.value, y.value) * y.value)
       end
 
       (P_Expression.REAL_EXPRESSION(__), P_Expression.REAL_EXPRESSION(__)) => begin
@@ -3686,7 +3686,7 @@ function evalBuiltinSign(arg::Expression)::Expression
   @assign result = begin
     @match arg begin
       P_Expression.REAL_EXPRESSION(__) => begin
-        P_Expression.Expression.INTEGER(if arg.value > 0
+        INTEGER_EXPRESSION(if arg.value > 0
           1
         else
           if arg.value < 0
@@ -3697,8 +3697,8 @@ function evalBuiltinSign(arg::Expression)::Expression
         end)
       end
 
-      P_Expression.Expression.INTEGER(__) => begin
-        P_Expression.Expression.INTEGER(if arg.value > 0
+      INTEGER_EXPRESSION(__) => begin
+        INTEGER_EXPRESSION(if arg.value > 0
           1
         else
           if arg.value < 0
@@ -3837,11 +3837,11 @@ function evalBuiltinString(args::List{<:Expression})::Expression
     local r::AbstractFloat
     @match args begin
       arg <|
-      P_Expression.Expression.INTEGER(min_len) <|
+      INTEGER_EXPRESSION(min_len) <|
       P_Expression.Expression.BOOLEAN(left_justified) <| nil() => begin
         @assign str = begin
           @match arg begin
-            P_Expression.Expression.INTEGER(__) => begin
+            INTEGER_EXPRESSION(__) => begin
               intString(arg.value)
             end
 
@@ -3867,12 +3867,12 @@ function evalBuiltinString(args::List{<:Expression})::Expression
             @assign str = stringAppendList(ListUtil.fill(" ", min_len - str_len)) + str
           end
         end
-        P_Expression.Expression.STRING(str)
+        STRING_EXPRESSION(str)
       end
 
       P_Expression.REAL_EXPRESSION(r) <|
-      P_Expression.Expression.INTEGER(significant_digits) <|
-      P_Expression.Expression.INTEGER(min_len) <|
+      INTEGER_EXPRESSION(significant_digits) <|
+      INTEGER_EXPRESSION(min_len) <|
       P_Expression.Expression.BOOLEAN(left_justified) <| nil() => begin
         @assign format =
           "%" +
@@ -3888,12 +3888,12 @@ function evalBuiltinString(args::List{<:Expression})::Expression
           intString(significant_digits) +
           "g"
         @assign str = System.sprintff(format, r)
-        P_Expression.Expression.STRING(str)
+        STRING_EXPRESSION(str)
       end
 
-      P_Expression.REAL_EXPRESSION(r) <| P_Expression.Expression.STRING(format) <| nil() => begin
+      P_Expression.REAL_EXPRESSION(r) <| STRING_EXPRESSION(format) <| nil() => begin
         @assign str = System.sprintff(format, r)
-        P_Expression.Expression.STRING(str)
+        STRING_EXPRESSION(str)
       end
     end
   end
@@ -3909,7 +3909,7 @@ function evalBuiltinSum(arg::Expression)::Expression
         begin
           @match Type.arrayElementType(P_Expression.Expression.typeOf(arg)) begin
             TYPE_INTEGER(__) => begin
-              P_Expression.Expression.INTEGER(P_Expression.Expression.fold(
+              INTEGER_EXPRESSION(P_Expression.Expression.fold(
                 arg,
                 evalBuiltinSumInt,
                 0,
@@ -3945,7 +3945,7 @@ function evalBuiltinSumInt(exp::Expression, result::Integer)::Integer
 
   @assign result = begin
     @match exp begin
-      P_Expression.Expression.INTEGER(__) => begin
+      INTEGER_EXPRESSION(__) => begin
         result + exp.value
       end
 
@@ -4131,7 +4131,7 @@ end
 function evalBuiltinZeros(args::List{<:Expression})::Expression
   local result::Expression
 
-  @assign result = evalBuiltinFill2(P_Expression.Expression.INTEGER(0), args)
+  @assign result = evalBuiltinFill2(INTEGER_EXPRESSION(0), args)
   return result
 end
 
@@ -4150,9 +4150,9 @@ function evalUriToFilename(
   @assign arg = listHead(args)
   @assign result = begin
     @match arg begin
-      P_Expression.Expression.STRING(__) => begin
+      STRING_EXPRESSION(__) => begin
         @assign s = OpenModelica.Scripting.uriToFilename(arg.value)
-        @assign e = P_Expression.Expression.STRING(s)
+        @assign e = STRING_EXPRESSION(s)
         e
       end
 
@@ -4173,9 +4173,9 @@ function evalIntBitAnd(args::List{<:Expression})::Expression
 
   @assign result = begin
     @match args begin
-      P_Expression.Expression.INTEGER(value = i1) <|
-      P_Expression.Expression.INTEGER(value = i2) <| nil() => begin
-        P_Expression.Expression.INTEGER(intBitAnd(i1, i2))
+      INTEGER_EXPRESSION(value = i1) <|
+      INTEGER_EXPRESSION(value = i2) <| nil() => begin
+        INTEGER_EXPRESSION(intBitAnd(i1, i2))
       end
 
       _ => begin
@@ -4195,9 +4195,9 @@ function evalIntBitOr(args::List{<:Expression})::Expression
 
   @assign result = begin
     @match args begin
-      P_Expression.Expression.INTEGER(value = i1) <|
-      P_Expression.Expression.INTEGER(value = i2) <| nil() => begin
-        P_Expression.Expression.INTEGER(intBitOr(i1, i2))
+      INTEGER_EXPRESSION(value = i1) <|
+      INTEGER_EXPRESSION(value = i2) <| nil() => begin
+        INTEGER_EXPRESSION(intBitOr(i1, i2))
       end
 
       _ => begin
@@ -4217,9 +4217,9 @@ function evalIntBitXor(args::List{<:Expression})::Expression
 
   @assign result = begin
     @match args begin
-      P_Expression.Expression.INTEGER(value = i1) <|
-      P_Expression.Expression.INTEGER(value = i2) <| nil() => begin
-        P_Expression.Expression.INTEGER(intBitXor(i1, i2))
+      INTEGER_EXPRESSION(value = i1) <|
+      INTEGER_EXPRESSION(value = i2) <| nil() => begin
+        INTEGER_EXPRESSION(intBitXor(i1, i2))
       end
 
       _ => begin
@@ -4239,9 +4239,9 @@ function evalIntBitLShift(args::List{<:Expression})::Expression
 
   @assign result = begin
     @match args begin
-      P_Expression.Expression.INTEGER(value = i1) <|
-      P_Expression.Expression.INTEGER(value = i2) <| nil() => begin
-        P_Expression.Expression.INTEGER(intBitLShift(i1, i2))
+      INTEGER_EXPRESSION(value = i1) <|
+      INTEGER_EXPRESSION(value = i2) <| nil() => begin
+        INTEGER_EXPRESSION(intBitLShift(i1, i2))
       end
 
       _ => begin
@@ -4261,9 +4261,9 @@ function evalIntBitRShift(args::List{<:Expression})::Expression
 
   @assign result = begin
     @match args begin
-      P_Expression.Expression.INTEGER(value = i1) <|
-      P_Expression.Expression.INTEGER(value = i2) <| nil() => begin
-        P_Expression.Expression.INTEGER(intBitRShift(i1, i2))
+      INTEGER_EXPRESSION(value = i1) <|
+      INTEGER_EXPRESSION(value = i2) <| nil() => begin
+        INTEGER_EXPRESSION(intBitRShift(i1, i2))
       end
 
       _ => begin
@@ -4301,8 +4301,8 @@ function evalRationalClock(args::List{<:Expression})::Expression
     local resolution::Expression
     @match args begin
       interval &&
-      P_Expression.Expression.INTEGER(__) <| resolution &&
-      P_Expression.Expression.INTEGER(__) <| nil() => begin
+      INTEGER_EXPRESSION(__) <| resolution &&
+      INTEGER_EXPRESSION(__) <| nil() => begin
         P_Expression.Expression.CLKCONST(P_Expression.P_ClockKind.Expression.INTEGER_CLOCK(
           interval,
           resolution,
@@ -4373,7 +4373,7 @@ function evalSolverClock(args::List{<:Expression})::Expression
     @match args begin
       c &&
       P_Expression.Expression.CLKCONST(__) <| solver &&
-      P_Expression.Expression.STRING(__) <| nil() => begin
+      STRING_EXPRESSION(__) <| nil() => begin
         P_Expression.Expression.CLKCONST(P_Expression.P_ClockKind.Expression.SOLVER_CLOCK(
           c,
           solver,
@@ -4427,7 +4427,7 @@ function evalArrayConstructor2(
 
   local e::Expression
   local ranges::List{Expression}
-  local iters::List{Mutable{Expression}}
+  local iters::List{Pointer{Expression}}
   local types::List{M_Type} = nil
   local ty::M_Type
 
@@ -4447,21 +4447,21 @@ end
 function createIterationRanges(
   exp::Expression,
   iterators::List{<:Tuple{<:InstNode, Expression}},
-)::Tuple{Expression, List{Expression}, List{Mutable{Expression}}}
-  local iters::List{Mutable{Expression}} = nil
+)::Tuple{Expression, List{Expression}, List{Pointer{Expression}}}
+  local iters::List{Pointer{Expression}} = nil
   local ranges::List{Expression} = nil
 
   local node::InstNode
   local range::Expression
-  local iter::Mutable{Expression}
+  local iter::Pointer{Expression}
 
   for i in iterators
     @assign (node, range) = i
-    @assign iter = Mutable.create(P_Expression.Expression.INTEGER(0))
+    @assign iter = P_Pointer.create(INTEGER_EXPRESSION(0))
     @assign exp = P_Expression.Expression.replaceIterator(
       exp,
       node,
-      P_Expression.Expression.MUTABLE(iter),
+      MUTABLE_EXPRESSION(iter),
     )
     @assign iters = _cons(iter, iters)
     @assign ranges = _cons(evalExp_impl(range, P_EvalTarget.IGNORE_ERRORS()), ranges)
@@ -4472,7 +4472,7 @@ end
 function evalArrayConstructor3(
   exp::Expression,
   ranges::List{<:Expression},
-  iterators::List{<:Mutable{<:Expression}},
+  iterators::List{<:Pointer{<:Expression}},
   types::List{<:M_Type},
 )::Expression
   local result::Expression
@@ -4481,8 +4481,8 @@ function evalArrayConstructor3(
   local e::Expression
   local ranges_rest::List{Expression}
   local expl::List{Expression} = nil
-  local iter::Mutable{Expression}
-  local iters_rest::List{Mutable{Expression}}
+  local iter::Pointer{Expression}
+  local iters_rest::List{Pointer{Expression}}
   local range_iter::ExpressionIterator
   local value::Expression
   local ty::M_Type
@@ -4497,7 +4497,7 @@ function evalArrayConstructor3(
     @assign range_iter = P_ExpressionIterator.ExpressionIterator.fromExp(range)
     while P_ExpressionIterator.ExpressionIterator.hasNext(range_iter)
       @assign (range_iter, value) = P_ExpressionIterator.ExpressionIterator.next(range_iter)
-      Mutable.update(iter, value)
+      P_Pointer.update(iter, value)
       @assign expl =
         _cons(evalArrayConstructor3(exp, ranges_rest, iters_rest, rest_ty), expl)
     end
@@ -4532,7 +4532,7 @@ function evalReduction2(
   local e::Expression
   local default_exp::Expression
   local ranges::List{Expression}
-  local iters::List{Mutable{Expression}}
+  local iters::List{Pointer{Expression}}
   local red_fn::ReductionFn
   local ty::M_Type
 
@@ -4575,7 +4575,7 @@ end
 function evalReduction3(
   exp::Expression,
   ranges::List{<:Expression},
-  iterators::List{<:Mutable{<:Expression}},
+  iterators::List{<:Pointer{<:Expression}},
   foldExp::Expression,
   fn::ReductionFn,
 )::Expression
@@ -4584,8 +4584,8 @@ function evalReduction3(
   local range::Expression
   local ranges_rest::List{Expression}
   local expl::List{Expression} = nil
-  local iter::Mutable{Expression}
-  local iters_rest::List{Mutable{Expression}}
+  local iter::Pointer{Expression}
+  local iters_rest::List{Pointer{Expression}}
   local range_iter::ExpressionIterator
   local value::Expression
   local el_ty::M_Type
@@ -4599,7 +4599,7 @@ function evalReduction3(
     @assign result = foldExp
     while P_ExpressionIterator.ExpressionIterator.hasNext(range_iter)
       @assign (range_iter, value) = P_ExpressionIterator.ExpressionIterator.next(range_iter)
-      Mutable.update(iter, value)
+      P_Pointer.update(iter, value)
       @assign result = evalReduction3(exp, ranges_rest, iters_rest, result, fn)
     end
   end

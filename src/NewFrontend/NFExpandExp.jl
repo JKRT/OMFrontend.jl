@@ -249,7 +249,7 @@ function expandBinaryPowMatrix(exp::Expression)::Tuple{Expression, Bool}
   @match BINARY_EXPRESSION(exp1 = exp1, operator = op, exp2 = exp2) = exp
   @assign (outExp, expanded) = begin
     @match exp2 begin
-      P_Expression.Expression.INTEGER(0) => begin
+      INTEGER_EXPRESSION(0) => begin
         #=  a ^ 0 = identity(size(a, 1))
         =#
         @assign n =
@@ -259,7 +259,7 @@ function expandBinaryPowMatrix(exp::Expression)::Tuple{Expression, Bool}
         (P_Expression.Expression.makeIdentityMatrix(n, TYPE_REAL()), true)
       end
 
-      P_Expression.Expression.INTEGER(n) => begin
+      INTEGER_EXPRESSION(n) => begin
         #=  a ^ n where n is a literal value.
         =#
         @assign (exp1, expanded) = expand(exp1)
@@ -703,7 +703,7 @@ function expandSize(exp::Expression)::Tuple{Expression, Bool}
         @assign ty = P_Expression.Expression.typeOf(e)
         @assign dims = Type.dimensionCount(ty)
         @assign expl = List(
-          P_Expression.Expression.SIZE(e, SOME(P_Expression.Expression.INTEGER(i)))
+          P_Expression.Expression.SIZE(e, SOME(INTEGER_EXPRESSION(i)))
           for i = 1:dims
         )
         P_Expression.Expression.makeArray(
@@ -726,15 +726,15 @@ function expandArrayConstructor2(
   exp::Expression,
   ty::M_Type,
   ranges::List{<:Expression},
-  iterators::List{<:Mutable{<:Expression}},
+  iterators::List{<:Pointer{<:Expression}},
 )::Expression
   local result::Expression
 
   local range::Expression
   local ranges_rest::List{Expression}
   local expl::List{Expression} = nil
-  local iter::Mutable{Expression}
-  local iters_rest::List{Mutable{Expression}}
+  local iter::Pointer{Expression}
+  local iters_rest::List{Pointer{Expression}}
   local range_iter::ExpressionIterator
   local value::Expression
   local el_ty::M_Type
@@ -748,7 +748,7 @@ function expandArrayConstructor2(
     @assign el_ty = Type.unliftArray(ty)
     while P_ExpressionIterator.ExpressionIterator.hasNext(range_iter)
       @assign (range_iter, value) = P_ExpressionIterator.ExpressionIterator.next(range_iter)
-      Mutable.update(iter, value)
+      P_Pointer.update(iter, value)
       @assign expl =
         _cons(expandArrayConstructor2(exp, el_ty, ranges_rest, iters_rest), expl)
     end
@@ -780,16 +780,16 @@ function expandArrayConstructor(
   local node::InstNode
   local ranges::List{Expression} = nil
   local expl::List{Expression}
-  local iter::Mutable{Expression}
-  local iters::List{Mutable{Expression}} = nil
+  local iter::Pointer{Expression}
+  local iters::List{Pointer{Expression}} = nil
 
   for i in iterators
     @assign (node, range) = i
-    @assign iter = Mutable.create(P_Expression.Expression.INTEGER(0))
+    @assign iter = P_Pointer.create(INTEGER_EXPRESSION(0))
     @assign e = P_Expression.Expression.replaceIterator(
       e,
       node,
-      P_Expression.Expression.MUTABLE(iter),
+      MUTABLE_EXPRESSION(iter),
     )
     @assign iters = _cons(iter, iters)
     @match (range, true) = expand(range)
@@ -878,7 +878,7 @@ function expandBuiltinPromote(args::List{<:Expression})::Tuple{Expression, Bool}
   local nexp::Expression
 
   @match _cons(eexp, _cons(nexp, nil)) = args
-  @match P_Expression.Expression.INTEGER(value = n) = nexp
+  @match INTEGER_EXPRESSION(value = n) = nexp
   @assign (eexp, expanded) = expand(eexp)
   @assign exp =
     P_Expression.Expression.promote(eexp, P_Expression.Expression.typeOf(eexp), n)

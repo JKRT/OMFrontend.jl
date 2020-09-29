@@ -274,7 +274,7 @@ function foldExpParameter(node::InstNode, foldFn::FoldFunc, arg::ArgT) where {Ar
   @assign arg = foldExp(P_Component.getBinding(comp), foldFn, arg)
   @assign () = begin
     @match comp begin
-      P_Component.TYPED_COMPONENT(__) => begin
+      TYPED_COMPONENT(__) => begin
         @assign arg = Type.foldDims(
           comp.ty,
           (foldFn) -> P_Dimension.Dimension.foldExp(func = foldFn),
@@ -338,7 +338,7 @@ function mapExpParameter(node::InstNode, mapFn::MapFunc)
   end
   @assign () = begin
     @match comp begin
-      P_Component.TYPED_COMPONENT(__) => begin
+      TYPED_COMPONENTy(__) => begin
         @assign ty =
           Type.mapDims(comp.ty, (mapFn) -> P_Dimension.Dimension.mapExp(func = mapFn))
         if !referenceEq(ty, comp.ty)
@@ -577,12 +577,11 @@ end
 
 function isSubscriptableBuiltin(fn::M_Function)::Bool
   local scalarBuiltin::Bool
-
   if !isBuiltin(fn)
     @assign scalarBuiltin = false
   else
     @assign scalarBuiltin = begin
-      @match AbsynUtil.pathFirstIdent(P_Function.nameConsiderBuiltin(fn)) begin
+      @match AbsynUtil.pathFirstIdent(nameConsiderBuiltin(fn)) begin
         "change" => begin
           true
         end
@@ -936,7 +935,7 @@ function typePartialApplication(
   local inputs::List{InstNode}
   local slots::List{Slot}
 
-  @match P_Expression.Expression.PARTIAL_FUNCTION_APPLICATION(
+  @match PARTIAL_FUNCTION_APPLICATION_EXPRESSION(
     fn = fn_ref,
     args = args,
     argNames = arg_names,
@@ -963,7 +962,7 @@ function typePartialApplication(
   @assign fn.inputs = inputs
   @assign fn.slots = slots
   @assign ty = TYPE_FUNCTION(fn, FunctionTYPE_FUNCTIONAL_VARIABLE)
-  @assign exp = P_Expression.Expression.PARTIAL_FUNCTION_APPLICATION(
+  @assign exp = PARTIAL_FUNCTION_APPLICATION_EXPRESSION(
     fn_ref,
     listReverseInPlace(ty_args),
     arg_names,
@@ -1181,7 +1180,7 @@ function fillUnknownVectorizedDims(
   for dim in dims
     if P_Dimension.Dimension.isUnknown(dim)
       @assign dim = P_Dimension.Dimension.EXP(
-        P_Expression.Expression.SIZE(argExp, SOME(P_Expression.Expression.INTEGER(i))),
+        P_Expression.Expression.SIZE(argExp, SOME(INTEGER_EXPRESSION(i))),
         Variability.CONTINUOUS,
       )
     end
@@ -1268,7 +1267,7 @@ function matchArgs(
   local ty::M_Type
   local arg_var::Variability
   local mk::TypeCheck.MatchKind
-  local vect_arg::Expression = P_Expression.Expression.INTEGER(0)
+  local vect_arg::Expression = INTEGER_EXPRESSION(0)
   local vect_dims::List{Dimension} = nil
   local matched::Bool
   local vectorized_args::List{Integer} = nil
@@ -2162,19 +2161,14 @@ function lookupFunction(
   local functionPath::Absyn.Path
   local prefix::ComponentRef
   local is_class::Bool
-
   try
     @assign functionPath = AbsynUtil.crefToPath(functionName)
-  catch
-    Error.addSourceMessageAndFail(
-      Error.SUBSCRIPTED_FUNCTION_CALL,
-      list(Dump.printComponentRefStr(functionName)),
-      info,
-    )
+  catch e
+    @error "Function path not found we have error $e"
   end
   #=  Make sure the name is a path.
   =#
-  @assign (functionRef, found_scope) = Lookup.lookupFunctionName(functionName, scope, info)
+  @assign (functionRef, found_scope) = lookupFunctionName(functionName, scope, info)
   #=  If we found a function class we include the root in the prefix, but if we
   =#
   #=  instead found a component (i.e. a functional parameter) we don't.
@@ -2190,12 +2184,10 @@ end
 
 function lookupFunctionSimple(functionName::String, scope::InstNode)::ComponentRef
   local functionRef::ComponentRef
-
   local found_scope::InstNode
   local state::LookupState
   local functionPath::Absyn.Path
   local prefix::ComponentRef
-
   @assign (functionRef, found_scope) =
     Lookup.lookupFunctionNameSilent(Absyn.CREF_IDENT(functionName, nil), scope)
   @assign prefix =

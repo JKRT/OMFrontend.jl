@@ -25,9 +25,9 @@ import ..DAE
 
                    #=  make sure we don't expand anything
                    =#
-                   System.setUsesCardinality(false)
-                   System.setHasOverconstrainedConnectors(false)
-                   System.setHasStreamConnectors(false)
+                   #System.setUsesCardinality(false)
+                   #System.setHasOverconstrainedConnectors(false)
+                   #System.setHasStreamConnectors(false)
                    #=  Create a root node from the given top-level classes.
                    =#
                    @assign top = makeTopNode(program)
@@ -41,12 +41,12 @@ import ..DAE
                    @assign top = setInnerOuterCache(top, C_TOP_SCOPE(NodeTree.new(), cls))
                    @info "OK we have a cache!"
                     #=  Instantiate the class. =#
-                   @info "First inst call!"
+                   @info "FIRST INST CALL!"
                    @assign inst_cls = instantiateN1(cls, EMPTY_NODE())
-                   @info "After inst call"
+                   @info "AFTER INST CALL"
                    insertGeneratedInners(inst_cls, top)
                     #execStat("NFInst.instantiate(" + name + ")")
-                    @info "Instantiation step 1 done!"
+                    @info "INSTANTIATION STEP 1 DONE!"
                    #=  Instantiate expressions (i.e. anything that can contains crefs, like
                    =#
                    #=  bindings, dimensions, etc). This is done as a separate step after
@@ -54,17 +54,20 @@ import ..DAE
                    #=  instantiation to make sure that lookup is able to find the correct nodes.
                    =#
                    instExpressions(inst_cls)
-                   execStat("NFInst.instExpressions(" + name + ")")
+                    #                   execStat("NFInst.instExpressions(" + name + ")")
+                    @info "Inst expressions done"
                    #=  Mark structural parameters.
                    =#
-                   updateImplicitVariability(inst_cls, Flags.isSet(Flags.EVAL_PARAM))
-                   execStat("NFInst.updateImplicitVariability")
+                   #updateImplicitVariability(inst_cls, Flags.isSet(Flags.EVAL_PARAM))
+                   #execStat("NFInst.updateImplicitVariability")
                    #=  Type the class.
                    =#
-                   Typing.typeClass(inst_cls, name)
+                    @info "typeClass(inst_cls, name)"
+                    typeClass(inst_cls, name)
+                    @info "After type class"
                    #=  Flatten the model and evaluate constants in it.
                    =#
-                   @assign flat_model = Flatten.flatten(inst_cls, name)
+                   @assign flat_model = flatten(inst_cls, name)
                    @assign flat_model = EvalConstants.evaluate(flat_model)
                    #=  Do unit checking
                    =#
@@ -106,9 +109,9 @@ end
 
 
 function instantiateN1(node::InstNode, parentNode::InstNode)::InstNode
-  @info "Instantiating!!!! $node"
+  @info "Instantiating!!!! in Inst"
   @assign node = expand(node)
-  @info "After expansion  $node"
+  @info "After expansion in inst. Instantiating in class-tree "
   @assign (node, _) = instClass(node, MODIFIER_NOMOD(), DEFAULT_ATTR, true, 0, parentNode)
   return node
 end
@@ -614,9 +617,9 @@ end
 function instClass(node::InstNode, modifier::Modifier, attributes::Attributes = DEFAULT_ATTR, useBinding::Bool = false, instLevel::Integer = 0, parent = EMPTY_NODE) ::Tuple{InstNode, Attributes}
   local cls::Class
   local outer_mod::Modifier
-  @info "Inst class called. Calling getClass on node. Our node is: $node"
-  @assign cls = getClassTest(node)
-  @info "OUR CLASS AFTER CALLING GETCLASS is $cls"
+  @info "INST CLASS CALLED. CALLING GETCLASS ON NODE."
+  @assign cls = getClass(node)
+  @info "OUR CLASS AFTER CALLING GETCLASS"
   @assign outer_mod = getModifier(cls)
   #=  Give an error for modifiers such as (A = B), i.e. attempting to replace a =#
   #=  class without using redeclare. =#
@@ -639,7 +642,7 @@ function instClassDef(cls::Class, outerMod::Modifier, attributes::Attributes, us
   local res::Restriction
   local ty::M_Type
   local attrs::Attributes
-  @info "Calling InstclassDef for class $cls"
+  @info "CALLING INSTCLASSDEF FOR CLASS"
   @assign () = begin
     @match cls begin
       EXPANDED_CLASS(restriction = res)  => begin
@@ -652,7 +655,6 @@ function instClassDef(cls::Class, outerMod::Modifier, attributes::Attributes, us
         else
           @assign (node, par) = instantiate(node, parentArg)
         end
-        @info "PAR IS $par"
         updateComponentType(parentArg, node)
         @assign attributes = updateClassConnectorType(res, attributes)
         @error "The questions is the semantics here double check!!"
@@ -682,11 +684,13 @@ function instClassDef(cls::Class, outerMod::Modifier, attributes::Attributes, us
         =#
         redeclareClasses(cls_tree)
         #=  Instantiate the extends nodes. =#
-        @info "BEFORE MAPEXETENDS WITH CLS_TREE: $cls_tree"
-        @error "Double check this line. Some translation error here."
+        @info "BEFORE MAPEXETENDS WITH CLS_TREE"
+        @error "Double check this line. Might be ome translation error here."
         mapExtends(cls_tree, (attributes, useBinding, visibility, instLevel)
                    -> instExtends(attributes = attributes,
-                                  useBinding = useBinding, visibility = ExtendsVisibility.PUBLIC, instLevel = instLevel + 1))
+                                  useBinding = useBinding,
+                                  visibility = ExtendsVisibility.PUBLIC,
+                                  instLevel = instLevel + 1))
         # #=  Instantiate local components. =#
         @info "Here we are"
         instCp = (node) -> instComponent(
@@ -925,10 +929,10 @@ function instExtends(node::InstNode, attributes::Attributes, useBinding::Bool, v
         =#
         if vis == ExtendsVisibility.PROTECTED && visibility != ExtendsVisibility.PROTECTED
           for c in cls_tree.classes
-            Mutable.update(c, protectClass(Mutable.access(c)))
+            P_Pointer.update(c, protectClass(P_Pointer.access(c)))
           end
           for c in cls_tree.components
-            Mutable.update(c, protectComponent(Mutable.access(c)))
+            P_Pointer.update(c, protectComponent(P_Pointer.access(c)))
           end
         end
         noMod = MODIFIER_NOMOD()
@@ -967,7 +971,7 @@ end
              each part with the relevant element in the scope. =#"""
                function applyModifier(modifier::Modifier, cls::ClassTree, clsName::String) ::ClassTree
                  local mods::List{Modifier}
-                 local node_ptrs::List{Mutable{InstNode}}
+                 local node_ptrs::List{Pointer{InstNode}}
                  local node::InstNode
                  local comp::Component
                  #=  Split the modifier into a list of submodifiers.
@@ -1001,7 +1005,7 @@ end
                            fail()
                          end
                          for node_ptr in node_ptrs
-                           @assign node = resolveOuter(Mutable.access(node_ptr))
+                           @assign node = resolveOuter(P_Pointer.access(node_ptr))
                            if isComponent(node)
                              componentApply(node, mergeModifier, mod)
                            else
@@ -1012,7 +1016,7 @@ end
                              partialInstClass(node)
                              @assign node = replaceClass(mergeModifier(mod, getClass(node)), node)
                              @assign node = clearPackageCache(node)
-                             Mutable.update(node_ptr, node)
+                             P_Pointer.update(node_ptr, node)
                            end
                          end
                        end
@@ -1032,13 +1036,13 @@ function redeclareClasses(tree::ClassTree) ::ClassTree
     @match tree begin
       CLASS_TREE_INSTANTIATED_TREE(__)  => begin
         for cls_ptr in tree.classes
-          @assign cls_node = Mutable.access(cls_ptr)
+          @assign cls_node = P_Pointer.access(cls_ptr)
           @assign cls = getClass(resolveOuter(cls_node))
           @assign mod = getModifier(cls)
           if isRedeclare(mod)
             @match REDECLARE(element = redecl_node, mod = mod) = mod
             @assign cls_node = redeclareClass(redecl_node, cls_node, mod)
-            Mutable.update(cls_ptr, cls_node)
+            P_Pointer.update(cls_ptr, cls_node)
           end
         end
         ()
@@ -1053,46 +1057,46 @@ end
 
 function redeclareElements(chain::List, instLevel::Integer)
   local node::InstNode
-  local node_ptr::Mutable{InstNode}
+  local node_ptr::Pointer{InstNode}
 
-  @assign node = Mutable.access(listHead(chain))
+  @assign node = P_Pointer.access(listHead(chain))
   @assign node_ptr = listHead(chain)
   if isClass(node)
     for cls_ptr in listRest(chain)
       @assign node_ptr = redeclareClassElement(cls_ptr, node_ptr)
     end
-    @assign node = Mutable.access(node_ptr)
+    @assign node = P_Pointer.access(node_ptr)
   else
     for comp_ptr in listRest(chain)
       @assign node_ptr = redeclareComponentElement(comp_ptr, node_ptr, instLevel)
     end
-    @assign node = Mutable.access(node_ptr)
+    @assign node = P_Pointer.access(node_ptr)
   end
   for cls_ptr in chain
-    Mutable.update(cls_ptr, node)
+    P_Pointer.update(cls_ptr, node)
   end
 end
 
-function redeclareClassElement(redeclareCls::Mutable, replaceableCls::Mutable)::Mutable
-  local outCls::Mutable{InstNode}
+function redeclareClassElement(redeclareCls::Pointer, replaceableCls::Pointer)::Pointer
+  local outCls::Pointer{InstNode}
   local rdcl_node::InstNode
   local repl_node::InstNode
-  @assign rdcl_node = Mutable.access(redeclareCls)
-  @assign repl_node = Mutable.access(replaceableCls)
+  @assign rdcl_node = P_Pointer.access(redeclareCls)
+  @assign repl_node = P_Pointer.access(replaceableCls)
   @assign rdcl_node = redeclareClass(rdcl_node, repl_node, MODIFIER_NOMOD())
-  @assign outCls = Mutable.create(rdcl_node)
+  @assign outCls = P_Pointer.create(rdcl_node)
   outCls
 end
 
-function redeclareComponentElement(redeclareComp::Mutable{<:InstNode}, replaceableComp::Mutable{<:InstNode}, instLevel::Integer) ::Mutable{InstNode}
-  local outComp::Mutable{InstNode}
+function redeclareComponentElement(redeclareComp::Pointer{<:InstNode}, replaceableComp::Pointer{<:InstNode}, instLevel::Integer) ::Pointer{InstNode}
+  local outComp::Pointer{InstNode}
   local rdcl_node::InstNode
   local repl_node::InstNode
-  @assign rdcl_node = Mutable.access(redeclareComp)
-  @assign repl_node = Mutable.access(replaceableComp)
+  @assign rdcl_node = P_Pointer.access(redeclareComp)
+  @assign repl_node = P_Pointer.access(replaceableComp)
   instComponent(repl_node, DEFAULT_ATTR, MODIFIER_NOMOD(), true, instLevel)
   redeclareComponent(rdcl_node, repl_node, MODIFIER_NOMOD(), MODIFIER_NOMOD(), DEFAULT_ATTR, rdcl_node, instLevel)
-  @assign outComp = Mutable.create(rdcl_node)
+  @assign outComp = P_Pointer.create(rdcl_node)
   outComp
 end
 
@@ -1290,8 +1294,7 @@ function instComponentDef(component::SCode.Element, outerMod::Modifier, innerMod
         =#
         #=  attributes of the component's parent (e.g. constant SomeComplexClass c).
         =#
-        @info "Component is $component"
-        @info "Parent is: $parentNode"
+        @info "Instantiating components attributes"
         @assign parent_res = restriction(getClass(parentNode))
         @assign attr = instComponentAttributes(component.attributes, component.prefixes)
         @assign attr = checkDeclaredComponentAttributes(attr, parent_res, node)
@@ -1854,8 +1857,7 @@ function instExpressions(node::InstNode, scope::InstNode = node, sections::Secti
   local dims::Array{Dimension}
   local dim_scope::InstNode
   local info::SourceInfo
-  local ty::M_Type
-
+  local ty::NFType
   @assign () = begin
     @match cls begin
       EXPANDED_CLASS(elements = cls_tree, restriction = RESTRICTION_TYPE(__))  => begin
@@ -1863,7 +1865,7 @@ function instExpressions(node::InstNode, scope::InstNode = node, sections::Secti
         =#
         #=  Instantiate expressions in the extends nodes.
         =#
-        @assign exts = getExtends(cls_tree)
+        exts = getExtends(cls_tree)
         for ext in exts
           instExpressions(ext, ext, sections)
         end
@@ -1943,19 +1945,16 @@ function instExpressions(node::InstNode, scope::InstNode = node, sections::Secti
   sections
 end
 
-function makeComplexType(restriction::Restriction, node::InstNode, cls::Class) ::M_Type
-  local ty::M_Type
-
+function makeComplexType(restriction::Restriction, node::InstNode, cls::Class)::NFType
+  local ty::NFType
   local cty::ComplexType
-
   @assign cty = begin
     @match restriction begin
-      P_Restriction.Restriction.RECORD(__)  => begin
+      RESTRICTION_RECORD(__)  => begin
         makeRecordComplexType(classScope(getDerivedNode(node)), cls)
       end
-
       _  => begin
-        ComplexType.CLASS()
+        COMPLEX_CLASS()
       end
     end
   end
@@ -1974,16 +1973,16 @@ function makeRecordComplexType(node::InstNode, cls::Class) ::ComplexType
   else
     classScope(getDerivedNode(node))
   end
-  @assign ty = ComplexType.RECORD(cls_node, nil)
+  @assign ty = COMPLEX_RECORD(cls_node, nil)
   ty
 end
 
-function instComplexType(ty::M_Type)
+function instComplexType(ty::NFType)
   @assign () = begin
     local node::InstNode
     local cache::CachedData
     @match ty begin
-      TYPE_COMPLEX(complexTy = ComplexType.RECORD(node)) where (! isModel(node))  => begin
+      TYPE_COMPLEX(complexTy = COMPLEX_RECORD(node)) where (! isModel(node))  => begin
         #=  Make sure it's really a record, and not e.g. a record inherited by a model.
         =#
         #=  TODO: This check should really be InstNode.isRecord(node), but that
@@ -1993,7 +1992,6 @@ function instComplexType(ty::M_Type)
         instRecordConstructor(node)
         ()
       end
-
       _  => begin
         ()
       end
@@ -2076,7 +2074,7 @@ function instComponentExpressions(componentArg::InstNode)
         ()
       end
 
-      ENUM_LITERAL(__)  => begin
+      ENUM_LITERAL_COMPONENT(__)  => begin
         ()
       end
 
@@ -2192,20 +2190,20 @@ function instExp(absynExp::Absyn.Exp, scope::InstNode, info::SourceInfo) ::Expre
 
       Absyn.UNARY(__)  => begin
         @assign e1 = instExp(absynExp.exp, scope, info)
-        @assign op = P_Operator.Operator.fromAbsyn(absynExp.op)
-        Expression.UNARY(op, e1)
+        @assign op = fromAbsyn(absynExp.op)
+        UNARY_EXPRESSION(op, e1)
       end
 
       Absyn.LBINARY(__)  => begin
         @assign e1 = instExp(absynExp.exp1, scope, info)
         @assign e2 = instExp(absynExp.exp2, scope, info)
-        @assign op = P_Operator.Operator.fromAbsyn(absynExp.op)
+        @assign op = fromAbsyn(absynExp.op)
         Expression.LBINARY(e1, op, e2)
       end
 
       Absyn.LUNARY(__)  => begin
         @assign e1 = instExp(absynExp.exp, scope, info)
-        @assign op = P_Operator.Operator.fromAbsyn(absynExp.op)
+        @assign op = fromAbsyn(absynExp.op)
         Expression.LUNARY(op, e1)
       end
 
@@ -2271,7 +2269,7 @@ function instCref(absynCref::Absyn.ComponentRef, scope::InstNode, info::SourceIn
   @assign cref = instCrefSubscripts(cref, scope, info)
   @assign crefExp = begin
     @match cref begin
-      ComponentRef.CREF(__)  => begin
+      COMPONENT_REF_CREF(__)  => begin
         begin
           @match cref.node begin
             COMPONENT_NODE(__)  => begin
@@ -2306,11 +2304,11 @@ function instCrefComponent(cref::ComponentRef, node::InstNode, scope::InstNode, 
   @assign comp = component(node)
   @assign crefExp = begin
     @match comp begin
-      P_Component.ITERATOR(__)  => begin
+      ITERATOR_COMPONENT(__)  => begin
         checkUnsubscriptableCref(cref, info)
-        CREF_EXPRESSION(TYPE_UNKNOWN(), ComponentRef.makeIterator(node, comp.ty))
+        CREF_EXPRESSION(TYPE_UNKNOWN(), makeIterator(node, comp.ty))
       end
-      P_Component.ENUM_LITERAL(__)  => begin
+      ENUM_LITERAL_COMPONENT(__)  => begin
         checkUnsubscriptableCref(cref, info)
         comp.literal
       end
@@ -2319,11 +2317,11 @@ function instCrefComponent(cref::ComponentRef, node::InstNode, scope::InstNode, 
         fail()
       end
       _  => begin
-        @assign prefixed_cref = ComponentRef.fromNodeList(scopeList(scope))
-        @assign prefixed_cref = if ComponentRef.isEmpty(prefixed_cref)
+        @assign prefixed_cref = fromNodeList(scopeList(scope))
+        @assign prefixed_cref = if isEmpty(prefixed_cref)
           cref
         else
-          ComponentRef.append(cref, prefixed_cref)
+          append(cref, prefixed_cref)
         end
         CREF_EXPRESSION(TYPE_UNKNOWN(), prefixed_cref)
       end
@@ -2378,7 +2376,7 @@ function instCrefSubscripts(cref::ComponentRef, scope::InstNode, info::SourceInf
   @assign () = begin
     local rest_cr::ComponentRef
     @match cref begin
-      ComponentRef.CREF(__)  => begin
+      COMPONENT_REF_CREF(__)  => begin
         if ! listEmpty(cref.subscripts)
           @assign cref.subscripts = List(instSubscript(s, scope, info) for s in cref.subscripts)
         end
@@ -2427,7 +2425,7 @@ function instPartEvalFunction(func::Absyn.ComponentRef, funcArgs::Absyn.Function
     @assign fn_ref = P_Expression.Expression.toCref(outExp)
     @assign args = List(instExp(arg.argValue, scope, info) for arg in nargs)
     @assign arg_names = List(arg.argName for arg in nargs)
-    @assign outExp = P_Expression.Expression.PARTIAL_FUNCTION_APPLICATION(fn_ref, args, arg_names, TYPE_UNKNOWN())
+    @assign outExp = PARTIAL_FUNCTION_APPLICATION_EXPRESSION(fn_ref, args, arg_names, TYPE_UNKNOWN())
   end
   outExp
 end
@@ -2588,7 +2586,7 @@ function instEEquation(scodeEq::SCode.EEquation, scope::InstNode, origin::ORIGIN
       SCode.EQ_EQUALS(info = info)  => begin
         @assign exp1 = instExp(scodeEq.expLeft, scope, info)
         @assign exp2 = instExp(scodeEq.expRight, scope, info)
-        Equation.EQUALITY(exp1, exp2, TYPE_UNKNOWN(), makeSource(scodeEq.comment, info))
+        EQUATION_EQUALITY(exp1, exp2, TYPE_UNKNOWN(), makeSource(scodeEq.comment, info))
       end
 
       SCode.EQ_CONNECT(info = info)  => begin
@@ -2707,8 +2705,7 @@ end
 
 function makeSource(comment::SCode.Comment, info::SourceInfo) ::DAE.ElementSource
   local source::DAE.ElementSource
-
-  @assign source = DAE.ElementSource.SOURCE(info, nil, DAE.NOCOMPPRE(), nil, nil, nil, list(comment))
+  @assign source = DAE.SOURCE(info, nil, "TODO Dummy", nil, nil, nil, list(comment))
   source
 end
 
@@ -2746,49 +2743,52 @@ end
                  end
                end
 
-""" #= Inner elements can be generated automatically during instantiation if they're
-               missing, and are stored in the cache of the top scope since that's easily
-               accessible during lookup. This function copies any such inner elements into
-               the class we're instantiating, so that they are typed and flattened properly. =#"""
-                 function insertGeneratedInners(node::InstNode, topScope::InstNode)
-                   local inner_tree::NodeTree.Tree
-                   local inner_nodes::List{Tuple{String, InstNode}}
-                   local inner_comps::List{Mutable{InstNode}}
-                   local n::InstNode
-                   local name::String
-                   local str::String
-                   local cls::Class
-                   local cls_tree::ClassTree
-                   local base_node::InstNode
-
-                   @match C_TOP_SCOPE(addedInner = inner_tree) = getInnerOuterCache(topScope)
-                   #=  Empty tree => nothing more to do.
-                   =#
-                   if NodeTree.isEmpty(inner_tree)
-                     return
-                   end
-                   @assign inner_nodes = NodeTree.toList(inner_tree)
-                   @assign inner_comps = nil
-                   for e in inner_nodes
-                     @assign (name, n) = e
-                     Error.addSourceMessage(Error.MISSING_INNER_ADDED, list(typeName(n), name), info(n))
-                     if isComponent(n)
-                       instComponent(n, DEFAULT_ATTR, MODIFIER_NOMOD(), true, 0)
-                       try
-                         @match Absyn.STRING(str) = SCodeUtil.getElementNamedAnnotation(definition(classScope(n)), "missingInnerMessage")
-                         Error.addSourceMessage(Error.MISSING_INNER_MESSAGE, list(System.unescapedString(str)), info(n))
-                       catch
-                       end
-                       @assign inner_comps = _cons(Mutable.create(n), inner_comps)
-                     end
-                   end
-                   if ! listEmpty(inner_comps)
-                     @assign base_node = lastBaseClass(node)
-                     @assign cls = getClass(base_node)
-                     @assign cls_tree = appendComponentsToInstTree(inner_comps, classTree(cls))
-                     updateClass(setClassTree(cls_tree, cls), base_node)
-                   end
-                 end
+" #= Inner elements can be generated automatically during instantiation if they're
+                   missing, and are stored in the cache of the top scope since that's easily
+                   accessible during lookup. This function copies any such inner elements into
+                   the class we're instantiating, so that they are typed and flattened properly. =#"
+function insertGeneratedInners(node::InstNode, topScope::InstNode)
+  local inner_tree::NodeTree.Tree
+  local inner_nodes::List{Tuple{String, InstNode}}
+  local inner_comps::List{Pointer{InstNode}}
+  local n::InstNode
+  local name::String
+  local str::String
+  local cls::Class
+  local cls_tree::ClassTree
+  local base_node::InstNode
+@info "Calling insert generate inners!"
+  @match C_TOP_SCOPE(addedInner = inner_tree) = getInnerOuterCache(topScope)
+  #=  Empty tree => nothing more to do.
+  =#
+  if NodeTree.isEmpty(inner_tree)
+    @info "EMPTY NODE TREE"
+    return
+  end
+  @assign inner_nodes = NodeTree.toList(inner_tree)
+  @assign inner_comps = nil
+  for e in inner_nodes
+    @assign (name, n) = e
+    Error.addSourceMessage(Error.MISSING_INNER_ADDED, list(typeName(n), name), info(n))
+    if isComponent(n)
+      instComponent(n, DEFAULT_ATTR, MODIFIER_NOMOD(), true, 0)
+      try
+        @match Absyn.STRING(str) = SCodeUtil.getElementNamedAnnotation(definition(classScope(n)), "missingInnerMessage")
+        Error.addSourceMessage(Error.MISSING_INNER_MESSAGE, list(System.unescapedString(str)), info(n))
+      catch
+        @error "Error missing inners!"
+        fail()
+      end
+      @assign inner_comps = _cons(P_Pointer.create(n), inner_comps)
+    end
+  end
+  if ! listEmpty(inner_comps)
+    @assign base_node = lastBaseClass(node)
+    @assign cls = getClass(base_node)
+    @assign cls_tree = appendComponentsToInstTree(inner_comps, classTree(cls))
+    updateClass(setClassTree(cls_tree, cls), base_node)
+  end
+end
 
 function updateImplicitVariability(node::InstNode, evalAllParams::Bool)
   local cls::Class = getClass(node)
@@ -3038,7 +3038,7 @@ function markStructuralParamsExp_traverser(exp::Expression)
     local comp::Component
     local binding::Option{Expression}
     @match exp begin
-      CREF_EXPRESSION(cref = ComponentRef.CREF(node = node, origin = Origin.CREF))  => begin
+      CREF_EXPRESSION(cref = COMPONENT_REF_CREF(node = node, origin = Origin.CREF))  => begin
         if isComponent(node)
           @assign comp = component(node)
           if P_Component.variability(comp) == Variability.PARAMETER
@@ -3185,7 +3185,7 @@ function markImplicitWhenExp_traverser(exp::Expression)
     local node::InstNode
     local comp::Component
     @match exp begin
-      Expression.CREF(cref = ComponentRef.CREF(node = node))  => begin
+      Expression.CREF(cref = COMPONENT_REF_CREF(node = node))  => begin
         if isComponent(node)
           @assign comp = component(node)
           if variability(comp) == Variability.CONTINUOUS

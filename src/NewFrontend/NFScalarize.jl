@@ -123,7 +123,7 @@ function scalarizeVariable(var::Variable, vars::List{<:Variable})::List{Variable
 
   if Type.isArray(var.ty)
     try
-      @match P_Variable.Variable.VARIABLE(
+      @match VARIABLE(
         name,
         ty,
         binding,
@@ -151,7 +151,7 @@ function scalarizeVariable(var::Variable, vars::List{<:Variable})::List{Variable
           @assign binding = FLAT_BINDING(exp, bind_var)
           @assign ty_attr = nextTypeAttributes(ty_attr_names, ty_attr_iters)
           @assign vars = _cons(
-            P_Variable.Variable.VARIABLE(cr, ty, binding, vis, attr, ty_attr, cmt, info),
+            VARIABLE(cr, ty, binding, vis, attr, ty_attr, cmt, info),
             vars,
           )
         end
@@ -159,7 +159,7 @@ function scalarizeVariable(var::Variable, vars::List{<:Variable})::List{Variable
         for cr in crefs
           @assign ty_attr = nextTypeAttributes(ty_attr_names, ty_attr_iters)
           @assign vars = _cons(
-            P_Variable.Variable.VARIABLE(cr, ty, binding, vis, attr, ty_attr, cmt, info),
+            VARIABLE(cr, ty, binding, vis, attr, ty_attr, cmt, info),
             vars,
           )
         end

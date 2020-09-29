@@ -60,7 +60,7 @@ Equation = NFEquation
   @Record EQUATION_ARRAY_EQUALITY begin
     lhs::Expression
     rhs::Expression
-    ty::M_Type
+    ty::NFType
     source::DAE.ElementSource
   end
 
@@ -73,7 +73,7 @@ Equation = NFEquation
   @Record EQUATION_EQUALITY begin
     lhs::Expression #= The left hand side expression. =#
     rhs::Expression #= The right hand side expression. =#
-    ty::M_Type
+    ty::NFType
     source::DAE.ElementSource
   end
 end
@@ -131,7 +131,6 @@ function toFlatStreamList(
 end
 
 function toFlatStream(eq::Equation, indent::String, s)
-
   @assign s = IOStream.append(s, indent)
   @assign s = begin
     @match eq begin

@@ -192,8 +192,8 @@ function setRecordFields(fields::List{<:Field}, recordType::M_Type)::M_Type
   @assign recordType = begin
     local rec_node::InstNode
     @match recordType begin
-      COMPLEX(complexTy = ComplexType.RECORD(constructor = rec_node)) => begin
-        COMPLEX(recordType.cls, ComplexType.RECORD(rec_node, fields))
+      COMPLEX(complexTy = COMPLEX_RECORD(constructor = rec_node)) => begin
+        COMPLEX(recordType.cls, COMPLEX_RECORD(rec_node, fields))
       end
 
       _ => begin
@@ -209,7 +209,7 @@ function recordFields(recordType::M_Type)::List{Field}
 
   @assign fields = begin
     @match recordType begin
-      COMPLEX(complexTy = ComplexType.RECORD(fields = fields)) => begin
+      COMPLEX(complexTy = COMPLEX_RECORD(fields = fields)) => begin
         fields
       end
 
@@ -1196,7 +1196,7 @@ function isRecord(ty::M_Type)::Bool
 
   @assign isRecord = begin
     @match ty begin
-      COMPLEX(complexTy = ComplexType.RECORD(__)) => begin
+      COMPLEX(complexTy = COMPLEX_RECORD(__)) => begin
         true
       end
 
@@ -1538,7 +1538,7 @@ end
 
 """ #= Adds array dimensions to a type on the left side, e.g.
        listArrayLeft(Real[2, 3], [4, 5]) => Real[2, 3, 4, 5]. =#"""
-function liftArrayRightList(ty::M_Type, dims::List{<:Dimension})::M_Type
+function liftArrayRightList(ty::NFType, dims::List{<:Dimension})::NFType
 
   if listEmpty(dims)
     return ty
@@ -1559,7 +1559,7 @@ end
 
 """ #= Adds array dimensions to a type on the left side, e.g.
        listArrayLeft(Real[2, 3], [4, 5]) => Real[4, 5, 2, 3]. =#"""
-function liftArrayLeftList(ty::M_Type, dims::List{<:Dimension})::M_Type
+function liftArrayLeftList(ty::NFType, dims::List{<:Dimension})::NFType
 
   if listEmpty(dims)
     return ty
@@ -1569,7 +1569,6 @@ function liftArrayLeftList(ty::M_Type, dims::List{<:Dimension})::M_Type
       ARRAY(__) => begin
         ARRAY(ty.elementType, listAppend(dims, ty.dimensions))
       end
-
       _ => begin
         ARRAY(ty, dims)
       end

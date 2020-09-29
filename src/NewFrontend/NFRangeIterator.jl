@@ -112,13 +112,13 @@ function next(iterator::RangeIterator)::Tuple{RangeIterator, Expression}
   @assign nextExp = begin
     @match iterator begin
       INT_RANGE(__) => begin
-        @assign nextExp = P_Expression.Expression.INTEGER(iterator.current)
+        @assign nextExp = INTEGER_EXPRESSION(iterator.current)
         @assign iterator.current = iterator.current + 1
         nextExp
       end
 
       INT_STEP_RANGE(__) => begin
-        @assign nextExp = P_Expression.Expression.INTEGER(iterator.current)
+        @assign nextExp = INTEGER_EXPRESSION(iterator.current)
         @assign iterator.current = iterator.current + iterator.stepsize
         nextExp
       end
@@ -211,17 +211,17 @@ function fromExp(exp::Expression)::RangeIterator
       end
 
       P_Expression.Expression.RANGE(
-        start = P_Expression.Expression.INTEGER(istart),
-        step = SOME(P_Expression.Expression.INTEGER(istep)),
-        stop = P_Expression.Expression.INTEGER(istop),
+        start = INTEGER_EXPRESSION(istart),
+        step = SOME(INTEGER_EXPRESSION(istep)),
+        stop = INTEGER_EXPRESSION(istop),
       ) => begin
         INT_STEP_RANGE(istart, istep, istop)
       end
 
       P_Expression.Expression.RANGE(
-        start = P_Expression.Expression.INTEGER(istart),
+        start = INTEGER_EXPRESSION(istart),
         step = NONE(),
-        stop = P_Expression.Expression.INTEGER(istop),
+        stop = INTEGER_EXPRESSION(istop),
       ) => begin
         INT_RANGE(istart, istop)
       end

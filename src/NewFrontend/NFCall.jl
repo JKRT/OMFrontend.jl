@@ -1375,7 +1375,7 @@ function vectorizeCall(
           @assign ty = Type.ARRAY(TYPE_INTEGER(), list(dim))
           @assign exp = P_Expression.Expression.RANGE(
             ty,
-            P_Expression.Expression.INTEGER(1),
+            INTEGER_EXPRESSION(1),
             NONE(),
             P_Dimension.Dimension.sizeExp(dim),
           )
@@ -1969,24 +1969,25 @@ function instNormalCall(
 
   @assign name = AbsynUtil.crefFirstIdent(functionName)
   #=  try to inst the parameters =#
-  #try
+  try
   @error "Here we have an error"
   @assign (args, named_args) = instArgs(functionArgs, scope, info)
   @error "Did we get here. After calling instArgs in NFCall"
-  #catch
-    # if false #=Config.getGraphicsExpMode() && stringEq(name, "DynamicSelect") TODO =#
-    #   @assign callExp = begin
-    #     @match functionArgs begin
-    #       Absyn.FUNCTIONARGS(__) => begin
-    #         instExp(listHead(functionArgs.args), scope, info)
-    #       end
-    #     end
-    #   end
-    #   return callExp
-    # #else
-    #   fail()
-    # #end
-  #end
+ catch e
+    if false #=Config.getGraphicsExpMode() && stringEq(name, "DynamicSelect") TODO =#
+      @assign callExp = begin
+        @match functionArgs begin
+          Absyn.FUNCTIONARGS(__) => begin
+            instExp(listHead(functionArgs.args), scope, info)
+          end
+        end
+      end
+      return callExp
+    else
+      @info "Failed with the following error $e"
+      fail()
+    end
+  end
   #=  didn't work, is this DynamicSelect dynamic part?! #5631
   =#
   #=  return just the first part of DynamicSelect

@@ -43,6 +43,7 @@ include("./FrontendUtil/DAE.jl")
 #=New Frontend=#
 include("./FrontendInterfaces/NFInterfaces.jl")
 include("./NewFrontend/NFType.jl")
+include("./NewFrontend/NFComplexType.jl")
 include("./NewFrontend/NFPrefixes.jl")
 include("./NewFrontEnd/NFComponent.jl")
 include("./NewFrontend/NFInstNode.jl")
@@ -79,10 +80,14 @@ include("./NewFrontend/NFLookupState.jl")
 include("./NewFrontend/NFComponentRef.jl")
 @exportAll
 include("./NewFrontend/NFBuiltin.jl")
-.import NFBuiltin
+import ..NFBuiltin
 include("./NewFrontend/BindingExpression.jl")
 include("./NewFrontend/NFDimension.jl")
 include("./NewFrontend/NFCall.jl")
+include("./NewFrontend/NFOperator.jl")
+include("./NewFrontend/NFTypeCheck.jl")
+
+include("./NewFrontend/NFExpandableConnectors.jl")
 end
 
 function parseFile(file::String)::Absyn.Program
@@ -104,6 +109,15 @@ end
 "
 function instantiateSCodeToDAE(elementToInstantiate::String, inProgram::SCode.Program)
   Main.instClassInProgram(Absyn.IDENT(elementToInstantiate), inProgram)
+end
+
+function testSpin()
+    p = parseFile("./src\\example.mo")
+    scodeProgram = translateToSCode(p)
+    @info "Translation to SCode"
+    @info "SCode -> DAE"
+    (dae, cache) = instantiateSCodeToDAE("HelloWorld", scodeProgram)
+    @info "After DAE Translation"
 end
 
 end # module

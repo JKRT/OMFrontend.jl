@@ -50,7 +50,7 @@ function toDAE(fnDer::FunctionDerivative)::DAE.FunctionDefinition
 
   local order::Integer
 
-  @match P_Expression.Expression.INTEGER(order) = fnDer.order
+  @match INTEGER_EXPRESSION(order) = fnDer.order
   @assign derDef = DAE.FunctionDefinition.FUNCTION_DER_MAPPER(
     P_Function.name(listHead(P_Function.getCachedFuncs(fnDer.derivedFn))),
     P_Function.name(listHead(P_Function.getCachedFuncs(fnDer.derivativeFn))),
@@ -232,7 +232,7 @@ function getDerivativeAttributes(
     end
   end
   if P_Expression.Expression.isEmpty(order)
-    @assign order = P_Expression.Expression.INTEGER(1)
+    @assign order = INTEGER_EXPRESSION(1)
   end
   return (order, conditions)
 end

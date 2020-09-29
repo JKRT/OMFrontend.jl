@@ -3,7 +3,7 @@ ComponentRef = NFComponentRef
 @Uniontype NFVariable begin
   @Record VARIABLE begin
     name::ComponentRef
-    ty::M_Type
+    ty::NFType
     binding::Binding
     visibility::VisibilityType
     attributes::Attributes

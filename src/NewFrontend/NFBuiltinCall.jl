@@ -364,7 +364,7 @@
                 if Type.isEqual(resTy, TYPE_UNKNOWN())
                   @assign resTy = Type.arrayElementType(ty)
                 else
-                  @assign (_, _, ty1, mk) = TypeCheck.matchExpressions(P_Expression.Expression.INTEGER(0), Type.arrayElementType(ty), P_Expression.Expression.INTEGER(0), resTy)
+                  @assign (_, _, ty1, mk) = TypeCheck.matchExpressions(INTEGER_EXPRESSION(0), Type.arrayElementType(ty), INTEGER_EXPRESSION(0), resTy)
                   if TypeCheck.isCompatibleMatch(mk)
                     @assign resTy = ty1
                   end
@@ -405,7 +405,7 @@
                 if Type.isEqual(resTy, TYPE_UNKNOWN())
                   @assign resTy = ty
                 else
-                  @assign (_, _, ty1, mk) = TypeCheck.matchExpressions(P_Expression.Expression.INTEGER(0), ty, P_Expression.Expression.INTEGER(0), resTy)
+                  @assign (_, _, ty1, mk) = TypeCheck.matchExpressions(INTEGER_EXPRESSION(0), ty, INTEGER_EXPRESSION(0), resTy)
                   if TypeCheck.isCompatibleMatch(mk)
                     @assign resTy = ty1
                   end
@@ -442,7 +442,7 @@
                #=  We have all except dimension n having equal sizes; with matching types
                =#
               @assign ty = resTy
-              @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(NFBuiltinFuncs.CAT, _cons(P_Expression.Expression.INTEGER(n), res), variability, resTy))
+              @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(NFBuiltinFuncs.CAT, _cons(INTEGER_EXPRESSION(n), res), variability, resTy))
           (callExp, ty)
         end
 
@@ -577,7 +577,7 @@
                #=  so we might as well evaluate the ndims call here.
                =#
               @assign (_, arg_ty, _) = Typing.typeExp(listHead(args), origin, info)
-              @assign callExp = P_Expression.Expression.INTEGER(Type.dimensionCount(arg_ty))
+              @assign callExp = INTEGER_EXPRESSION(Type.dimensionCount(arg_ty))
           (callExp, ty, variability)
         end
 
@@ -991,7 +991,7 @@
               if listEmpty(args)
                 Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), toString(fn_ref) + "(Integer, ...) => Integer[:, ...]"), info)
               end
-              @assign fill_arg = P_Expression.Expression.INTEGER(if name == "ones"
+              @assign fill_arg = INTEGER_EXPRESSION(if name == "ones"
                     1
                   else
                     0
@@ -1158,7 +1158,7 @@
               if variability > Variability.PARAMETER
                 Error.addSourceMessageAndFail(Error.NF_CAT_FIRST_ARG_EVAL, list(toString(arg), P_Prefixes.variabilityString(variability)), info)
               end
-              @match P_Expression.Expression.INTEGER(n) = Ceval.evalExp(arg, Ceval.P_EvalTarget.GENERIC(info))
+              @match INTEGER_EXPRESSION(n) = Ceval.evalExp(arg, Ceval.P_EvalTarget.GENERIC(info))
               @assign res = nil
               @assign tys = nil
               for a in args
@@ -1377,7 +1377,7 @@
                   Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list("2", toString(fn_ref), "", toString(arg2), Type.toString(ty), "Integer"), info)
                 end
               else
-                @assign arg2 = P_Expression.Expression.INTEGER(0)
+                @assign arg2 = INTEGER_EXPRESSION(0)
               end
               @match list(fn) = P_Function.typeRefCache(fn_ref)
               @assign ty = TYPE_NORETCALL()
@@ -1484,7 +1484,7 @@
                   Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list("2", toString(fn_ref), "", toString(arg2), Type.toString(ty), "String"), info)
                 end
               else
-                @assign arg2 = P_Expression.Expression.STRING("")
+                @assign arg2 = STRING_EXPRESSION("")
               end
               @match list(fn) = P_Function.typeRefCache(fn_ref)
               @assign ty = TYPE_NORETCALL()
@@ -1546,7 +1546,7 @@
                   Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list("3", toString(fn_ref), "", toString(arg2), Type.toString(ty3), "String"), info)
                 end
               else
-                @assign arg2 = P_Expression.Expression.STRING("")
+                @assign arg2 = STRING_EXPRESSION("")
               end
               @match list(fn) = P_Function.typeRefCache(fn_ref)
               assert(listLength(Type.arrayDims(ty1)) == listLength(Type.arrayDims(ty2)), "the first two parameters need to have the same size")
@@ -1663,7 +1663,7 @@
               local scope::InstNode
 
               @match P_Call.UNTYPED_CALL(call_scope = scope) = call
-              @assign result = P_Expression.Expression.STRING(AbsynUtil.pathString(scopePath(scope, includeRoot = true)))
+              @assign result = STRING_EXPRESSION(AbsynUtil.pathString(scopePath(scope, includeRoot = true)))
           (result, ty, var)
         end
 
@@ -1702,7 +1702,7 @@
                                #=  Clock(intervalCounter, resolution) - integer clock.
                                =#
                               Error.assertionOrAddSourceMessage(integerValue(e2) >= 1, Error.WRONG_VALUE_OF_ARG, list("Clock", "resolution", toString(e2), "=> 1"), info)
-                            P_Expression.Expression.CLKCONST(P_Expression.Expression.INTEGER_CLOCK(e1, e2))
+                            P_Expression.Expression.CLKCONST(INTEGER_EXPRESSION_CLOCK(e1, e2))
                           end
 
                           TYPE_REAL(__)  => begin

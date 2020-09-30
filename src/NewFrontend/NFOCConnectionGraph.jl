@@ -277,7 +277,7 @@
               local expRHS::Expression
               local fn_node_lhs::InstNode
               local fn_node_rhs::InstNode
-              local var::Variability
+              local var::VariabilityType
 
               if ! System.getHasOverconstrainedConnectors()
                 return eqsEqualityConstraint
@@ -307,7 +307,7 @@
                         @assign (expRHS, ty, var) = Typing.typeExp(expRHS, origin, ElementSource.getInfo(source))
                         @assign fcref_lhs = P_Function.lookupFunctionSimple("fill", topScope(node(clhs)))
                         @assign (fcref_lhs, fn_node_lhs, _) = P_Function.instFunctionRef(fcref_lhs, ElementSource.getInfo(source))
-                        @assign expLHS = CALL_EXPRESSION(P_Call.UNTYPED_CALL(fcref_lhs, _cons(P_Expression.REAL_EXPRESSION(0.0), ListUtil.map(Type.arrayDims(ty), P_Dimension.Dimension.sizeExp)), nil, fn_node_lhs))
+                        @assign expLHS = CALL_EXPRESSION(P_Call.UNTYPED_CALL(fcref_lhs, _cons(P_Expression.REAL_EXPRESSION(0.0), ListUtil.map(arrayDims(ty), P_Dimension.Dimension.sizeExp)), nil, fn_node_lhs))
                         @assign (expLHS, ty, var) = Typing.typeExp(expLHS, origin, ElementSource.getInfo(source))
                         @assign replaceEq = EQUATION_EQUALITY(expRHS, expLHS, ty, source)
                         @assign eqsEqualityConstraint = list(replaceEq)
@@ -453,7 +453,7 @@
                   @match root begin
                     CREF_EXPRESSION(__)  => begin
                         if printTrace
-                          print("- NFOCConnectionGraph.addUniqueRoots(" + P_Expression.Expression.toString(root) + ", " + P_Expression.Expression.toString(message) + ")\\n")
+                          print("- NFOCConnectionGraph.addUniqueRoots(" + toString(root) + ", " + toString(message) + ")\\n")
                         end
                       _cons((root.cref, message), unique_roots)
                     end
@@ -1194,7 +1194,7 @@
         function evaluateOperators(exp::Expression, rooted::NFHashTable.HashTable, roots::List{<:ComponentRef}, graph::NFOCConnectionGraph, info::SourceInfo) ::Expression
 
 
-              @assign exp = P_Expression.Expression.map(exp, (rooted, roots, graph, info) -> evalConnectionsOperatorsHelper(rooted = rooted, roots = roots, graph = graph, info = info))
+              @assign exp = map(exp, (rooted, roots, graph, info) -> evalConnectionsOperatorsHelper(rooted = rooted, roots = roots, graph = graph, info = info))
           exp
         end
 
@@ -1225,7 +1225,7 @@
                               @match call.arguments begin
                                 P_Expression.Expression.ARRAY(elements =  nil()) <|  nil()  => begin
                                     if Flags.isSet(Flags.CGRAPH)
-                                      print("- NFOCConnectionGraph.evalConnectionsOperatorsHelper: " + P_Expression.Expression.toString(exp) + " = false\\n")
+                                      print("- NFOCConnectionGraph.evalConnectionsOperatorsHelper: " + toString(exp) + " = false\\n")
                                     end
                                   P_Expression.Expression.BOOLEAN(false)
                                 end
@@ -1243,7 +1243,7 @@
                                       end
                                       @assign result = getRooted(cref, cref1, rooted)
                                       if Flags.isSet(Flags.CGRAPH)
-                                        print("- NFOCConnectionGraph.evalConnectionsOperatorsHelper: " + P_Expression.Expression.toString(exp) + " = " + boolString(result) + "\\n")
+                                        print("- NFOCConnectionGraph.evalConnectionsOperatorsHelper: " + toString(exp) + " = " + boolString(result) + "\\n")
                                       end
                                     catch
                                       @assign str = toString(cref)
@@ -1274,7 +1274,7 @@
                               @match call.arguments begin
                                 P_Expression.Expression.ARRAY(elements =  nil()) <|  nil()  => begin
                                     if Flags.isSet(Flags.CGRAPH)
-                                      print("- NFOCConnectionGraph.evalConnectionsOperatorsHelper: " + P_Expression.Expression.toString(exp) + " = false\\n")
+                                      print("- NFOCConnectionGraph.evalConnectionsOperatorsHelper: " + toString(exp) + " = false\\n")
                                     end
                                   P_Expression.Expression.BOOLEAN(false)
                                 end
@@ -1282,7 +1282,7 @@
                                 CREF_EXPRESSION(cref = cref) <|  nil()  => begin
                                     @assign result = ListUtil.isMemberOnTrue(cref, roots, isEqual)
                                     if Flags.isSet(Flags.CGRAPH)
-                                      print("- NFOCConnectionGraph.evalConnectionsOperatorsHelper: " + P_Expression.Expression.toString(exp) + " = " + boolString(result) + "\\n")
+                                      print("- NFOCConnectionGraph.evalConnectionsOperatorsHelper: " + toString(exp) + " = " + boolString(result) + "\\n")
                                     end
                                   P_Expression.Expression.BOOLEAN(result)
                                 end
@@ -1298,7 +1298,7 @@
                               @match call.arguments begin
                                 uroots && P_Expression.Expression.ARRAY(elements = lst) <| nodes <| message <|  nil()  => begin
                                     if Flags.isSet(Flags.CGRAPH)
-                                      print("- NFOCConnectionGraph.evalConnectionsOperatorsHelper: Connections.uniqueRootsIndicies(" + P_Expression.Expression.toString(uroots) + "," + P_Expression.Expression.toString(nodes) + "," + P_Expression.Expression.toString(message) + ")\\n")
+                                      print("- NFOCConnectionGraph.evalConnectionsOperatorsHelper: Connections.uniqueRootsIndicies(" + toString(uroots) + "," + toString(nodes) + "," + toString(message) + ")\\n")
                                     end
                                     @assign lst = ListUtil.fill(INTEGER_EXPRESSION(1), listLength(lst))
                                   P_Expression.Expression.makeArray(TYPE_INTEGER(), lst)
@@ -1921,7 +1921,7 @@
                       for eq in inEquations
                         @assign eql = begin
                           @match eq begin
-                            P_Equation.Equation.CONNECT(lhs = CREF_EXPRESSION(ty = ty1, cref = lhs), rhs = CREF_EXPRESSION(ty = ty2, cref = rhs), source = source)  => begin
+                            EQUATION_CONNECT(lhs = CREF_EXPRESSION(ty = ty1, cref = lhs), rhs = CREF_EXPRESSION(ty = ty2, cref = rhs), source = source)  => begin
                                 if ! (isDeleted(lhs) || isDeleted(rhs))
                                   @assign isThere = false
                                   for tpl in inBroken

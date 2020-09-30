@@ -80,7 +80,7 @@ Package = NFPackage
 
 function evaluate(flatModel::FlatModel)::FlatModel
 
-  local const_var::Variability = Variability.STRUCTURAL_PARAMETER
+  local const_var::VariabilityType = Variability.STRUCTURAL_PARAMETER
 
   @assign flatModel.variables =
     List(evaluateVariable(v, const_var) for v in flatModel.variables)
@@ -94,7 +94,7 @@ function evaluate(flatModel::FlatModel)::FlatModel
   return flatModel
 end
 
-function evaluateVariable(var::Variable, constVariability::Variability)::Variable
+function evaluateVariable(var::Variable, constVariability::VariabilityType)::Variable
 
   local binding::Binding
 
@@ -115,7 +115,7 @@ end
 function evaluateBinding(
   binding::Binding,
   structural::Bool,
-  constVariability::Variability,
+  constVariability::VariabilityType,
 )::Binding
 
   local exp::Expression
@@ -137,7 +137,7 @@ end
 
 function evaluateTypeAttribute(
   attribute::Tuple{<:String, Binding},
-  constVariability::Variability,
+  constVariability::VariabilityType,
 )::Tuple{String, Binding}
 
   local name::String
@@ -154,7 +154,7 @@ function evaluateTypeAttribute(
   return attribute
 end
 
-function evaluateExp(exp::Expression, constVariability::Variability)::Expression
+function evaluateExp(exp::Expression, constVariability::VariabilityType)::Expression
   local outExp::Expression
 
   @assign outExp = evaluateExpTraverser(exp, constVariability, false)
@@ -163,7 +163,7 @@ end
 
 function evaluateExpTraverser(
   exp::Expression,
-  constVariability::Variability,
+  constVariability::VariabilityType,
   changed::Bool,
 )::Tuple{Expression, Bool}
   local outChanged::Bool
@@ -172,7 +172,7 @@ function evaluateExpTraverser(
   local e::Expression
   local cref::ComponentRef
   local ty::M_Type
-  local var::Variability
+  local var::VariabilityType
 
   @assign outExp = begin
     @match exp begin
@@ -180,7 +180,7 @@ function evaluateExpTraverser(
         @match (
           (@match CREF_EXPRESSION(cref = cref, ty = ty) = outExp),
           outChanged,
-        ) = P_Expression.Expression.mapFoldShallow(
+        ) = mapFoldShallow(
           exp,
           (constVariability) -> evaluateExpTraverser(constVariability = constVariability),
           false,
@@ -210,7 +210,7 @@ function evaluateExpTraverser(
       end
 
       _ => begin
-        @assign (outExp, outChanged) = P_Expression.Expression.mapFoldShallow(
+        @assign (outExp, outChanged) = mapFoldShallow(
           exp,
           (constVariability) -> evaluateExpTraverser(constVariability = constVariability),
           false,
@@ -253,13 +253,13 @@ end
 
 function evaluateEquations(
   eql::List{<:Equation},
-  constVariability::Variability,
+  constVariability::VariabilityType,
 )::List{Equation}
   local outEql::List{Equation} = List(evaluateEquation(e, constVariability) for e in eql)
   return outEql
 end
 
-function evaluateEquation(eq::Equation, constVariability::Variability)::Equation
+function evaluateEquation(eq::Equation, constVariability::VariabilityType)::Equation
 
   @assign eq = begin
     local e1::Expression
@@ -331,7 +331,7 @@ function evaluateEquation(eq::Equation, constVariability::Variability)::Equation
   return eq
 end
 
-function evaluateEqBranch(branch::Branch, constVariability::Variability)::Branch
+function evaluateEqBranch(branch::Branch, constVariability::VariabilityType)::Branch
   local outBranch::Branch
 
   @assign outBranch = begin
@@ -355,14 +355,14 @@ end
 
 function evaluateAlgorithms(
   algs::List{<:Algorithm},
-  constVariability::Variability,
+  constVariability::VariabilityType,
 )::List{Algorithm}
   local outAlgs::List{Algorithm} =
     List(evaluateAlgorithm(a, constVariability) for a in algs)
   return outAlgs
 end
 
-function evaluateAlgorithm(alg::Algorithm, constVariability::Variability)::Algorithm
+function evaluateAlgorithm(alg::Algorithm, constVariability::VariabilityType)::Algorithm
 
   @assign alg.statements = evaluateStatements(alg.statements, constVariability)
   return alg
@@ -370,14 +370,14 @@ end
 
 function evaluateStatements(
   stmts::List{<:Statement},
-  constVariability::Variability,
+  constVariability::VariabilityType,
 )::List{Statement}
   local outStmts::List{Statement} =
     List(evaluateStatement(s, constVariability) for s in stmts)
   return outStmts
 end
 
-function evaluateStatement(stmt::Statement, constVariability::Variability)::Statement
+function evaluateStatement(stmt::Statement, constVariability::VariabilityType)::Statement
 
   @assign stmt = begin
     local e1::Expression
@@ -446,7 +446,7 @@ end
 
 function evaluateStmtBranch(
   branch::Tuple{<:Expression, List{<:Statement}},
-  constVariability::Variability,
+  constVariability::VariabilityType,
 )::Tuple{Expression, List{Statement}}
   local outBranch::Tuple{Expression, List{Statement}}
 
@@ -496,7 +496,7 @@ function evaluateFuncExpTraverser(
 
   local e::Expression
 
-  @assign (e, outChanged) = P_Expression.Expression.mapFoldShallow(
+  @assign (e, outChanged) = mapFoldShallow(
     exp,
     (fnNode) -> evaluateFuncExpTraverser(fnNode = fnNode),
     false,

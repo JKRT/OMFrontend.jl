@@ -107,7 +107,7 @@ function simplify(exp::Expression)::Expression
         simplifyBinary(exp)
       end
 
-      P_Expression.Expression.UNARY(__) => begin
+      UNARY_EXPRESSION(__) => begin
         simplifyUnary(exp)
       end
 
@@ -115,15 +115,15 @@ function simplify(exp::Expression)::Expression
         simplifyLogicBinary(exp)
       end
 
-      P_Expression.Expression.LUNARY(__) => begin
+      LUNARY_EXPRESSION(__) => begin
         simplifyLogicUnary(exp)
       end
 
-      P_Expression.Expression.RELATION(__) => begin
+      RELATION_EXPRESSION(__) => begin
         simplifyRelation(exp)
       end
 
-      P_Expression.Expression.IF(__) => begin
+      IF_EXPRESSION(__) => begin
         simplifyIf(exp)
       end
 
@@ -206,7 +206,7 @@ function simplifyRange(range::Expression)::Expression
       start_exp2,
       step_exp2,
       stop_exp2,
-      Type.arrayElementType(ty),
+      arrayElementType(ty),
       AbsynUtil.dummyInfo,
     )
     @assign exp = P_Expression.Expression.RANGE(ty, start_exp2, step_exp2, stop_exp2)
@@ -362,7 +362,7 @@ function simplifySumProduct(arg::Expression, call::Call, isSum::Bool)::Expressio
   @assign (exp, expanded) = P_ExpandExp.ExpandExp.expand(arg)
   if expanded
     @assign args = P_Expression.Expression.arrayScalarElements(exp)
-    @assign ty = Type.arrayElementType(P_Expression.Expression.typeOf(arg))
+    @assign ty = arrayElementType(typeOf(arg))
     if listEmpty(args)
       @assign exp = if isSum
         P_Expression.Expression.makeZero(ty)
@@ -416,7 +416,7 @@ function simplifyArrayConstructor(call::Call)::Expression
   local outExp::Expression
 
   local ty::M_Type
-  local var::Variability
+  local var::VariabilityType
   local exp::Expression
   local e::Expression
   local iters::List{Tuple{InstNode, Expression}}
@@ -430,7 +430,7 @@ function simplifyArrayConstructor(call::Call)::Expression
   @assign outExp = begin
     @matchcontinue iters begin
       (iter, e) <| nil() => begin
-        @match Type.ARRAY(dimensions = list(dim)) = P_Expression.Expression.typeOf(e)
+        @match ARRAY_TYPE(dimensions = list(dim)) = typeOf(e)
         @assign dim_size = P_Dimension.Dimension.size(dim)
         if dim_size == 0
           @assign outExp = P_Expression.Expression.makeEmptyArray(ty)
@@ -471,7 +471,7 @@ function simplifySize(sizeExp::Expression)::Expression
         @assign index = simplify(index)
         if P_Expression.Expression.isLiteral(index)
           @assign dim = listGet(
-            Type.arrayDims(P_Expression.Expression.typeOf(exp)),
+            arrayDims(typeOf(exp)),
             P_Expression.Expression.toInteger(index),
           )
           if P_Dimension.Dimension.isKnown(dim)
@@ -486,10 +486,10 @@ function simplifySize(sizeExp::Expression)::Expression
       end
 
       P_Expression.Expression.SIZE(__) => begin
-        @assign dims = Type.arrayDims(P_Expression.Expression.typeOf(sizeExp.exp))
+        @assign dims = arrayDims(typeOf(sizeExp.exp))
         if ListUtil.all(dims, (true) -> P_Dimension.Dimension.isKnown(allowExp = true))
           @assign exp = P_Expression.Expression.makeArray(
-            Type.ARRAY(
+            ARRAY_TYPE(
               TYPE_INTEGER(),
               list(P_Dimension.Dimension.fromInteger(listLength(dims))),
             ),
@@ -595,7 +595,7 @@ function simplifyBinarySub(exp1::Expression, op::Operator, exp2::Expression)::Ex
   local outExp::Expression
 
   if P_Expression.Expression.isZero(exp1)
-    @assign outExp = P_Expression.Expression.UNARY(
+    @assign outExp = UNARY_EXPRESSION(
       P_Operator.Operator.makeUMinus(P_Operator.Operator.typeOf(op)),
       exp2,
     )
@@ -693,7 +693,7 @@ function simplifyUnary(unaryExp::Expression)::Expression
   local se::Expression
   local op::Operator
 
-  @match P_Expression.Expression.UNARY(op, e) = unaryExp
+  @match UNARY_EXPRESSION(op, e) = unaryExp
   @assign se = simplify(e)
   @assign unaryExp = simplifyUnaryOp(se, op)
   if Flags.isSet(Flags.NF_EXPAND_OPERATIONS) &&
@@ -710,7 +710,7 @@ function simplifyUnaryOp(exp::Expression, op::Operator)::Expression
     @assign outExp = Ceval.evalUnaryOp(exp, op)
     @assign outExp = P_Expression.Expression.stripBindingInfo(outExp)
   else
-    @assign outExp = P_Expression.Expression.UNARY(op, exp)
+    @assign outExp = UNARY_EXPRESSION(op, exp)
   end
   return outExp
 end
@@ -848,13 +848,13 @@ function simplifyLogicUnary(unaryExp::Expression)::Expression
   local se::Expression
   local op::Operator
 
-  @match P_Expression.Expression.LUNARY(op, e) = unaryExp
+  @match LUNARY_EXPRESSION(op, e) = unaryExp
   @assign se = simplify(e)
   if P_Expression.Expression.isLiteral(se)
     @assign unaryExp = Ceval.evalLogicUnaryOp(se, op)
     @assign unaryExp = P_Expression.Expression.stripBindingInfo(unaryExp)
   elseif !referenceEq(e, se)
-    @assign unaryExp = P_Expression.Expression.LUNARY(op, se)
+    @assign unaryExp = LUNARY_EXPRESSION(op, se)
   end
   return unaryExp
 end
@@ -867,14 +867,14 @@ function simplifyRelation(relationExp::Expression)::Expression
   local se2::Expression
   local op::Operator
 
-  @match P_Expression.Expression.RELATION(e1, op, e2) = relationExp
+  @match RELATION_EXPRESSION(e1, op, e2) = relationExp
   @assign se1 = simplify(e1)
   @assign se2 = simplify(e2)
   if P_Expression.Expression.isLiteral(se1) && P_Expression.Expression.isLiteral(se2)
     @assign relationExp = Ceval.evalRelationOp(se1, op, se2)
     @assign relationExp = P_Expression.Expression.stripBindingInfo(relationExp)
   elseif !(referenceEq(e1, se1) && referenceEq(e2, se2))
-    @assign relationExp = P_Expression.Expression.RELATION(se1, op, se2)
+    @assign relationExp = RELATION_EXPRESSION(se1, op, se2)
   end
   return relationExp
 end
@@ -885,7 +885,7 @@ function simplifyIf(ifExp::Expression)::Expression
   local tb::Expression
   local fb::Expression
 
-  @match P_Expression.Expression.IF(cond, tb, fb) = ifExp
+  @match IF_EXPRESSION(cond, tb, fb) = ifExp
   @assign cond = simplify(cond)
   @assign ifExp = begin
     @match cond begin
@@ -903,7 +903,7 @@ function simplifyIf(ifExp::Expression)::Expression
         if P_Expression.Expression.isEqual(tb, fb)
           tb
         else
-          P_Expression.Expression.IF(cond, tb, fb)
+          IF_EXPRESSION(cond, tb, fb)
         end
       end
     end
@@ -921,11 +921,11 @@ function simplifyCast(exp::Expression, ty::M_Type)::Expression
         P_Expression.REAL_EXPRESSION(intReal(exp.value))
       end
 
-      (Type.ARRAY(elementType = TYPE_REAL(__)), P_Expression.Expression.ARRAY(__)) =>
+      (ARRAY_TYPE(elementType = TYPE_REAL(__)), P_Expression.Expression.ARRAY(__)) =>
         begin
           @assign ety = Type.unliftArray(ty)
           @assign exp.elements = List(simplifyCast(e, ety) for e in exp.elements)
-          @assign exp.ty = Type.setArrayElementType(exp.ty, Type.arrayElementType(ty))
+          @assign exp.ty = setArrayElementType(exp.ty, arrayElementType(ty))
           exp
         end
 

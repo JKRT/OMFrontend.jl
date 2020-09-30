@@ -803,10 +803,10 @@ function assignVariableExt(variable::Expression, value::Expression)
   local exp::Expression
 
   @assign exp = begin
-    @match (P_Expression.Expression.typeOf(variable), value) begin
+    @match (typeOf(variable), value) begin
       (
-        Type.ARRAY(dimensions = _ <| nil()),
-        P_Expression.Expression.ARRAY(ty = Type.ARRAY(dimensions = _ <| _ <| nil())),
+        ARRAY_TYPE(dimensions = _ <| nil()),
+        P_Expression.Expression.ARRAY(ty = ARRAY_TYPE(dimensions = _ <| _ <| nil())),
       ) => begin
         P_Expression.Expression.makeArray(
           Type.unliftArray(value.ty),

@@ -279,7 +279,7 @@ function dimensionCount(component::Component)::Integer
         arrayLength(component.dimensions)
       end
       TYPED_COMPONENT(__) => begin
-        listLength(Type.arrayDims(component.ty))
+        listLength(arrayDims(component.ty))
       end
       _ => begin
         0
@@ -298,7 +298,7 @@ function setDimensions(dims::List{<:Dimension}, component::Component)::Component
       end
       TYPED_COMPONENT(__) => begin
         @assign component.ty =
-          Type.liftArrayLeftList(Type.arrayElementType(component.ty), dims)
+          Type.liftArrayLeftList(arrayElementType(component.ty), dims)
         ()
       end
       _ => begin
@@ -430,16 +430,14 @@ function isExpandableConnector(component::Component)::Bool
 end
 
 function isConnector(component::Component)::Bool
-  local isConnector::Bool = ConnectorType.isConnectorType(connectorType(component))
-  return isConnector
+  return isConnectorType(connectorType(component))
 end
 
 function isFlow(component::Component)::Bool
-  local isFlow::Bool = ConnectorType.isFlow(connectorType(component))
-  return isFlow
+  return isFlow(connectorType(component))
 end
 
-function setConnectorType(cty::ConnectorType.Type, component::Component)::Component
+function setConnectorType(cty::ConnectorType.TYPE, component::Component)::Component
   @assign () = begin
     local attr::Attributes
     @match component begin
@@ -461,16 +459,14 @@ function setConnectorType(cty::ConnectorType.Type, component::Component)::Compon
   return component
 end
 
-function connectorType(component::Component)::ConnectorType.Type
-  local cty::ConnectorType.Type
-
+function connectorType(component::Component)::ConnectorType.TYPE
+  local cty::ConnectorType.TYPE
   @assign cty = begin
     @match component begin
-      UNTYPED_COMPONENT(attributes = P_Attributes.ATTRIBUTES(connectorType = cty)) => begin
+      UNTYPED_COMPONENT(attributes = ATTRIBUTES(connectorType = cty)) => begin
           cty
         end
-
-      TYPED_COMPONENT(attributes = P_Attributes.ATTRIBUTES(connectorType = cty)) => begin
+      TYPED_COMPONENT(attributes = ATTRIBUTES(connectorType = cty)) => begin
         cty
       end
       DELETED_COMPONENT(__) => begin
@@ -539,10 +535,10 @@ function isFinal(component::Component)::Bool
       COMPONENT_DEF(__) => begin
         SCodeUtil.finalBool(SCodeUtil.prefixesFinal(SCodeUtil.elementPrefixes(component.definition)))
       end
-      UNTYPED_COMPONENT(attributes = P_Attributes.ATTRIBUTES(isFinal = isFinal)) => begin
+      UNTYPED_COMPONENT(attributes = ATTRIBUTES(isFinal = isFinal)) => begin
         isFinal
       end
-      TYPED_COMPONENT(attributes = P_Attributes.ATTRIBUTES(isFinal = isFinal)) => begin
+      TYPED_COMPONENT(attributes = ATTRIBUTES(isFinal = isFinal)) => begin
         isFinal
       end
 
@@ -616,15 +612,14 @@ end
 
 function variability(component::Component)
   local variability
-
   @assign variability = begin
     @match component begin
-      TYPED_COMPONENT(attributes = P_Attributes.ATTRIBUTES(variability = variability)) =>
+      TYPED_COMPONENT(attributes = ATTRIBUTES(variability = variability)) =>
         begin
           variability
         end
 
-      UNTYPED_COMPONENT(attributes = P_Attributes.ATTRIBUTES(variability = variability)) => begin
+      UNTYPED_COMPONENT(attributes = ATTRIBUTES(variability = variability)) => begin
         variability
       end
 
@@ -902,12 +897,12 @@ function unliftType(component::Component)::Component
   @assign () = begin
     local ty::M_Type
     @match component begin
-      TYPED_COMPONENT(ty = Type.ARRAY(elementType = ty)) => begin
+      TYPED_COMPONENT(ty = ARRAY_TYPE(elementType = ty)) => begin
         @assign component.ty = ty
         ()
       end
 
-      ITERATOR(ty = Type.ARRAY(elementType = ty)) => begin
+      ITERATOR(ty = ARRAY_TYPE(elementType = ty)) => begin
         @assign component.ty = ty
         ()
       end

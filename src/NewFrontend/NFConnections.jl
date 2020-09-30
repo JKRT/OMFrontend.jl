@@ -58,7 +58,6 @@ end
 
 function collect(flatModel::FlatModel)::Tuple{FlatModel, Connections}
   local conns::Connections = new()
-
   local comp::Component
   local cr::ComponentRef
   local lhs::ComponentRef
@@ -75,12 +74,11 @@ function collect(flatModel::FlatModel)::Tuple{FlatModel, Connections}
   local ty2::M_Type
   local b1::Bool
   local b2::Bool
-
   #=  Collect all flow variables.
   =#
   for var in flatModel.variables
     @assign comp = component(node(var.name))
-    if P_Component.isFlow(comp)
+    if isFlow(comp)
       @assign c1 = Connector.fromFacedCref(
         var.name,
         var.ty,
@@ -95,7 +93,7 @@ function collect(flatModel::FlatModel)::Tuple{FlatModel, Connections}
   for eq in flatModel.equations
     @assign eql = begin
       @match eq begin
-        P_Equation.Equation.CONNECT(
+        EQUATION_CONNECT(
           lhs = CREF_EXPRESSION(ty = ty1, cref = lhs),
           rhs = CREF_EXPRESSION(ty = ty2, cref = rhs),
           source = source,

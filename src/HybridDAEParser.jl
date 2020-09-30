@@ -18,6 +18,7 @@ using ExportAll
 
 import Absyn
 import SCode
+import ListUtil
 include("./Util/Pointer.jl")
 import .P_Pointer
 Pointer = P_Pointer.Pointer

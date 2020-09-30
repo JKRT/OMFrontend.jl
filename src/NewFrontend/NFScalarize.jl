@@ -91,10 +91,10 @@ function scalarize(flatModel::FlatModel, name::String)::FlatModel
   end
   @assign flatModel.variables = listReverseInPlace(vars)
   @assign flatModel.equations =
-    P_Equation.Equation.mapExpList(flatModel.equations, expandComplexCref)
+    mapExpList(flatModel.equations, expandComplexCref)
   @assign flatModel.equations = scalarizeEquations(flatModel.equations)
   @assign flatModel.initialEquations =
-    P_Equation.Equation.mapExpList(flatModel.initialEquations, expandComplexCref)
+    mapExpList(flatModel.initialEquations, expandComplexCref)
   @assign flatModel.initialEquations = scalarizeEquations(flatModel.initialEquations)
   @assign flatModel.algorithms = List(scalarizeAlgorithm(a) for a in flatModel.algorithms)
   @assign flatModel.initialAlgorithms =
@@ -119,7 +119,7 @@ function scalarizeVariable(var::Variable, vars::List{<:Variable})::List{Variable
   local v::Variable
   local ty_attr_names::List{String}
   local ty_attr_iters::Array{ExpressionIterator}
-  local bind_var::Variability
+  local bind_var::VariabilityType
 
   if Type.isArray(var.ty)
     try
@@ -137,7 +137,7 @@ function scalarizeVariable(var::Variable, vars::List{<:Variable})::List{Variable
       if listEmpty(crefs)
         return vars
       end
-      @assign ty = Type.arrayElementType(ty)
+      @assign ty = arrayElementType(ty)
       @assign (ty_attr_names, ty_attr_iters) = scalarizeTypeAttributes(ty_attr)
       if isBound(binding)
         @assign binding_iter =
@@ -225,7 +225,7 @@ end
 
 function expandComplexCref(exp::Expression)::Expression
 
-  @assign exp = P_Expression.Expression.map(exp, expandComplexCref_traverser)
+  @assign exp = map(exp, expandComplexCref_traverser)
   return exp
 end
 
@@ -233,7 +233,7 @@ function expandComplexCref_traverser(exp::Expression)::Expression
 
   @assign () = begin
     @match exp begin
-      CREF_EXPRESSION(ty = Type.ARRAY(__)) => begin
+      CREF_EXPRESSION(ty = ARRAY_TYPE(__)) => begin
         #=  Expand crefs where any of the prefix nodes are arrays. For example if
         =#
         #=  b in a.b.c is SomeType[2] we expand it into {a.b[1].c, a.b[2].c}.
@@ -291,13 +291,13 @@ function scalarizeEquation(eq::Equation, equations::List{<:Equation})::List{Equa
         else
           @assign lhs_iter = P_ExpressionIterator.ExpressionIterator.fromExp(lhs)
           @assign rhs_iter = P_ExpressionIterator.ExpressionIterator.fromExp(rhs)
-          @assign ty = Type.arrayElementType(ty)
+          @assign ty = arrayElementType(ty)
           while P_ExpressionIterator.ExpressionIterator.hasNext(lhs_iter)
             if !P_ExpressionIterator.ExpressionIterator.hasNext(rhs_iter)
               Error.addInternalError(
                 getInstanceName() +
                 " could not expand rhs " +
-                P_Expression.Expression.toString(eq.rhs),
+                toString(eq.rhs),
                 ElementSource.getInfo(src),
               )
             end
@@ -316,7 +316,7 @@ function scalarizeEquation(eq::Equation, equations::List{<:Equation})::List{Equa
         _cons(EQUATION_ARRAY_EQUALITY(eq.lhs, eq.rhs, eq.ty, eq.source), equations)
       end
 
-      P_Equation.Equation.CONNECT(__) => begin
+      EQUATION_CONNECT(__) => begin
         equations
       end
 
@@ -345,7 +345,7 @@ function scalarizeIfEquation(
   local bl::List{P_Equation.Equation} = nil
   local cond::Expression
   local body::List{Equation}
-  local var::Variability
+  local var::VariabilityType
 
   for b in branches
     @match P_Equation.Equation.BRANCH(cond, var, body) = b
@@ -376,12 +376,12 @@ function scalarizeWhenEquation(
   local bl::List{P_Equation.Equation} = nil
   local cond::Expression
   local body::List{Equation}
-  local var::Variability
+  local var::VariabilityType
 
   for b in branches
     @match P_Equation.Equation.BRANCH(cond, var, body) = b
     @assign body = scalarizeEquations(body)
-    if Type.isArray(P_Expression.Expression.typeOf(cond))
+    if Type.isArray(typeOf(cond))
       @assign cond = P_ExpandExp.ExpandExp.expand(cond)
     end
     @assign bl = _cons(P_Equation.Equation.makeBranch(cond, body, var), bl)
@@ -493,7 +493,7 @@ function scalarizeWhenStatement(
   for b in branches
     @assign (cond, body) = b
     @assign body = scalarizeStatements(body)
-    if Type.isArray(P_Expression.Expression.typeOf(cond))
+    if Type.isArray(typeOf(cond))
       @assign cond = P_ExpandExp.ExpandExp.expand(cond)
     end
     @assign bl = _cons((cond, body), bl)

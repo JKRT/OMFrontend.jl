@@ -103,7 +103,7 @@ function generateEquations(sets::Array{<:List{<:Connector}})::List{Equation}
   local set_eql::List{Equation}
   local potfunc::potFunc
   local flowThreshold::Expression
-  local cty::ConnectorType.Type
+  local cty::ConnectorType.TYPE
 
   setGlobalRoot(Global.isInStream, NONE())
   #= potfunc := if Config.orderConnections() then
@@ -178,7 +178,7 @@ function evaluateOperators(
                   end
 
                   _ => begin
-                    P_Expression.Expression.mapShallow(
+                    mapShallow(
                       exp,
                       (sets, setsArray, ctable) -> evaluateOperators(
                         sets = sets,
@@ -206,7 +206,7 @@ function evaluateOperators(
               end
 
             _ => begin
-              P_Expression.Expression.mapShallow(
+              mapShallow(
                 exp,
                 (sets, setsArray, ctable) -> evaluateOperators(
                   sets = sets,
@@ -221,7 +221,7 @@ function evaluateOperators(
 
       BINARY_EXPRESSION(
         exp1 = CREF_EXPRESSION(__),
-        operator = P_Operator.Operator.OPERATOR(op = Op.MUL),
+        operator = OPERATOR(op = Op.MUL),
         exp2 = CALL_EXPRESSION(call = call && P_Call.TYPED_CALL(__)),
       ) where {(AbsynUtil.isNamedPathIdent(P_Function.name(call.fn), "actualStream"))} =>
         begin
@@ -237,7 +237,7 @@ function evaluateOperators(
 
       BINARY_EXPRESSION(
         exp1 = CALL_EXPRESSION(call = call && P_Call.TYPED_CALL(__)),
-        operator = P_Operator.Operator.OPERATOR(op = Op.MUL),
+        operator = OPERATOR(op = Op.MUL),
         exp2 = CREF_EXPRESSION(__),
       ) where {(AbsynUtil.isNamedPathIdent(P_Function.name(call.fn), "actualStream"))} =>
         begin
@@ -252,7 +252,7 @@ function evaluateOperators(
         end
 
       _ => begin
-        P_Expression.Expression.mapShallow(
+        mapShallow(
           exp,
           (sets, setsArray, ctable) ->
             evaluateOperators(sets = sets, setsArray = setsArray, ctable = ctable),
@@ -267,8 +267,8 @@ function evaluateOperators(
   return evalExp
 end
 
-function getSetType(set::List{<:Connector})::ConnectorType.Type
-  local cty::ConnectorType.Type
+function getSetType(set::List{<:Connector})::ConnectorType.TYPE
+  local cty::ConnectorType.TYPE
 
   #=  All connectors in a set should have the same type, so pick the first.
   =#
@@ -420,14 +420,14 @@ function makeEqualityAssert(
       list(exp),
       P_Expression.Expression.variability(exp),
     ))
-    @assign exp = P_Expression.Expression.RELATION(
+    @assign exp = RELATION_EXPRESSION(
       exp,
       P_Operator.Operator.makeLessEq(ty),
       P_Expression.REAL_EXPRESSION(0.0),
     )
   else
     @assign exp =
-      P_Expression.Expression.RELATION(lhs_exp, P_Operator.Operator.makeEqual(ty), rhs_exp)
+      RELATION_EXPRESSION(lhs_exp, P_Operator.Operator.makeEqual(ty), rhs_exp)
   end
   #=  Modelica doesn't allow == for Reals, so to keep the flat Modelica
   =#
@@ -522,7 +522,7 @@ function makeFlowExp(element::Connector)::Expression
   @assign face = element.face
   if face == Face.OUTSIDE
     @assign exp =
-      P_Expression.Expression.UNARY(P_Operator.Operator.makeUMinus(TYPE_REAL()), exp)
+      UNARY_EXPRESSION(P_Operator.Operator.makeUMinus(TYPE_REAL()), exp)
   end
   return exp
 end
@@ -546,8 +546,8 @@ function generateStreamEquations(
     local e2::Expression
     local inside::List{Connector}
     local outside::List{Connector}
-    local var1::Variability
-    local var2::Variability
+    local var1::VariabilityType
+    local var2::VariabilityType
     #=  Unconnected stream connector, do nothing.
     =#
     @match elements begin
@@ -772,7 +772,7 @@ function sumInside1(element::Connector, flowThreshold::Expression)::Expression
 
   @assign (stream_exp, flow_exp) = streamFlowExp(element)
   @assign flow_exp =
-    P_Expression.Expression.UNARY(P_Operator.Operator.makeUMinus(TYPE_REAL()), flow_exp)
+    UNARY_EXPRESSION(P_Operator.Operator.makeUMinus(TYPE_REAL()), flow_exp)
   @assign exp = BINARY_EXPRESSION(
     makePositiveMaxCall(flow_exp, element, flowThreshold),
     P_Operator.Operator.makeMul(TYPE_REAL()),
@@ -804,7 +804,7 @@ function sumInside2(element::Connector, flowThreshold::Expression)::Expression
 
   @assign flow_exp = flowExp(element)
   @assign flow_exp =
-    P_Expression.Expression.UNARY(P_Operator.Operator.makeUMinus(TYPE_REAL()), flow_exp)
+    UNARY_EXPRESSION(P_Operator.Operator.makeUMinus(TYPE_REAL()), flow_exp)
   @assign exp = makePositiveMaxCall(flow_exp, element, flowThreshold)
   return exp
 end
@@ -911,10 +911,10 @@ function evaluateOperatorReductionExp(
   @assign evalExp = begin
     @match exp begin
       CALL_EXPRESSION(call = call && P_Call.TYPED_REDUCTION(__)) => begin
-        @assign ty = P_Expression.Expression.typeOf(call.exp)
+        @assign ty = typeOf(call.exp)
         for iter in call.iters
           @assign (iter_node, iter_exp) = iter
-          if P_Component.variability(component(iter_node)) >
+          if variability(component(iter_node)) >
              Variability.PARAMETER
             print("Iteration range in reduction containing connector operator calls must be a parameter expression.")
             fail()
@@ -922,7 +922,7 @@ function evaluateOperatorReductionExp(
           @assign iter_exp = Ceval.evalExp(iter_exp)
           @assign ty = Type.liftArrayLeftList(
             ty,
-            Type.arrayDims(P_Expression.Expression.typeOf(iter_exp)),
+            arrayDims(typeOf(iter_exp)),
           )
           @assign iters = _cons((iter_node, iter_exp), iters)
         end
@@ -956,7 +956,7 @@ function evaluateOperatorArrayConstructorExp(
     Error.addInternalError(
       getInstanceName() +
       " failed to expand call containing stream operator: " +
-      P_Expression.Expression.toString(exp),
+      toString(exp),
       sourceInfo(),
     )
   end
@@ -1147,8 +1147,8 @@ function evaluateActualStream(
     @assign instream_exp = evaluateInStream(streamCref, sets, setsArray, ctable)
     @assign op =
       P_Operator.Operator.makeGreater(nodeType(flow_cr))
-    @assign exp = P_Expression.Expression.IF(
-      P_Expression.Expression.RELATION(flow_exp, op, P_Expression.REAL_EXPRESSION(0.0)),
+    @assign exp = IF_EXPRESSION(
+      RELATION_EXPRESSION(flow_exp, op, P_Expression.REAL_EXPRESSION(0.0)),
       instream_exp,
       stream_exp,
     )
@@ -1195,7 +1195,7 @@ function evaluateActualStreamMul(
   =#
   @assign outExp = begin
     @match e2 begin
-      P_Expression.Expression.IF(__) => begin
+      IF_EXPRESSION(__) => begin
         makeSmoothCall(outExp, 0)
       end
 
@@ -1320,7 +1320,7 @@ function associatedFlowCref(streamCref::ComponentRef)::ComponentRef
 
   @match CREF(ty = ty, restCref = rest_cr) = streamCref
   @assign flowCref = begin
-    @match Type.arrayElementType(ty) begin
+    @match arrayElementType(ty) begin
       TYPE_COMPLEX(complexTy = ComplexType.CONNECTOR(flows = flow_node <| nil())) => begin
         prefixCref(
           flow_node,

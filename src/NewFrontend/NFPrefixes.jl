@@ -7,7 +7,7 @@ module ConnectorType
 
 import ..Main.NFType
 
-M_Type = NFType
+TYPE = Integer
 
 using MetaModelica
 using ExportAll
@@ -57,9 +57,9 @@ function toDAE(cty::Integer)::DAE.ConnectorType
 
   if intBitAnd(cty, POTENTIAL) > 0
     @assign dcty = DAE.ConnectorType.POTENTIAL()
-  elseif intBitAnd(cty, FLOW) > 0
+  elseif intBitAnd(cty, ConnectorType.FLOW) > 0
     @assign dcty = DAE.ConnectorType.FLOW()
-  elseif intBitAnd(cty, STREAM) > 0
+  elseif intBitAnd(cty, cty, ConnectorType.STREAM) > 0
     @assign dcty = DAE.ConnectorType.STREAM(NONE())
   else
     @assign dcty = DAE.ConnectorType.NON_CONNECTOR()
@@ -99,15 +99,14 @@ end
 
 function isFlow(cty::Integer)::Bool
   local isFlow::Bool
-
-  @assign isFlow = intBitAnd(cty, FLOW) > 0
+  @assign isFlow = intBitAnd(cty, ConnectorType.FLOW) > 0
   return isFlow
 end
 
 function isStream(cty::Integer)::Bool
   local isStream::Bool
 
-  @assign isStream = intBitAnd(cty, STREAM) > 0
+  @assign isStream = intBitAnd(cty, ConnectorType.STREAM) > 0
   return isStream
 end
 

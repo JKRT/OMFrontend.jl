@@ -107,7 +107,7 @@ function sizeType(arrayTy::M_Type)::M_Type
   if Type.isUnknown(arrayTy)
     @assign sizeTy = TYPE_UNKNOWN()
   else
-    @assign sizeTy = Type.ARRAY(
+    @assign sizeTy = ARRAY_TYPE(
       TYPE_INTEGER(),
       list(P_Dimension.Dimension.fromInteger(dimensionCount(arrayTy))),
     )
@@ -124,7 +124,7 @@ function isBoxed(ty::M_Type)::Bool
 
   @assign isBoxed = begin
     @match ty begin
-      METABOXED(__) => begin
+      TYPE_METABOXED(__) => begin
         true
       end
 
@@ -141,7 +141,7 @@ function unbox(ty::M_Type)::M_Type
 
   @assign unboxedType = begin
     @match ty begin
-      METABOXED(__) => begin
+      TYPE_METABOXED(__) => begin
         ty.ty
       end
 
@@ -158,12 +158,12 @@ function box(ty::M_Type)::M_Type
 
   @assign boxedType = begin
     @match ty begin
-      METABOXED(__) => begin
+      TYPE_METABOXED(__) => begin
         ty
       end
 
       _ => begin
-        METABOXED(ty)
+        TYPE_METABOXED(ty)
       end
     end
   end
@@ -188,7 +188,6 @@ function enumName(ty::M_Type)::Absyn.Path
 end
 
 function setRecordFields(fields::List{<:Field}, recordType::M_Type)::M_Type
-
   @assign recordType = begin
     local rec_node::InstNode
     @match recordType begin
@@ -230,7 +229,7 @@ function lookupRecordFieldType(name::String, recordType::M_Type)::M_Type
         getType(lookupElement(name, getClass(recordType.cls)))
       end
 
-      ARRAY(__) => begin
+      TYPE_ARRAY(__) => begin
         liftArrayLeftList(
           lookupRecordFieldType(name, recordType.elementType),
           recordType.dimensions,
@@ -394,7 +393,7 @@ function toDAE(ty::M_Type, makeTypeVars::Bool = true)::DAE.Type
         DAE.T_CLOCK_DEFAULT
       end
 
-      Type.ARRAY(__) => begin
+      ARRAY_TYPE(__) => begin
         DAE.T_ARRAY(
           toDAE(ty.elementType, makeTypeVars),
           List(P_Dimension.Dimension.toDAE(d) for d in ty.dimensions),
@@ -519,7 +518,7 @@ function toFlatString(ty::M_Type)::String
         "enumeration(:)"
       end
 
-      Type.ARRAY(__) => begin
+      ARRAY_TYPE(__) => begin
         toString(ty.elementType) +
         "[" +
         stringDelimitList(
@@ -690,11 +689,11 @@ function foldDims(ty::M_Type, func::FuncT, arg::ArgT) where {ArgT}
         ListUtil.fold(ty.types, (func) -> foldDims(func = func), arg)
       end
 
-      FUNCTION(__) => begin
+      TYPE_FUNCTION(__) => begin
         foldDims(P_Function.returnType(ty.fn), func, arg)
       end
 
-      METABOXED(__) => begin
+      TYPE_METABOXED(__) => begin
         foldDims(ty.ty, func, arg)
       end
 
@@ -721,13 +720,13 @@ function mapDims(ty::M_Type, func::FuncT)::M_Type
         ()
       end
 
-      FUNCTION(fn = fn) => begin
+      TYPE_FUNCTION(fn = fn) => begin
         @assign ty.fn =
           P_Function.setReturnType(mapDims(P_Function.returnType(fn), func), fn)
         ()
       end
 
-      METABOXED(__) => begin
+      TYPE_METABOXED(__) => begin
         @assign ty.ty = mapDims(ty.ty, func)
         ()
       end
@@ -769,7 +768,7 @@ function hasKnownSize(ty::M_Type)::Bool
         )
       end
 
-      FUNCTION(__) => begin
+      TYPE_FUNCTION(__) => begin
         hasKnownSize(P_Function.returnType(ty.fn))
       end
 
@@ -795,11 +794,11 @@ function dimensionCount(ty::M_Type)::Integer
         listLength(ty.dimensions)
       end
 
-      FUNCTION(__) => begin
+      TYPE_FUNCTION(__) => begin
         dimensionCount(P_Function.returnType(ty.fn))
       end
 
-      METABOXED(__) => begin
+      TYPE_METABOXED(__) => begin
         dimensionCount(ty.ty)
       end
 
@@ -820,11 +819,11 @@ function nthDimension(ty::M_Type, index::Integer)::Dimension
         listGet(ty.dimensions, index)
       end
 
-      FUNCTION(__) => begin
+      TYPE_FUNCTION(__) => begin
         nthDimension(P_Function.returnType(ty.fn), index)
       end
 
-      METABOXED(__) => begin
+      TYPE_METABOXED(__) => begin
         nthDimension(ty.ty, index)
       end
     end
@@ -855,23 +854,19 @@ function copyDims(srcType::M_Type, dstType::M_Type)::M_Type
   return ty
 end
 
-function arrayDims(ty::M_Type)::List{Dimension}
+function arrayDims(ty::NFType)::List{Dimension}
   local dims::List{Dimension}
-
   @assign dims = begin
     @match ty begin
-      ARRAY(__) => begin
+      TYPE_ARRAY(__) => begin
         ty.dimensions
       end
-
-      FUNCTION(__) => begin
+      TYPE_FUNCTION(__) => begin
         arrayDims(P_Function.returnType(ty.fn))
       end
-
-      METABOXED(__) => begin
+      TYPE_METABOXED(__) => begin
         arrayDims(ty.ty)
       end
-
       _ => begin
         nil
       end
@@ -880,19 +875,16 @@ function arrayDims(ty::M_Type)::List{Dimension}
   return dims
 end
 
-function elementType(ty::M_Type)::M_Type
-  local elementTy::M_Type
-
+function elementType(ty::NFType)::NFType
+  local elementTy::NFType
   @assign elementTy = begin
     @match ty begin
-      ARRAY(__) => begin
+      TYPE_ARRAY(__) => begin
         ty.elementType
       end
-
-      FUNCTION(__) => begin
-        elementType(P_Function.returnType(ty.fn))
+      TYPE_FUNCTION(__) => begin
+        elementType(returnType(ty.fn))
       end
-
       _ => begin
         ty
       end
@@ -903,15 +895,13 @@ end
 
 """ #= Sets the common type of the elements in an array, if the type is an array
      type. Otherwise it just returns the given element type. =#"""
-function setArrayElementType(arrayTy::M_Type, elementTy::M_Type)::M_Type
-  local ty::M_Type
-
+function setArrayElementType(arrayTy::M_Type, elementTy::NFType)::NFType
+  local ty::NFType
   @assign ty = begin
     @match arrayTy begin
-      ARRAY(__) => begin
+      TYPE_ARRAY(__) => begin
         liftArrayLeftList(elementTy, arrayTy.dimensions)
       end
-
       _ => begin
         elementTy
       end
@@ -927,7 +917,7 @@ function arrayElementType(ty::M_Type)::M_Type
 
   @assign elementTy = begin
     @match ty begin
-      ARRAY(__) => begin
+      TYPE_ARRAY(__) => begin
         ty.elementType
       end
 
@@ -948,8 +938,8 @@ function nthTupleType(ty::M_Type, n::Integer)::M_Type
         listGet(ty.types, n)
       end
 
-      ARRAY(__) => begin
-        Type.ARRAY(nthTupleType(ty.elementType, n), ty.dimensions)
+      TYPE_ARRAY(__) => begin
+        ARRAY_TYPE(nthTupleType(ty.elementType, n), ty.dimensions)
       end
 
       _ => begin
@@ -969,8 +959,8 @@ function firstTupleType(ty::M_Type)::M_Type
         listHead(ty.types)
       end
 
-      ARRAY(__) => begin
-        Type.ARRAY(firstTupleType(ty.elementType), ty.dimensions)
+      TYPE_ARRAY(__) => begin
+        ARRAY_TYPE(firstTupleType(ty.elementType), ty.dimensions)
       end
 
       _ => begin
@@ -1055,7 +1045,7 @@ function isScalarBuiltin(ty::M_Type)::Bool
 
   @assign isScalarBuiltin = begin
     @match ty begin
-      INTEGER(__) => begin
+      TYPE_INTEGER(__) => begin
         true
       end
 
@@ -1083,7 +1073,7 @@ function isScalarBuiltin(ty::M_Type)::Bool
         true
       end
 
-      FUNCTION(__) => begin
+      TYPE_FUNCTION(__) => begin
         isScalarBuiltin(P_Function.returnType(ty.fn))
       end
 
@@ -1100,7 +1090,7 @@ function isNumeric(ty::M_Type)::Bool
 
   @assign isNumeric = begin
     @match ty begin
-      ARRAY(__) => begin
+      TYPE_ARRAY(__) => begin
         isBasicNumeric(ty.elementType)
       end
 
@@ -1114,17 +1104,14 @@ end
 
 function isBasicNumeric(ty::M_Type)::Bool
   local isNumeric::Bool
-
   @assign isNumeric = begin
     @match ty begin
-      REAL(__) => begin
+      TYPE_REAL(__) => begin
         true
       end
-
-      INTEGER(__) => begin
+      TYPE_INTEGER(__) => begin
         true
       end
-
       _ => begin
         false
       end
@@ -1135,14 +1122,12 @@ end
 
 function isBasic(ty::M_Type)::Bool
   local isNumeric::Bool
-
   @assign isNumeric = begin
     @match ty begin
-      REAL(__) => begin
+      TYPE_REAL(__) => begin
         true
       end
-
-      INTEGER(__) => begin
+      TYPE_INTEGER(__) => begin
         true
       end
 
@@ -1162,7 +1147,7 @@ function isBasic(ty::M_Type)::Bool
         true
       end
 
-      FUNCTION(__) => begin
+      TYPE_FUNCTION(__) => begin
         isBasic(P_Function.returnType(ty.fn))
       end
 
@@ -1179,7 +1164,7 @@ function isScalarArray(ty::M_Type)::Bool
 
   @assign isScalar = begin
     @match ty begin
-      ARRAY(dimensions = _ <| nil()) => begin
+      TYPE_ARRAY(dimensions = _ <| nil()) => begin
         true
       end
 
@@ -1196,7 +1181,7 @@ function isRecord(ty::M_Type)::Bool
 
   @assign isRecord = begin
     @match ty begin
-      COMPLEX(complexTy = COMPLEX_RECORD(__)) => begin
+      TYPE_COMPLEX(complexTy = COMPLEX_RECORD(__)) => begin
         true
       end
 
@@ -1213,7 +1198,7 @@ function isExternalObject(ty::M_Type)::Bool
 
   @assign isEO = begin
     @match ty begin
-      COMPLEX(complexTy = ComplexType.EXTERNAL_OBJECT(__)) => begin
+      TYPE_COMPLEX(complexTy = ComplexType.EXTERNAL_OBJECT(__)) => begin
         true
       end
 
@@ -1230,7 +1215,7 @@ function isExpandableConnector(ty::M_Type)::Bool
 
   @assign isExpandable = begin
     @match ty begin
-      COMPLEX(complexTy = ComplexType.EXPANDABLE_CONNECTOR(__)) => begin
+      TYPE_COMPLEX(complexTy = ComplexType.EXPANDABLE_CONNECTOR(__)) => begin
         true
       end
 
@@ -1247,7 +1232,7 @@ function isConnector(ty::M_Type)::Bool
 
   @assign isConnector = begin
     @match ty begin
-      COMPLEX(complexTy = ComplexType.CONNECTOR(__)) => begin
+      TYPE_COMPLEX(complexTy = ComplexType.CONNECTOR(__)) => begin
         true
       end
 
@@ -1261,13 +1246,11 @@ end
 
 function isComplex(ty::M_Type)::Bool
   local isComplex::Bool
-
   @assign isComplex = begin
     @match ty begin
-      COMPLEX(__) => begin
+      TYPE_COMPLEX(__) => begin
         true
       end
-
       _ => begin
         false
       end
@@ -1303,7 +1286,7 @@ function isSingleElementArray(ty::M_Type)::Bool
   @assign isSingleElement = begin
     local d::Dimension
     @match ty begin
-      ARRAY(dimensions = d <| nil()) => begin
+      TYPE_ARRAY(dimensions = d <| nil()) => begin
         P_Dimension.Dimension.isKnown(d) && P_Dimension.Dimension.size(d) == 1
       end
 
@@ -1320,7 +1303,7 @@ function isEmptyArray(ty::M_Type)::Bool
 
   @assign isEmpty = begin
     @match ty begin
-      ARRAY(__) => begin
+      TYPE_ARRAY(__) => begin
         ListUtil.exist(ty.dimensions, P_Dimension.Dimension.isZero)
       end
 
@@ -1339,7 +1322,7 @@ function isSquareMatrix(ty::M_Type)::Bool
     local d1::Dimension
     local d2::Dimension
     @match ty begin
-      ARRAY(dimensions = d1 <| d2 <| nil()) => begin
+      TYPE_ARRAY(dimensions = d1 <| d2 <| nil()) => begin
         P_Dimension.Dimension.isEqualKnown(d1, d2)
       end
 
@@ -1356,7 +1339,7 @@ function isMatrix(ty::M_Type)::Bool
 
   @assign isMatrix = begin
     @match ty begin
-      ARRAY(dimensions = _ <| _ <| nil()) => begin
+      TYPE_ARRAY(dimensions = _ <| _ <| nil()) => begin
         true
       end
 
@@ -1374,7 +1357,7 @@ function isVector(ty::M_Type)::Bool
 
   @assign isVector = begin
     @match ty begin
-      ARRAY(dimensions = _ <| nil()) => begin
+      TYPE_ARRAY(dimensions = _ <| nil()) => begin
         true
       end
 
@@ -1391,7 +1374,7 @@ function isArray(ty::M_Type)::Bool
 
   @assign isArray = begin
     @match ty begin
-      ARRAY(__) => begin
+      TYPE_ARRAY(__) => begin
         true
       end
 
@@ -1408,7 +1391,7 @@ function isScalar(ty::M_Type)::Bool
 
   @assign isScalar = begin
     @match ty begin
-      ARRAY(__) => begin
+      TYPE_ARRAY(__) => begin
         false
       end
 
@@ -1476,7 +1459,7 @@ function isReal(ty::M_Type)::Bool
 
   @assign isReal = begin
     @match ty begin
-      REAL(__) => begin
+      TYPE_REAL(__) => begin
         true
       end
 
@@ -1493,7 +1476,7 @@ function isInteger(ty::M_Type)::Bool
 
   @assign isInteger = begin
     @match ty begin
-      INTEGER(__) => begin
+      TYPE_INTEGER(__) => begin
         true
       end
 
@@ -1510,14 +1493,14 @@ function unliftArrayN(N::Integer, ty::M_Type)::M_Type
   local el_ty::M_Type
   local dims::List{Dimension}
 
-  @match ARRAY(el_ty, dims) = ty
+  @match TYPE_ARRAY(el_ty, dims) = ty
   for i = 1:N
     @assign dims = listRest(dims)
   end
   if listEmpty(dims)
     @assign ty = el_ty
   else
-    @assign ty = ARRAY(el_ty, dims)
+    @assign ty = TYPE_ARRAY(el_ty, dims)
   end
   return ty
 end
@@ -1527,11 +1510,11 @@ function unliftArray(ty::M_Type)::M_Type
   local el_ty::M_Type
   local dims::List{Dimension}
 
-  @match ARRAY(el_ty, _cons(_, dims)) = ty
+  @match TYPE_ARRAY(el_ty, _cons(_, dims)) = ty
   if listEmpty(dims)
     @assign ty = el_ty
   else
-    @assign ty = ARRAY(el_ty, dims)
+    @assign ty = TYPE_ARRAY(el_ty, dims)
   end
   return ty
 end
@@ -1545,12 +1528,12 @@ function liftArrayRightList(ty::NFType, dims::List{<:Dimension})::NFType
   end
   @assign ty = begin
     @match ty begin
-      ARRAY(__) => begin
-        ARRAY(ty.elementType, listAppend(ty.dimensions, dims))
+      TYPE_ARRAY(__) => begin
+        TYPE_ARRAY(ty.elementType, listAppend(ty.dimensions, dims))
       end
 
       _ => begin
-        ARRAY(ty, dims)
+        TYPE_ARRAY(ty, dims)
       end
     end
   end
@@ -1566,11 +1549,11 @@ function liftArrayLeftList(ty::NFType, dims::List{<:Dimension})::NFType
   end
   @assign ty = begin
     @match ty begin
-      ARRAY(__) => begin
-        ARRAY(ty.elementType, listAppend(dims, ty.dimensions))
+      TYPE_ARRAY(__) => begin
+        TYPE_ARRAY(ty.elementType, listAppend(dims, ty.dimensions))
       end
       _ => begin
-        ARRAY(ty, dims)
+        TYPE_ARRAY(ty, dims)
       end
     end
   end
@@ -1583,11 +1566,11 @@ function liftArrayLeft(ty::M_Type, dim::Dimension)::M_Type
 
   @assign ty = begin
     @match ty begin
-      ARRAY(__) => begin
-        ARRAY(ty.elementType, _cons(dim, ty.dimensions))
+      TYPE_ARRAY(__) => begin
+        TYPE_ARRAY(ty.elementType, _cons(dim, ty.dimensions))
       end
       _ => begin
-        ARRAY(ty, list(dim))
+        TYPE_ARRAY(ty, list(dim))
       end
     end
   end

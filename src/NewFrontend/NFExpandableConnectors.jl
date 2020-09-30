@@ -385,7 +385,7 @@ end
 
 function markComponentPresent(node::InstNode)
   local comp::Component
-  local cty::ConnectorType.Type
+  local cty::ConnectorType.TYPE
 
   @assign comp = component(node)
   @assign cty = P_Component.connectorType(comp)
@@ -523,7 +523,7 @@ function updateExpandableConnection(
   if TypeCheck.isIncompatibleMatch(mk)
     Error.addSourceMessageAndFail(
       Error.INVALID_CONNECTOR_VARIABLE,
-      list(P_Expression.Expression.toString(e1), P_Expression.Expression.toString(e2)),
+      list(toString(e1), toString(e2)),
       Connector.getInfo(c1),
     )
   end
@@ -538,9 +538,9 @@ function updateExpandableConnector(conn::Connector)::Tuple{Connector, M_Type}
 
   @match Connector.CONNECTOR(name = name, ty = ty) = conn
   @assign name = updateNodeType(name)
-  @assign ty = Type.setArrayElementType(
+  @assign ty = setArrayElementType(
     ty,
-    Type.arrayElementType(nodeType(name)),
+    arrayElementType(nodeType(name)),
   )
   @assign conn = Connector.CONNECTOR(name, ty, conn.face, conn.cty, conn.source)
   return (conn, ty)

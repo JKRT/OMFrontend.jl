@@ -128,7 +128,7 @@ function lookupOperatorFunctionsInType(operatorName::String, ty::M_Type)::List{M
   local is_defined::Bool
 
   @assign functions = begin
-    @match Type.arrayElementType(ty) begin
+    @match arrayElementType(ty) begin
       TYPE_COMPLEX(cls = node) => begin
         try
           @assign fn_ref = P_Function.lookupFunctionSimple(operatorName, node)

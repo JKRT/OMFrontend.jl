@@ -73,11 +73,11 @@ function checkBinaryOperation(
   local resultType::M_Type
   local binaryExp::Expression
 
-  if Type.isComplex(Type.arrayElementType(type1)) ||
-     Type.isComplex(Type.arrayElementType(type2))
+  if isComplex(arrayElementType(type1)) ||
+     isComplex(arrayElementType(type2))
     @assign (binaryExp, resultType) =
       checkOverloadedBinaryOperator(exp1, type1, var1, operator, exp2, type2, var2, info)
-  elseif Type.isBoxed(type1) && Type.isBoxed(type2)
+  elseif isBoxed(type1) && isBoxed(type2)
     @assign (binaryExp, resultType) =
       checkBinaryOperationBoxed(exp1, type1, var1, operator, exp2, type2, var2, info)
   else
@@ -147,8 +147,8 @@ function checkOverloadedBinaryOperator(
   local ety2::M_Type
 
   @assign op_str = P_Operator.Operator.symbol(P_Operator.Operator.stripEW(op), "'")
-  @assign ety1 = Type.arrayElementType(type1)
-  @assign ety2 = Type.arrayElementType(type2)
+  @assign ety1 = arrayElementType(type1)
+  @assign ety2 = arrayElementType(type2)
   @assign candidates = OperatorOverloading.lookupOperatorFunctionsInType(op_str, ety1)
   #=  Only collect operators from both types if they're not the same type.
   =#
@@ -323,7 +323,7 @@ function matchOverloadedBinaryOperator(
     @assign outExp = CALL_EXPRESSION(P_Call.makeTypedCall(
       matchedFunc.func,
       List(Util.tuple31(a) for a in matchedFunc.args),
-      P_Prefixes.variabilityMax(var1, var2),
+      variabilityMax(var1, var2),
       outType,
     ))
   else
@@ -331,7 +331,7 @@ function matchOverloadedBinaryOperator(
       Error.addSourceMessage(
         Error.AMBIGUOUS_MATCHING_OPERATOR_FUNCTIONS_NFINST,
         list(
-          P_Expression.Expression.toString(BINARY_EXPRESSION(exp1, op, exp2)),
+          toString(BINARY_EXPRESSION(exp1, op, exp2)),
           P_Function.candidateFuncListString(List(mfn.func for mfn in matchedFunctions)),
         ),
         info,
@@ -440,8 +440,8 @@ function checkOverloadedBinaryArrayAddSub2(
       ) => begin
         @assign expl = nil
         if listEmpty(expl1)
-          @assign ty1 = Type.arrayElementType(type1)
-          @assign ty2 = Type.arrayElementType(type2)
+          @assign ty1 = arrayElementType(type1)
+          @assign ty2 = arrayElementType(type2)
           try
             @assign (_, ty) = matchOverloadedBinaryOperator(
               P_Expression.Expression.EMPTY(ty1),
@@ -484,7 +484,7 @@ function checkOverloadedBinaryArrayAddSub2(
         end
         #=  If the arrays are empty, match against the element types to get the expected return type.
         =#
-        @assign outType = Type.setArrayElementType(type1, ty)
+        @assign outType = setArrayElementType(type1, ty)
         @assign outExp = P_Expression.Expression.makeArray(outType, expl)
         (outExp, outType)
       end
@@ -529,8 +529,8 @@ function checkOverloadedBinaryArrayMul(
   local dim21::Dimension
   local dim22::Dimension
 
-  @assign dims1 = Type.arrayDims(type1)
-  @assign dims2 = Type.arrayDims(type2)
+  @assign dims1 = arrayDims(type1)
+  @assign dims2 = arrayDims(type2)
   @assign (valid, outExp) = begin
     @match (dims1, dims2) begin
       (nil(), _ <| nil()) => begin
@@ -601,7 +601,7 @@ function checkOverloadedBinaryArrayMul(
   if !valid
     printUnresolvableTypeError(outExp, list(type1, type2), info)
   end
-  @assign outType = P_Expression.Expression.typeOf(outExp)
+  @assign outType = typeOf(outExp)
   return (outExp, outType)
 end
 
@@ -674,7 +674,7 @@ function checkOverloadedBinaryScalarArray2(
             info,
           )
         end
-        @assign outType = Type.setArrayElementType(exp2.ty, outType)
+        @assign outType = setArrayElementType(exp2.ty, outType)
         (P_Expression.Expression.makeArray(outType, nil), outType)
       end
 
@@ -693,9 +693,9 @@ function checkOverloadedBinaryScalarArray2(
             info,
           ) for e in expl
         )
-        @assign outType = Type.setArrayElementType(
+        @assign outType = setArrayElementType(
           exp2.ty,
-          P_Expression.Expression.typeOf(listHead(expl)),
+          typeOf(listHead(expl)),
         )
         (P_Expression.Expression.makeArray(outType, expl), outType)
       end
@@ -788,7 +788,7 @@ function checkOverloadedBinaryArrayScalar2(
             info,
           )
         end
-        @assign outType = Type.setArrayElementType(exp1.ty, outType)
+        @assign outType = setArrayElementType(exp1.ty, outType)
         (P_Expression.Expression.makeArray(outType, nil), outType)
       end
 
@@ -807,9 +807,9 @@ function checkOverloadedBinaryArrayScalar2(
             info,
           ) for e in expl
         )
-        @assign outType = Type.setArrayElementType(
+        @assign outType = setArrayElementType(
           exp1.ty,
-          P_Expression.Expression.typeOf(listHead(expl)),
+          typeOf(listHead(expl)),
         )
         (P_Expression.Expression.makeArray(outType, expl), outType)
       end
@@ -894,9 +894,9 @@ function checkOverloadedBinaryArrayEW(
   else
     @assign (e1, e2, _, mk) = matchExpressions(
       exp1,
-      Type.arrayElementType(type1),
+      arrayElementType(type1),
       exp2,
-      Type.arrayElementType(type2),
+      arrayElementType(type2),
       true,
     )
   end
@@ -944,8 +944,8 @@ function checkOverloadedBinaryArrayEW2(
     @assign expl = nil
     if P_Expression.Expression.isEmptyArray(exp1) ||
        P_Expression.Expression.isEmptyArray(exp2)
-      @assign ty1 = Type.arrayElementType(type1)
-      @assign ty2 = Type.arrayElementType(type2)
+      @assign ty1 = arrayElementType(type1)
+      @assign ty2 = arrayElementType(type2)
       try
         @assign (_, ty) = matchOverloadedBinaryOperator(
           P_Expression.Expression.EMPTY(ty1),
@@ -1011,7 +1011,7 @@ function checkOverloadedBinaryArrayEW2(
         @assign expl = _cons(e, expl)
       end
     end
-    @assign outType = Type.setArrayElementType(type1, ty)
+    @assign outType = setArrayElementType(type1, ty)
     @assign outExp = P_Expression.Expression.makeArray(outType, listReverseInPlace(expl))
   else
     @assign (outExp, outType) = matchOverloadedBinaryOperator(
@@ -1118,7 +1118,7 @@ function implicitConstructAndMatch(
     Error.addSourceMessage(
       Error.AMBIGUOUS_MATCHING_OPERATOR_FUNCTIONS_NFINST,
       list(
-        P_Expression.Expression.toString(BINARY_EXPRESSION(exp1, op, exp2)),
+        toString(BINARY_EXPRESSION(exp1, op, exp2)),
         P_Function.candidateFuncListString(List(Util.tuple31(fn) for fn in matchedfuncs)),
       ),
       info,
@@ -1431,7 +1431,7 @@ function checkBinaryOperationAdd(
   @assign (e1, e2, resultType, mk) = matchExpressions(exp1, type1, exp2, type2, true)
   @assign valid = isCompatibleMatch(mk)
   @assign valid = begin
-    @match Type.arrayElementType(resultType) begin
+    @match arrayElementType(resultType) begin
       TYPE_INTEGER(__) => begin
         valid
       end
@@ -1475,7 +1475,7 @@ function checkBinaryOperationSub(
   @assign (e1, e2, resultType, mk) = matchExpressions(exp1, type1, exp2, type2, true)
   @assign valid = isCompatibleMatch(mk)
   @assign valid = begin
-    @match Type.arrayElementType(resultType) begin
+    @match arrayElementType(resultType) begin
       TYPE_INTEGER(__) => begin
         valid
       end
@@ -1503,8 +1503,8 @@ function checkBinaryOperationMul(
   exp2::Expression,
   type2::M_Type,
   info::SourceInfo,
-)::Tuple{Expression, M_Type}
-  local resultType::M_Type
+)::Tuple{Expression, NFType}
+  local resultType::NFType
   local binaryExp::Expression
 
   local e1::Expression
@@ -1521,8 +1521,8 @@ function checkBinaryOperationMul(
   local op::OpType
   local valid::Bool
 
-  @assign ty1 = Type.arrayElementType(type1)
-  @assign ty2 = Type.arrayElementType(type2)
+  @assign ty1 = arrayElementType(type1)
+  @assign ty2 = arrayElementType(type2)
   @assign (e1, e2, resultType, mk) = matchExpressions(exp1, ty1, exp2, ty2, true)
   @assign valid = isCompatibleMatch(mk)
   @assign valid = begin
@@ -1540,8 +1540,8 @@ function checkBinaryOperationMul(
       end
     end
   end
-  @assign dims1 = Type.arrayDims(type1)
-  @assign dims2 = Type.arrayDims(type2)
+  @assign dims1 = arrayDims(type1)
+  @assign dims2 = arrayDims(type2)
   @assign (resultType, op) = begin
     @match (dims1, dims2) begin
       (nil(), nil()) => begin
@@ -1549,11 +1549,11 @@ function checkBinaryOperationMul(
       end
 
       (nil(), _) => begin
-        (Type.ARRAY(resultType, dims2), Op.MUL_SCALAR_ARRAY)
+        (ARRAY_TYPE(resultType, dims2), Op.MUL_SCALAR_ARRAY)
       end
 
       (_, nil()) => begin
-        (Type.ARRAY(resultType, dims1), Op.MUL_ARRAY_SCALAR)
+        (ARRAY_TYPE(resultType, dims1), Op.MUL_ARRAY_SCALAR)
       end
 
       (dim11 <| nil(), dim21 <| nil()) => begin
@@ -1573,21 +1573,21 @@ function checkBinaryOperationMul(
         #=  vector[n] * matrix[n, m] = vector[m]
         =#
         @assign valid = P_Dimension.Dimension.isEqual(dim11, dim21)
-        (Type.ARRAY(resultType, list(dim22)), Op.MUL_VECTOR_MATRIX)
+        (ARRAY_TYPE(resultType, list(dim22)), Op.MUL_VECTOR_MATRIX)
       end
 
       (dim11 <| dim12 <| nil(), dim21 <| nil()) => begin
         #=  matrix[n, m] * vector[m] = vector[n]
         =#
         @assign valid = P_Dimension.Dimension.isEqual(dim12, dim21)
-        (Type.ARRAY(resultType, list(dim11)), Op.MUL_MATRIX_VECTOR)
+        (ARRAY_TYPE(resultType, list(dim11)), Op.MUL_MATRIX_VECTOR)
       end
 
       (dim11 <| dim12 <| nil(), dim21 <| dim22 <| nil()) => begin
         #=  matrix[n, m] * matrix[m, p] = vector[n, p]
         =#
         @assign valid = P_Dimension.Dimension.isEqual(dim12, dim21)
-        (Type.ARRAY(resultType, list(dim11, dim22)), Op.MATRIX_PRODUCT)
+        (ARRAY_TYPE(resultType, list(dim11, dim22)), Op.MATRIX_PRODUCT)
       end
 
       _ => begin
@@ -1597,7 +1597,7 @@ function checkBinaryOperationMul(
     end
   end
   @assign binaryExp =
-    BINARY_EXPRESSION(e1, P_Operator.Operator.OPERATOR(resultType, op), e2)
+    BINARY_EXPRESSION(e1, OPERATOR(resultType, op), e2)
   if !valid
     printUnresolvableTypeError(binaryExp, list(type1, type2), info)
   end
@@ -1606,32 +1606,26 @@ end
 
 function checkBinaryOperationDiv(
   exp1::Expression,
-  type1::M_Type,
+  type1::NFType,
   exp2::Expression,
-  type2::M_Type,
+  type2::NFType,
   info::SourceInfo,
   isElementWise::Bool,
-)::Tuple{Expression, M_Type}
-  local resultType::M_Type
+)::Tuple{Expression, NFType}
+  local resultType::NFType
   local binaryExp::Expression
-
   local e1::Expression
   local e2::Expression
-  local ty1::M_Type
-  local ty2::M_Type
+  local ty1::NFType
+  local ty2::NFType
   local mk::MatchKindType
   local valid::Bool
   local op::Operator
-
-  #=  Division always returns a Real value, so instead of checking if the types
-  =#
-  #=  are compatible with each other we check if each type is compatible with Real.
-  =#
   @assign (e1, ty1, mk) =
-    matchTypes(type1, Type.setArrayElementType(type1, TYPE_REAL()), exp1, true)
+    matchTypes(type1, setArrayElementType(type1, TYPE_REAL()), exp1, true)
   @assign valid = isCompatibleMatch(mk)
   @assign (e2, ty2, mk) =
-    matchTypes(type2, Type.setArrayElementType(type2, TYPE_REAL()), exp2, true)
+    matchTypes(type2, setArrayElementType(type2, TYPE_REAL()), exp2, true)
   @assign valid = valid && isCompatibleMatch(mk)
   #=  Division is always element-wise, the only difference between / and ./ is
   =#
@@ -1644,11 +1638,11 @@ function checkBinaryOperationDiv(
       end
 
       (_, false, _) => begin
-        (ty1, P_Operator.Operator.OPERATOR(ty1, Op.DIV_ARRAY_SCALAR))
+        (ty1, OPERATOR(ty1, Op.DIV_ARRAY_SCALAR))
       end
 
       (false, _, true) => begin
-        (ty2, P_Operator.Operator.OPERATOR(ty2, Op.DIV_SCALAR_ARRAY))
+        (ty2, OPERATOR(ty2, Op.DIV_SCALAR_ARRAY))
       end
 
       (true, _, true) => begin
@@ -1684,12 +1678,12 @@ end
 
 function checkBinaryOperationPow(
   exp1::Expression,
-  type1::M_Type,
+  type1::NFType,
   exp2::Expression,
-  type2::M_Type,
+  type2::NFType,
   info::SourceInfo,
-)::Tuple{Expression, M_Type}
-  local resultType::M_Type
+)::Tuple{Expression, NFType}
+  local resultType::NFType
   local binaryExp::Expression
 
   local e1::Expression
@@ -1701,17 +1695,17 @@ function checkBinaryOperationPow(
   #=  The first operand of ^ should be Real.
   =#
   @assign (e1, resultType, mk) =
-    matchTypes(type1, Type.setArrayElementType(type1, TYPE_REAL()), exp1, true)
+    matchTypes(type1, setArrayElementType(type1, TYPE_REAL()), exp1, true)
   @assign valid = isCompatibleMatch(mk)
   if Type.isArray(resultType)
     @assign valid = valid && Type.isSquareMatrix(resultType)
     @assign valid = valid && Type.isInteger(type2)
-    @assign op = P_Operator.Operator.OPERATOR(resultType, Op.POW_MATRIX)
+    @assign op = OPERATOR(resultType, Op.POW_MATRIX)
     @assign e2 = exp2
   else
     @assign (e2, _, mk) = matchTypes(type2, TYPE_REAL(), exp2, true)
     @assign valid = valid && isCompatibleMatch(mk)
-    @assign op = P_Operator.Operator.OPERATOR(resultType, Op.POW)
+    @assign op = OPERATOR(resultType, Op.POW)
   end
   #=  Real[n, n] ^ Integer
   =#
@@ -1726,18 +1720,18 @@ end
 
 function checkBinaryOperationPowEW(
   exp1::Expression,
-  type1::M_Type,
+  type1::NFType,
   exp2::Expression,
-  type2::M_Type,
+  type2::NFType,
   info::SourceInfo,
-)::Tuple{Expression, M_Type}
-  local resultType::M_Type
+)::Tuple{Expression, NFType}
+  local resultType::NFType
   local binaryExp::Expression
 
   local e1::Expression
   local e2::Expression
-  local ty1::M_Type
-  local ty2::M_Type
+  local ty1::NFType
+  local ty2::NFType
   local mk::MatchKindType
   local valid::Bool
   local op::Operator
@@ -1747,10 +1741,10 @@ function checkBinaryOperationPowEW(
   #=  are compatible with ecah other we check if each type is compatible with Real.
   =#
   @assign (e1, ty1, mk) =
-    matchTypes(type1, Type.setArrayElementType(type1, TYPE_REAL()), exp1, true)
+    matchTypes(type1, setArrayElementType(type1, TYPE_REAL()), exp1, true)
   @assign valid = isCompatibleMatch(mk)
   @assign (e2, ty2, mk) =
-    matchTypes(type2, Type.setArrayElementType(type2, TYPE_REAL()), exp2, true)
+    matchTypes(type2, setArrayElementType(type2, TYPE_REAL()), exp2, true)
   @assign valid = valid && isCompatibleMatch(mk)
   @assign (resultType, op) = begin
     @match (Type.isArray(ty1), Type.isArray(ty2)) begin
@@ -1759,11 +1753,11 @@ function checkBinaryOperationPowEW(
       end
 
       (_, false) => begin
-        (ty1, P_Operator.Operator.OPERATOR(ty1, Op.POW_ARRAY_SCALAR))
+        (ty1, OPERATOR(ty1, Op.POW_ARRAY_SCALAR))
       end
 
       (false, _) => begin
-        (ty2, P_Operator.Operator.OPERATOR(ty2, Op.POW_SCALAR_ARRAY))
+        (ty2, OPERATOR(ty2, Op.POW_SCALAR_ARRAY))
       end
 
       _ => begin
@@ -1792,19 +1786,19 @@ end
 
 function checkBinaryOperationEW(
   exp1::Expression,
-  type1::M_Type,
+  type1::NFType,
   exp2::Expression,
-  type2::M_Type,
+  type2::NFType,
   elemOp::OpType,
   info::SourceInfo,
-)::Tuple{Expression, M_Type}
-  local resultType::M_Type
+)::Tuple{Expression, NFType}
+  local resultType::NFType
   local binaryExp::Expression
 
   local e1::Expression
   local e2::Expression
-  local ty1::M_Type
-  local ty2::M_Type
+  local ty1::NFType
+  local ty2::NFType
   local mk::MatchKindType
   local valid::Bool
   local is_arr1::Bool
@@ -1816,8 +1810,8 @@ function checkBinaryOperationEW(
   if is_arr1 && is_arr2
     @assign (e1, e2, resultType, mk) = matchExpressions(exp1, type1, exp2, type2, true)
   else
-    @assign ty1 = Type.arrayElementType(type1)
-    @assign ty2 = Type.arrayElementType(type2)
+    @assign ty1 = arrayElementType(type1)
+    @assign ty2 = arrayElementType(type2)
     @assign (e1, e2, resultType, mk) = matchExpressions(exp1, ty1, exp2, ty2, true)
   end
   #=  The expressions must be type compatible if they are both arrays.
@@ -1828,7 +1822,7 @@ function checkBinaryOperationEW(
   #=  Check that the type is valid for the operation.
   =#
   @assign valid = begin
-    @match (Type.arrayElementType(resultType), elemOp) begin
+    @match (arrayElementType(resultType), elemOp) begin
       (TYPE_INTEGER(__), _) => begin
         valid
       end
@@ -1865,7 +1859,7 @@ function checkBinaryOperationEW(
       end
 
       _ => begin
-        (resultType, P_Operator.Operator.OPERATOR(resultType, elemOp))
+        (resultType, OPERATOR(resultType, elemOp))
       end
     end
   end
@@ -1880,24 +1874,24 @@ end
 
 function checkUnaryOperation(
   exp1::Expression,
-  type1::M_Type,
+  type1::NFType,
   var1::VariabilityType,
   operator::Operator,
   info::SourceInfo,
-)::Tuple{Expression, M_Type}
-  local unaryType::M_Type
+)::Tuple{Expression, NFType}
+  local unaryType::NFType
   local unaryExp::Expression
 
   local valid::Bool = true
   local op::Operator
 
-  if Type.isComplex(Type.arrayElementType(type1))
+  if isComplex(arrayElementType(type1))
     @assign (unaryExp, unaryType) =
       checkOverloadedUnaryOperator(exp1, type1, var1, operator, info)
     return (unaryExp, unaryType)
   end
   @assign unaryType = type1
-  @assign op = P_Operator.Operator.setType(unaryType, operator)
+  @assign op = setType(unaryType, operator)
   @assign unaryExp = begin
     @match operator.op begin
       Op.ADD => begin
@@ -1905,13 +1899,13 @@ function checkUnaryOperation(
       end
 
       _ => begin
-        P_Expression.Expression.UNARY(op, exp1)
+        UNARY_EXPRESSION(op, exp1)
       end
     end
   end
   #=  + is a no-op for arithmetic unary operations.
   =#
-  if !Type.isNumeric(type1)
+  if !isNumeric(type1)
     printUnresolvableTypeError(unaryExp, list(type1), info)
   end
   return (unaryExp, unaryType)
@@ -1919,12 +1913,12 @@ end
 
 function checkOverloadedUnaryOperator(
   inExp1::Expression,
-  inType1::M_Type,
+  inType1::NFType,
   var::VariabilityType,
   inOp::Operator,
   info::SourceInfo,
-)::Tuple{Expression, M_Type}
-  local outType::M_Type
+)::Tuple{Expression, NFType}
+  local outType::NFType
   local outExp::Expression
 
   local opstr::String
@@ -1956,7 +1950,7 @@ function checkOverloadedUnaryOperator(
   @assign exactMatches = P_MatchedFunction.getExactMatches(matchedFunctions)
   if listEmpty(exactMatches)
     printUnresolvableTypeError(
-      P_Expression.Expression.UNARY(inOp, inExp1),
+      UNARY_EXPRESSION(inOp, inExp1),
       list(inType1),
       info,
     )
@@ -1975,7 +1969,7 @@ function checkOverloadedUnaryOperator(
     Error.addSourceMessage(
       Error.AMBIGUOUS_MATCHING_OPERATOR_FUNCTIONS_NFINST,
       list(
-        P_Expression.Expression.toString(P_Expression.Expression.UNARY(inOp, inExp1)),
+        toString(UNARY_EXPRESSION(inOp, inExp1)),
         P_Function.candidateFuncListString(List(mfn.func for mfn in matchedFunctions)),
       ),
       info,
@@ -1987,23 +1981,23 @@ end
 
 function checkLogicalBinaryOperation(
   exp1::Expression,
-  type1::M_Type,
+  type1::NFType,
   var1::VariabilityType,
   operator::Operator,
   exp2::Expression,
-  type2::M_Type,
+  type2::NFType,
   var2::VariabilityType,
   info::SourceInfo,
-)::Tuple{Expression, M_Type}
-  local resultType::M_Type
+)::Tuple{Expression, NFType}
+  local resultType::NFType
   local outExp::Expression
 
   local e1::Expression
   local e2::Expression
   local mk::MatchKindType
 
-  if Type.isComplex(Type.arrayElementType(type1)) ||
-     Type.isComplex(Type.arrayElementType(type2))
+  if isComplex(arrayElementType(type1)) ||
+     isComplex(arrayElementType(type2))
     @assign (outExp, resultType) =
       checkOverloadedBinaryOperator(exp1, type1, var1, operator, exp2, type2, var2, info)
     return (outExp, resultType)
@@ -2011,10 +2005,10 @@ function checkLogicalBinaryOperation(
   @assign (e1, e2, resultType, mk) = matchExpressions(exp1, type1, exp2, type2, true)
   @assign outExp = P_Expression.Expression.LBINARY(
     e1,
-    P_Operator.Operator.setType(resultType, operator),
+    setType(resultType, operator),
     e2,
   )
-  if !isCompatibleMatch(mk) || !Type.isBoolean(Type.arrayElementType(resultType))
+  if !isCompatibleMatch(mk) || !Type.isBoolean(arrayElementType(resultType))
     printUnresolvableTypeError(outExp, list(type1, type2), info)
   end
   return (outExp, resultType)
@@ -2022,26 +2016,26 @@ end
 
 function checkLogicalUnaryOperation(
   exp1::Expression,
-  type1::M_Type,
+  type1::NFType,
   var1::VariabilityType,
   operator::Operator,
   info::SourceInfo,
-)::Tuple{Expression, M_Type}
-  local resultType::M_Type = type1
+)::Tuple{Expression, NFType}
+  local resultType::NFType = type1
   local outExp::Expression
 
   local e1::Expression
   local e2::Expression
   local mk::MatchKindType
 
-  if Type.isComplex(Type.arrayElementType(type1))
+  if isComplex(arrayElementType(type1))
     @assign (outExp, resultType) =
       checkOverloadedUnaryOperator(exp1, type1, var1, operator, info)
     return (outExp, resultType)
   end
   @assign outExp =
-    P_Expression.Expression.LUNARY(P_Operator.Operator.setType(type1, operator), exp1)
-  if !Type.isBoolean(Type.arrayElementType(type1))
+    LUNARY_EXPRESSION(setType(type1, operator), exp1)
+  if !Type.isBoolean(arrayElementType(type1))
     printUnresolvableTypeError(outExp, list(type1), info)
   end
   return (outExp, resultType)
@@ -2049,27 +2043,27 @@ end
 
 function checkRelationOperation(
   exp1::Expression,
-  type1::M_Type,
+  type1::NFType,
   var1::VariabilityType,
   operator::Operator,
   exp2::Expression,
-  type2::M_Type,
+  type2::NFType,
   var2::VariabilityType,
   origin::ORIGIN_Type,
   info::SourceInfo,
-)::Tuple{Expression, M_Type}
-  local resultType::M_Type
+)::Tuple{Expression, NFType}
+  local resultType::NFType
   local outExp::Expression
 
   local e1::Expression
   local e2::Expression
-  local ty::M_Type
+  local ty::NFType
   local mk::MatchKindType
   local valid::Bool
   local o::OpType
 
-  if Type.isComplex(Type.arrayElementType(type1)) ||
-     Type.isComplex(Type.arrayElementType(type2))
+  if isComplex(arrayElementType(type1)) ||
+     isComplex(arrayElementType(type2))
     @assign (outExp, resultType) =
       checkOverloadedBinaryOperator(exp1, type1, var1, operator, exp2, type2, var2, info)
     return (outExp, resultType)
@@ -2078,7 +2072,7 @@ function checkRelationOperation(
   @assign valid = isCompatibleMatch(mk)
   @assign resultType = TYPE_BOOLEAN()
   @assign outExp =
-    P_Expression.Expression.RELATION(e1, P_Operator.Operator.setType(ty, operator), e2)
+    RELATION_EXPRESSION(e1, setType(ty, operator), e2)
   @assign valid = begin
     @match ty begin
       TYPE_INTEGER(__) => begin
@@ -2094,7 +2088,7 @@ function checkRelationOperation(
           Error.addStrictMessage(
             Error.WARNING_RELATION_ON_REAL,
             list(
-              P_Expression.Expression.toString(outExp),
+              toString(outExp),
               P_Operator.Operator.symbol(operator, ""),
             ),
             info,
@@ -2128,7 +2122,7 @@ end
 
 function printUnresolvableTypeError(
   exp::Expression,
-  types::List{<:M_Type},
+  types::List{<:NFType},
   info::SourceInfo,
   printError::Bool = true,
 )
@@ -2136,7 +2130,7 @@ function printUnresolvableTypeError(
   local ty_str::String
 
   if printError
-    @assign exp_str = P_Expression.Expression.toString(exp)
+    @assign exp_str = toString(exp)
     @assign ty_str = ListUtil.toString(types, Type.toString, "", "", ", ", "", false)
     Error.addSourceMessage(
       Error.UNRESOLVABLE_TYPE,
@@ -3130,13 +3124,13 @@ end
 
 function matchExpressions(
   exp1::Expression,
-  type1::M_Type,
+  type1::NFType,
   exp2::Expression,
-  type2::M_Type,
+  type2::NFType,
   allowUnknown::Bool = false,
-)::Tuple{Expression, Expression, M_Type, MatchKind}
+)::Tuple{Expression, Expression, NFType, MatchKindType}
   local matchKind::MatchKindType
-  local compatibleType::M_Type
+  local compatibleType::NFType
 
   #=  Return true if the references are the same.
   =#
@@ -3190,7 +3184,7 @@ function matchExpressions(
         type1
       end
 
-      Type.ARRAY(__) => begin
+      ARRAY_TYPE(__) => begin
         @assign (exp1, exp2, compatibleType, matchKind) =
           matchArrayExpressions(exp1, type1, exp2, type2, allowUnknown)
         compatibleType
@@ -3235,13 +3229,13 @@ function matchExpressions(
 end
 
 function matchTypes(
-  actualType::M_Type,
-  expectedType::M_Type,
+  actualType::NFType,
+  expectedType::NFType,
   expression::Expression,
   allowUnknown::Bool = false,
-)::Tuple{Expression, M_Type, MatchKind}
+)::Tuple{Expression, NFType, MatchKindType}
   local matchKind::MatchKindType
-  local compatibleType::M_Type
+  local compatibleType::NFType
 
   #=  Return true if the references are the same.
   =#
@@ -3295,7 +3289,7 @@ function matchTypes(
         actualType
       end
 
-      Type.ARRAY(__) => begin
+      ARRAY_TYPE(__) => begin
         @assign (expression, compatibleType, matchKind) =
           matchArrayTypes(actualType, expectedType, expression, allowUnknown)
         compatibleType
@@ -3351,25 +3345,25 @@ end
 
 function matchExpressions_cast(
   exp1::Expression,
-  type1::M_Type,
+  type1::NFType,
   exp2::Expression,
-  type2::M_Type,
+  type2::NFType,
   allowUnknown::Bool,
-)::Tuple{Expression, Expression, M_Type, MatchKind}
+)::Tuple{Expression, Expression, NFType, MatchKind}
   local matchKind::MatchKindType
-  local compatibleType::M_Type
+  local compatibleType::NFType
 
   @assign (compatibleType, matchKind) = begin
     @match (type1, type2) begin
       (TYPE_INTEGER(__), TYPE_REAL(__)) => begin
         #=  Integer can be cast to Real.
         =#
-        @assign exp1 = P_Expression.Expression.typeCast(exp1, type2)
+        @assign exp1 = typeCast(exp1, type2)
         (type2, MatchKind.CAST)
       end
 
       (TYPE_REAL(__), TYPE_INTEGER(__)) => begin
-        @assign exp2 = P_Expression.Expression.typeCast(exp2, type1)
+        @assign exp2 = typeCast(exp2, type1)
         (type1, MatchKind.CAST)
       end
 
@@ -3380,20 +3374,20 @@ function matchExpressions_cast(
         =#
         Error.addCompilerWarning(
           "Allowing casting of boolean expression: " +
-          P_Expression.Expression.toString(exp1) +
+          toString(exp1) +
           " to Real.",
         )
-        @assign exp1 = P_Expression.Expression.typeCast(exp1, type2)
+        @assign exp1 = typeCast(exp1, type2)
         (type2, MatchKind.CAST)
       end
 
       (TYPE_REAL(__), TYPE_BOOLEAN(__)) where {(Flags.isSet(Flags.NF_API))} => begin
         Error.addCompilerWarning(
           "Allowing casting of boolean expression: " +
-          P_Expression.Expression.toString(exp2) +
+          toString(exp2) +
           " to Real.",
         )
-        @assign exp2 = P_Expression.Expression.typeCast(exp2, type1)
+        @assign exp2 = typeCast(exp2, type1)
         (type1, MatchKind.CAST)
       end
 
@@ -3472,13 +3466,13 @@ function matchExpressions_cast(
 end
 
 function matchComplexTypes(
-  actualType::M_Type,
-  expectedType::M_Type,
+  actualType::NFType,
+  expectedType::NFType,
   expression::Expression,
   allowUnknown::Bool,
-)::Tuple{Expression, M_Type, MatchKind}
+)::Tuple{Expression, NFType, MatchKind}
   local matchKind::MatchKindType = MatchKind.NOT_COMPATIBLE
-  local compatibleType::M_Type = actualType
+  local compatibleType::NFType = actualType
 
   local cls1::Class
   local cls2::Class
@@ -3487,7 +3481,7 @@ function matchComplexTypes(
   local comps1::Array{InstNode}
   local comps2::Array{InstNode}
   local path::Absyn.Path
-  local ty::M_Type
+  local ty::NFType
   local cty1::ComplexType
   local cty2::ComplexType
   local e::Expression
@@ -3638,14 +3632,13 @@ function matchComponentList(
 end
 
 function matchFunctionTypes(
-  actualType::M_Type,
-  expectedType::M_Type,
+  actualType::NFType,
+  expectedType::NFType,
   expression::Expression,
   allowUnknown::Bool,
-)::Tuple{Expression, M_Type, MatchKind}
+)::Tuple{Expression, NFType, MatchKindType}
   local matchKind::MatchKindType = MatchKind.EXACT
-  local compatibleType::M_Type = actualType
-
+  local compatibleType::NFType = actualType
   local inputs1::List{InstNode}
   local inputs2::List{InstNode}
   local remaining_inputs::List{InstNode}
@@ -3741,7 +3734,7 @@ function matchFunctionParameters(
   return matching
 end
 
-function matchEnumerationTypes(type1::M_Type, type2::M_Type)::MatchKindType
+function matchEnumerationTypes(type1::NFType, type2::NFType)::MatchKindType
   local matchKind::MatchKindType
 
   local lits1::List{String}
@@ -3759,21 +3752,21 @@ end
 
 function matchArrayExpressions(
   exp1::Expression,
-  type1::M_Type,
+  type1::NFType,
   exp2::Expression,
-  type2::M_Type,
+  type2::NFType,
   allowUnknown::Bool,
-)::Tuple{Expression, Expression, M_Type, MatchKind}
+)::Tuple{Expression, Expression, NFType, MatchKind}
   local matchKind::MatchKindType
-  local compatibleType::M_Type
+  local compatibleType::NFType
 
-  local ety1::M_Type
-  local ety2::M_Type
+  local ety1::NFType
+  local ety2::NFType
   local dims1::List{Dimension}
   local dims2::List{Dimension}
 
-  @match Type.ARRAY(elementType = ety1, dimensions = dims1) = type1
-  @match Type.ARRAY(elementType = ety2, dimensions = dims2) = type2
+  @match ARRAY_TYPE(elementType = ety1, dimensions = dims1) = type1
+  @match ARRAY_TYPE(elementType = ety2, dimensions = dims2) = type2
   #=  Check that the element types are compatible.
   =#
   @assign (exp1, exp2, compatibleType, matchKind) =
@@ -3786,21 +3779,21 @@ function matchArrayExpressions(
 end
 
 function matchArrayTypes(
-  arrayType1::M_Type,
-  arrayType2::M_Type,
+  arrayType1::NFType,
+  arrayType2::NFType,
   expression::Expression,
   allowUnknown::Bool,
-)::Tuple{Expression, M_Type, MatchKind}
+)::Tuple{Expression, NFType, MatchKind}
   local matchKind::MatchKindType
-  local compatibleType::M_Type
+  local compatibleType::NFType
 
-  local ety1::M_Type
-  local ety2::M_Type
+  local ety1::NFType
+  local ety2::NFType
   local dims1::List{Dimension}
   local dims2::List{Dimension}
 
-  @match Type.ARRAY(elementType = ety1, dimensions = dims1) = arrayType1
-  @match Type.ARRAY(elementType = ety2, dimensions = dims2) = arrayType2
+  @match ARRAY_TYPE(elementType = ety1, dimensions = dims1) = arrayType1
+  @match ARRAY_TYPE(elementType = ety2, dimensions = dims2) = arrayType2
   #=  Check that the element types are compatible.
   =#
   @assign (expression, compatibleType, matchKind) =
@@ -3815,10 +3808,10 @@ end
 function matchArrayDims(
   dims1::List{<:Dimension},
   dims2::List{<:Dimension},
-  ty::M_Type,
+  ty::NFType,
   matchKind::MatchKindType,
   allowUnknown::Bool,
-)::Tuple{M_Type, MatchKind}
+)::Tuple{NFType, MatchKind}
 
   local rest_dims2::List{Dimension} = dims2
   local cdims::List{Dimension} = nil
@@ -3845,7 +3838,7 @@ function matchArrayDims(
     end
     @assign cdims = _cons(dim1, cdims)
   end
-  @assign ty = Type.ARRAY(ty, listReverseInPlace(cdims))
+  @assign ty = ARRAY_TYPE(ty, listReverseInPlace(cdims))
   return (ty, matchKind)
 end
 
@@ -3876,17 +3869,17 @@ function matchDimensions(
 end
 
 function matchTupleTypes(
-  tupleType1::M_Type,
-  tupleType2::M_Type,
+  tupleType1::NFType,
+  tupleType2::NFType,
   expression::Expression,
   allowUnknown::Bool,
-)::Tuple{Expression, M_Type, MatchKind}
+)::Tuple{Expression, NFType, MatchKind}
   local matchKind::MatchKindType = MatchKind.EXACT
-  local compatibleType::M_Type = tupleType1
+  local compatibleType::NFType = tupleType1
 
-  local tyl1::List{M_Type}
-  local tyl2::List{M_Type}
-  local ty1::M_Type
+  local tyl1::List{NFType}
+  local tyl2::List{NFType}
+  local ty1::NFType
 
   @match TYPE_TUPLE(types = tyl1) = tupleType1
   @match TYPE_TUPLE(types = tyl2) = tupleType2
@@ -3911,13 +3904,13 @@ end
 
 function matchBoxedExpressions(
   exp1::Expression,
-  type1::M_Type,
+  type1::NFType,
   exp2::Expression,
-  type2::M_Type,
+  type2::NFType,
   allowUnknown::Bool,
-)::Tuple{Expression, Expression, M_Type, MatchKind}
+)::Tuple{Expression, Expression, NFType, MatchKind}
   local matchKind::MatchKindType
-  local compatibleType::M_Type
+  local compatibleType::NFType
 
   local e1::Expression
   local e2::Expression
@@ -3935,20 +3928,20 @@ function matchBoxedExpressions(
 end
 
 function matchTypes_cast(
-  actualType::M_Type,
-  expectedType::M_Type,
+  actualType::NFType,
+  expectedType::NFType,
   expression::Expression,
   allowUnknown::Bool = false,
-)::Tuple{Expression, M_Type, MatchKind}
+)::Tuple{Expression, NFType, MatchKindType}
   local matchKind::MatchKindType
-  local compatibleType::M_Type
+  local compatibleType::NFType
 
   @assign (compatibleType, matchKind) = begin
     @match (actualType, expectedType) begin
       (TYPE_INTEGER(__), TYPE_REAL(__)) => begin
         #=  Integer can be cast to Real.
         =#
-        @assign expression = P_Expression.Expression.typeCast(expression, expectedType)
+        @assign expression = typeCast(expression, expectedType)
         (expectedType, MatchKind.CAST)
       end
 
@@ -3978,8 +3971,8 @@ function matchTypes_cast(
                 TUPLE_EXPRESSION_ELEMENT(
                   expression,
                   1,
-                  Type.setArrayElementType(
-                    P_Expression.Expression.typeOf(expression),
+                  setArrayElementType(
+                    typeOf(expression),
                     compatibleType,
                   ),
                 )
@@ -4067,10 +4060,10 @@ function getRangeType(
   startExp::Expression,
   stepExp::Option{<:Expression},
   stopExp::Expression,
-  rangeElemType::M_Type,
+  rangeElemType::NFType,
   info::SourceInfo,
-)::M_Type
-  local rangeType::M_Type
+)::NFType
+  local rangeType::NFType
 
   local step_exp::Expression
   local dim::Dimension
@@ -4117,7 +4110,7 @@ function getRangeType(
       end
     end
   end
-  @assign rangeType = Type.ARRAY(rangeElemType, list(dim))
+  @assign rangeType = ARRAY_TYPE(rangeElemType, list(dim))
   return rangeType
 end
 
@@ -4178,13 +4171,13 @@ function getRangeTypeInt(
           P_Operator.Operator.makeSub(TYPE_INTEGER()),
           startExp,
         )
-        @assign var = P_Prefixes.variabilityMax(
+        @assign var = variabilityMax(
           P_Expression.Expression.variability(stopExp),
           P_Expression.Expression.variability(startExp),
         )
         if isSome(stepExp)
           @match SOME(step_exp) = stepExp
-          @assign var = P_Prefixes.variabilityMax(
+          @assign var = variabilityMax(
             var,
             P_Expression.Expression.variability(step_exp),
           )
@@ -4265,13 +4258,13 @@ function getRangeTypeReal(
           P_Operator.Operator.makeSub(TYPE_REAL()),
           startExp,
         )
-        @assign var = P_Prefixes.variabilityMax(
+        @assign var = variabilityMax(
           P_Expression.Expression.variability(stopExp),
           P_Expression.Expression.variability(startExp),
         )
         if isSome(stepExp)
           @match SOME(step_exp) = stepExp
-          @assign var = P_Prefixes.variabilityMax(
+          @assign var = variabilityMax(
             var,
             P_Expression.Expression.variability(step_exp),
           )
@@ -4332,19 +4325,19 @@ function getRangeTypeBool(startExp::Expression, stopExp::Expression)::Dimension
         if P_Expression.Expression.isEqual(startExp, stopExp)
           @assign dim = P_Dimension.Dimension.fromInteger(1)
         else
-          @assign var = P_Prefixes.variabilityMax(
+          @assign var = variabilityMax(
             P_Expression.Expression.variability(startExp),
             P_Expression.Expression.variability(stopExp),
           )
-          @assign dim_exp = P_Expression.Expression.IF(
-            P_Expression.Expression.RELATION(
+          @assign dim_exp = IF_EXPRESSION(
+            RELATION_EXPRESSION(
               startExp,
               P_Operator.Operator.makeEqual(TYPE_BOOLEAN()),
               stopExp,
             ),
             INTEGER_EXPRESSION(1),
-            P_Expression.Expression.IF(
-              P_Expression.Expression.RELATION(
+            IF_EXPRESSION(
+              RELATION_EXPRESSION(
                 startExp,
                 P_Operator.Operator.makeLess(TYPE_BOOLEAN()),
                 stopExp,
@@ -4382,7 +4375,7 @@ function getRangeTypeEnum(startExp::Expression, stopExp::Expression)::Dimension
         if P_Expression.Expression.isEqual(startExp, stopExp)
           @assign dim = P_Dimension.Dimension.fromInteger(1)
         else
-          @assign var = P_Prefixes.variabilityMax(
+          @assign var = variabilityMax(
             P_Expression.Expression.variability(startExp),
             P_Expression.Expression.variability(stopExp),
           )
@@ -4408,31 +4401,30 @@ end
 
 function matchBinding(
   binding::Binding,
-  componentType::M_Type,
+  componentType::NFType,
   name::String,
   component::InstNode,
 )::Binding
-
   @assign () = begin
     local ty_match::MatchKindType
     local exp::Expression
-    local ty::M_Type
-    local exp_ty::M_Type
-    local comp_ty::M_Type
+    local ty::NFType
+    local exp_ty::NFType
+    local comp_ty::NFType
     local dims::List{List{Dimension}}
     @match binding begin
       TYPED_BINDING(bindingExp = exp) => begin
         @assign (exp_ty, comp_ty) = begin
           @match exp begin
-            P_Expression.Expression.BINDING_EXP(
+            BINDING_EXP(
               __,
-            ) where {(binding.eachType == NFBinding.EachType.NOT_EACH)} => begin
-              @assign dims = List(
-                Type.arrayDims(getType(p)) for p in listRest(exp.parents)
+            ) where {(binding.eachType == EachType.NOT_EACH)} => begin
+              @assign dims = list(
+                arrayDims(getType(p)) for p in listRest(exp.parents)
               )
               (
                 exp.expType,
-                Type.liftArrayLeftList(componentType, ListUtil.flattenReverse(dims)),
+                liftArrayLeftList(componentType, ListUtil.flattenReverse(dims)),
               )
             end
 
@@ -4462,7 +4454,6 @@ function matchBinding(
       UNBOUND(__) => begin
         ()
       end
-
       _ => begin
         # Error.assertion(
         #   false,
@@ -4480,8 +4471,8 @@ end
 function printBindingTypeError(
   name::String,
   binding::Binding,
-  componentType::M_Type,
-  bindingType::M_Type,
+  componentType::NFType,
+  bindingType::NFType,
   component::InstNode,
 )
   local binding_info::SourceInfo
@@ -4500,8 +4491,8 @@ function printBindingTypeError(
     )
   else
     @assign (_, _, mk) = matchTypes(
-      Type.arrayElementType(bindingType),
-      Type.arrayElementType(componentType),
+      arrayElementType(bindingType),
+      arrayElementType(componentType),
       P_Expression.Expression.EMPTY(bindingType),
       true,
     )
@@ -4512,8 +4503,8 @@ function printBindingTypeError(
           list(
             name,
             toString(binding),
-            P_Dimension.Dimension.toStringList(Type.arrayDims(componentType)),
-            P_Dimension.Dimension.toStringList(Type.arrayDims(bindingType)),
+            P_Dimension.Dimension.toStringList(arrayDims(componentType)),
+            P_Dimension.Dimension.toStringList(arrayDims(bindingType)),
           ),
           list(binding_info, comp_info),
         )
@@ -4537,16 +4528,16 @@ end
 
 """ #= Checks that an expression used as a dimension has a valid type for a
    dimension, otherwise prints an error and fails. =#"""
-function checkDimensionType(exp::Expression, ty::M_Type, info::SourceInfo)
+function checkDimensionType(exp::Expression, ty::NFType, info::SourceInfo)
   return if !Type.isInteger(ty)
     @assign () = begin
       @match exp begin
-        P_Expression.Expression.TYPENAME(ty = Type.ARRAY(elementType = TYPE_BOOLEAN(__))) => begin
+        P_Expression.Expression.TYPENAME(ty = ARRAY_TYPE(elementType = TYPE_BOOLEAN(__))) => begin
           ()
         end
 
         P_Expression.Expression.TYPENAME(
-          ty = Type.ARRAY(elementType = TYPE_ENUMERATION(__)),
+          ty = ARRAY_TYPE(elementType = TYPE_ENUMERATION(__)),
         ) => begin
           ()
         end
@@ -4554,7 +4545,7 @@ function checkDimensionType(exp::Expression, ty::M_Type, info::SourceInfo)
         _ => begin
           Error.addSourceMessage(
             Error.INVALID_DIMENSION_TYPE,
-            list(P_Expression.Expression.toString(exp), Type.toString(ty)),
+            list(toString(exp), Type.toString(ty)),
             info,
           )
           fail()
@@ -4564,15 +4555,14 @@ function checkDimensionType(exp::Expression, ty::M_Type, info::SourceInfo)
   end
 end
 
-function checkReductionType(ty::M_Type, name::Absyn.Path, exp::Expression, info::SourceInfo)
-  local ety::M_Type
+function checkReductionType(ty::NFType, name::Absyn.Path, exp::Expression, info::SourceInfo)
+  local ety::NFType
   local err::String
-
   @assign err = begin
     @match name begin
       Absyn.IDENT("sum") => begin
         begin
-          @match Type.arrayElementType(ty) begin
+          @match arrayElementType(ty) begin
             TYPE_INTEGER(__) => begin
               ""
             end
@@ -4671,7 +4661,7 @@ function checkReductionType(ty::M_Type, name::Absyn.Path, exp::Expression, info:
     Error.addSourceMessageAndFail(
       Error.INVALID_REDUCTION_TYPE,
       list(
-        P_Expression.Expression.toString(exp),
+        toString(exp),
         Type.toString(ty),
         AbsynUtil.pathString(name),
         err,
@@ -4681,7 +4671,7 @@ function checkReductionType(ty::M_Type, name::Absyn.Path, exp::Expression, info:
   end
 end
 
-function checkSumComplexType(ty::M_Type, exp::Expression, info::SourceInfo)::Bool
+function checkSumComplexType(ty::NFType, exp::Expression, info::SourceInfo)::Bool
   local valid::Bool = true
 
   local cls_node::InstNode
@@ -4694,7 +4684,7 @@ function checkSumComplexType(ty::M_Type, exp::Expression, info::SourceInfo)::Boo
     if !hasOperator(op, cls)
       Error.addSourceMessage(
         Error.OPERATOR_RECORD_MISSING_OPERATOR,
-        list(Type.toString(ty), P_Expression.Expression.toString(exp), "sum", op),
+        list(Type.toString(ty), toString(exp), "sum", op),
         info,
       )
       @assign valid = false

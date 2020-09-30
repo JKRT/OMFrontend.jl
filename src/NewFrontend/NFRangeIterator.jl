@@ -96,7 +96,7 @@ function hasNext(iterator::RangeIterator)::Bool
           false,
           getInstanceName() +
           " got invalid range " +
-          P_Expression.Expression.toString(iterator.exp),
+          toString(iterator.exp),
           sourceInfo(),
         )
         fail()
@@ -142,7 +142,7 @@ function next(iterator::RangeIterator)::Tuple{RangeIterator, Expression}
           false,
           getInstanceName() +
           " got invalid range " +
-          P_Expression.Expression.toString(iterator.exp),
+          toString(iterator.exp),
           sourceInfo(),
         )
         fail()
@@ -266,7 +266,7 @@ function fromExp(exp::Expression)::RangeIterator
       end
 
       P_Expression.Expression.TYPENAME(
-        ty = Type.ARRAY(elementType = ty && TYPE_ENUMERATION(literals = literals)),
+        ty = ARRAY_TYPE(elementType = ty && TYPE_ENUMERATION(literals = literals)),
       ) => begin
         #=  enumeration type based range
         =#

@@ -62,7 +62,7 @@ function reconstructRecordInstance(
       field_exps,
     )
     @assign record_binding =
-      FLAT_BINDING(record_exp, P_Component.variability(record_comp))
+      FLAT_BINDING(record_exp, variability(record_comp))
   end
   @assign recordVar = VARIABLE(
     recordName,
@@ -118,8 +118,8 @@ function collectSubscriptedFlatType(
   local strl::List{String}
   local name::String
 
-  @assign exp_ty = P_Expression.Expression.typeOf(exp)
-  @assign dims = ListUtil.firstN(Type.arrayDims(exp_ty), listLength(subs))
+  @assign exp_ty = typeOf(exp)
+  @assign dims = ListUtil.firstN(arrayDims(exp_ty), listLength(subs))
   @assign sub_tyl = List(P_Dimension.Dimension.subscriptType(d) for d in dims)
   @assign name = Type.subscriptedTypeName(exp_ty, sub_tyl)
   @assign types = TypeTree.add(
@@ -164,7 +164,7 @@ function collectExpFlatTypes_traverse(exp::Expression, types::TypeTree)::TypeTre
       end
 
       _ => begin
-        collectFlatType(P_Expression.Expression.typeOf(exp), types)
+        collectFlatType(typeOf(exp), types)
       end
     end
   end
@@ -350,7 +350,7 @@ function collectFlatType(ty::M_Type, types::TypeTree)::TypeTree
         ()
       end
 
-      Type.ARRAY(__) => begin
+      ARRAY_TYPE(__) => begin
         @assign types = P_Dimension.Dimension.foldExpList(
           ty.dimensions,
           collectExpFlatTypes_traverse,

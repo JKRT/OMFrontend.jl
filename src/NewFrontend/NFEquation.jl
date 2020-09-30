@@ -280,9 +280,9 @@ function toStream(eq::Equation, indent::String, s)
   @assign s = begin
     @match eq begin
       EQUALITY(__) => begin
-        @assign s = IOStream.append(s, P_Expression.Expression.toString(eq.lhs))
+        @assign s = IOStream.append(s, toString(eq.lhs))
         @assign s = IOStream.append(s, " = ")
-        @assign s = IOStream.append(s, P_Expression.Expression.toString(eq.rhs))
+        @assign s = IOStream.append(s, toString(eq.rhs))
         s
       end
 
@@ -294,17 +294,17 @@ function toStream(eq::Equation, indent::String, s)
       end
 
       ARRAY_EQUALITY(__) => begin
-        @assign s = IOStream.append(s, P_Expression.Expression.toString(eq.lhs))
+        @assign s = IOStream.append(s, toString(eq.lhs))
         @assign s = IOStream.append(s, " = ")
-        @assign s = IOStream.append(s, P_Expression.Expression.toString(eq.rhs))
+        @assign s = IOStream.append(s, toString(eq.rhs))
         s
       end
 
       CONNECT(__) => begin
         @assign s = IOStream.append(s, "connect(")
-        @assign s = IOStream.append(s, P_Expression.Expression.toString(eq.lhs))
+        @assign s = IOStream.append(s, toString(eq.lhs))
         @assign s = IOStream.append(s, " = ")
-        @assign s = IOStream.append(s, P_Expression.Expression.toString(eq.rhs))
+        @assign s = IOStream.append(s, toString(eq.rhs))
         @assign s = IOStream.append(s, ")")
         s
       end
@@ -316,7 +316,7 @@ function toStream(eq::Equation, indent::String, s)
           @assign s = IOStream.append(s, " in ")
           @assign s = IOStream.append(
             s,
-            P_Expression.Expression.toString(Util.getOption(eq.range)),
+            toString(Util.getOption(eq.range)),
           )
         end
         @assign s = IOStream.append(s, " loop\\n")
@@ -354,33 +354,33 @@ function toStream(eq::Equation, indent::String, s)
 
       ASSERT(__) => begin
         @assign s = IOStream.append(s, "assert(")
-        @assign s = IOStream.append(s, P_Expression.Expression.toString(eq.condition))
+        @assign s = IOStream.append(s, toString(eq.condition))
         @assign s = IOStream.append(s, ", ")
-        @assign s = IOStream.append(s, P_Expression.Expression.toString(eq.message))
+        @assign s = IOStream.append(s, toString(eq.message))
         @assign s = IOStream.append(s, ", ")
-        @assign s = IOStream.append(s, P_Expression.Expression.toString(eq.level))
+        @assign s = IOStream.append(s, toString(eq.level))
         @assign s = IOStream.append(s, ")")
         s
       end
 
       TERMINATE(__) => begin
         @assign s = IOStream.append(s, "terminate(")
-        @assign s = IOStream.append(s, P_Expression.Expression.toString(eq.message))
+        @assign s = IOStream.append(s, toString(eq.message))
         @assign s = IOStream.append(s, ")")
         s
       end
 
       REINIT(__) => begin
         @assign s = IOStream.append(s, "reinit(")
-        @assign s = IOStream.append(s, P_Expression.Expression.toString(eq.cref))
+        @assign s = IOStream.append(s, toString(eq.cref))
         @assign s = IOStream.append(s, ", ")
-        @assign s = IOStream.append(s, P_Expression.Expression.toString(eq.reinitExp))
+        @assign s = IOStream.append(s, toString(eq.reinitExp))
         @assign s = IOStream.append(s, ")")
         s
       end
 
       NORETCALL(__) => begin
-        IOStream.append(s, P_Expression.Expression.toString(eq.exp))
+        IOStream.append(s, toString(eq.exp))
       end
 
       _ => begin
@@ -524,7 +524,7 @@ function foldExp(eq::Equation, func::FoldFunc, arg::ArgT) where {ArgT}
         ()
       end
 
-      P_Equation.Equation.CONNECT(__) => begin
+      EQUATION_CONNECT(__) => begin
         @assign arg = func(eq.lhs, arg)
         @assign arg = func(eq.rhs, arg)
         ()
@@ -1004,7 +1004,7 @@ function toStream(branch::Branch, indent::String, s)
   @assign s = begin
     @match branch begin
       BRANCH(__) => begin
-        @assign s = IOStream.append(s, P_Expression.Expression.toString(branch.condition))
+        @assign s = IOStream.append(s, toString(branch.condition))
         @assign s = IOStream.append(s, " then\\n")
         @assign s = toStreamList(branch.body, indent + "  ", s)
         s

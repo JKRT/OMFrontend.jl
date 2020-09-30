@@ -1,7 +1,6 @@
 
 @UniontypeDecl NFOperator
 M_Type = NFType
-
 Op = (
   () -> begin #= Enumeration =#
     ADD = 1
@@ -635,19 +634,16 @@ function symbol(op::Operator, spacing::String = " ")::String
 end
 
 function unlift(op::Operator)::Operator
-
   @assign op.ty = Type.unliftArray(op.ty)
   return op
 end
 
 function scalarize(op::Operator)::Operator
-
-  @assign op.ty = Type.arrayElementType(op.ty)
+  @assign op.ty = arrayElementType(op.ty)
   return op
 end
 
 function setType(ty::M_Type, op::Operator)::Operator
-
   @assign op.ty = ty
   return op
 end
@@ -930,12 +926,8 @@ end
 
 function compare(op1::Operator, op2::Operator)::Integer
   local comp::Integer
-
   local o1::OpType = op1.op
   local o2::OpType = op2.op
-
-  #=  TODO: Compare the types instead if both operators are USERDEFINED.
-  =#
   @assign comp = Util.intCompare(Integer(o1), Integer(o2))
   return comp
 end

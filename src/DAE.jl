@@ -1619,28 +1619,19 @@
 
          @Uniontype ClockKind begin
               @Record INFERRED_CLOCK begin
-
               end
-
               @Record INTEGER_CLOCK begin
-
                       intervalCounter::Exp
                       resolution #=  integer type >= 1  =#::Exp
               end
-
               @Record REAL_CLOCK begin
-
                       interval::Exp
               end
-
               @Record BOOLEAN_CLOCK begin
-
                       condition::Exp
                       startInterval #=  real type >= 0.0  =#::Exp
               end
-
               @Record SOLVER_CLOCK begin
-
                       c::Exp
                       solverMethod #=  string type  =#::Exp
               end
@@ -1682,7 +1673,6 @@
               end
 
               @Record CLKCONST begin
-
                       clk #= Clock kinds =#::ClockKind
               end
 

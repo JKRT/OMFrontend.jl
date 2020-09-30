@@ -1841,7 +1841,7 @@ function name(node::InstNode) ::String
       end
 
       EXP_NODE(__)  => begin
-        "EXP(" + P_Expression.Expression.toString(node.exp) + ")"
+        "EXP(" + toString(node.exp) + ")"
       end
 
       EMPTY_NODE(__)  => begin

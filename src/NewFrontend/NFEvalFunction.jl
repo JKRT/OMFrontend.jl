@@ -355,10 +355,10 @@ function buildBinding(node::InstNode, repl::ReplTree.Tree)::Expression
   @assign ty = Type.mapDims(ty, (repl) -> applyReplacementsDim(repl = repl))
   @assign result = begin
     @match ty begin
-      Type.ARRAY(__) where {(Type.hasKnownSize(ty))} => begin
+      ARRAY_TYPE(__) where {(Type.hasKnownSize(ty))} => begin
         P_Expression.Expression.fillType(
           ty,
-          P_Expression.Expression.EMPTY(Type.arrayElementType(ty)),
+          P_Expression.Expression.EMPTY(arrayElementType(ty)),
         )
       end
 
@@ -380,7 +380,7 @@ function applyReplacementsDim(repl::ReplTree.Tree, dim::Dimension)::Dimension
     local exp::Expression
     @match dim begin
       P_Dimension.Dimension.EXP(__) => begin
-        @assign exp = P_Expression.Expression.map(
+        @assign exp = map(
           dim.exp,
           (repl) -> applyReplacements2(repl = repl),
         )
@@ -479,7 +479,7 @@ function applyBindingReplacement(
   local outExp::Expression
 
   @assign outExp =
-    P_Expression.Expression.map(exp, (repl) -> applyReplacements2(repl = repl))
+    map(exp, (repl) -> applyReplacements2(repl = repl))
   return outExp
 end
 
@@ -487,7 +487,7 @@ function applyReplacements(repl::ReplTree.Tree, fnBody::List{<:Statement})::List
 
   @assign fnBody = P_Statement.Statement.mapExpList(
     fnBody,
-    () -> P_Expression.Expression.map(func = (repl) -> applyReplacements2(repl = repl)),
+    () -> map(func = (repl) -> applyReplacements2(repl = repl)),
   )#= AbsyntoJulia.dumpPattern: UNHANDLED Abyn.Exp  =#
   return fnBody
 end
@@ -564,7 +564,7 @@ function applyReplacementCref(
       end
     end
     @assign outExp =
-      P_Expression.Expression.map(outExp, (repl) -> applyReplacements2(repl = repl))
+      map(outExp, (repl) -> applyReplacements2(repl = repl))
   end
   #=  Look up the replacement for the first part in the replacement tree.
   =#
@@ -639,7 +639,7 @@ function createResult(repl::ReplTree.Tree, outputs::List{<:InstNode})::Expressio
       @assign expl = _cons(e, expl)
     end
     @assign expl = listReverseInPlace(expl)
-    @assign types = List(P_Expression.Expression.typeOf(e) for e in expl)
+    @assign types = List(typeOf(e) for e in expl)
     @assign exp = TUPLE_EXPRESSION(TYPE_TUPLE(types, NONE()), expl)
   end
   return exp
@@ -800,9 +800,9 @@ function assignVariable(variable::Expression, value::Expression)
           false,
           getInstanceName() +
           " failed on " +
-          P_Expression.Expression.toString(variable) +
+          toString(variable) +
           " := " +
-          P_Expression.Expression.toString(value),
+          toString(value),
           sourceInfo(),
         )
         fail()
@@ -897,10 +897,10 @@ function assignArrayElement(
           false,
           getInstanceName() +
           ": unimplemented case for " +
-          P_Expression.Expression.toString(arrayExp) +
+          toString(arrayExp) +
           toStringList(subscripts) +
           " = " +
-          P_Expression.Expression.toString(value),
+          toString(value),
           sourceInfo(),
         )
         fail()
@@ -959,7 +959,7 @@ function assignRecord(lhs::Expression, rhs::Expression)::Expression
           @match _cons(e, elems) = elems
           @assign ty = getType(c)
           @assign val = CREF_EXPRESSION(
-            Type.liftArrayLeftList(ty, Type.arrayDims(rhs.ty)),
+            Type.liftArrayLeftList(ty, arrayDims(rhs.ty)),
             prefixCref(c, ty, nil, rhs.cref),
           )
           assignVariable(e, val)
@@ -1091,9 +1091,9 @@ function evaluateAssert(condition::Expression, assertStmt::Statement)::FlowContr
             false,
             getInstanceName() +
             " failed to evaluate assert(false, " +
-            P_Expression.Expression.toString(msg) +
+            toString(msg) +
             ", " +
-            P_Expression.Expression.toString(lvl) +
+            toString(lvl) +
             ")",
             sourceInfo(),
           )
@@ -1380,7 +1380,7 @@ function evaluateKnownExternal(name::String, args::List{<:Expression})::Expressi
       ) => begin
         @assign dims = ModelicaExternalC.ModelicaIO_readMatrixSizes(s1, s2)
         P_Expression.Expression.ARRAY(
-          Type.ARRAY(TYPE_INTEGER(), list(P_Dimension.Dimension.fromInteger(2))),
+          ARRAY_TYPE(TYPE_INTEGER(), list(P_Dimension.Dimension.fromInteger(2))),
           list(
             INTEGER_EXPRESSION(dims[1]),
             INTEGER_EXPRESSION(dims[2]),
@@ -1436,7 +1436,7 @@ function evaluateOpenModelicaRegex(args::List{<:Expression})::Expression
         @assign (n, strs) = System.regex(str, re, i, extended, insensitive)
         @assign expl = List(STRING_EXPRESSION(s) for s in strs)
         @assign strs_ty =
-          Type.ARRAY(TYPE_STRING(), list(P_Dimension.Dimension.fromInteger(i)))
+          ARRAY_TYPE(TYPE_STRING(), list(P_Dimension.Dimension.fromInteger(i)))
         @assign strs_exp = P_Expression.Expression.makeArray(strs_ty, expl, true)
         TUPLE_EXPRESSION(
           TYPE_TUPLE(list(TYPE_INTEGER(), strs_ty), NONE()),
@@ -1451,7 +1451,7 @@ function evaluateOpenModelicaRegex(args::List{<:Expression})::Expression
           " failed on OpenModelica_regex" +
           ListUtil.toString(
             args,
-            P_Expression.Expression.toString,
+            toString,
             "",
             "(",
             ", ",
@@ -1488,7 +1488,7 @@ function evaluateModelicaIO_readRealMatrix(
     ncol,
     verboseRead,
   )
-  @assign ty = Type.ARRAY(TYPE_REAL(), list(P_Dimension.Dimension.fromInteger(ncol)))
+  @assign ty = ARRAY_TYPE(TYPE_REAL(), list(P_Dimension.Dimension.fromInteger(ncol)))
   for r = 1:nrow
     @assign row = nil
     for c = 1:ncol
@@ -1514,7 +1514,7 @@ function evaluateExternal2(
 
   @assign repl = createReplacements(fn, args)
   @assign ext_args = List(
-    P_Expression.Expression.map(e, (repl) -> applyReplacements2(repl = repl))
+    map(e, (repl) -> applyReplacements2(repl = repl))
     for e in extArgs
   )
   evaluateExternal3(name, ext_args)

@@ -134,7 +134,7 @@ function makeDAEVar(
 
   @assign dcref = toDAE(cref)
   @assign dty = Type.toDAE(if settings.isFunctionParameter
-    Type.arrayElementType(ty)
+    arrayElementType(ty)
   else
     ty
   end)
@@ -144,7 +144,7 @@ function makeDAEVar(
   end
   @assign var = begin
     @match attr begin
-      P_Component.P_Attributes.ATTRIBUTES(__) => begin
+      ATTRIBUTES(__) => begin
         #=  Strip input/output from non top-level components unless
         =#
         #=  --useLocalDirection=true has been set.
@@ -257,7 +257,7 @@ function convertVarAttributes(
   end
   @assign is_final_opt = SOME(is_final)
   @assign attributes = begin
-    @match Type.arrayElementType(ty) begin
+    @match arrayElementType(ty) begin
       TYPE_REAL(__) => begin
         convertRealVarAttributes(attrs, is_final_opt)
       end
@@ -685,7 +685,7 @@ function convertStateSelectAttribute(binding::Binding)::Option{DAE.StateSelect}
           false,
           getInstanceName() +
           " got invalid StateSelect expression " +
-          P_Expression.Expression.toString(exp),
+          toString(exp),
           sourceInfo(),
         )
         fail()
@@ -760,11 +760,11 @@ function convertEquation(eq::Equation, elements::List{<:DAE.Element})::List{DAE.
         @assign e1 = P_Expression.Expression.toDAE(eq.lhs)
         @assign e2 = P_Expression.Expression.toDAE(eq.rhs)
         _cons(
-          if Type.isComplex(eq.ty)
+          if isComplex(eq.ty)
             DAE.Element.COMPLEX_EQUATION(e1, e2, eq.source)
           elseif (Type.isArray(eq.ty))
             DAE.Element.ARRAY_EQUATION(
-              List(P_Dimension.Dimension.toDAE(d) for d in Type.arrayDims(eq.ty)),
+              List(P_Dimension.Dimension.toDAE(d) for d in arrayDims(eq.ty)),
               e1,
               e2,
               eq.source,
@@ -785,7 +785,7 @@ function convertEquation(eq::Equation, elements::List{<:DAE.Element})::List{DAE.
       EQUATION_ARRAY_EQUALITY(__) => begin
         @assign e1 = P_Expression.Expression.toDAE(eq.lhs)
         @assign e2 = P_Expression.Expression.toDAE(eq.rhs)
-        @assign dims = List(P_Dimension.Dimension.toDAE(d) for d in Type.arrayDims(eq.ty))
+        @assign dims = List(P_Dimension.Dimension.toDAE(d) for d in arrayDims(eq.ty))
         _cons(DAE.Element.ARRAY_EQUATION(dims, e1, e2, eq.source), elements)
       end
 
@@ -969,7 +969,7 @@ function convertInitialEquation(
       EQUATION_EQUALITY(__) => begin
         @assign e1 = P_Expression.Expression.toDAE(eq.lhs)
         @assign e2 = P_Expression.Expression.toDAE(eq.rhs)
-        _cons(if Type.isComplex(eq.ty)
+        _cons(if isComplex(eq.ty)
           DAE.Element.INITIAL_COMPLEX_EQUATION(e1, e2, eq.source)
         else
           DAE.Element.INITIALEQUATION(e1, e2, eq.source)
@@ -979,7 +979,7 @@ function convertInitialEquation(
       EQUATION_ARRAY_EQUALITY(__) => begin
         @assign e1 = P_Expression.Expression.toDAE(eq.lhs)
         @assign e2 = P_Expression.Expression.toDAE(eq.rhs)
-        @assign dims = List(P_Dimension.Dimension.toDAE(d) for d in Type.arrayDims(eq.ty))
+        @assign dims = List(P_Dimension.Dimension.toDAE(d) for d in arrayDims(eq.ty))
         _cons(DAE.Element.INITIAL_ARRAY_EQUATION(dims, e1, e2, eq.source), elements)
       end
 
@@ -1504,7 +1504,7 @@ function convertExternalDeclArg(exp::Expression)::DAE.ExtArg
       _ => begin
         DAE.ExtArg.EXTARGEXP(
           P_Expression.Expression.toDAE(exp),
-          Type.toDAE(P_Expression.Expression.typeOf(exp)),
+          Type.toDAE(typeOf(exp)),
         )
       end
     end
@@ -1610,7 +1610,7 @@ function stripScopePrefixFromDim(dim::Dimension)::Dimension
 end
 
 function stripScopePrefixExp(exp::Expression)::Expression
-  @assign exp = P_Expression.Expression.map(exp, stripScopePrefixCrefExp)
+  @assign exp = map(exp, stripScopePrefixCrefExp)
   return exp
 end
 

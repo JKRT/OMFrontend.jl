@@ -552,7 +552,7 @@ function insertUnitInEquation(
     #=  SUB equal summands
     =#
     @matchcontinue eq begin
-      BINARY_EXPRESSION(exp1, P_Operator.Operator.OPERATOR(op = Op.SUB), exp2) => begin
+      BINARY_EXPRESSION(exp1, OPERATOR(op = Op.SUB), exp2) => begin
         @match ((@match Unit.UNIT() = unit1), htCr2U, htS2U, htU2S, fnCache, icu1) =
           insertUnitInEquation(exp1, unit, htCr2U, htS2U, htU2S, fnCache)
         @assign (unit2, htCr2U, htS2U, htU2S, fnCache, icu2) =
@@ -563,7 +563,7 @@ function insertUnitInEquation(
 
       BINARY_EXPRESSION(
         exp1,
-        P_Operator.Operator.OPERATOR(op = Op.SUB),
+        OPERATOR(op = Op.SUB),
         exp2,
       ) => begin
         #=  SUB equal summands
@@ -578,7 +578,7 @@ function insertUnitInEquation(
 
       BINARY_EXPRESSION(
         exp1,
-        P_Operator.Operator.OPERATOR(op = Op.SUB),
+        OPERATOR(op = Op.SUB),
         exp2,
       ) => begin
         #=  SUB unequal summands
@@ -596,7 +596,7 @@ function insertUnitInEquation(
 
       BINARY_EXPRESSION(
         exp1,
-        P_Operator.Operator.OPERATOR(op = Op.SUB),
+        OPERATOR(op = Op.SUB),
         exp2,
       ) => begin
         #=  SUB unequal summands
@@ -614,7 +614,7 @@ function insertUnitInEquation(
 
       BINARY_EXPRESSION(
         exp1,
-        P_Operator.Operator.OPERATOR(op = Op.ADD),
+        OPERATOR(op = Op.ADD),
         exp2,
       ) => begin
         #=  ADD equal summands
@@ -629,7 +629,7 @@ function insertUnitInEquation(
 
       BINARY_EXPRESSION(
         exp1,
-        P_Operator.Operator.OPERATOR(op = Op.ADD),
+        OPERATOR(op = Op.ADD),
         exp2,
       ) => begin
         #=  ADD equal summands
@@ -644,7 +644,7 @@ function insertUnitInEquation(
 
       BINARY_EXPRESSION(
         exp1,
-        P_Operator.Operator.OPERATOR(op = Op.ADD),
+        OPERATOR(op = Op.ADD),
         exp2,
       ) => begin
         #=  ADD unequal summands
@@ -662,7 +662,7 @@ function insertUnitInEquation(
 
       BINARY_EXPRESSION(
         exp1,
-        P_Operator.Operator.OPERATOR(op = Op.ADD),
+        OPERATOR(op = Op.ADD),
         exp2,
       ) => begin
         #=  ADD unequal summands
@@ -680,7 +680,7 @@ function insertUnitInEquation(
 
       BINARY_EXPRESSION(
         exp1,
-        P_Operator.Operator.OPERATOR(op = Op.MUL),
+        OPERATOR(op = Op.MUL),
         exp2,
       ) => begin
         #=  MUL
@@ -696,7 +696,7 @@ function insertUnitInEquation(
 
       BINARY_EXPRESSION(
         exp1,
-        P_Operator.Operator.OPERATOR(op = Op.MUL),
+        OPERATOR(op = Op.MUL),
         exp2,
       ) where {(Unit.isMaster(unit))} => begin
         @match ((@match Unit.MASTER() = unit1), htCr2U, htS2U, htU2S, fnCache, icu1) =
@@ -708,7 +708,7 @@ function insertUnitInEquation(
 
       BINARY_EXPRESSION(
         exp1,
-        P_Operator.Operator.OPERATOR(op = Op.MUL),
+        OPERATOR(op = Op.MUL),
         exp2,
       ) where {(Unit.isUnit(unit))} => begin
         @match (Unit.MASTER(varList = vars), htCr2U, htS2U, htU2S, fnCache, icu1) =
@@ -723,7 +723,7 @@ function insertUnitInEquation(
 
       BINARY_EXPRESSION(
         exp1,
-        P_Operator.Operator.OPERATOR(op = Op.MUL),
+        OPERATOR(op = Op.MUL),
         exp2,
       ) where {(Unit.isMaster(unit))} => begin
         @match (Unit.UNIT(), htCr2U, htS2U, htU2S, fnCache, icu1) =
@@ -735,7 +735,7 @@ function insertUnitInEquation(
 
       BINARY_EXPRESSION(
         exp1,
-        P_Operator.Operator.OPERATOR(op = Op.MUL),
+        OPERATOR(op = Op.MUL),
         exp2,
       ) where {(Unit.isUnit(unit))} => begin
         @match ((@match Unit.UNIT() = unit2), htCr2U, htS2U, htU2S, fnCache, icu1) =
@@ -750,7 +750,7 @@ function insertUnitInEquation(
 
       BINARY_EXPRESSION(
         exp1,
-        P_Operator.Operator.OPERATOR(op = Op.MUL),
+        OPERATOR(op = Op.MUL),
         exp2,
       ) => begin
         @match (Unit.MASTER(), htCr2U, htS2U, htU2S, fnCache, icu1) =
@@ -762,7 +762,7 @@ function insertUnitInEquation(
 
       BINARY_EXPRESSION(
         exp1,
-        P_Operator.Operator.OPERATOR(op = Op.DIV),
+        OPERATOR(op = Op.DIV),
         exp2,
       ) => begin
         #=  DIV
@@ -778,7 +778,7 @@ function insertUnitInEquation(
 
       BINARY_EXPRESSION(
         exp1,
-        P_Operator.Operator.OPERATOR(op = Op.DIV),
+        OPERATOR(op = Op.DIV),
         exp2,
       ) where {(Unit.isMaster(unit))} => begin
         @match (Unit.MASTER(), htCr2U, htS2U, htU2S, fnCache, icu1) =
@@ -791,7 +791,7 @@ function insertUnitInEquation(
 
       BINARY_EXPRESSION(
         exp1,
-        P_Operator.Operator.OPERATOR(op = Op.DIV),
+        OPERATOR(op = Op.DIV),
         exp2,
       ) where {(Unit.isUnit(unit))} => begin
         @match (Unit.MASTER(varList = vars), htCr2U, htS2U, htU2S, fnCache, icu1) =
@@ -806,7 +806,7 @@ function insertUnitInEquation(
 
       BINARY_EXPRESSION(
         exp1,
-        P_Operator.Operator.OPERATOR(op = Op.DIV),
+        OPERATOR(op = Op.DIV),
         exp2,
       ) where {(Unit.isMaster(unit))} => begin
         @match (Unit.UNIT(), htCr2U, htS2U, htU2S, fnCache, icu1) =
@@ -818,7 +818,7 @@ function insertUnitInEquation(
 
       BINARY_EXPRESSION(
         exp1,
-        P_Operator.Operator.OPERATOR(op = Op.DIV),
+        OPERATOR(op = Op.DIV),
         exp2,
       ) where {(Unit.isUnit(unit))} => begin
         @match ((@match Unit.UNIT() = unit2), htCr2U, htS2U, htU2S, fnCache, icu1) =
@@ -833,7 +833,7 @@ function insertUnitInEquation(
 
       BINARY_EXPRESSION(
         exp1,
-        P_Operator.Operator.OPERATOR(op = Op.DIV),
+        OPERATOR(op = Op.DIV),
         exp2,
       ) => begin
         @match (Unit.MASTER(), htCr2U, htS2U, htU2S, fnCache, icu1) =
@@ -845,7 +845,7 @@ function insertUnitInEquation(
 
       BINARY_EXPRESSION(
         exp1,
-        P_Operator.Operator.OPERATOR(op = Op.POW),
+        OPERATOR(op = Op.POW),
         exp2 && P_Expression.REAL_EXPRESSION(__),
       ) => begin
         #=  POW
@@ -861,7 +861,7 @@ function insertUnitInEquation(
 
       BINARY_EXPRESSION(
         exp1,
-        P_Operator.Operator.OPERATOR(op = Op.POW),
+        OPERATOR(op = Op.POW),
         exp2 && P_Expression.REAL_EXPRESSION(__),
       ) where {(Unit.isUnit(unit))} => begin
         @match (Unit.MASTER(varList = vars), htCr2U, htS2U, htU2S, fnCache, icu1) =
@@ -874,7 +874,7 @@ function insertUnitInEquation(
 
       BINARY_EXPRESSION(
         exp1,
-        P_Operator.Operator.OPERATOR(op = Op.POW),
+        OPERATOR(op = Op.POW),
         P_Expression.REAL_EXPRESSION(__),
       ) => begin
         @assign (_, htCr2U, htS2U, htU2S, fnCache, icu1) =
@@ -890,7 +890,7 @@ function insertUnitInEquation(
         (op_unit, icu1)
       end
 
-      P_Expression.Expression.IF(__) => begin
+      IF_EXPRESSION(__) => begin
         @assign (unit1, htCr2U, htS2U, htU2S, fnCache, icu1) =
           insertUnitInEquation(eq.trueBranch, unit, htCr2U, htS2U, htU2S, fnCache)
         @assign (unit2, htCr2U, htS2U, htU2S, fnCache, icu2) =
@@ -907,7 +907,7 @@ function insertUnitInEquation(
         (op_unit, inconsistentUnits)
       end
 
-      P_Expression.Expression.RELATION(__) => begin
+      RELATION_EXPRESSION(__) => begin
         @assign (unit1, htCr2U, htS2U, htU2S, fnCache, icu1) =
           insertUnitInEquation(eq.exp1, unit, htCr2U, htS2U, htU2S, fnCache)
         @assign (unit2, htCr2U, htS2U, htU2S, fnCache, icu2) =
@@ -922,8 +922,8 @@ function insertUnitInEquation(
         (op_unit, inconsistentUnits)
       end
 
-      P_Expression.Expression.UNARY(
-        operator = P_Operator.Operator.OPERATOR(op = Op.UMINUS),
+      UNARY_EXPRESSION(
+        operator = OPERATOR(op = Op.UMINUS),
       ) => begin
         @assign (op_unit, htCr2U, htS2U, htU2S, fnCache, icu1) =
           insertUnitInEquation(eq.exp, unit, htCr2U, htS2U, htU2S, fnCache)
@@ -1268,14 +1268,14 @@ function Errorfunction2(
     local s2::String
     @match (inexpList, inHtU2S) begin
       ((exp, ut) <| nil(), _) => begin
-        @assign s = P_Expression.Expression.toString(exp)
+        @assign s = toString(exp)
         @assign s1 = Unit.unitString(ut, inHtU2S)
         @assign s = "- sub-expression \\" + s + "\\ has unit \\" + s1 + "\\"
         s
       end
 
       ((exp, ut) <| expList, _) => begin
-        @assign s = P_Expression.Expression.toString(exp)
+        @assign s = toString(exp)
         @assign s1 = Unit.unitString(ut, inHtU2S)
         @assign s2 = Errorfunction2(expList, inHtU2S)
         @assign s = "- sub-expression \\" + s + "\\ has unit \\" + s1 + "\\\\n" + s2

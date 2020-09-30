@@ -187,7 +187,7 @@ function fromExp(exp::Expression)::ExpressionIterator
             false,
             getInstanceName() +
             " got unexpandable expression `" +
-            P_Expression.Expression.toString(exp) +
+            toString(exp) +
             "`",
             sourceInfo(),
           )

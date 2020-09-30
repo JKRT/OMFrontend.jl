@@ -131,9 +131,9 @@ function replaceConstants(
   @assign flatModel.variables =
     List(replaceVariableConstants(c) for c in flatModel.variables)
   @assign flatModel.equations =
-    P_Equation.Equation.mapExpList(flatModel.equations, replaceExpConstants)
+    mapExpList(flatModel.equations, replaceExpConstants)
   @assign flatModel.initialEquations =
-    P_Equation.Equation.mapExpList(flatModel.initialEquations, replaceExpConstants)
+    mapExpList(flatModel.initialEquations, replaceExpConstants)
   @assign flatModel.algorithms =
     P_Algorithm.Algorithm.mapExpList(flatModel.algorithms, replaceExpConstants)
   @assign flatModel.initialAlgorithms =
@@ -292,7 +292,7 @@ end
 
 function replaceExpConstants(exp::Expression)::Expression
 
-  @assign exp = P_Expression.Expression.map(exp, replaceExpConstants_traverser)
+  @assign exp = map(exp, replaceExpConstants_traverser)
   return exp
 end
 

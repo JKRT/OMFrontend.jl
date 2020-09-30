@@ -34,7 +34,7 @@ function isComplexArray2(cref::ComponentRef)::Bool
   @assign complexArray = begin
     @match cref begin
       COMPONENT_REF_CREF(
-        ty = Type.ARRAY(__),
+        ty = ARRAY_TYPE(__),
       ) where {(Type.isArray(Type.subscript(cref.ty, cref.subscripts)))} => begin
         true
       end
@@ -279,8 +279,8 @@ function scalarize(cref::ComponentRef)::List{ComponentRef}
     local dims::List{Dimension}
     local subs::List{List{Subscript}}
     @match cref begin
-      COMPONENT_REF_CREF(ty = Type.ARRAY(__)) => begin
-        @assign dims = Type.arrayDims(cref.ty)
+      COMPONENT_REF_CREF(ty = ARRAY_TYPE(__)) => begin
+        @assign dims = arrayDims(cref.ty)
         @assign subs = scalarizeList(cref.subscripts, dims)
         @assign subs = ListUtil.combination(subs)
         List(setSubscripts(s, cref) for s in subs)
@@ -815,8 +815,8 @@ end
 
 """ #= Returns the variability of the cref, with the variability of the subscripts
      taken into account. =#"""
-function variability(cref::ComponentRef)::Variability
-  local var::Variability =
+function variability(cref::ComponentRef)::VariabilityType
+  local var::VariabilityType =
     variabilityMax(nodeVariability(cref), subscriptsVariability(cref))
   return var
 end
@@ -824,7 +824,7 @@ end
 function subscriptsVariability(
   cref::ComponentRef,
   var::VariabilityType = Variability.CONSTANT,
-)::Variability
+)::VariabilityType
 
   @assign () = begin
     @match cref begin
@@ -860,19 +860,17 @@ function nodeVariability(cref::ComponentRef)::VariabilityType
   return var
 end
 
-function getSubscriptedType2(restCref::ComponentRef, accumTy::M_Type)::M_Type
-  local ty::M_Type
-
+function getSubscriptedType2(restCref::ComponentRef, accumTy::NFType)::NFType
+  local ty::NFType
   @assign ty = begin
     @match restCref begin
       COMPONENT_REF_CREF(origin = Origin.CREF) => begin
-        @assign ty = Type.liftArrayLeftList(
+        @assign ty = liftArrayLeftList(
           accumTy,
-          Type.arrayDims(Type.subscript(restCref.ty, restCref.subscripts)),
+          arrayDims(subscript(restCref.ty, restCref.subscripts)),
         )
         getSubscriptedType2(restCref.restCref, ty)
       end
-
       _ => begin
         accumTy
       end
@@ -882,15 +880,13 @@ function getSubscriptedType2(restCref::ComponentRef, accumTy::M_Type)::M_Type
 end
 
 """ #= Returns the type of a cref, with the subscripts taken into account. =#"""
-function getSubscriptedType(cref::ComponentRef)::M_Type
-  local ty::M_Type
-
+function getSubscriptedType(cref::ComponentRef)::NFType
+  local ty::NFType
   @assign ty = begin
     @match cref begin
       COMPONENT_REF_CREF(__) => begin
-        getSubscriptedType2(cref.restCref, Type.subscript(cref.ty, cref.subscripts))
+        getSubscriptedType2(cref.restCref, subscript(cref.ty, cref.subscripts))
       end
-
       _ => begin
         TYPE_UNKNOWN()
       end

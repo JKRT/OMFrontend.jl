@@ -45,7 +45,7 @@ function toFlatStream(
       end
       @assign b = Util.tuple22(a)
       @assign binding_dims =
-        Type.dimensionCount(P_Expression.Expression.typeOf(P_Expression.Expression.getBindingExp(getExp(
+        Type.dimensionCount(typeOf(P_Expression.Expression.getBindingExp(getExp(
           b,
         ))))
       if var_dims > binding_dims
@@ -162,8 +162,8 @@ function isEmptyArray(variable::Variable)::Bool
   return isEmpty
 end
 
-function variability(variable::Variable)::Variability
-  local variability::Variability = variable.attributes.variability
+function variability(variable::Variable)::VariabilityType
+  local variability::VariabilityType = variable.attributes.variability
   return variability
 end
 

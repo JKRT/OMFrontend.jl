@@ -109,8 +109,8 @@ function mapExp(sections::Sections, mapFn::MapFn)::Sections
   @assign sections = begin
     @match sections begin
       SECTIONS(__) => begin
-        @assign eq = P_Equation.Equation.mapExpList(sections.equations, mapFn)
-        @assign ieq = P_Equation.Equation.mapExpList(sections.initialEquations, mapFn)
+        @assign eq = mapExpList(sections.equations, mapFn)
+        @assign ieq = mapExpList(sections.initialEquations, mapFn)
         @assign alg = P_Algorithm.Algorithm.mapExpList(sections.algorithms, mapFn)
         @assign ialg = P_Algorithm.Algorithm.mapExpList(sections.initialAlgorithms, mapFn)
         SECTIONS(eq, ieq, alg, ialg)

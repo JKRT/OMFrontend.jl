@@ -102,7 +102,7 @@
         end
 
         function typeSpecial(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
-              local variability::Variability
+              local variability::VariabilityType
               local ty::M_Type
               local callExp::Expression
 
@@ -335,7 +335,7 @@
           arrayExp
         end
 
-        function makeCatExp(n::Integer, args::List{<:Expression}, tys::List{<:M_Type}, variability::Variability, info::SourceInfo) ::Tuple{Expression, M_Type}
+        function makeCatExp(n::Integer, args::List{<:Expression}, tys::List{<:M_Type}, variability::VariabilityType, info::SourceInfo) ::Tuple{Expression, M_Type}
               local ty::M_Type
               local callExp::Expression
 
@@ -360,11 +360,11 @@
                =#
               for arg in args
                 @match _cons(ty, tys2) = tys2
-                @assign dimsLst = _cons(Type.arrayDims(ty), dimsLst)
+                @assign dimsLst = _cons(arrayDims(ty), dimsLst)
                 if Type.isEqual(resTy, TYPE_UNKNOWN())
-                  @assign resTy = Type.arrayElementType(ty)
+                  @assign resTy = arrayElementType(ty)
                 else
-                  @assign (_, _, ty1, mk) = TypeCheck.matchExpressions(INTEGER_EXPRESSION(0), Type.arrayElementType(ty), INTEGER_EXPRESSION(0), resTy)
+                  @assign (_, _, ty1, mk) = TypeCheck.matchExpressions(INTEGER_EXPRESSION(0), arrayElementType(ty), INTEGER_EXPRESSION(0), resTy)
                   if TypeCheck.isCompatibleMatch(mk)
                     @assign resTy = ty1
                   end
@@ -386,7 +386,7 @@
               for arg in args
                 @match _cons(ty, tys2) = tys2
                 @assign pos = pos - 1
-                @assign ty2 = Type.setArrayElementType(ty, resTy)
+                @assign ty2 = setArrayElementType(ty, resTy)
                 @assign (arg2, ty1, mk) = TypeCheck.matchTypes(ty, ty2, arg, allowUnknown = true)
                 if TypeCheck.isIncompatibleMatch(mk)
                   Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list(String(pos), "cat", "arg", toString(arg), Type.toString(ty), Type.toString(ty2)), info)
@@ -415,8 +415,8 @@
                =#
                #=  with the concatenated dimension set to unknown.
                =#
-              @assign dims = Type.arrayDims(resTy)
-              @assign resTyToMatch = Type.ARRAY(Type.arrayElementType(resTy), ListUtil.set(dims, n, P_Dimension.Dimension.UNKNOWN()))
+              @assign dims = arrayDims(resTy)
+              @assign resTyToMatch = ARRAY_TYPE(arrayElementType(resTy), ListUtil.set(dims, n, P_Dimension.Dimension.UNKNOWN()))
               @assign dims = List(listGet(lst, n) for lst in dimsLst)
               @assign sumDim = P_Dimension.Dimension.fromInteger(0)
               for d in dims
@@ -424,7 +424,7 @@
               end
                #=  Create the concatenated dimension
                =#
-              @assign resTy = Type.ARRAY(Type.arrayElementType(resTy), ListUtil.set(Type.arrayDims(resTy), n, sumDim))
+              @assign resTy = ARRAY_TYPE(arrayElementType(resTy), ListUtil.set(arrayDims(resTy), n, sumDim))
               @assign tys2 = tys3
               @assign tys3 = nil
               @assign res = nil
@@ -454,7 +454,7 @@
         end
 
         function typeStringCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
-              local var::Variability
+              local var::VariabilityType
               local outType::M_Type
               local callExp::Expression
 
@@ -465,8 +465,8 @@
 
               @match (@match P_Call.ARG_TYPED_CALL(_, args, named_args) = ty_call) = P_Call.typeNormalCall(call, origin, info)
               @match _cons((_, arg_ty, _), _) = args
-              @assign arg_ty = Type.arrayElementType(arg_ty)
-              if Type.isComplex(arg_ty)
+              @assign arg_ty = arrayElementType(arg_ty)
+              if isComplex(arg_ty)
                 @assign (callExp, outType, var) = typeOverloadedStringCall(arg_ty, args, named_args, ty_call, origin, info)
               else
                 @assign (callExp, outType, var) = typeBuiltinStringCall(ty_call, origin, info)
@@ -475,7 +475,7 @@
         end
 
         function typeBuiltinStringCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
-              local var::Variability
+              local var::VariabilityType
               local ty::M_Type
               local callExp::Expression
 
@@ -489,7 +489,7 @@
         end
 
         function typeOverloadedStringCall(overloadedType::M_Type, args::List{<:TypedArg}, namedArgs::List{<:TypedNamedArg}, call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
-              local var::Variability = Variability.CONSTANT
+              local var::VariabilityType = Variability.CONSTANT
               local outType::M_Type
               local callExp::Expression
 
@@ -527,7 +527,7 @@
                 @match _cons(matchedFunc, _) = exactMatches
                 @assign outType = P_Function.returnType(matchedFunc.func)
                 for arg in matchedFunc.args
-                  @assign var = P_Prefixes.variabilityMax(var, Util.tuple33(arg))
+                  @assign var = variabilityMax(var, Util.tuple33(arg))
                 end
                 @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(matchedFunc.func, List(Util.tuple31(a) for a in matchedFunc.args), var, outType))
                 return (callExp, outType, var)
@@ -541,7 +541,7 @@
         """ #= Types a function call that can be typed normally, but which always has
              discrete variability regardless of the variability of the arguments. =#"""
         function typeDiscreteCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
-              local var::Variability = Variability.DISCRETE
+              local var::VariabilityType = Variability.DISCRETE
               local ty::M_Type
               local callExp::Expression
 
@@ -558,7 +558,7 @@
         end
 
         function typeNdimsCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
-              local variability::Variability = Variability.PARAMETER
+              local variability::VariabilityType = Variability.PARAMETER
               local ty::M_Type = TYPE_INTEGER()
               local callExp::Expression
 
@@ -582,7 +582,7 @@
         end
 
         function typePreCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
-              local variability::Variability
+              local variability::VariabilityType
               local ty::M_Type
               local callExp::Expression
 
@@ -591,17 +591,17 @@
         end
 
         function typeChangeCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
-              local variability::Variability
+              local variability::VariabilityType
               local ty::M_Type
               local callExp::Expression
 
               @assign (callExp, ty, variability) = typePreChangeCall("change", call, origin, info)
-              @assign ty = Type.setArrayElementType(ty, TYPE_BOOLEAN())
+              @assign ty = setArrayElementType(ty, TYPE_BOOLEAN())
           (callExp, ty, variability)
         end
 
         function typePreChangeCall(name::String, call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
-              local variability::Variability = Variability.DISCRETE
+              local variability::VariabilityType = Variability.DISCRETE
               local ty::M_Type
               local callExp::Expression
 
@@ -609,7 +609,7 @@
               local args::List{Expression}
               local named_args::List{NamedArg}
               local arg::Expression
-              local var::Variability
+              local var::VariabilityType
               local fn::M_Function
 
               @match P_Call.UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
@@ -628,7 +628,7 @@
                 fail()
               end
               if var == Variability.CONTINUOUS
-                Error.addSourceMessageAndFail(Error.INVALID_ARGUMENT_VARIABILITY, list("1", toString(fn_ref), P_Prefixes.variabilityString(Variability.DISCRETE), P_Expression.Expression.toString(arg), P_Prefixes.variabilityString(var)), info)
+                Error.addSourceMessageAndFail(Error.INVALID_ARGUMENT_VARIABILITY, list("1", toString(fn_ref), P_Prefixes.variabilityString(Variability.DISCRETE), toString(arg), P_Prefixes.variabilityString(var)), info)
               end
               @match list(fn) = P_Function.typeRefCache(fn_ref)
               @assign callExp = CALL(P_Call.makeTypedCall(fn, list(arg), var, ty))
@@ -636,7 +636,7 @@
         end
 
         function typeDerCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
-              local variability::Variability
+              local variability::VariabilityType
               local ty::M_Type
               local callExp::Expression
 
@@ -660,9 +660,9 @@
               end
               @match list(arg) = args
               @assign (arg, ty, variability) = Typing.typeExp(arg, origin, info)
-              @assign ety = Type.arrayElementType(ty)
+              @assign ety = arrayElementType(ty)
               if Type.isInteger(ety)
-                @assign ty = Type.setArrayElementType(ty, TYPE_REAL())
+                @assign ty = setArrayElementType(ty, TYPE_REAL())
                 @assign arg = typeCast(arg, TYPE_REAL())
               elseif ! Type.isReal(ety)
                 Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list("1", toString(fn_ref), "", toString(arg), Type.toString(ty), "Real"), info)
@@ -673,7 +673,7 @@
         end
 
         function typeDiagonalCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
-              local variability::Variability
+              local variability::VariabilityType
               local ty::M_Type
               local callExp::Expression
 
@@ -692,8 +692,8 @@
               @assign (arg, ty, variability) = Typing.typeExp(listHead(args), origin, info)
               @assign ty = begin
                 @match ty begin
-                  Type.ARRAY(dimensions = dim <|  nil())  => begin
-                    Type.ARRAY(ty.elementType, list(dim, dim))
+                  ARRAY_TYPE(dimensions = dim <|  nil())  => begin
+                    ARRAY_TYPE(ty.elementType, list(dim, dim))
                   end
 
                   _  => begin
@@ -708,7 +708,7 @@
         end
 
         function typeEdgeCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
-              local variability::Variability = Variability.DISCRETE
+              local variability::VariabilityType = Variability.DISCRETE
               local ty::M_Type
               local callExp::Expression
 
@@ -738,7 +738,7 @@
         end
 
         function typeMinMaxCall(name::String, call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
-              local var::Variability
+              local var::VariabilityType
               local ty::M_Type
               local callExp::Expression
 
@@ -751,8 +751,8 @@
               local arg2::Expression
               local ty1::M_Type
               local ty2::M_Type
-              local var1::Variability
-              local var2::Variability
+              local var1::VariabilityType
+              local var2::VariabilityType
               local mk::TypeCheck.MatchKind
 
               @match P_Call.UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
@@ -761,7 +761,7 @@
                 @match args begin
                   arg1 <|  nil()  => begin
                       @assign (arg1, ty1, var) = Typing.typeExp(arg1, origin, info)
-                      @assign ty = Type.arrayElementType(ty1)
+                      @assign ty = arrayElementType(ty1)
                       if ! (Type.isArray(ty1) && Type.isBasic(ty))
                         Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list("1", name, "", toString(arg1), Type.toString(ty1), "Any[:, ...]"), info)
                       end
@@ -770,7 +770,7 @@
                        #=  return that element instead of making a min/max call.
                        =#
                       if Type.isSingleElementArray(ty1)
-                        @assign callExp = applySubscript(first(listHead(Type.arrayDims(ty1))), arg1)
+                        @assign callExp = applySubscript(first(listHead(arrayDims(ty1))), arg1)
                         return
                       end
                     (list(arg1), ty, var)
@@ -789,7 +789,7 @@
                       if ! TypeCheck.isValidArgumentMatch(mk)
                         Error.addSourceMessage(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), name + "(Any[:, ...]) => Any\\n" + name + "(Any, Any) => Any"), info)
                       end
-                    (list(arg1, arg2), ty, P_Prefixes.variabilityMax(var1, var2))
+                    (list(arg1, arg2), ty, variabilityMax(var1, var2))
                   end
 
                   _  => begin
@@ -804,7 +804,7 @@
         end
 
         function typeSumCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
-              local variability::Variability
+              local variability::VariabilityType
               local ty::M_Type
               local callExp::Expression
 
@@ -822,14 +822,14 @@
                 Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), "sum(Any[:, ...]) => Any"), info)
               end
               @assign (arg, ty, variability) = Typing.typeExp(listHead(args), origin, info)
-              @assign ty = Type.arrayElementType(ty)
+              @assign ty = arrayElementType(ty)
               @match list(fn) = P_Function.typeRefCache(fn_ref)
               @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(fn, list(arg), variability, ty))
           (callExp, ty, variability)
         end
 
         function typeProductCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
-              local variability::Variability
+              local variability::VariabilityType
               local ty::M_Type
               local callExp::Expression
 
@@ -847,14 +847,14 @@
                 Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), "product(Any[:, ...]) => Any"), info)
               end
               @assign (arg, ty, variability) = Typing.typeExp(listHead(args), origin, info)
-              @assign ty = Type.arrayElementType(ty)
+              @assign ty = arrayElementType(ty)
               @match list(fn) = P_Function.typeRefCache(fn_ref)
               @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(fn, list(arg), variability, ty))
           (callExp, ty, variability)
         end
 
         function typeSmoothCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
-              local variability::Variability
+              local variability::VariabilityType
               local ty::M_Type
               local callExp::Expression
 
@@ -865,7 +865,7 @@
               local arg2::Expression
               local ty1::M_Type
               local ty2::M_Type
-              local var::Variability
+              local var::VariabilityType
               local fn::M_Function
               local mk::TypeCheck.MatchKind
 
@@ -893,7 +893,7 @@
                =#
                #=  TODO: Also handle records here.
                =#
-              @assign (arg2, ty, mk) = TypeCheck.matchTypes(ty2, Type.setArrayElementType(ty2, TYPE_REAL()), arg2, true)
+              @assign (arg2, ty, mk) = TypeCheck.matchTypes(ty2, setArrayElementType(ty2, TYPE_REAL()), arg2, true)
               if ! TypeCheck.isValidArgumentMatch(mk)
                 Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list("2", toString(fn_ref), "", toString(arg2), Type.toString(ty2), "Real\\n  Real[:, ...]\\n  Real record\\n  Real record[:, ...]"), info)
               end
@@ -903,7 +903,7 @@
         end
 
         function typeFillCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
-              local variability::Variability
+              local variability::VariabilityType
               local ty::M_Type
               local callExp::Expression
 
@@ -928,13 +928,13 @@
         end
 
         function typeFillCall2(fnRef::ComponentRef, fillType::M_Type, fillArg::Expression, dimensionArgs::List{<:Expression}, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
-              local variability::Variability = Variability.CONSTANT
+              local variability::VariabilityType = Variability.CONSTANT
               local ty::M_Type
               local callExp::Expression
 
               local fill_arg::Expression
               local ty_args::List{Expression}
-              local arg_var::Variability
+              local arg_var::VariabilityType
               local arg_ty::M_Type
               local fn::M_Function
               local dims::List{Dimension}
@@ -956,7 +956,7 @@
                 if ! Type.isInteger(arg_ty)
                   Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list(intString(listLength(ty_args) + 1), toString(fnRef), "", toString(arg), Type.toString(arg_ty), "Integer"), info)
                 end
-                @assign variability = P_Prefixes.variabilityMax(variability, arg_var)
+                @assign variability = variabilityMax(variability, arg_var)
                 @assign ty_args = _cons(arg, ty_args)
                 @assign dims = _cons(P_Dimension.Dimension.fromExp(arg, arg_var), dims)
               end
@@ -975,7 +975,7 @@
         end
 
         function typeZerosOnesCall(name::String, call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
-              local variability::Variability
+              local variability::VariabilityType
               local ty::M_Type
               local callExp::Expression
 
@@ -1001,7 +1001,7 @@
         end
 
         function typeScalarCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
-              local variability::Variability
+              local variability::VariabilityType
               local ty::M_Type
               local callExp::Expression
 
@@ -1020,13 +1020,13 @@
               @assign (arg, ty, variability) = Typing.typeExp(listHead(args), origin, info)
                #=  scalar requires all dimensions of the array to be 1.
                =#
-              for dim in Type.arrayDims(ty)
+              for dim in arrayDims(ty)
                 if P_Dimension.Dimension.isKnown(dim) && ! P_Dimension.Dimension.size(dim) == 1
                   Error.addSourceMessageAndFail(Error.INVALID_ARRAY_DIM_IN_SCALAR_OP, list(Type.toString(ty)), info)
                 end
               end
               @assign (arg, expanded) = P_ExpandExp.ExpandExp.expand(arg)
-              @assign ty = Type.arrayElementType(ty)
+              @assign ty = arrayElementType(ty)
               if expanded
                 @assign args = arrayScalarElements(arg)
                 if listLength(args) != 1
@@ -1041,7 +1041,7 @@
         end
 
         function typeVectorCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
-              local variability::Variability
+              local variability::VariabilityType
               local ty::M_Type
               local callExp::Expression
 
@@ -1049,7 +1049,7 @@
               local args::List{Expression}
               local named_args::List{NamedArg}
               local arg::Expression
-              local var::Variability
+              local var::VariabilityType
               local fn::M_Function
               local vector_dim::Dimension = P_Dimension.Dimension.fromInteger(1)
               local dim_found::Bool = false
@@ -1064,7 +1064,7 @@
                =#
                #=  determines the type of the vector call.
                =#
-              for dim in Type.arrayDims(ty)
+              for dim in arrayDims(ty)
                 if ! P_Dimension.Dimension.isKnown(dim) || P_Dimension.Dimension.size(dim) > 1
                   if dim_found
                     Error.addSourceMessageAndFail(Error.NF_VECTOR_INVALID_DIMENSIONS, list(Type.toString(ty), P_Call.toString(call)), info)
@@ -1074,14 +1074,14 @@
                   end
                 end
               end
-              @assign ty = Type.ARRAY(Type.arrayElementType(ty), list(vector_dim))
+              @assign ty = ARRAY_TYPE(arrayElementType(ty), list(vector_dim))
               @match list(fn) = P_Function.typeRefCache(fn_ref)
               @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(fn, list(arg), variability, ty))
           (callExp, ty, variability)
         end
 
         function typeMatrixCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
-              local variability::Variability
+              local variability::VariabilityType
               local ty::M_Type
               local callExp::Expression
 
@@ -1089,7 +1089,7 @@
               local args::List{Expression}
               local named_args::List{NamedArg}
               local arg::Expression
-              local var::Variability
+              local var::VariabilityType
               local fn::M_Function
               local dims::List{Dimension}
               local dim1::Dimension
@@ -1103,7 +1103,7 @@
                 Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), "vector(Any) => Any[:]\\n  vector(Any[:, ...]) => Any[:]"), info)
               end
               @assign (arg, ty, variability) = Typing.typeExp(listHead(args), origin, info)
-              @assign dims = Type.arrayDims(ty)
+              @assign dims = arrayDims(ty)
               @assign ndims = listLength(dims)
               if ndims < 2
                 @assign (callExp, ty) = promote(arg, ty, 2)
@@ -1118,7 +1118,7 @@
                   end
                   @assign i = i + 1
                 end
-                @assign ty = Type.ARRAY(Type.arrayElementType(ty), list(dim1, dim2))
+                @assign ty = ARRAY_TYPE(arrayElementType(ty), list(dim1, dim2))
                 @match list(fn) = P_Function.typeRefCache(fn_ref)
                 @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(fn, list(arg), variability, ty))
               end
@@ -1132,7 +1132,7 @@
         end
 
         function typeCatCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
-              local variability::Variability
+              local variability::VariabilityType
               local ty::M_Type
               local callExp::Expression
 
@@ -1142,7 +1142,7 @@
               local named_args::List{NamedArg}
               local tys::List{M_Type}
               local arg::Expression
-              local var::Variability
+              local var::VariabilityType
               local mk::TypeCheck.MatchKind
               local fn::M_Function
               local n::Integer
@@ -1163,7 +1163,7 @@
               @assign tys = nil
               for a in args
                 @assign (arg, ty, var) = Typing.typeExp(a, origin, info)
-                @assign variability = P_Prefixes.variabilityMax(var, variability)
+                @assign variability = variabilityMax(var, variability)
                 @assign res = _cons(arg, res)
                 @assign tys = _cons(ty, tys)
               end
@@ -1172,7 +1172,7 @@
         end
 
         function typeSymmetricCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
-              local variability::Variability
+              local variability::VariabilityType
               local ty::M_Type
               local callExp::Expression
 
@@ -1197,7 +1197,7 @@
         end
 
         function typeTransposeCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
-              local variability::Variability
+              local variability::VariabilityType
               local ty::M_Type
               local callExp::Expression
 
@@ -1218,8 +1218,8 @@
               @assign (arg, ty, variability) = Typing.typeExp(listHead(args), origin, info)
               @assign ty = begin
                 @match ty begin
-                  Type.ARRAY(dimensions = dim1 <| dim2 <| rest_dims)  => begin
-                    Type.ARRAY(ty.elementType, _cons(dim2, _cons(dim1, rest_dims)))
+                  ARRAY_TYPE(dimensions = dim1 <| dim2 <| rest_dims)  => begin
+                    ARRAY_TYPE(ty.elementType, _cons(dim2, _cons(dim1, rest_dims)))
                   end
 
                   _  => begin
@@ -1234,7 +1234,7 @@
         end
 
         function typeCardinalityCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
-              local var::Variability = Variability.PARAMETER
+              local var::VariabilityType = Variability.PARAMETER
               local ty::M_Type
               local callExp::Expression
 
@@ -1280,7 +1280,7 @@
         end
 
         function typeBranchCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
-              local var::Variability = Variability.PARAMETER
+              local var::VariabilityType = Variability.PARAMETER
               local ty::M_Type
               local callExp::Expression
 
@@ -1311,7 +1311,7 @@
         end
 
         function typeIsRootCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
-              local var::Variability = Variability.PARAMETER
+              local var::VariabilityType = Variability.PARAMETER
               local ty::M_Type
               local callExp::Expression
 
@@ -1338,7 +1338,7 @@
         end
 
         function typePotentialRootCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
-              local var::Variability = Variability.PARAMETER
+              local var::VariabilityType = Variability.PARAMETER
               local ty::M_Type
               local callExp::Expression
 
@@ -1386,7 +1386,7 @@
         end
 
         function typeRootCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
-              local var::Variability = Variability.PARAMETER
+              local var::VariabilityType = Variability.PARAMETER
               local ty::M_Type
               local callExp::Expression
 
@@ -1413,7 +1413,7 @@
         end
 
         function typeRootedCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
-              local var::Variability = Variability.PARAMETER
+              local var::VariabilityType = Variability.PARAMETER
               local ty::M_Type
               local callExp::Expression
 
@@ -1444,7 +1444,7 @@
 
         """ #= see also typeUniqueRootIndicesCall =#"""
         function typeUniqueRootCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
-              local var::Variability = Variability.PARAMETER
+              local var::VariabilityType = Variability.PARAMETER
               local ty::M_Type
               local callExp::Expression
 
@@ -1500,7 +1500,7 @@
             http:www.ep.liu.se/ecp/043/041/ecp09430108.pdf
             for a specification of this operator =#"""
         function typeUniqueRootIndicesCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
-              local var::Variability = Variability.PARAMETER
+              local var::VariabilityType = Variability.PARAMETER
               local ty::M_Type
               local callExp::Expression
 
@@ -1549,8 +1549,8 @@
                 @assign arg2 = STRING_EXPRESSION("")
               end
               @match list(fn) = P_Function.typeRefCache(fn_ref)
-              assert(listLength(Type.arrayDims(ty1)) == listLength(Type.arrayDims(ty2)), "the first two parameters need to have the same size")
-              @assign ty = Type.ARRAY(Type.TYPE_INTEGER(), Type.arrayDims(ty1))
+              assert(listLength(arrayDims(ty1)) == listLength(arrayDims(ty2)), "the first two parameters need to have the same size")
+              @assign ty = ARRAY_TYPE(Type.TYPE_INTEGER(), arrayDims(ty1))
               @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(fn, list(arg1, arg2), var, ty))
           (callExp, ty, var)
         end
@@ -1570,7 +1570,7 @@
                                =#
                               @assign ty2 = begin
                                 @match ty2 begin
-                                  Type.ARRAY(__) where (listLength(subscriptsAllFlat(arg.cref)) == listLength(ty2.dimensions))  => begin
+                                  ARRAY_TYPE(__) where (listLength(subscriptsAllFlat(arg.cref)) == listLength(ty2.dimensions))  => begin
                                     ty2.elementType
                                   end
 
@@ -1587,7 +1587,7 @@
                                =#
                               @assign ty2 = begin
                                 @match ty2 begin
-                                  Type.ARRAY(__) where (listLength(subscriptsAllFlat(arg.cref)) == listLength(ty2.dimensions))  => begin
+                                  ARRAY_TYPE(__) where (listLength(subscriptsAllFlat(arg.cref)) == listLength(ty2.dimensions))  => begin
                                     ty2.elementType
                                   end
 
@@ -1631,7 +1631,7 @@
         end
 
         function typeNoEventCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
-              local variability::Variability
+              local variability::VariabilityType
               local ty::M_Type
               local callExp::Expression
 
@@ -1656,7 +1656,7 @@
         end
 
         function typeGetInstanceName(call::Call) ::Tuple{Expression, M_Type, Variability}
-              local var::Variability = Variability.CONSTANT
+              local var::VariabilityType = Variability.CONSTANT
               local ty::M_Type = TYPE_STRING()
               local result::Expression
 
@@ -1668,7 +1668,7 @@
         end
 
         function typeClockCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
-              local var::Variability = Variability.PARAMETER
+              local var::VariabilityType = Variability.PARAMETER
               local outType::M_Type = TYPE_CLOCK()
               local callExp::Expression
 
@@ -1726,7 +1726,7 @@
         end
 
         function typeSampleCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
-              local var::Variability
+              local var::VariabilityType
               local outType::M_Type
               local callExp::Expression
 
@@ -1740,9 +1740,9 @@
               local t::M_Type
               local t1::M_Type
               local t2::M_Type
-              local v::Variability
-              local v1::Variability
-              local v2::Variability
+              local v::VariabilityType
+              local v1::VariabilityType
+              local v2::VariabilityType
               local fn_ref::ComponentRef
               local normalSample::M_Function
               local clockedSample::M_Function
@@ -1815,7 +1815,7 @@
         end
 
         function typeActualInStreamCall(name::String, call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
-              local variability::Variability = Variability.DISCRETE
+              local variability::VariabilityType = Variability.DISCRETE
               local ty::M_Type
               local callExp::Expression
 
@@ -1824,7 +1824,7 @@
               local args::List{Expression}
               local named_args::List{NamedArg}
               local arg::Expression
-              local var::Variability
+              local var::VariabilityType
               local fn::M_Function
               local arg_node::InstNode
 
@@ -1840,7 +1840,7 @@
           (callExp, ty, variability)
         end
 
-        function typeActualInStreamCall2(name::String, fn::M_Function, arg::Expression, var::Variability, info::SourceInfo) ::Expression
+        function typeActualInStreamCall2(name::String, fn::M_Function, arg::Expression, var::VariabilityType, info::SourceInfo) ::Expression
               local callExp::Expression
 
               @assign callExp = begin
@@ -1869,7 +1869,7 @@
                   end
 
                   _  => begin
-                        Error.addSourceMessage(Error.NON_STREAM_OPERAND_IN_STREAM_OPERATOR, list(P_Expression.Expression.toString(arg), name), info)
+                        Error.addSourceMessage(Error.NON_STREAM_OPERAND_IN_STREAM_OPERATOR, list(toString(arg), name), info)
                       fail()
                   end
                 end
@@ -1878,7 +1878,7 @@
         end
 
         function typeDynamicSelectCall(name::String, call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
-              local variability::Variability = Variability.CONTINUOUS
+              local variability::VariabilityType = Variability.CONTINUOUS
               local ty::M_Type
               local callExp::Expression
 
@@ -1888,8 +1888,8 @@
               local named_args::List{NamedArg}
               local arg1::Expression
               local arg2::Expression
-              local var1::Variability
-              local var2::Variability
+              local var1::VariabilityType
+              local var2::VariabilityType
               local fn::M_Function
               local arg_node::InstNode
               local ty1::M_Type

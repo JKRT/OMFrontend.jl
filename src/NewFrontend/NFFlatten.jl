@@ -263,8 +263,8 @@ function isDeletedComponent(condition::Binding, prefix::ComponentRef)::Bool
     @assign exp = getTypedExp(cond)
     @assign exp = Ceval.evalExp(exp, Ceval.P_EvalTarget.CONDITION(getInfo(cond)))
     @assign exp = P_Expression.Expression.stripBindingInfo(exp)
-    if P_Expression.Expression.arrayAllEqual(exp)
-      @assign exp = P_Expression.Expression.arrayFirstScalar(exp)
+    if arrayAllEqual(exp)
+      @assign exp = arrayFirstScalar(exp)
     end
     @assign isDeleted = begin
       @match exp begin
@@ -291,7 +291,7 @@ function isDeletedComponent(condition::Binding, prefix::ComponentRef)::Bool
           =#
           Error.addSourceMessage(
             Error.CONDITIONAL_EXP_WITHOUT_VALUE,
-            list(P_Expression.Expression.toString(exp)),
+            list(toString(exp)),
             getInfo(cond),
           )
           fail()
@@ -400,7 +400,7 @@ function flattenSimpleComponent(
     @match SOME(binding) = outerBinding
     @assign unfix = isUnbound(binding) && var == Variability.PARAMETER
   else
-    @assign binding = flattenBinding(binding, prefix)
+    binding = flattenBinding(binding, prefix)
     @assign unfix = false
   end
   #=  If the component is an array component with a binding and at least discrete variability,
@@ -477,7 +477,7 @@ function getRecordBindings(binding::Binding, comps::Array{<:InstNode})::List{Bin
   local recordBindings::List{Binding} = nil
 
   local binding_exp::Expression
-  local var::Variability
+  local var::VariabilityType
 
   @assign binding_exp = getTypedExp(binding)
   @assign var = variability(binding)
@@ -502,7 +502,7 @@ function getRecordBindings(binding::Binding, comps::Array{<:InstNode})::List{Bin
           false,
           getInstanceName() +
           " got non-record binding " +
-          P_Expression.Expression.toString(binding_exp),
+          toString(binding_exp),
           sourceInfo(),
         )
         fail()
@@ -531,10 +531,10 @@ function flattenComplexComponent(
   local binding_exp::Expression
   local eq::Equation
   local bindings::List{Expression}
-  local comp_var::Variability
-  local binding_var::Variability
+  local comp_var::VariabilityType
+  local binding_var::VariabilityType
 
-  @assign dims = Type.arrayDims(ty)
+  @assign dims = arrayDims(ty)
   @assign binding = if isSome(outerBinding)
     Util.getOption(outerBinding)
   else
@@ -546,7 +546,7 @@ function flattenComplexComponent(
     @assign binding = flattenBinding(binding, prefix)
     @assign binding_exp = getTypedExp(binding)
     @assign binding_var = variability(binding)
-    @assign comp_var = P_Component.variability(comp)
+    @assign comp_var = variability(comp)
     if comp_var <= Variability.STRUCTURAL_PARAMETER ||
        binding_var <= Variability.STRUCTURAL_PARAMETER
       @assign binding_exp =
@@ -756,7 +756,7 @@ function vectorizeEquation(
         end
         @match list(P_Dimension.Dimension.INTEGER(size = stop)) = dimensions
         @assign range = P_Expression.Expression.RANGE(
-          Type.ARRAY(TYPE_INTEGER(), dimensions),
+          ARRAY_TYPE(TYPE_INTEGER(), dimensions),
           INTEGER_EXPRESSION(1),
           NONE(),
           INTEGER_EXPRESSION(stop),
@@ -783,10 +783,9 @@ end
 function vectorizeAlgorithm(
   alg::Algorithm,
   dimensions::List{<:Dimension},
-  prefix::ComponentRef,
+  prefix::ComponentRef
 )::Algorithm
   local valg::Algorithm
-
   @assign valg = begin
     local prefix_node::InstNode
     local iter::InstNode
@@ -794,8 +793,8 @@ function vectorizeAlgorithm(
     local range::Expression
     local body::List{Statement}
     @match alg begin
-      P_Algorithm.Algorithm.ALGORITHM(
-        statements = P_Statement.Statement.ASSIGNMENT(
+      ALGORITHM(
+        statements = ALG_ASSIGNMENT(
           lhs = CREF_EXPRESSION(__),
           rhs = CREF_EXPRESSION(__),
         ) <| nil(),
@@ -827,32 +826,24 @@ function vectorizeAlgorithm(
         end
         @match list(P_Dimension.Dimension.INTEGER(size = stop)) = dimensions
         @assign range = P_Expression.Expression.RANGE(
-          Type.ARRAY(TYPE_INTEGER(), dimensions),
+          ARRAY_TYPE(TYPE_INTEGER(), dimensions),
           INTEGER_EXPRESSION(1),
           NONE(),
           INTEGER_EXPRESSION(stop),
         )
         @error "Manually check this error. It has to do with higher order functions in the translation"
-        # @assign body = P_Statement.Statement.mapExpList(
-        #   alg.statements,
-        #   (
-        #     prefix,
-        #     SUBSCRIPT_INDEX(CREF_EXPRESSION(
-        #       TYPE_INTEGER(__),
-        #       makeIterator(iter, TYPE_INTEGER(__)),
-        #     )),
-        #   ) -> addIterator(
-        #     prefix = prefix,
-        #     subscript = SUBSCRIPT_INDEX(CREF_EXPRESSION(
-        #       TYPE_INTEGER(),
-        #       makeIterator(iter, TYPE_INTEGER()),
-        #     )),
-        #   ),
-        # )
-        # P_Algorithm.Algorithm.ALGORITHM(
-        #   list(P_Statement.Statement.FOR(iter, SOME(range), body, alg.source)),
-        #   alg.source,
-        # )
+        @assign body = mapExpList(
+          alg.statements,
+          (x) -> addIterator(
+            x,
+            subscript = SUBSCRIPT_INDEX(CREF_EXPRESSION(
+              TYPE_INTEGER(),
+              makeIterator(iter, TYPE_INTEGER()),
+            ))))
+        ALGORITHM(
+          list(P_Statement.Statement.FOR(iter, SOME(range), body, alg.source)),
+          alg.source,
+        )
       end
     end
   end
@@ -865,7 +856,7 @@ function addIterator(
   subscript::Subscript,
 )::Expression
 
-  @assign exp = P_Expression.Expression.map(
+  @assign exp = map(
     exp,
     (prefix, subscript) -> addIterator_traverse(prefix = prefix, subscript = subscript),
   )
@@ -920,7 +911,7 @@ function subscriptBindingOpt(
       @match b begin
         TYPED_BINDING(bindingExp = exp, bindingType = ty) => begin
           @assign b.bindingExp = P_Expression.Expression.applySubscripts(subscripts, exp)
-          @assign b.bindingType = Type.arrayElementType(ty)
+          @assign b.bindingType = arrayElementType(ty)
           SOME(b)
         end
 
@@ -938,10 +929,18 @@ function subscriptBindingOpt(
   return binding
 end
 
+
+function flattenBinding(
+  binding::Binding,
+  prefix::ComponentRef
+)::Binding
+  flattenBinding(binding, prefix, false)
+end
+
 function flattenBinding(
   binding::Binding,
   prefix::ComponentRef,
-  isTypeAttribute::Bool = false,
+  isTypeAttribute::Bool
 )::Binding
   @assign binding = begin
     local subs::List{Subscript}
@@ -983,7 +982,7 @@ function flattenBinding(
       _ => begin
         #Error.assertion(false, getInstanceName() + " got untyped binding.", sourceInfo())
         @error "Untyped binding!"
-#        fail()
+        fail()
       end
     end
   end
@@ -993,10 +992,9 @@ end
 function flattenBindingExp(
   exp::Expression,
   prefix::ComponentRef,
-  isTypeAttribute::Bool = false,
+  isTypeAttribute::Bool = false
 )::Expression
   local outExp::Expression
-
   local subs::List{Subscript}
   local accum_subs::List{Subscript}
   local binding_level::Integer
@@ -1004,10 +1002,9 @@ function flattenBindingExp(
   local pre::ComponentRef
   local cr_node::InstNode
   local par::InstNode
-
   @assign outExp = begin
     @match exp begin
-      P_Expression.Expression.BINDING_EXP(exp = outExp) => begin
+      BINDING_EXP(exp = outExp) => begin
         @assign parents = listRest(exp.parents)
         if !exp.isEach
           if isTypeAttribute && !listEmpty(parents)
@@ -1070,9 +1067,8 @@ function flattenBindingExp2(
 end
 
 function flattenExp(exp::Expression, prefix::ComponentRef)::Expression
-
   @assign exp =
-    P_Expression.Expression.map(exp, (prefix) -> flattenExp_traverse(prefix = prefix))
+    map(exp, (x) -> flattenExp_traverse(x,prefix))
   return exp
 end
 
@@ -1085,7 +1081,7 @@ function flattenExp_traverse(exp::Expression, prefix::ComponentRef)::Expression
         exp
       end
 
-      P_Expression.Expression.BINDING_EXP(__) => begin
+      BINDING_EXP(__) => begin
         flattenBindingExp(exp, prefix)
       end
 
@@ -1163,10 +1159,10 @@ function flattenEquation(
         eql
       end
 
-      P_Equation.Equation.CONNECT(__) => begin
+      EQUATION_CONNECT(__) => begin
         @assign e1 = flattenExp(eq.lhs, prefix)
         @assign e2 = flattenExp(eq.rhs, prefix)
-        _cons(P_Equation.Equation.CONNECT(e1, e2, eq.source), equations)
+        _cons(EQUATION_CONNECT(e1, e2, eq.source), equations)
       end
 
       EQUATION_IF(__) => begin
@@ -1220,7 +1216,7 @@ function flattenIfEquation(
   local bl::List{P_Equation.Equation} = nil
   local cond::Expression
   local eql::List{Equation}
-  local var::Variability
+  local var::VariabilityType
   local has_connect::Bool
   local src::DAE.ElementSource
   local info::SourceInfo
@@ -1253,7 +1249,7 @@ function flattenIfEquation(
             if !P_Expression.Expression.isBoolean(cond) && has_connect
               Error.addInternalError(
                 "Failed to evaluate branch condition in if equation containing connect equations: `" +
-                P_Expression.Expression.toString(cond) +
+                toString(cond) +
                 "`",
                 P_Equation.Equation.info(eq),
               )
@@ -1333,7 +1329,7 @@ function isConnectEq(eq::Equation)::Bool
   @assign isConnect = begin
     local fn::M_Function
     @match eq begin
-      P_Equation.Equation.CONNECT(__) => begin
+      EQUATION_CONNECT(__) => begin
         true
       end
 
@@ -1358,7 +1354,7 @@ function flattenEqBranch(
 
   local exp::Expression
   local eql::List{Equation}
-  local var::Variability
+  local var::VariabilityType
 
   @match P_Equation.Equation.BRANCH(exp, var, eql) = branch
   @assign exp = flattenExp(exp, prefix)
@@ -1390,7 +1386,7 @@ function unrollForLoop(
   @assign range_iter = P_RangeIterator.RangeIterator.fromExp(range)
   while P_RangeIterator.RangeIterator.hasNext(range_iter)
     @assign (range_iter, val) = P_RangeIterator.RangeIterator.next(range_iter)
-    @assign unrolled_body = P_Equation.Equation.mapExpList(
+    @assign unrolled_body = mapExpList(
       body,
       (iter, val) ->
         P_Expression.Expression.replaceIterator(iterator = iter, iteratorValue = val),
@@ -1437,7 +1433,7 @@ function splitForLoop2(forBody::List{<:Equation})::Tuple{List{Equation}, List{Eq
   for eq in forBody
     @assign () = begin
       @match eq begin
-        P_Equation.Equation.CONNECT(__) => begin
+        EQUATION_CONNECT(__) => begin
           @assign connects = _cons(eq, connects)
           ()
         end
@@ -1519,20 +1515,21 @@ end
 
 """ #= Generates the connect equations and adds them to the equation list =#"""
 function resolveConnections(flatModel::FlatModel, name::String)::FlatModel
-
   local conns::Connections
   local conn_eql::List{Equation}
   local csets::ConnectionSets.Sets
   local csets_array::Array{List{Connector}}
   local ctable::CardinalityTable.Table
   local broken::BrokenEdges = nil
-
   #=  get the connections from the model
   =#
   @assign (flatModel, conns) = collect(flatModel)
+  return flatModel
+  #= Let's ignore the stuff below for now=#
+
   #=  Elaborate expandable connectors.
   =#
-  @assign (flatModel, conns) = ExpandableConnectors.elaborate(flatModel, conns)
+  @assign (flatModel, conns) = elaborate(flatModel, conns)
   #=  handle overconstrained connections
   =#
   #=  - build the graph
@@ -1543,10 +1540,12 @@ function resolveConnections(flatModel::FlatModel, name::String)::FlatModel
   =#
   #=  - return the broken connects + the equations
   =#
-  if System.getHasOverconstrainedConnectors()
-    @assign (flatModel, broken) =
-      NFOCConnectionGraph.handleOverconstrainedConnections(flatModel, conns, name)
-  end
+
+  # if System.getHasOverconstrainedConnectors()
+  #   @assign (flatModel, broken) =
+  #     NFOCConnectionGraph.handleOverconstrainedConnections(flatModel, conns, name)
+  # TODO
+  # end
   #=  add the broken connections
   =#
   @assign conns = P_Connections.Connections.addBroken(broken, conns)
@@ -1680,7 +1679,7 @@ function collectTypeFuncs(ty::M_Type, funcs::FunctionTree)::FunctionTree
     local de::InstNode
     local fn::M_Function
     @match ty begin
-      Type.ARRAY(__) => begin
+      ARRAY_TYPE(__) => begin
         @assign funcs = P_Dimension.Dimension.foldExpList(
           ty.dimensions,
           collectExpFuncs_traverse,

@@ -139,7 +139,7 @@ function inlineCall(call::Call)::Expression
           @match _cons(arg, args) = args
           @assign stmt = P_Statement.Statement.mapExp(
             stmt,
-            () -> P_Expression.Expression.map(
+            () -> map(
               func = (i, arg) -> replaceCrefNode(node = i, value = arg),
             ),
           )#= AbsyntoJulia.dumpPattern: UNHANDLED Abyn.Exp  =#
@@ -191,7 +191,7 @@ function replaceCrefNode(exp::Expression, node::InstNode, value::Expression)::Ex
   =#
   #=  Replace expressions in dimensions too.
   =#
-  @assign ty = P_Expression.Expression.typeOf(exp)
+  @assign ty = typeOf(exp)
   @assign repl_ty =
     Type.mapDims(ty, (node, value) -> replaceDimExp(node = node, value = value))
   if !referenceEq(ty, repl_ty)
@@ -206,7 +206,7 @@ function replaceDimExp(dim::Dimension, node::InstNode, value::Expression)::Dimen
     local exp::Expression
     @match dim begin
       P_Dimension.Dimension.EXP(__) => begin
-        @assign exp = P_Expression.Expression.map(
+        @assign exp = map(
           dim.exp,
           (node, value) -> replaceCrefNode(node = node, value = value),
         )

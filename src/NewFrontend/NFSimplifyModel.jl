@@ -321,7 +321,7 @@ function simplifyStatement(stmt::Statement, statements::List{<:Statement})::List
       end
 
       P_Statement.Statement.FOR(range = SOME(e)) => begin
-        @assign ty = P_Expression.Expression.typeOf(e)
+        @assign ty = typeOf(e)
         @assign dim = Type.nthDimension(ty, 1)
         #= if Dimension.isOne(dim) then
         =#
@@ -492,7 +492,7 @@ function removeEmptyFunctionArguments(exp::Expression, isArg::Bool = false)::Exp
     end
   end
   @assign is_arg = isArg || P_Expression.Expression.isCall(exp)
-  @assign outExp = P_Expression.Expression.mapShallow(
+  @assign outExp = mapShallow(
     exp,
     (is_arg) -> removeEmptyFunctionArguments(isArg = is_arg),
   )
@@ -507,7 +507,7 @@ function simplifyIfEqBranches(
 
   local cond::Expression
   local body::List{Equation}
-  local var::Variability
+  local var::VariabilityType
   local accum::List{P_Equation.Equation} = nil
 
   for branch in branches

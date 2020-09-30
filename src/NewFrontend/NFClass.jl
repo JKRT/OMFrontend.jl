@@ -545,15 +545,15 @@ function getDimensions(cls::Class)::List{Dimension}
   @assign dims = begin
     @match cls begin
       INSTANCED_CLASS(__) => begin
-        Type.arrayDims(cls.ty)
+        arrayDims(cls.ty)
       end
 
       INSTANCED_BUILTIN(__) => begin
-        Type.arrayDims(cls.ty)
+        arrayDims(cls.ty)
       end
 
       TYPED_DERIVED(__) => begin
-        Type.arrayDims(cls.ty)
+        arrayDims(cls.ty)
       end
 
       _ => begin
@@ -893,7 +893,6 @@ function lookupElement(name::String, cls::Class)::Tuple{InstNode, Bool}
 end
 
 function setSections(sections::Sections, cls::Class)::Class
-
   @assign cls = begin
     @match cls begin
       INSTANCED_CLASS(__) => begin

@@ -10,7 +10,7 @@ const FaceType = Integer
     name::ComponentRef
     ty::M_Type
     face::FaceType
-    cty::ConnectorType.Type
+    cty::ConnectorType.TYPE
     source::DAE.ElementSource
   end
 end
@@ -113,9 +113,9 @@ function isEqual(conn1::Connector, conn2::Connector)::Bool
   return isEqual
 end
 
-function variability(conn::Connector)::Variability
-  local var::Variability =
-    P_Component.variability(component(node(conn.name)))
+function variability(conn::Connector)::VariabilityType
+  local var::VariabilityType =
+    variability(component(node(conn.name)))
   return var
 end
 
@@ -154,7 +154,7 @@ function fromExp(
           false,
           getInstanceName() +
           " got unknown expression " +
-          P_Expression.Expression.toString(exp),
+          toString(exp),
           sourceInfo(),
         )
         fail()
@@ -174,7 +174,7 @@ function fromFacedCref(
 
   local node::InstNode = node(cref)
   local comp::Component
-  local cty::ConnectorType.Type
+  local cty::ConnectorType.TYPE
   local res::Restriction
 
   if isComponent(node)
@@ -207,7 +207,7 @@ function splitImpl2(
   local c::Component
   local cref::ComponentRef
   local ty::M_Type
-  local cty::ConnectorType.Type
+  local cty::ConnectorType.TYPE
 
   for comp in comps
     @assign c = component(comp)
@@ -229,7 +229,7 @@ function splitImpl(
   ty::M_Type,
   face::FaceType,
   source::DAE.ElementSource,
-  cty::ConnectorType.Type,
+  cty::ConnectorType.TYPE,
   scalarize::ScalarizeSettingType,
   conns::List{<:Connector} = nil,
   dims::List{<:Dimension} = nil,
@@ -266,7 +266,7 @@ function splitImpl(
         conns
       end
 
-      Type.ARRAY(
+      ARRAY_TYPE(
         elementType = ety && TYPE_COMPLEX(__),
       ) where {(scalarize >= ScalarizeSetting.PREFIX)} => begin
         for c in scalarize(name)
@@ -275,7 +275,7 @@ function splitImpl(
         conns
       end
 
-      Type.ARRAY(elementType = ety) => begin
+      ARRAY_TYPE(elementType = ety) => begin
         if scalarize == ScalarizeSetting.ALL
           for c in scalarize(name)
             @assign conns = splitImpl(c, ety, face, source, cty, scalarize, conns, dims)

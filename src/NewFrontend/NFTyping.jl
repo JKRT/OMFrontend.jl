@@ -134,9 +134,9 @@ const ORIGIN_NOEVENT = intBitLShift(1, 19)::M_Type
 const ORIGIN_ASSERT = intBitLShift(1, 20)::M_Type
 
 
-const EQ_SUBEXPRESSION = intBitOr(ORIGIN_EQUATION, ORIGIN_SUBEXPRESSION)::M_Type
-const VALIDNAME_SCOPE = intBitOr(ORIGIN_ITERATION_RANGE, ORIGIN_DIMENSION)::M_Type
-const DISCRETE_SCOPE = intBitOr(ORIGIN_WHEN, intBitOr(ORIGIN_INITIAL, ORIGIN_FUNCTION))::M_Type
+const ORIGIN_EQ_SUBEXPRESSION = intBitOr(ORIGIN_EQUATION, ORIGIN_SUBEXPRESSION)::M_Type
+const ORIGIN_VALIDNAME_SCOPE = intBitOr(ORIGIN_ITERATION_RANGE, ORIGIN_DIMENSION)::M_Type
+const ORIGIN_DISCRETE_SCOPE = intBitOr(ORIGIN_WHEN, intBitOr(ORIGIN_INITIAL, ORIGIN_FUNCTION))::M_Type
 
 """ #= Returns true if the given origin indicates the expression is alone on
      either side of an equality/assignment. =#"""
@@ -207,7 +207,7 @@ function typeComponents(cls::InstNode, origin::ORIGIN_Type)
         ()
       end
 
-      TYPED_DERIVED(ty = Type.ARRAY(__)) => begin
+      TYPED_DERIVED(ty = ARRAY_TYPE(__)) => begin
         #=  For derived types with dimensions we keep them as they are, because we
         =#
         #=  need to preserve the dimensions.
@@ -389,7 +389,7 @@ function makeConnectorType(ctree::ClassTree, isExpandable::Bool)::ComplexType
   local flows::List{InstNode} = nil
   local streams::List{InstNode} = nil
   local exps::List{InstNode} = nil
-  local cty::ConnectorType.Type
+  local cty::ConnectorType.TYPE
 
   if isExpandable
     for c in enumerateComponents(ctree)
@@ -520,8 +520,8 @@ function checkComponentStreamAttribute(
   local ety::NFType
 
   return if isFlowOrStream(cty)
-    @assign ety = Type.arrayElementType(ty)
-    if !(Type.isReal(ety) || Type.isComplex(ety))
+    @assign ety = arrayElementType(ty)
+    if !(Type.isReal(ety) || isComplex(ety))
       Error.addSourceMessageAndFail(
         Error.NON_REAL_FLOW_OR_STREAM,
         list(ConnectorType.toString(cty), name(component)),
@@ -552,7 +552,7 @@ function typeIterator(
   origin::ORIGIN_Type,
   structural::Bool,
 )::Tuple{Expression, M_Type, Variability} #= If the iteration range must be a parameter expression or not. =#
-  local var::Variability
+  local var::VariabilityType
   local ty::M_Type
   local outRange::Expression
 
@@ -570,7 +570,7 @@ function typeIterator(
         if structural && var > Variability.PARAMETER
           Error.addSourceMessageAndFail(
             Error.NON_PARAMETER_ITERATOR_RANGE,
-            list(P_Expression.Expression.toString(exp)),
+            list(toString(exp)),
             info,
           )
         end
@@ -579,13 +579,13 @@ function typeIterator(
         if !Type.isVector(ty)
           Error.addSourceMessageAndFail(
             Error.FOR_EXPRESSION_ERROR,
-            list(P_Expression.Expression.toString(exp), Type.toString(ty)),
+            list(toString(exp), Type.toString(ty)),
             info,
           )
         end
         #=  The type of the iterator is the element type of the range expression.
         =#
-        @assign c = P_Component.ITERATOR(Type.arrayElementType(ty), var, info)
+        @assign c = P_Component.ITERATOR(arrayElementType(ty), var, info)
         updateComponent(c, iterator)
         (exp, ty, var)
       end
@@ -630,7 +630,7 @@ function typeDimension(
   @assign dimension = begin
     local exp::Expression
     local oexp::Option{Expression}
-    local var::Variability
+    local var::VariabilityType
     local dim::Dimension
     local b::Binding
     local ty::M_Type
@@ -659,7 +659,7 @@ function typeDimension(
             list(
               String(index),
               name(component),
-              P_Expression.Expression.toString(dimension.dimension),
+              toString(dimension.dimension),
             ),
             info,
           )
@@ -701,7 +701,7 @@ function typeDimension(
           else
             Error.addSourceMessage(
               Error.DIMENSION_NOT_KNOWN,
-              list(P_Expression.Expression.toString(exp)),
+              list(toString(exp)),
               info,
             )
             fail()
@@ -714,16 +714,16 @@ function typeDimension(
             )
           end
         end
-        if !P_Expression.Expression.arrayAllEqual(exp)
+        if !arrayAllEqual(exp)
           Error.addSourceMessage(
             Error.RAGGED_DIMENSION,
-            list(P_Expression.Expression.toString(exp)),
+            list(toString(exp)),
             info,
           )
           fail()
         end
         @assign dim = P_Dimension.Dimension.fromExp(
-          P_Expression.Expression.arrayFirstScalar(exp),
+          arrayFirstScalar(exp),
           var,
         )
         arrayUpdate(dimensions, index, dim)
@@ -797,7 +797,7 @@ function typeDimension(
                   Ceval.P_EvalTarget.DIMENSION(component, index, exp, info),
                 )
                 @assign (dim, ty_err) = nthDimensionBoundsChecked(
-                  P_Expression.Expression.typeOf(exp),
+                  typeOf(exp),
                   dim_index,
                 )
               end
@@ -817,7 +817,7 @@ function typeDimension(
                   Ceval.P_EvalTarget.DIMENSION(component, index, b.bindingExp, info),
                 )
                 @assign (dim, ty_err) = nthDimensionBoundsChecked(
-                  P_Expression.Expression.typeOf(exp),
+                  typeOf(exp),
                   dim_index,
                 )
               end
@@ -920,21 +920,21 @@ function getRecordElementBinding(component::InstNode)::Tuple{Binding, Integer}
   @assign parent = derivedParent(component)
   if isComponent(parent)
     @assign comp = component(parent)
-    @assign parent_binding = P_Component.getBinding(comp)
+    @assign parent_binding = getBinding(comp)
     if isUnbound(parent_binding)
       @assign (binding, parentDims) = getRecordElementBinding(parent)
     else
       @assign binding = typeBinding(parent_binding, ORIGIN_CLASS)
       if !referenceEq(parent_binding, binding)
-        componentApply(parent, P_Component.setBinding, binding)
+        componentApply(parent, setBinding, binding)
       end
     end
-    @assign parentDims = parentDims + P_Component.dimensionCount(comp)
+    @assign parentDims = parentDims + dimensionCount(comp)
     if isBound(binding)
       @assign binding = recordFieldBinding(component, binding)
     end
   else
-    @assign binding = NFBinding.EMPTY_BINDING
+    @assign binding = EMPTY_BINDING
   end
   return (binding, parentDims)
 end
@@ -992,11 +992,11 @@ function typeComponentBinding(
   local binding::Binding
   local cls::InstNode
   local matchKind::MatchKind
-  local name::String
-  local comp_var::Variability
-  local comp_eff_var::Variability
-  local bind_var::Variability
-  local bind_eff_var::Variability
+  local nameStr::String
+  local comp_var::VariabilityType
+  local comp_eff_var::VariabilityType
+  local bind_var::VariabilityType
+  local bind_eff_var::VariabilityType
   local attrs::Attributes
 
   @assign c = component(node)
@@ -1006,31 +1006,34 @@ function typeComponentBinding(
         binding = UNTYPED_BINDING(__),
         attributes = attrs,
       ) => begin
-        @assign name = name(inComponent)
+        @assign nameStr = name(inComponent)
         @assign binding = c.binding
-        ErrorExt.setCheckpoint(getInstanceName())
+        #ErrorExt.setCheckpoint(getInstanceName())
+        #TODO
+        @error "ErrorExt.setCheckpoint(getInstanceName())"
         try
           checkBindingEach(c.binding)
           @assign binding =
             typeBinding(binding, setFlag(origin, ORIGIN_BINDING))
-          if !(Config.getGraphicsExpMode() && stringEq(name, "graphics"))
-            @assign binding = matchBinding(binding, c.ty, name, node)
-          end
-          @assign comp_var = checkComponentBindingVariability(name, c, binding, origin)
+          #if !(Config.getGraphicsExpMode() && stringEq(nameStr, "graphics")) TODO
+            @assign binding = matchBinding(binding, c.ty, nameStr, node)
+          #end
+          @assign comp_var = checkComponentBindingVariability(nameStr, c, binding, origin)
           if comp_var != attrs.variability
             @assign attrs.variability = comp_var
             @assign c.attributes = attrs
           end
-        catch
+        catch e
           if isBound(c.condition)
             @assign binding =
               INVALID_BINDING(binding, ErrorExt.getCheckpointMessages())
           else
-            ErrorExt.delCheckpoint(getInstanceName())
+            #            ErrorExt.delCheckpoint(getInstanceName())
+            @error "Error in type componeent binding $e"
             fail()
           end
         end
-        ErrorExt.delCheckpoint(getInstanceName())
+#        ErrorExt.delCheckpoint(getInstanceName()) TODO
         @assign c.binding = binding
         if isBound(c.condition)
           @assign c.condition = typeComponentCondition(c.condition, origin)
@@ -1070,11 +1073,11 @@ function typeComponentBinding(
         =#
         #=  component. Type only the binding and let the case above handle the rest.
         =#
-        @assign name = name(inComponent)
+        @assign nameStr = name(inComponent)
         checkBindingEach(c.binding)
         @assign binding =
           typeBinding(c.binding, setFlag(origin, ORIGIN_BINDING))
-        @assign comp_var = checkComponentBindingVariability(name, c, binding, origin)
+        @assign comp_var = checkComponentBindingVariability(nameStr, c, binding, origin)
         if comp_var != attrs.variability
           @assign attrs.variability = comp_var
           @assign c.attributes = attrs
@@ -1116,18 +1119,18 @@ function checkComponentBindingVariability(
   component::Component,
   binding::Binding,
   origin::ORIGIN_Type,
-)::Variability
-  local var::Variability
+)::VariabilityType
+  local var::VariabilityType
 
-  local comp_var::Variability
-  local comp_eff_var::Variability
-  local bind_var::Variability
-  local bind_eff_var::Variability
+  local comp_var::VariabilityType
+  local comp_eff_var::VariabilityType
+  local bind_var::VariabilityType
+  local bind_eff_var::VariabilityType
 
-  @assign comp_var = P_Component.variability(component)
-  @assign comp_eff_var = P_Prefixes.effectiveVariability(comp_var)
+  @assign comp_var = variability(component)
+  @assign comp_eff_var = effectiveVariability(comp_var)
   @assign bind_var = variability(binding)
-  @assign bind_eff_var = P_Prefixes.effectiveVariability(bind_var)
+  @assign bind_eff_var = effectiveVariability(bind_var)
   if bind_eff_var > comp_eff_var && flagNotSet(origin, ORIGIN_FUNCTION)
     Error.addSourceMessage(
       Error.HIGHER_VARIABILITY_BINDING,
@@ -1162,19 +1165,19 @@ function typeBinding(binding::Binding, origin::ORIGIN_Type)::Binding
   @assign binding = begin
     local exp::Expression
     local ty::M_Type
-    local var::Variability
+    local var::VariabilityType
     local info::SourceInfo
-    local each_ty::NFBinding.EachType
+    local each_ty::EachTypeType
     @match binding begin
       UNTYPED_BINDING(bindingExp = exp) => begin
         @assign info = getInfo(binding)
         @assign (exp, ty, var) = typeExp(exp, origin, info)
         if binding.isEach
-          @assign each_ty = NFBinding.EachType.EACH
+          @assign each_ty = EachType.EACH
         elseif isClassBinding(binding)
-          @assign each_ty = NFBinding.EachType.REPEAT
+          @assign each_ty = EachType.REPEAT
         else
-          @assign each_ty = NFBinding.EachType.NOT_EACH
+          @assign each_ty = EachType.NOT_EACH
         end
         TYPED_BINDING(exp, ty, var, each_ty, false, false, binding.info)
       end
@@ -1223,7 +1226,7 @@ function typeComponentCondition(condition::Binding, origin::ORIGIN_Type)::Bindin
   @assign condition = begin
     local exp::Expression
     local ty::M_Type
-    local var::Variability
+    local var::VariabilityType
     local info::SourceInfo
     local mk::MatchKind
     @match condition begin
@@ -1235,7 +1238,7 @@ function typeComponentCondition(condition::Binding, origin::ORIGIN_Type)::Bindin
         if isIncompatibleMatch(mk)
           Error.addSourceMessage(
             Error.IF_CONDITION_TYPE_ERROR,
-            list(P_Expression.Expression.toString(exp), Type.toString(ty)),
+            list(toString(exp), Type.toString(ty)),
             info,
           )
           fail()
@@ -1243,7 +1246,7 @@ function typeComponentCondition(condition::Binding, origin::ORIGIN_Type)::Bindin
         if var > Variability.PARAMETER
           Error.addSourceMessage(
             Error.COMPONENT_CONDITION_VARIABILITY,
-            list(P_Expression.Expression.toString(exp)),
+            list(toString(exp)),
             info,
           )
           fail()
@@ -1350,9 +1353,9 @@ function typeExp(
     local e1::Expression
     local e2::Expression
     local e3::Expression
-    local var1::Variability
-    local var2::Variability
-    local var3::Variability
+    local var1::VariabilityType
+    local var2::VariabilityType
+    local var3::VariabilityType
     local ty1::M_Type
     local ty2::M_Type
     local ty3::M_Type
@@ -1388,7 +1391,7 @@ function typeExp(
         if flagNotSet(origin, ORIGIN_VALID_TYPENAME_SCOPE)
           Error.addSourceMessage(
             Error.INVALID_TYPENAME_USE,
-            list(Type.typenameString(Type.arrayElementType(exp.ty))),
+            list(Type.typenameString(arrayElementType(exp.ty))),
             info,
           )
           fail()
@@ -1439,7 +1442,7 @@ function typeExp(
           var2,
           info,
         )
-        (exp, ty, P_Prefixes.variabilityMax(var1, var2))
+        (exp, ty, variabilityMax(var1, var2))
       end
 
       UNARY_EXPRESSION(__) => begin
@@ -1464,10 +1467,10 @@ function typeExp(
           var2,
           info,
         )
-        (exp, ty, P_Prefixes.variabilityMax(var1, var2))
+        (exp, ty, variabilityMax(var1, var2))
       end
 
-      P_Expression.Expression.LUNARY(__) => begin
+      LUNARY_EXPRESSION(__) => begin
         @assign next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
         @assign (e1, ty1, var1) = typeExp(exp.exp, next_origin, info)
         @assign (exp, ty) =
@@ -1475,7 +1478,7 @@ function typeExp(
         (exp, ty, var1)
       end
 
-      P_Expression.Expression.RELATION(__) => begin
+      RELATION_EXPRESSION(__) => begin
         @assign next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
         @assign (e1, ty1, var1) = typeExp(exp.exp1, next_origin, info)
         @assign (e2, ty2, var2) = typeExp(exp.exp2, next_origin, info)
@@ -1490,7 +1493,7 @@ function typeExp(
           origin,
           info,
         )
-        @assign variability = P_Prefixes.variabilityMax(var1, var2)
+        @assign variability = variabilityMax(var1, var2)
         #=  A relation involving continuous expressions which is not inside
         =#
         #=  noEvent is a discrete expression.
@@ -1502,7 +1505,7 @@ function typeExp(
         (exp, ty, variability)
       end
 
-      P_Expression.Expression.IF(__) => begin
+      IF_EXPRESSION(__) => begin
         typeIfExpression(exp, origin, info)
       end
 
@@ -1541,7 +1544,7 @@ function typeExp(
         typePartialApplication(exp, origin, info)
       end
 
-      BINDING_EXP_EXPRESSION(__) => begin
+      BINDING_EXP(__) => begin
         typeBindingExp(exp, origin, info)
       end
       _ => begin
@@ -1549,7 +1552,7 @@ function typeExp(
         #   false,
         #   getInstanceName() +
         #   " got unknown expression: " +
-        #   P_Expression.Expression.toString(exp),
+        #   toString(exp),
         #   sourceInfo(),
         # )
         fail()
@@ -1575,7 +1578,7 @@ function typeExpl(
   local explTyped::List{Expression} = nil
 
   local exp::Expression
-  local var::Variability
+  local var::VariabilityType
   local ty::M_Type
 
   for e in listReverse(expl)
@@ -1591,8 +1594,8 @@ function typeBindingExp(
   exp::Expression,
   origin::ORIGIN_Type,
   info::SourceInfo,
-)::Tuple{Expression, M_Type, Variability}
-  local variability::Variability
+)::Tuple{Expression, M_Type, VariabilityType}
+  local variability::VariabilityType
   local ty::M_Type
   local outExp::Expression
 
@@ -1602,7 +1605,7 @@ function typeBindingExp(
   local exp_ty::M_Type
   local parent_dims::Integer
 
-  @match P_Expression.Expression.BINDING_EXP(e, _, _, parents, is_each) = exp
+  @match BINDING_EXP(e, _, _, parents, is_each) = exp
   @assign (e, exp_ty, variability) = typeExp(e, origin, info)
   @assign parent_dims = 0
   if !is_each
@@ -1621,7 +1624,7 @@ function typeBindingExp(
   =#
   #=  can report the error better so we silently ignore it here.
   =#
-  @assign outExp = P_Expression.Expression.BINDING_EXP(e, exp_ty, ty, parents, is_each)
+  @assign outExp = BINDING_EXP(e, exp_ty, ty, parents, is_each)
   return (outExp, ty, variability)
 end
 
@@ -1642,7 +1645,7 @@ function typeExpDim(
   local ty::M_Type
   local e::Expression
 
-  @assign ty = P_Expression.Expression.typeOf(exp)
+  @assign ty = typeOf(exp)
   if Type.isKnown(ty)
     @assign (dim, error) = nthDimensionBoundsChecked(ty, dimIndex)
     @assign typedExp = SOME(exp)
@@ -1870,41 +1873,31 @@ end
 
 function typeCrefExp(
   cref::ComponentRef,
-  origin::ORIGIN_Type,
+  o::ORIGIN_Type,
   info::SourceInfo,
-)::Tuple{Expression, M_Type, Variability}
-  local variability::Variability
-  local ty::M_Type
+)::Tuple{Expression, NFType, VariabilityType}
+  local variability::VariabilityType
+  local ty::NFType
   local exp::Expression
-
   local cr::ComponentRef
-  local node_var::Variability
-  local subs_var::Variability
+  local node_var::VariabilityType
+  local subs_var::VariabilityType
   local eval::Bool
-
-  @assign (cr, ty, node_var, subs_var) = typeCref(cref, origin, info)
-  @assign exp = CREF_EXPRESSION(ty, cr)
-  @assign variability = P_Prefixes.variabilityMax(node_var, subs_var)
+  (cr, ty, node_var, subs_var) = typeCref(cref, o, info)
+  exp = CREF_EXPRESSION(ty, cr)
+  variability = variabilityMax(node_var, subs_var)
   return (exp, ty, variability)
 end
 
 function typeCref(
   cref::ComponentRef,
   origin::ORIGIN_Type,
-  info::SourceInfo,
-)::Tuple{ComponentRef, M_Type, Variability, Variability}
+  info::SourceInfo
+)::Tuple{ComponentRef, NFType, VariabilityType, VariabilityType}
   local subsVariability::VariabilityType
-  local nodeVariability::VariabilityType
+  local nodeVariabilityType::VariabilityType
   local ty::NFType
-
   local subs_var::VariabilityType
-
-  #=  Check that time isn't used in a function context.
-  =#
-  #=  TODO: Fix TIME_CREF so that the compiler treats it like an actual
-  =#
-  #=        constant, then maybe we can use referenceEq here instead.
-  =#
   if flagSet(origin, ORIGIN_FUNCTION) &&
      firstName(cref) == "time"
     Error.addSourceMessage(Error.EXP_INVALID_IN_FUNCTION, list("time"), info)
@@ -1912,8 +1905,8 @@ function typeCref(
   end
   @assign (cref, subsVariability) = typeCref2(cref, origin, info)
   @assign ty = getSubscriptedType(cref)
-  @assign nodeVariability = nodeVariability(cref)
-  return (cref, ty, nodeVariability, subsVariability)
+  @assign nodeVariabilityType = nodeVariability(cref)
+  return (cref, ty, nodeVariabilityType, subsVariability)
 end
 
 function typeCref2(
@@ -2008,13 +2001,13 @@ function typeSubscripts(
   local next_origin::Integer
   local i::Integer
   local sub::Subscript
-  local var::Variability
+  local var::VariabilityType
 
   if listEmpty(subscripts)
     @assign typedSubs = subscripts
     return (typedSubs, variability)
   end
-  @assign dims = Type.arrayDims(crefType)
+  @assign dims = arrayDims(crefType)
   @assign typedSubs = nil
   @assign next_origin = setFlag(origin, ORIGIN_SUBSCRIPT)
   @assign i = 1
@@ -2034,7 +2027,7 @@ function typeSubscripts(
     @match _cons(dim, dims) = dims
     @assign (sub, var) = typeSubscript(s, dim, cref, i, next_origin, info)
     @assign typedSubs = _cons(sub, typedSubs)
-    @assign variability = P_Prefixes.variabilityMax(variability, var)
+    @assign variability = variabilityMax(variability, var)
     @assign i = i + 1
     if var == Variability.PARAMETER
       Inst.markStructuralParamsSub(sub)
@@ -2058,7 +2051,7 @@ function typeSubscript(
   origin::Type,
   info::SourceInfo,
 )::Tuple{Subscript, Variability}
-  local variability::Variability = Variability.CONSTANT
+  local variability::VariabilityType = Variability.CONSTANT
   local outSubscript::Subscript = subscript
 
   local e::Expression
@@ -2086,12 +2079,12 @@ function typeSubscript(
       end
 
       SUBSCRIPT_INDEX(index = e) => begin
-        (P_Expression.Expression.typeOf(e), P_Expression.Expression.variability(e))
+        (typeOf(e), P_Expression.Expression.variability(e))
       end
 
       SUBSCRIPT_SLICE(slice = e) => begin
         (
-          Type.unliftArray(P_Expression.Expression.typeOf(e)),
+          Type.unliftArray(typeOf(e)),
           P_Expression.Expression.variability(e),
         )
       end
@@ -2134,14 +2127,14 @@ function typeArray(
   origin::ORIGIN_Type,
   info::SourceInfo,
 )::Tuple{Expression, M_Type, Variability}
-  local variability::Variability = Variability.CONSTANT
+  local variability::VariabilityType = Variability.CONSTANT
   local arrayType::M_Type = TYPE_UNKNOWN()
   local arrayExp::Expression
 
   local exp::Expression
   local expl::List{Expression} = nil
   local expl2::List{Expression} = nil
-  local var::Variability
+  local var::VariabilityType
   local ty1::M_Type = TYPE_UNKNOWN()
   local ty2::M_Type
   local ty3::M_Type
@@ -2153,7 +2146,7 @@ function typeArray(
   @assign next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
   for e in elements
     @assign (exp, ty2, var) = typeExp(e, next_origin, info)
-    @assign variability = P_Prefixes.variabilityMax(var, variability)
+    @assign variability = variabilityMax(var, variability)
     @assign (_, ty3, mk) = matchTypes(ty2, ty1, exp, allowUnknown = true)
     if isIncompatibleMatch(mk)
       @assign (_, ty3, mk) = matchTypes(ty1, ty2, exp, allowUnknown = false)
@@ -2182,7 +2175,7 @@ function typeArray(
           Error.NF_ARRAY_TYPE_MISMATCH,
           list(
             String(n),
-            P_Expression.Expression.toString(exp),
+            toString(exp),
             Type.toString(ty2),
             Type.toString(ty1),
           ),
@@ -2205,14 +2198,14 @@ function typeMatrix(
   origin::ORIGIN_Type,
   info::SourceInfo,
 )::Tuple{Expression, M_Type, Variability}
-  local variability::Variability = Variability.CONSTANT
+  local variability::VariabilityType = Variability.CONSTANT
   local arrayType::M_Type = TYPE_UNKNOWN()
   local arrayExp::Expression
 
   local exp::Expression
   local expl::List{Expression} = nil
   local res::List{Expression} = nil
-  local var::Variability
+  local var::VariabilityType
   local ty::M_Type = TYPE_UNKNOWN()
   local tys::List{M_Type} = nil
   local resTys::List{M_Type} = nil
@@ -2222,7 +2215,7 @@ function typeMatrix(
   if listLength(elements) > 1
     for el in elements
       @assign (exp, ty, var) = typeMatrixComma(el, next_origin, info)
-      @assign variability = P_Prefixes.variabilityMax(var, variability)
+      @assign variability = variabilityMax(var, variability)
       @assign expl = _cons(exp, expl)
       @assign tys = _cons(ty, tys)
       @assign n = max(n, Type.dimensionCount(ty))
@@ -2251,14 +2244,14 @@ function typeMatrixComma(
   origin::ORIGIN_Type,
   info::SourceInfo,
 )::Tuple{Expression, M_Type, Variability}
-  local variability::Variability = Variability.CONSTANT
+  local variability::VariabilityType = Variability.CONSTANT
   local arrayType::M_Type
   local arrayExp::Expression
 
   local exp::Expression
   local expl::List{Expression} = nil
   local res::List{Expression} = nil
-  local var::Variability
+  local var::VariabilityType
   local ty::M_Type = TYPE_UNKNOWN()
   local ty1::M_Type
   local ty2::M_Type
@@ -2283,16 +2276,16 @@ function typeMatrixComma(
       else
         @assign (_, _, ty2, mk) = matchExpressions(
           INTEGER_EXPRESSION(0),
-          Type.arrayElementType(ty1),
+          arrayElementType(ty1),
           INTEGER_EXPRESSION(0),
-          Type.arrayElementType(ty),
+          arrayElementType(ty),
         )
         if isCompatibleMatch(mk)
           @assign ty = ty2
         end
       end
       @assign tys = _cons(ty1, tys)
-      @assign variability = P_Prefixes.variabilityMax(variability, var)
+      @assign variability = variabilityMax(variability, var)
       @assign n = max(n, Type.dimensionCount(ty))
     end
     @assign tys2 = nil
@@ -2304,7 +2297,7 @@ function typeMatrixComma(
       if Type.dimensionCount(ty1) != n
         @assign (e, ty1) = P_Expression.Expression.promote(e, ty1, n)
       end
-      @assign ty2 = Type.setArrayElementType(ty1, ty)
+      @assign ty2 = setArrayElementType(ty1, ty)
       @assign (e, ty3, mk) = matchTypes(ty1, ty2, e)
       if isIncompatibleMatch(mk)
         Error.addSourceMessageAndFail(
@@ -2313,7 +2306,7 @@ function typeMatrixComma(
             String(pos),
             "matrix constructor ",
             "arg",
-            P_Expression.Expression.toString(e),
+            toString(e),
             Type.toString(ty1),
             Type.toString(ty2),
           ),
@@ -2335,7 +2328,7 @@ function typeRange(
   origin::ORIGIN_Type,
   info::SourceInfo,
 )::Tuple{Expression, M_Type, Variability}
-  local variability::Variability
+  local variability::VariabilityType
   local rangeType::M_Type
 
   local start_exp::Expression
@@ -2346,9 +2339,9 @@ function typeRange(
   local stop_ty::M_Type
   local ostep_exp::Option{Expression}
   local ostep_ty::Option{M_Type}
-  local start_var::Variability
-  local step_var::Variability
-  local stop_var::Variability
+  local start_var::VariabilityType
+  local step_var::VariabilityType
+  local stop_var::VariabilityType
   local ty_match::MatchKind
   local next_origin::ORIGIN_Type = ORIGIN_setFlag(origin, ORIGIN_SUBEXPRESSION)
 
@@ -2361,7 +2354,7 @@ function typeRange(
   =#
   @assign (start_exp, start_ty, start_var) = typeExp(start_exp, next_origin, info)
   @assign (stop_exp, stop_ty, stop_var) = typeExp(stop_exp, next_origin, info)
-  @assign variability = P_Prefixes.variabilityMax(start_var, stop_var)
+  @assign variability = variabilityMax(start_var, stop_var)
   #=  Type check start and stop.
   =#
   @assign (start_exp, stop_exp, rangeType, ty_match) =
@@ -2372,7 +2365,7 @@ function typeRange(
   if isSome(ostep_exp)
     @match SOME(step_exp) = ostep_exp
     @assign (step_exp, step_ty, step_var) = typeExp(step_exp, next_origin, info)
-    @assign variability = P_Prefixes.variabilityMax(step_var, variability)
+    @assign variability = variabilityMax(step_var, variability)
     @assign (start_exp, step_exp, rangeType, ty_match) =
       matchExpressions(start_exp, start_ty, step_exp, step_ty)
     if isIncompatibleMatch(ty_match)
@@ -2408,7 +2401,7 @@ function typeTuple(
   origin::ORIGIN_Type,
   info::SourceInfo,
 )::Tuple{Expression, M_Type, Variability}
-  local variability::Variability
+  local variability::VariabilityType
   local tupleType::M_Type
   local tupleExp::Expression
 
@@ -2425,7 +2418,7 @@ function typeTuple(
      flagSet(origin, ORIGIN_SUBEXPRESSION)
     Error.addSourceMessage(
       Error.RHS_TUPLE_EXPRESSION,
-      list(P_Expression.Expression.toString(TUPLE_EXPRESSION(
+      list(toString(TUPLE_EXPRESSION(
         TYPE_UNKNOWN(),
         elements,
       ))),
@@ -2455,9 +2448,9 @@ function printRangeTypeError(
   Error.addSourceMessage(
     Error.RANGE_TYPE_MISMATCH,
     list(
-      P_Expression.Expression.toString(exp1),
+      toString(exp1),
       Type.toString(ty1),
-      P_Expression.Expression.toString(exp2),
+      toString(exp2),
       Type.toString(ty2),
     ),
     info,
@@ -2474,7 +2467,7 @@ function typeSize(
   info::SourceInfo,
   evaluate::Bool = true,
 )::Tuple{Expression, M_Type, Variability}
-  local variability::Variability
+  local variability::VariabilityType
   local sizeType::M_Type
 
   local exp::Expression
@@ -2504,7 +2497,7 @@ function typeSize(
               "2",
               "size ",
               "dim",
-              P_Expression.Expression.toString(index),
+              toString(index),
               Type.toString(index_ty),
               "Integer",
             ),
@@ -2641,7 +2634,7 @@ function evaluateEnd(
       end
 
       _ => begin
-        P_Expression.Expression.mapShallow(
+        mapShallow(
           exp,
           (dim, cref, index, info, origin) -> evaluateEnd(
             dim = dim,
@@ -2666,7 +2659,7 @@ function typeIfExpression(
   origin::ORIGIN_Type,
   info::SourceInfo,
 )::Tuple{Expression, M_Type, Variability}
-  local var::Variability
+  local var::VariabilityType
   local ty::M_Type
 
   local cond::Expression
@@ -2678,12 +2671,12 @@ function typeIfExpression(
   local cond_ty::M_Type
   local tb_ty::M_Type
   local fb_ty::M_Type
-  local cond_var::Variability
-  local tb_var::Variability
-  local fb_var::Variability
+  local cond_var::VariabilityType
+  local tb_var::VariabilityType
+  local fb_var::VariabilityType
   local ty_match::MatchKind
 
-  @match P_Expression.Expression.IF(condition = cond, trueBranch = tb, falseBranch = fb) =
+  @match IF_EXPRESSION(condition = cond, trueBranch = tb, falseBranch = fb) =
     ifExp
   @assign next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
   @assign (cond, cond_ty, cond_var) = typeExp(cond, next_origin, info)
@@ -2693,7 +2686,7 @@ function typeIfExpression(
   if isIncompatibleMatch(ty_match)
     Error.addSourceMessage(
       Error.IF_CONDITION_TYPE_ERROR,
-      list(P_Expression.Expression.toString(cond), Type.toString(cond_ty)),
+      list(toString(cond), Type.toString(cond_ty)),
       info,
     )
     fail()
@@ -2721,9 +2714,9 @@ function typeIfExpression(
           Error.TYPE_MISMATCH_IF_EXP,
           list(
             "",
-            P_Expression.Expression.toString(tb),
+            toString(tb),
             Type.toString(tb_ty),
-            P_Expression.Expression.toString(fb),
+            toString(fb),
             Type.toString(fb_ty),
           ),
           info,
@@ -2731,7 +2724,7 @@ function typeIfExpression(
         fail()
       end
     else
-      @assign ifExp = P_Expression.Expression.IF(cond, tb2, fb2)
+      @assign ifExp = IF_EXPRESSION(cond, tb2, fb2)
       @assign var =
         variabilityMax(cond_var, variabilityMax(tb_var, fb_var))
     end
@@ -2761,8 +2754,8 @@ function evaluateCondition(
   local cond_exp::Expression
 
   @assign cond_exp = Ceval.evalExp(condExp, Ceval.P_EvalTarget.GENERIC(info))
-  if P_Expression.Expression.arrayAllEqual(cond_exp)
-    @assign cond_exp = P_Expression.Expression.arrayFirstScalar(cond_exp)
+  if arrayAllEqual(cond_exp)
+    @assign cond_exp = arrayFirstScalar(cond_exp)
   end
   @assign condBool = begin
     @match cond_exp begin
@@ -2775,7 +2768,7 @@ function evaluateCondition(
           false,
           getInstanceName() +
           " failed to evaluate condition `" +
-          P_Expression.Expression.toString(condExp) +
+          toString(condExp) +
           "`",
           info,
         )
@@ -2825,7 +2818,7 @@ function typeClassSections(classNode::InstNode, originArg::ORIGIN_Type)
                     setFlag(initial_origin, ORIGIN_ALGORITHM),
                   )
               )
-              @error "TODO"
+#              @error "TODO"
             end
             SECTIONS_EXTERNAL(__) => begin
               Error.addSourceMessage(
@@ -2957,7 +2950,7 @@ function typeExternalArg(arg::Expression, info::SourceInfo, node::InstNode)::Exp
   local outArg::Expression
 
   local ty::M_Type
-  local var::Variability
+  local var::VariabilityType
   local index::Expression
 
   @assign outArg = begin
@@ -2970,7 +2963,7 @@ function typeExternalArg(arg::Expression, info::SourceInfo, node::InstNode)::Exp
         if !P_Expression.Expression.isInteger(index)
           Error.addSourceMessage(
             Error.EXTERNAL_ARG_NONCONSTANT_SIZE_INDEX,
-            list(P_Expression.Expression.toString(arg)),
+            list(toString(arg)),
             info,
           )
           fail()
@@ -2996,7 +2989,7 @@ function typeExternalArg(arg::Expression, info::SourceInfo, node::InstNode)::Exp
               else
                 Error.addSourceMessage(
                   Error.EXTERNAL_ARG_WRONG_EXP,
-                  list(P_Expression.Expression.toString(outArg)),
+                  list(toString(outArg)),
                   info,
                 )
                 fail()
@@ -3134,9 +3127,9 @@ function typeEquation(eq::Equation, origin::ORIGIN_Type)::Equation
     local body::List{Equation}
     local tybrs::List{Equation}
     local iterator::InstNode
-    local mk::MatchKind
-    local var::Variability
-    local bvar::Variability
+    local mk::MatchKindType
+    local var::VariabilityType
+    local bvar::VariabilityType
     local next_origin::Integer
     local info::SourceInfo
     @match eq begin
@@ -3251,8 +3244,8 @@ function typeConnect(
   local rhs::Expression
   local lhs_ty::M_Type
   local rhs_ty::M_Type
-  local lhs_var::Variability
-  local rhs_var::Variability
+  local lhs_var::VariabilityType
+  local rhs_var::VariabilityType
   local mk::MatchKind
   local next_origin::Integer
   local info::SourceInfo
@@ -3269,8 +3262,8 @@ function typeConnect(
     Error.addSourceMessage(
       Error.CONNECT_IN_IF,
       list(
-        P_Expression.Expression.toString(lhsConn),
-        P_Expression.Expression.toString(rhsConn),
+        toString(lhsConn),
+        toString(rhsConn),
       ),
       info,
     )
@@ -3292,8 +3285,8 @@ function typeConnect(
       Error.addSourceMessage(
         Error.INVALID_CONNECTOR_VARIABLE,
         list(
-          P_Expression.Expression.toString(lhsConn),
-          P_Expression.Expression.toString(rhsConn),
+          toString(lhsConn),
+          toString(rhsConn),
         ),
         info,
       )
@@ -3348,7 +3341,7 @@ function checkConnector(connExp::Expression, info::SourceInfo)
               Error.addSourceMessage(
                 Error.CONNECTOR_NON_PARAMETER_SUBSCRIPT,
                 list(
-                  P_Expression.Expression.toString(connExp),
+                  toString(connExp),
                   toString(sub),
                 ),
                 info,
@@ -3363,7 +3356,7 @@ function checkConnector(connExp::Expression, info::SourceInfo)
       _ => begin
         Error.addSourceMessage(
           Error.INVALID_CONNECTOR_TYPE,
-          list(P_Expression.Expression.toString(connExp)),
+          list(toString(connExp)),
           info,
         )
         fail()
@@ -3467,8 +3460,8 @@ function typeStatement(st::Statement, origin::ORIGIN_Type)::Statement
           Error.addSourceMessage(
             Error.ASSIGN_TYPE_MISMATCH_ERROR,
             list(
-              P_Expression.Expression.toString(e1),
-              P_Expression.Expression.toString(e2),
+              toString(e1),
+              toString(e2),
               Type.toString(ty1),
               Type.toString(ty2),
             ),
@@ -3630,14 +3623,13 @@ function typeEqualityEquation(
   source::DAE.ElementSource,
 )::Equation
   local eq::Equation
-
   local info::SourceInfo = sourceInfo()
   local e1::Expression
   local e2::Expression
   local ty1::M_Type
   local ty2::M_Type
   local ty::M_Type
-  local mk::MatchKind
+  local mk::MatchKindType
 
   if flagSet(origin, ORIGIN_WHEN) &&
      flagNotSet(origin, ORIGIN_CLOCKED)
@@ -3646,7 +3638,7 @@ function typeEqualityEquation(
     else
       Error.addSourceMessage(
         Error.WHEN_EQ_LHS,
-        list(P_Expression.Expression.toString(lhsExp)),
+        list(toString(lhsExp)),
         info,
       )
       fail()
@@ -3659,14 +3651,14 @@ function typeEqualityEquation(
     Error.addSourceMessage(
       Error.EQUATION_TYPE_MISMATCH_ERROR,
       list(
-        P_Expression.Expression.toString(e1) + " = " + P_Expression.Expression.toString(e2),
+        toString(e1) + " = " + toString(e2),
         Type.toString(ty1) + " = " + Type.toString(ty2),
       ),
       info,
     )
     fail()
   end
-  @assign eq = EQUALITY(e1, e2, ty, source)
+  @assign eq = EQUATION_EQUALITY(e1, e2, ty, source)
   return eq
 end
 
@@ -3678,7 +3670,7 @@ function typeCondition(
   allowVector::Bool = false,
   allowClock::Bool = false,
 )::Tuple{Expression, M_Type, Variability}
-  local variability::Variability
+  local variability::VariabilityType
   local ty::M_Type
 
   local info::SourceInfo
@@ -3687,14 +3679,14 @@ function typeCondition(
   @assign info = ElementSource.getInfo(source)
   @assign (condition, ty, variability) = typeExp(condition, origin, info)
   @assign ety = if allowVector
-    Type.arrayElementType(ty)
+    arrayElementType(ty)
   else
     ty
   end
   if !(Type.isBoolean(ety) || allowClock && Type.isClock(ety))
     # Error.addSourceMessage(
     #   errorMsg,
-    #   list(P_Expression.Expression.toString(condition), Type.toString(ty)),
+    #   list(toString(condition), Type.toString(ty)),
     #   info,
     # )
     fail()
@@ -3711,8 +3703,8 @@ function typeIfEquation(
 
   local cond::Expression
   local eql::List{Equation}
-  local accum_var::Variability = Variability.CONSTANT
-  local var::Variability
+  local accum_var::VariabilityType = Variability.CONSTANT
+  local var::VariabilityType
   local bl::List{Equation} = nil
   local bl2::List{Equation} = nil
   local next_origin::Type = setFlag(origin, ORIGIN_IF)
@@ -3730,7 +3722,7 @@ function typeIfEquation(
       @assign var = Variability.STRUCTURAL_PARAMETER
       Inst.markStructuralParamsExp(cond)
     end
-    @assign accum_var = P_Prefixes.variabilityMax(accum_var, var)
+    @assign accum_var = variabilityMax(accum_var, var)
     @assign bl = _cons(BRANCH(cond, var, eql), bl)
   end
 
@@ -3832,7 +3824,7 @@ function typeWhenEquation(
   local cond::Expression
   local body::List{Equation}
   local ty::M_Type
-  local var::Variability
+  local var::VariabilityType
 
   for branch in branches
     @match BRANCH(cond, _, body) = branch
@@ -3890,7 +3882,7 @@ function typeOperatorArg(
         intString(argIndex),
         operatorName,
         argName,
-        P_Expression.Expression.toString(arg),
+        toString(arg),
         Type.toString(ty),
         Type.toString(expectedType),
       ),
@@ -3908,7 +3900,7 @@ function typeReinit(
   source::DAE.ElementSource,
 )::Tuple{Expression, Expression}
 
-  local var::Variability
+  local var::VariabilityType
   local mk::MatchKind
   local ty1::M_Type
   local ty2::M_Type
@@ -3942,7 +3934,7 @@ function typeReinit(
     Error.addSourceMessage(
       Error.REINIT_MUST_BE_VAR,
       list(
-        P_Expression.Expression.toString(crefExp),
+        toString(crefExp),
         P_Prefixes.variabilityString(nodeVariability(cref)),
       ),
       info,
@@ -3957,7 +3949,7 @@ function typeReinit(
     Error.addSourceMessage(
       Error.REINIT_MUST_BE_REAL,
       list(
-        P_Expression.Expression.toString(crefExp),
+        toString(crefExp),
         toString(arrayElementType(ty1)),
       ),
       info,
@@ -3974,7 +3966,7 @@ function typeReinit(
         "2",
         "reinit",
         "",
-        P_Expression.Expression.toString(exp),
+        toString(exp),
         toString(ty2),
         toString(ty1),
       ),

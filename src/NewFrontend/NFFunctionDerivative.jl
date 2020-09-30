@@ -70,7 +70,7 @@ function typeDerivative(fnDer::FunctionDerivative)
   local mk::MatchKind
   local order::Expression
   local order_ty::M_Type
-  local var::Variability
+  local var::VariabilityType
   local info::SourceInfo
 
   P_Function.typeNodeCache(fnDer.derivativeFn)
@@ -82,7 +82,7 @@ function typeDerivative(fnDer::FunctionDerivative)
       Error.VARIABLE_BINDING_TYPE_MISMATCH,
       list(
         "order",
-        P_Expression.Expression.toString(order),
+        toString(order),
         "Integer",
         Type.toString(order_ty),
       ),
@@ -96,7 +96,7 @@ function typeDerivative(fnDer::FunctionDerivative)
       list(
         "order",
         P_Prefixes.variabilityString(Variability.CONSTANT),
-        P_Expression.Expression.toString(order),
+        toString(order),
         P_Prefixes.variabilityString(var),
       ),
       info,

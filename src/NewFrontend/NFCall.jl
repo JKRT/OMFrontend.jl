@@ -104,19 +104,14 @@ end
   end
 end
 
-
-
-
-function typeCast(callExp::Expression, ty::NFType)::Expression
-
+function typeCast(callExp::CALL_EXPRESSION, ty::NFType)::Expression
   local call::Call
   local cast_ty::NFType
-
   @match CALL_EXPRESSION(call = call) = callExp
   @assign callExp = begin
     @match call begin
       TYPED_CALL(__) where {(P_Function.isBuiltin(call.fn))} => begin
-        @assign cast_ty = Type.setArrayElementType(call.ty, ty)
+        @assign cast_ty = setArrayElementType(call.ty, ty)
         begin
           @match AbsynUtil.pathFirstIdent(P_Function.name(call.fn)) begin
             "fill" => begin
@@ -125,7 +120,7 @@ function typeCast(callExp::Expression, ty::NFType)::Expression
               #=  whole array that 'fill' constructs.
               =#
               @assign call.arguments = _cons(
-                P_Expression.Expression.typeCast(listHead(call.arguments), ty),
+                typeCast(listHead(call.arguments), ty),
                 listRest(call.arguments),
               )
               @assign call.ty = cast_ty
@@ -138,7 +133,7 @@ function typeCast(callExp::Expression, ty::NFType)::Expression
               #=  matrix that diagonal constructs.
               =#
               @assign call.arguments =
-                list(P_Expression.Expression.typeCast(listHead(call.arguments), ty))
+                list(typeCast(listHead(call.arguments), ty))
               @assign call.ty = cast_ty
               CALL_EXPRESSION(call)
             end
@@ -151,7 +146,7 @@ function typeCast(callExp::Expression, ty::NFType)::Expression
       end
 
       _ => begin
-        P_Expression.Expression.CAST(Type.setArrayElementType(typeOf(call), ty), callExp)
+        CAST_EXPRESSION(setArrayElementType(typeOf(call), ty), callExp)
       end
     end
   end
@@ -168,11 +163,11 @@ function retype(call::Call)::Call
         @assign dims = nil
         for i in listReverse(call.iters)
           @assign dims = listAppend(
-            Type.arrayDims(P_Expression.Expression.typeOf(Util.tuple22(i))),
+            arrayDims(typeOf(Util.tuple22(i))),
             dims,
           )
         end
-        @assign call.ty = Type.liftArrayLeftList(Type.arrayElementType(call.ty), dims)
+        @assign call.ty = Type.liftArrayLeftList(arrayElementType(call.ty), dims)
         ()
       end
 
@@ -298,7 +293,7 @@ function typedString(call::Call)::String
             "/*" +
             Type.toString(Util.tuple32(arg)) +
             "*/ " +
-            P_Expression.Expression.toString(Util.tuple31(arg))
+            toString(Util.tuple31(arg))
             for arg in call.arguments
           ),
           ", ",
@@ -316,7 +311,7 @@ function typedString(call::Call)::String
             " = /*" +
             Type.toString(Util.tuple43(arg)) +
             "*/ " +
-            P_Expression.Expression.toString(Util.tuple42(arg))
+            toString(Util.tuple42(arg))
         end
         name + "(" + arg_str + ")"
       end
@@ -324,7 +319,7 @@ function typedString(call::Call)::String
       TYPED_CALL(__) => begin
         @assign name = AbsynUtil.pathString(P_Function.name(call.fn))
         @assign arg_str = stringDelimitList(
-          List(P_Expression.Expression.toStringTyped(arg) for arg in call.arguments),
+          List(toStringTyped(arg) for arg in call.arguments),
           ", ",
         )
         name + "(" + arg_str + ")"
@@ -425,7 +420,7 @@ function toString(call::Call)::String
       UNTYPED_CALL(__) => begin
         @assign name = toString(call.ref)
         @assign arg_str = stringDelimitList(
-          List(P_Expression.Expression.toString(arg) for arg in call.arguments),
+          List(toString(arg) for arg in call.arguments),
           ", ",
         )
         name + "(" + arg_str + ")"
@@ -435,7 +430,7 @@ function toString(call::Call)::String
         @assign name = toString(call.ref)
         @assign arg_str = stringDelimitList(
           List(
-            P_Expression.Expression.toString(Util.tuple31(arg)) for arg in call.arguments
+            toString(Util.tuple31(arg)) for arg in call.arguments
           ),
           ", ",
         )
@@ -450,19 +445,19 @@ function toString(call::Call)::String
             c +
             Util.tuple41(arg) +
             " = " +
-            P_Expression.Expression.toString(Util.tuple42(arg))
+            toString(Util.tuple42(arg))
         end
         name + "(" + arg_str + ")"
       end
 
       UNTYPED_ARRAY_CONSTRUCTOR(__) => begin
         @assign name = AbsynUtil.pathString(P_Function.name(NFBuiltinFuncs.ARRAY_FUNC))
-        @assign arg_str = P_Expression.Expression.toString(call.exp)
+        @assign arg_str = toString(call.exp)
         @assign c = stringDelimitList(
           List(
             name(Util.tuple21(iter)) +
             " in " +
-            P_Expression.Expression.toString(Util.tuple22(iter))
+            toString(Util.tuple22(iter))
             for iter in call.iters
           ),
           ", ",
@@ -473,12 +468,12 @@ function toString(call::Call)::String
 
       UNTYPED_REDUCTION(__) => begin
         @assign name = toString(call.ref)
-        @assign arg_str = P_Expression.Expression.toString(call.exp)
+        @assign arg_str = toString(call.exp)
         @assign c = stringDelimitList(
           List(
             name(Util.tuple21(iter)) +
             " in " +
-            P_Expression.Expression.toString(Util.tuple22(iter))
+            toString(Util.tuple22(iter))
             for iter in call.iters
           ),
           ", ",
@@ -489,7 +484,7 @@ function toString(call::Call)::String
       TYPED_CALL(__) => begin
         @assign name = AbsynUtil.pathString(P_Function.name(call.fn))
         @assign arg_str = stringDelimitList(
-          List(P_Expression.Expression.toString(arg) for arg in call.arguments),
+          List(toString(arg) for arg in call.arguments),
           ", ",
         )
         name + "(" + arg_str + ")"
@@ -497,12 +492,12 @@ function toString(call::Call)::String
 
       TYPED_ARRAY_CONSTRUCTOR(__) => begin
         @assign name = AbsynUtil.pathString(P_Function.name(NFBuiltinFuncs.ARRAY_FUNC))
-        @assign arg_str = P_Expression.Expression.toString(call.exp)
+        @assign arg_str = toString(call.exp)
         @assign c = stringDelimitList(
           List(
             name(Util.tuple21(iter)) +
             " in " +
-            P_Expression.Expression.toString(Util.tuple22(iter))
+            toString(Util.tuple22(iter))
             for iter in call.iters
           ),
           ", ",
@@ -513,12 +508,12 @@ function toString(call::Call)::String
 
       TYPED_REDUCTION(__) => begin
         @assign name = AbsynUtil.pathString(P_Function.name(call.fn))
-        @assign arg_str = P_Expression.Expression.toString(call.exp)
+        @assign arg_str = toString(call.exp)
         @assign c = stringDelimitList(
           List(
             name(Util.tuple21(iter)) +
             " in " +
-            P_Expression.Expression.toString(Util.tuple22(iter))
+            toString(Util.tuple22(iter))
             for iter in call.iters
           ),
           ", ",
@@ -787,7 +782,7 @@ function variability(call::Call)::VariabilityType
         if !var_set
           @assign var = P_Expression.Expression.variabilityList(call.arguments)
           for narg in call.named_args
-            @assign var = P_Prefixes.variabilityMax(
+            @assign var = variabilityMax(
               var,
               P_Expression.Expression.variability(Util.tuple22(narg)),
             )
@@ -902,7 +897,7 @@ function matchTypedNormalCall(call::Call, origin::ORIGIN_Type, info::SourceInfo)
   for a in typed_args
     @assign (arg_exp, _, arg_var) = a
     @assign args = _cons(arg_exp, args)
-    @assign var = P_Prefixes.variabilityMax(var, arg_var)
+    @assign var = variabilityMax(var, arg_var)
   end
   @assign args = listReverseInPlace(args)
   @assign ty = P_Function.returnType(func)
@@ -1076,7 +1071,7 @@ function typeCall(
       _ => begin
         Error.assertion(
           false,
-          getInstanceName() + ": " + P_Expression.Expression.toString(callExp),
+          getInstanceName() + ": " + toString(callExp),
           sourceInfo(),
         )
         fail()
@@ -1116,55 +1111,55 @@ function getSpecialReturnType(fn::M_Function, args::List{<:Expression})::NFType
   @assign ty = begin
     @match fn.path begin
       Absyn.IDENT("min") => begin
-        Type.arrayElementType(P_Expression.Expression.typeOf(P_Expression.Expression.unbox(listHead(
+        arrayElementType(typeOf(P_Expression.Expression.unbox(listHead(
           args,
         ))))
       end
 
       Absyn.IDENT("max") => begin
-        Type.arrayElementType(P_Expression.Expression.typeOf(P_Expression.Expression.unbox(listHead(
+        arrayElementType(typeOf(P_Expression.Expression.unbox(listHead(
           args,
         ))))
       end
 
       Absyn.IDENT("sum") => begin
-        Type.arrayElementType(P_Expression.Expression.typeOf(P_Expression.Expression.unbox(listHead(
+        arrayElementType(typeOf(P_Expression.Expression.unbox(listHead(
           args,
         ))))
       end
 
       Absyn.IDENT("product") => begin
-        Type.arrayElementType(P_Expression.Expression.typeOf(P_Expression.Expression.unbox(listHead(
+        arrayElementType(typeOf(P_Expression.Expression.unbox(listHead(
           args,
         ))))
       end
 
       Absyn.IDENT("previous") => begin
-        P_Expression.Expression.typeOf(P_Expression.Expression.unbox(listHead(args)))
+        typeOf(P_Expression.Expression.unbox(listHead(args)))
       end
 
       Absyn.IDENT("shiftSample") => begin
-        P_Expression.Expression.typeOf(P_Expression.Expression.unbox(listHead(args)))
+        typeOf(P_Expression.Expression.unbox(listHead(args)))
       end
 
       Absyn.IDENT("backSample") => begin
-        P_Expression.Expression.typeOf(P_Expression.Expression.unbox(listHead(args)))
+        typeOf(P_Expression.Expression.unbox(listHead(args)))
       end
 
       Absyn.IDENT("hold") => begin
-        P_Expression.Expression.typeOf(P_Expression.Expression.unbox(listHead(args)))
+        typeOf(P_Expression.Expression.unbox(listHead(args)))
       end
 
       Absyn.IDENT("superSample") => begin
-        P_Expression.Expression.typeOf(P_Expression.Expression.unbox(listHead(args)))
+        typeOf(P_Expression.Expression.unbox(listHead(args)))
       end
 
       Absyn.IDENT("subSample") => begin
-        P_Expression.Expression.typeOf(P_Expression.Expression.unbox(listHead(args)))
+        typeOf(P_Expression.Expression.unbox(listHead(args)))
       end
 
       Absyn.IDENT("DynamicSelect") => begin
-        P_Expression.Expression.typeOf(P_Expression.Expression.unbox(listHead(args)))
+        typeOf(P_Expression.Expression.unbox(listHead(args)))
       end
 
       _ => begin
@@ -1244,7 +1239,7 @@ function evaluateCallTypeDim(
     @match dim begin
       P_Dimension.Dimension.EXP(__) => begin
         @assign ptree = buildParameterTree(fnArgs, ptree)
-        @assign exp = P_Expression.Expression.map(
+        @assign exp = map(
           dim.exp,
           (ptree) -> evaluateCallTypeDimExp(ptree = ptree),
         )
@@ -1276,7 +1271,7 @@ function evaluateCallType(
     local dims::List{Dimension}
     local tys::List{NFType}
     @match ty begin
-      Type.ARRAY(__) => begin
+      ARRAY_TYPE(__) => begin
         @assign (dims, ptree) =
           ListUtil.map1Fold(ty.dimensions, evaluateCallTypeDim, (fn, args), ptree)
         @assign ty.dimensions = dims
@@ -1372,7 +1367,7 @@ function vectorizeCall(
             getInstanceName() + " got unknown dimension for vectorized call",
             info,
           )
-          @assign ty = Type.ARRAY(TYPE_INTEGER(), list(dim))
+          @assign ty = ARRAY_TYPE(TYPE_INTEGER(), list(dim))
           @assign exp = P_Expression.Expression.RANGE(
             ty,
             INTEGER_EXPRESSION(1),
@@ -1592,7 +1587,7 @@ function reductionFoldExpression(
   local op_node::InstNode
   local fn::M_Function
 
-  if Type.isComplex(reductionType)
+  if isComplex(reductionType)
     @assign foldExp = begin
       @match AbsynUtil.pathFirstIdent(P_Function.name(reductionFn)) begin
         "sum" => begin
@@ -1808,9 +1803,9 @@ function typeArrayConstructor(
             Typing.typeIterator(iter, range, next_origin, is_structural)
           if is_structural
             @assign range = Ceval.evalExp(range, Ceval.P_EvalTarget.RANGE(info))
-            @assign iter_ty = P_Expression.Expression.typeOf(range)
+            @assign iter_ty = typeOf(range)
           end
-          @assign dims = listAppend(Type.arrayDims(iter_ty), dims)
+          @assign dims = listAppend(arrayDims(iter_ty), dims)
           @assign variability = Variability.variabilityMax(variability, iter_var)
           @assign iters = _cons((iter, range), iters)
         end

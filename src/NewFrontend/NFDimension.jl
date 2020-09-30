@@ -62,7 +62,7 @@ function mapExp(dim::Dimension, func::MapFunc)::Dimension
     local e2::Expression
     @match dim begin
       DIMENSION_UNTYPED(dimension = e1) => begin
-        @assign e2 = P_Expression.Expression.map(e1, func)
+        @assign e2 = map(e1, func)
         if referenceEq(e1, e2)
           dim
         else
@@ -71,7 +71,7 @@ function mapExp(dim::Dimension, func::MapFunc)::Dimension
       end
 
       DIMENSION_EXP(exp = e1) => begin
-        @assign e2 = P_Expression.Expression.map(e1, func)
+        @assign e2 = map(e1, func)
         if referenceEq(e1, e2)
           dim
         else
@@ -87,8 +87,8 @@ function mapExp(dim::Dimension, func::MapFunc)::Dimension
   return outDim
 end
 
-function variability(dim::Dimension)::Variability
-  local var::Variability
+function variability(dim::Dimension)::VariabilityType
+  local var::VariabilityType
 
   @assign var = begin
     @match dim begin
@@ -234,7 +234,7 @@ function subscriptType(dim::Dimension)::M_Type
         dim.enumType
       end
       DIMENSION_EXP(__) => begin
-        P_Expression.Expression.typeOf(dim.exp)
+        typeOf(dim.exp)
       end
       _ => begin
         TYPE_UNKNOWN()
@@ -427,14 +427,14 @@ function add(a::Dimension, b::Dimension)::Dimension
       end
 
       (INTEGER(__), INTEGER(__)) => begin
-        INTEGER(a.size + b.size, P_Prefixes.variabilityMax(a.var, b.var))
+        INTEGER(a.size + b.size, variabilityMax(a.var, b.var))
       end
 
       (INTEGER(__), DIMENSION_EXP(__)) => begin
         DIMENSION_EXP(
           BINARY_EXPRESSION(
             b.exp,
-            P_Operator.Operator.OPERATOR(TYPE_INTEGER(), P_NFOperator.Op.ADD),
+            OPERATOR(TYPE_INTEGER(), P_NFOperator.Op.ADD),
             INTEGER_EXPRESSION(a.size),
           ),
           b.var,
@@ -445,7 +445,7 @@ function add(a::Dimension, b::Dimension)::Dimension
         DIMENSION_EXP(
           BINARY_EXPRESSION(
             a.exp,
-            P_Operator.Operator.OPERATOR(TYPE_INTEGER(), P_NFOperator.Op.ADD),
+            OPERATOR(TYPE_INTEGER(), P_NFOperator.Op.ADD),
             INTEGER_EXPRESSION(b.size),
           ),
           a.var,
@@ -456,10 +456,10 @@ function add(a::Dimension, b::Dimension)::Dimension
         DIMENSION_EXP(
           BINARY_EXPRESSION(
             a.exp,
-            P_Operator.Operator.OPERATOR(TYPE_INTEGER(), P_NFOperator.Op.ADD),
+            OPERATOR(TYPE_INTEGER(), P_NFOperator.Op.ADD),
             b.exp,
           ),
-          P_Prefixes.variabilityMax(a.var, b.var),
+          variabilityMax(a.var, b.var),
         )
       end
 
@@ -517,7 +517,7 @@ function fromExp(exp::Expression, var::VariabilityType)::Dimension
       EXPRESSION_INTEGER(__) => begin
         INTEGER(exp.value, var)
       end
-      EXPRESSION_TYPENAME(ty = Type.ARRAY(elementType = ty)) => begin
+      EXPRESSION_TYPENAME(ty = ARRAY_TYPE(elementType = ty)) => begin
         begin
           @match ty begin
             TYPE_BOOLEAN(__) => begin

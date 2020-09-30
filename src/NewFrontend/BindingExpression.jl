@@ -99,7 +99,7 @@ function bindingExpMap2(exp::Expression, evalFunc::EvalFunc, mostPropagatedCount
   local is_each::Bool
 
   @match BINDING_EXP(exp = e, expType = exp_ty, parents = parents, isEach = is_each) = mostPropagatedExp
-  @assign dims = ListUtil.firstN(Type.arrayDims(exp_ty), mostPropagatedCount)
+  @assign dims = ListUtil.firstN(arrayDims(exp_ty), mostPropagatedCount)
   @assign result = vectorize(exp, dims, (evalFunc) -> bindingExpMap3(evalFunc = evalFunc))
   @assign (exp_ty, bind_ty) = bindingExpType(result, mostPropagatedCount)
   @assign result = BINDING_EXP(result, exp_ty, bind_ty, parents, is_each)
@@ -317,18 +317,18 @@ end
                          listGet(recordExp.elements, index)
                        end
 
-                       ARRAY(elements =  nil(), ty = Type.ARRAY(elementType = TYPE_COMPLEX(cls = node)))  => begin
+                       ARRAY(elements =  nil(), ty = ARRAY_TYPE(elementType = TYPE_COMPLEX(cls = node)))  => begin
                          makeEmptyArray(getType(nthComponent(index, getClass(node))))
                        end
 
                        ARRAY(__)  => begin
                          @assign expl = list(nthRecordElement(index, e) for e in recordExp.elements)
-                         makeArray(Type.setArrayElementType(recordExp.ty, typeOf(listHead(expl))), expl)
+                         makeArray(setArrayElementType(recordExp.ty, typeOf(listHead(expl))), expl)
                        end
 
-                       RECORD_ELEMENT(ty = Type.ARRAY(elementType = TYPE_COMPLEX(cls = node)))  => begin
+                       RECORD_ELEMENT_EXPRESSION(ty = ARRAY_TYPE(elementType = TYPE_COMPLEX(cls = node)))  => begin
                          @assign node = nthComponent(index, getClass(node))
-                         RECORD_ELEMENT(recordExp, index, name(node), Type.liftArrayLeftList(getType(node), Type.arrayDims(recordExp.ty)))
+                         RECORD_ELEMENT_EXPRESSION(recordExp, index, name(node), Type.liftArrayLeftList(getType(node), arrayDims(recordExp.ty)))
                        end
 
                        BINDING_EXP(__)  => begin
@@ -338,7 +338,7 @@ end
                        _  => begin
                          @match TYPE_COMPLEX(cls = node) = typeOf(recordExp)
                          @assign node = nthComponent(index, getClass(node))
-                         RECORD_ELEMENT(recordExp, index, name(node), getType(node))
+                         RECORD_ELEMENT_EXPRESSION(recordExp, index, name(node), getType(node))
                        end
                      end
                    end
@@ -371,18 +371,18 @@ end
                          @match (node, false) = lookupElement(elementName, cls_tree)
                          @assign ty = getType(node)
                          @assign cref = prefixCref(node, ty, nil, recordExp.cref)
-                         @assign ty = Type.liftArrayLeftList(ty, Type.arrayDims(recordExp.ty))
+                         @assign ty = Type.liftArrayLeftList(ty, arrayDims(recordExp.ty))
                          CREF(ty, cref)
                        end
 
-                       ARRAY(elements =  nil(), ty = Type.ARRAY(elementType = TYPE_COMPLEX(cls = node)))  => begin
+                       ARRAY(elements =  nil(), ty = ARRAY_TYPE(elementType = TYPE_COMPLEX(cls = node)))  => begin
                          @assign cls = getClass(node)
                          @assign index = lookupComponentIndex(elementName, cls)
                          @assign ty = getType(nthComponent(index, cls))
                          makeArray(ty, nil)
                        end
 
-                       ARRAY(ty = Type.ARRAY(elementType = TYPE_COMPLEX(cls = node)))  => begin
+                       ARRAY(ty = ARRAY_TYPE(elementType = TYPE_COMPLEX(cls = node)))  => begin
                          @assign index = lookupComponentIndex(elementName, getClass(node))
                          @assign expl = List(nthRecordElement(index, e) for e in recordExp.elements)
                          @assign ty = Type.liftArrayLeft(typeOf(listHead(expl)), P_Dimension.Dimension.fromInteger(listLength(expl)))
@@ -393,9 +393,9 @@ end
                          bindingExpMap(recordExp, (elementName) -> recordElement(elementName = elementName))
                        end
 
-                       SUBSCRIPTED_EXP(__)  => begin
+                       SUBSCRIPTED_EXP_EXPRESSION(__)  => begin
                          @assign outExp = recordElement(elementName, recordExp.exp)
-                         SUBSCRIPTED_EXP(outExp, recordExp.subscripts, Type.lookupRecordFieldType(elementName, recordExp.ty))
+                         SUBSCRIPTED_EXP_EXPRESSION(outExp, recordExp.subscripts, Type.lookupRecordFieldType(elementName, recordExp.ty))
                        end
 
                        EMPTY(__)  => begin
@@ -404,11 +404,11 @@ end
 
                        _  => begin
                          @assign ty = typeOf(recordExp)
-                         @match TYPE_COMPLEX(cls = node) = Type.arrayElementType(ty)
+                         @match TYPE_COMPLEX(cls = node) = arrayElementType(ty)
                          @assign cls = getClass(node)
                          @assign index = lookupComponentIndex(elementName, cls)
-                         @assign ty = Type.liftArrayRightList(getType(nthComponent(index, cls)), Type.arrayDims(ty))
-                         RECORD_ELEMENT(recordExp, index, elementName, ty)
+                         @assign ty = Type.liftArrayRightList(getType(nthComponent(index, cls)), arrayDims(ty))
+                         RECORD_ELEMENT_EXPRESSION(recordExp, index, elementName, ty)
                        end
                      end
                    end
@@ -431,7 +431,7 @@ function tupleElement(exp::Expression, ty::M_Type, index::Integer) ::Expression
         exp
       end
 
-      P_Expression.Expression.BINDING_EXP(__)  => begin
+      BINDING_EXP(__)  => begin
         bindingExpMap(exp, (ty, index) -> tupleElement(ty = ty, index = index))
       end
 
@@ -499,7 +499,7 @@ function isMutable(exp::Expression) ::Bool
 
   @assign isMutable = begin
     @match exp begin
-      MUTABLE(__)  => begin
+      MUTABLE_EXPRESSION(__)  => begin
         true
       end
 
@@ -515,7 +515,7 @@ function makeImmutable(exp::Expression)::Expression
   local outExp::Expression
   @assign outExp = begin
     @match exp begin
-      MUTABLE(__)  => begin
+      MUTABLE_EXPRESSION(__)  => begin
         P_Pointer.access(exp.exp)
       end
 
@@ -529,7 +529,7 @@ end
 
 function makeMutable(exp::Expression)::Expression
   local outExp::Expression
-  @assign outExp = MUTABLE(P_Pointer.create(exp))
+  @assign outExp = MUTABLE_EXPRESSION(P_Pointer.create(exp))
   outExp
 end
 
@@ -540,8 +540,8 @@ function variabilityList(expl::List{<:Expression}, var::VariabilityType = Variab
   var
 end
 
-function variability(exp::Expression) ::Variability
-  local var::Variability
+function variability(exp::Expression) ::VariabilityType
+  local var::VariabilityType
   @assign var = begin
     @match exp begin
       INTEGER(__)  => begin
@@ -586,14 +586,14 @@ function variability(exp::Expression) ::Variability
 
       RANGE(__)  => begin
         @assign var = variability(exp.start)
-        @assign var = P_Prefixes.variabilityMax(var, variability(exp.stop))
+        @assign var = variabilityMax(var, variability(exp.stop))
         if isSome(exp.step)
-          @assign var = P_Prefixes.variabilityMax(var, variability(Util.getOption(exp.step)))
+          @assign var = variabilityMax(var, variability(Util.getOption(exp.step)))
         end
         var
       end
 
-      TUPLE(__)  => begin
+      TUPLE_EXPRESSION(__)  => begin
         variabilityList(exp.elements)
       end
 
@@ -605,9 +605,9 @@ function variability(exp::Expression) ::Variability
         P_Call.variability(exp.call)
       end
 
-      SIZE(__)  => begin
+      SIZE_EXPRESSION(__)  => begin
         if isSome(exp.dimIndex)
-          @assign var = P_Prefixes.variabilityMax(Variability.PARAMETER, variability(Util.getOption(exp.dimIndex)))
+          @assign var = variabilityMax(Variability.PARAMETER, variability(Util.getOption(exp.dimIndex)))
         else
           @assign var = Variability.PARAMETER
         end
@@ -619,7 +619,7 @@ function variability(exp::Expression) ::Variability
       end
 
       BINARY(__)  => begin
-        P_Prefixes.variabilityMax(variability(exp.exp1), variability(exp.exp2))
+        variabilityMax(variability(exp.exp1), variability(exp.exp2))
       end
 
       UNARY(__)  => begin
@@ -627,46 +627,46 @@ function variability(exp::Expression) ::Variability
       end
 
       LBINARY(__)  => begin
-        P_Prefixes.variabilityMax(variability(exp.exp1), variability(exp.exp2))
+        variabilityMax(variability(exp.exp1), variability(exp.exp2))
       end
 
       LUNARY(__)  => begin
         variability(exp.exp)
       end
 
-      RELATION(__)  => begin
-        P_Prefixes.variabilityMin(P_Prefixes.variabilityMax(variability(exp.exp1), variability(exp.exp2)), Variability.DISCRETE)
+      RELATION_EXPRESSION(__)  => begin
+        P_Prefixes.variabilityMin(variabilityMax(variability(exp.exp1), variability(exp.exp2)), Variability.DISCRETE)
       end
 
-      IF(__)  => begin
-        P_Prefixes.variabilityMax(variability(exp.condition), P_Prefixes.variabilityMax(variability(exp.trueBranch), variability(exp.falseBranch)))
+      IF_EXPRESSION(__)  => begin
+        variabilityMax(variability(exp.condition), variabilityMax(variability(exp.trueBranch), variability(exp.falseBranch)))
       end
 
-      CAST(__)  => begin
+      CAST_EXPRESSION(__)  => begin
         variability(exp.exp)
       end
 
-      UNBOX(__)  => begin
+      UNBOX_EXPRESSION(__)  => begin
         variability(exp.exp)
       end
 
-      SUBSCRIPTED_EXP(__)  => begin
-        P_Prefixes.variabilityMax(variability(exp.exp), variabilityList(exp.subscripts))
+      SUBSCRIPTED_EXP_EXPRESSION(__)  => begin
+        variabilityMax(variability(exp.exp), variabilityList(exp.subscripts))
       end
 
-      TUPLE_ELEMENT(__)  => begin
+      TUPLE_ELEMENT_EXPRESSION(__)  => begin
         variability(exp.tupleExp)
       end
 
-      RECORD_ELEMENT(__)  => begin
+      RECORD_ELEMENT_EXPRESSION(__)  => begin
         variability(exp.recordExp)
       end
 
-      BOX(__)  => begin
+      BOX_EXPRESSION(__)  => begin
         variability(exp.exp)
       end
 
-      PARTIAL_FUNCTION_APPLICATION(__)  => begin
+      PARTIAL_FUNCTION_APPLICATION_EXPRESSION(__)  => begin
         Variability.CONTINUOUS
       end
 
@@ -745,9 +745,9 @@ function promote(e::Expression, ty::M_Type, n::Integer) ::Tuple{Expression, M_Ty
   =#
   @assign dims = List(P_Dimension.Dimension.fromInteger(1) for i in Type.dimensionCount(ty):n - 1)
   if ! listEmpty(dims)
-    @assign dims = listAppend(Type.arrayDims(ty), dims)
+    @assign dims = listAppend(arrayDims(ty), dims)
     @assign is_array = Type.isArray(ty)
-    @assign ety = Type.arrayElementType(ty)
+    @assign ety = arrayElementType(ty)
     @assign ty = Type.liftArrayLeftList(ety, dims)
     while ! listEmpty(dims)
       @assign tys = _cons(Type.liftArrayLeftList(ety, dims), tys)
@@ -777,7 +777,7 @@ function makeIdentityMatrix(n::Integer, elementType::M_Type) ::Expression
 
   @assign zero = makeZero(elementType)
   @assign one = makeOne(elementType)
-  @assign row_ty = Type.ARRAY(elementType, list(P_Dimension.Dimension.fromInteger(n)))
+  @assign row_ty = ARRAY_TYPE(elementType, list(P_Dimension.Dimension.fromInteger(n)))
   for i in 1:n
     @assign row = nil
     for j in 2:i
@@ -805,14 +805,14 @@ function transposeArray(arrayExp::Expression) ::Expression
   local matrix::List{List{Expression}}
   local literal::Bool
 
-  @match ARRAY(Type.ARRAY(ty, _cons(dim1, _cons(dim2, rest_dims))), expl, literal) = arrayExp
+  @match ARRAY(ARRAY_TYPE(ty, _cons(dim1, _cons(dim2, rest_dims))), expl, literal) = arrayExp
   if ! listEmpty(expl)
-    @assign row_ty = Type.ARRAY(ty, _cons(dim1, rest_dims))
+    @assign row_ty = ARRAY_TYPE(ty, _cons(dim1, rest_dims))
     @assign matrix = List(arrayElements(e) for e in expl)
     @assign matrix = ListUtil.transposeList(matrix)
     @assign expl = List(makeArray(row_ty, row, literal) for row in matrix)
   end
-  @assign outExp = makeArray(Type.ARRAY(ty, _cons(dim2, _cons(dim1, rest_dims))), expl, literal)
+  @assign outExp = makeArray(ARRAY_TYPE(ty, _cons(dim2, _cons(dim1, rest_dims))), expl, literal)
   outExp
 end
 
@@ -829,7 +829,7 @@ function hasArrayCall2(exp::Expression) ::Bool
         Type.isArray(ty) && P_Call.isVectorizeable(call)
       end
 
-      TUPLE_ELEMENT(tupleExp = CALL(call = call))  => begin
+      TUPLE_ELEMENT_EXPRESSION(tupleExp = CALL(call = call))  => begin
         @assign ty = Type.nthTupleType(P_Call.typeOf(call), exp.index)
         Type.isArray(ty) && P_Call.isVectorizeable(call)
       end
@@ -905,8 +905,8 @@ function negate(exp::Expression) ::Expression
         REAL(-exp.value)
       end
 
-      CAST(__)  => begin
-        CAST(exp.ty, negate(exp.exp))
+      CAST_EXPRESSION(__)  => begin
+        CAST_EXPRESSION(exp.ty, negate(exp.exp))
       end
 
       UNARY(__)  => begin
@@ -914,7 +914,7 @@ function negate(exp::Expression) ::Expression
       end
 
       _  => begin
-        UNARY(P_Operator.Operator.OPERATOR(typeOf(exp), P_NFOperator.Op.UMINUS), exp)
+        UNARY(OPERATOR(typeOf(exp), P_NFOperator.Op.UMINUS), exp)
       end
     end
   end
@@ -934,7 +934,7 @@ function isNegated(exp::Expression) ::Bool
         exp.value < 0
       end
 
-      CAST(__)  => begin
+      CAST_EXPRESSION(__)  => begin
         isNegated(exp.exp)
       end
 
@@ -956,13 +956,13 @@ function unbox(boxedExp::Expression) ::Expression
   @assign exp = begin
     local ty::M_Type
     @match boxedExp begin
-      BOX(__)  => begin
+      BOX_EXPRESSION(__)  => begin
         boxedExp.exp
       end
 
       _  => begin
         @assign ty = typeOf(boxedExp)
-        if Type.isBoxed(ty)
+        if isBoxed(ty)
           P_Expression.Expression.UNBOX(boxedExp, Type.unbox(ty))
         else
           boxedExp
@@ -1011,7 +1011,7 @@ function makeMinValue(ty::M_Type) ::Expression
         ENUM_LITERAL(ty, listHead(ty.literals), 1)
       end
 
-      Type.ARRAY(__)  => begin
+      ARRAY_TYPE(__)  => begin
         makeArray(ty, ListUtil.fill(makeMaxValue(Type.unliftArray(ty)), P_Dimension.Dimension.size(listHead(ty.dimensions))), literal = true)
       end
     end
@@ -1040,7 +1040,7 @@ function makeMaxValue(ty::M_Type) ::Expression
         ENUM_LITERAL(ty, ListUtil.last(ty.literals), listLength(ty.literals))
       end
 
-      Type.ARRAY(__)  => begin
+      ARRAY_TYPE(__)  => begin
         ARRAY(ty, ListUtil.fill(makeMaxValue(Type.unliftArray(ty)), P_Dimension.Dimension.size(listHead(ty.dimensions))), literal = true)
       end
     end
@@ -1061,7 +1061,7 @@ function makeOne(ty::M_Type) ::Expression
         INTEGER(1)
       end
 
-      Type.ARRAY(__)  => begin
+      ARRAY_TYPE(__)  => begin
         ARRAY(ty, ListUtil.fill(makeZero(Type.unliftArray(ty)), P_Dimension.Dimension.size(listHead(ty.dimensions))), literal = true)
       end
     end
@@ -1096,7 +1096,7 @@ function makeZero(ty::M_Type) ::Expression
         INTEGER(0)
       end
 
-      Type.ARRAY(__)  => begin
+      ARRAY_TYPE(__)  => begin
         ARRAY(ty, ListUtil.fill(makeZero(Type.unliftArray(ty)), P_Dimension.Dimension.size(listHead(ty.dimensions))), literal = true)
       end
 
@@ -1150,9 +1150,9 @@ end
                  function fillType(ty::M_Type, fillExp::Expression) ::Expression
                    local exp::Expression = fillExp
 
-                   local dims::List{Dimension} = Type.arrayDims(ty)
+                   local dims::List{Dimension} = arrayDims(ty)
                    local expl::List{Expression}
-                   local arr_ty::M_Type = Type.arrayElementType(ty)
+                   local arr_ty::M_Type = arrayElementType(ty)
 
                    for dim in listReverse(dims)
                      @assign expl = nil
@@ -1336,7 +1336,7 @@ function isNegative(exp::Expression) ::Bool
         false
       end
 
-      CAST(__)  => begin
+      CAST_EXPRESSION(__)  => begin
         isNegative(exp.exp)
       end
 
@@ -1365,7 +1365,7 @@ function isOne(exp::Expression) ::Bool
         exp.value == 1.0
       end
 
-      CAST(__)  => begin
+      CAST_EXPRESSION(__)  => begin
         isOne(exp.exp)
       end
 
@@ -1390,7 +1390,7 @@ function isZero(exp::Expression) ::Bool
         exp.value == 0.0
       end
 
-      CAST(__)  => begin
+      CAST_EXPRESSION(__)  => begin
         isZero(exp.exp)
       end
 
@@ -1625,7 +1625,7 @@ function containsShallow(exp::Expression, func::ContainsPred) ::Bool
         func(exp.start) || Util.applyOptionOrDefault(exp.step, func, false) || func(exp.stop)
       end
 
-      TUPLE(__)  => begin
+      TUPLE_EXPRESSION(__)  => begin
         listContainsShallow(exp.elements, func)
       end
 
@@ -1637,7 +1637,7 @@ function containsShallow(exp::Expression, func::ContainsPred) ::Bool
         callContainsShallow(exp.call, func)
       end
 
-      SIZE(__)  => begin
+      SIZE_EXPRESSION(__)  => begin
         Util.applyOptionOrDefault(exp.dimIndex, func, false) || func(exp.exp)
       end
 
@@ -1657,39 +1657,39 @@ function containsShallow(exp::Expression, func::ContainsPred) ::Bool
         func(exp.exp)
       end
 
-      RELATION(__)  => begin
+      RELATION_EXPRESSION(__)  => begin
         func(exp.exp1) || func(exp.exp2)
       end
 
-      IF(__)  => begin
+      IF_EXPRESSION(__)  => begin
         func(exp.condition) || func(exp.trueBranch) || func(exp.falseBranch)
       end
 
-      CAST(__)  => begin
+      CAST_EXPRESSION(__)  => begin
         func(exp.exp)
       end
 
-      UNBOX(__)  => begin
+      UNBOX_EXPRESSION(__)  => begin
         func(exp.exp)
       end
 
-      SUBSCRIPTED_EXP(__)  => begin
+      SUBSCRIPTED_EXP_EXPRESSION(__)  => begin
         func(exp.exp) || listContainsExpShallow(exp.subscripts, func)
       end
 
-      TUPLE_ELEMENT(__)  => begin
+      TUPLE_ELEMENT_EXPRESSION(__)  => begin
         func(exp.tupleExp)
       end
 
-      RECORD_ELEMENT(__)  => begin
+      RECORD_ELEMENT_EXPRESSION(__)  => begin
         func(exp.recordExp)
       end
 
-      PARTIAL_FUNCTION_APPLICATION(__)  => begin
+      PARTIAL_FUNCTION_APPLICATION_EXPRESSION(__)  => begin
         listContains(exp.args, func)
       end
 
-      BOX(__)  => begin
+      BOX_EXPRESSION(__)  => begin
         func(exp.exp)
       end
 
@@ -1795,7 +1795,6 @@ end
 
 function contains(exp::Expression, func::ContainsPred) ::Bool
   local res::Bool
-
   if func(exp)
     @assign res = true
     return res
@@ -1806,11 +1805,9 @@ function contains(exp::Expression, func::ContainsPred) ::Bool
       CREF(__)  => begin
         crefContains(exp.cref, func)
       end
-
       ARRAY(__)  => begin
         listContains(exp.elements, func)
       end
-
       MATRIX(__)  => begin
         @assign res = false
         for row in exp.elements
@@ -1821,79 +1818,60 @@ function contains(exp::Expression, func::ContainsPred) ::Bool
         end
         res
       end
-
       RANGE(__)  => begin
         contains(exp.start, func) || containsOpt(exp.step, func) || contains(exp.stop, func)
       end
-
-      TUPLE(__)  => begin
+      TUPLE_EXPRESSION(__)  => begin
         listContains(exp.elements, func)
       end
-
       RECORD(__)  => begin
         listContains(exp.elements, func)
       end
-
       CALL(__)  => begin
         callContains(exp.call, func)
       end
-
-      SIZE(__)  => begin
+      SIZE_EXPRESSION(__)  => begin
         containsOpt(exp.dimIndex, func) || contains(exp.exp, func)
       end
-
       BINARY(__)  => begin
         contains(exp.exp1, func) || contains(exp.exp2, func)
       end
-
       UNARY(__)  => begin
         contains(exp.exp, func)
       end
-
       LBINARY(__)  => begin
         contains(exp.exp1, func) || contains(exp.exp2, func)
       end
-
       LUNARY(__)  => begin
         contains(exp.exp, func)
       end
-
-      RELATION(__)  => begin
+      RELATION_EXPRESSION(__)  => begin
         contains(exp.exp1, func) || contains(exp.exp2, func)
       end
-
-      IF(__)  => begin
+      IF_EXPRESSION(__)  => begin
         contains(exp.condition, func) || contains(exp.trueBranch, func) || contains(exp.falseBranch, func)
       end
-
-      CAST(__)  => begin
+      CAST_EXPRESSION(__)  => begin
         contains(exp.exp, func)
       end
-
-      UNBOX(__)  => begin
+      UNBOX_EXPRESSION(__)  => begin
         contains(exp.exp, func)
       end
-
-      SUBSCRIPTED_EXP(__)  => begin
+      SUBSCRIPTED_EXP_EXPRESSION(__)  => begin
         contains(exp.exp, func) || listContainsExp(exp.subscripts, func)
       end
-
-      TUPLE_ELEMENT(__)  => begin
+      TUPLE_ELEMENT_EXPRESSION(__)  => begin
         contains(exp.tupleExp, func)
       end
-
-      RECORD_ELEMENT(__)  => begin
+      RECORD_ELEMENT_EXPRESSION(__)  => begin
         contains(exp.recordExp, func)
       end
-
-      PARTIAL_FUNCTION_APPLICATION(__)  => begin
+      PARTIAL_FUNCTION_APPLICATION_EXPRESSION(__)  => begin
         listContains(exp.args, func)
       end
-
-      BOX(__)  => begin
+      BOX_EXPRESSION(__)  => begin
         contains(exp.exp, func)
       end
-
       _  => begin
         false
       end
@@ -1978,7 +1956,7 @@ function mapFoldCallShallow(call::Call, func::MapFunc, foldArg::ArgT)  where {Ar
     local s::String
     local e::Expression
     local t::M_Type
-    local v::Variability
+    local v::VariabilityType
     local iters::List{Tuple{InstNode, Expression}}
     local default_exp::Option{Expression}
     local fold_exp::Tuple{Option{Expression}, String, String}
@@ -2120,13 +2098,13 @@ function mapFoldClockShallow(clockExp::Expression, func::MapFunc, arg::ArgT)  wh
         end
       end
 
-      P_ClockKind.SOLVER_CLOCK(e1, e2)  => begin
+      SOLVER_CLOCK(e1, e2)  => begin
         @assign (e3, arg) = func(e1, arg)
         @assign (e4, arg) = func(e2, arg)
         if referenceEq(e1, e3) && referenceEq(e2, e4)
           clockExp
         else
-          CLKCONST(P_ClockKind.SOLVER_CLOCK(e3, e4))
+          CLKCONST(SOLVER_CLOCK(e3, e4))
         end
       end
 
@@ -2184,7 +2162,7 @@ function mapFoldShallow(exp::Expression, func::MapFunc, arg::ArgT)  where {ArgT}
         end
       end
 
-      TUPLE(__)  => begin
+      TUPLE_EXPRESSION(__)  => begin
         @assign (expl, arg) = ListUtil.mapFold(exp.elements, func, arg)
         TUPLE(exp.ty, expl)
       end
@@ -2203,13 +2181,13 @@ function mapFoldShallow(exp::Expression, func::MapFunc, arg::ArgT)  where {ArgT}
         end
       end
 
-      SIZE(__)  => begin
+      SIZE_EXPRESSION(__)  => begin
         @assign (e1, arg) = func(exp.exp, arg)
         @assign (oe, arg) = mapFoldOptShallow(exp.dimIndex, func, arg)
         if referenceEq(exp.exp, e1) && referenceEq(exp.dimIndex, oe)
           exp
         else
-          SIZE(e1, oe)
+          SIZE_EXPRESSION(e1, oe)
         end
       end
 
@@ -2251,76 +2229,76 @@ function mapFoldShallow(exp::Expression, func::MapFunc, arg::ArgT)  where {ArgT}
         end
       end
 
-      RELATION(__)  => begin
+      RELATION_EXPRESSION(__)  => begin
         @assign (e1, arg) = func(exp.exp1, arg)
         @assign (e2, arg) = func(exp.exp2, arg)
         if referenceEq(exp.exp1, e1) && referenceEq(exp.exp2, e2)
           exp
         else
-          RELATION(e1, exp.operator, e2)
+          RELATION_EXPRESSION(e1, exp.operator, e2)
         end
       end
 
-      IF(__)  => begin
+      IF_EXPRESSION(__)  => begin
         @assign (e1, arg) = func(exp.condition, arg)
         @assign (e2, arg) = func(exp.trueBranch, arg)
         @assign (e3, arg) = func(exp.falseBranch, arg)
         if referenceEq(exp.condition, e1) && referenceEq(exp.trueBranch, e2) && referenceEq(exp.falseBranch, e3)
           exp
         else
-          IF(e1, e2, e3)
+          IF_EXPRESSION(e1, e2, e3)
         end
       end
 
-      CAST(__)  => begin
+      CAST_EXPRESSION(__)  => begin
         @assign (e1, arg) = func(exp.exp, arg)
         if referenceEq(exp.exp, e1)
           exp
         else
-          CAST(exp.ty, e1)
+          CAST_EXPRESSION(exp.ty, e1)
         end
       end
 
-      UNBOX(__)  => begin
+      UNBOX_EXPRESSION(__)  => begin
         @assign (e1, arg) = func(exp.exp, arg)
         if referenceEq(exp.exp, e1)
           exp
         else
-          UNBOX(e1, exp.ty)
+          UNBOX_EXPRESSION(e1, exp.ty)
         end
       end
 
-      SUBSCRIPTED_EXP(__)  => begin
+      SUBSCRIPTED_EXP_EXPRESSION(__)  => begin
         @assign (e1, arg) = func(exp.exp, arg)
         @assign (subs, arg) = ListUtil.mapFold(exp.subscripts, (func) -> mapFoldExpShallow(func = func), arg)
-        SUBSCRIPTED_EXP(e1, subs, exp.ty)
+        SUBSCRIPTED_EXP_EXPRESSION(e1, subs, exp.ty)
       end
 
-      TUPLE_ELEMENT(__)  => begin
+      TUPLE_ELEMENT_EXPRESSION(__)  => begin
         @assign (e1, arg) = func(exp.tupleExp, arg)
         if referenceEq(exp.tupleExp, e1)
           exp
         else
-          TUPLE_ELEMENT(e1, exp.index, exp.ty)
+          TUPLE_ELEMENT_EXPRESSION(e1, exp.index, exp.ty)
         end
       end
 
-      RECORD_ELEMENT(__)  => begin
+      RECORD_ELEMENT_EXPRESSION(__)  => begin
         @assign (e1, arg) = func(exp.recordExp, arg)
         if referenceEq(exp.recordExp, e1)
           exp
         else
-          RECORD_ELEMENT(e1, exp.index, exp.fieldName, exp.ty)
+          RECORD_ELEMENT_EXPRESSION(e1, exp.index, exp.fieldName, exp.ty)
         end
       end
 
-      MUTABLE(__)  => begin
+      MUTABLE_EXPRESSION(__)  => begin
         @assign (e1, arg) = func(P_Pointer.access(exp.exp), arg)
         P_Pointer.update(exp.exp, e1)
         exp
       end
 
-      PARTIAL_FUNCTION_APPLICATION(__)  => begin
+      PARTIAL_FUNCTION_APPLICATION_EXPRESSION(__)  => begin
         @assign (expl, arg) = ListUtil.mapFold(exp.args, func, arg)
         @assign exp.args = expl
         exp
@@ -2398,7 +2376,7 @@ function mapFoldCall(call::Call, func::MapFunc, foldArg::ArgT)  where {ArgT}
     local s::String
     local e::Expression
     local t::M_Type
-    local v::Variability
+    local v::VariabilityType
     local iters::List{Tuple{InstNode, Expression}}
     local default_exp::Option{Expression}
     local fold_exp::Tuple{Option{Expression}, String, String}
@@ -2533,13 +2511,13 @@ function mapFold(exp::Expression, func::MapFunc, arg::ArgT)  where {ArgT}
         end
       end
 
-      CLKCONST(P_ClockKind.SOLVER_CLOCK(e1, e2))  => begin
+      CLKCONST(SOLVER_CLOCK(e1, e2))  => begin
         @assign (e3, arg) = mapFold(e1, func, arg)
         @assign (e4, arg) = mapFold(e2, func, arg)
         if referenceEq(e1, e3) && referenceEq(e2, e4)
           exp
         else
-          CLKCONST(P_ClockKind.SOLVER_CLOCK(e3, e4))
+          CLKCONST(SOLVER_CLOCK(e3, e4))
         end
       end
 
@@ -2597,22 +2575,22 @@ function mapFold(exp::Expression, func::MapFunc, arg::ArgT)  where {ArgT}
         end
       end
 
-      SIZE(dimIndex = SOME(e2))  => begin
+      SIZE_EXPRESSION(dimIndex = SOME(e2))  => begin
         @assign (e1, arg) = mapFold(exp.exp, func, arg)
         @assign (e3, arg) = mapFold(e2, func, arg)
         if referenceEq(exp.exp, e1) && referenceEq(e2, e3)
           exp
         else
-          SIZE(e1, SOME(e3))
+          SIZE_EXPRESSION(e1, SOME(e3))
         end
       end
 
-      SIZE(__)  => begin
+      SIZE_EXPRESSION(__)  => begin
         @assign (e1, arg) = mapFold(exp.exp, func, arg)
         if referenceEq(exp.exp, e1)
           exp
         else
-          SIZE(e1, NONE())
+          SIZE_EXPRESSION(e1, NONE())
         end
       end
 
@@ -2654,76 +2632,76 @@ function mapFold(exp::Expression, func::MapFunc, arg::ArgT)  where {ArgT}
         end
       end
 
-      RELATION(__)  => begin
+      RELATION_EXPRESSION(__)  => begin
         @assign (e1, arg) = mapFold(exp.exp1, func, arg)
         @assign (e2, arg) = mapFold(exp.exp2, func, arg)
         if referenceEq(exp.exp1, e1) && referenceEq(exp.exp2, e2)
           exp
         else
-          RELATION(e1, exp.operator, e2)
+          RELATION_EXPRESSION(e1, exp.operator, e2)
         end
       end
 
-      IF(__)  => begin
+      IF_EXPRESSION(__)  => begin
         @assign (e1, arg) = mapFold(exp.condition, func, arg)
         @assign (e2, arg) = mapFold(exp.trueBranch, func, arg)
         @assign (e3, arg) = mapFold(exp.falseBranch, func, arg)
         if referenceEq(exp.condition, e1) && referenceEq(exp.trueBranch, e2) && referenceEq(exp.falseBranch, e3)
           exp
         else
-          IF(e1, e2, e3)
+          IF_EXPRESSION(e1, e2, e3)
         end
       end
 
-      CAST(__)  => begin
+      CAST_EXPRESSION(__)  => begin
         @assign (e1, arg) = mapFold(exp.exp, func, arg)
         if referenceEq(exp.exp, e1)
           exp
         else
-          CAST(exp.ty, e1)
+          CAST_EXPRESSION(exp.ty, e1)
         end
       end
 
-UNBOX(__)  => begin
+UNBOX_EXPRESSION(__)  => begin
   @assign (e1, arg) = mapFold(exp.exp, func, arg)
   if referenceEq(exp.exp, e1)
     exp
   else
-    UNBOX(e1, exp.ty)
+    UNBOX_EXPRESSION(e1, exp.ty)
   end
 end
 
-SUBSCRIPTED_EXP(__)  => begin
+SUBSCRIPTED_EXP_EXPRESSION(__)  => begin
   @assign (e1, arg) = mapFold(exp.exp, func, arg)
   @assign (subs, arg) = ListUtil.mapFold(exp.subscripts, (func) -> mapFoldExp(func = func), arg)
-  SUBSCRIPTED_EXP(e1, subs, exp.ty)
+  SUBSCRIPTED_EXP_EXPRESSION(e1, subs, exp.ty)
 end
 
-TUPLE_ELEMENT(__)  => begin
+TUPLE_ELEMENT_EXPRESSION(__)  => begin
   @assign (e1, arg) = mapFold(exp.tupleExp, func, arg)
   if referenceEq(exp.tupleExp, e1)
     exp
   else
-    TUPLE_ELEMENT(e1, exp.index, exp.ty)
+    TUPLE_ELEMENT_EXPRESSION(e1, exp.index, exp.ty)
   end
 end
 
-RECORD_ELEMENT(__)  => begin
+RECORD_ELEMENT_EXPRESSION(__)  => begin
   @assign (e1, arg) = mapFold(exp.recordExp, func, arg)
   if referenceEq(exp.recordExp, e1)
     exp
   else
-    RECORD_ELEMENT(e1, exp.index, exp.fieldName, exp.ty)
+    RECORD_ELEMENT_EXPRESSION(e1, exp.index, exp.fieldName, exp.ty)
   end
 end
 
-MUTABLE(__)  => begin
+MUTABLE_EXPRESSION(__)  => begin
   @assign (e1, arg) = mapFold(P_Pointer.access(exp.exp), func, arg)
   P_Pointer.update(exp.exp, e1)
   exp
 end
 
-PARTIAL_FUNCTION_APPLICATION(__)  => begin
+PARTIAL_FUNCTION_APPLICATION_EXPRESSION(__)  => begin
   @assign (expl, arg) = ListUtil.map1Fold(exp.args, mapFold, func, arg)
   @assign exp.args = expl
   exp
@@ -2880,7 +2858,7 @@ function apply(exp::Expression, func::ApplyFunc)
         ()
       end
 
-      CLKCONST(P_ClockKind.SOLVER_CLOCK(e1, e2))  => begin
+      CLKCONST(SOLVER_CLOCK(e1, e2))  => begin
         apply(e1, func)
         apply(e2, func)
         ()
@@ -2931,13 +2909,13 @@ function apply(exp::Expression, func::ApplyFunc)
         ()
       end
 
-      SIZE(dimIndex = SOME(e))  => begin
+      SIZE_EXPRESSION(dimIndex = SOME(e))  => begin
         apply(exp.exp, func)
         apply(e, func)
         ()
       end
 
-      SIZE(__)  => begin
+      SIZE_EXPRESSION(__)  => begin
         apply(exp.exp, func)
         ()
       end
@@ -2964,30 +2942,30 @@ function apply(exp::Expression, func::ApplyFunc)
         ()
       end
 
-      RELATION(__)  => begin
+      RELATION_EXPRESSION(__)  => begin
         apply(exp.exp1, func)
         apply(exp.exp2, func)
         ()
       end
 
-      IF(__)  => begin
+      IF_EXPRESSION(__)  => begin
         apply(exp.condition, func)
         apply(exp.trueBranch, func)
         apply(exp.falseBranch, func)
         ()
       end
 
-      CAST(__)  => begin
+      CAST_EXPRESSION(__)  => begin
         apply(exp.exp, func)
         ()
       end
 
-      UNBOX(__)  => begin
+      UNBOX_EXPRESSION(__)  => begin
         apply(exp.exp, func)
         ()
       end
 
-      SUBSCRIPTED_EXP(__)  => begin
+      SUBSCRIPTED_EXP_EXPRESSION(__)  => begin
         apply(exp.exp, func)
         for s in exp.subscripts
           applyExp(s, func)
@@ -2995,27 +2973,27 @@ function apply(exp::Expression, func::ApplyFunc)
         ()
       end
 
-      TUPLE_ELEMENT(__)  => begin
+      TUPLE_ELEMENT_EXPRESSION(__)  => begin
         apply(exp.tupleExp, func)
         ()
       end
 
-      RECORD_ELEMENT(__)  => begin
+      RECORD_ELEMENT_EXPRESSION(__)  => begin
         apply(exp.recordExp, func)
         ()
       end
 
-      BOX(__)  => begin
+      BOX_EXPRESSION(__)  => begin
         apply(exp.exp, func)
         ()
       end
 
-      MUTABLE(__)  => begin
+      MUTABLE_EXPRESSION(__)  => begin
         apply(P_Pointer.access(exp.exp), func)
         ()
       end
 
-      PARTIAL_FUNCTION_APPLICATION(__)  => begin
+      PARTIAL_FUNCTION_APPLICATION_EXPRESSION(__)  => begin
         applyList(exp.args, func)
         ()
       end
@@ -3153,7 +3131,7 @@ function fold(exp::Expression, func::FoldFunc, arg::ArgT)  where {ArgT}
         result
       end
 
-      CLKCONST(P_ClockKind.SOLVER_CLOCK(e1, e2))  => begin
+      CLKCONST(SOLVER_CLOCK(e1, e2))  => begin
         @assign result = fold(e1, func, arg)
         @assign result = fold(e2, func, result)
         result
@@ -3193,12 +3171,12 @@ function fold(exp::Expression, func::FoldFunc, arg::ArgT)  where {ArgT}
         foldCall(exp.call, func, arg)
       end
 
-      SIZE(dimIndex = SOME(e))  => begin
+      SIZE_EXPRESSION(dimIndex = SOME(e))  => begin
         @assign result = fold(exp.exp, func, arg)
         fold(e, func, result)
       end
 
-      SIZE(__)  => begin
+      SIZE_EXPRESSION(__)  => begin
         fold(exp.exp, func, arg)
       end
 
@@ -3220,47 +3198,47 @@ function fold(exp::Expression, func::FoldFunc, arg::ArgT)  where {ArgT}
         fold(exp.exp, func, arg)
       end
 
-      RELATION(__)  => begin
+      RELATION_EXPRESSION(__)  => begin
         @assign result = fold(exp.exp1, func, arg)
         fold(exp.exp2, func, result)
       end
 
-      IF(__)  => begin
+      IF_EXPRESSION(__)  => begin
         @assign result = fold(exp.condition, func, arg)
         @assign result = fold(exp.trueBranch, func, result)
         fold(exp.falseBranch, func, result)
       end
 
-      CAST(__)  => begin
+      CAST_EXPRESSION(__)  => begin
         fold(exp.exp, func, arg)
       end
 
-      UNBOX(__)  => begin
+      UNBOX_EXPRESSION(__)  => begin
         fold(exp.exp, func, arg)
       end
 
-      SUBSCRIPTED_EXP(__)  => begin
+      SUBSCRIPTED_EXP_EXPRESSION(__)  => begin
         @assign result = fold(exp.exp, func, arg)
         ListUtil.fold(exp.subscripts, (func) -> foldExp(func = func), result)
       end
 
-      TUPLE_ELEMENT(__)  => begin
+      TUPLE_ELEMENT_EXPRESSION(__)  => begin
         fold(exp.tupleExp, func, arg)
       end
 
-      RECORD_ELEMENT(__)  => begin
+      RECORD_ELEMENT_EXPRESSION(__)  => begin
         fold(exp.recordExp, func, arg)
       end
 
-      BOX(__)  => begin
+      BOX_EXPRESSION(__)  => begin
         fold(exp.exp, func, arg)
       end
 
-      MUTABLE(__)  => begin
+      MUTABLE_EXPRESSION(__)  => begin
         fold(P_Pointer.access(exp.exp), func, arg)
       end
 
-      PARTIAL_FUNCTION_APPLICATION(__)  => begin
+      PARTIAL_FUNCTION_APPLICATION_EXPRESSION(__)  => begin
         foldList(exp.args, func, arg)
       end
 
@@ -3354,7 +3332,7 @@ function mapCallShallow(call::Call, func::MapFunc) ::Call
     local s::String
     local e::Expression
     local t::M_Type
-    local v::Variability
+    local v::VariabilityType
     local iters::List{Tuple{InstNode, Expression}}
     local default_exp::Option{Expression}
     local fold_exp::Tuple{Option{Expression}, String, String}
@@ -3496,13 +3474,13 @@ function mapShallow(exp::Expression, func::MapFunc) ::Expression
         end
       end
 
-      CLKCONST(P_ClockKind.SOLVER_CLOCK(e1, e2))  => begin
+      CLKCONST(SOLVER_CLOCK(e1, e2))  => begin
         @assign e3 = func(e1)
         @assign e4 = func(e2)
         if referenceEq(e1, e3) && referenceEq(e2, e4)
           exp
         else
-          CLKCONST(P_ClockKind.SOLVER_CLOCK(e3, e4))
+          CLKCONST(SOLVER_CLOCK(e3, e4))
         end
       end
 
@@ -3551,22 +3529,22 @@ function mapShallow(exp::Expression, func::MapFunc) ::Expression
         CALL(mapCallShallow(exp.call, func))
       end
 
-      SIZE(dimIndex = SOME(e2))  => begin
+      SIZE_EXPRESSION(dimIndex = SOME(e2))  => begin
         @assign e1 = func(exp.exp)
         @assign e3 = func(e2)
         if referenceEq(exp.exp, e1) && referenceEq(e2, e3)
           exp
         else
-          SIZE(e1, SOME(e3))
+          SIZE_EXPRESSION(e1, SOME(e3))
         end
       end
 
-      SIZE(__)  => begin
+      SIZE_EXPRESSION(__)  => begin
         @assign e1 = func(exp.exp)
         if referenceEq(exp.exp, e1)
           exp
         else
-          SIZE(e1, NONE())
+          SIZE_EXPRESSION(e1, NONE())
         end
       end
 
@@ -3608,82 +3586,82 @@ function mapShallow(exp::Expression, func::MapFunc) ::Expression
         end
       end
 
-      RELATION(__)  => begin
+      RELATION_EXPRESSION(__)  => begin
         @assign e1 = func(exp.exp1)
         @assign e2 = func(exp.exp2)
         if referenceEq(exp.exp1, e1) && referenceEq(exp.exp2, e2)
           exp
         else
-          RELATION(e1, exp.operator, e2)
+          RELATION_EXPRESSION(e1, exp.operator, e2)
         end
       end
 
-      IF(__)  => begin
+      IF_EXPRESSION(__)  => begin
         @assign e1 = func(exp.condition)
         @assign e2 = func(exp.trueBranch)
         @assign e3 = func(exp.falseBranch)
         if referenceEq(exp.condition, e1) && referenceEq(exp.trueBranch, e2) && referenceEq(exp.falseBranch, e3)
           exp
         else
-          IF(e1, e2, e3)
+          IF_EXPRESSION(e1, e2, e3)
         end
       end
 
-      CAST(__)  => begin
+      CAST_EXPRESSION(__)  => begin
         @assign e1 = func(exp.exp)
         if referenceEq(exp.exp, e1)
           exp
         else
-          CAST(exp.ty, e1)
+          CAST_EXPRESSION(exp.ty, e1)
         end
       end
 
-      UNBOX(__)  => begin
+      UNBOX_EXPRESSION(__)  => begin
         @assign e1 = func(exp.exp)
         if referenceEq(exp.exp, e1)
           exp
         else
-          UNBOX(e1, exp.ty)
+          UNBOX_EXPRESSION(e1, exp.ty)
         end
       end
 
-      SUBSCRIPTED_EXP(__)  => begin
-        SUBSCRIPTED_EXP(func(exp.exp), List(mapShallowExp(e, func) for e in exp.subscripts), exp.ty)
+      SUBSCRIPTED_EXP_EXPRESSION(__)  => begin
+        SUBSCRIPTED_EXP_EXPRESSION(func(exp.exp), List(mapShallowExp(e, func) for e in exp.subscripts), exp.ty)
       end
 
-      TUPLE_ELEMENT(__)  => begin
+      TUPLE_ELEMENT_EXPRESSION(__)  => begin
         @assign e1 = func(exp.tupleExp)
         if referenceEq(exp.tupleExp, e1)
           exp
         else
-          TUPLE_ELEMENT(e1, exp.index, exp.ty)
+          TUPLE_ELEMENT_EXPRESSION(e1, exp.index, exp.ty)
         end
       end
 
-      RECORD_ELEMENT(__)  => begin
+      RECORD_ELEMENT_EXPRESSION(__)  => begin
         @assign e1 = func(exp.recordExp)
         if referenceEq(exp.recordExp, e1)
           exp
         else
-          RECORD_ELEMENT(e1, exp.index, exp.fieldName, exp.ty)
+          RECORD_ELEMENT_EXPRESSION(e1, exp.index, exp.fieldName, exp.ty)
         end
       end
 
-BOX(__)  => begin
+BOX_EXPRESSION(__)  => begin
   @assign e1 = func(exp.exp)
   if referenceEq(exp.exp, e1)
     exp
   else
-    BOX(e1)
+    BOX_EXPRESSION(e1)
   end
 end
 
-MUTABLE(__)  => begin
+MUTABLE_EXPRESSION(__)  => begin
   P_Pointer.update(exp.exp, func(P_Pointer.access(exp.exp)))
   exp
 end
 
-PARTIAL_FUNCTION_APPLICATION(__)  => begin
+PARTIAL_FUNCTION_APPLICATION_EXPRESSION(__)  => begin
   @assign exp.args = List(func(e) for e in exp.args)
   exp
 end
@@ -3707,17 +3685,15 @@ end
 
 function mapCref(cref::ComponentRef, func::MapFunc) ::ComponentRef
   local outCref::ComponentRef
-
   @assign outCref = begin
     local subs::List{Subscript}
     local rest::ComponentRef
     @match cref begin
-      CREF(origin = Origin.CREF)  => begin
-        @assign subs = List(mapExp(s, func) for s in cref.subscripts)
+      COMPONENT_REF_CREF(origin = Origin.CREF)  => begin
+        @assign subs = list(mapExp(s, func) for s in cref.subscripts)
         @assign rest = mapCref(cref.restCref, func)
-        CREF(cref.node, subs, cref.ty, cref.origin, rest)
+        COMPONENT_REF_CREF(cref.node, subs, cref.ty, cref.origin, rest)
       end
-
       _  => begin
         cref
       end
@@ -3756,7 +3732,7 @@ function mapCall(call::Call, func::MapFunc) ::Call
     local s::String
     local e::Expression
     local t::M_Type
-    local v::Variability
+    local v::VariabilityType
     local iters::List{Tuple{InstNode, Expression}}
     local default_exp::Option{Expression}
     local fold_exp::Tuple{Option{Expression}, String, String}
@@ -3844,33 +3820,31 @@ end
 
 function map(exp::Expression, func::MapFunc) ::Expression
   local outExp::Expression
-
   @assign outExp = begin
     local e1::Expression
     local e2::Expression
     local e3::Expression
     local e4::Expression
     @match exp begin
-      CLKCONST(P_ClockKind.INTEGER_CLOCK(e1, e2))  => begin
+      CLKCONST_EXPRESSION(INTEGER_CLOCK(e1, e2))  => begin
         @assign e3 = map(e1, func)
         @assign e4 = map(e2, func)
         if referenceEq(e1, e3) && referenceEq(e2, e4)
           exp
         else
-          CLKCONST(P_ClockKind.INTEGER_CLOCK(e3, e4))
+          CLKCONST_EXPRESSION(INTEGER_CLOCK(e3, e4))
         end
       end
 
-      CLKCONST(P_ClockKind.REAL_CLOCK(e1))  => begin
+      CLKCONST_EXPRESSION(REAL_CLOCK(e1))  => begin
         @assign e2 = map(e1, func)
         if referenceEq(e1, e2)
           exp
         else
-          CLKCONST(P_ClockKind.REAL_CLOCK(e2))
+          CLKCONST(REAL_CLOCK(e2))
         end
       end
-
-      CLKCONST(P_ClockKind.BOOLEAN_CLOCK(e1, e2))  => begin
+      CLKCONST_EXPRESSION(BOOLEAN_CLOCK(e1, e2))  => begin
         @assign e3 = map(e1, func)
         @assign e4 = map(e2, func)
         if referenceEq(e1, e3) && referenceEq(e2, e4)
@@ -3879,30 +3853,28 @@ function map(exp::Expression, func::MapFunc) ::Expression
           CLKCONST(P_ClockKind.BOOLEAN_CLOCK(e3, e4))
         end
       end
-
-      CLKCONST(P_ClockKind.SOLVER_CLOCK(e1, e2))  => begin
+      CLKCONST_EXPRESSION(SOLVER_CLOCK(e1, e2))  => begin
         @assign e3 = map(e1, func)
         @assign e4 = map(e2, func)
         if referenceEq(e1, e3) && referenceEq(e2, e4)
           exp
         else
-          CLKCONST(P_ClockKind.SOLVER_CLOCK(e3, e4))
+          CLKCONST(SOLVER_CLOCK(e3, e4))
         end
       end
-
-      CREF(__)  => begin
-        CREF(exp.ty, mapCref(exp.cref, func))
+      CREF_EXPRESSION(__)  => begin
+        CREF_EXPRESSION(exp.ty, mapCref(exp.cref, func))
       end
 
-      ARRAY(__)  => begin
+      ARRAY_EXPRESSION(__)  => begin
         ARRAY(exp.ty, List(map(e, func) for e in exp.elements), exp.literal)
       end
 
-      MATRIX(__)  => begin
-        MATRIX(List(List(map(e, func) for e in row) for row in exp.elements))
+      MATRIX_EXPRESSION(__)  => begin
+        MATRIX_EXPRESSION(list(list(map(e, func) for e in row) for row in exp.elements))
       end
 
-      RANGE(step = SOME(e2))  => begin
+      RANGE_EXPRESSION(step = SOME(e2))  => begin
         @assign e1 = map(exp.start, func)
         @assign e4 = map(e2, func)
         @assign e3 = map(exp.stop, func)
@@ -3923,151 +3895,151 @@ function map(exp::Expression, func::MapFunc) ::Expression
         end
       end
 
-      TUPLE(__)  => begin
-        TUPLE(exp.ty, List(map(e, func) for e in exp.elements))
+      TUPLE_EXPRESSION(__)  => begin
+        TUPLE_EXPRESSION(exp.ty, List(map(e, func) for e in exp.elements))
       end
 
-      RECORD(__)  => begin
-        RECORD(exp.path, exp.ty, List(map(e, func) for e in exp.elements))
+      RECORD_EXPRESSION(__)  => begin
+        RECORD_EXPRESSION(exp.path, exp.ty, List(map(e, func) for e in exp.elements))
       end
 
-      CALL(__)  => begin
-        CALL(mapCall(exp.call, func))
+      CALL_EXPRESSION(__)  => begin
+        CALL_EXPRESSION(mapCall(exp.call, func))
       end
 
-      SIZE(dimIndex = SOME(e2))  => begin
+      SIZE_EXPRESSION(dimIndex = SOME(e2))  => begin
         @assign e1 = map(exp.exp, func)
         @assign e3 = map(e2, func)
         if referenceEq(exp.exp, e1) && referenceEq(e2, e3)
           exp
         else
-          SIZE(e1, SOME(e3))
+          SIZE_EXPRESSION(e1, SOME(e3))
         end
       end
 
-      SIZE(__)  => begin
+      SIZE_EXPRESSION(__)  => begin
         @assign e1 = map(exp.exp, func)
         if referenceEq(exp.exp, e1)
           exp
         else
-          SIZE(e1, NONE())
+          SIZE_EXPRESSION(e1, NONE())
         end
       end
 
-      BINARY(__)  => begin
+      BINARY_EXPRESSION(__)  => begin
         @assign e1 = map(exp.exp1, func)
         @assign e2 = map(exp.exp2, func)
         if referenceEq(exp.exp1, e1) && referenceEq(exp.exp2, e2)
           exp
         else
-          BINARY(e1, exp.operator, e2)
+          BINARY_EXPRESSION(e1, exp.operator, e2)
         end
       end
 
-      UNARY(__)  => begin
+      UNARY_EXPRESSION(__)  => begin
         @assign e1 = map(exp.exp, func)
         if referenceEq(exp.exp, e1)
           exp
         else
-          UNARY(exp.operator, e1)
+          UNARY_EXPRESSION(exp.operator, e1)
         end
       end
 
-      LBINARY(__)  => begin
+      LBINARY_EXPRESSION(__)  => begin
         @assign e1 = map(exp.exp1, func)
         @assign e2 = map(exp.exp2, func)
         if referenceEq(exp.exp1, e1) && referenceEq(exp.exp2, e2)
           exp
         else
-          LBINARY(e1, exp.operator, e2)
+          LBINARY_EXPRESSION(e1, exp.operator, e2)
         end
       end
 
-      LUNARY(__)  => begin
+      LUNARY_EXPRESSION(__)  => begin
         @assign e1 = map(exp.exp, func)
         if referenceEq(exp.exp, e1)
           exp
         else
-          LUNARY(exp.operator, e1)
+          LUNARY_EXPRESSION(exp.operator, e1)
         end
       end
 
-      RELATION(__)  => begin
+      RELATION_EXPRESSION(__)  => begin
         @assign e1 = map(exp.exp1, func)
         @assign e2 = map(exp.exp2, func)
         if referenceEq(exp.exp1, e1) && referenceEq(exp.exp2, e2)
           exp
         else
-          RELATION(e1, exp.operator, e2)
+          RELATION_EXPRESSION(e1, exp.operator, e2)
         end
       end
 
-      IF(__)  => begin
+      IF_EXPRESSION(__)  => begin
         @assign e1 = map(exp.condition, func)
         @assign e2 = map(exp.trueBranch, func)
         @assign e3 = map(exp.falseBranch, func)
         if referenceEq(exp.condition, e1) && referenceEq(exp.trueBranch, e2) && referenceEq(exp.falseBranch, e3)
           exp
         else
-          IF(e1, e2, e3)
+          IF_EXPRESSION(e1, e2, e3)
         end
       end
 
-      CAST(__)  => begin
+      CAST_EXPRESSION(__)  => begin
         @assign e1 = map(exp.exp, func)
         if referenceEq(exp.exp, e1)
           exp
         else
-          CAST(exp.ty, e1)
+          CAST_EXPRESSION(exp.ty, e1)
         end
       end
 
-      UNBOX(__)  => begin
+      UNBOX_EXPRESSION(__)  => begin
         @assign e1 = map(exp.exp, func)
         if referenceEq(exp.exp, e1)
           exp
         else
-          UNBOX(e1, exp.ty)
+          UNBOX_EXPRESSION(e1, exp.ty)
         end
       end
 
-      SUBSCRIPTED_EXP(__)  => begin
-        SUBSCRIPTED_EXP(map(exp.exp, func), List(mapExp(s, func) for s in exp.subscripts), exp.ty)
+      SUBSCRIPTED_EXP_EXPRESSION(__)  => begin
+        SUBSCRIPTED_EXP_EXPRESSION(map(exp.exp, func), List(mapExp(s, func) for s in exp.subscripts), exp.ty)
       end
 
-      TUPLE_ELEMENT(__)  => begin
+      TUPLE_ELEMENT_EXPRESSION(__)  => begin
         @assign e1 = map(exp.tupleExp, func)
         if referenceEq(exp.tupleExp, e1)
           exp
         else
-          TUPLE_ELEMENT(e1, exp.index, exp.ty)
+          TUPLE_ELEMENT_EXPRESSION(e1, exp.index, exp.ty)
         end
       end
 
-      RECORD_ELEMENT(__)  => begin
+      RECORD_ELEMENT_EXPRESSION(__)  => begin
         @assign e1 = map(exp.recordExp, func)
         if referenceEq(exp.recordExp, e1)
           exp
         else
-          RECORD_ELEMENT(e1, exp.index, exp.fieldName, exp.ty)
+          RECORD_ELEMENT_EXPRESSION(e1, exp.index, exp.fieldName, exp.ty)
         end
       end
 
-BOX(__)  => begin
+BOX_EXPRESSION(__)  => begin
   @assign e1 = map(exp.exp, func)
   if referenceEq(exp.exp, e1)
     exp
   else
-    BOX(e1)
+    BOX_EXPRESSION(e1)
   end
 end
 
-MUTABLE(__)  => begin
+MUTABLE_EXPRESSION(__)  => begin
   P_Pointer.update(exp.exp, map(P_Pointer.access(exp.exp), func))
   exp
 end
 
-PARTIAL_FUNCTION_APPLICATION(__)  => begin
+PARTIAL_FUNCTION_APPLICATION_EXPRESSION(__)  => begin
   @assign exp.args = List(map(e, func) for e in exp.args)
   exp
 end
@@ -4080,7 +4052,6 @@ BINDING_EXP(__)  => begin
     BINDING_EXP(e1, exp.expType, exp.bindingType, exp.parents, exp.isEach)
   end
 end
-
 _  => begin
   exp
 end
@@ -4107,19 +4078,19 @@ function dimensionCount(exp::Expression) ::Integer
         Type.dimensionCount(exp.ty)
       end
 
-      SIZE(dimIndex = NONE())  => begin
+      SIZE_EXPRESSION(dimIndex = NONE())  => begin
         dimensionCount(exp.exp)
       end
 
-      CAST(__)  => begin
+      CAST_EXPRESSION(__)  => begin
         dimensionCount(exp.exp)
       end
 
-      SUBSCRIPTED_EXP(__)  => begin
+      SUBSCRIPTED_EXP_EXPRESSION(__)  => begin
         Type.dimensionCount(exp.ty)
       end
 
-      TUPLE_ELEMENT(__)  => begin
+      TUPLE_ELEMENT_EXPRESSION(__)  => begin
         Type.dimensionCount(exp.ty)
       end
 
@@ -4327,7 +4298,7 @@ function toDAE(exp::Expression) ::DAE.Exp
         P_Call.toDAE(exp.call)
       end
 
-      SIZE(__)  => begin
+      SIZE_EXPRESSION(__)  => begin
         DAE.SIZE(toDAE(exp.exp), if isSome(exp.dimIndex)
                  SOME(toDAE(Util.getOption(exp.dimIndex)))
                  else
@@ -4352,7 +4323,7 @@ function toDAE(exp::Expression) ::DAE.Exp
                    end)
       end
 
-      UNARY(__)  => begin
+      UNARY_EXPRESSION(__)  => begin
         DAE.UNARY(P_Operator.Operator.toDAE(exp.operator), toDAE(exp.exp))
       end
 
@@ -4360,43 +4331,43 @@ function toDAE(exp::Expression) ::DAE.Exp
         DAE.LBINARY(toDAE(exp.exp1), P_Operator.Operator.toDAE(exp.operator), toDAE(exp.exp2))
       end
 
-      LUNARY(__)  => begin
+      LUNARY_EXPRESSION(__)  => begin
         DAE.LUNARY(P_Operator.Operator.toDAE(exp.operator), toDAE(exp.exp))
       end
 
-      RELATION(__)  => begin
+      RELATION_EXPRESSION(__)  => begin
         DAE.RELATION(toDAE(exp.exp1), P_Operator.Operator.toDAE(exp.operator), toDAE(exp.exp2), -1, NONE())
       end
 
-      IF(__)  => begin
+      IF_EXPRESSION(__)  => begin
         DAE.IFEXP(toDAE(exp.condition), toDAE(exp.trueBranch), toDAE(exp.falseBranch))
       end
 
-      CAST(__)  => begin
+      CAST_EXPRESSION(__)  => begin
         DAE.CAST(Type.toDAE(exp.ty), toDAE(exp.exp))
       end
 
-      BOX(__)  => begin
+      BOX_EXPRESSION(__)  => begin
         DAE.BOX(toDAE(exp.exp))
       end
 
-      UNBOX(__)  => begin
+      UNBOX_EXPRESSION(__)  => begin
         DAE.UNBOX(toDAE(exp.exp), Type.toDAE(exp.ty))
       end
 
-      SUBSCRIPTED_EXP(__)  => begin
+      SUBSCRIPTED_EXP_EXPRESSION(__)  => begin
         DAE.ASUB(toDAE(exp.exp), List(toDAEExp(s) for s in exp.subscripts))
       end
 
-      TUPLE_ELEMENT(__)  => begin
+      TUPLE_ELEMENT_EXPRESSION(__)  => begin
         DAE.TSUB(toDAE(exp.tupleExp), exp.index, Type.toDAE(exp.ty))
       end
 
-      RECORD_ELEMENT(__)  => begin
+      RECORD_ELEMENT_EXPRESSION(__)  => begin
         DAE.RSUB(toDAE(exp.recordExp), exp.index, exp.fieldName, Type.toDAE(exp.ty))
       end
 
-      PARTIAL_FUNCTION_APPLICATION(__)  => begin
+      PARTIAL_FUNCTION_APPLICATION_EXPRESSION(__)  => begin
         @match _cons(fn, _) = P_Function.P_Function.typeRefCache(exp.fn)
         DAE.PARTEVALFUNCTION(P_Function.P_Function.nameConsiderBuiltin(fn), List(toDAE(arg) for arg in exp.args), Type.toDAE(exp.ty), Type.toDAE(TYPE_FUNCTION(fn, FunctionTYPE_FUNCTIONAL_VARIABLE)))
       end
@@ -4499,7 +4470,7 @@ function priority(exp::Expression, lhs::Bool) ::Integer
         P_Operator.Operator.priority(exp.operator, lhs)
       end
 
-      UNARY(__)  => begin
+      UNARY_EXPRESSION(__)  => begin
         4
       end
 
@@ -4507,11 +4478,11 @@ function priority(exp::Expression, lhs::Bool) ::Integer
         P_Operator.Operator.priority(exp.operator, lhs)
       end
 
-      LUNARY(__)  => begin
+      LUNARY_EXPRESSION(__)  => begin
         7
       end
 
-      RELATION(__)  => begin
+      RELATION_EXPRESSION(__)  => begin
         6
       end
 
@@ -4519,7 +4490,7 @@ function priority(exp::Expression, lhs::Bool) ::Integer
         10
       end
 
-      IF(__)  => begin
+      IF_EXPRESSION(__)  => begin
         11
       end
 
@@ -4601,7 +4572,7 @@ function toFlatSubscriptedString(exp::Expression, subs::List{<:Subscript}) ::Str
   local name::String
 
   @assign exp_ty = typeOf(exp)
-  @assign dims = ListUtil.firstN(Type.arrayDims(exp_ty), listLength(subs))
+  @assign dims = ListUtil.firstN(arrayDims(exp_ty), listLength(subs))
   @assign sub_tyl = List(P_Dimension.Dimension.subscriptType(d) for d in dims)
   @assign name = Type.subscriptedTypeName(exp_ty, sub_tyl)
   @assign strl = list(")")
@@ -4654,7 +4625,7 @@ function toFlatString(exp::Expression) ::String
       end
 
       TYPENAME(__)  => begin
-        Type.typenameString(Type.arrayElementType(exp.ty))
+        Type.typenameString(arrayElementType(exp.ty))
       end
 
       ARRAY(__)  => begin
@@ -4685,7 +4656,7 @@ function toFlatString(exp::Expression) ::String
         P_Call.toFlatString(exp.call)
       end
 
-      SIZE(__)  => begin
+      SIZE_EXPRESSION(__)  => begin
         "size(" + toFlatString(exp.exp) + (if isSome(exp.dimIndex)
                                            ", " + toFlatString(Util.getOption(exp.dimIndex))
                                            else
@@ -4701,7 +4672,7 @@ function toFlatString(exp::Expression) ::String
         operandFlatString(exp.exp1, exp, true) + P_Operator.Operator.symbol(exp.operator) + operandFlatString(exp.exp2, exp, false)
       end
 
-      UNARY(__)  => begin
+      UNARY_EXPRESSION(__)  => begin
         P_Operator.Operator.symbol(exp.operator, "") + operandFlatString(exp.exp, exp, false)
       end
 
@@ -4709,43 +4680,43 @@ function toFlatString(exp::Expression) ::String
         operandFlatString(exp.exp1, exp, true) + P_Operator.Operator.symbol(exp.operator) + operandFlatString(exp.exp2, exp, false)
       end
 
-      LUNARY(__)  => begin
+      LUNARY_EXPRESSION(__)  => begin
         P_Operator.Operator.symbol(exp.operator, "") + " " + operandFlatString(exp.exp, exp, false)
       end
 
-      RELATION(__)  => begin
+      RELATION_EXPRESSION(__)  => begin
         operandFlatString(exp.exp1, exp, true) + P_Operator.Operator.symbol(exp.operator) + operandFlatString(exp.exp2, exp, false)
       end
 
-      IF(__)  => begin
+      IF_EXPRESSION(__)  => begin
         "if " + toFlatString(exp.condition) + " then " + toFlatString(exp.trueBranch) + " else " + toFlatString(exp.falseBranch)
       end
 
-      UNBOX(__)  => begin
-        "UNBOX(" + toFlatString(exp.exp) + ")"
+      UNBOX_EXPRESSION(__)  => begin
+        "UNBOX_EXPRESSION(" + toFlatString(exp.exp) + ")"
       end
 
-      BOX(__)  => begin
-        "BOX(" + toFlatString(exp.exp) + ")"
+      BOX_EXPRESSION(__)  => begin
+        "BOX_EXPRESSION(" + toFlatString(exp.exp) + ")"
       end
 
-      CAST(__)  => begin
+      CAST_EXPRESSION(__)  => begin
         toFlatString(exp.exp)
       end
 
-      SUBSCRIPTED_EXP(__)  => begin
+      SUBSCRIPTED_EXP_EXPRESSION(__)  => begin
         toFlatSubscriptedString(exp.exp, exp.subscripts)
       end
 
-      TUPLE_ELEMENT(__)  => begin
+      TUPLE_ELEMENT_EXPRESSION(__)  => begin
         toFlatString(exp.tupleExp) + "[" + intString(exp.index) + "]"
       end
 
-      RECORD_ELEMENT(__)  => begin
+      RECORD_ELEMENT_EXPRESSION(__)  => begin
         toFlatString(exp.recordExp) + "[field: " + exp.fieldName + "]"
       end
 
-      MUTABLE(__)  => begin
+      MUTABLE_EXPRESSION(__)  => begin
         toFlatString(P_Pointer.access(exp.exp))
       end
 
@@ -4753,7 +4724,7 @@ function toFlatString(exp::Expression) ::String
         "#EMPTY#"
       end
 
-      PARTIAL_FUNCTION_APPLICATION(__)  => begin
+      PARTIAL_FUNCTION_APPLICATION_EXPRESSION(__)  => begin
         "function " + toFlatString(exp.fn) + "(" + stringDelimitList(List(@do_threaded_for n + " = " + toFlatString(a) (a, n) (exp.args, exp.argNames)), ", ") + ")"
       end
 
@@ -4806,7 +4777,7 @@ function toString(exp::Expression) ::String
       end
 
       TYPENAME(__)  => begin
-        Type.typenameString(Type.arrayElementType(exp.ty))
+        Type.typenameString(arrayElementType(exp.ty))
       end
 
       ARRAY(__)  => begin
@@ -4837,7 +4808,7 @@ function toString(exp::Expression) ::String
         P_Call.toString(exp.call)
       end
 
-      SIZE(__)  => begin
+      SIZE_EXPRESSION(__)  => begin
         "size(" + toString(exp.exp) + (if isSome(exp.dimIndex)
                                        ", " + toString(Util.getOption(exp.dimIndex))
                                        else
@@ -4853,7 +4824,7 @@ function toString(exp::Expression) ::String
         operandString(exp.exp1, exp, true) + P_Operator.Operator.symbol(exp.operator) + operandString(exp.exp2, exp, false)
       end
 
-      UNARY(__)  => begin
+      UNARY_EXPRESSION(__)  => begin
         P_Operator.Operator.symbol(exp.operator, "") + operandString(exp.exp, exp, false)
       end
 
@@ -4861,47 +4832,47 @@ function toString(exp::Expression) ::String
         operandString(exp.exp1, exp, true) + P_Operator.Operator.symbol(exp.operator) + operandString(exp.exp2, exp, false)
       end
 
-      LUNARY(__)  => begin
+      LUNARY_EXPRESSION(__)  => begin
         P_Operator.Operator.symbol(exp.operator, "") + " " + operandString(exp.exp, exp, false)
       end
 
-      RELATION(__)  => begin
+      RELATION_EXPRESSION(__)  => begin
         operandString(exp.exp1, exp, true) + P_Operator.Operator.symbol(exp.operator) + operandString(exp.exp2, exp, false)
       end
 
-      IF(__)  => begin
+      IF_EXPRESSION(__)  => begin
         "if " + toString(exp.condition) + " then " + toString(exp.trueBranch) + " else " + toString(exp.falseBranch)
       end
 
-      UNBOX(__)  => begin
-        "UNBOX(" + toString(exp.exp) + ")"
+      UNBOX_EXPRESSION(__)  => begin
+        "UNBOX_EXPRESSION(" + toString(exp.exp) + ")"
       end
 
-      BOX(__)  => begin
-        "BOX(" + toString(exp.exp) + ")"
+      BOX_EXPRESSION(__)  => begin
+        "BOX_EXPRESSION(" + toString(exp.exp) + ")"
       end
 
-      CAST(__)  => begin
+      CAST_EXPRESSION(__)  => begin
         if Flags.isSet(Flags.NF_API)
           toString(exp.exp)
         else
-          "CAST(" + Type.toString(exp.ty) + ", " + toString(exp.exp) + ")"
+          "CAST_EXPRESSION(" + Type.toString(exp.ty) + ", " + toString(exp.exp) + ")"
         end
       end
 
-      SUBSCRIPTED_EXP(__)  => begin
+      SUBSCRIPTED_EXP_EXPRESSION(__)  => begin
         toString(exp.exp) + toStringList(exp.subscripts)
       end
 
-      TUPLE_ELEMENT(__)  => begin
+      TUPLE_ELEMENT_EXPRESSION(__)  => begin
         toString(exp.tupleExp) + "[" + intString(exp.index) + "]"
       end
 
-      RECORD_ELEMENT(__)  => begin
+      RECORD_ELEMENT_EXPRESSION(__)  => begin
         toString(exp.recordExp) + "[field: " + exp.fieldName + "]"
       end
 
-      MUTABLE(__)  => begin
+      MUTABLE_EXPRESSION(__)  => begin
         toString(P_Pointer.access(exp.exp))
       end
 
@@ -4909,7 +4880,7 @@ function toString(exp::Expression) ::String
         "#EMPTY#"
       end
 
-      PARTIAL_FUNCTION_APPLICATION(__)  => begin
+      PARTIAL_FUNCTION_APPLICATION_EXPRESSION(__)  => begin
         "function " + toString(exp.fn) + "(" + stringDelimitList(List(@do_threaded_for n + " = " + toString(a) (a, n) (exp.args, exp.argNames)), ", ") + ")"
       end
 
@@ -5051,13 +5022,13 @@ function makeSubscriptedExp(subscripts::List{<:Subscript}, exp::Expression) ::Ex
   local ty::M_Type
   local dim_count::Integer
 
-  #=  If the expression is already a SUBSCRIPTED_EXP we need to concatenate the
+  #=  If the expression is already a SUBSCRIPTED_EXP_EXPRESSION we need to concatenate the
   =#
-  #=  old subscripts with the new. Otherwise we just create a new SUBSCRIPTED_EXP.
+  #=  old subscripts with the new. Otherwise we just create a new SUBSCRIPTED_EXP_EXPRESSION.
   =#
   @assign (e, subs, ty) = begin
     @match exp begin
-      SUBSCRIPTED_EXP(__)  => begin
+      SUBSCRIPTED_EXP_EXPRESSION(__)  => begin
         (exp.exp, exp.subscripts, typeOf(exp.exp))
       end
 
@@ -5074,7 +5045,7 @@ function makeSubscriptedExp(subscripts::List{<:Subscript}, exp::Expression) ::Ex
     Error.assertion(false, getInstanceName() + ": too few dimensions in " + toString(exp) + " to apply subscripts " + toStringList(subscripts), sourceInfo())
   end
   @assign ty = Type.subscript(ty, subs)
-  @assign outExp = SUBSCRIPTED_EXP(e, subs, ty)
+  @assign outExp = SUBSCRIPTED_EXP_EXPRESSION(e, subs, ty)
   outExp
 end
 
@@ -5085,10 +5056,10 @@ function applySubscriptIf(subscript::Subscript, exp::Expression, restSubscripts:
   local tb::Expression
   local fb::Expression
 
-  @match P_Expression.Expression.IF(cond, tb, fb) = exp
+  @match IF_EXPRESSION(cond, tb, fb) = exp
   @assign tb = applySubscript(subscript, tb, restSubscripts)
   @assign fb = applySubscript(subscript, fb, restSubscripts)
-  @assign outExp = P_Expression.Expression.IF(cond, tb, fb)
+  @assign outExp = IF_EXPRESSION(cond, tb, fb)
   outExp
 end
 
@@ -5096,7 +5067,7 @@ function applyIndexSubscriptArrayConstructor(call::Call, index::Subscript) ::Exp
   local subscriptedExp::Expression
 
   local ty::M_Type
-  local var::Variability
+  local var::VariabilityType
   local exp::Expression
   local iter_exp::Expression
   local iters::List{Tuple{InstNode, Expression}}
@@ -5209,7 +5180,7 @@ function applyIndexSubscriptRange(rangeExp::Expression, index::Subscript) ::Expr
     @assign outExp = applyIndexSubscriptRange2(start_exp, step_exp, stop_exp, toInteger(index_exp))
   else
     @match RANGE(ty = ty) = rangeExp
-    @assign outExp = SUBSCRIPTED_EXP(rangeExp, list(index), ty)
+    @assign outExp = SUBSCRIPTED_EXP_EXPRESSION(rangeExp, list(index), ty)
   end
   outExp
 end
@@ -5233,8 +5204,8 @@ function applySubscriptRange(subscript::Subscript, exp::Expression) ::Expression
 
       SUBSCRIPT_SLICE(__)  => begin
         @match RANGE(ty = ty) = exp
-        @assign ty = Type.ARRAY(Type.unliftArray(ty), list(toDimension(sub)))
-        SUBSCRIPTED_EXP(exp, list(subscript), ty)
+        @assign ty = ARRAY_TYPE(Type.unliftArray(ty), list(toDimension(sub)))
+        SUBSCRIPTED_EXP_EXPRESSION(exp, list(subscript), ty)
       end
 
       SUBSCRIPT_WHOLE(__)  => begin
@@ -5357,7 +5328,7 @@ function applyIndexSubscriptTypename(ty::M_Type, index::Subscript) ::Expression
       end
     end
   else
-    @assign subscriptedExp = SUBSCRIPTED_EXP(TYPENAME(ty), list(index), ty)
+    @assign subscriptedExp = SUBSCRIPTED_EXP_EXPRESSION(TYPENAME(ty), list(index), ty)
   end
   subscriptedExp
 end
@@ -5377,7 +5348,7 @@ function applySubscriptTypename(subscript::Subscript, ty::M_Type) ::Expression
       end
 
       SUBSCRIPT_SLICE(__)  => begin
-        SUBSCRIPTED_EXP(TYPENAME(ty), list(subscript), Type.ARRAY(ty, list(toDimension(sub))))
+        SUBSCRIPTED_EXP_EXPRESSION(TYPENAME(ty), list(subscript), ARRAY_TYPE(ty, list(toDimension(sub))))
       end
 
       SUBSCRIPT_WHOLE(__)  => begin
@@ -5436,7 +5407,7 @@ end
                          applySubscriptCall(subscript, exp, restSubscripts)
                        end
 
-                       IF(__)  => begin
+                       IF_EXPRESSION(__)  => begin
                          applySubscriptIf(subscript, exp, restSubscripts)
                        end
 
@@ -5489,10 +5460,10 @@ function makeRealMatrix(values::List{<:List{<:AbstractFloat}}) ::Expression
   local expl::List{Expression}
 
   if listEmpty(values)
-    @assign ty = Type.ARRAY(TYPE_REAL(), list(P_Dimension.Dimension.fromInteger(0), P_Dimension.Dimension.UNKNOWN()))
+    @assign ty = ARRAY_TYPE(TYPE_REAL(), list(P_Dimension.Dimension.fromInteger(0), P_Dimension.Dimension.UNKNOWN()))
     @assign exp = makeEmptyArray(ty)
   else
-    @assign ty = Type.ARRAY(TYPE_REAL(), list(P_Dimension.Dimension.fromInteger(listLength(listHead(values)))))
+    @assign ty = ARRAY_TYPE(TYPE_REAL(), list(P_Dimension.Dimension.fromInteger(listLength(listHead(values)))))
     @assign expl = List(makeArray(ty, List(REAL(v) for v in row), literal = true) for row in values)
     @assign ty = Type.liftArrayLeft(ty, P_Dimension.Dimension.fromInteger(listLength(expl)))
     @assign exp = makeArray(ty, expl, literal = true)
@@ -5503,14 +5474,14 @@ end
 function makeRealArray(values::List{<:AbstractFloat}) ::Expression
   local exp::Expression
 
-  @assign exp = makeArray(Type.ARRAY(TYPE_REAL(), list(P_Dimension.Dimension.fromInteger(listLength(values)))), List(REAL(v) for v in values), literal = true)
+  @assign exp = makeArray(ARRAY_TYPE(TYPE_REAL(), list(P_Dimension.Dimension.fromInteger(listLength(values)))), List(REAL(v) for v in values), literal = true)
   exp
 end
 
 function makeIntegerArray(values::List{<:Integer}) ::Expression
   local exp::Expression
 
-  @assign exp = makeArray(Type.ARRAY(TYPE_INTEGER(), list(P_Dimension.Dimension.fromInteger(listLength(values)))), List(INTEGER(v) for v in values), literal = true)
+  @assign exp = makeArray(ARRAY_TYPE(TYPE_INTEGER(), list(P_Dimension.Dimension.fromInteger(listLength(values)))), List(INTEGER(v) for v in values), literal = true)
   exp
 end
 
@@ -5576,98 +5547,85 @@ end
 
                The function does not check that the cast is valid, and expressions that
                can't be converted outright will be wrapped as a CAST expression. =#"""
-                 function typeCast(exp::Expression, ty::M_Type) ::Expression
-
-
-                   local t::M_Type
-                   local t2::M_Type
-                   local ety::M_Type
-                   local el::List{Expression}
-
-                   @assign ety = Type.arrayElementType(ty)
-                   @assign exp = begin
-                     @match (exp, ety) begin
-                       (INTEGER(__), TYPE_REAL(__))  => begin
-                         REAL(intReal(exp.value))
-                       end
-
-                       (BOOLEAN(__), TYPE_REAL(__)) where (Flags.isSet(Flags.NF_API))  => begin
-                         REAL(if exp.value
-                              1.0
-                              else
-                              0.0
-                              end)
-                       end
-
-                       (REAL(__), TYPE_REAL(__))  => begin
-                         exp
-                       end
-
-                       (ARRAY(ty = t, elements = el), _)  => begin
-                         #=  Integer can be cast to Real.
-                         =#
-                         #=  Boolean can be cast to Real (only if -d=nfAPI is on)
-                         =#
-                         #=  as there are annotations having expressions such as Boolean x > 0.5
-                         =#
-                         #=  Real doesn't need to be cast to Real, since we convert e.g. array with
-                         =#
-                         #=  a mix of Integers and Reals to only Reals.
-                         =#
-                         #=  For arrays we typecast each element and update the type of the array.
-                         =#
-                         @assign el = List(typeCast(e, ety) for e in el)
-                         @assign t = Type.setArrayElementType(t, ety)
-                         ARRAY(t, el, exp.literal)
-                       end
-
-                       (RANGE(ty = t), _)  => begin
-                         @assign t = Type.setArrayElementType(t, ety)
-                         RANGE(t, typeCast(exp.start, ety), typeCastOpt(exp.step, ety), typeCast(exp.stop, ety))
-                       end
-
-                       (UNARY(__), _)  => begin
-                         #=  Unary operators (i.e. -) are handled by casting the operand.
-                         =#
-                         @assign t = Type.setArrayElementType(P_Operator.Operator.typeOf(exp.operator), ety)
-                         UNARY(P_Operator.Operator.setType(t, exp.operator), typeCast(exp.exp, ety))
-                       end
-
-                       (IF(__), _)  => begin
-                         IF(exp.condition, typeCast(exp.trueBranch, ety), typeCast(exp.falseBranch, ety))
-                       end
-
-                       (CALL(__), _)  => begin
-                         P_Call.typeCast(exp, ety)
-                       end
-
-                       (CAST(__), _)  => begin
-                         typeCast(exp.exp, ty)
-                       end
-
-                       (BINDING_EXP(__), _)  => begin
-                         #=  If-expressions are handled by casting each of the branches.
-                         =#
-                         #=  Calls are handled by Call.typeCast, which has special rules for some functions.
-                         =#
-                         #=  Casting a cast expression overrides its current cast type.
-                         =#
-                         @assign t = Type.setArrayElementType(exp.expType, ety)
-                         @assign t2 = Type.setArrayElementType(exp.bindingType, ety)
-                         BINDING_EXP(typeCast(exp.exp, ety), t, t2, exp.parents, exp.isEach)
-                       end
-
-                       _  => begin
-                         #=  Other expressions are handled by making a CAST expression.
-                         =#
-                         @assign t = typeOf(exp)
-                         @assign t = Type.setArrayElementType(t, ety)
-                         CAST(t, exp)
-                       end
-                     end
-                   end
-                   exp
-                 end
+ function typeCast(exp::Expression, ty::NFType) ::Expression
+   local t::NFType
+   local t2::NFType
+   local ety::NFType
+   local el::List{Expression}
+   @assign ety = arrayElementType(ty)
+   @assign exp = begin
+     @match (exp, ety) begin
+       (INTEGER_EXPRESSION(__), TYPE_REAL(__))  => begin
+         REAL_EXPRESSION(intReal(exp.value))
+       end
+       (BOOLEAN_EXPRESSION(__), TYPE_REAL(__)) where (Flags.isSet(Flags.NF_API))  => begin
+         REAL(if exp.value
+              1.0
+              else
+              0.0
+              end)
+       end
+       (REAL_EXPRESSION(__), TYPE_REAL(__))  => begin
+         exp
+       end
+       (ARRAY_EXPRESSION(ty = t, elements = el), _)  => begin
+         #=  Integer can be cast to Real.
+         =#
+         #=  Boolean can be cast to Real (only if -d=nfAPI is on)
+         =#
+         #=  as there are annotations having expressions such as Boolean x > 0.5
+         =#
+         #=  Real doesn't need to be cast to Real, since we convert e.g. array with
+         =#
+         #=  a mix of Integers and Reals to only Reals.
+         =#
+         #=  For arrays we typecast each element and update the type of the array.
+         =#
+         @assign el = list(typeCast(e, ety) for e in el)
+         @assign t = setArrayElementType(t, ety)
+         ARRAY_EXPRESSION(t, el, exp.literal)
+       end
+       (RANGE_EXPRESSION(ty = t), _)  => begin
+         @assign t = setArrayElementType(t, ety)
+         RANGE(t, typeCast(exp.start, ety), typeCastOpt(exp.step, ety), typeCast(exp.stop, ety))
+       end
+       (UNARY_EXPRESSION(__), _)  => begin
+         #=  Unary operators (i.e. -) are handled by casting the operand.
+         =#
+         @assign t = setArrayElementType(P_Operator.Operator.typeOf(exp.operator), ety)
+         UNARY_EXPRESSION(setType(t, exp.operator), typeCast(exp.exp, ety))
+       end
+       (IF_EXPRESSION(__), _)  => begin
+         IF(exp.condition, typeCast(exp.trueBranch, ety), typeCast(exp.falseBranch, ety))
+       end
+       (CALL_EXPRESSION(__), _)  => begin
+         typeCast(exp, ety)
+       end
+       (CAST_EXPRESSION(__), _)  => begin
+         typeCast(exp.exp, ty)
+       end
+       (BINDING_EXP(__), _)  => begin
+         #=  If-expressions are handled by casting each of the branches.
+         =#
+         #=  Calls are handled by Call.typeCast, which has special rules for some functions.
+         =#
+         #=  Casting a cast expression overrides its current cast type.
+         =#
+         @assign t = setArrayElementType(exp.expType, ety)
+         @assign t2 = setArrayElementType(exp.bindingType, ety)
+         BINDING_EXP(typeCast(exp.exp, ety), t, t2, exp.parents, exp.isEach)
+       end
+       _  => begin
+         #=  Other expressions are handled by making a CAST expression.
+         =#
+         @assign t = typeOf(exp)
+         @assign t = setArrayElementType(t, ety)
+         CAST_EXPRESSION(t, exp)
+       end
+     end
+   end
+   exp
+ end
 
 function typeCastOpt(exp::Option{<:Expression}, ty::M_Type) ::Option{Expression}
   local outExp::Option{Expression} = Util.applyOption(exp, (ty) -> typeCast(ty = ty))
@@ -5719,56 +5677,56 @@ function setType(ty::NFType, exp::Expression) ::Expression
       end
 
       BINARY(__)  => begin
-        @assign exp.operator = P_Operator.Operator.setType(ty, exp.operator)
+        @assign exp.operator = setType(ty, exp.operator)
         ()
       end
 
-      UNARY(__)  => begin
-        @assign exp.operator = P_Operator.Operator.setType(ty, exp.operator)
+      UNARY_EXPRESSION(__)  => begin
+        @assign exp.operator = setType(ty, exp.operator)
         ()
       end
 
       LBINARY(__)  => begin
-        @assign exp.operator = P_Operator.Operator.setType(ty, exp.operator)
+        @assign exp.operator = setType(ty, exp.operator)
         ()
       end
 
-      LUNARY(__)  => begin
-        @assign exp.operator = P_Operator.Operator.setType(ty, exp.operator)
+      LUNARY_EXPRESSION(__)  => begin
+        @assign exp.operator = setType(ty, exp.operator)
         ()
       end
 
-      RELATION(__)  => begin
-        @assign exp.operator = P_Operator.Operator.setType(ty, exp.operator)
+      RELATION_EXPRESSION(__)  => begin
+        @assign exp.operator = setType(ty, exp.operator)
         ()
       end
 
-      CAST(__)  => begin
+      CAST_EXPRESSION(__)  => begin
         @assign exp.ty = ty
         ()
       end
 
-      UNBOX(__)  => begin
+      UNBOX_EXPRESSION(__)  => begin
         @assign exp.ty = ty
         ()
       end
 
-      SUBSCRIPTED_EXP(__)  => begin
+      SUBSCRIPTED_EXP_EXPRESSION(__)  => begin
         @assign exp.ty = ty
         ()
       end
 
-      TUPLE_ELEMENT(__)  => begin
+      TUPLE_ELEMENT_EXPRESSION(__)  => begin
         @assign exp.ty = ty
         ()
       end
 
-      RECORD_ELEMENT(__)  => begin
+      RECORD_ELEMENT_EXPRESSION(__)  => begin
         @assign exp.ty = ty
         ()
       end
 
-      PARTIAL_FUNCTION_APPLICATION(__)  => begin
+      PARTIAL_FUNCTION_APPLICATION_EXPRESSION(__)  => begin
         @assign exp.ty = ty
         ()
       end
@@ -5838,7 +5796,7 @@ function typeOf(exp::Expression) ::M_Type
         P_Call.typeOf(exp.call)
       end
 
-      SIZE(__)  => begin
+      SIZE_EXPRESSION(__)  => begin
         if isSome(exp.dimIndex)
           TYPE_INTEGER()
         else
@@ -5854,7 +5812,7 @@ function typeOf(exp::Expression) ::M_Type
         P_Operator.Operator.typeOf(exp.operator)
       end
 
-      UNARY(__)  => begin
+      UNARY_EXPRESSION(__)  => begin
         P_Operator.Operator.typeOf(exp.operator)
       end
 
@@ -5862,43 +5820,43 @@ function typeOf(exp::Expression) ::M_Type
         P_Operator.Operator.typeOf(exp.operator)
       end
 
-      LUNARY(__)  => begin
+      LUNARY_EXPRESSION(__)  => begin
         P_Operator.Operator.typeOf(exp.operator)
       end
 
-      RELATION(__)  => begin
+      RELATION_EXPRESSION(__)  => begin
         P_Operator.Operator.typeOf(exp.operator)
       end
 
-      IF(__)  => begin
+      IF_EXPRESSION(__)  => begin
         typeOf(exp.trueBranch)
       end
 
-      CAST(__)  => begin
+      CAST_EXPRESSION(__)  => begin
         exp.ty
       end
 
-      UNBOX(__)  => begin
+      UNBOX_EXPRESSION(__)  => begin
         exp.ty
       end
 
-      SUBSCRIPTED_EXP(__)  => begin
+      SUBSCRIPTED_EXP_EXPRESSION(__)  => begin
         exp.ty
       end
 
-      TUPLE_ELEMENT(__)  => begin
+      TUPLE_ELEMENT_EXPRESSION(__)  => begin
         exp.ty
       end
 
-      RECORD_ELEMENT(__)  => begin
+      RECORD_ELEMENT_EXPRESSION(__)  => begin
         exp.ty
       end
 
-      BOX(__)  => begin
+      BOX_EXPRESSION(__)  => begin
         TYPE_METABOXED(typeOf(exp.exp))
       end
 
-      MUTABLE(__)  => begin
+      MUTABLE_EXPRESSION(__)  => begin
         typeOf(P_Pointer.access(exp.exp))
       end
 
@@ -5906,7 +5864,7 @@ function typeOf(exp::Expression) ::M_Type
         exp.ty
       end
 
-      PARTIAL_FUNCTION_APPLICATION(__)  => begin
+      PARTIAL_FUNCTION_APPLICATION_EXPRESSION(__)  => begin
         exp.ty
       end
 
@@ -6094,8 +6052,8 @@ end
                          P_Call.compare(exp1.call, c)
                        end
 
-                       SIZE(__)  => begin
-                         @match SIZE(exp = e1, dimIndex = oe) = exp2
+                       SIZE_EXPRESSION(__)  => begin
+                         @match SIZE_EXPRESSION(exp = e1, dimIndex = oe) = exp2
                          @assign comp = compareOpt(exp1.dimIndex, oe)
                          if comp == 0
                            compare(exp1.exp, e1)
@@ -6120,8 +6078,8 @@ end
                          comp
                        end
 
-                       UNARY(__)  => begin
-                         @match UNARY(operator = op, exp = e1) = exp2
+                       UNARY_EXPRESSION(__)  => begin
+                         @match UNARY_EXPRESSION(operator = op, exp = e1) = exp2
                          @assign comp = P_Operator.Operator.compare(exp1.operator, op)
                          if comp == 0
                            compare(exp1.exp, e1)
@@ -6142,8 +6100,8 @@ end
                          comp
                        end
 
-LUNARY(__)  => begin
-  @match LUNARY(operator = op, exp = e1) = exp2
+LUNARY_EXPRESSION(__)  => begin
+  @match LUNARY_EXPRESSION(operator = op, exp = e1) = exp2
   @assign comp = P_Operator.Operator.compare(exp1.operator, op)
   if comp == 0
     compare(exp1.exp, e1)
@@ -6152,8 +6110,8 @@ LUNARY(__)  => begin
   end
 end
 
-RELATION(__)  => begin
-  @match RELATION(exp1 = e1, operator = op, exp2 = e2) = exp2
+RELATION_EXPRESSION(__)  => begin
+  @match RELATION_EXPRESSION(exp1 = e1, operator = op, exp2 = e2) = exp2
   @assign comp = P_Operator.Operator.compare(exp1.operator, op)
   if comp == 0
     @assign comp = compare(exp1.exp1, e1)
@@ -6164,8 +6122,8 @@ RELATION(__)  => begin
   comp
 end
 
-IF(__)  => begin
-  @match IF(condition = e1, trueBranch = e2, falseBranch = e3) = exp2
+IF_EXPRESSION(__)  => begin
+  @match IF_EXPRESSION(condition = e1, trueBranch = e2, falseBranch = e3) = exp2
   @assign comp = compare(exp1.condition, e1)
   if comp == 0
     @assign comp = compare(exp1.trueBranch, e2)
@@ -6176,15 +6134,15 @@ IF(__)  => begin
   comp
 end
 
-UNBOX(__)  => begin
-  @match UNBOX(exp = e1) = exp2
+UNBOX_EXPRESSION(__)  => begin
+  @match UNBOX_EXPRESSION(exp = e1) = exp2
   compare(exp1.exp, e1)
 end
 
-CAST(__)  => begin
+CAST_EXPRESSION(__)  => begin
   @assign e1 = begin
     @match exp2 begin
-      CAST(exp = e1)  => begin
+      CAST_EXPRESSION(exp = e1)  => begin
         e1
       end
 
@@ -6196,8 +6154,8 @@ CAST(__)  => begin
   compare(exp1.exp, e1)
 end
 
-SUBSCRIPTED_EXP(__)  => begin
-  @match SUBSCRIPTED_EXP(exp = e1, subscripts = subs) = exp2
+SUBSCRIPTED_EXP_EXPRESSION(__)  => begin
+  @match SUBSCRIPTED_EXP_EXPRESSION(exp = e1, subscripts = subs) = exp2
   @assign comp = compare(exp1.exp, e1)
   if comp == 0
     @assign comp = compareList(exp1.subscripts, subs)
@@ -6205,8 +6163,8 @@ SUBSCRIPTED_EXP(__)  => begin
   comp
 end
 
-TUPLE_ELEMENT(__)  => begin
-  @match TUPLE_ELEMENT(tupleExp = e1, index = i) = exp2
+TUPLE_ELEMENT_EXPRESSION(__)  => begin
+  @match TUPLE_ELEMENT_EXPRESSION(tupleExp = e1, index = i) = exp2
   @assign comp = Util.intCompare(exp1.index, i)
   if comp == 0
     @assign comp = compare(exp1.tupleExp, e1)
@@ -6214,8 +6172,8 @@ TUPLE_ELEMENT(__)  => begin
   comp
 end
 
-RECORD_ELEMENT(__)  => begin
-  @match RECORD_ELEMENT(recordExp = e1, index = i) = exp2
+RECORD_ELEMENT_EXPRESSION(__)  => begin
+  @match RECORD_ELEMENT_EXPRESSION(recordExp = e1, index = i) = exp2
   @assign comp = Util.intCompare(exp1.index, i)
   if comp == 0
     @assign comp = compare(exp1.recordExp, e1)
@@ -6223,13 +6181,13 @@ RECORD_ELEMENT(__)  => begin
   comp
 end
 
-BOX(__)  => begin
-  @match BOX(exp = e2) = exp2
+BOX_EXPRESSION(__)  => begin
+  @match BOX_EXPRESSION(exp = e2) = exp2
   compare(exp1.exp, e2)
 end
 
-MUTABLE(__)  => begin
-  @match MUTABLE(exp = me) = exp2
+MUTABLE_EXPRESSION(__)  => begin
+  @match MUTABLE_EXPRESSION(exp = me) = exp2
   compare(P_Pointer.access(exp1.exp), P_Pointer.access(me))
 end
 
@@ -6243,8 +6201,8 @@ CLKCONST(clk1)  => begin
   P_ClockKind.compare(clk1, clk2)
 end
 
-PARTIAL_FUNCTION_APPLICATION(__)  => begin
-  @match PARTIAL_FUNCTION_APPLICATION(fn = cr, args = expl) = exp2
+PARTIAL_FUNCTION_APPLICATION_EXPRESSION(__)  => begin
+  @match PARTIAL_FUNCTION_APPLICATION_EXPRESSION(fn = cr, args = expl) = exp2
   @assign comp = compare(exp1.fn, cr)
   if comp == 0
     @assign comp = compareList(exp1.args, expl)
@@ -6815,25 +6773,20 @@ end
 
 function isEqual(binding1::Binding, binding2::Binding)::Bool
   local equal::Bool
-
   @assign equal = begin
     @match (binding1, binding2) begin
       (UNBOUND(__), UNBOUND(__)) => begin
         true
       end
-
       (RAW_BINDING(__), RAW_BINDING(__)) => begin
         AbsynUtil.expEqual(binding1.bindingExp, binding2.bindingExp)
       end
-
       (UNTYPED_BINDING(__), UNTYPED_BINDING(__)) => begin
         isEqual(binding1.bindingExp, binding2.bindingExp)
       end
-
       (TYPED_BINDING(__), TYPED_BINDING(__)) => begin
         isEqual(binding1.bindingExp, binding2.bindingExp)
       end
-
       _ => begin
         false
       end
@@ -6942,16 +6895,12 @@ function propagatedDimCount(binding::Binding)::Integer
 end
 
 function isClassBinding(binding::Binding)::Bool
-  local isClass::Bool
-
   for parent in parents(binding)
     if isClass(parent)
-      @assign isClass = true
-      return isClass
+      return true
     end
   end
-  @assign isClass = false
-  return isClass
+  return false
 end
 
 function addParent(parent::InstNode, binding::Binding)::Binding
@@ -7062,15 +7011,13 @@ function isEach(binding::Binding)::Bool
   return isEach
 end
 
-function getType(binding::Binding)::M_Type
-  local ty::M_Type
-
+function getType(binding::Binding)::NFType
+  local ty::NFType
   @assign ty = begin
     @match binding begin
       UNBOUND(__) => begin
         TYPE_UNKNOWN()
       end
-
       RAW_BINDING(__) => begin
         TYPE_UNKNOWN()
       end
@@ -7128,8 +7075,8 @@ function getInfo(binding::Binding)::SourceInfo
   return info
 end
 
-function variability(binding::Binding)::Variability
-  local var::Variability
+function variability(binding::Binding)::VariabilityType
+  local var::VariabilityType
 
   @assign var = begin
     @match binding begin
@@ -7156,7 +7103,7 @@ function recordFieldBinding(fieldNode::InstNode, recordBinding::Binding)::Bindin
 
   local exp::Expression
   local ty::M_Type
-  local var::Variability
+  local var::VariabilityType
   local field_name::String = name(fieldNode)
 
   @assign fieldBinding = begin
@@ -7450,14 +7397,12 @@ function fromAbsyn(
   info::SourceInfo,
 )::Binding
   local binding::Binding
-
   @assign binding = begin
     local exp::Absyn.Exp
     @match bindingExp begin
       SOME(exp) => begin
         RAW_BINDING(exp, scope, parents, eachPrefix, info)
       end
-
       _ => begin
         if eachPrefix
           UNBOUND(parents, true, info)

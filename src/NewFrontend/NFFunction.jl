@@ -452,7 +452,7 @@ function makeDAEType(fn::M_Function, boxTypes::Bool = false)::DAE.Type
     else
       ty
     end)
-    @assign pconst = P_Prefixes.variabilityToDAEConst(P_Component.variability(comp))
+    @assign pconst = P_Prefixes.variabilityToDAEConst(variability(comp))
     @assign ppar = P_Prefixes.parallelismToDAE(P_Component.parallelism(comp))
     @assign pdefault = Util.applyOption(
       typedExp(P_Component.getBinding(comp)),
@@ -889,7 +889,7 @@ function applyPartialApplicationArg(
           list(
             AbsynUtil.pathString(name(fn)),
             argName,
-            P_Expression.Expression.toString(argExp),
+            toString(argExp),
             Type.toString(argType),
             Type.toString(getType(i)),
           ),
@@ -918,7 +918,7 @@ function typePartialApplication(
   origin::ORIGIN_Type,
   info::SourceInfo,
 )::Tuple{Expression, M_Type, Variability}
-  local variability::Variability
+  local variability::VariabilityType
   local ty::M_Type
 
   local fn_ref::ComponentRef
@@ -929,7 +929,7 @@ function typePartialApplication(
   local arg_name::String
   local arg_exp::Expression
   local arg_ty::M_Type
-  local arg_var::Variability
+  local arg_var::VariabilityType
   local fn::M_Function
   local next_origin::ORIGIN_Type = ExpOrigin.setFlag(origin, ExpOrigin.SUBEXPRESSION)
   local inputs::List{InstNode}
@@ -957,7 +957,7 @@ function typePartialApplication(
     @assign (arg, inputs, slots) =
       applyPartialApplicationArg(arg_name, arg, arg_ty, inputs, slots, fn, info)
     @assign ty_args = _cons(P_Expression.Expression.box(arg), ty_args)
-    @assign variability = P_Prefixes.variabilityMax(variability, arg_var)
+    @assign variability = variabilityMax(variability, arg_var)
   end
   @assign fn.inputs = inputs
   @assign fn.slots = slots
@@ -1209,8 +1209,8 @@ function matchArgVectorized(
   local mk::TypeCheck.MatchKind
   local vect_dims_count::Integer
 
-  @assign arg_dims = Type.arrayDims(argTy)
-  @assign input_dims = Type.arrayDims(inputTy)
+  @assign arg_dims = arrayDims(argTy)
+  @assign input_dims = arrayDims(inputTy)
   @assign vect_dims_count = listLength(arg_dims) - listLength(input_dims)
   #=  Only try to vectorize if the argument has more dimensions than the input parameter.
   =#
@@ -1229,9 +1229,9 @@ function matchArgVectorized(
       Error.VECTORIZE_CALL_DIM_MISMATCH,
       list(
         "",
-        P_Expression.Expression.toString(vectArg),
+        toString(vectArg),
         "",
-        P_Expression.Expression.toString(argExp),
+        toString(argExp),
         P_Dimension.Dimension.toStringList(vectDims),
         P_Dimension.Dimension.toStringList(vect_dims),
       ),
@@ -1242,7 +1242,7 @@ function matchArgVectorized(
   =#
   #=  the dimensions to vectorize over has been removed from the argument's type.
   =#
-  @assign rest_ty = Type.liftArrayLeftList(Type.arrayElementType(argTy), rest_dims)
+  @assign rest_ty = Type.liftArrayLeftList(arrayElementType(argTy), rest_dims)
   @assign (argExp, argTy, matchKind) =
     TypeCheck.matchTypes(rest_ty, inputTy, argExp, allowUnknown = false)
   return (argExp, argTy, vectArg, vectDims, matchKind)
@@ -1265,7 +1265,7 @@ function matchArgs(
   local arg_ty::M_Type
   local input_ty::M_Type
   local ty::M_Type
-  local arg_var::Variability
+  local arg_var::VariabilityType
   local mk::TypeCheck.MatchKind
   local vect_arg::Expression = INTEGER_EXPRESSION(0)
   local vect_dims::List{Dimension} = nil
@@ -1276,15 +1276,15 @@ function matchArgs(
     @assign (arg_exp, arg_ty, arg_var) = arg
     @match _cons(input_node, inputs) = inputs
     @assign comp = component(input_node)
-    if arg_var > P_Component.variability(comp)
+    if arg_var > variability(comp)
       Error.addSourceMessage(
         Error.FUNCTION_SLOT_VARIABILITY,
         list(
           name(input_node),
-          P_Expression.Expression.toString(arg_exp),
+          toString(arg_exp),
           AbsynUtil.pathString(P_Function.name(func)),
           P_Prefixes.variabilityString(arg_var),
-          P_Prefixes.variabilityString(P_Component.variability(comp)),
+          P_Prefixes.variabilityString(variability(comp)),
         ),
         info,
       )
@@ -1308,7 +1308,7 @@ function matchArgs(
           intString(arg_idx),
           AbsynUtil.pathString(func.path),
           name(input_node),
-          P_Expression.Expression.toString(arg_exp),
+          toString(arg_exp),
           Type.toString(arg_ty),
           Type.toString(input_ty),
         ),
@@ -1398,7 +1398,7 @@ function evaluateSlotExp(
 )::Expression
   local outExp::Expression
 
-  @assign outExp = P_Expression.Expression.map(
+  @assign outExp = map(
     exp,
     (slots, info) -> evaluateSlotExp_traverser(slots = slots, info = info),
   )
@@ -1432,7 +1432,7 @@ function fillDefaultSlot2(slot::Slot, slots::Array{<:Slot}, info::SourceInfo)::T
         @assign exp = evaluateSlotExp(Util.getOption(slot.default), slots, info)
         @assign outArg = (
           exp,
-          P_Expression.Expression.typeOf(exp),
+          typeOf(exp),
           P_Expression.Expression.variability(exp),
         )
         @assign slot.arg = SOME(outArg)
@@ -1525,7 +1525,7 @@ function fillNamedArg(
   local argName::String
   local ty::M_Type
   local argExp::Expression
-  local var::Variability
+  local var::VariabilityType
 
   #=  Try to find a slot and fill it with the argument expression.
   =#
@@ -1745,14 +1745,14 @@ function callString(
   local str::String
 
   @assign str =
-    stringDelimitList(List(P_Expression.Expression.toString(arg) for arg in posArgs), ", ")
+    stringDelimitList(List(toString(arg) for arg in posArgs), ", ")
   if !listEmpty(namedArgs)
     @assign str =
       str +
       ", " +
       stringDelimitList(
         List(
-          Util.tuple21(arg) + " = " + P_Expression.Expression.toString(Util.tuple22(arg))
+          Util.tuple21(arg) + " = " + toString(Util.tuple22(arg))
           for arg in namedArgs
         ),
         ", ",
@@ -1788,7 +1788,7 @@ function signatureString(fn::M_Function, printTypes::Bool = true)::String
     @assign inputs = listRest(inputs)
     if isSome(s.default)
       @match SOME(def_exp) = s.default
-      @assign input_str = " = " + P_Expression.Expression.toString(def_exp)
+      @assign input_str = " = " + toString(def_exp)
     end
     @assign input_str = s.name + input_str
     @assign input_str = begin
@@ -1804,7 +1804,7 @@ function signatureString(fn::M_Function, printTypes::Bool = true)::String
     end
     if printTypes && P_Component.isTyped(c)
       @assign ty = P_Component.getType(c)
-      @assign var_s = P_Prefixes.unparseVariability(P_Component.variability(c), ty)
+      @assign var_s = P_Prefixes.unparseVariability(variability(c), ty)
       @assign input_str = var_s + Type.toString(ty) + " " + input_str
     end
     @assign inputs_strl = _cons(input_str, inputs_strl)
@@ -2302,7 +2302,7 @@ function isValidParamType(ty::M_Type)::Bool
         true
       end
 
-      Type.ARRAY(__) => begin
+      ARRAY_TYPE(__) => begin
         isValidParamType(ty.elementType)
       end
 
@@ -2588,18 +2588,18 @@ end
 function paramDirection(component::InstNode)::DirectionType
   local direction::DirectionType
 
-  local cty::ConnectorType.Type
+  local cty::ConnectorType.TYPE
   local io::InnerOuter
   local vis::VisibilityType
-  local var::Variability
+  local var::VariabilityType
 
-  @match P_Component.P_Attributes.ATTRIBUTES(
+  @match ATTRIBUTES(
     connectorType = cty,
     direction = direction,
     innerOuter = io,
   ) = P_Component.getAttributes(component(component))
   @assign vis = visibility(component)
-  @assign var = P_Component.variability(component(component))
+  @assign var = variability(component(component))
   #=  Function components may not be connectors.
   =#
   if ConnectorType.isFlowOrStream(cty)

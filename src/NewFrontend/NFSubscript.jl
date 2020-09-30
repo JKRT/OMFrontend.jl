@@ -215,17 +215,17 @@ function mergeList(
   return (outSubs, remainingSubs) #= The subscripts that didn't fit =#
 end
 
-function variabilityList(subscripts::List{<:Subscript})::Variability
-  local var::Variability = Variability.CONSTANT
+function variabilityList(subscripts::List{<:Subscript})::VariabilityType
+  local var::VariabilityType = Variability.CONSTANT
 
   for s in subscripts
-    @assign var = P_Prefixes.variabilityMax(var, variability(s))
+    @assign var = variabilityMax(var, variability(s))
   end
   return var
 end
 
-function variability(subscript::Subscript)::Variability
-  local var::Variability
+function variability(subscript::Subscript)::VariabilityType
+  local var::VariabilityType
 
   @assign var = begin
     @match subscript begin
@@ -411,7 +411,7 @@ function toDimension(subscript::Subscript)::Dimension
       end
 
       SLICE(__) => begin
-        listHead(Type.arrayDims(P_Expression.Expression.typeOf(subscript.slice)))
+        listHead(arrayDims(typeOf(subscript.slice)))
       end
 
       WHOLE(__) => begin
@@ -524,15 +524,15 @@ function toString(subscript::Subscript)::String
       end
 
       UNTYPED(__) => begin
-        P_Expression.Expression.toString(subscript.exp)
+        toString(subscript.exp)
       end
 
       INDEX(__) => begin
-        P_Expression.Expression.toString(subscript.index)
+        toString(subscript.index)
       end
 
       SLICE(__) => begin
-        P_Expression.Expression.toString(subscript.slice)
+        toString(subscript.slice)
       end
 
       EXPANDED_SLICE(__) => begin
@@ -653,7 +653,7 @@ function mapFoldExp(subscript::Subscript, func::MapFunc, arg::ArgT) where {ArgT}
     local exp::Expression
     @match subscript begin
       UNTYPED(__) => begin
-        @assign (exp, arg) = P_Expression.Expression.mapFold(subscript.exp, func, arg)
+        @assign (exp, arg) = mapFold(subscript.exp, func, arg)
         if referenceEq(subscript.exp, exp)
           subscript
         else
@@ -662,7 +662,7 @@ function mapFoldExp(subscript::Subscript, func::MapFunc, arg::ArgT) where {ArgT}
       end
 
       INDEX(__) => begin
-        @assign (exp, arg) = P_Expression.Expression.mapFold(subscript.index, func, arg)
+        @assign (exp, arg) = mapFold(subscript.index, func, arg)
         if referenceEq(subscript.index, exp)
           subscript
         else
@@ -671,7 +671,7 @@ function mapFoldExp(subscript::Subscript, func::MapFunc, arg::ArgT) where {ArgT}
       end
 
       SLICE(__) => begin
-        @assign (exp, arg) = P_Expression.Expression.mapFold(subscript.slice, func, arg)
+        @assign (exp, arg) = mapFold(subscript.slice, func, arg)
         if referenceEq(subscript.slice, exp)
           subscript
         else
@@ -762,7 +762,7 @@ function mapExp(subscript::Subscript, func::MapFunc)::Subscript
     local e2::Expression
     @match subscript begin
       UNTYPED(exp = e1) => begin
-        @assign e2 = P_Expression.Expression.map(e1, func)
+        @assign e2 = map(e1, func)
         if referenceEq(e1, e2)
           subscript
         else
@@ -771,7 +771,7 @@ function mapExp(subscript::Subscript, func::MapFunc)::Subscript
       end
 
       INDEX(index = e1) => begin
-        @assign e2 = P_Expression.Expression.map(e1, func)
+        @assign e2 = map(e1, func)
         if referenceEq(e1, e2)
           subscript
         else
@@ -780,7 +780,7 @@ function mapExp(subscript::Subscript, func::MapFunc)::Subscript
       end
 
       SLICE(slice = e1) => begin
-        @assign e2 = P_Expression.Expression.map(e1, func)
+        @assign e2 = map(e1, func)
         if referenceEq(e1, e2)
           subscript
         else
@@ -1042,7 +1042,7 @@ function isScalar(sub::Subscript)::Bool
     local ty::M_Type
     @match sub begin
       INDEX(__) => begin
-        @assign ty = P_Expression.Expression.typeOf(sub.index)
+        @assign ty = typeOf(sub.index)
         isValidIndexType(ty)
       end
 
@@ -1087,7 +1087,7 @@ end
 function makeIndex(exp::Expression)::Subscript
   local subscript::Subscript
   local ty::M_Type
-  @assign ty = P_Expression.Expression.typeOf(exp)
+  @assign ty = typeOf(exp)
   if isValidIndexType(ty)
     @assign subscript = INDEX(exp)
   else

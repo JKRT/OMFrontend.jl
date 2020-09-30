@@ -55,7 +55,7 @@ import ..DAE
                    =#
                    instExpressions(inst_cls)
                     #                   execStat("NFInst.instExpressions(" + name + ")")
-                    @info "Inst expressions done"
+                   @info "Inst expressions done"
                    #=  Mark structural parameters.
                    =#
                    #updateImplicitVariability(inst_cls, Flags.isSet(Flags.EVAL_PARAM))
@@ -66,9 +66,11 @@ import ..DAE
                     typeClass(inst_cls, name)
                     @info "After type class"
                    #=  Flatten the model and evaluate constants in it.
-                   =#
+                    =#
+                   @info "START FLATTENING!"
                    @assign flat_model = flatten(inst_cls, name)
-                   @assign flat_model = EvalConstants.evaluate(flat_model)
+@error             "@assign flat_model = EvalConstants.evaluate(flat_model)"
+                   @info "Flattening done: $flat_model"
                    #=  Do unit checking
                    =#
                    @assign flat_model = UnitCheck.checkUnits(flat_model)
@@ -97,15 +99,16 @@ import ..DAE
                    end
                    #=  Remove empty arrays from variables
                    =#
+                   @info "VERIFYING MODEL"
                    P_VerifyModel.VerifyModel.verify(flat_model)
                    if Flags.isSet(Flags.NF_DUMP_FLAT)
                      print("FlatModel:\\n" + FlatModel.toString(flat_model) + "\\n")
                    end
-                   #=  Convert the flat model to a DAE.
-                   =#
-                   @assign (dae, daeFuncs) = ConvertDAE.convert(flat_model, funcs, name, info(inst_cls))
-(dae, daeFuncs)
-end
+                  #=  Convert the flat model to a DAE.=#
+                  @info "Convert to the DAE representation"
+                  (dae, daeFuncs) = ConvertDAE.convert(flat_model, funcs, name, info(inst_cls))
+                  return (dae, daeFuncs)
+                end
 
 
 function instantiateN1(node::InstNode, parentNode::InstNode)::InstNode
@@ -593,8 +596,8 @@ end
 function instDerivedAttributes(scodeAttr::SCode.Attributes) ::Attributes
   local attributes::Attributes
 
-  local cty::ConnectorType.Type
-  local var::Variability
+  local cty::ConnectorType.TYPE
+  local var::VariabilityType
   local dir::DirectionType
 
   @assign attributes = begin
@@ -1496,9 +1499,9 @@ end
 function mergeComponentAttributes(outerAttr::Attributes, innerAttr::Attributes, node::InstNode, parentRestriction::Restriction) ::Attributes
   local attr::Attributes
 
-  local cty::ConnectorType.Type
+  local cty::ConnectorType.TYPE
   local par::Parallelism
-  local var::Variability
+  local var::VariabilityType
   local dir::DirectionType
   local fin::Bool
   local redecl::Bool
@@ -1581,7 +1584,7 @@ function assertNotInnerOuter(io, node::InstNode, restriction)
   end
 end
 
-function assertNotFlowStream(cty::ConnectorType.Type, node::InstNode, restriction)
+function assertNotFlowStream(cty::ConnectorType.TYPE, node::InstNode, restriction)
   if ConnectorType.isFlowOrStream(cty)
     invalidComponentPrefixError(ConnectorType.toString(cty), node, restriction)
     fail()
@@ -1590,9 +1593,9 @@ end
 
 function mergeDerivedAttributes(outerAttr::Attributes, innerAttr::Attributes, node::InstNode) ::Attributes
   local attr::Attributes
-  local cty::ConnectorType.Type
+  local cty::ConnectorType.TYPE
   local par::Parallelism
-  local var::Variability
+  local var::VariabilityType
   local dir::DirectionType
   local io::InnerOuter
   local fin::Bool
@@ -1615,14 +1618,14 @@ end
 
 function mergeRedeclaredComponentAttributes(origAttr::Attributes, redeclAttr::Attributes, node::InstNode) ::Attributes
   local attr::Attributes
-  local cty::ConnectorType.Type
-  local rcty::ConnectorType.Type
-  local cty_fs::ConnectorType.Type
-  local rcty_fs::ConnectorType.Type
+  local cty::ConnectorType.TYPE
+  local rcty::ConnectorType.TYPE
+  local cty_fs::ConnectorType.TYPE
+  local rcty_fs::ConnectorType.TYPE
   local par::Parallelism
   local rpar::Parallelism
-  local var::Variability
-  local rvar::Variability
+  local var::VariabilityType
+  local rvar::VariabilityType
   local dir::DirectionType
   local rdir::DirectionType
   local io::InnerOuter
@@ -2098,10 +2101,10 @@ end
 function instBinding(bindingVar::Binding)::Binding
   @assign bindingVar = begin
     local bind_exp::Expression
-    @match binding begin
+    @match bindingVar begin
       RAW_BINDING(__)  => begin
-        @assign bind_exp = instExp(bindingVar.bindingExp, bindingVar.scope, bindingVar.info)
-        @assign bind_exp = BINDING_EXP(bind_exp, TYPE_UNKNOWN(), TYPE_UNKNOWN(), bindingVar.parents, bindingVar.isEach)
+        bind_exp = instExp(bindingVar.bindingExp, bindingVar.scope, bindingVar.info)
+        bind_exp = BINDING_EXP(bind_exp, TYPE_UNKNOWN(), TYPE_UNKNOWN(), bindingVar.parents, bindingVar.isEach)
         UNTYPED_BINDING(bind_exp, false, bindingVar.scope, bindingVar.isEach, bindingVar.info)
       end
       _  => begin
@@ -2350,10 +2353,10 @@ function instCrefTypename(cref::ComponentRef, node::InstNode, info::SourceInfo) 
   @assign ty = begin
     @match ty begin
       TYPE_BOOLEAN(__)  => begin
-        Type.ARRAY(ty, list(P_Dimension.Dimension.BOOLEAN()))
+        ARRAY_TYPE(ty, list(P_Dimension.Dimension.BOOLEAN()))
       end
       TYPE_ENUMERATION(__)  => begin
-        Type.ARRAY(ty, list(P_Dimension.Dimension.ENUM(ty)))
+        ARRAY_TYPE(ty, list(P_Dimension.Dimension.ENUM(ty)))
       end
       _  => begin
         Error.assertion(false, getInstanceName() + " got unknown class node " + name(node), sourceInfo())
@@ -2946,14 +2949,14 @@ function isExpressionNotFixed(exp::Expression, requireFinal::Bool = false, maxDe
   @assign isNotFixed = begin
     local node::InstNode
     local c::Component
-    local var::Variability
+    local var::VariabilityType
     local e::Expression
     @match exp begin
       CREF_EXPRESSION(__)  => begin
         @assign node = ComponentRef.node(exp.cref)
         if isComponent(node)
           @assign c = component(node)
-          @assign var = P_Component.variability(c)
+          @assign var = variability(c)
           if var <= Variability.STRUCTURAL_PARAMETER
             @assign isNotFixed = false
           elseif var == Variability.PARAMETER && (! requireFinal || P_Component.isFinal(c)) && ! P_Component.isExternalObject(c) && P_Component.getFixedAttribute(c)
@@ -3041,7 +3044,7 @@ function markStructuralParamsExp_traverser(exp::Expression)
       CREF_EXPRESSION(cref = COMPONENT_REF_CREF(node = node, origin = Origin.CREF))  => begin
         if isComponent(node)
           @assign comp = component(node)
-          if P_Component.variability(comp) == Variability.PARAMETER
+          if variability(comp) == Variability.PARAMETER
             markStructuralParamsComp(comp, node)
           end
         end

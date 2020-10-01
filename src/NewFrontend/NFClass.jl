@@ -574,7 +574,7 @@ function hasDimensions(cls::Class)::Bool
       end
 
       TYPED_DERIVED(__) => begin
-        Type.isArray(cls.ty)
+        isArray(cls.ty)
       end
 
       _ => begin
@@ -816,9 +816,9 @@ function classTree(cls::Class)::ClassTree
       end
     end
   end
-  @info "Our resulting tree in class tree"
+  @debug "Our resulting tree in class tree"
   str = LookupTree.printTreeStr(lookupTree(tree))
-  @info str
+  @debug str
   return tree
 end
 

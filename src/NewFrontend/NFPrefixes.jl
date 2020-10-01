@@ -54,15 +54,14 @@ end
 
 function toDAE(cty::Integer)::DAE.ConnectorType
   local dcty::DAE.ConnectorType
-
-  if intBitAnd(cty, POTENTIAL) > 0
-    @assign dcty = DAE.ConnectorType.POTENTIAL()
+  if intBitAnd(cty, ConnectorType.POTENTIAL) > 0
+    @assign dcty = DAE.POTENTIAL()
   elseif intBitAnd(cty, ConnectorType.FLOW) > 0
-    @assign dcty = DAE.ConnectorType.FLOW()
-  elseif intBitAnd(cty, cty, ConnectorType.STREAM) > 0
-    @assign dcty = DAE.ConnectorType.STREAM(NONE())
+    @assign dcty = DAE.FLOW()
+  elseif intBitAnd(cty, ConnectorType.STREAM) > 0
+    @assign dcty = DAE..STREAM(NONE())
   else
-    @assign dcty = DAE.ConnectorType.NON_CONNECTOR()
+    @assign dcty = DAE.NON_CONNECTOR()
   end
   return dcty
 end
@@ -147,7 +146,6 @@ end
 
 function isExpandable(cty::Integer)::Bool
   local isExpandable::Bool
-
   @assign isExpandable = intBitAnd(cty, EXPANDABLE) > 0
   return isExpandable
 end
@@ -324,19 +322,17 @@ end
 
 function parallelismToDAE(par)::DAE.VarParallelism
   local dpar::DAE.VarParallelism
-
   @assign dpar = begin
-    @match par() begin
+    @match par begin
       Parallelism.GLOBAL => begin
-        DAE.VarParallelism.PARGLOBAL()
+        DAE.PARGLOBAL()
       end
-
       Parallelism.LOCAL => begin
-        DAE.VarParallelism.PARLOCAL()
+        DAE.PARLOCAL()
       end
 
       Parallelism.NON_PARALLEL => begin
-        DAE.VarParallelism.NON_PARALLEL()
+        DAE.NON_PARALLEL()
       end
     end
   end
@@ -464,27 +460,27 @@ function variabilityToDAE(var)::DAE.VarKind
   @assign varKind = begin
     @match var begin
       Variability.CONSTANT => begin
-        DAE.VarKind.CONST()
+        DAE.CONST()
       end
 
       Variability.STRUCTURAL_PARAMETER => begin
-        DAE.VarKind.PARAM()
+        DAE.PARAM()
       end
 
       Variability.PARAMETER => begin
-        DAE.VarKind.PARAM()
+        DAE.PARAM()
       end
 
       Variability.NON_STRUCTURAL_PARAMETER => begin
-        DAE.VarKind.PARAM()
+        DAE.PARAM()
       end
 
       Variability.DISCRETE => begin
-        DAE.VarKind.DISCRETE()
+        DAE.DISCRETE()
       end
 
       _ => begin
-        DAE.VarKind.VARIABLE()
+        DAE.VARIABLE()
       end
     end
   end

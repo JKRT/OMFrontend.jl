@@ -1,37 +1,4 @@
-#= /*
-* This file is part of OpenModelica.
-*
-* Copyright (c) 1998-CurrentYear, Linköping University,
-* Department of Computer and Information Science,
-* SE-58183 Linköping, Sweden.
-*
-* All rights reserved.
-*
-* THIS PROGRAM IS PROVIDED UNDER THE TERMS OF GPL VERSION 3
-* AND THIS OSMC PUBLIC LICENSE (OSMC-PL).
-* ANY USE, REPRODUCTION OR DISTRIBUTION OF THIS PROGRAM CONSTITUTES RECIPIENT'S
-* ACCEPTANCE OF THE OSMC PUBLIC LICENSE.
-*
-* The OpenModelica software and the Open Source Modelica
-* Consortium (OSMC) Public License (OSMC-PL) are obtained
-* from Linköping University, either from the above address,
-* from the URLs: http:www.ida.liu.se/projects/OpenModelica or
-* http:www.openmodelica.org, and in the OpenModelica distribution.
-* GNU version 3 is obtained from: http:www.gnu.org/copyleft/gpl.html.
-*
-* This program is distributed WITHOUT ANY WARRANTY; without
-* even the implied warranty of  MERCHANTABILITY or FITNESS
-* FOR A PARTICULAR PURPOSE, EXCEPT AS EXPRESSLY SET FORTH
-* IN THE BY RECIPIENT SELECTED SUBSIDIARY LICENSE CONDITIONS
-* OF OSMC-PL.
-*
-* See the full OSMC Public License conditions for more details.
-*
-*/ =#
-
 @UniontypeDecl VariableConversionSettings
-
-
 import ..ComponentReference
 import ..Flags
 import ..Util
@@ -42,13 +9,11 @@ function convert(
   functions::FunctionTree,
   name::String,
   info::SourceInfo,
-)::Tuple{DAE.DAElist, DAE.FunctionTree}
+)::Tuple{DAE.DAE_LIST, DAE.FunctionTree}
   local daeFunctions::DAE.FunctionTree
-  local dae::DAE.DAElist
-
+  local dae::DAE.DAE_LIST
   local elems::List{DAE.Element}
   local class_elem::DAE.Element
-
   @assign daeFunctions = convertFunctionTree(functions)
   @assign elems = convertVariables(flatModel.variables, nil)
   @assign elems = convertEquations(flatModel.equations, elems)
@@ -56,14 +21,13 @@ function convert(
   @assign elems = convertAlgorithms(flatModel.algorithms, elems)
   @assign elems = convertInitialAlgorithms(flatModel.initialAlgorithms, elems)
   @assign class_elem =
-    DAE.COMP(name, elems, ElementSource.createElementSource(info), flatModel.comment)
-  @assign dae = DAE.DAE(list(class_elem))
+    DAE.COMP(name, elems, createElementSource(info), flatModel.comment)
+  @assign dae = DAE.DAE_LIST(list(class_elem))
   return (dae, daeFunctions)
 end
 
 @Uniontype VariableConversionSettings begin
   @Record VARIABLE_CONVERSION_SETTINGS begin
-
     useLocalDirection::Bool
     isFunctionParameter::Bool
     addTypeToSource::Bool
@@ -77,14 +41,12 @@ function convertVariables(
   variables::List{<:Variable},
   elements::List{<:DAE.Element},
 )::List{DAE.Element}
-
-  local settings::VariableConversionSettings
-
-  @assign settings = VariableConversionSettings.VARIABLE_CONVERSION_SETTINGS(
-    useLocalDirection = Flags.getConfigBool(Flags.USE_LOCAL_DIRECTION),
-    isFunctionParameter = false,
-    addTypeToSource = Flags.isSet(Flags.INFO_XML_OPERATIONS) ||
-                      Flags.isSet(Flags.VISUAL_XML),
+#  local settings::VariableConversionSettings
+  @assign settings = VARIABLE_CONVERSION_SETTINGS(
+     true, #Flags.getConfigBool(Flags.USE_LOCAL_DIRECTION),
+    false,
+    true# addTypeToSource = Flags.isSet(Flags.INFO_XML_OPERATIONS) ||
+    #                   Flags.isSet(Flags.VISUAL_XML),
   )
   for var in listReverse(variables)
     @assign elements = _cons(convertVariable(var, settings), elements)
@@ -94,10 +56,8 @@ end
 
 function convertVariable(var::Variable, settings::VariableConversionSettings)::DAE.Element
   local daeVar::DAE.Element
-
   local var_attr::Option{DAE.VariableAttributes}
   local binding_exp::Option{DAE.Exp}
-
   @assign binding_exp = toDAEExp(var.binding)
   @assign var_attr = convertVarAttributes(var.typeAttributes, var.ty, var.attributes)
   @assign daeVar = makeDAEVar(
@@ -116,7 +76,7 @@ end
 
 function makeDAEVar(
   cref::ComponentRef,
-  ty::M_Type,
+  ty::NFType,
   binding::Option{<:DAE.Exp},
   attr::Attributes,
   vis::VisibilityType,
@@ -127,18 +87,18 @@ function makeDAEVar(
 )::DAE.Element
   local var::DAE.Element
 
-  local dcref::DAE.P_ComponentRef.ComponentRef
+  local dcref::DAE.ComponentRef
   local dty::DAE.Type
   local source::DAE.ElementSource
   local dir::DirectionType
 
   @assign dcref = toDAE(cref)
-  @assign dty = Type.toDAE(if settings.isFunctionParameter
+  @assign dty = toDAE(if settings.isFunctionParameter
     arrayElementType(ty)
   else
     ty
   end)
-  @assign source = ElementSource.createElementSource(info)
+  @assign source = createElementSource(info)
   if settings.addTypeToSource
     @assign source = addComponentTypeToSource(cref, source)
   end
@@ -156,14 +116,14 @@ function makeDAEVar(
         end
         DAE.VAR(
           dcref,
-          P_Prefixes.variabilityToDAE(attr.variability),
-          P_Prefixes.directionToDAE(dir),
-          P_Prefixes.parallelismToDAE(attr.parallelism),
-          P_Prefixes.visibilityToDAE(vis),
+          variabilityToDAE(attr.variability),
+          directionToDAE(dir),
+          parallelismToDAE(attr.parallelism),
+          visibilityToDAE(vis),
           dty,
           binding,
-          ComponentReference.crefDims(dcref),
-          ConnectorType.toDAE(attr.connectorType),
+          nil,#crefDims(dcref) TODO
+          toDAE(attr.connectorType),
           source,
           vattr,
           comment,
@@ -174,9 +134,9 @@ function makeDAEVar(
       _ => begin
         DAE.VAR(
           dcref,
-          DAE.VarKind.VARIABLE(),
+          DAE.VARIABLE(),
           DAE.VarDirection.BIDIR(),
-          DAE.VarParallelism.NON_PARALLEL(),
+          DAE.NON_PARALLEL(),
           P_Prefixes.visibilityToDAE(vis),
           dty,
           binding,
@@ -197,14 +157,10 @@ function addComponentTypeToSource(
   cref::ComponentRef,
   source::DAE.ElementSource,
 )::DAE.ElementSource
-
   @assign source = begin
     @match cref begin
-      CREF(__) => begin
-        @assign source = ElementSource.addElementSourceType(
-          source,
-          scopePath(classScope(getDerivedNode(parent(cref.node)))),
-        )
+      COMPONENT_REF_CREF(__) => begin
+        @assign source = createElementSource(source)
         addComponentTypeToSource(cref.restCref, source)
       end
 
@@ -239,11 +195,10 @@ end
 
 function convertVarAttributes(
   attrs::List{<:Tuple{<:String, Binding}},
-  ty::M_Type,
+  ty::NFType,
   compAttrs::Attributes,
 )::Option{DAE.VariableAttributes}
   local attributes::Option{DAE.VariableAttributes}
-
   local is_final::Bool
   local is_final_opt::Option{Bool}
   local elTy::M_Type
@@ -746,23 +701,22 @@ function convertEquations(
 end
 
 function convertEquation(eq::Equation, elements::List{<:DAE.Element})::List{DAE.Element}
-
   @assign elements = begin
     local e1::DAE.Exp
     local e2::DAE.Exp
     local e3::DAE.Exp
-    local cr1::DAE.P_ComponentRef.ComponentRef
-    local cr2::DAE.P_ComponentRef.ComponentRef
+    local cr1::DAE.ComponentRef
+    local cr2::DAE.ComponentRef
     local dims::List{DAE.P_Dimension.Dimension}
     local body::List{DAE.Element}
     @match eq begin
       EQUATION_EQUALITY(__) => begin
-        @assign e1 = P_Expression.Expression.toDAE(eq.lhs)
-        @assign e2 = P_Expression.Expression.toDAE(eq.rhs)
+        @assign e1 = toDAE(eq.lhs)
+        @assign e2 = toDAE(eq.rhs)
         _cons(
           if isComplex(eq.ty)
             DAE.Element.COMPLEX_EQUATION(e1, e2, eq.source)
-          elseif (Type.isArray(eq.ty))
+          elseif (isArray(eq.ty))
             DAE.Element.ARRAY_EQUATION(
               List(P_Dimension.Dimension.toDAE(d) for d in arrayDims(eq.ty)),
               e1,
@@ -770,7 +724,7 @@ function convertEquation(eq::Equation, elements::List{<:DAE.Element})::List{DAE.
               eq.source,
             )
           else
-            DAE.Element.EQUATION(e1, e2, eq.source)
+            DAE.EQUATION(e1, e2, eq.source)
           end,
           elements,
         )
@@ -797,7 +751,7 @@ function convertEquation(eq::Equation, elements::List{<:DAE.Element})::List{DAE.
         _cons(convertIfEquation(eq.branches, eq.source, isInitial = false), elements)
       end
 
-      P_Equation.Equation.WHEN(__) => begin
+      EQUATION_WHEN(__) => begin
         _cons(convertWhenEquation(eq.branches, eq.source), elements)
       end
 
@@ -856,8 +810,8 @@ function convertForEquation(forEquation::Equation)::DAE.Element
   @assign dbody = convertEquations(body)
   @match P_Component.ITERATOR(ty = ty) = component(iterator)
   @assign forDAE = DAE.Element.FOR_EQUATION(
-    Type.toDAE(ty),
-    Type.isArray(ty),
+    toDAE(ty),
+    isArray(ty),
     name(iterator),
     0,
     P_Expression.Expression.toDAE(range),
@@ -962,7 +916,7 @@ function convertInitialEquation(
     local e1::DAE.Exp
     local e2::DAE.Exp
     local e3::DAE.Exp
-    local cref::DAE.P_ComponentRef.ComponentRef
+    local cref::DAE.ComponentRef
     local dims::List{DAE.P_Dimension.Dimension}
     local body::List{DAE.Element}
     @match eq begin
@@ -1068,7 +1022,7 @@ function convertStatement(stmt::Statement)::DAE.P_Statement.Statement
       end
 
       P_Statement.Statement.FUNCTION_ARRAY_INIT(__) => begin
-        @assign ty = Type.toDAE(stmt.ty)
+        @assign ty = toDAE(stmt.ty)
         DAE.P_Statement.Statement.STMT_ARRAY_INIT(stmt.name, ty, stmt.source)
       end
 
@@ -1153,10 +1107,10 @@ function convertAssignment(stmt::Statement)::DAE.P_Statement.Statement
           =#
           #=  (lhs) := call(...) => lhs := TSUB[call(...), 1]
           =#
-          @assign dty = Type.toDAE(ty)
+          @assign dty = toDAE(ty)
           @assign dlhs = P_Expression.Expression.toDAE(lhs)
           @assign drhs = DAE.Exp.TSUB(P_Expression.Expression.toDAE(rhs), 1, dty)
-          if Type.isArray(ty)
+          if isArray(ty)
             @assign daeStmt =
               DAE.P_Statement.Statement.STMT_ASSIGN_ARR(dty, dlhs, drhs, src)
           else
@@ -1166,7 +1120,7 @@ function convertAssignment(stmt::Statement)::DAE.P_Statement.Statement
         end
 
         _ => begin
-          @assign dty = Type.toDAE(ty)
+          @assign dty = toDAE(ty)
           @assign drhs = P_Expression.Expression.toDAE(rhs)
           DAE.P_Statement.Statement.STMT_TUPLE_ASSIGN(
             dty,
@@ -1178,10 +1132,10 @@ function convertAssignment(stmt::Statement)::DAE.P_Statement.Statement
       end
     end
   else
-    @assign dty = Type.toDAE(ty)
+    @assign dty = toDAE(ty)
     @assign dlhs = P_Expression.Expression.toDAE(lhs)
     @assign drhs = P_Expression.Expression.toDAE(rhs)
-    if Type.isArray(ty)
+    if isArray(ty)
       @assign daeStmt = DAE.P_Statement.Statement.STMT_ASSIGN_ARR(dty, dlhs, drhs, src)
     else
       @assign daeStmt = DAE.P_Statement.Statement.STMT_ASSIGN(dty, dlhs, drhs, src)
@@ -1209,8 +1163,8 @@ function convertForStatement(forStmt::Statement)::DAE.P_Statement.Statement
   @assign dbody = convertStatements(body)
   @match P_Component.ITERATOR(ty = ty) = component(iterator)
   @assign forDAE = DAE.P_Statement.Statement.STMT_FOR(
-    Type.toDAE(ty),
-    Type.isArray(ty),
+    toDAE(ty),
+    isArray(ty),
     name(iterator),
     0,
     P_Expression.Expression.toDAE(range),
@@ -1298,85 +1252,71 @@ end
 
 function convertFunctionTree(funcs::FunctionTree)::DAE.FunctionTree
   local dfuncs::DAE.FunctionTree
-
   @assign dfuncs = begin
     local left::DAE.FunctionTree
     local right::DAE.FunctionTree
     local fn::DAE.P_Function
     @match funcs begin
-      FunctionTree.NODE(__) => begin
+      NFFunctionTree.NODE(__) => begin
         @assign fn = convertFunction(funcs.value)
         @assign left = convertFunctionTree(funcs.left)
         @assign right = convertFunctionTree(funcs.right)
         DAE.FunctionTree.NODE(funcs.key, SOME(fn), funcs.height, left, right)
       end
-
-      FunctionTree.LEAF(__) => begin
+      NFFunctionTree.LEAF(__) => begin
         @assign fn = convertFunction(funcs.value)
         DAE.FunctionTree.LEAF(funcs.key, SOME(fn))
       end
-
-      FunctionTree.EMPTY(__) => begin
-        DAE.FunctionTree.EMPTY()
+      NFFunctionTree.EMPTY(__) => begin
+        Dict()
       end
     end
   end
   return dfuncs
 end
 
-function convertFunction(func::M_Function)::DAE.P_Function
+function convertFunction(func::M_Function)::DAE.Function
   local dfunc::DAE.P_Function
-
   local cls::Class
   local elems::List{DAE.Element}
   local def::DAE.FunctionDefinition
   local sections::Sections
-
   @assign cls = getClass(P_Function.instance(func))
   @assign dfunc = begin
     @match cls begin
       INSTANCED_CLASS(
         sections = sections,
-        restriction = P_Restriction.Restriction.FUNCTION(__),
+        restriction = RESTRICTION_FUNCTION(__),
       ) => begin
         @assign elems = convertFunctionParams(func.inputs, nil)
         @assign elems = convertFunctionParams(func.outputs, elems)
         @assign elems = convertFunctionParams(func.locals, elems)
         @assign def = begin
           @match sections begin
-            P_Sections.Sections.SECTIONS(__) => begin
-              #=  A function with an algorithm section.
-              =#
+            SECTIONS_SECTIONS(__) => begin
+              #=  A function with an algorithm section. =#
               @assign elems = convertAlgorithms(sections.algorithms, elems)
               DAE.FunctionDefinition.FUNCTION_DEF(listReverse(elems))
             end
-
             SECTIONS_EXTERNAL(__) => begin
               convertExternalDecl(sections, listReverse(elems))
             end
-
             _ => begin
-              DAE.FunctionDefinition.FUNCTION_DEF(listReverse(elems))
+              DAE.FUNCTION_DEF(listReverse(elems))
             end
           end
         end
-        #=  An external function.
-        =#
-        #=  A function without either algorithm or external section.
-        =#
-        P_Function.toDAE(func, def)
+        toDAE(func, def)
       end
-
       INSTANCED_CLASS(
         restriction = P_Restriction.Restriction.RECORD_CONSTRUCTOR(__),
       ) => begin
-        DAE.P_Function.RECORD_CONSTRUCTOR(
-          P_Function.name(func),
-          P_Function.makeDAEType(func),
+        DAE.RECORD_CONSTRUCTOR(
+          name(func),
+          makeDAEType(func),
           DAE.emptyElementSource,
         )
       end
-
       _ => begin
         Error.assertion(false, getInstanceName() + " got unknown function", sourceInfo())
         fail()
@@ -1484,11 +1424,11 @@ function convertExternalDeclArg(exp::Expression)::DAE.ExtArg
           DAE.ExtArg.EXTARG(
             toDAE(cref),
             dir,
-            Type.toDAE(exp.ty),
+            toDAE(exp.ty),
           )
         end
 
-      P_Expression.Expression.SIZE(
+      SIZE_EXPRESSION(
         exp = CREF_EXPRESSION(
           cref = cref && CREF(__),
         ),
@@ -1496,7 +1436,7 @@ function convertExternalDeclArg(exp::Expression)::DAE.ExtArg
       ) => begin
         DAE.ExtArg.EXTARGSIZE(
           toDAE(cref),
-          Type.toDAE(cref.ty),
+          toDAE(cref.ty),
           P_Expression.Expression.toDAE(e),
         )
       end
@@ -1504,7 +1444,7 @@ function convertExternalDeclArg(exp::Expression)::DAE.ExtArg
       _ => begin
         DAE.ExtArg.EXTARGEXP(
           P_Expression.Expression.toDAE(exp),
-          Type.toDAE(typeOf(exp)),
+          toDAE(typeOf(exp)),
         )
       end
     end
@@ -1520,7 +1460,7 @@ function convertExternalDeclOutput(cref::ComponentRef)::DAE.ExtArg
       CREF(__) => begin
         @assign dir =
           P_Prefixes.directionToAbsyn(P_Component.direction(component(cref.node)))
-        DAE.ExtArg.EXTARG(toDAE(cref), dir, Type.toDAE(cref.ty))
+        DAE.ExtArg.EXTARG(toDAE(cref), dir, toDAE(cref.ty))
       end
 
       _ => begin
@@ -1564,8 +1504,8 @@ function makeTypeVar(component::InstNode)::DAE.Var
   @assign attr = P_Component.getAttributes(comp)
   @assign typeVar = DAE.TYPES_VAR(
     name(component),
-    P_Component.P_Attributes.toDAE(attr, visibility(component)),
-    Type.toDAE(P_Component.getType(comp)),
+    toDAE(attr, visibility(component)),
+    toDAE(P_Component.getType(comp)),
     toDAE(P_Component.getBinding(comp)),
     false,
     NONE(),
@@ -1592,11 +1532,11 @@ function makeTypeRecordVar(component::InstNode)::DAE.Var
   @assign binding = mapExp(binding, stripScopePrefixExp)
   @assign bind_from_outside = parentCount(binding) > 1
   @assign ty = P_Component.getType(comp)
-  @assign ty = Type.mapDims(ty, stripScopePrefixFromDim)
+  @assign ty = mapDims(ty, stripScopePrefixFromDim)
   @assign typeVar = DAE.TYPES_VAR(
     name(component),
-    P_Component.P_Attributes.toDAE(attr, vis),
-    Type.toDAE(ty),
+    toDAE(attr, vis),
+    toDAE(ty),
     toDAE(binding),
     bind_from_outside,
     NONE(),
@@ -1605,7 +1545,7 @@ function makeTypeRecordVar(component::InstNode)::DAE.Var
 end
 
 function stripScopePrefixFromDim(dim::Dimension)::Dimension
-  @assign dim = P_Dimension.Dimension.mapExp(dim, stripScopePrefixCrefExp)
+  @assign dim = mapExp(dim, stripScopePrefixCrefExp)
   return dim
 end
 

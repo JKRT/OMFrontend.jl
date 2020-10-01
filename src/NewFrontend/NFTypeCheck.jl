@@ -235,7 +235,7 @@ function matchOverloadedBinaryOperator(
       end
     catch
       ErrorExt.rollBack("NFTypeCheck:implicitConstruction")
-      if Type.isArray(type1) || Type.isArray(type2)
+      if isArray(type1) || isArray(type2)
         @assign (outExp, outType) = begin
           @match op.op begin
             Op.ADD => begin
@@ -435,8 +435,8 @@ function checkOverloadedBinaryArrayAddSub2(
     local expl2::List{Expression}
     @match (exp1, exp2) begin
       (
-        P_Expression.Expression.ARRAY(elements = expl1),
-        P_Expression.Expression.ARRAY(elements = expl2),
+        ARRAY_EXPRESSION(elements = expl1),
+        ARRAY_EXPRESSION(elements = expl2),
       ) => begin
         @assign expl = nil
         if listEmpty(expl1)
@@ -652,7 +652,7 @@ function checkOverloadedBinaryScalarArray2(
 
   @assign (outExp, outType) = begin
     @match exp2 begin
-      P_Expression.Expression.ARRAY(elements = nil()) => begin
+      ARRAY_EXPRESSION(elements = nil()) => begin
         try
           @assign ty = Type.unliftArray(type2)
           @assign (_, outType) = matchOverloadedBinaryOperator(
@@ -678,7 +678,7 @@ function checkOverloadedBinaryScalarArray2(
         (P_Expression.Expression.makeArray(outType, nil), outType)
       end
 
-      P_Expression.Expression.ARRAY(elements = expl) => begin
+      ARRAY_EXPRESSION(elements = expl) => begin
         @assign ty = Type.unliftArray(type2)
         @assign expl = List(
           checkOverloadedBinaryScalarArray2(
@@ -766,7 +766,7 @@ function checkOverloadedBinaryArrayScalar2(
 
   @assign (outExp, outType) = begin
     @match exp1 begin
-      P_Expression.Expression.ARRAY(elements = nil()) => begin
+      ARRAY_EXPRESSION(elements = nil()) => begin
         try
           @assign ty = Type.unliftArray(type1)
           @assign (_, outType) = matchOverloadedBinaryOperator(
@@ -792,7 +792,7 @@ function checkOverloadedBinaryArrayScalar2(
         (P_Expression.Expression.makeArray(outType, nil), outType)
       end
 
-      P_Expression.Expression.ARRAY(elements = expl) => begin
+      ARRAY_EXPRESSION(elements = expl) => begin
         @assign ty = Type.unliftArray(type1)
         @assign expl = List(
           checkOverloadedBinaryArrayScalar2(
@@ -846,7 +846,7 @@ function checkOverloadedBinaryArrayDiv(
   local outType::M_Type
   local outExp::Expression
 
-  if Type.isArray(type1) && Type.isScalar(type2)
+  if isArray(type1) && Type.isScalar(type2)
     @assign (outExp, outType) = checkOverloadedBinaryArrayScalar(
       exp1,
       type1,
@@ -889,7 +889,7 @@ function checkOverloadedBinaryArrayEW(
   local expl2::List{Expression}
   local ty::M_Type
 
-  if Type.isArray(type1) && Type.isArray(type2)
+  if isArray(type1) && isArray(type2)
     @assign (e1, e2, _, mk) = matchExpressions(exp1, type1, exp2, type2, true)
   else
     @assign (e1, e2, _, mk) = matchExpressions(
@@ -938,8 +938,8 @@ function checkOverloadedBinaryArrayEW2(
   local is_array1::Bool
   local is_array2::Bool
 
-  @assign is_array1 = Type.isArray(type1)
-  @assign is_array2 = Type.isArray(type2)
+  @assign is_array1 = isArray(type1)
+  @assign is_array2 = isArray(type2)
   if is_array1 || is_array2
     @assign expl = nil
     if P_Expression.Expression.isEmptyArray(exp1) ||
@@ -1632,7 +1632,7 @@ function checkBinaryOperationDiv(
   #=  which operands they accept.
   =#
   @assign (resultType, op) = begin
-    @match (Type.isArray(ty1), Type.isArray(ty2), isElementWise) begin
+    @match (isArray(ty1), isArray(ty2), isElementWise) begin
       (false, false, _) => begin
         (ty1, P_Operator.Operator.makeDiv(ty1))
       end
@@ -1697,7 +1697,7 @@ function checkBinaryOperationPow(
   @assign (e1, resultType, mk) =
     matchTypes(type1, setArrayElementType(type1, TYPE_REAL()), exp1, true)
   @assign valid = isCompatibleMatch(mk)
-  if Type.isArray(resultType)
+  if isArray(resultType)
     @assign valid = valid && Type.isSquareMatrix(resultType)
     @assign valid = valid && Type.isInteger(type2)
     @assign op = OPERATOR(resultType, Op.POW_MATRIX)
@@ -1747,7 +1747,7 @@ function checkBinaryOperationPowEW(
     matchTypes(type2, setArrayElementType(type2, TYPE_REAL()), exp2, true)
   @assign valid = valid && isCompatibleMatch(mk)
   @assign (resultType, op) = begin
-    @match (Type.isArray(ty1), Type.isArray(ty2)) begin
+    @match (isArray(ty1), isArray(ty2)) begin
       (false, false) => begin
         (ty1, P_Operator.Operator.makePow(ty1))
       end
@@ -1805,8 +1805,8 @@ function checkBinaryOperationEW(
   local is_arr2::Bool
   local op::Operator
 
-  @assign is_arr1 = Type.isArray(type1)
-  @assign is_arr2 = Type.isArray(type2)
+  @assign is_arr1 = isArray(type1)
+  @assign is_arr2 = isArray(type2)
   if is_arr1 && is_arr2
     @assign (e1, e2, resultType, mk) = matchExpressions(exp1, type1, exp2, type2, true)
   else
@@ -2003,7 +2003,7 @@ function checkLogicalBinaryOperation(
     return (outExp, resultType)
   end
   @assign (e1, e2, resultType, mk) = matchExpressions(exp1, type1, exp2, type2, true)
-  @assign outExp = P_Expression.Expression.LBINARY(
+  @assign outExp = LBINARY_EXPRESSION(
     e1,
     setType(resultType, operator),
     e2,
@@ -3506,7 +3506,7 @@ function matchComplexTypes(
       (
         INSTANCED_CLASS(elements = FLAT_TREE(components = comps1)),
         INSTANCED_CLASS(elements = FLAT_TREE(components = comps2)),
-        P_Expression.Expression.RECORD(elements = elements),
+        RECORD_EXPRESSION(elements = elements),
       ) => begin
         @assign matchKind = MatchKind.PLUG_COMPATIBLE
         if arrayLength(comps1) != arrayLength(comps2) ||
@@ -3968,7 +3968,7 @@ function matchTypes_cast(
               end
 
               _ => begin
-                TUPLE_EXPRESSION_ELEMENT(
+                TUPLE_ELEMENT_EXPRESSION(
                   expression,
                   1,
                   setArrayElementType(
@@ -4483,7 +4483,7 @@ function printBindingTypeError(
 
   @assign binding_info = getInfo(binding)
   @assign comp_info = info(component)
-  return if Type.isScalar(bindingType) && Type.isArray(componentType)
+  return if Type.isScalar(bindingType) && isArray(componentType)
     Error.addMultiSourceMessage(
       Error.MODIFIER_NON_ARRAY_TYPE_ERROR,
       list(toString(binding), name),

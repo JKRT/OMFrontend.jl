@@ -1223,7 +1223,7 @@
                              =#
                             @assign res = begin
                               @match call.arguments begin
-                                P_Expression.Expression.ARRAY(elements =  nil()) <|  nil()  => begin
+                                ARRAY_EXPRESSION(elements =  nil()) <|  nil()  => begin
                                     if Flags.isSet(Flags.CGRAPH)
                                       print("- NFOCConnectionGraph.evalConnectionsOperatorsHelper: " + toString(exp) + " = false\\n")
                                     end
@@ -1272,7 +1272,7 @@
                              =#
                             @assign res = begin
                               @match call.arguments begin
-                                P_Expression.Expression.ARRAY(elements =  nil()) <|  nil()  => begin
+                                ARRAY_EXPRESSION(elements =  nil()) <|  nil()  => begin
                                     if Flags.isSet(Flags.CGRAPH)
                                       print("- NFOCConnectionGraph.evalConnectionsOperatorsHelper: " + toString(exp) + " = false\\n")
                                     end
@@ -1296,7 +1296,7 @@
                              =#
                             @assign res = begin
                               @match call.arguments begin
-                                uroots && P_Expression.Expression.ARRAY(elements = lst) <| nodes <| message <|  nil()  => begin
+                                uroots && ARRAY_EXPRESSION(elements = lst) <| nodes <| message <|  nil()  => begin
                                     if Flags.isSet(Flags.CGRAPH)
                                       print("- NFOCConnectionGraph.evalConnectionsOperatorsHelper: Connections.uniqueRootsIndicies(" + toString(uroots) + "," + toString(nodes) + "," + toString(message) + ")\\n")
                                     end

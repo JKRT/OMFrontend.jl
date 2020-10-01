@@ -38,20 +38,15 @@
          *
          */ =#
 
-         import ..P_NFComponentRef
-         P_ComponentRef=P_NFComponentRef
-         ComponentRef=P_NFComponentRef.NFComponentRef
-
+        import ..ComponentRef
         import ..Debug
         import ..Error
         import ..Flags
         import ..NFHashTableStringToUnit; HashTableStringToUnit=NFHashTableStringToUnit
         import ..NFHashTableUnitToString; HashTableUnitToString=NFHashTableUnitToString
         import ..Util
-
          @Uniontype Unit begin
               @Record UNIT begin
-
                       factor #= prefix =#::AbstractFloat
                       mol #= exponent =#::Integer
                       cd #= exponent =#::Integer
@@ -65,41 +60,33 @@
               end
 
               @Record MASTER begin
-
                       varList::List{ComponentRef}
               end
 
               @Record UNKNOWN begin
-
                       unit::String
               end
          end
 
          @Uniontype Token begin
               @Record T_NUMBER begin
-
                       number::Integer
               end
 
               @Record T_UNIT begin
-
                       unit::String
               end
 
               @Record T_MUL begin
-
               end
 
               @Record T_DIV begin
-
               end
 
               @Record T_LPAREN begin
-
               end
 
               @Record T_RPAREN begin
-
               end
          end
 

@@ -158,7 +158,7 @@ function isDeleted(variable::Variable)::Bool
 end
 
 function isEmptyArray(variable::Variable)::Bool
-  local isEmpty::Bool = Type.isEmptyArray(variable.ty)
+  local isEmpty::Bool = isEmptyArray(variable.ty)
   return isEmpty
 end
 

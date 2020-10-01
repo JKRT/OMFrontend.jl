@@ -121,7 +121,7 @@ function scalarizeVariable(var::Variable, vars::List{<:Variable})::List{Variable
   local ty_attr_iters::Array{ExpressionIterator}
   local bind_var::VariabilityType
 
-  if Type.isArray(var.ty)
+  if isArray(var.ty)
     try
       @match VARIABLE(
         name,
@@ -283,7 +283,7 @@ function scalarizeEquation(eq::Equation, equations::List{<:Equation})::List{Equa
         rhs = rhs,
         ty = ty,
         source = src,
-      ) where {(Type.isArray(ty))} => begin
+      ) where {(isArray(ty))} => begin
         if P_Expression.Expression.hasArrayCall(lhs) ||
            P_Expression.Expression.hasArrayCall(rhs)
           @assign equations =
@@ -324,7 +324,7 @@ function scalarizeEquation(eq::Equation, equations::List{<:Equation})::List{Equa
         scalarizeIfEquation(eq.branches, eq.source, equations)
       end
 
-      P_Equation.Equation.WHEN(__) => begin
+      EQUATION_WHEN(__) => begin
         scalarizeWhenEquation(eq.branches, eq.source, equations)
       end
 
@@ -381,13 +381,13 @@ function scalarizeWhenEquation(
   for b in branches
     @match P_Equation.Equation.BRANCH(cond, var, body) = b
     @assign body = scalarizeEquations(body)
-    if Type.isArray(typeOf(cond))
+    if isArray(typeOf(cond))
       @assign cond = P_ExpandExp.ExpandExp.expand(cond)
     end
     @assign bl = _cons(P_Equation.Equation.makeBranch(cond, body, var), bl)
   end
   @assign equations =
-    _cons(P_Equation.Equation.WHEN(listReverseInPlace(bl), source), equations)
+    _cons(EQUATION_WHEN(listReverseInPlace(bl), source), equations)
   return equations
 end
 
@@ -493,7 +493,7 @@ function scalarizeWhenStatement(
   for b in branches
     @assign (cond, body) = b
     @assign body = scalarizeStatements(body)
-    if Type.isArray(typeOf(cond))
+    if isArray(typeOf(cond))
       @assign cond = P_ExpandExp.ExpandExp.expand(cond)
     end
     @assign bl = _cons((cond, body), bl)

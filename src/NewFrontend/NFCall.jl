@@ -28,14 +28,12 @@ ParameterTree = ParameterTreeImpl.Tree
   end
 
   @Record UNTYPED_REDUCTION begin
-
     ref::ComponentRef
     exp::Expression
     iters::List{Tuple{InstNode, Expression}}
   end
 
   @Record TYPED_ARRAY_CONSTRUCTOR begin
-
     ty::NFType
     var::VariabilityType
     exp::Expression
@@ -43,13 +41,11 @@ ParameterTree = ParameterTreeImpl.Tree
   end
 
   @Record UNTYPED_ARRAY_CONSTRUCTOR begin
-
     exp::Expression
     iters::List{Tuple{InstNode, Expression}}
   end
 
   @Record TYPED_CALL begin
-
     fn::M_Function
     ty::NFType
     var::VariabilityType
@@ -58,7 +54,6 @@ ParameterTree = ParameterTreeImpl.Tree
   end
 
   @Record ARG_TYPED_CALL begin
-
     ref::ComponentRef
     arguments::List{TypedArg}
     named_args::List{TypedNamedArg}
@@ -66,7 +61,6 @@ ParameterTree = ParameterTreeImpl.Tree
   end
 
   @Record UNTYPED_CALL begin
-
     ref::ComponentRef
     arguments::List{Expression}
     named_args::List{NamedArg}
@@ -82,7 +76,7 @@ function toDAE(attr::CallAttributes, returnType::NFType)::DAE.P_CallAttributes
   local fattr::DAE.P_CallAttributes
 
   @assign fattr = DAE.CALL_ATTR(
-    Type.toDAE(returnType),
+    toDAE(returnType),
     attr.tuple_,
     attr.builtin,
     attr.isImpure,
@@ -139,7 +133,7 @@ function typeCast(callExp::CALL_EXPRESSION, ty::NFType)::Expression
             end
 
             _ => begin
-              P_Expression.Expression.CAST(cast_ty, callExp)
+              CAST_EXPRESSION(cast_ty, callExp)
             end
           end
         end
@@ -238,7 +232,7 @@ function toDAE(call::Call)::DAE.Exp
           DAE.REDUCTIONINFO(
             P_Function.name(NFBuiltinFuncs.ARRAY_FUNC),
             Absyn.COMBINE(),
-            Type.toDAE(call.ty),
+            toDAE(call.ty),
             NONE(),
             fold_id,
             res_id,
@@ -255,7 +249,7 @@ function toDAE(call::Call)::DAE.Exp
           DAE.REDUCTIONINFO(
             P_Function.name(call.fn),
             Absyn.COMBINE(),
-            Type.toDAE(call.ty),
+            toDAE(call.ty),
             P_Expression.Expression.toDAEValueOpt(call.defaultExp),
             fold_id,
             res_id,
@@ -1368,7 +1362,7 @@ function vectorizeCall(
             info,
           )
           @assign ty = ARRAY_TYPE(TYPE_INTEGER(), list(dim))
-          @assign exp = P_Expression.Expression.RANGE(
+          @assign exp = RANGE_EXPRESSION(
             ty,
             INTEGER_EXPRESSION(1),
             NONE(),
@@ -1435,7 +1429,7 @@ function iteratorToDAE(iter::Tuple{<:InstNode, Expression})::DAE.ReductionIterat
     name(iter_node),
     P_Expression.Expression.toDAE(iter_range),
     NONE(),
-    Type.toDAE(getType(iter_node)),
+    toDAE(getType(iter_node)),
   )
   return diter
 end
@@ -1665,7 +1659,7 @@ end
 function reductionDefaultValue(fn::M_Function, ty::NFType)::Option{Expression}
   local defaultValue::Option{Expression}
 
-  if Type.isArray(ty)
+  if isArray(ty)
     @assign defaultValue = NONE()
   else
     @assign defaultValue = begin
@@ -1928,15 +1922,15 @@ function instArgs(
 )::Tuple{List{Expression}, List{NamedArg}}
   local namedArgs::List{NamedArg}
   local posArgs::List{Expression}
-  @info "Calling inst args for $args"
+  @debug "Calling inst args for $args"
   @assign (posArgs, namedArgs) = begin
     @match args begin
       Absyn.FUNCTIONARGS(__) => begin
-        @info "Matched function args"
+        @debug "Matched function args"
         @assign posArgs = list(instExp(a, scope, info) for a in args.args)
-        @info "Positional arguments done"
+        @debug "Positional arguments done"
         @assign namedArgs = list(instNamedArg(a, scope, info) for a in args.argNames)
-        @info "Named arguments done"
+        @debug "Named arguments done"
         (posArgs, namedArgs)
       end
       _ => begin
@@ -1979,7 +1973,7 @@ function instNormalCall(
       end
       return callExp
     else
-      @info "Failed with the following error $e"
+      @debug "Failed with the following error $e"
       fail()
     end
   end

@@ -82,12 +82,12 @@ function foldExp(sections::Sections, foldFn::FoldFn, arg::ArgT) where {ArgT}
   @assign arg = begin
     @match sections begin
       SECTIONS(__) => begin
-        @assign arg = P_Equation.Equation.foldExpList(sections.equations, foldFn, arg)
+        @assign arg = foldExpList(sections.equations, foldFn, arg)
         @assign arg =
-          P_Equation.Equation.foldExpList(sections.initialEquations, foldFn, arg)
-        @assign arg = P_Algorithm.Algorithm.foldExpList(sections.algorithms, foldFn, arg)
+          foldExpList(sections.initialEquations, foldFn, arg)
+        @assign arg = foldExpList(sections.algorithms, foldFn, arg)
         @assign arg =
-          P_Algorithm.Algorithm.foldExpList(sections.initialAlgorithms, foldFn, arg)
+          foldExpList(sections.initialAlgorithms, foldFn, arg)
         arg
       end
       SECTIONS_EXTERNAL(__) => begin

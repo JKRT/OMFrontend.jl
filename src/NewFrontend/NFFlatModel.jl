@@ -173,7 +173,7 @@ end
 
 function collectExpFlatTypes(exp::Expression, types::TypeTree)::TypeTree
 
-  @assign types = P_Expression.Expression.fold(exp, collectExpFlatTypes_traverse, types)
+  @assign types = fold(exp, collectExpFlatTypes_traverse, types)
   return types
 end
 
@@ -349,7 +349,6 @@ function collectFlatType(ty::M_Type, types::TypeTree)::TypeTree
         @assign types = TypeTree.add(types, ty.typePath, ty)
         ()
       end
-
       ARRAY_TYPE(__) => begin
         @assign types = P_Dimension.Dimension.foldExpList(
           ty.dimensions,
@@ -359,12 +358,10 @@ function collectFlatType(ty::M_Type, types::TypeTree)::TypeTree
         @assign types = collectFlatType(ty.elementType, types)
         ()
       end
-
       TYPE_COMPLEX(complexTy = COMPLEX_RECORD(__)) => begin
         @assign types = TypeTree.add(types, scopePath(ty.cls), ty)
         ()
       end
-
       _ => begin
         ()
       end
@@ -374,7 +371,6 @@ function collectFlatType(ty::M_Type, types::TypeTree)::TypeTree
 end
 
 function collectVariableFlatTypes(var::Variable, types::TypeTree)::TypeTree
-
   @assign types = collectFlatType(var.ty, types)
   @assign types = collectBindingFlatTypes(var.binding, types)
   for attr in var.typeAttributes
@@ -452,7 +448,6 @@ function printFlatString(
   printBindingTypes::Bool = false,
 )
   local s::IOStream.IOStream
-
   @assign s = IOStream.create(getInstanceName(), IOStream.IOStreamType.LIST())
   @assign s = toFlatStream(flatModel, functions, printBindingTypes, s)
   return IOStream.print(s, IOStream.stdOutput)

@@ -1,105 +1,20 @@
-module NFSimplifyModel
-
-using MetaModelica
-using ExportAll
-#= Forward declarations for uniontypes until Julia adds support for mutual recursion =#
-
-MakeElement = Function
-
-MakeFunc = Function
-SimplifyFunc = Function
-
-#= /*
-* This file is part of OpenModelica.
-*
-* Copyright (c) 1998-2014, Open Source Modelica Consortium (OSMC),
-* c/o Linköpings universitet, Department of Computer and Information Science,
-* SE-58183 Linköping, Sweden.
-*
-* All rights reserved.
-*
-* THIS PROGRAM IS PROVIDED UNDER THE TERMS OF GPL VERSION 3 LICENSE OR
-* THIS OSMC PUBLIC LICENSE (OSMC-PL) VERSION 1.2.
-* ANY USE, REPRODUCTION OR DISTRIBUTION OF THIS PROGRAM CONSTITUTES
-* RECIPIENT'S ACCEPTANCE OF THE OSMC PUBLIC LICENSE OR THE GPL VERSION 3,
-* ACCORDING TO RECIPIENTS CHOICE.
-*
-* The OpenModelica software and the Open Source Modelica
-* Consortium (OSMC) Public License (OSMC-PL) are obtained
-* from OSMC, either from the above address,
-* from the URLs: http:www.ida.liu.se/projects/OpenModelica or
-* http:www.openmodelica.org, and in the OpenModelica distribution.
-* GNU version 3 is obtained from: http:www.gnu.org/copyleft/gpl.html.
-*
-* This program is distributed WITHOUT ANY WARRANTY; without
-* even the implied warranty of  MERCHANTABILITY or FITNESS
-* FOR A PARTICULAR PURPOSE, EXCEPT AS EXPRESSLY SET FORTH
-* IN THE BY RECIPIENT SELECTED SUBSIDIARY LICENSE CONDITIONS OF OSMC-PL.
-*
-* See the full OSMC Public License conditions for more details.
-*
-*/ =#
-import ..NFFlatModel
-FlatModel = NFFlatModel
-import ..P_NFEquation
-P_Equation = P_NFEquation
-Equation = P_NFEquation.NFEquation
-import ..P_NFStatement
-P_Statement = P_NFStatement
-Statement = P_NFStatement.NFStatement
-import ..P_NFExpression
-P_Expression = P_NFExpression
-Expression = P_NFExpression.NFExpression
-import ..P_NFType
-P_M_Type = P_NFType
-M_Type = NFType
-import ..P_NFComponentRef
-P_ComponentRef = P_NFComponentRef
-ComponentRef = P_NFComponentRef.NFComponentRef
-import ..NFFlatten.FunctionTree
-import ..NFClass.P_Class
-import ..NFInstNode.P_InstNode
-import ..NFFunction.P_Function
-import ..P_NFSections
-P_Sections = P_NFSections
-Sections = P_NFSections.NFSections
-import ..NFBinding.P_Binding
-import ..P_NFVariable
-P_Variable = P_NFVariable
-Variable = P_NFVariable.NFVariable
-import ..P_NFAlgorithm
-P_Algorithm = P_NFAlgorithm
-Algorithm = P_NFAlgorithm.NFAlgorithm
-import ..P_NFDimension
-P_Dimension = P_NFDimension
-Dimension = P_NFDimension.NFDimension
-import ..P_NFSubscript
-P_Subscript = P_NFSubscript
-Subscript = P_NFSubscript.NFSubscript
-
-using MetaModelica.Dangerous
-import ..ExecStat.execStat
-import ..NFSimplifyExp
-SimplifyExp = NFSimplifyExp
-import ..NFPrefixes.Variability
-import ..NFCeval
-Ceval = NFCeval
+const SimplifyFunc = Function
+const MakeElement = Function
+const MakeFunc = Function
 
 function simplify(flatModel::FlatModel)::FlatModel
-
-  @assign flatModel.variables = List(simplifyVariable(v) for v in flatModel.variables)
+  @assign flatModel.variables = list(simplifyVariable(v) for v in flatModel.variables)
   @assign flatModel.equations = simplifyEquations(flatModel.equations)
   @assign flatModel.initialEquations = simplifyEquations(flatModel.initialEquations)
   @assign flatModel.algorithms = simplifyAlgorithms(flatModel.algorithms)
   @assign flatModel.initialAlgorithms = simplifyAlgorithms(flatModel.initialAlgorithms)
-  execStat(getInstanceName())
+#  execStat(getInstanceName()) TODO
   return flatModel
 end
 
 function simplifyVariable(var::Variable)::Variable
-
   @assign var.binding = simplifyBinding(var.binding)
-  @assign var.typeAttributes = List(simplifyTypeAttribute(a) for a in var.typeAttributes)
+  @assign var.typeAttributes = list(simplifyTypeAttribute(a) for a in var.typeAttributes)
   return var
 end
 
@@ -110,7 +25,7 @@ function simplifyBinding(binding::Binding)::Binding
 
   if isBound(binding)
     @assign exp = getTypedExp(binding)
-    @assign sexp = SimplifyExp.simplify(exp)
+    @assign sexp = simplify(exp)
     @assign sexp = removeEmptyFunctionArguments(sexp)
     if !referenceEq(exp, sexp)
       @assign binding = setTypedExp(sexp, binding)
@@ -179,7 +94,7 @@ function simplifyEquation(eq::Equation, equations::List{<:Equation})::List{Equat
       end
 
       EQUATION_ARRAY_EQUALITY(__) => begin
-        @assign ty = Type.mapDims(eq.ty, simplifyDimension)
+        @assign ty = mapDims(eq.ty, simplifyDimension)
         if !Type.isEmptyArray(ty)
           @assign rhs = removeEmptyFunctionArguments(SimplifyExp.simplify(eq.rhs))
           @assign equations = _cons(
@@ -194,8 +109,8 @@ function simplifyEquation(eq::Equation, equations::List{<:Equation})::List{Equat
         simplifyIfEqBranches(eq.branches, eq.source, equations)
       end
 
-      P_Equation.Equation.WHEN(__) => begin
-        @assign eq.branches = List(
+      EQUATION_WHEN(__) => begin
+        @assign eq.branches = list(
           begin
             @match b begin
               P_Equation.Equation.BRANCH(__) => begin
@@ -248,13 +163,13 @@ function simplifyEqualityEquation(eq::Equation, equations::List{<:Equation})::Li
   local src::DAE.ElementSource
 
   @match EQUATION_EQUALITY(lhs = lhs, rhs = rhs, ty = ty, source = src) = eq
-  @assign ty = Type.mapDims(ty, simplifyDimension)
-  if Type.isEmptyArray(ty)
+  @assign ty = mapDims(ty, simplifyDimension)
+  if isEmptyArray(ty)
     return equations
   end
-  @assign lhs = SimplifyExp.simplify(lhs)
+  @assign lhs = simplify(lhs)
   @assign lhs = removeEmptyTupleElements(lhs)
-  @assign rhs = SimplifyExp.simplify(rhs)
+  @assign rhs = simplify(rhs)
   @assign rhs = removeEmptyFunctionArguments(rhs)
   @assign equations = begin
     @match (lhs, rhs) begin
@@ -356,7 +271,7 @@ function simplifyStatement(stmt::Statement, statements::List{<:Statement})::List
       end
 
       P_Statement.Statement.WHEN(__) => begin
-        @assign stmt.branches = List(
+        @assign stmt.branches = list(
           (SimplifyExp.simplify(Util.tuple21(b)), simplifyStatements(Util.tuple22(b))) for b in stmt.branches
         )
         _cons(stmt, statements)
@@ -390,7 +305,7 @@ function simplifyAssignment(stmt::Statement, statements::List{<:Statement})::Lis
 
   @match P_Statement.Statement.ASSIGNMENT(lhs = lhs, rhs = rhs, ty = ty, source = src) =
     stmt
-  @assign ty = Type.mapDims(ty, simplifyDimension)
+  @assign ty = mapDims(ty, simplifyDimension)
   if Type.isEmptyArray(ty)
     return statements
   end
@@ -406,7 +321,7 @@ function simplifyAssignment(stmt::Statement, statements::List{<:Statement})::Lis
           rhs.elements,
           ty,
           src,
-          P_Statement.Statement.makeAssignment,
+          makeAssignment,
           statements,
         )
       end
@@ -454,7 +369,7 @@ function removeEmptyTupleElements(exp::Expression)::Expression
     local tyl::List{M_Type}
     @match exp begin
       TUPLE_EXPRESSION(ty = TYPE_TUPLE(types = tyl)) => begin
-        @assign exp.elements = List(@do_threaded_for if Type.isEmptyArray(t)
+        @assign exp.elements = list(@do_threaded_for if Type.isEmptyArray(t)
           CREF_EXPRESSION(t, WILD())
         else
           e
@@ -491,10 +406,10 @@ function removeEmptyFunctionArguments(exp::Expression, isArg::Bool = false)::Exp
       end
     end
   end
-  @assign is_arg = isArg || P_Expression.Expression.isCall(exp)
+  @assign is_arg = isArg || isCall(exp)
   @assign outExp = mapShallow(
     exp,
-    (is_arg) -> removeEmptyFunctionArguments(isArg = is_arg),
+    (x, y = is_arg) -> removeEmptyFunctionArguments(x, y)
   )
   return outExp
 end
@@ -556,7 +471,7 @@ function simplifyIfEqBranches(
           ),
         ) => begin
           if var <= Variability.STRUCTURAL_PARAMETER
-            @assign cond = Ceval.evalExp(cond)
+            @assign cond = evalExp(cond)
           end
           #=  An invalid branch that can't be removed will trigger the errors
           =#
@@ -663,7 +578,4 @@ function simplifyFunction(func::M_Function)
       end
     end
   end
-end
-
-@exportAll()
 end

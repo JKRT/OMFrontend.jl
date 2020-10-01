@@ -300,11 +300,11 @@
               @assign callExp = begin
                 @match posArgs begin
                   arg1 <|  nil()  => begin
-                    P_Expression.Expression.SIZE(arg1, NONE())
+                    SIZE_EXPRESSION(arg1, NONE())
                   end
 
                   arg1 <| arg2 <|  nil()  => begin
-                    P_Expression.Expression.SIZE(arg1, SOME(arg2))
+                    SIZE_EXPRESSION(arg1, SOME(arg2))
                   end
 
                   _  => begin
@@ -762,7 +762,7 @@
                   arg1 <|  nil()  => begin
                       @assign (arg1, ty1, var) = Typing.typeExp(arg1, origin, info)
                       @assign ty = arrayElementType(ty1)
-                      if ! (Type.isArray(ty1) && Type.isBasic(ty))
+                      if ! (isArray(ty1) && Type.isBasic(ty))
                         Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list("1", name, "", toString(arg1), Type.toString(ty1), "Any[:, ...]"), info)
                       end
                        #=  If the argument is an array with a single element we can just
@@ -1758,9 +1758,9 @@
                        #=  sample(start, Real interval) - the usual stuff
                        =#
                       if valueEq(t, TYPE_INTEGER())
-                        @assign e = P_Expression.Expression.CAST(TYPE_REAL(), e)
+                        @assign e = CAST_EXPRESSION(TYPE_REAL(), e)
                       end
-                      @assign ty_call = P_Call.makeTypedCall(normalSample, list(e, P_Expression.Expression.CAST(TYPE_REAL(), e1)), Variability.PARAMETER, TYPE_BOOLEAN())
+                      @assign ty_call = P_Call.makeTypedCall(normalSample, list(e, CAST_EXPRESSION(TYPE_REAL(), e1)), Variability.PARAMETER, TYPE_BOOLEAN())
                     (CALL_EXPRESSION(ty_call), TYPE_BOOLEAN(), Variability.PARAMETER)
                   end
 
@@ -1768,7 +1768,7 @@
                        #=  sample(start, Real interval) - the usual stuff
                        =#
                       if valueEq(t, TYPE_INTEGER())
-                        @assign e = P_Expression.Expression.CAST(TYPE_REAL(), e)
+                        @assign e = CAST_EXPRESSION(TYPE_REAL(), e)
                       end
                       @assign ty_call = P_Call.makeTypedCall(normalSample, list(e, e1), Variability.PARAMETER, TYPE_BOOLEAN())
                     (CALL_EXPRESSION(ty_call), TYPE_BOOLEAN(), Variability.PARAMETER)
@@ -1778,7 +1778,7 @@
                        #=  sample(start, Real interval = value) - the usual stuff
                        =#
                       if valueEq(t, TYPE_INTEGER())
-                        @assign e = P_Expression.Expression.CAST(TYPE_REAL(), e)
+                        @assign e = CAST_EXPRESSION(TYPE_REAL(), e)
                       end
                       @assign ty_call = P_Call.makeTypedCall(normalSample, list(e, e1), Variability.PARAMETER, TYPE_BOOLEAN())
                     (CALL_EXPRESSION(ty_call), TYPE_BOOLEAN(), Variability.PARAMETER)
@@ -1863,7 +1863,7 @@
                     CALL_EXPRESSION(P_Call.makeTypedCall(fn, list(arg), var, arg.ty))
                   end
 
-                  P_Expression.Expression.ARRAY(__)  => begin
+                  ARRAY_EXPRESSION(__)  => begin
                       @assign arg.elements = List(typeActualInStreamCall2(name, fn, e, var, info) for e in arg.elements)
                     arg
                   end

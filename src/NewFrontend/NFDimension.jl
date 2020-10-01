@@ -167,7 +167,7 @@ function endExp(dim::Dimension, cref::ComponentRef, index::Integer)::Expression
       end
 
       UNKNOWN(__) => begin
-        P_Expression.Expression.SIZE(
+        SIZE_EXPRESSION(
           CREF_EXPRESSION(
             TYPE_UNKNOWN(),
             stripSubscripts(cref),

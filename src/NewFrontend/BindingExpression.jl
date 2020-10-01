@@ -250,12 +250,12 @@ function retype(exp::Expression) ::Expression
   @assign () = begin
     local dims::List{Dimension}
     @match exp begin
-      RANGE(__)  => begin
+      RANGE_EXPRESSION(__)  => begin
         @assign exp.ty = TypeCheck.getRangeType(exp.start, exp.step, exp.stop, typeOf(exp.start), AbsynUtil.dummyInfo)
         ()
       end
 
-      CALL(call = P_Call.TYPED_ARRAY_CONSTRUCTOR(__))  => begin
+      CALL_EXPRESSION(call = P_Call.TYPED_ARRAY_CONSTRUCTOR(__))  => begin
         @assign exp.call = P_Call.retype(exp.call)
         ()
       end
@@ -291,7 +291,7 @@ function splitRecordCref(exp::Expression) ::Expression
         makeRecord(scopePath(cls), outExp.ty, fields)
       end
 
-      ARRAY(__)  => begin
+      ARRAY_EXPRESSION(__)  => begin
         @assign outExp.elements = list(splitRecordCref(e) for e in outExp.elements)
         outExp
       end
@@ -313,15 +313,15 @@ end
                      local node::InstNode
                      local expl::List{Expression}
                      @match recordExp begin
-                       RECORD(__)  => begin
+                       RECORD_EXPRESSION(__)  => begin
                          listGet(recordExp.elements, index)
                        end
 
-                       ARRAY(elements =  nil(), ty = ARRAY_TYPE(elementType = TYPE_COMPLEX(cls = node)))  => begin
+                       ARRAY_EXPRESSION(elements =  nil(), ty = ARRAY_TYPE(elementType = TYPE_COMPLEX(cls = node)))  => begin
                          makeEmptyArray(getType(nthComponent(index, getClass(node))))
                        end
 
-                       ARRAY(__)  => begin
+                       ARRAY_EXPRESSION(__)  => begin
                          @assign expl = list(nthRecordElement(index, e) for e in recordExp.elements)
                          makeArray(setArrayElementType(recordExp.ty, typeOf(listHead(expl))), expl)
                        end
@@ -360,7 +360,7 @@ end
                      local expl::List{Expression}
                      local cref::ComponentRef
                      @match recordExp begin
-                       RECORD(ty = TYPE_COMPLEX(cls = node))  => begin
+                       RECORD_EXPRESSION(ty = TYPE_COMPLEX(cls = node))  => begin
                          @assign cls = getClass(node)
                          @assign index = lookupComponentIndex(elementName, cls)
                          listGet(recordExp.elements, index)
@@ -375,16 +375,16 @@ end
                          CREF(ty, cref)
                        end
 
-                       ARRAY(elements =  nil(), ty = ARRAY_TYPE(elementType = TYPE_COMPLEX(cls = node)))  => begin
+                       ARRAY_EXPRESSION(elements =  nil(), ty = ARRAY_EXPRESSION_TYPE(elementType = TYPE_COMPLEX(cls = node)))  => begin
                          @assign cls = getClass(node)
                          @assign index = lookupComponentIndex(elementName, cls)
                          @assign ty = getType(nthComponent(index, cls))
                          makeArray(ty, nil)
                        end
 
-                       ARRAY(ty = ARRAY_TYPE(elementType = TYPE_COMPLEX(cls = node)))  => begin
+                       ARRAY_EXPRESSION(ty = ARRAY_TYPE(elementType = TYPE_COMPLEX(cls = node)))  => begin
                          @assign index = lookupComponentIndex(elementName, getClass(node))
-                         @assign expl = List(nthRecordElement(index, e) for e in recordExp.elements)
+                         @assign expl = list(nthRecordElement(index, e) for e in recordExp.elements)
                          @assign ty = Type.liftArrayLeft(typeOf(listHead(expl)), P_Dimension.Dimension.fromInteger(listLength(expl)))
                          makeArray(ty, expl, recordExp.literal)
                        end
@@ -425,9 +425,9 @@ function tupleElement(exp::Expression, ty::M_Type, index::Integer) ::Expression
         listGet(exp.elements, index)
       end
 
-      P_Expression.Expression.ARRAY(__)  => begin
+      ARRAY_EXPRESSION(__)  => begin
         @assign ety = Type.unliftArray(ty)
-        @assign exp.elements = List(tupleElement(e, ety, index) for e in exp.elements)
+        @assign exp.elements = list(tupleElement(e, ety, index) for e in exp.elements)
         exp
       end
 
@@ -448,7 +448,7 @@ function toScalar(exp::Expression) ::Expression
 
   @assign outExp = begin
     @match exp begin
-      ARRAY(elements = outExp <|  nil())  => begin
+      ARRAY_EXPRESSION(elements = outExp <|  nil())  => begin
         toScalar(outExp)
       end
 
@@ -470,7 +470,7 @@ function enumIndexExp(enumExp::Expression) ::Expression
       end
 
       _  => begin
-        CALL(P_Call.makeTypedCall(NFBuiltinFuncs.INTEGER_ENUM, list(enumExp), variability(enumExp)))
+        CALL_EXPRESSION(P_Call.makeTypedCall(NFBuiltinFuncs.INTEGER_ENUM, list(enumExp), variability(enumExp)))
       end
     end
   end
@@ -564,7 +564,7 @@ function variability(exp::Expression) ::VariabilityType
         Variability.CONSTANT
       end
 
-      CLKCONST(_)  => begin
+      CLKCONST_EXPRESSION(_)  => begin
         Variability.DISCRETE
       end
 
@@ -576,15 +576,15 @@ function variability(exp::Expression) ::VariabilityType
         Variability.CONSTANT
       end
 
-      ARRAY(__)  => begin
+      ARRAY_EXPRESSION(__)  => begin
         variabilityList(exp.elements)
       end
 
-      MATRIX(__)  => begin
+      MATRIX_EXPRESSION(__)  => begin
         ListUtil.fold(exp.elements, variabilityList, Variability.CONSTANT)
       end
 
-      RANGE(__)  => begin
+      RANGE_EXPRESSION(__)  => begin
         @assign var = variability(exp.start)
         @assign var = variabilityMax(var, variability(exp.stop))
         if isSome(exp.step)
@@ -597,11 +597,11 @@ function variability(exp::Expression) ::VariabilityType
         variabilityList(exp.elements)
       end
 
-      RECORD(__)  => begin
+      RECORD_EXPRESSION(__)  => begin
         variabilityList(exp.elements)
       end
 
-      CALL(__)  => begin
+      CALL_EXPRESSION(__)  => begin
         P_Call.variability(exp.call)
       end
 
@@ -618,7 +618,7 @@ function variability(exp::Expression) ::VariabilityType
         Variability.PARAMETER
       end
 
-      BINARY(__)  => begin
+      BINARY_EXPRESSION(__)  => begin
         variabilityMax(variability(exp.exp1), variability(exp.exp2))
       end
 
@@ -626,7 +626,7 @@ function variability(exp::Expression) ::VariabilityType
         variability(exp.exp)
       end
 
-      LBINARY(__)  => begin
+      LBINARY_EXPRESSION(__)  => begin
         variabilityMax(variability(exp.exp1), variability(exp.exp2))
       end
 
@@ -698,8 +698,8 @@ function promote2(exp::Expression, isArray::Bool, dims::Integer, types::List{<:M
         exp
       end
 
-      (ARRAY(__), ty <| rest_ty)  => begin
-        makeArray(ty, List(promote2(e, false, dims, rest_ty) for e in exp.elements))
+      (ARRAY_EXPRESSION(__), ty <| rest_ty)  => begin
+        makeArray(ty, list(promote2(e, false, dims, rest_ty) for e in exp.elements))
       end
 
       (_, _) where (isArray)  => begin
@@ -713,7 +713,7 @@ function promote2(exp::Expression, isArray::Bool, dims::Integer, types::List{<:M
         if expanded
           @assign outExp = promote2(outExp, true, dims, types)
         else
-          @assign outExp = CALL(P_Call.makeTypedCall(NFBuiltinFuncs.PROMOTE, list(exp, INTEGER(dims)), variability(exp), listHead(types)))
+          @assign outExp = CALL_EXPRESSION(P_Call.makeTypedCall(NFBuiltinFuncs.PROMOTE, list(exp, INTEGER(dims)), variability(exp), listHead(types)))
         end
         outExp
       end
@@ -743,10 +743,10 @@ function promote(e::Expression, ty::M_Type, n::Integer) ::Tuple{Expression, M_Ty
 
   #=  Construct the dimensions that needs to be added.
   =#
-  @assign dims = List(P_Dimension.Dimension.fromInteger(1) for i in Type.dimensionCount(ty):n - 1)
+  @assign dims = list(P_Dimension.Dimension.fromInteger(1) for i in Type.dimensionCount(ty):n - 1)
   if ! listEmpty(dims)
     @assign dims = listAppend(arrayDims(ty), dims)
-    @assign is_array = Type.isArray(ty)
+    @assign is_array = isArray(ty)
     @assign ety = arrayElementType(ty)
     @assign ty = Type.liftArrayLeftList(ety, dims)
     while ! listEmpty(dims)
@@ -808,9 +808,9 @@ function transposeArray(arrayExp::Expression) ::Expression
   @match ARRAY(ARRAY_TYPE(ty, _cons(dim1, _cons(dim2, rest_dims))), expl, literal) = arrayExp
   if ! listEmpty(expl)
     @assign row_ty = ARRAY_TYPE(ty, _cons(dim1, rest_dims))
-    @assign matrix = List(arrayElements(e) for e in expl)
+    @assign matrix = list(arrayElements(e) for e in expl)
     @assign matrix = ListUtil.transposeList(matrix)
-    @assign expl = List(makeArray(row_ty, row, literal) for row in matrix)
+    @assign expl = list(makeArray(row_ty, row, literal) for row in matrix)
   end
   @assign outExp = makeArray(ARRAY_TYPE(ty, _cons(dim2, _cons(dim1, rest_dims))), expl, literal)
   outExp
@@ -824,14 +824,14 @@ function hasArrayCall2(exp::Expression) ::Bool
 
   @assign hasArrayCall = begin
     @match exp begin
-      CALL(call = call)  => begin
+      CALL_EXPRESSION(call = call)  => begin
         @assign ty = P_Call.typeOf(call)
-        Type.isArray(ty) && P_Call.isVectorizeable(call)
+        isArray(ty) && P_Call.isVectorizeable(call)
       end
 
-      TUPLE_ELEMENT_EXPRESSION(tupleExp = CALL(call = call))  => begin
+      TUPLE_ELEMENT_EXPRESSION(tupleExp = CALL_EXPRESSION(call = call))  => begin
         @assign ty = Type.nthTupleType(P_Call.typeOf(call), exp.index)
-        Type.isArray(ty) && P_Call.isVectorizeable(call)
+        isArray(ty) && P_Call.isVectorizeable(call)
       end
 
       _  => begin
@@ -854,7 +854,7 @@ end
 function arrayScalarElement(arrayExp::Expression) ::Expression
   local scalarExp::Expression
 
-  @match ARRAY(elements = list(scalarExp)) = arrayExp
+  @match ARRAY_EXPRESSION(elements = list(scalarExp)) = arrayExp
   scalarExp
 end
 
@@ -863,7 +863,7 @@ function arrayScalarElements_impl(exp::Expression, elements::List{<:Expression})
 
   @assign elements = begin
     @match exp begin
-      ARRAY(__)  => begin
+      ARRAY_EXPRESSION(__)  => begin
         for e in exp.elements
           @assign elements = arrayScalarElements_impl(e, elements)
         end
@@ -888,7 +888,7 @@ end
 function arrayElements(Array::Expression) ::List{Expression}
   local elements::List{Expression}
 
-  @match P_Expression.Expression.ARRAY(elements = elements) = Array
+  @match ARRAY_EXPRESSION(elements = elements) = Array
   elements
 end
 
@@ -963,7 +963,7 @@ function unbox(boxedExp::Expression) ::Expression
       _  => begin
         @assign ty = typeOf(boxedExp)
         if isBoxed(ty)
-          P_Expression.Expression.UNBOX(boxedExp, Type.unbox(ty))
+          UNBOX_EXPRESSION(boxedExp, Type.unbox(ty))
         else
           boxedExp
         end
@@ -1041,7 +1041,7 @@ function makeMaxValue(ty::M_Type) ::Expression
       end
 
       ARRAY_TYPE(__)  => begin
-        ARRAY(ty, ListUtil.fill(makeMaxValue(Type.unliftArray(ty)), P_Dimension.Dimension.size(listHead(ty.dimensions))), literal = true)
+        ARRAY_EXPRESSION(ty, ListUtil.fill(makeMaxValue(Type.unliftArray(ty)), P_Dimension.Dimension.size(listHead(ty.dimensions))), literal = true)
       end
     end
   end
@@ -1062,7 +1062,7 @@ function makeOne(ty::M_Type) ::Expression
       end
 
       ARRAY_TYPE(__)  => begin
-        ARRAY(ty, ListUtil.fill(makeZero(Type.unliftArray(ty)), P_Dimension.Dimension.size(listHead(ty.dimensions))), literal = true)
+        ARRAY_EXPRESSION(ty, ListUtil.fill(makeZero(Type.unliftArray(ty)), P_Dimension.Dimension.size(listHead(ty.dimensions))), literal = true)
       end
     end
   end
@@ -1097,7 +1097,7 @@ function makeZero(ty::M_Type) ::Expression
       end
 
       ARRAY_TYPE(__)  => begin
-        ARRAY(ty, ListUtil.fill(makeZero(Type.unliftArray(ty)), P_Dimension.Dimension.size(listHead(ty.dimensions))), literal = true)
+        ARRAY_EXPRESSION(ty, ListUtil.fill(makeZero(Type.unliftArray(ty)), P_Dimension.Dimension.size(listHead(ty.dimensions))), literal = true)
       end
 
       TYPE_COMPLEX(__)  => begin
@@ -1170,11 +1170,11 @@ function isRecordOrRecordArray(exp::Expression) ::Bool
 
   @assign isRecord = begin
     @match exp begin
-      RECORD(__)  => begin
+      RECORD_EXPRESSION(__)  => begin
         true
       end
 
-      ARRAY(__)  => begin
+      ARRAY_EXPRESSION(__)  => begin
         ListUtil.all(exp.elements, isRecordOrRecordArray)
       end
 
@@ -1191,7 +1191,7 @@ function isRecord(exp::Expression) ::Bool
 
   @assign isRecord = begin
     @match exp begin
-      RECORD(__)  => begin
+      RECORD_EXPRESSION(__)  => begin
         true
       end
 
@@ -1242,38 +1242,37 @@ function isLiteral(exp::Expression) ::Bool
 
   @assign literal = begin
     @match exp begin
-      INTEGER(__)  => begin
+      INTEGER_EXPRESSION(__)  => begin
         true
       end
 
-      REAL(__)  => begin
+      REAL_EXPRESSION(__)  => begin
         true
       end
 
-      STRING(__)  => begin
+      STRING_EXPRESSION(__)  => begin
         true
       end
 
-      BOOLEAN(__)  => begin
+      BOOLEAN_EXPRESSION(__)  => begin
         true
       end
 
-      ENUM_LITERAL(__)  => begin
+      ENUM_LITERAL_EXPRESSION(__)  => begin
         true
       end
 
-      ARRAY(__)  => begin
+      ARRAY_EXPRESSION(__)  => begin
         ListUtil.all(exp.elements, isLiteral)
       end
 
-      RECORD(__)  => begin
+      RECORD_EXPRESSION(__)  => begin
         ListUtil.all(exp.elements, isLiteral)
       end
 
-      RANGE(__)  => begin
+      RANGE_EXPRESSION(__)  => begin
         isLiteral(exp.start) && isLiteral(exp.stop) && Util.applyOptionOrDefault(exp.step, isLiteral, true)
       end
-
       _  => begin
         false
       end
@@ -1453,11 +1452,11 @@ function arrayAllEqual2(arrayExp::Expression, element::Expression) ::Bool
 
   @assign allEqual = begin
     @match arrayExp begin
-      ARRAY(elements = ARRAY(__) <| _)  => begin
+      ARRAY_EXPRESSION(elements = ARRAY_EXPRESSION(__) <| _)  => begin
         ListUtil.map1BoolAnd(arrayExp.elements, arrayAllEqual2, element)
       end
 
-      ARRAY(__)  => begin
+      ARRAY_EXPRESSION(__)  => begin
         ListUtil.map1BoolAnd(arrayExp.elements, isEqual, element)
       end
 
@@ -1475,7 +1474,7 @@ function arrayAllEqual(arrayExp::Expression) ::Bool
 
   @assign allEqual = begin
     @matchcontinue arrayExp begin
-      ARRAY(__)  => begin
+      ARRAY_EXPRESSION(__)  => begin
         arrayAllEqual2(arrayExp, arrayFirstScalar(arrayExp))
       end
 
@@ -1493,7 +1492,7 @@ function arrayFirstScalar(arrayExp::Expression) ::Expression
 
   @assign exp = begin
     @match arrayExp begin
-      ARRAY(__)  => begin
+      ARRAY_EXPRESSION(__)  => begin
         arrayFirstScalar(listHead(arrayExp.elements))
       end
 
@@ -1606,11 +1605,11 @@ function containsShallow(exp::Expression, func::ContainsPred) ::Bool
         crefContainsShallow(exp.cref, func)
       end
 
-      ARRAY(__)  => begin
+      ARRAY_EXPRESSION(__)  => begin
         listContainsShallow(exp.elements, func)
       end
 
-      MATRIX(__)  => begin
+      MATRIX_EXPRESSION(__)  => begin
         @assign res = false
         for row in exp.elements
           if listContainsShallow(row, func)
@@ -1621,7 +1620,7 @@ function containsShallow(exp::Expression, func::ContainsPred) ::Bool
         res
       end
 
-      RANGE(__)  => begin
+      RANGE_EXPRESSION(__)  => begin
         func(exp.start) || Util.applyOptionOrDefault(exp.step, func, false) || func(exp.stop)
       end
 
@@ -1629,11 +1628,11 @@ function containsShallow(exp::Expression, func::ContainsPred) ::Bool
         listContainsShallow(exp.elements, func)
       end
 
-      RECORD(__)  => begin
+      RECORD_EXPRESSION(__)  => begin
         listContainsShallow(exp.elements, func)
       end
 
-      CALL(__)  => begin
+      CALL_EXPRESSION(__)  => begin
         callContainsShallow(exp.call, func)
       end
 
@@ -1641,7 +1640,7 @@ function containsShallow(exp::Expression, func::ContainsPred) ::Bool
         Util.applyOptionOrDefault(exp.dimIndex, func, false) || func(exp.exp)
       end
 
-      BINARY(__)  => begin
+      BINARY_EXPRESSION(__)  => begin
         func(exp.exp1) || func(exp.exp2)
       end
 
@@ -1649,7 +1648,7 @@ function containsShallow(exp::Expression, func::ContainsPred) ::Bool
         func(exp.exp)
       end
 
-      LBINARY(__)  => begin
+      LBINARY_EXPRESSION(__)  => begin
         func(exp.exp1) || func(exp.exp2)
       end
 
@@ -1805,10 +1804,10 @@ function contains(exp::Expression, func::ContainsPred) ::Bool
       CREF(__)  => begin
         crefContains(exp.cref, func)
       end
-      ARRAY(__)  => begin
+      ARRAY_EXPRESSION(__)  => begin
         listContains(exp.elements, func)
       end
-      MATRIX(__)  => begin
+      MATRIX_EXPRESSION(__)  => begin
         @assign res = false
         for row in exp.elements
           if listContains(row, func)
@@ -1818,28 +1817,28 @@ function contains(exp::Expression, func::ContainsPred) ::Bool
         end
         res
       end
-      RANGE(__)  => begin
+      RANGE_EXPRESSION(__)  => begin
         contains(exp.start, func) || containsOpt(exp.step, func) || contains(exp.stop, func)
       end
       TUPLE_EXPRESSION(__)  => begin
         listContains(exp.elements, func)
       end
-      RECORD(__)  => begin
+      RECORD_EXPRESSION(__)  => begin
         listContains(exp.elements, func)
       end
-      CALL(__)  => begin
+      CALL_EXPRESSION(__)  => begin
         callContains(exp.call, func)
       end
       SIZE_EXPRESSION(__)  => begin
         containsOpt(exp.dimIndex, func) || contains(exp.exp, func)
       end
-      BINARY(__)  => begin
+      BINARY_EXPRESSION(__)  => begin
         contains(exp.exp1, func) || contains(exp.exp2, func)
       end
       UNARY(__)  => begin
         contains(exp.exp, func)
       end
-      LBINARY(__)  => begin
+      LBINARY_EXPRESSION(__)  => begin
         contains(exp.exp1, func) || contains(exp.exp2, func)
       end
       LUNARY(__)  => begin
@@ -1909,12 +1908,11 @@ function mapFoldCrefShallow(cref::ComponentRef, func::MapFunc, arg::ArgT)  where
     local subs::List{Subscript}
     local rest::ComponentRef
     @match cref begin
-      CREF(origin = Origin.CREF)  => begin
+      COMPONENT_REF_CREF(origin = Origin.CREF)  => begin
         @assign (subs, arg) = ListUtil.map1Fold(cref.subscripts, mapFoldExpShallow, func, arg)
         @assign (rest, arg) = mapFoldCrefShallow(cref.restCref, func, arg)
-        CREF(cref.node, subs, cref.ty, cref.origin, rest)
+        COMPONENT_REF_CREF(cref.node, subs, cref.ty, cref.origin, rest)
       end
-
       _  => begin
         cref
       end
@@ -2066,35 +2064,35 @@ function mapFoldClockShallow(clockExp::Expression, func::MapFunc, arg::ArgT)  wh
   local e3::Expression
   local e4::Expression
 
-  @match CLKCONST(clk = clk) = clockExp
+  @match CLKCONST_EXPRESSION(clk = clk) = clockExp
   @assign outExp = begin
     @match clk begin
-      P_ClockKind.INTEGER_CLOCK(e1, e2)  => begin
+      INTEGER_CLOCK(e1, e2)  => begin
         @assign (e3, arg) = func(e1, arg)
         @assign (e4, arg) = func(e2, arg)
         if referenceEq(e1, e3) && referenceEq(e2, e4)
           clockExp
         else
-          CLKCONST(P_ClockKind.INTEGER_CLOCK(e3, e4))
+          CLKCONST_EXPRESSION(INTEGER_CLOCK(e3, e4))
         end
       end
 
-      P_ClockKind.REAL_CLOCK(e1)  => begin
+      REAL_CLOCK(e1)  => begin
         @assign (e2, arg) = func(e1, arg)
         if referenceEq(e1, e2)
           clockExp
         else
-          CLKCONST(P_ClockKind.REAL_CLOCK(e2))
+          CLKCONST_EXPRESSION(REAL_CLOCK(e2))
         end
       end
 
-      P_ClockKind.BOOLEAN_CLOCK(e1, e2)  => begin
+      BOOLEAN_CLOCK(e1, e2)  => begin
         @assign (e3, arg) = func(e1, arg)
         @assign (e4, arg) = func(e2, arg)
         if referenceEq(e1, e3) && referenceEq(e2, e4)
           clockExp
         else
-          CLKCONST(P_ClockKind.BOOLEAN_CLOCK(e3, e4))
+          CLKCONST_EXPRESSION(BOOLEAN_CLOCK(e3, e4))
         end
       end
 
@@ -2104,7 +2102,7 @@ function mapFoldClockShallow(clockExp::Expression, func::MapFunc, arg::ArgT)  wh
         if referenceEq(e1, e3) && referenceEq(e2, e4)
           clockExp
         else
-          CLKCONST(SOLVER_CLOCK(e3, e4))
+          CLKCONST_EXPRESSION(SOLVER_CLOCK(e3, e4))
         end
       end
 
@@ -2117,9 +2115,7 @@ function mapFoldClockShallow(clockExp::Expression, func::MapFunc, arg::ArgT)  wh
 end
 
 function mapFoldShallow(exp::Expression, func::MapFunc, arg::ArgT)  where {ArgT}
-
   local outExp::Expression
-
   @assign outExp = begin
     local e1::Expression
     local e2::Expression
@@ -2131,53 +2127,52 @@ function mapFoldShallow(exp::Expression, func::MapFunc, arg::ArgT)  where {ArgT}
     local call::Call
     local subs::List{Subscript}
     local unchanged::Bool
+    @debug "Calling mapFoldShallow"
     @match exp begin
-      CLKCONST(__)  => begin
+      CLKCONST_EXPRESSION(__)  => begin
         @assign (outExp, arg) = mapFoldClockShallow(exp, func, arg)
         outExp
       end
-
-      CREF(__)  => begin
+      CREF_EXPRESSION(__)  => begin
         @assign (cr, arg) = mapFoldCrefShallow(exp.cref, func, arg)
         if referenceEq(exp.cref, cr)
           exp
         else
-          CREF(exp.ty, cr)
+          CREF_EXPRESSION(exp.ty, cr)
         end
       end
-
-      ARRAY(__)  => begin
+      ARRAY_EXPRESSION(__)  => begin
         @assign (expl, arg) = ListUtil.mapFold(exp.elements, func, arg)
-        ARRAY(exp.ty, expl, exp.literal)
+        ARRAY_EXPRESSION(exp.ty, expl, exp.literal)
       end
 
-      RANGE(step = oe)  => begin
+      RANGE_EXPRESSION(step = oe)  => begin
         @assign (e1, arg) = func(exp.start, arg)
         @assign (oe, arg) = mapFoldOptShallow(exp.step, func, arg)
         @assign (e3, arg) = func(exp.stop, arg)
         if referenceEq(e1, exp.start) && referenceEq(oe, exp.step) && referenceEq(e3, exp.stop)
           exp
         else
-          RANGE(exp.ty, e1, oe, e3)
+          RANGE_EXPRESSION(exp.ty, e1, oe, e3)
         end
       end
 
       TUPLE_EXPRESSION(__)  => begin
         @assign (expl, arg) = ListUtil.mapFold(exp.elements, func, arg)
-        TUPLE(exp.ty, expl)
+        TUPLE_EXPRESSION(exp.ty, expl)
       end
 
-      RECORD(__)  => begin
+      RECORD_EXPRESSION(__)  => begin
         @assign (expl, arg) = ListUtil.mapFold(exp.elements, func, arg)
-        RECORD(exp.path, exp.ty, expl)
+        RECORD_EXPRESSION(exp.path, exp.ty, expl)
       end
 
-      CALL(__)  => begin
+      CALL_EXPRESSION(__)  => begin
         @assign (call, arg) = mapFoldCallShallow(exp.call, func, arg)
         if referenceEq(exp.call, call)
           exp
         else
-          CALL(call)
+          CALL_EXPRESSION(call)
         end
       end
 
@@ -2191,41 +2186,41 @@ function mapFoldShallow(exp::Expression, func::MapFunc, arg::ArgT)  where {ArgT}
         end
       end
 
-      BINARY(__)  => begin
+      BINARY_EXPRESSION(__)  => begin
         @assign (e1, arg) = func(exp.exp1, arg)
         @assign (e2, arg) = func(exp.exp2, arg)
         if referenceEq(exp.exp1, e1) && referenceEq(exp.exp2, e2)
           exp
         else
-          BINARY(e1, exp.operator, e2)
+          BINARY_EXPRESSION(e1, exp.operator, e2)
         end
       end
 
-      UNARY(__)  => begin
+      UNARY_EXPRESSION(__)  => begin
         @assign (e1, arg) = func(exp.exp, arg)
         if referenceEq(exp.exp, e1)
           exp
         else
-          UNARY(exp.operator, e1)
+          UNARY_EXPRESSION(exp.operator, e1)
         end
       end
 
-      LBINARY(__)  => begin
+      LBINARY_EXPRESSION(__)  => begin
         @assign (e1, arg) = func(exp.exp1, arg)
         @assign (e2, arg) = func(exp.exp2, arg)
         if referenceEq(exp.exp1, e1) && referenceEq(exp.exp2, e2)
           exp
         else
-          LBINARY(e1, exp.operator, e2)
+          LBINARY_EXPRESSION(e1, exp.operator, e2)
         end
       end
 
-      LUNARY(__)  => begin
+      LUNARY_EXPRESSION(__)  => begin
         @assign (e1, arg) = func(exp.exp, arg)
         if referenceEq(exp.exp, e1)
           exp
         else
-          LUNARY(exp.operator, e1)
+          LUNARY_EXPRESSION(exp.operator, e1)
         end
       end
 
@@ -2482,42 +2477,42 @@ function mapFold(exp::Expression, func::MapFunc, arg::ArgT)  where {ArgT}
     local call::Call
     local subs::List{Subscript}
     @match exp begin
-      CLKCONST(P_ClockKind.INTEGER_CLOCK(e1, e2))  => begin
+      CLKCONST_EXPRESSION(INTEGER_CLOCK(e1, e2))  => begin
         @assign (e3, arg) = mapFold(e1, func, arg)
         @assign (e4, arg) = mapFold(e2, func, arg)
         if referenceEq(e1, e3) && referenceEq(e2, e4)
           exp
         else
-          CLKCONST(P_ClockKind.INTEGER_CLOCK(e3, e4))
+          CLKCONST_EXPRESSION(INTEGER_CLOCK(e3, e4))
         end
       end
 
-      CLKCONST(P_ClockKind.REAL_CLOCK(e1))  => begin
+      CLKCONST_EXPRESSION(REAL_CLOCK(e1))  => begin
         @assign (e2, arg) = mapFold(e1, func, arg)
         if referenceEq(e1, e2)
           exp
         else
-          CLKCONST(P_ClockKind.REAL_CLOCK(e2))
+          CLKCONST_EXPRESSION(REAL_CLOCK(e2))
         end
       end
 
-      CLKCONST(P_ClockKind.BOOLEAN_CLOCK(e1, e2))  => begin
+      CLKCONST_EXPRESSION(BOOLEAN_CLOCK(e1, e2))  => begin
         @assign (e3, arg) = mapFold(e1, func, arg)
         @assign (e4, arg) = mapFold(e2, func, arg)
         if referenceEq(e1, e3) && referenceEq(e2, e4)
           exp
         else
-          CLKCONST(P_ClockKind.BOOLEAN_CLOCK(e3, e4))
+          CLKCONST_EXPRESSION(BOOLEAN_CLOCK(e3, e4))
         end
       end
 
-      CLKCONST(SOLVER_CLOCK(e1, e2))  => begin
+      CLKCONST_EXPRESSION(SOLVER_CLOCK(e1, e2))  => begin
         @assign (e3, arg) = mapFold(e1, func, arg)
         @assign (e4, arg) = mapFold(e2, func, arg)
         if referenceEq(e1, e3) && referenceEq(e2, e4)
           exp
         else
-          CLKCONST(SOLVER_CLOCK(e3, e4))
+          CLKCONST_EXPRESSION(SOLVER_CLOCK(e3, e4))
         end
       end
 
@@ -2530,9 +2525,9 @@ function mapFold(exp::Expression, func::MapFunc, arg::ArgT)  where {ArgT}
         end
       end
 
-      ARRAY(__)  => begin
+      ARRAY_EXPRESSION(__)  => begin
         @assign (expl, arg) = ListUtil.map1Fold(exp.elements, mapFold, func, arg)
-        ARRAY(exp.ty, expl, exp.literal)
+        ARRAY_EXPRESSION(exp.ty, expl, exp.literal)
       end
 
       RANGE(step = SOME(e2))  => begin
@@ -2542,36 +2537,36 @@ function mapFold(exp::Expression, func::MapFunc, arg::ArgT)  where {ArgT}
         if referenceEq(exp.start, e1) && referenceEq(e2, e4) && referenceEq(exp.stop, e3)
           exp
         else
-          RANGE(exp.ty, e1, SOME(e4), e3)
+          RANGE_EXPRESSION(exp.ty, e1, SOME(e4), e3)
         end
       end
 
-      RANGE(__)  => begin
+      RANGE_EXPRESSION(__)  => begin
         @assign (e1, arg) = mapFold(exp.start, func, arg)
         @assign (e3, arg) = mapFold(exp.stop, func, arg)
         if referenceEq(exp.start, e1) && referenceEq(exp.stop, e3)
           exp
         else
-          RANGE(exp.ty, e1, NONE(), e3)
+          RANGE_EXPRESSION(exp.ty, e1, NONE(), e3)
         end
       end
 
-      TUPLE(__)  => begin
+      TUPLE_EXPRESSION(__)  => begin
         @assign (expl, arg) = ListUtil.map1Fold(exp.elements, mapFold, func, arg)
-        TUPLE(exp.ty, expl)
+        TUPLE_EXPRESSION(exp.ty, expl)
       end
 
-      RECORD(__)  => begin
+      RECORD_EXPRESSION(__)  => begin
         @assign (expl, arg) = ListUtil.map1Fold(exp.elements, mapFold, func, arg)
-        RECORD(exp.path, exp.ty, expl)
+        RECORD_EXPRESSION(exp.path, exp.ty, expl)
       end
 
-      CALL(__)  => begin
+      CALL_EXPRESSION(__)  => begin
         @assign (call, arg) = mapFoldCall(exp.call, func, arg)
         if referenceEq(exp.call, call)
           exp
         else
-          CALL(call)
+          CALL_EXPRESSION(call)
         end
       end
 
@@ -2594,13 +2589,13 @@ function mapFold(exp::Expression, func::MapFunc, arg::ArgT)  where {ArgT}
         end
       end
 
-      BINARY(__)  => begin
+      BINARY_EXPRESSION(__)  => begin
         @assign (e1, arg) = mapFold(exp.exp1, func, arg)
         @assign (e2, arg) = mapFold(exp.exp2, func, arg)
         if referenceEq(exp.exp1, e1) && referenceEq(exp.exp2, e2)
           exp
         else
-          BINARY(e1, exp.operator, e2)
+          BINARY_EXPRESSION(e1, exp.operator, e2)
         end
       end
 
@@ -2613,13 +2608,13 @@ function mapFold(exp::Expression, func::MapFunc, arg::ArgT)  where {ArgT}
         end
       end
 
-      LBINARY(__)  => begin
+      LBINARY_EXPRESSION(__)  => begin
         @assign (e1, arg) = mapFold(exp.exp1, func, arg)
         @assign (e2, arg) = mapFold(exp.exp2, func, arg)
         if referenceEq(exp.exp1, e1) && referenceEq(exp.exp2, e2)
           exp
         else
-          LBINARY(e1, exp.operator, e2)
+          LBINARY_EXPRESSION(e1, exp.operator, e2)
         end
       end
 
@@ -2841,24 +2836,24 @@ function apply(exp::Expression, func::ApplyFunc)
     local e1::Expression
     local e2::Expression
     @match exp begin
-      CLKCONST(P_ClockKind.INTEGER_CLOCK(e1, e2))  => begin
+      CLKCONST_EXPRESSION(INTEGER_CLOCK(e1, e2))  => begin
         apply(e1, func)
         apply(e2, func)
         ()
       end
 
-      CLKCONST(P_ClockKind.REAL_CLOCK(e1))  => begin
+      CLKCONST_EXPRESSION(REAL_CLOCK(e1))  => begin
         apply(e1, func)
         ()
       end
 
-      CLKCONST(P_ClockKind.BOOLEAN_CLOCK(e1, e2))  => begin
+      CLKCONST_EXPRESSION(BOOLEAN_CLOCK(e1, e2))  => begin
         apply(e1, func)
         apply(e2, func)
         ()
       end
 
-      CLKCONST(SOLVER_CLOCK(e1, e2))  => begin
+      CLKCONST_EXPRESSION(SOLVER_CLOCK(e1, e2))  => begin
         apply(e1, func)
         apply(e2, func)
         ()
@@ -2869,42 +2864,42 @@ function apply(exp::Expression, func::ApplyFunc)
         ()
       end
 
-      ARRAY(__)  => begin
+      ARRAY_EXPRESSION(__)  => begin
         applyList(exp.elements, func)
         ()
       end
 
-      MATRIX(__)  => begin
+      MATRIX_EXPRESSION(__)  => begin
         for row in exp.elements
           applyList(row, func)
         end
         ()
       end
 
-      RANGE(step = SOME(e))  => begin
+      RANGE_EXPRESSION(step = SOME(e))  => begin
         apply(exp.start, func)
         apply(e, func)
         apply(exp.stop, func)
         ()
       end
 
-      RANGE(__)  => begin
+      RANGE_EXPRESSION(__)  => begin
         apply(exp.start, func)
         apply(exp.stop, func)
         ()
       end
 
-      TUPLE(__)  => begin
+      TUPLE_EXPRESSION(__)  => begin
         applyList(exp.elements, func)
         ()
       end
 
-      RECORD(__)  => begin
+      RECORD_EXPRESSION(__)  => begin
         applyList(exp.elements, func)
         ()
       end
 
-      CALL(__)  => begin
+      CALL_EXPRESSION(__)  => begin
         applyCall(exp.call, func)
         ()
       end
@@ -2920,24 +2915,24 @@ function apply(exp::Expression, func::ApplyFunc)
         ()
       end
 
-      BINARY(__)  => begin
+      BINARY_EXPRESSION(__)  => begin
         apply(exp.exp1, func)
         apply(exp.exp2, func)
         ()
       end
 
-      UNARY(__)  => begin
+      UNARY_EXPRESSION(__)  => begin
         apply(exp.exp, func)
         ()
       end
 
-      LBINARY(__)  => begin
+      LBINARY_EXPRESSION(__)  => begin
         apply(exp.exp1, func)
         apply(exp.exp2, func)
         ()
       end
 
-      LUNARY(__)  => begin
+      LUNARY_EXPRESSION(__)  => begin
         apply(exp.exp, func)
         ()
       end
@@ -3019,10 +3014,9 @@ end
 
 function foldCref(cref::ComponentRef, func::FoldFunc, arg::ArgT)  where {ArgT}
 
-
   @assign () = begin
     @match cref begin
-      CREF(origin = Origin.CREF)  => begin
+      COMPONENT_REF_CREF(origin = Origin.CREF)  => begin
         @assign arg = ListUtil.fold(cref.subscripts, (func) -> foldExp(func = func), arg)
         @assign arg = foldCref(cref.restCref, func, arg)
         ()
@@ -3114,38 +3108,38 @@ function fold(exp::Expression, func::FoldFunc, arg::ArgT)  where {ArgT}
     local e1::Expression
     local e2::Expression
     @match exp begin
-      CLKCONST(P_ClockKind.INTEGER_CLOCK(e1, e2))  => begin
+      CLKCONST_EXPRESSION(INTEGER_CLOCK(e1, e2))  => begin
         @assign result = fold(e1, func, arg)
         @assign result = fold(e2, func, result)
         result
       end
 
-      CLKCONST(P_ClockKind.REAL_CLOCK(e1))  => begin
+      CLKCONST_EXPRESSION(REAL_CLOCK(e1))  => begin
         @assign result = fold(e1, func, arg)
         result
       end
 
-      CLKCONST(P_ClockKind.BOOLEAN_CLOCK(e1, e2))  => begin
-        @assign result = fold(e1, func, arg)
-        @assign result = fold(e2, func, result)
-        result
-      end
-
-      CLKCONST(SOLVER_CLOCK(e1, e2))  => begin
+      CLKCONST_EXPRESSION(BOOLEAN_CLOCK(e1, e2))  => begin
         @assign result = fold(e1, func, arg)
         @assign result = fold(e2, func, result)
         result
       end
 
-      CREF(__)  => begin
+      CLKCONST_EXPRESSION(SOLVER_CLOCK(e1, e2))  => begin
+        @assign result = fold(e1, func, arg)
+        @assign result = fold(e2, func, result)
+        result
+      end
+
+      CREF_EXPRESSION(__)  => begin
         foldCref(exp.cref, func, arg)
       end
 
-      ARRAY(__)  => begin
+      ARRAY_EXPRESSION(__)  => begin
         foldList(exp.elements, func, arg)
       end
 
-      MATRIX(__)  => begin
+      MATRIX_EXPRESSION(__)  => begin
         @assign result = arg
         for row in exp.elements
           @assign result = foldList(row, func, result)
@@ -3153,21 +3147,21 @@ function fold(exp::Expression, func::FoldFunc, arg::ArgT)  where {ArgT}
         result
       end
 
-      RANGE(__)  => begin
+      RANGE_EXPRESSION(__)  => begin
         @assign result = fold(exp.start, func, arg)
         @assign result = foldOpt(exp.step, func, result)
         fold(exp.stop, func, result)
       end
 
-      TUPLE(__)  => begin
+      TUPLE_EXPRESSION(__)  => begin
         foldList(exp.elements, func, arg)
       end
 
-      RECORD(__)  => begin
+      RECORD_EXPRESSION(__)  => begin
         foldList(exp.elements, func, arg)
       end
 
-      CALL(__)  => begin
+      CALL_EXPRESSION(__)  => begin
         foldCall(exp.call, func, arg)
       end
 
@@ -3180,21 +3174,21 @@ function fold(exp::Expression, func::FoldFunc, arg::ArgT)  where {ArgT}
         fold(exp.exp, func, arg)
       end
 
-      BINARY(__)  => begin
+      BINARY_EXPRESSION(__)  => begin
         @assign result = fold(exp.exp1, func, arg)
         fold(exp.exp2, func, result)
       end
 
-      UNARY(__)  => begin
+      UNARY_EXPRESSION(__)  => begin
         fold(exp.exp, func, arg)
       end
 
-      LBINARY(__)  => begin
+      LBINARY_EXPRESSION(__)  => begin
         @assign result = fold(exp.exp1, func, arg)
         fold(exp.exp2, func, result)
       end
 
-      LUNARY(__)  => begin
+      LUNARY_EXPRESSION(__)  => begin
         fold(exp.exp, func, arg)
       end
 
@@ -3288,8 +3282,8 @@ function mapArrayElements(exp::Expression, func::MapFunc) ::Expression
 
   @assign outExp = begin
     @match exp begin
-      ARRAY(__)  => begin
-        @assign exp.elements = List(mapArrayElements(e, func) for e in exp.elements)
+      ARRAY_EXPRESSION(__)  => begin
+        @assign exp.elements = list(mapArrayElements(e, func) for e in exp.elements)
         exp
       end
 
@@ -3338,7 +3332,7 @@ function mapCallShallow(call::Call, func::MapFunc) ::Call
     local fold_exp::Tuple{Option{Expression}, String, String}
     @match call begin
       P_Call.UNTYPED_CALL(__)  => begin
-        @assign args = List(func(arg) for arg in call.arguments)
+        @assign args = list(func(arg) for arg in call.arguments)
         @assign nargs = nil
         for arg in call.named_args
           @assign (s, e) = arg
@@ -3365,7 +3359,7 @@ function mapCallShallow(call::Call, func::MapFunc) ::Call
       end
 
       P_Call.TYPED_CALL(__)  => begin
-        @assign args = List(func(arg) for arg in call.arguments)
+        @assign args = list(func(arg) for arg in call.arguments)
         P_Call.TYPED_CALL(call.fn, call.ty, call.var, args, call.attributes)
       end
 
@@ -3403,10 +3397,10 @@ function mapCrefShallow(cref::ComponentRef, func::MapFunc) ::ComponentRef
     local subs::List{Subscript}
     local rest::ComponentRef
     @match cref begin
-      CREF(origin = Origin.CREF)  => begin
-        @assign subs = List(mapShallowExp(s, func) for s in cref.subscripts)
+      COMPONENT_REF_CREF(origin = Origin.CREF)  => begin
+        @assign subs = list(mapShallowExp(s, func) for s in cref.subscripts)
         @assign rest = mapCref(cref.restCref, func)
-        CREF(cref.node, subs, cref.ty, cref.origin, rest)
+        COMPONENT_REF_CREF(cref.node, subs, cref.ty, cref.origin, rest)
       end
 
       _  => begin
@@ -3445,88 +3439,88 @@ function mapShallow(exp::Expression, func::MapFunc) ::Expression
     local e3::Expression
     local e4::Expression
     @match exp begin
-      CLKCONST(P_ClockKind.INTEGER_CLOCK(e1, e2))  => begin
+      CLKCONST_EXPRESSION(INTEGER_CLOCK(e1, e2))  => begin
         @assign e3 = func(e1)
         @assign e4 = func(e2)
         if referenceEq(e1, e3) && referenceEq(e2, e4)
           exp
         else
-          CLKCONST(P_ClockKind.INTEGER_CLOCK(e3, e4))
+          CLKCONST_EXPRESSION(INTEGER_CLOCK(e3, e4))
         end
       end
 
-      CLKCONST(P_ClockKind.REAL_CLOCK(e1))  => begin
+      CLKCONST_EXPRESSION(REAL_CLOCK(e1))  => begin
         @assign e2 = func(e1)
         if referenceEq(e1, e2)
           exp
         else
-          CLKCONST(P_ClockKind.REAL_CLOCK(e2))
+          CLKCONST_EXPRESSION(REAL_CLOCK(e2))
         end
       end
 
-      CLKCONST(P_ClockKind.BOOLEAN_CLOCK(e1, e2))  => begin
+      CLKCONST_EXPRESSION(BOOLEAN_CLOCK(e1, e2))  => begin
         @assign e3 = func(e1)
         @assign e4 = func(e2)
         if referenceEq(e1, e3) && referenceEq(e2, e4)
           exp
         else
-          CLKCONST(P_ClockKind.BOOLEAN_CLOCK(e3, e4))
+          CLKCONST_EXPRESSION(BOOLEAN_CLOCK(e3, e4))
         end
       end
 
-      CLKCONST(SOLVER_CLOCK(e1, e2))  => begin
+      CLKCONST_EXPRESSION(SOLVER_CLOCK(e1, e2))  => begin
         @assign e3 = func(e1)
         @assign e4 = func(e2)
         if referenceEq(e1, e3) && referenceEq(e2, e4)
           exp
         else
-          CLKCONST(SOLVER_CLOCK(e3, e4))
+          CLKCONST_EXPRESSION(SOLVER_CLOCK(e3, e4))
         end
       end
 
-      CREF(__)  => begin
-        CREF(exp.ty, mapCrefShallow(exp.cref, func))
+      CREF_EXPRESSION(__)  => begin
+        CREF_EXPRESSION(exp.ty, mapCrefShallow(exp.cref, func))
       end
 
-      ARRAY(__)  => begin
-        ARRAY(exp.ty, List(func(e) for e in exp.elements), exp.literal)
+      ARRAY_EXPRESSION(__)  => begin
+        ARRAY_EXPRESSION(exp.ty, list(func(e) for e in exp.elements), exp.literal)
       end
 
-      MATRIX(__)  => begin
-        MATRIX(List(List(func(e) for e in row) for row in exp.elements))
+      MATRIX_EXPRESSION(__)  => begin
+        MATRIX_EXPRESSION(list(list(func(e) for e in row) for row in exp.elements))
       end
 
-      RANGE(step = SOME(e2))  => begin
+      RANGE_EXPRESSION(step = SOME(e2))  => begin
         @assign e1 = func(exp.start)
         @assign e4 = func(e2)
         @assign e3 = func(exp.stop)
         if referenceEq(exp.start, e1) && referenceEq(e2, e4) && referenceEq(exp.stop, e3)
           exp
         else
-          RANGE(exp.ty, e1, SOME(e4), e3)
+          RANGE_EXPRESSION(exp.ty, e1, SOME(e4), e3)
         end
       end
 
-      RANGE(__)  => begin
+      RANGE_EXPRESSION(__)  => begin
         @assign e1 = func(exp.start)
         @assign e3 = func(exp.stop)
         if referenceEq(exp.start, e1) && referenceEq(exp.stop, e3)
           exp
         else
-          RANGE(exp.ty, e1, NONE(), e3)
+          RANGE_EXPRESSION(exp.ty, e1, NONE(), e3)
         end
       end
 
-      TUPLE(__)  => begin
-        TUPLE(exp.ty, List(func(e) for e in exp.elements))
+      TUPLE_EXPRESSION(__)  => begin
+        TUPLE_EXPRESSION(exp.ty, list(func(e) for e in exp.elements))
       end
 
-      RECORD(__)  => begin
-        RECORD(exp.path, exp.ty, List(func(e) for e in exp.elements))
+      RECORD_EXPRESSION(__)  => begin
+        RECORD_EXPRESSION(exp.path, exp.ty, list(func(e) for e in exp.elements))
       end
 
-      CALL(__)  => begin
-        CALL(mapCallShallow(exp.call, func))
+      CALL_EXPRESSION(__)  => begin
+        CALL_EXPRESSION(mapCallShallow(exp.call, func))
       end
 
       SIZE_EXPRESSION(dimIndex = SOME(e2))  => begin
@@ -3548,41 +3542,41 @@ function mapShallow(exp::Expression, func::MapFunc) ::Expression
         end
       end
 
-      BINARY(__)  => begin
+      BINARY_EXPRESSION(__)  => begin
         @assign e1 = func(exp.exp1)
         @assign e2 = func(exp.exp2)
         if referenceEq(exp.exp1, e1) && referenceEq(exp.exp2, e2)
           exp
         else
-          BINARY(e1, exp.operator, e2)
+          BINARY_EXPRESSION(e1, exp.operator, e2)
         end
       end
 
-      UNARY(__)  => begin
+      UNARY_EXPRESSION(__)  => begin
         @assign e1 = func(exp.exp)
         if referenceEq(exp.exp, e1)
           exp
         else
-          UNARY(exp.operator, e1)
+          UNARY_EXPRESSION(exp.operator, e1)
         end
       end
 
-      LBINARY(__)  => begin
+      LBINARY_EXPRESSION(__)  => begin
         @assign e1 = func(exp.exp1)
         @assign e2 = func(exp.exp2)
         if referenceEq(exp.exp1, e1) && referenceEq(exp.exp2, e2)
           exp
         else
-          LBINARY(e1, exp.operator, e2)
+          LBINARY_EXPRESSION(e1, exp.operator, e2)
         end
       end
 
-      LUNARY(__)  => begin
+      LUNARY_EXPRESSION(__)  => begin
         @assign e1 = func(exp.exp)
         if referenceEq(exp.exp, e1)
           exp
         else
-          LUNARY(exp.operator, e1)
+          LUNARY_EXPRESSION(exp.operator, e1)
         end
       end
 
@@ -3626,7 +3620,7 @@ function mapShallow(exp::Expression, func::MapFunc) ::Expression
       end
 
       SUBSCRIPTED_EXP_EXPRESSION(__)  => begin
-        SUBSCRIPTED_EXP_EXPRESSION(func(exp.exp), List(mapShallowExp(e, func) for e in exp.subscripts), exp.ty)
+        SUBSCRIPTED_EXP_EXPRESSION(func(exp.exp), list(mapShallowExp(e, func) for e in exp.subscripts), exp.ty)
       end
 
       TUPLE_ELEMENT_EXPRESSION(__)  => begin
@@ -3662,7 +3656,7 @@ MUTABLE_EXPRESSION(__)  => begin
 end
 
 PARTIAL_FUNCTION_APPLICATION_EXPRESSION(__)  => begin
-  @assign exp.args = List(func(e) for e in exp.args)
+  @assign exp.args = list(func(e) for e in exp.args)
   exp
 end
 
@@ -3674,7 +3668,6 @@ BINDING_EXP(__)  => begin
     BINDING_EXP(e1, exp.expType, exp.bindingType, exp.parents, exp.isEach)
   end
 end
-
 _  => begin
   exp
 end
@@ -3738,7 +3731,7 @@ function mapCall(call::Call, func::MapFunc) ::Call
     local fold_exp::Tuple{Option{Expression}, String, String}
     @match call begin
       P_Call.UNTYPED_CALL(__)  => begin
-        @assign args = List(map(arg, func) for arg in call.arguments)
+        @assign args = list(map(arg, func) for arg in call.arguments)
         @assign nargs = nil
         for arg in call.named_args
           @assign (s, e) = arg
@@ -3765,7 +3758,7 @@ function mapCall(call::Call, func::MapFunc) ::Call
       end
 
       P_Call.TYPED_CALL(__)  => begin
-        @assign args = List(map(arg, func) for arg in call.arguments)
+        @assign args = list(map(arg, func) for arg in call.arguments)
         P_Call.TYPED_CALL(call.fn, call.ty, call.var, args, call.attributes)
       end
 
@@ -3841,7 +3834,7 @@ function map(exp::Expression, func::MapFunc) ::Expression
         if referenceEq(e1, e2)
           exp
         else
-          CLKCONST(REAL_CLOCK(e2))
+          CLKCONST_EXPRESSION(REAL_CLOCK(e2))
         end
       end
       CLKCONST_EXPRESSION(BOOLEAN_CLOCK(e1, e2))  => begin
@@ -3850,7 +3843,7 @@ function map(exp::Expression, func::MapFunc) ::Expression
         if referenceEq(e1, e3) && referenceEq(e2, e4)
           exp
         else
-          CLKCONST(P_ClockKind.BOOLEAN_CLOCK(e3, e4))
+          CLKCONST_EXPRESSION(BOOLEAN_CLOCK(e3, e4))
         end
       end
       CLKCONST_EXPRESSION(SOLVER_CLOCK(e1, e2))  => begin
@@ -3859,7 +3852,7 @@ function map(exp::Expression, func::MapFunc) ::Expression
         if referenceEq(e1, e3) && referenceEq(e2, e4)
           exp
         else
-          CLKCONST(SOLVER_CLOCK(e3, e4))
+          CLKCONST_EXPRESSION(SOLVER_CLOCK(e3, e4))
         end
       end
       CREF_EXPRESSION(__)  => begin
@@ -3867,7 +3860,7 @@ function map(exp::Expression, func::MapFunc) ::Expression
       end
 
       ARRAY_EXPRESSION(__)  => begin
-        ARRAY(exp.ty, List(map(e, func) for e in exp.elements), exp.literal)
+        ARRAY(exp.ty, list(map(e, func) for e in exp.elements), exp.literal)
       end
 
       MATRIX_EXPRESSION(__)  => begin
@@ -3881,26 +3874,26 @@ function map(exp::Expression, func::MapFunc) ::Expression
         if referenceEq(exp.start, e1) && referenceEq(e2, e4) && referenceEq(exp.stop, e3)
           exp
         else
-          RANGE(exp.ty, e1, SOME(e4), e3)
+          RANGE_EXPRESSION(exp.ty, e1, SOME(e4), e3)
         end
       end
 
-      RANGE(__)  => begin
+      RANGE_EXPRESSION(__)  => begin
         @assign e1 = map(exp.start, func)
         @assign e3 = map(exp.stop, func)
         if referenceEq(exp.start, e1) && referenceEq(exp.stop, e3)
           exp
         else
-          RANGE(exp.ty, e1, NONE(), e3)
+          RANGE_EXPRESSION(exp.ty, e1, NONE(), e3)
         end
       end
 
       TUPLE_EXPRESSION(__)  => begin
-        TUPLE_EXPRESSION(exp.ty, List(map(e, func) for e in exp.elements))
+        TUPLE_EXPRESSION(exp.ty, list(map(e, func) for e in exp.elements))
       end
 
       RECORD_EXPRESSION(__)  => begin
-        RECORD_EXPRESSION(exp.path, exp.ty, List(map(e, func) for e in exp.elements))
+        RECORD_EXPRESSION(exp.path, exp.ty, list(map(e, func) for e in exp.elements))
       end
 
       CALL_EXPRESSION(__)  => begin
@@ -4004,7 +3997,7 @@ function map(exp::Expression, func::MapFunc) ::Expression
       end
 
       SUBSCRIPTED_EXP_EXPRESSION(__)  => begin
-        SUBSCRIPTED_EXP_EXPRESSION(map(exp.exp, func), List(mapExp(s, func) for s in exp.subscripts), exp.ty)
+        SUBSCRIPTED_EXP_EXPRESSION(map(exp.exp, func), list(mapExp(s, func) for s in exp.subscripts), exp.ty)
       end
 
       TUPLE_ELEMENT_EXPRESSION(__)  => begin
@@ -4040,7 +4033,7 @@ MUTABLE_EXPRESSION(__)  => begin
 end
 
 PARTIAL_FUNCTION_APPLICATION_EXPRESSION(__)  => begin
-  @assign exp.args = List(map(e, func) for e in exp.args)
+  @assign exp.args = list(map(e, func) for e in exp.args)
   exp
 end
 
@@ -4063,18 +4056,17 @@ end
 
 function dimensionCount(exp::Expression) ::Integer
   local dimCount::Integer
-
   @assign dimCount = begin
     @match exp begin
-      ARRAY(ty = TYPE_UNKNOWN(__))  => begin
+      ARRAY_EXPRESSION(ty = TYPE_UNKNOWN(__))  => begin
         1 + dimensionCount(listHead(exp.elements))
       end
 
-      ARRAY(__)  => begin
+      ARRAY_EXPRESSION(__)  => begin
         Type.dimensionCount(exp.ty)
       end
 
-      RANGE(__)  => begin
+      RANGE_EXPRESSION(__)  => begin
         Type.dimensionCount(exp.ty)
       end
 
@@ -4163,12 +4155,12 @@ function toDAEValue(exp::Expression) ::Values.Value
         Values.ENUM_LITERAL(AbsynUtil.suffixPath(ty.typePath, exp.name), exp.index)
       end
 
-      ARRAY(__)  => begin
-        @assign vals = List(toDAEValue(e) for e in exp.elements)
+      ARRAY_EXPRESSION(__)  => begin
+        @assign vals = list(toDAEValue(e) for e in exp.elements)
         ValuesUtil.makeArray(vals)
       end
 
-      RECORD(__)  => begin
+      RECORD_EXPRESSION(__)  => begin
         toDAEValueRecord(exp.ty, exp.path, exp.elements)
       end
 
@@ -4224,77 +4216,75 @@ function toDAERecord(ty::M_Type, path::Absyn.Path, args::List{<:Expression}) ::D
   end
   @assign field_names = listReverseInPlace(field_names)
   @assign dargs = listReverseInPlace(dargs)
-  @assign exp = DAE.RECORD(path, dargs, field_names, Type.toDAE(ty))
+  @assign exp = DAE.RECORD(path, dargs, field_names, toDAE(ty))
   exp
 end
 
-function toDAE(exp::Expression) ::DAE.Exp
+function toDAE(exp::Expression)::DAE.Exp
   local dexp::DAE.Exp
-
   local changed::Bool = true
-
   @assign dexp = begin
     local ty::M_Type
-    local daeOp::DAE.P_Operator.Operator
+    local daeOp::DAE.Operator
     local swap::Bool
     local dae1::DAE.Exp
     local dae2::DAE.Exp
     local names::List{String}
     local fn::P_Function.P_Function
     @match exp begin
-      INTEGER(__)  => begin
+      INTEGER_EXPRESSION(__)  => begin
         DAE.ICONST(exp.value)
       end
 
-      REAL(__)  => begin
+      REAL_EXPRESSION(__)  => begin
         DAE.RCONST(exp.value)
       end
 
-      STRING(__)  => begin
+      STRING_EXPRESSION(__)  => begin
         DAE.SCONST(exp.value)
       end
 
-      BOOLEAN(__)  => begin
+      BOOLEAN_EXPRESSION(__)  => begin
         DAE.BCONST(exp.value)
       end
 
-      ENUM_LITERAL(ty = ty && TYPE_ENUMERATION(__))  => begin
+      ENUM_LITERAL_EXPRESSION(ty = ty && TYPE_ENUMERATION(__))  => begin
         DAE.ENUM_LITERAL(AbsynUtil.suffixPath(ty.typePath, exp.name), exp.index)
       end
 
-      CLKCONST(__)  => begin
-        DAE.CLKCONST(P_ClockKind.toDAE(exp.clk))
+      CLKCONST_EXPRESSION(__)  => begin
+        DAE.CLKCONST_EXPRESSION(P_ClockKind.toDAE(exp.clk))
       end
 
-      CREF(__)  => begin
-        DAE.CREF(toDAE(exp.cref), Type.toDAE(exp.ty))
+      CREF_EXPRESSION(__)  => begin
+        DAE.CREF(toDAE(exp.cref), toDAE(exp.ty))
       end
 
-      TYPENAME(__)  => begin
+      TYPENAME_EXPRESSION(__)  => begin
         toDAE(P_ExpandExp.ExpandExp.expandTypename(exp.ty))
       end
 
-      ARRAY(__)  => begin
-        DAE.ARRAY(Type.toDAE(exp.ty), Type.isScalarArray(exp.ty), List(toDAE(e) for e in exp.elements))
+      ARRAY_EXPRESSION(__)  => begin
+        DAE.ARRAY(toDAE(exp.ty), Type.isScalarArray(exp.ty), list(toDAE(e) for e in exp.elements))
       end
 
-      RECORD(__)  => begin
+      RECORD_EXPRESSION(__)  => begin
         toDAERecord(exp.ty, exp.path, exp.elements)
       end
 
-      RANGE(__)  => begin
-        DAE.RANGE(Type.toDAE(exp.ty), toDAE(exp.start), if isSome(exp.step)
+      RANGE_EXPRESSION(__)  => begin
+        DAE.RANGE(toDAE(exp.ty), toDAE(exp.start), if isSome(exp.step)
                   SOME(toDAE(Util.getOption(exp.step)))
                   else
                   NONE()
                   end, toDAE(exp.stop))
       end
 
-      TUPLE(__)  => begin
-        DAE.TUPLE(List(toDAE(e) for e in exp.elements))
+      TUPLE_EXPRESSION(__)  => begin
+        DAE.TUPLE(list(toDAE(e) for e in exp.elements))
       end
 
-      CALL(__)  => begin
+      CALL_EXPRESSION(__)  => begin
         P_Call.toDAE(exp.call)
       end
 
@@ -4306,10 +4296,11 @@ function toDAE(exp::Expression) ::DAE.Exp
                  end)
       end
 
-      BINARY(__)  => begin
+      BINARY_EXPRESSION(__)  => begin
         #=  END() doesn't have a DAE representation.
         =#
-        @assign (daeOp, swap) = P_Operator.Operator.toDAE(exp.operator)
+        @assign daeOp = toDAE(exp.operator)
+        swap = false #=TODO. Handle arrays better Implicit stupid metamodelica=#
         @assign dae1 = toDAE(exp.exp1)
         @assign dae2 = toDAE(exp.exp2)
         DAE.BINARY(if swap
@@ -4324,19 +4315,19 @@ function toDAE(exp::Expression) ::DAE.Exp
       end
 
       UNARY_EXPRESSION(__)  => begin
-        DAE.UNARY(P_Operator.Operator.toDAE(exp.operator), toDAE(exp.exp))
+        DAE.UNARY(toDAE(exp.operator), toDAE(exp.exp))
       end
 
-      LBINARY(__)  => begin
-        DAE.LBINARY(toDAE(exp.exp1), P_Operator.Operator.toDAE(exp.operator), toDAE(exp.exp2))
+      LBINARY_EXPRESSION(__)  => begin
+        DAE.LBINARY(toDAE(exp.exp1), toDAE(exp.operator), toDAE(exp.exp2))
       end
 
       LUNARY_EXPRESSION(__)  => begin
-        DAE.LUNARY(P_Operator.Operator.toDAE(exp.operator), toDAE(exp.exp))
+        DAE.LUNARY(toDAE(exp.operator), toDAE(exp.exp))
       end
 
       RELATION_EXPRESSION(__)  => begin
-        DAE.RELATION(toDAE(exp.exp1), P_Operator.Operator.toDAE(exp.operator), toDAE(exp.exp2), -1, NONE())
+        DAE.RELATION(toDAE(exp.exp1), toDAE(exp.operator), toDAE(exp.exp2), -1, NONE())
       end
 
       IF_EXPRESSION(__)  => begin
@@ -4344,7 +4335,7 @@ function toDAE(exp::Expression) ::DAE.Exp
       end
 
       CAST_EXPRESSION(__)  => begin
-        DAE.CAST(Type.toDAE(exp.ty), toDAE(exp.exp))
+        DAE.CAST(toDAE(exp.ty), toDAE(exp.exp))
       end
 
       BOX_EXPRESSION(__)  => begin
@@ -4352,24 +4343,24 @@ function toDAE(exp::Expression) ::DAE.Exp
       end
 
       UNBOX_EXPRESSION(__)  => begin
-        DAE.UNBOX(toDAE(exp.exp), Type.toDAE(exp.ty))
+        DAE.UNBOX(toDAE(exp.exp), toDAE(exp.ty))
       end
 
       SUBSCRIPTED_EXP_EXPRESSION(__)  => begin
-        DAE.ASUB(toDAE(exp.exp), List(toDAEExp(s) for s in exp.subscripts))
+        DAE.ASUB(toDAE(exp.exp), list(toDAEExp(s) for s in exp.subscripts))
       end
 
       TUPLE_ELEMENT_EXPRESSION(__)  => begin
-        DAE.TSUB(toDAE(exp.tupleExp), exp.index, Type.toDAE(exp.ty))
+        DAE.TSUB(toDAE(exp.tupleExp), exp.index, toDAE(exp.ty))
       end
 
       RECORD_ELEMENT_EXPRESSION(__)  => begin
-        DAE.RSUB(toDAE(exp.recordExp), exp.index, exp.fieldName, Type.toDAE(exp.ty))
+        DAE.RSUB(toDAE(exp.recordExp), exp.index, exp.fieldName, toDAE(exp.ty))
       end
 
       PARTIAL_FUNCTION_APPLICATION_EXPRESSION(__)  => begin
         @match _cons(fn, _) = P_Function.P_Function.typeRefCache(exp.fn)
-        DAE.PARTEVALFUNCTION(P_Function.P_Function.nameConsiderBuiltin(fn), List(toDAE(arg) for arg in exp.args), Type.toDAE(exp.ty), Type.toDAE(TYPE_FUNCTION(fn, FunctionTYPE_FUNCTIONAL_VARIABLE)))
+        DAE.PARTEVALFUNCTION(P_Function.P_Function.nameConsiderBuiltin(fn), list(toDAE(arg) for arg in exp.args), toDAE(exp.ty), toDAE(TYPE_FUNCTION(fn, FunctionTYPE_FUNCTIONAL_VARIABLE)))
       end
 
       BINDING_EXP(__)  => begin
@@ -4408,11 +4399,11 @@ function isNonAssociativeExp(exp::Expression) ::Bool
 
   @assign isAssociative = begin
     @match exp begin
-      BINARY(__)  => begin
+      BINARY_EXPRESSION(__)  => begin
         P_Operator.Operator.isNonAssociative(exp.operator)
       end
 
-      LBINARY(__)  => begin
+      LBINARY_EXPRESSION(__)  => begin
         true
       end
 
@@ -4429,11 +4420,11 @@ function isAssociativeExp(exp::Expression) ::Bool
 
   @assign isAssociative = begin
     @match exp begin
-      BINARY(__)  => begin
+      BINARY_EXPRESSION(__)  => begin
         P_Operator.Operator.isAssociative(exp.operator)
       end
 
-      LBINARY(__)  => begin
+      LBINARY_EXPRESSION(__)  => begin
         true
       end
 
@@ -4466,7 +4457,7 @@ function priority(exp::Expression, lhs::Bool) ::Integer
         end
       end
 
-      BINARY(__)  => begin
+      BINARY_EXPRESSION(__)  => begin
         P_Operator.Operator.priority(exp.operator, lhs)
       end
 
@@ -4474,7 +4465,7 @@ function priority(exp::Expression, lhs::Bool) ::Integer
         4
       end
 
-      LBINARY(__)  => begin
+      LBINARY_EXPRESSION(__)  => begin
         P_Operator.Operator.priority(exp.operator, lhs)
       end
 
@@ -4486,7 +4477,7 @@ function priority(exp::Expression, lhs::Bool) ::Integer
         6
       end
 
-      RANGE(__)  => begin
+      RANGE_EXPRESSION(__)  => begin
         10
       end
 
@@ -4573,7 +4564,7 @@ function toFlatSubscriptedString(exp::Expression, subs::List{<:Subscript}) ::Str
 
   @assign exp_ty = typeOf(exp)
   @assign dims = ListUtil.firstN(arrayDims(exp_ty), listLength(subs))
-  @assign sub_tyl = List(P_Dimension.Dimension.subscriptType(d) for d in dims)
+  @assign sub_tyl = list(P_Dimension.Dimension.subscriptType(d) for d in dims)
   @assign name = Type.subscriptedTypeName(exp_ty, sub_tyl)
   @assign strl = list(")")
   for s in subs
@@ -4616,7 +4607,7 @@ function toFlatString(exp::Expression) ::String
         "'" + AbsynUtil.pathString(t.typePath) + "'." + exp.name
       end
 
-      CLKCONST(clk)  => begin
+      CLKCONST_EXPRESSION(clk)  => begin
         P_ClockKind.toString(clk)
       end
 
@@ -4628,15 +4619,15 @@ function toFlatString(exp::Expression) ::String
         Type.typenameString(arrayElementType(exp.ty))
       end
 
-      ARRAY(__)  => begin
+      ARRAY_EXPRESSION(__)  => begin
         "{" + stringDelimitList(List(toFlatString(e) for e in exp.elements), ", ") + "}"
       end
 
-      MATRIX(__)  => begin
+      MATRIX_EXPRESSION(__)  => begin
         "[" + stringDelimitList(List(stringDelimitList(List(toFlatString(e) for e in el), ", ") for el in exp.elements), "; ") + "]"
       end
 
-      RANGE(__)  => begin
+      RANGE_EXPRESSION(__)  => begin
         operandFlatString(exp.start, exp, false) + (if isSome(exp.step)
                                                     ":" + operandFlatString(Util.getOption(exp.step), exp, false)
                                                     else
@@ -4644,15 +4635,15 @@ function toFlatString(exp::Expression) ::String
                                                     end) + ":" + operandFlatString(exp.stop, exp, false)
       end
 
-      TUPLE(__)  => begin
+      TUPLE_EXPRESSION(__)  => begin
         "(" + stringDelimitList(List(toFlatString(e) for e in exp.elements), ", ") + ")"
       end
 
-      RECORD(__)  => begin
+      RECORD_EXPRESSION(__)  => begin
         ListUtil.toString(exp.elements, toFlatString, "'" + AbsynUtil.pathString(exp.path), "'(", ", ", ")", true)
       end
 
-      CALL(__)  => begin
+      CALL_EXPRESSION(__)  => begin
         P_Call.toFlatString(exp.call)
       end
 
@@ -4668,7 +4659,7 @@ function toFlatString(exp::Expression) ::String
         "end"
       end
 
-      BINARY(__)  => begin
+      BINARY_EXPRESSION(__)  => begin
         operandFlatString(exp.exp1, exp, true) + P_Operator.Operator.symbol(exp.operator) + operandFlatString(exp.exp2, exp, false)
       end
 
@@ -4676,7 +4667,7 @@ function toFlatString(exp::Expression) ::String
         P_Operator.Operator.symbol(exp.operator, "") + operandFlatString(exp.exp, exp, false)
       end
 
-      LBINARY(__)  => begin
+      LBINARY_EXPRESSION(__)  => begin
         operandFlatString(exp.exp1, exp, true) + P_Operator.Operator.symbol(exp.operator) + operandFlatString(exp.exp2, exp, false)
       end
 
@@ -4768,7 +4759,7 @@ function toString(exp::Expression) ::String
         AbsynUtil.pathString(t.typePath) + "." + exp.name
       end
 
-      CLKCONST(clk)  => begin
+      CLKCONST_EXPRESSION(clk)  => begin
         P_ClockKind.toString(clk)
       end
 
@@ -4780,15 +4771,15 @@ function toString(exp::Expression) ::String
         Type.typenameString(arrayElementType(exp.ty))
       end
 
-      ARRAY(__)  => begin
+      ARRAY_EXPRESSION(__)  => begin
         "{" + stringDelimitList(List(toString(e) for e in exp.elements), ", ") + "}"
       end
 
-      MATRIX(__)  => begin
+      MATRIX_EXPRESSION(__)  => begin
         "[" + stringDelimitList(List(stringDelimitList(List(toString(e) for e in el), ", ") for el in exp.elements), "; ") + "]"
       end
 
-      RANGE(__)  => begin
+      RANGE_EXPRESSION(__)  => begin
         operandString(exp.start, exp, false) + (if isSome(exp.step)
                                                 ":" + operandString(Util.getOption(exp.step), exp, false)
                                                 else
@@ -4796,15 +4787,15 @@ function toString(exp::Expression) ::String
                                                 end) + ":" + operandString(exp.stop, exp, false)
       end
 
-      TUPLE(__)  => begin
+      TUPLE_EXPRESSION(__)  => begin
         "(" + stringDelimitList(List(toString(e) for e in exp.elements), ", ") + ")"
       end
 
-      RECORD(__)  => begin
+      RECORD_EXPRESSION(__)  => begin
         ListUtil.toString(exp.elements, toString, AbsynUtil.pathString(exp.path), "(", ", ", ")", true)
       end
 
-      CALL(__)  => begin
+      CALL_EXPRESSION(__)  => begin
         P_Call.toString(exp.call)
       end
 
@@ -4820,7 +4811,7 @@ function toString(exp::Expression) ::String
         "end"
       end
 
-      BINARY(__)  => begin
+      BINARY_EXPRESSION(__)  => begin
         operandString(exp.exp1, exp, true) + P_Operator.Operator.symbol(exp.operator) + operandString(exp.exp2, exp, false)
       end
 
@@ -4828,7 +4819,7 @@ function toString(exp::Expression) ::String
         P_Operator.Operator.symbol(exp.operator, "") + operandString(exp.exp, exp, false)
       end
 
-      LBINARY(__)  => begin
+      LBINARY_EXPRESSION(__)  => begin
         operandString(exp.exp1, exp, true) + P_Operator.Operator.symbol(exp.operator) + operandString(exp.exp2, exp, false)
       end
 
@@ -5078,7 +5069,7 @@ function applyIndexSubscriptArrayConstructor(call::Call, index::Subscript) ::Exp
   @assign iter_exp = applySubscript(index, iter_exp)
   @assign subscriptedExp = replaceIterator(exp, iter, iter_exp)
   if ! listEmpty(iters)
-    @assign subscriptedExp = CALL(P_Call.TYPED_ARRAY_CONSTRUCTOR(Type.unliftArray(ty), var, subscriptedExp, iters))
+    @assign subscriptedExp = CALL_EXPRESSION(P_Call.TYPED_ARRAY_CONSTRUCTOR(Type.unliftArray(ty), var, subscriptedExp, iters))
   end
   subscriptedExp
 end
@@ -5089,7 +5080,7 @@ function applySubscriptArrayConstructor(subscript::Subscript, call::Call, restSu
   if isIndex(subscript) && listEmpty(restSubscripts)
     @assign outExp = applyIndexSubscriptArrayConstructor(call, subscript)
   else
-    @assign outExp = makeSubscriptedExp(_cons(subscript, restSubscripts), CALL(call))
+    @assign outExp = makeSubscriptedExp(_cons(subscript, restSubscripts), CALL_EXPRESSION(call))
   end
   #=  TODO: Handle slicing and multiple subscripts better.
   =#
@@ -5101,7 +5092,7 @@ function applySubscriptCall(subscript::Subscript, exp::Expression, restSubscript
 
   local call::Call
 
-  @match CALL(call = call) = exp
+  @match CALL_EXPRESSION(call = call) = exp
   @assign outExp = begin
     local arg::Expression
     local ty::M_Type
@@ -5176,10 +5167,10 @@ function applyIndexSubscriptRange(rangeExp::Expression, index::Subscript) ::Expr
 
   @match SUBSCRIPT_INDEX(index = index_exp) = index
   if isScalarLiteral(index_exp)
-    @match RANGE(start = start_exp, step = step_exp, stop = stop_exp) = rangeExp
+    @match RANGE_EXPRESSION(start = start_exp, step = step_exp, stop = stop_exp) = rangeExp
     @assign outExp = applyIndexSubscriptRange2(start_exp, step_exp, stop_exp, toInteger(index_exp))
   else
-    @match RANGE(ty = ty) = rangeExp
+    @match RANGE_EXPRESSION(ty = ty) = rangeExp
     @assign outExp = SUBSCRIPTED_EXP_EXPRESSION(rangeExp, list(index), ty)
   end
   outExp
@@ -5203,7 +5194,7 @@ function applySubscriptRange(subscript::Subscript, exp::Expression) ::Expression
       end
 
       SUBSCRIPT_SLICE(__)  => begin
-        @match RANGE(ty = ty) = exp
+        @match RANGE_EXPRESSION(ty = ty) = exp
         @assign ty = ARRAY_TYPE(Type.unliftArray(ty), list(toDimension(sub)))
         SUBSCRIPTED_EXP_EXPRESSION(exp, list(subscript), ty)
       end
@@ -5214,7 +5205,7 @@ function applySubscriptRange(subscript::Subscript, exp::Expression) ::Expression
 
       SUBSCRIPT_EXPANDED_SLICE(__)  => begin
         @assign expl = List(applyIndexSubscriptRange(exp, i) for i in sub.indices)
-        @match RANGE(ty = ty) = exp
+        @match RANGE_EXPRESSION(ty = ty) = exp
         makeArray(Type.liftArrayLeft(ty, P_Dimension.Dimension.fromInteger(listLength(expl))), expl)
       end
     end
@@ -5228,7 +5219,7 @@ function applyIndexExpArray(exp::Expression, index::Expression, restSubscripts::
   local expl::List{Expression}
 
   if isScalarLiteral(index)
-    @match ARRAY(elements = expl) = exp
+    @match ARRAY_EXPRESSION(elements = expl) = exp
     @assign outExp = applySubscripts(restSubscripts, listGet(expl, toInteger(index)))
   elseif isBindingExp(index)
     @assign outExp = bindingExpMap(index, (exp, restSubscripts) -> applyIndexExpArray(exp = exp, restSubscripts = restSubscripts))
@@ -5271,7 +5262,7 @@ function applySubscriptArray(subscript::Subscript, exp::Expression, restSubscrip
         if listEmpty(restSubscripts)
           @assign outExp = exp
         else
-          @match ARRAY(ty = ty, elements = expl, literal = literal) = exp
+          @match ARRAY_EXPRESSION(ty = ty, elements = expl, literal = literal) = exp
           @match _cons(s, rest_subs) = restSubscripts
           @assign expl = List(applySubscript(s, e, rest_subs) for e in expl)
           @assign el_count = listLength(expl)
@@ -5287,7 +5278,7 @@ function applySubscriptArray(subscript::Subscript, exp::Expression, restSubscrip
       end
 
       SUBSCRIPT_EXPANDED_SLICE(__)  => begin
-        @match ARRAY(ty = ty, literal = literal) = exp
+        @match ARRAY_EXPRESSION(ty = ty, literal = literal) = exp
         @assign expl = List(applyIndexSubscriptArray(exp, i, restSubscripts) for i in sub.indices)
         @assign el_count = listLength(expl)
         @assign ty = if el_count > 0
@@ -5391,19 +5382,19 @@ end
                          applySubscriptTypename(subscript, exp.ty)
                        end
 
-                       ARRAY(__)  => begin
+                       ARRAY_EXPRESSION(__)  => begin
                          applySubscriptArray(subscript, exp, restSubscripts)
                        end
 
-                       RANGE(__) where (listEmpty(restSubscripts))  => begin
+                       RANGE_EXPRESSION(__) where (listEmpty(restSubscripts))  => begin
                          applySubscriptRange(subscript, exp)
                        end
 
-                       CALL(call = P_Call.TYPED_ARRAY_CONSTRUCTOR(__))  => begin
+                       CALL_EXPRESSION(call = P_Call.TYPED_ARRAY_CONSTRUCTOR(__))  => begin
                          applySubscriptArrayConstructor(subscript, exp.call, restSubscripts)
                        end
 
-                       CALL(__)  => begin
+                       CALL_EXPRESSION(__)  => begin
                          applySubscriptCall(subscript, exp, restSubscripts)
                        end
 
@@ -5438,7 +5429,7 @@ end
 function makeRecord(recordName::Absyn.Path, recordType::M_Type, fields::List{<:Expression}) ::Expression
   local exp::Expression
 
-  @assign exp = RECORD(recordName, recordType, fields)
+  @assign exp = RECORD_EXPRESSION(recordName, recordType, fields)
   exp
 end
 
@@ -5488,14 +5479,14 @@ end
 function makeEmptyArray(ty::M_Type) ::Expression
   local outExp::Expression
 
-  @assign outExp = ARRAY(ty, nil, true)
+  @assign outExp = ARRAY_EXPRESSION(ty, nil, true)
   outExp
 end
 
 function makeArray(ty::M_Type, expl::List{<:Expression}, literal::Bool = false) ::Expression
   local outExp::Expression
 
-  @assign outExp = ARRAY(ty, expl, literal)
+  @assign outExp = ARRAY_EXPRESSION(ty, expl, literal)
   outExp
 end
 
@@ -5587,7 +5578,7 @@ end
        end
        (RANGE_EXPRESSION(ty = t), _)  => begin
          @assign t = setArrayElementType(t, ety)
-         RANGE(t, typeCast(exp.start, ety), typeCastOpt(exp.step, ety), typeCast(exp.stop, ety))
+         RANGE_EXPRESSION(t, typeCast(exp.start, ety), typeCastOpt(exp.step, ety), typeCast(exp.stop, ety))
        end
        (UNARY_EXPRESSION(__), _)  => begin
          #=  Unary operators (i.e. -) are handled by casting the operand.
@@ -5651,32 +5642,32 @@ function setType(ty::NFType, exp::Expression) ::Expression
         ()
       end
 
-      ARRAY(__)  => begin
+      ARRAY_EXPRESSION(__)  => begin
         @assign exp.ty = ty
         ()
       end
 
-      RANGE(__)  => begin
+      RANGE_EXPRESSION(__)  => begin
         @assign exp.ty = ty
         ()
       end
 
-      TUPLE(__)  => begin
+      TUPLE_EXPRESSION(__)  => begin
         @assign exp.ty = ty
         ()
       end
 
-      RECORD(__)  => begin
+      RECORD_EXPRESSION(__)  => begin
         @assign exp.ty = ty
         ()
       end
 
-      CALL(__)  => begin
+      CALL_EXPRESSION(__)  => begin
         @assign exp.call = P_Call.setType(exp.call, ty)
         ()
       end
 
-      BINARY(__)  => begin
+      BINARY_EXPRESSION(__)  => begin
         @assign exp.operator = setType(ty, exp.operator)
         ()
       end
@@ -5686,7 +5677,7 @@ function setType(ty::NFType, exp::Expression) ::Expression
         ()
       end
 
-      LBINARY(__)  => begin
+      LBINARY_EXPRESSION(__)  => begin
         @assign exp.operator = setType(ty, exp.operator)
         ()
       end
@@ -5764,7 +5755,7 @@ function typeOf(exp::Expression) ::M_Type
         exp.ty
       end
 
-      CLKCONST(__)  => begin
+      CLKCONST_EXPRESSION(__)  => begin
         TYPE_CLOCK()
       end
 
@@ -5776,23 +5767,23 @@ function typeOf(exp::Expression) ::M_Type
         exp.ty
       end
 
-      ARRAY(__)  => begin
+      ARRAY_EXPRESSION(__)  => begin
         exp.ty
       end
 
-      RANGE(__)  => begin
+      RANGE_EXPRESSION(__)  => begin
         exp.ty
       end
 
-      TUPLE(__)  => begin
+      TUPLE_EXPRESSION(__)  => begin
         exp.ty
       end
 
-      RECORD(__)  => begin
+      RECORD_EXPRESSION(__)  => begin
         exp.ty
       end
 
-      CALL(__)  => begin
+      CALL_EXPRESSION(__)  => begin
         P_Call.typeOf(exp.call)
       end
 
@@ -5808,7 +5799,7 @@ function typeOf(exp::Expression) ::M_Type
         TYPE_INTEGER()
       end
 
-      BINARY(__)  => begin
+      BINARY_EXPRESSION(__)  => begin
         P_Operator.Operator.typeOf(exp.operator)
       end
 
@@ -5816,7 +5807,7 @@ function typeOf(exp::Expression) ::M_Type
         P_Operator.Operator.typeOf(exp.operator)
       end
 
-      LBINARY(__)  => begin
+      LBINARY_EXPRESSION(__)  => begin
         P_Operator.Operator.typeOf(exp.operator)
       end
 
@@ -6010,8 +6001,8 @@ end
                          valueCompare(exp1.ty, ty)
                        end
 
-                       ARRAY(__)  => begin
-                         @match ARRAY(ty = ty, elements = expl) = exp2
+                       ARRAY_EXPRESSION(__)  => begin
+                         @match ARRAY_EXPRESSION(ty = ty, elements = expl) = exp2
                          @assign comp = valueCompare(ty, exp1.ty)
                          if comp == 0
                            compareList(exp1.elements, expl)
@@ -6020,8 +6011,8 @@ end
                          end
                        end
 
-                       RANGE(__)  => begin
-                         @match RANGE(start = e1, step = oe, stop = e2) = exp2
+                       RANGE_EXPRESSION(__)  => begin
+                         @match RANGE_EXPRESSION(start = e1, step = oe, stop = e2) = exp2
                          @assign comp = compare(exp1.start, e1)
                          if comp == 0
                            @assign comp = compare(exp1.stop, e2)
@@ -6032,13 +6023,13 @@ end
                          comp
                        end
 
-                       TUPLE(__)  => begin
-                         @match TUPLE(elements = expl) = exp2
+                       TUPLE_EXPRESSION(__)  => begin
+                         @match TUPLE_EXPRESSION(elements = expl) = exp2
                          compareList(exp1.elements, expl)
                        end
 
-                       RECORD(__)  => begin
-                         @match RECORD(path = p, elements = expl) = exp2
+                       RECORD_EXPRESSION(__)  => begin
+                         @match RECORD_EXPRESSION(path = p, elements = expl) = exp2
                          @assign comp = AbsynUtil.pathCompare(exp1.path, p)
                          if comp == 0
                            compareList(exp1.elements, expl)
@@ -6047,8 +6038,8 @@ end
                          end
                        end
 
-                       CALL(__)  => begin
-                         @match CALL(call = c) = exp2
+                       CALL_EXPRESSION(__)  => begin
+                         @match CALL_EXPRESSION(call = c) = exp2
                          P_Call.compare(exp1.call, c)
                        end
 
@@ -6066,8 +6057,8 @@ end
                          0
                        end
 
-                       BINARY(__)  => begin
-                         @match BINARY(exp1 = e1, operator = op, exp2 = e2) = exp2
+                       BINARY_EXPRESSION(__)  => begin
+                         @match BINARY_EXPRESSION(exp1 = e1, operator = op, exp2 = e2) = exp2
                          @assign comp = P_Operator.Operator.compare(exp1.operator, op)
                          if comp == 0
                            @assign comp = compare(exp1.exp1, e1)
@@ -6088,8 +6079,8 @@ end
                          end
                        end
 
-                       LBINARY(__)  => begin
-                         @match LBINARY(exp1 = e1, operator = op, exp2 = e2) = exp2
+                       LBINARY_EXPRESSION(__)  => begin
+                         @match LBINARY_EXPRESSION(exp1 = e1, operator = op, exp2 = e2) = exp2
                          @assign comp = P_Operator.Operator.compare(exp1.operator, op)
                          if comp == 0
                            @assign comp = compare(exp1.exp1, e1)
@@ -6196,8 +6187,8 @@ EMPTY(__)  => begin
   valueCompare(exp1.ty, ty)
 end
 
-CLKCONST(clk1)  => begin
-  @match CLKCONST(clk2) = exp2
+CLKCONST_EXPRESSION(clk1)  => begin
+  @match CLKCONST_EXPRESSION(clk2) = exp2
   P_ClockKind.compare(clk1, clk2)
 end
 
@@ -6258,7 +6249,7 @@ function isAllTrue(exp::Expression) ::Bool
         true
       end
 
-      ARRAY(__)  => begin
+      ARRAY_EXPRESSION(__)  => begin
         for e in exp.elements
           if ! isAllTrue(e)
             @assign isTrue = false
@@ -6295,13 +6286,11 @@ end
 
 function isCall(exp::Expression) ::Bool
   local isCall::Bool
-
   @assign isCall = begin
     @match exp begin
-      CALL(__)  => begin
+      CALL_EXPRESSION(__)  => begin
         true
       end
-
       _  => begin
         false
       end
@@ -6349,7 +6338,7 @@ function isEmptyArray(exp::Expression) ::Bool
 
   @assign emptyArray = begin
     @match exp begin
-      ARRAY(elements =  nil())  => begin
+      ARRAY_EXPRESSION(elements =  nil())  => begin
         true
       end
 
@@ -6366,7 +6355,7 @@ function isArray(exp::Expression) ::Bool
 
   @assign isArray = begin
     @match exp begin
-      ARRAY(__)  => begin
+      ARRAY_EXPRESSION(__)  => begin
         true
       end
 

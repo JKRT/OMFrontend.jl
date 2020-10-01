@@ -15,15 +15,23 @@ module FunctionTreeImpl
 using MetaModelica
 using ExportAll
 import ..Absyn
-import ..BaseAvlTree
 import ..Main.M_Function
-using ..BaseAvlTree #= Modelica extend clause =#
 Key = Absyn.Path
 Value = M_Function
+include("../Util/baseAvlTreeCode.jl")
+include("../Util/baseAvlSetCode.jl")
+
+
 addConflictDefault = addConflictKeep
+
+function new()
+  return EMPTY()
+end
+
 @exportAll()
 end
 FunctionTree = FunctionTreeImpl.Tree
+const NFFunctionTree = FunctionTreeImpl
 
 import .FunctionTree
 function flatten(classInst::InstNode, name::String)::FlatModel
@@ -68,14 +76,13 @@ end
 
 function collectFunctions(flatModel::FlatModel, name::String)::FunctionTree
   local funcs::FunctionTree
-
-  @assign funcs = FunctionTree.new()
+  @assign funcs = FunctionTreeImpl.new()
   @assign funcs = ListUtil.fold(flatModel.variables, collectComponentFuncs, funcs)
   @assign funcs = ListUtil.fold(flatModel.equations, collectEquationFuncs, funcs)
   @assign funcs = ListUtil.fold(flatModel.initialEquations, collectEquationFuncs, funcs)
   @assign funcs = ListUtil.fold(flatModel.algorithms, collectAlgorithmFuncs, funcs)
   @assign funcs = ListUtil.fold(flatModel.initialAlgorithms, collectAlgorithmFuncs, funcs)
-  execStat(getInstanceName() + "(" + name + ")")
+#  execStat(getInstanceName() + "(" + name + ")")
   return funcs
 end
 
@@ -408,7 +415,7 @@ function flattenSimpleComponent(
   #=  move the binding into an equation. This avoids having to scalarize the binding.
   =#
   # if !Flags.isSet(Flags.NF_API)
-  #   if Type.isArray(ty) && isBound(binding) && var >= Variability.DISCRETE
+  #   if isArray(ty) && isBound(binding) && var >= Variability.DISCRETE
   #     @assign name = prefixCref(comp_node, ty, nil, prefix)
   #     @assign eq = EQUATION_ARRAY_EQUALITY(
   #       CREF_EXPRESSION(ty, name),
@@ -485,7 +492,7 @@ function getRecordBindings(binding::Binding, comps::Array{<:InstNode})::List{Bin
   =#
   @assign recordBindings = begin
     @match binding_exp begin
-      P_Expression.Expression.RECORD(__) => begin
+RECORD_EXPRESSION(__) => begin
         List(if P_Expression.Expression.isEmpty(e)
           NFBinding.EMPTY_BINDING
         else
@@ -755,7 +762,7 @@ function vectorizeEquation(
           end
         end
         @match list(P_Dimension.Dimension.INTEGER(size = stop)) = dimensions
-        @assign range = P_Expression.Expression.RANGE(
+        @assign range = RANGE_EXPRESSION(
           ARRAY_TYPE(TYPE_INTEGER(), dimensions),
           INTEGER_EXPRESSION(1),
           NONE(),
@@ -825,7 +832,7 @@ function vectorizeAlgorithm(
           end
         end
         @match list(P_Dimension.Dimension.INTEGER(size = stop)) = dimensions
-        @assign range = P_Expression.Expression.RANGE(
+        @assign range = RANGE_EXPRESSION(
           ARRAY_TYPE(TYPE_INTEGER(), dimensions),
           INTEGER_EXPRESSION(1),
           NONE(),
@@ -1169,7 +1176,7 @@ function flattenEquation(
         flattenIfEquation(eq, prefix, equations)
       end
 
-      P_Equation.Equation.WHEN(__) => begin
+      EQUATION_WHEN(__) => begin
         @assign eq.branches = List(flattenEqBranch(b, prefix) for b in eq.branches)
         _cons(eq, equations)
       end
@@ -1665,21 +1672,19 @@ function collectComponentFuncs(var::Variable, funcs::FunctionTree)::FunctionTree
 end
 
 function collectBindingFuncs(binding::Binding, funcs::FunctionTree)::FunctionTree
-
   if isExplicitlyBound(binding)
     @assign funcs = collectExpFuncs(getTypedExp(binding), funcs)
   end
   return funcs
 end
 
-function collectTypeFuncs(ty::M_Type, funcs::FunctionTree)::FunctionTree
-
+function collectTypeFuncs(ty::NFType, funcs::FunctionTree)::FunctionTree
   @assign () = begin
     local con::InstNode
     local de::InstNode
     local fn::M_Function
     @match ty begin
-      ARRAY_TYPE(__) => begin
+      TYPE_ARRAY(__) => begin
         @assign funcs = P_Dimension.Dimension.foldExpList(
           ty.dimensions,
           collectExpFuncs_traverse,
@@ -1695,7 +1700,7 @@ function collectTypeFuncs(ty::M_Type, funcs::FunctionTree)::FunctionTree
       end
 
       TYPE_COMPLEX(
-        complexTy = ComplexType.EXTERNAL_OBJECT(constructor = con, destructor = de),
+        complexTy = COMPLEX_EXTERNAL_OBJECT(constructor = con, destructor = de),
       ) => begin
         #=  Collect external object structors.
         =#
@@ -1710,7 +1715,6 @@ function collectTypeFuncs(ty::M_Type, funcs::FunctionTree)::FunctionTree
         @assign funcs = collectStructor(con, funcs)
         ()
       end
-
       _ => begin
         ()
       end
@@ -1775,7 +1779,7 @@ function collectEquationFuncs(eq::Equation, funcs::FunctionTree)::FunctionTree
         ()
       end
 
-      P_Equation.Equation.WHEN(__) => begin
+      EQUATION_WHEN(__) => begin
         @assign funcs = ListUtil.fold(eq.branches, collectEqBranchFuncs, funcs)
         ()
       end
@@ -1903,8 +1907,7 @@ function collectStmtBranchFuncs(
 end
 
 function collectExpFuncs(exp::Expression, funcs::FunctionTree)::FunctionTree
-
-  @assign funcs = P_Expression.Expression.fold(exp, collectExpFuncs_traverse, funcs)
+  @assign funcs = fold(exp, collectExpFuncs_traverse, funcs)
   return funcs
 end
 
@@ -1923,7 +1926,7 @@ function collectExpFuncs_traverse(exp::Expression, funcs::FunctionTree)::Functio
         ()
       end
 
-      P_Expression.Expression.RECORD(__) => begin
+RECORD_EXPRESSION(__) => begin
         @assign funcs = collectTypeFuncs(exp.ty, funcs)
         ()
       end

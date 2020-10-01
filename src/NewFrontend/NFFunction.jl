@@ -28,17 +28,14 @@ end
 
 function named(slot::Slot)::Bool
   local pos::Bool
-
   @assign pos = begin
     @match slot.ty begin
       SlotType.NAMED => begin
         true
       end
-
       SlotType.GENERIC => begin
         true
       end
-
       _ => begin
         false
       end
@@ -49,17 +46,14 @@ end
 
 function positional(slot::Slot)::Bool
   local pos::Bool
-
   @assign pos = begin
     @match slot.ty begin
       SlotType.POSITIONAL => begin
         true
       end
-
       SlotType.GENERIC => begin
         true
       end
-
       _ => begin
         false
       end
@@ -89,7 +83,6 @@ function isExactVectorized(mk::FunctionMatchKind)::Bool
       VECTORIZED(baseMatch = EXACT(__)) => begin
         true
       end
-
       _ => begin
         false
       end
@@ -222,7 +215,6 @@ MapFunc = Function
 MapFunc = Function
 MapFn = Function
 @UniontypeDecl M_Function
-
 @Uniontype M_Function begin
   @Record M_FUNCTION begin
     path::Absyn.Path
@@ -340,7 +332,7 @@ function mapExpParameter(node::InstNode, mapFn::MapFunc)
     @match comp begin
       TYPED_COMPONENTy(__) => begin
         @assign ty =
-          Type.mapDims(comp.ty, (mapFn) -> P_Dimension.Dimension.mapExp(func = mapFn))
+          mapDims(comp.ty, (mapFn) -> mapExp(func = mapFn))
         if !referenceEq(ty, comp.ty)
           @assign comp.ty = ty
           @assign dirty = true
@@ -439,7 +431,7 @@ function makeDAEType(fn::M_Function, boxTypes::Bool = false)::DAE.Type
   local ty::M_Type
   local ptype::DAE.Type
   local pconst::DAE.Const
-  local ppar::DAE.VarParallelism
+  local ppar::DAE
   local pdefault::Option{DAE.Exp}
   local comp::Component
 
@@ -447,7 +439,7 @@ function makeDAEType(fn::M_Function, boxTypes::Bool = false)::DAE.Type
     @assign comp = component(param)
     @assign pname = name(param)
     @assign ty = P_Component.getType(comp)
-    @assign ptype = Type.toDAE(if boxTypes
+    @assign ptype = toDAE(if boxTypes
       Type.box(ty)
     else
       ty
@@ -467,7 +459,7 @@ function makeDAEType(fn::M_Function, boxTypes::Bool = false)::DAE.Type
   else
     fn.returnType
   end
-  @assign outType = DAE.T_FUNCTION(params, Type.toDAE(ty), fn.attributes, fn.path)
+  @assign outType = DAE.T_FUNCTION(params, toDAE(ty), fn.attributes, fn.path)
   return outType
 end
 
@@ -1180,7 +1172,7 @@ function fillUnknownVectorizedDims(
   for dim in dims
     if P_Dimension.Dimension.isUnknown(dim)
       @assign dim = P_Dimension.Dimension.EXP(
-        P_Expression.Expression.SIZE(argExp, SOME(INTEGER_EXPRESSION(i))),
+        SIZE_EXPRESSION(argExp, SOME(INTEGER_EXPRESSION(i))),
         Variability.CONTINUOUS,
       )
     end
@@ -2738,7 +2730,7 @@ function analyseUnusedParametersExp(
 )::List{InstNode}
 
   if !listEmpty(params)
-    @assign params = P_Expression.Expression.fold(exp, analyseUnusedParametersExp2, params)
+    @assign params = fold(exp, analyseUnusedParametersExp2, params)
   end
   return params
 end
@@ -2771,11 +2763,9 @@ function getBody2(node::InstNode)::List{Statement}
       ) => begin
         fn_body.statements
       end
-
       INSTANCED_CLASS(sections = SECTIONS_EMPTY(__)) => begin
         nil
       end
-
       INSTANCED_CLASS(
         sections = P_Sections.Sections.SECTIONS(algorithms = _ <| _),
       ) => begin
@@ -2786,11 +2776,9 @@ function getBody2(node::InstNode)::List{Statement}
         )
         fail()
       end
-
       TYPED_DERIVED(__) => begin
         getBody2(cls.baseClass)
       end
-
       _ => begin
         Error.assertion(false, getInstanceName() + " got unknown function", sourceInfo())
         fail()

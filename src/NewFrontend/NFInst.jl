@@ -1,12 +1,11 @@
 import Absyn
 import SCode
 import ..DAE
-
 """ #= Instantiates a class given by its fully qualified path, with the result being
                  a DAE. =#"""
-                  function instClassInProgram(classPath::Absyn.Path, program::SCode.Program)::Tuple{DAE.DAElist, DAE.FunctionTree}
+                  function instClassInProgram(classPath::Absyn.Path, program::SCode.Program)::Tuple{DAE.DAE_LIST, DAE.FunctionTree}
                    local daeFuncs::DAE.FunctionTree
-                   local dae::DAE.DAElist
+                   local dae::DAE.DAE_LIST
                    local top::InstNode
                    local cls::InstNode
                    local inst_cls::InstNode
@@ -37,16 +36,16 @@ import ..DAE
                    @assign cls = lookupClassName(classPath, top, AbsynUtil.dummyInfo, false)
                    @assign cls = setNodeType(ROOT_CLASS(EMPTY_NODE()), cls)
                    #=  Initialize the storage for automatically generated inner elements. =#
-                   @info "Test test test!"
+                   @debug "Test test test!"
                    @assign top = setInnerOuterCache(top, C_TOP_SCOPE(NodeTree.new(), cls))
-                   @info "OK we have a cache!"
+                   @debug "OK we have a cache!"
                     #=  Instantiate the class. =#
-                   @info "FIRST INST CALL!"
+                   @debug "FIRST INST CALL!"
                    @assign inst_cls = instantiateN1(cls, EMPTY_NODE())
-                   @info "AFTER INST CALL"
+                   @debug "AFTER INST CALL"
                    insertGeneratedInners(inst_cls, top)
                     #execStat("NFInst.instantiate(" + name + ")")
-                    @info "INSTANTIATION STEP 1 DONE!"
+                    @debug "INSTANTIATION STEP 1 DONE!"
                    #=  Instantiate expressions (i.e. anything that can contains crefs, like
                    =#
                    #=  bindings, dimensions, etc). This is done as a separate step after
@@ -55,66 +54,64 @@ import ..DAE
                    =#
                    instExpressions(inst_cls)
                     #                   execStat("NFInst.instExpressions(" + name + ")")
-                   @info "Inst expressions done"
+                   @debug "Inst expressions done"
                    #=  Mark structural parameters.
                    =#
                    #updateImplicitVariability(inst_cls, Flags.isSet(Flags.EVAL_PARAM))
                    #execStat("NFInst.updateImplicitVariability")
                    #=  Type the class.
                    =#
-                    @info "typeClass(inst_cls, name)"
+                    @debug "typeClass(inst_cls, name)"
                     typeClass(inst_cls, name)
-                    @info "After type class"
+                    @debug "After type class"
                    #=  Flatten the model and evaluate constants in it.
                     =#
-                   @info "START FLATTENING!"
+                   @debug "START FLATTENING!"
                    @assign flat_model = flatten(inst_cls, name)
-@error             "@assign flat_model = EvalConstants.evaluate(flat_model)"
-                   @info "Flattening done: $flat_model"
-                   #=  Do unit checking
-                   =#
-                   @assign flat_model = UnitCheck.checkUnits(flat_model)
-                   #=  Apply simplifications to the model.
-                   =#
-                   @assign flat_model = SimplifyModel.simplify(flat_model)
-                   #=  Collect a tree of all functions that are still used in the flat model.
-                   =#
-                   @assign funcs = Flatten.collectFunctions(flat_model, name)
-                   #=  Collect package constants that couldn't be substituted with their values
-                   =#
-                   #=  (e.g. because they where used with non-constant subscripts), and add them
-                   =#
-                   #=  to the model.
-                   =#
-                   @assign flat_model = Package.collectConstants(flat_model, funcs)
-                   if Flags.getConfigBool(Flags.FLAT_MODELICA)
-                     FlatModel.printFlatString(flat_model, FunctionTree.listValues(funcs))
-                   end
-                   #=  Scalarize array components in the flat model.
-                   =#
-                   if Flags.isSet(Flags.NF_SCALARIZE)
-                     @assign flat_model = Scalarize.scalarize(flat_model, name)
-                   else
-                     @assign flat_model.variables = ListUtil.filterOnFalse(flat_model.variables, P_Variable.Variable.isEmptyArray)
-                   end
-                   #=  Remove empty arrays from variables
-                   =#
-                   @info "VERIFYING MODEL"
-                   P_VerifyModel.VerifyModel.verify(flat_model)
-                   if Flags.isSet(Flags.NF_DUMP_FLAT)
-                     print("FlatModel:\\n" + FlatModel.toString(flat_model) + "\\n")
-                   end
+                   @debug "CONSTANT EVALUATION"
+                   @assign flat_model = evaluate(flat_model)
+                   @debug "FLATTENING DONE: $flat_model"
+                   #= Do unit checking =#
+#                   @assign flat_model = UnitCheck.checkUnits(flat_model) TODO
+                   #=  Apply simplifications to the model.=#
+                   @assign flat_model = simplify(flat_model)
+                   #=  Collect a tree of all functions that are still used in the flat model.=#
+                    @debug "COLLECT FUNCTIONS"
+                   @assign funcs = collectFunctions(flat_model, name)
+                   @debug "COLLECTED FUNCTIONS!"
+                   #=  Collect package constants that couldn't be substituted with their values =#
+                   #=  (e.g. because they where used with non-constant subscripts), and add them to the model. =#
+                    @debug "COLLECT CONSTANTS"
+                    @assign flat_model = collectConstants(flat_model, funcs)
+                    @debug "COLLECTED CONSTANTS"
+                    #                   if Flags.getConfigBool(Flags.FLAT_MODELICA)
+                    @debug "PRINTING FLAT MODELICA"
+#                    printFlatString(flat_model, FunctionTreeImpl.listValues(funcs))
+#                 end
+                    #=  Scalarize array components in the flat model.=#
+                    @debug "Skipping NF_SCALARIZE"
+ #                  if Flags.isSet(Flags.NF_SCALARIZE)
+ #                    @assign flat_model = Scalarize.scalarize(flat_model, name)
+ #                  else
+                   @assign flat_model.variables = ListUtil.filterOnFalse(flat_model.variables, isEmptyArray)
+#                   end
+                   #=  Remove empty arrays from variables =#
+                   @debug "VERIFYING MODEL"
+                   verify(flat_model)
+#                   if Flags.isSet(Flags.NF_DUMP_FLAT)
+#                     print("FlatModel:\\n" + toString(flat_model) + "\\n")
+#                  end
                   #=  Convert the flat model to a DAE.=#
-                  @info "Convert to the DAE representation"
-                  (dae, daeFuncs) = ConvertDAE.convert(flat_model, funcs, name, info(inst_cls))
+                  @debug "CONVERT TO THE DAE REPRESENTATION"
+                  (dae, daeFuncs) = convert(flat_model, funcs, name, info(inst_cls))
                   return (dae, daeFuncs)
                 end
 
 
 function instantiateN1(node::InstNode, parentNode::InstNode)::InstNode
-  @info "Instantiating!!!! in Inst"
+  @debug "Instantiating!!!! in Inst"
   @assign node = expand(node)
-  @info "After expansion in inst. Instantiating in class-tree "
+  @debug "After expansion in inst. Instantiating in class-tree "
   @assign (node, _) = instClass(node, MODIFIER_NOMOD(), DEFAULT_ATTR, true, 0, parentNode)
   return node
 end
@@ -548,7 +545,7 @@ end
                        end
                        #=  The destructor is missing.
                        =#
-                       ComplexType.EXTERNAL_OBJECT(constructor, destructor)
+                       COMPLEX_EXTERNAL_OBJECT(constructor, destructor)
                      end
                    end
                  end
@@ -620,9 +617,9 @@ end
 function instClass(node::InstNode, modifier::Modifier, attributes::Attributes = DEFAULT_ATTR, useBinding::Bool = false, instLevel::Integer = 0, parent = EMPTY_NODE) ::Tuple{InstNode, Attributes}
   local cls::Class
   local outer_mod::Modifier
-  @info "INST CLASS CALLED. CALLING GETCLASS ON NODE."
+  @debug "INST CLASS CALLED. CALLING GETCLASS ON NODE."
   @assign cls = getClass(node)
-  @info "OUR CLASS AFTER CALLING GETCLASS"
+  @debug "OUR CLASS AFTER CALLING GETCLASS"
   @assign outer_mod = getModifier(cls)
   #=  Give an error for modifiers such as (A = B), i.e. attempting to replace a =#
   #=  class without using redeclare. =#
@@ -630,7 +627,7 @@ function instClass(node::InstNode, modifier::Modifier, attributes::Attributes = 
     Error.addSourceMessage(Error.MISSING_REDECLARE_IN_CLASS_MOD, list(name(node)), getInfo(binding(outer_mod)))
     fail()
   end
-  @info "CALLING INSTCLASSDEF"
+  @debug "CALLING INSTCLASSDEF"
   @assign (attributes, node) = instClassDef(cls, modifier, attributes, useBinding, node, parent, instLevel)
   (node, attributes)
 end
@@ -645,7 +642,7 @@ function instClassDef(cls::Class, outerMod::Modifier, attributes::Attributes, us
   local res::Restriction
   local ty::M_Type
   local attrs::Attributes
-  @info "CALLING INSTCLASSDEF FOR CLASS"
+  @debug "CALLING INSTCLASSDEF FOR CLASS"
   @assign () = begin
     @match cls begin
       EXPANDED_CLASS(restriction = res)  => begin
@@ -687,7 +684,7 @@ function instClassDef(cls::Class, outerMod::Modifier, attributes::Attributes, us
         =#
         redeclareClasses(cls_tree)
         #=  Instantiate the extends nodes. =#
-        @info "BEFORE MAPEXETENDS WITH CLS_TREE"
+        @debug "BEFORE MAPEXETENDS WITH CLS_TREE"
         @error "Double check this line. Might be ome translation error here."
         mapExtends(cls_tree, (attributes, useBinding, visibility, instLevel)
                    -> instExtends(attributes = attributes,
@@ -695,7 +692,7 @@ function instClassDef(cls::Class, outerMod::Modifier, attributes::Attributes, us
                                   visibility = ExtendsVisibility.PUBLIC,
                                   instLevel = instLevel + 1))
         # #=  Instantiate local components. =#
-        @info "Here we are"
+        @debug "Here we are"
         instCp = (node) -> instComponent(
           node,
           attributes,
@@ -816,7 +813,7 @@ function instExternalObjectStructors(ty::M_Type, parent::InstNode)
   =#
   @assign par = parent(parent(parent))
   if ! (isClass(par) && isExternalObject(getClass(par)))
-    @match TYPE_COMPLEX(complexTy = ComplexType.EXTERNAL_OBJECT(constructor, destructor)) = ty
+    @match TYPE_COMPLEX(complexTy = COMPLEX_EXTERNAL_OBJECT(constructor, destructor)) = ty
     instFunctionNode(constructor)
     instFunctionNode(destructor)
   end
@@ -1297,7 +1294,7 @@ function instComponentDef(component::SCode.Element, outerMod::Modifier, innerMod
         =#
         #=  attributes of the component's parent (e.g. constant SomeComplexClass c).
         =#
-        @info "Instantiating components attributes"
+        @debug "Instantiating components attributes"
         @assign parent_res = restriction(getClass(parentNode))
         @assign attr = instComponentAttributes(component.attributes, component.prefixes)
         @assign attr = checkDeclaredComponentAttributes(attr, parent_res, node)
@@ -2760,12 +2757,12 @@ function insertGeneratedInners(node::InstNode, topScope::InstNode)
   local cls::Class
   local cls_tree::ClassTree
   local base_node::InstNode
-@info "Calling insert generate inners!"
+@debug "Calling insert generate inners!"
   @match C_TOP_SCOPE(addedInner = inner_tree) = getInnerOuterCache(topScope)
   #=  Empty tree => nothing more to do.
   =#
   if NodeTree.isEmpty(inner_tree)
-    @info "EMPTY NODE TREE"
+    @debug "EMPTY NODE TREE"
     return
   end
   @assign inner_nodes = NodeTree.toList(inner_tree)
@@ -2970,7 +2967,7 @@ function isExpressionNotFixed(exp::Expression, requireFinal::Bool = false, maxDe
         isNotFixed || P_Expression.Expression.containsShallow(exp, (requireFinal, maxDepth) -> isExpressionNotFixed(requireFinal = requireFinal, maxDepth = maxDepth))
       end
 
-      P_Expression.Expression.SIZE(__)  => begin
+      SIZE_EXPRESSION(__)  => begin
         if isSome(exp.dimIndex)
           @assign isNotFixed = isExpressionNotFixed(Util.getOption(exp.dimIndex), requireFinal, maxDepth)
         else
@@ -3110,8 +3107,8 @@ function updateImplicitVariabilityEq(eq::Equation, inWhen::Bool = false)
       end
 
       Equation.CONNECT(__)  => begin
-        P_Expression.Expression.fold(eq.lhs, markStructuralParamsSubs, 0)
-        P_Expression.Expression.fold(eq.rhs, markStructuralParamsSubs, 0)
+        fold(eq.lhs, markStructuralParamsSubs, 0)
+        fold(eq.rhs, markStructuralParamsSubs, 0)
         ()
       end
 

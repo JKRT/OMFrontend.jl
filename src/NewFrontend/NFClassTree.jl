@@ -529,12 +529,12 @@ function lookupElement(name::String, tree::ClassTree)::Tuple{InstNode, Bool}
   local isImport::Bool
   local element::InstNode
   local entry::LookupTree.Entry
-  @info "Looking up element $name in class tree!"
-  @info "Fetching from tree. Soon to report entry"
+  @debug "Looking up element $name in class tree!"
+  @debug "Fetching from tree. Soon to report entry"
   str = LookupTree.printTreeStr(lookupTree(tree))
-  @info str
+  @debug str
   @assign entry = LookupTree.get(lookupTree(tree), name)
-  @info "Our entry is $entry"
+  @debug "Our entry is $entry"
   @assign (element, isImport) = resolveEntry(entry, tree)
   return (element, isImport)
 end
@@ -857,7 +857,7 @@ function instantiate(
   local comp::Component
   local ext_def::SCode.Element
   local is_typish::Bool
-@info "Instantiating in class tree"
+@debug "Instantiating in class tree"
   #=  TODO: If we don't have any extends we could probably generate a flat
   =#
   #=  tree directly and skip a lot of this.
@@ -946,7 +946,7 @@ function instantiate(
           end
           arrayUpdateNoBoundsChecking(clss, cls_idx, P_Pointer.create(c))
           @assign cls_idx = cls_idx + 1
-          @info "We have some clss: $clss"
+          @debug "We have some clss: $clss"
         end
         for ext in exts
           @assign () = begin
@@ -2100,7 +2100,7 @@ function resolveClass(index::Integer, tree::ClassTree)::InstNode
       end
     end
   end
-  @info "Returning element in resolveClass"
+  @debug "Returning element in resolveClass"
   return element
 end
 

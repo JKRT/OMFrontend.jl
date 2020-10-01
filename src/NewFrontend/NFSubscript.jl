@@ -693,15 +693,15 @@ function foldExp(subscript::Subscript, func::FoldFunc, arg::ArgT) where {ArgT}
   @assign result = begin
     @match subscript begin
       UNTYPED(__) => begin
-        P_Expression.Expression.fold(subscript.exp, func, arg)
+        fold(subscript.exp, func, arg)
       end
 
       INDEX(__) => begin
-        P_Expression.Expression.fold(subscript.index, func, arg)
+        fold(subscript.index, func, arg)
       end
 
       SLICE(__) => begin
-        P_Expression.Expression.fold(subscript.slice, func, arg)
+        fold(subscript.slice, func, arg)
       end
 
       _ => begin

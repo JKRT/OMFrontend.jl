@@ -1,61 +1,5 @@
-module NFUnitCheck
-
-using MetaModelica
-using ExportAll
-#= Forward declarations for uniontypes until Julia adds support for mutual recursion =#
-
-@UniontypeDecl Functionargs
-
-import Absyn
-import ..AbsynUtil
-#= import DAE;
-=#
-import ..NFFlatModel
-FlatModel = NFFlatModel
-import ..NFFlatten.FunctionTree
-FunctionTree = NFFlatten.FunctionTree
-
-import ..BaseHashTable
-import ..P_NFComponentRef
-P_ComponentRef = P_NFComponentRef
-ComponentRef = P_NFComponentRef.NFComponentRef
-import ..ElementSource
-import ..P_NFEquation
-P_Equation = P_NFEquation
-Equation = P_NFEquation.NFEquation
-import ..ExecStat.execStat
-import ..ExpressionDump
-import ..P_NFExpression
-P_Expression = P_NFExpression
-Expression = P_NFExpression.NFExpression
-import ..NFHashTableCrToUnit
-HashTableCrToUnit = NFHashTableCrToUnit
-import ..NFHashTableStringToUnit
-HashTableStringToUnit = NFHashTableStringToUnit
-import ..NFHashTableUnitToString
-HashTableUnitToString = NFHashTableUnitToString
-import ..NFBinding.P_Binding
-import ..NFCall.P_Call
-import ..NFComponent.P_Component
-import ..NFFunction.P_Function
-import ..NFInstNode.P_InstNode
-import ..P_NFOperator
-P_Operator = P_NFOperator
-Operator = P_NFOperator.NFOperator
-import ..P_NFType
-P_M_Type = P_NFType
-M_Type = NFType
-import ..NFUnit
-Unit = NFUnit
-import ..P_NFVariable
-P_Variable = P_NFVariable
-Variable = P_NFVariable.NFVariable
-import ..NFPrefixes.Variability
-Variability = NFPrefixes.Variability
-
 @Uniontype Functionargs begin
   @Record FUNCTIONUNITS begin
-
     name::String
     invars::List{String}
     outvars::List{String}
@@ -66,45 +10,39 @@ end
 
 module FunctionUnitCache
 
+import ..Main. Functionargs
+
 using MetaModelica
 using ExportAll
 #= Forward declarations for uniontypes until Julia adds support for mutual recursion =#
-
 FuncHash = Function
 FuncEq = Function
 FuncKeyStr = Function
 FuncValueStr = Function
-
 Key = String
 Value = Functionargs
 Cache = Tuple
-
 function dummyPrint(args::Functionargs)::String
   local res::String = ""
   return res
 end
-
 function emptyCache(size::Integer)::Cache
   local table::Cache
-
   @assign table = BaseHashTable.emptyHashTableWork(
     size,
     (stringHashDjb2Mod, stringEq, Util.id, dummyPrint),
   )
   return table
 end
-
 @exportAll()
 end
 
 function checkUnits(flatModel::FlatModel)::FlatModel
-
   local htCr2U1::HashTableCrToUnit.HashTable
   local htCr2U2::HashTableCrToUnit.HashTable
   local htS2U::HashTableStringToUnit.HashTable
   local htU2S::HashTableUnitToString.HashTable
   local fn_cache::FunctionUnitCache.Cache
-
   if !(Flags.isSet(Flags.NF_UNITCHECK) || Flags.getConfigBool(Flags.CHECK_MODEL))
     return flatModel
   end
@@ -137,7 +75,7 @@ function checkUnits(flatModel::FlatModel)::FlatModel
   catch
     Error.addInternalError(getInstanceName() + ": unit check module failed", sourceInfo())
   end
-  execStat(getInstanceName())
+#  execStat(getInstanceName()) TODO
   return flatModel
 end
 
@@ -149,7 +87,7 @@ function updateModel(
 )::FlatModel
 
   @assign flatModel.variables =
-    List(updateVariable(v, htCr2U, htU2S) for v in flatModel.variables)
+    list(updateVariable(v, htCr2U, htU2S) for v in flatModel.variables)
   return flatModel
 end
 
@@ -476,7 +414,7 @@ function foldEquation2(
         inconsistentUnits
       end
 
-      P_Equation.Equation.WHEN(
+      EQUATION_WHEN(
         branches = P_Equation.Equation.BRANCH(body = eql) <| _,
       ) => begin
         @assign inconsistentUnits = nil
@@ -1436,9 +1374,7 @@ function parse(
   htS2U::HashTableStringToUnit.HashTable,
   htU2S::HashTableUnitToString.HashTable,
 )::Tuple{Unit.Unit, HashTableStringToUnit.HashTable, HashTableUnitToString.HashTable}
-
   local unit::Unit.Unit
-
   if stringEmpty(unitString)
     @assign unit = Unit.MASTER(list(cref))
     return (unit, htS2U, htU2S)
@@ -1455,7 +1391,4 @@ function parse(
     @assign htU2S = addUnit2HtU2S(unitString, unit, htU2S)
   end
   return (unit, htS2U, htU2S)
-end
-
-@exportAll()
 end

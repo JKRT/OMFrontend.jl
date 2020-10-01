@@ -453,26 +453,6 @@ function priority(op::Operator, lhs::Bool)::Integer
       end
     end
   end
-  #= case MUL_ARRAY_SCALAR() then if lhs then 2 else 3;
-  =#
-  #= case ADD_ARRAY_SCALAR() then if lhs then 5 else 6;
-  =#
-  #= case SUB_SCALAR_ARRAY() then 5;
-  =#
-  #= case SCALAR_PRODUCT()   then if lhs then 2 else 3;
-  =#
-  #= case MATRIX_PRODUCT()   then if lhs then 2 else 3;
-  =#
-  #= case DIV_ARRAY_SCALAR() then 2;
-  =#
-  #= case DIV_SCALAR_ARRAY() then 2;
-  =#
-  #= case POW_ARRAY_SCALAR() then 1;
-  =#
-  #= case POW_SCALAR_ARRAY() then 1;
-  =#
-  #= case POW_ARR()          then 1;
-  =#
   return priority
 end
 
@@ -653,17 +633,15 @@ function typeOf(op::Operator)::M_Type
   return ty
 end
 
-function toDAE(op::Operator)::Tuple{DAE.P_Operator.Operator, Bool}
+function toDAE(op::Operator)::DAE.Operator #Tuple{DAE.Operator, Bool}
   local swapArguments::Bool = false #= The DAE structure only has array*scalar, not scalar*array, etc =#
-  local daeOp::DAE.P_Operator.Operator
-
+  local daeOp::DAE.Operator
   local ty::DAE.Type
-
-  @assign ty = Type.toDAE(op.ty)
+  @assign ty = toDAE(op.ty)
   @assign daeOp = begin
     @match op.op begin
       Op.ADD => begin
-        if Type.isArray(op.ty)
+        if isArray(op.ty)
           DAE.ADD_ARR(ty)
         else
           DAE.ADD(ty)
@@ -671,7 +649,7 @@ function toDAE(op::Operator)::Tuple{DAE.P_Operator.Operator, Bool}
       end
 
       Op.SUB => begin
-        if Type.isArray(op.ty)
+        if isArray(op.ty)
           DAE.SUB_ARR(ty)
         else
           DAE.SUB(ty)
@@ -679,7 +657,7 @@ function toDAE(op::Operator)::Tuple{DAE.P_Operator.Operator, Bool}
       end
 
       Op.MUL => begin
-        if Type.isArray(op.ty)
+        if isArray(op.ty)
           DAE.MUL_ARR(ty)
         else
           DAE.MUL(ty)
@@ -687,7 +665,7 @@ function toDAE(op::Operator)::Tuple{DAE.P_Operator.Operator, Bool}
       end
 
       Op.DIV => begin
-        if Type.isArray(op.ty)
+        if isArray(op.ty)
           DAE.DIV_ARR(ty)
         else
           DAE.DIV(ty)
@@ -695,7 +673,7 @@ function toDAE(op::Operator)::Tuple{DAE.P_Operator.Operator, Bool}
       end
 
       Op.POW => begin
-        if Type.isArray(op.ty)
+        if isArray(op.ty)
           DAE.POW_ARR2(ty)
         else
           DAE.POW(ty)
@@ -769,7 +747,7 @@ function toDAE(op::Operator)::Tuple{DAE.P_Operator.Operator, Bool}
       end
 
       Op.UMINUS => begin
-        if Type.isArray(op.ty)
+        if isArray(op.ty)
           DAE.UMINUS_ARR(ty)
         else
           DAE.UMINUS(ty)
@@ -818,7 +796,7 @@ function toDAE(op::Operator)::Tuple{DAE.P_Operator.Operator, Bool}
       end
     end
   end
-  return (daeOp, swapArguments) #= The DAE structure only has array*scalar, not scalar*array, etc =#
+  return daeOp #, swapArguments) #= The DAE structure only has array*scalar, not scalar*array, etc =#
 end
 
 function fromAbsyn(inOperator::Absyn.Operator)::Operator

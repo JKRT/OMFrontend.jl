@@ -179,8 +179,8 @@ function fromExp(exp::Expression)::ExpressionIterator
     local e::Expression
     local expanded::Bool
     @match exp begin
-      P_Expression.Expression.ARRAY(__) => begin
-        @match (P_Expression.Expression.ARRAY(elements = arr), expanded) =
+      ARRAY_EXPRESSION(__) => begin
+        @match (ARRAY_EXPRESSION(elements = arr), expanded) =
           P_ExpandExp.ExpandExp.expand(exp)
         if !expanded
           Error.assertion(
@@ -200,7 +200,7 @@ function fromExp(exp::Expression)::ExpressionIterator
         @assign e = P_ExpandExp.ExpandExp.expandCref(exp)
         @assign iterator = begin
           @match e begin
-            P_Expression.Expression.ARRAY(__) => begin
+            ARRAY_EXPRESSION(__) => begin
               fromExp(e)
             end
 
@@ -239,7 +239,7 @@ function nextArraySlice(
     @assign e = listHead(Array)
     @assign (Array, slice) = begin
       @match e begin
-        P_Expression.Expression.ARRAY(__) => begin
+        ARRAY_EXPRESSION(__) => begin
           @assign (arr, slice) = nextArraySlice(e.elements)
           if listEmpty(arr)
             @assign Array = listRest(Array)

@@ -706,31 +706,26 @@ function foldDims(ty::M_Type, func::FuncT, arg::ArgT) where {ArgT}
 end
 
 function mapDims(ty::M_Type, func::FuncT)::M_Type
-
   @assign () = begin
     local fn::M_Function
     @match ty begin
-      ARRAY(__) => begin
-        @assign ty.dimensions = List(func(d) for d in ty.dimensions)
+      TYPE_ARRAY(__) => begin
+        @assign ty.dimensions = list(func(d) for d in ty.dimensions)
         ()
       end
-
-      TUPLE(__) => begin
+      TYPE_TUPLE(__) => begin
         @assign ty.types = List(mapDims(t, func) for t in ty.types)
         ()
       end
-
       TYPE_FUNCTION(fn = fn) => begin
         @assign ty.fn =
-          P_Function.setReturnType(mapDims(P_Function.returnType(fn), func), fn)
+          setReturnmapDims(mapDims(returnType(fn), func), fn)
         ()
       end
-
       TYPE_METABOXED(__) => begin
         @assign ty.ty = mapDims(ty.ty, func)
         ()
       end
-
       _ => begin
         ()
       end
@@ -741,13 +736,11 @@ end
 
 function hasZeroDimension(ty::M_Type)::Bool
   local hasZero::Bool
-
   @assign hasZero = begin
     @match ty begin
-      ARRAY(__) => begin
+      TYPE_ARRAY(__) => begin
         ListUtil.exist(ty.dimensions, P_Dimension.Dimension.isZero)
       end
-
       _ => begin
         false
       end
@@ -1198,7 +1191,7 @@ function isExternalObject(ty::M_Type)::Bool
 
   @assign isEO = begin
     @match ty begin
-      TYPE_COMPLEX(complexTy = ComplexType.EXTERNAL_OBJECT(__)) => begin
+      TYPE_COMPLEX(complexTy = COMPLEX_EXTERNAL_OBJECT(__)) => begin
         true
       end
 

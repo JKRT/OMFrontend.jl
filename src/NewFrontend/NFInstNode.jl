@@ -77,7 +77,7 @@ include("../Util/baseAvlSetCode.jl")
 
 
 keyCompare = (inKey1::String, inKey2::String) -> begin
-  @info "Calling key compare node tree"
+  @debug "Calling key compare node tree"
   res = stringCompare(inKey1, inKey2)
   return res
 end
@@ -972,7 +972,7 @@ function resolveInner(node::InstNode) ::InstNode
 end
 
 function isInnerOuterNode(node::InstNode) ::Bool
-  @info "is inner outer node?"
+  @debug "is inner outer node?"
   local isIO::Bool
   @assign isIO = begin
     @match node begin
@@ -1555,8 +1555,8 @@ function setParent(parent::InstNode, node::InstNode) ::InstNode
         ()
       end
       COMPONENT_NODE(__)  => begin
-        @info "Setting parent! for parent: $(parent.name) and node: $(node.name)"
-        @info "parent scope before $(node.parent)"
+        @debug "Setting parent! for parent: $(parent.name) and node: $(node.name)"
+        @debug "parent scope before $(node.parent)"
         @assign node.parent = parent
         ()
       end
@@ -1566,7 +1566,7 @@ function setParent(parent::InstNode, node::InstNode) ::InstNode
       end
     end
   end
-  @info "parent scope after $(node.parent.name)"
+  @debug "parent scope after $(node.parent.name)"
   node
 end
 
@@ -1728,7 +1728,7 @@ function parent(node::InstNode) ::InstNode
         node.parentScope
       end
       COMPONENT_NODE(__)  => begin
-        @info "node was: $(node.name)"
+        @debug "node was: $(node.name)"
         node.parent
       end
       IMPLICIT_SCOPE(__)  => begin

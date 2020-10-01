@@ -1217,9 +1217,8 @@ end
 
 function toDAE(ina::Attributes, vis)::DAE.Attributes
   local outa::DAE.Attributes
-
   @assign outa = DAE.ATTR(
-    ConnectorType.toDAE(ina.connectorType),
+    toDAE(ina.connectorType),
     parallelismToSCode(ina.parallelism),
     variabilityToSCode(ina.variability),
     directionToAbsyn(ina.direction),

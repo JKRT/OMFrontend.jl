@@ -35,7 +35,7 @@ function isComplexArray2(cref::ComponentRef)::Bool
     @match cref begin
       COMPONENT_REF_CREF(
         ty = ARRAY_TYPE(__),
-      ) where {(Type.isArray(Type.subscript(cref.ty, cref.subscripts)))} => begin
+      ) where {(isArray(Type.subscript(cref.ty, cref.subscripts)))} => begin
         true
       end
 
@@ -99,13 +99,11 @@ function toListReverse(
   accum::List{<:ComponentRef} = nil,
 )::List{ComponentRef}
   local crefs::List{ComponentRef}
-
   @assign crefs = begin
     @match cref begin
       COMPONENT_REF_CREF(origin = Origin.COMPONENT_REF_CREF) => begin
         toListReverse(cref.restCref, _cons(cref, accum))
       end
-
       _ => begin
         accum
       end
@@ -448,7 +446,7 @@ function toDAE_impl(
         else
           cref.ty
         end
-        @assign dty = Type.toDAE(ty, makeTypeVars = false)
+        @assign dty = toDAE(ty, makeTypeVars = false)
         @assign dcref = DAE.CREF_QUAL(
           name(cref.node),
           dty,
@@ -462,16 +460,15 @@ function toDAE_impl(
   return dcref
 end
 
-function toDAE(cref::ComponentRef)::DAE.P_ComponentRef.ComponentRef
-  local dcref::DAE.P_ComponentRef.ComponentRef
-
+function toDAE(cref::ComponentRef)::DAE.ComponentRef
+  local dcref::DAE.ComponentRef
   @assign dcref = begin
     @match cref begin
       COMPONENT_REF_CREF(__) => begin
         @assign dcref = DAE.CREF_IDENT(
           name(cref.node),
-          Type.toDAE(cref.ty),
-          List(toDAE(s) for s in cref.subscripts),
+          toDAE(cref.ty),
+          list(toDAE(s) for s in cref.subscripts),
         )
         toDAE_impl(cref.restCref, dcref)
       end

@@ -206,11 +206,11 @@ function fromExp(exp::Expression)::RangeIterator
     local path::Absyn.Path
     local values::List{Expression}
     @match exp begin
-      P_Expression.Expression.ARRAY(__) => begin
+      ARRAY_EXPRESSION(__) => begin
         ARRAY_RANGE(exp.elements)
       end
 
-      P_Expression.Expression.RANGE(
+      RANGE_EXPRESSION(
         start = INTEGER_EXPRESSION(istart),
         step = SOME(INTEGER_EXPRESSION(istep)),
         stop = INTEGER_EXPRESSION(istop),
@@ -218,7 +218,7 @@ function fromExp(exp::Expression)::RangeIterator
         INT_STEP_RANGE(istart, istep, istop)
       end
 
-      P_Expression.Expression.RANGE(
+      RANGE_EXPRESSION(
         start = INTEGER_EXPRESSION(istart),
         step = NONE(),
         stop = INTEGER_EXPRESSION(istop),
@@ -226,7 +226,7 @@ function fromExp(exp::Expression)::RangeIterator
         INT_RANGE(istart, istop)
       end
 
-      P_Expression.Expression.RANGE(
+      RANGE_EXPRESSION(
         start = P_Expression.REAL_EXPRESSION(rstart),
         step = SOME(P_Expression.REAL_EXPRESSION(rstep)),
         stop = P_Expression.REAL_EXPRESSION(rstop),
@@ -234,7 +234,7 @@ function fromExp(exp::Expression)::RangeIterator
         REAL_RANGE(rstart, rstep, 0, Util.realRangeSize(rstart, rstep, rstop))
       end
 
-      P_Expression.Expression.RANGE(
+      RANGE_EXPRESSION(
         start = P_Expression.REAL_EXPRESSION(rstart),
         step = NONE(),
         stop = P_Expression.REAL_EXPRESSION(rstop),
@@ -242,7 +242,7 @@ function fromExp(exp::Expression)::RangeIterator
         REAL_RANGE(rstart, 1.0, 0, Util.realRangeSize(rstart, 1.0, rstop))
       end
 
-      P_Expression.Expression.RANGE(
+      RANGE_EXPRESSION(
         start = P_Expression.Expression.ENUM_LITERAL(ty = ty, index = istart),
         step = NONE(),
         stop = P_Expression.Expression.ENUM_LITERAL(index = istop),

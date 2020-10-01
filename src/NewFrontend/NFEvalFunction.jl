@@ -352,7 +352,7 @@ function buildBinding(node::InstNode, repl::ReplTree.Tree)::Expression
   local ty::M_Type
 
   @assign ty = getType(node)
-  @assign ty = Type.mapDims(ty, (repl) -> applyReplacementsDim(repl = repl))
+  @assign ty = mapDims(ty, (repl) -> applyReplacementsDim(repl = repl))
   @assign result = begin
     @match ty begin
       ARRAY_TYPE(__) where {(Type.hasKnownSize(ty))} => begin
@@ -839,7 +839,7 @@ function assignArrayElement(
   @assign result = begin
     @match (arrayExp, subscripts) begin
       (
-        P_Expression.Expression.ARRAY(__),
+        ARRAY_EXPRESSION(__),
         SUBSCRIPT_INDEX(sub) <| rest_subs,
       ) where {(P_Expression.Expression.isScalarLiteral(sub))} => begin
         @assign idx = P_Expression.Expression.toInteger(sub)
@@ -855,7 +855,7 @@ function assignArrayElement(
         arrayExp
       end
 
-      (P_Expression.Expression.ARRAY(__), SUBSCRIPT_SLICE(sub) <| rest_subs) => begin
+      (ARRAY_EXPRESSION(__), SUBSCRIPT_SLICE(sub) <| rest_subs) => begin
         @assign subs = P_Expression.Expression.arrayElements(sub)
         @assign vals = P_Expression.Expression.arrayElements(value)
         if listEmpty(rest_subs)
@@ -878,7 +878,7 @@ function assignArrayElement(
         arrayExp
       end
 
-      (P_Expression.Expression.ARRAY(__), SUBSCRIPT_WHOLE(__) <| rest_subs) =>
+      (ARRAY_EXPRESSION(__), SUBSCRIPT_WHOLE(__) <| rest_subs) =>
         begin
           if listEmpty(rest_subs)
             @assign arrayExp.elements = P_Expression.Expression.arrayElements(value)
@@ -915,7 +915,7 @@ function assignExp(lhs::Expression, rhs::Expression)::Expression
 
   @assign result = begin
     @match lhs begin
-      P_Expression.Expression.RECORD(__) => begin
+RECORD_EXPRESSION(__) => begin
         assignRecord(lhs, rhs)
       end
 
@@ -941,7 +941,7 @@ function assignRecord(lhs::Expression, rhs::Expression)::Expression
     local binding_exp::Option{Expression}
     local ty::M_Type
     @match rhs begin
-      P_Expression.Expression.RECORD(__) => begin
+RECORD_EXPRESSION(__) => begin
         @match P_Expression.Expression.RECORD(elements = elems) = lhs
         for v in rhs.elements
           @match _cons(e, elems) = elems
@@ -1379,7 +1379,7 @@ function evaluateKnownExternal(name::String, args::List{<:Expression})::Expressi
         STRING_EXPRESSION(s1) <| STRING_EXPRESSION(s2) <| nil(),
       ) => begin
         @assign dims = ModelicaExternalC.ModelicaIO_readMatrixSizes(s1, s2)
-        P_Expression.Expression.ARRAY(
+        ARRAY_EXPRESSION(
           ARRAY_TYPE(TYPE_INTEGER(), list(P_Dimension.Dimension.fromInteger(2))),
           list(
             INTEGER_EXPRESSION(dims[1]),
@@ -1494,10 +1494,10 @@ function evaluateModelicaIO_readRealMatrix(
     for c = 1:ncol
       @assign row = _cons(P_Expression.REAL_EXPRESSION(matrix[r, c]), row)
     end
-    @assign rows = _cons(P_Expression.Expression.ARRAY(ty, row, literal = true), rows)
+    @assign rows = _cons(ARRAY_EXPRESSION(ty, row, literal = true), rows)
   end
   @assign ty = Type.liftArrayLeft(ty, P_Dimension.Dimension.fromInteger(nrow))
-  @assign result = P_Expression.Expression.ARRAY(ty, rows, literal = true)
+  @assign result = ARRAY_EXPRESSION(ty, rows, literal = true)
   return result
 end
 

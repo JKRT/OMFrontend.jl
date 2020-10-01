@@ -193,7 +193,7 @@ function replaceCrefNode(exp::Expression, node::InstNode, value::Expression)::Ex
   =#
   @assign ty = typeOf(exp)
   @assign repl_ty =
-    Type.mapDims(ty, (node, value) -> replaceDimExp(node = node, value = value))
+    mapDims(ty, (node, value) -> replaceDimExp(node = node, value = value))
   if !referenceEq(ty, repl_ty)
     @assign exp = P_Expression.Expression.setType(repl_ty, exp)
   end

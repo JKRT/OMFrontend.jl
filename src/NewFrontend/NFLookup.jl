@@ -28,7 +28,7 @@ function lookupBaseClassName(name::Absyn.Path, scope::InstNode, info::SourceInfo
 end
 
 function lookupComponent(cref::Absyn.ComponentRef, scope::InstNode #= The scope to look in. =#, info::SourceInfo) ::Tuple{ComponentRef, InstNode}
-  @info "Calling lookup component! cref: $cref"
+  @debug "Calling lookup component! cref: $cref"
   local foundScope::InstNode #= The scope the cref was found in. =#
   local foundCref::ComponentRef
   local state::LookupState
@@ -287,9 +287,9 @@ end
 function lookupLocalSimpleName(n::String, scope::InstNode) ::Tuple{InstNode, Bool}
   local isImport::Bool = false
   local node::InstNode
-  @info "Looking up simple name $n"
+  @debug "Looking up simple name $n"
   @assign (node, isImport) = lookupElement(n, getClass(scope))
-  @info "We lookup an element"
+  @debug "We lookup an element"
   @assign node = resolveInner(node)
   return (node, isImport)
 end
@@ -300,7 +300,7 @@ function lookupSimpleName(nameStr::String, scope::InstNode) ::InstNode
   for i in 1:Global.recursionDepthLimit
     try
       (node, _) = lookupLocalSimpleName(nameStr, cur_scope)
-      @info "The node is resolved $node"
+      @debug "The node is resolved $node"
       return node
     catch
       if nameStr == name(cur_scope) && isClass(cur_scope)
@@ -344,12 +344,12 @@ function lookupName(name::Absyn.Path, scope::InstNode, checkAccessViolations::Bo
       end
     end
   end
-  @info "Returning in lookup name"
+  @debug "Returning in lookup name"
   (node, state)
 end
 
 function lookupNames(name::Absyn.Path, scope::InstNode) ::Tuple{List{InstNode}, LookupState}
-  @info "Calling lookupNames with path: $name"
+  @debug "Calling lookupNames with path: $name"
   local state::LookupState
   local nodes::List{InstNode}
   @assign (nodes, state) = begin
@@ -373,7 +373,7 @@ function lookupNames(name::Absyn.Path, scope::InstNode) ::Tuple{List{InstNode}, 
   end
   #=  Fully qualified path, start from top scope.
   =#
-  @info "Done looking up names"
+  @debug "Done looking up names"
   (nodes, state)
 end
 
@@ -386,7 +386,7 @@ function lookupFirstIdent(name::String, scope::InstNode) ::Tuple{InstNode, Looku
     @assign state = LOOKUP_STATE_PREDEF_CLASS()
   catch
     @assign node = lookupSimpleName(name, scope)
-    @info "Lookup sucessfull in lookupfirstIdent for $name"
+    @debug "Lookup sucessfull in lookupfirstIdent for $name"
     @assign state = nodeState(node)
   end
   (node, state)
@@ -409,7 +409,7 @@ end
                        @match name begin
                          Absyn.IDENT(__)  => begin
                            @assign (node, is_import) = lookupLocalSimpleName(name.name, node)
-                           @info "HERE WE ARE!"
+                           @debug "HERE WE ARE!"
                            if is_import
                              @assign state = ERROR(P_LookupState.IMPORT())
                            else
@@ -453,7 +453,7 @@ end
                        @match name begin
                          Absyn.IDENT(__)  => begin
                            @assign node = lookupLocalSimpleName(name.name, node)
-                           @info "Here we are!"
+                           @debug "Here we are!"
                            @assign state = next(node, state)
                            (_cons(node, nodes), state)
                          end
@@ -475,7 +475,7 @@ end
 
 function lookupSimpleBuiltinName(name::String) ::InstNode
   local builtin::InstNode
-  @info "Calling lookupSimpleBuiltinName with $name"
+  @debug "Calling lookupSimpleBuiltinName with $name"
   @assign builtin = begin
     @match name begin
       "Real"  => begin
@@ -505,7 +505,7 @@ function lookupSimpleBuiltinCref(name::String, subs::List{<:Absyn.Subscript}) ::
   local state::LookupState
   local cref::ComponentRef
   local node::InstNode
-  @info "Looking up $name in lookupSimpleBuiltinCref"
+  @debug "Looking up $name in lookupSimpleBuiltinCref"
   @assign (node, cref, state) = begin
     @match name begin
       "time"  => begin
@@ -546,21 +546,21 @@ function lookupSimpleCref(name::String, subs::List{<:Absyn.Subscript}, scope::In
     @assign (node, cref, state) = lookupSimpleBuiltinCref(name, subs)
     @assign foundScope = topScope(foundScope)
   catch
-    @info "Searching for scope in lookupSimplecref.. with $(typeof(scope))"
+    @debug "Searching for scope in lookupSimplecref.. with $(typeof(scope))"
     for i in 1:Global.recursionDepthLimit
       try
-        @info "Searching..."
+        @debug "Searching..."
         (node, is_import) = begin
           @match foundScope begin
             IMPLICIT_SCOPE(__)  => begin
               (lookupIterator(name, foundScope.locals), false)
             end
             CLASS_NODE(__)  => begin
-              @info "Hit CLASS_NODE. Fetching class"
+              @debug "Hit CLASS_NODE. Fetching class"
               c = getClass(foundScope)
-              @info "Class fetched. Looking up element"
+              @debug "Class fetched. Looking up element"
               e = lookupElement(name, c)
-              @info "After looking up element"
+              @debug "After looking up element"
               e
             end
             COMPONENT_NODE(__)  => begin
@@ -571,19 +571,19 @@ function lookupSimpleCref(name::String, subs::List{<:Absyn.Subscript}, scope::In
             end
           end
         end
-        @info "Checking imports and other things.."
+        @debug "Checking imports and other things.."
         if is_import
           @assign foundScope = parent(node)
         elseif isInnerOuterNode(node)
-          @info "Not a import checking inner"
+          @debug "Not a import checking inner"
           @assign node = resolveInner(node)
           @assign foundScope = parent(node)
         end
-        @info "Not inner outer. Checking state"
+        @debug "Not inner outer. Checking state"
         @assign state = nodeState(node)
-        @info "State checked. Checking fromAbsyn"
+        @debug "State checked. Checking fromAbsyn"
         @assign cref = fromAbsyn(node, subs)
-        @info "After from absyn. Returning..."
+        @debug "After from absyn. Returning..."
         return (node, cref, foundScope, state)
       catch e
         @error "Error.. $e"

@@ -16,6 +16,7 @@ module Main
 using MetaModelica
 using ExportAll
 
+
 import Absyn
 import SCode
 import ListUtil
@@ -40,6 +41,15 @@ include("./FrontendUtil/Values.jl")
 include("./FrontendUtil/ClassInf.jl")
 include("./FrontendUtil/Prefix.jl")
 include("./FrontendUtil/DAE.jl")
+
+
+"
+TODO
+"
+function createElementSource(source)
+  return DAE.emptyElementSource
+end
+
 
 #=New Frontend=#
 include("./FrontendInterfaces/NFInterfaces.jl")
@@ -87,8 +97,19 @@ include("./NewFrontend/NFDimension.jl")
 include("./NewFrontend/NFCall.jl")
 include("./NewFrontend/NFOperator.jl")
 include("./NewFrontend/NFTypeCheck.jl")
-
 include("./NewFrontend/NFExpandableConnectors.jl")
+include("./NewFrontend/NFEvalConstants.jl")
+
+#= TODO: NOT IN USE=#
+#include("./NewFrontend/NFUnit.jl")
+#include("./NewFrontend/NFHashTableCrToUnit.jl")
+#include("./NewFrontend/NFUnitCheck.jl")
+#=################# =#
+include("./NewFrontend/NFSimplifyModel.jl")
+include("./NewFrontend/NFSimplifyExp.jl")
+include("./NewFrontend/NFPackage.jl")
+#= Model verification =#
+include("./NewFrontend/NFVerifyModel.jl")
 end
 
 function parseFile(file::String)::Absyn.Program
@@ -119,6 +140,24 @@ function testSpin()
     @info "SCode -> DAE"
     (dae, cache) = instantiateSCodeToDAE("HelloWorld", scodeProgram)
     @info "After DAE Translation"
+  return dae
+end
+
+function testSpinDAEExport()
+    p = parseFile("example.mo")
+    scodeProgram = translateToSCode(p)
+    @info "Translation to SCode"
+    @info "SCode -> DAE"
+    (dae, cache) = instantiateSCodeToDAE("HelloWorld", scodeProgram)
+  @info "Exporting to file"
+  exportDAERepresentationToFile("testDAE.jl", "$dae")
+  @info "DAE Exported"
+end
+
+function exportDAERepresentationToFile(fileName::String, contents::String)
+  local fdesc = open(fileName, "w")
+  write(fdesc, contents)
+  close(fdesc)
 end
 
 end # module

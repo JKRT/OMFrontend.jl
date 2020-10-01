@@ -772,7 +772,7 @@ function evaluateExtRealMatrixArg(arg::Expression)::List{List{AbstractFloat}}
   local expl::List{Expression}
   local ty::M_Type
 
-  @match P_Expression.Expression.ARRAY(ty = ty, elements = expl) = Ceval.evalExp(arg)
+  @match ARRAY_EXPRESSION(ty = ty, elements = expl) = Ceval.evalExp(arg)
   #=  Some external functions don't make a difference between vectors and
   =#
   #=  matrices, so if the argument is a vector we convert it into a matrix.
@@ -806,7 +806,7 @@ function assignVariableExt(variable::Expression, value::Expression)
     @match (typeOf(variable), value) begin
       (
         ARRAY_TYPE(dimensions = _ <| nil()),
-        P_Expression.Expression.ARRAY(ty = ARRAY_TYPE(dimensions = _ <| _ <| nil())),
+        ARRAY_EXPRESSION(ty = ARRAY_TYPE(dimensions = _ <| _ <| nil())),
       ) => begin
         P_Expression.Expression.makeArray(
           Type.unliftArray(value.ty),

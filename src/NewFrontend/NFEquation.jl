@@ -557,7 +557,7 @@ function foldExp(eq::Equation, func::FoldFunc, arg::ArgT) where {ArgT}
         ()
       end
 
-      P_Equation.Equation.WHEN(__) => begin
+      EQUATION_WHEN(__) => begin
         for b in eq.branches
           @assign () = begin
             @match b begin
@@ -608,10 +608,13 @@ function foldExp(eq::Equation, func::FoldFunc, arg::ArgT) where {ArgT}
 end
 
 function foldExpList(eq::List{Equation}, func::FoldFunc, arg::ArgT) where {ArgT}
-
   for e in eq
     @assign arg = foldExp(e, func, arg)
   end
+  return arg
+end
+
+function foldExpList(eq::Nil{Any}, func::FoldFunc, arg::ArgT) where {ArgT}
   return arg
 end
 

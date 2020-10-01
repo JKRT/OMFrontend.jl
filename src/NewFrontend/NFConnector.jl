@@ -142,7 +142,7 @@ function fromExp(
         _cons(fromCref(exp.cref, exp.ty, source), conns)
       end
 
-      P_Expression.Expression.ARRAY(__) => begin
+      ARRAY_EXPRESSION(__) => begin
         for e in listReverse(exp.elements)
           @assign conns = fromExp(e, source, conns)
         end
@@ -248,7 +248,7 @@ function splitImpl(
         conns
       end
 
-      TYPE_COMPLEX(complexTy = ComplexType.EXTERNAL_OBJECT(__)) => begin
+      TYPE_COMPLEX(complexTy = COMPLEX_EXTERNAL_OBJECT(__)) => begin
         _cons(CONNECTOR(name, Type.liftArrayLeftList(ty, dims), face, cty, source), conns)
       end
 

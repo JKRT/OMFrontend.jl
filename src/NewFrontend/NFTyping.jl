@@ -1653,7 +1653,7 @@ function typeExpDim(
     @assign e = P_Expression.Expression.getBindingExp(exp)
     @assign (dim, error) = begin
       @match e begin
-        P_Expression.Expression.ARRAY(ty = TYPE_UNKNOWN(__)) => begin
+        ARRAY_EXPRESSION(ty = TYPE_UNKNOWN(__)) => begin
           typeArrayDim(e, dimIndex)
         end
 
@@ -1718,11 +1718,11 @@ function typeArrayDim2(
 
   @assign (dim, error) = begin
     @match (arrayExp, dimIndex) begin
-      (P_Expression.Expression.ARRAY(__), 1) => begin
+      (ARRAY_EXPRESSION(__), 1) => begin
         (P_Dimension.Dimension.fromExpList(arrayExp.elements), P_TypingError.NO_ERROR())
       end
 
-      (P_Expression.Expression.ARRAY(__), _) => begin
+      (ARRAY_EXPRESSION(__), _) => begin
         typeArrayDim2(listHead(arrayExp.elements), dimIndex - 1, dimCount + 1)
       end
 
@@ -2066,7 +2066,7 @@ function typeSubscript(
         =#
         @assign e = evaluateEnd(subscript.exp, dimension, cref, index, origin, info)
         @assign (e, ty, variability) = typeExp(e, origin, info)
-        if Type.isArray(ty)
+        if isArray(ty)
           @assign outSubscript = SUBSCRIPT_SLICE(e)
           @assign ty = Type.unliftArray(ty)
           if flagSet(origin, ORIGIN_EQUATION)
@@ -2345,7 +2345,7 @@ function typeRange(
   local ty_match::MatchKind
   local next_origin::ORIGIN_Type = ORIGIN_setFlag(origin, ORIGIN_SUBEXPRESSION)
 
-  @match P_Expression.Expression.RANGE(
+  @match RANGE_EXPRESSION(
     start = start_exp,
     step = ostep_exp,
     stop = stop_exp,
@@ -2389,7 +2389,7 @@ function typeRange(
   @assign rangeType =
     getRangeType(start_exp, ostep_exp, stop_exp, rangeType, info)
   @assign rangeExp =
-    P_Expression.Expression.RANGE(rangeType, start_exp, ostep_exp, stop_exp)
+    RANGE_EXPRESSION(rangeType, start_exp, ostep_exp, stop_exp)
   if variability <= Variability.PARAMETER && !flagSet(origin, ORIGIN_FUNCTION)
     Inst.markStructuralParamsExp(rangeExp)
   end
@@ -2484,7 +2484,7 @@ function typeSize(
 
   @assign (sizeExp, sizeType, variability) = begin
     @match sizeExp begin
-      P_Expression.Expression.SIZE(exp = exp, dimIndex = SOME(index)) => begin
+      SIZE_EXPRESSION(exp = exp, dimIndex = SOME(index)) => begin
         @assign (index, index_ty, variability) = typeExp(index, next_origin, info)
         #=  The second argument must be an Integer.
         =#
@@ -2519,7 +2519,7 @@ function typeSize(
             else
               @assign exp = typeExp(exp, next_origin, info)
             end
-            @assign exp = P_Expression.Expression.SIZE(exp, SOME(index))
+            @assign exp = SIZE_EXPRESSION(exp, SOME(index))
           end
           if flagNotSet(origin, ORIGIN_FUNCTION) ||
              P_Dimension.Dimension.isKnown(dim)
@@ -2529,7 +2529,7 @@ function typeSize(
           end
         else
           @assign (exp, exp_ty) = typeExp(sizeExp.exp, next_origin, info)
-          if !Type.isArray(exp_ty)
+          if !isArray(exp_ty)
             Error.addSourceMessage(
               Error.INVALID_ARGUMENT_TYPE_FIRST_ARRAY,
               list("size"),
@@ -2537,7 +2537,7 @@ function typeSize(
             )
             fail()
           end
-          @assign exp = P_Expression.Expression.SIZE(exp, SOME(index))
+          @assign exp = SIZE_EXPRESSION(exp, SOME(index))
         end
         #=  Evaluate the index if it's a constant.
         =#
@@ -2564,10 +2564,10 @@ function typeSize(
         (exp, TYPE_INTEGER(), variability)
       end
 
-      P_Expression.Expression.SIZE(__) => begin
+      SIZE_EXPRESSION(__) => begin
         @assign (exp, exp_ty, _) = typeExp(sizeExp.exp, next_origin, info)
         @assign sizeType = Type.sizeType(exp_ty)
-        (P_Expression.Expression.SIZE(exp, NONE()), sizeType, Variability.PARAMETER)
+        (SIZE_EXPRESSION(exp, NONE()), sizeType, Variability.PARAMETER)
       end
     end
   end
@@ -2955,9 +2955,9 @@ function typeExternalArg(arg::Expression, info::SourceInfo, node::InstNode)::Exp
 
   @assign outArg = begin
     @match arg begin
-      P_Expression.Expression.SIZE(dimIndex = SOME(_)) => begin
+      SIZE_EXPRESSION(dimIndex = SOME(_)) => begin
         @assign outArg = typeSize(arg, ORIGIN_FUNCTION, info, evaluate = false)
-        @match P_Expression.Expression.SIZE(dimIndex = SOME(index)) = outArg
+        @match SIZE_EXPRESSION(dimIndex = SOME(index)) = outArg
         #=  Size expression must have a constant dimension index.
         =#
         if !P_Expression.Expression.isInteger(index)
@@ -3039,7 +3039,7 @@ function makeDefaultExternalCall(extDecl::Sections, fnNode::InstNode)::Sections
         =#
         #=  though it's not a single output.
         =#
-        if single_output && Type.isArray(P_Function.returnType(fn))
+        if single_output && isArray(P_Function.returnType(fn))
           @assign single_output = false
           Error.addSourceMessage(
             Error.EXT_FN_SINGLE_RETURN_ARRAY,
@@ -3073,7 +3073,7 @@ function makeDefaultExternalCall(extDecl::Sections, fnNode::InstNode)::Sections
               @assign args = _cons(exp, args)
               for i = 1:Type.dimensionCount(ty)
                 @assign args = _cons(
-                  P_Expression.Expression.SIZE(
+                  SIZE_EXPRESSION(
                     exp,
                     SOME(INTEGER_EXPRESSION(i)),
                   ),
@@ -3634,7 +3634,7 @@ function typeEqualityEquation(
   if flagSet(origin, ORIGIN_WHEN) &&
      flagNotSet(origin, ORIGIN_CLOCKED)
     if checkLhsInWhen(lhsExp)
-      P_Expression.Expression.fold(lhsExp, Inst.markStructuralParamsSubs, 0)
+      fold(lhsExp, Inst.markStructuralParamsSubs, 0)
     else
       Error.addSourceMessage(
         Error.WHEN_EQ_LHS,

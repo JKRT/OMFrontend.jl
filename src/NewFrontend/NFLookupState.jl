@@ -665,7 +665,7 @@ end
 function assertFunction(
   endState::LookupState,
   node::InstNode,
-  name::Absyn.Path,
+  name::Absyn.ComponentRef,
   info::SourceInfo
 )
   return assertState(

@@ -112,8 +112,8 @@ include("./NewFrontend/NFPackage.jl")
 include("./NewFrontend/NFVerifyModel.jl")
 end
 
-function parseFile(file::String)::Absyn.Program
-  return OpenModelicaParser.parseFile(file)
+function parseFile(file::String, acceptedGram::Int64 = 1)::Absyn.Program
+  return OpenModelicaParser.parseFile(file, acceptedGram)
 end
 
 function translateToSCode(inProgram::Absyn.Program)::SCode.Program
@@ -126,11 +126,20 @@ end
 function instSCode(inProgram::SCode.Program)
 end
 
+
 "
   Instantiates and translates to DAE.
 "
 function instantiateSCodeToDAE(elementToInstantiate::String, inProgram::SCode.Program)
-  Main.instClassInProgram(Absyn.IDENT(elementToInstantiate), inProgram)
+  # initialize globals
+  Main.Global.initialize()
+  # make sure we have all the flags loaded!
+  # Main.Flags.new(Flags.emptyFlags)
+
+  p = parseFile("../lib/NFModelicaBuiltin.mo", 2 #== MetaModelica ==#)
+  s = HybridDAEParser.translateToSCode(p)
+  p = Main.listAppend(s, inProgram)
+  Main.instClassInProgram(Absyn.IDENT(elementToInstantiate), p)
 end
 
 function testSpin()

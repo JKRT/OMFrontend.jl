@@ -1,8 +1,3 @@
-module Settings
-
-using MetaModelica
-using ExportAll
-
 #= /*
 * This file is part of OpenModelica.
 *
@@ -34,91 +29,80 @@ using ExportAll
 *
 */ =#
 
-""" #= Returns the version number of this release =#"""
-function getVersionNr()::String
-  local outString::String
 
-  @error "TODO: Defined in the runtime"
-  return outString
+module Settings 
+
+using MetaModelica
+using ExportAll
+
+import Pkg
+
+#=The directory path. Can be modified=#
+INSTALLATION_DIRECTORY_PATH = realpath(realpath(Base.find_package("OMCompiler") * "./../.."))
+
+#= Returns the version number of this release =#
+function getVersionNr() ::String 
+ "TODO"       
 end
 
-function setCompilePath(inString::String)
-  @error "TODO: Defined in the runtime"
+function setCompilePath(inString::String)  
+    #= TODO: Defined in the runtime =#
 end
 
-#= /* TODO: Implement an external C function for bootstrapped omc or remove me. DO NOT SIMPLY REMOVE THIS COMMENT
-public function getCompilePath
- output String outString;
-
- external \"C\" outString=Settings_getCompilePath() annotation(Library = \"omcruntime\");
-end getCompilePath;*/ =#
-
-function setCompileCommand(inString::String)
-  @error "TODO: Defined in the runtime"
+function setCompileCommand(inString::String)  
+    #= TODO: Defined in the runtime =#
 end
 
-function getCompileCommand()::String
-  local outString::String
-
-  @error "TODO: Defined in the runtime"
-  return outString
+function getCompileCommand() ::String 
+    #= TODO: Defined in the runtime =#
 end
 
-function setTempDirectoryPath(inString::String)
-  @error "TODO: Defined in the runtime"
+function setTempDirectoryPath(inString::String)  
+    #= TODO: Defined in the runtime =#
 end
 
-function getTempDirectoryPath()::String
-  local outString::String
-
-  @error "TODO: Defined in the runtime"
-  return outString
+function getTempDirectoryPath() ::String 
+    #= TODO: Defined in the runtime =#
+    "TODO getTempDirectoryPath"
 end
 
-function setInstallationDirectoryPath(inString::String)
-  @error "TODO: Defined in the runtime"
+
+function setInstallationDirectoryPath(path::String)  
+  global INSTALLATION_DIRECTORY_PATH = path
 end
 
 function getInstallationDirectoryPath()::String
-  local outString::String
-
-  @error "TODO: Defined in the runtime"
-  return outString
+  if INSTALLATION_DIRECTORY_PATH != nothing
+    INSTALLATION_DIRECTORY_PATH
+  else #The default variant
+    #= pathToOMC is always in src. We need to go up two steps =#
+    local pathToOMC = realpath(realpath(Base.find_package("OMCompiler") * "./../.."))
+    global INSTALLATION_DIRECTORY_PATH = pathToOMC    
+  end
 end
 
-function setModelicaPath(inString::String)
-  @error "TODO: Defined in the runtime"
+function setModelicaPath(inString::String)  
+  #= TODO: Defined in the runtime =#
 end
 
-function getModelicaPath(runningTestsuite::Bool)::String
-  local outString::String
-
-  @error "TODO: Defined in the runtime"
-  return outString
+function getModelicaPath(runningTestsuite::Bool) ::String 
+    #= TODO: Defined in the runtime =#
+    "modelicaPath"
 end
 
-function getHomeDir(runningTestsuite::Bool)::String
-  local outString::String
-
-  @error "TODO: Defined in the runtime"
-  return outString
+function getHomeDir(runningTestsuite::Bool) ::String 
+    #= TODO: Defined in the runtime =#
+    "getHomeDir"
 end
 
-function getEcho()::Integer
-  local echo::Integer
-
-  @error "TODO: Defined in the runtime"
-  return echo
+function getEcho()::ModelicaInteger 
+    #= TODO: Defined in the runtime =#
+    0
 end
 
-function setEcho(echo::Integer)
-  @error "TODO: Defined in the runtime"
+function setEcho(echo::ModelicaInteger)  
+    #= TODO: Defined in the runtime =#
 end
-
-#= /* TODO: Implement an external C function for bootstrapped omc or remove me. DO NOT SIMPLY REMOVE THIS COMMENT
-public function dumpSettings
- external \"C\" Settings_dumpSettings() annotation(Library = \"omcruntime\");
-end dumpSettings;*/ =#
 
 @exportAll()
 end

@@ -246,12 +246,16 @@ function printTreeStr(inTree::Tree)::String
 end
 
 function setTreeLeftRight(orig::Tree, left::Tree = EMPTY(), right::Tree = EMPTY())::Tree
+  setTreeLeftRight(orig, left = left, right = right)
+end
+
+function setTreeLeftRight(orig::Tree; left::Tree = EMPTY(), right::Tree = EMPTY())::Tree
   local res::Tree
 
   @assign res = begin
     @match (orig, left, right) begin
       (NODE(__), EMPTY(__), EMPTY(__)) => begin
-        LEAF(orig.key)
+        LEAF(orig.key, orig.value)
       end
 
       (LEAF(__), EMPTY(__), EMPTY(__)) => begin
@@ -262,12 +266,12 @@ function setTreeLeftRight(orig::Tree, left::Tree = EMPTY(), right::Tree = EMPTY(
         if referenceEqOrEmpty(orig.left, left) && referenceEqOrEmpty(orig.right, right)
           orig
         else
-          NODE(orig.key, max(height(left), height(right)) + 1, left, right)
+          NODE(orig.key, orig.value, max(height(left), height(right)) + 1, left, right)
         end
       end
 
       (LEAF(__), _, _) => begin
-        NODE(orig.key, max(height(left), height(right)) + 1, left, right)
+        NODE(orig.key, orig.value, max(height(left), height(right)) + 1, left, right)
       end
     end
   end
@@ -456,13 +460,13 @@ function rotateLeft(inNode::Tree)::Tree
     local child::Tree
     @match outNode begin
       NODE(right = child && NODE(__)) => begin
-        @assign node = setTreeLeftRight(outNode, left = outNode.left, right = child.left)
-        setTreeLeftRight(child, left = node, right = child.right)
+        @assign node = setTreeLeftRight(outNode, outNode.left, child.left)
+        setTreeLeftRight(child, node, child.right)
       end
 
       NODE(right = child && LEAF(__)) => begin
-        @assign node = setTreeLeftRight(outNode, left = outNode.left, right = EMPTY())
-        setTreeLeftRight(child, left = node, right = EMPTY())
+        @assign node = setTreeLeftRight(outNode, outNode.left, EMPTY())
+        setTreeLeftRight(child, node, EMPTY())
       end
 
       _ => begin

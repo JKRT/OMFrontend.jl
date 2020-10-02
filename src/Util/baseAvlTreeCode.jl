@@ -542,6 +542,10 @@ function mapFold(inTree::Tree, inFunc::MapFunc, inStartValue::FT) where {FT}
 end
 
 function setTreeLeftRight(orig::Tree, left::Tree = EMPTY(), right::Tree = EMPTY())::Tree
+  setTreeLeftRight(orig, left = left, right = right)
+end
+
+function setTreeLeftRight(orig::Tree; left::Tree = EMPTY(), right::Tree = EMPTY())::Tree
   local res::Tree
 
   @assign res = begin

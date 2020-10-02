@@ -67,7 +67,9 @@ FuncType = Function
 end
 
 module NodeTree
+
 import ..Main.InstNode
+
 using MetaModelica
 using ExportAll
 Key = String
@@ -105,6 +107,8 @@ end
   @Record C_NO_CACHE begin
   end
 end
+
+P_CachedData = CachedData
 
 const NUMBER_OF_CACHES = 3::Integer
 
@@ -1248,6 +1252,10 @@ function scopeListClass(clsNode::InstNode, ty::InstNodeType, includeRoot::Bool, 
 end
 
 function scopeList(node::InstNode, includeRoot::Bool = false #= Whether to include the root class name or not. =#, accumScopes::List{<:InstNode} = nil) ::List{InstNode}
+  scopeList(node, includeRoot = includeRoot, accumScopes = accumScopes)
+end
+
+function scopeList(node::InstNode; includeRoot::Bool = false #= Whether to include the root class name or not. =#, accumScopes::List{<:InstNode} = nil) ::List{InstNode}
   local scopes::List{InstNode}
 
   @assign scopes = begin

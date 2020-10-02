@@ -891,7 +891,7 @@ function getFuncCache(inNode::InstNode) ::CachedData
   @assign func_cache = begin
     @match inNode begin
       CLASS_NODE(__)  => begin
-        P_CachedData.getFuncCache(inNode.caches)
+        getFuncCache(inNode.caches)
       end
 
       _  => begin

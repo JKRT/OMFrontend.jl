@@ -6,3 +6,4 @@ scodeProgram = HybridDAEParser.translateToSCode(p)
 @info "SCode -> DAE"
 (dae, cache) = HybridDAEParser.instantiateSCodeToDAE("HelloWorld", scodeProgram)
 @info "After DAE Translation"
+@show dae

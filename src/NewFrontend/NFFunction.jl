@@ -1989,13 +1989,13 @@ end
 
 function instFunction3(fnNode::InstNode)::InstNode
 
-  @assign fnNode = Inst.instantiate(fnNode)
+  @assign fnNode = instantiate(fnNode)
   #=  Set up an empty function cache to signal that this function is
   =#
   #=  currently being instantiated, so recursive functions can be handled.
   =#
   cacheInitFunc(fnNode)
-  Inst.instExpressions(fnNode)
+  instExpressions(fnNode)
   return fnNode
 end
 
@@ -2051,7 +2051,7 @@ function instFunction2(
           OperatorOverloading.checkOperatorRestrictions(fnNode)
         end
         @assign fnNode =
-          setNodeType(NFInstNode.ROOT_CLASS(parent), fnNode)
+          setNodeType(ROOT_CLASS(parent), fnNode)
         @assign fnNode = instFunction3(fnNode)
         @assign fn = new(fnPath, fnNode)
         @assign specialBuiltin = isSpecialBuiltin(fn)

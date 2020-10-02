@@ -41,6 +41,7 @@ import ListUtil
 import ..AbsynUtil
 import ..SCodeUtil
 import ..Main.Util
+import ..System
 
 const ASSERTION_LEVEL_ERROR =
   Absyn.CREF(Absyn.CREF_FULLYQUALIFIED(Absyn.CREF_QUAL(
@@ -1035,7 +1036,7 @@ function translateClassdefAlgorithmitems(
 )::List{SCode.Statement}
   local outStatements::List{SCode.Statement}
 
-  @assign outStatements = List(
+  @assign outStatements = list(
     translateClassdefAlgorithmItem(stmt)
     for stmt in inStatements if AbsynUtil.isAlgorithmItem(stmt)
   )
@@ -1198,7 +1199,7 @@ function translateAlgBranches(
   local condition::Absyn.Exp
   local body::List{Absyn.AlgorithmItem}
 
-  @assign outBranches = List(
+  @assign outBranches = list(
     begin
       @match branch begin
         (condition, body) => begin

@@ -600,12 +600,12 @@ end
      applyOption(SOME(1), intString) => SOME(\\\"1\\\")
      applyOption(NONE(),  intString) => NONE()
    =#"""
-function applyOption(inOption::Option{TI}, inFunc::FuncType) where {TI, TO}
-  local outOption::Option{TO}
+function applyOption(inOption::Option{TI}, inFunc::FuncType) where {TI}
+  local outOption::Option
 
   @assign outOption = begin
     local ival::TI
-    local oval::TO
+    local oval
     @match inOption begin
       SOME(ival) => begin
         SOME(inFunc(ival))

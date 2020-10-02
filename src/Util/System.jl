@@ -845,9 +845,7 @@
         """ #= Because list() requires escape-sequences to be in the AST, we need to be
         able to unescape them in some places of the code. =#"""
         function unescapedString(escapedString::String) ::String
-              local unescapedString::String
-
-            @error "TODO: Defined in the runtime"
+              local unescapedString::String = escapedString
           unescapedString
         end
 

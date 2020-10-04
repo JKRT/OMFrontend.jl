@@ -549,7 +549,7 @@ end
 function updatePotentiallyPresentVariable(var::Variable)::Variable
   if ConnectorType.isPotentiallyPresent(var.attributes.connectorType)
     @assign var.attributes =
-      P_Component.getAttributes(component(node(var.name)))
+      getAttributes(component(node(var.name)))
   end
   return var
 end

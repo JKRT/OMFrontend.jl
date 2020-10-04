@@ -1998,7 +1998,7 @@ function instNormalCall(
         =#
         #=  Absyn.FOR_ITER_FARG and that is handled in instIteratorCall.
         =#
-        @assign fn_ref = instFunction(functionName, scope, info)
+        @assign (fn_ref, _, _) = instFunction(functionName, scope, info)
         CALL_EXPRESSION(UNTYPED_CALL(fn_ref, args, named_args, scope))
       end
     end

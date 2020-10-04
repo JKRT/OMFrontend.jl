@@ -155,7 +155,7 @@ function endExp(dim::Dimension, cref::ComponentRef, index::Integer)::Expression
       end
 
       BOOLEAN(__) => begin
-        P_Expression.Expression.BOOLEAN(true)
+        P_Expression.BOOLEAN_EXPRESSION(true)
       end
 
       DIMENSION_ENUM(enumType = ty && TYPE_ENUMERATION(__)) => begin

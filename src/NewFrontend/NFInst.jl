@@ -2008,7 +2008,6 @@ function instRecordConstructor(node::InstNode)
       C_FUNCTION(__)  => begin
         ()
       end
-
       _  => begin
         cacheInitFunc(node)
         if SCodeUtil.isOperatorRecord(definition(node))
@@ -2148,11 +2147,11 @@ function instExp(absynExp::Absyn.Exp, scope::InstNode, info::SourceInfo) ::Expre
       end
 
       Absyn.STRING(__)  => begin
-        Expression.STRING(System.unescapedString(absynExp.value))
+        STRING_EXPRESSION(System.unescapedString(absynExp.value))
       end
 
       Absyn.BOOL(__)  => begin
-        Expression.BOOLEAN(absynExp.value)
+        BOOLEAN_EXPRESSION(absynExp.value)
       end
 
       Absyn.CREF(__)  => begin
@@ -2627,7 +2626,7 @@ function instEEquation(scodeEq::SCode.EEquation, scope::InstNode, origin::ORIGIN
         =#
         if ! listEmpty(scodeEq.elseBranch)
           @assign eql = instEEquations(scodeEq.elseBranch, scope, next_origin)
-          @assign branches = _cons(Equation.makeBranch(P_Expression.Expression.BOOLEAN(true), eql), branches)
+          @assign branches = _cons(Equation.makeBranch(P_Expression.BOOLEAN_EXPRESSION(true), eql), branches)
         end
         Equation.IF(listReverse(branches), makeSource(scodeEq.comment, info))
       end

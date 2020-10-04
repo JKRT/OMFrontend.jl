@@ -64,7 +64,7 @@ function fromExp(exp::Expression)::Subscript
         INDEX(exp)
       end
 
-      P_Expression.Expression.BOOLEAN(__) => begin
+      P_Expression.BOOLEAN_EXPRESSION(__) => begin
         INDEX(exp)
       end
 
@@ -95,7 +95,7 @@ function first(dim::Dimension)::Subscript
       end
 
       P_Dimension.Dimension.BOOLEAN(__) => begin
-        INDEX(P_Expression.Expression.BOOLEAN(false))
+        INDEX(P_Expression.BOOLEAN_EXPRESSION(false))
       end
 
       P_Dimension.Dimension.ENUM(__) => begin

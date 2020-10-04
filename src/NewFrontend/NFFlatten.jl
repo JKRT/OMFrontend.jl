@@ -275,7 +275,7 @@ function isDeletedComponent(condition::Binding, prefix::ComponentRef)::Bool
     end
     @assign isDeleted = begin
       @match exp begin
-        P_Expression.Expression.BOOLEAN(__) => begin
+        P_Expression.BOOLEAN_EXPRESSION(__) => begin
           !exp.value
         end
 
@@ -439,7 +439,7 @@ function flattenSimpleComponent(
       (
         "fixed",
         FLAT_BINDING(
-          P_Expression.Expression.BOOLEAN(false),
+          P_Expression.BOOLEAN_EXPRESSION(false),
           Variability.CONSTANT,
         ),
       ),

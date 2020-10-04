@@ -7,6 +7,7 @@ module HybridDAEParser
 import Absyn
 import SCode
 import OpenModelicaParser
+
 "
   Main module
 "
@@ -65,6 +66,7 @@ include("./NewFrontend/NFCeval.jl")
 include("./NewFrontend/NFTyping.jl")
 include("./NewFrontend/NFInst.jl")
 include("./NewFrontend/NFEquation.jl")
+include("./NewFrontend/NFAlgorithm.jl")
 include("./NewFrontend/NFStatement.jl")
 include("./NewFrontend/NFBinding.jl")
 include("./NewFrontend/NFVariable.jl")
@@ -135,10 +137,13 @@ function instantiateSCodeToDAE(elementToInstantiate::String, inProgram::SCode.Pr
   Main.Global.initialize()
   # make sure we have all the flags loaded!
   # Main.Flags.new(Flags.emptyFlags)
-
+  @info "Parsing buildin stuff"
+  GC.enable(false) #=This C stuff can be a bit flaky..=#
   p = parseFile("../lib/NFModelicaBuiltin.mo", 2 #== MetaModelica ==#)
+  @info "SCode translation"
   s = HybridDAEParser.translateToSCode(p)
   p = Main.listAppend(s, inProgram)
+  GC.enable(true)
   Main.instClassInProgram(Absyn.IDENT(elementToInstantiate), p)
 end
 

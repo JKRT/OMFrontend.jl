@@ -5139,7 +5139,7 @@ function applyIndexSubscriptRange2(startExp::Expression, stepExp::Option{<:Expre
         P_Expression.REAL_EXPRESSION(startExp.value + index - 1.0)
       end
 
-      (P_Expression.Expression.BOOLEAN(__), _)  => begin
+      (P_Expression.BOOLEAN_EXPRESSION(__), _)  => begin
         if index == 1
           startExp
         else
@@ -5307,9 +5307,9 @@ function applyIndexSubscriptTypename(ty::M_Type, index::Subscript) ::Expression
       @match ty begin
         TYPE_BOOLEAN(__) where (idx <= 2)  => begin
           if idx == 1
-            P_Expression.Expression.BOOLEAN(false)
+            P_Expression.BOOLEAN_EXPRESSION(false)
           else
-            P_Expression.Expression.BOOLEAN(true)
+            P_Expression.BOOLEAN_EXPRESSION(true)
           end
         end
 

@@ -4310,7 +4310,7 @@ function getRangeTypeBool(startExp::Expression, stopExp::Expression)::Dimension
     local dim_exp::Expression
     local var::VariabilityType
     @match (startExp, stopExp) begin
-      (P_Expression.Expression.BOOLEAN(__), P_Expression.Expression.BOOLEAN(__)) => begin
+      (P_Expression.BOOLEAN_EXPRESSION(__), P_Expression.BOOLEAN_EXPRESSION(__)) => begin
         @assign sz = if startExp.value == stopExp.value
           1
         elseif (startExp.value < stopExp.value)

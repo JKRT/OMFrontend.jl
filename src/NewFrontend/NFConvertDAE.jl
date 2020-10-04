@@ -1501,7 +1501,7 @@ function makeTypeVar(component::InstNode)::DAE.Var
   local attr::Attributes
 
   @assign comp = component(resolveOuter(component))
-  @assign attr = P_Component.getAttributes(comp)
+  @assign attr = getAttributes(comp)
   @assign typeVar = DAE.TYPES_VAR(
     name(component),
     toDAE(attr, visibility(component)),
@@ -1522,7 +1522,7 @@ function makeTypeRecordVar(component::InstNode)::DAE.Var
   local bind_from_outside::Bool
   local ty::M_Type
   @assign comp = component(component)
-  @assign attr = P_Component.getAttributes(comp)
+  @assign attr = getAttributes(comp)
   if P_Component.isConst(comp) && P_Component.hasBinding(comp)
     @assign vis = Visibility.PROTECTED
   else

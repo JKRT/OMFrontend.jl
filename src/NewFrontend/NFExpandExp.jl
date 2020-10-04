@@ -1002,8 +1002,8 @@ function expandTypename(ty::M_Type)::Expression
         P_Expression.Expression.makeArray(
           ty,
           list(
-            P_Expression.Expression.BOOLEAN(false),
-            P_Expression.Expression.BOOLEAN(true),
+            P_Expression.BOOLEAN_EXPRESSION(false),
+            P_Expression.BOOLEAN_EXPRESSION(true),
           ),
           true,
         )

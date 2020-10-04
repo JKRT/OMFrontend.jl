@@ -77,9 +77,7 @@ Value = InstNode
 include("../Util/baseAvlTreeCode.jl")
 include("../Util/baseAvlSetCode.jl")
 
-
 keyCompare = (inKey1::String, inKey2::String) -> begin
-  @debug "Calling key compare node tree"
   res = stringCompare(inKey1, inKey2)
   return res
 end
@@ -107,8 +105,6 @@ end
   @Record C_NO_CACHE begin
   end
 end
-
-P_CachedData = CachedData
 
 const NUMBER_OF_CACHES = 3::Integer
 
@@ -138,25 +134,28 @@ function getPackageCache(in_caches::Array{<:CachedData}) ::CachedData
 end
 
 function setFuncCache(in_caches::Array{<:CachedData}, in_cache::CachedData)
+  @info "Setting func cache  with $in_caches and $in_cache"
   arrayUpdate(in_caches, 1, in_cache)
 end
 
 function getFuncCache(in_caches::Array{<:CachedData}) ::CachedData
+  @info in_caches
   local out_cache::CachedData = arrayGet(in_caches, 1)
   out_cache
 end
 
 function addFunc(fn::M_Function, specialBuiltin::Bool, caches::Array{<:CachedData})
+  @error "ADD FUNC CALLED"
   local func_cache::CachedData
   @assign func_cache = getFuncCache(caches)
   @assign func_cache = begin
     @match func_cache begin
       C_NO_CACHE(__)  => begin
-        FUNCTION(list(fn), false, specialBuiltin)
+        C_FUNCTION(list(fn), false, specialBuiltin)
       end
 
-      FUNCTION(__)  => begin
-        FUNCTION(listAppend(func_cache.funcs, list(fn)), false, func_cache.specialBuiltin || specialBuiltin)
+      C_FUNCTION(__)  => begin
+        C_FUNCTION(listAppend(func_cache.funcs, list(fn)), false, func_cache.specialBuiltin || specialBuiltin)
       end
 
       _  => begin
@@ -172,14 +171,13 @@ end
 
 function initFunc(caches::Array{<:CachedData})
   local func_cache::CachedData
-
   @assign func_cache = getFuncCache(caches)
   @assign func_cache = begin
     @match func_cache begin
       C_NO_CACHE(__)  => begin
-        FUNCTION(nil, false, false)
+        C_FUNCTION(nil, false, false)
       end
-      FUNCTION(__)  => begin
+      C_FUNCTION(__)  => begin
         func_cache
       end
     end
@@ -867,17 +865,15 @@ function getPackageCache(inNode::InstNode) ::CachedData
 end
 
 function setFuncCache(node::InstNode, in_func_cache::CachedData) ::InstNode
-
-
   @assign () = begin
     @match node begin
       CLASS_NODE(__)  => begin
-        P_CachedData.setFuncCache(node.caches, in_func_cache)
+        setFuncCache(node.caches, in_func_cache)
         ()
       end
-
       _  => begin
-        Error.assertion(false, getInstanceName() + " got node without cache", sourceInfo())
+        #Error.assertion(false, getInstanceName() + " got node without cache", sourceInfo())
+        @error "Error in set func cache"
         fail()
       end
     end
@@ -887,13 +883,11 @@ end
 
 function getFuncCache(inNode::InstNode) ::CachedData
   local func_cache::CachedData
-
   @assign func_cache = begin
     @match inNode begin
       CLASS_NODE(__)  => begin
         getFuncCache(inNode.caches)
       end
-
       _  => begin
         Error.assertion(false, getInstanceName() + " got node without cache", sourceInfo())
         fail()
@@ -904,15 +898,12 @@ function getFuncCache(inNode::InstNode) ::CachedData
 end
 
 function cacheAddFunc(node::InstNode, fn::M_Function, specialBuiltin::Bool) ::InstNode
-
-
   @assign () = begin
     @match node begin
       CLASS_NODE(__)  => begin
-        P_CachedData.addFunc(fn, specialBuiltin, node.caches)
+        addFunc(fn, specialBuiltin, node.caches)
         ()
       end
-
       _  => begin
         Error.assertion(false, getInstanceName() + " got node without cache", sourceInfo())
         fail()
@@ -923,12 +914,10 @@ function cacheAddFunc(node::InstNode, fn::M_Function, specialBuiltin::Bool) ::In
 end
 
 function cacheInitFunc(node::InstNode) ::InstNode
-
-
   @assign () = begin
     @match node begin
       CLASS_NODE(__)  => begin
-        P_CachedData.initFunc(node.caches)
+        initFunc(node.caches)
         ()
       end
 

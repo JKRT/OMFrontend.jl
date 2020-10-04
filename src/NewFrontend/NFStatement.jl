@@ -62,7 +62,7 @@
   @Record ALG_ASSIGNMENT begin
     lhs::Expression #= The asignee =#
     rhs::Expression #= The expression =#
-    ty::M_Type
+    ty::NFType
     source::DAE.ElementSource
   end
 end
@@ -803,7 +803,7 @@ function instStatement(scodeStmt::SCode.Statement, scope::InstNode, origin::ORIG
         end
         if ! listEmpty(scodeStmt.elseBranch)
           @assign stmtl = instStatements(scodeStmt.elseBranch, scope, next_origin)
-          @assign branches = _cons((P_Expression.Expression.BOOLEAN(true), stmtl), branches)
+          @assign branches = _cons((P_Expression.BOOLEAN_EXPRESSION(true), stmtl), branches)
         end
         ALG_IF(listReverse(branches), makeSource(scodeStmt.comment, info))
       end

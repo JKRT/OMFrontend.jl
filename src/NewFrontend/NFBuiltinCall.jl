@@ -1706,7 +1706,7 @@
                           end
 
                           TYPE_REAL(__)  => begin
-                            P_Expression.Expression.CLKCONST(P_Expression.Expression.BOOLEAN_CLOCK(e1, e2))
+                            P_Expression.Expression.CLKCONST(P_Expression.BOOLEAN_EXPRESSION_CLOCK(e1, e2))
                           end
 
                           TYPE_STRING(__)  => begin

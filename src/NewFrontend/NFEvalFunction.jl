@@ -1278,7 +1278,7 @@ function evaluateKnownExternal(name::String, args::List{<:Expression})::Expressi
         @assign (s1, b) = ModelicaExternalC.Streams_readLine(s1, i)
         TUPLE_EXPRESSION(
           TYPE_TUPLE(list(TYPE_STRING(), TYPE_BOOLEAN()), NONE()),
-          list(STRING_EXPRESSION(s1), P_Expression.Expression.BOOLEAN(b)),
+          list(STRING_EXPRESSION(s1), P_Expression.BOOLEAN_EXPRESSION(b)),
         )
       end
 
@@ -1295,7 +1295,7 @@ function evaluateKnownExternal(name::String, args::List{<:Expression})::Expressi
       (
         "ModelicaStrings_compare",
         STRING_EXPRESSION(s1) <|
-        STRING_EXPRESSION(s2) <| P_Expression.Expression.BOOLEAN(b) <| nil(),
+        STRING_EXPRESSION(s2) <| P_Expression.BOOLEAN_EXPRESSION(b) <| nil(),
       ) => begin
         @assign i = ModelicaExternalC.Strings_compare(s1, s2, b)
         listGet(COMPARE_LITERALS, i)
@@ -1308,7 +1308,7 @@ function evaluateKnownExternal(name::String, args::List{<:Expression})::Expressi
       (
         "ModelicaStrings_scanReal",
         STRING_EXPRESSION(s1) <|
-        INTEGER_EXPRESSION(i) <| P_Expression.Expression.BOOLEAN(b) <| nil(),
+        INTEGER_EXPRESSION(i) <| P_Expression.BOOLEAN_EXPRESSION(b) <| nil(),
       ) => begin
         @assign (i, r) = ModelicaExternalC.Strings_scanReal(s1, i, b)
         TUPLE_EXPRESSION(
@@ -1320,7 +1320,7 @@ function evaluateKnownExternal(name::String, args::List{<:Expression})::Expressi
       (
         "ModelicaStrings_scanInteger",
         STRING_EXPRESSION(s1) <|
-        INTEGER_EXPRESSION(i) <| P_Expression.Expression.BOOLEAN(b) <| nil(),
+        INTEGER_EXPRESSION(i) <| P_Expression.BOOLEAN_EXPRESSION(b) <| nil(),
       ) => begin
         @assign (i, i2) = ModelicaExternalC.Strings_scanInteger(s1, i, b)
         TUPLE_EXPRESSION(
@@ -1394,7 +1394,7 @@ function evaluateKnownExternal(name::String, args::List{<:Expression})::Expressi
         STRING_EXPRESSION(s1) <|
         STRING_EXPRESSION(s2) <|
         INTEGER_EXPRESSION(i) <|
-        INTEGER_EXPRESSION(i2) <| P_Expression.Expression.BOOLEAN(b) <| nil(),
+        INTEGER_EXPRESSION(i2) <| P_Expression.BOOLEAN_EXPRESSION(b) <| nil(),
       ) => begin
         evaluateModelicaIO_readRealMatrix(s1, s2, i, i2, b)
       end
@@ -1431,8 +1431,8 @@ function evaluateOpenModelicaRegex(args::List{<:Expression})::Expression
       STRING_EXPRESSION(str) <|
       STRING_EXPRESSION(re) <|
       INTEGER_EXPRESSION(i) <|
-      P_Expression.Expression.BOOLEAN(extended) <|
-      P_Expression.Expression.BOOLEAN(insensitive) <| nil() => begin
+      P_Expression.BOOLEAN_EXPRESSION(extended) <|
+      P_Expression.BOOLEAN_EXPRESSION(insensitive) <| nil() => begin
         @assign (n, strs) = System.regex(str, re, i, extended, insensitive)
         @assign expl = List(STRING_EXPRESSION(s) for s in strs)
         @assign strs_ty =

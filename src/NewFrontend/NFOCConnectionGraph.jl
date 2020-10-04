@@ -1227,7 +1227,7 @@
                                     if Flags.isSet(Flags.CGRAPH)
                                       print("- NFOCConnectionGraph.evalConnectionsOperatorsHelper: " + toString(exp) + " = false\\n")
                                     end
-                                  P_Expression.Expression.BOOLEAN(false)
+                                  P_Expression.BOOLEAN_EXPRESSION(false)
                                 end
 
                                 CREF_EXPRESSION(cref = cref) <|  nil()  => begin
@@ -1260,7 +1260,7 @@
                                      =#
                                      #=  add an error message:
                                      =#
-                                  P_Expression.Expression.BOOLEAN(result)
+                                  P_Expression.BOOLEAN_EXPRESSION(result)
                                 end
                               end
                             end
@@ -1276,7 +1276,7 @@
                                     if Flags.isSet(Flags.CGRAPH)
                                       print("- NFOCConnectionGraph.evalConnectionsOperatorsHelper: " + toString(exp) + " = false\\n")
                                     end
-                                  P_Expression.Expression.BOOLEAN(false)
+                                  P_Expression.BOOLEAN_EXPRESSION(false)
                                 end
 
                                 CREF_EXPRESSION(cref = cref) <|  nil()  => begin
@@ -1284,7 +1284,7 @@
                                     if Flags.isSet(Flags.CGRAPH)
                                       print("- NFOCConnectionGraph.evalConnectionsOperatorsHelper: " + toString(exp) + " = " + boolString(result) + "\\n")
                                     end
-                                  P_Expression.Expression.BOOLEAN(result)
+                                  P_Expression.BOOLEAN_EXPRESSION(result)
                                 end
                               end
                             end

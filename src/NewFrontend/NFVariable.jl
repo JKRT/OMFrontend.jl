@@ -188,7 +188,7 @@ function fromCref(cref::ComponentRef)::Variable
   @assign ty = getSubscriptedType(cref)
   @assign binding = P_Component.getBinding(comp)
   @assign vis = visibility(node)
-  @assign attr = P_Component.getAttributes(comp)
+  @assign attr = getAttributes(comp)
   @assign cmt = P_Component.comment(comp)
   @assign info = info(node)
   @assign variable = VARIABLE(cref, ty, binding, vis, attr, nil, cmt, info)

@@ -2759,7 +2759,7 @@ function evaluateCondition(
   end
   @assign condBool = begin
     @match cond_exp begin
-      P_Expression.Expression.BOOLEAN(__) => begin
+      BOOLEAN_EXPRESSION(__) => begin
         cond_exp.value
       end
 
@@ -3009,7 +3009,6 @@ end
    otherwise a call 'func(param1, param2, ...)' is generated from the function's
    formal parameters and local variables. =#"""
 function makeDefaultExternalCall(extDecl::Sections, fnNode::InstNode)::Sections
-
   @assign extDecl = begin
     local args::List{Expression}
     local output_ref::ComponentRef

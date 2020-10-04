@@ -134,6 +134,7 @@ end
 "
 function instantiateSCodeToDAE(elementToInstantiate::String, inProgram::SCode.Program)
   # initialize globals
+  @info "INit globals"
   Main.Global.initialize()
   # make sure we have all the flags loaded!
   # Main.Flags.new(Flags.emptyFlags)
@@ -142,6 +143,7 @@ function instantiateSCodeToDAE(elementToInstantiate::String, inProgram::SCode.Pr
   p = parseFile("../lib/NFModelicaBuiltin.mo", 2 #== MetaModelica ==#)
   @info "SCode translation"
   s = HybridDAEParser.translateToSCode(p)
+  @info "Parsing done!"
   p = Main.listAppend(s, inProgram)
   GC.enable(true)
   Main.instClassInProgram(Absyn.IDENT(elementToInstantiate), inProgram)
@@ -158,6 +160,7 @@ function testSpin()
 end
 
 function testSpinDAEExport()
+  @info "Parsing example.mo"
   p = parseFile("example.mo")
   scodeProgram = translateToSCode(p)
   @info "Translation to SCode"

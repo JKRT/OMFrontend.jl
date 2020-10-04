@@ -1,111 +1,111 @@
 import Absyn
 import SCode
 import ..DAE
-""" #= Instantiates a class given by its fully qualified path, with the result being
-                 a DAE. =#"""
-                  function instClassInProgram(classPath::Absyn.Path, program::SCode.Program)::Tuple{DAE.DAE_LIST, DAE.FunctionTree}
-                   local daeFuncs::DAE.FunctionTree
-                   local dae::DAE.DAE_LIST
-                   local top::InstNode
-                   local cls::InstNode
-                   local inst_cls::InstNode
-                   local name::String
-                   local flat_model::FlatModel
-                   local funcs::FunctionTree
+" #= Instantiates a class given by its fully qualified path, with the result being
+                 a DAE. =#"
+function instClassInProgram(classPath::Absyn.Path, program::SCode.Program)::Tuple{DAE.DAE_LIST, DAE.FunctionTree}
+  local daeFuncs::DAE.FunctionTree
+  local dae::DAE.DAE_LIST
+  local top::InstNode
+  local cls::InstNode
+  local inst_cls::InstNode
+  local name::String
+  local flat_model::FlatModel
+  local funcs::FunctionTree
+  #=  gather here all the flags to disable expansion
+  =#
+  #=  and scalarization if -d=-nfScalarize is on
+  =#
+  # if ! Flags.isSet(Flags.NF_SCALARIZE)
+  #   FlagsUtil.set(Flags.NF_EXPAND_OPERATIONS, false)
+  #   FlagsUtil.set(Flags.NF_EXPAND_FUNC_ARGS, false)
+  # end
 
-                   #=  gather here all the flags to disable expansion
-                   =#
-                   #=  and scalarization if -d=-nfScalarize is on
-                   =#
-                   # if ! Flags.isSet(Flags.NF_SCALARIZE)
-                   #   FlagsUtil.set(Flags.NF_EXPAND_OPERATIONS, false)
-                   #   FlagsUtil.set(Flags.NF_EXPAND_FUNC_ARGS, false)
-                   # end
-
-                   #=  make sure we don't expand anything
-                   =#
-                   #System.setUsesCardinality(false)
-                   #System.setHasOverconstrainedConnectors(false)
-                   #System.setHasStreamConnectors(false)
-                   #=  Create a root node from the given top-level classes.
-                   =#
-                   @assign top = makeTopNode(program)
-                   name = AbsynUtil.pathString(classPath)
-                   #=  Look up the class to instantiate and mark it as the root class.
-                   =#
-                   @assign cls = lookupClassName(classPath, top, AbsynUtil.dummyInfo, false)
-                   @assign cls = setNodeType(ROOT_CLASS(EMPTY_NODE()), cls)
-                   #=  Initialize the storage for automatically generated inner elements. =#
-                   @debug "Test test test!"
-                   @assign top = setInnerOuterCache(top, C_TOP_SCOPE(NodeTree.new(), cls))
-                   @debug "OK we have a cache!"
-                    #=  Instantiate the class. =#
-                   @debug "FIRST INST CALL!"
-                   @assign inst_cls = instantiateN1(cls, EMPTY_NODE())
-                   @debug "AFTER INST CALL"
-                   insertGeneratedInners(inst_cls, top)
-                    #execStat("NFInst.instantiate(" + name + ")")
-                    @debug "INSTANTIATION STEP 1 DONE!"
-                   #=  Instantiate expressions (i.e. anything that can contains crefs, like
-                   =#
-                   #=  bindings, dimensions, etc). This is done as a separate step after
-                   =#
-                   #=  instantiation to make sure that lookup is able to find the correct nodes.
-                   =#
-                   instExpressions(inst_cls)
-                    #                   execStat("NFInst.instExpressions(" + name + ")")
-                   @debug "Inst expressions done"
-                   #=  Mark structural parameters.
-                   =#
-                   #updateImplicitVariability(inst_cls, Flags.isSet(Flags.EVAL_PARAM))
-                   #execStat("NFInst.updateImplicitVariability")
-                   #=  Type the class.
-                   =#
-                    @debug "typeClass(inst_cls, name)"
-                    typeClass(inst_cls, name)
-                    @debug "After type class"
-                   #=  Flatten the model and evaluate constants in it.
-                    =#
-                   @debug "START FLATTENING!"
-                   @assign flat_model = flatten(inst_cls, name)
-                   @debug "CONSTANT EVALUATION"
-                   @assign flat_model = evaluate(flat_model)
-                   @debug "FLATTENING DONE: $flat_model"
-                   #= Do unit checking =#
-#                   @assign flat_model = UnitCheck.checkUnits(flat_model) TODO
-                   #=  Apply simplifications to the model.=#
-                   @assign flat_model = simplify(flat_model)
-                   #=  Collect a tree of all functions that are still used in the flat model.=#
-                    @debug "COLLECT FUNCTIONS"
-                   @assign funcs = collectFunctions(flat_model, name)
-                   @debug "COLLECTED FUNCTIONS!"
-                   #=  Collect package constants that couldn't be substituted with their values =#
-                   #=  (e.g. because they where used with non-constant subscripts), and add them to the model. =#
-                    @debug "COLLECT CONSTANTS"
-                    @assign flat_model = collectConstants(flat_model, funcs)
-                    @debug "COLLECTED CONSTANTS"
-                    #                   if Flags.getConfigBool(Flags.FLAT_MODELICA)
-                    @debug "PRINTING FLAT MODELICA"
-#                    printFlatString(flat_model, FunctionTreeImpl.listValues(funcs))
-#                 end
-                    #=  Scalarize array components in the flat model.=#
-                    @debug "Skipping NF_SCALARIZE"
- #                  if Flags.isSet(Flags.NF_SCALARIZE)
- #                    @assign flat_model = Scalarize.scalarize(flat_model, name)
- #                  else
-                   @assign flat_model.variables = ListUtil.filterOnFalse(flat_model.variables, isEmptyArray)
-#                   end
-                   #=  Remove empty arrays from variables =#
-                   @debug "VERIFYING MODEL"
-                   verify(flat_model)
-#                   if Flags.isSet(Flags.NF_DUMP_FLAT)
-#                     print("FlatModel:\\n" + toString(flat_model) + "\\n")
-#                  end
-                  #=  Convert the flat model to a DAE.=#
-                  @debug "CONVERT TO THE DAE REPRESENTATION"
-                  (dae, daeFuncs) = convert(flat_model, funcs, name, info(inst_cls))
-                  return (dae, daeFuncs)
-                end
+  #=  make sure we don't expand anything
+  =#
+  #System.setUsesCardinality(false)
+  #System.setHasOverconstrainedConnectors(false)
+  #System.setHasStreamConnectors(false)
+  #=  Create a root node from the given top-level classes.
+  =#
+  @info "CALLING INST CLASS IN PROGRAM"
+  @assign top = makeTopNode(program)
+  name = AbsynUtil.pathString(classPath)
+  #=  Look up the class to instantiate and mark it as the root class.
+  =#
+  @assign cls = lookupClassName(classPath, top, AbsynUtil.dummyInfo, false)
+  @assign cls = setNodeType(ROOT_CLASS(EMPTY_NODE()), cls)
+  #=  Initialize the storage for automatically generated inner elements. =#
+  @debug "Test test test!"
+  @assign top = setInnerOuterCache(top, C_TOP_SCOPE(NodeTree.new(), cls))
+  @debug "OK we have a cache!"
+  #=  Instantiate the class. =#
+  @info "FIRST INST CALL!"
+  @assign inst_cls = instantiateN1(cls, EMPTY_NODE())
+  @info "AFTER INST CALL"
+  insertGeneratedInners(inst_cls, top)
+  #execStat("NFInst.instantiate(" + name + ")")
+  @info "INSTANTIATION STEP 1 DONE!"
+  #=  Instantiate expressions (i.e. anything that can contains crefs, like
+  =#
+  #=  bindings, dimensions, etc). This is done as a separate step after
+  #=  instantiation to make sure that lookup is able to find the correct nodes.
+  =#
+  =#
+  instExpressions(inst_cls)
+  #                   execStat("NFInst.instExpressions(" + name + ")")
+  @info "Inst expressions done"
+  #=  Mark structural parameters.
+  =#
+  #updateImplicitVariability(inst_cls, Flags.isSet(Flags.EVAL_PARAM))
+  #execStat("NFInst.updateImplicitVariability")
+  #=  Type the class.
+  =#
+  @info "TYPECLASS(inst_cls, name)"
+  typeClass(inst_cls, name)
+  @info "AFTER type class"
+  #=  Flatten the model and evaluate constants in it.
+  =#
+  @info "START FLATTENING!"
+  @assign flat_model = flatten(inst_cls, name)
+  @info "CONSTANT EVALUATION"
+  @assign flat_model = evaluate(flat_model)
+  @info "FLATTENING DONE"
+  #= Do unit checking =#
+  #                   @assign flat_model = UnitCheck.checkUnits(flat_model) TODO
+  #=  Apply simplifications to the model.=#
+  @assign flat_model = simplify(flat_model)
+  #=  Collect a tree of all functions that are still used in the flat model.=#
+  @debug "COLLECT FUNCTIONS"
+  @assign funcs = collectFunctions(flat_model, name)
+  @debug "COLLECTED FUNCTIONS!"
+  #=  Collect package constants that couldn't be substituted with their values =#
+  #=  (e.g. because they where used with non-constant subscripts), and add them to the model. =#
+  @info "COLLECT CONSTANTS"
+  @assign flat_model = collectConstants(flat_model, funcs)
+  @info "COLLECTED CONSTANTS"
+  #                   if Flags.getConfigBool(Flags.FLAT_MODELICA)
+  @debug "PRINTING FLAT MODELICA"
+  #                    printFlatString(flat_model, FunctionTreeImpl.listValues(funcs))
+  #                 end
+  #=  Scalarize array components in the flat model.=#
+  @info "Skipping NF_SCALARIZE"
+  #                  if Flags.isSet(Flags.NF_SCALARIZE)
+  #                    @assign flat_model = Scalarize.scalarize(flat_model, name)
+  #                  else
+  @assign flat_model.variables = ListUtil.filterOnFalse(flat_model.variables, isEmptyArray)
+  #                   end
+  #=  Remove empty arrays from variables =#
+  @info "VERIFYING MODEL"
+  verify(flat_model)
+  #                   if Flags.isSet(Flags.NF_DUMP_FLAT)
+  #                     print("FlatModel:\\n" + toString(flat_model) + "\\n")
+  #                  end
+  #=  Convert the flat model to a DAE.=#
+  @info "CONVERT TO THE DAE REPRESENTATION"
+  (dae, daeFuncs) = convert(flat_model, funcs, name, info(inst_cls))
+  return (dae, daeFuncs)
+end
 
 
 function instantiateN1(node::InstNode, parentNode::InstNode)::InstNode
@@ -2485,26 +2485,28 @@ end
 
 function instExternalDecl(extDecl::SCode.ExternalDecl, scope::InstNode) ::Sections
   local sections::Sections
-
   @assign sections = begin
-    local name::String
+    local nameV::String
     local lang::String
     local args::List{Expression}
     local ret_cref::ComponentRef
-    local info::SourceInfo
+    local infoV::SourceInfo
     @match extDecl begin
       SCode.EXTERNALDECL(__)  => begin
-        @assign info = info(scope)
-        @assign name = Util.getOptionOrDefault(extDecl.funcName, name(scope))
+        @assign infoV = info(scope)
+        @assign nameV = Util.getOptionOrDefault(extDecl.funcName, name(scope))
         @assign lang = Util.getOptionOrDefault(extDecl.lang, "C")
-        checkExternalDeclLanguage(lang, info)
-        @assign args = List(instExp(arg, scope, info) for arg in extDecl.args)
+        checkExternalDeclLanguage(lang, infoV)
+        @assign args = list(instExp(arg, scope, infoV) for arg in extDecl.args)
         if isSome(extDecl.output_)
-          @assign ret_cref = Lookup.lookupLocalComponent(Util.getOption(extDecl.output_), scope, info)
+          @assign ret_cref =
+            Lookup.lookupLocalComponent(Util.getOption(extDecl.output_), scope, infoV)
         else
-          @assign ret_cref = ComponentRef.EMPTY()
+          @assign ret_cref =
+            COMPONENT_REF_EMPTY()
         end
-        SECTIONS_EXTERNAL(name, args, ret_cref, lang, extDecl.annotation_, isSome(extDecl.funcName))
+        SECTIONS_EXTERNAL(nameV, args, ret_cref, lang,
+                          extDecl.annotation_, isSome(extDecl.funcName))
       end
     end
   end
@@ -2919,7 +2921,7 @@ function isComponentBindingNotFixed(component::Component, node::InstNode, requir
   local binding::Binding
   local parent::InstNode
 
-  @assign binding = P_Component.getBinding(component)
+  @assign binding = getBinding(component)
   if isUnbound(binding)
     if isRecord || isRecord(node)
       @assign isNotFixed = false
@@ -2997,7 +2999,7 @@ function getRecordFieldBinding(comp::Component, node::InstNode) ::Binding
 
   local parent::InstNode
 
-  @assign binding = P_Component.getBinding(comp)
+  @assign binding = getBinding(comp)
   if isUnbound(binding)
     @assign parent = parent(node)
     if isComponent(parent) && P_Restriction.Restriction.isRecord(restriction(getClass(parent)))
@@ -3059,7 +3061,7 @@ function markStructuralParamsComp(component::Component, node::InstNode)
   local binding::Option{Expression}
   @assign comp = P_Component.setVariability(Variability.STRUCTURAL_PARAMETER, component)
   updateComponent(comp, node)
-  @assign binding = untypedExp(P_Component.getBinding(comp))
+  @assign binding = untypedExp(getBinding(comp))
   if isSome(binding)
     markStructuralParamsExp(Util.getOption(binding))
   end

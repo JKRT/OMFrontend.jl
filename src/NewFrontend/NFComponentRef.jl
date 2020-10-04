@@ -777,7 +777,7 @@ function applySubscripts2(
           @assign (cref_subs, subscripts) = mergeList(
             subscripts,
             cref_subs,
-            Type.dimensionCount(cref.ty),
+            dimensionCount(cref.ty),
           )
         end
         (subscripts, COMPONENT_REF_CREF(cref.node, cref_subs, cref.ty, cref.origin, rest_cref))

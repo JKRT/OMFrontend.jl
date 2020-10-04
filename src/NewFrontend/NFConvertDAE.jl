@@ -1309,7 +1309,7 @@ function convertFunction(func::M_Function)::DAE.Function
         toDAE(func, def)
       end
       INSTANCED_CLASS(
-        restriction = P_Restriction.Restriction.RECORD_CONSTRUCTOR(__),
+        restriction = RESTRICTION_RECORD_CONSTRUCTOR(__),
       ) => begin
         DAE.RECORD_CONSTRUCTOR(
           name(func),
@@ -1420,7 +1420,7 @@ function convertExternalDeclArg(exp::Expression)::DAE.ExtArg
       CREF_EXPRESSION(cref = cref && CREF(__)) =>
         begin
           @assign dir =
-            P_Prefixes.directionToAbsyn(P_Component.direction(component(cref.node)))
+            directionToAbsyn(direction(component(cref.node)))
           DAE.ExtArg.EXTARG(
             toDAE(cref),
             dir,
@@ -1459,7 +1459,7 @@ function convertExternalDeclOutput(cref::ComponentRef)::DAE.ExtArg
     @match cref begin
       CREF(__) => begin
         @assign dir =
-          P_Prefixes.directionToAbsyn(P_Component.direction(component(cref.node)))
+          directionToAbsyn(direction(component(cref.node)))
         DAE.ExtArg.EXTARG(toDAE(cref), dir, toDAE(cref.ty))
       end
 
@@ -1505,8 +1505,8 @@ function makeTypeVar(component::InstNode)::DAE.Var
   @assign typeVar = DAE.TYPES_VAR(
     name(component),
     toDAE(attr, visibility(component)),
-    toDAE(P_Component.getType(comp)),
-    toDAE(P_Component.getBinding(comp)),
+    toDAE(getType(comp)),
+    toDAE(getBinding(comp)),
     false,
     NONE(),
   )
@@ -1528,10 +1528,10 @@ function makeTypeRecordVar(component::InstNode)::DAE.Var
   else
     @assign vis = visibility(component)
   end
-  @assign binding = P_Component.getBinding(comp)
+  @assign binding = getBinding(comp)
   @assign binding = mapExp(binding, stripScopePrefixExp)
   @assign bind_from_outside = parentCount(binding) > 1
-  @assign ty = P_Component.getType(comp)
+  @assign ty = getType(comp)
   @assign ty = mapDims(ty, stripScopePrefixFromDim)
   @assign typeVar = DAE.TYPES_VAR(
     name(component),

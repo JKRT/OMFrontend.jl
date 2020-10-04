@@ -81,7 +81,7 @@ function fromExp(exp::Expression)::Subscript
 end
 
 function isValidIndexType(ty::M_Type)::Bool
-  local b::Bool = Type.isInteger(ty) || Type.isBoolean(ty) || Type.isEnumeration(ty)
+  local b::Bool = isInteger(ty) || Type.isBoolean(ty) || Type.isEnumeration(ty)
   return b
 end
 

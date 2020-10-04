@@ -101,7 +101,7 @@ include("./NewFrontend/NFOperator.jl")
 include("./NewFrontend/NFTypeCheck.jl")
 include("./NewFrontend/NFExpandableConnectors.jl")
 include("./NewFrontend/NFEvalConstants.jl")
-
+include("./NewFrontend/NFBuiltinCall.jl")
 #= TODO: NOT IN USE=#
 #include("./NewFrontend/NFUnit.jl")
 #include("./NewFrontend/NFHashTableCrToUnit.jl")
@@ -144,7 +144,7 @@ function instantiateSCodeToDAE(elementToInstantiate::String, inProgram::SCode.Pr
   s = HybridDAEParser.translateToSCode(p)
   p = Main.listAppend(s, inProgram)
   GC.enable(true)
-  Main.instClassInProgram(Absyn.IDENT(elementToInstantiate), p)
+  Main.instClassInProgram(Absyn.IDENT(elementToInstantiate), inProgram)
 end
 
 function testSpin()
@@ -158,11 +158,11 @@ function testSpin()
 end
 
 function testSpinDAEExport()
-    p = parseFile("example.mo")
-    scodeProgram = translateToSCode(p)
-    @info "Translation to SCode"
-    @info "SCode -> DAE"
-    (dae, cache) = instantiateSCodeToDAE("HelloWorld", scodeProgram)
+  p = parseFile("example.mo")
+  scodeProgram = translateToSCode(p)
+  @info "Translation to SCode"
+  @info "SCode -> DAE"
+  (dae, cache) = instantiateSCodeToDAE("HelloWorld", scodeProgram)
   @info "Exporting to file"
   exportDAERepresentationToFile("testDAE.jl", "$dae")
   @info "DAE Exported"

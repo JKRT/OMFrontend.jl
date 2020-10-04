@@ -211,7 +211,7 @@ function splitImpl2(
 
   for comp in comps
     @assign c = component(comp)
-    @assign ty = P_Component.getType(c)
+    @assign ty = getType(c)
     @assign cty = P_Component.connectorType(c)
     if !ConnectorType.isPotentiallyPresent(cty)
       @assign cref = append(

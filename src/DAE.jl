@@ -594,44 +594,35 @@
 
          @Uniontype InlineType begin
               @Record NORM_INLINE begin
-
               end
 
               @Record BUILTIN_EARLY_INLINE begin
-
               end
 
               @Record EARLY_INLINE begin
-
               end
 
               @Record DEFAULT_INLINE begin
-
               end
 
               @Record NO_INLINE begin
-
               end
 
               @Record AFTER_INDEX_RED_INLINE begin
-
               end
          end
 
          @Uniontype FunctionDefinition begin
               @Record FUNCTION_DEF begin
-
                       body::List{Element}
               end
 
               @Record FUNCTION_EXT begin
-
                       body::List{Element}
                       externalDecl::ExternalDecl
               end
 
               @Record FUNCTION_DER_MAPPER begin
-
                       derivedFunction #= Function that is derived =#::Absyn.Path
                       derivativeFunction #= Path to derivative function =#::Absyn.Path
                       derivativeOrder #= in case a function have multiple derivatives, include all =#::Integer
@@ -644,11 +635,9 @@
           #= Different conditions on derivatives =#
          @Uniontype derivativeCond begin
               @Record ZERO_DERIVATIVE begin
-
               end
 
               @Record NO_DERIVATIVE begin
-
                       binding::Exp
               end
          end

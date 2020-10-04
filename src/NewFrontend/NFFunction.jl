@@ -261,7 +261,7 @@ function foldExpParameter(node::InstNode, foldFn::FoldFunc, arg::ArgT) where {Ar
   local cls::Class
 
   @assign comp = component(node)
-  @assign arg = foldExp(P_Component.getBinding(comp), foldFn, arg)
+  @assign arg = foldExp(getBinding(comp), foldFn, arg)
   @assign () = begin
     @match comp begin
       TYPED_COMPONENT(__) => begin
@@ -320,7 +320,7 @@ function mapExpParameter(node::InstNode, mapFn::MapFunc)
   local dirty::Bool = false
 
   @assign comp = component(node)
-  @assign binding = P_Component.getBinding(comp)
+  @assign binding = getBinding(comp)
   @assign binding2 = mapExp(binding, mapFn)
   if !referenceEq(binding, binding2)
     @assign comp = P_Component.setBinding(binding2, comp)
@@ -436,7 +436,7 @@ function makeDAEType(fn::M_Function, boxTypes::Bool = false)::DAE.Type
   for param in fn.inputs
     @assign comp = component(param)
     @assign pname = name(param)
-    @assign ty = P_Component.getType(comp)
+    @assign ty = getType(comp)
     @assign ptype = toDAE(if boxTypes
       Type.box(ty)
     else
@@ -445,7 +445,7 @@ function makeDAEType(fn::M_Function, boxTypes::Bool = false)::DAE.Type
     @assign pconst = P_Prefixes.variabilityToDAEConst(variability(comp))
     @assign ppar = P_Prefixes.parallelismToDAE(P_Component.parallelism(comp))
     @assign pdefault = Util.applyOption(
-      typedExp(P_Component.getBinding(comp)),
+      typedExp(getBinding(comp)),
       P_Expression.Expression.toDAE,
     )
     @assign params =
@@ -508,7 +508,7 @@ function isDefaultRecordConstructor(fn::M_Function)::Bool
 
   @assign isConstructor = begin
     @match restriction(getClass(fn.node)) begin
-      P_Restriction.Restriction.RECORD_CONSTRUCTOR(__) => begin
+      RESTRICTION_RECORD_CONSTRUCTOR(__) => begin
         true
       end
 
@@ -522,13 +522,11 @@ end
 
 function inlineBuiltin(fn::M_Function)::DAE.InlineType
   local inlineType::DAE.InlineType
-
   @assign inlineType = begin
     @match fn.attributes.isBuiltin begin
-      DAE.FunctionBuiltin.FUNCTION_BUILTIN_PTR(__) => begin
-        DAE.InlineType.BUILTIN_EARLY_INLINE()
+      DAE.FUNCTION_BUILTIN_PTR(__) => begin
+        DAE.BUILTIN_EARLY_INLINE()
       end
-
       _ => begin
         fn.attributes.inline
       end
@@ -595,13 +593,11 @@ end
 
 function isSpecialBuiltin(fn::M_Function)::Bool
   local special::Bool
-
   local path::Absyn.Path
-
   if !isBuiltin(fn)
     @assign special = false
   else
-    @assign path = P_Function.nameConsiderBuiltin(fn)
+    @assign path = nameConsiderBuiltin(fn)
     if !AbsynUtil.pathIsIdent(path)
       @assign special = false
     else
@@ -920,7 +916,7 @@ function typePartialApplication(
   local arg_ty::M_Type
   local arg_var::VariabilityType
   local fn::M_Function
-  local next_origin::ORIGIN_Type = ExpOrigin.setFlag(origin, ExpOrigin.SUBEXPRESSION)
+  local next_origin::ORIGIN_Type = ExpOrigin.setFlag(origin, ORIGIN_SUBEXPRESSION)
   local inputs::List{InstNode}
   local slots::List{Slot}
 
@@ -941,7 +937,7 @@ function typePartialApplication(
     Variability.CONSTANT
   end
   for arg in args
-    @assign (arg, arg_ty, arg_var) = Typing.typeExp(arg, origin, info)
+    @assign (arg, arg_ty, arg_var) = typeExp(arg, origin, info)
     @match _cons(arg_name, rest_names) = rest_names
     @assign (arg, inputs, slots) =
       applyPartialApplicationArg(arg_name, arg, arg_ty, inputs, slots, fn, info)
@@ -964,7 +960,7 @@ function boxFunctionParameter(component::InstNode)
   local comp::Component
 
   @assign comp = component(component)
-  @assign comp = P_Component.setType(Type.box(P_Component.getType(comp)), comp)
+  @assign comp = P_Component.setType(Type.box(getType(comp)), comp)
   return updateComponent(comp, component)
 end
 
@@ -975,14 +971,14 @@ function typeFunctionBody(fn::M_Function)::M_Function
   #=  Type the bindings of the outputs and local variables.
   =#
   for c in fn.outputs
-    Typing.typeComponentBinding(c, ExpOrigin.FUNCTION)
+    typeComponentBinding(c, ORIGIN_FUNCTION)
   end
   for c in fn.locals
-    Typing.typeComponentBinding(c, ExpOrigin.FUNCTION)
+    typeComponentBinding(c, ORIGIN_FUNCTION)
   end
   #=  Type the algorithm section of the function, if it has one.
   =#
-  Typing.typeFunctionSections(fn.node, ExpOrigin.FUNCTION)
+  typeFunctionSections(fn.node, ORIGIN_FUNCTION)
   #=  Type any derivatives of the function.
   =#
   for fn_der in fn.derivatives
@@ -993,13 +989,11 @@ end
 
 """ #= Types a function's parameters, local components and default arguments. =#"""
 function typeFunctionSignature(fn::M_Function)::M_Function
-
   local attr::DAE.FunctionAttributes
   local node::InstNode = fn.node
-
   if !isTyped(fn)
-    Typing.typeClassType(node, NFBinding.EMPTY_BINDING, ExpOrigin.FUNCTION, node)
-    Typing.typeComponents(node, ExpOrigin.FUNCTION)
+    typeClassType(node, EMPTY_BINDING, ORIGIN_FUNCTION, node)
+    typeComponents(node, ORIGIN_FUNCTION)
     if isPartial(node)
       applyComponents(
         classTree(getClass(node)),
@@ -1007,7 +1001,7 @@ function typeFunctionSignature(fn::M_Function)::M_Function
       )
     end
     for c in fn.inputs
-      Typing.typeComponentBinding(c, ExpOrigin.FUNCTION)
+      typeComponentBinding(c, ORIGIN_FUNCTION)
     end
     @assign fn.slots = makeSlots(fn.inputs)
     checkParamTypes(fn)
@@ -1043,12 +1037,11 @@ function typeNodeCache(functionNode::InstNode)::List{M_Function}
   local name::String
   @assign fn_node = classScope(functionNode)
   @match C_FUNCTION(functions, typed, special) = getFuncCache(fn_node)
-  #=  Type the function(s) if not already done.
-  =#
+  #=  Type the function(s) if not already done. =#
   if !typed
-    @assign functions = List(typeFunctionSignature(f) for f in functions)
+    @assign functions = list(typeFunctionSignature(f) for f in functions)
     setFuncCache(fn_node, C_FUNCTION(functions, true, special))
-    @assign functions = List(typeFunctionBody(f) for f in functions)
+    @assign functions = list(typeFunctionBody(f) for f in functions)
     setFuncCache(fn_node, C_FUNCTION(functions, true, special))
   end
   return functions
@@ -1058,19 +1051,18 @@ end
      they are not already typed. =#"""
 function typeRefCache(functionRef::ComponentRef)::List{M_Function}
   local functions::List{M_Function}
-
   @assign functions = begin
     @match functionRef begin
-      CREF(__) => begin
+      COMPONENT_REF_CREF(__) => begin
         typeNodeCache(functionRef.node)
       end
-
       _ => begin
-        Error.assertion(
-          false,
-          getInstanceName() + " got invalid function call reference",
-          sourceInfo(),
-        )
+        # Error.assertion(
+        #   false,
+        #   getInstanceName() + " got invalid function call reference",
+        #   sourceInfo(),
+        # )
+        @error "Got invalid function call reference"
         fail()
       end
     end
@@ -1278,7 +1270,7 @@ function matchArgs(
       @assign funcMatchKind = NO_MATCH
       return (args, funcMatchKind)
     end
-    @assign input_ty = P_Component.getType(comp)
+    @assign input_ty = getType(comp)
     @assign (arg_exp, ty, mk) =
       TypeCheck.matchTypes(arg_ty, input_ty, arg_exp, allowUnknown = true)
     @assign matched = TypeCheck.isValidArgumentMatch(mk)
@@ -1790,7 +1782,7 @@ function signatureString(fn::M_Function, printTypes::Bool = true)::String
       end
     end
     if printTypes && P_Component.isTyped(c)
-      @assign ty = P_Component.getType(c)
+      @assign ty = getType(c)
       @assign var_s = P_Prefixes.unparseVariability(variability(c), ty)
       @assign input_str = var_s + Type.toString(ty) + " " + input_str
     end
@@ -1992,7 +1984,7 @@ function instFunction3(fnNode::InstNode)::InstNode
   @error "Callng cache init func!"
   cacheInitFunc(fnNode)
   instExpressions(fnNode)
-  @info "Returning in instfunction3"
+  @debug "Returning in instfunction3"
   return fnNode
 end
 
@@ -2238,9 +2230,8 @@ function isValidParamState(cls::InstNode)::Bool
   return isValid
 end
 
-function isValidParamType(ty::M_Type)::Bool
+function isValidParamType(ty::NFType)::Bool
   local isValid::Bool
-
   @assign isValid = begin
     @match ty begin
       TYPE_INTEGER(__) => begin
@@ -2282,11 +2273,9 @@ function isValidParamType(ty::M_Type)::Bool
       TYPE_COMPLEX(__) => begin
         isValidParamState(ty.cls)
       end
-
       TYPE_FUNCTION(__) => begin
         true
       end
-
       TYPE_METABOXED(__) => begin
         isValidParamType(ty.ty)
       end
@@ -2354,7 +2343,7 @@ function makeAttributes(
     local is_om_pure::Bool
     local has_out_params::Bool
     local has_unbox_args::Bool
-    local name::String
+    local nameVar::String
     local in_params::List{String}
     local out_params::List{String}
     local inline_ty::DAE.InlineType
@@ -2363,10 +2352,10 @@ function makeAttributes(
     =#
     @matchcontinue fres begin
       SCode.FR_EXTERNAL_FUNCTION(is_impure) => begin
-        @assign in_params = List(name(i) for i in inputs)
-        @assign out_params = List(name(o) for o in outputs)
-        @assign name = SCodeUtil.isBuiltinFunction(def, in_params, out_params)
-        @assign inline_ty = InstUtil.commentIsInlineFunc(cmt)
+        @assign in_params = list(name(i) for i in inputs)
+        @assign out_params = list(name(o) for o in outputs)
+        @assign nameVar = SCodeUtil.isBuiltinFunction(def, in_params, out_params)
+        @assign inline_ty = commentIsInlineFunc(cmt)
         @assign is_impure = is_impure || hasImpure(cmt)
         @assign has_unbox_args = hasUnboxArgsAnnotation(cmt)
         DAE.FUNCTION_ATTRIBUTES(
@@ -2374,33 +2363,30 @@ function makeAttributes(
           hasOMPure(cmt),
           is_impure,
           is_partial,
-          DAE.FUNCTION_BUILTIN(SOME(name), has_unbox_args),
+          DAE.FUNCTION_BUILTIN(SOME(nameVar), has_unbox_args),
           DAE.FP_NON_PARALLEL(),
         )
       end
 
       SCode.FR_PARALLEL_FUNCTION(__) => begin
-        #=  Parallel function: there are some builtin functions.
-        =#
-        @assign in_params = List(name(i) for i in inputs)
-        @assign out_params = List(name(o) for o in outputs)
-        @assign name = SCodeUtil.isBuiltinFunction(def, in_params, out_params)
-        @assign inline_ty = InstUtil.commentIsInlineFunc(cmt)
+        #=  Parallel function: there are some builtin functions.=#
+        @assign in_params = list(name(i) for i in inputs)
+        @assign out_params = list(name(o) for o in outputs)
+        @assign nameVar = SCodeUtil.isBuiltinFunction(def, in_params, out_params)
+        @assign inline_ty = commentIsInlineFunc(cmt)
         @assign has_unbox_args = hasUnboxArgsAnnotation(cmt)
         DAE.FUNCTION_ATTRIBUTES(
           inline_ty,
           hasOMPure(cmt),
           false,
           is_partial,
-          DAE.FUNCTION_BUILTIN(SOME(name), has_unbox_args),
+          DAE.FUNCTION_BUILTIN(SOME(nameVar), has_unbox_args),
           DAE.FP_PARALLEL_FUNCTION(),
         )
       end
-
       SCode.FR_PARALLEL_FUNCTION(__) => begin
-        #=  Parallel function: non-builtin.
-        =#
-        @assign inline_ty = InstUtil.commentIsInlineFunc(cmt)
+        #=  Parallel function: non-builtin.=#
+        @assign inline_ty = commentIsInlineFunc(cmt)
         DAE.FUNCTION_ATTRIBUTES(
           inline_ty,
           hasOMPure(cmt),
@@ -2423,10 +2409,8 @@ function makeAttributes(
       end
 
       _ => begin
-        #=  Kernel functions: never builtin and never inlined.
-        =#
-        #=  Normal function.
-        =#
+        #=  Kernel functions: never builtin and never inlined.=#
+        #=  Normal function.=#
         #        @assign inline_ty = InstUtil.commentIsInlineFunc(cmt) TODO
         inline_ty = DAE.NO_INLINE() #TODO tmp
         #=  In Modelica 3.2 and before, external functions with side-effects are not marked.
@@ -2513,32 +2497,32 @@ function hasOMPure(cmt::SCode.Comment)::Bool
   return res
 end
 
-function makeSlot(component::InstNode, index::Integer)::Slot
+function makeSlot(componentArg::InstNode, index::Integer)::Slot
   local slot::Slot
-
   local comp::Component
   local default::Option{Expression}
-  local name::String
-
+  local nameVar::String
   try
-    @assign comp = component(component)
-    @assign default = typedExp(P_Component.getImplicitBinding(comp))
-    @assign name = name(component)
-    if stringGet(name, 1) == 36
-      if stringLength(name) > 4 && substring(name, 1, 4) == "in_"
-        @assign name = substring(name, 5, stringLength(name))
+    @assign comp = component(componentArg)
+    @assign default = typedExp(getImplicitBinding(comp))
+    @assign nameVar = name(componentArg)
+    if stringGet(nameVar, 1) == 36
+      if stringLength(nameVar) > 4 && substring(nameVar, 1, 4) == "in_"
+        @assign nameVar = substring(nameVar, 5, stringLength(nameVar))
       end
     end
     @assign slot = SLOT(
-      name(component),
+      name(componentArg),
       SlotType.GENERIC,
       default,
       NONE(),
       index,
       SlotEvalStatus.NOT_EVALUATED,
     )
-  catch
-    Error.assertion(false, getInstanceName() + " got invalid component", sourceInfo())
+  catch e
+    #Error.assertion(false, getInstanceName() + " got invalid component", sourceInfo())
+    @error "Invalid component. Error: $e"
+    fail()
   end
   #=  Remove $in_ for OM input output arguments.
   =#
@@ -2548,9 +2532,7 @@ end
 
 function makeSlots(inputs::List{<:InstNode})::List{Slot}
   local slots::List{Slot} = nil
-
   local index::Integer = 1
-
   for i in inputs
     @assign slots = _cons(makeSlot(i, index), slots)
     @assign index = index + 1
@@ -2776,7 +2758,7 @@ end
 function makeReturnType(fn::M_Function)::M_Type
   local returnType::M_Type
   local ret_tyl::List{M_Type}
-  @assign ret_tyl = List(getType(o) for o in fn.outputs)
+  @assign ret_tyl = list(getType(o) for o in fn.outputs)
   @assign returnType = begin
     @match ret_tyl begin
       nil() => begin
@@ -2793,4 +2775,11 @@ function makeReturnType(fn::M_Function)::M_Type
     end
   end
   return returnType
+end
+
+"
+  TODO currently just returns that we should not inline
+"
+function commentIsInlineFunc(cmt)
+  return DAE.NO_INLINE()
 end

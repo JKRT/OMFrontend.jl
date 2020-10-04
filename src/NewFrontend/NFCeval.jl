@@ -426,13 +426,13 @@ function evalComponentBinding(
   local start_exp::Option{Expression}
 
   @assign exp_origin = if isFunction(explicitParent(node))
-    ExpOrigin.FUNCTION
+    ORIGIN_FUNCTION
   else
     ExpOrigin.CLASS
   end
-  Typing.typeComponentBinding(node, exp_origin, typeChildren = false)
+  typeComponentBinding(node, exp_origin, typeChildren = false)
   @assign comp = component(node)
-  @assign binding = P_Component.getBinding(comp)
+  @assign binding = getBinding(comp)
   if isUnbound(binding)
     @assign binding =
       makeComponentBinding(comp, node, P_Expression.Expression.toCref(defaultExp), target)
@@ -656,7 +656,7 @@ function evalComponentStartBinding(
   end
   #=  Try to evaluate the binding if one exists.
   =#
-  @assign binding = P_Component.getBinding(start_comp)
+  @assign binding = getBinding(start_comp)
   @assign outExp = begin
     @match binding begin
       TYPED_BINDING(__) => begin
@@ -749,7 +749,7 @@ function makeComponentBinding(
       end
 
       _ => begin
-        NFBinding.EMPTY_BINDING
+        EMPTY_BINDING
       end
     end
   end
@@ -2341,7 +2341,7 @@ function evalCall(call::Call, target::EvalTarget)::Expression
   @assign exp = begin
     local args::List{Expression}
     @match c begin
-      P_Call.TYPED_CALL(__) => begin
+      TYPED_CALL(__) => begin
         @assign c.arguments = List(evalExp_impl(arg, target) for arg in c.arguments)
         if P_Function.isBuiltin(c.fn)
           P_Expression.Expression.bindingExpMap(
@@ -2356,7 +2356,7 @@ function evalCall(call::Call, target::EvalTarget)::Expression
         end
       end
 
-      P_Call.TYPED_ARRAY_CONSTRUCTOR(__) => begin
+      TYPED_ARRAY_CONSTRUCTOR(__) => begin
         evalArrayConstructor(c.exp, c.iters)
       end
 
@@ -2379,7 +2379,7 @@ function evalBuiltinCallExp(callExp::Expression, target::EvalTarget)::Expression
   local fn::M_Function
   local args::List{Expression}
 
-  @match CALL_EXPRESSION(call = P_Call.TYPED_CALL(fn = fn, arguments = args)) =
+  @match CALL_EXPRESSION(call = TYPED_CALL(fn = fn, arguments = args)) =
     callExp
   @assign result = evalBuiltinCall(fn, args, target)
   return result
@@ -2646,7 +2646,7 @@ function evalNormalCallExp(callExp::Expression)::Expression
   local fn::M_Function
   local args::List{Expression}
 
-  @match CALL_EXPRESSION(call = P_Call.TYPED_CALL(fn = fn, arguments = args)) =
+  @match CALL_EXPRESSION(call = TYPED_CALL(fn = fn, arguments = args)) =
     callExp
   @assign result = evalNormalCall(fn, args)
   return result
@@ -2806,7 +2806,7 @@ function evalBuiltinCat(
 
   @match INTEGER_EXPRESSION(n) = argN
   @assign ty = typeOf(listHead(args))
-  @assign nd = Type.dimensionCount(ty)
+  @assign nd = dimensionCount(ty)
   if n > nd || n < 1
     if P_EvalTarget.hasInfo(target)
       Error.addSourceMessage(
@@ -3215,7 +3215,7 @@ function evalBuiltinMatrix(arg::Expression)::Expression
     local ty::M_Type
     @match arg begin
       ARRAY_EXPRESSION(ty = ty) => begin
-        @assign dim_count = Type.dimensionCount(ty)
+        @assign dim_count = dimensionCount(ty)
         if dim_count < 2
           @assign result = P_Expression.Expression.promote(arg, ty, 2)
         elseif dim_count == 2
@@ -4621,11 +4621,11 @@ function evalSize(
   if isSome(optIndex)
     @assign index_exp = evalExp_impl(Util.getOption(optIndex), target)
     @assign index = P_Expression.Expression.toInteger(index_exp)
-    @assign (dim, _, ty_err) = Typing.typeExpDim(exp, index, ExpOrigin.CLASS, info)
+    @assign (dim, _, ty_err) = typeExpDim(exp, index, ExpOrigin.CLASS, info)
     Typing.checkSizeTypingError(ty_err, exp, index, info)
     @assign outExp = P_Dimension.Dimension.sizeExp(dim)
   else
-    @assign (outExp, ty) = Typing.typeExp(exp, ExpOrigin.CLASS, info)
+    @assign (outExp, ty) = typeExp(exp, ExpOrigin.CLASS, info)
     @assign expl = List(P_Dimension.Dimension.sizeExp(d) for d in arrayDims(ty))
     @assign dim = P_Dimension.Dimension.fromInteger(listLength(expl), Variability.PARAMETER)
     @assign outExp =

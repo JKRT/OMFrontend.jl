@@ -337,7 +337,7 @@ function getBindingExp(node::InstNode, repl::ReplTree.Tree)::Expression
 
   local binding::Binding
 
-  @assign binding = P_Component.getBinding(component(node))
+  @assign binding = getBinding(component(node))
   if isBound(binding)
     @assign bindingExp = P_Expression.Expression.getBindingExp(getExp(binding))
   else

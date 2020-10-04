@@ -53,7 +53,7 @@ function reconstructRecordInstance(
     end
   end
   if listEmpty(field_exps)
-    @assign record_binding = NFBinding.EMPTY_BINDING
+    @assign record_binding = EMPTY_BINDING
   else
     @assign field_exps = listReverseInPlace(field_exps)
     @assign record_exp = P_Expression.Expression.makeRecord(
@@ -135,8 +135,8 @@ function collectComponentFlatTypes(component::InstNode, types::TypeTree)::TypeTr
   local comp::Component
 
   @assign comp = component(component)
-  @assign types = collectFlatType(P_Component.getType(comp), types)
-  @assign types = collectBindingFlatTypes(P_Component.getBinding(comp), types)
+  @assign types = collectFlatType(getType(comp), types)
+  @assign types = collectBindingFlatTypes(getBinding(comp), types)
   return types
 end
 

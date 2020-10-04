@@ -740,7 +740,7 @@ function getCondition(component::Component)::Binding
       end
 
       _ => begin
-        NFBinding.EMPTY_BINDING
+        EMPTY_BINDING
       end
     end
   end
@@ -850,7 +850,7 @@ function getBinding(component::Component)::Binding
       end
 
       _ => begin
-        NFBinding.EMPTY_BINDING
+        EMPTY_BINDING
       end
     end
   end
@@ -1101,29 +1101,23 @@ end
      enumeration literals can be handled correctly. =#"""
 function info(component::Component)::SourceInfo
   local info::SourceInfo
-
   @assign info = begin
     @match component begin
       COMPONENT_DEF(__) => begin
         SCodeUtil.elementInfo(component.definition)
       end
-
       UNTYPED_COMPONENT(__) => begin
         component.info
       end
-
       TYPED_COMPONENT(__) => begin
         component.info
       end
-
       ITERATOR(__) => begin
         component.info
       end
-
       TYPE_ATTRIBUTE(__) => begin
-        P_Modifier.info(component.modifier)
+        info(component.modifier)
       end
-
       DELETED_COMPONENT(__) => begin
         info(component.component)
       end

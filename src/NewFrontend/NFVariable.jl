@@ -36,7 +36,7 @@ function toFlatStream(
   if !listEmpty(var.typeAttributes)
     @assign s = append(s, "(")
     @assign first = true
-    @assign var_dims = Type.dimensionCount(var.ty)
+    @assign var_dims = dimensionCount(var.ty)
     for a in var.typeAttributes
       if first
         @assign first = false
@@ -45,7 +45,7 @@ function toFlatStream(
       end
       @assign b = Util.tuple22(a)
       @assign binding_dims =
-        Type.dimensionCount(typeOf(P_Expression.Expression.getBindingExp(getExp(
+        dimensionCount(typeOf(P_Expression.Expression.getBindingExp(getExp(
           b,
         ))))
       if var_dims > binding_dims
@@ -138,7 +138,7 @@ function lookupTypeAttribute(name::String, var::Variable)::Binding
       return binding
     end
   end
-  @assign binding = NFBinding.EMPTY_BINDING
+  @assign binding = EMPTY_BINDING
   return binding
 end
 
@@ -186,7 +186,7 @@ function fromCref(cref::ComponentRef)::Variable
   @assign node = node(cref)
   @assign comp = component(node)
   @assign ty = getSubscriptedType(cref)
-  @assign binding = P_Component.getBinding(comp)
+  @assign binding = getBinding(comp)
   @assign vis = visibility(node)
   @assign attr = getAttributes(comp)
   @assign cmt = P_Component.comment(comp)

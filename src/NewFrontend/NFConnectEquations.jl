@@ -152,7 +152,7 @@ function evaluateOperators(
       CALL_EXPRESSION(call = call) => begin
         begin
           @match call begin
-            P_Call.TYPED_CALL(__) => begin
+            TYPED_CALL(__) => begin
               begin
                 @match P_Function.name(call.fn) begin
                   Absyn.IDENT("inStream") => begin
@@ -198,7 +198,7 @@ function evaluateOperators(
                 evaluateOperatorReductionExp(exp, sets, setsArray, ctable)
               end
 
-            P_Call.TYPED_ARRAY_CONSTRUCTOR(
+            TYPED_ARRAY_CONSTRUCTOR(
               __,
             ) where {(P_Expression.Expression.contains(call.exp, isStreamCall))} =>
               begin
@@ -222,7 +222,7 @@ function evaluateOperators(
       BINARY_EXPRESSION(
         exp1 = CREF_EXPRESSION(__),
         operator = OPERATOR(op = Op.MUL),
-        exp2 = CALL_EXPRESSION(call = call && P_Call.TYPED_CALL(__)),
+        exp2 = CALL_EXPRESSION(call = call && TYPED_CALL(__)),
       ) where {(AbsynUtil.isNamedPathIdent(P_Function.name(call.fn), "actualStream"))} =>
         begin
           evaluateActualStreamMul(
@@ -236,7 +236,7 @@ function evaluateOperators(
         end
 
       BINARY_EXPRESSION(
-        exp1 = CALL_EXPRESSION(call = call && P_Call.TYPED_CALL(__)),
+        exp1 = CALL_EXPRESSION(call = call && TYPED_CALL(__)),
         operator = OPERATOR(op = Op.MUL),
         exp2 = CREF_EXPRESSION(__),
       ) where {(AbsynUtil.isNamedPathIdent(P_Function.name(call.fn), "actualStream"))} =>
@@ -412,7 +412,7 @@ function makeEqualityAssert(
   @assign ty = getComponentType(lhsCref)
   @assign lhs_exp = P_Expression.Expression.fromCref(lhsCref)
   @assign rhs_exp = P_Expression.Expression.fromCref(rhsCref)
-  if Type.isReal(ty)
+  if isReal(ty)
     @assign exp =
       BINARY_EXPRESSION(lhs_exp, P_Operator.Operator.makeSub(ty), rhs_exp)
     @assign exp = CALL_EXPRESSION(P_Call.makeTypedCall(

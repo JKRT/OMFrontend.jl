@@ -778,7 +778,7 @@ function evaluateExtRealMatrixArg(arg::Expression)::List{List{AbstractFloat}}
   #=  matrices, so if the argument is a vector we convert it into a matrix.
   =#
   @assign value = begin
-    @match Type.dimensionCount(ty) begin
+    @match dimensionCount(ty) begin
       1 => begin
         List(list(getExtRealValue(e)) for e in expl)
       end

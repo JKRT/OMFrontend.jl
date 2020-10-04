@@ -1699,7 +1699,7 @@ function checkBinaryOperationPow(
   @assign valid = isCompatibleMatch(mk)
   if isArray(resultType)
     @assign valid = valid && Type.isSquareMatrix(resultType)
-    @assign valid = valid && Type.isInteger(type2)
+    @assign valid = valid && isInteger(type2)
     @assign op = OPERATOR(resultType, Op.POW_MATRIX)
     @assign e2 = exp2
   else
@@ -2083,7 +2083,7 @@ function checkRelationOperation(
         #=  Print a warning for == or <> with Real operands in a model.
         =#
         @assign o = operator.op
-        if ExpOrigin.flagNotSet(origin, ExpOrigin.FUNCTION) &&
+        if ExpOrigin.flagNotSet(origin, ORIGIN_FUNCTION) &&
            (o == Op.EQUAL || o == Op.NEQUAL)
           Error.addStrictMessage(
             Error.WARNING_RELATION_ON_REAL,
@@ -3398,7 +3398,7 @@ function matchExpressions_cast(
         =#
         #=  tuple is used. exp1 should never be a tuple here, since any tuple expression
         =#
-        #=  not alone on the rhs of an equation is \"tuple subscripted\" by Typing.typeExp.
+        #=  not alone on the rhs of an equation is \"tuple subscripted\" by typeExp.
         =#
         @assign exp2 = P_Expression.Expression.tupleElement(exp2, compatibleType, 1)
         @assign (exp2, compatibleType, matchKind) =
@@ -3576,8 +3576,8 @@ function matchComplexTypes(
             @assign comp2 = component(comps2[i])
             if P_Component.isTyped(comp2)
               @assign (_, _, mk) = matchTypes(
-                P_Component.getType(comp1),
-                P_Component.getType(comp2),
+                getType(comp1),
+                getType(comp2),
                 expression,
                 allowUnknown,
               )
@@ -4529,7 +4529,7 @@ end
 """ #= Checks that an expression used as a dimension has a valid type for a
    dimension, otherwise prints an error and fails. =#"""
 function checkDimensionType(exp::Expression, ty::NFType, info::SourceInfo)
-  return if !Type.isInteger(ty)
+  return if !isInteger(ty)
     @assign () = begin
       @match exp begin
         P_Expression.Expression.TYPENAME(ty = ARRAY_TYPE(elementType = TYPE_BOOLEAN(__))) => begin

@@ -64,7 +64,7 @@ function inlineCallExp(callExp::Expression)::Expression
     local call::Call
     local shouldInline::Bool
     @match callExp begin
-      CALL_EXPRESSION(call = call && P_Call.TYPED_CALL(__)) => begin
+      CALL_EXPRESSION(call = call && TYPED_CALL(__)) => begin
         @assign shouldInline = begin
           @match P_Call.inlineType(call) begin
             DAE.InlineType.BUILTIN_EARLY_INLINE(__) => begin
@@ -108,7 +108,7 @@ function inlineCall(call::Call)::Expression
     local body::List{Statement}
     local stmt::Statement
     @match call begin
-      P_Call.TYPED_CALL(
+      TYPED_CALL(
         fn = fn && P_Function.FUNCTION(inputs = inputs, outputs = outputs, locals = locals),
         arguments = args,
       ) => begin

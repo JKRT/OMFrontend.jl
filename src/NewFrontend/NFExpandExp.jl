@@ -572,7 +572,7 @@ function expandBinaryElementWise2(
   @assign expl2 = P_Expression.Expression.arrayElements(exp2)
   @assign ty = P_Operator.Operator.typeOf(op)
   @assign eop = setType(Type.unliftArray(ty), op)
-  if Type.dimensionCount(ty) > 1
+  if dimensionCount(ty) > 1
     @assign expl =
       List(@do_threaded_for expandBinaryElementWise2(e1, eop, e2, func) (e1, e2) (
         expl1,
@@ -701,7 +701,7 @@ function expandSize(exp::Expression)::Tuple{Expression, Bool}
     @match exp begin
       SIZE_EXPRESSION(exp = e, dimIndex = NONE()) => begin
         @assign ty = typeOf(e)
-        @assign dims = Type.dimensionCount(ty)
+        @assign dims = dimensionCount(ty)
         @assign expl = List(
           SIZE_EXPRESSION(e, SOME(INTEGER_EXPRESSION(i)))
           for i = 1:dims
@@ -821,7 +821,7 @@ function expandBuiltinGeneric2(
       end
 
       _ => begin
-        CALL_EXPRESSION(P_Call.TYPED_CALL(fn, ty, var, list(exp), attr))
+        CALL_EXPRESSION(TYPED_CALL(fn, ty, var, list(exp), attr))
       end
     end
   end
@@ -840,7 +840,7 @@ function expandBuiltinGeneric(call::Call)::Tuple{Expression, Bool}
   local args::List{Expression}
   local expl::List{Expression}
 
-  @match P_Call.TYPED_CALL(fn, ty, var, list(arg), attr) = call
+  @match TYPED_CALL(fn, ty, var, list(arg), attr) = call
   @assign ty = arrayElementType(ty)
   @match (arg, true) = expand(arg)
   @assign outExp = expandBuiltinGeneric2(arg, fn, ty, var, attr)
@@ -957,13 +957,13 @@ function expandCall(call::Call, exp::Expression)::Tuple{Expression, Bool}
 
   @assign (outExp, expanded) = begin
     @matchcontinue call begin
-      P_Call.TYPED_CALL(
+      TYPED_CALL(
         __,
       ) where {(P_Function.isBuiltin(call.fn) && !P_Function.isImpure(call.fn))} => begin
         expandBuiltinCall(call.fn, call.arguments, call)
       end
 
-      P_Call.TYPED_ARRAY_CONSTRUCTOR(__) => begin
+      TYPED_ARRAY_CONSTRUCTOR(__) => begin
         expandArrayConstructor(call.exp, call.ty, call.iters)
       end
 

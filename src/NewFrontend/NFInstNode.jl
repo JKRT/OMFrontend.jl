@@ -134,12 +134,12 @@ function getPackageCache(in_caches::Array{<:CachedData}) ::CachedData
 end
 
 function setFuncCache(in_caches::Array{<:CachedData}, in_cache::CachedData)
-  @info "Setting func cache  with $in_caches and $in_cache"
+  @debug "Setting func cache  with $in_caches and $in_cache"
   arrayUpdate(in_caches, 1, in_cache)
 end
 
 function getFuncCache(in_caches::Array{<:CachedData}) ::CachedData
-  @info in_caches
+  @debug in_caches
   local out_cache::CachedData = arrayGet(in_caches, 1)
   out_cache
 end
@@ -229,11 +229,11 @@ function isRecord(node::InstNode) ::Bool
   @assign isRec = begin
     @match node begin
       CLASS_NODE(__)  => begin
-        P_Restriction.Restriction.isRecord(restriction(P_Pointer.access(node.cls)))
+        isRecord(restriction(P_Pointer.access(node.cls)))
       end
 
       COMPONENT_NODE(__)  => begin
-        isRecord(P_Component.classInstance(P_Pointer.access(node.component)))
+        isRecord(classInstance(P_Pointer.access(node.component)))
       end
     end
   end
@@ -1310,11 +1310,11 @@ function getType(node::InstNode) ::M_Type
   @assign ty = begin
     @match node begin
       CLASS_NODE(__)  => begin
-        getType(P_P_Pointer.access(node.cls), node)
+        getType(P_Pointer.access(node.cls), node)
       end
 
       COMPONENT_NODE(__)  => begin
-        P_Component.getType(P_Pointer.access(node.component))
+        getType(P_Pointer.access(node.component))
       end
     end
   end

@@ -445,7 +445,7 @@ function augmentExpandableConnector(
       @assign var = VARIABLE(
         elem_name,
         ty,
-        NFBinding.EMPTY_BINDING,
+        EMPTY_BINDING,
         Visibility.PUBLIC,
         NFComponent.DEFAULT_ATTR,
         nil,

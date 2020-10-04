@@ -85,13 +85,11 @@ end
 
 function isPotential(cty::Integer)::Bool
   local isPotential::Bool
-
   @assign isPotential = intBitAnd(cty, POTENTIAL) > 0
   return isPotential
 end
 
 function setPotential(cty::Integer)::Integer
-
   @assign cty = intBitOr(cty, POTENTIAL)
   return cty
 end
@@ -104,7 +102,6 @@ end
 
 function isStream(cty::Integer)::Bool
   local isStream::Bool
-
   @assign isStream = intBitAnd(cty, ConnectorType.STREAM) > 0
   return isStream
 end

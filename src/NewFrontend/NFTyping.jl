@@ -66,73 +66,50 @@ end
 
 ORIGIN_Type = Integer
 M_Type = Integer
-#=  Flag values:
-=#
+#=  Flag values: =#
 const ORIGIN_CLASS = 0
-#=  In class.
-=#
+#=  In class.=#
 const ORIGIN_FUNCTION = intBitLShift(1, 0)::M_Type
-#=  In function.
-=#
+#=  In function.=#
 const ORIGIN_ALGORITHM = intBitLShift(1, 1)::M_Type
-#=  In algorithm section.
-=#
+#=  In algorithm section.=#
 const ORIGIN_EQUATION = intBitLShift(1, 2)::M_Type
-#=  In equation section.
-=#
+#=  In equation section.=#
 const ORIGIN_INITIAL = intBitLShift(1, 3)::M_Type
-#=  In initial section.
-=#
+#=  In initial section.=#
 const ORIGIN_LHS = intBitLShift(1, 4)::M_Type
-#=  On left hand side of equality/assignment.
-=#
+#=  On left hand side of equality/assignment.=#
 const ORIGIN_RHS = intBitLShift(1, 5)::M_Type
-#=  On right hand side of equality/assignment.
-=#
+#=  On right hand side of equality/assignment.=#
 const ORIGIN_WHEN = intBitLShift(1, 6)::M_Type
-#=  In when equation/statement.
-=#
+#=  In when equation/statement.=#
 const ORIGIN_CLOCKED = intBitLShift(1, 7)::M_Type
-#=  Part of a clocked when equation.
-=#
+#=  Part of a clocked when equation.=#
 const ORIGIN_FOR = intBitLShift(1, 8)::M_Type
-#=  In a for loop.
-=#
+#=  In a for loop.=#
 const ORIGIN_IF = intBitLShift(1, 9)::M_Type
-#=  In an if equation/statement.
-=#
+#=  In an if equation/statement.=#
 const ORIGIN_WHILE = intBitLShift(1, 10)::M_Type
-#=  In a while loop.
-=#
+#=  In a while loop.=#
 const ORIGIN_NONEXPANDABLE = intBitLShift(1, 11)::M_Type
-#=  In non-parameter if/for.
-=#
+#=  In non-parameter if/for.=#
 const ORIGIN_ITERATION_RANGE = intBitLShift(1, 12)::M_Type
-#=  In range used for iteration.
-=#
+#=  In range used for iteration.=#
 const ORIGIN_DIMENSION = intBitLShift(1, 13)::M_Type
-#=  In dimension.
-=#
+#=  In dimension.=#
 const ORIGIN_BINDING = intBitLShift(1, 14)::M_Type
-#=  In binding.
-=#
+#=  In binding.=#
 const ORIGIN_CONDITION = intBitLShift(1, 15)::M_Type
-#=  In conditional expression.
-=#
+#=  In conditional expression.=#
 const ORIGIN_SUBSCRIPT = intBitLShift(1, 16)::M_Type
-#=  In subscript.
-=#
+#=  In subscript.=#
 const ORIGIN_SUBEXPRESSION = intBitLShift(1, 17)::M_Type
-#=  Part of a larger expression.
-=#
+#=  Part of a larger expression.=#
 const ORIGIN_CONNECT = intBitLShift(1, 18)::M_Type
-#=  Part of connect argument.
-=#
+#=  Part of connect argument.=#
 const ORIGIN_NOEVENT = intBitLShift(1, 19)::M_Type
-#=  Part of noEvent argument.
-=#
+#=  Part of noEvent argument.=#
 const ORIGIN_ASSERT = intBitLShift(1, 20)::M_Type
-
 
 const ORIGIN_EQ_SUBEXPRESSION = intBitOr(ORIGIN_EQUATION, ORIGIN_SUBEXPRESSION)::M_Type
 const ORIGIN_VALIDNAME_SCOPE = intBitOr(ORIGIN_ITERATION_RANGE, ORIGIN_DIMENSION)::M_Type
@@ -166,7 +143,7 @@ end
 function typeClass(cls::InstNode, name::String)
   typeClassType(cls, EMPTY_BINDING, ORIGIN_CLASS, cls)
   typeComponents(cls, ORIGIN_CLASS)
-#  execStat("NFTyping.typeComponents(" + name + ")")
+#  execStat("NFtypeComponents(" + name + ")")
   typeBindings(cls, cls, ORIGIN_CLASS)
 #  execStat("NFTyping.typeBindings(" + name + ")")
   typeClassSections(cls, ORIGIN_CLASS)
@@ -521,7 +498,7 @@ function checkComponentStreamAttribute(
 
   return if isFlowOrStream(cty)
     @assign ety = arrayElementType(ty)
-    if !(Type.isReal(ety) || isComplex(ety))
+    if !(isReal(ety) || isComplex(ety))
       Error.addSourceMessageAndFail(
         Error.NON_REAL_FLOW_OR_STREAM,
         list(ConnectorType.toString(cty), name(component)),
@@ -1137,7 +1114,7 @@ function checkComponentBindingVariability(
       list(
         name,
         P_Prefixes.variabilityString(comp_eff_var),
-        "'" + toString(P_Component.getBinding(component)) + "'",
+        "'" + toString(getBinding(component)) + "'",
         P_Prefixes.variabilityString(bind_eff_var),
       ),
       getInfo(binding),
@@ -1610,13 +1587,13 @@ function typeBindingExp(
   @assign parent_dims = 0
   if !is_each
     for p in listRest(parents)
-      @assign parent_dims = parent_dims + Type.dimensionCount(getType(p))
+      @assign parent_dims = parent_dims + dimensionCount(getType(p))
     end
   end
   if parent_dims == 0
     @assign ty = exp_ty
   else
-    if Type.dimensionCount(exp_ty) >= parent_dims
+    if dimensionCount(exp_ty) >= parent_dims
       @assign ty = Type.unliftArrayN(parent_dims, exp_ty)
     end
   end
@@ -1819,7 +1796,7 @@ function typeCrefDim(
               end
 
               TYPED_COMPONENT(__) => begin
-                @assign dim_count = Type.dimensionCount(c.ty)
+                @assign dim_count = dimensionCount(c.ty)
                 if index <= dim_count && index > 0
                   @assign dim = Type.nthDimension(c.ty, index)
                   return
@@ -1858,7 +1835,7 @@ function nthDimensionBoundsChecked(
   local error::TypingError
   local dim::Dimension
 
-  local dim_size::Integer = Type.dimensionCount(ty)
+  local dim_size::Integer = dimensionCount(ty)
   local index::Integer = dimIndex + offset
 
   if index < 1 || index > dim_size
@@ -2218,7 +2195,7 @@ function typeMatrix(
       @assign variability = variabilityMax(var, variability)
       @assign expl = _cons(exp, expl)
       @assign tys = _cons(ty, tys)
-      @assign n = max(n, Type.dimensionCount(ty))
+      @assign n = max(n, dimensionCount(ty))
     end
     for e in expl
       @match _cons(ty, tys) = tys
@@ -2231,7 +2208,7 @@ function typeMatrix(
   else
     @assign (arrayExp, arrayType, variability) =
       typeMatrixComma(listHead(elements), next_origin, info)
-    if Type.dimensionCount(arrayType) < 2
+    if dimensionCount(arrayType) < 2
       @assign (arrayExp, arrayType) =
         P_Expression.Expression.promote(arrayExp, arrayType, n)
     end
@@ -2286,7 +2263,7 @@ function typeMatrixComma(
       end
       @assign tys = _cons(ty1, tys)
       @assign variability = variabilityMax(variability, var)
-      @assign n = max(n, Type.dimensionCount(ty))
+      @assign n = max(n, dimensionCount(ty))
     end
     @assign tys2 = nil
     @assign res = nil
@@ -2294,7 +2271,7 @@ function typeMatrixComma(
     for e in expl
       @match _cons(ty1, tys) = tys
       @assign pos = pos - 1
-      if Type.dimensionCount(ty1) != n
+      if dimensionCount(ty1) != n
         @assign (e, ty1) = P_Expression.Expression.promote(e, ty1, n)
       end
       @assign ty2 = setArrayElementType(ty1, ty)
@@ -2888,7 +2865,6 @@ function typeFunctionSections(classNode::InstNode, origin::ORIGIN_Type)
               ))
               sections
             end
-
             SECTIONS(__) => begin
               if listLength(sections.equations) > 0 ||
                  listLength(sections.initialEquations) > 0
@@ -2907,7 +2883,7 @@ function typeFunctionSections(classNode::InstNode, origin::ORIGIN_Type)
               fail()
             end
 
-            EXTERNAL(explicit = true) => begin
+            SECTIONS_EXTERNAL(explicit = true) => begin
               @assign info = info(classNode)
               @assign sections.args =
                 List(typeExternalArg(arg, info, classNode) for arg in sections.args)
@@ -2915,10 +2891,9 @@ function typeFunctionSections(classNode::InstNode, origin::ORIGIN_Type)
               sections
             end
 
-            EXTERNAL(__) => begin
+            SECTIONS_EXTERNAL(__) => begin
               makeDefaultExternalCall(sections, classNode)
             end
-
             _ => begin
               sections
             end
@@ -2933,7 +2908,6 @@ function typeFunctionSections(classNode::InstNode, origin::ORIGIN_Type)
         typeFunctionSections(cls.baseClass, origin)
         ()
       end
-
       _ => begin
         Error.assertion(
           false,
@@ -3020,14 +2994,12 @@ function makeDefaultExternalCall(extDecl::Sections, fnNode::InstNode)::Sections
     local node::InstNode
     local exp::Expression
     @match extDecl begin
-      EXTERNAL(__) => begin
-        #=  An explicit function call isn't needed for builtin calls.
-        =#
+      SECTIONS_EXTERNAL(__) => begin
+        #=  An explicit function call isn't needed for builtin calls. =#
         if extDecl.language == "builtin"
-          return
+          return extDecl #TODO. Weird to return void in typed function
         end
-        #=  Fetch the cached function.
-        =#
+        #=  Fetch the cached function.=#
         @match C_FUNCTION(funcs = list(fn)) = getFuncCache(fnNode)
         #=  Check whether we have a single output or not.
         =#
@@ -3063,14 +3035,14 @@ function makeDefaultExternalCall(extDecl::Sections, fnNode::InstNode)::Sections
           @assign args = nil
           for c in comps
             @assign comp = component(c)
-            if !single_output || P_Component.direction(comp) != Direction.OUTPUT
-              @assign ty = P_Component.getType(comp)
+            if !single_output || direction(comp) != Direction.OUTPUT
+              @assign ty = getType(comp)
               @assign exp = CREF_EXPRESSION(
                 ty,
                 fromNode(c, ty),
               )
               @assign args = _cons(exp, args)
-              for i = 1:Type.dimensionCount(ty)
+              for i = 1:dimensionCount(ty)
                 @assign args = _cons(
                   SIZE_EXPRESSION(
                     exp,
@@ -3785,7 +3757,7 @@ function isNonConstantIfCondition(exp::Expression)::Bool
         isIterator(exp.cref)
       end
 
-      CALL_EXPRESSION(call = P_Call.TYPED_CALL(fn = fn)) => begin
+      CALL_EXPRESSION(call = TYPED_CALL(fn = fn)) => begin
         begin
           @match AbsynUtil.pathFirstIdent(fn.path) begin
             "Connections" => begin

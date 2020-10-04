@@ -424,7 +424,7 @@ function flattenSimpleComponent(
   #       ElementSource.createElementSource(info),
   #     )
   #     @assign sections = prependEquation(eq, sections)
-  #     @assign binding = NFBinding.EMPTY_BINDING
+  #     @assign binding = EMPTY_BINDING
   #   end
   # end
   @assign name = prefixScope(comp_node, ty, nil, prefix)
@@ -494,7 +494,7 @@ function getRecordBindings(binding::Binding, comps::Array{<:InstNode})::List{Bin
     @match binding_exp begin
 RECORD_EXPRESSION(__) => begin
         List(if P_Expression.Expression.isEmpty(e)
-          NFBinding.EMPTY_BINDING
+          EMPTY_BINDING
         else
           FLAT_BINDING(e, var)
         end for e in binding_exp.elements)
@@ -545,7 +545,7 @@ function flattenComplexComponent(
   @assign binding = if isSome(outerBinding)
     Util.getOption(outerBinding)
   else
-    P_Component.getBinding(comp)
+    getBinding(comp)
   end
   #=  Create an equation if there's a binding on a complex component.
   =#
@@ -582,7 +582,7 @@ function flattenComplexComponent(
         sections,
         isInitial = comp_var <= Variability.PARAMETER,
       )
-      @assign opt_binding = SOME(NFBinding.EMPTY_BINDING)
+      @assign opt_binding = SOME(EMPTY_BINDING)
     else
       @assign binding = setTypedExp(binding_exp, binding)
       @assign opt_binding = SOME(binding)
@@ -971,7 +971,7 @@ function flattenBinding(
       end
 
       CEVAL_BINDING(__) => begin
-        NFBinding.EMPTY_BINDING
+        EMPTY_BINDING
       end
 
       FLAT_BINDING(__) => begin
@@ -1057,7 +1057,7 @@ function flattenBindingExp2(
     end
   end
   for parent in parents
-    @assign binding_level = binding_level + Type.dimensionCount(getType(parent))
+    @assign binding_level = binding_level + dimensionCount(getType(parent))
   end
   if binding_level > 0
     @assign subs =
@@ -1341,7 +1341,7 @@ function isConnectEq(eq::Equation)::Bool
       end
 
       P_Equation.Equation.NORETCALL(
-        exp = CALL_EXPRESSION(call = P_Call.TYPED_CALL(fn = fn)),
+        exp = CALL_EXPRESSION(call = TYPED_CALL(fn = fn)),
       ) => begin
         AbsynUtil.pathFirstIdent(P_Function.name(fn)) == "Connections"
       end
@@ -1984,8 +1984,8 @@ function collectClassFunctions(clsNode::InstNode, funcs::FunctionTree)::Function
       ) => begin
         for c in cls_tree.components
           @assign comp = component(c)
-          @assign funcs = collectTypeFuncs(P_Component.getType(comp), funcs)
-          @assign binding = P_Component.getBinding(comp)
+          @assign funcs = collectTypeFuncs(getType(comp), funcs)
+          @assign binding = getBinding(comp)
           if isExplicitlyBound(binding)
             @assign funcs = collectExpFuncs(getTypedExp(binding), funcs)
           end

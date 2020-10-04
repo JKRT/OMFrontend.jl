@@ -150,8 +150,8 @@ function makeRecordExp(clsNode::InstNode)::Expression
   @match (@match TYPE_COMPLEX(complexTy = COMPLEX_RECORD(ty_node)) = ty) =
     getType(cls, clsNode)
   @assign fields = getComponents(classTree(cls))
-  @assign args = List(
-    getExp(P_Component.getImplicitBinding(component(f)))
+  @assign args = list(
+    getExp(getImplicitBinding(component(f)))
     for f in fields
   )
   @assign exp = P_Expression.Expression.makeRecord(scopePath(ty_node), ty, args)
@@ -863,9 +863,9 @@ function lookupAttributeBinding(name::String, cls::Class)::Binding
 
   try
     @assign attr_node = lookupElement(name, classTree(cls))
-    @assign binding = P_Component.getBinding(component(attr_node))
+    @assign binding = getBinding(component(attr_node))
   catch
-    @assign binding = NFBinding.EMPTY_BINDING
+    @assign binding = EMPTY_BINDING
   end
   return binding
 end
@@ -950,7 +950,7 @@ function makeRecordConstructor(fields::List{<:InstNode}, out::InstNode)::Class
     TYPE_UNKNOWN(),
     tree,
     SECTIONS_EMPTY(),
-    P_Restriction.Restriction.RECORD_CONSTRUCTOR(),
+    RESTRICTION_RECORD_CONSTRUCTOR(),
   )
   return cls
 end

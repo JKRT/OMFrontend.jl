@@ -63,14 +63,14 @@ function instClassInProgram(classPath::Absyn.Path, program::SCode.Program)::Tupl
   # #execStat("NFInst.updateImplicitVariability")
   # #=  Type the class.
   # =#
-  # @info "TYPECLASS(inst_cls, name)"
-  # typeClass(inst_cls, name)
-  # @info "AFTER type class"
+  @info "TYPECLASS(inst_cls, name)"
+#   typeClass(inst_cls, name)
+#   @info "AFTER type class"
   # #=  Flatten the model and evaluate constants in it.
   # =#
-  # @info "START FLATTENING!"
+  @info "START FLATTENING!"
   # @assign flat_model = flatten(inst_cls, name)
-  # @info "CONSTANT EVALUATION"
+  #@info "CONSTANT EVALUATION"
   # @assign flat_model = evaluate(flat_model)
   # @info "FLATTENING DONE"
   # #= Do unit checking =#

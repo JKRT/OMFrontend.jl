@@ -108,9 +108,9 @@ function lookupFunctionName(cref::Absyn.ComponentRef, scope::InstNode #= The sco
   local state::LookupState
   local nodeVar::InstNode
   try
-    @info "Lookup cref"
+    #@info "Lookup cref"
     @assign (foundCref, foundScope, state) = lookupCref(cref, scope)
-    @info "After Lookup cref"
+    #@info "After Lookup cref"
     @assign nodeVar = node(foundCref)
     @match false = isName(nodeVar)
   catch e
@@ -303,7 +303,7 @@ function lookupSimpleName(nameStr::String, scope::InstNode) ::InstNode
   for i in 1:Global.recursionDepthLimit
     try
       (node, _) = lookupLocalSimpleName(nameStr, cur_scope)
-       @info "The node is resolved"
+       #@info "The node is resolved"
       return node
     catch
       if nameStr == name(cur_scope) && isClass(cur_scope)
@@ -552,18 +552,18 @@ function lookupSimpleCref(name::String, subs::List{<:Absyn.Subscript}, scope::In
     # @debug "Searching for scope in lookupSimplecref.. with $(typeof(scope))"
     for i in 1:Global.recursionDepthLimit
       try
-        @info "Searching..."
+        #@info "Searching..."
         (node, is_import) = begin
           @match foundScope begin
             IMPLICIT_SCOPE(__)  => begin
               (lookupIterator(name, foundScope.locals), false)
             end
             CLASS_NODE(__)  => begin
-              @info "Hit CLASS_NODE. Fetching class"
+              #@info "Hit CLASS_NODE. Fetching class"
               c = getClass(foundScope)
-              @info "Class fetched. Looking up element"
+              #@info "Class fetched. Looking up element"
               e = lookupElement(name, c)
-              @info "After looking up element"
+              #@info "After looking up element"
               e
             end
             COMPONENT_NODE(__)  => begin
@@ -574,19 +574,19 @@ function lookupSimpleCref(name::String, subs::List{<:Absyn.Subscript}, scope::In
             end
           end
         end
-        @info "Checking imports and other things.."
+        #@info "Checking imports and other things.."
         if is_import
           @assign foundScope = parent(node)
         elseif isInnerOuterNode(node)
-          @info "Not a import checking inner"
+          #@info "Not a import checking inner"
           @assign node = resolveInner(node)
           @assign foundScope = parent(node)
         end
-        @info "Not inner outer. Checking state"
+        #@info "Not inner outer. Checking state"
         @assign state = nodeState(node)
-        @info "State checked. Checking fromAbsyn"
+        #@info "State checked. Checking fromAbsyn"
         @assign cref = fromAbsyn(node, subs)
-        @info "After from absyn. Returning..."
+        #@info "After from absyn. Returning..."
         return (node, cref, foundScope, state)
       catch e
         @error "Error.. $e"

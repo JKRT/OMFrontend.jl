@@ -21,7 +21,6 @@ Value = M_Function
 include("../Util/baseAvlTreeCode.jl")
 include("../Util/baseAvlSetCode.jl")
 
-
 addConflictDefault = addConflictKeep
 
 @exportAll()
@@ -834,7 +833,7 @@ function vectorizeAlgorithm(
           NONE(),
           INTEGER_EXPRESSION(stop),
         )
-        @error "Manually check this error. It has to do with higher order functions in the translation"
+        #@error "Manually check this error. It has to do with higher order functions in the translation"
         @assign body = mapExpList(
           alg.statements,
           (x) -> addIterator(

@@ -2118,11 +2118,11 @@ function instFunction(
   local fn_node::InstNode
   local fn_ref::ComponentRef
   local cache::CachedData
-  @info "Looking up function1"
+  #@info "Looking up function1"
   @assign fn_ref = lookupFunction(functionName, scope, info)
-  @info "Instantiate function ref"
+  #@info "Instantiate function ref"
   @assign (fn_ref, fn_node, specialBuiltin) = instFunctionRef(fn_ref, info)
-  @info "Instantiated function ref"
+  #@info "Instantiated function ref"
   return (fn_ref, fn_node, specialBuiltin)
 end
 

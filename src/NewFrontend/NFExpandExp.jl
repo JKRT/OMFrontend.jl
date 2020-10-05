@@ -907,7 +907,7 @@ function expandBuiltinCat(args::List{<:Expression}, call::Call)::Tuple{Expressio
   return (exp, expanded)
 end
 
-function expandBuiltinCall(
+function expand
   fn::M_Function,
   args::List{<:Expression},
   call::Call,
@@ -960,7 +960,7 @@ function expandCall(call::Call, exp::Expression)::Tuple{Expression, Bool}
       P_Call.TYPED_CALL(
         __,
       ) where {(P_Function.isBuiltin(call.fn) && !P_Function.isImpure(call.fn))} => begin
-        expandBuiltinCall(call.fn, call.arguments, call)
+        expandcall.fn, call.arguments, call)
       end
 
       P_Call.TYPED_ARRAY_CONSTRUCTOR(__) => begin

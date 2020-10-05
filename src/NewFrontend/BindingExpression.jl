@@ -1408,7 +1408,7 @@ end
 function containsIterator(exp::Expression, origin::ORIGIN_Type) ::Bool
   local iter::Bool
 
-  if ExpOrigin.flagSet(origin, ExpOrigin.FOR)
+  if flagSet(origin, ExpOrigin.FOR)
     @assign iter = contains(exp, isIterator)
   else
     @assign iter = false
@@ -1510,7 +1510,7 @@ function callContainsShallow(call::Call, func::ContainsPred) ::Bool
   @assign res = begin
     local e::Expression
     @match call begin
-      P_Call.UNTYPED_CALL(__)  => begin
+      UNTYPED_CALL(__)  => begin
         @assign res = listContainsShallow(call.arguments, func)
         if ! res
           for arg in call.named_args
@@ -1706,7 +1706,7 @@ function callContains(call::Call, func::ContainsPred) ::Bool
   @assign res = begin
     local e::Expression
     @match call begin
-      P_Call.UNTYPED_CALL(__)  => begin
+      UNTYPED_CALL(__)  => begin
         @assign res = listContains(call.arguments, func)
         if ! res
           for arg in call.named_args
@@ -1960,7 +1960,7 @@ function mapFoldCallShallow(call::Call, func::MapFunc, foldArg::ArgT)  where {Ar
     local fold_exp::Tuple{Option{Expression}, String, String}
     local oe::Option{Expression}
     @match call begin
-      P_Call.UNTYPED_CALL(__)  => begin
+      UNTYPED_CALL(__)  => begin
         @assign (args, foldArg) = ListUtil.mapFold(call.arguments, func, foldArg)
         @assign nargs = nil
         for arg in call.named_args
@@ -1968,7 +1968,7 @@ function mapFoldCallShallow(call::Call, func::MapFunc, foldArg::ArgT)  where {Ar
           @assign (e, foldArg) = func(e, foldArg)
           @assign nargs = _cons((s, e), nargs)
         end
-        P_Call.UNTYPED_CALL(call.ref, args, listReverse(nargs), call.call_scope)
+        UNTYPED_CALL(call.ref, args, listReverse(nargs), call.call_scope)
       end
 
       P_Call.ARG_TYPED_CALL(__)  => begin
@@ -2377,7 +2377,7 @@ function mapFoldCall(call::Call, func::MapFunc, foldArg::ArgT)  where {ArgT}
     local fold_exp::Tuple{Option{Expression}, String, String}
     local oe::Option{Expression}
     @match call begin
-      P_Call.UNTYPED_CALL(__)  => begin
+      UNTYPED_CALL(__)  => begin
         @assign (args, foldArg) = ListUtil.map1Fold(call.arguments, mapFold, func, foldArg)
         @assign nargs = nil
         for arg in call.named_args
@@ -2385,7 +2385,7 @@ function mapFoldCall(call::Call, func::MapFunc, foldArg::ArgT)  where {ArgT}
           @assign (e, foldArg) = mapFold(e, func, foldArg)
           @assign nargs = _cons((s, e), nargs)
         end
-        P_Call.UNTYPED_CALL(call.ref, args, listReverse(nargs), call.call_scope)
+        UNTYPED_CALL(call.ref, args, listReverse(nargs), call.call_scope)
       end
 
       P_Call.ARG_TYPED_CALL(__)  => begin
@@ -2767,7 +2767,7 @@ function applyCall(call::Call, func::ApplyFunc)
   @assign () = begin
     local e::Expression
     @match call begin
-      P_Call.UNTYPED_CALL(__)  => begin
+      UNTYPED_CALL(__)  => begin
         applyList(call.arguments, func)
         for arg in call.named_args
           @assign (_, e) = arg
@@ -3036,7 +3036,7 @@ function foldCall(call::Call, func::FoldFunc, foldArg::ArgT)  where {ArgT}
   @assign () = begin
     local e::Expression
     @match call begin
-      P_Call.UNTYPED_CALL(__)  => begin
+      UNTYPED_CALL(__)  => begin
         @assign foldArg = foldList(call.arguments, func, foldArg)
         for arg in call.named_args
           @assign (_, e) = arg
@@ -3331,7 +3331,7 @@ function mapCallShallow(call::Call, func::MapFunc) ::Call
     local default_exp::Option{Expression}
     local fold_exp::Tuple{Option{Expression}, String, String}
     @match call begin
-      P_Call.UNTYPED_CALL(__)  => begin
+      UNTYPED_CALL(__)  => begin
         @assign args = list(func(arg) for arg in call.arguments)
         @assign nargs = nil
         for arg in call.named_args
@@ -3339,7 +3339,7 @@ function mapCallShallow(call::Call, func::MapFunc) ::Call
           @assign e = func(e)
           @assign nargs = _cons((s, e), nargs)
         end
-        P_Call.UNTYPED_CALL(call.ref, args, listReverse(nargs), call.call_scope)
+        UNTYPED_CALL(call.ref, args, listReverse(nargs), call.call_scope)
       end
 
       P_Call.ARG_TYPED_CALL(__)  => begin
@@ -3730,7 +3730,7 @@ function mapCall(call::Call, func::MapFunc) ::Call
     local default_exp::Option{Expression}
     local fold_exp::Tuple{Option{Expression}, String, String}
     @match call begin
-      P_Call.UNTYPED_CALL(__)  => begin
+      UNTYPED_CALL(__)  => begin
         @assign args = list(map(arg, func) for arg in call.arguments)
         @assign nargs = nil
         for arg in call.named_args
@@ -3738,7 +3738,7 @@ function mapCall(call::Call, func::MapFunc) ::Call
           @assign e = map(e, func)
           @assign nargs = _cons((s, e), nargs)
         end
-        P_Call.UNTYPED_CALL(call.ref, args, listReverse(nargs), call.call_scope)
+        UNTYPED_CALL(call.ref, args, listReverse(nargs), call.call_scope)
       end
 
       P_Call.ARG_TYPED_CALL(__)  => begin

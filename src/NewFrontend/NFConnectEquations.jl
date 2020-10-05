@@ -79,7 +79,7 @@ import ..NFBinding.P_Binding
 import ..NFFunction.P_Function
 import ..Global
 import ..NFBuiltinCall
-BuiltinCall = NFBuiltinCall
+= NFBuiltinCall
 import ..NFComplexType
 ComplexType = NFComplexType
 import ..P_NFExpandExp

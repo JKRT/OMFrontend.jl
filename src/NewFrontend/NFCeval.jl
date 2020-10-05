@@ -426,9 +426,9 @@ function evalComponentBinding(
   local start_exp::Option{Expression}
 
   @assign exp_origin = if isFunction(explicitParent(node))
-    ExpOrigin.FUNCTION
+    ORIGIN_FUNCTION
   else
-    ExpOrigin.CLASS
+    ORIGIN_CLASS
   end
   Typing.typeComponentBinding(node, exp_origin, typeChildren = false)
   @assign comp = component(node)
@@ -2346,7 +2346,7 @@ function evalCall(call::Call, target::EvalTarget)::Expression
         if P_Function.isBuiltin(c.fn)
           P_Expression.Expression.bindingExpMap(
             CALL_EXPRESSION(c),
-            (target) -> evalBuiltinCallExp(target = target),
+            (target) -> evalxp(target = target),
           )
         else
           P_Expression.Expression.bindingExpMap(
@@ -2373,7 +2373,7 @@ function evalCall(call::Call, target::EvalTarget)::Expression
   return exp
 end
 
-function evalBuiltinCallExp(callExp::Expression, target::EvalTarget)::Expression
+function evalxp(callExp::Expression, target::EvalTarget)::Expression
   local result::Expression
 
   local fn::M_Function
@@ -2381,11 +2381,11 @@ function evalBuiltinCallExp(callExp::Expression, target::EvalTarget)::Expression
 
   @match CALL_EXPRESSION(call = P_Call.TYPED_CALL(fn = fn, arguments = args)) =
     callExp
-  @assign result = evalBuiltinCall(fn, args, target)
+  @assign result = evalfn, args, target)
   return result
 end
 
-function evalBuiltinCall(
+function eval
   fn::M_Function,
   args::List{<:Expression},
   target::EvalTarget,
@@ -4621,11 +4621,11 @@ function evalSize(
   if isSome(optIndex)
     @assign index_exp = evalExp_impl(Util.getOption(optIndex), target)
     @assign index = P_Expression.Expression.toInteger(index_exp)
-    @assign (dim, _, ty_err) = Typing.typeExpDim(exp, index, ExpOrigin.CLASS, info)
+    @assign (dim, _, ty_err) = Typing.typeExpDim(exp, index, ORIGIN_CLASS, info)
     Typing.checkSizeTypingError(ty_err, exp, index, info)
     @assign outExp = P_Dimension.Dimension.sizeExp(dim)
   else
-    @assign (outExp, ty) = Typing.typeExp(exp, ExpOrigin.CLASS, info)
+    @assign (outExp, ty) = Typing.typeExp(exp, ORIGIN_CLASS, info)
     @assign expl = List(P_Dimension.Dimension.sizeExp(d) for d in arrayDims(ty))
     @assign dim = P_Dimension.Dimension.fromInteger(listLength(expl), Variability.PARAMETER)
     @assign outExp =

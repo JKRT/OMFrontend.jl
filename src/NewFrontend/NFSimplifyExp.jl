@@ -185,7 +185,7 @@ function simplifyCall(callExp::Expression)::Expression
           else
             if Flags.isSet(Flags.NF_SCALARIZE)
               @assign callExp =
-                simplifyBuiltinCall(nameConsiderBuiltin(call.fn), args, call)
+                simplifynameConsiderBuiltin(call.fn), args, call)
             end
           end
         elseif Flags.isSet(Flags.NF_EVAL_CONST_ARG_FUNCS) &&
@@ -243,7 +243,7 @@ function simplifyCall2(call::Call)::Expression
   return outExp
 end
 
-function simplifyBuiltinCall(
+function simplify
   name::Absyn.Path,
   args::List{<:Expression},
   call::Call,

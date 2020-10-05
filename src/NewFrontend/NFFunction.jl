@@ -920,7 +920,7 @@ function typePartialApplication(
   local arg_ty::M_Type
   local arg_var::VariabilityType
   local fn::M_Function
-  local next_origin::ORIGIN_Type = ExpOrigin.setFlag(origin, ExpOrigin.SUBEXPRESSION)
+  local next_origin::ORIGIN_Type = setFlag(origin, ORIGIN_SUBEXPRESSION)
   local inputs::List{InstNode}
   local slots::List{Slot}
 
@@ -975,14 +975,14 @@ function typeFunctionBody(fn::M_Function)::M_Function
   #=  Type the bindings of the outputs and local variables.
   =#
   for c in fn.outputs
-    Typing.typeComponentBinding(c, ExpOrigin.FUNCTION)
+    Typing.typeComponentBinding(c, ORIGIN_FUNCTION)
   end
   for c in fn.locals
-    Typing.typeComponentBinding(c, ExpOrigin.FUNCTION)
+    Typing.typeComponentBinding(c, ORIGIN_FUNCTION)
   end
   #=  Type the algorithm section of the function, if it has one.
   =#
-  Typing.typeFunctionSections(fn.node, ExpOrigin.FUNCTION)
+  Typing.typeFunctionSections(fn.node, ORIGIN_FUNCTION)
   #=  Type any derivatives of the function.
   =#
   for fn_der in fn.derivatives
@@ -998,8 +998,8 @@ function typeFunctionSignature(fn::M_Function)::M_Function
   local node::InstNode = fn.node
 
   if !isTyped(fn)
-    Typing.typeClassType(node, NFBinding.EMPTY_BINDING, ExpOrigin.FUNCTION, node)
-    Typing.typeComponents(node, ExpOrigin.FUNCTION)
+    Typing.typeClassType(node, NFBinding.EMPTY_BINDING, ORIGIN_FUNCTION, node)
+    Typing.typeComponents(node, ORIGIN_FUNCTION)
     if isPartial(node)
       applyComponents(
         classTree(getClass(node)),
@@ -1007,7 +1007,7 @@ function typeFunctionSignature(fn::M_Function)::M_Function
       )
     end
     for c in fn.inputs
-      Typing.typeComponentBinding(c, ExpOrigin.FUNCTION)
+      Typing.typeComponentBinding(c, ORIGIN_FUNCTION)
     end
     @assign fn.slots = makeSlots(fn.inputs)
     checkParamTypes(fn)

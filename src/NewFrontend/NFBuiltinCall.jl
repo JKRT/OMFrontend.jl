@@ -4,7 +4,7 @@ function needSpecialHandling(call::Call) ::Bool
 
   @assign () = begin
     @match call begin
-      P_Call.UNTYPED_CALL(__)  => begin
+      UNTYPED_CALL(__)  => begin
         @match C_FUNCTION(specialBuiltin = special) = getFuncCache(classScope(node(call.ref)))
         ()
       end
@@ -30,8 +30,8 @@ function typeSpecial(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{
   local name::String
   local next_origin::ORIGIN_Type
 
-  @match P_Call.UNTYPED_CALL(ref = cref) = call
-  @assign next_origin = ExpOrigin.setFlag(origin, ExpOrigin.SUBEXPRESSION)
+  @match UNTYPED_CALL(ref = cref) = call
+  @assign next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
   @assign (callExp, ty, variability) = begin
     @match firstName(cref) begin
       "String"  => begin
@@ -483,7 +483,7 @@ function typeNdimsCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tupl
   local named_args::List{NamedArg}
   local arg_ty::M_Type
 
-  @match P_Call.UNTYPED_CALL(arguments = args, named_args = named_args) = call
+  @match UNTYPED_CALL(arguments = args, named_args = named_args) = call
   assertNoNamedParams("ndims", named_args, info)
   if listLength(args) != 1
     Error.addSourceMessage(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), "ndims(Any) => Integer"), info)
@@ -529,14 +529,14 @@ function typePreChangeCall(name::String, call::Call, origin::ORIGIN_Type, info::
   local var::VariabilityType
   local fn::M_Function
 
-  @match P_Call.UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
+  @match UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
   assertNoNamedParams(name, named_args, info)
   if listLength(args) != 1
     Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), toString(fn_ref) + "(Any) => Any"), info)
   end
   #=  pre/change may not be used in a function context.
   =#
-  if ExpOrigin.flagSet(origin, ExpOrigin.FUNCTION)
+  if flagSet(origin, ORIGIN_FUNCTION)
     Error.addSourceMessageAndFail(Error.EXP_INVALID_IN_FUNCTION, list(toString(fn_ref)), info)
   end
   @assign (arg, ty, var) = Typing.typeExp(listHead(args), origin, info)
@@ -566,11 +566,11 @@ function typeDerCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{
 
   #=  der may not be used in a function context.
   =#
-  if ExpOrigin.flagSet(origin, ExpOrigin.FUNCTION)
+  if flagSet(origin, ORIGIN_FUNCTION)
     Error.addSourceMessage(Error.EXP_INVALID_IN_FUNCTION, list("der"), info)
     fail()
   end
-  @match P_Call.UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
+  @match UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
   assertNoNamedParams("der", named_args, info)
   if listLength(args) != 1
     Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), "der(Real) => Real"), info)
@@ -601,7 +601,7 @@ function typeDiagonalCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::T
   local dim::Dimension
   local fn::M_Function
 
-  @match P_Call.UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
+  @match UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
   assertNoNamedParams("diagonal", named_args, info)
   if listLength(args) != 1
     Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), "diagonal(Any[n]) => Any[n, n]"), info)
@@ -638,7 +638,7 @@ function typeEdgeCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple
 
   #=  edge may not be used in a function context.
   =#
-  if ExpOrigin.flagSet(origin, ExpOrigin.FUNCTION)
+  if flagSet(origin, ORIGIN_FUNCTION)
     Error.addSourceMessage(Error.EXP_INVALID_IN_FUNCTION, list("edge"), info)
     fail()
   end
@@ -672,7 +672,7 @@ function typeMinMaxCall(name::String, call::Call, origin::ORIGIN_Type, info::Sou
   local var2::VariabilityType
   local mk::TypeCheck.MatchKind
 
-  @match P_Call.UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
+  @match UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
   assertNoNamedParams(name, named_args, info)
   @assign (args, ty, var) = begin
     @match args begin
@@ -733,7 +733,7 @@ function typeSumCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{
   local expanded::Bool
   local op::Operator
 
-  @match P_Call.UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
+  @match UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
   assertNoNamedParams("sum", named_args, info)
   if listLength(args) != 1
     Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), "sum(Any[:, ...]) => Any"), info)
@@ -758,7 +758,7 @@ function typeProductCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tu
   local expanded::Bool
   local op::Operator
 
-  @match P_Call.UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
+  @match UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
   assertNoNamedParams("product", named_args, info)
   if listLength(args) != 1
     Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), "product(Any[:, ...]) => Any"), info)
@@ -786,7 +786,7 @@ function typeSmoothCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tup
   local fn::M_Function
   local mk::TypeCheck.MatchKind
 
-  @match P_Call.UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
+  @match UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
   assertNoNamedParams("smooth", named_args, info)
   if listLength(args) != 2
     Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), "smooth(Integer, Any) => Any"), info)
@@ -829,7 +829,7 @@ function typeFillCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple
   local named_args::List{NamedArg}
   local fill_arg::Expression
 
-  @match P_Call.UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
+  @match UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
   assertNoNamedParams("fill", named_args, info)
   #=  fill can take any number of arguments, but needs at least two.
   =#
@@ -864,7 +864,7 @@ function typeFillCall2(fnRef::ComponentRef, fillType::M_Type, fillArg::Expressio
   =#
   for arg in dimensionArgs
     @assign (arg, arg_ty, arg_var) = Typing.typeExp(arg, origin, info)
-    if arg_var <= Variability.STRUCTURAL_PARAMETER && ! ExpOrigin.flagSet(origin, ExpOrigin.FUNCTION) && ! containsIterator(arg, origin)
+    if arg_var <= Variability.STRUCTURAL_PARAMETER && ! flagSet(origin, ORIGIN_FUNCTION) && ! containsIterator(arg, origin)
       @assign arg = Ceval.evalExp(arg)
       @assign arg_ty = typeOf(arg)
     else
@@ -901,7 +901,7 @@ function typeZerosOnesCall(name::String, call::Call, origin::ORIGIN_Type, info::
   local named_args::List{NamedArg}
   local fill_arg::Expression
 
-  @match P_Call.UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
+  @match UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
   assertNoNamedParams(name, named_args, info)
   #=  zeros/ones can take any number of arguments, but needs at least one.
   =#
@@ -929,7 +929,7 @@ function typeScalarCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tup
   local fn::M_Function
   local expanded::Bool
 
-  @match P_Call.UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
+  @match UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
   assertNoNamedParams("scalar", named_args, info)
   if listLength(args) != 1
     Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), "scalar(Any[1, ...]) => Any"), info)
@@ -971,7 +971,7 @@ function typeVectorCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tup
   local vector_dim::Dimension = P_Dimension.Dimension.fromInteger(1)
   local dim_found::Bool = false
 
-  @match P_Call.UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
+  @match UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
   assertNoNamedParams("vector", named_args, info)
   if listLength(args) != 1
     Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), "vector(Any) => Any[:]\\n  vector(Any[:, ...]) => Any[:]"), info)
@@ -1014,7 +1014,7 @@ function typeMatrixCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tup
   local i::Integer
   local ndims::Integer
 
-  @match P_Call.UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
+  @match UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
   assertNoNamedParams("matrix", named_args, info)
   if listLength(args) != 1
     Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), "vector(Any) => Any[:]\\n  vector(Any[:, ...]) => Any[:]"), info)
@@ -1064,7 +1064,7 @@ function typeCatCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{
   local fn::M_Function
   local n::Integer
 
-  @match P_Call.UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
+  @match UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
   assertNoNamedParams("cat", named_args, info)
   if listLength(args) < 2
     Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), "cat(Integer, Any[:,:], ...) => Any[:]"), info)
@@ -1099,7 +1099,7 @@ function typeSymmetricCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::
   local arg::Expression
   local fn::M_Function
 
-  @match P_Call.UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
+  @match UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
   assertNoNamedParams("symmetric", named_args, info)
   if listLength(args) != 1
     Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), "symmetric(Any[n, n]) => Any[n, n]"), info)
@@ -1127,7 +1127,7 @@ function typeTransposeCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::
   local rest_dims::List{Dimension}
   local fn::M_Function
 
-  @match P_Call.UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
+  @match UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
   assertNoNamedParams("transpose", named_args, info)
   if listLength(args) != 1
     Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), "transpose(Any[n, m, ...]) => Any[m, n, ...]"), info)
@@ -1168,15 +1168,15 @@ function typeCardinalityCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) 
   =#
   #=  but e.g. the MSL only uses them in if-equations and asserts).
   =#
-  if ! (ExpOrigin.flagSet(origin, ExpOrigin.CONDITION) && (ExpOrigin.flagSet(origin, ExpOrigin.IF) || ExpOrigin.flagSet(origin, ExpOrigin.ASSERT)))
+  if ! (flagSet(origin, ExpOrigin.CONDITION) && (flagSet(origin, ExpOrigin.IF) || flagSet(origin, ExpOrigin.ASSERT)))
     Error.addSourceMessageAndFail(Error.INVALID_CARDINALITY_CONTEXT, nil, info)
   end
-  @match P_Call.UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
+  @match UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
   assertNoNamedParams("cardinality", named_args, info)
   if listLength(args) != 1
     Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), toString(fn_ref) + "(Connector) => Integer"), info)
   end
-  if ExpOrigin.flagSet(origin, ExpOrigin.FUNCTION)
+  if flagSet(origin, ORIGIN_FUNCTION)
     Error.addSourceMessageAndFail(Error.EXP_INVALID_IN_FUNCTION, list(toString(fn_ref)), info)
   end
   @assign (arg, ty) = Typing.typeExp(listHead(args), origin, info)
@@ -1208,12 +1208,12 @@ function typeBranchCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tup
   local arg2::Expression
   local fn::M_Function
 
-  @match P_Call.UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
+  @match UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
   assertNoNamedParams("Connections.branch", named_args, info)
   if listLength(args) != 2
     Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), toString(fn_ref) + "(Connector, Connector)"), info)
   end
-  if ExpOrigin.flagSet(origin, ExpOrigin.FUNCTION)
+  if flagSet(origin, ORIGIN_FUNCTION)
     Error.addSourceMessageAndFail(Error.EXP_INVALID_IN_FUNCTION, list(toString(fn_ref)), info)
   end
   @match list(arg1, arg2) = args
@@ -1238,12 +1238,12 @@ function typeIsRootCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tup
   local arg::Expression
   local fn::M_Function
 
-  @match P_Call.UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
+  @match UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
   assertNoNamedParams("Connections.isRoot", named_args, info)
   if listLength(args) != 1
     Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), toString(fn_ref) + "(Connector)"), info)
   end
-  if ExpOrigin.flagSet(origin, ExpOrigin.FUNCTION)
+  if flagSet(origin, ORIGIN_FUNCTION)
     Error.addSourceMessageAndFail(Error.EXP_INVALID_IN_FUNCTION, list(toString(fn_ref)), info)
   end
   @assign (arg, ty) = Typing.typeExp(listHead(args), origin, info)
@@ -1268,7 +1268,7 @@ function typePotentialRootCall(call::Call, origin::ORIGIN_Type, info::SourceInfo
   local args_len::Integer
   local name::String
 
-  @match P_Call.UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
+  @match UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
   for narg in named_args
     @assign (name, arg2) = narg
     if name == "priority"
@@ -1281,7 +1281,7 @@ function typePotentialRootCall(call::Call, origin::ORIGIN_Type, info::SourceInfo
   if args_len < 1 || args_len > 2
     Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), toString(fn_ref) + "(Connector, Integer = 0)"), info)
   end
-  if ExpOrigin.flagSet(origin, ExpOrigin.FUNCTION)
+  if flagSet(origin, ORIGIN_FUNCTION)
     Error.addSourceMessageAndFail(Error.EXP_INVALID_IN_FUNCTION, list(toString(fn_ref)), info)
   end
   @match _cons(arg1, args) = args
@@ -1313,12 +1313,12 @@ function typeRootCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple
   local arg::Expression
   local fn::M_Function
 
-  @match P_Call.UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
+  @match UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
   assertNoNamedParams("Connections.root", named_args, info)
   if listLength(args) != 1
     Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), toString(fn_ref) + "(Connector)"), info)
   end
-  if ExpOrigin.flagSet(origin, ExpOrigin.FUNCTION)
+  if flagSet(origin, ORIGIN_FUNCTION)
     Error.addSourceMessageAndFail(Error.EXP_INVALID_IN_FUNCTION, list(toString(fn_ref)), info)
   end
   @assign (arg, ty) = Typing.typeExp(listHead(args), origin, info)
@@ -1340,12 +1340,12 @@ function typeRootedCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tup
   local arg::Expression
   local fn::M_Function
 
-  @match P_Call.UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
+  @match UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
   assertNoNamedParams("Connections.rooted", named_args, info)
   if listLength(args) != 1
     Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), toString(fn_ref) + "(Connector)"), info)
   end
-  if ExpOrigin.flagSet(origin, ExpOrigin.FUNCTION)
+  if flagSet(origin, ORIGIN_FUNCTION)
     Error.addSourceMessageAndFail(Error.EXP_INVALID_IN_FUNCTION, list(toString(fn_ref)), info)
   end
   @assign (arg, ty) = Typing.typeExp(listHead(args), origin, info)
@@ -1375,7 +1375,7 @@ function typeUniqueRootCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) :
   local name::String
 
   Error.addSourceMessage(Error.NON_STANDARD_OPERATOR, list("Connections.uniqueRoot"), info)
-  @match P_Call.UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
+  @match UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
   for narg in named_args
     @assign (name, arg2) = narg
     if name == "message"
@@ -1388,7 +1388,7 @@ function typeUniqueRootCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) :
   if args_len < 1 || args_len > 2
     Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), toString(fn_ref) + "(Connector, String = \\\\)"), info)
   end
-  if ExpOrigin.flagSet(origin, ExpOrigin.FUNCTION)
+  if flagSet(origin, ORIGIN_FUNCTION)
     Error.addSourceMessageAndFail(Error.EXP_INVALID_IN_FUNCTION, list(toString(fn_ref)), info)
   end
   @match _cons(arg1, args) = args
@@ -1435,7 +1435,7 @@ end
                   local ty3::M_Type
 
                   Error.addSourceMessage(Error.NON_STANDARD_OPERATOR, list("Connections.uniqueRootIndices"), info)
-                  @match P_Call.UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
+                  @match UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
                   for narg in named_args
                     @assign (name, arg3) = narg
                     if name == "message"
@@ -1448,7 +1448,7 @@ end
                   if args_len < 2 || args_len > 3
                     Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), toString(fn_ref) + "(Connector, Connector, String = \\\\)"), info)
                   end
-                  if ExpOrigin.flagSet(origin, ExpOrigin.FUNCTION)
+                  if flagSet(origin, ORIGIN_FUNCTION)
                     Error.addSourceMessageAndFail(Error.EXP_INVALID_IN_FUNCTION, list(toString(fn_ref)), info)
                   end
                   @match _cons(arg1, _cons(arg2, args)) = args
@@ -1558,7 +1558,7 @@ function typeNoEventCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tu
   local arg::Expression
   local fn::M_Function
 
-  @match P_Call.UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
+  @match UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
   assertNoNamedParams("noEvent", named_args, info)
   #=  noEvent takes exactly one argument.
   =#
@@ -1566,7 +1566,7 @@ function typeNoEventCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tu
     Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), "noEvent(Any) => Any"), info)
   end
   @match list(arg) = args
-  @assign (arg, ty, variability) = Typing.typeExp(arg, ExpOrigin.setFlag(origin, ExpOrigin.NOEVENT), info)
+  @assign (arg, ty, variability) = typeExp(arg, setFlag(origin, ORIGIN_NOEVENT), info)
   @match list(fn) = P_Function.typeRefCache(fn_ref)
   @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(fn, list(arg), variability, ty))
   (callExp, ty, variability)
@@ -1579,7 +1579,7 @@ function typeGetInstanceName(call::Call) ::Tuple{Expression, M_Type, Variability
 
   local scope::InstNode
 
-  @match P_Call.UNTYPED_CALL(call_scope = scope) = call
+  @match UNTYPED_CALL(call_scope = scope) = call
   @assign result = STRING_EXPRESSION(AbsynUtil.pathString(scopePath(scope, includeRoot = true)))
   (result, ty, var)
 end
@@ -1745,7 +1745,7 @@ function typeActualInStreamCall(name::String, call::Call, origin::ORIGIN_Type, i
   local fn::M_Function
   local arg_node::InstNode
 
-  @match P_Call.UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
+  @match UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
   assertNoNamedParams(name, named_args, info)
   if listLength(args) != 1
     Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), toString(fn_ref) + "(stream variable) => Real"), info)
@@ -1814,7 +1814,7 @@ function typeDynamicSelectCall(name::String, call::Call, origin::ORIGIN_Type, in
   local expStatic::Expression
   local expDynamic::Expression
 
-  @match P_Call.UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
+  @match UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
   assertNoNamedParams(name, named_args, info)
   if listLength(args) != 2
     Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), toString(fn_ref) + "(static expression, dynamic expression)"), info)

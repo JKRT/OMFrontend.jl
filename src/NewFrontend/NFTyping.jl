@@ -2227,7 +2227,7 @@ function typeMatrix(
       @assign res = _cons(e, res)
     end
     @assign (arrayExp, arrayType) =
-      BuiltinCall.makeCatExp(1, res, resTys, variability, info)
+      makeCatExp(1, res, resTys, variability, info)
   else
     @assign (arrayExp, arrayType, variability) =
       typeMatrixComma(listHead(elements), next_origin, info)
@@ -2316,7 +2316,7 @@ function typeMatrixComma(
       @assign res = _cons(e, res)
       @assign tys2 = _cons(ty3, tys2)
     end
-    @assign (arrayExp, arrayType) = BuiltinCall.makeCatExp(2, res, tys2, variability, info)
+    @assign (arrayExp, arrayType) = makeCatExp(2, res, tys2, variability, info)
   else
     @assign (arrayExp, arrayType, variability) = typeExp(listHead(elements), origin, info)
   end

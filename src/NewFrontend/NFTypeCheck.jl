@@ -2083,7 +2083,7 @@ function checkRelationOperation(
         #=  Print a warning for == or <> with Real operands in a model.
         =#
         @assign o = operator.op
-        if ExpOrigin.flagNotSet(origin, ExpOrigin.FUNCTION) &&
+        if ExpOrigin.flagNotSet(origin, ORIGIN_FUNCTION) &&
            (o == Op.EQUAL || o == Op.NEQUAL)
           Error.addStrictMessage(
             Error.WARNING_RELATION_ON_REAL,

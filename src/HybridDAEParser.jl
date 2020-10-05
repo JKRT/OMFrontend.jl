@@ -96,6 +96,7 @@ include("./NewFrontend/NFBuiltin.jl")
 import ..NFBuiltin
 include("./NewFrontend/BindingExpression.jl")
 include("./NewFrontend/NFDimension.jl")
+include("./NewFrontend/NFBuiltinCall.jl")
 include("./NewFrontend/NFCall.jl")
 include("./NewFrontend/NFOperator.jl")
 include("./NewFrontend/NFTypeCheck.jl")
@@ -132,7 +133,7 @@ end
 "
   Instantiates and translates to DAE.
 "
-function instantiateSCodeToDAE(elementToInstantiate::String, inProgram::SCode.Program)
+function instantiateSCodeToDAE(@nospecialize(elementToInstantiate::String), @nospecialize (inProgram::SCode.Program))
   # initialize globals
   Main.Global.initialize()
   # make sure we have all the flags loaded!

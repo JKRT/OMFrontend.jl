@@ -1014,8 +1014,8 @@ function typeCall(
   @assign outExp = begin
     @match call begin
       UNTYPED_CALL(ref = cref) => begin
-        if BuiltinCall.needSpecialHandling(call)
-          @assign (outExp, ty, var) = BuiltinCall.typeSpecial(call, origin, info)
+        if needSpecialHandling(call)
+          @assign (outExp, ty, var) = typeSpecial(call, origin, info)
         else
           @assign ty_call = typeMatchNormalCall(call, origin, info)
           @assign ty = typeOf(ty_call)
@@ -1538,7 +1538,7 @@ function typeArgs(call::Call, origin::ORIGIN_Type, info::SourceInfo)::Call
     @match call begin
       UNTYPED_CALL(__) => begin
         @assign typedArgs = nil
-        @assign next_origin = ExpOrigin.setFlag(origin, ExpOrigin.SUBEXPRESSION)
+        @assign next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
         for arg in call.arguments
           @assign (arg, arg_ty, arg_var) = Typing.typeExp(arg, next_origin, info)
           @assign typedArgs = _cons((arg, arg_ty, arg_var), typedArgs)
@@ -1723,7 +1723,7 @@ function typeReduction(
     @match call begin
       UNTYPED_REDUCTION(__) => begin
         @assign variability = Variability.CONSTANT
-        @assign next_origin = ExpOrigin.setFlag(origin, ExpOrigin.SUBEXPRESSION)
+        @assign next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
         for i in call.iters
           @assign (iter, range) = i
           @assign (range, _, iter_var) =
@@ -1789,8 +1789,8 @@ function typeArrayConstructor(
         @assign variability = Variability.CONSTANT
         #=  The size of the expression must be known unless we're in a function.
         =#
-        @assign is_structural = ExpOrigin.flagNotSet(origin, ExpOrigin.FUNCTION)
-        @assign next_origin = ExpOrigin.setFlag(origin, ExpOrigin.SUBEXPRESSION)
+        @assign is_structural = ExpOrigin.flagNotSet(origin, ORIGIN_FUNCTION)
+        @assign next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
         for i in call.iters
           @assign (iter, range) = i
           @assign (range, iter_ty, iter_var) =
@@ -1984,10 +1984,10 @@ function instNormalCall(
   @assign callExp = begin
     @match name begin
       "size" => begin
-        BuiltinCall.makeSizeExp(args, named_args, info)
+        makeSizeExp(args, named_args, info)
       end
       "array" => begin
-        BuiltinCall.makeArrayExp(args, named_args, info)
+        makeArrayExp(args, named_args, info)
       end
       _ => begin
         #=  size creates Expression.SIZE instead of Expression.CALL.

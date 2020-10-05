@@ -145,12 +145,12 @@ function instantiateSCodeToDAE(elementToInstantiate::String, inProgram::SCode.Pr
   # Main.Flags.new(Flags.emptyFlags)
   @info "Parsing buildin stuff"
   GC.enable(false) #=This C stuff can be a bit flaky..=#
-  p = parseFile("./lib/NFModelicaBuiltin.mo", 2 #== MetaModelica ==#)
+  p = parseFile("../lib/NFModelicaBuiltin.mo", 2 #== MetaModelica ==#)
   @info "SCode translation"
   GC.enable(true)
   s = HybridDAEParser.translateToSCode(p)
   @info "Parsing done!"
-  p = inProgram # Main.listAppend(s, inProgram)
+  p = Main.listAppend(s, inProgram)
   Main.instClassInProgram(Absyn.IDENT(elementToInstantiate), p)
 end
 

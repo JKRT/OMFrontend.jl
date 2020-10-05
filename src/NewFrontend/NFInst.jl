@@ -38,73 +38,75 @@ function instClassInProgram(classPath::Absyn.Path, program::SCode.Program)::Tupl
   #=  Initialize the storage for automatically generated inner elements. =#
   @debug "Test test test!"
   @assign top = setInnerOuterCache(top, C_TOP_SCOPE(NodeTree.new(), cls))
-  @debug "OK we have a cache!"
-  #=  Instantiate the class. =#
-  @info "FIRST INST CALL!"
-  @assign inst_cls = instantiateN1(cls, EMPTY_NODE())
-  @info "AFTER INST CALL"
-  insertGeneratedInners(inst_cls, top)
-  #execStat("NFInst.instantiate(" + name + ")")
-  @info "INSTANTIATION STEP 1 DONE!"
-  #=  Instantiate expressions (i.e. anything that can contains crefs, like
-  =#
-  #=  bindings, dimensions, etc). This is done as a separate step after
-  #=  instantiation to make sure that lookup is able to find the correct nodes.
-  =#
-  =#
+  # @debug "OK we have a cache!"
+  # #=  Instantiate the class. =#
+   @info "FIRST INST CALL!"
+   @assign inst_cls = instantiateN1(cls, EMPTY_NODE())
+   @info "AFTER INST CALL"
+   insertGeneratedInners(inst_cls, top)
+  # #execStat("NFInst.instantiate(" + name + ")")
+   @info "INSTANTIATION STEP 1 DONE!"
+  # #=  Instantiate expressions (i.e. anything that can contains crefs, like
+  # =#
+  # #=  bindings, dimensions, etc). This is done as a separate step after
+  # #=  instantiation to make sure that lookup is able to find the correct nodes.
+  # =#
+  # =#
+  @info "INSTEXPRESSIONS"
   instExpressions(inst_cls)
-  #                   execStat("NFInst.instExpressions(" + name + ")")
-  @info "Inst expressions done"
-  #=  Mark structural parameters.
-  =#
-  #updateImplicitVariability(inst_cls, Flags.isSet(Flags.EVAL_PARAM))
-  #execStat("NFInst.updateImplicitVariability")
-  #=  Type the class.
-  =#
-  @info "TYPECLASS(inst_cls, name)"
-  typeClass(inst_cls, name)
-  @info "AFTER type class"
-  #=  Flatten the model and evaluate constants in it.
-  =#
-  @info "START FLATTENING!"
-  @assign flat_model = flatten(inst_cls, name)
-  @info "CONSTANT EVALUATION"
-  @assign flat_model = evaluate(flat_model)
-  @info "FLATTENING DONE"
-  #= Do unit checking =#
-  #                   @assign flat_model = UnitCheck.checkUnits(flat_model) TODO
-  #=  Apply simplifications to the model.=#
-  @assign flat_model = simplify(flat_model)
-  #=  Collect a tree of all functions that are still used in the flat model.=#
-  @debug "COLLECT FUNCTIONS"
-  @assign funcs = collectFunctions(flat_model, name)
-  @debug "COLLECTED FUNCTIONS!"
-  #=  Collect package constants that couldn't be substituted with their values =#
-  #=  (e.g. because they where used with non-constant subscripts), and add them to the model. =#
-  @info "COLLECT CONSTANTS"
-  @assign flat_model = collectConstants(flat_model, funcs)
-  @info "COLLECTED CONSTANTS"
-  #                   if Flags.getConfigBool(Flags.FLAT_MODELICA)
-  @debug "PRINTING FLAT MODELICA"
-  #                    printFlatString(flat_model, FunctionTreeImpl.listValues(funcs))
-  #                 end
-  #=  Scalarize array components in the flat model.=#
-  @info "Skipping NF_SCALARIZE"
-  #                  if Flags.isSet(Flags.NF_SCALARIZE)
-  #                    @assign flat_model = Scalarize.scalarize(flat_model, name)
-  #                  else
-  @assign flat_model.variables = ListUtil.filterOnFalse(flat_model.variables, isEmptyArray)
-  #                   end
-  #=  Remove empty arrays from variables =#
-  @info "VERIFYING MODEL"
-  verify(flat_model)
-  #                   if Flags.isSet(Flags.NF_DUMP_FLAT)
-  #                     print("FlatModel:\\n" + toString(flat_model) + "\\n")
-  #                  end
-  #=  Convert the flat model to a DAE.=#
-  @info "CONVERT TO THE DAE REPRESENTATION"
-  (dae, daeFuncs) = convert(flat_model, funcs, name, info(inst_cls))
-  return (dae, daeFuncs)
+  @info "After insts expression"
+  # #                   execStat("NFInst.instExpressions(" + name + ")")
+  # @info "Inst expressions done"
+  # #=  Mark structural parameters.
+  # =#
+  # #updateImplicitVariability(inst_cls, Flags.isSet(Flags.EVAL_PARAM))
+  # #execStat("NFInst.updateImplicitVariability")
+  # #=  Type the class.
+  # =#
+  # @info "TYPECLASS(inst_cls, name)"
+  # typeClass(inst_cls, name)
+  # @info "AFTER type class"
+  # #=  Flatten the model and evaluate constants in it.
+  # =#
+  # @info "START FLATTENING!"
+  # @assign flat_model = flatten(inst_cls, name)
+  # @info "CONSTANT EVALUATION"
+  # @assign flat_model = evaluate(flat_model)
+  # @info "FLATTENING DONE"
+  # #= Do unit checking =#
+  # #                   @assign flat_model = UnitCheck.checkUnits(flat_model) TODO
+  # #=  Apply simplifications to the model.=#
+  # @assign flat_model = simplify(flat_model)
+  # #=  Collect a tree of all functions that are still used in the flat model.=#
+  # @debug "COLLECT FUNCTIONS"
+  # @assign funcs = collectFunctions(flat_model, name)
+  # @debug "COLLECTED FUNCTIONS!"
+  # #=  Collect package constants that couldn't be substituted with their values =#
+  # #=  (e.g. because they where used with non-constant subscripts), and add them to the model. =#
+  # @info "COLLECT CONSTANTS"
+  # @assign flat_model = collectConstants(flat_model, funcs)
+  # @info "COLLECTED CONSTANTS"
+  # #                   if Flags.getConfigBool(Flags.FLAT_MODELICA)
+  # @debug "PRINTING FLAT MODELICA"
+  # #                    printFlatString(flat_model, FunctionTreeImpl.listValues(funcs))
+  # #                 end
+  # #=  Scalarize array components in the flat model.=#
+  # @info "Skipping NF_SCALARIZE"
+  # #                  if Flags.isSet(Flags.NF_SCALARIZE)
+  # #                    @assign flat_model = Scalarize.scalarize(flat_model, name)
+  # #                  else
+  # @assign flat_model.variables = ListUtil.filterOnFalse(flat_model.variables, isEmptyArray)
+  # #                   end
+  # #=  Remove empty arrays from variables =#
+  # @info "VERIFYING MODEL"
+  # verify(flat_model)
+  # #                   if Flags.isSet(Flags.NF_DUMP_FLAT)
+  # #                     print("FlatModel:\\n" + toString(flat_model) + "\\n")
+  # #                  end
+  # #=  Convert the flat model to a DAE.=#
+  # @info "CONVERT TO THE DAE REPRESENTATION"
+  # (dae, daeFuncs) = convert(flat_model, funcs, name, info(inst_cls))
+  # return (dae, daeFuncs)
 end
 
 

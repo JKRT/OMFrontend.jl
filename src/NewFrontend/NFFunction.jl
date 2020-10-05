@@ -1958,14 +1958,12 @@ function getCachedFuncs(inNode::InstNode)::List{M_Function}
   local outFuncs::List{M_Function}
 
   local cache::CachedData
-
   @assign cache = getFuncCache(classScope(inNode))
   @assign outFuncs = begin
     @match cache begin
       C_FUNCTION(__) => begin
         cache.funcs
       end
-
       _ => begin
         fail()
       end
@@ -2120,8 +2118,11 @@ function instFunction(
   local fn_node::InstNode
   local fn_ref::ComponentRef
   local cache::CachedData
+  @info "Looking up function1"
   @assign fn_ref = lookupFunction(functionName, scope, info)
+  @info "Instantiate function ref"
   @assign (fn_ref, fn_node, specialBuiltin) = instFunctionRef(fn_ref, info)
+  @info "Instantiated function ref"
   return (fn_ref, fn_node, specialBuiltin)
 end
 
@@ -2290,7 +2291,6 @@ end
 
 function checkParamTypes2(params::List{<:InstNode})
   local ty::M_Type
-
   return for p in params
     @assign ty = getType(p)
     if !isValidParamType(ty)

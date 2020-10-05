@@ -47,7 +47,6 @@ function addConflictFail(newValue::Value, oldValue::Value, key::Key)::Value
   return value
 end
 addConflictDefault = addConflictFail
-
 """ #= Conflict resolving function for add which replaces the old value with the new. =#"""
 function addConflictReplace(newValue::Value, oldValue::Value, key::Key)::Value
   local value::Value = newValue
@@ -539,19 +538,20 @@ function mapFold(inTree::Tree, inFunc::MapFunc, inStartValue::FT) where {FT}
   return (outTree, outResult)
 end
 
-function setTreeLeftRight(orig::Tree; left::Tree = EMPTY(), right::Tree = EMPTY())::Tree
-  local res::Tree
+function setTreeLeftRight(orig::Tree)::Tree
+  setTreeLeftRight(orig::Tree, EMPTY(), EMPTY())
+end
 
+function setTreeLeftRight(orig::Tree, left::Tree, right::Tree)::Tree
+  local res::Tree
   @assign res = begin
     @match (orig, left, right) begin
       (NODE(__), EMPTY(__), EMPTY(__)) => begin
         LEAF(orig.key, orig.value)
       end
-
       (LEAF(__), EMPTY(__), EMPTY(__)) => begin
         orig
       end
-
       (NODE(__), _, _) => begin
         if referenceEqOrEmpty(orig.left, left) && referenceEqOrEmpty(orig.right, right)
           orig
@@ -559,7 +559,6 @@ function setTreeLeftRight(orig::Tree; left::Tree = EMPTY(), right::Tree = EMPTY(
           NODE(orig.key, orig.value, max(height(left), height(right)) + 1, left, right)
         end
       end
-
       (LEAF(__), _, _) => begin
         NODE(orig.key, orig.value, max(height(left), height(right)) + 1, left, right)
       end

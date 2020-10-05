@@ -915,7 +915,7 @@ function expandBuiltinCall(
   local expanded::Bool
   local outExp::Expression
 
-  local fn_path::Absyn.Path = P_Function.nameConsiderBuiltin(fn)
+  local fn_path::Absyn.Path = nameConsiderBuiltin(fn)
 
   @assign (outExp, expanded) = begin
     @match AbsynUtil.pathFirstIdent(fn_path) begin

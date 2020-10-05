@@ -134,12 +134,12 @@ function getPackageCache(in_caches::Array{<:CachedData}) ::CachedData
 end
 
 function setFuncCache(in_caches::Array{<:CachedData}, in_cache::CachedData)
-  @info "Setting func cache  with $in_caches and $in_cache"
+  #@info "Setting func cache  with $in_caches and $in_cache"
   arrayUpdate(in_caches, 1, in_cache)
 end
 
 function getFuncCache(in_caches::Array{<:CachedData}) ::CachedData
-  @info in_caches
+#  @info in_caches
   local out_cache::CachedData = arrayGet(in_caches, 1)
   out_cache
 end

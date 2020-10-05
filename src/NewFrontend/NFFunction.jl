@@ -177,13 +177,13 @@ function getExactVectorizedMatches(
   matchedFunctions::List{<:MatchedFunction},
 )::List{MatchedFunction}
   local outFuncs::List{MatchedFunction} =
-    List(mf for mf in matchedFunctions if isExactVectorized(mf.mk))
+    list(mf for mf in matchedFunctions if isExactVectorized(mf.mk))
   return outFuncs
 end
 
 function getExactMatches(matchedFunctions::List{<:MatchedFunction})::List{MatchedFunction}
   local outFuncs::List{MatchedFunction} =
-    List(mf for mf in matchedFunctions if isExact(mf.mk))
+    list(mf for mf in matchedFunctions if isExact(mf.mk))
   return outFuncs
 end
 
@@ -484,7 +484,7 @@ function toDAE(fn::M_Function, def::DAE.FunctionDefinition)::DAE.P_Function
   @assign unused_inputs = analyseUnusedParameters(fn)
   @assign defs = _cons(
     def,
-    List(
+    list(
       P_FunctionDerivative.FunctionDerivative.toDAE(fn_der) for fn_der in fn.derivatives
     ),
   )
@@ -601,7 +601,7 @@ function isSpecialBuiltin(fn::M_Function)::Bool
   if !isBuiltin(fn)
     @assign special = false
   else
-    @assign path = P_Function.nameConsiderBuiltin(fn)
+    @assign path = nameConsiderBuiltin(fn)
     if !AbsynUtil.pathIsIdent(path)
       @assign special = false
     else
@@ -1046,9 +1046,9 @@ function typeNodeCache(functionNode::InstNode)::List{M_Function}
   #=  Type the function(s) if not already done.
   =#
   if !typed
-    @assign functions = List(typeFunctionSignature(f) for f in functions)
+    @assign functions = list(typeFunctionSignature(f) for f in functions)
     setFuncCache(fn_node, C_FUNCTION(functions, true, special))
-    @assign functions = List(typeFunctionBody(f) for f in functions)
+    @assign functions = list(typeFunctionBody(f) for f in functions)
     setFuncCache(fn_node, C_FUNCTION(functions, true, special))
   end
   return functions
@@ -1738,7 +1738,7 @@ function callString(
       str +
       ", " +
       stringDelimitList(
-        List(
+        list(
           Util.tuple21(arg) + " = " + toString(Util.tuple22(arg))
           for arg in namedArgs
         ),
@@ -1751,7 +1751,7 @@ end
 
 function candidateFuncListString(fns::List{<:M_Function})::String
   local s::String =
-    stringDelimitList(List(P_Function.signatureString(fn, true) for fn in fns), "\\n  ")
+    stringDelimitList(list(P_Function.signatureString(fn, true) for fn in fns), "\\n  ")
   return s
 end
 
@@ -1950,7 +1950,7 @@ function mapCachedFuncs(inNode::InstNode, mapFn::MapFn)
   @assign cache = begin
     @match cache begin
       C_FUNCTION(__) => begin
-        @assign cache.funcs = List(mapFn(fn) for fn in cache.funcs)
+        @assign cache.funcs = list(mapFn(fn) for fn in cache.funcs)
         cache
       end
 
@@ -1987,12 +1987,12 @@ function instFunction3(fnNode::InstNode)::InstNode
   @assign fnNode = instantiateN1(fnNode, EMPTY_NODE())
   #=  Set up an empty function cache to signal that this function is
   =#
-  #=  currently being instantiated, so recursive functions can be handled.
+  #=  currently being instantiatdded, so recursive functions can be handled.
   =#
   @error "Callng cache init func!"
   cacheInitFunc(fnNode)
   instExpressions(fnNode)
-  @info "Returning in instfunction3"
+  #@info "Returning in instfunction3"
   return fnNode
 end
 
@@ -2324,9 +2324,9 @@ function checkParamTypes(fn::M_Function)
 end
 
 function makeAttributes(
-  node::InstNode,
-  inputs::List{<:InstNode},
-  outputs::List{<:InstNode},
+  @nospecialize(node::InstNode),
+  @nospecialize(inputs::List{<:InstNode}),
+  @nospecialize (outputs::List{<:InstNode})
 )::DAE.FunctionAttributes
   local attr::DAE.FunctionAttributes
 
@@ -2354,7 +2354,7 @@ function makeAttributes(
     local is_om_pure::Bool
     local has_out_params::Bool
     local has_unbox_args::Bool
-    local name::String
+    local nameVar::String
     local in_params::List{String}
     local out_params::List{String}
     local inline_ty::DAE.InlineType
@@ -2363,10 +2363,10 @@ function makeAttributes(
     =#
     @matchcontinue fres begin
       SCode.FR_EXTERNAL_FUNCTION(is_impure) => begin
-        @assign in_params = List(name(i) for i in inputs)
-        @assign out_params = List(name(o) for o in outputs)
-        @assign name = SCodeUtil.isBuiltinFunction(def, in_params, out_params)
-        @assign inline_ty = InstUtil.commentIsInlineFunc(cmt)
+        @assign in_params = list(name(i) for i in inputs)
+        @assign out_params = list(name(o) for o in outputs)
+        @assign nameVar = SCodeUtil.isBuiltinFunction(def, in_params, out_params)
+        @assign inline_ty = commentIsInlineFunc(cmt)
         @assign is_impure = is_impure || hasImpure(cmt)
         @assign has_unbox_args = hasUnboxArgsAnnotation(cmt)
         DAE.FUNCTION_ATTRIBUTES(
@@ -2374,7 +2374,7 @@ function makeAttributes(
           hasOMPure(cmt),
           is_impure,
           is_partial,
-          DAE.FUNCTION_BUILTIN(SOME(name), has_unbox_args),
+          DAE.FUNCTION_BUILTIN(SOME(nameVar), has_unbox_args),
           DAE.FP_NON_PARALLEL(),
         )
       end
@@ -2382,17 +2382,17 @@ function makeAttributes(
       SCode.FR_PARALLEL_FUNCTION(__) => begin
         #=  Parallel function: there are some builtin functions.
         =#
-        @assign in_params = List(name(i) for i in inputs)
-        @assign out_params = List(name(o) for o in outputs)
-        @assign name = SCodeUtil.isBuiltinFunction(def, in_params, out_params)
-        @assign inline_ty = InstUtil.commentIsInlineFunc(cmt)
+        @assign in_params = list(name(i) for i in inputs)
+        @assign out_params = list(name(o) for o in outputs)
+        @assign nameVar = SCodeUtil.isBuiltinFunction(def, in_params, out_params)
+        @assign inline_ty = commentIsInlineFunc(cmt)
         @assign has_unbox_args = hasUnboxArgsAnnotation(cmt)
         DAE.FUNCTION_ATTRIBUTES(
           inline_ty,
           hasOMPure(cmt),
           false,
           is_partial,
-          DAE.FUNCTION_BUILTIN(SOME(name), has_unbox_args),
+          DAE.FUNCTION_BUILTIN(SOME(nameVar), has_unbox_args),
           DAE.FP_PARALLEL_FUNCTION(),
         )
       end
@@ -2400,7 +2400,7 @@ function makeAttributes(
       SCode.FR_PARALLEL_FUNCTION(__) => begin
         #=  Parallel function: non-builtin.
         =#
-        @assign inline_ty = InstUtil.commentIsInlineFunc(cmt)
+        @assign inline_ty = commentIsInlineFunc(cmt)
         DAE.FUNCTION_ATTRIBUTES(
           inline_ty,
           hasOMPure(cmt),
@@ -2427,7 +2427,7 @@ function makeAttributes(
         =#
         #=  Normal function.
         =#
-        #        @assign inline_ty = InstUtil.commentIsInlineFunc(cmt) TODO
+        #        @assign inline_ty = commentIsInlineFunc(cmt) TODO
         inline_ty = DAE.NO_INLINE() #TODO tmp
         #=  In Modelica 3.2 and before, external functions with side-effects are not marked.
         =#
@@ -2452,6 +2452,10 @@ function makeAttributes(
     end
   end
   return attr
+end
+
+function commentIsInlineFunc(cmt::SCode.Comment)
+  return DAE.NO_INLINE()
 end
 
 """ #= Merges the function's comments from inherited classes. =#"""
@@ -2491,6 +2495,7 @@ function mergeFunctionAnnotations(comments::List{<:SCode.Comment})::SCode.Commen
   end
   return outComment
 end
+
 
 function getBuiltin(def::SCode.Element)::DAE.FunctionBuiltin
   local builtin::DAE.FunctionBuiltin = if SCodeUtil.isBuiltinElement(def)
@@ -2776,7 +2781,7 @@ end
 function makeReturnType(fn::M_Function)::M_Type
   local returnType::M_Type
   local ret_tyl::List{M_Type}
-  @assign ret_tyl = List(getType(o) for o in fn.outputs)
+  @assign ret_tyl = list(getType(o) for o in fn.outputs)
   @assign returnType = begin
     @match ret_tyl begin
       nil() => begin

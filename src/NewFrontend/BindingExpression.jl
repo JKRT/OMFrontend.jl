@@ -4360,7 +4360,7 @@ function toDAE(exp::Expression)::DAE.Exp
 
       PARTIAL_FUNCTION_APPLICATION_EXPRESSION(__)  => begin
         @match _cons(fn, _) = P_Function.P_Function.typeRefCache(exp.fn)
-        DAE.PARTEVALFUNCTION(P_Function.P_Function.nameConsiderBuiltin(fn), list(toDAE(arg) for arg in exp.args), toDAE(exp.ty), toDAE(TYPE_FUNCTION(fn, FunctionTYPE_FUNCTIONAL_VARIABLE)))
+        DAE.PARTEVALFUNCTION(P_Function.nameConsiderBuiltin(fn), list(toDAE(arg) for arg in exp.args), toDAE(exp.ty), toDAE(TYPE_FUNCTION(fn, FunctionTYPE_FUNCTIONAL_VARIABLE)))
       end
 
       BINDING_EXP(__)  => begin

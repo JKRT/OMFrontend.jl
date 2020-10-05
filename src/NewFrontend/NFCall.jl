@@ -219,7 +219,7 @@ function toDAE(call::Call)::DAE.Exp
     @match call begin
       TYPED_CALL(__) => begin
         DAE.CALL(
-          P_Function.nameConsiderBuiltin(call.fn),
+          nameConsiderBuiltin(call.fn),
           List(P_Expression.Expression.toDAE(e) for e in call.arguments),
           P_CallAttributes.toDAE(call.attributes, call.ty),
         )
@@ -997,9 +997,9 @@ function typeNormalCall(call::Call, origin::ORIGIN_Type, info::SourceInfo)::Call
 end
 
 function typeCall(
-  callExp::Expression,
-  origin::ORIGIN_Type,
-  info::SourceInfo,
+  @nospecialize(callExp::Expression),
+  @nospecialize(origin::ORIGIN_Type),
+  @nospecialize(info::SourceInfo),
 )::Tuple{Expression, NFType, Variability}
   local var::VariabilityType
   local ty::NFType
@@ -1519,7 +1519,7 @@ function checkMatchingFunctions(call::Call, info::SourceInfo)::MatchedFunction
   =#
   if P_Function.isBuiltin(matchedFunc.func)
     @assign func = matchedFunc.func
-    @assign func.path = P_Function.nameConsiderBuiltin(func)
+    @assign func.path = nameConsiderBuiltin(func)
     @assign matchedFunc.func = func
   end
   return matchedFunc

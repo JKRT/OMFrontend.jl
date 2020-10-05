@@ -163,7 +163,7 @@ function simplifyCall(callExp::Expression)::Expression
         if Flags.isSet(Flags.NF_API) && !Flags.isSet(Flags.NF_API_DYNAMIC_SELECT)
           if stringEq(
             "DynamicSelect",
-            AbsynUtil.pathString(P_Function.nameConsiderBuiltin(call.fn)),
+            AbsynUtil.pathString(nameConsiderBuiltin(call.fn)),
           )
             @assign callExp = simplify(listHead(args))
             return
@@ -185,7 +185,7 @@ function simplifyCall(callExp::Expression)::Expression
           else
             if Flags.isSet(Flags.NF_SCALARIZE)
               @assign callExp =
-                simplifyBuiltinCall(P_Function.nameConsiderBuiltin(call.fn), args, call)
+                simplifyBuiltinCall(nameConsiderBuiltin(call.fn), args, call)
             end
           end
         elseif Flags.isSet(Flags.NF_EVAL_CONST_ARG_FUNCS) &&

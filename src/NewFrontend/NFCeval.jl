@@ -2392,7 +2392,7 @@ function evalBuiltinCall(
 )::Expression
   local result::Expression
 
-  local fn_path::Absyn.Path = P_Function.nameConsiderBuiltin(fn)
+  local fn_path::Absyn.Path = nameConsiderBuiltin(fn)
 
   @assign result = begin
     @match AbsynUtil.pathFirstIdent(fn_path) begin

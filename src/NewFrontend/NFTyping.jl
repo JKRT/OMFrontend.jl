@@ -163,7 +163,7 @@ function flagNotSet(origin::M_Type, flag::M_Type)::Bool
   return notSet
 end
 
-function typeClass(cls::InstNode, name::String)
+function typeClass(@nospecialize(cls::InstNode), name::String)
   typeClassType(cls, EMPTY_BINDING, ORIGIN_CLASS, cls)
   typeComponents(cls, ORIGIN_CLASS)
 #  execStat("NFTyping.typeComponents(" + name + ")")
@@ -174,7 +174,7 @@ function typeClass(cls::InstNode, name::String)
   return
 end
 
-function typeComponents(cls::InstNode, origin::ORIGIN_Type)
+function typeComponents(@nospecialize(cls::InstNode), origin::ORIGIN_Type)
   local c::Class = getClass(cls)
   local c2::Class
   local cls_tree::ClassTree

@@ -27,13 +27,11 @@ function printNodeStr(inNode::Tree)::String
   @assign outString = begin
     @match inNode begin
       NODE(__) => begin
-        "(" + keyStr(inNode.key)
-        +", " + valueStr(inNode.value) + ")"
+        "(" * keyStr(inNode.key) * ", " * valueStr(inNode.value) * ")"
       end
 
       LEAF(__) => begin
-        "(" + keyStr(inNode.key)
-        +", " + valueStr(inNode.value) + ")"
+        "(" * keyStr(inNode.key) * ", " * valueStr(inNode.value) * ")"
       end
     end
   end
@@ -539,10 +537,6 @@ function mapFold(inTree::Tree, inFunc::MapFunc, inStartValue::FT) where {FT}
     end
   end
   return (outTree, outResult)
-end
-
-function setTreeLeftRight(orig::Tree, left::Tree = EMPTY(), right::Tree = EMPTY())::Tree
-  setTreeLeftRight(orig, left = left, right = right)
 end
 
 function setTreeLeftRight(orig::Tree; left::Tree = EMPTY(), right::Tree = EMPTY())::Tree

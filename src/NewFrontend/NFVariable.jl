@@ -173,7 +173,7 @@ function isStructural(variable::Variable)::Bool
   return structural
 end
 
-function fromCref(cref::ComponentRef)::Variable
+function NFVariable_fromCref(cref::ComponentRef)::Variable
   local variable::Variable
   local node::InstNode
   local comp::Component

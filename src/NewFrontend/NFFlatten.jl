@@ -24,10 +24,6 @@ include("../Util/baseAvlSetCode.jl")
 
 addConflictDefault = addConflictKeep
 
-function new()
-  return EMPTY()
-end
-
 @exportAll()
 end
 FunctionTree = FunctionTreeImpl.Tree

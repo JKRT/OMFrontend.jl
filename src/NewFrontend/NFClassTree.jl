@@ -531,8 +531,8 @@ function lookupElement(name::String, tree::ClassTree)::Tuple{InstNode, Bool}
   local entry::LookupTree.Entry
   @debug "Looking up element $name in class tree!"
   @debug "Fetching from tree. Soon to report entry"
-  str = LookupTree.printTreeStr(lookupTree(tree))
-  @debug str
+  # str = LookupTree.printTreeStr(lookupTree(tree))
+  # @debug str
   @assign entry = LookupTree.get(lookupTree(tree), name)
   @debug "Our entry is $entry"
   @assign (element, isImport) = resolveEntry(entry, tree)

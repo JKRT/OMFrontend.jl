@@ -31,10 +31,6 @@ EntryTypeTy = Integer
   end
 end
 
-function new()
-  return EMPTY();
-end
-
 function newRedeclare(entry::LookupTree.Entry) :Entry
   local redecl::Entry = DUPLICATE_TREE_ENTRY(entry, NONE(), nil, EntryType.REDECLARE)
   return redecl

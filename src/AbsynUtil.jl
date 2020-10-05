@@ -99,9 +99,9 @@ FuncType = Function
 *
 * All rights reserved.
 *
-* THIS PROGRAM IS PROVIDED UNDER THE TERMS OF GPL VERSION 3 LICENSE OR
+* THIS Absyn.PROGRAM IS PROVIDED UNDER THE TERMS OF GPL VERSION 3 LICENSE OR
 * THIS OSMC PUBLIC LICENSE (OSMC-PL) VERSION 1.2.
-* ANY USE, REPRODUCTION OR DISTRIBUTION OF THIS PROGRAM CONSTITUTES
+* ANY USE, REPRODUCTION OR DISTRIBUTION OF THIS Absyn.PROGRAM CONSTITUTES
 * RECIPIENT'S ACCEPTANCE OF THE OSMC PUBLIC LICENSE OR THE GPL VERSION 3,
 * ACCORDING TO RECIPIENTS CHOICE.
 *
@@ -121,17 +121,17 @@ FuncType = Function
 *
 */ =#
 
-using Absyn
+import Absyn
 
 import ListUtil
 
 import ..Main.Util
 
-const dummyParts = PARTS(nil, nil, nil, nil, NONE())::ClassDef
+const dummyParts = Absyn.PARTS(nil, nil, nil, nil, NONE())::Absyn.ClassDef
 
-const dummyInfo = SOURCEINFO("", false, 0, 0, 0, 0, 0.0)::Info
+const dummyInfo = Absyn.SOURCEINFO("", false, 0, 0, 0, 0, 0.0)::Absyn.Info
 
-const dummyProgram = PROGRAM(nil, TOP())::Program
+const dummyProgram = Absyn.PROGRAM(nil, Absyn.TOP())::Absyn.Program
 TypeA = Any
 Type_a = Any
 Argument = Any
@@ -142,11 +142,11 @@ Arg = Any
 """ #= Traverses all subequations of an equation.
    Takes a function and an extra argument passed through the traversal =#"""
 function traverseEquation(
-  inEquation::Equation,
+  inEquation::Absyn.Equation,
   inFunc::FuncTplToTpl,
   inTypeA::TypeA,
-)::Tuple{Equation, TypeA}
-  local outTpl::Tuple{Equation, TypeA}
+)::Tuple{Absyn.Equation, TypeA}
+  local outTpl::Tuple{Absyn.Equation, TypeA}
 
   @assign outTpl = begin
     local arg::TypeA
@@ -154,49 +154,49 @@ function traverseEquation(
     local arg_2::TypeA
     local arg_3::TypeA
     local arg_4::TypeA
-    local eq::Equation
-    local eq_1::Equation
+    local eq::Absyn.Equation
+    local eq_1::Absyn.Equation
     local rel::FuncTplToTpl
-    local e::Exp
-    local e_1::Exp
-    local eqilst::List{EquationItem}
-    local eqilst1::List{EquationItem}
-    local eqilst2::List{EquationItem}
-    local eqilst_1::List{EquationItem}
-    local eqilst1_1::List{EquationItem}
-    local eqilst2_1::List{EquationItem}
-    local eeqitlst::List{Tuple{Exp, List{EquationItem}}}
-    local eeqitlst_1::List{Tuple{Exp, List{EquationItem}}}
-    local fis::ForIterators
-    local fis_1::ForIterators
-    local ei::EquationItem
-    local ei_1::EquationItem
+    local e::Absyn.Exp
+    local e_1::Absyn.Exp
+    local eqilst::List{Absyn.EquationItem}
+    local eqilst1::List{Absyn.EquationItem}
+    local eqilst2::List{Absyn.EquationItem}
+    local eqilst_1::List{Absyn.EquationItem}
+    local eqilst1_1::List{Absyn.EquationItem}
+    local eqilst2_1::List{Absyn.EquationItem}
+    local eeqitlst::List{Tuple{Absyn.Exp, List{Absyn.EquationItem}}}
+    local eeqitlst_1::List{Tuple{Absyn.Exp, List{Absyn.EquationItem}}}
+    local fis::Absyn.ForIterators
+    local ei::Absyn.EquationItem
+    local fis_1::Absyn.ForIterators
+    local ei_1::Absyn.EquationItem
     @matchcontinue (inEquation, inFunc, inTypeA) begin
-      (eq && EQ_IF(e, eqilst1, eeqitlst, eqilst2), rel, arg) => begin
+      (eq && Absyn.EQ_IF(e, eqilst1, eeqitlst, eqilst2), rel, arg) => begin
         @assign (eqilst1_1, arg_1) = traverseEquationItemList(eqilst1, rel, arg)
         @assign (eeqitlst_1, arg_2) = traverseExpEqItemTupleList(eeqitlst, rel, arg_1)
         @assign (eqilst2_1, arg_3) = traverseEquationItemList(eqilst2, rel, arg_2)
-        @match (EQ_IF(), arg_4) = rel((eq, arg_3))
-        (EQ_IF(e, eqilst1_1, eeqitlst_1, eqilst2_1), arg_4)
+        @match (Absyn.EQ_IF(), arg_4) = rel((eq, arg_3))
+        (Absyn.EQ_IF(e, eqilst1_1, eeqitlst_1, eqilst2_1), arg_4)
       end
 
-      (eq && EQ_FOR(_, eqilst), rel, arg) => begin
+      (eq && Absyn.EQ_FOR(_, eqilst), rel, arg) => begin
         @assign (eqilst_1, arg_1) = traverseEquationItemList(eqilst, rel, arg)
-        @match (EQ_FOR(fis_1, _), arg_2) = rel((eq, arg_1))
-        (EQ_FOR(fis_1, eqilst_1), arg_2)
+        @match (Absyn.EQ_FOR(fis_1, _), arg_2) = rel((eq, arg_1))
+        (Absyn.EQ_FOR(fis_1, eqilst_1), arg_2)
       end
 
-      (eq && EQ_WHEN_E(_, eqilst, eeqitlst), rel, arg) => begin
+      (eq && Absyn.EQ_WHEN_E(_, eqilst, eeqitlst), rel, arg) => begin
         @assign (eqilst_1, arg_1) = traverseEquationItemList(eqilst, rel, arg)
         @assign (eeqitlst_1, arg_2) = traverseExpEqItemTupleList(eeqitlst, rel, arg_1)
-        @match (EQ_WHEN_E(e_1, _, _), arg_3) = rel((eq, arg_2))
-        (EQ_WHEN_E(e_1, eqilst_1, eeqitlst_1), arg_3)
+        @match (Absyn.EQ_WHEN_E(e_1, _, _), arg_3) = rel((eq, arg_2))
+        (Absyn.EQ_WHEN_E(e_1, eqilst_1, eeqitlst_1), arg_3)
       end
 
-      (eq && EQ_FAILURE(ei), rel, arg) => begin
+      (eq && Absyn.EQ_FAILURE(ei), rel, arg) => begin
         @assign (ei_1, arg_1) = traverseEquationItem(ei, rel, arg)
-        @match (EQ_FAILURE(), arg_2) = rel((eq, arg_1))
-        (EQ_FAILURE(ei_1), arg_2)
+        @match (Absyn.EQ_FAILURE(), arg_2) = rel((eq, arg_1))
+        (Absyn.EQ_FAILURE(ei_1), arg_2)
       end
 
       (eq, rel, arg) => begin
@@ -213,25 +213,25 @@ end
 
 """ #= Traverses the equation inside an equationitem =#"""
 function traverseEquationItem(
-  inEquationItem::EquationItem,
+  inEquationItem::Absyn.EquationItem,
   inFunc::FuncTplToTpl,
   inTypeA::TypeA,
-)::Tuple{EquationItem, TypeA}
-  local outTpl::Tuple{EquationItem, TypeA}
+)::Tuple{Absyn.EquationItem, TypeA}
+  local outTpl::Tuple{Absyn.EquationItem, TypeA}
 
   @assign outTpl = begin
-    local ei::EquationItem
+    local ei::Absyn.EquationItem
     local rel::FuncTplToTpl
     local arg::TypeA
     local arg_1::TypeA
-    local eq::Equation
-    local eq_1::Equation
-    local oc::Option{Comment}
+    local eq::Absyn.Equation
+    local eq_1::Absyn.Equation
+    local oc::Option{Absyn.Comment}
     local info::Info
     @matchcontinue (inEquationItem, inFunc, inTypeA) begin
-      (EQUATIONITEM(eq, oc, info), rel, arg) => begin
+      (Absyn.EQUATIONITEM(eq, oc, info), rel, arg) => begin
         @assign (eq_1, arg_1) = traverseEquation(eq, rel, arg)
-        (EQUATIONITEM(eq_1, oc, info), arg_1)
+        (Absyn.EQUATIONITEM(eq_1, oc, info), arg_1)
       end
 
       (ei, _, arg) => begin
@@ -247,19 +247,19 @@ end
 
 """ #= calls traverseEquationItem on every element of the given list =#"""
 function traverseEquationItemList(
-  inEquationItemList::List{<:EquationItem},
+  inEquationItemList::List{<:Absyn.EquationItem},
   inFunc::FuncTplToTpl,
   inTypeA::TypeA,
-)::Tuple{List{EquationItem}, TypeA}
-  local outTpl::Tuple{List{EquationItem}, TypeA}
+)::Tuple{List{Absyn.EquationItem}, TypeA}
+  local outTpl::Tuple{List{Absyn.EquationItem}, TypeA}
 
   local arg2::TypeA = inTypeA
 
   @assign outTpl = (
     List(
       begin
-        local ei::EquationItem
-        local ei_1::EquationItem
+        local ei::Absyn.EquationItem
+        local ei_1::Absyn.EquationItem
         @match el begin
           ei => begin
             @assign (ei_1, arg2) = traverseEquationItem(ei, inFunc, arg2)
@@ -276,23 +276,23 @@ end
 #=  stefan
 =#
 
-""" #= traverses a list of Exp * EquationItem list tuples
+""" #= traverses a list of Absyn.Exp * Absyn.EquationItem list tuples
   mostly used for else-if blocks =#"""
 function traverseExpEqItemTupleList(
-  inList::List{<:Tuple{<:Exp, List{<:EquationItem}}},
+  inList::List{<:Tuple{<:Absyn.Exp, List{<:Absyn.EquationItem}}},
   inFunc::FuncTplToTpl,
   inTypeA::TypeA,
-)::Tuple{List{Tuple{Exp, List{EquationItem}}}, TypeA}
-  local outTpl::Tuple{List{Tuple{Exp, List{EquationItem}}}, TypeA}
+)::Tuple{List{Tuple{Absyn.Exp, List{Absyn.EquationItem}}}, TypeA}
+  local outTpl::Tuple{List{Tuple{Absyn.Exp, List{Absyn.EquationItem}}}, TypeA}
 
   local arg2::TypeA = inTypeA
 
   @assign outTpl = (
     List(
       begin
-        local e::Exp
-        local eilst::List{EquationItem}
-        local eilst_1::List{EquationItem}
+        local e::Absyn.Exp
+        local eilst::List{Absyn.EquationItem}
+        local eilst_1::List{Absyn.EquationItem}
         @match el begin
           (e, eilst) => begin
             @assign (eilst_1, arg2) = traverseEquationItemList(eilst, inFunc, arg2)
@@ -312,11 +312,11 @@ end
 """ #= Traverses all subalgorithms of an algorithm
   Takes a function and an extra argument passed through the traversal =#"""
 function traverseAlgorithm(
-  inAlgorithm::Algorithm,
+  inAlgorithm::Absyn.Algorithm,
   inFunc::FuncTplToTpl,
   inTypeA::TypeA,
-)::Tuple{Algorithm, TypeA}
-  local outTpl::Tuple{Algorithm, TypeA}
+)::Tuple{Absyn.Algorithm, TypeA}
+  local outTpl::Tuple{Absyn.Algorithm, TypeA}
 
   @assign outTpl = begin
     local arg::TypeA
@@ -324,58 +324,58 @@ function traverseAlgorithm(
     local arg1_1::TypeA
     local arg2_1::TypeA
     local arg3_1::TypeA
-    local alg::Algorithm
-    local alg_1::Algorithm
-    local alg1_1::Algorithm
-    local alg2_1::Algorithm
-    local alg3_1::Algorithm
-    local ailst::List{AlgorithmItem}
-    local ailst1::List{AlgorithmItem}
-    local ailst2::List{AlgorithmItem}
-    local ailst_1::List{AlgorithmItem}
-    local ailst1_1::List{AlgorithmItem}
-    local ailst2_1::List{AlgorithmItem}
-    local eaitlst::List{Tuple{Exp, List{AlgorithmItem}}}
-    local eaitlst_1::List{Tuple{Exp, List{AlgorithmItem}}}
+    local alg::Absyn.Algorithm
+    local alg_1::Absyn.Algorithm
+    local alg1_1::Absyn.Algorithm
+    local alg2_1::Absyn.Algorithm
+    local alg3_1::Absyn.Algorithm
+    local ailst::List{Absyn.AlgorithmItem}
+    local ailst1::List{Absyn.AlgorithmItem}
+    local ailst2::List{Absyn.AlgorithmItem}
+    local ailst_1::List{Absyn.AlgorithmItem}
+    local ailst1_1::List{Absyn.AlgorithmItem}
+    local ailst2_1::List{Absyn.AlgorithmItem}
+    local eaitlst::List{Tuple{Absyn.Exp, List{Absyn.AlgorithmItem}}}
+    local eaitlst_1::List{Tuple{Absyn.Exp, List{Absyn.AlgorithmItem}}}
     local rel::FuncTplToTpl
-    local ai::AlgorithmItem
-    local ai_1::AlgorithmItem
-    local e::Exp
-    local e_1::Exp
-    local fis::ForIterators
-    local fis_1::ForIterators
+    local ai::Absyn.AlgorithmItem
+    local ai_1::Absyn.AlgorithmItem
+    local e::Absyn.Exp
+    local e_1::Absyn.Exp
+    local fis::Absyn.ForIterators
+    local fis_1::Absyn.ForIterators
     @matchcontinue (inAlgorithm, inFunc, inTypeA) begin
-      (alg && ALG_IF(_, ailst1, eaitlst, ailst2), rel, arg) => begin
+      (alg && Absyn.ALG_IF(_, ailst1, eaitlst, ailst2), rel, arg) => begin
         @assign (ailst1_1, arg1_1) = traverseAlgorithmItemList(ailst1, rel, arg)
         @assign (eaitlst_1, arg2_1) = traverseExpAlgItemTupleList(eaitlst, rel, arg1_1)
         @assign (ailst2_1, arg3_1) = traverseAlgorithmItemList(ailst2, rel, arg2_1)
-        @match (ALG_IF(e_1, _, _, _), arg_1) = rel((alg, arg3_1))
-        (ALG_IF(e_1, ailst1_1, eaitlst_1, ailst2_1), arg_1)
+        @match (Absyn.ALG_IF(e_1, _, _, _), arg_1) = rel((alg, arg3_1))
+        (Absyn.ALG_IF(e_1, ailst1_1, eaitlst_1, ailst2_1), arg_1)
       end
 
-      (alg && ALG_FOR(_, ailst), rel, arg) => begin
+      (alg && Absyn.ALG_FOR(_, ailst), rel, arg) => begin
         @assign (ailst_1, arg1_1) = traverseAlgorithmItemList(ailst, rel, arg)
-        @match (ALG_FOR(fis_1, _), arg_1) = rel((alg, arg1_1))
-        (ALG_FOR(fis_1, ailst_1), arg_1)
+        @match (Absyn.ALG_FOR(fis_1, _), arg_1) = rel((alg, arg1_1))
+        (Absyn.ALG_FOR(fis_1, ailst_1), arg_1)
       end
 
-      (alg && ALG_PARFOR(_, ailst), rel, arg) => begin
+      (alg && Absyn.ALG_PARFOR(_, ailst), rel, arg) => begin
         @assign (ailst_1, arg1_1) = traverseAlgorithmItemList(ailst, rel, arg)
-        @match (ALG_PARFOR(fis_1, _), arg_1) = rel((alg, arg1_1))
-        (ALG_PARFOR(fis_1, ailst_1), arg_1)
+        @match (Absyn.ALG_PARFOR(fis_1, _), arg_1) = rel((alg, arg1_1))
+        (Absyn.ALG_PARFOR(fis_1, ailst_1), arg_1)
       end
 
-      (alg && ALG_WHILE(_, ailst), rel, arg) => begin
+      (alg && Absyn.ALG_WHILE(_, ailst), rel, arg) => begin
         @assign (ailst_1, arg1_1) = traverseAlgorithmItemList(ailst, rel, arg)
-        @match (ALG_WHILE(e_1, _), arg_1) = rel((alg, arg1_1))
-        (ALG_WHILE(e_1, ailst_1), arg_1)
+        @match (Absyn.ALG_WHILE(e_1, _), arg_1) = rel((alg, arg1_1))
+        (Absyn.ALG_WHILE(e_1, ailst_1), arg_1)
       end
 
-      (alg && ALG_WHEN_A(_, ailst, eaitlst), rel, arg) => begin
+      (alg && Absyn.ALG_WHEN_A(_, ailst, eaitlst), rel, arg) => begin
         @assign (ailst_1, arg1_1) = traverseAlgorithmItemList(ailst, rel, arg)
         @assign (eaitlst_1, arg2_1) = traverseExpAlgItemTupleList(eaitlst, rel, arg1_1)
-        @match (ALG_WHEN_A(e_1, _, _), arg_1) = rel((alg, arg2_1))
-        (ALG_WHEN_A(e_1, ailst_1, eaitlst_1), arg_1)
+        @match (Absyn.ALG_WHEN_A(e_1, _, _), arg_1) = rel((alg, arg2_1))
+        (Absyn.ALG_WHEN_A(e_1, ailst_1, eaitlst_1), arg_1)
       end
 
       (alg, rel, arg) => begin
@@ -390,28 +390,28 @@ end
 #=  stefan
 =#
 
-""" #= traverses the Algorithm contained in an AlgorithmItem, if any
+""" #= traverses the Absyn.Algorithm contained in an Absyn.AlgorithmItem, if any
   see traverseAlgorithm =#"""
 function traverseAlgorithmItem(
-  inAlgorithmItem::AlgorithmItem,
+  inAlgorithmItem::Absyn.AlgorithmItem,
   inFunc::FuncTplToTpl,
   inTypeA::TypeA,
-)::Tuple{AlgorithmItem, TypeA}
-  local outTpl::Tuple{AlgorithmItem, TypeA}
+)::Tuple{Absyn.AlgorithmItem, TypeA}
+  local outTpl::Tuple{Absyn.AlgorithmItem, TypeA}
 
   @assign outTpl = begin
     local rel::FuncTplToTpl
     local arg::TypeA
     local arg_1::TypeA
-    local alg::Algorithm
-    local alg_1::Algorithm
-    local oc::Option{Comment}
-    local ai::AlgorithmItem
+    local alg::Absyn.Algorithm
+    local alg_1::Absyn.Algorithm
+    local oc::Option{Absyn.Comment}
+    local ai::Absyn.AlgorithmItem
     local info::Info
     @matchcontinue (inAlgorithmItem, inFunc, inTypeA) begin
-      (ALGORITHMITEM(alg, oc, info), rel, arg) => begin
+      (Absyn.ALGORITHMITEM(alg, oc, info), rel, arg) => begin
         @assign (alg_1, arg_1) = traverseAlgorithm(alg, rel, arg)
-        (ALGORITHMITEM(alg_1, oc, info), arg_1)
+        (Absyn.ALGORITHMITEM(alg_1, oc, info), arg_1)
       end
 
       (ai, _, arg) => begin
@@ -427,21 +427,21 @@ end
 
 """ #= calls traverseAlgorithmItem on each item in a list of AlgorithmItems =#"""
 function traverseAlgorithmItemList(
-  inAlgorithmItemList::List{<:AlgorithmItem},
+  inAlgorithmItemList::List{<:Absyn.AlgorithmItem},
   inFunc::FuncTplToTpl,
   inTypeA::TypeA,
-)::Tuple{List{AlgorithmItem}, TypeA}
-  local outTpl::Tuple{List{AlgorithmItem}, TypeA}
+)::Tuple{List{Absyn.AlgorithmItem}, TypeA}
+  local outTpl::Tuple{List{Absyn.AlgorithmItem}, TypeA}
 
   @assign outTpl = begin
     local rel::FuncTplToTpl
     local arg::TypeA
     local arg_1::TypeA
     local arg_2::TypeA
-    local ai::AlgorithmItem
-    local ai_1::AlgorithmItem
-    local cdr::List{AlgorithmItem}
-    local cdr_1::List{AlgorithmItem}
+    local ai::Absyn.AlgorithmItem
+    local ai_1::Absyn.AlgorithmItem
+    local cdr::List{Absyn.AlgorithmItem}
+    local cdr_1::List{Absyn.AlgorithmItem}
     @match (inAlgorithmItemList, inFunc, inTypeA) begin
       (nil(), _, arg) => begin
         (nil, arg)
@@ -460,25 +460,25 @@ end
 #=  stefan
 =#
 
-""" #= traverses a list of Exp * AlgorithmItem list tuples
+""" #= traverses a list of Absyn.Exp * Absyn.AlgorithmItem list tuples
   mostly used for else-if blocks =#"""
 function traverseExpAlgItemTupleList(
-  inList::List{<:Tuple{<:Exp, List{<:AlgorithmItem}}},
+  inList::List{<:Tuple{<:Absyn.Exp, List{<:Absyn.AlgorithmItem}}},
   inFunc::FuncTplToTpl,
   inTypeA::TypeA,
-)::Tuple{List{Tuple{Exp, List{AlgorithmItem}}}, TypeA}
-  local outTpl::Tuple{List{Tuple{Exp, List{AlgorithmItem}}}, TypeA}
+)::Tuple{List{Tuple{Absyn.Exp, List{Absyn.AlgorithmItem}}}, TypeA}
+  local outTpl::Tuple{List{Tuple{Absyn.Exp, List{Absyn.AlgorithmItem}}}, TypeA}
 
   @assign outTpl = begin
     local rel::FuncTplToTpl
     local arg::TypeA
     local arg_1::TypeA
     local arg_2::TypeA
-    local cdr::List{Tuple{Exp, List{AlgorithmItem}}}
-    local cdr_1::List{Tuple{Exp, List{AlgorithmItem}}}
-    local e::Exp
-    local ailst::List{AlgorithmItem}
-    local ailst_1::List{AlgorithmItem}
+    local cdr::List{Tuple{Absyn.Exp, List{Absyn.AlgorithmItem}}}
+    local cdr_1::List{Tuple{Absyn.Exp, List{Absyn.AlgorithmItem}}}
+    local e::Absyn.Exp
+    local ailst::List{Absyn.AlgorithmItem}
+    local ailst_1::List{Absyn.AlgorithmItem}
     @match (inList, inFunc, inTypeA) begin
       (nil(), _, arg) => begin
         (nil, arg)
@@ -494,22 +494,22 @@ function traverseExpAlgItemTupleList(
   return outTpl
 end
 
-""" #=  Traverses all subexpressions of an Exp expression.
+""" #=  Traverses all subexpressions of an Absyn.Exp expression.
   Takes a function and an extra argument passed through the traversal.
   NOTE:This function was copied from Expression.traverseExpression. =#"""
-function traverseExp(inExp::Exp, inFunc::FuncType, inArg::Type_a)::Tuple{Exp, Type_a}
+function traverseExp(inExp::Absyn.Exp, inFunc::FuncType, inArg::Type_a)::Tuple{Absyn.Exp, Type_a}
   local outArg::Type_a
-  local outExp::Exp
+  local outExp::Absyn.Exp
 
   @assign (outExp, outArg) = traverseExpBidir(inExp, dummyTraverseExp, inFunc, inArg)
   return (outExp, outArg)
 end
 
-""" #=  Traverses all subexpressions of an Exp expression.
+""" #=  Traverses all subexpressions of an Absyn.Exp expression.
   Takes a function and an extra argument passed through the traversal. =#"""
-function traverseExpTopDown(inExp::Exp, inFunc::FuncType, inArg::Type_a)::Tuple{Exp, Type_a}
+function traverseExpTopDown(inExp::Absyn.Exp, inFunc::FuncType, inArg::Type_a)::Tuple{Absyn.Exp, Type_a}
   local outArg::Type_a
-  local outExp::Exp
+  local outExp::Absyn.Exp
 
   @assign (outExp, outArg) = traverseExpBidir(inExp, inFunc, dummyTraverseExp, inArg)
   return (outExp, outArg)
@@ -517,12 +517,12 @@ end
 
 """ #= calls traverseExp on each element in the given list =#"""
 function traverseExpList(
-  inExpList::List{<:Exp},
+  inExpList::List{<:Absyn.Exp},
   inFunc::FuncTplToTpl,
   inArg::Type_a,
-)::Tuple{List{Exp}, Type_a}
+)::Tuple{List{Absyn.Exp}, Type_a}
   local outArg::Type_a
-  local outExpList::List{Exp}
+  local outExpList::List{Absyn.Exp}
 
   @assign (outExpList, outArg) =
     traverseExpListBidir(inExpList, dummyTraverseExp, inFunc, inArg)
@@ -532,13 +532,13 @@ end
 """ #= Traverses a list of expressions, calling traverseExpBidir on each
   expression. =#"""
 function traverseExpListBidir(
-  inExpl::List{<:Exp},
+  inExpl::List{<:Absyn.Exp},
   enterFunc::FuncType,
   exitFunc::FuncType,
   inArg::Argument,
-)::Tuple{List{Exp}, Argument}
+)::Tuple{List{Absyn.Exp}, Argument}
   local outArg::Argument
-  local outExpl::List{Exp}
+  local outExpl::List{Absyn.Exp}
 
   @assign (outExpl, outArg) =
     ListUtil.map2FoldCheckReferenceEq(inExpl, traverseExpBidir, enterFunc, exitFunc, inArg)
@@ -553,13 +553,13 @@ end
   the updated argument. This means that this function is bidirectional, and can
   be used to emulate both top-down and bottom-up traversal. =#"""
 function traverseExpBidir(
-  inExp::Exp,
+  inExp::Absyn.Exp,
   enterFunc::FuncType,
   exitFunc::FuncType,
   inArg::Argument,
-)::Tuple{Exp, Argument}
+)::Tuple{Absyn.Exp, Argument}
   local arg::Argument
-  local e::Exp
+  local e::Absyn.Exp
 
   @assign (e, arg) = enterFunc(inExp, inArg)
   @assign (e, arg) = traverseExpBidirSubExps(e, enterFunc, exitFunc, arg)
@@ -571,17 +571,17 @@ end
   traverseExpBidir if the option is SOME(), or just returns the input if it's
   NONE() =#"""
 function traverseExpOptBidir(
-  inExp::Option{<:Exp},
+  inExp::Option{<:Absyn.Exp},
   enterFunc::FuncType,
   exitFunc::FuncType,
   inArg::Argument,
-)::Tuple{Option{Exp}, Argument}
+)::Tuple{Option{Absyn.Exp}, Argument}
   local arg::Argument
-  local outExp::Option{Exp}
+  local outExp::Option{Absyn.Exp}
 
   @assign (outExp, arg) = begin
-    local e1::Exp
-    local e2::Exp
+    local e1::Absyn.Exp
+    local e2::Absyn.Exp
     local tup::Tuple{FuncType, FuncType, Argument}
     @match (inExp, enterFunc, exitFunc, inArg) begin
       (SOME(e1), _, _, _) => begin
@@ -604,118 +604,118 @@ end
 """ #= Helper function to traverseExpBidir. Traverses the subexpressions of an
   expression and calls traverseExpBidir on them. =#"""
 function traverseExpBidirSubExps(
-  inExp::Exp,
+  inExp::Absyn.Exp,
   enterFunc::FuncType,
   exitFunc::FuncType,
   inArg::Argument,
-)::Tuple{Exp, Argument}
+)::Tuple{Absyn.Exp, Argument}
   local arg::Argument
-  local e::Exp
+  local e::Absyn.Exp
 
   @assign (e, arg) = begin
-    local e1::Exp
-    local e1m::Exp
-    local e2::Exp
-    local e2m::Exp
-    local e3::Exp
-    local e3m::Exp
-    local oe1::Option{Exp}
-    local oe1m::Option{Exp}
+    local e1::Absyn.Exp
+    local e1m::Absyn.Exp
+    local e2::Absyn.Exp
+    local e2m::Absyn.Exp
+    local e3::Absyn.Exp
+    local e3m::Absyn.Exp
+    local oe1::Option{Absyn.Exp}
+    local oe1m::Option{Absyn.Exp}
     local tup::Tuple{FuncType, FuncType, Argument}
-    local op::Operator
-    local cref::ComponentRef
-    local crefm::ComponentRef
-    local else_ifs1::List{Tuple{Exp, Exp}}
-    local else_ifs2::List{Tuple{Exp, Exp}}
-    local expl1::List{Exp}
-    local expl2::List{Exp}
-    local mat_expl::List{List{Exp}}
-    local fargs1::FunctionArgs
-    local fargs2::FunctionArgs
+    local op::Absyn.Operator
+    local cref::Absyn.ComponentRef
+    local crefm::Absyn.ComponentRef
+    local else_ifs1::List{Tuple{Absyn.Exp, Absyn.Exp}}
+    local else_ifs2::List{Tuple{Absyn.Exp, Absyn.Exp}}
+    local expl1::List{Absyn.Exp}
+    local expl2::List{Absyn.Exp}
+    local mat_expl::List{List{Absyn.Exp}}
+    local fargs1::Absyn.FunctionArgs
+    local fargs2::Absyn.FunctionArgs
     local error_msg::String
-    local id::Ident
-    local enterName::Ident
-    local exitName::Ident
-    local match_ty::MatchType
-    local match_decls::List{ElementItem}
-    local match_cases::List{Case}
+    local id::Absyn.Ident
+    local enterName::Absyn.Ident
+    local exitName::Absyn.Ident
+    local match_ty::Absyn.MatchType
+    local match_decls::List{Absyn.ElementItem}
+    local match_cases::List{Absyn.Case}
     local cmt::Option{String}
     @match (inExp, enterFunc, exitFunc, inArg) begin
-      (INTEGER(__), _, _, _) => begin
+      (Absyn.INTEGER(__), _, _, _) => begin
         (inExp, inArg)
       end
 
-      (REAL(__), _, _, _) => begin
+      (Absyn.REAL(__), _, _, _) => begin
         (inExp, inArg)
       end
 
-      (STRING(__), _, _, _) => begin
+      (Absyn.STRING(__), _, _, _) => begin
         (inExp, inArg)
       end
 
-      (BOOL(__), _, _, _) => begin
+      (Absyn.BOOL(__), _, _, _) => begin
         (inExp, inArg)
       end
 
-      (CREF(componentRef = cref), _, _, arg) => begin
+      (Absyn.CREF(componentRef = cref), _, _, arg) => begin
         @assign (crefm, arg) = traverseExpBidirCref(cref, enterFunc, exitFunc, arg)
         (if referenceEq(cref, crefm)
           inExp
         else
-          CREF(crefm)
+          Absyn.CREF(crefm)
         end, arg)
       end
 
-      (BINARY(exp1 = e1, op = op, exp2 = e2), _, _, arg) => begin
+      (Absyn.BINARY(exp1 = e1, op = op, exp2 = e2), _, _, arg) => begin
         @assign (e1m, arg) = traverseExpBidir(e1, enterFunc, exitFunc, arg)
         @assign (e2m, arg) = traverseExpBidir(e2, enterFunc, exitFunc, arg)
         (if referenceEq(e1, e1m) && referenceEq(e2, e2m)
           inExp
         else
-          BINARY(e1m, op, e2m)
+          Absyn.BINARY(e1m, op, e2m)
         end, arg)
       end
 
-      (UNARY(op = op, exp = e1), _, _, arg) => begin
+      (Absyn.UNARY(op = op, exp = e1), _, _, arg) => begin
         @assign (e1m, arg) = traverseExpBidir(e1, enterFunc, exitFunc, arg)
         (if referenceEq(e1, e1m)
           inExp
         else
-          UNARY(op, e1m)
+          Absyn.UNARY(op, e1m)
         end, arg)
       end
 
-      (LBINARY(exp1 = e1, op = op, exp2 = e2), _, _, arg) => begin
+      (Absyn.LBINARY(exp1 = e1, op = op, exp2 = e2), _, _, arg) => begin
         @assign (e1m, arg) = traverseExpBidir(e1, enterFunc, exitFunc, arg)
         @assign (e2m, arg) = traverseExpBidir(e2, enterFunc, exitFunc, arg)
         (if referenceEq(e1, e1m) && referenceEq(e2, e2m)
           inExp
         else
-          LBINARY(e1m, op, e2m)
+          Absyn.LBINARY(e1m, op, e2m)
         end, arg)
       end
 
-      (LUNARY(op = op, exp = e1), _, _, arg) => begin
+      (Absyn.LUNARY(op = op, exp = e1), _, _, arg) => begin
         @assign (e1m, arg) = traverseExpBidir(e1, enterFunc, exitFunc, arg)
         (if referenceEq(e1, e1m)
           inExp
         else
-          LUNARY(op, e1m)
+          Absyn.LUNARY(op, e1m)
         end, arg)
       end
 
-      (RELATION(exp1 = e1, op = op, exp2 = e2), _, _, arg) => begin
+      (Absyn.RELATION(exp1 = e1, op = op, exp2 = e2), _, _, arg) => begin
         @assign (e1m, arg) = traverseExpBidir(e1, enterFunc, exitFunc, arg)
         @assign (e2m, arg) = traverseExpBidir(e2, enterFunc, exitFunc, arg)
         (if referenceEq(e1, e1m) && referenceEq(e2, e2m)
           inExp
         else
-          RELATION(e1m, op, e2m)
+          Absyn.RELATION(e1m, op, e2m)
         end, arg)
       end
 
       (
-        IFEXP(ifExp = e1, trueBranch = e2, elseBranch = e3, elseIfBranch = else_ifs1),
+        Absyn.IFEXP(ifExp = e1, trueBranch = e2, elseBranch = e3, elseIfBranch = else_ifs1),
         _,
         _,
         arg,
@@ -737,42 +737,42 @@ function traverseExpBidirSubExps(
              referenceEq(else_ifs1, else_ifs2)
             inExp
           else
-            IFEXP(e1m, e2m, e3m, else_ifs2)
+            Absyn.IFEXP(e1m, e2m, e3m, else_ifs2)
           end,
           arg,
         )
       end
 
-      (CALL(function_ = cref, functionArgs = fargs1), _, _, arg) => begin
+      (Absyn.CALL(function_ = cref, functionArgs = fargs1), _, _, arg) => begin
         @assign (fargs2, arg) =
           traverseExpBidirFunctionArgs(fargs1, enterFunc, exitFunc, arg)
         (if referenceEq(fargs1, fargs2)
           inExp
         else
-          CALL(cref, fargs2)
+          Absyn.CALL(cref, fargs2)
         end, arg)
       end
 
-      (PARTEVALFUNCTION(function_ = cref, functionArgs = fargs1), _, _, arg) => begin
+      (Absyn.PARTEVALFUNCTION(function_ = cref, functionArgs = fargs1), _, _, arg) => begin
         @assign (fargs2, arg) =
           traverseExpBidirFunctionArgs(fargs1, enterFunc, exitFunc, arg)
         (if referenceEq(fargs1, fargs2)
           inExp
         else
-          PARTEVALFUNCTION(cref, fargs2)
+          Absyn.PARTEVALFUNCTION(cref, fargs2)
         end, arg)
       end
 
-      (ARRAY(arrayExp = expl1), _, _, arg) => begin
+      (Absyn.ARRAY(arrayExp = expl1), _, _, arg) => begin
         @assign (expl2, arg) = traverseExpListBidir(expl1, enterFunc, exitFunc, arg)
         (if referenceEq(expl1, expl2)
           inExp
         else
-          ARRAY(expl2)
+          Absyn.ARRAY(expl2)
         end, arg)
       end
 
-      (MATRIX(matrix = mat_expl), _, _, arg) => begin
+      (Absyn.MATRIX(matrix = mat_expl), _, _, arg) => begin
         @assign (mat_expl, arg) = ListUtil.map2FoldCheckReferenceEq(
           mat_expl,
           traverseExpListBidir,
@@ -780,54 +780,54 @@ function traverseExpBidirSubExps(
           exitFunc,
           arg,
         )
-        (MATRIX(mat_expl), arg)
+        (Absyn.MATRIX(mat_expl), arg)
       end
 
-      (RANGE(start = e1, step = oe1, stop = e2), _, _, arg) => begin
+      (Absyn.RANGE(start = e1, step = oe1, stop = e2), _, _, arg) => begin
         @assign (e1m, arg) = traverseExpBidir(e1, enterFunc, exitFunc, arg)
         @assign (oe1m, arg) = traverseExpOptBidir(oe1, enterFunc, exitFunc, arg)
         @assign (e2m, arg) = traverseExpBidir(e2, enterFunc, exitFunc, arg)
         (if referenceEq(e1, e1m) && referenceEq(e2, e2m) && referenceEq(oe1, oe1m)
           inExp
         else
-          RANGE(e1m, oe1m, e2m)
+          Absyn.RANGE(e1m, oe1m, e2m)
         end, arg)
       end
 
-      (END(__), _, _, _) => begin
+      (Absyn.END(__), _, _, _) => begin
         (inExp, inArg)
       end
 
-      (TUPLE(expressions = expl1), _, _, arg) => begin
+      (Absyn.TUPLE(expressions = expl1), _, _, arg) => begin
         @assign (expl2, arg) = traverseExpListBidir(expl1, enterFunc, exitFunc, arg)
         (if referenceEq(expl1, expl2)
           inExp
         else
-          TUPLE(expl2)
+          Absyn.TUPLE(expl2)
         end, arg)
       end
 
-      (AS(id = id, exp = e1), _, _, arg) => begin
+      (Absyn.AS(id = id, exp = e1), _, _, arg) => begin
         @assign (e1m, arg) = traverseExpBidir(e1, enterFunc, exitFunc, arg)
         (if referenceEq(e1, e1m)
           inExp
         else
-          AS(id, e1m)
+          Absyn.AS(id, e1m)
         end, arg)
       end
 
-      (CONS(head = e1, rest = e2), _, _, arg) => begin
+      (Absyn.CONS(head = e1, rest = e2), _, _, arg) => begin
         @assign (e1m, arg) = traverseExpBidir(e1, enterFunc, exitFunc, arg)
         @assign (e2m, arg) = traverseExpBidir(e2, enterFunc, exitFunc, arg)
         (if referenceEq(e1, e1m) && referenceEq(e2, e2m)
           inExp
         else
-          CONS(e1m, e2m)
+          Absyn.CONS(e1m, e2m)
         end, arg)
       end
 
       (
-        MATCHEXP(
+        Absyn.MATCHEXP(
           matchTy = match_ty,
           inputExp = e1,
           localDecls = match_decls,
@@ -846,29 +846,29 @@ function traverseExpBidirSubExps(
           exitFunc,
           arg,
         )
-        (MATCHEXP(match_ty, e1, match_decls, match_cases, cmt), arg)
+        (Absyn.MATCHEXP(match_ty, e1, match_decls, match_cases, cmt), arg)
       end
 
-      (LIST(exps = expl1), _, _, arg) => begin
+      (Absyn.LIST(exps = expl1), _, _, arg) => begin
         @assign (expl2, arg) = traverseExpListBidir(expl1, enterFunc, exitFunc, arg)
         (if referenceEq(expl1, expl2)
           inExp
         else
-          LIST(expl2)
+          Absyn.LIST(expl2)
         end, arg)
       end
 
-      (CODE(__), _, _, _) => begin
+      (Absyn.CODE(__), _, _, _) => begin
         (inExp, inArg)
       end
 
-      (DOT(__), _, _, arg) => begin
+      (Absyn.DOT(__), _, _, arg) => begin
         @assign (e1, arg) = traverseExpBidir(inExp.exp, enterFunc, exitFunc, arg)
         @assign (e2, arg) = traverseExpBidir(inExp.index, enterFunc, exitFunc, arg)
         (if referenceEq(inExp.exp, e1) && referenceEq(inExp.index, e2)
           inExp
         else
-          DOT(e1, e2)
+          Absyn.DOT(e1, e2)
         end, arg)
       end
 
@@ -893,23 +893,23 @@ end
 """ #= Helper function to traverseExpBidirSubExps. Traverses any expressions in a
   component reference (i.e. in it's subscripts). =#"""
 function traverseExpBidirCref(
-  inCref::ComponentRef,
+  inCref::Absyn.ComponentRef,
   enterFunc::FuncType,
   exitFunc::FuncType,
   inArg::Argument,
-)::Tuple{ComponentRef, Argument}
+)::Tuple{Absyn.ComponentRef, Argument}
   local arg::Argument
-  local outCref::ComponentRef
+  local outCref::Absyn.ComponentRef
 
   @assign (outCref, arg) = begin
-    local name::Ident
-    local cr1::ComponentRef
-    local cr2::ComponentRef
-    local subs1::List{Subscript}
-    local subs2::List{Subscript}
+    local name::Absyn.Ident
+    local cr1::Absyn.ComponentRef
+    local cr2::Absyn.ComponentRef
+    local subs1::List{Absyn.Subscript}
+    local subs2::List{Absyn.Subscript}
     local tup::Tuple{FuncType, FuncType, Argument}
     @match (inCref, enterFunc, exitFunc, inArg) begin
-      (CREF_FULLYQUALIFIED(componentRef = cr1), _, _, arg) => begin
+      (Absyn.CREF_FULLYQUALIFIED(componentRef = cr1), _, _, arg) => begin
         @assign (cr2, arg) = traverseExpBidirCref(cr1, enterFunc, exitFunc, arg)
         (if referenceEq(cr1, cr2)
           inCref
@@ -918,7 +918,7 @@ function traverseExpBidirCref(
         end, arg)
       end
 
-      (CREF_QUAL(name = name, subscripts = subs1, componentRef = cr1), _, _, arg) => begin
+      (Absyn.CREF_QUAL(name = name, subscripts = subs1, componentRef = cr1), _, _, arg) => begin
         @assign (subs2, arg) = ListUtil.map2FoldCheckReferenceEq(
           subs1,
           traverseExpBidirSubs,
@@ -930,11 +930,11 @@ function traverseExpBidirCref(
         (if referenceEq(cr1, cr2) && referenceEq(subs1, subs2)
           inCref
         else
-          CREF_QUAL(name, subs2, cr2)
+          Absyn.CREF_QUAL(name, subs2, cr2)
         end, arg)
       end
 
-      (CREF_IDENT(name = name, subscripts = subs1), _, _, arg) => begin
+      (Absyn.CREF_IDENT(name = name, subscripts = subs1), _, _, arg) => begin
         @assign (subs2, arg) = ListUtil.map2FoldCheckReferenceEq(
           subs1,
           traverseExpBidirSubs,
@@ -945,15 +945,15 @@ function traverseExpBidirCref(
         (if referenceEq(subs1, subs2)
           inCref
         else
-          CREF_IDENT(name, subs2)
+          Absyn.CREF_IDENT(name, subs2)
         end, arg)
       end
 
-      (ALLWILD(__), _, _, _) => begin
+      (Absyn.ALLWILD(__), _, _, _) => begin
         (inCref, inArg)
       end
 
-      (WILD(__), _, _, _) => begin
+      (Absyn.WILD(__), _, _, _) => begin
         (inCref, inArg)
       end
     end
@@ -964,28 +964,28 @@ end
 """ #= Helper function to traverseExpBidirCref. Traverses expressions in a
   subscript. =#"""
 function traverseExpBidirSubs(
-  inSubscript::Subscript,
+  inSubscript::Absyn.Subscript,
   enterFunc::FuncType,
   exitFunc::FuncType,
   inArg::Argument,
-)::Tuple{Subscript, Argument}
+)::Tuple{Absyn.Subscript, Argument}
   local arg::Argument
-  local outSubscript::Subscript
+  local outSubscript::Absyn.Subscript
 
   @assign (outSubscript, arg) = begin
-    local e1::Exp
-    local e2::Exp
+    local e1::Absyn.Exp
+    local e2::Absyn.Exp
     @match (inSubscript, enterFunc, exitFunc, inArg) begin
-      (SUBSCRIPT(subscript = e1), _, _, arg) => begin
+      (Absyn.SUBSCRIPT(subscript = e1), _, _, arg) => begin
         @assign (e2, arg) = traverseExpBidir(e1, enterFunc, exitFunc, inArg)
         (if referenceEq(e1, e2)
           inSubscript
         else
-          SUBSCRIPT(e2)
+          Absyn.SUBSCRIPT(e2)
         end, arg)
       end
 
-      (NOSUB(__), _, _, _) => begin
+      (Absyn.NOSUB(__), _, _, _) => begin
         (inSubscript, inArg)
       end
     end
@@ -996,16 +996,16 @@ end
 """ #= Helper function to traverseExpBidirSubExps. Traverses the expressions in an
   elseif branch. =#"""
 function traverseExpBidirElseIf(
-  inElseIf::Tuple{<:Exp, Exp},
+  inElseIf::Tuple{<:Absyn.Exp, Absyn.Exp},
   enterFunc::FuncType,
   exitFunc::FuncType,
   inArg::Argument,
-)::Tuple{Tuple{Exp, Exp}, Argument}
+)::Tuple{Tuple{Absyn.Exp, Absyn.Exp}, Argument}
   local arg::Argument
-  local outElseIf::Tuple{Exp, Exp}
+  local outElseIf::Tuple{Absyn.Exp, Absyn.Exp}
 
-  local e1::Exp
-  local e2::Exp
+  local e1::Absyn.Exp
+  local e2::Absyn.Exp
   local tup::Tuple{FuncType, FuncType, Argument}
 
   @assign (e1, e2) = inElseIf
@@ -1018,27 +1018,27 @@ end
 """ #= Helper function to traverseExpBidirSubExps. Traverses the expressions in a
   list of function argument. =#"""
 function traverseExpBidirFunctionArgs(
-  inArgs::FunctionArgs,
+  inArgs::Absyn.FunctionArgs,
   enterFunc::FuncType,
   exitFunc::FuncType,
   inArg::Argument,
-)::Tuple{FunctionArgs, Argument}
+)::Tuple{Absyn.FunctionArgs, Argument}
   local outArg::Argument
-  local outArgs::FunctionArgs
+  local outArgs::Absyn.FunctionArgs
 
   @assign (outArgs, outArg) = begin
-    local e1::Exp
-    local e2::Exp
-    local expl1::List{Exp}
-    local expl2::List{Exp}
-    local named_args1::List{NamedArg}
-    local named_args2::List{NamedArg}
-    local iters1::ForIterators
-    local iters2::ForIterators
+    local e1::Absyn.Exp
+    local e2::Absyn.Exp
+    local expl1::List{Absyn.Exp}
+    local expl2::List{Absyn.Exp}
+    local named_args1::List{Absyn.NamedArg}
+    local named_args2::List{Absyn.NamedArg}
+    local iters1::Absyn.ForIterators
+    local iters2::Absyn.ForIterators
     local arg::Argument
     local iterType::ReductionIterType
     @match (inArgs, enterFunc, exitFunc, inArg) begin
-      (FUNCTIONARGS(args = expl1, argNames = named_args1), _, _, arg) => begin
+      (Absyn.FUNCTIONARGS(args = expl1, argNames = named_args1), _, _, arg) => begin
         @assign (expl2, arg) = traverseExpListBidir(expl1, enterFunc, exitFunc, arg)
         @assign (named_args2, arg) = ListUtil.map2FoldCheckReferenceEq(
           named_args1,
@@ -1050,11 +1050,11 @@ function traverseExpBidirFunctionArgs(
         (if referenceEq(expl1, expl2) && referenceEq(named_args1, named_args2)
           inArgs
         else
-          FUNCTIONARGS(expl2, named_args2)
+          Absyn.FUNCTIONARGS(expl2, named_args2)
         end, arg)
       end
 
-      (FOR_ITER_FARG(e1, iterType, iters1), _, _, arg) => begin
+      (Absyn.FOR_ITER_FARG(e1, iterType, iters1), _, _, arg) => begin
         @assign (e2, arg) = traverseExpBidir(e1, enterFunc, exitFunc, arg)
         @assign (iters2, arg) = ListUtil.map2FoldCheckReferenceEq(
           iters1,
@@ -1066,7 +1066,7 @@ function traverseExpBidirFunctionArgs(
         (if referenceEq(e1, e2) && referenceEq(iters1, iters2)
           inArgs
         else
-          FOR_ITER_FARG(e2, iterType, iters2)
+          Absyn.FOR_ITER_FARG(e2, iterType, iters2)
         end, arg)
       end
     end
@@ -1077,24 +1077,24 @@ end
 """ #= Helper function to traverseExpBidirFunctionArgs. Traverses the expressions in
   a named function argument. =#"""
 function traverseExpBidirNamedArg(
-  inArg::NamedArg,
+  inArg::Absyn.NamedArg,
   enterFunc::FuncType,
   exitFunc::FuncType,
   inExtra::Argument,
-)::Tuple{NamedArg, Argument}
+)::Tuple{Absyn.NamedArg, Argument}
   local outExtra::Argument
-  local outArg::NamedArg
+  local outArg::Absyn.NamedArg
 
-  local name::Ident
-  local value1::Exp
-  local value2::Exp
+  local name::Absyn.Ident
+  local value1::Absyn.Exp
+  local value2::Absyn.Exp
 
-  @match NAMEDARG(name, value1) = inArg
+  @match Absyn.NAMEDARG(name, value1) = inArg
   @assign (value2, outExtra) = traverseExpBidir(value1, enterFunc, exitFunc, inExtra)
   @assign outArg = if referenceEq(value1, value2)
     inArg
   else
-    NAMEDARG(name, value2)
+    Absyn.NAMEDARG(name, value2)
   end
   return (outArg, outExtra)
 end
@@ -1102,54 +1102,54 @@ end
 """ #= Helper function to traverseExpBidirFunctionArgs. Traverses the expressions in
   an iterator. =#"""
 function traverseExpBidirIterator(
-  inIterator::ForIterator,
+  inIterator::Absyn.ForIterator,
   enterFunc::FuncType,
   exitFunc::FuncType,
   inArg::Argument,
-)::Tuple{ForIterator, Argument}
+)::Tuple{Absyn.ForIterator, Argument}
   local outArg::Argument
-  local outIterator::ForIterator
+  local outIterator::Absyn.ForIterator
 
-  local name::Ident
-  local guardExp1::Option{Exp}
-  local guardExp2::Option{Exp}
-  local range1::Option{Exp}
-  local range2::Option{Exp}
+  local name::Absyn.Ident
+  local guardExp1::Option{Absyn.Exp}
+  local guardExp2::Option{Absyn.Exp}
+  local range1::Option{Absyn.Exp}
+  local range2::Option{Absyn.Exp}
 
-  @match ITERATOR(name = name, guardExp = guardExp1, range = range1) = inIterator
+  @match Absyn.ITERATOR(name = name, guardExp = guardExp1, range = range1) = inIterator
   @assign (guardExp2, outArg) = traverseExpOptBidir(guardExp1, enterFunc, exitFunc, inArg)
   @assign (range2, outArg) = traverseExpOptBidir(range1, enterFunc, exitFunc, outArg)
   @assign outIterator = if referenceEq(guardExp1, guardExp2) && referenceEq(range1, range2)
     inIterator
   else
-    ITERATOR(name, guardExp2, range2)
+    Absyn.ITERATOR(name, guardExp2, range2)
   end
   return (outIterator, outArg)
 end
 
 function traverseMatchCase(
-  inMatchCase::Case,
+  inMatchCase::Absyn.Case,
   enterFunc::FuncType,
   exitFunc::FuncType,
   inArg::Argument,
-)::Tuple{Case, Argument}
+)::Tuple{Absyn.Case, Argument}
   local outArg::Argument
-  local outMatchCase::Case
+  local outMatchCase::Absyn.Case
 
   @assign (outMatchCase, outArg) = begin
     local arg::Argument
-    local pattern::Exp
-    local result::Exp
+    local pattern::Absyn.Exp
+    local result::Absyn.Exp
     local info::Info
     local resultInfo::Info
     local pinfo::Info
-    local ldecls::List{ElementItem}
-    local cp::ClassPart
+    local ldecls::List{Absyn.ElementItem}
+    local cp::Absyn.ClassPart
     local cmt::Option{String}
-    local patternGuard::Option{Exp}
+    local patternGuard::Option{Absyn.Exp}
     @match (inMatchCase, enterFunc, exitFunc, inArg) begin
       (
-        CASE(pattern, patternGuard, pinfo, ldecls, cp, result, resultInfo, cmt, info),
+        Absyn.CASE(pattern, patternGuard, pinfo, ldecls, cp, result, resultInfo, cmt, info),
         _,
         _,
         arg,
@@ -1159,11 +1159,11 @@ function traverseMatchCase(
           traverseExpOptBidir(patternGuard, enterFunc, exitFunc, arg)
         @assign (cp, arg) = traverseClassPartBidir(cp, enterFunc, exitFunc, arg)
         @assign (result, arg) = traverseExpBidir(result, enterFunc, exitFunc, arg)
-        (CASE(pattern, patternGuard, pinfo, ldecls, cp, result, resultInfo, cmt, info), arg)
+        (Absyn.CASE(pattern, patternGuard, pinfo, ldecls, cp, result, resultInfo, cmt, info), arg)
       end
 
       (
-        ELSE(
+        Absyn.ELSE(
           localDecls = ldecls,
           classPart = cp,
           result = result,
@@ -1177,7 +1177,7 @@ function traverseMatchCase(
       ) => begin
         @assign (cp, arg) = traverseClassPartBidir(cp, enterFunc, exitFunc, arg)
         @assign (result, arg) = traverseExpBidir(result, enterFunc, exitFunc, arg)
-        (ELSE(ldecls, cp, result, resultInfo, cmt, info), arg)
+        (Absyn.ELSE(ldecls, cp, result, resultInfo, cmt, info), arg)
       end
     end
   end
@@ -1185,20 +1185,20 @@ function traverseMatchCase(
 end
 
 function traverseClassPartBidir(
-  cp::ClassPart,
+  cp::Absyn.ClassPart,
   enterFunc::FuncType,
   exitFunc::FuncType,
   inArg::Argument,
-)::Tuple{ClassPart, Argument}
+)::Tuple{Absyn.ClassPart, Argument}
   local outArg::Argument
-  local outCp::ClassPart
+  local outCp::Absyn.ClassPart
 
   @assign (outCp, outArg) = begin
-    local algs::List{AlgorithmItem}
-    local eqs::List{EquationItem}
+    local algs::List{Absyn.AlgorithmItem}
+    local eqs::List{Absyn.EquationItem}
     local arg::Argument
     @match (cp, enterFunc, exitFunc, inArg) begin
-      (ALGORITHMS(algs), _, _, arg) => begin
+      (Absyn.ALGORITHMS(algs), _, _, arg) => begin
         @assign (algs, arg) = ListUtil.map2FoldCheckReferenceEq(
           algs,
           traverseAlgorithmItemBidir,
@@ -1206,10 +1206,10 @@ function traverseClassPartBidir(
           exitFunc,
           arg,
         )
-        (ALGORITHMS(algs), arg)
+        (Absyn.ALGORITHMS(algs), arg)
       end
 
-      (EQUATIONS(eqs), _, _, arg) => begin
+      (Absyn.EQUATIONS(eqs), _, _, arg) => begin
         @assign (eqs, arg) = ListUtil.map2FoldCheckReferenceEq(
           eqs,
           traverseEquationItemBidir,
@@ -1217,7 +1217,7 @@ function traverseClassPartBidir(
           exitFunc,
           arg,
         )
-        (EQUATIONS(eqs), arg)
+        (Absyn.EQUATIONS(eqs), arg)
       end
     end
   end
@@ -1225,13 +1225,13 @@ function traverseClassPartBidir(
 end
 
 function traverseEquationItemListBidir(
-  inEquationItems::List{<:EquationItem},
+  inEquationItems::List{<:Absyn.EquationItem},
   enterFunc::FuncType,
   exitFunc::FuncType,
   inArg::Argument,
-)::Tuple{List{EquationItem}, Argument}
+)::Tuple{List{Absyn.EquationItem}, Argument}
   local outArg::Argument
-  local outEquationItems::List{EquationItem}
+  local outEquationItems::List{Absyn.EquationItem}
 
   @assign (outEquationItems, outArg) = ListUtil.map2FoldCheckReferenceEq(
     inEquationItems,
@@ -1244,13 +1244,13 @@ function traverseEquationItemListBidir(
 end
 
 function traverseAlgorithmItemListBidir(
-  inAlgs::List{<:AlgorithmItem},
+  inAlgs::List{<:Absyn.AlgorithmItem},
   enterFunc::FuncType,
   exitFunc::FuncType,
   inArg::Argument,
-)::Tuple{List{AlgorithmItem}, Argument}
+)::Tuple{List{Absyn.AlgorithmItem}, Argument}
   local outArg::Argument
-  local outAlgs::List{AlgorithmItem}
+  local outAlgs::List{Absyn.AlgorithmItem}
 
   @assign (outAlgs, outArg) = ListUtil.map2FoldCheckReferenceEq(
     inAlgs,
@@ -1263,26 +1263,26 @@ function traverseAlgorithmItemListBidir(
 end
 
 function traverseAlgorithmItemBidir(
-  inAlgorithmItem::AlgorithmItem,
+  inAlgorithmItem::Absyn.AlgorithmItem,
   enterFunc::FuncType,
   exitFunc::FuncType,
   inArg::Argument,
-)::Tuple{AlgorithmItem, Argument}
+)::Tuple{Absyn.AlgorithmItem, Argument}
   local outArg::Argument
-  local outAlgorithmItem::AlgorithmItem
+  local outAlgorithmItem::Absyn.AlgorithmItem
 
   @assign (outAlgorithmItem, outArg) = begin
     local arg::Argument
-    local alg::Algorithm
-    local cmt::Option{Comment}
+    local alg::Absyn.Algorithm
+    local cmt::Option{Absyn.Comment}
     local info::Info
     @match (inAlgorithmItem, enterFunc, exitFunc, inArg) begin
-      (ALGORITHMITEM(algorithm_ = alg, comment = cmt, info = info), _, _, arg) => begin
+      (Absyn.ALGORITHMITEM(algorithm_ = alg, comment = cmt, info = info), _, _, arg) => begin
         @assign (alg, arg) = traverseAlgorithmBidir(alg, enterFunc, exitFunc, arg)
-        (ALGORITHMITEM(alg, cmt, info), arg)
+        (Absyn.ALGORITHMITEM(alg, cmt, info), arg)
       end
 
-      (ALGORITHMITEMCOMMENT(__), _, _, _) => begin
+      (Absyn.ALGORITHMITEMCOMMENT(__), _, _, _) => begin
         (inAlgorithmItem, inArg)
       end
     end
@@ -1291,23 +1291,23 @@ function traverseAlgorithmItemBidir(
 end
 
 function traverseEquationItemBidir(
-  inEquationItem::EquationItem,
+  inEquationItem::Absyn.EquationItem,
   enterFunc::FuncType,
   exitFunc::FuncType,
   inArg::Argument,
-)::Tuple{EquationItem, Argument}
+)::Tuple{Absyn.EquationItem, Argument}
   local outArg::Argument
-  local outEquationItem::EquationItem
+  local outEquationItem::Absyn.EquationItem
 
   @assign (outEquationItem, outArg) = begin
     local arg::Argument
-    local eq::Equation
-    local cmt::Option{Comment}
+    local eq::Absyn.Equation
+    local cmt::Option{Absyn.Comment}
     local info::Info
     @match (inEquationItem, enterFunc, exitFunc, inArg) begin
-      (EQUATIONITEM(equation_ = eq, comment = cmt, info = info), _, _, arg) => begin
+      (Absyn.EQUATIONITEM(equation_ = eq, comment = cmt, info = info), _, _, arg) => begin
         @assign (eq, arg) = traverseEquationBidir(eq, enterFunc, exitFunc, arg)
-        (EQUATIONITEM(eq, cmt, info), arg)
+        (Absyn.EQUATIONITEM(eq, cmt, info), arg)
       end
     end
   end
@@ -1315,29 +1315,29 @@ function traverseEquationItemBidir(
 end
 
 function traverseEquationBidir(
-  inEquation::Equation,
+  inEquation::Absyn.Equation,
   enterFunc::FuncType,
   exitFunc::FuncType,
   inArg::Argument,
-)::Tuple{Equation, Argument}
+)::Tuple{Absyn.Equation, Argument}
   local outArg::Argument
-  local outEquation::Equation
+  local outEquation::Absyn.Equation
 
   @assign (outEquation, outArg) = begin
     local arg::Argument
-    local e1::Exp
-    local e2::Exp
-    local eqil1::List{EquationItem}
-    local eqil2::List{EquationItem}
-    local else_branch::List{Tuple{Exp, List{EquationItem}}}
-    local cref1::ComponentRef
-    local cref2::ComponentRef
-    local iters::ForIterators
-    local func_args::FunctionArgs
-    local eq::EquationItem
+    local e1::Absyn.Exp
+    local e2::Absyn.Exp
+    local eqil1::List{Absyn.EquationItem}
+    local eqil2::List{Absyn.EquationItem}
+    local else_branch::List{Tuple{Absyn.Exp, List{Absyn.EquationItem}}}
+    local cref1::Absyn.ComponentRef
+    local cref2::Absyn.ComponentRef
+    local iters::Absyn.ForIterators
+    local func_args::Absyn.FunctionArgs
+    local eq::Absyn.EquationItem
     @match (inEquation, enterFunc, exitFunc, inArg) begin
       (
-        EQ_IF(
+        Absyn.EQ_IF(
           ifExp = e1,
           equationTrueItems = eqil1,
           elseIfBranches = else_branch,
@@ -1359,29 +1359,29 @@ function traverseEquationBidir(
         )
         @assign (eqil2, arg) =
           traverseEquationItemListBidir(eqil2, enterFunc, exitFunc, arg)
-        (EQ_IF(e1, eqil1, else_branch, eqil2), arg)
+        (Absyn.EQ_IF(e1, eqil1, else_branch, eqil2), arg)
       end
 
-      (EQ_EQUALS(leftSide = e1, rightSide = e2), _, _, arg) => begin
+      (Absyn.EQ_EQUALS(leftSide = e1, rightSide = e2), _, _, arg) => begin
         @assign (e1, arg) = traverseExpBidir(e1, enterFunc, exitFunc, arg)
         @assign (e2, arg) = traverseExpBidir(e2, enterFunc, exitFunc, arg)
-        (EQ_EQUALS(e1, e2), arg)
+        (Absyn.EQ_EQUALS(e1, e2), arg)
       end
 
-      (EQ_PDE(leftSide = e1, rightSide = e2, domain = cref1), _, _, arg) => begin
+      (Absyn.EQ_PDE(leftSide = e1, rightSide = e2, domain = cref1), _, _, arg) => begin
         @assign (e1, arg) = traverseExpBidir(e1, enterFunc, exitFunc, arg)
         @assign (e2, arg) = traverseExpBidir(e2, enterFunc, exitFunc, arg)
         @assign cref1 = traverseExpBidirCref(cref1, enterFunc, exitFunc, arg)
-        (EQ_PDE(e1, e2, cref1), arg)
+        (Absyn.EQ_PDE(e1, e2, cref1), arg)
       end
 
-      (EQ_CONNECT(connector1 = cref1, connector2 = cref2), _, _, arg) => begin
+      (Absyn.EQ_CONNECT(connector1 = cref1, connector2 = cref2), _, _, arg) => begin
         @assign (cref1, arg) = traverseExpBidirCref(cref1, enterFunc, exitFunc, arg)
         @assign (cref2, arg) = traverseExpBidirCref(cref2, enterFunc, exitFunc, arg)
-        (EQ_CONNECT(cref1, cref2), arg)
+        (Absyn.EQ_CONNECT(cref1, cref2), arg)
       end
 
-      (EQ_FOR(iterators = iters, forEquations = eqil1), _, _, arg) => begin
+      (Absyn.EQ_FOR(iterators = iters, forEquations = eqil1), _, _, arg) => begin
         @assign (iters, arg) = ListUtil.map2FoldCheckReferenceEq(
           iters,
           traverseExpBidirIterator,
@@ -1391,11 +1391,11 @@ function traverseEquationBidir(
         )
         @assign (eqil1, arg) =
           traverseEquationItemListBidir(eqil1, enterFunc, exitFunc, arg)
-        (EQ_FOR(iters, eqil1), arg)
+        (Absyn.EQ_FOR(iters, eqil1), arg)
       end
 
       (
-        EQ_WHEN_E(whenExp = e1, whenEquations = eqil1, elseWhenEquations = else_branch),
+        Absyn.EQ_WHEN_E(whenExp = e1, whenEquations = eqil1, elseWhenEquations = else_branch),
         _,
         _,
         arg,
@@ -1410,19 +1410,19 @@ function traverseEquationBidir(
           exitFunc,
           arg,
         )
-        (EQ_WHEN_E(e1, eqil1, else_branch), arg)
+        (Absyn.EQ_WHEN_E(e1, eqil1, else_branch), arg)
       end
 
-      (EQ_NORETCALL(functionName = cref1, functionArgs = func_args), _, _, arg) => begin
+      (Absyn.EQ_NORETCALL(functionName = cref1, functionArgs = func_args), _, _, arg) => begin
         @assign (cref1, arg) = traverseExpBidirCref(cref1, enterFunc, exitFunc, arg)
         @assign (func_args, arg) =
           traverseExpBidirFunctionArgs(func_args, enterFunc, exitFunc, arg)
-        (EQ_NORETCALL(cref1, func_args), arg)
+        (Absyn.EQ_NORETCALL(cref1, func_args), arg)
       end
 
-      (EQ_FAILURE(equ = eq), _, _, arg) => begin
+      (Absyn.EQ_FAILURE(equ = eq), _, _, arg) => begin
         @assign (eq, arg) = traverseEquationItemBidir(eq, enterFunc, exitFunc, arg)
-        (EQ_FAILURE(eq), arg)
+        (Absyn.EQ_FAILURE(eq), arg)
       end
     end
   end
@@ -1430,16 +1430,16 @@ function traverseEquationBidir(
 end
 
 function traverseEquationBidirElse(
-  inElse::Tuple{<:Exp, List{<:EquationItem}},
+  inElse::Tuple{<:Absyn.Exp, List{<:Absyn.EquationItem}},
   enterFunc::FuncType,
   exitFunc::FuncType,
   inArg::Argument,
-)::Tuple{Tuple{Exp, List{EquationItem}}, Argument}
+)::Tuple{Tuple{Absyn.Exp, List{Absyn.EquationItem}}, Argument}
   local arg::Argument
-  local outElse::Tuple{Exp, List{EquationItem}}
+  local outElse::Tuple{Absyn.Exp, List{Absyn.EquationItem}}
 
-  local e::Exp
-  local eqil::List{EquationItem}
+  local e::Absyn.Exp
+  local eqil::List{Absyn.EquationItem}
 
   @assign (e, eqil) = inElse
   @assign (e, arg) = traverseExpBidir(e, enterFunc, exitFunc, inArg)
@@ -1449,16 +1449,16 @@ function traverseEquationBidirElse(
 end
 
 function traverseAlgorithmBidirElse(
-  inElse::Tuple{<:Exp, List{<:AlgorithmItem}},
+  inElse::Tuple{<:Absyn.Exp, List{<:Absyn.AlgorithmItem}},
   enterFunc::FuncType,
   exitFunc::FuncType,
   inArg::Argument,
-)::Tuple{Tuple{Exp, List{AlgorithmItem}}, Argument}
+)::Tuple{Tuple{Absyn.Exp, List{Absyn.AlgorithmItem}}, Argument}
   local arg::Argument
-  local outElse::Tuple{Exp, List{AlgorithmItem}}
+  local outElse::Tuple{Absyn.Exp, List{Absyn.AlgorithmItem}}
 
-  local e::Exp
-  local algs::List{AlgorithmItem}
+  local e::Absyn.Exp
+  local algs::List{Absyn.AlgorithmItem}
 
   @assign (e, algs) = inElse
   @assign (e, arg) = traverseExpBidir(e, enterFunc, exitFunc, inArg)
@@ -1468,34 +1468,34 @@ function traverseAlgorithmBidirElse(
 end
 
 function traverseAlgorithmBidir(
-  inAlg::Algorithm,
+  inAlg::Absyn.Algorithm,
   enterFunc::FuncType,
   exitFunc::FuncType,
   inArg::Argument,
-)::Tuple{Algorithm, Argument}
+)::Tuple{Absyn.Algorithm, Argument}
   local outArg::Argument
-  local outAlg::Algorithm
+  local outAlg::Absyn.Algorithm
 
   @assign (outAlg, outArg) = begin
     local arg::Argument
-    local e1::Exp
-    local e2::Exp
-    local algs1::List{AlgorithmItem}
-    local algs2::List{AlgorithmItem}
-    local else_branch::List{Tuple{Exp, List{AlgorithmItem}}}
-    local cref1::ComponentRef
-    local cref2::ComponentRef
-    local iters::ForIterators
-    local func_args::FunctionArgs
-    local alg::AlgorithmItem
+    local e1::Absyn.Exp
+    local e2::Absyn.Exp
+    local algs1::List{Absyn.AlgorithmItem}
+    local algs2::List{Absyn.AlgorithmItem}
+    local else_branch::List{Tuple{Absyn.Exp, List{Absyn.AlgorithmItem}}}
+    local cref1::Absyn.ComponentRef
+    local cref2::Absyn.ComponentRef
+    local iters::Absyn.ForIterators
+    local func_args::Absyn.FunctionArgs
+    local alg::Absyn.AlgorithmItem
     @match (inAlg, enterFunc, exitFunc, inArg) begin
-      (ALG_ASSIGN(e1, e2), _, _, arg) => begin
+      (Absyn.ALG_ASSIGN(e1, e2), _, _, arg) => begin
         @assign (e1, arg) = traverseExpBidir(e1, enterFunc, exitFunc, arg)
         @assign (e2, arg) = traverseExpBidir(e2, enterFunc, exitFunc, arg)
-        (ALG_ASSIGN(e1, e2), arg)
+        (Absyn.ALG_ASSIGN(e1, e2), arg)
       end
 
-      (ALG_IF(e1, algs1, else_branch, algs2), _, _, arg) => begin
+      (Absyn.ALG_IF(e1, algs1, else_branch, algs2), _, _, arg) => begin
         @assign (e1, arg) = traverseExpBidir(e1, enterFunc, exitFunc, arg)
         @assign (algs1, arg) =
           traverseAlgorithmItemListBidir(algs1, enterFunc, exitFunc, arg)
@@ -1508,10 +1508,10 @@ function traverseAlgorithmBidir(
         )
         @assign (algs2, arg) =
           traverseAlgorithmItemListBidir(algs2, enterFunc, exitFunc, arg)
-        (ALG_IF(e1, algs1, else_branch, algs2), arg)
+        (Absyn.ALG_IF(e1, algs1, else_branch, algs2), arg)
       end
 
-      (ALG_FOR(iters, algs1), _, _, arg) => begin
+      (Absyn.ALG_FOR(iters, algs1), _, _, arg) => begin
         @assign (iters, arg) = ListUtil.map2FoldCheckReferenceEq(
           iters,
           traverseExpBidirIterator,
@@ -1521,10 +1521,10 @@ function traverseAlgorithmBidir(
         )
         @assign (algs1, arg) =
           traverseAlgorithmItemListBidir(algs1, enterFunc, exitFunc, arg)
-        (ALG_FOR(iters, algs1), arg)
+        (Absyn.ALG_FOR(iters, algs1), arg)
       end
 
-      (ALG_PARFOR(iters, algs1), _, _, arg) => begin
+      (Absyn.ALG_PARFOR(iters, algs1), _, _, arg) => begin
         @assign (iters, arg) = ListUtil.map2FoldCheckReferenceEq(
           iters,
           traverseExpBidirIterator,
@@ -1534,17 +1534,17 @@ function traverseAlgorithmBidir(
         )
         @assign (algs1, arg) =
           traverseAlgorithmItemListBidir(algs1, enterFunc, exitFunc, arg)
-        (ALG_PARFOR(iters, algs1), arg)
+        (Absyn.ALG_PARFOR(iters, algs1), arg)
       end
 
-      (ALG_WHILE(e1, algs1), _, _, arg) => begin
+      (Absyn.ALG_WHILE(e1, algs1), _, _, arg) => begin
         @assign (e1, arg) = traverseExpBidir(e1, enterFunc, exitFunc, arg)
         @assign (algs1, arg) =
           traverseAlgorithmItemListBidir(algs1, enterFunc, exitFunc, arg)
-        (ALG_WHILE(e1, algs1), arg)
+        (Absyn.ALG_WHILE(e1, algs1), arg)
       end
 
-      (ALG_WHEN_A(e1, algs1, else_branch), _, _, arg) => begin
+      (Absyn.ALG_WHEN_A(e1, algs1, else_branch), _, _, arg) => begin
         @assign (e1, arg) = traverseExpBidir(e1, enterFunc, exitFunc, arg)
         @assign (algs1, arg) =
           traverseAlgorithmItemListBidir(algs1, enterFunc, exitFunc, arg)
@@ -1555,77 +1555,77 @@ function traverseAlgorithmBidir(
           exitFunc,
           arg,
         )
-        (ALG_WHEN_A(e1, algs1, else_branch), arg)
+        (Absyn.ALG_WHEN_A(e1, algs1, else_branch), arg)
       end
 
-      (ALG_NORETCALL(cref1, func_args), _, _, arg) => begin
+      (Absyn.ALG_NORETCALL(cref1, func_args), _, _, arg) => begin
         @assign (cref1, arg) = traverseExpBidirCref(cref1, enterFunc, exitFunc, arg)
         @assign (func_args, arg) =
           traverseExpBidirFunctionArgs(func_args, enterFunc, exitFunc, arg)
-        (ALG_NORETCALL(cref1, func_args), arg)
+        (Absyn.ALG_NORETCALL(cref1, func_args), arg)
       end
 
-      (ALG_RETURN(__), _, _, arg) => begin
+      (Absyn.ALG_RETURN(__), _, _, arg) => begin
         (inAlg, arg)
       end
 
-      (ALG_BREAK(__), _, _, arg) => begin
+      (Absyn.ALG_BREAK(__), _, _, arg) => begin
         (inAlg, arg)
       end
 
-      (ALG_CONTINUE(__), _, _, arg) => begin
+      (Absyn.ALG_CONTINUE(__), _, _, arg) => begin
         (inAlg, arg)
       end
 
-      (ALG_FAILURE(algs1), _, _, arg) => begin
+      (Absyn.ALG_FAILURE(algs1), _, _, arg) => begin
         @assign (algs1, arg) =
           traverseAlgorithmItemListBidir(algs1, enterFunc, exitFunc, arg)
-        (ALG_FAILURE(algs1), arg)
+        (Absyn.ALG_FAILURE(algs1), arg)
       end
 
-      (ALG_TRY(algs1, algs2), _, _, arg) => begin
+      (Absyn.ALG_TRY(algs1, algs2), _, _, arg) => begin
         @assign (algs1, arg) =
           traverseAlgorithmItemListBidir(algs1, enterFunc, exitFunc, arg)
         @assign (algs2, arg) =
           traverseAlgorithmItemListBidir(algs2, enterFunc, exitFunc, arg)
-        (ALG_TRY(algs1, algs2), arg)
+        (Absyn.ALG_TRY(algs1, algs2), arg)
       end
     end
   end
   return (outAlg, outArg)
 end
 
-function makeIdentPathFromString(s::String)::Path
-  local p::Path
+function makeIdentPathFromString(s::String)::Absyn.Path
+  local p::Absyn.Path
 
-  @assign p = IDENT(s)
+  @assign p = Absyn.IDENT(s)
   return p
 end
 
-function makeQualifiedPathFromStrings(s1::String, s2::String)::Path
-  local p::Path
+function makeQualifiedPathFromStrings(s1::String, s2::String)::Absyn.Path
+  local p::Absyn.Path
 
-  @assign p = QUALIFIED(s1, IDENT(s2))
+  @assign p = Absyn.QUALIFIED(s1, Absyn.IDENT(s2))
   return p
 end
 
-""" #= returns the class name of a Class as a Path =#"""
-function className(cl::Class)::Path
-  local name::Path
+""" #= returns the class name of a Absyn.Class as a Absyn.Path =#"""
+function className(cl::Absyn.Class)::Absyn.Path
+  local name::Absyn.Path
 
   local id::String
 
-  @match CLASS(name = id) = cl
-  @assign name = IDENT(id)
+  @match Absyn.CLASS(name = id) = cl
+  @assign name = Absyn.IDENT(id)
   return name
 end
 
-function isClassNamed(inName::String, inClass::Class)::Bool
+function isClassNamed(inName::String, inClass::Absyn.Class)::Bool
   local outIsNamed::Bool
 
   @assign outIsNamed = begin
     @match inClass begin
-      CLASS(__) => begin
+      Absyn.CLASS(__) => begin
         inName == inClass.name
       end
 
@@ -1637,19 +1637,19 @@ function isClassNamed(inName::String, inClass::Class)::Bool
   return outIsNamed
 end
 
-""" #= The ElementSpec type contains the name of the element, and this function
+""" #= The Absyn.ElementSpec type contains the name of the element, and this function
    extracts this name. =#"""
-function elementSpecName(inElementSpec::ElementSpec)::Ident
-  local outIdent::Ident
+function elementSpecName(inElementSpec::Absyn.ElementSpec)::Absyn.Ident
+  local outIdent::Absyn.Ident
 
   @assign outIdent = begin
-    local n::Ident
+    local n::Absyn.Ident
     @match inElementSpec begin
-      CLASSDEF(class_ = CLASS(name = n)) => begin
+      Absyn.CLASSDEF(class_ = Absyn.CLASS(name = n)) => begin
         n
       end
 
-      COMPONENTS(components = COMPONENTITEM(component = COMPONENT(name = n)) <| nil()) =>
+      Absyn.COMPONENTS(components = Absyn.COMPONENTITEM(component = Absyn.COMPONENT(name = n)) <| nil()) =>
         begin
           n
         end
@@ -1658,12 +1658,12 @@ function elementSpecName(inElementSpec::ElementSpec)::Ident
   return outIdent
 end
 
-function isClassdef(inElement::Element)::Bool
+function isClassdef(inElement::Absyn.Element)::Bool
   local b::Bool
 
   @assign b = begin
     @match inElement begin
-      ELEMENT(specification = CLASSDEF(__)) => begin
+      Absyn.ELEMENT(specification = Absyn.CLASSDEF(__)) => begin
         true
       end
 
@@ -1675,7 +1675,7 @@ function isClassdef(inElement::Element)::Bool
   return b
 end
 
-function elementSpecificationIsClassDef(es::ElementSpec)::Bool
+function elementSpecificationIsClassDef(es::Absyn.ElementSpec)::Bool
   local b::Bool
 
   @assign b = begin
@@ -1692,23 +1692,23 @@ function elementSpecificationIsClassDef(es::ElementSpec)::Bool
   return b
 end
 
-""" #= This function takes a Import and prints it as a flat-string. =#"""
-function printImportString(imp::Import)::String
+""" #= This function takes a Absyn.Import and prints it as a flat-string. =#"""
+function printImportString(imp::Absyn.Import)::String
   local ostring::String
   @assign ostring = begin
-    local path::Path
+    local path::Absyn.Path
     local name::String
     @match imp begin
-      NAMED_IMPORT(name, _) => begin
+      Absyn.NAMED_IMPORT(name, _) => begin
         name
       end
 
-      QUAL_IMPORT(path) => begin
+      Absyn.QUAL_IMPORT(path) => begin
         @assign name = pathString(path)
         name
       end
 
-      UNQUAL_IMPORT(path) => begin
+      Absyn.UNQUAL_IMPORT(path) => begin
         @assign name = pathString(path)
         name
       end
@@ -1718,65 +1718,65 @@ function printImportString(imp::Import)::String
 end
 
 """ #= returns the string of an expression if it is a string constant. =#"""
-function expString(exp::Exp)::String
+function expString(exp::Absyn.Exp)::String
   local str::String
 
-  @match STRING(str) = exp
+  @match Absyn.STRING(str) = exp
   return str
 end
 
 """ #= returns the componentRef of an expression if matches. =#"""
-function expCref(exp::Exp)::ComponentRef
-  local cr::ComponentRef
+function expCref(exp::Absyn.Exp)::Absyn.ComponentRef
+  local cr::Absyn.ComponentRef
 
-  @match CREF(cr) = exp
+  @match Absyn.CREF(cr) = exp
   return cr
 end
 
 """ #= returns the componentRef of an expression if matches. =#"""
-function crefExp(cr::ComponentRef)::Exp
-  local exp::Exp
+function crefExp(cr::Absyn.ComponentRef)::Absyn.Exp
+  local exp::Absyn.Exp
 
-  @assign exp = CREF(cr)
+  @assign exp = Absyn.CREF(cr)
   return exp
 end
 
-function expComponentRefStr(aexp::Exp)::String
+function expComponentRefStr(aexp::Absyn.Exp)::String
   local outString::String
 
   @assign outString = printComponentRefStr(expCref(aexp))
   return outString
 end
 
-function printComponentRefStr(cr::ComponentRef)::String
+function printComponentRefStr(cr::Absyn.ComponentRef)::String
   local ostring::String
 
   @assign ostring = begin
     local s1::String
     local s2::String
-    local child::ComponentRef
+    local child::Absyn.ComponentRef
     @match cr begin
-      CREF_IDENT(s1, _) => begin
+      Absyn.CREF_IDENT(s1, _) => begin
         s1
       end
 
-      CREF_QUAL(s1, _, child) => begin
+      Absyn.CREF_QUAL(s1, _, child) => begin
         @assign s2 = printComponentRefStr(child)
         @assign s1 = s1 + "." + s2
         s1
       end
 
-      CREF_FULLYQUALIFIED(child) => begin
+      Absyn.CREF_FULLYQUALIFIED(child) => begin
         @assign s2 = printComponentRefStr(child)
         @assign s1 = "." + s2
         s1
       end
 
-      ALLWILD(__) => begin
+      Absyn.ALLWILD(__) => begin
         "__"
       end
 
-      WILD(__) => begin
+      Absyn.WILD(__) => begin
         "_"
       end
     end
@@ -1785,31 +1785,31 @@ function printComponentRefStr(cr::ComponentRef)::String
 end
 
 """ #= Returns true if two paths are equal. =#"""
-function pathEqual(inPath1::Path, inPath2::Path)::Bool
+function pathEqual(inPath1::Absyn.Path, inPath2::Absyn.Path)::Bool
   local outBoolean::Bool
 
   @assign outBoolean = begin
     local id1::String
     local id2::String
     local res::Bool
-    local path1::Path
-    local path2::Path
+    local path1::Absyn.Path
+    local path2::Absyn.Path
     #=  fully qual vs. path
     =#
     @match (inPath1, inPath2) begin
-      (FULLYQUALIFIED(path1), path2) => begin
+      (Absyn.FULLYQUALIFIED(path1), path2) => begin
         pathEqual(path1, path2)
       end
 
-      (path1, FULLYQUALIFIED(path2)) => begin
+      (path1, Absyn.FULLYQUALIFIED(path2)) => begin
         pathEqual(path1, path2)
       end
 
-      (IDENT(id1), IDENT(id2)) => begin
+      (Absyn.IDENT(id1), Absyn.IDENT(id2)) => begin
         stringEq(id1, id2)
       end
 
-      (QUALIFIED(id1, path1), QUALIFIED(id2, path2)) => begin
+      (Absyn.QUALIFIED(id1, path1), Absyn.QUALIFIED(id2, path2)) => begin
         @assign res = if stringEq(id1, id2)
           pathEqual(path1, path2)
         else
@@ -1836,30 +1836,30 @@ end
 
 """ #= Author BZ 2009-01
    Check whether two type specs are equal or not. =#"""
-function typeSpecEqual(a::TypeSpec, b::TypeSpec)::Bool
+function typeSpecEqual(a::Absyn.TypeSpec, b::Absyn.TypeSpec)::Bool
   local ob::Bool
 
   @assign ob = begin
-    local p1::Path
-    local p2::Path
-    local oad1::Option{ArrayDim}
-    local oad2::Option{ArrayDim}
-    local lst1::List{TypeSpec}
-    local lst2::List{TypeSpec}
-    local i1::Ident
-    local i2::Ident
+    local p1::Absyn.Path
+    local p2::Absyn.Path
+    local oad1::Option{Absyn.ArrayDim}
+    local oad2::Option{Absyn.ArrayDim}
+    local lst1::List{Absyn.TypeSpec}
+    local lst2::List{Absyn.TypeSpec}
+    local i1::Absyn.Ident
+    local i2::Absyn.Ident
     local pos1::Integer
     local pos2::Integer
     #=  first try full equality
     =#
     @matchcontinue (a, b) begin
-      (TPATH(p1, oad1), TPATH(p2, oad2)) => begin
+      (Absyn.TPATH(p1, oad1), Absyn.TPATH(p2, oad2)) => begin
         @match true = pathEqual(p1, p2)
         @match true = optArrayDimEqual(oad1, oad2)
         true
       end
 
-      (TCOMPLEX(p1, lst1, oad1), TCOMPLEX(p2, lst2, oad2)) => begin
+      (Absyn.TCOMPLEX(p1, lst1, oad1), Absyn.TCOMPLEX(p2, lst2, oad2)) => begin
         @match true = pathEqual(p1, p2)
         @match true = ListUtil.isEqualOnTrue(lst1, lst2, typeSpecEqual)
         @match true = optArrayDimEqual(oad1, oad2)
@@ -1876,12 +1876,12 @@ end
 
 """ #= Author BZ
    helper function for typeSpecEqual =#"""
-function optArrayDimEqual(oad1::Option{<:ArrayDim}, oad2::Option{<:ArrayDim})::Bool
+function optArrayDimEqual(oad1::Option{<:Absyn.ArrayDim}, oad2::Option{<:Absyn.ArrayDim})::Bool
   local b::Bool
 
   @assign b = begin
-    local ad1::List{Subscript}
-    local ad2::List{Subscript}
+    local ad1::List{Absyn.Subscript}
+    local ad2::List{Absyn.Subscript}
     @matchcontinue (oad1, oad2) begin
       (SOME(ad1), SOME(ad2)) => begin
         @match true = ListUtil.isEqualOnTrue(ad1, ad2, subscriptEqual)
@@ -1900,18 +1900,18 @@ function optArrayDimEqual(oad1::Option{<:ArrayDim}, oad2::Option{<:ArrayDim})::B
   return b
 end
 
-""" #= This function simply converts a Path to a string. =#"""
-function typeSpecPathString(tp::TypeSpec)::String
+""" #= This function simply converts a Absyn.Path to a string. =#"""
+function typeSpecPathString(tp::Absyn.TypeSpec)::String
   local s::String
 
   @assign s = begin
-    local p::Path
+    local p::Absyn.Path
     @match tp begin
-      TCOMPLEX(path = p) => begin
+      Absyn.TCOMPLEX(path = p) => begin
         pathString(p)
       end
 
-      TPATH(path = p) => begin
+      Absyn.TPATH(path = p) => begin
         pathString(p)
       end
     end
@@ -1919,18 +1919,18 @@ function typeSpecPathString(tp::TypeSpec)::String
   return s
 end
 
-""" #= Converts a TypeSpec to Path =#"""
-function typeSpecPath(tp::TypeSpec)::Path
-  local op::Path
+""" #= Converts a Absyn.TypeSpec to Absyn.Path =#"""
+function typeSpecPath(tp::Absyn.TypeSpec)::Absyn.Path
+  local op::Absyn.Path
 
   @assign op = begin
-    local p::Path
+    local p::Absyn.Path
     @match tp begin
-      TCOMPLEX(path = p) => begin
+      Absyn.TCOMPLEX(path = p) => begin
         p
       end
 
-      TPATH(path = p) => begin
+      Absyn.TPATH(path = p) => begin
         p
       end
     end
@@ -1938,18 +1938,18 @@ function typeSpecPath(tp::TypeSpec)::Path
   return op
 end
 
-""" #= Returns the dimensions of a TypeSpec. =#"""
-function typeSpecDimensions(inTypeSpec::TypeSpec)::ArrayDim
-  local outDimensions::ArrayDim
+""" #= Returns the dimensions of a Absyn.TypeSpec. =#"""
+function typeSpecDimensions(inTypeSpec::Absyn.TypeSpec)::Absyn.ArrayDim
+  local outDimensions::Absyn.ArrayDim
 
   @assign outDimensions = begin
-    local dim::ArrayDim
+    local dim::Absyn.ArrayDim
     @match inTypeSpec begin
-      TPATH(arrayDim = SOME(dim)) => begin
+      Absyn.TPATH(arrayDim = SOME(dim)) => begin
         dim
       end
 
-      TCOMPLEX(arrayDim = SOME(dim)) => begin
+      Absyn.TCOMPLEX(arrayDim = SOME(dim)) => begin
         dim
       end
 
@@ -1961,16 +1961,16 @@ function typeSpecDimensions(inTypeSpec::TypeSpec)::ArrayDim
   return outDimensions
 end
 
-""" #= This function simply converts a Path to a string. =#"""
+""" #= This function simply converts a Absyn.Path to a string. =#"""
 function pathString(
-  path::Path,
+  path::Absyn.Path,
   delimiter::String = ".",
   usefq::Bool = true,
   reverse::Bool = false,
 )::String
   local s::String
-  local p1::Path
-  local p2::Path
+  local p1::Absyn.Path
+  local p2::Absyn.Path
   local count::Integer = 0
   local len::Integer = 0
   local dlen::Integer = stringLength(delimiter)
@@ -1985,7 +1985,7 @@ function pathString(
   end
   _ = begin
     @match p1 begin
-      IDENT(__) => begin
+      Absyn.IDENT(__) => begin
         #=  Do not allocate memory if we're just going to copy the only identifier
         =#
         @assign s = p1.name
@@ -2002,15 +2002,15 @@ function pathString(
   while b
     @assign (p2, len, count, b) = begin
       @match p2 begin
-        IDENT(__) => begin
+        Absyn.IDENT(__) => begin
           (p2, len + 1, count + stringLength(p2.name), false)
         end
 
-        QUALIFIED(__) => begin
+        Absyn.QUALIFIED(__) => begin
           (p2.path, len + 1, count + stringLength(p2.name), true)
         end
 
-        FULLYQUALIFIED(__) => begin
+        Absyn.FULLYQUALIFIED(__) => begin
           (p2.path, len + 1, count, true)
         end
       end
@@ -2021,7 +2021,7 @@ function pathString(
 end
 
 function pathStringWork(
-  inPath::Path,
+  inPath::Absyn.Path,
   len::Integer,
   delimiter::String,
   dlen::Integer,
@@ -2029,7 +2029,7 @@ function pathStringWork(
 )::String
   local s::String = ""
 
-  local p::Path = inPath
+  local p::Absyn.Path = inPath
   local b::Bool = true
   local count::Integer = 0
   #=  Allocate a string of the exact required length
@@ -2041,7 +2041,7 @@ function pathStringWork(
   while b
     @assign (p, count, b) = begin
       @match p begin
-        IDENT(__) => begin
+        Absyn.IDENT(__) => begin
           System.stringAllocatorStringCopy(sb, p.name, if reverse
               len - count - stringLength(p.name)
             else
@@ -2050,7 +2050,7 @@ function pathStringWork(
           (p, count + stringLength(p.name), false)
         end
 
-        QUALIFIED(__) => begin
+        Absyn.QUALIFIED(__) => begin
           System.stringAllocatorStringCopy(
             sb,
             p.name,
@@ -2068,7 +2068,7 @@ function pathStringWork(
           (p.path, count + stringLength(p.name) + dlen, true)
         end
 
-        FULLYQUALIFIED(__) => begin
+        Absyn.FULLYQUALIFIED(__) => begin
           System.stringAllocatorStringCopy(sb, delimiter, if reverse
             len - count - dlen
           else
@@ -2087,47 +2087,47 @@ end
 
 @ExtendedFunction pathStringNoQual pathString(usefq = false)
 
-function pathStringDefault(path::Path)::String
+function pathStringDefault(path::Absyn.Path)::String
   local s::String = pathString(path)
   return s
 end
 
-function classNameCompare(c1::Class, c2::Class)::Integer
+function classNameCompare(c1::Absyn.Class, c2::Absyn.Class)::Integer
   local o::Integer
 
   @assign o = stringCompare(c1.name, c2.name)
   return o
 end
 
-function classNameGreater(c1::Class, c2::Class)::Bool
+function classNameGreater(c1::Absyn.Class, c2::Absyn.Class)::Bool
   local b::Bool
 
   @assign b = stringCompare(c1.name, c2.name) > 0
   return b
 end
 
-function pathCompare(ip1::Path, ip2::Path)::Integer
+function pathCompare(ip1::Absyn.Path, ip2::Absyn.Path)::Integer
   local o::Integer
 
   @assign o = begin
-    local p1::Path
-    local p2::Path
+    local p1::Absyn.Path
+    local p2::Absyn.Path
     local i1::String
     local i2::String
     @match (ip1, ip2) begin
-      (FULLYQUALIFIED(p1), FULLYQUALIFIED(p2)) => begin
+      (Absyn.FULLYQUALIFIED(p1), Absyn.FULLYQUALIFIED(p2)) => begin
         pathCompare(p1, p2)
       end
 
-      (FULLYQUALIFIED(__), _) => begin
+      (Absyn.FULLYQUALIFIED(__), _) => begin
         1
       end
 
-      (_, FULLYQUALIFIED(__)) => begin
+      (_, Absyn.FULLYQUALIFIED(__)) => begin
         -1
       end
 
-      (QUALIFIED(i1, p1), QUALIFIED(i2, p2)) => begin
+      (Absyn.QUALIFIED(i1, p1), Absyn.QUALIFIED(i2, p2)) => begin
         @assign o = stringCompare(i1, i2)
         @assign o = if o == 0
           pathCompare(p1, p2)
@@ -2137,15 +2137,15 @@ function pathCompare(ip1::Path, ip2::Path)::Integer
         o
       end
 
-      (QUALIFIED(__), _) => begin
+      (Absyn.QUALIFIED(__), _) => begin
         1
       end
 
-      (_, QUALIFIED(__)) => begin
+      (_, Absyn.QUALIFIED(__)) => begin
         -1
       end
 
-      (IDENT(i1), IDENT(i2)) => begin
+      (Absyn.IDENT(i1), Absyn.IDENT(i2)) => begin
         stringCompare(i1, i2)
       end
     end
@@ -2153,24 +2153,24 @@ function pathCompare(ip1::Path, ip2::Path)::Integer
   return o
 end
 
-function pathCompareNoQual(ip1::Path, ip2::Path)::Integer
+function pathCompareNoQual(ip1::Absyn.Path, ip2::Absyn.Path)::Integer
   local o::Integer
 
   @assign o = begin
-    local p1::Path
-    local p2::Path
+    local p1::Absyn.Path
+    local p2::Absyn.Path
     local i1::String
     local i2::String
     @match (ip1, ip2) begin
-      (FULLYQUALIFIED(p1), p2) => begin
+      (Absyn.FULLYQUALIFIED(p1), p2) => begin
         pathCompareNoQual(p1, p2)
       end
 
-      (p1, FULLYQUALIFIED(p2)) => begin
+      (p1, Absyn.FULLYQUALIFIED(p2)) => begin
         pathCompareNoQual(p1, p2)
       end
 
-      (QUALIFIED(i1, p1), QUALIFIED(i2, p2)) => begin
+      (Absyn.QUALIFIED(i1, p1), Absyn.QUALIFIED(i2, p2)) => begin
         @assign o = stringCompare(i1, i2)
         @assign o = if o == 0
           pathCompare(p1, p2)
@@ -2180,15 +2180,15 @@ function pathCompareNoQual(ip1::Path, ip2::Path)::Integer
         o
       end
 
-      (QUALIFIED(__), _) => begin
+      (Absyn.QUALIFIED(__), _) => begin
         1
       end
 
-      (_, QUALIFIED(__)) => begin
+      (_, Absyn.QUALIFIED(__)) => begin
         -1
       end
 
-      (IDENT(i1), IDENT(i2)) => begin
+      (Absyn.IDENT(i1), Absyn.IDENT(i2)) => begin
         stringCompare(i1, i2)
       end
     end
@@ -2197,7 +2197,7 @@ function pathCompareNoQual(ip1::Path, ip2::Path)::Integer
 end
 
 """ #= Hashes a path. =#"""
-function pathHashMod(path::Path, mod::Integer)::Integer
+function pathHashMod(path::Absyn.Path, mod::Integer)::Integer
   local hash::Integer
 
   #=  hash := valueHashMod(path,mod);
@@ -2213,26 +2213,26 @@ function pathHashMod(path::Path, mod::Integer)::Integer
 end
 
 """ #= Hashes a path. =#"""
-function pathHashModWork(path::Path, acc::Integer)::Integer
+function pathHashModWork(path::Absyn.Path, acc::Integer)::Integer
   local hash::Integer
 
   @assign hash = begin
-    local p::Path
+    local p::Absyn.Path
     local s::String
     local i::Integer
     local i2::Integer
     @match (path, acc) begin
-      (FULLYQUALIFIED(p), _) => begin
+      (Absyn.FULLYQUALIFIED(p), _) => begin
         pathHashModWork(p, acc * 31 + 46)
       end
 
-      (QUALIFIED(s, p), _) => begin
+      (Absyn.QUALIFIED(s, p), _) => begin
         @assign i = stringHashDjb2(s)
         @assign i2 = acc * 31 + 46
         pathHashModWork(p, i2 * 31 + i)
       end
 
-      (IDENT(s), _) => begin
+      (Absyn.IDENT(s), _) => begin
         @assign i = stringHashDjb2(s)
         @assign i2 = acc * 31 + 46
         i2 * 31 + i
@@ -2244,12 +2244,12 @@ function pathHashModWork(path::Path, acc::Integer)::Integer
 end
 
 """ #= Returns a path converted to string or an empty string if nothing exist =#"""
-function optPathString(inPathOption::Option{<:Path})::String
+function optPathString(inPathOption::Option{<:Absyn.Path})::String
   local outString::String
 
   @assign outString = begin
-    local str::Ident
-    local p::Path
+    local str::Absyn.Ident
+    local p::Absyn.Path
     @match inPathOption begin
       NONE() => begin
         ""
@@ -2269,7 +2269,7 @@ end
   a_b changes to a__b) before delimiting
   (Replaces dots with that separator). And also unquotes each ident.
  =#"""
-function pathStringUnquoteReplaceDot(inPath::Path, repStr::String)::String
+function pathStringUnquoteReplaceDot(inPath::Absyn.Path, repStr::String)::String
   local outString::String
 
   local strlst::List{String}
@@ -2284,8 +2284,8 @@ function pathStringUnquoteReplaceDot(inPath::Path, repStr::String)::String
 end
 
 """ #= Converts a string into a qualified path. =#"""
-function stringPath(str::String)::Path
-  local qualifiedPath::Path
+function stringPath(str::String)::Absyn.Path
+  local qualifiedPath::Absyn.Path
 
   local paths::List{String}
 
@@ -2295,25 +2295,25 @@ function stringPath(str::String)::Path
 end
 
 """ #= Converts a list of strings into a qualified path. =#"""
-function stringListPath(paths::List{<:String})::Path
-  local qualifiedPath::Path
+function stringListPath(paths::List{<:String})::Absyn.Path
+  local qualifiedPath::Absyn.Path
 
   @assign qualifiedPath = begin
     local str::String
     local rest_str::List{String}
-    local p::Path
+    local p::Absyn.Path
     @matchcontinue paths begin
       nil() => begin
         fail()
       end
 
       str <| nil() => begin
-        IDENT(str)
+        Absyn.IDENT(str)
       end
 
       str <| rest_str => begin
         @assign p = stringListPath(rest_str)
-        QUALIFIED(str, p)
+        Absyn.QUALIFIED(str, p)
       end
     end
   end
@@ -2322,33 +2322,33 @@ end
 
 """ #= Converts a list of strings into a qualified path, in reverse order.
    Ex: {'a', 'b', 'c'} => c.b.a =#"""
-function stringListPathReversed(inStrings::List{<:String})::Path
-  local outPath::Path
+function stringListPathReversed(inStrings::List{<:String})::Absyn.Path
+  local outPath::Absyn.Path
 
   local id::String
   local rest_str::List{String}
-  local path::Path
+  local path::Absyn.Path
 
   @match _cons(id, rest_str) = inStrings
-  @assign path = IDENT(id)
+  @assign path = Absyn.IDENT(id)
   @assign outPath = stringListPathReversed2(rest_str, path)
   return outPath
 end
 
-function stringListPathReversed2(inStrings::List{<:String}, inAccumPath::Path)::Path
-  local outPath::Path
+function stringListPathReversed2(inStrings::List{<:String}, inAccumPath::Absyn.Path)::Absyn.Path
+  local outPath::Absyn.Path
 
   @assign outPath = begin
     local id::String
     local rest_str::List{String}
-    local path::Path
+    local path::Absyn.Path
     @match (inStrings, inAccumPath) begin
       (nil(), _) => begin
         inAccumPath
       end
 
       (id <| rest_str, _) => begin
-        @assign path = QUALIFIED(id, inAccumPath)
+        @assign path = Absyn.QUALIFIED(id, inAccumPath)
         stringListPathReversed2(rest_str, path)
       end
     end
@@ -2357,21 +2357,21 @@ function stringListPathReversed2(inStrings::List{<:String}, inAccumPath::Path)::
 end
 
 """ #= Returns the two last idents of a path =#"""
-function pathTwoLastIdents(inPath::Path)::Path
-  local outTwoLast::Path
+function pathTwoLastIdents(inPath::Absyn.Path)::Absyn.Path
+  local outTwoLast::Absyn.Path
 
   @assign outTwoLast = begin
-    local p::Path
+    local p::Absyn.Path
     @match inPath begin
-      QUALIFIED(path = IDENT(__)) => begin
+      Absyn.QUALIFIED(path = Absyn.IDENT(__)) => begin
         inPath
       end
 
-      QUALIFIED(path = p) => begin
+      Absyn.QUALIFIED(path = p) => begin
         pathTwoLastIdents(p)
       end
 
-      FULLYQUALIFIED(path = p) => begin
+      Absyn.FULLYQUALIFIED(path = p) => begin
         pathTwoLastIdents(p)
       end
     end
@@ -2380,22 +2380,22 @@ function pathTwoLastIdents(inPath::Path)::Path
 end
 
 """ #= Returns the last ident (after last dot) in a path =#"""
-function pathLastIdent(inPath::Path)::String
+function pathLastIdent(inPath::Absyn.Path)::String
   local outIdent::String
 
   @assign outIdent = begin
-    local id::Ident
-    local p::Path
+    local id::Absyn.Ident
+    local p::Absyn.Path
     @match inPath begin
-      QUALIFIED(path = p) => begin
+      Absyn.QUALIFIED(path = p) => begin
         pathLastIdent(p)
       end
 
-      IDENT(name = id) => begin
+      Absyn.IDENT(name = id) => begin
         id
       end
 
-      FULLYQUALIFIED(path = p) => begin
+      Absyn.FULLYQUALIFIED(path = p) => begin
         pathLastIdent(p)
       end
     end
@@ -2404,20 +2404,20 @@ function pathLastIdent(inPath::Path)::String
 end
 
 """ #= Returns the last ident (after last dot) in a path =#"""
-function pathLast(path::Path)::Path
+function pathLast(path::Absyn.Path)::Absyn.Path
 
   @assign path = begin
-    local p::Path
+    local p::Absyn.Path
     @match path begin
-      QUALIFIED(path = p) => begin
+      Absyn.QUALIFIED(path = p) => begin
         pathLast(p)
       end
 
-      IDENT(__) => begin
+      Absyn.IDENT(__) => begin
         path
       end
 
-      FULLYQUALIFIED(path = p) => begin
+      Absyn.FULLYQUALIFIED(path = p) => begin
         pathLast(p)
       end
     end
@@ -2426,22 +2426,22 @@ function pathLast(path::Path)::Path
 end
 
 """ #= Returns the first ident (before first dot) in a path =#"""
-function pathFirstIdent(inPath::Path)::Ident
-  local outIdent::Ident
+function pathFirstIdent(inPath::Absyn.Path)::Absyn.Ident
+  local outIdent::Absyn.Ident
 
   @assign outIdent = begin
-    local n::Ident
-    local p::Path
+    local n::Absyn.Ident
+    local p::Absyn.Path
     @match inPath begin
-      FULLYQUALIFIED(path = p) => begin
+      Absyn.FULLYQUALIFIED(path = p) => begin
         pathFirstIdent(p)
       end
 
-      QUALIFIED(name = n) => begin
+      Absyn.QUALIFIED(name = n) => begin
         n
       end
 
-      IDENT(name = n) => begin
+      Absyn.IDENT(name = n) => begin
         n
       end
     end
@@ -2449,21 +2449,21 @@ function pathFirstIdent(inPath::Path)::Ident
   return outIdent
 end
 
-function pathFirstPath(inPath::Path)::Path
-  local outPath::Path
+function pathFirstPath(inPath::Absyn.Path)::Absyn.Path
+  local outPath::Absyn.Path
 
   @assign outPath = begin
-    local n::Ident
+    local n::Absyn.Ident
     @match inPath begin
-      IDENT(__) => begin
+      Absyn.IDENT(__) => begin
         inPath
       end
 
-      QUALIFIED(name = n) => begin
-        IDENT(n)
+      Absyn.QUALIFIED(name = n) => begin
+        Absyn.IDENT(n)
       end
 
-      FULLYQUALIFIED(path = outPath) => begin
+      Absyn.FULLYQUALIFIED(path = outPath) => begin
         pathFirstPath(outPath)
       end
     end
@@ -2471,22 +2471,22 @@ function pathFirstPath(inPath::Path)::Path
   return outPath
 end
 
-function pathSecondIdent(inPath::Path)::Ident
-  local outIdent::Ident
+function pathSecondIdent(inPath::Absyn.Path)::Absyn.Ident
+  local outIdent::Absyn.Ident
 
   @assign outIdent = begin
-    local n::Ident
-    local p::Path
+    local n::Absyn.Ident
+    local p::Absyn.Path
     @match inPath begin
-      QUALIFIED(path = QUALIFIED(name = n)) => begin
+      Absyn.QUALIFIED(path = Absyn.QUALIFIED(name = n)) => begin
         n
       end
 
-      QUALIFIED(path = IDENT(name = n)) => begin
+      Absyn.QUALIFIED(path = Absyn.IDENT(name = n)) => begin
         n
       end
 
-      FULLYQUALIFIED(path = p) => begin
+      Absyn.FULLYQUALIFIED(path = p) => begin
         pathSecondIdent(p)
       end
     end
@@ -2494,16 +2494,16 @@ function pathSecondIdent(inPath::Path)::Ident
   return outIdent
 end
 
-function pathRest(inPath::Path)::Path
-  local outPath::Path
+function pathRest(inPath::Absyn.Path)::Absyn.Path
+  local outPath::Absyn.Path
 
   @assign outPath = begin
     @match inPath begin
-      QUALIFIED(path = outPath) => begin
+      Absyn.QUALIFIED(path = outPath) => begin
         outPath
       end
 
-      FULLYQUALIFIED(path = outPath) => begin
+      Absyn.FULLYQUALIFIED(path = outPath) => begin
         pathRest(outPath)
       end
     end
@@ -2516,8 +2516,8 @@ function pathStripSamePrefix(inPath1::Absyn.Path, inPath2::Absyn.Path)::Absyn.Pa
   local outPath::Absyn.Path
 
   @assign outPath = begin
-    local ident1::Ident
-    local ident2::Ident
+    local ident1::Absyn.Ident
+    local ident2::Absyn.Ident
     local path1::Absyn.Path
     local path2::Absyn.Path
     @matchcontinue (inPath1, inPath2) begin
@@ -2539,24 +2539,24 @@ function pathStripSamePrefix(inPath1::Absyn.Path, inPath2::Absyn.Path)::Absyn.Pa
 end
 
 """ #= Returns the prefix of a path, i.e. this.is.a.path => this.is.a =#"""
-function pathPrefix(path::Path)::Path
-  local prefix::Path
+function pathPrefix(path::Absyn.Path)::Absyn.Path
+  local prefix::Absyn.Path
 
   @assign prefix = begin
-    local p::Path
-    local n::Ident
+    local p::Absyn.Path
+    local n::Absyn.Ident
     @matchcontinue path begin
-      FULLYQUALIFIED(path = p) => begin
+      Absyn.FULLYQUALIFIED(path = p) => begin
         pathPrefix(p)
       end
 
-      QUALIFIED(name = n, path = IDENT(__)) => begin
-        IDENT(n)
+      Absyn.QUALIFIED(name = n, path = Absyn.IDENT(__)) => begin
+        Absyn.IDENT(n)
       end
 
-      QUALIFIED(name = n, path = p) => begin
+      Absyn.QUALIFIED(name = n, path = p) => begin
         @assign p = pathPrefix(p)
-        QUALIFIED(n, p)
+        Absyn.QUALIFIED(n, p)
       end
     end
   end
@@ -2564,26 +2564,26 @@ function pathPrefix(path::Path)::Path
 end
 
 """ #= Prefixes a path with an identifier. =#"""
-function prefixPath(prefix::Ident, path::Path)::Path
-  local outPath::Path
+function prefixPath(prefix::Absyn.Ident, path::Absyn.Path)::Absyn.Path
+  local outPath::Absyn.Path
 
-  @assign outPath = QUALIFIED(prefix, path)
+  @assign outPath = Absyn.QUALIFIED(prefix, path)
   return outPath
 end
 
 """ #= Prefixes an optional path with an identifier. =#"""
-function prefixOptPath(prefix::Ident, optPath::Option{<:Path})::Option{Path}
-  local outPath::Option{Path}
+function prefixOptPath(prefix::Absyn.Ident, optPath::Option{<:Absyn.Path})::Option{Absyn.Path}
+  local outPath::Option{Absyn.Path}
 
   @assign outPath = begin
-    local path::Path
+    local path::Absyn.Path
     @match (prefix, optPath) begin
       (_, NONE()) => begin
-        SOME(IDENT(prefix))
+        SOME(Absyn.IDENT(prefix))
       end
 
       (_, SOME(path)) => begin
-        SOME(QUALIFIED(prefix, path))
+        SOME(Absyn.QUALIFIED(prefix, path))
       end
     end
   end
@@ -2592,25 +2592,25 @@ end
 
 """ #= Adds a suffix to a path. Ex:
      suffixPath(a.b.c, 'd') => a.b.c.d =#"""
-function suffixPath(inPath::Path, inSuffix::Ident)::Path
-  local outPath::Path
+function suffixPath(inPath::Absyn.Path, inSuffix::Absyn.Ident)::Absyn.Path
+  local outPath::Absyn.Path
 
   @assign outPath = begin
-    local name::Ident
-    local path::Path
+    local name::Absyn.Ident
+    local path::Absyn.Path
     @match (inPath, inSuffix) begin
-      (IDENT(name), _) => begin
-        QUALIFIED(name, IDENT(inSuffix))
+      (Absyn.IDENT(name), _) => begin
+        Absyn.QUALIFIED(name, Absyn.IDENT(inSuffix))
       end
 
-      (QUALIFIED(name, path), _) => begin
+      (Absyn.QUALIFIED(name, path), _) => begin
         @assign path = suffixPath(path, inSuffix)
-        QUALIFIED(name, path)
+        Absyn.QUALIFIED(name, path)
       end
 
-      (FULLYQUALIFIED(path), _) => begin
+      (Absyn.FULLYQUALIFIED(path), _) => begin
         @assign path = suffixPath(path, inSuffix)
-        FULLYQUALIFIED(path)
+        Absyn.FULLYQUALIFIED(path)
       end
     end
   end
@@ -2618,22 +2618,22 @@ function suffixPath(inPath::Path, inSuffix::Ident)::Path
 end
 
 """ #= returns true if suffix_path is a suffix of path =#"""
-function pathSuffixOf(suffix_path::Path, path::Path)::Bool
+function pathSuffixOf(suffix_path::Absyn.Path, path::Absyn.Path)::Bool
   local res::Bool
 
   @assign res = begin
-    local p::Path
+    local p::Absyn.Path
     @matchcontinue (suffix_path, path) begin
       (_, _) => begin
         @match true = pathEqual(suffix_path, path)
         true
       end
 
-      (_, FULLYQUALIFIED(path = p)) => begin
+      (_, Absyn.FULLYQUALIFIED(path = p)) => begin
         pathSuffixOf(suffix_path, p)
       end
 
-      (_, QUALIFIED(path = p)) => begin
+      (_, Absyn.QUALIFIED(path = p)) => begin
         pathSuffixOf(suffix_path, p)
       end
 
@@ -2646,37 +2646,37 @@ function pathSuffixOf(suffix_path::Path, path::Path)::Bool
 end
 
 """ #= returns true if suffix_path is a suffix of path =#"""
-function pathSuffixOfr(path::Path, suffix_path::Path)::Bool
+function pathSuffixOfr(path::Absyn.Path, suffix_path::Absyn.Path)::Bool
   local res::Bool
 
   @assign res = pathSuffixOf(suffix_path, path)
   return res
 end
 
-function pathToStringList(path::Path)::List{String}
+function pathToStringList(path::Absyn.Path)::List{String}
   local outPaths::List{String}
 
   @assign outPaths = listReverse(pathToStringListWork(path, nil))
   return outPaths
 end
 
-function pathToStringListWork(path::Path, acc::List{<:String})::List{String}
+function pathToStringListWork(path::Absyn.Path, acc::List{<:String})::List{String}
   local outPaths::List{String}
 
   @assign outPaths = begin
     local n::String
-    local p::Path
+    local p::Absyn.Path
     local strings::List{String}
     @match (path, acc) begin
-      (IDENT(name = n), _) => begin
+      (Absyn.IDENT(name = n), _) => begin
         _cons(n, acc)
       end
 
-      (FULLYQUALIFIED(path = p), _) => begin
+      (Absyn.FULLYQUALIFIED(path = p), _) => begin
         pathToStringListWork(p, acc)
       end
 
-      (QUALIFIED(name = n, path = p), _) => begin
+      (Absyn.QUALIFIED(name = n, path = p), _) => begin
         pathToStringListWork(p, _cons(n, acc))
       end
     end
@@ -2689,19 +2689,19 @@ end
   (a.b.c, d.e) => d.e.b.c
   (a, b.c.d) => b.c.d
  =#"""
-function pathReplaceFirstIdent(path::Path, replPath::Path)::Path
-  local outPath::Path
+function pathReplaceFirstIdent(path::Absyn.Path, replPath::Absyn.Path)::Absyn.Path
+  local outPath::Absyn.Path
 
   @assign outPath = begin
-    local p::Path
+    local p::Absyn.Path
     #=  Should not be possible to replace FQ paths
     =#
     @match (path, replPath) begin
-      (QUALIFIED(path = p), _) => begin
+      (Absyn.QUALIFIED(path = p), _) => begin
         joinPaths(replPath, p)
       end
 
-      (IDENT(__), _) => begin
+      (Absyn.IDENT(__), _) => begin
         replPath
       end
     end
@@ -2710,24 +2710,24 @@ function pathReplaceFirstIdent(path::Path, replPath::Path)::Path
 end
 
 """ #= Function for appending subscripts at end of last ident =#"""
-function addSubscriptsLast(icr::ComponentRef, i::List{<:Subscript})::ComponentRef
-  local ocr::ComponentRef
+function addSubscriptsLast(icr::Absyn.ComponentRef, i::List{<:Absyn.Subscript})::Absyn.ComponentRef
+  local ocr::Absyn.ComponentRef
 
   @assign ocr = begin
-    local subs::List{Subscript}
+    local subs::List{Absyn.Subscript}
     local id::String
-    local cr::ComponentRef
+    local cr::Absyn.ComponentRef
     @match (icr, i) begin
-      (CREF_IDENT(id, subs), _) => begin
-        CREF_IDENT(id, listAppend(subs, i))
+      (Absyn.CREF_IDENT(id, subs), _) => begin
+        Absyn.CREF_IDENT(id, listAppend(subs, i))
       end
 
-      (CREF_QUAL(id, subs, cr), _) => begin
+      (Absyn.CREF_QUAL(id, subs, cr), _) => begin
         @assign cr = addSubscriptsLast(cr, i)
-        CREF_QUAL(id, subs, cr)
+        Absyn.CREF_QUAL(id, subs, cr)
       end
 
-      (CREF_FULLYQUALIFIED(cr), _) => begin
+      (Absyn.CREF_FULLYQUALIFIED(cr), _) => begin
         @assign cr = addSubscriptsLast(cr, i)
         crefMakeFullyQualified(cr)
       end
@@ -2741,26 +2741,26 @@ end
   (a[4].b.c[3], d.e) => d.e[4].b.c[3]
   (a[3], b.c.d) => b.c.d[3]
  =#"""
-function crefReplaceFirstIdent(icref::ComponentRef, replPath::Path)::ComponentRef
-  local outCref::ComponentRef
+function crefReplaceFirstIdent(icref::Absyn.ComponentRef, replPath::Absyn.Path)::Absyn.ComponentRef
+  local outCref::Absyn.ComponentRef
 
   @assign outCref = begin
-    local subs::List{Subscript}
-    local cr::ComponentRef
-    local cref::ComponentRef
+    local subs::List{Absyn.Subscript}
+    local cr::Absyn.ComponentRef
+    local cref::Absyn.ComponentRef
     @match (icref, replPath) begin
-      (CREF_FULLYQUALIFIED(componentRef = cr), _) => begin
+      (Absyn.CREF_FULLYQUALIFIED(componentRef = cr), _) => begin
         @assign cr = crefReplaceFirstIdent(cr, replPath)
         crefMakeFullyQualified(cr)
       end
 
-      (CREF_QUAL(componentRef = cr, subscripts = subs), _) => begin
+      (Absyn.CREF_QUAL(componentRef = cr, subscripts = subs), _) => begin
         @assign cref = pathToCref(replPath)
         @assign cref = addSubscriptsLast(cref, subs)
         joinCrefs(cref, cr)
       end
 
-      (CREF_IDENT(subscripts = subs), _) => begin
+      (Absyn.CREF_IDENT(subscripts = subs), _) => begin
         @assign cref = pathToCref(replPath)
         @assign cref = addSubscriptsLast(cref, subs)
         cref
@@ -2771,32 +2771,32 @@ function crefReplaceFirstIdent(icref::ComponentRef, replPath::Path)::ComponentRe
 end
 
 """ #= Returns true if prefixPath is a prefix of path, false otherwise. =#"""
-function pathPrefixOf(prefixPath::Path, path::Path)::Bool
+function pathPrefixOf(prefixPath::Absyn.Path, path::Absyn.Path)::Bool
   local isPrefix::Bool
 
   @assign isPrefix = begin
-    local p::Path
-    local p2::Path
+    local p::Absyn.Path
+    local p2::Absyn.Path
     local id::String
     local id2::String
     @matchcontinue (prefixPath, path) begin
-      (FULLYQUALIFIED(p), p2) => begin
+      (Absyn.FULLYQUALIFIED(p), p2) => begin
         pathPrefixOf(p, p2)
       end
 
-      (p, FULLYQUALIFIED(p2)) => begin
+      (p, Absyn.FULLYQUALIFIED(p2)) => begin
         pathPrefixOf(p, p2)
       end
 
-      (IDENT(id), IDENT(id2)) => begin
+      (Absyn.IDENT(id), Absyn.IDENT(id2)) => begin
         stringEq(id, id2)
       end
 
-      (IDENT(id), QUALIFIED(name = id2)) => begin
+      (Absyn.IDENT(id), Absyn.QUALIFIED(name = id2)) => begin
         stringEq(id, id2)
       end
 
-      (QUALIFIED(id, p), QUALIFIED(id2, p2)) => begin
+      (Absyn.QUALIFIED(id, p), Absyn.QUALIFIED(id2, p2)) => begin
         @match true = stringEq(id, id2)
         @match true = pathPrefixOf(p, p2)
         true
@@ -2814,8 +2814,8 @@ end
   Author: DH 2010-03
 
   Returns true if prefixCr is a prefix of cr, i.e., false otherwise.
-  Subscripts are NOT checked. =#"""
-function crefPrefixOf(prefixCr::ComponentRef, cr::ComponentRef)::Bool
+  Subscripts are Absyn.NOT checked. =#"""
+function crefPrefixOf(prefixCr::Absyn.ComponentRef, cr::Absyn.ComponentRef)::Bool
   local out::Bool
 
   @assign out = begin
@@ -2838,27 +2838,27 @@ function crefPrefixOf(prefixCr::ComponentRef, cr::ComponentRef)::Bool
 end
 
 """ #= removes the prefix_path from path, and returns the rest of path =#"""
-function removePrefix(prefix_path::Path, path::Path)::Path
-  local newPath::Path
+function removePrefix(prefix_path::Absyn.Path, path::Absyn.Path)::Absyn.Path
+  local newPath::Absyn.Path
 
   @assign newPath = begin
-    local p::Path
-    local p2::Path
-    local id1::Ident
-    local id2::Ident
+    local p::Absyn.Path
+    local p2::Absyn.Path
+    local id1::Absyn.Ident
+    local id2::Absyn.Ident
     #=  fullyqual path
     =#
     @match (prefix_path, path) begin
-      (p, FULLYQUALIFIED(p2)) => begin
+      (p, Absyn.FULLYQUALIFIED(p2)) => begin
         removePrefix(p, p2)
       end
 
-      (QUALIFIED(name = id1, path = p), QUALIFIED(name = id2, path = p2)) => begin
+      (Absyn.QUALIFIED(name = id1, path = p), Absyn.QUALIFIED(name = id2, path = p2)) => begin
         @match true = stringEq(id1, id2)
         removePrefix(p, p2)
       end
 
-      (IDENT(id1), QUALIFIED(name = id2, path = p2)) => begin
+      (Absyn.IDENT(id1), Absyn.QUALIFIED(name = id2, path = p2)) => begin
         @match true = stringEq(id1, id2)
         p2
       end
@@ -2876,23 +2876,23 @@ end
   succeeds or reaches the end of the prefix. Ex:
     removePartialPrefix(A.B.C, B.C.D.E) => D.E
    =#"""
-function removePartialPrefix(inPrefix::Path, inPath::Path)::Path
-  local outPath::Path
+function removePartialPrefix(inPrefix::Absyn.Path, inPath::Absyn.Path)::Absyn.Path
+  local outPath::Absyn.Path
 
   @assign outPath = begin
-    local p::Path
+    local p::Absyn.Path
     @matchcontinue (inPrefix, inPath) begin
       (_, _) => begin
         @assign p = removePrefix(inPrefix, inPath)
         p
       end
 
-      (QUALIFIED(path = p), _) => begin
+      (Absyn.QUALIFIED(path = p), _) => begin
         @assign p = removePrefix(p, inPath)
         p
       end
 
-      (FULLYQUALIFIED(path = p), _) => begin
+      (Absyn.FULLYQUALIFIED(path = p), _) => begin
         @assign p = removePartialPrefix(p, inPath)
         p
       end
@@ -2911,43 +2911,43 @@ end
   Author: DH 2010-03
 
   If prefixCr is a prefix of cr, removes prefixCr from cr and returns the remaining reference,
-  otherwise fails. Subscripts are NOT checked.
+  otherwise fails. Subscripts are Absyn.NOT checked.
  =#"""
-function crefRemovePrefix(prefixCr::ComponentRef, cr::ComponentRef)::ComponentRef
-  local out::ComponentRef
+function crefRemovePrefix(prefixCr::Absyn.ComponentRef, cr::Absyn.ComponentRef)::Absyn.ComponentRef
+  local out::Absyn.ComponentRef
 
   @assign out = begin
-    local prefixIdent::Ident
-    local ident::Ident
-    local prefixRestCr::ComponentRef
-    local restCr::ComponentRef
+    local prefixIdent::Absyn.Ident
+    local ident::Absyn.Ident
+    local prefixRestCr::Absyn.ComponentRef
+    local restCr::Absyn.ComponentRef
     #=  fqual
     =#
     @match (prefixCr, cr) begin
       (
-        CREF_FULLYQUALIFIED(componentRef = prefixRestCr),
-        CREF_FULLYQUALIFIED(componentRef = restCr),
+        Absyn.CREF_FULLYQUALIFIED(componentRef = prefixRestCr),
+        Absyn.CREF_FULLYQUALIFIED(componentRef = restCr),
       ) => begin
         crefRemovePrefix(prefixRestCr, restCr)
       end
 
       (
-        CREF_QUAL(name = prefixIdent, componentRef = prefixRestCr),
-        CREF_QUAL(name = ident, componentRef = restCr),
+        Absyn.CREF_QUAL(name = prefixIdent, componentRef = prefixRestCr),
+        Absyn.CREF_QUAL(name = ident, componentRef = restCr),
       ) => begin
         @match true = stringEq(prefixIdent, ident)
         crefRemovePrefix(prefixRestCr, restCr)
       end
 
-      (CREF_IDENT(name = prefixIdent), CREF_QUAL(name = ident, componentRef = restCr)) =>
+      (Absyn.CREF_IDENT(name = prefixIdent), Absyn.CREF_QUAL(name = ident, componentRef = restCr)) =>
         begin
           @match true = stringEq(prefixIdent, ident)
           restCr
         end
 
-      (CREF_IDENT(name = prefixIdent), CREF_IDENT(name = ident)) => begin
+      (Absyn.CREF_IDENT(name = prefixIdent), Absyn.CREF_IDENT(name = ident)) => begin
         @match true = stringEq(prefixIdent, ident)
-        CREF_IDENT("", nil)
+        Absyn.CREF_IDENT("", nil)
       end
     end
   end
@@ -2961,29 +2961,29 @@ function crefRemovePrefix(prefixCr::ComponentRef, cr::ComponentRef)::ComponentRe
 end
 
 """ #= Author BZ,
-   checks if one IDENT(..) is contained in path. =#"""
-function pathContains(fullPath::Path, pathId::Path)::Bool
+   checks if one Absyn.IDENT(..) is contained in path. =#"""
+function pathContains(fullPath::Absyn.Path, pathId::Absyn.Path)::Bool
   local b::Bool
 
   @assign b = begin
     local str1::String
     local str2::String
-    local qp::Path
+    local qp::Absyn.Path
     local b1::Bool
     local b2::Bool
     @match (fullPath, pathId) begin
-      (IDENT(str1), IDENT(str2)) => begin
+      (Absyn.IDENT(str1), Absyn.IDENT(str2)) => begin
         stringEq(str1, str2)
       end
 
-      (QUALIFIED(str1, qp), IDENT(str2)) => begin
+      (Absyn.QUALIFIED(str1, qp), Absyn.IDENT(str2)) => begin
         @assign b1 = stringEq(str1, str2)
         @assign b2 = pathContains(qp, pathId)
         @assign b1 = boolOr(b1, b2)
         b1
       end
 
-      (FULLYQUALIFIED(qp), _) => begin
+      (Absyn.FULLYQUALIFIED(qp), _) => begin
         pathContains(qp, pathId)
       end
     end
@@ -2992,31 +2992,31 @@ function pathContains(fullPath::Path, pathId::Path)::Bool
 end
 
 """ #= Author OT,
-   checks if Path contains the given string. =#"""
-function pathContainsString(p1::Path, str::String)::Bool
+   checks if Absyn.Path contains the given string. =#"""
+function pathContainsString(p1::Absyn.Path, str::String)::Bool
   local b::Bool
 
   @assign b = begin
     local str1::String
     local searchStr::String
-    local qp::Path
+    local qp::Absyn.Path
     local b1::Bool
     local b2::Bool
     local b3::Bool
     @match (p1, str) begin
-      (IDENT(str1), searchStr) => begin
+      (Absyn.IDENT(str1), searchStr) => begin
         @assign b1 = System.stringFind(str1, searchStr) != (-1)
         b1
       end
 
-      (QUALIFIED(str1, qp), searchStr) => begin
+      (Absyn.QUALIFIED(str1, qp), searchStr) => begin
         @assign b1 = System.stringFind(str1, searchStr) != (-1)
         @assign b2 = pathContainsString(qp, searchStr)
         @assign b3 = boolOr(b1, b2)
         b3
       end
 
-      (FULLYQUALIFIED(qp), searchStr) => begin
+      (Absyn.FULLYQUALIFIED(qp), searchStr) => begin
         pathContainsString(qp, searchStr)
       end
     end
@@ -3031,13 +3031,13 @@ end
      pathContainedIn(C.D, A.B.C.D) => A.B.C.D
      pathContainedIn(A.B.C.D, A.B.C.D) => A.B.C.D
      pathContainedIn(B.C,A.B) => A.B.C =#"""
-function pathContainedIn(subPath::Path, path::Path)::Path
-  local completePath::Path
+function pathContainedIn(subPath::Absyn.Path, path::Absyn.Path)::Absyn.Path
+  local completePath::Absyn.Path
 
   @assign completePath = begin
-    local ident::Ident
-    local newPath::Path
-    local newSubPath::Path
+    local ident::Absyn.Ident
+    local newPath::Absyn.Path
+    local newSubPath::Absyn.Path
     #=  A suffix, e.g. C.D in A.B.C.D
     =#
     @matchcontinue (subPath, path) begin
@@ -3050,14 +3050,14 @@ function pathContainedIn(subPath::Path, path::Path)::Path
         @assign ident = pathLastIdent(path)
         @assign newPath = stripLast(path)
         @assign newPath = pathContainedIn(subPath, newPath)
-        joinPaths(newPath, IDENT(ident))
+        joinPaths(newPath, Absyn.IDENT(ident))
       end
 
       _ => begin
         @assign ident = pathLastIdent(subPath)
         @assign newSubPath = stripLast(subPath)
         @assign newSubPath = pathContainedIn(newSubPath, path)
-        joinPaths(newSubPath, IDENT(ident))
+        joinPaths(newSubPath, Absyn.IDENT(ident))
       end
     end
   end
@@ -3071,26 +3071,26 @@ end
 """ #= Author BZ 2009-08
    Function for getting ComponentRefs out from Subscripts =#"""
 function getCrefsFromSubs(
-  isubs::List{<:Subscript},
+  isubs::List{<:Absyn.Subscript},
   includeSubs::Bool,
   includeFunctions::Bool,
-)::List{ComponentRef} #= note that if you say includeSubs = false then you won't get the functions from array subscripts =#
-  local crefs::List{ComponentRef}
+)::List{Absyn.ComponentRef} #= note that if you say includeSubs = false then you won't get the functions from array subscripts =#
+  local crefs::List{Absyn.ComponentRef}
 
   @assign crefs = begin
-    local crefs1::List{ComponentRef}
-    local exp::Exp
-    local subs::List{Subscript}
+    local crefs1::List{Absyn.ComponentRef}
+    local exp::Absyn.Exp
+    local subs::List{Absyn.Subscript}
     @match (isubs, includeSubs, includeFunctions) begin
       (nil(), _, _) => begin
         nil
       end
 
-      (NOSUB(__) <| subs, _, _) => begin
+      (Absyn.NOSUB(__) <| subs, _, _) => begin
         getCrefsFromSubs(subs, includeSubs, includeFunctions)
       end
 
-      (SUBSCRIPT(exp) <| subs, _, _) => begin
+      (Absyn.SUBSCRIPT(exp) <| subs, _, _) => begin
         @assign crefs1 = getCrefsFromSubs(subs, includeSubs, includeFunctions)
         @assign crefs = getCrefFromExp(exp, includeSubs, includeFunctions)
         listAppend(crefs, crefs1)
@@ -3103,28 +3103,28 @@ end
 """ #= Returns a flattened list of the
    component references in an expression =#"""
 function getCrefFromExp(
-  inExp::Exp,
+  inExp::Absyn.Exp,
   includeSubs::Bool,
   includeFunctions::Bool,
-)::List{ComponentRef} #= note that if you say includeSubs = false then you won't get the functions from array subscripts =#
-  local outComponentRefLst::List{ComponentRef}
+)::List{Absyn.ComponentRef} #= note that if you say includeSubs = false then you won't get the functions from array subscripts =#
+  local outComponentRefLst::List{Absyn.ComponentRef}
 
   @assign outComponentRefLst = begin
-    local cr::ComponentRef
-    local l1::List{ComponentRef}
-    local l2::List{ComponentRef}
-    local res::List{ComponentRef}
+    local cr::Absyn.ComponentRef
+    local l1::List{Absyn.ComponentRef}
+    local l2::List{Absyn.ComponentRef}
+    local res::List{Absyn.ComponentRef}
     local e1::ComponentCondition
     local e2::ComponentCondition
     local e3::ComponentCondition
-    local op::Operator
+    local op::Absyn.Operator
     local e4::List{Tuple{ComponentCondition, ComponentCondition}}
-    local farg::FunctionArgs
+    local farg::Absyn.FunctionArgs
     local expl::List{ComponentCondition}
     local expll::List{List{ComponentCondition}}
-    local subs::List{Subscript}
-    local lstres1::List{List{ComponentRef}}
-    local crefll::List{List{ComponentRef}}
+    local subs::List{Absyn.Subscript}
+    local lstres1::List{List{Absyn.ComponentRef}}
+    local crefll::List{List{Absyn.ComponentRef}}
     @match (inExp, includeSubs, includeFunctions) begin
       (INTEGER(__), _, _) => begin
         nil
@@ -3134,7 +3134,7 @@ function getCrefFromExp(
         nil
       end
 
-      (STRING(__), _, _) => begin
+      (Absyn.STRING(__), _, _) => begin
         nil
       end
 
@@ -3142,56 +3142,56 @@ function getCrefFromExp(
         nil
       end
 
-      (CREF(componentRef = ALLWILD(__)), _, _) => begin
+      (Absyn.CREF(componentRef = Absyn.ALLWILD(__)), _, _) => begin
         nil
       end
 
-      (CREF(componentRef = WILD(__)), _, _) => begin
+      (Absyn.CREF(componentRef = Absyn.WILD(__)), _, _) => begin
         nil
       end
 
-      (CREF(componentRef = cr), false, _) => begin
+      (Absyn.CREF(componentRef = cr), false, _) => begin
         list(cr)
       end
 
-      (CREF(componentRef = cr), true, _) => begin
+      (Absyn.CREF(componentRef = cr), true, _) => begin
         @assign subs = getSubsFromCref(cr, includeSubs, includeFunctions)
         @assign l1 = getCrefsFromSubs(subs, includeSubs, includeFunctions)
         _cons(cr, l1)
       end
 
-      (BINARY(exp1 = e1, exp2 = e2), _, _) => begin
+      (Absyn.BINARY(exp1 = e1, exp2 = e2), _, _) => begin
         @assign l1 = getCrefFromExp(e1, includeSubs, includeFunctions)
         @assign l2 = getCrefFromExp(e2, includeSubs, includeFunctions)
         @assign res = listAppend(l1, l2)
         res
       end
 
-      (UNARY(exp = e1), _, _) => begin
+      (Absyn.UNARY(exp = e1), _, _) => begin
         @assign res = getCrefFromExp(e1, includeSubs, includeFunctions)
         res
       end
 
-      (LBINARY(exp1 = e1, exp2 = e2), _, _) => begin
+      (Absyn.LBINARY(exp1 = e1, exp2 = e2), _, _) => begin
         @assign l1 = getCrefFromExp(e1, includeSubs, includeFunctions)
         @assign l2 = getCrefFromExp(e2, includeSubs, includeFunctions)
         @assign res = listAppend(l1, l2)
         res
       end
 
-      (LUNARY(exp = e1), _, _) => begin
+      (Absyn.LUNARY(exp = e1), _, _) => begin
         @assign res = getCrefFromExp(e1, includeSubs, includeFunctions)
         res
       end
 
-      (RELATION(exp1 = e1, exp2 = e2), _, _) => begin
+      (Absyn.RELATION(exp1 = e1, exp2 = e2), _, _) => begin
         @assign l1 = getCrefFromExp(e1, includeSubs, includeFunctions)
         @assign l2 = getCrefFromExp(e2, includeSubs, includeFunctions)
         @assign res = listAppend(l1, l2)
         res
       end
 
-      (IFEXP(ifExp = e1, trueBranch = e2, elseBranch = e3), _, _) => begin
+      (Absyn.IFEXP(ifExp = e1, trueBranch = e2, elseBranch = e3), _, _) => begin
         ListUtil.flatten(list(
           getCrefFromExp(e1, includeSubs, includeFunctions),
           getCrefFromExp(e2, includeSubs, includeFunctions),
@@ -3199,7 +3199,7 @@ function getCrefFromExp(
         ))
       end
 
-      (CALL(function_ = cr, functionArgs = farg), _, _) => begin
+      (Absyn.CALL(function_ = cr, functionArgs = farg), _, _) => begin
         @assign res = getCrefFromFarg(farg, includeSubs, includeFunctions)
         @assign res = if includeFunctions
           _cons(cr, res)
@@ -3255,7 +3255,7 @@ function getCrefFromExp(
         nil
       end
 
-      (TUPLE(expressions = expl), _, _) => begin
+      (Absyn.TUPLE(expressions = expl), _, _) => begin
         @assign crefll = ListUtil.map2(expl, getCrefFromExp, includeSubs, includeFunctions)
         @assign res = ListUtil.flatten(crefll)
         res
@@ -3309,25 +3309,25 @@ end
 """ #= Returns the flattened list of all component references
   present in a list of function arguments. =#"""
 function getCrefFromFarg(
-  inFunctionArgs::FunctionArgs,
+  inFunctionArgs::Absyn.FunctionArgs,
   includeSubs::Bool,
   includeFunctions::Bool,
-)::List{ComponentRef} #= note that if you say includeSubs = false then you won't get the functions from array subscripts =#
-  local outComponentRefLst::List{ComponentRef}
+)::List{Absyn.ComponentRef} #= note that if you say includeSubs = false then you won't get the functions from array subscripts =#
+  local outComponentRefLst::List{Absyn.ComponentRef}
 
   @assign outComponentRefLst = begin
-    local l1::List{List{ComponentRef}}
-    local l2::List{List{ComponentRef}}
-    local fl1::List{ComponentRef}
-    local fl2::List{ComponentRef}
-    local fl3::List{ComponentRef}
-    local res::List{ComponentRef}
+    local l1::List{List{Absyn.ComponentRef}}
+    local l2::List{List{Absyn.ComponentRef}}
+    local fl1::List{Absyn.ComponentRef}
+    local fl2::List{Absyn.ComponentRef}
+    local fl3::List{Absyn.ComponentRef}
+    local res::List{Absyn.ComponentRef}
     local expl::List{ComponentCondition}
-    local nargl::List{NamedArg}
-    local iterators::ForIterators
-    local exp::Exp
+    local nargl::List{Absyn.NamedArg}
+    local iterators::Absyn.ForIterators
+    local exp::Absyn.Exp
     @match (inFunctionArgs, includeSubs, includeFunctions) begin
-      (FUNCTIONARGS(args = expl, argNames = nargl), _, _) => begin
+      (Absyn.FUNCTIONARGS(args = expl, argNames = nargl), _, _) => begin
         @assign l1 = ListUtil.map2(expl, getCrefFromExp, includeSubs, includeFunctions)
         @assign fl1 = ListUtil.flatten(l1)
         @assign l2 = ListUtil.map2(nargl, getCrefFromNarg, includeSubs, includeFunctions)
@@ -3336,7 +3336,7 @@ function getCrefFromFarg(
         res
       end
 
-      (FOR_ITER_FARG(exp, _, iterators), _, _) => begin
+      (Absyn.FOR_ITER_FARG(exp, _, iterators), _, _) => begin
         @assign l1 = ListUtil.map2Option(
           ListUtil.map(iterators, iteratorRange),
           getCrefFromExp,
@@ -3360,24 +3360,24 @@ function getCrefFromFarg(
   return outComponentRefLst
 end
 
-function iteratorName(iterator::ForIterator)::String
+function iteratorName(iterator::Absyn.ForIterator)::String
   local name::String
 
-  @match ITERATOR(name = name) = iterator
+  @match Absyn.ITERATOR(name = name) = iterator
   return name
 end
 
-function iteratorRange(iterator::ForIterator)::Option{Exp}
-  local range::Option{Exp}
+function iteratorRange(iterator::Absyn.ForIterator)::Option{Absyn.Exp}
+  local range::Option{Absyn.Exp}
 
-  @match ITERATOR(range = range) = iterator
+  @match Absyn.ITERATOR(range = range) = iterator
   return range
 end
 
-function iteratorGuard(iterator::ForIterator)::Option{Exp}
-  local guardExp::Option{Exp}
+function iteratorGuard(iterator::Absyn.ForIterator)::Option{Absyn.Exp}
+  local guardExp::Option{Absyn.Exp}
 
-  @match ITERATOR(guardExp = guardExp) = iterator
+  @match Absyn.ITERATOR(guardExp = guardExp) = iterator
   return guardExp
 end
 
@@ -3386,23 +3386,23 @@ end
 
 """ #= returns the names from a list of NamedArgs as a string list =#"""
 function getNamedFuncArgNamesAndValues(
-  inNamedArgList::List{<:NamedArg},
-)::Tuple{List{String}, List{Exp}}
-  local outExpList::List{Exp}
+  inNamedArgList::List{<:Absyn.NamedArg},
+)::Tuple{List{String}, List{Absyn.Exp}}
+  local outExpList::List{Absyn.Exp}
   local outStringList::List{String}
 
   @assign (outStringList, outExpList) = begin
-    local cdr::List{NamedArg}
+    local cdr::List{Absyn.NamedArg}
     local s::String
-    local e::Exp
+    local e::Absyn.Exp
     local slst::List{String}
-    local elst::List{Exp}
+    local elst::List{Absyn.Exp}
     @match inNamedArgList begin
       nil() => begin
         (nil, nil)
       end
 
-      NAMEDARG(argName = s, argValue = e) <| cdr => begin
+      Absyn.NAMEDARG(argName = s, argValue = e) <| cdr => begin
         @assign (slst, elst) = getNamedFuncArgNamesAndValues(cdr)
         (_cons(s, slst), _cons(e, elst))
       end
@@ -3414,17 +3414,17 @@ end
 """ #= Returns the flattened list of all component references
   present in a list of named function arguments. =#"""
 function getCrefFromNarg(
-  inNamedArg::NamedArg,
+  inNamedArg::Absyn.NamedArg,
   includeSubs::Bool,
   includeFunctions::Bool,
-)::List{ComponentRef} #= note that if you say includeSubs = false then you won't get the functions from array subscripts =#
-  local outComponentRefLst::List{ComponentRef}
+)::List{Absyn.ComponentRef} #= note that if you say includeSubs = false then you won't get the functions from array subscripts =#
+  local outComponentRefLst::List{Absyn.ComponentRef}
 
   @assign outComponentRefLst = begin
-    local res::List{ComponentRef}
+    local res::List{Absyn.ComponentRef}
     local exp::ComponentCondition
     @match (inNamedArg, includeSubs, includeFunctions) begin
-      (NAMEDARG(argValue = exp), _, _) => begin
+      (Absyn.NAMEDARG(argValue = exp), _, _) => begin
         @assign res = getCrefFromExp(exp, includeSubs, includeFunctions)
         res
       end
@@ -3434,29 +3434,29 @@ function getCrefFromNarg(
 end
 
 """ #= This function joins two paths =#"""
-function joinPaths(inPath1::Path, inPath2::Path)::Path
-  local outPath::Path
+function joinPaths(inPath1::Absyn.Path, inPath2::Absyn.Path)::Absyn.Path
+  local outPath::Absyn.Path
 
   @assign outPath = begin
-    local str::Ident
-    local p2::Path
-    local p_1::Path
-    local p::Path
+    local str::Absyn.Ident
+    local p2::Absyn.Path
+    local p_1::Absyn.Path
+    local p::Absyn.Path
     @match (inPath1, inPath2) begin
-      (IDENT(name = str), p2) => begin
-        QUALIFIED(str, p2)
+      (Absyn.IDENT(name = str), p2) => begin
+        Absyn.QUALIFIED(str, p2)
       end
 
-      (QUALIFIED(name = str, path = p), p2) => begin
+      (Absyn.QUALIFIED(name = str, path = p), p2) => begin
         @assign p_1 = joinPaths(p, p2)
-        QUALIFIED(str, p_1)
+        Absyn.QUALIFIED(str, p_1)
       end
 
-      (FULLYQUALIFIED(p), p2) => begin
+      (Absyn.FULLYQUALIFIED(p), p2) => begin
         joinPaths(p, p2)
       end
 
-      (p, FULLYQUALIFIED(p2)) => begin
+      (p, Absyn.FULLYQUALIFIED(p2)) => begin
         joinPaths(p, p2)
       end
     end
@@ -3465,11 +3465,11 @@ function joinPaths(inPath1::Path, inPath2::Path)::Path
 end
 
 """ #= This function joins two paths when the first one might be NONE =#"""
-function joinPathsOpt(inPath1::Option{<:Path}, inPath2::Path)::Path
-  local outPath::Path
+function joinPathsOpt(inPath1::Option{<:Absyn.Path}, inPath2::Absyn.Path)::Absyn.Path
+  local outPath::Absyn.Path
 
   @assign outPath = begin
-    local p::Path
+    local p::Absyn.Path
     @match (inPath1, inPath2) begin
       (NONE(), _) => begin
         inPath2
@@ -3483,11 +3483,11 @@ function joinPathsOpt(inPath1::Option{<:Path}, inPath2::Path)::Path
   return outPath
 end
 
-function joinPathsOptSuffix(inPath1::Path, inPath2::Option{<:Path})::Path
-  local outPath::Path
+function joinPathsOptSuffix(inPath1::Absyn.Path, inPath2::Option{<:Absyn.Path})::Absyn.Path
+  local outPath::Absyn.Path
 
   @assign outPath = begin
-    local p::Path
+    local p::Absyn.Path
     @match (inPath1, inPath2) begin
       (_, SOME(p)) => begin
         joinPaths(inPath1, p)
@@ -3503,11 +3503,11 @@ end
 
 """ #= This function selects the second path when the first one
   is NONE() otherwise it will select the first one. =#"""
-function selectPathsOpt(inPath1::Option{<:Path}, inPath2::Path)::Path
-  local outPath::Path
+function selectPathsOpt(inPath1::Option{<:Absyn.Path}, inPath2::Absyn.Path)::Absyn.Path
+  local outPath::Absyn.Path
 
   @assign outPath = begin
-    local p::Path
+    local p::Absyn.Path
     @match (inPath1, inPath2) begin
       (NONE(), p) => begin
         p
@@ -3523,17 +3523,17 @@ end
 
 """ #= author Lucian
   This function joins a path list =#"""
-function pathAppendList(inPathLst::List{<:Path})::Path
-  local outPath::Path
+function pathAppendList(inPathLst::List{<:Absyn.Path})::Absyn.Path
+  local outPath::Absyn.Path
 
   @assign outPath = begin
-    local path::Path
-    local res_path::Path
-    local first::Path
-    local rest::List{Path}
+    local path::Absyn.Path
+    local res_path::Absyn.Path
+    local first::Absyn.Path
+    local rest::List{Absyn.Path}
     @match inPathLst begin
       nil() => begin
-        IDENT("")
+        Absyn.IDENT("")
       end
 
       path <| nil() => begin
@@ -3552,38 +3552,38 @@ end
 
 """ #= Returns the path given as argument to
   the function minus the last ident. =#"""
-function stripLast(inPath::Path)::Path
-  local outPath::Path
+function stripLast(inPath::Absyn.Path)::Absyn.Path
+  local outPath::Absyn.Path
 
   @assign outPath = begin
-    local str::Ident
-    local p::Path
+    local str::Absyn.Ident
+    local p::Absyn.Path
     @match inPath begin
-      QUALIFIED(name = str, path = IDENT(__)) => begin
-        IDENT(str)
+      Absyn.QUALIFIED(name = str, path = Absyn.IDENT(__)) => begin
+        Absyn.IDENT(str)
       end
 
-      QUALIFIED(name = str, path = p) => begin
+      Absyn.QUALIFIED(name = str, path = p) => begin
         @assign p = stripLast(p)
-        QUALIFIED(str, p)
+        Absyn.QUALIFIED(str, p)
       end
 
-      FULLYQUALIFIED(p) => begin
+      Absyn.FULLYQUALIFIED(p) => begin
         @assign p = stripLast(p)
-        FULLYQUALIFIED(p)
+        Absyn.FULLYQUALIFIED(p)
       end
     end
   end
   return outPath
 end
 
-function stripLastOpt(inPath::Path)::Option{Path}
-  local outPath::Option{Path}
+function stripLastOpt(inPath::Absyn.Path)::Option{Absyn.Path}
+  local outPath::Option{Absyn.Path}
 
   @assign outPath = begin
-    local p::Path
+    local p::Absyn.Path
     @match inPath begin
-      IDENT(__) => begin
+      Absyn.IDENT(__) => begin
         NONE()
       end
 
@@ -3598,29 +3598,29 @@ end
 
 """ #= Returns the path given as argument to
   the function minus the last ident. =#"""
-function crefStripLast(inCref::ComponentRef)::ComponentRef
-  local outCref::ComponentRef
+function crefStripLast(inCref::Absyn.ComponentRef)::Absyn.ComponentRef
+  local outCref::Absyn.ComponentRef
 
   @assign outCref = begin
-    local str::Ident
-    local c_1::ComponentRef
-    local c::ComponentRef
-    local subs::List{Subscript}
+    local str::Absyn.Ident
+    local c_1::Absyn.ComponentRef
+    local c::Absyn.ComponentRef
+    local subs::List{Absyn.Subscript}
     @match inCref begin
-      CREF_IDENT(__) => begin
+      Absyn.CREF_IDENT(__) => begin
         fail()
       end
 
-      CREF_QUAL(name = str, subscripts = subs, componentRef = CREF_IDENT(__)) => begin
-        CREF_IDENT(str, subs)
+      Absyn.CREF_QUAL(name = str, subscripts = subs, componentRef = Absyn.CREF_IDENT(__)) => begin
+        Absyn.CREF_IDENT(str, subs)
       end
 
-      CREF_QUAL(name = str, subscripts = subs, componentRef = c) => begin
+      Absyn.CREF_QUAL(name = str, subscripts = subs, componentRef = c) => begin
         @assign c_1 = crefStripLast(c)
-        CREF_QUAL(str, subs, c_1)
+        Absyn.CREF_QUAL(str, subs, c_1)
       end
 
-      CREF_FULLYQUALIFIED(componentRef = c) => begin
+      Absyn.CREF_FULLYQUALIFIED(componentRef = c) => begin
         @assign c_1 = crefStripLast(c)
         crefMakeFullyQualified(c_1)
       end
@@ -3634,27 +3634,27 @@ Author BZ 2008-04
 Function for splitting Absynpath into two parts,
 qualified part, and ident part (all_but_last, last);
  =#"""
-function splitQualAndIdentPath(inPath::Path)::Tuple{Path, Path}
-  local outPath2::Path
-  local outPath1::Path
+function splitQualAndIdentPath(inPath::Absyn.Path)::Tuple{Absyn.Path, Absyn.Path}
+  local outPath2::Absyn.Path
+  local outPath1::Absyn.Path
 
   @assign (outPath1, outPath2) = begin
-    local qPath::Path
-    local curPath::Path
-    local identPath::Path
+    local qPath::Absyn.Path
+    local curPath::Absyn.Path
+    local identPath::Absyn.Path
     local s1::String
     local s2::String
     @match inPath begin
-      QUALIFIED(name = s1, path = IDENT(name = s2)) => begin
-        (IDENT(s1), IDENT(s2))
+      Absyn.QUALIFIED(name = s1, path = Absyn.IDENT(name = s2)) => begin
+        (Absyn.IDENT(s1), Absyn.IDENT(s2))
       end
 
-      QUALIFIED(name = s1, path = qPath) => begin
+      Absyn.QUALIFIED(name = s1, path = qPath) => begin
         @assign (curPath, identPath) = splitQualAndIdentPath(qPath)
-        (QUALIFIED(s1, curPath), identPath)
+        (Absyn.QUALIFIED(s1, curPath), identPath)
       end
 
-      FULLYQUALIFIED(qPath) => begin
+      Absyn.FULLYQUALIFIED(qPath) => begin
         @assign (curPath, identPath) = splitQualAndIdentPath(qPath)
         (curPath, identPath)
       end
@@ -3665,17 +3665,17 @@ end
 
 """ #= Returns the path given as argument
   to the function minus the first ident. =#"""
-function stripFirst(inPath::Path)::Path
-  local outPath::Path
+function stripFirst(inPath::Absyn.Path)::Absyn.Path
+  local outPath::Absyn.Path
 
   @assign outPath = begin
-    local p::Path
+    local p::Absyn.Path
     @match inPath begin
-      QUALIFIED(path = p) => begin
+      Absyn.QUALIFIED(path = p) => begin
         p
       end
 
-      FULLYQUALIFIED(p) => begin
+      Absyn.FULLYQUALIFIED(p) => begin
         stripFirst(p)
       end
     end
@@ -3683,41 +3683,41 @@ function stripFirst(inPath::Path)::Path
   return outPath
 end
 
-""" #= This function converts a ComponentRef to a Path, if possible.
+""" #= This function converts a Absyn.ComponentRef to a Absyn.Path, if possible.
   If the component reference contains subscripts, it will silently fail. =#"""
-function crefToPath(inComponentRef::ComponentRef)::Path
-  local outPath::Path
+function crefToPath(inComponentRef::Absyn.ComponentRef)::Absyn.Path
+  local outPath::Absyn.Path
 
   @assign outPath = begin
-    local i::Ident
-    local p::Path
-    local c::ComponentRef
+    local i::Absyn.Ident
+    local p::Absyn.Path
+    local c::Absyn.ComponentRef
     @match inComponentRef begin
-      CREF_IDENT(name = i, subscripts = nil()) => begin
-        IDENT(i)
+      Absyn.CREF_IDENT(name = i, subscripts = nil()) => begin
+        Absyn.IDENT(i)
       end
 
-      CREF_QUAL(name = i, subscripts = nil(), componentRef = c) => begin
+      Absyn.CREF_QUAL(name = i, subscripts = nil(), componentRef = c) => begin
         @assign p = crefToPath(c)
-        QUALIFIED(i, p)
+        Absyn.QUALIFIED(i, p)
       end
 
-      CREF_FULLYQUALIFIED(componentRef = c) => begin
+      Absyn.CREF_FULLYQUALIFIED(componentRef = c) => begin
         @assign p = crefToPath(c)
-        FULLYQUALIFIED(p)
+        Absyn.FULLYQUALIFIED(p)
       end
     end
   end
   return outPath
 end
 
-""" #= This function converts a ElementSpec to a Path, if possible.
-  If the ElementSpec is not EXTENDS, it will silently fail. =#"""
-function elementSpecToPath(inElementSpec::ElementSpec)::Path
-  local outPath::Path
+""" #= This function converts a Absyn.ElementSpec to a Absyn.Path, if possible.
+  If the Absyn.ElementSpec is not EXTENDS, it will silently fail. =#"""
+function elementSpecToPath(inElementSpec::Absyn.ElementSpec)::Absyn.Path
+  local outPath::Absyn.Path
 
   @assign outPath = begin
-    local p::Path
+    local p::Absyn.Path
     @match inElementSpec begin
       EXTENDS(path = p) => begin
         p
@@ -3727,52 +3727,52 @@ function elementSpecToPath(inElementSpec::ElementSpec)::Path
   return outPath
 end
 
-""" #= Converts a ComponentRef to a Path, ignoring any subscripts. =#"""
-function crefToPathIgnoreSubs(inComponentRef::ComponentRef)::Path
-  local outPath::Path
+""" #= Converts a Absyn.ComponentRef to a Absyn.Path, ignoring any subscripts. =#"""
+function crefToPathIgnoreSubs(inComponentRef::Absyn.ComponentRef)::Absyn.Path
+  local outPath::Absyn.Path
 
   @assign outPath = begin
-    local i::Ident
-    local p::Path
-    local c::ComponentRef
+    local i::Absyn.Ident
+    local p::Absyn.Path
+    local c::Absyn.ComponentRef
     @match inComponentRef begin
-      CREF_IDENT(name = i) => begin
-        IDENT(i)
+      Absyn.CREF_IDENT(name = i) => begin
+        Absyn.IDENT(i)
       end
 
-      CREF_QUAL(name = i, componentRef = c) => begin
+      Absyn.CREF_QUAL(name = i, componentRef = c) => begin
         @assign p = crefToPathIgnoreSubs(c)
-        QUALIFIED(i, p)
+        Absyn.QUALIFIED(i, p)
       end
 
-      CREF_FULLYQUALIFIED(componentRef = c) => begin
+      Absyn.CREF_FULLYQUALIFIED(componentRef = c) => begin
         @assign p = crefToPathIgnoreSubs(c)
-        FULLYQUALIFIED(p)
+        Absyn.FULLYQUALIFIED(p)
       end
     end
   end
   return outPath
 end
 
-""" #= This function converts a Path to a ComponentRef. =#"""
-function pathToCref(inPath::Path)::ComponentRef
-  local outComponentRef::ComponentRef
+""" #= This function converts a Absyn.Path to a Absyn.ComponentRef. =#"""
+function pathToCref(inPath::Absyn.Path)::Absyn.ComponentRef
+  local outComponentRef::Absyn.ComponentRef
 
   @assign outComponentRef = begin
-    local i::Ident
-    local c::ComponentRef
-    local p::Path
+    local i::Absyn.Ident
+    local c::Absyn.ComponentRef
+    local p::Absyn.Path
     @match inPath begin
-      IDENT(name = i) => begin
-        CREF_IDENT(i, nil)
+      Absyn.IDENT(name = i) => begin
+        Absyn.CREF_IDENT(i, nil)
       end
 
-      QUALIFIED(name = i, path = p) => begin
+      Absyn.QUALIFIED(name = i, path = p) => begin
         @assign c = pathToCref(p)
-        CREF_QUAL(i, nil, c)
+        Absyn.CREF_QUAL(i, nil, c)
       end
 
-      FULLYQUALIFIED(p) => begin
+      Absyn.FULLYQUALIFIED(p) => begin
         @assign c = pathToCref(p)
         crefMakeFullyQualified(c)
       end
@@ -3781,26 +3781,26 @@ function pathToCref(inPath::Path)::ComponentRef
   return outComponentRef
 end
 
-""" #= This function converts a Path to a ComponentRef, and applies the given
+""" #= This function converts a Absyn.Path to a Absyn.ComponentRef, and applies the given
   subscripts to the last identifier. =#"""
-function pathToCrefWithSubs(inPath::Path, inSubs::List{<:Subscript})::ComponentRef
-  local outComponentRef::ComponentRef
+function pathToCrefWithSubs(inPath::Absyn.Path, inSubs::List{<:Absyn.Subscript})::Absyn.ComponentRef
+  local outComponentRef::Absyn.ComponentRef
 
   @assign outComponentRef = begin
-    local i::Ident
-    local c::ComponentRef
-    local p::Path
+    local i::Absyn.Ident
+    local c::Absyn.ComponentRef
+    local p::Absyn.Path
     @match (inPath, inSubs) begin
-      (IDENT(name = i), _) => begin
-        CREF_IDENT(i, inSubs)
+      (Absyn.IDENT(name = i), _) => begin
+        Absyn.CREF_IDENT(i, inSubs)
       end
 
-      (QUALIFIED(name = i, path = p), _) => begin
+      (Absyn.QUALIFIED(name = i, path = p), _) => begin
         @assign c = pathToCrefWithSubs(p, inSubs)
-        CREF_QUAL(i, nil, c)
+        Absyn.CREF_QUAL(i, nil, c)
       end
 
-      (FULLYQUALIFIED(p), _) => begin
+      (Absyn.FULLYQUALIFIED(p), _) => begin
         @assign c = pathToCrefWithSubs(p, inSubs)
         crefMakeFullyQualified(c)
       end
@@ -3810,22 +3810,22 @@ function pathToCrefWithSubs(inPath::Path, inSubs::List{<:Subscript})::ComponentR
 end
 
 """ #= Returns the last identifier in a component reference. =#"""
-function crefLastIdent(inComponentRef::ComponentRef)::Ident
-  local outIdent::Ident
+function crefLastIdent(inComponentRef::Absyn.ComponentRef)::Absyn.Ident
+  local outIdent::Absyn.Ident
 
   @assign outIdent = begin
-    local cref::ComponentRef
-    local id::Ident
+    local cref::Absyn.ComponentRef
+    local id::Absyn.Ident
     @match inComponentRef begin
-      CREF_IDENT(name = id) => begin
+      Absyn.CREF_IDENT(name = id) => begin
         id
       end
 
-      CREF_QUAL(componentRef = cref) => begin
+      Absyn.CREF_QUAL(componentRef = cref) => begin
         crefLastIdent(cref)
       end
 
-      CREF_FULLYQUALIFIED(componentRef = cref) => begin
+      Absyn.CREF_FULLYQUALIFIED(componentRef = cref) => begin
         crefLastIdent(cref)
       end
     end
@@ -3835,22 +3835,22 @@ end
 
 """ #= Returns the basename of the component reference, but fails if it encounters
   any subscripts. =#"""
-function crefFirstIdentNoSubs(inCref::ComponentRef)::Ident
-  local outIdent::Ident
+function crefFirstIdentNoSubs(inCref::Absyn.ComponentRef)::Absyn.Ident
+  local outIdent::Absyn.Ident
 
   @assign outIdent = begin
-    local id::Ident
-    local cr::ComponentRef
+    local id::Absyn.Ident
+    local cr::Absyn.ComponentRef
     @match inCref begin
-      CREF_IDENT(name = id, subscripts = nil()) => begin
+      Absyn.CREF_IDENT(name = id, subscripts = nil()) => begin
         id
       end
 
-      CREF_QUAL(name = id, subscripts = nil()) => begin
+      Absyn.CREF_QUAL(name = id, subscripts = nil()) => begin
         id
       end
 
-      CREF_FULLYQUALIFIED(componentRef = cr) => begin
+      Absyn.CREF_FULLYQUALIFIED(componentRef = cr) => begin
         crefFirstIdentNoSubs(cr)
       end
     end
@@ -3859,12 +3859,12 @@ function crefFirstIdentNoSubs(inCref::ComponentRef)::Ident
 end
 
 """ #= Returns true if the component reference is a simple identifier, otherwise false. =#"""
-function crefIsIdent(inComponentRef::ComponentRef)::Bool
+function crefIsIdent(inComponentRef::Absyn.ComponentRef)::Bool
   local outIsIdent::Bool
 
   @assign outIsIdent = begin
     @match inComponentRef begin
-      CREF_IDENT(__) => begin
+      Absyn.CREF_IDENT(__) => begin
         true
       end
 
@@ -3877,16 +3877,16 @@ function crefIsIdent(inComponentRef::ComponentRef)::Bool
 end
 
 """ #= Returns true if the component reference is a qualified identifier, otherwise false. =#"""
-function crefIsQual(inComponentRef::ComponentRef)::Bool
+function crefIsQual(inComponentRef::Absyn.ComponentRef)::Bool
   local outIsQual::Bool
 
   @assign outIsQual = begin
     @match inComponentRef begin
-      CREF_QUAL(__) => begin
+      Absyn.CREF_QUAL(__) => begin
         true
       end
 
-      CREF_FULLYQUALIFIED(__) => begin
+      Absyn.CREF_FULLYQUALIFIED(__) => begin
         true
       end
 
@@ -3898,26 +3898,26 @@ function crefIsQual(inComponentRef::ComponentRef)::Bool
   return outIsQual
 end
 
-""" #= Return the last subscripts of an ComponentRef =#"""
-function crefLastSubs(inComponentRef::ComponentRef)::List{Subscript}
-  local outSubscriptLst::List{Subscript}
+""" #= Return the last subscripts of an Absyn.ComponentRef =#"""
+function crefLastSubs(inComponentRef::Absyn.ComponentRef)::List{Absyn.Subscript}
+  local outSubscriptLst::List{Absyn.Subscript}
 
   @assign outSubscriptLst = begin
-    local id::Ident
-    local subs::List{Subscript}
-    local res::List{Subscript}
-    local cr::ComponentRef
+    local id::Absyn.Ident
+    local subs::List{Absyn.Subscript}
+    local res::List{Absyn.Subscript}
+    local cr::Absyn.ComponentRef
     @match inComponentRef begin
-      CREF_IDENT(subscripts = subs) => begin
+      Absyn.CREF_IDENT(subscripts = subs) => begin
         subs
       end
 
-      CREF_QUAL(componentRef = cr) => begin
+      Absyn.CREF_QUAL(componentRef = cr) => begin
         @assign res = crefLastSubs(cr)
         res
       end
 
-      CREF_FULLYQUALIFIED(componentRef = cr) => begin
+      Absyn.CREF_FULLYQUALIFIED(componentRef = cr) => begin
         @assign res = crefLastSubs(cr)
         res
       end
@@ -3927,24 +3927,24 @@ function crefLastSubs(inComponentRef::ComponentRef)::List{Subscript}
 end
 
 function crefSetLastSubs(
-  inCref::ComponentRef,
-  inSubscripts::List{<:Subscript},
-)::ComponentRef
-  local outCref::ComponentRef = inCref
+  inCref::Absyn.ComponentRef,
+  inSubscripts::List{<:Absyn.Subscript},
+)::Absyn.ComponentRef
+  local outCref::Absyn.ComponentRef = inCref
 
   @assign outCref = begin
     @match outCref begin
-      CREF_IDENT(__) => begin
+      Absyn.CREF_IDENT(__) => begin
         @assign outCref.subscripts = inSubscripts
         outCref
       end
 
-      CREF_QUAL(__) => begin
+      Absyn.CREF_QUAL(__) => begin
         @assign outCref.componentRef = crefSetLastSubs(outCref.componentRef, inSubscripts)
         outCref
       end
 
-      CREF_FULLYQUALIFIED(__) => begin
+      Absyn.CREF_FULLYQUALIFIED(__) => begin
         @assign outCref.componentRef = crefSetLastSubs(outCref.componentRef, inSubscripts)
         outCref
       end
@@ -3954,28 +3954,28 @@ function crefSetLastSubs(
 end
 
 """ #= This function finds if a cref has subscripts =#"""
-function crefHasSubscripts(cref::ComponentRef)::Bool
+function crefHasSubscripts(cref::Absyn.ComponentRef)::Bool
   local hasSubscripts::Bool
 
   @assign hasSubscripts = begin
     @match cref begin
-      CREF_IDENT(__) => begin
+      Absyn.CREF_IDENT(__) => begin
         !listEmpty(cref.subscripts)
       end
 
-      CREF_QUAL(subscripts = nil()) => begin
+      Absyn.CREF_QUAL(subscripts = nil()) => begin
         crefHasSubscripts(cref.componentRef)
       end
 
-      CREF_FULLYQUALIFIED(__) => begin
+      Absyn.CREF_FULLYQUALIFIED(__) => begin
         crefHasSubscripts(cref.componentRef)
       end
 
-      WILD(__) => begin
+      Absyn.WILD(__) => begin
         false
       end
 
-      ALLWILD(__) => begin
+      Absyn.ALLWILD(__) => begin
         false
       end
 
@@ -3991,27 +3991,27 @@ end
 Author: BZ, 2009-09
  Extract subscripts of crefs. =#"""
 function getSubsFromCref(
-  cr::ComponentRef,
+  cr::Absyn.ComponentRef,
   includeSubs::Bool,
   includeFunctions::Bool,
-)::List{Subscript} #= note that if you say includeSubs = false then you won't get the functions from array subscripts =#
-  local subscripts::List{Subscript}
+)::List{Absyn.Subscript} #= note that if you say includeSubs = false then you won't get the functions from array subscripts =#
+  local subscripts::List{Absyn.Subscript}
 
   @assign subscripts = begin
-    local subs2::List{Subscript}
-    local child::ComponentRef
+    local subs2::List{Absyn.Subscript}
+    local child::Absyn.ComponentRef
     @match (cr, includeSubs, includeFunctions) begin
-      (CREF_IDENT(_, subs2), _, _) => begin
+      (Absyn.CREF_IDENT(_, subs2), _, _) => begin
         subs2
       end
 
-      (CREF_QUAL(_, subs2, child), _, _) => begin
+      (Absyn.CREF_QUAL(_, subs2, child), _, _) => begin
         @assign subscripts = getSubsFromCref(child, includeSubs, includeFunctions)
         @assign subscripts = ListUtil.unionOnTrue(subscripts, subs2, subscriptEqual)
         subscripts
       end
 
-      (CREF_FULLYQUALIFIED(child), _, _) => begin
+      (Absyn.CREF_FULLYQUALIFIED(child), _, _) => begin
         @assign subscripts = getSubsFromCref(child, includeSubs, includeFunctions)
         subscripts
       end
@@ -4023,26 +4023,26 @@ end
 #=  stefan
 =#
 
-""" #= Gets the last ident in a ComponentRef =#"""
-function crefGetLastIdent(inComponentRef::ComponentRef)::ComponentRef
-  local outComponentRef::ComponentRef
+""" #= Gets the last ident in a Absyn.ComponentRef =#"""
+function crefGetLastIdent(inComponentRef::Absyn.ComponentRef)::Absyn.ComponentRef
+  local outComponentRef::Absyn.ComponentRef
 
   @assign outComponentRef = begin
-    local cref::ComponentRef
-    local cref_1::ComponentRef
-    local id::Ident
-    local subs::List{Subscript}
+    local cref::Absyn.ComponentRef
+    local cref_1::Absyn.ComponentRef
+    local id::Absyn.Ident
+    local subs::List{Absyn.Subscript}
     @match inComponentRef begin
-      CREF_IDENT(id, subs) => begin
-        CREF_IDENT(id, subs)
+      Absyn.CREF_IDENT(id, subs) => begin
+        Absyn.CREF_IDENT(id, subs)
       end
 
-      CREF_QUAL(_, _, cref) => begin
+      Absyn.CREF_QUAL(_, _, cref) => begin
         @assign cref_1 = crefGetLastIdent(cref)
         cref_1
       end
 
-      CREF_FULLYQUALIFIED(cref) => begin
+      Absyn.CREF_FULLYQUALIFIED(cref) => begin
         @assign cref_1 = crefGetLastIdent(cref)
         cref_1
       end
@@ -4051,27 +4051,27 @@ function crefGetLastIdent(inComponentRef::ComponentRef)::ComponentRef
   return outComponentRef
 end
 
-""" #= Strips the last subscripts of a ComponentRef =#"""
-function crefStripLastSubs(inComponentRef::ComponentRef)::ComponentRef
-  local outComponentRef::ComponentRef
+""" #= Strips the last subscripts of a Absyn.ComponentRef =#"""
+function crefStripLastSubs(inComponentRef::Absyn.ComponentRef)::Absyn.ComponentRef
+  local outComponentRef::Absyn.ComponentRef
 
   @assign outComponentRef = begin
-    local id::Ident
-    local subs::List{Subscript}
-    local s::List{Subscript}
-    local cr_1::ComponentRef
-    local cr::ComponentRef
+    local id::Absyn.Ident
+    local subs::List{Absyn.Subscript}
+    local s::List{Absyn.Subscript}
+    local cr_1::Absyn.ComponentRef
+    local cr::Absyn.ComponentRef
     @match inComponentRef begin
-      CREF_IDENT(name = id) => begin
-        CREF_IDENT(id, nil)
+      Absyn.CREF_IDENT(name = id) => begin
+        Absyn.CREF_IDENT(id, nil)
       end
 
-      CREF_QUAL(name = id, subscripts = s, componentRef = cr) => begin
+      Absyn.CREF_QUAL(name = id, subscripts = s, componentRef = cr) => begin
         @assign cr_1 = crefStripLastSubs(cr)
-        CREF_QUAL(id, s, cr_1)
+        Absyn.CREF_QUAL(id, s, cr_1)
       end
 
-      CREF_FULLYQUALIFIED(componentRef = cr) => begin
+      Absyn.CREF_FULLYQUALIFIED(componentRef = cr) => begin
         @assign cr_1 = crefStripLastSubs(cr)
         crefMakeFullyQualified(cr_1)
       end
@@ -4082,29 +4082,29 @@ end
 
 """ #= This function joins two ComponentRefs. =#"""
 function joinCrefs(
-  inComponentRef1::ComponentRef,
-  inComponentRef2::ComponentRef,
-)::ComponentRef
-  local outComponentRef::ComponentRef
+  inComponentRef1::Absyn.ComponentRef,
+  inComponentRef2::Absyn.ComponentRef,
+)::Absyn.ComponentRef
+  local outComponentRef::Absyn.ComponentRef
 
   @assign outComponentRef = begin
-    local id::Ident
-    local sub::List{Subscript}
-    local cr2::ComponentRef
-    local cr_1::ComponentRef
-    local cr::ComponentRef
+    local id::Absyn.Ident
+    local sub::List{Absyn.Subscript}
+    local cr2::Absyn.ComponentRef
+    local cr_1::Absyn.ComponentRef
+    local cr::Absyn.ComponentRef
     @match (inComponentRef1, inComponentRef2) begin
-      (CREF_IDENT(name = id, subscripts = sub), cr2) => begin
-        @shouldFail @match CREF_FULLYQUALIFIED() = cr2
-        CREF_QUAL(id, sub, cr2)
+      (Absyn.CREF_IDENT(name = id, subscripts = sub), cr2) => begin
+        @shouldFail @match Absyn.CREF_FULLYQUALIFIED() = cr2
+        Absyn.CREF_QUAL(id, sub, cr2)
       end
 
-      (CREF_QUAL(name = id, subscripts = sub, componentRef = cr), cr2) => begin
+      (Absyn.CREF_QUAL(name = id, subscripts = sub, componentRef = cr), cr2) => begin
         @assign cr_1 = joinCrefs(cr, cr2)
-        CREF_QUAL(id, sub, cr_1)
+        Absyn.CREF_QUAL(id, sub, cr_1)
       end
 
-      (CREF_FULLYQUALIFIED(componentRef = cr), cr2) => begin
+      (Absyn.CREF_FULLYQUALIFIED(componentRef = cr), cr2) => begin
         @assign cr_1 = joinCrefs(cr, cr2)
         crefMakeFullyQualified(cr_1)
       end
@@ -4113,21 +4113,21 @@ function joinCrefs(
   return outComponentRef
 end
 
-""" #= Returns first ident from a ComponentRef =#"""
-function crefFirstIdent(inCref::ComponentRef)::Ident
-  local outIdent::Ident
+""" #= Returns first ident from a Absyn.ComponentRef =#"""
+function crefFirstIdent(inCref::Absyn.ComponentRef)::Absyn.Ident
+  local outIdent::Absyn.Ident
 
   @assign outIdent = begin
     @match inCref begin
-      CREF_IDENT(__) => begin
+      Absyn.CREF_IDENT(__) => begin
         inCref.name
       end
 
-      CREF_QUAL(__) => begin
+      Absyn.CREF_QUAL(__) => begin
         inCref.name
       end
 
-      CREF_FULLYQUALIFIED(__) => begin
+      Absyn.CREF_FULLYQUALIFIED(__) => begin
         crefFirstIdent(inCref.componentRef)
       end
     end
@@ -4135,16 +4135,16 @@ function crefFirstIdent(inCref::ComponentRef)::Ident
   return outIdent
 end
 
-function crefSecondIdent(cref::ComponentRef)::Ident
-  local ident::Ident
+function crefSecondIdent(cref::Absyn.ComponentRef)::Absyn.Ident
+  local ident::Absyn.Ident
 
   @assign ident = begin
     @match cref begin
-      CREF_QUAL(__) => begin
+      Absyn.CREF_QUAL(__) => begin
         crefFirstIdent(cref.componentRef)
       end
 
-      CREF_FULLYQUALIFIED(__) => begin
+      Absyn.CREF_FULLYQUALIFIED(__) => begin
         crefSecondIdent(cref.componentRef)
       end
     end
@@ -4153,16 +4153,16 @@ function crefSecondIdent(cref::ComponentRef)::Ident
 end
 
 """ #= Returns the first part of a cref. =#"""
-function crefFirstCref(inCref::ComponentRef)::ComponentRef
-  local outCref::ComponentRef
+function crefFirstCref(inCref::Absyn.ComponentRef)::Absyn.ComponentRef
+  local outCref::Absyn.ComponentRef
 
   @assign outCref = begin
     @match inCref begin
-      CREF_QUAL(__) => begin
-        CREF_IDENT(inCref.name, inCref.subscripts)
+      Absyn.CREF_QUAL(__) => begin
+        Absyn.CREF_IDENT(inCref.name, inCref.subscripts)
       end
 
-      CREF_FULLYQUALIFIED(__) => begin
+      Absyn.CREF_FULLYQUALIFIED(__) => begin
         crefFirstCref(inCref.componentRef)
       end
 
@@ -4174,18 +4174,18 @@ function crefFirstCref(inCref::ComponentRef)::ComponentRef
   return outCref
 end
 
-""" #= Strip the first ident from a ComponentRef =#"""
-function crefStripFirst(inComponentRef::ComponentRef)::ComponentRef
-  local outComponentRef::ComponentRef
+""" #= Strip the first ident from a Absyn.ComponentRef =#"""
+function crefStripFirst(inComponentRef::Absyn.ComponentRef)::Absyn.ComponentRef
+  local outComponentRef::Absyn.ComponentRef
 
   @assign outComponentRef = begin
-    local cr::ComponentRef
+    local cr::Absyn.ComponentRef
     @match inComponentRef begin
-      CREF_QUAL(componentRef = cr) => begin
+      Absyn.CREF_QUAL(componentRef = cr) => begin
         cr
       end
 
-      CREF_FULLYQUALIFIED(componentRef = cr) => begin
+      Absyn.CREF_FULLYQUALIFIED(componentRef = cr) => begin
         crefStripFirst(cr)
       end
     end
@@ -4193,12 +4193,12 @@ function crefStripFirst(inComponentRef::ComponentRef)::ComponentRef
   return outComponentRef
 end
 
-function crefIsFullyQualified(inCref::ComponentRef)::Bool
+function crefIsFullyQualified(inCref::Absyn.ComponentRef)::Bool
   local outIsFullyQualified::Bool
 
   @assign outIsFullyQualified = begin
     @match inCref begin
-      CREF_FULLYQUALIFIED(__) => begin
+      Absyn.CREF_FULLYQUALIFIED(__) => begin
         true
       end
 
@@ -4211,17 +4211,17 @@ function crefIsFullyQualified(inCref::ComponentRef)::Bool
 end
 
 """ #= Makes a component reference fully qualified unless it already is. =#"""
-function crefMakeFullyQualified(inComponentRef::ComponentRef)::ComponentRef
-  local outComponentRef::ComponentRef
+function crefMakeFullyQualified(inComponentRef::Absyn.ComponentRef)::Absyn.ComponentRef
+  local outComponentRef::Absyn.ComponentRef
 
   @assign outComponentRef = begin
     @match inComponentRef begin
-      CREF_FULLYQUALIFIED(__) => begin
+      Absyn.CREF_FULLYQUALIFIED(__) => begin
         inComponentRef
       end
 
       _ => begin
-        CREF_FULLYQUALIFIED(inComponentRef)
+        Absyn.CREF_FULLYQUALIFIED(inComponentRef)
       end
     end
   end
@@ -4229,84 +4229,84 @@ function crefMakeFullyQualified(inComponentRef::ComponentRef)::ComponentRef
 end
 
 """ #= Maps a class restriction to the corresponding string for printing =#"""
-function restrString(inRestriction::Restriction)::String
+function restrString(inRestriction::Absyn.Restriction)::String
   local outString::String
 
   @assign outString = begin
     @match inRestriction begin
-      R_CLASS(__) => begin
-        "CLASS"
+      Absyn.R_CLASS(__) => begin
+        "Absyn.CLASS"
       end
 
-      R_OPTIMIZATION(__) => begin
+      Absyn.R_OPTIMIZATION(__) => begin
         "OPTIMIZATION"
       end
 
-      R_MODEL(__) => begin
+      Absyn.R_MODEL(__) => begin
         "MODEL"
       end
 
-      R_RECORD(__) => begin
+      Absyn.R_RECORD(__) => begin
         "RECORD"
       end
 
-      R_BLOCK(__) => begin
+      Absyn.R_BLOCK(__) => begin
         "BLOCK"
       end
 
-      R_CONNECTOR(__) => begin
+      Absyn.R_CONNECTOR(__) => begin
         "CONNECTOR"
       end
 
-      R_EXP_CONNECTOR(__) => begin
+      Absyn.R_EXP_CONNECTOR(__) => begin
         "EXPANDABLE CONNECTOR"
       end
 
-      R_TYPE(__) => begin
+      Absyn.R_TYPE(__) => begin
         "TYPE"
       end
 
-      R_PACKAGE(__) => begin
+      Absyn.R_PACKAGE(__) => begin
         "PACKAGE"
       end
 
-      R_FUNCTION(FR_NORMAL_FUNCTION(PURE(__))) => begin
+      Absyn.R_FUNCTION(Absyn.FR_NORMAL_FUNCTION(Absyn.PURE(__))) => begin
         "PURE FUNCTION"
       end
 
-      R_FUNCTION(FR_NORMAL_FUNCTION(IMPURE(__))) => begin
+      Absyn.R_FUNCTION(Absyn.FR_NORMAL_FUNCTION(Absyn.IMPURE(__))) => begin
         "IMPURE FUNCTION"
       end
 
-      R_FUNCTION(FR_NORMAL_FUNCTION(NO_PURITY(__))) => begin
+      Absyn.R_FUNCTION(Absyn.FR_NORMAL_FUNCTION(Absyn.NO_PURITY(__))) => begin
         "FUNCTION"
       end
 
-      R_FUNCTION(FR_OPERATOR_FUNCTION(__)) => begin
+      Absyn.R_FUNCTION(Absyn.FR_OPERATOR_FUNCTION(__)) => begin
         "OPERATOR FUNCTION"
       end
 
-      R_PREDEFINED_INTEGER(__) => begin
+      Absyn.R_PREDEFINED_INTEGER(__) => begin
         "PREDEFINED_INT"
       end
 
-      R_PREDEFINED_REAL(__) => begin
+      Absyn.R_PREDEFINED_REAL(__) => begin
         "PREDEFINED_REAL"
       end
 
-      R_PREDEFINED_STRING(__) => begin
+      Absyn.R_PREDEFINED_STRING(__) => begin
         "PREDEFINED_STRING"
       end
 
-      R_PREDEFINED_BOOLEAN(__) => begin
+      Absyn.R_PREDEFINED_BOOLEAN(__) => begin
         "PREDEFINED_BOOL"
       end
 
-      R_PREDEFINED_CLOCK(__) => begin
+      Absyn.R_PREDEFINED_CLOCK(__) => begin
         "PREDEFINED_CLOCK"
       end
 
-      R_UNIONTYPE(__) => begin
+      Absyn.R_UNIONTYPE(__) => begin
         "UNIONTYPE"
       end
 
@@ -4322,35 +4322,35 @@ function restrString(inRestriction::Restriction)::String
 end
 
 """ #= Returns the path (=name) of the last class in a program =#"""
-function lastClassname(inProgram::Program)::Path
-  local outPath::Path
+function lastClassname(inProgram::Absyn.Program)::Absyn.Path
+  local outPath::Absyn.Path
 
-  local lst::List{Class}
-  local id::Ident
+  local lst::List{Absyn.Class}
+  local id::Absyn.Ident
 
-  @match PROGRAM(classes = lst) = inProgram
-  @match CLASS(name = id) = ListUtil.last(lst)
-  @assign outPath = IDENT(id)
+  @match Absyn.PROGRAM(classes = lst) = inProgram
+  @match Absyn.CLASS(name = id) = ListUtil.last(lst)
+  @assign outPath = Absyn.IDENT(id)
   return outPath
 end
 
 """ #= Retrieves the filename where the class is stored. =#"""
-function classFilename(inClass::Class)::String
+function classFilename(inClass::Absyn.Class)::String
   local outFilename::String
 
-  @match CLASS(info = SOURCEINFO(fileName = outFilename)) = inClass
+  @match Absyn.CLASS(info = SOURCEINFO(fileName = outFilename)) = inClass
   return outFilename
 end
 
 """ #= Sets the filename where the class is stored. =#"""
-function setClassFilename(inClass::Class, fileName::String)::Class
-  local outClass::Class
+function setClassFilename(inClass::Absyn.Class, fileName::String)::Absyn.Class
+  local outClass::Absyn.Class
 
   @assign outClass = begin
     local info::SourceInfo
-    local cl::Class
+    local cl::Absyn.Class
     @match inClass begin
-      cl && CLASS(info = info && SOURCEINFO(__)) => begin
+      cl && Absyn.CLASS(info = info && SOURCEINFO(__)) => begin
         @assign info.fileName = fileName
         @assign cl.info = info
         cl
@@ -4362,12 +4362,12 @@ end
 
 """ #= author: BZ
   Sets the name of the class =#"""
-function setClassName(inClass::Class, newName::String)::Class
-  local outClass::Class = inClass
+function setClassName(inClass::Absyn.Class, newName::String)::Absyn.Class
+  local outClass::Absyn.Class = inClass
 
   @assign outClass = begin
     @match outClass begin
-      CLASS(__) => begin
+      Absyn.CLASS(__) => begin
         @assign outClass.name = newName
         outClass
       end
@@ -4376,12 +4376,12 @@ function setClassName(inClass::Class, newName::String)::Class
   return outClass
 end
 
-function setClassBody(inClass::Class, inBody::ClassDef)::Class
-  local outClass::Class = inClass
+function setClassBody(inClass::Absyn.Class, inBody::Absyn.ClassDef)::Absyn.Class
+  local outClass::Absyn.Class = inClass
 
   @assign outClass = begin
     @match outClass begin
-      CLASS(__) => begin
+      Absyn.CLASS(__) => begin
         @assign outClass.body = inBody
         outClass
       end
@@ -4390,29 +4390,29 @@ function setClassBody(inClass::Class, inBody::ClassDef)::Class
   return outClass
 end
 
-""" #=  Checks if the name of a ComponentRef is
- equal to the name of another ComponentRef, including subscripts.
+""" #=  Checks if the name of a Absyn.ComponentRef is
+ equal to the name of another Absyn.ComponentRef, including subscripts.
  See also crefEqualNoSubs. =#"""
-function crefEqual(iCr1::ComponentRef, iCr2::ComponentRef)::Bool
+function crefEqual(iCr1::Absyn.ComponentRef, iCr2::Absyn.ComponentRef)::Bool
   local outBoolean::Bool
 
   @assign outBoolean = begin
-    local id::Ident
-    local id2::Ident
-    local ss1::List{Subscript}
-    local ss2::List{Subscript}
-    local cr1::ComponentRef
-    local cr2::ComponentRef
+    local id::Absyn.Ident
+    local id2::Absyn.Ident
+    local ss1::List{Absyn.Subscript}
+    local ss2::List{Absyn.Subscript}
+    local cr1::Absyn.ComponentRef
+    local cr2::Absyn.ComponentRef
     @matchcontinue (iCr1, iCr2) begin
-      (CREF_IDENT(name = id, subscripts = ss1), CREF_IDENT(name = id2, subscripts = ss2)) => begin
+      (Absyn.CREF_IDENT(name = id, subscripts = ss1), Absyn.CREF_IDENT(name = id2, subscripts = ss2)) => begin
         @match true = stringEq(id, id2)
         @match true = subscriptsEqual(ss1, ss2)
         true
       end
 
       (
-        CREF_QUAL(name = id, subscripts = ss1, componentRef = cr1),
-        CREF_QUAL(name = id2, subscripts = ss2, componentRef = cr2),
+        Absyn.CREF_QUAL(name = id, subscripts = ss1, componentRef = cr1),
+        Absyn.CREF_QUAL(name = id2, subscripts = ss2, componentRef = cr2),
       ) => begin
         @match true = stringEq(id, id2)
         @match true = subscriptsEqual(ss1, ss2)
@@ -4420,7 +4420,7 @@ function crefEqual(iCr1::ComponentRef, iCr2::ComponentRef)::Bool
         true
       end
 
-      (CREF_FULLYQUALIFIED(componentRef = cr1), CREF_FULLYQUALIFIED(componentRef = cr2)) => begin
+      (Absyn.CREF_FULLYQUALIFIED(componentRef = cr1), Absyn.CREF_FULLYQUALIFIED(componentRef = cr2)) => begin
         crefEqual(cr1, cr2)
       end
 
@@ -4435,25 +4435,25 @@ end
 """ #= @author: adrpo
    a.b, a -> true
    b.c, a -> false =#"""
-function crefFirstEqual(iCr1::ComponentRef, iCr2::ComponentRef)::Bool
+function crefFirstEqual(iCr1::Absyn.ComponentRef, iCr2::Absyn.ComponentRef)::Bool
   local outBoolean::Bool
 
   @assign outBoolean = stringEq(crefFirstIdent(iCr1), crefFirstIdent(iCr2))
   return outBoolean
 end
 
-function subscriptEqual(inSubscript1::Subscript, inSubscript2::Subscript)::Bool
+function subscriptEqual(inSubscript1::Absyn.Subscript, inSubscript2::Absyn.Subscript)::Bool
   local outIsEqual::Bool
 
   @assign outIsEqual = begin
-    local e1::Exp
-    local e2::Exp
+    local e1::Absyn.Exp
+    local e2::Absyn.Exp
     @match (inSubscript1, inSubscript2) begin
-      (NOSUB(__), NOSUB(__)) => begin
+      (Absyn.NOSUB(__), Absyn.NOSUB(__)) => begin
         true
       end
 
-      (SUBSCRIPT(e1), SUBSCRIPT(e2)) => begin
+      (Absyn.SUBSCRIPT(e1), Absyn.SUBSCRIPT(e2)) => begin
         expEqual(e1, e2)
       end
 
@@ -4466,33 +4466,33 @@ function subscriptEqual(inSubscript1::Subscript, inSubscript2::Subscript)::Bool
 end
 
 """ #= Checks if two subscript lists are equal. =#"""
-function subscriptsEqual(inSubList1::List{<:Subscript}, inSubList2::List{<:Subscript})::Bool
+function subscriptsEqual(inSubList1::List{<:Absyn.Subscript}, inSubList2::List{<:Absyn.Subscript})::Bool
   local outIsEqual::Bool
 
   @assign outIsEqual = ListUtil.isEqualOnTrue(inSubList1, inSubList2, subscriptEqual)
   return outIsEqual
 end
 
-""" #= Checks if the name of a ComponentRef is equal to the name
-   of another ComponentRef without checking subscripts.
+""" #= Checks if the name of a Absyn.ComponentRef is equal to the name
+   of another Absyn.ComponentRef without checking subscripts.
    See also crefEqual. =#"""
-function crefEqualNoSubs(cr1::ComponentRef, cr2::ComponentRef)::Bool
+function crefEqualNoSubs(cr1::Absyn.ComponentRef, cr2::Absyn.ComponentRef)::Bool
   local outBoolean::Bool
 
   @assign outBoolean = begin
-    local rest1::ComponentRef
-    local rest2::ComponentRef
-    local id::Ident
-    local id2::Ident
+    local rest1::Absyn.ComponentRef
+    local rest2::Absyn.ComponentRef
+    local id::Absyn.Ident
+    local id2::Absyn.Ident
     @matchcontinue (cr1, cr2) begin
-      (CREF_IDENT(name = id), CREF_IDENT(name = id2)) => begin
+      (Absyn.CREF_IDENT(name = id), Absyn.CREF_IDENT(name = id2)) => begin
         @match true = stringEq(id, id2)
         true
       end
 
       (
-        CREF_QUAL(name = id, componentRef = rest1),
-        CREF_QUAL(name = id2, componentRef = rest2),
+        Absyn.CREF_QUAL(name = id, componentRef = rest1),
+        Absyn.CREF_QUAL(name = id2, componentRef = rest2),
       ) => begin
         @match true = stringEq(id, id2)
         @match true = crefEqualNoSubs(rest1, rest2)
@@ -4500,8 +4500,8 @@ function crefEqualNoSubs(cr1::ComponentRef, cr2::ComponentRef)::Bool
       end
 
       (
-        CREF_FULLYQUALIFIED(componentRef = rest1),
-        CREF_FULLYQUALIFIED(componentRef = rest2),
+        Absyn.CREF_FULLYQUALIFIED(componentRef = rest1),
+        Absyn.CREF_FULLYQUALIFIED(componentRef = rest2),
       ) => begin
         crefEqualNoSubs(rest1, rest2)
       end
@@ -4515,7 +4515,7 @@ function crefEqualNoSubs(cr1::ComponentRef, cr2::ComponentRef)::Bool
 end
 
 """ #= checks if the provided parameter is a package or not =#"""
-function isPackageRestriction(inRestriction::Restriction)::Bool
+function isPackageRestriction(inRestriction::Absyn.Restriction)::Bool
   local outIsPackage::Bool
 
   @assign outIsPackage = begin
@@ -4533,7 +4533,7 @@ function isPackageRestriction(inRestriction::Restriction)::Bool
 end
 
 """ #= checks if restriction is a function or not =#"""
-function isFunctionRestriction(inRestriction::Restriction)::Bool
+function isFunctionRestriction(inRestriction::Absyn.Restriction)::Bool
   local outIsFunction::Bool
 
   @assign outIsFunction = begin
@@ -4551,13 +4551,13 @@ function isFunctionRestriction(inRestriction::Restriction)::Bool
 end
 
 """ #= Returns true if two expressions are equal =#"""
-function expEqual(exp1::Exp, exp2::Exp)::Bool
+function expEqual(exp1::Absyn.Exp, exp2::Absyn.Exp)::Bool
   local equal::Bool
 
   @assign equal = begin
     local b::Bool
-    local x::Exp
-    local y::Exp
+    local x::Absyn.Exp
+    local y::Absyn.Exp
     local i::Integer
     local r::String
     #=  real vs. integer
@@ -4584,16 +4584,16 @@ function expEqual(exp1::Exp, exp2::Exp)::Bool
 end
 
 """ #= Returns true if two each attributes are equal =#"""
-function eachEqual(each1::Each, each2::Each)::Bool
+function eachEqual(each1::Absyn.Each, each2::Absyn.Each)::Bool
   local equal::Bool
 
   @assign equal = begin
     @match (each1, each2) begin
-      (NON_EACH(__), NON_EACH(__)) => begin
+      (Absyn.NON_EACH(__), Absyn.NON_EACH(__)) => begin
         true
       end
 
-      (EACH(__), EACH(__)) => begin
+      (Absyn.EACH(__), Absyn.EACH(__)) => begin
         true
       end
 
@@ -4605,15 +4605,15 @@ function eachEqual(each1::Each, each2::Each)::Bool
   return equal
 end
 
-""" #= Returns true if two FunctionArgs are equal =#"""
-function functionArgsEqual(args1::FunctionArgs, args2::FunctionArgs)::Bool
+""" #= Returns true if two Absyn.FunctionArgs are equal =#"""
+function functionArgsEqual(args1::Absyn.FunctionArgs, args2::Absyn.FunctionArgs)::Bool
   local equal::Bool
 
   @assign equal = begin
-    local expl1::List{Exp}
-    local expl2::List{Exp}
+    local expl1::List{Absyn.Exp}
+    local expl2::List{Absyn.Exp}
     @match (args1, args2) begin
-      (FUNCTIONARGS(args = expl1), FUNCTIONARGS(args = expl2)) => begin
+      (Absyn.FUNCTIONARGS(args = expl1), Absyn.FUNCTIONARGS(args = expl2)) => begin
         ListUtil.isEqualOnTrue(expl1, expl2, expEqual)
       end
 
@@ -4627,10 +4627,10 @@ end
 
 """ #= author: adrpo
   gets the name of the class. =#"""
-function getClassName(inClass::Class)::String
+function getClassName(inClass::Absyn.Class)::String
   local outName::String
 
-  @match CLASS(name = outName) = inClass
+  @match Absyn.CLASS(name = outName) = inClass
   return outName
 end
 
@@ -4640,7 +4640,7 @@ IteratorIndexedCref = Tuple
    iterator, and return a list of cref-Integer tuples, where the cref is the
    index of the subscript. =#"""
 function findIteratorIndexedCrefs(
-  inExp::Exp,
+  inExp::Absyn.Exp,
   inIterator::String,
   inCrefs::List{<:IteratorIndexedCref} = nil,
 )::List{IteratorIndexedCref}
@@ -4663,17 +4663,17 @@ end
 """ #= Traversal function used by deduceReductionIterationRange. Used to find crefs
    which are subscripted by a given iterator. =#"""
 function findIteratorIndexedCrefs_traverser(
-  inExp::Exp,
+  inExp::Absyn.Exp,
   inCrefs::List{<:IteratorIndexedCref},
   inIterator::String,
-)::Tuple{Exp, List{IteratorIndexedCref}}
+)::Tuple{Absyn.Exp, List{IteratorIndexedCref}}
   local outCrefs::List{IteratorIndexedCref}
-  local outExp::Exp = inExp
+  local outExp::Absyn.Exp = inExp
 
   @assign outCrefs = begin
-    local cref::ComponentRef
+    local cref::Absyn.ComponentRef
     @match inExp begin
-      CREF(componentRef = cref) => begin
+      Absyn.CREF(componentRef = cref) => begin
         getIteratorIndexedCrefs(cref, inIterator, inCrefs)
       end
 
@@ -4692,8 +4692,8 @@ function iteratorIndexedCrefsEqual(
 )::Bool
   local outEqual::Bool
 
-  local cr1::ComponentRef
-  local cr2::ComponentRef
+  local cr1::Absyn.ComponentRef
+  local cr2::Absyn.ComponentRef
   local idx1::Integer
   local idx2::Integer
 
@@ -4710,22 +4710,22 @@ end
    iterator i:
      a[i] => (a, 1), b[1, i] => (b, 2), c[i+1] => (), d[2].e[i] => (d[2].e, 1) =#"""
 function getIteratorIndexedCrefs(
-  inCref::ComponentRef,
+  inCref::Absyn.ComponentRef,
   inIterator::String,
   inCrefs::List{<:IteratorIndexedCref},
 )::List{IteratorIndexedCref}
   local outCrefs::List{IteratorIndexedCref} = inCrefs
 
-  local crefs::List{Tuple{ComponentRef, Integer}}
+  local crefs::List{Tuple{Absyn.ComponentRef, Integer}}
 
   @assign outCrefs = begin
-    local subs::List{Subscript}
+    local subs::List{Absyn.Subscript}
     local idx::Integer
     local name::String
     local id::String
-    local cref::ComponentRef
+    local cref::Absyn.ComponentRef
     @match inCref begin
-      CREF_IDENT(name = id, subscripts = subs) => begin
+      Absyn.CREF_IDENT(name = id, subscripts = subs) => begin
         #=  For each subscript, check if the subscript consists of only the
         =#
         #=  iterator we're looking for.
@@ -4734,13 +4734,13 @@ function getIteratorIndexedCrefs(
         for sub in subs
           @assign _ = begin
             @match sub begin
-              SUBSCRIPT(
-                subscript = CREF(
-                  componentRef = CREF_IDENT(name = name, subscripts = nil()),
+              Absyn.SUBSCRIPT(
+                subscript = Absyn.CREF(
+                  componentRef = Absyn.CREF_IDENT(name = name, subscripts = nil()),
                 ),
               ) => begin
                 if name == inIterator
-                  @assign outCrefs = _cons((CREF_IDENT(id, nil), idx), outCrefs)
+                  @assign outCrefs = _cons((Absyn.CREF_IDENT(id, nil), idx), outCrefs)
                 end
                 ()
               end
@@ -4755,7 +4755,7 @@ function getIteratorIndexedCrefs(
         outCrefs
       end
 
-      CREF_QUAL(name = id, subscripts = subs, componentRef = cref) => begin
+      Absyn.CREF_QUAL(name = id, subscripts = subs, componentRef = cref) => begin
         @assign crefs = getIteratorIndexedCrefs(cref, inIterator, nil)
         #=  Append the prefix from the qualified cref to any matches, and add
         =#
@@ -4763,18 +4763,18 @@ function getIteratorIndexedCrefs(
         =#
         for cr in crefs
           @assign (cref, idx) = cr
-          @assign outCrefs = _cons((CREF_QUAL(id, subs, cref), idx), outCrefs)
+          @assign outCrefs = _cons((Absyn.CREF_QUAL(id, subs, cref), idx), outCrefs)
         end
-        getIteratorIndexedCrefs(CREF_IDENT(id, subs), inIterator, outCrefs)
+        getIteratorIndexedCrefs(Absyn.CREF_IDENT(id, subs), inIterator, outCrefs)
       end
 
-      CREF_FULLYQUALIFIED(componentRef = cref) => begin
+      Absyn.CREF_FULLYQUALIFIED(componentRef = cref) => begin
         @assign crefs = getIteratorIndexedCrefs(cref, inIterator, nil)
         #=  Make any matches fully qualified, and add them to the result list.
         =#
         for cr in crefs
           @assign (cref, idx) = cr
-          @assign outCrefs = _cons((CREF_FULLYQUALIFIED(cref), idx), outCrefs)
+          @assign outCrefs = _cons((Absyn.CREF_FULLYQUALIFIED(cref), idx), outCrefs)
         end
         outCrefs
       end
@@ -4787,26 +4787,26 @@ function getIteratorIndexedCrefs(
   return outCrefs
 end
 
-function pathReplaceIdent(path::Path, last::String)::Path
-  local out::Path
+function pathReplaceIdent(path::Absyn.Path, last::String)::Absyn.Path
+  local out::Absyn.Path
 
   @assign out = begin
-    local p::Path
+    local p::Absyn.Path
     local n::String
     local s::String
     @match (path, last) begin
-      (FULLYQUALIFIED(p), s) => begin
+      (Absyn.FULLYQUALIFIED(p), s) => begin
         @assign p = pathReplaceIdent(p, s)
-        FULLYQUALIFIED(p)
+        Absyn.FULLYQUALIFIED(p)
       end
 
-      (QUALIFIED(n, p), s) => begin
+      (Absyn.QUALIFIED(n, p), s) => begin
         @assign p = pathReplaceIdent(p, s)
-        QUALIFIED(n, p)
+        Absyn.QUALIFIED(n, p)
       end
 
-      (IDENT(__), s) => begin
-        IDENT(s)
+      (Absyn.IDENT(__), s) => begin
+        Absyn.IDENT(s)
       end
     end
   end
@@ -4821,18 +4821,18 @@ function getFileNameFromInfo(inInfo::SourceInfo)::String
 end
 
 """ #= @author: adrpo
-  this function returns true if the given InnerOuter
-  is one of INNER_OUTER() or OUTER() =#"""
-function isOuter(io::InnerOuter)::Bool
+  this function returns true if the given Absyn.InnerOuter
+  is one of Absyn.INNER_OUTER() or Absyn.OUTER() =#"""
+function isOuter(io::Absyn.InnerOuter)::Bool
   local isItAnOuter::Bool
 
   @assign isItAnOuter = begin
     @match io begin
-      INNER_OUTER(__) => begin
+      Absyn.INNER_OUTER(__) => begin
         true
       end
 
-      OUTER(__) => begin
+      Absyn.OUTER(__) => begin
         true
       end
 
@@ -4845,18 +4845,18 @@ function isOuter(io::InnerOuter)::Bool
 end
 
 """ #= @author: adrpo
-  this function returns true if the given InnerOuter
-  is one of INNER_OUTER() or INNER() =#"""
-function isInner(io::InnerOuter)::Bool
+  this function returns true if the given Absyn.InnerOuter
+  is one of Absyn.INNER_OUTER() or Absyn.INNER() =#"""
+function isInner(io::Absyn.InnerOuter)::Bool
   local isItAnInner::Bool
 
   @assign isItAnInner = begin
     @match io begin
-      INNER_OUTER(__) => begin
+      Absyn.INNER_OUTER(__) => begin
         true
       end
 
-      INNER(__) => begin
+      Absyn.INNER(__) => begin
         true
       end
 
@@ -4868,13 +4868,13 @@ function isInner(io::InnerOuter)::Bool
   return isItAnInner
 end
 
-""" #= Returns true if the InnerOuter is INNER, false otherwise. =#"""
-function isOnlyInner(inIO::InnerOuter)::Bool
+""" #= Returns true if the Absyn.InnerOuter is Absyn.INNER, false otherwise. =#"""
+function isOnlyInner(inIO::Absyn.InnerOuter)::Bool
   local outOnlyInner::Bool
 
   @assign outOnlyInner = begin
     @match inIO begin
-      INNER(__) => begin
+      Absyn.INNER(__) => begin
         true
       end
 
@@ -4886,13 +4886,13 @@ function isOnlyInner(inIO::InnerOuter)::Bool
   return outOnlyInner
 end
 
-""" #= Returns true if the InnerOuter is OUTER, false otherwise. =#"""
-function isOnlyOuter(inIO::InnerOuter)::Bool
+""" #= Returns true if the Absyn.InnerOuter is Absyn.OUTER, false otherwise. =#"""
+function isOnlyOuter(inIO::Absyn.InnerOuter)::Bool
   local outOnlyOuter::Bool
 
   @assign outOnlyOuter = begin
     @match inIO begin
-      OUTER(__) => begin
+      Absyn.OUTER(__) => begin
         true
       end
 
@@ -4904,12 +4904,12 @@ function isOnlyOuter(inIO::InnerOuter)::Bool
   return outOnlyOuter
 end
 
-function isInnerOuter(inIO::InnerOuter)::Bool
+function isInnerOuter(inIO::Absyn.InnerOuter)::Bool
   local outIsInnerOuter::Bool
 
   @assign outIsInnerOuter = begin
     @match inIO begin
-      INNER_OUTER(__) => begin
+      Absyn.INNER_OUTER(__) => begin
         true
       end
 
@@ -4921,12 +4921,12 @@ function isInnerOuter(inIO::InnerOuter)::Bool
   return outIsInnerOuter
 end
 
-function isNotInnerOuter(inIO::InnerOuter)::Bool
+function isNotInnerOuter(inIO::Absyn.InnerOuter)::Bool
   local outIsNotInnerOuter::Bool
 
   @assign outIsNotInnerOuter = begin
     @match inIO begin
-      NOT_INNER_OUTER(__) => begin
+      Absyn.NOT_INNER_OUTER(__) => begin
         true
       end
 
@@ -4938,25 +4938,25 @@ function isNotInnerOuter(inIO::InnerOuter)::Bool
   return outIsNotInnerOuter
 end
 
-""" #= Returns true if two InnerOuter's are equal =#"""
-function innerOuterEqual(io1::InnerOuter, io2::InnerOuter)::Bool
+""" #= Returns true if two Absyn.InnerOuter's are equal =#"""
+function innerOuterEqual(io1::Absyn.InnerOuter, io2::Absyn.InnerOuter)::Bool
   local res::Bool
 
   @assign res = begin
     @match (io1, io2) begin
-      (INNER(__), INNER(__)) => begin
+      (Absyn.INNER(__), Absyn.INNER(__)) => begin
         true
       end
 
-      (OUTER(__), OUTER(__)) => begin
+      (Absyn.OUTER(__), Absyn.OUTER(__)) => begin
         true
       end
 
-      (INNER_OUTER(__), INNER_OUTER(__)) => begin
+      (Absyn.INNER_OUTER(__), Absyn.INNER_OUTER(__)) => begin
         true
       end
 
-      (NOT_INNER_OUTER(__), NOT_INNER_OUTER(__)) => begin
+      (Absyn.NOT_INNER_OUTER(__), Absyn.NOT_INNER_OUTER(__)) => begin
         true
       end
 
@@ -4969,17 +4969,17 @@ function innerOuterEqual(io1::InnerOuter, io2::InnerOuter)::Bool
 end
 
 """ #= Makes a path fully qualified unless it already is. =#"""
-function makeFullyQualified(inPath::Path)::Path
-  local outPath::Path
+function makeFullyQualified(inPath::Absyn.Path)::Absyn.Path
+  local outPath::Absyn.Path
 
   @assign outPath = begin
     @match inPath begin
-      FULLYQUALIFIED(__) => begin
+      Absyn.FULLYQUALIFIED(__) => begin
         inPath
       end
 
       _ => begin
-        FULLYQUALIFIED(inPath)
+        Absyn.FULLYQUALIFIED(inPath)
       end
     end
   end
@@ -4987,13 +4987,13 @@ function makeFullyQualified(inPath::Path)::Path
 end
 
 """ #= Makes a path not fully qualified unless it already is. =#"""
-function makeNotFullyQualified(inPath::Path)::Path
-  local outPath::Path
+function makeNotFullyQualified(inPath::Absyn.Path)::Absyn.Path
+  local outPath::Absyn.Path
 
   @assign outPath = begin
-    local path::Path
+    local path::Absyn.Path
     @match inPath begin
-      FULLYQUALIFIED(path) => begin
+      Absyn.FULLYQUALIFIED(path) => begin
         path
       end
 
@@ -5006,27 +5006,27 @@ function makeNotFullyQualified(inPath::Path)::Path
 end
 
 """ #= Compares two import elements.  =#"""
-function importEqual(im1::Import, im2::Import)::Bool
+function importEqual(im1::Absyn.Import, im2::Absyn.Import)::Bool
   local outBoolean::Bool
 
   @assign outBoolean = begin
-    local id::Ident
-    local id2::Ident
-    local p1::Path
-    local p2::Path
+    local id::Absyn.Ident
+    local id2::Absyn.Ident
+    local p1::Absyn.Path
+    local p2::Absyn.Path
     @matchcontinue (im1, im2) begin
-      (NAMED_IMPORT(name = id, path = p1), NAMED_IMPORT(name = id2, path = p2)) => begin
+      (Absyn.NAMED_IMPORT(name = id, path = p1), Absyn.NAMED_IMPORT(name = id2, path = p2)) => begin
         @match true = stringEq(id, id2)
         @match true = pathEqual(p1, p2)
         true
       end
 
-      (QUAL_IMPORT(path = p1), QUAL_IMPORT(path = p2)) => begin
+      (Absyn.QUAL_IMPORT(path = p1), Absyn.QUAL_IMPORT(path = p2)) => begin
         @match true = pathEqual(p1, p2)
         true
       end
 
-      (UNQUAL_IMPORT(path = p1), UNQUAL_IMPORT(path = p2)) => begin
+      (Absyn.UNQUAL_IMPORT(path = p1), Absyn.UNQUAL_IMPORT(path = p2)) => begin
         @match true = pathEqual(p1, p2)
         true
       end
@@ -5040,30 +5040,30 @@ function importEqual(im1::Import, im2::Import)::Bool
 end
 
 """ #= Transforms an if-expression to canonical form (without else-if branches) =#"""
-function canonIfExp(inExp::Exp)::Exp
-  local outExp::Exp
+function canonIfExp(inExp::Absyn.Exp)::Absyn.Exp
+  local outExp::Absyn.Exp
 
   @assign outExp = begin
-    local cond::Exp
-    local tb::Exp
-    local eb::Exp
-    local ei_cond::Exp
-    local ei_tb::Exp
-    local e::Exp
-    local eib::List{Tuple{Exp, Exp}}
+    local cond::Absyn.Exp
+    local tb::Absyn.Exp
+    local eb::Absyn.Exp
+    local ei_cond::Absyn.Exp
+    local ei_tb::Absyn.Exp
+    local e::Absyn.Exp
+    local eib::List{Tuple{Absyn.Exp, Absyn.Exp}}
     @match inExp begin
-      IFEXP(elseIfBranch = nil()) => begin
+      Absyn.IFEXP(elseIfBranch = nil()) => begin
         inExp
       end
 
-      IFEXP(
+      Absyn.IFEXP(
         ifExp = cond,
         trueBranch = tb,
         elseBranch = eb,
         elseIfBranch = (ei_cond, ei_tb) <| eib,
       ) => begin
-        @assign e = canonIfExp(IFEXP(ei_cond, ei_tb, eb, eib))
-        IFEXP(cond, tb, e, nil)
+        @assign e = canonIfExp(Absyn.IFEXP(ei_cond, ei_tb, eb, eib))
+        Absyn.IFEXP(cond, tb, e, nil)
       end
     end
   end
@@ -5072,13 +5072,13 @@ end
 
 """ #= @author: adrpo
   This function checks if a modification only contains literal expressions =#"""
-function onlyLiteralsInAnnotationMod(inMod::List{<:ElementArg})::Bool
+function onlyLiteralsInAnnotationMod(inMod::List{<:Absyn.ElementArg})::Bool
   local onlyLiterals::Bool
 
   @assign onlyLiterals = begin
-    local dive::List{ElementArg}
-    local rest::List{ElementArg}
-    local eqMod::EqMod
+    local dive::List{Absyn.ElementArg}
+    local rest::List{Absyn.ElementArg}
+    local eqMod::Absyn.EqMod
     local b1::Bool
     local b2::Bool
     local b3::Bool
@@ -5088,12 +5088,12 @@ function onlyLiteralsInAnnotationMod(inMod::List{<:ElementArg})::Bool
         true
       end
 
-      MODIFICATION(path = IDENT(name = "interaction")) <| rest => begin
+      Absyn.MODIFICATION(path = Absyn.IDENT(name = "interaction")) <| rest => begin
         @assign b = onlyLiteralsInAnnotationMod(rest)
         b
       end
 
-      MODIFICATION(modification = SOME(CLASSMOD(dive, eqMod))) <| rest => begin
+      Absyn.MODIFICATION(modification = SOME(Absyn.CLASSMOD(dive, eqMod))) <| rest => begin
         @assign b1 = onlyLiteralsInEqMod(eqMod)
         @assign b2 = onlyLiteralsInAnnotationMod(dive)
         @assign b3 = onlyLiteralsInAnnotationMod(rest)
@@ -5122,19 +5122,19 @@ end
 
 """ #= @author: adrpo
   This function checks if an optional expression only contains literal expressions =#"""
-function onlyLiteralsInEqMod(eqMod::EqMod)::Bool
+function onlyLiteralsInEqMod(eqMod::Absyn.EqMod)::Bool
   local onlyLiterals::Bool
 
   @assign onlyLiterals = begin
-    local exp::Exp
-    local lst::List{Exp}
+    local exp::Absyn.Exp
+    local lst::List{Absyn.Exp}
     local b::Bool
     @match eqMod begin
-      NOMOD(__) => begin
+      Absyn.NOMOD(__) => begin
         true
       end
 
-      EQMOD(exp = exp) => begin
+      Absyn.EQMOD(exp = exp) => begin
         @match (_, _cons(lst, nil)) = traverseExpBidir(
           exp,
           onlyLiteralsInExpEnter,
@@ -5152,29 +5152,29 @@ function onlyLiteralsInEqMod(eqMod::EqMod)::Bool
 end
 
 """ #= @author: adrpo
- Visitor function for checking if Exp contains only literals, NO CREFS!
+ Visitor function for checking if Absyn.Exp contains only literals, NO CREFS!
  It returns an empty list if it doesn't contain any crefs! =#"""
 function onlyLiteralsInExpEnter(
-  inExp::Exp,
-  inLst::List{<:List{<:Exp}},
-)::Tuple{Exp, List{List{Exp}}}
-  local outLst::List{List{Exp}}
-  local outExp::Exp
+  inExp::Absyn.Exp,
+  inLst::List{<:List{<:Absyn.Exp}},
+)::Tuple{Absyn.Exp, List{List{Absyn.Exp}}}
+  local outLst::List{List{Absyn.Exp}}
+  local outExp::Absyn.Exp
 
   @assign (outExp, outLst) = begin
     local b::Bool
-    local e::Exp
-    local cr::ComponentRef
-    local lst::List{Exp}
-    local rest::List{List{Exp}}
+    local e::Absyn.Exp
+    local cr::Absyn.ComponentRef
+    local lst::List{Absyn.Exp}
+    local rest::List{List{Absyn.Exp}}
     local name::String
-    local fargs::FunctionArgs
+    local fargs::Absyn.FunctionArgs
     #=  first handle all graphic enumerations!
     =#
     #=  FillPattern.*, Smooth.*, TextAlignment.*, etc!
     =#
     @match (inExp, inLst) begin
-      (e && CREF(CREF_QUAL(name = name)), lst <| rest) => begin
+      (e && Absyn.CREF(Absyn.CREF_QUAL(name = name)), lst <| rest) => begin
         @assign b = listMember(
           name,
           list(
@@ -5191,7 +5191,7 @@ function onlyLiteralsInExpEnter(
         (inExp, _cons(lst, rest))
       end
 
-      (CREF(__), lst <| rest) => begin
+      (Absyn.CREF(__), lst <| rest) => begin
         (inExp, _cons(_cons(inExp, lst), rest))
       end
 
@@ -5208,21 +5208,21 @@ function onlyLiteralsInExpEnter(
 end
 
 """ #= @author: adrpo
- Visitor function for checking if Exp contains only literals, NO CREFS!
+ Visitor function for checking if Absyn.Exp contains only literals, NO CREFS!
  It returns an empty list if it doesn't contain any crefs! =#"""
 function onlyLiteralsInExpExit(
-  inExp::Exp,
-  inLst::List{<:List{<:Exp}},
-)::Tuple{Exp, List{List{Exp}}}
-  local outLst::List{List{Exp}}
-  local outExp::Exp
+  inExp::Absyn.Exp,
+  inLst::List{<:List{<:Absyn.Exp}},
+)::Tuple{Absyn.Exp, List{List{Absyn.Exp}}}
+  local outLst::List{List{Absyn.Exp}}
+  local outExp::Absyn.Exp
 
   @assign (outExp, outLst) = begin
-    local lst::List{List{Exp}}
+    local lst::List{List{Absyn.Exp}}
     #=  first handle DynamicSelect; pop the stack (ignore any crefs inside DynamicSelect)
     =#
     @match (inExp, inLst) begin
-      (CALL(function_ = CREF_IDENT(name = "DynamicSelect")), lst) => begin
+      (Absyn.CALL(function_ = Absyn.CREF_IDENT(name = "DynamicSelect")), lst) => begin
         (inExp, lst)
       end
 
@@ -5236,22 +5236,22 @@ function onlyLiteralsInExpExit(
   return (outExp, outLst)
 end
 
-function makeCons(e1::Exp, e2::Exp)::Exp
-  local e::Exp
+function makeCons(e1::Absyn.Exp, e2::Absyn.Exp)::Absyn.Exp
+  local e::Absyn.Exp
 
   @assign e = CONS(e1, e2)
   return e
 end
 
-function crefIdent(cr::ComponentRef)::String
+function crefIdent(cr::Absyn.ComponentRef)::String
   local str::String
 
-  @match CREF_IDENT(str, nil) = cr
+  @match Absyn.CREF_IDENT(str, nil) = cr
   return str
 end
 
-function unqotePathIdents(inPath::Path)::Path
-  local path::Path
+function unqotePathIdents(inPath::Absyn.Path)::Absyn.Path
+  local path::Absyn.Path
 
   @assign path =
     stringListPath(ListUtil.map(pathToStringList(inPath), System.unquoteIdentifier))
@@ -5260,13 +5260,13 @@ end
 
 """ #= If the given component reference is fully qualified this function removes the
   fully qualified qualifier, otherwise does nothing. =#"""
-function unqualifyCref(inCref::ComponentRef)::ComponentRef
-  local outCref::ComponentRef
+function unqualifyCref(inCref::Absyn.ComponentRef)::Absyn.ComponentRef
+  local outCref::Absyn.ComponentRef
 
   @assign outCref = begin
-    local cref::ComponentRef
+    local cref::Absyn.ComponentRef
     @match inCref begin
-      CREF_FULLYQUALIFIED(componentRef = cref) => begin
+      Absyn.CREF_FULLYQUALIFIED(componentRef = cref) => begin
         cref
       end
 
@@ -5278,12 +5278,12 @@ function unqualifyCref(inCref::ComponentRef)::ComponentRef
   return outCref
 end
 
-function pathIsFullyQualified(inPath::Path)::Bool
+function pathIsFullyQualified(inPath::Absyn.Path)::Bool
   local outIsQualified::Bool
 
   @assign outIsQualified = begin
     @match inPath begin
-      FULLYQUALIFIED(__) => begin
+      Absyn.FULLYQUALIFIED(__) => begin
         true
       end
 
@@ -5295,12 +5295,12 @@ function pathIsFullyQualified(inPath::Path)::Bool
   return outIsQualified
 end
 
-function pathIsIdent(inPath::Path)::Bool
+function pathIsIdent(inPath::Absyn.Path)::Bool
   local outIsIdent::Bool
 
   @assign outIsIdent = begin
     @match inPath begin
-      IDENT(__) => begin
+      Absyn.IDENT(__) => begin
         true
       end
 
@@ -5312,12 +5312,12 @@ function pathIsIdent(inPath::Path)::Bool
   return outIsIdent
 end
 
-function pathIsQual(inPath::Path)::Bool
+function pathIsQual(inPath::Absyn.Path)::Bool
   local outIsQual::Bool
 
   @assign outIsQual = begin
     @match inPath begin
-      QUALIFIED(__) => begin
+      Absyn.QUALIFIED(__) => begin
         true
       end
 
@@ -5329,18 +5329,18 @@ function pathIsQual(inPath::Path)::Bool
   return outIsQual
 end
 
-function withinEqual(within1::Within, within2::Within)::Bool
+function withinEqual(within1::Absyn.Within, within2::Absyn.Within)::Bool
   local b::Bool
 
   @assign b = begin
-    local p1::Path
-    local p2::Path
+    local p1::Absyn.Path
+    local p2::Absyn.Path
     @match (within1, within2) begin
-      (TOP(__), TOP(__)) => begin
+      (Absyn.TOP(__), Absyn.TOP(__)) => begin
         true
       end
 
-      (WITHIN(p1), WITHIN(p2)) => begin
+      (Absyn.WITHIN(p1), Absyn.WITHIN(p2)) => begin
         pathEqual(p1, p2)
       end
 
@@ -5352,17 +5352,17 @@ function withinEqual(within1::Within, within2::Within)::Bool
   return b
 end
 
-function withinString(w1::Within)::String
+function withinString(w1::Absyn.Within)::String
   local str::String
 
   @assign str = begin
-    local p1::Path
+    local p1::Absyn.Path
     @match w1 begin
-      TOP(__) => begin
+      Absyn.TOP(__) => begin
         "within ;"
       end
 
-      WITHIN(p1) => begin
+      Absyn.WITHIN(p1) => begin
         "within " + pathString(p1)
         +";"
       end
@@ -5371,17 +5371,17 @@ function withinString(w1::Within)::String
   return str
 end
 
-function joinWithinPath(within_::Within, path::Path)::Path
-  local outPath::Path
+function joinWithinPath(within_::Absyn.Within, path::Absyn.Path)::Absyn.Path
+  local outPath::Absyn.Path
 
   @assign outPath = begin
-    local path1::Path
+    local path1::Absyn.Path
     @match (within_, path) begin
-      (TOP(__), _) => begin
+      (Absyn.TOP(__), _) => begin
         path
       end
 
-      (WITHIN(path1), _) => begin
+      (Absyn.WITHIN(path1), _) => begin
         joinPaths(path1, path)
       end
     end
@@ -5389,24 +5389,24 @@ function joinWithinPath(within_::Within, path::Path)::Path
   return outPath
 end
 
-function innerOuterStr(io::InnerOuter)::String
+function innerOuterStr(io::Absyn.InnerOuter)::String
   local str::String
 
   @assign str = begin
     @match io begin
-      INNER_OUTER(__) => begin
+      Absyn.INNER_OUTER(__) => begin
         "inner outer "
       end
 
-      INNER(__) => begin
+      Absyn.INNER(__) => begin
         "inner "
       end
 
-      OUTER(__) => begin
+      Absyn.OUTER(__) => begin
         "outer "
       end
 
-      NOT_INNER_OUTER(__) => begin
+      Absyn.NOT_INNER_OUTER(__) => begin
         ""
       end
     end
@@ -5414,17 +5414,17 @@ function innerOuterStr(io::InnerOuter)::String
   return str
 end
 
-function subscriptExpOpt(inSub::Subscript)::Option{Exp}
-  local outExpOpt::Option{Exp}
+function subscriptExpOpt(inSub::Absyn.Subscript)::Option{Absyn.Exp}
+  local outExpOpt::Option{Absyn.Exp}
 
   @assign outExpOpt = begin
-    local e::Exp
+    local e::Absyn.Exp
     @match inSub begin
-      SUBSCRIPT(subscript = e) => begin
+      Absyn.SUBSCRIPT(subscript = e) => begin
         SOME(e)
       end
 
-      NOSUB(__) => begin
+      Absyn.NOSUB(__) => begin
         NONE()
       end
     end
@@ -5433,21 +5433,21 @@ function subscriptExpOpt(inSub::Subscript)::Option{Exp}
 end
 
 function crefInsertSubscriptLstLst(
-  inExp::Exp,
-  inLst::List{<:List{<:Subscript}},
-)::Tuple{Exp, List{List{Subscript}}}
-  local outLst::List{List{Subscript}}
-  local outExp::Exp
+  inExp::Absyn.Exp,
+  inLst::List{<:List{<:Absyn.Subscript}},
+)::Tuple{Absyn.Exp, List{List{Absyn.Subscript}}}
+  local outLst::List{List{Absyn.Subscript}}
+  local outExp::Absyn.Exp
 
   @assign (outExp, outLst) = begin
-    local cref::ComponentRef
-    local cref2::ComponentRef
-    local subs::List{List{Subscript}}
-    local e::Exp
+    local cref::Absyn.ComponentRef
+    local cref2::Absyn.ComponentRef
+    local subs::List{List{Absyn.Subscript}}
+    local e::Absyn.Exp
     @matchcontinue (inExp, inLst) begin
-      (CREF(componentRef = cref), subs) => begin
+      (Absyn.CREF(componentRef = cref), subs) => begin
         @assign cref2 = crefInsertSubscriptLstLst2(cref, subs)
-        (CREF(cref2), subs)
+        (Absyn.CREF(cref2), subs)
       end
 
       _ => begin
@@ -5460,32 +5460,32 @@ end
 
 """ #= Helper function to crefInsertSubscriptLstLst =#"""
 function crefInsertSubscriptLstLst2(
-  inCref::ComponentRef,
-  inSubs::List{<:List{<:Subscript}},
-)::ComponentRef
-  local outCref::ComponentRef
+  inCref::Absyn.ComponentRef,
+  inSubs::List{<:List{<:Absyn.Subscript}},
+)::Absyn.ComponentRef
+  local outCref::Absyn.ComponentRef
 
   @assign outCref = begin
-    local cref::ComponentRef
-    local cref2::ComponentRef
-    local n::Ident
-    local subs::List{List{Subscript}}
-    local s::List{Subscript}
+    local cref::Absyn.ComponentRef
+    local cref2::Absyn.ComponentRef
+    local n::Absyn.Ident
+    local subs::List{List{Absyn.Subscript}}
+    local s::List{Absyn.Subscript}
     @matchcontinue (inCref, inSubs) begin
       (cref, nil()) => begin
         cref
       end
 
-      (CREF_IDENT(name = n), s <| nil()) => begin
-        CREF_IDENT(n, s)
+      (Absyn.CREF_IDENT(name = n), s <| nil()) => begin
+        Absyn.CREF_IDENT(n, s)
       end
 
-      (CREF_QUAL(name = n, componentRef = cref), s <| subs) => begin
+      (Absyn.CREF_QUAL(name = n, componentRef = cref), s <| subs) => begin
         @assign cref2 = crefInsertSubscriptLstLst2(cref, subs)
-        CREF_QUAL(n, s, cref2)
+        Absyn.CREF_QUAL(n, s, cref2)
       end
 
-      (CREF_FULLYQUALIFIED(componentRef = cref), subs) => begin
+      (Absyn.CREF_FULLYQUALIFIED(componentRef = cref), subs) => begin
         @assign cref2 = crefInsertSubscriptLstLst2(cref, subs)
         crefMakeFullyQualified(cref2)
       end
@@ -5494,12 +5494,12 @@ function crefInsertSubscriptLstLst2(
   return outCref
 end
 
-function isCref(exp::Exp)::Bool
+function isCref(exp::Absyn.Exp)::Bool
   local b::Bool
 
   @assign b = begin
     @match exp begin
-      CREF(__) => begin
+      Absyn.CREF(__) => begin
         true
       end
 
@@ -5511,12 +5511,12 @@ function isCref(exp::Exp)::Bool
   return b
 end
 
-function isTuple(exp::Exp)::Bool
+function isTuple(exp::Absyn.Exp)::Bool
   local b::Bool
 
   @assign b = begin
     @match exp begin
-      TUPLE(__) => begin
+      Absyn.TUPLE(__) => begin
         true
       end
 
@@ -5530,7 +5530,7 @@ end
 
 """ #= @author: johti
    Returns true if all fields are crefs =#"""
-function allFieldsAreCrefs(expLst::List{<:Exp})::Bool
+function allFieldsAreCrefs(expLst::List{<:Absyn.Exp})::Bool
   local b::Bool
 
   @assign b = ListUtil.mapAllValueBool(expLst, complexIsCref, true)
@@ -5540,12 +5540,12 @@ end
 """ #=  @author: johti
     Returns true if everything contained
     in the tuple or a cons cell is a constant reference. =#"""
-function complexIsCref(inExp::Exp)::Bool
+function complexIsCref(inExp::Absyn.Exp)::Bool
   local b::Bool
 
   @assign b = begin
     @match inExp begin
-      TUPLE(__) => begin
+      Absyn.TUPLE(__) => begin
         allFieldsAreCrefs(inExp.expressions)
       end
 
@@ -5561,12 +5561,12 @@ function complexIsCref(inExp::Exp)::Bool
   return b
 end
 
-function isDerCref(exp::Exp)::Bool
+function isDerCref(exp::Absyn.Exp)::Bool
   local b::Bool
 
   @assign b = begin
     @match exp begin
-      CALL(CREF_IDENT("der", nil()), FUNCTIONARGS(CREF(__) <| nil(), nil())) => begin
+      Absyn.CALL(Absyn.CREF_IDENT("der", nil()), Absyn.FUNCTIONARGS(Absyn.CREF(__) <| nil(), nil())) => begin
         true
       end
 
@@ -5578,15 +5578,15 @@ function isDerCref(exp::Exp)::Bool
   return b
 end
 
-function isDerCrefFail(exp::Exp)
-  return @match CALL(CREF_IDENT("der", nil), FUNCTIONARGS(list(CREF()), nil)) = exp
+function isDerCrefFail(exp::Absyn.Exp)
+  return @match Absyn.CALL(Absyn.CREF_IDENT("der", nil), Absyn.FUNCTIONARGS(list(Absyn.CREF()), nil)) = exp
 end
 
 """ #= author: adrpo
   returns all the expressions from array dimension as a list
   also returns if we have unknown dimensions in the array dimension =#"""
-function getExpsFromArrayDim(inAd::ArrayDim)::Tuple{Bool, List{Exp}}
-  local outExps::List{Exp}
+function getExpsFromArrayDim(inAd::Absyn.ArrayDim)::Tuple{Bool, List{Absyn.Exp}}
+  local outExps::List{Absyn.Exp}
   local hasUnknownDimensions::Bool
 
   @assign (hasUnknownDimensions, outExps) = getExpsFromArrayDim_tail(inAd, nil)
@@ -5596,12 +5596,12 @@ end
 """ #= author: adrpo
   returns all the expressions from array dimension as a list
   also returns if we have unknown dimensions in the array dimension =#"""
-function getExpsFromArrayDimOpt(inAdO::Option{<:ArrayDim})::Tuple{Bool, List{Exp}}
-  local outExps::List{Exp}
+function getExpsFromArrayDimOpt(inAdO::Option{<:Absyn.ArrayDim})::Tuple{Bool, List{Absyn.Exp}}
+  local outExps::List{Absyn.Exp}
   local hasUnknownDimensions::Bool
 
   @assign (hasUnknownDimensions, outExps) = begin
-    local ad::ArrayDim
+    local ad::Absyn.ArrayDim
     @match inAdO begin
       NONE() => begin
         (false, nil)
@@ -5620,17 +5620,17 @@ end
   returns all the expressions from array dimension as a list
   also returns if we have unknown dimensions in the array dimension =#"""
 function getExpsFromArrayDim_tail(
-  inAd::ArrayDim,
-  inAccumulator::List{<:Exp},
-)::Tuple{Bool, List{Exp}}
-  local outExps::List{Exp}
+  inAd::Absyn.ArrayDim,
+  inAccumulator::List{<:Absyn.Exp},
+)::Tuple{Bool, List{Absyn.Exp}}
+  local outExps::List{Absyn.Exp}
   local hasUnknownDimensions::Bool
 
   @assign (hasUnknownDimensions, outExps) = begin
-    local rest::List{Subscript}
-    local e::Exp
-    local exps::List{Exp}
-    local acc::List{Exp}
+    local rest::List{Absyn.Subscript}
+    local e::Absyn.Exp
+    local exps::List{Absyn.Exp}
+    local acc::List{Absyn.Exp}
     local b::Bool
     #=  handle empty list
     =#
@@ -5639,44 +5639,44 @@ function getExpsFromArrayDim_tail(
         (false, listReverse(acc))
       end
 
-      (SUBSCRIPT(e) <| rest, acc) => begin
+      (Absyn.SUBSCRIPT(e) <| rest, acc) => begin
         @assign (b, exps) = getExpsFromArrayDim_tail(rest, _cons(e, acc))
         (b, exps)
       end
 
-      (NOSUB(__) <| rest, acc) => begin
+      (Absyn.NOSUB(__) <| rest, acc) => begin
         @assign (_, exps) = getExpsFromArrayDim_tail(rest, acc)
         (true, exps)
       end
     end
   end
-  #=  handle SUBSCRIPT
+  #=  handle Absyn.SUBSCRIPT
   =#
-  #=  handle NOSUB
+  #=  handle Absyn.NOSUB
   =#
   return (hasUnknownDimensions, outExps)
 end
 
 """ #= @author: adrpo
  returns true if the given direction is input or output =#"""
-function isInputOrOutput(direction::Direction)::Bool
+function isInputOrOutput(direction::Absyn.Direction)::Bool
   local isIorO::Bool #= input or output only =#
 
   @assign isIorO = begin
     @match direction begin
-      INPUT(__) => begin
+      Absyn.INPUT(__) => begin
         true
       end
 
-      OUTPUT(__) => begin
+      Absyn.INPUTOUTPUT(__) => begin
         true
       end
 
-      INPUT_OUTPUT(__) => begin
+      Absyn.INPUT_OUTPUT(__) => begin
         true
       end
 
-      BIDIR(__) => begin
+      Absyn.BIDIR(__) => begin
         false
       end
     end
@@ -5684,16 +5684,16 @@ function isInputOrOutput(direction::Direction)::Bool
   return isIorO #= input or output only =#
 end
 
-function isInput(inDirection::Direction)::Bool
+function isInput(inDirection::Absyn.Direction)::Bool
   local outIsInput::Bool
 
   @assign outIsInput = begin
     @match inDirection begin
-      INPUT(__) => begin
+      Absyn.INPUT(__) => begin
         true
       end
 
-      INPUT_OUTPUT(__) => begin
+      Absyn.INPUT_OUTPUT(__) => begin
         true
       end
 
@@ -5705,16 +5705,16 @@ function isInput(inDirection::Direction)::Bool
   return outIsInput
 end
 
-function isOutput(inDirection::Direction)::Bool
+function isOutput(inDirection::Absyn.Direction)::Bool
   local outIsOutput::Bool
 
   @assign outIsOutput = begin
     @match inDirection begin
-      OUTPUT(__) => begin
+      Absyn.OUTPUT(__) => begin
         true
       end
 
-      INPUT_OUTPUT(__) => begin
+      Absyn.INPUT_OUTPUT(__) => begin
         true
       end
 
@@ -5726,24 +5726,24 @@ function isOutput(inDirection::Direction)::Bool
   return outIsOutput
 end
 
-function directionEqual(inDirection1::Direction, inDirection2::Direction)::Bool
+function directionEqual(inDirection1::Absyn.Direction, inDirection2::Absyn.Direction)::Bool
   local outEqual::Bool
 
   @assign outEqual = begin
     @match (inDirection1, inDirection2) begin
-      (BIDIR(__), BIDIR(__)) => begin
+      (Absyn.BIDIR(__), Absyn.BIDIR(__)) => begin
         true
       end
 
-      (INPUT(__), INPUT(__)) => begin
+      (Absyn.INPUT(__), Absyn.INPUT(__)) => begin
         true
       end
 
-      (OUTPUT(__), OUTPUT(__)) => begin
+      (Absyn.OUTPUT(__), Absyn.OUTPUT(__)) => begin
         true
       end
 
-      (INPUT_OUTPUT(__), INPUT_OUTPUT(__)) => begin
+      (Absyn.INPUT_OUTPUT(__), Absyn.INPUT_OUTPUT(__)) => begin
         true
       end
 
@@ -5755,16 +5755,16 @@ function directionEqual(inDirection1::Direction, inDirection2::Direction)::Bool
   return outEqual
 end
 
-function isFieldEqual(isField1::IsField, isField2::IsField)::Bool
+function isFieldEqual(isField1::Absyn.IsField, isField2::Absyn.IsField)::Bool
   local outEqual::Bool
 
   @assign outEqual = begin
     @match (isField1, isField2) begin
-      (NONFIELD(__), NONFIELD(__)) => begin
+      (Absyn.NONFIELD(__), Absyn.NONFIELD(__)) => begin
         true
       end
 
-      (FIELD(__), FIELD(__)) => begin
+      (Absyn.FIELD(__), Absyn.FIELD(__)) => begin
         true
       end
 
@@ -5776,14 +5776,14 @@ function isFieldEqual(isField1::IsField, isField2::IsField)::Bool
   return outEqual
 end
 
-function pathLt(path1::Path, path2::Path)::Bool
+function pathLt(path1::Absyn.Path, path2::Absyn.Path)::Bool
   local lt::Bool
 
   @assign lt = stringCompare(pathString(path1), pathString(path2)) < 0
   return lt
 end
 
-function pathGe(path1::Path, path2::Path)::Bool
+function pathGe(path1::Absyn.Path, path2::Absyn.Path)::Bool
   local ge::Bool
 
   @assign ge = !pathLt(path1, path2)
@@ -5791,29 +5791,29 @@ function pathGe(path1::Path, path2::Path)::Bool
 end
 
 """ #= Strips out long class definitions =#"""
-function getShortClass(cl::Class)::Class
-  local o::Class
+function getShortClass(cl::Absyn.Class)::Absyn.Class
+  local o::Absyn.Class
 
   @assign o = begin
-    local name::Ident
+    local name::Absyn.Ident
     local pa::Bool
     local fi::Bool
     local en::Bool
-    local re::Restriction
-    local body::ClassDef
+    local re::Absyn.Restriction
+    local body::Absyn.ClassDef
     local info::Info
     @match cl begin
-      CLASS(body = PARTS(__)) => begin
+      Absyn.CLASS(body = Absyn.PARTS(__)) => begin
         fail()
       end
 
-      CLASS(body = CLASS_EXTENDS(__)) => begin
+      Absyn.CLASS(body = Absyn.CLASS_EXTENDS(__)) => begin
         fail()
       end
 
-      CLASS(name, pa, fi, en, re, body, info) => begin
+      Absyn.CLASS(name, pa, fi, en, re, body, info) => begin
         @assign body = stripClassDefComment(body)
-        CLASS(name, pa, fi, en, re, body, info)
+        Absyn.CLASS(name, pa, fi, en, re, body, info)
       end
     end
   end
@@ -5821,30 +5821,30 @@ function getShortClass(cl::Class)::Class
 end
 
 """ #= Strips out class definition comments. =#"""
-function stripClassDefComment(cl::ClassDef)::ClassDef
-  local o::ClassDef
+function stripClassDefComment(cl::Absyn.ClassDef)::Absyn.ClassDef
+  local o::Absyn.ClassDef
 
   @assign o = begin
     local enumLiterals::EnumDef
-    local typeSpec::TypeSpec
+    local typeSpec::Absyn.TypeSpec
     local attributes::ElementAttributes
-    local arguments::List{ElementArg}
-    local functionNames::List{Path}
-    local functionName::Path
-    local vars::List{Ident}
+    local arguments::List{Absyn.ElementArg}
+    local functionNames::List{Absyn.Path}
+    local functionName::Absyn.Path
+    local vars::List{Absyn.Ident}
     local typeVars::List{String}
-    local baseClassName::Ident
-    local modifications::List{ElementArg}
-    local parts::List{ClassPart}
-    local classAttrs::List{NamedArg}
-    local ann::List{Annotation}
+    local baseClassName::Absyn.Ident
+    local modifications::List{Absyn.ElementArg}
+    local parts::List{Absyn.ClassPart}
+    local classAttrs::List{Absyn.NamedArg}
+    local ann::List{Absyn.Annotation}
     @match cl begin
-      PARTS(typeVars, classAttrs, parts, ann, _) => begin
-        PARTS(typeVars, classAttrs, parts, ann, NONE())
+      Absyn.PARTS(typeVars, classAttrs, parts, ann, _) => begin
+        Absyn.PARTS(typeVars, classAttrs, parts, ann, NONE())
       end
 
-      CLASS_EXTENDS(baseClassName, modifications, _, parts, ann) => begin
-        CLASS_EXTENDS(baseClassName, modifications, NONE(), parts, ann)
+      Absyn.CLASS_EXTENDS(baseClassName, modifications, _, parts, ann) => begin
+        Absyn.CLASS_EXTENDS(baseClassName, modifications, NONE(), parts, ann)
       end
 
       DERIVED(typeSpec, attributes, arguments, _) => begin
@@ -5872,39 +5872,39 @@ function stripClassDefComment(cl::ClassDef)::ClassDef
 end
 
 """ #= Strips out the parts of a function definition that are not needed for the interface =#"""
-function getFunctionInterface(cl::Class)::Class
-  local o::Class
+function getFunctionInterface(cl::Absyn.Class)::Absyn.Class
+  local o::Absyn.Class
 
   @assign o = begin
-    local name::Ident
+    local name::Absyn.Ident
     local partialPrefix::Bool
     local finalPrefix::Bool
     local encapsulatedPrefix::Bool
     local info::Info
     local typeVars::List{String}
-    local classParts::List{ClassPart}
-    local elts::List{ElementItem}
+    local classParts::List{Absyn.ClassPart}
+    local elts::List{Absyn.ElementItem}
     local funcRest::FunctionRestriction
-    local classAttr::List{NamedArg}
+    local classAttr::List{Absyn.NamedArg}
     @match cl begin
-      CLASS(
+      Absyn.CLASS(
         name,
         partialPrefix,
         finalPrefix,
         encapsulatedPrefix,
         R_FUNCTION(funcRest),
-        PARTS(typeVars, classAttr, classParts, _, _),
+        Absyn.PARTS(typeVars, classAttr, classParts, _, _),
         info,
       ) => begin
         @match (@match _cons(_, _) = elts) =
           ListUtil.fold(listReverse(classParts), getFunctionInterfaceParts, nil)
-        CLASS(
+        Absyn.CLASS(
           name,
           partialPrefix,
           finalPrefix,
           encapsulatedPrefix,
           R_FUNCTION(funcRest),
-          PARTS(typeVars, classAttr, _cons(PUBLIC(elts), nil), nil, NONE()),
+          Absyn.PARTS(typeVars, classAttr, _cons(PUBLIC(elts), nil), nil, NONE()),
           info,
         )
       end
@@ -5914,14 +5914,14 @@ function getFunctionInterface(cl::Class)::Class
 end
 
 function getFunctionInterfaceParts(
-  part::ClassPart,
-  elts::List{<:ElementItem},
-)::List{ElementItem}
-  local oelts::List{ElementItem}
+  part::Absyn.ClassPart,
+  elts::List{<:Absyn.ElementItem},
+)::List{Absyn.ElementItem}
+  local oelts::List{Absyn.ElementItem}
 
   @assign oelts = begin
-    local elts1::List{ElementItem}
-    local elts2::List{ElementItem}
+    local elts1::List{Absyn.ElementItem}
+    local elts2::List{Absyn.ElementItem}
     @match (part, elts) begin
       (PUBLIC(elts1), elts2) => begin
         @assign elts1 = ListUtil.filterOnTrue(elts1, filterAnnotationItem)
@@ -5936,12 +5936,12 @@ function getFunctionInterfaceParts(
   return oelts
 end
 
-function filterAnnotationItem(elt::ElementItem)::Bool
+function filterAnnotationItem(elt::Absyn.ElementItem)::Bool
   local outB::Bool
 
   @assign outB = begin
     @match elt begin
-      ELEMENTITEM(__) => begin
+      Absyn.ELEMENTITEM(__) => begin
         true
       end
 
@@ -5954,40 +5954,40 @@ function filterAnnotationItem(elt::ElementItem)::Bool
 end
 
 """ #= Filter outs the nested classes from the class if any. =#"""
-function filterNestedClasses(cl::Class)::Class
-  local o::Class
+function filterNestedClasses(cl::Absyn.Class)::Absyn.Class
+  local o::Absyn.Class
 
   @assign o = begin
-    local name::Ident
+    local name::Absyn.Ident
     local partialPrefix::Bool
     local finalPrefix::Bool
     local encapsulatedPrefix::Bool
-    local restriction::Restriction
+    local restriction::Absyn.Restriction
     local typeVars::List{String}
-    local classAttrs::List{NamedArg}
-    local classParts::List{ClassPart}
-    local annotations::List{Annotation}
+    local classAttrs::List{Absyn.NamedArg}
+    local classParts::List{Absyn.ClassPart}
+    local annotations::List{Absyn.Annotation}
     local comment::Option{String}
     local info::Info
     @match cl begin
-      CLASS(
+      Absyn.CLASS(
         name,
         partialPrefix,
         finalPrefix,
         encapsulatedPrefix,
         restriction,
-        PARTS(typeVars, classAttrs, classParts, annotations, comment),
+        Absyn.PARTS(typeVars, classAttrs, classParts, annotations, comment),
         info,
       ) => begin
         @match (@match _cons(_, _) = classParts) =
           ListUtil.fold(listReverse(classParts), filterNestedClassesParts, nil)
-        CLASS(
+        Absyn.CLASS(
           name,
           partialPrefix,
           finalPrefix,
           encapsulatedPrefix,
           restriction,
-          PARTS(typeVars, classAttrs, classParts, annotations, comment),
+          Absyn.PARTS(typeVars, classAttrs, classParts, annotations, comment),
           info,
         )
       end
@@ -6002,14 +6002,14 @@ end
 
 """ #= Helper function for filterNestedClasses =#"""
 function filterNestedClassesParts(
-  classPart::ClassPart,
-  inClassParts::List{<:ClassPart},
-)::List{ClassPart}
-  local outClassPart::List{ClassPart}
+  classPart::Absyn.ClassPart,
+  inClassParts::List{<:Absyn.ClassPart},
+)::List{Absyn.ClassPart}
+  local outClassPart::List{Absyn.ClassPart}
 
   @assign outClassPart = begin
-    local classParts::List{ClassPart}
-    local elts::List{ElementItem}
+    local classParts::List{Absyn.ClassPart}
+    local elts::List{Absyn.ElementItem}
     @match (classPart, inClassParts) begin
       (PUBLIC(elts), classParts) => begin
         @assign classPart.contents = ListUtil.filterOnFalse(elts, isElementItemClass)
@@ -6032,18 +6032,18 @@ end
 """ #= @author: adrpo
    returns the EXTERNAL form parts if there is any.
    if there is none, it fails! =#"""
-function getExternalDecl(inCls::Class)::ClassPart
-  local outExternal::ClassPart
+function getExternalDecl(inCls::Absyn.Class)::Absyn.ClassPart
+  local outExternal::Absyn.ClassPart
 
-  local cp::ClassPart
-  local class_parts::List{ClassPart}
+  local cp::Absyn.ClassPart
+  local class_parts::List{Absyn.ClassPart}
 
-  @match CLASS(body = PARTS(classParts = class_parts)) = inCls
+  @match Absyn.CLASS(body = Absyn.PARTS(classParts = class_parts)) = inCls
   @assign outExternal = ListUtil.find(class_parts, isExternalPart)
   return outExternal
 end
 
-function isExternalPart(inClassPart::ClassPart)::Bool
+function isExternalPart(inClassPart::Absyn.ClassPart)::Bool
   local outFound::Bool
 
   @assign outFound = begin
@@ -6060,12 +6060,12 @@ function isExternalPart(inClassPart::ClassPart)::Bool
   return outFound
 end
 
-function isParts(cl::ClassDef)::Bool
+function isParts(cl::Absyn.ClassDef)::Bool
   local b::Bool
 
   @assign b = begin
     @match cl begin
-      PARTS(__) => begin
+      Absyn.PARTS(__) => begin
         true
       end
 
@@ -6077,45 +6077,45 @@ function isParts(cl::ClassDef)::Bool
   return b
 end
 
-""" #= Makes a class into an ElementItem =#"""
-function makeClassElement(cl::Class)::ElementItem
-  local el::ElementItem
+""" #= Makes a class into an Absyn.ElementItem =#"""
+function makeClassElement(cl::Absyn.Class)::Absyn.ElementItem
+  local el::Absyn.ElementItem
 
   local info::Info
   local fp::Bool
 
-  @match CLASS(finalPrefix = fp, info = info) = cl
+  @match Absyn.CLASS(finalPrefix = fp, info = info) = cl
   @assign el =
-    ELEMENTITEM(ELEMENT(fp, NONE(), NOT_INNER_OUTER(), CLASSDEF(false, cl), info, NONE()))
+    Absyn.ELEMENTITEM(Absyn.ELEMENT(fp, NONE(), Absyn.NOT_INNER_OUTER(), Absyn.CLASSDEF(false, cl), info, NONE()))
   return el
 end
 
-function componentName(c::ComponentItem)::String
+function componentName(c::Absyn.ComponentItem)::String
   local name::String
 
-  @match COMPONENTITEM(component = COMPONENT(name = name)) = c
+  @match Absyn.COMPONENTITEM(component = Absyn.COMPONENT(name = name)) = c
   return name
 end
 
-function pathSetLastIdent(inPath::Path, inLastIdent::Path)::Path
-  local outPath::Path
+function pathSetLastIdent(inPath::Absyn.Path, inLastIdent::Absyn.Path)::Absyn.Path
+  local outPath::Absyn.Path
 
   @assign outPath = begin
-    local p::Path
+    local p::Absyn.Path
     local n::String
     @match (inPath, inLastIdent) begin
-      (IDENT(__), _) => begin
+      (Absyn.IDENT(__), _) => begin
         inLastIdent
       end
 
-      (QUALIFIED(n, p), _) => begin
+      (Absyn.QUALIFIED(n, p), _) => begin
         @assign p = pathSetLastIdent(p, inLastIdent)
-        QUALIFIED(n, p)
+        Absyn.QUALIFIED(n, p)
       end
 
-      (FULLYQUALIFIED(p), _) => begin
+      (Absyn.FULLYQUALIFIED(p), _) => begin
         @assign p = pathSetLastIdent(p, inLastIdent)
-        FULLYQUALIFIED(p)
+        Absyn.FULLYQUALIFIED(p)
       end
     end
   end
@@ -6124,7 +6124,7 @@ end
 
 """ #= @author:
   returns true if expression contains initial() =#"""
-function expContainsInitial(inExp::Exp)::Bool
+function expContainsInitial(inExp::Absyn.Exp)::Bool
   local hasInitial::Bool
 
   @assign hasInitial = begin
@@ -6145,17 +6145,17 @@ end
 
 """ #= @author:
   returns true if expression is initial() =#"""
-function isInitialTraverseHelper(inExp::Exp, inBool::Bool)::Tuple{Exp, Bool}
+function isInitialTraverseHelper(inExp::Absyn.Exp, inBool::Bool)::Tuple{Absyn.Exp, Bool}
   local outBool::Bool
-  local outExp::Exp
+  local outExp::Absyn.Exp
 
   @assign (outExp, outBool) = begin
-    local e::Exp
+    local e::Absyn.Exp
     local b::Bool
     #=  make sure we don't have not initial()
     =#
     @match (inExp, inBool) begin
-      (UNARY(NOT(__), _), _) => begin
+      (Absyn.UNARY(Absyn.NOT(__), _), _) => begin
         (inExp, inBool)
       end
 
@@ -6176,16 +6176,16 @@ end
 
 """ #= @author:
   returns true if expression is initial() =#"""
-function isInitial(inExp::Exp)::Bool
+function isInitial(inExp::Absyn.Exp)::Bool
   local hasReinit::Bool
 
   @assign hasReinit = begin
     @match inExp begin
-      CALL(function_ = CREF_IDENT("initial", _)) => begin
+      Absyn.CALL(function_ = Absyn.CREF_IDENT("initial", _)) => begin
         true
       end
 
-      CALL(function_ = CREF_FULLYQUALIFIED(CREF_IDENT("initial", _))) => begin
+      Absyn.CALL(function_ = Absyn.CREF_FULLYQUALIFIED(Absyn.CREF_IDENT("initial", _))) => begin
         true
       end
 
@@ -6198,25 +6198,25 @@ function isInitial(inExp::Exp)::Bool
 end
 
 """ #= Return the path of the given import. =#"""
-function importPath(inImport::Import)::Path
-  local outPath::Path
+function importPath(inImport::Absyn.Import)::Absyn.Path
+  local outPath::Absyn.Path
 
   @assign outPath = begin
-    local path::Path
+    local path::Absyn.Path
     @match inImport begin
-      NAMED_IMPORT(path = path) => begin
+      Absyn.NAMED_IMPORT(path = path) => begin
         path
       end
 
-      QUAL_IMPORT(path = path) => begin
+      Absyn.QUAL_IMPORT(path = path) => begin
         path
       end
 
-      UNQUAL_IMPORT(path = path) => begin
+      Absyn.UNQUAL_IMPORT(path = path) => begin
         path
       end
 
-      GROUP_IMPORT(prefix = path) => begin
+      Absyn.GROUP_IMPORT(prefix = path) => begin
         path
       end
     end
@@ -6225,20 +6225,20 @@ function importPath(inImport::Import)::Path
 end
 
 """ #= Returns the import name of a named or qualified import. =#"""
-function importName(inImport::Import)::Ident
-  local outName::Ident
+function importName(inImport::Absyn.Import)::Absyn.Ident
+  local outName::Absyn.Ident
 
   @assign outName = begin
-    local name::Ident
-    local path::Path
+    local name::Absyn.Ident
+    local path::Absyn.Path
     #=  Named import has a given name, 'import D = A.B.C' => D.
     =#
     @match inImport begin
-      NAMED_IMPORT(name = name) => begin
+      Absyn.NAMED_IMPORT(name = name) => begin
         name
       end
 
-      QUAL_IMPORT(path = path) => begin
+      Absyn.QUAL_IMPORT(path = path) => begin
         pathLastIdent(path)
       end
     end
@@ -6250,24 +6250,24 @@ end
 
 """ #=  This function takes an old annotation as first argument and a new
    annotation as  second argument and merges the two.
-   Annotation \\\"parts\\\" that exist in both the old and the new annotation
+   Absyn.Annotation \\\"parts\\\" that exist in both the old and the new annotation
    will be changed according to the new definition. For instance,
    merge_annotations(annotation(x=1,y=2),annotation(x=3))
    => annotation(x=3,y=2) =#"""
-function mergeAnnotations(inAnnotation1::Annotation, inAnnotation2::Annotation)::Annotation
-  local outAnnotation::Annotation
+function mergeAnnotations(inAnnotation1::Absyn.Annotation, inAnnotation2::Absyn.Annotation)::Absyn.Annotation
+  local outAnnotation::Absyn.Annotation
 
   @assign outAnnotation = begin
-    local oldmods::List{ElementArg}
-    local newmods::List{ElementArg}
-    local a::Annotation
+    local oldmods::List{Absyn.ElementArg}
+    local newmods::List{Absyn.ElementArg}
+    local a::Absyn.Annotation
     @match (inAnnotation1, inAnnotation2) begin
-      (ANNOTATION(elementArgs = nil()), a) => begin
+      (Absyn.ANNOTATION(elementArgs = nil()), a) => begin
         a
       end
 
-      (ANNOTATION(elementArgs = oldmods), ANNOTATION(elementArgs = newmods)) => begin
-        ANNOTATION(mergeAnnotations2(oldmods, newmods))
+      (Absyn.ANNOTATION(elementArgs = oldmods), Absyn.ANNOTATION(elementArgs = newmods)) => begin
+        Absyn.ANNOTATION(mergeAnnotations2(oldmods, newmods))
       end
     end
   end
@@ -6275,19 +6275,19 @@ function mergeAnnotations(inAnnotation1::Annotation, inAnnotation2::Annotation):
 end
 
 function mergeAnnotations2(
-  oldmods::List{<:ElementArg},
-  newmods::List{<:ElementArg},
-)::List{ElementArg}
-  local res::List{ElementArg} = listReverse(oldmods)
+  oldmods::List{<:Absyn.ElementArg},
+  newmods::List{<:Absyn.ElementArg},
+)::List{Absyn.ElementArg}
+  local res::List{Absyn.ElementArg} = listReverse(oldmods)
 
-  local mods::List{ElementArg}
+  local mods::List{Absyn.ElementArg}
   local b::Bool
-  local p::Path
-  local mod1::ElementArg
-  local mod2::ElementArg
+  local p::Absyn.Path
+  local mod1::Absyn.ElementArg
+  local mod2::Absyn.ElementArg
 
   for mod in newmods
-    @match MODIFICATION(path = p) = mod
+    @match Absyn.MODIFICATION(path = p) = mod
     try
       @assign mod2 = ListUtil.find(res, (p) -> isModificationOfPath(path = p))
       @assign mod1 = subModsInSameOrder(mod2, mod)
@@ -6301,29 +6301,29 @@ function mergeAnnotations2(
   return res
 end
 
-""" #= Merges an annotation into a Comment option. =#"""
+""" #= Merges an annotation into a Absyn.Comment option. =#"""
 function mergeCommentAnnotation(
-  inAnnotation::Annotation,
-  inComment::Option{<:Comment},
-)::Option{Comment}
-  local outComment::Option{Comment}
+  inAnnotation::Absyn.Annotation,
+  inComment::Option{<:Absyn.Comment},
+)::Option{Absyn.Comment}
+  local outComment::Option{Absyn.Comment}
 
   @assign outComment = begin
-    local ann::Annotation
+    local ann::Absyn.Annotation
     local cmt::Option{String}
     #=  No comment, create a new one.
     =#
     @match inComment begin
       NONE() => begin
-        SOME(COMMENT(SOME(inAnnotation), NONE()))
+        SOME(Absyn.COMMENT(SOME(inAnnotation), NONE()))
       end
 
-      SOME(COMMENT(annotation_ = NONE(), comment = cmt)) => begin
-        SOME(COMMENT(SOME(inAnnotation), cmt))
+      SOME(Absyn.COMMENT(annotation_ = NONE(), comment = cmt)) => begin
+        SOME(Absyn.COMMENT(SOME(inAnnotation), cmt))
       end
 
-      SOME(COMMENT(annotation_ = SOME(ann), comment = cmt)) => begin
-        SOME(COMMENT(SOME(mergeAnnotations(ann, inAnnotation)), cmt))
+      SOME(Absyn.COMMENT(annotation_ = SOME(ann), comment = cmt)) => begin
+        SOME(Absyn.COMMENT(SOME(mergeAnnotations(ann, inAnnotation)), cmt))
       end
     end
   end
@@ -6335,14 +6335,14 @@ function mergeCommentAnnotation(
 end
 
 """ #= returns true or false if the given path is in the list of modifications =#"""
-function isModificationOfPath(mod::ElementArg, path::Path)::Bool
+function isModificationOfPath(mod::Absyn.ElementArg, path::Absyn.Path)::Bool
   local yes::Bool
 
   @assign yes = begin
     local id1::String
     local id2::String
     @match (mod, path) begin
-      (MODIFICATION(path = IDENT(name = id1)), IDENT(name = id2)) => begin
+      (Absyn.MODIFICATION(path = Absyn.IDENT(name = id1)), Absyn.IDENT(name = id2)) => begin
         id1 == id2
       end
 
@@ -6354,31 +6354,31 @@ function isModificationOfPath(mod::ElementArg, path::Path)::Bool
   return yes
 end
 
-function subModsInSameOrder(oldmod::ElementArg, newmod::ElementArg)::ElementArg
-  local mod::ElementArg
+function subModsInSameOrder(oldmod::Absyn.ElementArg, newmod::Absyn.ElementArg)::Absyn.ElementArg
+  local mod::Absyn.ElementArg
 
   @assign mod = begin
-    local args1::List{ElementArg}
-    local args2::List{ElementArg}
-    local res::List{ElementArg}
-    local arg2::ElementArg
-    local eq1::EqMod
-    local eq2::EqMod
-    local p::Path
+    local args1::List{Absyn.ElementArg}
+    local args2::List{Absyn.ElementArg}
+    local res::List{Absyn.ElementArg}
+    local arg2::Absyn.ElementArg
+    local eq1::Absyn.EqMod
+    local eq2::Absyn.EqMod
+    local p::Absyn.Path
     #=  mod1 or mod2 has no submods
     =#
     @match (oldmod, newmod) begin
-      (_, MODIFICATION(modification = NONE())) => begin
+      (_, Absyn.MODIFICATION(modification = NONE())) => begin
         newmod
       end
 
-      (MODIFICATION(modification = NONE()), _) => begin
+      (Absyn.MODIFICATION(modification = NONE()), _) => begin
         newmod
       end
 
       (
-        MODIFICATION(modification = SOME(CLASSMOD(args1, _))),
-        arg2 && MODIFICATION(modification = SOME(CLASSMOD(args2, eq2))),
+        Absyn.MODIFICATION(modification = SOME(Absyn.CLASSMOD(args1, _))),
+        arg2 && Absyn.MODIFICATION(modification = SOME(Absyn.CLASSMOD(args2, eq2))),
       ) => begin
         #=  mod1
         =#
@@ -6386,7 +6386,7 @@ function subModsInSameOrder(oldmod::ElementArg, newmod::ElementArg)::ElementArg
         =#
         @assign res = nil
         for arg1 in args1
-          @match MODIFICATION(path = p) = arg1
+          @match Absyn.MODIFICATION(path = p) = arg1
           if ListUtil.exist(args2, (p) -> isModificationOfPath(path = p))
             @assign res = _cons(arg1, res)
           end
@@ -6395,7 +6395,7 @@ function subModsInSameOrder(oldmod::ElementArg, newmod::ElementArg)::ElementArg
         #=  Merge the annotations
         =#
         @assign res = mergeAnnotations2(res, args2)
-        @assign arg2.modification = SOME(CLASSMOD(res, eq2))
+        @assign arg2.modification = SOME(Absyn.CLASSMOD(res, eq2))
         arg2
       end
     end
@@ -6403,53 +6403,53 @@ function subModsInSameOrder(oldmod::ElementArg, newmod::ElementArg)::ElementArg
   return mod
 end
 
-function annotationToElementArgs(ann::Annotation)::List{ElementArg}
-  local args::List{ElementArg}
+function annotationToElementArgs(ann::Absyn.Annotation)::List{Absyn.ElementArg}
+  local args::List{Absyn.ElementArg}
 
-  @match ANNOTATION(args) = ann
+  @match Absyn.ANNOTATION(args) = ann
   return args
 end
 
-function pathToTypeSpec(inPath::Path)::TypeSpec
-  local outTypeSpec::TypeSpec
+function pathToTypeSpec(inPath::Absyn.Path)::Absyn.TypeSpec
+  local outTypeSpec::Absyn.TypeSpec
 
-  @assign outTypeSpec = TPATH(inPath, NONE())
+  @assign outTypeSpec = Absyn.TPATH(inPath, NONE())
   return outTypeSpec
 end
 
-function typeSpecString(inTs::TypeSpec)::String
+function typeSpecString(inTs::Absyn.TypeSpec)::String
   local outStr::String
 
   @assign outStr = Dump.unparseTypeSpec(inTs)
   return outStr
 end
 
-function crefString(inCr::ComponentRef)::String
+function crefString(inCr::Absyn.ComponentRef)::String
   local outStr::String
 
   @assign outStr = Dump.printComponentRefStr(inCr)
   return outStr
 end
 
-function typeSpecStringNoQualNoDims(inTs::TypeSpec)::String
+function typeSpecStringNoQualNoDims(inTs::Absyn.TypeSpec)::String
   local outStr::String
 
   @assign outStr = begin
-    local str::Ident
-    local s::Ident
-    local str1::Ident
-    local str2::Ident
-    local str3::Ident
-    local path::Path
-    local adim::Option{List{Subscript}}
-    local typeSpecLst::List{TypeSpec}
+    local str::Absyn.Ident
+    local s::Absyn.Ident
+    local str1::Absyn.Ident
+    local str2::Absyn.Ident
+    local str3::Absyn.Ident
+    local path::Absyn.Path
+    local adim::Option{List{Absyn.Subscript}}
+    local typeSpecLst::List{Absyn.TypeSpec}
     @match inTs begin
-      TPATH(path = path) => begin
+      Absyn.TPATH(path = path) => begin
         @assign str = pathString(makeNotFullyQualified(path))
         str
       end
 
-      TCOMPLEX(path = path, typeSpecs = typeSpecLst) => begin
+      Absyn.TCOMPLEX(path = path, typeSpecs = typeSpecLst) => begin
         @assign str1 = pathString(makeNotFullyQualified(path))
         @assign str2 = typeSpecStringNoQualNoDimsLst(typeSpecLst)
         @assign str = stringAppendList(list(str1, "<", str2, ">"))
@@ -6460,7 +6460,7 @@ function typeSpecStringNoQualNoDims(inTs::TypeSpec)::String
   return outStr
 end
 
-function typeSpecStringNoQualNoDimsLst(inTypeSpecLst::List{<:TypeSpec})::String
+function typeSpecStringNoQualNoDimsLst(inTypeSpecLst::List{<:Absyn.TypeSpec})::String
   local outString::String
 
   @assign outString =
@@ -6468,17 +6468,17 @@ function typeSpecStringNoQualNoDimsLst(inTypeSpecLst::List{<:TypeSpec})::String
   return outString
 end
 
-function crefStringIgnoreSubs(inCr::ComponentRef)::String
+function crefStringIgnoreSubs(inCr::Absyn.ComponentRef)::String
   local outStr::String
 
-  local p::Path
+  local p::Absyn.Path
 
   @assign p = crefToPathIgnoreSubs(inCr)
   @assign outStr = pathString(makeNotFullyQualified(p))
   return outStr
 end
 
-function importString(inImp::Import)::String
+function importString(inImp::Absyn.Import)::String
   local outStr::String
 
   @assign outStr = Dump.unparseImportStr(inImp)
@@ -6492,9 +6492,9 @@ function refString(inRef::Ref)::String
   local outStr::String
 
   @assign outStr = begin
-    local cr::ComponentRef
-    local ts::TypeSpec
-    local im::Import
+    local cr::Absyn.ComponentRef
+    local ts::Absyn.TypeSpec
+    local im::Absyn.Import
     @match inRef begin
       RCR(cr) => begin
         crefString(cr)
@@ -6519,9 +6519,9 @@ function refStringBrief(inRef::Ref)::String
   local outStr::String
 
   @assign outStr = begin
-    local cr::ComponentRef
-    local ts::TypeSpec
-    local im::Import
+    local cr::Absyn.ComponentRef
+    local ts::Absyn.TypeSpec
+    local im::Absyn.Import
     @match inRef begin
       RCR(cr) => begin
         crefStringIgnoreSubs(cr)
@@ -6539,11 +6539,11 @@ function refStringBrief(inRef::Ref)::String
   return outStr
 end
 
-function getArrayDimOptAsList(inArrayDim::Option{<:ArrayDim})::ArrayDim
-  local outArrayDim::ArrayDim
+function getArrayDimOptAsList(inArrayDim::Option{<:Absyn.ArrayDim})::Absyn.ArrayDim
+  local outArrayDim::Absyn.ArrayDim
 
   @assign outArrayDim = begin
-    local ad::ArrayDim
+    local ad::Absyn.ArrayDim
     @match inArrayDim begin
       SOME(ad) => begin
         ad
@@ -6559,34 +6559,34 @@ end
 
 """ #= Removes a variable from a variable list =#"""
 function removeCrefFromCrefs(
-  inAbsynComponentRefLst::List{<:ComponentRef},
-  inComponentRef::ComponentRef,
-)::List{ComponentRef}
-  local outAbsynComponentRefLst::List{ComponentRef}
+  inAbsynComponentRefLst::List{<:Absyn.ComponentRef},
+  inComponentRef::Absyn.ComponentRef,
+)::List{Absyn.ComponentRef}
+  local outAbsynComponentRefLst::List{Absyn.ComponentRef}
 
   @assign outAbsynComponentRefLst = begin
     local n1::String
     local n2::String
-    local rest_1::List{ComponentRef}
-    local rest::List{ComponentRef}
-    local cr1::ComponentRef
-    local cr2::ComponentRef
+    local rest_1::List{Absyn.ComponentRef}
+    local rest::List{Absyn.ComponentRef}
+    local cr1::Absyn.ComponentRef
+    local cr2::Absyn.ComponentRef
     @matchcontinue (inAbsynComponentRefLst, inComponentRef) begin
       (nil(), _) => begin
         nil
       end
 
       (cr1 <| rest, cr2) => begin
-        @match CREF_IDENT(name = n1, subscripts = nil) = cr1
-        @match CREF_IDENT(name = n2, subscripts = nil) = cr2
+        @match Absyn.CREF_IDENT(name = n1, subscripts = nil) = cr1
+        @match Absyn.CREF_IDENT(name = n2, subscripts = nil) = cr2
         @match true = stringEq(n1, n2)
         @assign rest_1 = removeCrefFromCrefs(rest, cr2)
         rest_1
       end
 
       (cr1 <| rest, cr2) => begin
-        @match CREF_QUAL(name = n1) = cr1
-        @match CREF_IDENT(name = n2) = cr2
+        @match Absyn.CREF_QUAL(name = n1) = cr1
+        @match Absyn.CREF_IDENT(name = n2) = cr2
         @match true = stringEq(n1, n2)
         @assign rest_1 = removeCrefFromCrefs(rest, cr2)
         rest_1
@@ -6604,35 +6604,35 @@ function removeCrefFromCrefs(
 end
 
 """ #= Retrieve e.g. the documentation annotation as a string from the class passed as argument. =#"""
-function getNamedAnnotationInClass(inClass::Class, id::Path, f::ModFunc)::Option{TypeA}
+function getNamedAnnotationInClass(inClass::Absyn.Class, id::Absyn.Path, f::ModFunc)::Option{TypeA}
   local outString::Option{TypeA}
 
   @assign outString = begin
     local str::TypeA
     local res::TypeA
-    local parts::List{ClassPart}
-    local annlst::List{ElementArg}
-    local ann::List{Annotation}
+    local parts::List{Absyn.ClassPart}
+    local annlst::List{Absyn.ElementArg}
+    local ann::List{Absyn.Annotation}
     @matchcontinue (inClass, id, f) begin
-      (CLASS(body = PARTS(ann = ann)), _, _) => begin
+      (Absyn.CLASS(body = Absyn.PARTS(ann = ann)), _, _) => begin
         @assign annlst = ListUtil.flatten(ListUtil.map(ann, annotationToElementArgs))
         @match SOME(str) = getNamedAnnotationStr(annlst, id, f)
         SOME(str)
       end
 
-      (CLASS(body = CLASS_EXTENDS(ann = ann)), _, _) => begin
+      (Absyn.CLASS(body = Absyn.CLASS_EXTENDS(ann = ann)), _, _) => begin
         @assign annlst = ListUtil.flatten(ListUtil.map(ann, annotationToElementArgs))
         @match SOME(str) = getNamedAnnotationStr(annlst, id, f)
         SOME(str)
       end
 
-      (CLASS(body = DERIVED(comment = SOME(COMMENT(SOME(ANNOTATION(annlst)), _)))), _, _) => begin
+      (Absyn.CLASS(body = DERIVED(comment = SOME(Absyn.COMMENT(SOME(Absyn.ANNOTATION(annlst)), _)))), _, _) => begin
         @match SOME(res) = getNamedAnnotationStr(annlst, id, f)
         SOME(res)
       end
 
       (
-        CLASS(body = ENUMERATION(comment = SOME(COMMENT(SOME(ANNOTATION(annlst)), _)))),
+        Absyn.CLASS(body = ENUMERATION(comment = SOME(Absyn.COMMENT(SOME(Absyn.ANNOTATION(annlst)), _)))),
         _,
         _,
       ) => begin
@@ -6641,7 +6641,7 @@ function getNamedAnnotationInClass(inClass::Class, id::Path, f::ModFunc)::Option
       end
 
       (
-        CLASS(body = OVERLOAD(comment = SOME(COMMENT(SOME(ANNOTATION(annlst)), _)))),
+        Absyn.CLASS(body = OVERLOAD(comment = SOME(Absyn.COMMENT(SOME(Absyn.ANNOTATION(annlst)), _)))),
         _,
         _,
       ) => begin
@@ -6659,22 +6659,22 @@ end
 
 """ #= Helper function to getNamedAnnotationInElementitemlist. =#"""
 function getNamedAnnotationStr(
-  inAbsynElementArgLst::List{<:ElementArg},
-  id::Path,
+  inAbsynElementArgLst::List{<:Absyn.ElementArg},
+  id::Absyn.Path,
   f::ModFunc,
 )::Option{TypeA}
   local outString::Option{TypeA}
 
   @assign outString = begin
     local str::TypeA
-    local ann::ElementArg
-    local mod::Option{Modification}
-    local xs::List{ElementArg}
-    local id1::Ident
-    local id2::Ident
-    local rest::Path
+    local ann::Absyn.ElementArg
+    local mod::Option{Absyn.Modification}
+    local xs::List{Absyn.ElementArg}
+    local id1::Absyn.Ident
+    local id2::Absyn.Ident
+    local rest::Absyn.Path
     @matchcontinue (inAbsynElementArgLst, id, f) begin
-      (MODIFICATION(path = IDENT(name = id1), modification = mod) <| _, IDENT(id2), _) =>
+      (Absyn.MODIFICATION(path = Absyn.IDENT(name = id1), modification = mod) <| _, Absyn.IDENT(id2), _) =>
         begin
           @match true = stringEq(id1, id2)
           @assign str = f(mod)
@@ -6682,11 +6682,11 @@ function getNamedAnnotationStr(
         end
 
       (
-        MODIFICATION(
-          path = IDENT(name = id1),
-          modification = SOME(CLASSMOD(elementArgLst = xs)),
+        Absyn.MODIFICATION(
+          path = Absyn.IDENT(name = id1),
+          modification = SOME(Absyn.CLASSMOD(elementArgLst = xs)),
         ) <| _,
-        QUALIFIED(name = id2, path = rest),
+        Absyn.QUALIFIED(name = id2, path = rest),
         _,
       ) => begin
         @match true = stringEq(id1, id2)
@@ -6703,28 +6703,28 @@ end
 
 """ #= This function splits each part of a cref into CREF_IDENTs and applies the
    given function to each part. If the given cref is a qualified cref then the
-   map function is expected to also return CREF_IDENT, so that the split cref
+   map function is expected to also return Absyn.CREF_IDENT, so that the split cref
    can be reconstructed. Otherwise the map function is free to return whatever
    it wants. =#"""
-function mapCrefParts(inCref::ComponentRef, inMapFunc::MapFunc)::ComponentRef
-  local outCref::ComponentRef
+function mapCrefParts(inCref::Absyn.ComponentRef, inMapFunc::MapFunc)::Absyn.ComponentRef
+  local outCref::Absyn.ComponentRef
 
   @assign outCref = begin
-    local name::Ident
-    local subs::List{Subscript}
-    local rest_cref::ComponentRef
-    local cref::ComponentRef
+    local name::Absyn.Ident
+    local subs::List{Absyn.Subscript}
+    local rest_cref::Absyn.ComponentRef
+    local cref::Absyn.ComponentRef
     @match (inCref, inMapFunc) begin
-      (CREF_QUAL(name, subs, rest_cref), _) => begin
-        @assign cref = CREF_IDENT(name, subs)
-        @match CREF_IDENT(name, subs) = inMapFunc(cref)
+      (Absyn.CREF_QUAL(name, subs, rest_cref), _) => begin
+        @assign cref = Absyn.CREF_IDENT(name, subs)
+        @match Absyn.CREF_IDENT(name, subs) = inMapFunc(cref)
         @assign rest_cref = mapCrefParts(rest_cref, inMapFunc)
-        CREF_QUAL(name, subs, rest_cref)
+        Absyn.CREF_QUAL(name, subs, rest_cref)
       end
 
-      (CREF_FULLYQUALIFIED(cref), _) => begin
+      (Absyn.CREF_FULLYQUALIFIED(cref), _) => begin
         @assign cref = mapCrefParts(cref, inMapFunc)
-        CREF_FULLYQUALIFIED(cref)
+        Absyn.CREF_FULLYQUALIFIED(cref)
       end
 
       _ => begin
@@ -6736,43 +6736,43 @@ function mapCrefParts(inCref::ComponentRef, inMapFunc::MapFunc)::ComponentRef
   return outCref
 end
 
-function opEqual(op1::Operator, op2::Operator)::Bool
+function opEqual(op1::Absyn.Operator, op2::Absyn.Operator)::Bool
   local isEqual::Bool
 
   @assign isEqual = valueEq(op1, op2)
   return isEqual
 end
 
-function opIsElementWise(op::Operator)::Bool
+function opIsElementWise(op::Absyn.Operator)::Bool
   local isElementWise::Bool
 
   @assign isElementWise = begin
     @match op begin
-      ADD_EW(__) => begin
+      Absyn.ADD_EW(__) => begin
         true
       end
 
-      SUB_EW(__) => begin
+      Absyn.SUB_EW(__) => begin
         true
       end
 
-      MUL_EW(__) => begin
+      Absyn.MUL_EW(__) => begin
         true
       end
 
-      DIV_EW(__) => begin
+      Absyn.DIV_EW(__) => begin
         true
       end
 
-      POW_EW(__) => begin
+      Absyn.POW_EW(__) => begin
         true
       end
 
-      UPLUS_EW(__) => begin
+      Absyn.UPLUS_EW(__) => begin
         true
       end
 
-      UMINUS_EW(__) => begin
+      Absyn.UMINUS_EW(__) => begin
         true
       end
 
@@ -6784,9 +6784,9 @@ function opIsElementWise(op::Operator)::Bool
   return isElementWise
 end
 
-function dummyTraverseExp(inExp::Exp, inArg::Arg)::Tuple{Exp, Arg}
+function dummyTraverseExp(inExp::Absyn.Exp, inArg::Arg)::Tuple{Absyn.Exp, Arg}
   local outArg::Arg
-  local outExp::Exp
+  local outExp::Absyn.Exp
 
   @assign outExp = inExp
   @assign outArg = inArg
@@ -6794,18 +6794,18 @@ function dummyTraverseExp(inExp::Exp, inArg::Arg)::Tuple{Exp, Arg}
 end
 
 """ #= retrives defineunit definitions in elements =#"""
-function getDefineUnitsInElements(elts::List{<:ElementItem})::List{Element}
-  local outElts::List{Element}
+function getDefineUnitsInElements(elts::List{<:Absyn.ElementItem})::List{Absyn.Element}
+  local outElts::List{Absyn.Element}
 
   @assign outElts = begin
-    local e::Element
-    local rest::List{ElementItem}
+    local e::Absyn.Element
+    local rest::List{Absyn.ElementItem}
     @matchcontinue elts begin
       nil() => begin
         nil
       end
 
-      ELEMENTITEM(e && DEFINEUNIT(__)) <| rest => begin
+      Absyn.ELEMENTITEM(e && Absyn.DEFINEUNIT(__)) <| rest => begin
         @assign outElts = getDefineUnitsInElements(rest)
         _cons(e, outElts)
       end
@@ -6819,17 +6819,17 @@ function getDefineUnitsInElements(elts::List{<:ElementItem})::List{Element}
 end
 
 """ #= Returns the public and protected elements in a class. =#"""
-function getElementItemsInClass(inClass::Class)::List{ElementItem}
-  local outElements::List{ElementItem}
+function getElementItemsInClass(inClass::Absyn.Class)::List{Absyn.ElementItem}
+  local outElements::List{Absyn.ElementItem}
 
   @assign outElements = begin
-    local parts::List{ClassPart}
+    local parts::List{Absyn.ClassPart}
     @match inClass begin
-      CLASS(body = PARTS(classParts = parts)) => begin
+      Absyn.CLASS(body = Absyn.PARTS(classParts = parts)) => begin
         ListUtil.mapFlat(parts, getElementItemsInClassPart)
       end
 
-      CLASS(body = CLASS_EXTENDS(parts = parts)) => begin
+      Absyn.CLASS(body = Absyn.CLASS_EXTENDS(parts = parts)) => begin
         ListUtil.mapFlat(parts, getElementItemsInClassPart)
       end
 
@@ -6842,11 +6842,11 @@ function getElementItemsInClass(inClass::Class)::List{ElementItem}
 end
 
 """ #= Returns the public and protected elements in a class part. =#"""
-function getElementItemsInClassPart(inClassPart::ClassPart)::List{ElementItem}
-  local outElements::List{ElementItem}
+function getElementItemsInClassPart(inClassPart::Absyn.ClassPart)::List{Absyn.ElementItem}
+  local outElements::List{Absyn.ElementItem}
 
   @assign outElements = begin
-    local elts::List{ElementItem}
+    local elts::List{Absyn.ElementItem}
     @match inClassPart begin
       PUBLIC(contents = elts) => begin
         elts
@@ -6864,28 +6864,28 @@ function getElementItemsInClassPart(inClassPart::ClassPart)::List{ElementItem}
   return outElements
 end
 
-function makePublicClassPartFromElementItems(elementItems::List{<:ElementItem})::ClassPart
-  local classParts::ClassPart
+function makePublicClassPartFromElementItems(elementItems::List{<:Absyn.ElementItem})::Absyn.ClassPart
+  local classParts::Absyn.ClassPart
 
   @assign classParts = PUBLIC(elementItems)
   return classParts
 end
 
-function makePublicClassPartFromElementItem(ei::ElementItem)::ClassPart
-  local classParts::ClassPart
+function makePublicClassPartFromElementItem(ei::Absyn.ElementItem)::Absyn.ClassPart
+  local classParts::Absyn.ClassPart
 
   @assign classParts = PUBLIC(list(ei))
   return classParts
 end
 
-function traverseClassComponents(inClass::Class, inFunc::FuncType, inArg::ArgT) where {ArgT}
+function traverseClassComponents(inClass::Absyn.Class, inFunc::FuncType, inArg::ArgT) where {ArgT}
   local outArg::ArgT
-  local outClass::Class = inClass
+  local outClass::Absyn.Class = inClass
 
   @assign outClass = begin
-    local body::ClassDef
+    local body::Absyn.ClassDef
     @match outClass begin
-      CLASS(__) => begin
+      Absyn.CLASS(__) => begin
         @assign (body, outArg) = traverseClassDef(
           outClass.body,
           (inFunc) -> traverseClassPartComponents(inFunc = inFunc),
@@ -6935,16 +6935,16 @@ function traverseListGeneric(inList::List{T}, inFunc::FuncType, inArg::ArgT) whe
 end
 
 function traverseClassPartComponents(
-  inClassPart::ClassPart,
+  inClassPart::Absyn.ClassPart,
   inFunc::FuncType,
   inArg::ArgT,
 ) where {ArgT}
   local outContinue::Bool = true
   local outArg::ArgT = inArg
-  local outClassPart::ClassPart = inClassPart
+  local outClassPart::Absyn.ClassPart = inClassPart
 
   @assign _ = begin
-    local items::List{ElementItem}
+    local items::List{Absyn.ElementItem}
     @match outClassPart begin
       PUBLIC(__) => begin
         @assign (items, outArg, outContinue) = traverseListGeneric(
@@ -6975,24 +6975,24 @@ function traverseClassPartComponents(
 end
 
 function traverseElementItemComponents(
-  inItem::ElementItem,
+  inItem::Absyn.ElementItem,
   inFunc::FuncType,
   inArg::ArgT,
 ) where {ArgT}
   local outContinue::Bool
   local outArg::ArgT
-  local outItem::ElementItem
+  local outItem::Absyn.ElementItem
 
   @assign (outItem, outArg, outContinue) = begin
-    local elem::Element
+    local elem::Absyn.Element
     @match inItem begin
-      ELEMENTITEM(__) => begin
+      Absyn.ELEMENTITEM(__) => begin
         @assign (elem, outArg, outContinue) =
           traverseElementComponents(inItem.element, inFunc, inArg)
         @assign outItem = if referenceEq(elem, inItem.element)
           inItem
         else
-          ELEMENTITEM(elem)
+          Absyn.ELEMENTITEM(elem)
         end
         (outItem, outArg, outContinue)
       end
@@ -7006,18 +7006,18 @@ function traverseElementItemComponents(
 end
 
 function traverseElementComponents(
-  inElement::Element,
+  inElement::Absyn.Element,
   inFunc::FuncType,
   inArg::ArgT,
 ) where {ArgT}
   local outContinue::Bool
   local outArg::ArgT
-  local outElement::Element = inElement
+  local outElement::Absyn.Element = inElement
 
   @assign (outElement, outArg, outContinue) = begin
-    local spec::ElementSpec
+    local spec::Absyn.ElementSpec
     @match outElement begin
-      ELEMENT(__) => begin
+      Absyn.ELEMENT(__) => begin
         @assign (spec, outArg, outContinue) =
           traverseElementSpecComponents(outElement.specification, inFunc, inArg)
         if !referenceEq(spec, outElement.specification)
@@ -7035,19 +7035,19 @@ function traverseElementComponents(
 end
 
 function traverseElementSpecComponents(
-  inSpec::ElementSpec,
+  inSpec::Absyn.ElementSpec,
   inFunc::FuncType,
   inArg::ArgT,
 ) where {ArgT}
   local outContinue::Bool
   local outArg::ArgT
-  local outSpec::ElementSpec = inSpec
+  local outSpec::Absyn.ElementSpec = inSpec
 
   @assign (outSpec, outArg, outContinue) = begin
-    local cls::Class
-    local comps::List{ComponentItem}
+    local cls::Absyn.Class
+    local comps::List{Absyn.ComponentItem}
     @match outSpec begin
-      COMPONENTS(__) => begin
+      Absyn.COMPONENTS(__) => begin
         @assign (comps, outArg, outContinue) = inFunc(outSpec.components, inArg)
         if !referenceEq(comps, outSpec.components)
           @assign outSpec.components = comps
@@ -7063,22 +7063,22 @@ function traverseElementSpecComponents(
   return (outSpec, outArg, outContinue)
 end
 
-function traverseClassDef(inClassDef::ClassDef, inFunc::FuncType, inArg::ArgT) where {ArgT}
+function traverseClassDef(inClassDef::Absyn.ClassDef, inFunc::FuncType, inArg::ArgT) where {ArgT}
   local outContinue::Bool = true
   local outArg::ArgT = inArg
-  local outClassDef::ClassDef = inClassDef
+  local outClassDef::Absyn.ClassDef = inClassDef
 
   @assign _ = begin
-    local parts::List{ClassPart}
+    local parts::List{Absyn.ClassPart}
     @match outClassDef begin
-      PARTS(__) => begin
+      Absyn.PARTS(__) => begin
         @assign (parts, outArg, outContinue) =
           traverseListGeneric(outClassDef.classParts, inFunc, inArg)
         @assign outClassDef.classParts = parts
         ()
       end
 
-      CLASS_EXTENDS(__) => begin
+      Absyn.CLASS_EXTENDS(__) => begin
         @assign (parts, outArg, outContinue) =
           traverseListGeneric(outClassDef.parts, inFunc, inArg)
         @assign outClassDef.parts = parts
@@ -7093,16 +7093,16 @@ function traverseClassDef(inClassDef::ClassDef, inFunc::FuncType, inArg::ArgT) w
   return (outClassDef, outArg, outContinue)
 end
 
-function isEmptyMod(inMod::Modification)::Bool
+function isEmptyMod(inMod::Absyn.Modification)::Bool
   local outIsEmpty::Bool
 
   @assign outIsEmpty = begin
     @match inMod begin
-      CLASSMOD(nil(), NOMOD(__)) => begin
+      Absyn.CLASSMOD(nil(), Absyn.NOMOD(__)) => begin
         true
       end
 
-      CLASSMOD(nil(), EQMOD(exp = TUPLE(expressions = nil()))) => begin
+      Absyn.CLASSMOD(nil(), Absyn.EQMOD(exp = Absyn.TUPLE(expressions = nil()))) => begin
         true
       end
 
@@ -7114,17 +7114,17 @@ function isEmptyMod(inMod::Modification)::Bool
   return outIsEmpty
 end
 
-function isEmptySubMod(inSubMod::ElementArg)::Bool
+function isEmptySubMod(inSubMod::Absyn.ElementArg)::Bool
   local outIsEmpty::Bool
 
   @assign outIsEmpty = begin
-    local mod::Modification
+    local mod::Absyn.Modification
     @match inSubMod begin
-      MODIFICATION(modification = NONE()) => begin
+      Absyn.MODIFICATION(modification = NONE()) => begin
         true
       end
 
-      MODIFICATION(modification = SOME(mod)) => begin
+      Absyn.MODIFICATION(modification = SOME(mod)) => begin
         isEmptyMod(mod)
       end
     end
@@ -7132,17 +7132,17 @@ function isEmptySubMod(inSubMod::ElementArg)::Bool
   return outIsEmpty
 end
 
-function elementArgName(inArg::ElementArg)::Path
-  local outName::Path
+function elementArgName(inArg::Absyn.ElementArg)::Absyn.Path
+  local outName::Absyn.Path
 
   @assign outName = begin
-    local e::ElementSpec
+    local e::Absyn.ElementSpec
     @match inArg begin
-      MODIFICATION(path = outName) => begin
+      Absyn.MODIFICATION(path = outName) => begin
         outName
       end
 
-      REDECLARATION(elementSpec = e) => begin
+      Absyn.REDECLARATION(elementSpec = e) => begin
         makeIdentPathFromString(elementSpecName(e))
       end
     end
@@ -7150,15 +7150,15 @@ function elementArgName(inArg::ElementArg)::Path
   return outName
 end
 
-function elementArgEqualName(inArg1::ElementArg, inArg2::ElementArg)::Bool
+function elementArgEqualName(inArg1::Absyn.ElementArg, inArg2::Absyn.ElementArg)::Bool
   local outEqual::Bool
 
-  local name1::Path
-  local name2::Path
+  local name1::Absyn.Path
+  local name2::Absyn.Path
 
   @assign outEqual = begin
     @match (inArg1, inArg2) begin
-      (MODIFICATION(path = name1), MODIFICATION(path = name2)) => begin
+      (Absyn.MODIFICATION(path = name1), Absyn.MODIFICATION(path = name2)) => begin
         pathEqual(name1, name2)
       end
 
@@ -7175,34 +7175,34 @@ function optMsg(inShowMessage::Bool, inInfo::SourceInfo)::Msg
   local outMsg::Msg
 
   @assign outMsg = if inShowMessage
-    MSG(inInfo)
+    Absyn.MSG(inInfo)
   else
-    NO_MSG()
+    Absyn.NO_MSG()
   end
   return outMsg
 end
 
-function makeSubscript(inExp::Exp)::Subscript
-  local outSubscript::Subscript
+function makeSubscript(inExp::Absyn.Exp)::Absyn.Subscript
+  local outSubscript::Absyn.Subscript
 
-  @assign outSubscript = SUBSCRIPT(inExp)
+  @assign outSubscript = Absyn.SUBSCRIPT(inExp)
   return outSubscript
 end
 
 """ #= Splits a cref into parts. =#"""
 function crefExplode(
-  inCref::ComponentRef,
-  inAccum::List{<:ComponentRef} = nil,
-)::List{ComponentRef}
-  local outCrefParts::List{ComponentRef}
+  inCref::Absyn.ComponentRef,
+  inAccum::List{<:Absyn.ComponentRef} = nil,
+)::List{Absyn.ComponentRef}
+  local outCrefParts::List{Absyn.ComponentRef}
 
   @assign outCrefParts = begin
     @match inCref begin
-      CREF_QUAL(__) => begin
+      Absyn.CREF_QUAL(__) => begin
         crefExplode(inCref.componentRef, _cons(crefFirstCref(inCref), inAccum))
       end
 
-      CREF_FULLYQUALIFIED(__) => begin
+      Absyn.CREF_FULLYQUALIFIED(__) => begin
         crefExplode(inCref.componentRef, inAccum)
       end
 
@@ -7216,42 +7216,42 @@ end
 
 """ #= Calls the given function on each subexpression (non-recursively) of the given
    expression, sending in the extra argument to each call. =#"""
-function traverseExpShallow(inExp::Exp, inArg::ArgT, inFunc::FuncT) where {ArgT}
-  local outExp::Exp = inExp
+function traverseExpShallow(inExp::Absyn.Exp, inArg::ArgT, inFunc::FuncT) where {ArgT}
+  local outExp::Absyn.Exp = inExp
 
   @assign _ = begin
-    local e1::Exp
-    local e2::Exp
+    local e1::Absyn.Exp
+    local e2::Absyn.Exp
     @match outExp begin
-      BINARY(__) => begin
+      Absyn.BINARY(__) => begin
         @assign outExp.exp1 = inFunc(outExp.exp1, inArg)
         @assign outExp.exp2 = inFunc(outExp.exp2, inArg)
         ()
       end
 
-      UNARY(__) => begin
+      Absyn.UNARY(__) => begin
         @assign outExp.exp = inFunc(outExp.exp, inArg)
         ()
       end
 
-      LBINARY(__) => begin
+      Absyn.LBINARY(__) => begin
         @assign outExp.exp1 = inFunc(outExp.exp1, inArg)
         @assign outExp.exp2 = inFunc(outExp.exp2, inArg)
         ()
       end
 
-      LUNARY(__) => begin
+      Absyn.LUNARY(__) => begin
         @assign outExp.exp = inFunc(outExp.exp, inArg)
         ()
       end
 
-      RELATION(__) => begin
+      Absyn.RELATION(__) => begin
         @assign outExp.exp1 = inFunc(outExp.exp1, inArg)
         @assign outExp.exp2 = inFunc(outExp.exp2, inArg)
         ()
       end
 
-      IFEXP(__) => begin
+      Absyn.IFEXP(__) => begin
         @assign outExp.ifExp = inFunc(outExp.ifExp, inArg)
         @assign outExp.trueBranch = inFunc(outExp.trueBranch, inArg)
         @assign outExp.elseBranch = inFunc(outExp.elseBranch, inArg)
@@ -7262,7 +7262,7 @@ function traverseExpShallow(inExp::Exp, inArg::ArgT, inFunc::FuncT) where {ArgT}
         ()
       end
 
-      CALL(__) => begin
+      Absyn.CALL(__) => begin
         @assign outExp.functionArgs =
           traverseExpShallowFuncArgs(outExp.functionArgs, inArg, inFunc)
         ()
@@ -7292,7 +7292,7 @@ function traverseExpShallow(inExp::Exp, inArg::ArgT, inFunc::FuncT) where {ArgT}
         ()
       end
 
-      TUPLE(__) => begin
+      Absyn.TUPLE(__) => begin
         @assign outExp.expressions = List(inFunc(e, inArg) for e in outExp.expressions)
         ()
       end
@@ -7328,20 +7328,20 @@ function traverseExpShallow(inExp::Exp, inArg::ArgT, inFunc::FuncT) where {ArgT}
 end
 
 function traverseExpShallowFuncArgs(
-  inArgs::FunctionArgs,
+  inArgs::Absyn.FunctionArgs,
   inArg::ArgT,
   inFunc::FuncT,
 ) where {ArgT}
-  local outArgs::FunctionArgs = inArgs
+  local outArgs::Absyn.FunctionArgs = inArgs
 
   @assign outArgs = begin
     @match outArgs begin
-      FUNCTIONARGS(__) => begin
+      Absyn.FUNCTIONARGS(__) => begin
         @assign outArgs.args = List(inFunc(arg, inArg) for arg in outArgs.args)
         outArgs
       end
 
-      FOR_ITER_FARG(__) => begin
+      Absyn.FOR_ITER_FARG(__) => begin
         @assign outArgs.exp = inFunc(outArgs.exp, inArg)
         @assign outArgs.iterators = List(
           traverseExpShallowIterator(it, inArg, inFunc) for it in outArgs.iterators
@@ -7354,29 +7354,29 @@ function traverseExpShallowFuncArgs(
 end
 
 function traverseExpShallowIterator(
-  inIterator::ForIterator,
+  inIterator::Absyn.ForIterator,
   inArg::ArgT,
   inFunc::FuncT,
 ) where {ArgT}
-  local outIterator::ForIterator
+  local outIterator::Absyn.ForIterator
 
   local name::String
-  local guard_exp::Option{Exp}
-  local range_exp::Option{Exp}
+  local guard_exp::Option{Absyn.Exp}
+  local range_exp::Option{Absyn.Exp}
 
-  @match ITERATOR(name, guard_exp, range_exp) = inIterator
+  @match Absyn.ITERATOR(name, guard_exp, range_exp) = inIterator
   @assign guard_exp = Util.applyOption1(guard_exp, inFunc, inArg)
   @assign range_exp = Util.applyOption1(range_exp, inFunc, inArg)
-  @assign outIterator = ITERATOR(name, guard_exp, range_exp)
+  @assign outIterator = Absyn.ITERATOR(name, guard_exp, range_exp)
   return outIterator
 end
 
-function isElementItemClass(inElement::ElementItem)::Bool
+function isElementItemClass(inElement::Absyn.ElementItem)::Bool
   local outIsClass::Bool
 
   @assign outIsClass = begin
     @match inElement begin
-      ELEMENTITEM(element = ELEMENT(specification = CLASSDEF(__))) => begin
+      Absyn.ELEMENTITEM(element = Absyn.ELEMENT(specification = Absyn.CLASSDEF(__))) => begin
         true
       end
 
@@ -7388,12 +7388,12 @@ function isElementItemClass(inElement::ElementItem)::Bool
   return outIsClass
 end
 
-function isElementItem(inElement::ElementItem)::Bool
+function isElementItem(inElement::Absyn.ElementItem)::Bool
   local outIsClass::Bool
 
   @assign outIsClass = begin
     @match inElement begin
-      ELEMENTITEM(__) => begin
+      Absyn.ELEMENTITEM(__) => begin
         true
       end
 
@@ -7405,12 +7405,12 @@ function isElementItem(inElement::ElementItem)::Bool
   return outIsClass
 end
 
-function isAlgorithmItem(inAlg::AlgorithmItem)::Bool
+function isAlgorithmItem(inAlg::Absyn.AlgorithmItem)::Bool
   local outIsClass::Bool
 
   @assign outIsClass = begin
     @match inAlg begin
-      ALGORITHMITEM(__) => begin
+      Absyn.ALGORITHMITEM(__) => begin
         true
       end
 
@@ -7422,13 +7422,13 @@ function isAlgorithmItem(inAlg::AlgorithmItem)::Bool
   return outIsClass
 end
 
-function isElementItemClassNamed(inName::String, inElement::ElementItem)::Bool
+function isElementItemClassNamed(inName::String, inElement::Absyn.ElementItem)::Bool
   local outIsNamed::Bool
 
   @assign outIsNamed = begin
     local name::String
     @match inElement begin
-      ELEMENTITEM(element = ELEMENT(specification = CLASSDEF(class_ = CLASS(name = name)))) => begin
+      Absyn.ELEMENTITEM(element = Absyn.ELEMENT(specification = Absyn.CLASSDEF(class_ = Absyn.CLASS(name = name)))) => begin
         name == inName
       end
 
@@ -7440,7 +7440,7 @@ function isElementItemClassNamed(inName::String, inElement::ElementItem)::Bool
   return outIsNamed
 end
 
-function isEmptyClassPart(inClassPart::ClassPart)::Bool
+function isEmptyClassPart(inClassPart::Absyn.ClassPart)::Bool
   local outIsEmpty::Bool
 
   @assign outIsEmpty = begin
@@ -7457,7 +7457,7 @@ function isEmptyClassPart(inClassPart::ClassPart)::Bool
         true
       end
 
-      EQUATIONS(contents = nil()) => begin
+      Absyn.EQUATIONS(contents = nil()) => begin
         true
       end
 
@@ -7465,7 +7465,7 @@ function isEmptyClassPart(inClassPart::ClassPart)::Bool
         true
       end
 
-      ALGORITHMS(contents = nil()) => begin
+      Absyn.ALGORITHMS(contents = nil()) => begin
         true
       end
 
@@ -7497,7 +7497,7 @@ function isInvariantExpNoTraverse(e::Absyn.Exp, b::Bool)::Tuple{Absyn.Exp, Bool}
         true
       end
 
-      STRING(__) => begin
+      Absyn.STRING(__) => begin
         true
       end
 
@@ -7505,35 +7505,35 @@ function isInvariantExpNoTraverse(e::Absyn.Exp, b::Bool)::Tuple{Absyn.Exp, Bool}
         true
       end
 
-      BINARY(__) => begin
+      Absyn.BINARY(__) => begin
         true
       end
 
-      UNARY(__) => begin
+      Absyn.UNARY(__) => begin
         true
       end
 
-      LBINARY(__) => begin
+      Absyn.LBINARY(__) => begin
         true
       end
 
-      LUNARY(__) => begin
+      Absyn.LUNARY(__) => begin
         true
       end
 
-      RELATION(__) => begin
+      Absyn.RELATION(__) => begin
         true
       end
 
-      IFEXP(__) => begin
+      Absyn.IFEXP(__) => begin
         true
       end
 
-      CALL(function_ = CREF_FULLYQUALIFIED(__)) => begin
+      Absyn.CALL(function_ = Absyn.CREF_FULLYQUALIFIED(__)) => begin
         true
       end
 
-      PARTEVALFUNCTION(function_ = CREF_FULLYQUALIFIED(__)) => begin
+      PARTEVALFUNCTION(function_ = Absyn.CREF_FULLYQUALIFIED(__)) => begin
         true
       end
 
@@ -7562,26 +7562,26 @@ function isInvariantExpNoTraverse(e::Absyn.Exp, b::Bool)::Tuple{Absyn.Exp, Bool}
       end
     end
   end
-  #=  case CREF(CREF_FULLYQUALIFIED()) then true;
+  #=  case Absyn.CREF(Absyn.CREF_FULLYQUALIFIED()) then true;
   =#
   return (e, b)
 end
 
 """ #= Returns the number of parts a path consists of, e.g. A.B.C gives 3. =#"""
-function pathPartCount(path::Path, partsAccum::Integer = 0)::Integer
+function pathPartCount(path::Absyn.Path, partsAccum::Integer = 0)::Integer
   local parts::Integer
 
   @assign parts = begin
     @match path begin
-      Path.IDENT(__) => begin
+      Absyn.Path.Absyn.IDENT(__) => begin
         partsAccum + 1
       end
 
-      Path.QUALIFIED(__) => begin
+      Absyn.Path.Absyn.QUALIFIED(__) => begin
         pathPartCount(path.path, partsAccum + 1)
       end
 
-      Path.FULLYQUALIFIED(__) => begin
+      Absyn.Path.Absyn.FULLYQUALIFIED(__) => begin
         pathPartCount(path.path, partsAccum)
       end
     end
@@ -7589,14 +7589,14 @@ function pathPartCount(path::Path, partsAccum::Integer = 0)::Integer
   return parts
 end
 
-function getAnnotationsFromConstraintClass(inCC::Option{<:ConstrainClass})::List{ElementArg}
-  local outElArgLst::List{ElementArg}
+function getAnnotationsFromConstraintClass(inCC::Option{<:Absyn.ConstrainClass})::List{Absyn.ElementArg}
+  local outElArgLst::List{Absyn.ElementArg}
 
   @assign outElArgLst = begin
-    local elementArgs::List{ElementArg}
+    local elementArgs::List{Absyn.ElementArg}
     @match inCC begin
-      SOME(CONSTRAINCLASS(
-        comment = SOME(COMMENT(annotation_ = SOME(ANNOTATION(elementArgs)))),
+      SOME(Absyn.CONSTRAINCLASS(
+        comment = SOME(Absyn.COMMENT(annotation_ = SOME(Absyn.ANNOTATION(elementArgs)))),
       )) => begin
         elementArgs
       end
@@ -7610,10 +7610,10 @@ function getAnnotationsFromConstraintClass(inCC::Option{<:ConstrainClass})::List
 end
 
 function getAnnotationsFromItems(
-  inComponentItems::List{<:ComponentItem},
-  ccAnnotations::List{<:ElementArg},
-)::List{List{ElementArg}}
-  local outLst::List{List{ElementArg}} = nil
+  inComponentItems::List{<:Absyn.ComponentItem},
+  ccAnnotations::List{<:Absyn.ElementArg},
+)::List{List{Absyn.ElementArg}}
+  local outLst::List{List{Absyn.ElementArg}} = nil
 
   local annotations::List{Absyn.ElementArg}
   local res::List{String}
@@ -7638,7 +7638,7 @@ function getAnnotationsFromItems(
   return outLst
 end
 
-""" #=  This function strips out the `graphics\\' modification from an ElementArg
+""" #=  This function strips out the `graphics\\' modification from an Absyn.ElementArg
    list and return two lists, one with the other modifications and the
    second with the `graphics\\' modification =#"""
 function stripGraphicsAndInteractionModification(
@@ -7944,10 +7944,10 @@ function eltsHasLocalClassOfType(
 
   @assign res = begin
     local elts::List{Absyn.ElementItem}
-    local restriction::Restriction
+    local restriction::Absyn.Restriction
     @matchcontinue inElts begin
       Absyn.ELEMENTITEM(Absyn.ELEMENT(
-        specification = Absyn.CLASSDEF(class_ = CLASS(restriction = restriction)),
+        specification = Absyn.CLASSDEF(class_ = Absyn.CLASS(restriction = restriction)),
       )) <| _ => begin
         @assign res = valueEq(restriction, inRestriction)
         if res == false
@@ -8481,7 +8481,7 @@ function traverseInnerClassElementspec(
 end
 
 """ #= @auhtor: johti
- Get the typespec path in an ElementItem if it has one =#"""
+ Get the typespec path in an Absyn.ElementItem if it has one =#"""
 function getTypeSpecFromElementItemOpt(
   inElementItem::Absyn.ElementItem,
 )::Option{Absyn.TypeSpec}
@@ -8516,7 +8516,7 @@ function getTypeSpecFromElementItemOpt(
 end
 
 """ #= @auhtor: johti
-     Get a ComponentItem from an ElementItem if it has one =#"""
+     Get a Absyn.ComponentItem from an Absyn.ElementItem if it has one =#"""
 function getElementSpecificationFromElementItemOpt(
   inElementItem::Absyn.ElementItem,
 )::Option{Absyn.ElementSpec}
@@ -8553,7 +8553,7 @@ function getComponentItemsFromElementSpec(
 
   @assign componentItems = begin
     local components::List{Absyn.ComponentItem}
-    local importTmp::Import
+    local importTmp::Absyn.Import
     @match elemSpec begin
       Absyn.COMPONENTS(components = components) => begin
         components
@@ -8594,26 +8594,26 @@ function getComponentItemsFromElementItem(
 end
 
 """ #= @author johti
-  Get the direction if one exists otherwise returns BIDIR() =#"""
-function getDirection(elementItem::Absyn.ElementItem)::Direction
-  local oDirection::Direction
+  Get the direction if one exists otherwise returns Absyn.BIDIR() =#"""
+function getDirection(elementItem::Absyn.ElementItem)::Absyn.Direction
+  local oDirection::Absyn.Direction
 
   @assign oDirection = begin
-    local element::Element
+    local element::Absyn.Element
     @matchcontinue elementItem begin
-      ELEMENTITEM(element = element) => begin
+      Absyn.ELEMENTITEM(element = element) => begin
         begin
-          local specification::ElementSpec
+          local specification::Absyn.ElementSpec
           @match element begin
-            ELEMENT(specification = specification) => begin
+            Absyn.ELEMENT(specification = specification) => begin
               begin
                 local attributes::ElementAttributes
                 @match specification begin
-                  COMPONENTS(attributes = attributes) => begin
+                  Absyn.COMPONENTS(attributes = attributes) => begin
                     begin
-                      local direction::Direction
+                      local direction::Absyn.Direction
                       @match attributes begin
-                        ATTR(direction = direction) => begin
+                        Absyn.ATTR(direction = direction) => begin
                           direction
                         end
                       end
@@ -8627,7 +8627,7 @@ function getDirection(elementItem::Absyn.ElementItem)::Direction
       end
 
       _ => begin
-        BIDIR()
+        Absyn.BIDIR()
       end
     end
   end
@@ -8639,7 +8639,7 @@ function isNamedPathIdent(path::Absyn.Path, name::String)::Bool
 
   @assign res = begin
     @match path begin
-      IDENT(__) => begin
+      Absyn.IDENT(__) => begin
         path.name == name
       end
 
@@ -8657,7 +8657,7 @@ function isUniontype(cls::Absyn.Class)::Bool
 
   @assign b = begin
     @match cls.restriction begin
-      R_UNIONTYPE(__) => begin
+      Absyn.R_UNIONTYPE(__) => begin
         true
       end
 
@@ -8675,7 +8675,7 @@ function classRestrictionisRecord(cls::Absyn.Class)::Bool
 
   @assign restrictionIsRecord = begin
     @match cls begin
-      CLASS(__) => begin
+      Absyn.CLASS(__) => begin
         restrictionIsRecord(cls.restriction)
       end
 
@@ -8701,7 +8701,7 @@ function restrictionIsRecord(restriction::Absyn.Restriction)::Bool
 
   @assign isRecord = begin
     @match restriction begin
-      R_RECORD(__) => begin
+      Absyn.R_RECORD(__) => begin
         true
       end
 
@@ -8757,7 +8757,7 @@ end
 function makeElementItemFromElementSpec(spec::Absyn.ElementSpec)::Absyn.ElementItem
   local ei::Absyn.ElementItem
 
-  @assign ei = Absyn.ELEMENTITEM(ELEMENT(
+  @assign ei = Absyn.ELEMENTITEM(Absyn.ELEMENT(
     false,
     NONE(),
     Absyn.NOT_INNER_OUTER(),
@@ -8768,14 +8768,14 @@ function makeElementItemFromElementSpec(spec::Absyn.ElementSpec)::Absyn.ElementI
   return ei
 end
 
-""" #= Returns the class from an element spec iff the elementspec is a CLASSDEF.
+""" #= Returns the class from an element spec iff the elementspec is a Absyn.CLASSDEF.
  Otherwise returns NONE. =#"""
-function getClassFromElementSpecOpt(es::ElementSpec)::Option{Absyn.Class}
+function getClassFromElementSpecOpt(es::Absyn.ElementSpec)::Option{Absyn.Class}
   local outClass::Option{Absyn.Class}
 
   @assign outClass = begin
     @match es begin
-      CLASSDEF(__) => begin
+      Absyn.CLASSDEF(__) => begin
         SOME(es.class_)
       end
 
@@ -8824,14 +8824,14 @@ function classHasLocalClassesThatAreUniontypes(cls::Absyn.Class)::Bool
   return b
 end
 
-function elementSpecsIscomponentsOrImports(es::ElementSpec)::Bool
+function elementSpecsIscomponentsOrImports(es::Absyn.ElementSpec)::Bool
   local b::Bool
 
   @assign b = elementSpecIsImport(es) || elementSpecIsComponents(es)
   return b
 end
 
-function elementSpecIsImport(es::ElementSpec)::Bool
+function elementSpecIsImport(es::Absyn.ElementSpec)::Bool
   local isImport::Bool
 
   @assign isImport = begin
@@ -8848,7 +8848,7 @@ function elementSpecIsImport(es::ElementSpec)::Bool
   return isImport
 end
 
-function elementSpecIsComponents(es::ElementSpec)::Bool
+function elementSpecIsComponents(es::Absyn.ElementSpec)::Bool
   local isComponents::Bool
 
   @assign isComponents = begin

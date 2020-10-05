@@ -41,8 +41,8 @@ function lookupComponent(cref::Absyn.ComponentRef, scope::InstNode #= The scope 
     # Error.addSourceMessageAndFail(Error.LOOKUP_VARIABLE_ERROR, list(Dump.printComponentRefStr(cref), scopeName(scope)), info)
     treee = lookupTree(scope.cls.x.elements)
     @error "Lookupvariable error for cref:$cref in scope $(scope.name). Error: $e"
-    @error "Our tree was" LookupTree.printTreeStr(treee)
-    @error "Repr3: $treee"
+    # @error "Our tree was" LookupTree.printTreeStr(treee)
+    # @error "Repr3: $treee"
     fail()
   end
   @assign state = fixTypenameState(nodeVar, state)

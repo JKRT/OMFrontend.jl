@@ -47,10 +47,6 @@ function isImport(entry::Entry)::Bool
   return isImport
 end
 
-function new()
-  return EMPTY()
-end
-
 function isEqual(entry1::Entry, entry2::Entry)::Bool
   local isEqual::Bool = index(entry1) == index(entry2)
   return isEqual

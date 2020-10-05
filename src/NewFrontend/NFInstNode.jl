@@ -82,10 +82,6 @@ keyCompare = (inKey1::String, inKey2::String) -> begin
   return res
 end
 
-function new()
-  return EMPTY()
-end
-
 @exportAll()
 end
 
@@ -1238,10 +1234,6 @@ function scopeListClass(clsNode::InstNode, ty::InstNodeType, includeRoot::Bool, 
     end
   end
   scopes
-end
-
-function scopeList(node::InstNode, includeRoot::Bool = false #= Whether to include the root class name or not. =#, accumScopes::List{<:InstNode} = nil) ::List{InstNode}
-  scopeList(node, includeRoot = includeRoot, accumScopes = accumScopes)
 end
 
 function scopeList(node::InstNode; includeRoot::Bool = false #= Whether to include the root class name or not. =#, accumScopes::List{<:InstNode} = nil) ::List{InstNode}

@@ -4,6 +4,8 @@
 "
 module HybridDAEParser
 
+@nospecialize
+
 import Absyn
 import SCode
 import OpenModelicaParser
@@ -13,6 +15,8 @@ import OpenModelicaParser
 "
 module Main
 #= We also use it at the top level =#
+
+@nospecialize
 
 using MetaModelica
 using ExportAll
@@ -79,7 +83,6 @@ include("./NewFrontend/NFConnectionSets.jl")
 include("./NewFrontend/NFFunctionDerivative.jl")
 include("./NewFrontend/NFFunction.jl")
 include("./NewFrontend/NFExpression.jl")
-include("./NewFrontend/NFBinding.jl")
 include("./NewFrontend/NFSubscript.jl")
 include("./NewFrontend/NFFlatten.jl")
 include("./NewFrontend/NFConvertDAE.jl")
@@ -140,13 +143,13 @@ function instantiateSCodeToDAE(elementToInstantiate::String, inProgram::SCode.Pr
   # Main.Flags.new(Flags.emptyFlags)
   @info "Parsing buildin stuff"
   GC.enable(false) #=This C stuff can be a bit flaky..=#
-  p = parseFile("../lib/NFModelicaBuiltin.mo", 2 #== MetaModelica ==#)
+  p = parseFile("./lib/NFModelicaBuiltin.mo", 2 #== MetaModelica ==#)
   @info "SCode translation"
   s = HybridDAEParser.translateToSCode(p)
   @info "Parsing done!"
   p = Main.listAppend(s, inProgram)
   GC.enable(true)
-  Main.instClassInProgram(Absyn.IDENT(elementToInstantiate), inProgram)
+  Main.instClassInProgram(Absyn.IDENT(elementToInstantiate), p)
 end
 
 function testSpin()
@@ -176,5 +179,18 @@ function exportDAERepresentationToFile(fileName::String, contents::String)
   write(fdesc, contents)
   close(fdesc)
 end
+
+function runModel(modelName::String, fileName::String)
+  #using BenchmarkTools
+  p = parseFile(fileName)
+  scodeProgram = translateToSCode(p)
+  @info "Translation to SCode"
+  @info "SCode -> DAE"
+  (dae, cache) = instantiateSCodeToDAE(modelName, scodeProgram)
+  @info "After DAE Translation"
+  @show dae
+end
+
+export runModel
 
 end # module

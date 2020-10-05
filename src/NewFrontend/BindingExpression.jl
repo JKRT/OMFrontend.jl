@@ -1440,7 +1440,7 @@ function toCref(exp::Expression) ::ComponentRef
   cref
 end
 
-function fromCref(cref::ComponentRef) ::Expression
+function BindingExpression_fromCref(cref::ComponentRef) ::Expression
   local exp::Expression
 
   @assign exp = CREF_EXPRESSION(getSubscriptedType(cref), cref)

@@ -1,4 +1,5 @@
 
+#==
 function printNodeStr(inNode::Tree)::String
   local outString::String
   @assign outString = begin
@@ -14,11 +15,11 @@ function printNodeStr(inNode::Tree)::String
   end
   return outString
 end
+==#
 
 """ #= Return an empty tree =#"""
 function new()::Tree
-  local outTree::Tree = EMPTY()
-  return outTree
+  EMPTY()
 end
 
 """ #= Inserts a new node in the tree. =#"""
@@ -196,6 +197,7 @@ function listKeysReverse(inTree::Tree, lst::List{<:Key} = nil)::List{Key}
 end
 
 """ #= Joins two trees by adding the second one to the first. =#"""
+#==
 function join(tree::Tree, treeToJoin::Tree)::Tree
 
   @assign tree = begin
@@ -218,6 +220,7 @@ function join(tree::Tree, treeToJoin::Tree)::Tree
   end
   return tree
 end
+==#
 
 """ #= Prints the tree to a string using UTF-8 box-drawing characters to construct a
    graphical view of the tree. =#"""
@@ -245,10 +248,7 @@ function printTreeStr(inTree::Tree)::String
   return outString
 end
 
-function setTreeLeftRight(orig::Tree, left::Tree = EMPTY(), right::Tree = EMPTY())::Tree
-  setTreeLeftRight(orig, left = left, right = right)
-end
-
+#==
 function setTreeLeftRight(orig::Tree; left::Tree = EMPTY(), right::Tree = EMPTY())::Tree
   local res::Tree
 
@@ -277,6 +277,7 @@ function setTreeLeftRight(orig::Tree; left::Tree = EMPTY(), right::Tree = EMPTY(
   end
   return res
 end
+==#
 
 """ #= Takes two sets and returns the intersection as well as the remainder
   of both sets after removing the duplicates in both sets. =#"""

@@ -1,7 +1,8 @@
-
 model HelloWorld
-  Real x(start = 1,fixed=true);
+  Real x;
   parameter Real a = 1;
+initial equation
+  x = 1.0;
 equation
-  x = - a * der(x);
+  der(x) = - a * x;
 end HelloWorld;

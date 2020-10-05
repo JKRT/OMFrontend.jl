@@ -921,20 +921,20 @@ function convertInitialEquation(
     local body::List{DAE.Element}
     @match eq begin
       EQUATION_EQUALITY(__) => begin
-        @assign e1 = P_Expression.Expression.toDAE(eq.lhs)
-        @assign e2 = P_Expression.Expression.toDAE(eq.rhs)
+        @assign e1 = toDAE(eq.lhs)
+        @assign e2 = toDAE(eq.rhs)
         _cons(if isComplex(eq.ty)
-          DAE.Element.INITIAL_COMPLEX_EQUATION(e1, e2, eq.source)
+          DAE.INITIAL_COMPLEX_EQUATION(e1, e2, eq.source)
         else
-          DAE.Element.INITIALEQUATION(e1, e2, eq.source)
+          DAE.INITIALEQUATION(e1, e2, eq.source)
         end, elements)
       end
 
       EQUATION_ARRAY_EQUALITY(__) => begin
-        @assign e1 = P_Expression.Expression.toDAE(eq.lhs)
-        @assign e2 = P_Expression.Expression.toDAE(eq.rhs)
-        @assign dims = List(P_Dimension.Dimension.toDAE(d) for d in arrayDims(eq.ty))
-        _cons(DAE.Element.INITIAL_ARRAY_EQUATION(dims, e1, e2, eq.source), elements)
+        @assign e1 = toDAE(eq.lhs)
+        @assign e2 = toDAE(eq.rhs)
+        @assign dims = list(toDAE(d) for d in arrayDims(eq.ty))
+        _cons(DAE.INITIAL_ARRAY_EQUATION(dims, e1, e2, eq.source), elements)
       end
 
       EQUATION_FOR(__) => begin

@@ -552,7 +552,7 @@ function typePreChangeCall(@nospecialize(name::String), @nospecialize(call::Call
   (callExp, ty, variability)
 end
 
-function typeDerCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
+function typeDerCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, NFType, VariabilityType}
   local variability::VariabilityType
   local ty::M_Type
   local callExp::Expression

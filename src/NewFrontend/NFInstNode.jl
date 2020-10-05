@@ -223,26 +223,22 @@ function isModel(node::InstNode) ::Bool
   isModel
 end
 
-function isRecord(node::InstNode) ::Bool
+function isRecord(@nospecialize(node::InstNode)) ::Bool
   local isRec::Bool
-
   @assign isRec = begin
     @match node begin
       CLASS_NODE(__)  => begin
-        P_Restriction.Restriction.isRecord(restriction(P_Pointer.access(node.cls)))
+        isRecord(restriction(P_Pointer.access(node.cls)))
       end
-
       COMPONENT_NODE(__)  => begin
-        isRecord(P_Component.classInstance(P_Pointer.access(node.component)))
+        isRecord(classInstance(P_Pointer.access(node.component)))
       end
     end
   end
   isRec
 end
 
-function copyInstancePtr(srcNode::InstNode, dstNode::InstNode) ::InstNode
-
-
+function copyInstancePtr(@nospecialize(srcNode::InstNode), @nospecialize(dstNode::InstNode)) ::InstNode
   @assign () = begin
     @match (srcNode, dstNode) begin
       (COMPONENT_NODE(__), COMPONENT_NODE(__))  => begin
@@ -1292,11 +1288,11 @@ function componentApply(node::InstNode, func::FuncType, arg::ArgT)  where {ArgT}
   node
 end
 
-function classApply(node::InstNode, func::FuncType, arg::ArgT)  where {ArgT}
+function classApply(@nospecialize(node::InstNode), @nospecialize(func::FuncType), arg::ArgT)  where {ArgT}
   @assign () = begin
     @match node begin
       CLASS_NODE(__)  => begin
-        P_Pointer.update(node.cls, func(arg, P_P_Pointer.access(node.cls)))
+        P_Pointer.update(node.cls, func(arg, P_Pointer.access(node.cls)))
         ()
       end
     end
@@ -1304,17 +1300,16 @@ function classApply(node::InstNode, func::FuncType, arg::ArgT)  where {ArgT}
   node
 end
 
-function getType(node::InstNode) ::M_Type
+function getType(@nospecialize(node::InstNode))::NFType
   local ty::M_Type
-
   @assign ty = begin
     @match node begin
       CLASS_NODE(__)  => begin
-        getType(P_P_Pointer.access(node.cls), node)
+        getType(P_Pointer.access(node.cls), node)
       end
 
       COMPONENT_NODE(__)  => begin
-        P_Component.getType(P_Pointer.access(node.component))
+        getType(P_Pointer.access(node.component))
       end
     end
   end
@@ -1808,47 +1803,39 @@ function className(node::InstNode) ::String
   name
 end
 
-function name(node::InstNode) ::String
-  local name::String
 
-  @assign name = begin
+function name(@nospecialize(node::InstNode))::String
+  local nameVar::String
+  @assign nameVar = begin
     @match node begin
       CLASS_NODE(__)  => begin
         node.name
       end
-
       COMPONENT_NODE(__)  => begin
         node.name
       end
-
       INNER_OUTER_NODE(__)  => begin
         name(node.innerNode)
       end
-
       REF_NODE(__)  => begin
         "REF[" + String(node.index) + "]"
       end
-
       NAME_NODE(__)  => begin
         node.name
       end
-
       IMPLICIT_SCOPE(__)  => begin
         "IMPLICIT"
       end
-
       EXP_NODE(__)  => begin
         "EXP(" + toString(node.exp) + ")"
       end
-
       EMPTY_NODE(__)  => begin
         "EMPTY"
       end
     end
   end
-  #=  For bug catching, these names should never be used.
-  =#
-  name
+  #=  For bug catching, these names should never be used. =#
+  nameVar
 end
 
 function isOperator(node::InstNode) ::Bool
@@ -1861,7 +1848,6 @@ function isOperator(node::InstNode) ::Bool
       INNER_OUTER_NODE(__)  => begin
         isOperator(node.innerNode)
       end
-
       _  => begin
         false
       end

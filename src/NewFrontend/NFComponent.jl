@@ -271,7 +271,7 @@ function comment(component::Component)::Option{SCode.Comment}
   return comment
 end
 
-function dimensionCount(component::Component)::Integer
+function dimensionCount(@nospecialize(component::Component))::Integer
   local count::Integer
   @assign count = begin
     @match component begin

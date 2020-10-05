@@ -778,23 +778,19 @@ function dimensionDiff(ty1::M_Type, ty2::M_Type)::Integer
   return diff
 end
 
-function dimensionCount(ty::M_Type)::Integer
+function dimensionCount(@nospecialize(ty::NFType))::Integer
   local dimCount::Integer
-
   @assign dimCount = begin
     @match ty begin
-      ARRAY(__) => begin
+      TYPE_ARRAY(__) => begin
         listLength(ty.dimensions)
       end
-
       TYPE_FUNCTION(__) => begin
-        dimensionCount(P_Function.returnType(ty.fn))
+        dimensionCount(returnType(ty.fn))
       end
-
       TYPE_METABOXED(__) => begin
         dimensionCount(ty.ty)
       end
-
       _ => begin
         0
       end
@@ -1020,10 +1016,9 @@ function isTuple(ty::M_Type)::Bool
 
   @assign isTuple = begin
     @match ty begin
-      TUPLE(__) => begin
+      TYPE_TUPLE(__) => begin
         true
       end
-
       _ => begin
         false
       end

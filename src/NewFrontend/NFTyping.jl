@@ -1350,7 +1350,6 @@ function typeExp(
 )::Tuple{Expression, NFType, VariabilityType}
   local variability::VariabilityType
   local ty::NFType
-@nospecialize
   @assign (exp, ty, variability) = begin
     local e1::Expression
     local e2::Expression
@@ -1389,42 +1388,42 @@ function typeExp(
         typeCrefExp(exp.cref, origin, info)
       end
 
-      TYPENAME_EXPRESSION(__) => begin
-        if flagNotSet(origin, ORIGIN_VALID_TYPENAME_SCOPE)
-          Error.addSourceMessage(
-            Error.INVALID_TYPENAME_USE,
-            list(Type.typenameString(arrayElementType(exp.ty))),
-            info,
-          )
-          fail()
-        end
-        (exp, exp.ty, Variability.CONSTANT)
-      end
+      # TYPENAME_EXPRESSION(__) => begin
+      #   if flagNotSet(origin, ORIGIN_VALID_TYPENAME_SCOPE)
+      #     Error.addSourceMessage(
+      #       Error.INVALID_TYPENAME_USE,
+      #       list(Type.typenameString(arrayElementType(exp.ty))),
+      #       info,
+      #     )
+      #     fail()
+      #   end
+      #   (exp, exp.ty, Variability.CONSTANT)
+      # end
 
-      ARRAY_EXPRESSION(__) => begin
-        typeArray(exp.elements, origin, info)
-      end
+      # ARRAY_EXPRESSION(__) => begin
+      #   typeArray(exp.elements, origin, info)
+      # end
 
-      MATRIX_EXPRESSION(__) => begin
-        typeMatrix(exp.elements, origin, info)
-      end
+      # MATRIX_EXPRESSION(__) => begin
+      #   typeMatrix(exp.elements, origin, info)
+      # end
 
-      RANGE_EXPRESSION(__) => begin
-        typeRange(exp, origin, info)
-      end
+      # RANGE_EXPRESSION(__) => begin
+      #   typeRange(exp, origin, info)
+      # end
 
-      TUPLE_EXPRESSION(__) => begin
-        typeTuple(exp.elements, origin, info)
-      end
+      # TUPLE_EXPRESSION(__) => begin
+      #   typeTuple(exp.elements, origin, info)
+      # end
 
-      SIZE_EXPRESSION(__) => begin
-        typeSize(exp, origin, info)
-      end
+      # SIZE_EXPRESSION(__) => begin
+      #   typeSize(exp, origin, info)
+      # end
 
-      END_EXPRESSION(__) => begin
-        Error.addSourceMessage(Error.END_ILLEGAL_USE_ERROR, nil, info)
-        fail()
-      end
+      # END_EXPRESSION(__) => begin
+      #   Error.addSourceMessage(Error.END_ILLEGAL_USE_ERROR, nil, info)
+      #   fail()
+      # end
 
       BINARY_EXPRESSION(__) => begin
         @assign next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
@@ -1468,44 +1467,44 @@ function typeExp(
         (exp, ty, variabilityMax(var1, var2))
       end
 
-      LUNARY_EXPRESSION(__) => begin
-        @assign next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
-        @assign (e1, ty1, var1) = typeExp(exp.exp, next_origin, info)
-        @assign (exp, ty) =
-          checkLogicalUnaryOperation(e1, ty1, var1, exp.operator, info)
-        (exp, ty, var1)
-      end
+      # LUNARY_EXPRESSION(__) => begin
+      #   @assign next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
+      #   @assign (e1, ty1, var1) = typeExp(exp.exp, next_origin, info)
+      #   @assign (exp, ty) =
+      #     checkLogicalUnaryOperation(e1, ty1, var1, exp.operator, info)
+      #   (exp, ty, var1)
+      # end
 
-      RELATION_EXPRESSION(__) => begin
-        @assign next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
-        @assign (e1, ty1, var1) = typeExp(exp.exp1, next_origin, info)
-        @assign (e2, ty2, var2) = typeExp(exp.exp2, next_origin, info)
-        @assign (exp, ty) = checkRelationOperation(
-          e1,
-          ty1,
-          var1,
-          exp.operator,
-          e2,
-          ty2,
-          var2,
-          origin,
-          info,
-        )
-        @assign variability = variabilityMax(var1, var2)
-        #=  A relation involving continuous expressions which is not inside
-        =#
-        #=  noEvent is a discrete expression.
-        =#
-        if flagNotSet(origin, ORIGIN_NOEVENT) &&
-           variability == Variability.CONTINUOUS
-          @assign variability = Variability.DISCRETE
-        end
-        (exp, ty, variability)
-      end
+      # RELATION_EXPRESSION(__) => begin
+      #   @assign next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
+      #   @assign (e1, ty1, var1) = typeExp(exp.exp1, next_origin, info)
+      #   @assign (e2, ty2, var2) = typeExp(exp.exp2, next_origin, info)
+      #   @assign (exp, ty) = checkRelationOperation(
+      #     e1,
+      #     ty1,
+      #     var1,
+      #     exp.operator,
+      #     e2,
+      #     ty2,
+      #     var2,
+      #     origin,
+      #     info,
+      #   )
+      #   @assign variability = variabilityMax(var1, var2)
+      #   #=  A relation involving continuous expressions which is not inside
+      #   =#
+      #   #=  noEvent is a discrete expression.
+      #   =#
+      #   if flagNotSet(origin, ORIGIN_NOEVENT) &&
+      #      variability == Variability.CONTINUOUS
+      #     @assign variability = Variability.DISCRETE
+      #   end
+      #   (exp, ty, variability)
+      # end
 
-      IF_EXPRESSION(__) => begin
-        typeIfExpression(exp, origin, info)
-      end
+      # IF_EXPRESSION(__) => begin
+      #   typeIfExpression(exp, origin, info)
+      # end
 
       CALL_EXPRESSION(__) => begin
         @assign (e1, ty, var1) = typeCall(exp, origin, info)
@@ -1520,39 +1519,33 @@ function typeExp(
         (e1, ty, var1)
       end
 
-      CAST_EXPRESSION(__) => begin
-        @assign next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
-        typeExp(exp.exp, next_origin, info)
-      end
+      # CAST_EXPRESSION(__) => begin
+      #   @assign next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
+      #   typeExp(exp.exp, next_origin, info)
+      # end
 
-      SUBSCRIPTED_EXP_EXPRESSION(__) => begin
-        (exp, exp.ty, variability(exp))
-      end
+      # SUBSCRIPTED_EXP_EXPRESSION(__) => begin
+      #   (exp, exp.ty, variability(exp))
+      # end
 
-      MUTABLE_EXPRESSION(__) => begin
-        #=  Subscripted expressions are assumed to already be typed.
-        =#
-        @assign e1 = P_Pointer.access(exp.exp)
-        @assign (e1, ty, variability) = typeExp(e1, origin, info)
-        @assign exp.exp = P_Pointer.create(e1)
-        (exp, ty, variability)
-      end
+      # MUTABLE_EXPRESSION(__) => begin
+      #   #=  Subscripted expressions are assumed to already be typed.
+      #   =#
+      #   @assign e1 = P_Pointer.access(exp.exp)
+      #   @assign (e1, ty, variability) = typeExp(e1, origin, info)
+      #   @assign exp.exp = P_Pointer.create(e1)
+      #   (exp, ty, variability)
+      # end
 
-      PARTIAL_FUNCTION_APPLICATION_EXPRESSION(__) => begin
-        typePartialApplication(exp, origin, info)
-      end
+      # PARTIAL_FUNCTION_APPLICATION_EXPRESSION(__) => begin
+      #   typePartialApplication(exp, origin, info)
+      # end
 
       BINDING_EXP(__) => begin
         typeBindingExp(exp, origin, info)
       end
-      _ => begin
-        # Error.assertion(
-        #   false,
-        #   getInstanceName() +
-        #   " got unknown expression: " +
-        #   toString(exp),
-        #   sourceInfo(),
-        # )
+_ => begin
+        @info "Attempted to type"
         fail()
       end
     end
@@ -1590,7 +1583,7 @@ end
 
 function typeBindingExp(
   @nospecialize(exp::Expression),
-  origin::ORIGIN_Type,
+  @nospecialize(origin::ORIGIN_Type),
   info::SourceInfo,
 )::Tuple{Expression, M_Type, VariabilityType}
   local variability::VariabilityType
@@ -1608,7 +1601,7 @@ function typeBindingExp(
   @assign parent_dims = 0
   if !is_each
     for p in listRest(parents)
-      @assign parent_dims = parent_dims + Type.dimensionCount(getType(p))
+      @assign parent_dims = parent_dims + dimensionCount(getType(p))
     end
   end
   if parent_dims == 0
@@ -1870,7 +1863,7 @@ function nthDimensionBoundsChecked(
 end
 
 function typeCrefExp(
-  cref::ComponentRef,
+  @nospecialize(cref::ComponentRef),
   o::ORIGIN_Type,
   info::SourceInfo,
 )::Tuple{Expression, NFType, VariabilityType}
@@ -1888,7 +1881,7 @@ function typeCrefExp(
 end
 
 function typeCref(
-  cref::ComponentRef,
+  @nospecialize(cref::ComponentRef),
   origin::ORIGIN_Type,
   info::SourceInfo
 )::Tuple{ComponentRef, NFType, VariabilityType, VariabilityType}
@@ -2850,9 +2843,8 @@ function typeFunctionSections(classNode::InstNode, origin::ORIGIN_Type)
   local sections::Sections
   local info::SourceInfo
   local alg::Algorithm
-
   @assign cls = getClass(classNode)
-  return @assign _ = begin
+  begin
     @match cls begin
       INSTANCED_CLASS(sections = sections) => begin
         @assign sections = begin
@@ -2883,7 +2875,7 @@ function typeFunctionSections(classNode::InstNode, origin::ORIGIN_Type)
               fail()
             end
 
-            EXTERNAL(explicit = true) => begin
+            SECTIONS_EXTERNAL(explicit = true) => begin
               @assign info = info(classNode)
               @assign sections.args =
                 List(typeExternalArg(arg, info, classNode) for arg in sections.args)
@@ -2891,10 +2883,13 @@ function typeFunctionSections(classNode::InstNode, origin::ORIGIN_Type)
               sections
             end
 
-            EXTERNAL(__) => begin
-              makeDefaultExternalCall(sections, classNode)
+            SECTIONS_EXTERNAL(__) => begin
+              r = makeDefaultExternalCall(sections, classNode)
+              if r == SECTIONS_EMPTY()
+                return
+              end
+              r
             end
-
             _ => begin
               sections
             end
@@ -2996,11 +2991,11 @@ function makeDefaultExternalCall(extDecl::Sections, fnNode::InstNode)::Sections
     local node::InstNode
     local exp::Expression
     @match extDecl begin
-      EXTERNAL(__) => begin
+      SECTIONS_EXTERNAL(__) => begin
         #=  An explicit function call isn't needed for builtin calls.
         =#
         if extDecl.language == "builtin"
-          return
+          return SECTIONS_EMPTY()
         end
         #=  Fetch the cached function.
         =#

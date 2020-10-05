@@ -951,21 +951,19 @@ function unboxArgs(call::Call)::Call
 end
 
 function makeTypedCall(
-  fn::M_Function,
-  args::List{<:Expression},
-  variability::VariabilityType,
+  @nospecialize(fn::M_Function),
+  @nospecialize(args::List{<:Expression}),
+  @nospecialize(  variability::VariabilityType),
   returnType::NFType = fn.returnType,
 )::Call
   local call::Call
-
   local ca::CallAttributes
-
-  @assign ca = P_CallAttributes.CALL_ATTR(
-    Type.isTuple(returnType),
-    P_Function.isBuiltin(fn),
-    P_Function.isImpure(fn),
-    P_Function.isFunctionPointer(fn),
-    P_Function.inlineBuiltin(fn),
+  @assign ca = CALL_ATTR(
+    isTuple(returnType),
+    isBuiltin(fn),
+    isImpure(fn),
+    isFunctionPointer(fn),
+    inlineBuiltin(fn),
     DAE.NO_TAIL(),
   )
   @assign call = TYPED_CALL(fn, returnType, variability, args, ca)

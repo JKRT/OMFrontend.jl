@@ -4054,7 +4054,7 @@ end
 outExp
 end
 
-function dimensionCount(exp::Expression) ::Integer
+function dimensionCount(@nospecialize(exp::Expression))::Integer
   local dimCount::Integer
   @assign dimCount = begin
     @match exp begin
@@ -4079,11 +4079,11 @@ function dimensionCount(exp::Expression) ::Integer
       end
 
       SUBSCRIPTED_EXP_EXPRESSION(__)  => begin
-        Type.dimensionCount(exp.ty)
+        dimensionCount(exp.ty)
       end
 
       TUPLE_ELEMENT_EXPRESSION(__)  => begin
-        Type.dimensionCount(exp.ty)
+        dimensionCount(exp.ty)
       end
 
       _  => begin

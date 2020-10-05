@@ -505,13 +505,11 @@ end
 
 function isDefaultRecordConstructor(fn::M_Function)::Bool
   local isConstructor::Bool
-
   @assign isConstructor = begin
     @match restriction(getClass(fn.node)) begin
-      P_Restriction.Restriction.RECORD_CONSTRUCTOR(__) => begin
+      RESTRICTION_RECORD_CONSTRUCTOR(__) => begin
         true
       end
-
       _ => begin
         false
       end
@@ -522,13 +520,11 @@ end
 
 function inlineBuiltin(fn::M_Function)::DAE.InlineType
   local inlineType::DAE.InlineType
-
   @assign inlineType = begin
     @match fn.attributes.isBuiltin begin
-      DAE.FunctionBuiltin.FUNCTION_BUILTIN_PTR(__) => begin
-        DAE.InlineType.BUILTIN_EARLY_INLINE()
+      DAE.FUNCTION_BUILTIN_PTR(__) => begin
+        DAE.BUILTIN_EARLY_INLINE()
       end
-
       _ => begin
         fn.attributes.inline
       end
@@ -595,9 +591,7 @@ end
 
 function isSpecialBuiltin(fn::M_Function)::Bool
   local special::Bool
-
   local path::Absyn.Path
-
   if !isBuiltin(fn)
     @assign special = false
   else
@@ -982,7 +976,7 @@ function typeFunctionBody(fn::M_Function)::M_Function
   end
   #=  Type the algorithm section of the function, if it has one.
   =#
-  Typing.typeFunctionSections(fn.node, ORIGIN_FUNCTION)
+  typeFunctionSections(fn.node, ORIGIN_FUNCTION)
   #=  Type any derivatives of the function.
   =#
   for fn_der in fn.derivatives
@@ -2236,9 +2230,8 @@ function isValidParamState(cls::InstNode)::Bool
   return isValid
 end
 
-function isValidParamType(ty::M_Type)::Bool
+function isValidParamType(ty::NFType)::Bool
   local isValid::Bool
-
   @assign isValid = begin
     @match ty begin
       TYPE_INTEGER(__) => begin
@@ -2299,7 +2292,6 @@ end
 
 function checkParamTypes2(params::List{<:InstNode})
   local ty::M_Type
-
   return for p in params
     @assign ty = getType(p)
     if !isValidParamType(ty)
@@ -2516,32 +2508,32 @@ function hasOMPure(cmt::SCode.Comment)::Bool
   return res
 end
 
-function makeSlot(component::InstNode, index::Integer)::Slot
+function makeSlot(@nospecialize(componentArg::InstNode), @nospecialize(index::Integer))::Slot
   local slot::Slot
-
   local comp::Component
   local default::Option{Expression}
-  local name::String
-
+  local nameVar::String
   try
-    @assign comp = component(component)
-    @assign default = typedExp(P_Component.getImplicitBinding(comp))
-    @assign name = name(component)
-    if stringGet(name, 1) == 36
-      if stringLength(name) > 4 && substring(name, 1, 4) == "in_"
-        @assign name = substring(name, 5, stringLength(name))
+    @assign comp = component(componentArg)
+    @assign default = typedExp(getImplicitBinding(comp))
+    @assign nameVar = name(componentArg)
+    if stringGet(nameVar, 1) == 36
+      if stringLength(nameVar) > 4 && substring(nameVar, 1, 4) == "in_"
+        @assign nameVar = substring(nameVar, 5, stringLength(nameVar))
       end
     end
     @assign slot = SLOT(
-      name(component),
+      name(componentArg),
       SlotType.GENERIC,
       default,
       NONE(),
       index,
       SlotEvalStatus.NOT_EVALUATED,
     )
-  catch
-    Error.assertion(false, getInstanceName() + " got invalid component", sourceInfo())
+  catch e
+    #    Error.assertion(false, getInstanceName() + " got invalid component", sourceInfo())
+    @error "Error. Our error was $e"
+    fail()
   end
   #=  Remove $in_ for OM input output arguments.
   =#
@@ -2549,11 +2541,9 @@ function makeSlot(component::InstNode, index::Integer)::Slot
   return slot
 end
 
-function makeSlots(inputs::List{<:InstNode})::List{Slot}
+function makeSlots(@nospecialize(inputs::List{<:InstNode}))::List{Slot}
   local slots::List{Slot} = nil
-
   local index::Integer = 1
-
   for i in inputs
     @assign slots = _cons(makeSlot(i, index), slots)
     @assign index = index + 1
@@ -2562,7 +2552,7 @@ function makeSlots(inputs::List{<:InstNode})::List{Slot}
   return slots
 end
 
-function paramDirection(componentArg::InstNode)::DirectionType
+function paramDirection(@nospecialize(componentArg::InstNode))::DirectionType
   local direction::DirectionType
   local cty::ConnectorType.TYPE
   local io::Integer
@@ -2624,7 +2614,7 @@ end
 
 """ #= Sorts all the function parameters as inputs, outputs and locals. =#"""
 function collectParams(
-  node::InstNode,
+  @nospecialize(node::InstNode),
   inputs::List{<:InstNode} = nil,
   outputs::List{<:InstNode} = nil,
   locals::List{<:InstNode} = nil,

@@ -72,9 +72,8 @@ end
 
 @UniontypeDecl CallAttributes
 
-function toDAE(attr::CallAttributes, returnType::NFType)::DAE.P_CallAttributes
-  local fattr::DAE.P_CallAttributes
-
+function toDAE(attr::CallAttributes, returnType::NFType)::DAE.CallAttributes
+  local fattr::DAE.CallAttributes
   @assign fattr = DAE.CALL_ATTR(
     toDAE(returnType),
     attr.tuple_,
@@ -209,9 +208,8 @@ function isVectorizeable(call::Call)::Bool
   return isVect
 end
 
-function toDAE(call::Call)::DAE.Exp
+function toDAE(@nospecialize(call::Call))::DAE.Exp
   local daeCall::DAE.Exp
-
   @assign daeCall = begin
     local fold_id::String
     local res_id::String
@@ -220,11 +218,10 @@ function toDAE(call::Call)::DAE.Exp
       TYPED_CALL(__) => begin
         DAE.CALL(
           nameConsiderBuiltin(call.fn),
-          List(P_Expression.Expression.toDAE(e) for e in call.arguments),
-          P_CallAttributes.toDAE(call.attributes, call.ty),
+          list(toDAE(e) for e in call.arguments),
+          toDAE(call.attributes, call.ty),
         )
       end
-
       TYPED_ARRAY_CONSTRUCTOR(__) => begin
         @assign fold_id = Util.getTempVariableIndex()
         @assign res_id = Util.getTempVariableIndex()
@@ -690,7 +687,8 @@ function isExternal(call::Call)::Bool
       end
 
       TYPED_CALL(__) => begin
-        P_Function.isExternal(call.fn)
+        #isExternal(call.fn) TODO
+        true
       end
 
       _ => begin
@@ -998,7 +996,7 @@ function typeCall(
   @nospecialize(callExp::Expression),
   @nospecialize(origin::ORIGIN_Type),
   @nospecialize(info::SourceInfo),
-)::Tuple{Expression, NFType, Variability}
+)::Tuple{Expression, NFType, VariabilityType}
   local var::VariabilityType
   local ty::NFType
   local outExp::Expression

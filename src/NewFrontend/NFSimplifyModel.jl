@@ -385,21 +385,18 @@ function removeEmptyTupleElements(exp::Expression)::Expression
   return exp
 end
 
-function removeEmptyFunctionArguments(exp::Expression, isArg::Bool = false)::Expression
+function removeEmptyFunctionArguments(@nospecialize(exp::Expression), isArg::Bool = false)::Expression
   local outExp::Expression
-
   local is_arg::Bool
-
   if isArg
     @assign () = begin
       @match exp begin
-        CREF_EXPRESSION(__) where {(Type.isEmptyArray(exp.ty))} => begin
+        CREF_EXPRESSION(__) where {(isEmptyArray(exp.ty))} => begin
           @assign outExp =
-            P_Expression.Expression.fillType(exp.ty, INTEGER_EXPRESSION(0))
+            fillType(exp.ty, INTEGER_EXPRESSION(0))
           return
           ()
         end
-
         _ => begin
           ()
         end

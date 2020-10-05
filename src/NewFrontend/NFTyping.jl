@@ -1341,9 +1341,17 @@ function typeTypeAttribute(
   return attribute
 end
 
+function typeExp(
+  @nospecialize(exp::Expression),
+  @nospecialize(origin::ORIGIN_Type),
+  @nospecialize(info::SourceInfo),
+)::Tuple{Expression, NFType, VariabilityType}
+  typeExp2(exp, origin, info)
+end
+
 """ #= Types an untyped expression, returning the typed expression itself along with
    its type and variability. =#"""
-function typeExp(
+function typeExp2(
   @nospecialize(exp::Expression),
   @nospecialize(origin::ORIGIN_Type),
   @nospecialize(info::SourceInfo),
@@ -1364,108 +1372,35 @@ function typeExp(
     local cref::ComponentRef
     local next_origin::ORIGIN_Type
     @match exp begin
-      INTEGER_EXPRESSION(__) => begin
-        (exp, TYPE_INTEGER(), Variability.CONSTANT)
-      end
-
-      REAL_EXPRESSION(__) => begin
-        (exp, TYPE_REAL(), Variability.CONSTANT)
-      end
-
-      STRING_EXPRESSION(__) => begin
-        (exp, TYPE_STRING(), Variability.CONSTANT)
-      end
-
-      BOOLEAN_EXPRESSION(__) => begin
-        (exp, TYPE_BOOLEAN(), Variability.CONSTANT)
-      end
-
-      ENUM_LITERAL_EXPRESSION(__) => begin
+      INTEGER_EXPRESSION(__) => (exp, TYPE_INTEGER(), Variability.CONSTANT)
+      REAL_EXPRESSION(__) => (exp, TYPE_REAL(), Variability.CONSTANT)
+      STRING_EXPRESSION(__) => (exp, TYPE_STRING(), Variability.CONSTANT)
+      BOOLEAN_EXPRESSION(__) => (exp, TYPE_BOOLEAN(), Variability.CONSTANT)
+      ENUM_LITERAL_EXPRESSION(__) => (exp, exp.ty, Variability.CONSTANT)
+      CREF_EXPRESSION(__) => typeCrefExp(exp.cref, origin, info)
+      TYPENAME_EXPRESSION(__) => begin
+        if flagNotSet(origin, ORIGIN_VALID_TYPENAME_SCOPE)
+          Error.addSourceMessage(
+            Error.INVALID_TYPENAME_USE,
+            list(Type.typenameString(arrayElementType(exp.ty))),
+            info,
+          )
+          fail()
+        end
         (exp, exp.ty, Variability.CONSTANT)
       end
-
-      CREF_EXPRESSION(__) => begin
-        typeCrefExp(exp.cref, origin, info)
+      ARRAY_EXPRESSION(__) => typeArray(exp.elements, origin, info)
+      MATRIX_EXPRESSION(__) => typeMatrix(exp.elements, origin, info)
+      RANGE_EXPRESSION(__) => typeRange(exp, origin, info)
+      TUPLE_EXPRESSION(__) => typeTuple(exp.elements, origin, info)
+      SIZE_EXPRESSION(__) => typeSize(exp, origin, info)
+      END_EXPRESSION(__) => begin
+        Error.addSourceMessage(Error.END_ILLEGAL_USE_ERROR, nil, info)
+        fail()
       end
-
-      # TYPENAME_EXPRESSION(__) => begin
-      #   if flagNotSet(origin, ORIGIN_VALID_TYPENAME_SCOPE)
-      #     Error.addSourceMessage(
-      #       Error.INVALID_TYPENAME_USE,
-      #       list(Type.typenameString(arrayElementType(exp.ty))),
-      #       info,
-      #     )
-      #     fail()
-      #   end
-      #   (exp, exp.ty, Variability.CONSTANT)
-      # end
-
-      # ARRAY_EXPRESSION(__) => begin
-      #   typeArray(exp.elements, origin, info)
-      # end
-
-      # MATRIX_EXPRESSION(__) => begin
-      #   typeMatrix(exp.elements, origin, info)
-      # end
-
-      # RANGE_EXPRESSION(__) => begin
-      #   typeRange(exp, origin, info)
-      # end
-
-      # TUPLE_EXPRESSION(__) => begin
-      #   typeTuple(exp.elements, origin, info)
-      # end
-
-      # SIZE_EXPRESSION(__) => begin
-      #   typeSize(exp, origin, info)
-      # end
-
-      # END_EXPRESSION(__) => begin
-      #   Error.addSourceMessage(Error.END_ILLEGAL_USE_ERROR, nil, info)
-      #   fail()
-      # end
-
-      BINARY_EXPRESSION(__) => begin
-        @assign next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
-        @assign (e1, ty1, var1) = typeExp(exp.exp1, next_origin, info)
-        @assign (e2, ty2, var2) = typeExp(exp.exp2, next_origin, info)
-        @assign (exp, ty) = checkBinaryOperation(
-          e1,
-          ty1,
-          var1,
-          exp.operator,
-          e2,
-          ty2,
-          var2,
-          info,
-        )
-        (exp, ty, variabilityMax(var1, var2))
-      end
-
-      UNARY_EXPRESSION(__) => begin
-        @assign next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
-        @assign (e1, ty1, var1) = typeExp(exp.exp, next_origin, info)
-        @assign (exp, ty) =
-          checkUnaryOperation(e1, ty1, var1, exp.operator, info)
-        (exp, ty, var1)
-      end
-
-      LBINARY_EXPRESSION(__) => begin
-        @assign next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
-        @assign (e1, ty1, var1) = typeExp(exp.exp1, next_origin, info)
-        @assign (e2, ty2, var2) = typeExp(exp.exp2, next_origin, info)
-        @assign (exp, ty) = checkLogicalBinaryOperation(
-          e1,
-          ty1,
-          var1,
-          exp.operator,
-          e2,
-          ty2,
-          var2,
-          info,
-        )
-        (exp, ty, variabilityMax(var1, var2))
-      end
+      BINARY_EXPRESSION(__) => typeBinaryExpression(exp, origin, info)
+      UNARY_EXPRESSION(__) => typeUnaryExpression(exp, origin, info)
+      LBINARY_EXPRESSION(__) => typeLBinaryExpression(exp, origin, info)
 
       # LUNARY_EXPRESSION(__) => begin
       #   @assign next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
@@ -1507,7 +1442,7 @@ function typeExp(
       # end
 
       CALL_EXPRESSION(__) => begin
-        @assign (e1, ty, var1) = typeCall(exp, origin, info)
+        (e1, ty, var1) = typeCall(exp, origin, info)
         #=  If the call has multiple outputs and isn't alone on either side of an
         =#
         #=  equation/algorithm, select the first output.
@@ -1519,10 +1454,10 @@ function typeExp(
         (e1, ty, var1)
       end
 
-      # CAST_EXPRESSION(__) => begin
-      #   @assign next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
-      #   typeExp(exp.exp, next_origin, info)
-      # end
+      CAST_EXPRESSION(__) => begin
+        @assign next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
+        typeExp(exp.exp, next_origin, info)
+      end
 
       # SUBSCRIPTED_EXP_EXPRESSION(__) => begin
       #   (exp, exp.ty, variability(exp))
@@ -1541,9 +1476,7 @@ function typeExp(
       #   typePartialApplication(exp, origin, info)
       # end
 
-      BINDING_EXP(__) => begin
-        typeBindingExp(exp, origin, info)
-      end
+      BINDING_EXP(__) => typeBindingExp(exp, origin, info)
 _ => begin
         @info "Attempted to type"
         fail()
@@ -1557,6 +1490,60 @@ _ => begin
     @assign variability = Variability.DISCRETE
   end
   return (exp, ty, variability)
+end
+
+function typeBinaryExpression(
+  @nospecialize(exp::Expression),
+  @nospecialize(origin::ORIGIN_Type),
+  @nospecialize(info::SourceInfo),)::Tuple{Expression, NFType, VariabilityType}
+  @assign next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
+  @assign (e1, ty1, var1) = typeExp(exp.exp1, next_origin, info)
+  @assign (e2, ty2, var2) = typeExp(exp.exp2, next_origin, info)
+  @assign (exp, ty) = checkBinaryOperation(
+    e1,
+    ty1,
+    var1,
+    exp.operator,
+    e2,
+    ty2,
+    var2,
+    info,
+  )
+  (exp, ty, variabilityMax(var1, var2))
+end
+
+
+function typeLBinaryExpression(
+  @nospecialize(exp::Expression),
+  @nospecialize(origin::ORIGIN_Type),
+  @nospecialize(info::SourceInfo),)::Tuple{Expression, NFType, VariabilityType}
+
+  @assign next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
+  @assign (e1, ty1, var1) = typeExp(exp.exp1, next_origin, info)
+  @assign (e2, ty2, var2) = typeExp(exp.exp2, next_origin, info)
+  @assign (exp, ty) = checkLogicalBinaryOperation(
+    e1,
+    ty1,
+    var1,
+    exp.operator,
+    e2,
+    ty2,
+    var2,
+    info,
+  )
+  (exp, ty, variabilityMax(var1, var2))
+end
+
+
+function typeUnaryExpression(
+  @nospecialize(exp::Expression),
+  @nospecialize(origin::ORIGIN_Type),
+  @nospecialize(info::SourceInfo),)::Tuple{Expression, NFType, VariabilityType}
+  @assign next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
+  @assign (e1, ty1, var1) = typeExp(exp.exp, next_origin, info)
+  @assign (exp, ty) =
+    checkUnaryOperation(e1, ty1, var1, exp.operator, info)
+  (exp, ty, var1)
 end
 
 function typeExpl(

@@ -1860,17 +1860,14 @@ end
      (or shouldn't be added, e.g. if it's builtin), otherwise false. =#"""
 function isCollected(fn::M_Function)::Bool
   local collected::Bool
-
   @assign collected = begin
-    @match Pointer.access(fn.status) begin
+    @match P_Pointer.access(fn.status) begin
       FunctionStatus.BUILTIN => begin
         true
       end
-
       FunctionStatus.COLLECTED => begin
         true
       end
-
       _ => begin
         false
       end

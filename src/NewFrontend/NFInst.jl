@@ -61,29 +61,29 @@ import ..DAE
                    #execStat("NFInst.updateImplicitVariability")
                    #=  Type the class.
                    =#
-                    @debug "typeClass(inst_cls, name)"
+                    @info "TYPECLASS(inst_cls, name)"
                     typeClass(inst_cls, name)
-                    @debug "After type class"
+                    @info "AFTER type class"
                    #=  Flatten the model and evaluate constants in it.
                     =#
-                   @debug "START FLATTENING!"
+                   @info "START FLATTENING!"
                    @assign flat_model = flatten(inst_cls, name)
-                   @debug "CONSTANT EVALUATION"
+                   @info "CONSTANT EVALUATION"
                    @assign flat_model = evaluate(flat_model)
-                   @debug "FLATTENING DONE: flat_model"
+                   @info "FLATTENING DONE: flat_model"
                    #= Do unit checking =#
 #                   @assign flat_model = UnitCheck.checkUnits(flat_model) TODO
                    #=  Apply simplifications to the model.=#
                    @assign flat_model = simplify(flat_model)
                    #=  Collect a tree of all functions that are still used in the flat model.=#
-                    @debug "COLLECT FUNCTIONS"
+                   @info "COLLECT FUNCTIONS"
                    @assign funcs = collectFunctions(flat_model, name)
-                   @debug "COLLECTED FUNCTIONS!"
+                   @info "COLLECTED FUNCTIONS!"
                    #=  Collect package constants that couldn't be substituted with their values =#
                    #=  (e.g. because they where used with non-constant subscripts), and add them to the model. =#
-                    @debug "COLLECT CONSTANTS"
+                    @info "COLLECT CONSTANTS"
                     @assign flat_model = collectConstants(flat_model, funcs)
-                    @debug "COLLECTED CONSTANTS"
+                    @info "COLLECTED CONSTANTS"
                     #                   if Flags.getConfigBool(Flags.FLAT_MODELICA)
                     @debug "PRINTING FLAT MODELICA"
 #                    printFlatString(flat_model, FunctionTreeImpl.listValues(funcs))

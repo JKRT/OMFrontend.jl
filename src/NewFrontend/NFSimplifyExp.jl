@@ -150,7 +150,7 @@ function simplifyCall(callExp::Expression)::Expression
   @match CALL_EXPRESSION(call = call) = callExp
   @assign callExp = begin
     @match call begin
-      P_Call.TYPED_CALL(arguments = args) where {(!P_Call.isExternal(call))} => begin
+      TYPED_CALL(arguments = args) where {(!isExternal(call))} => begin
         if Flags.isSet(Flags.NF_EXPAND_FUNC_ARGS)
           @assign args = list(if P_Expression.Expression.hasArrayCall(arg)
             arg
@@ -202,11 +202,11 @@ function simplifyCall(callExp::Expression)::Expression
         callExp
       end
 
-      P_Call.TYPED_ARRAY_CONSTRUCTOR(__) => begin
+      TYPED_ARRAY_CONSTRUCTOR(__) => begin
         simplifyArrayConstructor(call)
       end
 
-      P_Call.TYPED_REDUCTION(__) => begin
+      TYPED_REDUCTION(__) => begin
         @assign call.exp = simplify(call.exp)
         @assign call.iters =
           list((Util.tuple21(i), simplify(Util.tuple22(i))) for i in call.iters)
@@ -233,7 +233,7 @@ function simplifyCall2(call::Call)::Expression
     if Flags.isSet(Flags.FAILTRACE)
       ErrorExt.delCheckpoint(getInstanceName())
       Debug.traceln(
-        "- " + getInstanceName() + " failed to evaluate " + P_Call.toString(call) + "\\n",
+        "- " + getInstanceName() + " failed to evaluate " + toString(call) + "\\n",
       )
     else
       ErrorExt.rollBack(getInstanceName())
@@ -351,7 +351,7 @@ function simplifyArrayConstructor(call::Call)::Expression
   local dim_size::Integer
   local expanded::Bool
 
-  @match P_Call.TYPED_ARRAY_CONSTRUCTOR(ty, var, exp, iters) = call
+  @match TYPED_ARRAY_CONSTRUCTOR(ty, var, exp, iters) = call
   @assign iters = list((Util.tuple21(i), simplify(Util.tuple22(i))) for i in iters)
   @assign outExp = begin
     @matchcontinue iters begin
@@ -378,7 +378,7 @@ function simplifyArrayConstructor(call::Call)::Expression
 
       _ => begin
         @assign exp = simplify(exp)
-        CALL_EXPRESSION(P_Call.TYPED_ARRAY_CONSTRUCTOR(ty, var, exp, iters))
+        CALL_EXPRESSION(TYPED_ARRAY_CONSTRUCTOR(ty, var, exp, iters))
       end
     end
   end

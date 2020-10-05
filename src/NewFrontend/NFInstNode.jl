@@ -130,7 +130,7 @@ function getPackageCache(in_caches::Array{<:CachedData}) ::CachedData
 end
 
 function setFuncCache(in_caches::Array{<:CachedData}, in_cache::CachedData)
-  @debug "Setting func cache  with $in_caches and $in_cache"
+  # @debug "Setting func cache  with $in_caches and $in_cache"
   arrayUpdate(in_caches, 1, in_cache)
 end
 
@@ -1544,8 +1544,8 @@ function setParent(parent::InstNode, node::InstNode) ::InstNode
         ()
       end
       COMPONENT_NODE(__)  => begin
-        @debug "Setting parent! for parent: $(parent.name) and node: $(node.name)"
-        @debug "parent scope before $(node.parent)"
+        # @debug "Setting parent! for parent: $(parent.name) and node: $(node.name)"
+        # @debug "parent scope before $(node.parent)"
         @assign node.parent = parent
         ()
       end
@@ -1555,7 +1555,7 @@ function setParent(parent::InstNode, node::InstNode) ::InstNode
       end
     end
   end
-  @debug "parent scope after $(node.parent.name)"
+  #  @debug "parent scope after $(node.parent.name)"
   node
 end
 
@@ -1717,7 +1717,7 @@ function parent(node::InstNode) ::InstNode
         node.parentScope
       end
       COMPONENT_NODE(__)  => begin
-        @debug "node was: $(node.name)"
+        # @debug "node was: $(node.name)"
         node.parent
       end
       IMPLICIT_SCOPE(__)  => begin

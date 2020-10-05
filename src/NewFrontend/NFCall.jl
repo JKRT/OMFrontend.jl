@@ -1920,7 +1920,7 @@ function instArgs(
 )::Tuple{List{Expression}, List{NamedArg}}
   local namedArgs::List{NamedArg}
   local posArgs::List{Expression}
-  @debug "Calling inst args for $args"
+  # @debug "Calling inst args for $args"
   @assign (posArgs, namedArgs) = begin
     @match args begin
       Absyn.FUNCTIONARGS(__) => begin
@@ -1933,7 +1933,7 @@ function instArgs(
       end
       _ => begin
         #Error.assertion(false, getInstanceName() + " got unknown function args", sourceInfo())
-        @error "Got unknown args! for $info"
+        # @error "Got unknown args! for $info"
         fail()
       end
     end
@@ -1971,7 +1971,7 @@ function instNormalCall(
       end
       return callExp
     else
-      @debug "Failed with the following error $e"
+      # @debug "Failed with the following error $e"
       fail()
     end
   end

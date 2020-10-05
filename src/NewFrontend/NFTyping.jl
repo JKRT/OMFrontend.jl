@@ -1006,7 +1006,7 @@ function typeComponentBinding(
               INVALID_BINDING(binding, ErrorExt.getCheckpointMessages())
           else
             #            ErrorExt.delCheckpoint(getInstanceName())
-            @error "Error in type componeent binding $e"
+            @error "Error in type componeent binding" # $e"
             fail()
           end
         end

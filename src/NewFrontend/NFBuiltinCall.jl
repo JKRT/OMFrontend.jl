@@ -9,7 +9,7 @@ function needSpecialHandling(call::Call) ::Bool
       end
       _  => begin
         #Error.assertion(false, getInstanceName() + " got unknown call: " + P_Call.toString(call), sourceInfo())
-        @error "Unknown call: $call"
+        # @error "Unknown call: $call"
         fail()
       end
     end
@@ -523,10 +523,10 @@ function typeDerCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{
   local fn::M_Function
   local ety::NFType
   #=  der may not be used in a function context.=#
-  @info "Value of origin was $origin, $ORIGIN_FUNCTION"
+  # @info "Value of origin was $origin, $ORIGIN_FUNCTION"
   if flagSet(origin, ORIGIN_FUNCTION)
     #Error.addSourceMessage(Error.EXP_INVALID_IN_FUNCTION, list("der"), info)
-    @error "Der used in context: $origin"
+    # @error "Der used in context: $origin"
     fail()
   end
   @match UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call

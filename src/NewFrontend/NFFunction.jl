@@ -2521,7 +2521,7 @@ function makeSlot(componentArg::InstNode, index::Integer)::Slot
     )
   catch e
     #Error.assertion(false, getInstanceName() + " got invalid component", sourceInfo())
-    @error "Invalid component. Error: $e"
+    # @error "Invalid component. Error: $e"
     fail()
   end
   #=  Remove $in_ for OM input output arguments.

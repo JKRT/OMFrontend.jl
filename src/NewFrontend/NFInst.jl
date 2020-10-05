@@ -156,6 +156,7 @@ function makeTopNode(topClasses::List{<:SCode.Element}) ::InstNode
   mapClasses(elems, markBuiltinTypeNodes)
   @assign cls = setClassTree(elems, cls)
   @assign topNode = updateClass(cls, topNode)
+
   topNode
 end
 

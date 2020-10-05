@@ -28,7 +28,7 @@ function lookupBaseClassName(name::Absyn.Path, scope::InstNode, info::SourceInfo
 end
 
 function lookupComponent(cref::Absyn.ComponentRef, scope::InstNode #= The scope to look in. =#, info::SourceInfo) ::Tuple{ComponentRef, InstNode}
-  @debug "Calling lookup component! cref: $cref"
+  # @debug "Calling lookup component! cref: $cref"
   local foundScope::InstNode #= The scope the cref was found in. =#
   local foundCref::ComponentRef
   local state::LookupState
@@ -40,7 +40,7 @@ function lookupComponent(cref::Absyn.ComponentRef, scope::InstNode #= The scope 
   catch e
     # Error.addSourceMessageAndFail(Error.LOOKUP_VARIABLE_ERROR, list(Dump.printComponentRefStr(cref), scopeName(scope)), info)
     treee = lookupTree(scope.cls.x.elements)
-    @error "Lookupvariable error for cref:$cref in scope $(scope.name). Error: $e"
+    # @error "Lookupvariable error for cref:$cref in scope $(scope.name). Error: $e"
     # @error "Our tree was" LookupTree.printTreeStr(treee)
     # @error "Repr3: $treee"
     fail()
@@ -112,7 +112,7 @@ function lookupFunctionName(cref::Absyn.ComponentRef, scope::InstNode #= The sco
     @assign nodeVar = node(foundCref)
     @match false = isName(nodeVar)
   catch e
-    @error "Function lookup error for function $cref. With exception $e"
+    # @error "Function lookup error for function $cref. With exception $e"
   end
   @assign (foundCref, state) = fixExternalObjectCall(nodeVar, foundCref, state)
   assertFunction(state, nodeVar, cref, info)
@@ -181,7 +181,7 @@ function lookupCrefWithError(cref::Absyn.ComponentRef, scope::InstNode, info::So
     @assign (foundCref, foundScope, state) = lookupCref(cref, scope)
   catch
     #Error.addSourceMessage(errMsg, list(Dump.printComponentRefStr(cref), scopeName(scope)), info)
-    @error "Failed to locate $cref"
+    # @error "Failed to locate $cref"
     fail()
   end
   (foundCref, foundScope, state)
@@ -252,7 +252,7 @@ function lookupLocalCref(cref::Absyn.ComponentRef, scope::InstNode #= The scope 
 
       _  => begin
         #Error.addSourceMessage(Error.LOOKUP_VARIABLE_ERROR, list(Dump.printComponentRefStr(cref), scopeName(scope)), info)
-        @error "Lookup error $cref"
+        # @error "Lookup error $cref"
         fail()
       end
     end
@@ -287,7 +287,7 @@ end
 function lookupLocalSimpleName(n::String, scope::InstNode) ::Tuple{InstNode, Bool}
   local isImport::Bool = false
   local node::InstNode
-  @debug "Looking up simple name $n"
+  # @debug "Looking up simple name $n"
   @assign (node, isImport) = lookupElement(n, getClass(scope))
   @debug "We lookup an element"
   @assign node = resolveInner(node)
@@ -300,7 +300,7 @@ function lookupSimpleName(nameStr::String, scope::InstNode) ::InstNode
   for i in 1:Global.recursionDepthLimit
     try
       (node, _) = lookupLocalSimpleName(nameStr, cur_scope)
-      @debug "The node is resolved $node"
+      # @debug "The node is resolved $node"
       return node
     catch
       if nameStr == name(cur_scope) && isClass(cur_scope)
@@ -310,7 +310,7 @@ function lookupSimpleName(nameStr::String, scope::InstNode) ::InstNode
       @assign cur_scope = parentScope(cur_scope)
     end
   end
-  @error "Failed to lookup simple name for $nameStr in scope:$scope"
+  @error "Failed to lookup simple name" # for $nameStr in scope:$scope"
   fail()
 end
 
@@ -321,7 +321,7 @@ function lookupNameWithError(name::Absyn.Path, scope::InstNode, info::SourceInfo
     @assign (node, state) = lookupName(name, scope, checkAccessViolations)
   catch
     #   Error.addSourceMessage(errorType, list(AbsynUtil.pathString(name), scopeName(scope)), info)
-    @error "Lookup error for path: $name"
+    @error "Lookup error for path " # $name"
     fail()
   end
   (node, state)
@@ -349,7 +349,7 @@ function lookupName(name::Absyn.Path, scope::InstNode, checkAccessViolations::Bo
 end
 
 function lookupNames(name::Absyn.Path, scope::InstNode) ::Tuple{List{InstNode}, LookupState}
-  @debug "Calling lookupNames with path: $name"
+  # @debug "Calling lookupNames with path: $name"
   local state::LookupState
   local nodes::List{InstNode}
   @assign (nodes, state) = begin
@@ -386,7 +386,7 @@ function lookupFirstIdent(name::String, scope::InstNode) ::Tuple{InstNode, Looku
     @assign state = LOOKUP_STATE_PREDEF_CLASS()
   catch
     @assign node = lookupSimpleName(name, scope)
-    @debug "Lookup sucessfull in lookupfirstIdent for $name"
+    # @debug "Lookup sucessfull in lookupfirstIdent for $name"
     @assign state = nodeState(node)
   end
   (node, state)
@@ -475,7 +475,7 @@ end
 
 function lookupSimpleBuiltinName(name::String) ::InstNode
   local builtin::InstNode
-  @debug "Calling lookupSimpleBuiltinName with $name"
+  # @debug "Calling lookupSimpleBuiltinName with $name"
   @assign builtin = begin
     @match name begin
       "Real"  => begin
@@ -505,7 +505,7 @@ function lookupSimpleBuiltinCref(name::String, subs::List{<:Absyn.Subscript}) ::
   local state::LookupState
   local cref::ComponentRef
   local node::InstNode
-  @debug "Looking up $name in lookupSimpleBuiltinCref"
+  # @debug "Looking up $name in lookupSimpleBuiltinCref"
   @assign (node, cref, state) = begin
     @match name begin
       "time"  => begin
@@ -546,7 +546,7 @@ function lookupSimpleCref(name::String, subs::List{<:Absyn.Subscript}, scope::In
     @assign (node, cref, state) = lookupSimpleBuiltinCref(name, subs)
     @assign foundScope = topScope(foundScope)
   catch
-    @debug "Searching for scope in lookupSimplecref.. with $(typeof(scope))"
+    # @debug "Searching for scope in lookupSimplecref.. with $(typeof(scope))"
     for i in 1:Global.recursionDepthLimit
       try
         @debug "Searching..."
@@ -586,7 +586,7 @@ function lookupSimpleCref(name::String, subs::List{<:Absyn.Subscript}, scope::In
         @debug "After from absyn. Returning..."
         return (node, cref, foundScope, state)
       catch e
-        @error "Error.. $e"
+        # @error "Error.. $e"
         @assign foundScope = parentScope(foundScope)
       end
     end

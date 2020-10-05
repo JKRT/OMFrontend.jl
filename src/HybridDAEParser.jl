@@ -4,19 +4,17 @@
 "
 module HybridDAEParser
 
-@nospecialize
-
 import Absyn
 import SCode
 import OpenModelicaParser
+
+using ExportAll
 
 "
   Main module
 "
 module Main
 #= We also use it at the top level =#
-
-@nospecialize
 
 using MetaModelica
 using ExportAll
@@ -115,7 +113,11 @@ include("./NewFrontend/NFSimplifyExp.jl")
 include("./NewFrontend/NFPackage.jl")
 #= Model verification =#
 include("./NewFrontend/NFVerifyModel.jl")
-end
+
+export instClassInProgram
+export makeTopNode
+
+end # Main
 
 function parseFile(file::String, acceptedGram::Int64 = 1)::Absyn.Program
   return OpenModelicaParser.parseFile(file, acceptedGram)
@@ -137,7 +139,7 @@ end
 "
 function instantiateSCodeToDAE(elementToInstantiate::String, inProgram::SCode.Program)
   # initialize globals
-  @info "INit globals"
+  @info "Init globals"
   Main.Global.initialize()
   # make sure we have all the flags loaded!
   # Main.Flags.new(Flags.emptyFlags)
@@ -145,10 +147,10 @@ function instantiateSCodeToDAE(elementToInstantiate::String, inProgram::SCode.Pr
   GC.enable(false) #=This C stuff can be a bit flaky..=#
   p = parseFile("./lib/NFModelicaBuiltin.mo", 2 #== MetaModelica ==#)
   @info "SCode translation"
+  GC.enable(true)
   s = HybridDAEParser.translateToSCode(p)
   @info "Parsing done!"
-  p = Main.listAppend(s, inProgram)
-  GC.enable(true)
+  p = inProgram # Main.listAppend(s, inProgram)
   Main.instClassInProgram(Absyn.IDENT(elementToInstantiate), p)
 end
 
@@ -191,6 +193,6 @@ function runModel(modelName::String, fileName::String)
   @show dae
 end
 
-export runModel
+@exportAll()
 
 end # module

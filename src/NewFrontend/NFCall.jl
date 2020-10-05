@@ -1540,14 +1540,14 @@ function typeArgs(call::Call, origin::ORIGIN_Type, info::SourceInfo)::Call
         @assign typedArgs = nil
         @assign next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
         for arg in call.arguments
-          @assign (arg, arg_ty, arg_var) = Typing.typeExp(arg, next_origin, info)
+          @assign (arg, arg_ty, arg_var) = typeExp(arg, next_origin, info)
           @assign typedArgs = _cons((arg, arg_ty, arg_var), typedArgs)
         end
         @assign typedArgs = listReverse(typedArgs)
         @assign typedNamedArgs = nil
         for narg in call.named_args
           @assign (name, arg) = narg
-          @assign (arg, arg_ty, arg_var) = Typing.typeExp(arg, next_origin, info)
+          @assign (arg, arg_ty, arg_var) = typeExp(arg, next_origin, info)
           @assign typedNamedArgs = _cons((name, arg, arg_ty, arg_var), typedNamedArgs)
         end
         @assign typedNamedArgs = listReverse(typedNamedArgs)
@@ -1727,7 +1727,7 @@ function typeReduction(
         for i in call.iters
           @assign (iter, range) = i
           @assign (range, _, iter_var) =
-            Typing.typeIterator(iter, range, origin, structural = false)
+            typeIterator(iter, range, origin, structural = false)
           @assign variability = Variability.variabilityMax(variability, iter_var)
           @assign iters = _cons((iter, range), iters)
         end
@@ -1735,7 +1735,7 @@ function typeReduction(
         #=  ExpOrigin.FOR is used here as a marker that this expression may contain iterators.
         =#
         @assign next_origin = intBitOr(next_origin, ExpOrigin.FOR)
-        @assign (arg, ty, exp_var) = Typing.typeExp(call.exp, next_origin, info)
+        @assign (arg, ty, exp_var) = typeExp(call.exp, next_origin, info)
         @assign variability = Variability.variabilityMax(variability, exp_var)
         @match list(fn) = P_Function.typeRefCache(call.ref)
         TypeCheck.checkReductionType(ty, P_Function.name(fn), call.exp, info)
@@ -1794,7 +1794,7 @@ function typeArrayConstructor(
         for i in call.iters
           @assign (iter, range) = i
           @assign (range, iter_ty, iter_var) =
-            Typing.typeIterator(iter, range, next_origin, is_structural)
+            typeIterator(iter, range, next_origin, is_structural)
           if is_structural
             @assign range = Ceval.evalExp(range, Ceval.P_EvalTarget.RANGE(info))
             @assign iter_ty = typeOf(range)
@@ -1807,7 +1807,7 @@ function typeArrayConstructor(
         #=  ExpOrigin.FOR is used here as a marker that this expression may contain iterators.
         =#
         @assign next_origin = intBitOr(next_origin, ExpOrigin.FOR)
-        @assign (arg, ty, exp_var) = Typing.typeExp(call.exp, next_origin, info)
+        @assign (arg, ty, exp_var) = typeExp(call.exp, next_origin, info)
         @assign variability = Variability.variabilityMax(variability, exp_var)
         @assign ty = Type.liftArrayLeftList(ty, dims)
         @assign variability = Variability.variabilityMax(variability, exp_var)

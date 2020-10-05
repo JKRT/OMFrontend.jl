@@ -941,7 +941,7 @@ function typePartialApplication(
     Variability.CONSTANT
   end
   for arg in args
-    @assign (arg, arg_ty, arg_var) = Typing.typeExp(arg, origin, info)
+    @assign (arg, arg_ty, arg_var) = typeExp(arg, origin, info)
     @match _cons(arg_name, rest_names) = rest_names
     @assign (arg, inputs, slots) =
       applyPartialApplicationArg(arg_name, arg, arg_ty, inputs, slots, fn, info)
@@ -975,10 +975,10 @@ function typeFunctionBody(fn::M_Function)::M_Function
   #=  Type the bindings of the outputs and local variables.
   =#
   for c in fn.outputs
-    Typing.typeComponentBinding(c, ORIGIN_FUNCTION)
+    typeComponentBinding(c, ORIGIN_FUNCTION)
   end
   for c in fn.locals
-    Typing.typeComponentBinding(c, ORIGIN_FUNCTION)
+    typeComponentBinding(c, ORIGIN_FUNCTION)
   end
   #=  Type the algorithm section of the function, if it has one.
   =#
@@ -998,8 +998,8 @@ function typeFunctionSignature(fn::M_Function)::M_Function
   local node::InstNode = fn.node
 
   if !isTyped(fn)
-    Typing.typeClassType(node, NFBinding.EMPTY_BINDING, ORIGIN_FUNCTION, node)
-    Typing.typeComponents(node, ORIGIN_FUNCTION)
+    typeClassType(node, EMPTY_BINDING, ORIGIN_FUNCTION, node)
+    typeComponents(node, ORIGIN_FUNCTION)
     if isPartial(node)
       applyComponents(
         classTree(getClass(node)),
@@ -1007,7 +1007,7 @@ function typeFunctionSignature(fn::M_Function)::M_Function
       )
     end
     for c in fn.inputs
-      Typing.typeComponentBinding(c, ORIGIN_FUNCTION)
+      typeComponentBinding(c, ORIGIN_FUNCTION)
     end
     @assign fn.slots = makeSlots(fn.inputs)
     checkParamTypes(fn)
@@ -1058,13 +1058,11 @@ end
      they are not already typed. =#"""
 function typeRefCache(functionRef::ComponentRef)::List{M_Function}
   local functions::List{M_Function}
-
   @assign functions = begin
     @match functionRef begin
-      CREF(__) => begin
+      COMPONENT_REF_CREF(__) => begin
         typeNodeCache(functionRef.node)
       end
-
       _ => begin
         Error.assertion(
           false,
@@ -1211,7 +1209,7 @@ function matchArgVectorized(
   if listEmpty(vectDims)
     @assign vectDims = fillUnknownVectorizedDims(vect_dims, argExp)
     @assign vectArg = argExp
-  elseif !ListUtil.isEqualOnTrue(vectDims, vect_dims, P_Dimension.Dimension.isEqual)
+  elseif !ListUtil.isEqualOnTrue(vectDims, vect_dims, isEqual)
     Error.addSourceMessage(
       Error.VECTORIZE_CALL_DIM_MISMATCH,
       list(

@@ -424,7 +424,7 @@ function flattenSimpleComponent(
   #       ElementSource.createElementSource(info),
   #     )
   #     @assign sections = prependEquation(eq, sections)
-  #     @assign binding = NFBinding.EMPTY_BINDING
+  #     @assign binding = EMPTY_BINDING
   #   end
   # end
   @assign name = prefixScope(comp_node, ty, nil, prefix)
@@ -494,7 +494,7 @@ function getRecordBindings(binding::Binding, comps::Array{<:InstNode})::List{Bin
     @match binding_exp begin
 RECORD_EXPRESSION(__) => begin
         List(if P_Expression.Expression.isEmpty(e)
-          NFBinding.EMPTY_BINDING
+          EMPTY_BINDING
         else
           FLAT_BINDING(e, var)
         end for e in binding_exp.elements)
@@ -582,7 +582,7 @@ function flattenComplexComponent(
         sections,
         isInitial = comp_var <= Variability.PARAMETER,
       )
-      @assign opt_binding = SOME(NFBinding.EMPTY_BINDING)
+      @assign opt_binding = SOME(EMPTY_BINDING)
     else
       @assign binding = setTypedExp(binding_exp, binding)
       @assign opt_binding = SOME(binding)
@@ -971,7 +971,7 @@ function flattenBinding(
       end
 
       CEVAL_BINDING(__) => begin
-        NFBinding.EMPTY_BINDING
+        EMPTY_BINDING
       end
 
       FLAT_BINDING(__) => begin

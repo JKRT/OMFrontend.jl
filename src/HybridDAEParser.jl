@@ -51,7 +51,7 @@ function createElementSource(source)
   return DAE.emptyElementSource
 end
 
-
+@nospecialize
 #=New Frontend=#
 include("./FrontendInterfaces/NFInterfaces.jl")
 include("./NewFrontend/NFType.jl")

@@ -138,7 +138,7 @@ function lookupTypeAttribute(name::String, var::Variable)::Binding
       return binding
     end
   end
-  @assign binding = NFBinding.EMPTY_BINDING
+  @assign binding = EMPTY_BINDING
   return binding
 end
 

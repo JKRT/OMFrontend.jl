@@ -430,7 +430,7 @@ function evalComponentBinding(
   else
     ORIGIN_CLASS
   end
-  Typing.typeComponentBinding(node, exp_origin, typeChildren = false)
+  typeComponentBinding(node, exp_origin, typeChildren = false)
   @assign comp = component(node)
   @assign binding = P_Component.getBinding(comp)
   if isUnbound(binding)
@@ -749,7 +749,7 @@ function makeComponentBinding(
       end
 
       _ => begin
-        NFBinding.EMPTY_BINDING
+        EMPTY_BINDING
       end
     end
   end
@@ -2375,17 +2375,14 @@ end
 
 function evalxp(callExp::Expression, target::EvalTarget)::Expression
   local result::Expression
-
   local fn::M_Function
   local args::List{Expression}
-
-  @match CALL_EXPRESSION(call = P_Call.TYPED_CALL(fn = fn, arguments = args)) =
-    callExp
-  @assign result = evalfn, args, target)
+  @match CALL_EXPRESSION(call = TYPED_CALL(fn = fn, arguments = args)) = callExp
+  @assign result = evalfn(args, target)
   return result
 end
 
-function eval
+function eval(
   fn::M_Function,
   args::List{<:Expression},
   target::EvalTarget,
@@ -4621,11 +4618,11 @@ function evalSize(
   if isSome(optIndex)
     @assign index_exp = evalExp_impl(Util.getOption(optIndex), target)
     @assign index = P_Expression.Expression.toInteger(index_exp)
-    @assign (dim, _, ty_err) = Typing.typeExpDim(exp, index, ORIGIN_CLASS, info)
-    Typing.checkSizeTypingError(ty_err, exp, index, info)
+    @assign (dim, _, ty_err) = typeExpDim(exp, index, ORIGIN_CLASS, info)
+    checkSizeTypingError(ty_err, exp, index, info)
     @assign outExp = P_Dimension.Dimension.sizeExp(dim)
   else
-    @assign (outExp, ty) = Typing.typeExp(exp, ORIGIN_CLASS, info)
+    @assign (outExp, ty) = typeExp(exp, ORIGIN_CLASS, info)
     @assign expl = List(P_Dimension.Dimension.sizeExp(d) for d in arrayDims(ty))
     @assign dim = P_Dimension.Dimension.fromInteger(listLength(expl), Variability.PARAMETER)
     @assign outExp =

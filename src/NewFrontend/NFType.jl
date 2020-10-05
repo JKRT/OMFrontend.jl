@@ -299,7 +299,7 @@ function isEqual(ty1::M_Type, ty2::M_Type)::Bool
         isEqual(ty1.elementType, ty2.elementType) && ListUtil.isEqualOnTrue(
           ty1.dimensions,
           ty2.dimensions,
-          P_Dimension.Dimension.isEqualKnown,
+          isEqualKnown,
         )
       end
 
@@ -1316,7 +1316,7 @@ function isSquareMatrix(ty::M_Type)::Bool
     local d2::Dimension
     @match ty begin
       TYPE_ARRAY(dimensions = d1 <| d2 <| nil()) => begin
-        P_Dimension.Dimension.isEqualKnown(d1, d2)
+        isEqualKnown(d1, d2)
       end
 
       _ => begin

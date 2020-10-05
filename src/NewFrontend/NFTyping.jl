@@ -40,6 +40,8 @@ Subscript = NFSubscript
 ComplexType = NFComplexType
 Restriction = NFRestriction
 
+@nospecialize
+
 @UniontypeDecl TypingError
 function isError(error::TypingError)::Bool
   local isError::Bool
@@ -166,7 +168,7 @@ end
 function typeClass(@nospecialize(cls::InstNode), name::String)
   typeClassType(cls, EMPTY_BINDING, ORIGIN_CLASS, cls)
   typeComponents(cls, ORIGIN_CLASS)
-#  execStat("NFTyping.typeComponents(" + name + ")")
+#  execStat("NFtypeComponents(" + name + ")")
   typeBindings(cls, cls, ORIGIN_CLASS)
 #  execStat("NFTyping.typeBindings(" + name + ")")
   typeClassSections(cls, ORIGIN_CLASS)
@@ -521,7 +523,7 @@ function checkComponentStreamAttribute(
 
   return if isFlowOrStream(cty)
     @assign ety = arrayElementType(ty)
-    if !(Type.isReal(ety) || isComplex(ety))
+    if !(isReal(ety) || isComplex(ety))
       Error.addSourceMessageAndFail(
         Error.NON_REAL_FLOW_OR_STREAM,
         list(ConnectorType.toString(cty), name(component)),
@@ -1342,13 +1344,13 @@ end
 """ #= Types an untyped expression, returning the typed expression itself along with
    its type and variability. =#"""
 function typeExp(
-  exp::Expression,
-  origin::ORIGIN_Type,
-  info::SourceInfo,
+  @nospecialize(exp::Expression),
+  @nospecialize(origin::ORIGIN_Type),
+  @nospecialize(info::SourceInfo),
 )::Tuple{Expression, NFType, VariabilityType}
   local variability::VariabilityType
   local ty::NFType
-
+@nospecialize
   @assign (exp, ty, variability) = begin
     local e1::Expression
     local e2::Expression
@@ -1420,10 +1422,6 @@ function typeExp(
       end
 
       END_EXPRESSION(__) => begin
-        #=  end is replaced in subscripts before we get here, so any end still
-        =#
-        #=  left should be outside a subscript and thus illegal.
-        =#
         Error.addSourceMessage(Error.END_ILLEGAL_USE_ERROR, nil, info)
         fail()
       end
@@ -1569,9 +1567,9 @@ function typeExp(
 end
 
 function typeExpl(
-  expl::List{<:Expression},
-  origin::ORIGIN_Type,
-  info::SourceInfo,
+  @nospecialize(expl::List{<:Expression}),
+  @nospecialize(origin::ORIGIN_Type),
+  @nospecialize(info::SourceInfo),
 )::Tuple{List{Expression}, List{M_Type}, List{Variability}}
   local varl::List{Variability} = nil
   local tyl::List{M_Type} = nil
@@ -1591,7 +1589,7 @@ function typeExpl(
 end
 
 function typeBindingExp(
-  exp::Expression,
+  @nospecialize(exp::Expression),
   origin::ORIGIN_Type,
   info::SourceInfo,
 )::Tuple{Expression, M_Type, VariabilityType}
@@ -1633,7 +1631,7 @@ end
    the given index doesn't refer to a valid dimension, in which case the
    returned dimension is undefined. =#"""
 function typeExpDim(
-  exp::Expression,
+  @nospecialize(exp::Expression),
   dimIndex::Integer,
   origin::ORIGIN_Type,
   info::SourceInfo,
@@ -2539,28 +2537,6 @@ function typeSize(
           end
           @assign exp = SIZE_EXPRESSION(exp, SOME(index))
         end
-        #=  Evaluate the index if it's a constant.
-        =#
-        #=  TODO: Print an error if the index couldn't be evaluated to an int.
-        =#
-        #=  Get the iindex'd dimension of the expression.
-        =#
-        #=  If the dimension size is known, return its size.
-        =#
-        #=  If the dimension size is unknown (e.g. in a function) or
-        =#
-        #=  evaluation is disabled, return a size expression instead.
-        =#
-        #=  size is constant outside functions, or for known dimensions inside functions.
-        =#
-        #=  size is discrete for : in functions.
-        =#
-        #=  If the index is not a constant, type the whole expression.
-        =#
-        #=  Check that it's an array.
-        =#
-        #=  Since we don't know which dimension to take the size of, return a size expression.
-        =#
         (exp, TYPE_INTEGER(), variability)
       end
 
@@ -2576,7 +2552,7 @@ end
 
 function checkSizeTypingError(
   typingError::TypingError,
-  exp::Expression,
+  @nospecialize(exp::Expression),
   index::Integer,
   info::SourceInfo,
 )
@@ -2612,7 +2588,7 @@ function checkSizeTypingError(
 end
 
 function evaluateEnd(
-  exp::Expression,
+  @nospecialize(exp::Expression),
   dim::Dimension,
   cref::ComponentRef,
   index::Integer,
@@ -3391,7 +3367,7 @@ function checkConnectorForm(cref::ComponentRef, isConnector::Bool = true)::Bool
   return valid
 end
 
-function checkLhsInWhen(exp::Expression)::Bool
+function checkLhsInWhen(@nospecialize(exp::Expression))::Bool
   local isValid::Bool
 
   @assign isValid = begin
@@ -3428,7 +3404,6 @@ function typeStatements(alg::List{<:Statement}, origin::ORIGIN_Type)::List{State
 end
 
 function typeStatement(st::Statement, origin::ORIGIN_Type)::Statement
-
   @assign st = begin
     local cond::Expression
     local e1::Expression
@@ -3775,7 +3750,7 @@ function typeIfEquation(
   return ifEq
 end
 
-function isNonConstantIfCondition(exp::Expression)::Bool
+function isNonConstantIfCondition(@nospecialize(exp::Expression))::Bool
   local isConstant::Bool
 
   @assign isConstant = begin
@@ -3893,10 +3868,10 @@ function typeOperatorArg(
 end
 
 function typeReinit(
-  crefExp::Expression,
-  exp::Expression,
-  origin::ORIGIN_Type,
-  source::DAE.ElementSource,
+  @nospecialize(crefExp::Expression),
+  @nospecialize(exp::Expression),
+  @nospecialize(origin::ORIGIN_Type),
+  @nospecialize(source::DAE.ElementSource),
 )::Tuple{Expression, Expression}
 
   local var::VariabilityType

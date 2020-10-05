@@ -865,7 +865,7 @@ function lookupAttributeBinding(name::String, cls::Class)::Binding
     @assign attr_node = lookupElement(name, classTree(cls))
     @assign binding = P_Component.getBinding(component(attr_node))
   catch
-    @assign binding = NFBinding.EMPTY_BINDING
+    @assign binding = EMPTY_BINDING
   end
   return binding
 end

@@ -304,11 +304,11 @@
                         @assign fcref_rhs = P_Function.lookupFunctionSimple("equalityConstraint", classScope(node(lhs)))
                         @assign (fcref_rhs, fn_node_rhs, _) = P_Function.instFunctionRef(fcref_rhs, ElementSource.getInfo(source))
                         @assign expRHS = CALL_EXPRESSION(UNTYPED_CALL(fcref_rhs, list(CREF_EXPRESSION(ty1, lhsArr), CREF_EXPRESSION(ty2, rhsArr)), nil, fn_node_rhs))
-                        @assign (expRHS, ty, var) = Typing.typeExp(expRHS, origin, ElementSource.getInfo(source))
+                        @assign (expRHS, ty, var) = typeExp(expRHS, origin, ElementSource.getInfo(source))
                         @assign fcref_lhs = P_Function.lookupFunctionSimple("fill", topScope(node(clhs)))
                         @assign (fcref_lhs, fn_node_lhs, _) = P_Function.instFunctionRef(fcref_lhs, ElementSource.getInfo(source))
                         @assign expLHS = CALL_EXPRESSION(UNTYPED_CALL(fcref_lhs, _cons(P_Expression.REAL_EXPRESSION(0.0), ListUtil.map(arrayDims(ty), P_Dimension.Dimension.sizeExp)), nil, fn_node_lhs))
-                        @assign (expLHS, ty, var) = Typing.typeExp(expLHS, origin, ElementSource.getInfo(source))
+                        @assign (expLHS, ty, var) = typeExp(expLHS, origin, ElementSource.getInfo(source))
                         @assign replaceEq = EQUATION_EQUALITY(expRHS, expLHS, ty, source)
                         @assign eqsEqualityConstraint = list(replaceEq)
                         return eqsEqualityConstraint

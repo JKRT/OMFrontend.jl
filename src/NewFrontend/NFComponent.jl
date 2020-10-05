@@ -740,7 +740,7 @@ function getCondition(component::Component)::Binding
       end
 
       _ => begin
-        NFBinding.EMPTY_BINDING
+        EMPTY_BINDING
       end
     end
   end
@@ -850,7 +850,7 @@ function getBinding(component::Component)::Binding
       end
 
       _ => begin
-        NFBinding.EMPTY_BINDING
+        EMPTY_BINDING
       end
     end
   end

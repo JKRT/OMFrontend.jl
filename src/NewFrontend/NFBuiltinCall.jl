@@ -493,7 +493,7 @@ function typeNdimsCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tupl
   =#
   #=  so we might as well evaluate the ndims call here.
   =#
-  @assign (_, arg_ty, _) = Typing.typeExp(listHead(args), origin, info)
+  @assign (_, arg_ty, _) = typeExp(listHead(args), origin, info)
   @assign callExp = INTEGER_EXPRESSION(Type.dimensionCount(arg_ty))
   (callExp, ty, variability)
 end
@@ -517,7 +517,7 @@ function typeChangeCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tup
   (callExp, ty, variability)
 end
 
-function typePreChangeCall(name::String, call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
+function typePreChangeCall(@nospecialize(name::String), @nospecialize(call::Call), origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
   local variability::VariabilityType = Variability.DISCRETE
   local ty::M_Type
   local callExp::Expression
@@ -539,7 +539,7 @@ function typePreChangeCall(name::String, call::Call, origin::ORIGIN_Type, info::
   if flagSet(origin, ORIGIN_FUNCTION)
     Error.addSourceMessageAndFail(Error.EXP_INVALID_IN_FUNCTION, list(toString(fn_ref)), info)
   end
-  @assign (arg, ty, var) = Typing.typeExp(listHead(args), origin, info)
+  @assign (arg, ty, var) = typeExp(listHead(args), origin, info)
   if ! isCref(arg)
     Error.addSourceMessage(Error.ARGUMENT_MUST_BE_VARIABLE, list("First", toString(fn_ref), "<REMOVE ME>"), info)
     fail()
@@ -575,17 +575,19 @@ function typeDerCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{
   if listLength(args) != 1
     Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), "der(Real) => Real"), info)
   end
-  @match list(arg) = args
-  @assign (arg, ty, variability) = Typing.typeExp(arg, origin, info)
+  @error "@match list(arg) = args"
+  arg = listHead(args)
+  @assign (arg, ty, variability) = typeExp(arg, origin, info)
   @assign ety = arrayElementType(ty)
-  if Type.isInteger(ety)
+  if isInteger(ety)
     @assign ty = setArrayElementType(ty, TYPE_REAL())
     @assign arg = typeCast(arg, TYPE_REAL())
-  elseif ! Type.isReal(ety)
+  elseif ! isReal(ety)
     Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list("1", toString(fn_ref), "", toString(arg), Type.toString(ty), "Real"), info)
   end
-  @match list(fn) = P_Function.typeRefCache(fn_ref)
-  @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(fn, list(arg), variability, ty))
+  @error "@match list(fn) = P_Function.typeRefCache(fn_ref) TODO"
+  fn = listHead(typeRefCache(fn_ref))
+  @assign callExp = CALL_EXPRESSION(makeTypedCall(fn, list(arg), variability, ty))
   (callExp, ty, variability)
 end
 
@@ -606,7 +608,7 @@ function typeDiagonalCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::T
   if listLength(args) != 1
     Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), "diagonal(Any[n]) => Any[n, n]"), info)
   end
-  @assign (arg, ty, variability) = Typing.typeExp(listHead(args), origin, info)
+  @assign (arg, ty, variability) = typeExp(listHead(args), origin, info)
   @assign ty = begin
     @match ty begin
       ARRAY_TYPE(dimensions = dim <|  nil())  => begin
@@ -677,7 +679,7 @@ function typeMinMaxCall(name::String, call::Call, origin::ORIGIN_Type, info::Sou
   @assign (args, ty, var) = begin
     @match args begin
       arg1 <|  nil()  => begin
-        @assign (arg1, ty1, var) = Typing.typeExp(arg1, origin, info)
+        @assign (arg1, ty1, var) = typeExp(arg1, origin, info)
         @assign ty = arrayElementType(ty1)
         if ! (isArray(ty1) && Type.isBasic(ty))
           Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list("1", name, "", toString(arg1), Type.toString(ty1), "Any[:, ...]"), info)
@@ -694,8 +696,8 @@ function typeMinMaxCall(name::String, call::Call, origin::ORIGIN_Type, info::Sou
       end
 
       arg1 <| arg2 <|  nil()  => begin
-        @assign (arg1, ty1, var1) = Typing.typeExp(arg1, origin, info)
-        @assign (arg2, ty2, var2) = Typing.typeExp(arg2, origin, info)
+        @assign (arg1, ty1, var1) = typeExp(arg1, origin, info)
+        @assign (arg2, ty2, var2) = typeExp(arg2, origin, info)
         if ! Type.isBasic(ty1)
           Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list("1", name, "", toString(arg1), Type.toString(ty1), "Any"), info)
         end
@@ -738,7 +740,7 @@ function typeSumCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{
   if listLength(args) != 1
     Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), "sum(Any[:, ...]) => Any"), info)
   end
-  @assign (arg, ty, variability) = Typing.typeExp(listHead(args), origin, info)
+  @assign (arg, ty, variability) = typeExp(listHead(args), origin, info)
   @assign ty = arrayElementType(ty)
   @match list(fn) = P_Function.typeRefCache(fn_ref)
   @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(fn, list(arg), variability, ty))
@@ -763,7 +765,7 @@ function typeProductCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tu
   if listLength(args) != 1
     Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), "product(Any[:, ...]) => Any"), info)
   end
-  @assign (arg, ty, variability) = Typing.typeExp(listHead(args), origin, info)
+  @assign (arg, ty, variability) = typeExp(listHead(args), origin, info)
   @assign ty = arrayElementType(ty)
   @match list(fn) = P_Function.typeRefCache(fn_ref)
   @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(fn, list(arg), variability, ty))
@@ -792,11 +794,11 @@ function typeSmoothCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tup
     Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), "smooth(Integer, Any) => Any"), info)
   end
   @match list(arg1, arg2) = args
-  @assign (arg1, ty1, var) = Typing.typeExp(arg1, origin, info)
-  @assign (arg2, ty2, variability) = Typing.typeExp(arg2, origin, info)
+  @assign (arg1, ty1, var) = typeExp(arg1, origin, info)
+  @assign (arg2, ty2, variability) = typeExp(arg2, origin, info)
   #=  First argument must be Integer.
   =#
-  if ! Type.isInteger(ty1)
+  if ! isInteger(ty1)
     Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list("1", toString(fn_ref), "", toString(arg1), Type.toString(ty1), "Integer"), info)
   end
   #=  First argument must be a parameter expression.
@@ -839,7 +841,7 @@ function typeFillCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple
   @match _cons(fill_arg, args) = args
   #=  Type the first argument, which is the fill value.
   =#
-  @assign (fill_arg, ty, _) = Typing.typeExp(fill_arg, origin, info)
+  @assign (fill_arg, ty, _) = typeExp(fill_arg, origin, info)
   @assign (callExp, ty, variability) = typeFillCall2(fn_ref, ty, fill_arg, args, origin, info)
   (callExp, ty, variability)
 end
@@ -863,14 +865,14 @@ function typeFillCall2(fnRef::ComponentRef, fillType::M_Type, fillArg::Expressio
   #=  Type the dimension arguments.
   =#
   for arg in dimensionArgs
-    @assign (arg, arg_ty, arg_var) = Typing.typeExp(arg, origin, info)
+    @assign (arg, arg_ty, arg_var) = typeExp(arg, origin, info)
     if arg_var <= Variability.STRUCTURAL_PARAMETER && ! flagSet(origin, ORIGIN_FUNCTION) && ! containsIterator(arg, origin)
       @assign arg = Ceval.evalExp(arg)
       @assign arg_ty = typeOf(arg)
     else
       @assign evaluated = false
     end
-    if ! Type.isInteger(arg_ty)
+    if ! isInteger(arg_ty)
       Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list(intString(listLength(ty_args) + 1), toString(fnRef), "", toString(arg), Type.toString(arg_ty), "Integer"), info)
     end
     @assign variability = variabilityMax(variability, arg_var)
@@ -934,7 +936,7 @@ function typeScalarCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tup
   if listLength(args) != 1
     Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), "scalar(Any[1, ...]) => Any"), info)
   end
-  @assign (arg, ty, variability) = Typing.typeExp(listHead(args), origin, info)
+  @assign (arg, ty, variability) = typeExp(listHead(args), origin, info)
   #=  scalar requires all dimensions of the array to be 1.
   =#
   for dim in arrayDims(ty)
@@ -976,7 +978,7 @@ function typeVectorCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tup
   if listLength(args) != 1
     Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), "vector(Any) => Any[:]\\n  vector(Any[:, ...]) => Any[:]"), info)
   end
-  @assign (arg, ty, variability) = Typing.typeExp(listHead(args), origin, info)
+  @assign (arg, ty, variability) = typeExp(listHead(args), origin, info)
   #=  vector requires that at most one dimension is > 1, and that dimension
   =#
   #=  determines the type of the vector call.
@@ -1019,7 +1021,7 @@ function typeMatrixCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tup
   if listLength(args) != 1
     Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), "vector(Any) => Any[:]\\n  vector(Any[:, ...]) => Any[:]"), info)
   end
-  @assign (arg, ty, variability) = Typing.typeExp(listHead(args), origin, info)
+  @assign (arg, ty, variability) = typeExp(listHead(args), origin, info)
   @assign dims = arrayDims(ty)
   @assign ndims = listLength(dims)
   if ndims < 2
@@ -1070,7 +1072,7 @@ function typeCatCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{
     Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), "cat(Integer, Any[:,:], ...) => Any[:]"), info)
   end
   @match _cons(arg, args) = args
-  @assign (arg, ty, variability) = Typing.typeExp(arg, origin, info)
+  @assign (arg, ty, variability) = typeExp(arg, origin, info)
   @assign (arg, ty, mk) = TypeCheck.matchTypes(ty, TYPE_INTEGER(), arg)
   if variability > Variability.PARAMETER
     Error.addSourceMessageAndFail(Error.NF_CAT_FIRST_ARG_EVAL, list(toString(arg), P_Prefixes.variabilityString(variability)), info)
@@ -1079,7 +1081,7 @@ function typeCatCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{
   @assign res = nil
   @assign tys = nil
   for a in args
-    @assign (arg, ty, var) = Typing.typeExp(a, origin, info)
+    @assign (arg, ty, var) = typeExp(a, origin, info)
     @assign variability = variabilityMax(var, variability)
     @assign res = _cons(arg, res)
     @assign tys = _cons(ty, tys)
@@ -1104,7 +1106,7 @@ function typeSymmetricCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::
   if listLength(args) != 1
     Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), "symmetric(Any[n, n]) => Any[n, n]"), info)
   end
-  @assign (arg, ty, variability) = Typing.typeExp(listHead(args), origin, info)
+  @assign (arg, ty, variability) = typeExp(listHead(args), origin, info)
   if ! Type.isSquareMatrix(ty)
     Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list("1", toString(fn_ref), "", toString(arg), Type.toString(ty), "Any[n, n]"), info)
   end
@@ -1132,7 +1134,7 @@ function typeTransposeCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::
   if listLength(args) != 1
     Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), "transpose(Any[n, m, ...]) => Any[m, n, ...]"), info)
   end
-  @assign (arg, ty, variability) = Typing.typeExp(listHead(args), origin, info)
+  @assign (arg, ty, variability) = typeExp(listHead(args), origin, info)
   @assign ty = begin
     @match ty begin
       ARRAY_TYPE(dimensions = dim1 <| dim2 <| rest_dims)  => begin
@@ -1179,7 +1181,7 @@ function typeCardinalityCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) 
   if flagSet(origin, ORIGIN_FUNCTION)
     Error.addSourceMessageAndFail(Error.EXP_INVALID_IN_FUNCTION, list(toString(fn_ref)), info)
   end
-  @assign (arg, ty) = Typing.typeExp(listHead(args), origin, info)
+  @assign (arg, ty) = typeExp(listHead(args), origin, info)
   if ! isCref(arg)
     Error.addSourceMessageAndFail(Error.ARGUMENT_MUST_BE_VARIABLE, list("First", toString(fn_ref), "<REMOVE ME>"), info)
   end
@@ -1217,9 +1219,9 @@ function typeBranchCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tup
     Error.addSourceMessageAndFail(Error.EXP_INVALID_IN_FUNCTION, list(toString(fn_ref)), info)
   end
   @match list(arg1, arg2) = args
-  @assign (arg1, ty) = Typing.typeExp(arg1, origin, info)
+  @assign (arg1, ty) = typeExp(arg1, origin, info)
   checkConnectionsArgument(arg1, ty, fn_ref, 1, info)
-  @assign (arg2, ty) = Typing.typeExp(arg2, origin, info)
+  @assign (arg2, ty) = typeExp(arg2, origin, info)
   checkConnectionsArgument(arg2, ty, fn_ref, 2, info)
   @match list(fn) = P_Function.typeRefCache(fn_ref)
   @assign ty = TYPE_NORETCALL()
@@ -1246,7 +1248,7 @@ function typeIsRootCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tup
   if flagSet(origin, ORIGIN_FUNCTION)
     Error.addSourceMessageAndFail(Error.EXP_INVALID_IN_FUNCTION, list(toString(fn_ref)), info)
   end
-  @assign (arg, ty) = Typing.typeExp(listHead(args), origin, info)
+  @assign (arg, ty) = typeExp(listHead(args), origin, info)
   checkConnectionsArgument(arg, ty, fn_ref, 1, info)
   @match list(fn) = P_Function.typeRefCache(fn_ref)
   @assign ty = TYPE_BOOLEAN()
@@ -1285,12 +1287,12 @@ function typePotentialRootCall(call::Call, origin::ORIGIN_Type, info::SourceInfo
     Error.addSourceMessageAndFail(Error.EXP_INVALID_IN_FUNCTION, list(toString(fn_ref)), info)
   end
   @match _cons(arg1, args) = args
-  @assign (arg1, ty) = Typing.typeExp(arg1, origin, info)
+  @assign (arg1, ty) = typeExp(arg1, origin, info)
   checkConnectionsArgument(arg1, ty, fn_ref, 1, info)
   if args_len == 2
     @assign arg2 = listHead(args)
-    @assign (arg2, ty) = Typing.typeExp(arg2, origin, info)
-    if ! Type.isInteger(ty)
+    @assign (arg2, ty) = typeExp(arg2, origin, info)
+    if ! isInteger(ty)
       Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list("2", toString(fn_ref), "", toString(arg2), Type.toString(ty), "Integer"), info)
     end
   else
@@ -1321,7 +1323,7 @@ function typeRootCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple
   if flagSet(origin, ORIGIN_FUNCTION)
     Error.addSourceMessageAndFail(Error.EXP_INVALID_IN_FUNCTION, list(toString(fn_ref)), info)
   end
-  @assign (arg, ty) = Typing.typeExp(listHead(args), origin, info)
+  @assign (arg, ty) = typeExp(listHead(args), origin, info)
   checkConnectionsArgument(arg, ty, fn_ref, 1, info)
   @match list(fn) = P_Function.typeRefCache(fn_ref)
   @assign ty = TYPE_NORETCALL()
@@ -1348,7 +1350,7 @@ function typeRootedCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tup
   if flagSet(origin, ORIGIN_FUNCTION)
     Error.addSourceMessageAndFail(Error.EXP_INVALID_IN_FUNCTION, list(toString(fn_ref)), info)
   end
-  @assign (arg, ty) = Typing.typeExp(listHead(args), origin, info)
+  @assign (arg, ty) = typeExp(listHead(args), origin, info)
   checkConnectionsArgument(arg, ty, fn_ref, 1, info)
   if isSimple(fn_ref)
     Error.addSourceMessage(Error.DEPRECATED_API_CALL, list("rooted", "Connections.rooted"), info)
@@ -1392,11 +1394,11 @@ function typeUniqueRootCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) :
     Error.addSourceMessageAndFail(Error.EXP_INVALID_IN_FUNCTION, list(toString(fn_ref)), info)
   end
   @match _cons(arg1, args) = args
-  @assign (arg1, ty) = Typing.typeExp(arg1, origin, info)
+  @assign (arg1, ty) = typeExp(arg1, origin, info)
   checkConnectionsArgument(arg1, ty, fn_ref, 1, info)
   if args_len == 2
     @assign arg2 = listHead(args)
-    @assign (arg2, ty) = Typing.typeExp(arg2, origin, info)
+    @assign (arg2, ty) = typeExp(arg2, origin, info)
     if ! Type.isString(ty)
       Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list("2", toString(fn_ref), "", toString(arg2), Type.toString(ty), "String"), info)
     end
@@ -1452,13 +1454,13 @@ end
                     Error.addSourceMessageAndFail(Error.EXP_INVALID_IN_FUNCTION, list(toString(fn_ref)), info)
                   end
                   @match _cons(arg1, _cons(arg2, args)) = args
-                  @assign (arg1, ty1) = Typing.typeExp(arg1, origin, info)
+                  @assign (arg1, ty1) = typeExp(arg1, origin, info)
                   checkConnectionsArgument(arg1, ty1, fn_ref, 1, info)
-                  @assign (arg2, ty2) = Typing.typeExp(arg2, origin, info)
+                  @assign (arg2, ty2) = typeExp(arg2, origin, info)
                   checkConnectionsArgument(arg2, ty2, fn_ref, 1, info)
                   if args_len == 3
                     @assign arg3 = listHead(args)
-                    @assign (arg3, ty3) = Typing.typeExp(arg3, origin, info)
+                    @assign (arg3, ty3) = typeExp(arg3, origin, info)
                     if ! Type.isString(ty3)
                       Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list("3", toString(fn_ref), "", toString(arg2), Type.toString(ty3), "String"), info)
                     end
@@ -1750,7 +1752,7 @@ function typeActualInStreamCall(name::String, call::Call, origin::ORIGIN_Type, i
   if listLength(args) != 1
     Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), toString(fn_ref) + "(stream variable) => Real"), info)
   end
-  @assign (arg, ty, var) = Typing.typeExp(listHead(args), origin, info)
+  @assign (arg, ty, var) = typeExp(listHead(args), origin, info)
   @assign arg = P_ExpandExp.ExpandExp.expand(arg)
   @match list(fn) = P_Function.typeRefCache(fn_ref)
   @assign callExp = typeActualInStreamCall2(name, fn, arg, var, info)
@@ -1820,14 +1822,14 @@ function typeDynamicSelectCall(name::String, call::Call, origin::ORIGIN_Type, in
     Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), toString(fn_ref) + "(static expression, dynamic expression)"), info)
   end
   @match list(expStatic, expDynamic) = List(unbox(arg) for arg in args)
-  @assign (arg1, ty1, var1) = Typing.typeExp(expStatic, origin, info)
+  @assign (arg1, ty1, var1) = typeExp(expStatic, origin, info)
   @assign arg1 = P_ExpandExp.ExpandExp.expand(arg1)
   #=  if we cannot typecheck the dynamic part, ignore it!
   =#
   #=  https:trac.openmodelica.org/OpenModelica/ticket/5631
   =#
   try
-    @assign (arg2, ty2, var2) = Typing.typeExp(expDynamic, origin, info)
+    @assign (arg2, ty2, var2) = typeExp(expDynamic, origin, info)
   catch
     @assign variability = var1
     @assign callExp = arg1

@@ -412,7 +412,7 @@ function makeEqualityAssert(
   @assign ty = getComponentType(lhsCref)
   @assign lhs_exp = P_Expression.Expression.fromCref(lhsCref)
   @assign rhs_exp = P_Expression.Expression.fromCref(rhsCref)
-  if Type.isReal(ty)
+  if isReal(ty)
     @assign exp =
       BINARY_EXPRESSION(lhs_exp, P_Operator.Operator.makeSub(ty), rhs_exp)
     @assign exp = CALL_EXPRESSION(P_Call.makeTypedCall(

@@ -104,7 +104,7 @@ function updateVariable(
   local unit_idx::Integer = 0
   local unit::Unit.Unit
 
-  if Type.isReal(var.ty)
+  if isReal(var.ty)
     for attr in var.typeAttributes
       @assign (name, binding) = attr
       @assign unit_idx = unit_idx + 1
@@ -263,7 +263,7 @@ function foldBindingExp(
   local binding_exp::Expression
   local eq::Equation
 
-  if Type.isReal(var.ty) && isBound(var.binding)
+  if isReal(var.ty) && isBound(var.binding)
     @assign binding_exp = getTypedExp(var.binding)
     @assign eq = P_Equation.Equation.makeEquality(
       P_Expression.Expression.fromCref(var.name),

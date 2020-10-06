@@ -358,15 +358,12 @@ function toFullDAEType(clsNode::InstNode) ::DAE.Type
 end
 
 function stripDAETypeVars(ty::DAE.Type) ::DAE.Type
-
-
   @assign () = begin
     @match ty begin
       DAE.Type.T_COMPLEX(__)  => begin
         @assign ty.varLst = nil
         ()
       end
-
       _  => begin
         ()
       end

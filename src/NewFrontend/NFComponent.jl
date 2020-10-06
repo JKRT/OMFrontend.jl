@@ -1,12 +1,6 @@
-
 Restriction = NFRestriction
-
-
 using MetaModelica
 using ExportAll
-
-
-import ..DAE
 Dimension = NFDimension
 M_Type = NFType
 Expression = NFExpression

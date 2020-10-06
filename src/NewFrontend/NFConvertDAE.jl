@@ -2,7 +2,7 @@
 import ..ComponentReference
 import ..Flags
 import ..Util
-import ..DAE
+import DAE
 
 function convert(
   flatModel::FlatModel,
@@ -623,18 +623,15 @@ function convertStateSelectAttribute(binding::Binding)::Option{DAE.StateSelect}
   local node::InstNode
   local name::String
   local exp::Expression =
-    P_Expression.Expression.getBindingExp(getTypedExp(binding))
-
+    getBindingExp(getTypedExp(binding))
   @assign name = begin
     @match exp begin
-      P_Expression.Expression.ENUM_LITERAL(__) => begin
+      ENUM_LITERAL(__) => begin
         exp.name
       end
-
       CREF_EXPRESSION(cref = CREF(node = node)) => begin
         name(node)
       end
-
       _ => begin
         Error.assertion(
           false,

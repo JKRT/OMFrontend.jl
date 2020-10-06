@@ -36,7 +36,7 @@ using ExportAll
 import ..P_NFComponentRef
 P_ComponentRef = P_NFComponentRef
 ComponentRef = P_NFComponentRef.NFComponentRef
-import ..DAE.InlineType
+import DAE.InlineType
 import ..P_NFDimension
 P_Dimension = P_NFDimension
 Dimension = P_NFDimension.NFDimension

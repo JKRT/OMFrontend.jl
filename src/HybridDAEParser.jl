@@ -20,6 +20,7 @@ using ExportAll
 
 import Absyn
 import SCode
+import DAE
 import ListUtil
 include("./Util/Pointer.jl")
 import .P_Pointer
@@ -38,12 +39,7 @@ include("./AbsynUtil.jl")
 include("./SCodeUtil.jl")
 include("./AbsynToSCode.jl")
 #=Utility for frontend=#
-include("./FrontendUtil/Values.jl")
-include("./FrontendUtil/ClassInf.jl")
 include("./FrontendUtil/Prefix.jl")
-include("./FrontendUtil/DAE.jl")
-
-
 "
 TODO
 "

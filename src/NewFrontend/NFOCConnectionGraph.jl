@@ -64,7 +64,7 @@
          P_Operator=P_NFOperator
          Operator=P_NFOperator.NFOperator
         import ..P_NFOperator.Op
-        import ..DAE.Connect
+        import DAE.Connect
          import ..P_NFExpression
          P_Expression=P_NFExpression
          Expression=P_NFExpression.NFExpression

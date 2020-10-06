@@ -1,6 +1,6 @@
 import Absyn
 import SCode
-import ..DAE
+import DAE
 """ #= Instantiates a class given by its fully qualified path, with the result being
                  a DAE. =#"""
                   function instClassInProgram(classPath::Absyn.Path, program::SCode.Program)::Tuple{DAE.DAE_LIST, DAE.FunctionTree}
@@ -96,7 +96,7 @@ import ..DAE
                    @assign flat_model.variables = ListUtil.filterOnFalse(flat_model.variables, isEmptyArray)
 #                   end
                    #=  Remove empty arrays from variables =#
-                   @debug "VERIFYING MODEL"
+                   @info "VERIFYING MODEL: "
                    verify(flat_model)
 #                   if Flags.isSet(Flags.NF_DUMP_FLAT)
 #                     print("FlatModel:\\n" + toString(flat_model) + "\\n")

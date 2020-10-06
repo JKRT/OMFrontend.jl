@@ -33,7 +33,7 @@ FuncT = Function
 ReductionFn = Function
 Expression = NFExpression
 Operator = NFOperator
-import ..DAE
+
 #import ..ElementSource
 
 @UniontypeDecl EvalTarget

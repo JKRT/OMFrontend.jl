@@ -130,18 +130,18 @@ function getPackageCache(in_caches::Array{<:CachedData}) ::CachedData
 end
 
 function setFuncCache(in_caches::Array{<:CachedData}, in_cache::CachedData)
-  # @debug "Setting func cache  with $in_caches and $in_cache"
+  # ## REENABLE @debug "Setting func cache  with $in_caches and $in_cache"
   arrayUpdate(in_caches, 1, in_cache)
 end
 
 function getFuncCache(in_caches::Array{<:CachedData}) ::CachedData
-  @debug in_caches
+  ## REENABLE @debug in_caches
   local out_cache::CachedData = arrayGet(in_caches, 1)
   out_cache
 end
 
 function addFunc(fn::M_Function, specialBuiltin::Bool, caches::Array{<:CachedData})
-  @error "ADD FUNC CALLED"
+  ## REENABLE @debug "ADD FUNC CALLED"
   local func_cache::CachedData
   @assign func_cache = getFuncCache(caches)
   @assign func_cache = begin
@@ -869,7 +869,7 @@ function setFuncCache(node::InstNode, in_func_cache::CachedData) ::InstNode
       end
       _  => begin
         #Error.assertion(false, getInstanceName() + " got node without cache", sourceInfo())
-        @error "Error in set func cache"
+        ## REENABLE @debug "Error in set func cache"
         fail()
       end
     end
@@ -961,7 +961,7 @@ function resolveInner(node::InstNode) ::InstNode
 end
 
 function isInnerOuterNode(node::InstNode) ::Bool
-  @debug "is inner outer node?"
+  ## REENABLE @debug "is inner outer node?"
   local isIO::Bool
   @assign isIO = begin
     @match node begin
@@ -1544,8 +1544,8 @@ function setParent(parent::InstNode, node::InstNode) ::InstNode
         ()
       end
       COMPONENT_NODE(__)  => begin
-        # @debug "Setting parent! for parent: $(parent.name) and node: $(node.name)"
-        # @debug "parent scope before $(node.parent)"
+        # ## REENABLE @debug "Setting parent! for parent: $(parent.name) and node: $(node.name)"
+        # ## REENABLE @debug "parent scope before $(node.parent)"
         @assign node.parent = parent
         ()
       end
@@ -1555,7 +1555,7 @@ function setParent(parent::InstNode, node::InstNode) ::InstNode
       end
     end
   end
-  #  @debug "parent scope after $(node.parent.name)"
+  #  ## REENABLE @debug "parent scope after $(node.parent.name)"
   node
 end
 
@@ -1717,7 +1717,7 @@ function parent(node::InstNode) ::InstNode
         node.parentScope
       end
       COMPONENT_NODE(__)  => begin
-        # @debug "node was: $(node.name)"
+        # ## REENABLE @debug "node was: $(node.name)"
         node.parent
       end
       IMPLICIT_SCOPE(__)  => begin

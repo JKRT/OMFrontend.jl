@@ -91,7 +91,7 @@ function stripAddresses(inSymbol::String)::String
 end
 
 function triggerStackOverflow()
-  return @error "TODO: Defined in the runtime"
+  return ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 function generateReadableMessage(
@@ -155,23 +155,23 @@ end
 function getStacktraceMessages()::List{String}
   local symbols::List{String}
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return symbols
 end
 
 function setStacktraceMessages(numSkip::Integer, numFrames::Integer)
-  return @error "TODO: Defined in the runtime"
+  return ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 function hasStacktraceMessages()::Bool
   local b::Bool
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return b
 end
 
 function clearStacktraceMessages()
-  return @error "TODO: Defined in the runtime"
+  return ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 @exportAll()

@@ -43,7 +43,7 @@
         function trim(inString::String, charsToRemove::String = " \\f\\n\\r\\t\\v") ::String
               local outString::String
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           outString
         end
 
@@ -58,7 +58,7 @@
         function trimChar(inString1::String, inString2::String) ::String
               local outString::String
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           outString
         end
 
@@ -73,7 +73,7 @@
         function strcmp(inString1::String, inString2::String) ::Integer
               local outInteger::Integer
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           outInteger
         end
 
@@ -81,7 +81,7 @@
         function strcmp_offset(string1::String, offset1::Integer, length1::Integer, string2::String, offset2::Integer, length2::Integer) ::Integer
               local outInteger::Integer
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           outInteger
         end
 
@@ -89,7 +89,7 @@
         function stringFind(str::String, searchStr::String) ::Integer
               local outInteger::Integer
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           outInteger
         end
 
@@ -97,7 +97,7 @@
         function stringFindString(str::String, searchStr::String) ::String
               local outString::String
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           outString
         end
 
@@ -115,21 +115,21 @@
               local strs::List{String} #= This list has length = maxMatches. Substrings that did not match are filled with the empty string =#
               local numMatches::Integer #= 0 means no match, else returns a number 1..maxMatches (1 if maxMatches<0) =#
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           (numMatches #= 0 means no match, else returns a number 1..maxMatches (1 if maxMatches<0) =#, strs #= This list has length = maxMatches. Substrings that did not match are filled with the empty string =#)
         end
 
         function strncmp(inString1::String, inString2::String, len::Integer) ::Integer
               local outInteger::Integer
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           outInteger
         end
 
         function stringReplace(str::String, source::String, target::String) ::String
               local res::String
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           res
         end
 
@@ -137,28 +137,28 @@
         function makeC89Identifier(str::String) ::String
               local res::String
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           res
         end
 
         function toupper(inString::String) ::String
               local outString::String
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           outString
         end
 
         function tolower(inString::String) ::String
               local outString::String
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           outString
         end
 
         function strtok(string::String, token::String) ::List{String}
               local strings::List{String}
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           strings
         end
 
@@ -168,115 +168,115 @@
         function strtokIncludingDelimiters(string::String, token::String) ::List{String}
               local strings::List{String}
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           strings
         end
 
         function setCCompiler(inString::String)
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
         end
 
         function getCCompiler() ::String
               local outString::String
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           outString
         end
 
         function setCFlags(inString::String)
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
         end
 
         function getCFlags() ::String
               local outString::String
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           outString
         end
 
         function setCXXCompiler(inString::String)
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
         end
 
         function getCXXCompiler() ::String
               local outString::String
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           outString
         end
 
         function getOMPCCompiler() ::String
               local outString::String
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           outString
         end
 
         function setLinker(inString::String)
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
         end
 
         function getLinker() ::String
               local outString::String
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           outString
         end
 
         function setLDFlags(inString::String)
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
         end
 
         function getLDFlags() ::String
               local outString::String
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           outString
         end
 
         function loadLibrary(inLib::String, inPrintDebug::Bool) ::Integer
               local outLibHandle::Integer
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           outLibHandle
         end
 
         function lookupFunction(inLibHandle::Integer, inFunc::String) ::Integer
               local outFuncHandle::Integer
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           outFuncHandle
         end
 
         function freeFunction(inFuncHandle::Integer, inPrintDebug::Bool)
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
         end
 
         function freeLibrary(inLibHandle::Integer, inPrintDebug::Bool)
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
         end
 
         """ #= This function will write to the file given by first argument the given string =#"""
         function writeFile(fileNameToWrite::String #= a filename where to write the data =#, stringToBeWritten::String #= the data =#)
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
         end
 
         function appendFile(file::String, data::String)
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
         end
 
         """ #= Does not fail. Returns strings describing the error instead. =#"""
         function readFile(inString::String) ::String
               local outString::String
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           outString
         end
 
         function systemCall(command::String, outFile::String = "" #= empty file means no redirection unless it is part of the command =#) ::Integer
               local outInteger::Integer
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           outInteger
         end
 
@@ -285,60 +285,60 @@
               local status::Integer
               local contents::String
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           (contents, status)
         end
 
         function systemCallParallel(inStrings::List{<:String}, numThreads::Integer) ::List{Integer}
               local outIntegers::List{Integer}
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           outIntegers
         end
 
         function spawnCall(path::String #= The absolute path to the executable =#, str::String #= The list of arguments with executable =#) ::Integer
               local outInteger::Integer
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           outInteger
         end
 
         function plotCallBackDefined() ::Bool
               local outBoolean::Bool
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           outBoolean
         end
 
         function plotCallBack(externalWindow::Bool, filename::String, title::String, grid::String, plotType::String, logX::String, logY::String, xLabel::String, yLabel::String, x1::String, x2::String, y1::String, y2::String, curveWidth::String, curveStyle::String, legendPosition::String, footer::String, autoScale::String, variables::String)
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
         end
 
         function cd(inString::String) ::Integer
               local outInteger::Integer
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           outInteger
         end
 
         function createDirectory(inString::String) ::Bool
               local outBool::Bool
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           outBool
         end
 
         function createTemporaryDirectory(inPrefix::String) ::String
               local outName::String
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           outName
         end
 
         function pwd() ::String
               local outString::String
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           outString
         end
 
@@ -346,7 +346,7 @@
         function readEnv(inString::String) ::String
               local outString::String
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           outString
         end
 
@@ -354,28 +354,28 @@
         function setEnv(varName::String, value::String, overwrite::Bool #= is always true on Windows, so recommended to always call it using true =#) ::Integer
               local outInteger::Integer
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           outInteger
         end
 
         function subDirectories(inString::String) ::List{String}
               local outStringLst::List{String}
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           outStringLst
         end
 
         function moFiles(inString::String) ::List{String}
               local outStringLst::List{String}
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           outStringLst
         end
 
         function mocFiles(inString::String) ::List{String}
               local outStringLst::List{String}
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           outStringLst
         end
 
@@ -384,21 +384,21 @@
               local name::String
               local dir::String
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           (dir, name, isDir)
         end
 
         function time() ::AbstractFloat
               local outReal::AbstractFloat
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           outReal
         end
 
         function regularFileExists(inString::String) ::Bool
               local outBool::Bool
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           outBool
         end
 
@@ -406,21 +406,21 @@
         function removeFile(fileName::String) ::Integer
               local res::Integer
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           res
         end
 
         function directoryExists(inString::String) ::Bool
               local outBool::Bool
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           outBool
         end
 
         function copyFile(source::String, destination::String) ::Bool
               local outBool::Bool
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           outBool
         end
 
@@ -443,25 +443,25 @@
         function removeDirectory_dispatch(inString::String) ::Bool
               local outBool::Bool
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           outBool
         end
 
         function getClassnamesForSimulation() ::String
               local outString::String
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           outString
         end
 
         function setClassnamesForSimulation(inString::String)
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
         end
 
         function getVariableValue(timeStamp::AbstractFloat, timeValues::List{<:AbstractFloat}, varValues::List{<:AbstractFloat}) ::AbstractFloat
               local outValue::AbstractFloat
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           outValue
         end
 
@@ -475,7 +475,7 @@
         function getFileModificationTime(fileName::String) ::Option{AbstractFloat}
               local outValue::Option{AbstractFloat}
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           outValue
         end
 
@@ -485,7 +485,7 @@
         function getCurrentTime() ::AbstractFloat
               local outValue::AbstractFloat
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           outValue
         end
 
@@ -500,7 +500,7 @@
               local min::Integer
               local sec::Integer
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           (sec, min, hour, mday, mon, year)
         end
 
@@ -511,14 +511,14 @@
         function getCurrentTimeStr() ::String
               local timeStr::String
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           timeStr
         end
 
         function readFileNoNumeric(inString::String) ::String
               local outString::String
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           outString
         end
 
@@ -526,7 +526,7 @@
          sets the external flag that signals the
          presence of expandable connectors in a model =#"""
         function setHasExpandableConnectors(hasExpandable::Bool)
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
         end
 
         """ #= @author: adrpo
@@ -535,7 +535,7 @@
         function getHasExpandableConnectors() ::Bool
               local hasExpandable::Bool
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           hasExpandable
         end
 
@@ -543,7 +543,7 @@
          sets the external flag that signals the
          presence of overconstrained connectors in a model =#"""
         function setHasOverconstrainedConnectors(hasOverconstrained::Bool)
-            #@error "TODO: Defined in the runtime"
+            ### REENABLE @debug "TODO: Defined in the runtime"
         end
 
         """ #= @author: adrpo
@@ -552,7 +552,7 @@
         function getHasOverconstrainedConnectors() ::Bool
               local hasOverconstrained::Bool
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           hasOverconstrained
         end
 
@@ -560,7 +560,7 @@
          sets the external flag that signals the
          presence of expandable connectors in a model =#"""
         function setPartialInstantiation(isPartialInstantiation::Bool)
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
         end
 
         """ #= @author: adrpo
@@ -569,7 +569,7 @@
         function getPartialInstantiation() ::Bool
               local isPartialInstantiation::Bool
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           isPartialInstantiation
         end
 
@@ -577,7 +577,7 @@
          sets the external flag that signals the
          presence of stream connectors in a model =#"""
         function setHasStreamConnectors(hasStream::Bool)
-            @info "TODO: Defined in the runtime: setHasStreamConnectors"
+            ## REENABLE @info "TODO: Defined in the runtime: setHasStreamConnectors"
         end
 
         """ #= @author: adrpo
@@ -586,20 +586,20 @@
         function getHasStreamConnectors() ::Bool
               local hasStream::Bool
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           hasStream
         end
 
         """ #= Sets the external flag that signals the use of the cardinality operator. =#"""
         function setUsesCardinality(inUses::Bool)
-          #@error "TODO: Defined in the runtime"
+          ### REENABLE @debug "TODO: Defined in the runtime"
         end
 
         """ #= Retrieves the external flag that signals the use of the cardinality operator. =#"""
         function getUsesCardinality() ::Bool
               local outUses::Bool
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           outUses
         end
 
@@ -607,7 +607,7 @@
          sets the external flag that signals the presence
          of inner/outer comoponent definitions in a model =#"""
         function setHasInnerOuterDefinitions(hasInnerOuterDefinitions::Bool)
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
         end
 
         """ #= @author: adrpo
@@ -616,7 +616,7 @@
         function getHasInnerOuterDefinitions() ::Bool
               local hasInnerOuterDefinitions::Bool
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           hasInnerOuterDefinitions
         end
 
@@ -630,14 +630,14 @@
 
         """ #= resets the tick so it restarts on start =#"""
         function tmpTickReset(start::Integer)
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
         end
 
         """ #= returns a tick that can be reset. TODO: remove me when bootstrapped (default argument index=0) =#"""
         function tmpTickIndex(index::Integer) ::Integer
               local tickNo::Integer
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           tickNo
         end
 
@@ -646,25 +646,25 @@
         function tmpTickIndexReserve(index::Integer, reserve::Integer #= current tick + reserve =#) ::Integer
               local tickNo::Integer
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           tickNo
         end
 
         """ #= resets the tick so it restarts on start. TODO: remove me when bootstrapped (default argument index=0) =#"""
         function tmpTickResetIndex(start::Integer, index::Integer)
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
         end
 
         """ #= sets the index, like tmpTickResetIndex, but does not reset the maximum counter =#"""
         function tmpTickSetIndex(start::Integer, index::Integer)
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
         end
 
         """ #= returns the max tick since the last reset =#"""
         function tmpTickMaximum(index::Integer) ::Integer
               local maxIndex::Integer
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           maxIndex
         end
 
@@ -674,21 +674,21 @@
         function userIsRoot() ::Bool
               local isRoot::Bool
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           isRoot
         end
 
         function getuid() ::Integer
               local uid::Integer
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           uid
         end
 
         """ #= Tock returns the time since the last tock; undefined if tick was never called.
         The clock index is 0-31. The function fails if the number is out of range. =#"""
         function realtimeTick(clockIndex::Integer)
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
         end
 
         """ #= Tock returns the time since the last tock, undefined if tick was never called.
@@ -696,14 +696,14 @@
         function realtimeTock(clockIndex::Integer) ::AbstractFloat
               local outTime::AbstractFloat
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           outTime
         end
 
         """ #= Clears the timer.
         The clock index is 0-31. The function fails if the number is out of range. =#"""
         function realtimeClear(clockIndex::Integer)
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
         end
 
         """ #= Returns the number of ticks since last clear.
@@ -711,28 +711,28 @@
         function realtimeNtick(clockIndex::Integer) ::Integer
               local n::Integer
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           n
         end
 
         """ #= @autor: adrpo
           this function will reset the timer to 0. =#"""
         function resetTimer()
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
         end
 
         """ #= @autor: adrpo
           this function will start counting the time
           that should be aggregated. =#"""
         function startTimer()
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
         end
 
         """ #= @autor: adrpo
           this function will stop counting the time
           that should be aggregated. =#"""
         function stopTimer()
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
         end
 
         """ #= @autor: adrpo
@@ -750,7 +750,7 @@
         function getTimerIntervalTime() ::AbstractFloat
               local timerIntervalTime::AbstractFloat
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           timerIntervalTime
         end
 
@@ -771,7 +771,7 @@
         function getTimerCummulatedTime() ::AbstractFloat
               local timerCummulatedTime::AbstractFloat
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           timerCummulatedTime
         end
 
@@ -784,7 +784,7 @@
         function getTimerElapsedTime() ::AbstractFloat
               local timerElapsedTime::AbstractFloat
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           timerElapsedTime
         end
 
@@ -803,7 +803,7 @@
         function getTimerStackIndex() ::Integer
               local stackIndex::Integer
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           stackIndex
         end
 
@@ -811,7 +811,7 @@
         function getUUIDStr() ::String
               local uuidStr::String
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           uuidStr
         end
 
@@ -820,7 +820,7 @@
         function basename(filename::String) ::String
               local base::String
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           base
         end
 
@@ -829,7 +829,7 @@
         function dirname(filename::String) ::String
               local base::String
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           base
         end
 
@@ -838,7 +838,7 @@
         function escapedString(unescapedString::String, unescapeNewline::Bool) ::String
               local escapedString::String
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           escapedString
         end
 
@@ -854,7 +854,7 @@
         function unescapedStringLength(unescapedString::String) ::Integer
               local length::Integer
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           length
         end
 
@@ -865,7 +865,7 @@
         function unquoteIdentifier(str::String) ::String
               local outStr::String
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           outStr
         end
 
@@ -873,7 +873,7 @@
         function intMaxLit() ::Integer
               local outInt::Integer
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           outInt
         end
 
@@ -881,7 +881,7 @@
         function realMaxLit() ::AbstractFloat
               local outReal::AbstractFloat
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           outReal
         end
 
@@ -892,7 +892,7 @@
               local classname::String #= empty if file: is used =#
               local scheme::String #= file: or modelica:, in lower-case =#
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           (scheme #= file: or modelica:, in lower-case =#, classname #= empty if file: is used =#, pathname)
         end
 
@@ -906,7 +906,7 @@
         function modelicaPlatform() ::String
               local platform::String
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           platform
         end
 
@@ -917,7 +917,7 @@
         function openModelicaPlatform() ::String
               local platform::String
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           platform
         end
 
@@ -927,7 +927,7 @@
         function gccDumpMachine() ::String
               local machine::String
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           machine
         end
 
@@ -937,7 +937,7 @@
         function gccVersion() ::String
               local version::String
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           version
         end
 
@@ -970,7 +970,7 @@
               local info::Integer
               local X::List{AbstractFloat}
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           (X, info)
         end
 
@@ -979,14 +979,14 @@
               local info::Integer
               local X::List{AbstractFloat}
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           (X, info)
         end
 
         function reopenStandardStream(_stream::Integer #= stdin,stdout,stderr =#, filename::String) ::Bool
               local success::Bool
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           success
         end
 
@@ -997,7 +997,7 @@
         function iconv(string::String, from::String, to::String) ::String
               local result::String
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           result
         end
 
@@ -1007,7 +1007,7 @@
         function snprintff(format::String, maxlen::Integer, val::AbstractFloat) ::String
               local str::String
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           str
         end
 
@@ -1021,7 +1021,7 @@
         function sprintff(format::String, val::AbstractFloat) ::String
               local str::String
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           str
         end
 
@@ -1029,7 +1029,7 @@
         function realRand() ::AbstractFloat
               local r::AbstractFloat
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           r
         end
 
@@ -1054,20 +1054,20 @@
         function intRandom0() ::Integer
               local ret::Integer
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           ret
         end
 
         """ #= Choose a locale for subsequent gettext calls. Prints warnings on failures. =#"""
         function gettextInit(locale::String = "" #= Empty string choses automatically from the environment =#)
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
         end
 
         """ #= Translate a string from msgid to msgstr using the language of the chosen locale =#"""
         function gettext(msgid::String) ::String
               local msgstr::String
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           msgstr
         end
 
@@ -1075,63 +1075,63 @@
         function anyStringCode(any::Any) ::String
               local str::String
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           str
         end
 
         function numBits() ::Integer
               local n::Integer
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           n
         end
 
         function realpath(path::String) ::String
               local fullpath::String
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           fullpath
         end
 
         function getSimulationHelpText(detailed::Bool = false, sphinx::Bool = false) ::String
               local text::String
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           text
         end
 
         function getTerminalWidth() ::Integer
               local width::Integer
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           width
         end
 
         function fileIsNewerThan(file1::String, file2::String) ::Bool
               local result::Bool
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           result
         end
 
         function fileContentsEqual(file1::String, file2::String) ::Bool
               local result::Bool
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           result
         end
 
         function rename(source::String, dest::String) ::Bool
               local result::Bool
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           result
         end
 
         function numProcessors() ::Integer
               local result::Integer
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           result
         end
 
@@ -1139,36 +1139,36 @@
         function launchParallelTasks(numThreads::Integer, inData::List{TI}, func::ForkFunction)  where {TI, TO}
               local result::List{TO}
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           result
         end
 
         """ #= Exits the compiler at this point with the given exit status. =#"""
         function exit(status::Integer)
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
         end
 
         """ #= Exits the current thread with a failure. =#"""
         function threadWorkFailed()
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
         end
 
         function getMemorySize() ::AbstractFloat
               local memory::AbstractFloat(unit = "MB")
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           memory
         end
 
         """ #= this needs to be called first in Main.mo =#"""
         function initGarbageCollector()
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
         end
 
         function ctime(t::AbstractFloat) ::String
               local str::String
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           str
         end
 
@@ -1177,21 +1177,21 @@
               local st_size::AbstractFloat
               local success::Bool
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           (success, st_size, st_mtime)
         end
 
         function alarm(seconds::Integer) ::Integer
               local previousAlarm::Integer
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           previousAlarm
         end
 
         function covertTextFileToCLiteral(textFile::String, outFile::String, target::String #= this would be what is set for +target=msvc|gcc =#) ::Bool
               local success::Bool
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           success
         end
 
@@ -1206,7 +1206,7 @@
                     local name::String
                     local file::String
 
-                  @error "TODO: Defined in the runtime"
+                  ## REENABLE @debug "TODO: Defined in the runtime"
                 (file, name)
               end
           (info, file, name)
@@ -1216,16 +1216,16 @@
         function relocateFunctions(fileName::String #= shared object =#, names::List{<:Tuple{<:String, String}} #= tuple of names to relocate; first is the local name and second is the name in the shared object =#) ::Bool
               local res::Bool
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           res
         end
 
         function fflush()
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
         end
 
         function updateUriMapping(namesAndDirs::Array{<:String})
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
         end
 
         function getSizeOfData(data::T)  where {T}
@@ -1233,7 +1233,7 @@
               local raw_sz::AbstractFloat #= The size without granule overhead =#
               local sz::AbstractFloat
 
-            @error "TODO: Defined in the runtime"
+            ## REENABLE @debug "TODO: Defined in the runtime"
           (sz, raw_sz #= The size without granule overhead =#, nonSharedStringSize #= The size that could be saved if String sharing was enabled =#)
         end
 

@@ -23,23 +23,23 @@ using ExternalObject #= Modelica extend clause =#
 function constructor()::SimpleBuffer
   local buf::SimpleBuffer
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return buf
 end
 
 function destructor(buf::SimpleBuffer)
-  return @error "TODO: Defined in the runtime"
+  return ## REENABLE @debug "TODO: Defined in the runtime"
 end
 end
 
 function writeFile(sbuffer::SimpleBuffer, file::String)
-  return @error "TODO: Defined in the runtime"
+  return ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 function position(sbuffer::SimpleBuffer)::Integer
   local position::Integer
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return position
 end
 
@@ -53,26 +53,26 @@ using ExternalObject #= Modelica extend clause =#
 function constructor(buf::SimpleBuffer.SimpleBuffer)::Packer
   local packer::Packer
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return packer
 end
 
 function destructor(packer::Packer)
-  return @error "TODO: Defined in the runtime"
+  return ## REENABLE @debug "TODO: Defined in the runtime"
 end
 end
 
 function double(packer::Packer, dbl::AbstractFloat)::Bool
   local result::Bool
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return result
 end
 
 function integer(packer::Packer, i::Integer)::Bool
   local result::Bool
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return result
 end
 
@@ -82,14 +82,14 @@ function bool(packer::Packer, bool::Bool)::Bool
   function msgpack_pack_true(packer::Packer)::Bool
     local result::Bool
 
-    @error "TODO: Defined in the runtime"
+    ## REENABLE @debug "TODO: Defined in the runtime"
     return result
   end
 
   function msgpack_pack_false(packer::Packer)::Bool
     local result::Bool
 
-    @error "TODO: Defined in the runtime"
+    ## REENABLE @debug "TODO: Defined in the runtime"
     return result
   end
 
@@ -104,28 +104,28 @@ end
 function sequence(packer::Packer, len::Integer)::Bool
   local result::Bool
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return result
 end
 
 function map(packer::Packer, len::Integer)::Bool
   local result::Bool
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return result
 end
 
 function string(packer::Packer, str::String)::Bool
   local result::Bool
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return result
 end
 
 function nil(packer::Packer)::Bool
   local result::Bool
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return result
 end
 
@@ -144,12 +144,12 @@ using ExternalObject #= Modelica extend clause =#
 function constructor(file::String)::Deserializer
   local deserializer::Deserializer
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return deserializer
 end
 
 function destructor(deserializer::Deserializer)
-  return @error "TODO: Defined in the runtime"
+  return ## REENABLE @debug "TODO: Defined in the runtime"
 end
 end
 
@@ -157,7 +157,7 @@ function next(deserializer::Deserializer, offset::Integer)::Tuple{Bool, Integer}
   local newoffset::Integer
   local success::Bool
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return (success, newoffset)
 end
 
@@ -169,7 +169,7 @@ function toStream(
   local success::Bool
   local newoffset::Integer
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return (newoffset, success)
 end
 
@@ -178,7 +178,7 @@ function integer(deserializer::Deserializer, offset::Integer)::Tuple{Integer, In
   local newoffset::Integer
   local res::Integer
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return (res, newoffset, success)
 end
 
@@ -187,14 +187,14 @@ function string(deserializer::Deserializer, offset::Integer)::Tuple{String, Inte
   local newoffset::Integer
   local res::String
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return (res, newoffset, success)
 end
 
 function get_integer(deserializer::Deserializer)::Integer
   local res::Integer
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return res
 end
 
@@ -218,12 +218,12 @@ using ExternalObject #= Modelica extend clause =#
 function constructor(file::String = "")::Stream #= Output file or \\\"\\\" for an in-memory string accessible using get() =#
   local ss::Stream
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return ss
 end
 
 function destructor(ss::Stream)
-  return @error "TODO: Defined in the runtime"
+  return ## REENABLE @debug "TODO: Defined in the runtime"
 end
 end
 
@@ -231,12 +231,12 @@ end
 function get(ss::Stream)::String
   local str::String
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return str
 end
 
 function append(ss::Stream, str::String)
-  return @error "TODO: Defined in the runtime"
+  return ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 @exportAll()

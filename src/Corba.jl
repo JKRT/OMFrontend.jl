@@ -37,35 +37,35 @@ using ExportAll
 function haveCorba()::Bool
   local b::Bool
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return b
 end
 
 function setObjectReferenceFilePath(inObjectReferenceFilePath::String)
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 function setSessionName(inSessionName::String)
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 function initialize()
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 function waitForCommand()::String
   local outString::String
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return outString
 end
 
 function sendreply(inString::String)
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 function close()
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 @exportAll()

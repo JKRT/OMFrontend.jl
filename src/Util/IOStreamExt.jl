@@ -37,76 +37,76 @@ using ExportAll
 function createFile(fileName::String)::Integer
   local fileID::Integer
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return fileID
 end
 
 function closeFile(fileID::Integer)
-  return @error "TODO: Defined in the runtime"
+  return ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 function deleteFile(fileID::Integer)
-  return @error "TODO: Defined in the runtime"
+  return ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 function clearFile(fileID::Integer)
-  return @error "TODO: Defined in the runtime"
+  return ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 function appendFile(fileID::Integer, inString::String)
-  return @error "TODO: Defined in the runtime"
+  return ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 function readFile(fileID::Integer)::String
   local outString::String
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return outString
 end
 
 function printFile(fileID::Integer, whereToPrint::Integer) #= stdout:1, stderr:2 =#
-  return @error "TODO: Defined in the runtime"
+  return ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 function createBuffer()::Integer
   local bufferID::Integer
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return bufferID
 end
 
 function appendBuffer(bufferID::Integer, inString::String)
-  return @error "TODO: Defined in the runtime"
+  return ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 function deleteBuffer(bufferID::Integer)
-  return @error "TODO: Defined in the runtime"
+  return ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 function clearBuffer(bufferID::Integer)
-  return @error "TODO: Defined in the runtime"
+  return ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 function readBuffer(bufferID::Integer)::String
   local outString::String
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return outString
 end
 
 function printBuffer(bufferID::Integer, whereToPrint::Integer) #= stdout:1, stderr:2 =#
-  return @error "TODO: Defined in the runtime"
+  return ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 function appendReversedList(inStringLst::List{<:String})::String
   local outString::String
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return outString
 end
 
 function printReversedList(inStringLst::List{<:String}, whereToPrint::Integer) #= stdout:1, stderr:2 =#
-  return @error "TODO: Defined in the runtime"
+  return ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 @exportAll()

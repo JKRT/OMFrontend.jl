@@ -41,7 +41,7 @@ import Main.ValuesUtil
 function val(filename::String, varname::String, timeStamp::AbstractFloat)::AbstractFloat
   local val::AbstractFloat
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return val
 end
 
@@ -52,7 +52,7 @@ function readVariables(
 )::List{String}
   local vars::List{String}
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return vars
 end
 
@@ -70,7 +70,7 @@ function readDataset(filename::String, vars::List{<:String}, dimsize::Integer)::
   )::List{List{AbstractFloat}}
     local outMatrix::List{List{AbstractFloat}}
 
-    @error "TODO: Defined in the runtime"
+    ## REENABLE @debug "TODO: Defined in the runtime"
     return outMatrix
   end
 
@@ -84,12 +84,12 @@ end
 function readSimulationResultSize(filename::String)::Integer
   local size::Integer
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return size
 end
 
 function close()
-  return @error "TODO: Defined in the runtime"
+  return ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 function cmpSimulationResults(
@@ -103,7 +103,7 @@ function cmpSimulationResults(
 )::List{String}
   local res::List{String}
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return res
 end
 
@@ -115,7 +115,7 @@ function deltaSimulationResults(
 )::AbstractFloat
   local res::AbstractFloat
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return res
 end
 
@@ -133,7 +133,7 @@ function diffSimulationResults(
   local res::List{String}
   local success::Bool
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return (success, res)
 end
 
@@ -148,7 +148,7 @@ function diffSimulationResultsHtml(
 )::String
   local html::String
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return html
 end
 
@@ -161,7 +161,7 @@ function filterSimulationResults(
 )::Bool
   local result::Bool
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return result
 end
 

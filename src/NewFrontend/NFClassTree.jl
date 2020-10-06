@@ -529,12 +529,12 @@ function lookupElement(name::String, tree::ClassTree)::Tuple{InstNode, Bool}
   local isImport::Bool
   local element::InstNode
   local entry::LookupTree.Entry
-  # @debug "Looking up element $name in class tree!"
-  @debug "Fetching from tree. Soon to report entry"
+  # ## REENABLE @debug "Looking up element $name in class tree!"
+  ## REENABLE @debug "Fetching from tree. Soon to report entry"
   # str = LookupTree.printTreeStr(lookupTree(tree))
-  # @debug str
+  # ## REENABLE @debug str
   @assign entry = LookupTree.get(lookupTree(tree), name)
-  # @debug "Our entry is $entry"
+  # ## REENABLE @debug "Our entry is $entry"
   @assign (element, isImport) = resolveEntry(entry, tree)
   return (element, isImport)
 end
@@ -857,7 +857,7 @@ function instantiate(
   local comp::Component
   local ext_def::SCode.Element
   local is_typish::Bool
-@debug "Instantiating in class tree"
+## REENABLE @debug "Instantiating in class tree"
   #=  TODO: If we don't have any extends we could probably generate a flat
   =#
   #=  tree directly and skip a lot of this.
@@ -946,7 +946,7 @@ function instantiate(
           end
           arrayUpdateNoBoundsChecking(clss, cls_idx, P_Pointer.create(c))
           @assign cls_idx = cls_idx + 1
-          # @debug "We have some clss: $clss"
+          # ## REENABLE @debug "We have some clss: $clss"
         end
         for ext in exts
           @assign () = begin
@@ -1054,7 +1054,7 @@ function instantiate(
       _ => begin
         ###Error.assertion(false, getInstanceName() + " got invalid class", sourceInfo())
         str = clsNode.name
-        # @error "Got an invalid class $cls"
+        # ## REENABLE @debug "Got an invalid class $cls"
         fail()
       end
     end
@@ -2100,7 +2100,7 @@ function resolveClass(index::Integer, tree::ClassTree)::InstNode
       end
     end
   end
-  @debug "Returning element in resolveClass"
+  ## REENABLE @debug "Returning element in resolveClass"
   return element
 end
 

@@ -76,7 +76,7 @@ function instDefaultConstructor(
   @assign (inputs, locals, all_params) = collectRecordParams(ctor_node)
   #=  Create the output record element, using the instance created above as both parent and type.
   =#
-  @assign out_comp = P_Component.UNTYPED_COMPONENT(
+  @assign out_comp = UNTYPED_COMPONENT(
     ctor_node,
     listArray(nil),
     EMPTY_BINDING,

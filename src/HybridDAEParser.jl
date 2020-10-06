@@ -139,17 +139,17 @@ end
 "
 function instantiateSCodeToDAE(elementToInstantiate::String, inProgram::SCode.Program)
   # initialize globals
-  @info "Init globals"
+  ### REENABLE @info "Init globals"
   Main.Global.initialize()
   # make sure we have all the flags loaded!
   # Main.Flags.new(Flags.emptyFlags)
-  @info "Parsing buildin stuff"
+  ### REENABLE @info "Parsing buildin stuff"
   GC.enable(false) #=This C stuff can be a bit flaky..=#
-  p = parseFile("../lib/NFModelicaBuiltin.mo", 2 #== MetaModelica ==#)
-  @info "SCode translation"
+  p = parseFile("./lib/NFModelicaBuiltin.mo", 2 #== MetaModelica ==#)
+  ### REENABLE @info "SCode translation"
   GC.enable(true)
   s = HybridDAEParser.translateToSCode(p)
-  @info "Parsing done!"
+  ### REENABLE @info "Parsing done!"
   p = Main.listAppend(s, inProgram)
   Main.instClassInProgram(Absyn.IDENT(elementToInstantiate), p)
 end
@@ -157,23 +157,23 @@ end
 function testSpin()
     p = parseFile("./src\\example.mo")
     scodeProgram = translateToSCode(p)
-    @info "Translation to SCode"
-    @info "SCode -> DAE"
+    ## REENABLE @info "Translation to SCode"
+    ## REENABLE @info "SCode -> DAE"
     (dae, cache) = instantiateSCodeToDAE("HelloWorld", scodeProgram)
-    @info "After DAE Translation"
+    ## REENABLE @info "After DAE Translation"
   return dae
 end
 
 function testSpinDAEExport()
-  @info "Parsing example.mo"
+  ## REENABLE @info "Parsing example.mo"
   p = parseFile("example.mo")
   scodeProgram = translateToSCode(p)
-  @info "Translation to SCode"
-  @info "SCode -> DAE"
+  ## REENABLE @info "Translation to SCode"
+  ## REENABLE @info "SCode -> DAE"
   (dae, cache) = instantiateSCodeToDAE("HelloWorld", scodeProgram)
-  @info "Exporting to file"
+  ## REENABLE @info "Exporting to file"
   exportDAERepresentationToFile("testDAE.jl", "$dae")
-  @info "DAE Exported"
+  ## REENABLE @info "DAE Exported"
 end
 
 function exportDAERepresentationToFile(fileName::String, contents::String)
@@ -186,10 +186,10 @@ function runModel(modelName::String, fileName::String)
   #using BenchmarkTools
   p = parseFile(fileName)
   scodeProgram = translateToSCode(p)
-  @info "Translation to SCode"
-  @info "SCode -> DAE"
+  ### REENABLE @info "Translation to SCode"
+  ### REENABLE @info "SCode -> DAE"
   (dae, cache) = instantiateSCodeToDAE(modelName, scodeProgram)
-  @info "After DAE Translation"
+  ### REENABLE @info "After DAE Translation"
   @show dae
 end
 

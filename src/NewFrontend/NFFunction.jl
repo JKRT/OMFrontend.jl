@@ -1062,7 +1062,7 @@ function typeRefCache(functionRef::ComponentRef)::List{M_Function}
         #   getInstanceName() + " got invalid function call reference",
         #   sourceInfo(),
         # )
-        @error "Got invalid function call reference"
+        ## REENABLE @debug "Got invalid function call reference"
         fail()
       end
     end
@@ -1973,16 +1973,16 @@ function getCachedFuncs(inNode::InstNode)::List{M_Function}
 end
 
 function instFunction3(fnNode::InstNode)::InstNode
-  @error "Calling inst function 3"
+  ## REENABLE @debug "Calling inst function 3"
   @assign fnNode = instantiateN1(fnNode, EMPTY_NODE())
   #=  Set up an empty function cache to signal that this function is
   =#
   #=  currently being instantiated, so recursive functions can be handled.
   =#
-  @error "Callng cache init func!"
+  ## REENABLE @debug "Callng cache init func!"
   cacheInitFunc(fnNode)
   instExpressions(fnNode)
-  @debug "Returning in instfunction3"
+  ## REENABLE @debug "Returning in instfunction3"
   return fnNode
 end
 
@@ -2037,10 +2037,10 @@ function instFunction2(
         if SCodeUtil.isOperator(def)
           checkOperatorRestrictions(fnNode)
         end
-        @error "Before set node type"
+        ## REENABLE @debug "Before set node type"
         @assign fnNode =
           setNodeType(ROOT_CLASS(parent), fnNode)
-        @error "After setNodeType"
+        ## REENABLE @debug "After setNodeType"
         @assign fnNode = instFunction3(fnNode)
         @assign fn = new(fnPath, fnNode)
         @assign specialBuiltin = isSpecialBuiltin(fn)
@@ -2118,11 +2118,11 @@ function instFunction(
   local fn_node::InstNode
   local fn_ref::ComponentRef
   local cache::CachedData
-  #@info "Looking up function1"
+  ### REENABLE @info "Looking up function1"
   @assign fn_ref = lookupFunction(functionName, scope, info)
-  #@info "Instantiate function ref"
+  ### REENABLE @info "Instantiate function ref"
   @assign (fn_ref, fn_node, specialBuiltin) = instFunctionRef(fn_ref, info)
-  #@info "Instantiated function ref"
+  ### REENABLE @info "Instantiated function ref"
   return (fn_ref, fn_node, specialBuiltin)
 end
 
@@ -2521,7 +2521,7 @@ function makeSlot(componentArg::InstNode, index::Integer)::Slot
     )
   catch e
     #Error.assertion(false, getInstanceName() + " got invalid component", sourceInfo())
-    # @error "Invalid component. Error: $e"
+    # ## REENABLE @debug "Invalid component. Error: $e"
     fail()
   end
   #=  Remove $in_ for OM input output arguments.
@@ -2584,7 +2584,7 @@ function paramDirection(componentArg::InstNode)::DirectionType
       #   list(name(componentArg)),
       #   info(componentArg),
       # )
-      @error "Formal parameters must be public, other function variables must be protected."
+      ## REENABLE @debug "Formal parameters must be public, other function variables must be protected."
       fail()
     end
   elseif vis == Visibility.PUBLIC
@@ -2595,7 +2595,7 @@ function paramDirection(componentArg::InstNode)::DirectionType
     # )
 #    componentArg),
       # )
-      @error "Non formal public funcition variable"
+      ## REENABLE @debug "Non formal public funcition variable"
     fail()
   end
   return direction

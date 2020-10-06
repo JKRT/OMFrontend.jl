@@ -38,71 +38,71 @@ using ExportAll
 function saveAndClearBuf()::Integer
   local handle::Integer
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return handle
 end
 
 function restoreBuf(handle::Integer)
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 function printErrorBuf(inString::String)
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 function clearErrorBuf()
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 function getErrorString()::String
   local outString::String
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return outString
 end
 
 function printBuf(inString::String)
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 function clearBuf()
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 """ #= Does not clear the buffer =#"""
 function getString()::String
   local outString::String
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return outString
 end
 
 """ #= Writes the buffer to a file =#"""
 function writeBuf(filename::String)
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 """ #= Writes the print buffer to the filename, with /*#modelicaLine...*/ directives converted to #line C preprocessor macros =#"""
 function writeBufConvertLines(filename::String)
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 """ #= Gets the actual length of the filled space in the print buffer. =#"""
 function getBufLength()::Integer
   local outBufFilledLength::Integer
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return outBufFilledLength
 end
 
 """ #= Prints the given number of spaces to the print buffer. =#"""
 function printBufSpace(inNumOfSpaces::Integer)
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 """ #= Prints one new line character to the print buffer. =#"""
 function printBufNewLine()
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 """ #= Tests if the last outputted character in the print buffer is a new line.
@@ -110,7 +110,7 @@ end
 function hasBufNewLineAtEnd()::Bool
   local outHasNewLineAtEnd::Bool
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return outHasNewLineAtEnd
 end
 

@@ -244,7 +244,7 @@ function flattenComponent(
 
       _ => begin
         #Error.assertion(false, getInstanceName() + " got unknown component", sourceInfo())
-        @error "Got unknown component!"
+        ## REENABLE @debug "Got unknown component!"
         fail()
       end
     end
@@ -558,7 +558,7 @@ function flattenComplexComponent(
         @assign binding_exp =
           stripBindingInfo(Ceval.evalExp(binding_exp))
       catch e
-        @error  "e"
+        ## REENABLE @debug  "e"
       end
     else
       @assign binding_exp = SimplifyExp.simplify(binding_exp)
@@ -833,7 +833,7 @@ function vectorizeAlgorithm(
           NONE(),
           INTEGER_EXPRESSION(stop),
         )
-        #@error "Manually check this error. It has to do with higher order functions in the translation"
+        ### REENABLE @debug "Manually check this error. It has to do with higher order functions in the translation"
         @assign body = mapExpList(
           alg.statements,
           (x) -> addIterator(
@@ -983,7 +983,7 @@ function flattenBinding(
       end
       _ => begin
         #Error.assertion(false, getInstanceName() + " got untyped binding.", sourceInfo())
-        @error "Untyped binding!"
+        ## REENABLE @debug "Untyped binding!"
         fail()
       end
     end

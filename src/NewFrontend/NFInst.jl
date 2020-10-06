@@ -28,7 +28,7 @@ function instClassInProgram(classPath::Absyn.Path, program::SCode.Program)::Tupl
   #System.setHasStreamConnectors(false)
   #=  Create a root node from the given top-level classes.
   =#
-  @info "CALLING INST CLASS IN PROGRAM"
+  ### REENABLE @info "CALLING INST CLASS IN PROGRAM"
   @assign top = makeTopNode(program)
   name = AbsynUtil.pathString(classPath)
   #=  Look up the class to instantiate and mark it as the root class.
@@ -36,84 +36,84 @@ function instClassInProgram(classPath::Absyn.Path, program::SCode.Program)::Tupl
   @assign cls = lookupClassName(classPath, top, AbsynUtil.dummyInfo, false)
   @assign cls = setNodeType(ROOT_CLASS(EMPTY_NODE()), cls)
   #=  Initialize the storage for automatically generated inner elements. =#
-  @debug "Test test test!"
+  ## REENABLE @debug "Test test test!"
   @assign top = setInnerOuterCache(top, C_TOP_SCOPE(NodeTree.new(), cls))
-  # @debug "OK we have a cache!"
+  # ## REENABLE @debug "OK we have a cache!"
   # #=  Instantiate the class. =#
-   @info "FIRST INST CALL!"
+   ## REENABLE @info "FIRST INST CALL!"
    @assign inst_cls = instantiateN1(cls, EMPTY_NODE())
-   @info "AFTER INST CALL"
+   ## REENABLE @info "AFTER INST CALL"
    insertGeneratedInners(inst_cls, top)
   # #execStat("NFInst.instantiate(" + name + ")")
-   @info "INSTANTIATION STEP 1 DONE!"
+   ## REENABLE @info "INSTANTIATION STEP 1 DONE!"
   # #=  Instantiate expressions (i.e. anything that can contains crefs, like
   # =#
   # #=  bindings, dimensions, etc). This is done as a separate step after
   # #=  instantiation to make sure that lookup is able to find the correct nodes.
   # =#
   # =#
-  @info "INSTEXPRESSIONS"
+  ## REENABLE @info "INSTEXPRESSIONS"
   instExpressions(inst_cls)
-  @info "After insts expression"
+  ## REENABLE @info "After insts expression"
   # #                   execStat("NFInst.instExpressions(" + name + ")")
-  # @info "Inst expressions done"
+  # ## REENABLE @info "Inst expressions done"
   # #=  Mark structural parameters.
   # =#
-  # #updateImplicitVariability(inst_cls, Flags.isSet(Flags.EVAL_PARAM))
+  updateImplicitVariability(inst_cls, false #== Flags.isSet(Flags.EVAL_PARAM) ==#)
   # #execStat("NFInst.updateImplicitVariability")
   # #=  Type the class.
   # =#
-  @info "TYPECLASS(inst_cls, name)"
-#   typeClass(inst_cls, name)
-#   @info "AFTER type class"
+  ## REENABLE @info "TYPECLASS(inst_cls, name)"
+  typeClass!(inst_cls, name)
+#   ## REENABLE @info "AFTER type class"
   # #=  Flatten the model and evaluate constants in it.
   # =#
-  @info "START FLATTENING!"
-  # @assign flat_model = flatten(inst_cls, name)
-  #@info "CONSTANT EVALUATION"
-  # @assign flat_model = evaluate(flat_model)
-  # @info "FLATTENING DONE"
+  ## REENABLE @info "START FLATTENING!"
+  @assign flat_model = flatten(inst_cls, name)
+  ## REENABLE @info "CONSTANT EVALUATION"
+  @assign flat_model = evaluate(flat_model)
+  ## REENABLE @info "FLATTENING DONE"
   # #= Do unit checking =#
   # #                   @assign flat_model = UnitCheck.checkUnits(flat_model) TODO
   # #=  Apply simplifications to the model.=#
-  # @assign flat_model = simplify(flat_model)
+  @assign flat_model = simplify(flat_model)
   # #=  Collect a tree of all functions that are still used in the flat model.=#
-  # @debug "COLLECT FUNCTIONS"
-  # @assign funcs = collectFunctions(flat_model, name)
-  # @debug "COLLECTED FUNCTIONS!"
+  ## REENABLE @debug "COLLECT FUNCTIONS"
+  @assign funcs = collectFunctions(flat_model, name)
+  ## REENABLE @debug "COLLECTED FUNCTIONS!"
   # #=  Collect package constants that couldn't be substituted with their values =#
   # #=  (e.g. because they where used with non-constant subscripts), and add them to the model. =#
-  # @info "COLLECT CONSTANTS"
-  # @assign flat_model = collectConstants(flat_model, funcs)
-  # @info "COLLECTED CONSTANTS"
+  # ## REENABLE @info "COLLECT CONSTANTS"
+  @assign flat_model = collectConstants(flat_model, funcs)
+  # ## REENABLE @info "COLLECTED CONSTANTS"
   # #                   if Flags.getConfigBool(Flags.FLAT_MODELICA)
-  # @debug "PRINTING FLAT MODELICA"
+  # ## REENABLE @debug "PRINTING FLAT MODELICA"
   # #                    printFlatString(flat_model, FunctionTreeImpl.listValues(funcs))
   # #                 end
   # #=  Scalarize array components in the flat model.=#
-  # @info "Skipping NF_SCALARIZE"
+  # ## REENABLE @info "Skipping NF_SCALARIZE"
   # #                  if Flags.isSet(Flags.NF_SCALARIZE)
-  # #                    @assign flat_model = Scalarize.scalarize(flat_model, name)
+                      @assign flat_model = Scalarize.scalarize(flat_model, name)
   # #                  else
   # @assign flat_model.variables = ListUtil.filterOnFalse(flat_model.variables, isEmptyArray)
   # #                   end
   # #=  Remove empty arrays from variables =#
-  # @info "VERIFYING MODEL"
-  # verify(flat_model)
+  # ## REENABLE @info "VERIFYING MODEL"
+  verify(flat_model)
   # #                   if Flags.isSet(Flags.NF_DUMP_FLAT)
   # #                     print("FlatModel:\\n" + toString(flat_model) + "\\n")
   # #                  end
   # #=  Convert the flat model to a DAE.=#
-  # @info "CONVERT TO THE DAE REPRESENTATION"
-  # (dae, daeFuncs) = convert(flat_model, funcs, name, info(inst_cls))
-  # return (dae, daeFuncs)
+  # ## REENABLE @info "CONVERT TO THE DAE REPRESENTATION"
+  (dae, daeFuncs) = convert(flat_model, funcs, name, info(inst_cls))
+  return (dae, daeFuncs)
 end
 
 
 function instantiateN1(node::InstNode, parentNode::InstNode)::InstNode
-  @debug "Instantiating!!!! in Inst"
+  ## REENABLE @debug "Instantiating!!!! in Inst"
   @assign node = expand(node)
-  @debug "After expansion in inst. Instantiating in class-tree "
+  ## REENABLE @debug "After expansion in inst. Instantiating in class-tree "
   @assign (node, _) = instClass(node, MODIFIER_NOMOD(), DEFAULT_ATTR, true, 0, parentNode)
   return node
 end
@@ -470,7 +470,7 @@ function checkBuiltinTypeExtends(builtinExtends::InstNode, tree::ClassTree, node
   =#
   if componentCount(tree) > 0 || extendsCount(tree) > 1
     #Error.addSourceMessage(Error.BUILTIN_EXTENDS_INVALID_ELEMENTS, list(name(builtinExtends)), info(node))
-    @error "Extends invalid elements!"
+    ## REENABLE @debug "Extends invalid elements!"
     fail()
   end
   #=  ***TODO***: Find the invalid element and use its info to make the error
@@ -620,9 +620,9 @@ end
 function instClass(node::InstNode, modifier::Modifier, attributes::Attributes = DEFAULT_ATTR, useBinding::Bool = false, instLevel::Integer = 0, parent = EMPTY_NODE) ::Tuple{InstNode, Attributes}
   local cls::Class
   local outer_mod::Modifier
-  @debug "INST CLASS CALLED. CALLING GETCLASS ON NODE."
+  ## REENABLE @debug "INST CLASS CALLED. CALLING GETCLASS ON NODE."
   @assign cls = getClass(node)
-  @debug "OUR CLASS AFTER CALLING GETCLASS"
+  ## REENABLE @debug "OUR CLASS AFTER CALLING GETCLASS"
   @assign outer_mod = getModifier(cls)
   #=  Give an error for modifiers such as (A = B), i.e. attempting to replace a =#
   #=  class without using redeclare. =#
@@ -630,7 +630,7 @@ function instClass(node::InstNode, modifier::Modifier, attributes::Attributes = 
     Error.addSourceMessage(Error.MISSING_REDECLARE_IN_CLASS_MOD, list(name(node)), getInfo(binding(outer_mod)))
     fail()
   end
-  @debug "CALLING INSTCLASSDEF"
+  ## REENABLE @debug "CALLING INSTCLASSDEF"
   @assign (attributes, node) = instClassDef(cls, modifier, attributes, useBinding, node, parent, instLevel)
   (node, attributes)
 end
@@ -645,7 +645,7 @@ function instClassDef(cls::Class, outerMod::Modifier, attributes::Attributes, us
   local res::Restriction
   local ty::M_Type
   local attrs::Attributes
-  @debug "CALLING INSTCLASSDEF FOR CLASS"
+  ## REENABLE @debug "CALLING INSTCLASSDEF FOR CLASS"
   @assign () = begin
     @match cls begin
       EXPANDED_CLASS(restriction = res)  => begin
@@ -660,7 +660,7 @@ function instClassDef(cls::Class, outerMod::Modifier, attributes::Attributes, us
         end
         updateComponentType(parentArg, node)
         @assign attributes = updateClassConnectorType(res, attributes)
-        @error "The questions is the semantics here double check!!"
+        ## REENABLE @debug "The questions is the semantics here double check!!"
         inst_cls = getClass(node)
         cls_tree = inst_cls.elements
         #=  Fetch modification on the class definition (for class extends).
@@ -687,15 +687,15 @@ function instClassDef(cls::Class, outerMod::Modifier, attributes::Attributes, us
         =#
         redeclareClasses(cls_tree)
         #=  Instantiate the extends nodes. =#
-        @debug "BEFORE MAPEXETENDS WITH CLS_TREE"
-        @error "Double check this line. Might be ome translation error here."
+        ## REENABLE @debug "BEFORE MAPEXETENDS WITH CLS_TREE"
+        ## REENABLE @debug "Double check this line. Might be ome translation error here."
         mapExtends(cls_tree, (attributes, useBinding, visibility, instLevel)
                    -> instExtends(attributes = attributes,
                                   useBinding = useBinding,
                                   visibility = ExtendsVisibility.PUBLIC,
                                   instLevel = instLevel + 1))
         # #=  Instantiate local components. =#
-        @debug "Here we are"
+        ## REENABLE @debug "Here we are"
         instCp = (node) -> instComponent(
           node,
           attributes,
@@ -991,7 +991,7 @@ end
                            @assign (node, _) = lookupElement(name(mod), cls)
                          catch
                            #Error.addSourceMessage(Error.MISSING_MODIFIED_ELEMENT, list(name(mod), clsName), info(mod))
-                           @error "Missing modified element! "
+                           ## REENABLE @debug "Missing modified element! "
                            fail()
                          end
                          componentApply(node, mergeModifier, mod)
@@ -1297,7 +1297,7 @@ function instComponentDef(component::SCode.Element, outerMod::Modifier, innerMod
         =#
         #=  attributes of the component's parent (e.g. constant SomeComplexClass c).
         =#
-        @debug "Instantiating components attributes"
+        ## REENABLE @debug "Instantiating components attributes"
         @assign parent_res = restriction(getClass(parentNode))
         @assign attr = instComponentAttributes(component.attributes, component.prefixes)
         @assign attr = checkDeclaredComponentAttributes(attr, parent_res, node)
@@ -1780,7 +1780,7 @@ function instTypeSpec(typeSpec::Absyn.TypeSpec, modifier::Modifier, attributes::
       end
 
       Absyn.TCOMPLEX(__)  => begin
-        @error("NFInst.instTypeSpec: TCOMPLEX not implemented.\\n")
+        ## REENABLE @debug("NFInst.instTypeSpec: TCOMPLEX not implemented.\\n")
         fail()
       end
     end
@@ -2240,7 +2240,7 @@ function instExp(absynExp::Absyn.Exp, scope::InstNode, info::SourceInfo) ::Expre
         Expression.END()
       end
       _  => begin
-        @error "UNKNOWN EXPRESSION!"
+        ## REENABLE @debug "UNKNOWN EXPRESSION!"
         fail()
       end
     end
@@ -2761,12 +2761,12 @@ function insertGeneratedInners(node::InstNode, topScope::InstNode)
   local cls::Class
   local cls_tree::ClassTree
   local base_node::InstNode
-@debug "Calling insert generate inners!"
+## REENABLE @debug "Calling insert generate inners!"
   @match C_TOP_SCOPE(addedInner = inner_tree) = getInnerOuterCache(topScope)
   #=  Empty tree => nothing more to do.
   =#
   if NodeTree.isEmpty(inner_tree)
-    @debug "EMPTY NODE TREE"
+    ## REENABLE @debug "EMPTY NODE TREE"
     return
   end
   @assign inner_nodes = NodeTree.toList(inner_tree)
@@ -2780,7 +2780,7 @@ function insertGeneratedInners(node::InstNode, topScope::InstNode)
         @match Absyn.STRING(str) = SCodeUtil.getElementNamedAnnotation(definition(classScope(n)), "missingInnerMessage")
         Error.addSourceMessage(Error.MISSING_INNER_MESSAGE, list(System.unescapedString(str)), info(n))
       catch
-        @error "Error missing inners!"
+        ## REENABLE @debug "Error missing inners!"
         fail()
       end
       @assign inner_comps = _cons(P_Pointer.create(n), inner_comps)
@@ -2799,7 +2799,7 @@ function updateImplicitVariability(node::InstNode, evalAllParams::Bool)
   local cls_tree::ClassTree
   @assign () = begin
     @match cls begin
-      INSTANCED_CLASS(elements = cls_tree && FLAT_TREE(__))  => begin
+      INSTANCED_CLASS(elements = cls_tree && CLASS_TREE_FLAT_TREE(__))  => begin
         for c in cls_tree.components
           updateImplicitVariabilityComp(c, evalAllParams)
         end
@@ -2815,7 +2815,7 @@ function updateImplicitVariability(node::InstNode, evalAllParams::Bool)
         ()
       end
 
-      INSTANCED_BUILTIN(elements = cls_tree && FLAT_TREE(__))  => begin
+      INSTANCED_BUILTIN(elements = cls_tree && CLASS_TREE_FLAT_TREE(__))  => begin
         for c in cls_tree.components
           updateImplicitVariabilityComp(c, evalAllParams)
         end
@@ -2829,16 +2829,16 @@ function updateImplicitVariability(node::InstNode, evalAllParams::Bool)
   end
 end
 
-function updateImplicitVariabilityComp(component::InstNode, evalAllParams::Bool)
-  local node::InstNode = resolveOuter(component)
+function updateImplicitVariabilityComp(co::InstNode, evalAllParams::Bool)
+  local node::InstNode = resolveOuter(co)
   local c::Component = component(node)
 
   @assign () = begin
-    local binding::Binding
+    local bnd::Binding
     local condition::Binding
     @match c begin
-      P_Component.UNTYPED_COMPONENT(binding = binding, condition = condition)  => begin
-        if isStructuralComponent(c, c.attributes, binding, node, evalAllParams)
+      UNTYPED_COMPONENT(binding = bnd, condition = condition)  => begin
+        if isStructuralComponent(c, c.attributes, bnd, node, evalAllParams)
           markStructuralParamsComp(c, node)
         end
         #=  Parameters used in array dimensions are structural.
@@ -2848,8 +2848,8 @@ function updateImplicitVariabilityComp(component::InstNode, evalAllParams::Bool)
         end
         #=  Parameters that determine the size of a component binding are structural.
         =#
-        if isBound(binding)
-          markStructuralParamsExpSize(getUntypedExp(binding))
+        if isBound(bnd)
+          markStructuralParamsExpSize(getUntypedExp(bnd))
         end
         #=  Parameters used in a component condition are structural.
         =#
@@ -2860,10 +2860,10 @@ function updateImplicitVariabilityComp(component::InstNode, evalAllParams::Bool)
         ()
       end
 
-      TYPE_ATTRIBUTE(__) where (listMember(name(component), list("fixed", "stateSelect")))  => begin
-        @assign binding = binding(c.modifier)
-        if isBound(binding)
-          markStructuralParamsExp(getUntypedExp(binding))
+      TYPE_ATTRIBUTE(__) where (listMember(name(co), list("fixed", "stateSelect")))  => begin
+        @assign bnd = binding(c.modifier)
+        if isBound(bnd)
+          markStructuralParamsExp(getUntypedExp(bnd))
         end
         ()
       end
@@ -2882,10 +2882,10 @@ function isStructuralComponent(component::Component, compAttrs::Attributes, comp
 
   if compAttrs.variability != Variability.PARAMETER
     @assign isStructural = false
-  elseif evalAllParams || P_Component.getEvaluateAnnotation(component)
-    if ! P_Component.getFixedAttribute(component)
+  elseif evalAllParams || getEvaluateAnnotation(component)
+    if ! getFixedAttribute(component)
       @assign isStructural = false
-    elseif P_Component.isExternalObject(component)
+    elseif isExternalObject(component)
       @assign isStructural = false
     elseif ! hasBinding(compNode)
       if ! evalAllParams && ! Flags.getConfigBool(Flags.CHECK_MODEL)
@@ -3071,14 +3071,14 @@ function markStructuralParamsComp(component::Component, node::InstNode)
 end
 
 function markStructuralParamsExpSize(exp::Expression)
-  P_Expression.Expression.apply(exp, markStructuralParamsExpSize_traverser)
+  apply(exp, markStructuralParamsExpSize_traverser)
 end
 
 function markStructuralParamsExpSize_traverser(exp::Expression)
   @assign () = begin
     local iters::List{Tuple{InstNode, Expression}}
     @match exp begin
-      CALL_EXPRESSION(call = P_Call.UNTYPED_ARRAY_CONSTRUCTOR(iters = iters))  => begin
+      CALL_EXPRESSION(call = UNTYPED_ARRAY_CONSTRUCTOR(iters = iters))  => begin
         for iter in iters
           markStructuralParamsExp(Util.tuple22(iter))
         end
@@ -3103,29 +3103,29 @@ function updateImplicitVariabilityEq(eq::Equation, inWhen::Bool = false)
     local exp::Expression
     local eql::List{Equation}
     @match eq begin
-      Equation.EQUALITY(__)  => begin
+      EQUATION_EQUALITY(__)  => begin
         if inWhen
           markImplicitWhenExp(eq.lhs)
         end
         ()
       end
 
-      Equation.CONNECT(__)  => begin
+      EQUATION_CONNECT(__)  => begin
         fold(eq.lhs, markStructuralParamsSubs, 0)
         fold(eq.rhs, markStructuralParamsSubs, 0)
         ()
       end
 
-      Equation.FOR(__)  => begin
+      EQUATION_FOR(__)  => begin
         updateImplicitVariabilityEql(eq.body, inWhen)
         ()
       end
 
-      Equation.IF(__)  => begin
+      EQUATION_IF(__)  => begin
         for branch in eq.branches
           @assign () = begin
             @match branch begin
-              P_Equation.Equation.BRANCH(__)  => begin
+              EQUATION_BRANCH(__)  => begin
                 updateImplicitVariabilityEql(branch.body, inWhen)
                 ()
               end
@@ -3135,11 +3135,11 @@ function updateImplicitVariabilityEq(eq::Equation, inWhen::Bool = false)
         ()
       end
 
-      Equation.WHEN(__)  => begin
+      EQUATION_WHEN(__)  => begin
         for branch in eq.branches
           @assign () = begin
             @match branch begin
-              P_Equation.Equation.BRANCH(__)  => begin
+              EQUATION_BRANCH(__)  => begin
                 updateImplicitVariabilityEql(branch.body, inWhen = true)
                 ()
               end

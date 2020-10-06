@@ -87,7 +87,7 @@ function evaluateExpTraverser(
   @assign outExp = begin
     @match exp begin
       CREF_EXPRESSION(__) => begin
-        @debug "Evaluate exp traverser"
+        ## REENABLE @debug "Evaluate exp traverser"
         (outExp, outChanged) = mapFoldShallow(exp, (x) -> evaluateExpTraverser(x, constVariability), false)
         cref = outExp.cref
         ty = outExp.ty

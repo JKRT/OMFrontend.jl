@@ -62,7 +62,7 @@ function initializeFMIImport(
   local outFMIContext::Option{Integer} #= Stores a pointer. If it is declared as Integer, it is truncated to 32-bit. =#
   local result::Bool
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return (
     result,
     outFMIContext,
@@ -81,7 +81,7 @@ function releaseFMIImport(
   inFMIContext::Option{<:Integer},
   inFMIVersion::String,
 ) #= Stores a pointer. If it is declared as Integer, it is truncated to 32-bit. =#
-  return @error "TODO: Defined in the runtime"
+  return ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 @exportAll()

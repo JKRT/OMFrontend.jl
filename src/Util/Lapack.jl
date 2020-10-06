@@ -61,7 +61,7 @@ function dgeev(
   local outWR::List{AbstractFloat}
   local outA::List{List{AbstractFloat}}
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return (outA, outWR, outWI, outVL, outVR, outWORK, outINFO)
 end
 
@@ -94,7 +94,7 @@ function dgegv(
   local outALPHAI::List{AbstractFloat}
   local outALPHAR::List{AbstractFloat}
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return (outALPHAR, outALPHAI, outBETA, outVL, outVR, outWORK, outINFO)
 end
 
@@ -115,7 +115,7 @@ function dgels(
   local outB::List{List{AbstractFloat}}
   local outA::List{List{AbstractFloat}}
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return (outA, outB, outWORK, outINFO)
 end
 
@@ -143,7 +143,7 @@ function dgelsx(
   local outB::List{List{AbstractFloat}}
   local outA::List{List{AbstractFloat}}
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return (outA, outB, outJPVT, outRANK, outINFO)
 end
 
@@ -174,7 +174,7 @@ function dgelsy(
   local outB::List{List{AbstractFloat}}
   local outA::List{List{AbstractFloat}}
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return (outA, outB, outJPVT, outRANK, outWORK, outINFO)
 end
 
@@ -191,7 +191,7 @@ function dgesv(
   local outIPIV::List{Integer}
   local outA::List{List{AbstractFloat}}
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return (outA, outIPIV, outB, outINFO)
 end
 
@@ -224,7 +224,7 @@ function dgglse(
   local outB::List{List{AbstractFloat}}
   local outA::List{List{AbstractFloat}}
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return (outA, outB, outC, outD, outX, outWORK, outINFO)
 end
 
@@ -249,7 +249,7 @@ function dgtsv(
   local outD::List{AbstractFloat}
   local outDL::List{AbstractFloat}
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return (outDL, outD, outDU, outB, outINFO)
 end
 
@@ -268,7 +268,7 @@ function dgbsv(
   local outIPIV::List{Integer}
   local outAB::List{List{AbstractFloat}}
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return (outAB, outIPIV, outB, outINFO)
 end
 
@@ -298,7 +298,7 @@ function dgesvd(
   local outS::List{AbstractFloat}
   local outA::List{List{AbstractFloat}}
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return (outA, outS, outU, outVT, outWORK, outINFO)
 end
 
@@ -312,7 +312,7 @@ function dgetrf(
   local outIPIV::List{Integer}
   local outA::List{List{AbstractFloat}}
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return (outA, outIPIV, outINFO)
 end
 
@@ -329,7 +329,7 @@ function dgetrs(
   local outINFO::Integer
   local outB::List{List{AbstractFloat}}
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return (outB, outINFO)
 end
 
@@ -345,7 +345,7 @@ function dgetri(
   local outWORK::List{AbstractFloat}
   local outA::List{List{AbstractFloat}}
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return (outA, outWORK, outINFO)
 end
 
@@ -362,7 +362,7 @@ function dgeqpf(
   local outJPVT::List{Integer}
   local outA::List{List{AbstractFloat}}
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return (outA, outJPVT, outTAU, outINFO)
 end
 
@@ -380,7 +380,7 @@ function dorgqr(
   local outWORK::List{AbstractFloat}
   local outA::List{List{AbstractFloat}}
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return (outA, outWORK, outINFO)
 end
 

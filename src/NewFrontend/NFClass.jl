@@ -816,9 +816,9 @@ function classTree(cls::Class)::ClassTree
       end
     end
   end
-  @debug "Our resulting tree in class tree"
+  ## REENABLE @debug "Our resulting tree in class tree"
   # str = LookupTree.printTreeStr(lookupTree(tree))
-  # @debug str
+  # ## REENABLE @debug str
   return tree
 end
 

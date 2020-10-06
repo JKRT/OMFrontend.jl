@@ -36,14 +36,14 @@ using ExportAll
 
 """ #= opens a datbase with the given index and the given name. fails if it cannot do it. =#"""
 function open(index::Integer, name::String) #= the name of the file or :memory: to have an in-memory database =#
-  return @error "TODO: Defined in the runtime"
+  return ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 """ #= query a datbase with the given index (previously open). fails if it cannot do it. =#"""
 function query(index::Integer, sql::String)::List{Tuple{String, String}} #= the sql query string =#
   local result::List{Tuple{String, String}} #= returns a list of tuples (columnName, value) =#
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return result #= returns a list of tuples (columnName, value) =#
 end
 

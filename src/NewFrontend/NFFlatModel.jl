@@ -274,7 +274,7 @@ function collectEquationFlatTypes(eq::Equation, types::TypeTree)::TypeTree
 
   @assign () = begin
     @match eq begin
-      Equation.EQUALITY(__) => begin
+      EQUALITY(__) => begin
         @assign types = collectExpFlatTypes(eq.lhs, types)
         @assign types = collectExpFlatTypes(eq.rhs, types)
         @assign types = collectFlatType(eq.ty, types)

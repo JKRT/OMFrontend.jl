@@ -42,12 +42,12 @@ using ExternalObject #= Modelica extend clause =#
 function constructor(fromID::Option{Integer} = noReference()) where {T} #= Never pass this an actual Option<Integer>. Only use File.getReference(file) or File.noReference(). Determines if we should restore from another File object or create a new File. =#
   local file::FileHandler
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return file
 end
 
 function destructor(file::FileHandler)
-  return @error "TODO: Defined in the runtime"
+  return ## REENABLE @debug "TODO: Defined in the runtime"
 end
 end
 
@@ -58,19 +58,19 @@ Mode = (() -> begin #= Enumeration =#
 end)()
 
 function open(file::FileHandler, filename::String, mode::Mode = Mode.Read)
-  return @error "TODO: Defined in the runtime"
+  return ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 function write(file::FileHandler, data::String)
-  return @error "TODO: Defined in the runtime"
+  return ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 function writeInt(file::FileHandler, data::Integer, format::String = "%d")
-  return @error "TODO: Defined in the runtime"
+  return ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 function writeReal(file::FileHandler, data::AbstractFloat, format::String = "%.15g")
-  return @error "TODO: Defined in the runtime"
+  return ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 Escape = (() -> begin #= Enumeration =#
@@ -82,7 +82,7 @@ Escape = (() -> begin #= Enumeration =#
 end)()
 
 function writeEscape(file::FileHandler, data::String, escape::Escape)
-  return @error "TODO: Defined in the runtime"
+  return ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 Whence = (() -> begin #= Enumeration =#
@@ -95,21 +95,21 @@ end)()
 function seek(file::FileHandler, offset::Integer, whence::Whence = Whence.Set)::Bool
   local success::Bool
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return success
 end
 
 function tell(file::FileHandler)::Integer
   local pos::Integer
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return pos
 end
 
 function getFilename(file::Option{<:Integer})::String
   local fileName::String
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return fileName
 end
 
@@ -117,7 +117,7 @@ end
 function noReference()::Option{Integer}
   local reference::Option{Integer}
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return reference
 end
 
@@ -125,12 +125,12 @@ end
 function getReference(file::FileHandler)::Option{Integer}
   local reference::Option{Integer}
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return reference
 end
 
 function releaseReference(file::FileHandler)
-  return @error "TODO: Defined in the runtime"
+  return ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 function writeSpace(file::FileHandler, n::Integer)

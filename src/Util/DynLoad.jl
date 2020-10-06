@@ -56,7 +56,7 @@ function executeFunction(
   )::Values.Value
     local outVal::Values.Value
 
-    @error "TODO: Defined in the runtime"
+    ## REENABLE @debug "TODO: Defined in the runtime"
     return outVal
   end
 

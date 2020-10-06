@@ -28,7 +28,7 @@ function lookupBaseClassName(name::Absyn.Path, scope::InstNode, info::SourceInfo
 end
 
 function lookupComponent(cref::Absyn.ComponentRef, scope::InstNode #= The scope to look in. =#, info::SourceInfo) ::Tuple{ComponentRef, InstNode}
-  # @debug "Calling lookup component! cref: $cref"
+  # ## REENABLE @debug "Calling lookup component! cref: $cref"
   local foundScope::InstNode #= The scope the cref was found in. =#
   local foundCref::ComponentRef
   local state::LookupState
@@ -40,9 +40,9 @@ function lookupComponent(cref::Absyn.ComponentRef, scope::InstNode #= The scope 
   catch e
     # Error.addSourceMessageAndFail(Error.LOOKUP_VARIABLE_ERROR, list(Dump.printComponentRefStr(cref), scopeName(scope)), info)
     treee = lookupTree(scope.cls.x.elements)
-    # @error "Lookupvariable error for cref:$cref in scope $(scope.name). Error: $e"
-    # @error "Our tree was" LookupTree.printTreeStr(treee)
-    # @error "Repr3: $treee"
+    # ## REENABLE @debug "Lookupvariable error for cref:$cref in scope $(scope.name). Error: $e"
+    # ## REENABLE @debug "Our tree was" LookupTree.printTreeStr(treee)
+    # ## REENABLE @debug "Repr3: $treee"
     fail()
   end
   @assign state = fixTypenameState(nodeVar, state)
@@ -108,13 +108,13 @@ function lookupFunctionName(cref::Absyn.ComponentRef, scope::InstNode #= The sco
   local state::LookupState
   local nodeVar::InstNode
   try
-    #@info "Lookup cref"
+    ### REENABLE @info "Lookup cref"
     @assign (foundCref, foundScope, state) = lookupCref(cref, scope)
-    #@info "After Lookup cref"
+    ### REENABLE @info "After Lookup cref"
     @assign nodeVar = node(foundCref)
     @match false = isName(nodeVar)
   catch e
-    @error "Function lookup error for function $cref. Error: $e"
+    ## REENABLE @debug "Function lookup error for function $cref. Error: $e"
     fail();
   end
   @assign (foundCref, state) = fixExternalObjectCall(nodeVar, foundCref, state)
@@ -184,7 +184,7 @@ function lookupCrefWithError(cref::Absyn.ComponentRef, scope::InstNode, info::So
     @assign (foundCref, foundScope, state) = lookupCref(cref, scope)
   catch
     #Error.addSourceMessage(errMsg, list(Dump.printComponentRefStr(cref), scopeName(scope)), info)
-    @error "Failed to locate cref"
+    ## REENABLE @debug "Failed to locate cref"
     fail()
   end
   (foundCref, foundScope, state)
@@ -255,7 +255,7 @@ function lookupLocalCref(cref::Absyn.ComponentRef, scope::InstNode #= The scope 
 
       _  => begin
         #Error.addSourceMessage(Error.LOOKUP_VARIABLE_ERROR, list(Dump.printComponentRefStr(cref), scopeName(scope)), info)
-        # @error "Lookup error $cref"
+        # ## REENABLE @debug "Lookup error $cref"
         fail()
       end
     end
@@ -290,9 +290,9 @@ end
 function lookupLocalSimpleName(n::String, scope::InstNode) ::Tuple{InstNode, Bool}
   local isImport::Bool = false
   local node::InstNode
-  # @debug "Looking up simple name $n"
+  # ## REENABLE @debug "Looking up simple name $n"
   @assign (node, isImport) = lookupElement(n, getClass(scope))
-  @debug "We lookup an element"
+  ## REENABLE @debug "We lookup an element"
   @assign node = resolveInner(node)
   return (node, isImport)
 end
@@ -303,7 +303,7 @@ function lookupSimpleName(nameStr::String, scope::InstNode) ::InstNode
   for i in 1:Global.recursionDepthLimit
     try
       (node, _) = lookupLocalSimpleName(nameStr, cur_scope)
-       #@info "The node is resolved"
+       ### REENABLE @info "The node is resolved"
       return node
     catch
       if nameStr == name(cur_scope) && isClass(cur_scope)
@@ -313,7 +313,7 @@ function lookupSimpleName(nameStr::String, scope::InstNode) ::InstNode
       @assign cur_scope = parentScope(cur_scope)
     end
   end
-  @error "Failed to lookup simple name" # for $nameStr in scope:$scope"
+  ## REENABLE @debug "Failed to lookup simple name" # for $nameStr in scope:$scope"
   fail()
 end
 
@@ -324,7 +324,7 @@ function lookupNameWithError(name::Absyn.Path, scope::InstNode, info::SourceInfo
     @assign (node, state) = lookupName(name, scope, checkAccessViolations)
   catch
     #   Error.addSourceMessage(errorType, list(AbsynUtil.pathString(name), scopeName(scope)), info)
-    @error "Lookup error for path " # $name"
+    ## REENABLE @debug "Lookup error for path " # $name"
     fail()
   end
   (node, state)
@@ -347,12 +347,12 @@ function lookupName(name::Absyn.Path, scope::InstNode, checkAccessViolations::Bo
       end
     end
   end
-  @debug "Returning in lookup name"
+  ## REENABLE @debug "Returning in lookup name"
   (node, state)
 end
 
 function lookupNames(name::Absyn.Path, scope::InstNode) ::Tuple{List{InstNode}, LookupState}
-  # @debug "Calling lookupNames with path: $name"
+  # ## REENABLE @debug "Calling lookupNames with path: $name"
   local state::LookupState
   local nodes::List{InstNode}
   @assign (nodes, state) = begin
@@ -376,7 +376,7 @@ function lookupNames(name::Absyn.Path, scope::InstNode) ::Tuple{List{InstNode}, 
   end
   #=  Fully qualified path, start from top scope.
   =#
-  @debug "Done looking up names"
+  ## REENABLE @debug "Done looking up names"
   (nodes, state)
 end
 
@@ -389,7 +389,7 @@ function lookupFirstIdent(name::String, scope::InstNode) ::Tuple{InstNode, Looku
     @assign state = LOOKUP_STATE_PREDEF_CLASS()
   catch
     @assign node = lookupSimpleName(name, scope)
-    # @debug "Lookup sucessfull in lookupfirstIdent for $name"
+    # ## REENABLE @debug "Lookup sucessfull in lookupfirstIdent for $name"
     @assign state = nodeState(node)
   end
   (node, state)
@@ -412,7 +412,7 @@ end
                        @match name begin
                          Absyn.IDENT(__)  => begin
                            @assign (node, is_import) = lookupLocalSimpleName(name.name, node)
-                           @debug "HERE WE ARE!"
+                           ## REENABLE @debug "HERE WE ARE!"
                            if is_import
                              @assign state = ERROR(P_LookupState.IMPORT())
                            else
@@ -456,7 +456,7 @@ end
                        @match name begin
                          Absyn.IDENT(__)  => begin
                            @assign node = lookupLocalSimpleName(name.name, node)
-                           @debug "Here we are!"
+                           ## REENABLE @debug "Here we are!"
                            @assign state = next(node, state)
                            (_cons(node, nodes), state)
                          end
@@ -478,7 +478,7 @@ end
 
 function lookupSimpleBuiltinName(name::String) ::InstNode
   local builtin::InstNode
-  # @debug "Calling lookupSimpleBuiltinName with $name"
+  # ## REENABLE @debug "Calling lookupSimpleBuiltinName with $name"
   @assign builtin = begin
     @match name begin
       "Real"  => begin
@@ -508,7 +508,7 @@ function lookupSimpleBuiltinCref(name::String, subs::List{<:Absyn.Subscript}) ::
   local state::LookupState
   local cref::ComponentRef
   local node::InstNode
-  # @debug "Looking up $name in lookupSimpleBuiltinCref"
+  # ## REENABLE @debug "Looking up $name in lookupSimpleBuiltinCref"
   @assign (node, cref, state) = begin
     @match name begin
       "time"  => begin
@@ -549,21 +549,21 @@ function lookupSimpleCref(name::String, subs::List{<:Absyn.Subscript}, scope::In
     @assign (node, cref, state) = lookupSimpleBuiltinCref(name, subs)
     @assign foundScope = topScope(foundScope)
   catch
-    # @debug "Searching for scope in lookupSimplecref.. with $(typeof(scope))"
+    # ## REENABLE @debug "Searching for scope in lookupSimplecref.. with $(typeof(scope))"
     for i in 1:Global.recursionDepthLimit
       try
-        #@info "Searching..."
+        ### REENABLE @info "Searching..."
         (node, is_import) = begin
           @match foundScope begin
             IMPLICIT_SCOPE(__)  => begin
               (lookupIterator(name, foundScope.locals), false)
             end
             CLASS_NODE(__)  => begin
-              #@info "Hit CLASS_NODE. Fetching class"
+              ### REENABLE @info "Hit CLASS_NODE. Fetching class"
               c = getClass(foundScope)
-              #@info "Class fetched. Looking up element"
+              ### REENABLE @info "Class fetched. Looking up element"
               e = lookupElement(name, c)
-              #@info "After looking up element"
+              ### REENABLE @info "After looking up element"
               e
             end
             COMPONENT_NODE(__)  => begin
@@ -574,27 +574,27 @@ function lookupSimpleCref(name::String, subs::List{<:Absyn.Subscript}, scope::In
             end
           end
         end
-        #@info "Checking imports and other things.."
+        ### REENABLE @info "Checking imports and other things.."
         if is_import
           @assign foundScope = parent(node)
         elseif isInnerOuterNode(node)
-          #@info "Not a import checking inner"
+          ### REENABLE @info "Not a import checking inner"
           @assign node = resolveInner(node)
           @assign foundScope = parent(node)
         end
-        #@info "Not inner outer. Checking state"
+        ### REENABLE @info "Not inner outer. Checking state"
         @assign state = nodeState(node)
-        #@info "State checked. Checking fromAbsyn"
+        ### REENABLE @info "State checked. Checking fromAbsyn"
         @assign cref = fromAbsyn(node, subs)
-        #@info "After from absyn. Returning..."
+        ### REENABLE @info "After from absyn. Returning..."
         return (node, cref, foundScope, state)
       catch e
-        @error "Error.. $e"
+        ## REENABLE @debug "Error.. $e"
         @assign foundScope = parentScope(foundScope)
       end
     end
     #    Error.addMessage(Error.RECURSION_DEPTH_REACHED, list(String(Global.recursionDepthLimit), scopeName(foundScope)))
-    @error "Recusrion depth reached failing.."
+    ## REENABLE @debug "Recusrion depth reached failing.."
     fail()
   end
   (node, cref, foundScope, state)
@@ -786,7 +786,7 @@ function makeInnerNode(node::InstNode) ::InstNode
             end
             _  => begin
               #             Error.assertion(false, getInstanceName() + " got unknown component", sourceInfo())
-              @error "Unknown component in makeInnerNode"
+              ## REENABLE @debug "Unknown component in makeInnerNode"
               fail()
             end
           end
@@ -795,7 +795,7 @@ function makeInnerNode(node::InstNode) ::InstNode
       end
       _  => begin
         #        Error.assertion(false, getInstanceName() + " got unknown node", sourceInfo())
-        @error "Unknown node in makeInnerNode"
+        ## REENABLE @debug "Unknown node in makeInnerNode"
         fail()
       end
     end

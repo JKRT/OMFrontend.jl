@@ -683,7 +683,7 @@ function mergeLocal(
         #=  The second modifier has no binding, use the binding from the first.
         =#
         lst = mod1.name <| prefix
-        # @debug "Value of $lst"
+        # ## REENABLE @debug "Value of $lst"
         @assign mod1.subModifiers = ModTable.join(
           mod1.subModifiers,
           mod2.subModifiers,
@@ -695,7 +695,7 @@ function mergeLocal(
         #=  The first modifier has no binding, use the binding from the second.
         =#
         lst = mod1.name <| prefix
-        # @debug "Value of $lst"
+        # ## REENABLE @debug "Value of $lst"
         @assign mod2.subModifiers = ModTable.join(
           mod2.subModifiers,
           mod1.subModifiers,

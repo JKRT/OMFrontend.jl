@@ -38,49 +38,49 @@ using ExportAll
 */ =#
 
 function gcollect()
-  return @error "TODO: Defined in the runtime"
+  return ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 function gcollectAndUnmap()
-  return @error "TODO: Defined in the runtime"
+  return ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 function enable()
-  return @error "TODO: Defined in the runtime"
+  return ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 function disable()
-  return @error "TODO: Defined in the runtime"
+  return ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 function free(data::T) where {T}
-  return @error "TODO: Defined in the runtime"
+  return ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 function expandHeap(sz::AbstractFloat)::Bool #= To avoid the 32-bit signed limit on sizes =#
   local success::Bool
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return success
 end
 
 function setFreeSpaceDivisor(divisor::Integer = 3)
-  return @error "TODO: Defined in the runtime"
+  return ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 function getForceUnmapOnGcollect()::Bool
   local res::Bool
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return res
 end
 
 function setForceUnmapOnGcollect(forceUnmap::Bool)
-  return @error "TODO: Defined in the runtime"
+  return ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 function setMaxHeapSize(sz::AbstractFloat) #= To avoid the 32-bit signed limit on sizes =#
-  return @error "TODO: Defined in the runtime"
+  return ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 #= TODO: Support regular records in the bootstrapped compiler to avoid allocation to return the stats in the GC... =#
@@ -190,7 +190,7 @@ function getProfStats()::ProfStats
       Integer,
     }
 
-    @error "TODO: Defined in the runtime"
+    ## REENABLE @debug "TODO: Defined in the runtime"
     return stats
   end
 

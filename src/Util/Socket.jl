@@ -37,27 +37,27 @@ using ExportAll
 function waitforconnect(inInteger::Integer)::Integer
   local outInteger::Integer
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return outInteger
 end
 
 function handlerequest(inInteger::Integer)::String
   local outString::String
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return outString
 end
 
 function sendreply(inInteger::Integer, inString::String)
-  return @error "TODO: Defined in the runtime"
+  return ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 function close(inInteger::Integer)
-  return @error "TODO: Defined in the runtime"
+  return ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 function cleanup()
-  return @error "TODO: Defined in the runtime"
+  return ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 @exportAll()

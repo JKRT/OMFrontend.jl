@@ -39,7 +39,7 @@ using ExportAll
 """ #= 
 Prints the structure of the object. =#"""
 function outputFile(object::T, filename::String) where {T}
-  return @error "TODO: Defined in the runtime"
+  return ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 """ #= 
@@ -47,7 +47,7 @@ Serializes the object and reads it back. This function is used for testing purpo
 function bypass(object::T) where {T}
   local out_object::T
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return out_object
 end
 

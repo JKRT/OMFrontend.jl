@@ -4460,7 +4460,7 @@ function matchBinding(
         #   getInstanceName() + " got untyped binding " + toString(binding),
         #   sourceInfo(),
         # )
-        @error "Untyped binding"
+        ## REENABLE @debug "Untyped binding"
         fail()
       end
     end

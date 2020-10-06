@@ -37,14 +37,14 @@ using ExportAll
 function checkTaskGraph(filename::String, reffilename::String)::List{String}
   local res::List{String}
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return res
 end
 
 function checkCodeGraph(graphfile::String, codefile::String)::List{String}
   local res::List{String}
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return res
 end
 

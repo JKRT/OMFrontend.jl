@@ -120,70 +120,70 @@ end
 function isInteger(any::T) where {T}
   local b::Bool
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return b
 end
 
 function isReal(any::T) where {T}
   local b::Bool
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return b
 end
 
 function isString(any::T) where {T}
   local b::Bool
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return b
 end
 
 function isArray(any::T) where {T}
   local b::Bool
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return b
 end
 
 function isRecord(any::T) where {T}
   local b::Bool
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return b
 end
 
 function isTuple(any::T) where {T}
   local b::Bool
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return b
 end
 
 function isNONE(any::T) where {T}
   local b::Bool
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return b
 end
 
 function isSOME(any::T) where {T}
   local b::Bool
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return b
 end
 
 function isNil(any::T) where {T}
   local b::Bool
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return b
 end
 
 function isCons(any::T) where {T}
   local b::Bool
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return b
 end
 
@@ -195,63 +195,63 @@ end
 function getRecordNamesHelper(any::T) where {T}
   local nameAndComponentsNames::List{String}
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return nameAndComponentsNames
 end
 
 function getRecordComponent(iany::TIN, offset::Integer) where {TIN, TOUT}
   local oany::TOUT
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return oany
 end
 
 function getInteger(a::T) where {T}
   local i::Integer
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return i
 end
 
 function getReal(a::T) where {T}
   local r::AbstractFloat
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return r
 end
 
 function getString(a::T) where {T}
   local s::String
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return s
 end
 
 function getSome(a::TIN) where {TIN, TOUT}
   local o::TOUT
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return o
 end
 
 function getTupleSize(any::T) where {T}
   local sz::Integer
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return sz
 end
 
 function getList(iany::TIN) where {TIN, TOUT}
   local oany::List{TOUT}
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return oany
 end
 
 function getListElement(iany::TIN, offset::Integer) where {TIN, TOUT}
   local oany::TOUT
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return oany
 end
 

@@ -37,11 +37,11 @@ using ExportAll
 import Main.Values
 
 function newStream(streamName::String, host::String, port::Integer, debug::Bool)
-  return @error "TODO: Defined in the runtime"
+  return ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 function addNode(streamName::String, sourceId::String, timeId::Integer, nodeId::String)
-  return @error "TODO: Defined in the runtime"
+  return ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 function addEdge(
@@ -52,7 +52,7 @@ function addEdge(
   nodeIdTarget::String,
   directed::Bool,
 )
-  return @error "TODO: Defined in the runtime"
+  return ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 function addNodeAttribute(
@@ -63,7 +63,7 @@ function addNodeAttribute(
   attributeName::String,
   attributeValue::Values.Value,
 )
-  return @error "TODO: Defined in the runtime"
+  return ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 function changeNodeAttribute(
@@ -75,7 +75,7 @@ function changeNodeAttribute(
   attributeValueOld::Values.Value,
   attributeValueNew::Values.Value,
 )
-  return @error "TODO: Defined in the runtime"
+  return ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 function addEdgeAttribute(
@@ -87,7 +87,7 @@ function addEdgeAttribute(
   attributeName::String,
   attributeValue::Values.Value,
 )
-  return @error "TODO: Defined in the runtime"
+  return ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 function changeEdgeAttribute(
@@ -100,7 +100,7 @@ function changeEdgeAttribute(
   attributeValueOld::Values.Value,
   attributeValueNew::Values.Value,
 )
-  return @error "TODO: Defined in the runtime"
+  return ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 function addGraphAttribute(
@@ -110,7 +110,7 @@ function addGraphAttribute(
   attributeName::String,
   attributeValue::Values.Value,
 )
-  return @error "TODO: Defined in the runtime"
+  return ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 function changeGraphAttribute(
@@ -121,11 +121,11 @@ function changeGraphAttribute(
   attributeValueOld::Values.Value,
   attributeValueNew::Values.Value,
 )
-  return @error "TODO: Defined in the runtime"
+  return ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 function cleanup()
-  return @error "TODO: Defined in the runtime"
+  return ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 @exportAll()

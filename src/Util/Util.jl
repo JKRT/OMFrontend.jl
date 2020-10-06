@@ -1837,7 +1837,7 @@ end
 function referenceCompare(ref1::T1, ref2::T2) where {T1, T2}
   local result::Integer
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return result
 end
 

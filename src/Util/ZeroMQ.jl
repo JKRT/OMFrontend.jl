@@ -37,23 +37,23 @@ using ExportAll
 function initialize(fileSuffix::String = "")::Option{Integer}
   local zmqSocket::Option{Integer}
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return zmqSocket
 end
 
 function handleRequest(zmqSocket::Option{<:Integer})::String
   local request::String
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return request
 end
 
 function sendReply(zmqSocket::Option{<:Integer}, reply::String)
-  return @error "TODO: Defined in the runtime"
+  return ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 function close(zmqSocket::Option{<:Integer})
-  return @error "TODO: Defined in the runtime"
+  return ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 @exportAll()

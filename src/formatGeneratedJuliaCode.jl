@@ -6,7 +6,7 @@ If  the above suceeds formats the files using YASStyle.
 =#
 import CSTParser
 using JuliaFormatter
-@info length(ARGS)
+## REENABLE @info length(ARGS)
 if length(ARGS) < 1
   println("Specify a path to a folder to format\n")
   exit(1)
@@ -14,7 +14,7 @@ end
 
 PATH = ARGS[1]
 
-@info "Testing parsing"
+## REENABLE @info "Testing parsing"
 #= Test and see if generated files follow Julia syntax =#
 for f in filter(x -> endswith(x, "jl"), readdir(PATH))
   local fullPath = abspath("$PATH")
@@ -25,11 +25,11 @@ for f in filter(x -> endswith(x, "jl"), readdir(PATH))
   try
     Meta.parse(fileContents)
   catch error
-    @info "Error parsing: $f"
+    ## REENABLE @info "Error parsing: $f"
   end
 end
 
-@info "Formatting output\n"
+## REENABLE @info "Formatting output\n"
 
 for f in filter(x -> endswith(x, "jl"), readdir(PATH))
   local fullPath = abspath("$PATH")
@@ -54,7 +54,7 @@ for f in filter(x -> endswith(x, "jl"), readdir(PATH))
       always_use_return = true,
     )
   catch error
-    @info "Error parsing: $f"
+    ## REENABLE @info "Error parsing: $f"
   end
 end
 

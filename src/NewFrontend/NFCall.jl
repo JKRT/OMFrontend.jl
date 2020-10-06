@@ -1920,20 +1920,20 @@ function instArgs(
 )::Tuple{List{Expression}, List{NamedArg}}
   local namedArgs::List{NamedArg}
   local posArgs::List{Expression}
-  # @debug "Calling inst args for $args"
+  # ## REENABLE @debug "Calling inst args for $args"
   @assign (posArgs, namedArgs) = begin
     @match args begin
       Absyn.FUNCTIONARGS(__) => begin
-        @debug "Matched function args"
+        ## REENABLE @debug "Matched function args"
         @assign posArgs = list(instExp(a, scope, info) for a in args.args)
-        @debug "Positional arguments done"
+        ## REENABLE @debug "Positional arguments done"
         @assign namedArgs = list(instNamedArg(a, scope, info) for a in args.argNames)
-        @debug "Named arguments done"
+        ## REENABLE @debug "Named arguments done"
         (posArgs, namedArgs)
       end
       _ => begin
         #Error.assertion(false, getInstanceName() + " got unknown function args", sourceInfo())
-        # @error "Got unknown args! for $info"
+        # ## REENABLE @debug "Got unknown args! for $info"
         fail()
       end
     end
@@ -1957,9 +1957,9 @@ function instNormalCall(
   @assign name = AbsynUtil.crefFirstIdent(functionName)
   #=  try to inst the parameters =#
   try
-  @error "Here we have an error"
+  ## REENABLE @debug "Here we have an error"
   @assign (args, named_args) = instArgs(functionArgs, scope, info)
-  @error "Did we get here. After calling instArgs in NFCall"
+  ## REENABLE @debug "Did we get here. After calling instArgs in NFCall"
  catch e
     if false #=Config.getGraphicsExpMode() && stringEq(name, "DynamicSelect") TODO =#
       @assign callExp = begin
@@ -1971,7 +1971,7 @@ function instNormalCall(
       end
       return callExp
     else
-      # @debug "Failed with the following error $e"
+      # ## REENABLE @debug "Failed with the following error $e"
       fail()
     end
   end

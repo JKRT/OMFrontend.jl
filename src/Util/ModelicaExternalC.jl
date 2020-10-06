@@ -35,46 +35,46 @@ using ExportAll
 */ =#
 
 function Streams_print(string::String, fileName::String)
-  return @error "TODO: Defined in the runtime"
+  return ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 function Streams_readLine(fileName::String, lineNumber::Integer)::Tuple{String, Bool}
   local endOfFile::Bool
   local string::String
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return (string, endOfFile)
 end
 
 function Streams_countLines(fileName::String)::Integer
   local numberOfLines::Integer
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return numberOfLines
 end
 
 function File_fullPathName(fileName::String)::String
   local outName::String
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return outName
 end
 
 function File_stat(name::String)::Integer
   local fileType::Integer
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return fileType
 end
 
 function Streams_close(fileName::String)
-  return @error "TODO: Defined in the runtime"
+  return ## REENABLE @debug "TODO: Defined in the runtime"
 end
 
 function Strings_compare(string1::String, string2::String, caseSensitive::Bool)::Integer
   local result::Integer
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return result
 end
 
@@ -86,7 +86,7 @@ function Strings_scanReal(
   local number::AbstractFloat
   local nextIndex::Integer
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return (nextIndex, number)
 end
 
@@ -98,7 +98,7 @@ function Strings_scanInteger(
   local number::Integer
   local nextIndex::Integer
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return (nextIndex, number)
 end
 
@@ -106,7 +106,7 @@ function Strings_scanString(string::String, startIndex::Integer)::Tuple{Integer,
   local string2::String
   local nextIndex::Integer
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return (nextIndex, string2)
 end
 
@@ -114,28 +114,28 @@ function Strings_scanIdentifier(string::String, startIndex::Integer)::Tuple{Inte
   local identifier::String
   local nextIndex::Integer
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return (nextIndex, identifier)
 end
 
 function Strings_skipWhiteSpace(string::String, startIndex::Integer(min = 1) = 1)::Integer
   local nextIndex::Integer
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return nextIndex
 end
 
 function Strings_hashString(string::String)::Integer
   local hash::Integer
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return hash
 end
 
 function ModelicaIO_readMatrixSizes(fileName::String, matrixName::String)::Integer
   local dim::Integer
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return dim
 end
 
@@ -148,7 +148,7 @@ function ModelicaIO_readRealMatrix(
 )::AbstractFloat
   local matrix::AbstractFloat
 
-  @error "TODO: Defined in the runtime"
+  ## REENABLE @debug "TODO: Defined in the runtime"
   return matrix
 end
 

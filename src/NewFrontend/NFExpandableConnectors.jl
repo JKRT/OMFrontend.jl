@@ -445,7 +445,7 @@ function augmentExpandableConnector(
       @assign var = VARIABLE(
         elem_name,
         ty,
-        NFBinding.EMPTY_BINDING,
+        EMPTY_BINDING,
         Visibility.PUBLIC,
         NFComponent.DEFAULT_ATTR,
         nil,
@@ -482,7 +482,7 @@ function augmentExpandableConnector(
   end
   #=  Create a normal non-expandable complex type for the augmented expandable connector.
   =#
-  @assign complex_ty = Typing.makeConnectorType(cls_tree, isExpandable = false)
+  @assign complex_ty = makeConnectorType(cls_tree, isExpandable = false)
   @assign ty = TYPE_COMPLEX(cls_node, complex_ty)
   @assign cls = setType(ty, cls)
   updateClass(cls, cls_node)
@@ -549,7 +549,7 @@ end
 function updatePotentiallyPresentVariable(var::Variable)::Variable
   if ConnectorType.isPotentiallyPresent(var.attributes.connectorType)
     @assign var.attributes =
-      P_Component.getAttributes(component(node(var.name)))
+      getAttributes(component(node(var.name)))
   end
   return var
 end

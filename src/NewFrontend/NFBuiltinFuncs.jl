@@ -83,8 +83,8 @@ const DUMMY_ELEMENT =
     SCode.Encapsulated.ENCAPSULATED(),
     SCode.Partial.NOT_PARTIAL(),
     SCode.RESTRICTION_R_FUNCTION(SCode.FunctionRestriction.FR_NORMAL_FUNCTION(false)),
-    SCode.ClassDef.PARTS(nil, nil, nil, nil, nil, nil, nil, NONE()),
-    SCode.Comment.COMMENT(NONE(), NONE()),
+    SCode.PARTS(nil, nil, nil, nil, nil, nil, nil, NONE()),
+    SCode.COMMENT(NONE(), NONE()),
     AbsynUtil.dummyInfo,
   )::SCode.Element
 #=  Default Integer parameter.
@@ -93,8 +93,8 @@ const INT_COMPONENT =
   TYPED_COMPONENT(
     NFInstNode.EMPTY_NODE(),
     TYPE_INTEGER(),
-    NFBinding.EMPTY_BINDING,
-    NFBinding.EMPTY_BINDING,
+    EMPTY_BINDING,
+    EMPTY_BINDING,
     NFComponent.DEFAULT_ATTR,
     NONE(),
     NONE(),
@@ -114,8 +114,8 @@ const REAL_COMPONENT =
   TYPED_COMPONENT(
     NFInstNode.EMPTY_NODE(),
     TYPE_REAL(),
-    NFBinding.EMPTY_BINDING,
-    NFBinding.EMPTY_BINDING,
+    EMPTY_BINDING,
+    EMPTY_BINDING,
     NFComponent.DEFAULT_ATTR,
     NONE(),
     NONE(),
@@ -135,8 +135,8 @@ const BOOL_COMPONENT =
   TYPED_COMPONENT(
     NFInstNode.EMPTY_NODE(),
     TYPE_BOOLEAN(),
-    NFBinding.EMPTY_BINDING,
-    NFBinding.EMPTY_BINDING,
+    EMPTY_BINDING,
+    EMPTY_BINDING,
     NFComponent.DEFAULT_ATTR,
     NONE(),
     NONE(),
@@ -156,8 +156,8 @@ const STRING_COMPONENT =
   TYPED_COMPONENT(
     NFInstNode.EMPTY_NODE(),
     TYPE_STRING(),
-    NFBinding.EMPTY_BINDING,
-    NFBinding.EMPTY_BINDING,
+    EMPTY_BINDING,
+    EMPTY_BINDING,
     NFComponent.DEFAULT_ATTR,
     NONE(),
     NONE(),
@@ -177,8 +177,8 @@ const ENUM_COMPONENT =
   TYPED_COMPONENT(
     NFInstNode.EMPTY_NODE(),
     TYPE_ENUMERATION_ANY(),
-    NFBinding.EMPTY_BINDING,
-    NFBinding.EMPTY_BINDING,
+    EMPTY_BINDING,
+    EMPTY_BINDING,
     NFComponent.DEFAULT_ATTR,
     NONE(),
     NONE(),
@@ -305,7 +305,7 @@ const STRING_REAL =
       P_Slot.SLOT(
         "leftJustified",
         SlotType.NAMED,
-        SOME(P_Expression.Expression.BOOLEAN(true)),
+        SOME(P_Expression.BOOLEAN_EXPRESSION(true)),
         NONE(),
         4,
         SlotEvalStatus.NOT_EVALUATED,
@@ -379,7 +379,7 @@ const STRING_INT =
       P_Slot.SLOT(
         "leftJustified",
         SlotType.NAMED,
-        SOME(P_Expression.Expression.BOOLEAN(true)),
+        SOME(P_Expression.BOOLEAN_EXPRESSION(true)),
         NONE(),
         3,
         SlotEvalStatus.NOT_EVALUATED,
@@ -420,7 +420,7 @@ const STRING_BOOL =
       P_Slot.SLOT(
         "leftJustified",
         SlotType.NAMED,
-        SOME(P_Expression.Expression.BOOLEAN(true)),
+        SOME(P_Expression.BOOLEAN_EXPRESSION(true)),
         NONE(),
         3,
         SlotEvalStatus.NOT_EVALUATED,
@@ -461,7 +461,7 @@ const STRING_ENUM =
       P_Slot.SLOT(
         "leftJustified",
         SlotType.NAMED,
-        SOME(P_Expression.Expression.BOOLEAN(true)),
+        SOME(P_Expression.BOOLEAN_EXPRESSION(true)),
         NONE(),
         3,
         SlotEvalStatus.NOT_EVALUATED,
@@ -705,8 +705,8 @@ const CLOCK_COMPONENT =
   TYPED_COMPONENT(
     NFInstNode.EMPTY_NODE(),
     TYPE_CLOCK(),
-    NFBinding.EMPTY_BINDING,
-    NFBinding.EMPTY_BINDING,
+    EMPTY_BINDING,
+    EMPTY_BINDING,
     NFComponent.DEFAULT_ATTR,
     NONE(),
     NONE(),

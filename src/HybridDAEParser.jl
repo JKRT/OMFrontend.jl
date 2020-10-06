@@ -7,6 +7,7 @@ module HybridDAEParser
 import Absyn
 import SCode
 import OpenModelicaParser
+
 "
   Main module
 "
@@ -19,6 +20,7 @@ using ExportAll
 
 import Absyn
 import SCode
+import DAE
 import ListUtil
 include("./Util/Pointer.jl")
 import .P_Pointer
@@ -37,12 +39,7 @@ include("./AbsynUtil.jl")
 include("./SCodeUtil.jl")
 include("./AbsynToSCode.jl")
 #=Utility for frontend=#
-include("./FrontendUtil/Values.jl")
-include("./FrontendUtil/ClassInf.jl")
 include("./FrontendUtil/Prefix.jl")
-include("./FrontendUtil/DAE.jl")
-
-
 "
 TODO
 "
@@ -50,7 +47,7 @@ function createElementSource(source)
   return DAE.emptyElementSource
 end
 
-
+@nospecialize
 #=New Frontend=#
 include("./FrontendInterfaces/NFInterfaces.jl")
 include("./NewFrontend/NFType.jl")
@@ -65,6 +62,7 @@ include("./NewFrontend/NFCeval.jl")
 include("./NewFrontend/NFTyping.jl")
 include("./NewFrontend/NFInst.jl")
 include("./NewFrontend/NFEquation.jl")
+include("./NewFrontend/NFAlgorithm.jl")
 include("./NewFrontend/NFStatement.jl")
 include("./NewFrontend/NFBinding.jl")
 include("./NewFrontend/NFVariable.jl")
@@ -94,6 +92,7 @@ include("./NewFrontend/NFBuiltin.jl")
 import ..NFBuiltin
 include("./NewFrontend/BindingExpression.jl")
 include("./NewFrontend/NFDimension.jl")
+include("./NewFrontend/NFBuiltinCall.jl")
 include("./NewFrontend/NFCall.jl")
 include("./NewFrontend/NFOperator.jl")
 include("./NewFrontend/NFTypeCheck.jl")
@@ -130,15 +129,18 @@ end
 "
   Instantiates and translates to DAE.
 "
-function instantiateSCodeToDAE(elementToInstantiate::String, inProgram::SCode.Program)
+function instantiateSCodeToDAE(@nospecialize(elementToInstantiate::String), @nospecialize (inProgram::SCode.Program))
   # initialize globals
   Main.Global.initialize()
   # make sure we have all the flags loaded!
   # Main.Flags.new(Flags.emptyFlags)
-
+  @info "Parsing buildin stuff"
+  GC.enable(false) #=This C stuff can be a bit flaky..=#
   p = parseFile("../lib/NFModelicaBuiltin.mo", 2 #== MetaModelica ==#)
+  @info "SCode translation"
   s = HybridDAEParser.translateToSCode(p)
   p = Main.listAppend(s, inProgram)
+  GC.enable(true)
   Main.instClassInProgram(Absyn.IDENT(elementToInstantiate), p)
 end
 

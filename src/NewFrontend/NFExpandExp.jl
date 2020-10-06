@@ -907,7 +907,7 @@ function expandBuiltinCat(args::List{<:Expression}, call::Call)::Tuple{Expressio
   return (exp, expanded)
 end
 
-function expandBuiltinCall(
+function expand
   fn::M_Function,
   args::List{<:Expression},
   call::Call,
@@ -915,7 +915,7 @@ function expandBuiltinCall(
   local expanded::Bool
   local outExp::Expression
 
-  local fn_path::Absyn.Path = P_Function.nameConsiderBuiltin(fn)
+  local fn_path::Absyn.Path = nameConsiderBuiltin(fn)
 
   @assign (outExp, expanded) = begin
     @match AbsynUtil.pathFirstIdent(fn_path) begin
@@ -960,7 +960,7 @@ function expandCall(call::Call, exp::Expression)::Tuple{Expression, Bool}
       P_Call.TYPED_CALL(
         __,
       ) where {(P_Function.isBuiltin(call.fn) && !P_Function.isImpure(call.fn))} => begin
-        expandBuiltinCall(call.fn, call.arguments, call)
+        expandcall.fn, call.arguments, call)
       end
 
       P_Call.TYPED_ARRAY_CONSTRUCTOR(__) => begin
@@ -1002,8 +1002,8 @@ function expandTypename(ty::M_Type)::Expression
         P_Expression.Expression.makeArray(
           ty,
           list(
-            P_Expression.Expression.BOOLEAN(false),
-            P_Expression.Expression.BOOLEAN(true),
+            P_Expression.BOOLEAN_EXPRESSION(false),
+            P_Expression.BOOLEAN_EXPRESSION(true),
           ),
           true,
         )

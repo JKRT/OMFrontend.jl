@@ -100,7 +100,7 @@ function fromElement(element::SCode.Element)::ModifierScope
       SCode.Element.COMPONENT(__) => begin
         COMPONENT(element.name)
       end
-      SCode.Element.CLASS(__) => begin
+      SCode.CLASS(__) => begin
         CLASS(element.name)
       end
       SCode.Element.EXTENDS(__) => begin
@@ -590,7 +590,7 @@ function stripSCodeMod(elem::SCode.Element)::Tuple{SCode.Element, SCode.Mod}
   @assign mod = begin
     local cdef::SCode.ClassDef
     @match elem begin
-      SCode.Element.CLASS(classDef = cdef && SCode.ClassDef.DERIVED(modifications = mod)) => begin
+      SCode.CLASS(classDef = cdef && SCode.ClassDef.DERIVED(modifications = mod)) => begin
         if !SCodeUtil.isEmptyMod(mod)
           @assign cdef.modifications = SCode.NOMOD()
           @assign elem.classDef = cdef

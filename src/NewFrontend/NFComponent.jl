@@ -1,12 +1,6 @@
-
 Restriction = NFRestriction
-
-
 using MetaModelica
 using ExportAll
-
-
-import ..DAE
 Dimension = NFDimension
 M_Type = NFType
 Expression = NFExpression
@@ -271,7 +265,7 @@ function comment(component::Component)::Option{SCode.Comment}
   return comment
 end
 
-function dimensionCount(component::Component)::Integer
+function dimensionCount(@nospecialize(component::Component))::Integer
   local count::Integer
   @assign count = begin
     @match component begin
@@ -740,7 +734,7 @@ function getCondition(component::Component)::Binding
       end
 
       _ => begin
-        NFBinding.EMPTY_BINDING
+        EMPTY_BINDING
       end
     end
   end
@@ -850,7 +844,7 @@ function getBinding(component::Component)::Binding
       end
 
       _ => begin
-        NFBinding.EMPTY_BINDING
+        EMPTY_BINDING
       end
     end
   end

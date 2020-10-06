@@ -570,7 +570,7 @@ function checkOverloadedBinaryArrayMul(
       (dim11 <| dim12 <| nil(), dim21 <| nil()) => begin
         #=  matrix[n, m] * vector[m] = vector[n]
         =#
-        @assign valid = P_Dimension.Dimension.isEqual(dim12, dim21)
+        @assign valid = isEqual(dim12, dim21)
         #=  TODO: Implement me!
         =#
         @assign outExp = BINARY_EXPRESSION(exp1, op, exp2)
@@ -581,7 +581,7 @@ function checkOverloadedBinaryArrayMul(
       (dim11 <| dim12 <| nil(), dim21 <| dim22 <| nil()) => begin
         #=  matrix[n, m] * matrix[m, p] = vector[n, p]
         =#
-        @assign valid = P_Dimension.Dimension.isEqual(dim12, dim21)
+        @assign valid = isEqual(dim12, dim21)
         #=  TODO: Implement me!
         =#
         @assign outExp = BINARY_EXPRESSION(exp1, op, exp2)
@@ -1565,28 +1565,28 @@ function checkBinaryOperationMul(
         =#
         #=  vector[n] * vector[n] = scalar
         =#
-        @assign valid = P_Dimension.Dimension.isEqual(dim11, dim21)
+        @assign valid = isEqual(dim11, dim21)
         (resultType, Op.SCALAR_PRODUCT)
       end
 
       (dim11 <| nil(), dim21 <| dim22 <| nil()) => begin
         #=  vector[n] * matrix[n, m] = vector[m]
         =#
-        @assign valid = P_Dimension.Dimension.isEqual(dim11, dim21)
+        @assign valid = isEqual(dim11, dim21)
         (ARRAY_TYPE(resultType, list(dim22)), Op.MUL_VECTOR_MATRIX)
       end
 
       (dim11 <| dim12 <| nil(), dim21 <| nil()) => begin
         #=  matrix[n, m] * vector[m] = vector[n]
         =#
-        @assign valid = P_Dimension.Dimension.isEqual(dim12, dim21)
+        @assign valid = isEqual(dim12, dim21)
         (ARRAY_TYPE(resultType, list(dim11)), Op.MUL_MATRIX_VECTOR)
       end
 
       (dim11 <| dim12 <| nil(), dim21 <| dim22 <| nil()) => begin
         #=  matrix[n, m] * matrix[m, p] = vector[n, p]
         =#
-        @assign valid = P_Dimension.Dimension.isEqual(dim12, dim21)
+        @assign valid = isEqual(dim12, dim21)
         (ARRAY_TYPE(resultType, list(dim11, dim22)), Op.MATRIX_PRODUCT)
       end
 
@@ -1699,7 +1699,7 @@ function checkBinaryOperationPow(
   @assign valid = isCompatibleMatch(mk)
   if isArray(resultType)
     @assign valid = valid && Type.isSquareMatrix(resultType)
-    @assign valid = valid && Type.isInteger(type2)
+    @assign valid = valid && isInteger(type2)
     @assign op = OPERATOR(resultType, Op.POW_MATRIX)
     @assign e2 = exp2
   else
@@ -2083,7 +2083,7 @@ function checkRelationOperation(
         #=  Print a warning for == or <> with Real operands in a model.
         =#
         @assign o = operator.op
-        if ExpOrigin.flagNotSet(origin, ExpOrigin.FUNCTION) &&
+        if ExpOrigin.flagNotSet(origin, ORIGIN_FUNCTION) &&
            (o == Op.EQUAL || o == Op.NEQUAL)
           Error.addStrictMessage(
             Error.WARNING_RELATION_ON_REAL,
@@ -3398,7 +3398,7 @@ function matchExpressions_cast(
         =#
         #=  tuple is used. exp1 should never be a tuple here, since any tuple expression
         =#
-        #=  not alone on the rhs of an equation is \"tuple subscripted\" by Typing.typeExp.
+        #=  not alone on the rhs of an equation is \"tuple subscripted\" by typeExp.
         =#
         @assign exp2 = P_Expression.Expression.tupleElement(exp2, compatibleType, 1)
         @assign (exp2, compatibleType, matchKind) =
@@ -3850,7 +3850,7 @@ function matchDimensions(
   local compatible::Bool
   local compatibleDim::Dimension
 
-  if P_Dimension.Dimension.isEqual(dim1, dim2)
+  if isEqual(dim1, dim2)
     @assign compatibleDim = dim1
     @assign compatible = true
   else
@@ -4310,7 +4310,7 @@ function getRangeTypeBool(startExp::Expression, stopExp::Expression)::Dimension
     local dim_exp::Expression
     local var::VariabilityType
     @match (startExp, stopExp) begin
-      (P_Expression.Expression.BOOLEAN(__), P_Expression.Expression.BOOLEAN(__)) => begin
+      (P_Expression.BOOLEAN_EXPRESSION(__), P_Expression.BOOLEAN_EXPRESSION(__)) => begin
         @assign sz = if startExp.value == stopExp.value
           1
         elseif (startExp.value < stopExp.value)
@@ -4529,7 +4529,7 @@ end
 """ #= Checks that an expression used as a dimension has a valid type for a
    dimension, otherwise prints an error and fails. =#"""
 function checkDimensionType(exp::Expression, ty::NFType, info::SourceInfo)
-  return if !Type.isInteger(ty)
+  return if !isInteger(ty)
     @assign () = begin
       @match exp begin
         P_Expression.Expression.TYPENAME(ty = ARRAY_TYPE(elementType = TYPE_BOOLEAN(__))) => begin

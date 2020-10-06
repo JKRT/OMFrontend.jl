@@ -1,6 +1,6 @@
 module Util
 
-import ..DAE
+import DAE
 import DoubleEnded
 
 using MetaModelica

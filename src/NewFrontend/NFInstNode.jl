@@ -77,9 +77,7 @@ Value = InstNode
 include("../Util/baseAvlTreeCode.jl")
 include("../Util/baseAvlSetCode.jl")
 
-
 keyCompare = (inKey1::String, inKey2::String) -> begin
-  @debug "Calling key compare node tree"
   res = stringCompare(inKey1, inKey2)
   return res
 end
@@ -107,8 +105,6 @@ end
   @Record C_NO_CACHE begin
   end
 end
-
-P_CachedData = CachedData
 
 const NUMBER_OF_CACHES = 3::Integer
 
@@ -138,25 +134,28 @@ function getPackageCache(in_caches::Array{<:CachedData}) ::CachedData
 end
 
 function setFuncCache(in_caches::Array{<:CachedData}, in_cache::CachedData)
+  #@info "Setting func cache  with $in_caches and $in_cache"
   arrayUpdate(in_caches, 1, in_cache)
 end
 
 function getFuncCache(in_caches::Array{<:CachedData}) ::CachedData
+#  @info in_caches
   local out_cache::CachedData = arrayGet(in_caches, 1)
   out_cache
 end
 
 function addFunc(fn::M_Function, specialBuiltin::Bool, caches::Array{<:CachedData})
+  @error "ADD FUNC CALLED"
   local func_cache::CachedData
   @assign func_cache = getFuncCache(caches)
   @assign func_cache = begin
     @match func_cache begin
       C_NO_CACHE(__)  => begin
-        FUNCTION(list(fn), false, specialBuiltin)
+        C_FUNCTION(list(fn), false, specialBuiltin)
       end
 
-      FUNCTION(__)  => begin
-        FUNCTION(listAppend(func_cache.funcs, list(fn)), false, func_cache.specialBuiltin || specialBuiltin)
+      C_FUNCTION(__)  => begin
+        C_FUNCTION(listAppend(func_cache.funcs, list(fn)), false, func_cache.specialBuiltin || specialBuiltin)
       end
 
       _  => begin
@@ -172,14 +171,13 @@ end
 
 function initFunc(caches::Array{<:CachedData})
   local func_cache::CachedData
-
   @assign func_cache = getFuncCache(caches)
   @assign func_cache = begin
     @match func_cache begin
       C_NO_CACHE(__)  => begin
-        FUNCTION(nil, false, false)
+        C_FUNCTION(nil, false, false)
       end
-      FUNCTION(__)  => begin
+      C_FUNCTION(__)  => begin
         func_cache
       end
     end
@@ -225,26 +223,22 @@ function isModel(node::InstNode) ::Bool
   isModel
 end
 
-function isRecord(node::InstNode) ::Bool
+function isRecord(@nospecialize(node::InstNode)) ::Bool
   local isRec::Bool
-
   @assign isRec = begin
     @match node begin
       CLASS_NODE(__)  => begin
-        P_Restriction.Restriction.isRecord(restriction(P_Pointer.access(node.cls)))
+        isRecord(restriction(P_Pointer.access(node.cls)))
       end
-
       COMPONENT_NODE(__)  => begin
-        isRecord(P_Component.classInstance(P_Pointer.access(node.component)))
+        isRecord(classInstance(P_Pointer.access(node.component)))
       end
     end
   end
   isRec
 end
 
-function copyInstancePtr(srcNode::InstNode, dstNode::InstNode) ::InstNode
-
-
+function copyInstancePtr(@nospecialize(srcNode::InstNode), @nospecialize(dstNode::InstNode)) ::InstNode
   @assign () = begin
     @match (srcNode, dstNode) begin
       (COMPONENT_NODE(__), COMPONENT_NODE(__))  => begin
@@ -364,15 +358,12 @@ function toFullDAEType(clsNode::InstNode) ::DAE.Type
 end
 
 function stripDAETypeVars(ty::DAE.Type) ::DAE.Type
-
-
   @assign () = begin
     @match ty begin
       DAE.Type.T_COMPLEX(__)  => begin
         @assign ty.varLst = nil
         ()
       end
-
       _  => begin
         ()
       end
@@ -867,17 +858,15 @@ function getPackageCache(inNode::InstNode) ::CachedData
 end
 
 function setFuncCache(node::InstNode, in_func_cache::CachedData) ::InstNode
-
-
   @assign () = begin
     @match node begin
       CLASS_NODE(__)  => begin
-        P_CachedData.setFuncCache(node.caches, in_func_cache)
+        setFuncCache(node.caches, in_func_cache)
         ()
       end
-
       _  => begin
-        Error.assertion(false, getInstanceName() + " got node without cache", sourceInfo())
+        #Error.assertion(false, getInstanceName() + " got node without cache", sourceInfo())
+        @error "Error in set func cache"
         fail()
       end
     end
@@ -887,13 +876,11 @@ end
 
 function getFuncCache(inNode::InstNode) ::CachedData
   local func_cache::CachedData
-
   @assign func_cache = begin
     @match inNode begin
       CLASS_NODE(__)  => begin
         getFuncCache(inNode.caches)
       end
-
       _  => begin
         Error.assertion(false, getInstanceName() + " got node without cache", sourceInfo())
         fail()
@@ -904,15 +891,12 @@ function getFuncCache(inNode::InstNode) ::CachedData
 end
 
 function cacheAddFunc(node::InstNode, fn::M_Function, specialBuiltin::Bool) ::InstNode
-
-
   @assign () = begin
     @match node begin
       CLASS_NODE(__)  => begin
-        P_CachedData.addFunc(fn, specialBuiltin, node.caches)
+        addFunc(fn, specialBuiltin, node.caches)
         ()
       end
-
       _  => begin
         Error.assertion(false, getInstanceName() + " got node without cache", sourceInfo())
         fail()
@@ -923,12 +907,10 @@ function cacheAddFunc(node::InstNode, fn::M_Function, specialBuiltin::Bool) ::In
 end
 
 function cacheInitFunc(node::InstNode) ::InstNode
-
-
   @assign () = begin
     @match node begin
       CLASS_NODE(__)  => begin
-        P_CachedData.initFunc(node.caches)
+        initFunc(node.caches)
         ()
       end
 
@@ -1303,11 +1285,11 @@ function componentApply(node::InstNode, func::FuncType, arg::ArgT)  where {ArgT}
   node
 end
 
-function classApply(node::InstNode, func::FuncType, arg::ArgT)  where {ArgT}
+function classApply(@nospecialize(node::InstNode), @nospecialize(func::FuncType), arg::ArgT)  where {ArgT}
   @assign () = begin
     @match node begin
       CLASS_NODE(__)  => begin
-        P_Pointer.update(node.cls, func(arg, P_P_Pointer.access(node.cls)))
+        P_Pointer.update(node.cls, func(arg, P_Pointer.access(node.cls)))
         ()
       end
     end
@@ -1315,17 +1297,16 @@ function classApply(node::InstNode, func::FuncType, arg::ArgT)  where {ArgT}
   node
 end
 
-function getType(node::InstNode) ::M_Type
+function getType(@nospecialize(node::InstNode))::NFType
   local ty::M_Type
-
   @assign ty = begin
     @match node begin
       CLASS_NODE(__)  => begin
-        getType(P_P_Pointer.access(node.cls), node)
+        getType(P_Pointer.access(node.cls), node)
       end
 
       COMPONENT_NODE(__)  => begin
-        P_Component.getType(P_Pointer.access(node.component))
+        getType(P_Pointer.access(node.component))
       end
     end
   end
@@ -1819,47 +1800,39 @@ function className(node::InstNode) ::String
   name
 end
 
-function name(node::InstNode) ::String
-  local name::String
 
-  @assign name = begin
+function name(@nospecialize(node::InstNode))::String
+  local nameVar::String
+  @assign nameVar = begin
     @match node begin
       CLASS_NODE(__)  => begin
         node.name
       end
-
       COMPONENT_NODE(__)  => begin
         node.name
       end
-
       INNER_OUTER_NODE(__)  => begin
         name(node.innerNode)
       end
-
       REF_NODE(__)  => begin
         "REF[" + String(node.index) + "]"
       end
-
       NAME_NODE(__)  => begin
         node.name
       end
-
       IMPLICIT_SCOPE(__)  => begin
         "IMPLICIT"
       end
-
       EXP_NODE(__)  => begin
         "EXP(" + toString(node.exp) + ")"
       end
-
       EMPTY_NODE(__)  => begin
         "EMPTY"
       end
     end
   end
-  #=  For bug catching, these names should never be used.
-  =#
-  name
+  #=  For bug catching, these names should never be used. =#
+  nameVar
 end
 
 function isOperator(node::InstNode) ::Bool
@@ -1872,7 +1845,6 @@ function isOperator(node::InstNode) ::Bool
       INNER_OUTER_NODE(__)  => begin
         isOperator(node.innerNode)
       end
-
       _  => begin
         false
       end

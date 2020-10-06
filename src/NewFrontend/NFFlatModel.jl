@@ -53,7 +53,7 @@ function reconstructRecordInstance(
     end
   end
   if listEmpty(field_exps)
-    @assign record_binding = NFBinding.EMPTY_BINDING
+    @assign record_binding = EMPTY_BINDING
   else
     @assign field_exps = listReverseInPlace(field_exps)
     @assign record_exp = P_Expression.Expression.makeRecord(
@@ -69,7 +69,7 @@ function reconstructRecordInstance(
     record_ty,
     record_binding,
     visibility(record_node),
-    P_Component.getAttributes(record_comp),
+    getAttributes(record_comp),
     nil,
     P_Component.comment(record_comp),
     info(record_node),

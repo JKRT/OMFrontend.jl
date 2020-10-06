@@ -87,14 +87,14 @@ function collectExpConstants(exp::Expression, constants::Constants)::Constants
   return constants
 end
 
-function collectExpConstants_traverser(exp::Expression, constants::Constants)::Constants
+function collectExpConstants_traverser(@nospecialize(exp::Expression), @nospecialize(constants::Constants))::Constants
   local cref::ComponentRef
   @assign () = begin
     @match exp begin
       CREF_EXPRESSION(cref = cref && CREF_EXPRESSION(__)) =>
         begin
           if isPackageConstant(cref)
-            Typing.typeComponentBinding(cref.node, ExpOrigin.CLASS)
+            typeComponentBinding(cref.node, ORIGIN_CLASS)
             @assign constants = Constants.add(
               constants,
               stripSubscriptsAll(cref),

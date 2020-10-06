@@ -1,6 +1,6 @@
 import Absyn
 import SCode
-import ..DAE
+import DAE
 """ #= Instantiates a class given by its fully qualified path, with the result being
                  a DAE. =#"""
                   function instClassInProgram(classPath::Absyn.Path, program::SCode.Program)::Tuple{DAE.DAE_LIST, DAE.FunctionTree}
@@ -61,29 +61,29 @@ import ..DAE
                    #execStat("NFInst.updateImplicitVariability")
                    #=  Type the class.
                    =#
-                    @debug "typeClass(inst_cls, name)"
+                    @info "TYPECLASS(inst_cls, name)"
                     typeClass(inst_cls, name)
-                    @debug "After type class"
+                    @info "AFTER type class"
                    #=  Flatten the model and evaluate constants in it.
                     =#
-                   @debug "START FLATTENING!"
+                   @info "START FLATTENING!"
                    @assign flat_model = flatten(inst_cls, name)
-                   @debug "CONSTANT EVALUATION"
+                   @info "CONSTANT EVALUATION"
                    @assign flat_model = evaluate(flat_model)
-                   @debug "FLATTENING DONE: $flat_model"
+                   @info "FLATTENING DONE: flat_model"
                    #= Do unit checking =#
 #                   @assign flat_model = UnitCheck.checkUnits(flat_model) TODO
                    #=  Apply simplifications to the model.=#
                    @assign flat_model = simplify(flat_model)
                    #=  Collect a tree of all functions that are still used in the flat model.=#
-                    @debug "COLLECT FUNCTIONS"
+                   @info "COLLECT FUNCTIONS"
                    @assign funcs = collectFunctions(flat_model, name)
-                   @debug "COLLECTED FUNCTIONS!"
+                   @info "COLLECTED FUNCTIONS!"
                    #=  Collect package constants that couldn't be substituted with their values =#
                    #=  (e.g. because they where used with non-constant subscripts), and add them to the model. =#
-                    @debug "COLLECT CONSTANTS"
+                    @info "COLLECT CONSTANTS"
                     @assign flat_model = collectConstants(flat_model, funcs)
-                    @debug "COLLECTED CONSTANTS"
+                    @info "COLLECTED CONSTANTS"
                     #                   if Flags.getConfigBool(Flags.FLAT_MODELICA)
                     @debug "PRINTING FLAT MODELICA"
 #                    printFlatString(flat_model, FunctionTreeImpl.listValues(funcs))
@@ -96,7 +96,7 @@ import ..DAE
                    @assign flat_model.variables = ListUtil.filterOnFalse(flat_model.variables, isEmptyArray)
 #                   end
                    #=  Remove empty arrays from variables =#
-                   @debug "VERIFYING MODEL"
+                   @info "VERIFYING MODEL: "
                    verify(flat_model)
 #                   if Flags.isSet(Flags.NF_DUMP_FLAT)
 #                     print("FlatModel:\\n" + toString(flat_model) + "\\n")
@@ -244,7 +244,7 @@ function makeEnumerationType(literals::List{<:SCode.Enum}, scope::InstNode) ::M_
   local path::Absyn.Path
 
   @assign path = scopePath(scope)
-  @assign lits = List(e.literal for e in literals)
+  @assign lits = list(e.literal for e in literals)
   @assign ty = TYPE_ENUMERATION(path, lits)
   ty
 end
@@ -582,7 +582,7 @@ function expandClassDerived(element::SCode.Element, definition::SCode.ClassDef, 
   @assign cls = getClass(node)
   @assign prefs = getPrefixes(cls)
   @assign attrs = instDerivedAttributes(sattrs)
-  @assign dims = List(DIMENSION_RAW_DIM(d) for d in AbsynUtil.typeSpecDimensions(ty))
+  @assign dims = list(DIMENSION_RAW_DIM(d) for d in AbsynUtil.typeSpecDimensions(ty))
   @assign mod = getModifier(cls)
   @assign res = P_Restriction.Restriction.fromSCode(SCodeUtil.getClassRestriction(element))
   @assign cls = EXPANDED_DERIVED(ext_node, mod, listArray(dims), prefs, attrs, res)
@@ -2008,7 +2008,6 @@ function instRecordConstructor(node::InstNode)
       C_FUNCTION(__)  => begin
         ()
       end
-
       _  => begin
         cacheInitFunc(node)
         if SCodeUtil.isOperatorRecord(definition(node))
@@ -2148,11 +2147,11 @@ function instExp(absynExp::Absyn.Exp, scope::InstNode, info::SourceInfo) ::Expre
       end
 
       Absyn.STRING(__)  => begin
-        Expression.STRING(System.unescapedString(absynExp.value))
+        STRING_EXPRESSION(System.unescapedString(absynExp.value))
       end
 
       Absyn.BOOL(__)  => begin
-        Expression.BOOLEAN(absynExp.value)
+        BOOLEAN_EXPRESSION(absynExp.value)
       end
 
       Absyn.CREF(__)  => begin
@@ -2160,12 +2159,12 @@ function instExp(absynExp::Absyn.Exp, scope::InstNode, info::SourceInfo) ::Expre
       end
 
       Absyn.ARRAY(__)  => begin
-        @assign expl = List(instExp(e, scope, info) for e in absynExp.arrayExp)
+        @assign expl = list(instExp(e, scope, info) for e in absynExp.arrayExp)
         makeArray(TYPE_UNKNOWN(), expl)
       end
 
       Absyn.MATRIX(__)  => begin
-        @assign expll = List(List(instExp(e, scope, info) for e in el) for el in absynExp.matrix)
+        @assign expll = list(list(instExp(e, scope, info) for e in el) for el in absynExp.matrix)
         MATRIX_EXPRESSION(expll)
       end
 
@@ -2177,7 +2176,7 @@ function instExp(absynExp::Absyn.Exp, scope::InstNode, info::SourceInfo) ::Expre
       end
 
       Absyn.TUPLE(__)  => begin
-        @assign expl = List(instExp(e, scope, info) for e in absynExp.expressions)
+        @assign expl = list(instExp(e, scope, info) for e in absynExp.expressions)
         TUPLE_EXPRESSION(TYPE_UNKNOWN(), expl)
       end
 
@@ -2340,11 +2339,9 @@ function instCrefFunction(cref::ComponentRef, info::SourceInfo) ::Expression
   crefExp
 end
 
-function instCrefTypename(cref::ComponentRef, node::InstNode, info::SourceInfo) ::Expression
+function instCrefTypename(@nospecialize(cref::ComponentRef), @nospecialize(node::InstNode), info::SourceInfo)x::Expression
   local crefExp::Expression
-
-  local ty::M_Type
-
+  local ty::NFType
   checkUnsubscriptableCref(cref, info)
   @assign ty = getType(node)
   @assign ty = begin
@@ -2356,7 +2353,7 @@ function instCrefTypename(cref::ComponentRef, node::InstNode, info::SourceInfo) 
         ARRAY_TYPE(ty, list(P_Dimension.Dimension.ENUM(ty)))
       end
       _  => begin
-        Error.assertion(false, getInstanceName() + " got unknown class node " + name(node), sourceInfo())
+        #Error.assertion(false, getInstanceName() + " got unknown class node " + name(node), sourceInfo())
         fail()
       end
     end
@@ -2378,7 +2375,7 @@ function instCrefSubscripts(cref::ComponentRef, scope::InstNode, info::SourceInf
     @match cref begin
       COMPONENT_REF_CREF(__)  => begin
         if ! listEmpty(cref.subscripts)
-          @assign cref.subscripts = List(instSubscript(s, scope, info) for s in cref.subscripts)
+          @assign cref.subscripts = list(instSubscript(s, scope, info) for s in cref.subscripts)
         end
         @assign rest_cr = instCrefSubscripts(cref.restCref, scope, info)
         if ! referenceEq(rest_cr, cref.restCref)
@@ -2423,8 +2420,8 @@ function instPartEvalFunction(func::Absyn.ComponentRef, funcArgs::Absyn.Function
   @assign outExp = instCref(func, scope, info)
   if ! listEmpty(nargs)
     @assign fn_ref = P_Expression.Expression.toCref(outExp)
-    @assign args = List(instExp(arg.argValue, scope, info) for arg in nargs)
-    @assign arg_names = List(arg.argName for arg in nargs)
+    @assign args = list(instExp(arg.argValue, scope, info) for arg in nargs)
+    @assign arg_names = list(arg.argName for arg in nargs)
     @assign outExp = PARTIAL_FUNCTION_APPLICATION_EXPRESSION(fn_ref, args, arg_names, TYPE_UNKNOWN())
   end
   outExp
@@ -2484,28 +2481,27 @@ function instSections2(parts::SCode.ClassDef, scope::InstNode, sections::Section
   sections
 end
 
-function instExternalDecl(extDecl::SCode.ExternalDecl, scope::InstNode) ::Sections
+function instExternalDecl(@nospecialize(extDecl::SCode.ExternalDecl), @nospecialize(scope::InstNode)) ::Sections
   local sections::Sections
-
   @assign sections = begin
-    local name::String
+    local nameVar::String
     local lang::String
     local args::List{Expression}
     local ret_cref::ComponentRef
-    local info::SourceInfo
+    local infoVar::SourceInfo
     @match extDecl begin
       SCode.EXTERNALDECL(__)  => begin
-        @assign info = info(scope)
-        @assign name = Util.getOptionOrDefault(extDecl.funcName, name(scope))
+        @assign infoVar = info(scope)
+        @assign nameVar = Util.getOptionOrDefault(extDecl.funcName, name(scope))
         @assign lang = Util.getOptionOrDefault(extDecl.lang, "C")
-        checkExternalDeclLanguage(lang, info)
-        @assign args = List(instExp(arg, scope, info) for arg in extDecl.args)
+        checkExternalDeclLanguage(lang, infoVar)
+        @assign args = list(instExp(arg, scope, infoVar) for arg in extDecl.args)
         if isSome(extDecl.output_)
-          @assign ret_cref = Lookup.lookupLocalComponent(Util.getOption(extDecl.output_), scope, info)
+          @assign ret_cref = Lookup.lookupLocalComponent(Util.getOption(extDecl.output_), scope, infoVar)
         else
-          @assign ret_cref = ComponentRef.EMPTY()
+          @assign ret_cref = COMPONENT_REF_EMPTY()
         end
-        SECTIONS_EXTERNAL(name, args, ret_cref, lang, extDecl.annotation_, isSome(extDecl.funcName))
+        SECTIONS_EXTERNAL(nameVar, args, ret_cref, lang, extDecl.annotation_, isSome(extDecl.funcName))
       end
     end
   end
@@ -2562,7 +2558,7 @@ end
 
 function instEEquations(scodeEql::List{<:SCode.EEquation}, scope::InstNode, origin::ORIGIN_Type) ::List{Equation}
   local instEql::List{Equation}
-  @assign instEql = List(instEEquation(eq, scope, origin) for eq in scodeEql)
+  @assign instEql = list(instEEquation(eq, scope, origin) for eq in scodeEql)
   instEql
 end
 
@@ -2611,7 +2607,7 @@ function instEEquation(scodeEq::SCode.EEquation, scope::InstNode, origin::ORIGIN
       SCode.EQ_IF(info = info)  => begin
         #=  Instantiate the conditions.
         =#
-        @assign expl = List(instExp(c, scope, info) for c in scodeEq.condition)
+        @assign expl = list(instExp(c, scope, info) for c in scodeEq.condition)
         #=  Instantiate each branch and pair it up with a condition.
         =#
         @assign next_origin = setFlag(origin, ORIGIN_IF)
@@ -2627,7 +2623,7 @@ function instEEquation(scodeEq::SCode.EEquation, scope::InstNode, origin::ORIGIN
         =#
         if ! listEmpty(scodeEq.elseBranch)
           @assign eql = instEEquations(scodeEq.elseBranch, scope, next_origin)
-          @assign branches = _cons(Equation.makeBranch(P_Expression.Expression.BOOLEAN(true), eql), branches)
+          @assign branches = _cons(Equation.makeBranch(P_Expression.BOOLEAN_EXPRESSION(true), eql), branches)
         end
         Equation.IF(listReverse(branches), makeSource(scodeEq.comment, info))
       end

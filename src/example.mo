@@ -1,6 +1,6 @@
 model HelloWorld
-  Real x;
+  Real x( start = 1 );
   parameter Real a = 1;
 equation
-  x = - a * der(x);
+  der(x) = - a * x;
 end HelloWorld;

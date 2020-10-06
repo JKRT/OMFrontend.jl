@@ -255,8 +255,8 @@ function retype(exp::Expression) ::Expression
         ()
       end
 
-      CALL_EXPRESSION(call = P_Call.TYPED_ARRAY_CONSTRUCTOR(__))  => begin
-        @assign exp.call = P_Call.retype(exp.call)
+      CALL_EXPRESSION(call = TYPED_ARRAY_CONSTRUCTOR(__))  => begin
+        @assign exp.call = retype(exp.call)
         ()
       end
 
@@ -470,7 +470,7 @@ function enumIndexExp(enumExp::Expression) ::Expression
       end
 
       _  => begin
-        CALL_EXPRESSION(P_Call.makeTypedCall(NFBuiltinFuncs.INTEGER_ENUM, list(enumExp), variability(enumExp)))
+        CALL_EXPRESSION(makeTypedCall(NFBuiltinFuncs.INTEGER_ENUM, list(enumExp), variability(enumExp)))
       end
     end
   end
@@ -602,7 +602,7 @@ function variability(exp::Expression) ::VariabilityType
       end
 
       CALL_EXPRESSION(__)  => begin
-        P_Call.variability(exp.call)
+        variability(exp.call)
       end
 
       SIZE_EXPRESSION(__)  => begin
@@ -713,7 +713,7 @@ function promote2(exp::Expression, isArray::Bool, dims::Integer, types::List{<:M
         if expanded
           @assign outExp = promote2(outExp, true, dims, types)
         else
-          @assign outExp = CALL_EXPRESSION(P_Call.makeTypedCall(NFBuiltinFuncs.PROMOTE, list(exp, INTEGER(dims)), variability(exp), listHead(types)))
+          @assign outExp = CALL_EXPRESSION(makeTypedCall(NFBuiltinFuncs.PROMOTE, list(exp, INTEGER(dims)), variability(exp), listHead(types)))
         end
         outExp
       end
@@ -825,13 +825,13 @@ function hasArrayCall2(exp::Expression) ::Bool
   @assign hasArrayCall = begin
     @match exp begin
       CALL_EXPRESSION(call = call)  => begin
-        @assign ty = P_Call.typeOf(call)
-        isArray(ty) && P_Call.isVectorizeable(call)
+        @assign ty = typeOf(call)
+        isArray(ty) && isVectorizeable(call)
       end
 
       TUPLE_ELEMENT_EXPRESSION(tupleExp = CALL_EXPRESSION(call = call))  => begin
-        @assign ty = Type.nthTupleType(P_Call.typeOf(call), exp.index)
-        isArray(ty) && P_Call.isVectorizeable(call)
+        @assign ty = Type.nthTupleType(typeOf(call), exp.index)
+        isArray(ty) && isVectorizeable(call)
       end
 
       _  => begin
@@ -1078,7 +1078,7 @@ function makeOperatorRecordZero(recordNode::InstNode) ::Expression
   @assign op_node = lookupElement("'0'", getClass(recordNode))
   P_Function.P_Function.instFunctionNode(op_node)
   @match list(fn) = P_Function.P_Function.typeNodeCache(op_node)
-  @assign zeroExp = CALL_EXPRESSION(P_Call.makeTypedCall(fn, nil, Variability.CONSTANT))
+  @assign zeroExp = CALL_EXPRESSION(makeTypedCall(fn, nil, Variability.CONSTANT))
   @assign zeroExp = Ceval.evalExp(zeroExp)
   zeroExp
 end
@@ -1408,7 +1408,7 @@ end
 function containsIterator(exp::Expression, origin::ORIGIN_Type) ::Bool
   local iter::Bool
 
-  if ExpOrigin.flagSet(origin, ExpOrigin.FOR)
+  if flagSet(origin, ExpOrigin.FOR)
     @assign iter = contains(exp, isIterator)
   else
     @assign iter = false
@@ -1510,7 +1510,7 @@ function callContainsShallow(call::Call, func::ContainsPred) ::Bool
   @assign res = begin
     local e::Expression
     @match call begin
-      P_Call.UNTYPED_CALL(__)  => begin
+      UNTYPED_CALL(__)  => begin
         @assign res = listContainsShallow(call.arguments, func)
         if ! res
           for arg in call.named_args
@@ -1524,7 +1524,7 @@ function callContainsShallow(call::Call, func::ContainsPred) ::Bool
         res
       end
 
-      P_Call.ARG_TYPED_CALL(__)  => begin
+      ARG_TYPED_CALL(__)  => begin
         for arg in call.arguments
           @assign (e, _, _) = arg
           if func(e)
@@ -1542,23 +1542,23 @@ function callContainsShallow(call::Call, func::ContainsPred) ::Bool
         false
       end
 
-      P_Call.TYPED_CALL(__)  => begin
+      TYPED_CALL(__)  => begin
         listContainsShallow(call.arguments, func)
       end
 
-      P_Call.UNTYPED_ARRAY_CONSTRUCTOR(__)  => begin
+      UNTYPED_ARRAY_CONSTRUCTOR(__)  => begin
         func(call.exp)
       end
 
-      P_Call.TYPED_ARRAY_CONSTRUCTOR(__)  => begin
+      TYPED_ARRAY_CONSTRUCTOR(__)  => begin
         func(call.exp)
       end
 
-      P_Call.UNTYPED_REDUCTION(__)  => begin
+      UNTYPED_REDUCTION(__)  => begin
         func(call.exp)
       end
 
-      P_Call.TYPED_REDUCTION(__)  => begin
+      TYPED_REDUCTION(__)  => begin
         func(call.exp)
       end
     end
@@ -1706,7 +1706,7 @@ function callContains(call::Call, func::ContainsPred) ::Bool
   @assign res = begin
     local e::Expression
     @match call begin
-      P_Call.UNTYPED_CALL(__)  => begin
+      UNTYPED_CALL(__)  => begin
         @assign res = listContains(call.arguments, func)
         if ! res
           for arg in call.named_args
@@ -1720,7 +1720,7 @@ function callContains(call::Call, func::ContainsPred) ::Bool
         res
       end
 
-      P_Call.ARG_TYPED_CALL(__)  => begin
+      ARG_TYPED_CALL(__)  => begin
         for arg in call.arguments
           @assign (e, _, _) = arg
           if contains(e, func)
@@ -1738,23 +1738,23 @@ function callContains(call::Call, func::ContainsPred) ::Bool
         false
       end
 
-      P_Call.TYPED_CALL(__)  => begin
+      TYPED_CALL(__)  => begin
         listContains(call.arguments, func)
       end
 
-      P_Call.UNTYPED_ARRAY_CONSTRUCTOR(__)  => begin
+      UNTYPED_ARRAY_CONSTRUCTOR(__)  => begin
         contains(call.exp, func)
       end
 
-      P_Call.TYPED_ARRAY_CONSTRUCTOR(__)  => begin
+      TYPED_ARRAY_CONSTRUCTOR(__)  => begin
         contains(call.exp, func)
       end
 
-      P_Call.UNTYPED_REDUCTION(__)  => begin
+      UNTYPED_REDUCTION(__)  => begin
         contains(call.exp, func)
       end
 
-      P_Call.TYPED_REDUCTION(__)  => begin
+      TYPED_REDUCTION(__)  => begin
         contains(call.exp, func)
       end
     end
@@ -1960,7 +1960,7 @@ function mapFoldCallShallow(call::Call, func::MapFunc, foldArg::ArgT)  where {Ar
     local fold_exp::Tuple{Option{Expression}, String, String}
     local oe::Option{Expression}
     @match call begin
-      P_Call.UNTYPED_CALL(__)  => begin
+      UNTYPED_CALL(__)  => begin
         @assign (args, foldArg) = ListUtil.mapFold(call.arguments, func, foldArg)
         @assign nargs = nil
         for arg in call.named_args
@@ -1968,10 +1968,10 @@ function mapFoldCallShallow(call::Call, func::MapFunc, foldArg::ArgT)  where {Ar
           @assign (e, foldArg) = func(e, foldArg)
           @assign nargs = _cons((s, e), nargs)
         end
-        P_Call.UNTYPED_CALL(call.ref, args, listReverse(nargs), call.call_scope)
+        UNTYPED_CALL(call.ref, args, listReverse(nargs), call.call_scope)
       end
 
-      P_Call.ARG_TYPED_CALL(__)  => begin
+      ARG_TYPED_CALL(__)  => begin
         @assign targs = nil
         @assign tnargs = nil
         for arg in call.arguments
@@ -1984,33 +1984,33 @@ function mapFoldCallShallow(call::Call, func::MapFunc, foldArg::ArgT)  where {Ar
           @assign (e, foldArg) = func(e, foldArg)
           @assign tnargs = _cons((s, e, t, v), tnargs)
         end
-        P_Call.ARG_TYPED_CALL(call.ref, listReverse(targs), listReverse(tnargs), call.call_scope)
+        ARG_TYPED_CALL(call.ref, listReverse(targs), listReverse(tnargs), call.call_scope)
       end
 
-      P_Call.TYPED_CALL(__)  => begin
+      TYPED_CALL(__)  => begin
         @assign (args, foldArg) = ListUtil.mapFold(call.arguments, func, foldArg)
-        P_Call.TYPED_CALL(call.fn, call.ty, call.var, args, call.attributes)
+        TYPED_CALL(call.fn, call.ty, call.var, args, call.attributes)
       end
 
-      P_Call.UNTYPED_ARRAY_CONSTRUCTOR(__)  => begin
+      UNTYPED_ARRAY_CONSTRUCTOR(__)  => begin
         @assign (e, foldArg) = func(call.exp, foldArg)
         @assign iters = mapFoldCallIteratorsShallow(call.iters, func, foldArg)
-        P_Call.UNTYPED_ARRAY_CONSTRUCTOR(e, iters)
+        UNTYPED_ARRAY_CONSTRUCTOR(e, iters)
       end
 
-      P_Call.TYPED_ARRAY_CONSTRUCTOR(__)  => begin
+      TYPED_ARRAY_CONSTRUCTOR(__)  => begin
         @assign (e, foldArg) = func(call.exp, foldArg)
         @assign iters = mapFoldCallIteratorsShallow(call.iters, func, foldArg)
-        P_Call.TYPED_ARRAY_CONSTRUCTOR(call.ty, call.var, e, iters)
+        TYPED_ARRAY_CONSTRUCTOR(call.ty, call.var, e, iters)
       end
 
-      P_Call.UNTYPED_REDUCTION(__)  => begin
+      UNTYPED_REDUCTION(__)  => begin
         @assign (e, foldArg) = func(call.exp, foldArg)
         @assign iters = mapFoldCallIteratorsShallow(call.iters, func, foldArg)
-        P_Call.UNTYPED_REDUCTION(call.ref, e, iters)
+        UNTYPED_REDUCTION(call.ref, e, iters)
       end
 
-      P_Call.TYPED_REDUCTION(__)  => begin
+      TYPED_REDUCTION(__)  => begin
         @assign (e, foldArg) = func(call.exp, foldArg)
         @assign iters = mapFoldCallIteratorsShallow(call.iters, func, foldArg)
         @assign (default_exp, foldArg) = mapFoldOptShallow(call.defaultExp, func, foldArg)
@@ -2021,7 +2021,7 @@ function mapFoldCallShallow(call::Call, func::MapFunc, foldArg::ArgT)  where {Ar
         else
           @assign fold_exp = call.foldExp
         end
-        P_Call.TYPED_REDUCTION(call.fn, call.ty, call.var, e, iters, default_exp, fold_exp)
+        TYPED_REDUCTION(call.fn, call.ty, call.var, e, iters, default_exp, fold_exp)
       end
     end
   end
@@ -2377,7 +2377,7 @@ function mapFoldCall(call::Call, func::MapFunc, foldArg::ArgT)  where {ArgT}
     local fold_exp::Tuple{Option{Expression}, String, String}
     local oe::Option{Expression}
     @match call begin
-      P_Call.UNTYPED_CALL(__)  => begin
+      UNTYPED_CALL(__)  => begin
         @assign (args, foldArg) = ListUtil.map1Fold(call.arguments, mapFold, func, foldArg)
         @assign nargs = nil
         for arg in call.named_args
@@ -2385,10 +2385,10 @@ function mapFoldCall(call::Call, func::MapFunc, foldArg::ArgT)  where {ArgT}
           @assign (e, foldArg) = mapFold(e, func, foldArg)
           @assign nargs = _cons((s, e), nargs)
         end
-        P_Call.UNTYPED_CALL(call.ref, args, listReverse(nargs), call.call_scope)
+        UNTYPED_CALL(call.ref, args, listReverse(nargs), call.call_scope)
       end
 
-      P_Call.ARG_TYPED_CALL(__)  => begin
+      ARG_TYPED_CALL(__)  => begin
         @assign targs = nil
         @assign tnargs = nil
         for arg in call.arguments
@@ -2401,30 +2401,30 @@ function mapFoldCall(call::Call, func::MapFunc, foldArg::ArgT)  where {ArgT}
           @assign (e, foldArg) = mapFold(e, func, foldArg)
           @assign tnargs = _cons((s, e, t, v), tnargs)
         end
-        P_Call.ARG_TYPED_CALL(call.ref, listReverse(targs), listReverse(tnargs), call.call_scope)
+        ARG_TYPED_CALL(call.ref, listReverse(targs), listReverse(tnargs), call.call_scope)
       end
 
-      P_Call.TYPED_CALL(__)  => begin
+      TYPED_CALL(__)  => begin
         @assign (args, foldArg) = ListUtil.map1Fold(call.arguments, mapFold, func, foldArg)
-        P_Call.TYPED_CALL(call.fn, call.ty, call.var, args, call.attributes)
+        TYPED_CALL(call.fn, call.ty, call.var, args, call.attributes)
       end
 
-      P_Call.UNTYPED_ARRAY_CONSTRUCTOR(__)  => begin
+      UNTYPED_ARRAY_CONSTRUCTOR(__)  => begin
         @assign (e, foldArg) = mapFold(call.exp, func, foldArg)
-        P_Call.UNTYPED_ARRAY_CONSTRUCTOR(e, call.iters)
+        UNTYPED_ARRAY_CONSTRUCTOR(e, call.iters)
       end
 
-      P_Call.TYPED_ARRAY_CONSTRUCTOR(__)  => begin
+      TYPED_ARRAY_CONSTRUCTOR(__)  => begin
         @assign (e, foldArg) = mapFold(call.exp, func, foldArg)
-        P_Call.TYPED_ARRAY_CONSTRUCTOR(call.ty, call.var, e, call.iters)
+        TYPED_ARRAY_CONSTRUCTOR(call.ty, call.var, e, call.iters)
       end
 
-      P_Call.UNTYPED_REDUCTION(__)  => begin
+      UNTYPED_REDUCTION(__)  => begin
         @assign (e, foldArg) = mapFold(call.exp, func, foldArg)
-        P_Call.UNTYPED_REDUCTION(call.ref, e, call.iters)
+        UNTYPED_REDUCTION(call.ref, e, call.iters)
       end
 
-      P_Call.TYPED_REDUCTION(__)  => begin
+      TYPED_REDUCTION(__)  => begin
         @assign (e, foldArg) = mapFold(call.exp, func, foldArg)
         @assign (iters, foldArg) = mapFoldCallIterators(call.iters, func, foldArg)
         @assign (default_exp, foldArg) = mapFoldOpt(call.defaultExp, func, foldArg)
@@ -2435,7 +2435,7 @@ function mapFoldCall(call::Call, func::MapFunc, foldArg::ArgT)  where {ArgT}
         else
           @assign fold_exp = call.foldExp
         end
-        P_Call.TYPED_REDUCTION(call.fn, call.ty, call.var, e, iters, default_exp, fold_exp)
+        TYPED_REDUCTION(call.fn, call.ty, call.var, e, iters, default_exp, fold_exp)
       end
     end
   end
@@ -2767,7 +2767,7 @@ function applyCall(call::Call, func::ApplyFunc)
   @assign () = begin
     local e::Expression
     @match call begin
-      P_Call.UNTYPED_CALL(__)  => begin
+      UNTYPED_CALL(__)  => begin
         applyList(call.arguments, func)
         for arg in call.named_args
           @assign (_, e) = arg
@@ -2776,7 +2776,7 @@ function applyCall(call::Call, func::ApplyFunc)
         ()
       end
 
-      P_Call.ARG_TYPED_CALL(__)  => begin
+      ARG_TYPED_CALL(__)  => begin
         for arg in call.arguments
           @assign (e, _, _) = arg
           apply(e, func)
@@ -2788,12 +2788,12 @@ function applyCall(call::Call, func::ApplyFunc)
         ()
       end
 
-      P_Call.TYPED_CALL(__)  => begin
+      TYPED_CALL(__)  => begin
         applyList(call.arguments, func)
         ()
       end
 
-      P_Call.UNTYPED_ARRAY_CONSTRUCTOR(__)  => begin
+      UNTYPED_ARRAY_CONSTRUCTOR(__)  => begin
         apply(call.exp, func)
         for i in call.iters
           apply(Util.tuple22(i), func)
@@ -2801,7 +2801,7 @@ function applyCall(call::Call, func::ApplyFunc)
         ()
       end
 
-      P_Call.TYPED_ARRAY_CONSTRUCTOR(__)  => begin
+      TYPED_ARRAY_CONSTRUCTOR(__)  => begin
         apply(call.exp, func)
         for i in call.iters
           apply(Util.tuple22(i), func)
@@ -2809,7 +2809,7 @@ function applyCall(call::Call, func::ApplyFunc)
         ()
       end
 
-      P_Call.UNTYPED_REDUCTION(__)  => begin
+      UNTYPED_REDUCTION(__)  => begin
         apply(call.exp, func)
         for i in call.iters
           apply(Util.tuple22(i), func)
@@ -2817,7 +2817,7 @@ function applyCall(call::Call, func::ApplyFunc)
         ()
       end
 
-      P_Call.TYPED_REDUCTION(__)  => begin
+      TYPED_REDUCTION(__)  => begin
         apply(call.exp, func)
         for i in call.iters
           apply(Util.tuple22(i), func)
@@ -3036,7 +3036,7 @@ function foldCall(call::Call, func::FoldFunc, foldArg::ArgT)  where {ArgT}
   @assign () = begin
     local e::Expression
     @match call begin
-      P_Call.UNTYPED_CALL(__)  => begin
+      UNTYPED_CALL(__)  => begin
         @assign foldArg = foldList(call.arguments, func, foldArg)
         for arg in call.named_args
           @assign (_, e) = arg
@@ -3045,7 +3045,7 @@ function foldCall(call::Call, func::FoldFunc, foldArg::ArgT)  where {ArgT}
         ()
       end
 
-      P_Call.ARG_TYPED_CALL(__)  => begin
+      ARG_TYPED_CALL(__)  => begin
         for arg in call.arguments
           @assign (e, _, _) = arg
           @assign foldArg = fold(e, func, foldArg)
@@ -3057,12 +3057,12 @@ function foldCall(call::Call, func::FoldFunc, foldArg::ArgT)  where {ArgT}
         ()
       end
 
-      P_Call.TYPED_CALL(__)  => begin
+      TYPED_CALL(__)  => begin
         @assign foldArg = foldList(call.arguments, func, foldArg)
         ()
       end
 
-      P_Call.UNTYPED_ARRAY_CONSTRUCTOR(__)  => begin
+      UNTYPED_ARRAY_CONSTRUCTOR(__)  => begin
         @assign foldArg = fold(call.exp, func, foldArg)
         for i in call.iters
           @assign foldArg = fold(Util.tuple22(i), func, foldArg)
@@ -3070,7 +3070,7 @@ function foldCall(call::Call, func::FoldFunc, foldArg::ArgT)  where {ArgT}
         ()
       end
 
-      P_Call.TYPED_ARRAY_CONSTRUCTOR(__)  => begin
+      TYPED_ARRAY_CONSTRUCTOR(__)  => begin
         @assign foldArg = fold(call.exp, func, foldArg)
         for i in call.iters
           @assign foldArg = fold(Util.tuple22(i), func, foldArg)
@@ -3078,7 +3078,7 @@ function foldCall(call::Call, func::FoldFunc, foldArg::ArgT)  where {ArgT}
         ()
       end
 
-      P_Call.UNTYPED_REDUCTION(__)  => begin
+      UNTYPED_REDUCTION(__)  => begin
         @assign foldArg = fold(call.exp, func, foldArg)
         for i in call.iters
           @assign foldArg = fold(Util.tuple22(i), func, foldArg)
@@ -3086,7 +3086,7 @@ function foldCall(call::Call, func::FoldFunc, foldArg::ArgT)  where {ArgT}
         ()
       end
 
-      P_Call.TYPED_REDUCTION(__)  => begin
+      TYPED_REDUCTION(__)  => begin
         @assign foldArg = fold(call.exp, func, foldArg)
         for i in call.iters
           @assign foldArg = fold(Util.tuple22(i), func, foldArg)
@@ -3331,7 +3331,7 @@ function mapCallShallow(call::Call, func::MapFunc) ::Call
     local default_exp::Option{Expression}
     local fold_exp::Tuple{Option{Expression}, String, String}
     @match call begin
-      P_Call.UNTYPED_CALL(__)  => begin
+      UNTYPED_CALL(__)  => begin
         @assign args = list(func(arg) for arg in call.arguments)
         @assign nargs = nil
         for arg in call.named_args
@@ -3339,10 +3339,10 @@ function mapCallShallow(call::Call, func::MapFunc) ::Call
           @assign e = func(e)
           @assign nargs = _cons((s, e), nargs)
         end
-        P_Call.UNTYPED_CALL(call.ref, args, listReverse(nargs), call.call_scope)
+        UNTYPED_CALL(call.ref, args, listReverse(nargs), call.call_scope)
       end
 
-      P_Call.ARG_TYPED_CALL(__)  => begin
+      ARG_TYPED_CALL(__)  => begin
         @assign targs = nil
         @assign tnargs = nil
         for arg in call.arguments
@@ -3355,35 +3355,35 @@ function mapCallShallow(call::Call, func::MapFunc) ::Call
           @assign e = func(e)
           @assign tnargs = _cons((s, e, t, v), tnargs)
         end
-        P_Call.ARG_TYPED_CALL(call.ref, listReverse(targs), listReverse(tnargs), call.call_scope)
+        ARG_TYPED_CALL(call.ref, listReverse(targs), listReverse(tnargs), call.call_scope)
       end
 
-      P_Call.TYPED_CALL(__)  => begin
+      TYPED_CALL(__)  => begin
         @assign args = list(func(arg) for arg in call.arguments)
-        P_Call.TYPED_CALL(call.fn, call.ty, call.var, args, call.attributes)
+        TYPED_CALL(call.fn, call.ty, call.var, args, call.attributes)
       end
 
-      P_Call.UNTYPED_ARRAY_CONSTRUCTOR(__)  => begin
+      UNTYPED_ARRAY_CONSTRUCTOR(__)  => begin
         @assign e = func(call.exp)
-        P_Call.UNTYPED_ARRAY_CONSTRUCTOR(e, call.iters)
+        UNTYPED_ARRAY_CONSTRUCTOR(e, call.iters)
       end
 
-      P_Call.TYPED_ARRAY_CONSTRUCTOR(__)  => begin
+      TYPED_ARRAY_CONSTRUCTOR(__)  => begin
         @assign e = func(call.exp)
-        P_Call.TYPED_ARRAY_CONSTRUCTOR(call.ty, call.var, e, call.iters)
+        TYPED_ARRAY_CONSTRUCTOR(call.ty, call.var, e, call.iters)
       end
 
-      P_Call.UNTYPED_REDUCTION(__)  => begin
+      UNTYPED_REDUCTION(__)  => begin
         @assign e = func(call.exp)
-        P_Call.UNTYPED_REDUCTION(call.ref, e, call.iters)
+        UNTYPED_REDUCTION(call.ref, e, call.iters)
       end
 
-      P_Call.TYPED_REDUCTION(__)  => begin
+      TYPED_REDUCTION(__)  => begin
         @assign e = func(call.exp)
         @assign iters = mapCallShallowIterators(call.iters, func)
         @assign default_exp = mapShallowOpt(call.defaultExp, func)
         @assign fold_exp = Util.applyTuple31(call.foldExp, (func) -> mapShallowOpt(func = func))
-        P_Call.TYPED_REDUCTION(call.fn, call.ty, call.var, e, iters, default_exp, fold_exp)
+        TYPED_REDUCTION(call.fn, call.ty, call.var, e, iters, default_exp, fold_exp)
       end
     end
   end
@@ -3730,7 +3730,7 @@ function mapCall(call::Call, func::MapFunc) ::Call
     local default_exp::Option{Expression}
     local fold_exp::Tuple{Option{Expression}, String, String}
     @match call begin
-      P_Call.UNTYPED_CALL(__)  => begin
+      UNTYPED_CALL(__)  => begin
         @assign args = list(map(arg, func) for arg in call.arguments)
         @assign nargs = nil
         for arg in call.named_args
@@ -3738,10 +3738,10 @@ function mapCall(call::Call, func::MapFunc) ::Call
           @assign e = map(e, func)
           @assign nargs = _cons((s, e), nargs)
         end
-        P_Call.UNTYPED_CALL(call.ref, args, listReverse(nargs), call.call_scope)
+        UNTYPED_CALL(call.ref, args, listReverse(nargs), call.call_scope)
       end
 
-      P_Call.ARG_TYPED_CALL(__)  => begin
+      ARG_TYPED_CALL(__)  => begin
         @assign targs = nil
         @assign tnargs = nil
         for arg in call.arguments
@@ -3754,38 +3754,38 @@ function mapCall(call::Call, func::MapFunc) ::Call
           @assign e = map(e, func)
           @assign tnargs = _cons((s, e, t, v), tnargs)
         end
-        P_Call.ARG_TYPED_CALL(call.ref, listReverse(targs), listReverse(tnargs), call.call_scope)
+      ARG_TYPED_CALL(call.ref, listReverse(targs), listReverse(tnargs), call.call_scope)
       end
 
-      P_Call.TYPED_CALL(__)  => begin
+      TYPED_CALL(__)  => begin
         @assign args = list(map(arg, func) for arg in call.arguments)
-        P_Call.TYPED_CALL(call.fn, call.ty, call.var, args, call.attributes)
+        TYPED_CALL(call.fn, call.ty, call.var, args, call.attributes)
       end
 
-      P_Call.UNTYPED_ARRAY_CONSTRUCTOR(__)  => begin
+      UNTYPED_ARRAY_CONSTRUCTOR(__)  => begin
         @assign e = map(call.exp, func)
         @assign iters = mapCallIterators(call.iters, func)
-        P_Call.UNTYPED_ARRAY_CONSTRUCTOR(e, iters)
+        UNTYPED_ARRAY_CONSTRUCTOR(e, iters)
       end
 
-      P_Call.TYPED_ARRAY_CONSTRUCTOR(__)  => begin
+      TYPED_ARRAY_CONSTRUCTOR(__)  => begin
         @assign e = map(call.exp, func)
         @assign iters = mapCallIterators(call.iters, func)
-        P_Call.TYPED_ARRAY_CONSTRUCTOR(call.ty, call.var, e, iters)
+        TYPED_ARRAY_CONSTRUCTOR(call.ty, call.var, e, iters)
       end
 
-      P_Call.UNTYPED_REDUCTION(__)  => begin
+      UNTYPED_REDUCTION(__)  => begin
         @assign e = map(call.exp, func)
         @assign iters = mapCallIterators(call.iters, func)
-        P_Call.UNTYPED_REDUCTION(call.ref, e, iters)
+        UNTYPED_REDUCTION(call.ref, e, iters)
       end
 
-      P_Call.TYPED_REDUCTION(__)  => begin
+      TYPED_REDUCTION(__)  => begin
         @assign e = map(call.exp, func)
         @assign iters = mapCallIterators(call.iters, func)
         @assign default_exp = mapOpt(call.defaultExp, func)
         @assign fold_exp = Util.applyTuple31(call.foldExp, (func) -> mapOpt(func = func))
-        P_Call.TYPED_REDUCTION(call.fn, call.ty, call.var, e, iters, default_exp, fold_exp)
+        TYPED_REDUCTION(call.fn, call.ty, call.var, e, iters, default_exp, fold_exp)
       end
     end
   end
@@ -4054,7 +4054,7 @@ end
 outExp
 end
 
-function dimensionCount(exp::Expression) ::Integer
+function dimensionCount(@nospecialize(exp::Expression))::Integer
   local dimCount::Integer
   @assign dimCount = begin
     @match exp begin
@@ -4079,11 +4079,11 @@ function dimensionCount(exp::Expression) ::Integer
       end
 
       SUBSCRIPTED_EXP_EXPRESSION(__)  => begin
-        Type.dimensionCount(exp.ty)
+        dimensionCount(exp.ty)
       end
 
       TUPLE_ELEMENT_EXPRESSION(__)  => begin
-        Type.dimensionCount(exp.ty)
+        dimensionCount(exp.ty)
       end
 
       _  => begin
@@ -4285,7 +4285,7 @@ function toDAE(exp::Expression)::DAE.Exp
       end
 
       CALL_EXPRESSION(__)  => begin
-        P_Call.toDAE(exp.call)
+        toDAE(exp.call)
       end
 
       SIZE_EXPRESSION(__)  => begin
@@ -4360,7 +4360,7 @@ function toDAE(exp::Expression)::DAE.Exp
 
       PARTIAL_FUNCTION_APPLICATION_EXPRESSION(__)  => begin
         @match _cons(fn, _) = P_Function.P_Function.typeRefCache(exp.fn)
-        DAE.PARTEVALFUNCTION(P_Function.P_Function.nameConsiderBuiltin(fn), list(toDAE(arg) for arg in exp.args), toDAE(exp.ty), toDAE(TYPE_FUNCTION(fn, FunctionTYPE_FUNCTIONAL_VARIABLE)))
+        DAE.PARTEVALFUNCTION(P_Function.nameConsiderBuiltin(fn), list(toDAE(arg) for arg in exp.args), toDAE(exp.ty), toDAE(TYPE_FUNCTION(fn, FunctionTYPE_FUNCTIONAL_VARIABLE)))
       end
 
       BINDING_EXP(__)  => begin
@@ -4644,7 +4644,7 @@ function toFlatString(exp::Expression) ::String
       end
 
       CALL_EXPRESSION(__)  => begin
-        P_Call.toFlatString(exp.call)
+        toFlatString(exp.call)
       end
 
       SIZE_EXPRESSION(__)  => begin
@@ -4796,7 +4796,7 @@ function toString(exp::Expression) ::String
       end
 
       CALL_EXPRESSION(__)  => begin
-        P_Call.toString(exp.call)
+        toString(exp.call)
       end
 
       SIZE_EXPRESSION(__)  => begin
@@ -5064,12 +5064,12 @@ function applyIndexSubscriptArrayConstructor(call::Call, index::Subscript) ::Exp
   local iters::List{Tuple{InstNode, Expression}}
   local iter::InstNode
 
-  @match P_Call.TYPED_ARRAY_CONSTRUCTOR(ty, var, exp, iters) = call
+  @match TYPED_ARRAY_CONSTRUCTOR(ty, var, exp, iters) = call
   @assign ((iter, iter_exp), iters) = ListUtil.splitLast(iters)
   @assign iter_exp = applySubscript(index, iter_exp)
   @assign subscriptedExp = replaceIterator(exp, iter, iter_exp)
   if ! listEmpty(iters)
-    @assign subscriptedExp = CALL_EXPRESSION(P_Call.TYPED_ARRAY_CONSTRUCTOR(Type.unliftArray(ty), var, subscriptedExp, iters))
+    @assign subscriptedExp = CALL_EXPRESSION(TYPED_ARRAY_CONSTRUCTOR(Type.unliftArray(ty), var, subscriptedExp, iters))
   end
   subscriptedExp
 end
@@ -5097,13 +5097,13 @@ function applySubscriptCall(subscript::Subscript, exp::Expression, restSubscript
     local arg::Expression
     local ty::M_Type
     @match call begin
-      P_Call.TYPED_CALL(arguments = arg <|  nil()) where (P_Function.P_Function.isSubscriptableBuiltin(call.fn))  => begin
+      TYPED_CALL(arguments = arg <|  nil()) where (P_Function.P_Function.isSubscriptableBuiltin(call.fn))  => begin
         @assign arg = applySubscript(subscript, arg, restSubscripts)
         @assign ty = Type.copyDims(typeOf(arg), call.ty)
-        CALL(P_Call.TYPED_CALL(call.fn, ty, call.var, list(arg), call.attributes))
+        CALL(TYPED_CALL(call.fn, ty, call.var, list(arg), call.attributes))
       end
 
-      P_Call.TYPED_ARRAY_CONSTRUCTOR(__)  => begin
+      TYPED_ARRAY_CONSTRUCTOR(__)  => begin
         applySubscriptArrayConstructor(subscript, call, restSubscripts)
       end
 
@@ -5139,7 +5139,7 @@ function applyIndexSubscriptRange2(startExp::Expression, stepExp::Option{<:Expre
         P_Expression.REAL_EXPRESSION(startExp.value + index - 1.0)
       end
 
-      (P_Expression.Expression.BOOLEAN(__), _)  => begin
+      (P_Expression.BOOLEAN_EXPRESSION(__), _)  => begin
         if index == 1
           startExp
         else
@@ -5307,9 +5307,9 @@ function applyIndexSubscriptTypename(ty::M_Type, index::Subscript) ::Expression
       @match ty begin
         TYPE_BOOLEAN(__) where (idx <= 2)  => begin
           if idx == 1
-            P_Expression.Expression.BOOLEAN(false)
+            P_Expression.BOOLEAN_EXPRESSION(false)
           else
-            P_Expression.Expression.BOOLEAN(true)
+            P_Expression.BOOLEAN_EXPRESSION(true)
           end
         end
 
@@ -5390,7 +5390,7 @@ end
                          applySubscriptRange(subscript, exp)
                        end
 
-                       CALL_EXPRESSION(call = P_Call.TYPED_ARRAY_CONSTRUCTOR(__))  => begin
+                       CALL_EXPRESSION(call = TYPED_ARRAY_CONSTRUCTOR(__))  => begin
                          applySubscriptArrayConstructor(subscript, exp.call, restSubscripts)
                        end
 
@@ -5663,7 +5663,7 @@ function setType(ty::NFType, exp::Expression) ::Expression
       end
 
       CALL_EXPRESSION(__)  => begin
-        @assign exp.call = P_Call.setType(exp.call, ty)
+        @assign exp.call = setType(exp.call, ty)
         ()
       end
 
@@ -5784,7 +5784,7 @@ function typeOf(exp::Expression) ::M_Type
       end
 
       CALL_EXPRESSION(__)  => begin
-        P_Call.typeOf(exp.call)
+        typeOf(exp.call)
       end
 
       SIZE_EXPRESSION(__)  => begin
@@ -6040,7 +6040,7 @@ end
 
                        CALL_EXPRESSION(__)  => begin
                          @match CALL_EXPRESSION(call = c) = exp2
-                         P_Call.compare(exp1.call, c)
+                         compare(exp1.call, c)
                        end
 
                        SIZE_EXPRESSION(__)  => begin

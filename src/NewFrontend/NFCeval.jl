@@ -33,7 +33,7 @@ FuncT = Function
 ReductionFn = Function
 Expression = NFExpression
 Operator = NFOperator
-import ..DAE
+
 #import ..ElementSource
 
 @UniontypeDecl EvalTarget
@@ -426,11 +426,11 @@ function evalComponentBinding(
   local start_exp::Option{Expression}
 
   @assign exp_origin = if isFunction(explicitParent(node))
-    ExpOrigin.FUNCTION
+    ORIGIN_FUNCTION
   else
-    ExpOrigin.CLASS
+    ORIGIN_CLASS
   end
-  Typing.typeComponentBinding(node, exp_origin, typeChildren = false)
+  typeComponentBinding(node, exp_origin, typeChildren = false)
   @assign comp = component(node)
   @assign binding = P_Component.getBinding(comp)
   if isUnbound(binding)
@@ -749,7 +749,7 @@ function makeComponentBinding(
       end
 
       _ => begin
-        NFBinding.EMPTY_BINDING
+        EMPTY_BINDING
       end
     end
   end
@@ -945,10 +945,10 @@ function evalRangeExp(rangeExp::Expression)::Expression
           (TYPE_REAL(), expl)
         end
 
-        (P_Expression.Expression.BOOLEAN(__), P_Expression.Expression.BOOLEAN(__)) =>
+        (P_Expression.BOOLEAN_EXPRESSION(__), P_Expression.BOOLEAN_EXPRESSION(__)) =>
           begin
             @assign expl =
-              List(P_Expression.Expression.BOOLEAN(b) for b = (start.value):(stop.value))
+              List(P_Expression.BOOLEAN_EXPRESSION(b) for b = (start.value):(stop.value))
             (TYPE_BOOLEAN(), expl)
           end
 
@@ -1767,7 +1767,7 @@ function evalLogicBinaryAnd(
   @assign exp = begin
     local expl::List{Expression}
     @matchcontinue exp1 begin
-      P_Expression.Expression.BOOLEAN(__) => begin
+      P_Expression.BOOLEAN_EXPRESSION(__) => begin
         if exp1.value
           evalExp_impl(exp2, target)
         else
@@ -1813,7 +1813,7 @@ function evalLogicBinaryOr(
   @assign exp = begin
     local expl::List{Expression}
     @match exp1 begin
-      P_Expression.Expression.BOOLEAN(__) => begin
+      P_Expression.BOOLEAN_EXPRESSION(__) => begin
         if exp1.value
           exp1
         else
@@ -1877,8 +1877,8 @@ function evalLogicUnaryNot(exp1::Expression)::Expression
 
   @assign exp = begin
     @match exp1 begin
-      P_Expression.Expression.BOOLEAN(__) => begin
-        P_Expression.Expression.BOOLEAN(!exp1.value)
+      P_Expression.BOOLEAN_EXPRESSION(__) => begin
+        P_Expression.BOOLEAN_EXPRESSION(!exp1.value)
       end
 
       ARRAY_EXPRESSION(__) => begin
@@ -1981,7 +1981,7 @@ function evalRelationOp_dispatch(
       end
     end
   end
-  @assign exp = P_Expression.Expression.BOOLEAN(res)
+  @assign exp = P_Expression.BOOLEAN_EXPRESSION(res)
   return exp
 end
 
@@ -1998,7 +1998,7 @@ function evalRelationLess(exp1::Expression, exp2::Expression)::Bool
         exp1.value < exp2.value
       end
 
-      (P_Expression.Expression.BOOLEAN(__), P_Expression.Expression.BOOLEAN(__)) => begin
+      (P_Expression.BOOLEAN_EXPRESSION(__), P_Expression.BOOLEAN_EXPRESSION(__)) => begin
         exp1.value < exp2.value
       end
 
@@ -2043,7 +2043,7 @@ function evalRelationLessEq(exp1::Expression, exp2::Expression)::Bool
         exp1.value <= exp2.value
       end
 
-      (P_Expression.Expression.BOOLEAN(__), P_Expression.Expression.BOOLEAN(__)) => begin
+      (P_Expression.BOOLEAN_EXPRESSION(__), P_Expression.BOOLEAN_EXPRESSION(__)) => begin
         exp1.value <= exp2.value
       end
 
@@ -2088,7 +2088,7 @@ function evalRelationGreater(exp1::Expression, exp2::Expression)::Bool
         exp1.value > exp2.value
       end
 
-      (P_Expression.Expression.BOOLEAN(__), P_Expression.Expression.BOOLEAN(__)) => begin
+      (P_Expression.BOOLEAN_EXPRESSION(__), P_Expression.BOOLEAN_EXPRESSION(__)) => begin
         exp1.value > exp2.value
       end
 
@@ -2133,7 +2133,7 @@ function evalRelationGreaterEq(exp1::Expression, exp2::Expression)::Bool
         exp1.value >= exp2.value
       end
 
-      (P_Expression.Expression.BOOLEAN(__), P_Expression.Expression.BOOLEAN(__)) => begin
+      (P_Expression.BOOLEAN_EXPRESSION(__), P_Expression.BOOLEAN_EXPRESSION(__)) => begin
         exp1.value >= exp2.value
       end
 
@@ -2178,7 +2178,7 @@ function evalRelationEqual(exp1::Expression, exp2::Expression)::Bool
         exp1.value == exp2.value
       end
 
-      (P_Expression.Expression.BOOLEAN(__), P_Expression.Expression.BOOLEAN(__)) => begin
+      (P_Expression.BOOLEAN_EXPRESSION(__), P_Expression.BOOLEAN_EXPRESSION(__)) => begin
         exp1.value == exp2.value
       end
 
@@ -2223,7 +2223,7 @@ function evalRelationNotEqual(exp1::Expression, exp2::Expression)::Bool
         exp1.value != exp2.value
       end
 
-      (P_Expression.Expression.BOOLEAN(__), P_Expression.Expression.BOOLEAN(__)) => begin
+      (P_Expression.BOOLEAN_EXPRESSION(__), P_Expression.BOOLEAN_EXPRESSION(__)) => begin
         exp1.value != exp2.value
       end
 
@@ -2287,7 +2287,7 @@ function evalIfExp2(ifExp::Expression, target::EvalTarget)::Expression
   ) = ifExp
   @assign result = begin
     @match cond begin
-      P_Expression.Expression.BOOLEAN(__) => begin
+      P_Expression.BOOLEAN_EXPRESSION(__) => begin
         evalExp_impl(if cond.value
           btrue
         else
@@ -2346,7 +2346,7 @@ function evalCall(call::Call, target::EvalTarget)::Expression
         if P_Function.isBuiltin(c.fn)
           P_Expression.Expression.bindingExpMap(
             CALL_EXPRESSION(c),
-            (target) -> evalBuiltinCallExp(target = target),
+            (target) -> evalxp(target = target),
           )
         else
           P_Expression.Expression.bindingExpMap(
@@ -2373,26 +2373,23 @@ function evalCall(call::Call, target::EvalTarget)::Expression
   return exp
 end
 
-function evalBuiltinCallExp(callExp::Expression, target::EvalTarget)::Expression
+function evalxp(callExp::Expression, target::EvalTarget)::Expression
   local result::Expression
-
   local fn::M_Function
   local args::List{Expression}
-
-  @match CALL_EXPRESSION(call = P_Call.TYPED_CALL(fn = fn, arguments = args)) =
-    callExp
-  @assign result = evalBuiltinCall(fn, args, target)
+  @match CALL_EXPRESSION(call = TYPED_CALL(fn = fn, arguments = args)) = callExp
+  @assign result = evalfn(args, target)
   return result
 end
 
-function evalBuiltinCall(
+function eval(
   fn::M_Function,
   args::List{<:Expression},
   target::EvalTarget,
 )::Expression
   local result::Expression
 
-  local fn_path::Absyn.Path = P_Function.nameConsiderBuiltin(fn)
+  local fn_path::Absyn.Path = nameConsiderBuiltin(fn)
 
   @assign result = begin
     @match AbsynUtil.pathFirstIdent(fn_path) begin
@@ -3328,7 +3325,7 @@ function evalBuiltinMax2(exp1::Expression, exp2::Expression)::Expression
         end
       end
 
-      (P_Expression.Expression.BOOLEAN(__), P_Expression.Expression.BOOLEAN(__)) => begin
+      (P_Expression.BOOLEAN_EXPRESSION(__), P_Expression.BOOLEAN_EXPRESSION(__)) => begin
         if exp1.value < exp2.value
           exp2
         else
@@ -3425,7 +3422,7 @@ function evalBuiltinMin2(exp1::Expression, exp2::Expression)::Expression
         end
       end
 
-      (P_Expression.Expression.BOOLEAN(__), P_Expression.Expression.BOOLEAN(__)) => begin
+      (P_Expression.BOOLEAN_EXPRESSION(__), P_Expression.BOOLEAN_EXPRESSION(__)) => begin
         if exp1.value > exp2.value
           exp2
         else
@@ -3834,14 +3831,14 @@ function evalBuiltinString(args::List{<:Expression})::Expression
     @match args begin
       arg <|
       INTEGER_EXPRESSION(min_len) <|
-      P_Expression.Expression.BOOLEAN(left_justified) <| nil() => begin
+      P_Expression.BOOLEAN_EXPRESSION(left_justified) <| nil() => begin
         @assign str = begin
           @match arg begin
             INTEGER_EXPRESSION(__) => begin
               intString(arg.value)
             end
 
-            P_Expression.Expression.BOOLEAN(__) => begin
+            P_Expression.BOOLEAN_EXPRESSION(__) => begin
               boolString(arg.value)
             end
 
@@ -3869,7 +3866,7 @@ function evalBuiltinString(args::List{<:Expression})::Expression
       P_Expression.REAL_EXPRESSION(r) <|
       INTEGER_EXPRESSION(significant_digits) <|
       INTEGER_EXPRESSION(min_len) <|
-      P_Expression.Expression.BOOLEAN(left_justified) <| nil() => begin
+      P_Expression.BOOLEAN_EXPRESSION(left_justified) <| nil() => begin
         @assign format =
           "%" +
           (
@@ -4343,9 +4340,9 @@ function evalBooleanClock(args::List{<:Expression})::Expression
     local interval::Expression
     @match args begin
       condition &&
-      P_Expression.Expression.BOOLEAN(__) <| interval &&
+      P_Expression.BOOLEAN_EXPRESSION(__) <| interval &&
       P_Expression.REAL_EXPRESSION(__) <| nil() => begin
-        P_Expression.Expression.CLKCONST(P_Expression.P_ClockKind.Expression.BOOLEAN_CLOCK(
+        P_Expression.Expression.CLKCONST(P_Expression.P_ClockKind.BOOLEAN_EXPRESSION_CLOCK(
           condition,
           interval,
         ))
@@ -4621,11 +4618,11 @@ function evalSize(
   if isSome(optIndex)
     @assign index_exp = evalExp_impl(Util.getOption(optIndex), target)
     @assign index = P_Expression.Expression.toInteger(index_exp)
-    @assign (dim, _, ty_err) = Typing.typeExpDim(exp, index, ExpOrigin.CLASS, info)
-    Typing.checkSizeTypingError(ty_err, exp, index, info)
+    @assign (dim, _, ty_err) = typeExpDim(exp, index, ORIGIN_CLASS, info)
+    checkSizeTypingError(ty_err, exp, index, info)
     @assign outExp = P_Dimension.Dimension.sizeExp(dim)
   else
-    @assign (outExp, ty) = Typing.typeExp(exp, ExpOrigin.CLASS, info)
+    @assign (outExp, ty) = typeExp(exp, ORIGIN_CLASS, info)
     @assign expl = List(P_Dimension.Dimension.sizeExp(d) for d in arrayDims(ty))
     @assign dim = P_Dimension.Dimension.fromInteger(listLength(expl), Variability.PARAMETER)
     @assign outExp =

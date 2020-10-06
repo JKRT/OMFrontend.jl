@@ -150,7 +150,7 @@ function simplifyCall(callExp::Expression)::Expression
   @match CALL_EXPRESSION(call = call) = callExp
   @assign callExp = begin
     @match call begin
-      P_Call.TYPED_CALL(arguments = args) where {(!P_Call.isExternal(call))} => begin
+      TYPED_CALL(arguments = args) where {(!isExternal(call))} => begin
         if Flags.isSet(Flags.NF_EXPAND_FUNC_ARGS)
           @assign args = list(if P_Expression.Expression.hasArrayCall(arg)
             arg
@@ -163,7 +163,7 @@ function simplifyCall(callExp::Expression)::Expression
         if Flags.isSet(Flags.NF_API) && !Flags.isSet(Flags.NF_API_DYNAMIC_SELECT)
           if stringEq(
             "DynamicSelect",
-            AbsynUtil.pathString(P_Function.nameConsiderBuiltin(call.fn)),
+            AbsynUtil.pathString(nameConsiderBuiltin(call.fn)),
           )
             @assign callExp = simplify(listHead(args))
             return
@@ -185,7 +185,7 @@ function simplifyCall(callExp::Expression)::Expression
           else
             if Flags.isSet(Flags.NF_SCALARIZE)
               @assign callExp =
-                simplifyBuiltinCall(P_Function.nameConsiderBuiltin(call.fn), args, call)
+                simplifynameConsiderBuiltin(call.fn, args, call)
             end
           end
         elseif Flags.isSet(Flags.NF_EVAL_CONST_ARG_FUNCS) &&
@@ -202,11 +202,11 @@ function simplifyCall(callExp::Expression)::Expression
         callExp
       end
 
-      P_Call.TYPED_ARRAY_CONSTRUCTOR(__) => begin
+      TYPED_ARRAY_CONSTRUCTOR(__) => begin
         simplifyArrayConstructor(call)
       end
 
-      P_Call.TYPED_REDUCTION(__) => begin
+      TYPED_REDUCTION(__) => begin
         @assign call.exp = simplify(call.exp)
         @assign call.iters =
           list((Util.tuple21(i), simplify(Util.tuple22(i))) for i in call.iters)
@@ -233,7 +233,7 @@ function simplifyCall2(call::Call)::Expression
     if Flags.isSet(Flags.FAILTRACE)
       ErrorExt.delCheckpoint(getInstanceName())
       Debug.traceln(
-        "- " + getInstanceName() + " failed to evaluate " + P_Call.toString(call) + "\\n",
+        "- " + getInstanceName() + " failed to evaluate " + toString(call) + "\\n",
       )
     else
       ErrorExt.rollBack(getInstanceName())
@@ -243,7 +243,7 @@ function simplifyCall2(call::Call)::Expression
   return outExp
 end
 
-function simplifyBuiltinCall(
+function simplify(
   name::Absyn.Path,
   args::List{<:Expression},
   call::Call,
@@ -351,7 +351,7 @@ function simplifyArrayConstructor(call::Call)::Expression
   local dim_size::Integer
   local expanded::Bool
 
-  @match P_Call.TYPED_ARRAY_CONSTRUCTOR(ty, var, exp, iters) = call
+  @match TYPED_ARRAY_CONSTRUCTOR(ty, var, exp, iters) = call
   @assign iters = list((Util.tuple21(i), simplify(Util.tuple22(i))) for i in iters)
   @assign outExp = begin
     @matchcontinue iters begin
@@ -378,7 +378,7 @@ function simplifyArrayConstructor(call::Call)::Expression
 
       _ => begin
         @assign exp = simplify(exp)
-        CALL_EXPRESSION(P_Call.TYPED_ARRAY_CONSTRUCTOR(ty, var, exp, iters))
+        CALL_EXPRESSION(TYPED_ARRAY_CONSTRUCTOR(ty, var, exp, iters))
       end
     end
   end
@@ -677,19 +677,19 @@ function simplifyLogicBinaryAnd(
     #=  false and e => false
     =#
     @match (exp1, exp2) begin
-      (P_Expression.Expression.BOOLEAN(false), _) => begin
+      (P_Expression.BOOLEAN_EXPRESSION(false), _) => begin
         exp1
       end
 
-      (_, P_Expression.Expression.BOOLEAN(false)) => begin
+      (_, P_Expression.BOOLEAN_EXPRESSION(false)) => begin
         exp2
       end
 
-      (P_Expression.Expression.BOOLEAN(true), _) => begin
+      (P_Expression.BOOLEAN_EXPRESSION(true), _) => begin
         exp2
       end
 
-      (_, P_Expression.Expression.BOOLEAN(true)) => begin
+      (_, P_Expression.BOOLEAN_EXPRESSION(true)) => begin
         exp1
       end
 
@@ -726,19 +726,19 @@ function simplifyLogicBinaryOr(exp1::Expression, op::Operator, exp2::Expression)
     #=  true or e => true
     =#
     @match (exp1, exp2) begin
-      (P_Expression.Expression.BOOLEAN(true), _) => begin
+      (P_Expression.BOOLEAN_EXPRESSION(true), _) => begin
         exp1
       end
 
-      (_, P_Expression.Expression.BOOLEAN(true)) => begin
+      (_, P_Expression.BOOLEAN_EXPRESSION(true)) => begin
         exp2
       end
 
-      (P_Expression.Expression.BOOLEAN(false), _) => begin
+      (P_Expression.BOOLEAN_EXPRESSION(false), _) => begin
         exp2
       end
 
-      (_, P_Expression.Expression.BOOLEAN(false)) => begin
+      (_, P_Expression.BOOLEAN_EXPRESSION(false)) => begin
         exp1
       end
 
@@ -813,7 +813,7 @@ function simplifyIf(ifExp::Expression)::Expression
   @assign cond = simplify(cond)
   @assign ifExp = begin
     @match cond begin
-      P_Expression.Expression.BOOLEAN(__) => begin
+      P_Expression.BOOLEAN_EXPRESSION(__) => begin
         simplify(if cond.value
           tb
         else

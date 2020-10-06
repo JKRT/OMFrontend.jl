@@ -275,7 +275,7 @@ function isDeletedComponent(condition::Binding, prefix::ComponentRef)::Bool
     end
     @assign isDeleted = begin
       @match exp begin
-        P_Expression.Expression.BOOLEAN(__) => begin
+        P_Expression.BOOLEAN_EXPRESSION(__) => begin
           !exp.value
         end
 
@@ -424,7 +424,7 @@ function flattenSimpleComponent(
   #       ElementSource.createElementSource(info),
   #     )
   #     @assign sections = prependEquation(eq, sections)
-  #     @assign binding = NFBinding.EMPTY_BINDING
+  #     @assign binding = EMPTY_BINDING
   #   end
   # end
   @assign name = prefixScope(comp_node, ty, nil, prefix)
@@ -439,7 +439,7 @@ function flattenSimpleComponent(
       (
         "fixed",
         FLAT_BINDING(
-          P_Expression.Expression.BOOLEAN(false),
+          P_Expression.BOOLEAN_EXPRESSION(false),
           Variability.CONSTANT,
         ),
       ),
@@ -494,7 +494,7 @@ function getRecordBindings(binding::Binding, comps::Array{<:InstNode})::List{Bin
     @match binding_exp begin
 RECORD_EXPRESSION(__) => begin
         List(if P_Expression.Expression.isEmpty(e)
-          NFBinding.EMPTY_BINDING
+          EMPTY_BINDING
         else
           FLAT_BINDING(e, var)
         end for e in binding_exp.elements)
@@ -582,7 +582,7 @@ function flattenComplexComponent(
         sections,
         isInitial = comp_var <= Variability.PARAMETER,
       )
-      @assign opt_binding = SOME(NFBinding.EMPTY_BINDING)
+      @assign opt_binding = SOME(EMPTY_BINDING)
     else
       @assign binding = setTypedExp(binding_exp, binding)
       @assign opt_binding = SOME(binding)
@@ -823,7 +823,7 @@ function vectorizeAlgorithm(
                 P_Pointer.create(P_Component.ITERATOR(
                   TYPE_INTEGER(),
                   Variability.IMPLICITLY_DISCRETE,
-                  P_Component.info(Pointer.access(prefix_node.component)),
+                  P_Component.info(P_Pointer.access(prefix_node.component)),
                 )),
                 prefix_node.parent,
                 NORMAL_COMP(),
@@ -971,7 +971,7 @@ function flattenBinding(
       end
 
       CEVAL_BINDING(__) => begin
-        NFBinding.EMPTY_BINDING
+        EMPTY_BINDING
       end
 
       FLAT_BINDING(__) => begin
@@ -1917,7 +1917,7 @@ function collectExpFuncs_traverse(exp::Expression, funcs::FunctionTree)::Functio
     local fn::M_Function
     @match exp begin
       CALL_EXPRESSION(__) => begin
-        @assign funcs = flattenFunction(P_Call.typedFunction(exp.call), funcs)
+        @assign funcs = flattenFunction(typedFunction(exp.call), funcs)
         ()
       end
 
@@ -1946,11 +1946,11 @@ RECORD_EXPRESSION(__) => begin
   return funcs
 end
 
-function flattenFunction(func::M_Function, funcs::FunctionTree)::FunctionTree
+function flattenFunction(@nospecialize(func::M_Function), @nospecialize(funcs::FunctionTree))::FunctionTree
 
   local fn::M_Function = func
 
-  if !P_Function.isCollected(fn)
+  if !isCollected(fn)
     @assign fn = EvalConstants.evaluateFunction(fn)
     SimplifyModel.simplifyFunction(fn)
     P_Function.collect(fn)

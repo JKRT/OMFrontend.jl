@@ -13,21 +13,17 @@ Expression = NFExpression
     c::Expression
     solverMethod #=  string type  =#::Expression
   end
-
   @Record BOOLEAN_CLOCK begin
     condition::Expression
     startInterval #=  real type >= 0.0  =#::Expression
   end
-
   @Record REAL_CLOCK begin
     interval::Expression
   end
-
   @Record INTEGER_CLOCK begin
     intervalCounter::Expression
     resolution #=  integer type >= 1  =#::Expression
   end
-
   @Record INFERRED_CLOCK begin
   end
 end

@@ -79,8 +79,8 @@ function instDefaultConstructor(
   @assign out_comp = P_Component.UNTYPED_COMPONENT(
     ctor_node,
     listArray(nil),
-    NFBinding.EMPTY_BINDING,
-    NFBinding.EMPTY_BINDING,
+    EMPTY_BINDING,
+    EMPTY_BINDING,
     NFComponent.OUTPUT_ATTR,
     NONE(),
     false,

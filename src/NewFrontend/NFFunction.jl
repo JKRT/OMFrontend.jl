@@ -177,13 +177,13 @@ function getExactVectorizedMatches(
   matchedFunctions::List{<:MatchedFunction},
 )::List{MatchedFunction}
   local outFuncs::List{MatchedFunction} =
-    List(mf for mf in matchedFunctions if isExactVectorized(mf.mk))
+    list(mf for mf in matchedFunctions if isExactVectorized(mf.mk))
   return outFuncs
 end
 
 function getExactMatches(matchedFunctions::List{<:MatchedFunction})::List{MatchedFunction}
   local outFuncs::List{MatchedFunction} =
-    List(mf for mf in matchedFunctions if isExact(mf.mk))
+    list(mf for mf in matchedFunctions if isExact(mf.mk))
   return outFuncs
 end
 
@@ -204,6 +204,7 @@ FunctionStatus = (() -> begin #= Enumeration =#
   () -> (BUILTIN; INITIAL; EVALUATED; SIMPLIFIED; COLLECTED)  #= The function has been added to the function tree. =#
 end)()
 
+const FunctionStatusType = Integer
 
 
 using MetaModelica
@@ -223,28 +224,25 @@ MapFn = Function
     outputs::List{InstNode}
     locals::List{InstNode}
     slots::List{Slot}
-    returnType::M_Type
+    returnType::NFType
     attributes::DAE.FunctionAttributes
     derivatives::List{FunctionDerivative}
-    status::Pointer{FunctionStatus}
-    callCounter::Pointer{Integer} #= Used during function evaluation to limit recursion. =#
+    status::Pointer
+    callCounter::Pointer
   end
 end
 
-
 function getLocalArguments(fn::M_Function)::List{Expression}
   local localArgs::List{Expression} = nil
-
   local binding::Binding
-
   for l in fn.locals
     if isComponent(l)
-      @assign binding = P_Component.getBinding(component(l))
-      Error.assertion(
-        hasExp(binding),
-        getInstanceName() + " got local component without binding",
-        sourceInfo(),
-      )
+      @assign binding = getBinding(component(l))
+      # Error.assertion(
+      #   hasExp(binding),
+      #   getInstanceName() + " got local component without binding",
+      #   sourceInfo(),
+      # )
       @assign localArgs = _cons(getExp(binding), localArgs)
     end
   end
@@ -486,7 +484,7 @@ function toDAE(fn::M_Function, def::DAE.FunctionDefinition)::DAE.P_Function
   @assign unused_inputs = analyseUnusedParameters(fn)
   @assign defs = _cons(
     def,
-    List(
+    list(
       P_FunctionDerivative.FunctionDerivative.toDAE(fn_der) for fn_der in fn.derivatives
     ),
   )
@@ -507,13 +505,11 @@ end
 
 function isDefaultRecordConstructor(fn::M_Function)::Bool
   local isConstructor::Bool
-
   @assign isConstructor = begin
     @match restriction(getClass(fn.node)) begin
-      P_Restriction.Restriction.RECORD_CONSTRUCTOR(__) => begin
+      RESTRICTION_RECORD_CONSTRUCTOR(__) => begin
         true
       end
-
       _ => begin
         false
       end
@@ -524,13 +520,11 @@ end
 
 function inlineBuiltin(fn::M_Function)::DAE.InlineType
   local inlineType::DAE.InlineType
-
   @assign inlineType = begin
     @match fn.attributes.isBuiltin begin
-      DAE.FunctionBuiltin.FUNCTION_BUILTIN_PTR(__) => begin
-        DAE.InlineType.BUILTIN_EARLY_INLINE()
+      DAE.FUNCTION_BUILTIN_PTR(__) => begin
+        DAE.BUILTIN_EARLY_INLINE()
       end
-
       _ => begin
         fn.attributes.inline
       end
@@ -597,13 +591,11 @@ end
 
 function isSpecialBuiltin(fn::M_Function)::Bool
   local special::Bool
-
   local path::Absyn.Path
-
   if !isBuiltin(fn)
     @assign special = false
   else
-    @assign path = P_Function.nameConsiderBuiltin(fn)
+    @assign path = nameConsiderBuiltin(fn)
     if !AbsynUtil.pathIsIdent(path)
       @assign special = false
     else
@@ -834,10 +826,9 @@ function isBuiltinAttr(attrs::DAE.FunctionAttributes)::Bool
 
   @assign isBuiltin = begin
     @match attrs.isBuiltin begin
-      DAE.FunctionBuiltin.FUNCTION_NOT_BUILTIN(__) => begin
+      DAE.FUNCTION_NOT_BUILTIN(__) => begin
         false
       end
-
       _ => begin
         true
       end
@@ -923,7 +914,7 @@ function typePartialApplication(
   local arg_ty::M_Type
   local arg_var::VariabilityType
   local fn::M_Function
-  local next_origin::ORIGIN_Type = ExpOrigin.setFlag(origin, ExpOrigin.SUBEXPRESSION)
+  local next_origin::ORIGIN_Type = setFlag(origin, ORIGIN_SUBEXPRESSION)
   local inputs::List{InstNode}
   local slots::List{Slot}
 
@@ -944,7 +935,7 @@ function typePartialApplication(
     Variability.CONSTANT
   end
   for arg in args
-    @assign (arg, arg_ty, arg_var) = Typing.typeExp(arg, origin, info)
+    @assign (arg, arg_ty, arg_var) = typeExp(arg, origin, info)
     @match _cons(arg_name, rest_names) = rest_names
     @assign (arg, inputs, slots) =
       applyPartialApplicationArg(arg_name, arg, arg_ty, inputs, slots, fn, info)
@@ -978,14 +969,14 @@ function typeFunctionBody(fn::M_Function)::M_Function
   #=  Type the bindings of the outputs and local variables.
   =#
   for c in fn.outputs
-    Typing.typeComponentBinding(c, ExpOrigin.FUNCTION)
+    typeComponentBinding(c, ORIGIN_FUNCTION)
   end
   for c in fn.locals
-    Typing.typeComponentBinding(c, ExpOrigin.FUNCTION)
+    typeComponentBinding(c, ORIGIN_FUNCTION)
   end
   #=  Type the algorithm section of the function, if it has one.
   =#
-  Typing.typeFunctionSections(fn.node, ExpOrigin.FUNCTION)
+  typeFunctionSections(fn.node, ORIGIN_FUNCTION)
   #=  Type any derivatives of the function.
   =#
   for fn_der in fn.derivatives
@@ -1001,8 +992,8 @@ function typeFunctionSignature(fn::M_Function)::M_Function
   local node::InstNode = fn.node
 
   if !isTyped(fn)
-    Typing.typeClassType(node, NFBinding.EMPTY_BINDING, ExpOrigin.FUNCTION, node)
-    Typing.typeComponents(node, ExpOrigin.FUNCTION)
+    typeClassType(node, EMPTY_BINDING, ORIGIN_FUNCTION, node)
+    typeComponents(node, ORIGIN_FUNCTION)
     if isPartial(node)
       applyComponents(
         classTree(getClass(node)),
@@ -1010,7 +1001,7 @@ function typeFunctionSignature(fn::M_Function)::M_Function
       )
     end
     for c in fn.inputs
-      Typing.typeComponentBinding(c, ExpOrigin.FUNCTION)
+      typeComponentBinding(c, ORIGIN_FUNCTION)
     end
     @assign fn.slots = makeSlots(fn.inputs)
     checkParamTypes(fn)
@@ -1040,20 +1031,18 @@ end
      they are not already typed. =#"""
 function typeNodeCache(functionNode::InstNode)::List{M_Function}
   local functions::List{M_Function}
-
   local fn_node::InstNode
   local typed::Bool
   local special::Bool
   local name::String
-
   @assign fn_node = classScope(functionNode)
   @match C_FUNCTION(functions, typed, special) = getFuncCache(fn_node)
   #=  Type the function(s) if not already done.
   =#
   if !typed
-    @assign functions = List(typeFunctionSignature(f) for f in functions)
+    @assign functions = list(typeFunctionSignature(f) for f in functions)
     setFuncCache(fn_node, C_FUNCTION(functions, true, special))
-    @assign functions = List(typeFunctionBody(f) for f in functions)
+    @assign functions = list(typeFunctionBody(f) for f in functions)
     setFuncCache(fn_node, C_FUNCTION(functions, true, special))
   end
   return functions
@@ -1063,13 +1052,11 @@ end
      they are not already typed. =#"""
 function typeRefCache(functionRef::ComponentRef)::List{M_Function}
   local functions::List{M_Function}
-
   @assign functions = begin
     @match functionRef begin
-      CREF(__) => begin
+      COMPONENT_REF_CREF(__) => begin
         typeNodeCache(functionRef.node)
       end
-
       _ => begin
         Error.assertion(
           false,
@@ -1216,7 +1203,7 @@ function matchArgVectorized(
   if listEmpty(vectDims)
     @assign vectDims = fillUnknownVectorizedDims(vect_dims, argExp)
     @assign vectArg = argExp
-  elseif !ListUtil.isEqualOnTrue(vectDims, vect_dims, P_Dimension.Dimension.isEqual)
+  elseif !ListUtil.isEqualOnTrue(vectDims, vect_dims, isEqual)
     Error.addSourceMessage(
       Error.VECTORIZE_CALL_DIM_MISMATCH,
       list(
@@ -1743,7 +1730,7 @@ function callString(
       str +
       ", " +
       stringDelimitList(
-        List(
+        list(
           Util.tuple21(arg) + " = " + toString(Util.tuple22(arg))
           for arg in namedArgs
         ),
@@ -1756,7 +1743,7 @@ end
 
 function candidateFuncListString(fns::List{<:M_Function})::String
   local s::String =
-    stringDelimitList(List(P_Function.signatureString(fn, true) for fn in fns), "\\n  ")
+    stringDelimitList(list(P_Function.signatureString(fn, true) for fn in fns), "\\n  ")
   return s
 end
 
@@ -1873,17 +1860,14 @@ end
      (or shouldn't be added, e.g. if it's builtin), otherwise false. =#"""
 function isCollected(fn::M_Function)::Bool
   local collected::Bool
-
   @assign collected = begin
-    @match Pointer.access(fn.status) begin
+    @match P_Pointer.access(fn.status) begin
       FunctionStatus.BUILTIN => begin
         true
       end
-
       FunctionStatus.COLLECTED => begin
         true
       end
-
       _ => begin
         false
       end
@@ -1955,7 +1939,7 @@ function mapCachedFuncs(inNode::InstNode, mapFn::MapFn)
   @assign cache = begin
     @match cache begin
       C_FUNCTION(__) => begin
-        @assign cache.funcs = List(mapFn(fn) for fn in cache.funcs)
+        @assign cache.funcs = list(mapFn(fn) for fn in cache.funcs)
         cache
       end
 
@@ -1988,14 +1972,16 @@ function getCachedFuncs(inNode::InstNode)::List{M_Function}
 end
 
 function instFunction3(fnNode::InstNode)::InstNode
-
-  @assign fnNode = instantiate(fnNode)
+  @error "Calling inst function 3"
+  @assign fnNode = instantiateN1(fnNode, EMPTY_NODE())
   #=  Set up an empty function cache to signal that this function is
   =#
-  #=  currently being instantiated, so recursive functions can be handled.
+  #=  currently being instantiatdded, so recursive functions can be handled.
   =#
+  @error "Callng cache init func!"
   cacheInitFunc(fnNode)
   instExpressions(fnNode)
+  #@info "Returning in instfunction3"
   return fnNode
 end
 
@@ -2012,14 +1998,14 @@ function instFunction2(
   @assign (fnNode, specialBuiltin) = begin
     local cdef::SCode.ClassDef
     local fn::M_Function
-    local cr::Absyn.P_ComponentRef.ComponentRef
+    local cr::Absyn.ComponentRef
     local sub_fnNode::InstNode
     local funcs::List{M_Function}
     local fn_ders::List{FunctionDerivative}
     @match def begin
       SCode.CLASS(__) where {(SCodeUtil.isOperatorRecord(def))} => begin
         @assign fnNode = instFunction3(fnNode)
-        @assign fnNode = OperatorOverloading.instConstructor(fnPath, fnNode, info)
+        @assign fnNode = instConstructor(fnPath, fnNode, info)
         (fnNode, false)
       end
 
@@ -2048,15 +2034,17 @@ function instFunction2(
 
       SCode.CLASS(__) => begin
         if SCodeUtil.isOperator(def)
-          OperatorOverloading.checkOperatorRestrictions(fnNode)
+          checkOperatorRestrictions(fnNode)
         end
+        @error "Before set node type"
         @assign fnNode =
           setNodeType(ROOT_CLASS(parent), fnNode)
+        @error "After setNodeType"
         @assign fnNode = instFunction3(fnNode)
         @assign fn = new(fnPath, fnNode)
         @assign specialBuiltin = isSpecialBuiltin(fn)
         @assign fn.derivatives =
-          P_FunctionDerivative.FunctionDerivative.instDerivatives(fnNode, fn)
+          instDerivatives(fnNode, fn)
         @assign fnNode = cacheAddFunc(fnNode, fn, specialBuiltin)
         (fnNode, specialBuiltin)
       end
@@ -2067,16 +2055,13 @@ end
 
 """ #= Instantiates the given InstNode as a function. =#"""
 function instFunctionNode(node::InstNode)::InstNode
-
   local cache::CachedData
-
   @assign cache = getFuncCache(node)
   @assign () = begin
     @match cache begin
       C_FUNCTION(__) => begin
         ()
       end
-
       _ => begin
         @assign node =
           instFunction2(scopePath(node), node, info(node))
@@ -2099,14 +2084,12 @@ function instFunctionRef(
 
   @assign fn_node = classScope(node(fn_ref))
   @assign cache = getFuncCache(fn_node)
-  #=  Check if a cached instantiation of this function already exists.
-  =#
+  #=  Check if a cached instantiation of this function already exists. =#
   @assign (fn_node, specialBuiltin) = begin
     @match cache begin
       C_FUNCTION(__) => begin
         (fn_node, cache.specialBuiltin)
       end
-
       _ => begin
         @assign parent =
           if isRedeclare(node(fn_ref)) ||
@@ -2133,9 +2116,7 @@ function instFunction(
   local specialBuiltin::Bool
   local fn_node::InstNode
   local fn_ref::ComponentRef
-
   local cache::CachedData
-
   @assign fn_ref = lookupFunction(functionName, scope, info)
   @assign (fn_ref, fn_node, specialBuiltin) = instFunctionRef(fn_ref, info)
   return (fn_ref, fn_node, specialBuiltin)
@@ -2147,17 +2128,12 @@ function lookupFunction(
   info::SourceInfo,
 )::ComponentRef
   local functionRef::ComponentRef
-
   local found_scope::InstNode
   local state::LookupState
   local functionPath::Absyn.Path
   local prefix::ComponentRef
   local is_class::Bool
-  try
-    @assign functionPath = AbsynUtil.crefToPath(functionName)
-  catch e
-    @error "Function path not found we have error $e"
-  end
+  @assign functionPath = AbsynUtil.crefToPath(functionName)
   #=  Make sure the name is a path.
   =#
   @assign (functionRef, found_scope) = lookupFunctionName(functionName, scope, info)
@@ -2190,14 +2166,13 @@ end
 
 function new(path::Absyn.Path, node::InstNode)::M_Function
   local fn::M_Function
-
   local cls::Class
   local inputs::List{InstNode}
   local outputs::List{InstNode}
   local locals::List{InstNode}
   local slots::List{Slot}
   local attr::DAE.FunctionAttributes
-  local status::FunctionStatus
+  local status::FunctionStatusType
 
   @assign (inputs, outputs, locals) = collectParams(node)
   @assign attr = makeAttributes(node, inputs, outputs)
@@ -2208,7 +2183,7 @@ function new(path::Absyn.Path, node::InstNode)::M_Function
   else
     FunctionStatus.INITIAL
   end
-  @assign fn = FUNCTION(
+  @assign fn = M_FUNCTION(
     path,
     node,
     inputs,
@@ -2226,21 +2201,17 @@ end
 
 function isValidParamState(cls::InstNode)::Bool
   local isValid::Bool
-
   @assign isValid = begin
     @match restriction(getClass(cls)) begin
       RESTRICTION_RECORD(__) => begin
         true
       end
-
       RESTRICTION_TYPE(__) => begin
         true
       end
-
       RESTRICTION_OPERATOR(__) => begin
         true
       end
-
       RESTRICTION_FUNCTION(__) => begin
         true
       end
@@ -2248,7 +2219,6 @@ function isValidParamState(cls::InstNode)::Bool
       RESTRICTION_EXTERNAL_OBJECT(__) => begin
         true
       end
-
       _ => begin
         false
       end
@@ -2257,9 +2227,8 @@ function isValidParamState(cls::InstNode)::Bool
   return isValid
 end
 
-function isValidParamType(ty::M_Type)::Bool
+function isValidParamType(ty::NFType)::Bool
   local isValid::Bool
-
   @assign isValid = begin
     @match ty begin
       TYPE_INTEGER(__) => begin
@@ -2320,7 +2289,6 @@ end
 
 function checkParamTypes2(params::List{<:InstNode})
   local ty::M_Type
-
   return for p in params
     @assign ty = getType(p)
     if !isValidParamType(ty)
@@ -2343,15 +2311,15 @@ function checkParamTypes(fn::M_Function)
 end
 
 function makeAttributes(
-  node::InstNode,
-  inputs::List{<:InstNode},
-  outputs::List{<:InstNode},
+  @nospecialize(node::InstNode),
+  @nospecialize(inputs::List{<:InstNode}),
+  @nospecialize (outputs::List{<:InstNode})
 )::DAE.FunctionAttributes
   local attr::DAE.FunctionAttributes
 
   local def::SCode.Element
   local params::Array{InstNode}
-  local res::SCode.P_Restriction.Restriction
+  local res::SCode.Restriction
   local fres::SCode.FunctionRestriction
   local is_partial::Bool
   local cmts::List{SCode.Comment}
@@ -2359,12 +2327,12 @@ function makeAttributes(
 
   @assign def = definition(node)
   @assign res = SCodeUtil.getClassRestriction(def)
-  Error.assertion(
-    SCodeUtil.isFunctionRestriction(res),
-    getInstanceName() + " got non-function restriction",
-    sourceInfo(),
-  )
-  @match SCode.P_Restriction.Restriction.R_FUNCTION(functionRestriction = fres) = res
+  # Error.assertion(
+  #   SCodeUtil.isFunctionRestriction(res),
+  #   getInstanceName() + " got non-function restriction",
+  #   sourceInfo(),
+  # ) TODO
+  @match SCode.R_FUNCTION(functionRestriction = fres) = res
   @assign is_partial = SCodeUtil.isPartial(def)
   @assign cmts = getComments(node)
   @assign cmt = mergeFunctionAnnotations(cmts)
@@ -2373,7 +2341,7 @@ function makeAttributes(
     local is_om_pure::Bool
     local has_out_params::Bool
     local has_unbox_args::Bool
-    local name::String
+    local nameVar::String
     local in_params::List{String}
     local out_params::List{String}
     local inline_ty::DAE.InlineType
@@ -2381,11 +2349,11 @@ function makeAttributes(
     #=  External function.
     =#
     @matchcontinue fres begin
-      SCode.FunctionRestriction.FR_EXTERNAL_FUNCTION(is_impure) => begin
-        @assign in_params = List(name(i) for i in inputs)
-        @assign out_params = List(name(o) for o in outputs)
-        @assign name = SCodeUtil.isBuiltinFunction(def, in_params, out_params)
-        @assign inline_ty = InstUtil.commentIsInlineFunc(cmt)
+      SCode.FR_EXTERNAL_FUNCTION(is_impure) => begin
+        @assign in_params = list(name(i) for i in inputs)
+        @assign out_params = list(name(o) for o in outputs)
+        @assign nameVar = SCodeUtil.isBuiltinFunction(def, in_params, out_params)
+        @assign inline_ty = commentIsInlineFunc(cmt)
         @assign is_impure = is_impure || hasImpure(cmt)
         @assign has_unbox_args = hasUnboxArgsAnnotation(cmt)
         DAE.FUNCTION_ATTRIBUTES(
@@ -2393,33 +2361,33 @@ function makeAttributes(
           hasOMPure(cmt),
           is_impure,
           is_partial,
-          DAE.FUNCTION_BUILTIN(SOME(name), has_unbox_args),
+          DAE.FUNCTION_BUILTIN(SOME(nameVar), has_unbox_args),
           DAE.FP_NON_PARALLEL(),
         )
       end
 
-      SCode.FunctionRestriction.FR_PARALLEL_FUNCTION(__) => begin
+      SCode.FR_PARALLEL_FUNCTION(__) => begin
         #=  Parallel function: there are some builtin functions.
         =#
-        @assign in_params = List(name(i) for i in inputs)
-        @assign out_params = List(name(o) for o in outputs)
-        @assign name = SCodeUtil.isBuiltinFunction(def, in_params, out_params)
-        @assign inline_ty = InstUtil.commentIsInlineFunc(cmt)
+        @assign in_params = list(name(i) for i in inputs)
+        @assign out_params = list(name(o) for o in outputs)
+        @assign nameVar = SCodeUtil.isBuiltinFunction(def, in_params, out_params)
+        @assign inline_ty = commentIsInlineFunc(cmt)
         @assign has_unbox_args = hasUnboxArgsAnnotation(cmt)
         DAE.FUNCTION_ATTRIBUTES(
           inline_ty,
           hasOMPure(cmt),
           false,
           is_partial,
-          DAE.FUNCTION_BUILTIN(SOME(name), has_unbox_args),
+          DAE.FUNCTION_BUILTIN(SOME(nameVar), has_unbox_args),
           DAE.FP_PARALLEL_FUNCTION(),
         )
       end
 
-      SCode.FunctionRestriction.FR_PARALLEL_FUNCTION(__) => begin
+      SCode.FR_PARALLEL_FUNCTION(__) => begin
         #=  Parallel function: non-builtin.
         =#
-        @assign inline_ty = InstUtil.commentIsInlineFunc(cmt)
+        @assign inline_ty = commentIsInlineFunc(cmt)
         DAE.FUNCTION_ATTRIBUTES(
           inline_ty,
           hasOMPure(cmt),
@@ -2430,7 +2398,7 @@ function makeAttributes(
         )
       end
 
-      SCode.FunctionRestriction.FR_KERNEL_FUNCTION(__) => begin
+      SCode.FR_KERNEL_FUNCTION(__) => begin
         DAE.FUNCTION_ATTRIBUTES(
           DAE.NO_INLINE(),
           true,
@@ -2446,13 +2414,14 @@ function makeAttributes(
         =#
         #=  Normal function.
         =#
-        @assign inline_ty = InstUtil.commentIsInlineFunc(cmt)
+        #        @assign inline_ty = commentIsInlineFunc(cmt) TODO
+        inline_ty = DAE.NO_INLINE() #TODO tmp
         #=  In Modelica 3.2 and before, external functions with side-effects are not marked.
         =#
         @assign is_impure =
           SCodeUtil.isRestrictionImpure(
             res,
-            Config.languageStandardAtLeast(Config.LanguageStandard.V3_3) ||
+#            Config.languageStandardAtLeast(Config.LanguageStandard.V3_3) ||
             !listEmpty(outputs),
           ) || SCodeUtil.commentHasBooleanNamedAnnotation(
             cmt,
@@ -2470,6 +2439,10 @@ function makeAttributes(
     end
   end
   return attr
+end
+
+function commentIsInlineFunc(cmt::SCode.Comment)
+  return DAE.NO_INLINE()
 end
 
 """ #= Merges the function's comments from inherited classes. =#"""
@@ -2510,6 +2483,7 @@ function mergeFunctionAnnotations(comments::List{<:SCode.Comment})::SCode.Commen
   return outComment
 end
 
+
 function getBuiltin(def::SCode.Element)::DAE.FunctionBuiltin
   local builtin::DAE.FunctionBuiltin = if SCodeUtil.isBuiltinElement(def)
     DAE.FUNCTION_BUILTIN_PTR()
@@ -2531,32 +2505,32 @@ function hasOMPure(cmt::SCode.Comment)::Bool
   return res
 end
 
-function makeSlot(component::InstNode, index::Integer)::Slot
+function makeSlot(@nospecialize(componentArg::InstNode), @nospecialize(index::Integer))::Slot
   local slot::Slot
-
   local comp::Component
   local default::Option{Expression}
-  local name::String
-
+  local nameVar::String
   try
-    @assign comp = component(component)
-    @assign default = typedExp(P_Component.getImplicitBinding(comp))
-    @assign name = name(component)
-    if stringGet(name, 1) == 36
-      if stringLength(name) > 4 && substring(name, 1, 4) == "in_"
-        @assign name = substring(name, 5, stringLength(name))
+    @assign comp = component(componentArg)
+    @assign default = typedExp(getImplicitBinding(comp))
+    @assign nameVar = name(componentArg)
+    if stringGet(nameVar, 1) == 36
+      if stringLength(nameVar) > 4 && substring(nameVar, 1, 4) == "in_"
+        @assign nameVar = substring(nameVar, 5, stringLength(nameVar))
       end
     end
     @assign slot = SLOT(
-      name(component),
+      name(componentArg),
       SlotType.GENERIC,
       default,
       NONE(),
       index,
       SlotEvalStatus.NOT_EVALUATED,
     )
-  catch
-    Error.assertion(false, getInstanceName() + " got invalid component", sourceInfo())
+  catch e
+    #    Error.assertion(false, getInstanceName() + " got invalid component", sourceInfo())
+    @error "Error. Our error was $e"
+    fail()
   end
   #=  Remove $in_ for OM input output arguments.
   =#
@@ -2564,11 +2538,9 @@ function makeSlot(component::InstNode, index::Integer)::Slot
   return slot
 end
 
-function makeSlots(inputs::List{<:InstNode})::List{Slot}
+function makeSlots(@nospecialize(inputs::List{<:InstNode}))::List{Slot}
   local slots::List{Slot} = nil
-
   local index::Integer = 1
-
   for i in inputs
     @assign slots = _cons(makeSlot(i, index), slots)
     @assign index = index + 1
@@ -2577,11 +2549,10 @@ function makeSlots(inputs::List{<:InstNode})::List{Slot}
   return slots
 end
 
-function paramDirection(component::InstNode)::DirectionType
+function paramDirection(@nospecialize(componentArg::InstNode))::DirectionType
   local direction::DirectionType
-
   local cty::ConnectorType.TYPE
-  local io::InnerOuter
+  local io::Integer
   local vis::VisibilityType
   local var::VariabilityType
 
@@ -2589,46 +2560,50 @@ function paramDirection(component::InstNode)::DirectionType
     connectorType = cty,
     direction = direction,
     innerOuter = io,
-  ) = P_Component.getAttributes(component(component))
-  @assign vis = visibility(component)
-  @assign var = variability(component(component))
+  ) = getAttributes(component(componentArg))
+  @assign vis = visibility(componentArg)
+  @assign var = variability(component(componentArg))
   #=  Function components may not be connectors.
   =#
-  if ConnectorType.isFlowOrStream(cty)
+  if isFlowOrStream(cty)
     Error.addSourceMessage(
       Error.INNER_OUTER_FORMAL_PARAMETER,
-      list(ConnectorType.toString(cty), name(component)),
-      info(component),
+      list(ConnectorType.toString(cty), name(componentArg)),
+      info(componentArg),
     )
     fail()
   end
   #=  Function components may not be inner/outer.
   =#
   if io != InnerOuter.NOT_INNER_OUTER
-    Error.addSourceMessage(
-      Error.INNER_OUTER_FORMAL_PARAMETER,
-      list(P_Prefixes.innerOuterString(io), name(component)),
-      info(component),
-    )
+    # Error.addSourceMessage(
+    #   Error.INNER_OUTER_FORMAL_PARAMETER,
+    #   list(P_Prefixes.innerOuterString(io), name(componentArg)),
+    #   info(component),
+    # )
     fail()
   end
   #=  Formal parameters must be public, other function variables must be protected.
   =#
   if direction != Direction.NONE
     if vis == Visibility.PROTECTED
-      Error.addSourceMessage(
-        Error.PROTECTED_FORMAL_FUNCTION_VAR,
-        list(name(component)),
-        info(component),
-      )
+      # Error.addSourceMessage(
+      #   Error.PROTECTED_FORMAL_FUNCTION_VAR,
+      #   list(name(componentArg)),
+      #   info(componentArg),
+      # )
+      @error "Formal parameters must be public, other function variables must be protected."
       fail()
     end
   elseif vis == Visibility.PUBLIC
-    Error.addSourceMessageAsError(
-      Error.NON_FORMAL_PUBLIC_FUNCTION_VAR,
-      list(name(component)),
-      info(component),
-    )
+    # Error.addSourceMessageAsError(
+    #   Error.NON_FORMAL_PUBLIC_FUNCTION_VAR,
+    #   list(name(componentArg)),
+    #   info(componentArg),
+    # )
+#    componentArg),
+      # )
+      @error "Non formal public funcition variable"
     fail()
   end
   return direction
@@ -2636,7 +2611,7 @@ end
 
 """ #= Sorts all the function parameters as inputs, outputs and locals. =#"""
 function collectParams(
-  node::InstNode,
+  @nospecialize(node::InstNode),
   inputs::List{<:InstNode} = nil,
   outputs::List{<:InstNode} = nil,
   locals::List{<:InstNode} = nil,
@@ -2646,15 +2621,15 @@ function collectParams(
   local comps::Array{InstNode}
   local n::InstNode
 
-  Error.assertion(
-    isClass(node),
-    getInstanceName() + " got non-class node",
-    sourceInfo(),
-  )
+  # Error.assertion(
+  #   isClass(node),
+  #   getInstanceName() + " got non-class node",
+  #   sourceInfo(),
+  # ) TODO
   @assign cls = getClass(node)
   @assign () = begin
     @match cls begin
-      INSTANCED_CLASS(elements = FLAT_TREE(components = comps)) =>
+      INSTANCED_CLASS(elements = CLASS_TREE_FLAT_TREE(components = comps)) =>
         begin
           for i = arrayLength(comps):(-1):1
             @assign n = comps[i]
@@ -2759,7 +2734,7 @@ function getBody2(node::InstNode)::List{Statement}
   @assign body = begin
     @match cls begin
       INSTANCED_CLASS(
-        sections = P_Sections.Sections.SECTIONS(algorithms = fn_body <| nil()),
+        sections = SECTIONS_SECTIONS(algorithms = fn_body <| nil()),
       ) => begin
         fn_body.statements
       end
@@ -2767,7 +2742,7 @@ function getBody2(node::InstNode)::List{Statement}
         nil
       end
       INSTANCED_CLASS(
-        sections = P_Sections.Sections.SECTIONS(algorithms = _ <| _),
+        sections = SECTIONS_SECTIONS(algorithms = _ <| _),
       ) => begin
         Error.assertion(
           false,
@@ -2791,7 +2766,7 @@ end
 function makeReturnType(fn::M_Function)::M_Type
   local returnType::M_Type
   local ret_tyl::List{M_Type}
-  @assign ret_tyl = List(getType(o) for o in fn.outputs)
+  @assign ret_tyl = list(getType(o) for o in fn.outputs)
   @assign returnType = begin
     @match ret_tyl begin
       nil() => begin

@@ -4,6 +4,14 @@ MapFunc = Function
 MapFunc = Function
 ApplyFn = Function
 @UniontypeDecl NFAlgorithm
+Algorithm = NFAlgorithm
+
+@Uniontype NFAlgorithm begin
+  @Record ALGORITHM begin
+    statements::List{Statement}
+    source::DAE.ElementSource
+  end
+end
 
 function toString(alg::Algorithm)::String
   local str::String
@@ -46,12 +54,5 @@ function applyList(algs::List{<:Algorithm}, func::ApplyFn)
     for s in alg.statements
       Statement.apply(s, func)
     end
-  end
-end
-
-@Uniontype NFAlgorithm begin
-  @Record ALGORITHM begin
-    statements::List{Statement}
-    source::ElementSource
   end
 end

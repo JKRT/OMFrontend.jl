@@ -72,9 +72,8 @@ end
 
 @UniontypeDecl CallAttributes
 
-function toDAE(attr::CallAttributes, returnType::NFType)::DAE.P_CallAttributes
-  local fattr::DAE.P_CallAttributes
-
+function toDAE(attr::CallAttributes, returnType::NFType)::DAE.CallAttributes
+  local fattr::DAE.CallAttributes
   @assign fattr = DAE.CALL_ATTR(
     toDAE(returnType),
     attr.tuple_,
@@ -209,9 +208,8 @@ function isVectorizeable(call::Call)::Bool
   return isVect
 end
 
-function toDAE(call::Call)::DAE.Exp
+function toDAE(@nospecialize(call::Call))::DAE.Exp
   local daeCall::DAE.Exp
-
   @assign daeCall = begin
     local fold_id::String
     local res_id::String
@@ -219,12 +217,11 @@ function toDAE(call::Call)::DAE.Exp
     @match call begin
       TYPED_CALL(__) => begin
         DAE.CALL(
-          P_Function.nameConsiderBuiltin(call.fn),
-          List(P_Expression.Expression.toDAE(e) for e in call.arguments),
-          P_CallAttributes.toDAE(call.attributes, call.ty),
+          nameConsiderBuiltin(call.fn),
+          list(toDAE(e) for e in call.arguments),
+          toDAE(call.attributes, call.ty),
         )
       end
-
       TYPED_ARRAY_CONSTRUCTOR(__) => begin
         @assign fold_id = Util.getTempVariableIndex()
         @assign res_id = Util.getTempVariableIndex()
@@ -690,7 +687,8 @@ function isExternal(call::Call)::Bool
       end
 
       TYPED_CALL(__) => begin
-        P_Function.isExternal(call.fn)
+        #isExternal(call.fn) TODO
+        true
       end
 
       _ => begin
@@ -951,21 +949,19 @@ function unboxArgs(call::Call)::Call
 end
 
 function makeTypedCall(
-  fn::M_Function,
-  args::List{<:Expression},
-  variability::VariabilityType,
+  @nospecialize(fn::M_Function),
+  @nospecialize(args::List{<:Expression}),
+  @nospecialize(  variability::VariabilityType),
   returnType::NFType = fn.returnType,
 )::Call
   local call::Call
-
   local ca::CallAttributes
-
-  @assign ca = P_CallAttributes.CALL_ATTR(
-    Type.isTuple(returnType),
-    P_Function.isBuiltin(fn),
-    P_Function.isImpure(fn),
-    P_Function.isFunctionPointer(fn),
-    P_Function.inlineBuiltin(fn),
+  @assign ca = CALL_ATTR(
+    isTuple(returnType),
+    isBuiltin(fn),
+    isImpure(fn),
+    isFunctionPointer(fn),
+    inlineBuiltin(fn),
     DAE.NO_TAIL(),
   )
   @assign call = TYPED_CALL(fn, returnType, variability, args, ca)
@@ -997,10 +993,10 @@ function typeNormalCall(call::Call, origin::ORIGIN_Type, info::SourceInfo)::Call
 end
 
 function typeCall(
-  callExp::Expression,
-  origin::ORIGIN_Type,
-  info::SourceInfo,
-)::Tuple{Expression, NFType, Variability}
+  @nospecialize(callExp::Expression),
+  @nospecialize(origin::ORIGIN_Type),
+  @nospecialize(info::SourceInfo),
+)::Tuple{Expression, NFType, VariabilityType}
   local var::VariabilityType
   local ty::NFType
   local outExp::Expression
@@ -1014,8 +1010,8 @@ function typeCall(
   @assign outExp = begin
     @match call begin
       UNTYPED_CALL(ref = cref) => begin
-        if BuiltinCall.needSpecialHandling(call)
-          @assign (outExp, ty, var) = BuiltinCall.typeSpecial(call, origin, info)
+        if needSpecialHandling(call)
+          @assign (outExp, ty, var) = typeSpecial(call, origin, info)
         else
           @assign ty_call = typeMatchNormalCall(call, origin, info)
           @assign ty = typeOf(ty_call)
@@ -1519,7 +1515,7 @@ function checkMatchingFunctions(call::Call, info::SourceInfo)::MatchedFunction
   =#
   if P_Function.isBuiltin(matchedFunc.func)
     @assign func = matchedFunc.func
-    @assign func.path = P_Function.nameConsiderBuiltin(func)
+    @assign func.path = nameConsiderBuiltin(func)
     @assign matchedFunc.func = func
   end
   return matchedFunc
@@ -1538,16 +1534,16 @@ function typeArgs(call::Call, origin::ORIGIN_Type, info::SourceInfo)::Call
     @match call begin
       UNTYPED_CALL(__) => begin
         @assign typedArgs = nil
-        @assign next_origin = ExpOrigin.setFlag(origin, ExpOrigin.SUBEXPRESSION)
+        @assign next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
         for arg in call.arguments
-          @assign (arg, arg_ty, arg_var) = Typing.typeExp(arg, next_origin, info)
+          @assign (arg, arg_ty, arg_var) = typeExp(arg, next_origin, info)
           @assign typedArgs = _cons((arg, arg_ty, arg_var), typedArgs)
         end
         @assign typedArgs = listReverse(typedArgs)
         @assign typedNamedArgs = nil
         for narg in call.named_args
           @assign (name, arg) = narg
-          @assign (arg, arg_ty, arg_var) = Typing.typeExp(arg, next_origin, info)
+          @assign (arg, arg_ty, arg_var) = typeExp(arg, next_origin, info)
           @assign typedNamedArgs = _cons((name, arg, arg_ty, arg_var), typedNamedArgs)
         end
         @assign typedNamedArgs = listReverse(typedNamedArgs)
@@ -1723,11 +1719,11 @@ function typeReduction(
     @match call begin
       UNTYPED_REDUCTION(__) => begin
         @assign variability = Variability.CONSTANT
-        @assign next_origin = ExpOrigin.setFlag(origin, ExpOrigin.SUBEXPRESSION)
+        @assign next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
         for i in call.iters
           @assign (iter, range) = i
           @assign (range, _, iter_var) =
-            Typing.typeIterator(iter, range, origin, structural = false)
+            typeIterator(iter, range, origin, structural = false)
           @assign variability = Variability.variabilityMax(variability, iter_var)
           @assign iters = _cons((iter, range), iters)
         end
@@ -1735,7 +1731,7 @@ function typeReduction(
         #=  ExpOrigin.FOR is used here as a marker that this expression may contain iterators.
         =#
         @assign next_origin = intBitOr(next_origin, ExpOrigin.FOR)
-        @assign (arg, ty, exp_var) = Typing.typeExp(call.exp, next_origin, info)
+        @assign (arg, ty, exp_var) = typeExp(call.exp, next_origin, info)
         @assign variability = Variability.variabilityMax(variability, exp_var)
         @match list(fn) = P_Function.typeRefCache(call.ref)
         TypeCheck.checkReductionType(ty, P_Function.name(fn), call.exp, info)
@@ -1789,12 +1785,12 @@ function typeArrayConstructor(
         @assign variability = Variability.CONSTANT
         #=  The size of the expression must be known unless we're in a function.
         =#
-        @assign is_structural = ExpOrigin.flagNotSet(origin, ExpOrigin.FUNCTION)
-        @assign next_origin = ExpOrigin.setFlag(origin, ExpOrigin.SUBEXPRESSION)
+        @assign is_structural = ExpOrigin.flagNotSet(origin, ORIGIN_FUNCTION)
+        @assign next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
         for i in call.iters
           @assign (iter, range) = i
           @assign (range, iter_ty, iter_var) =
-            Typing.typeIterator(iter, range, next_origin, is_structural)
+            typeIterator(iter, range, next_origin, is_structural)
           if is_structural
             @assign range = Ceval.evalExp(range, Ceval.P_EvalTarget.RANGE(info))
             @assign iter_ty = typeOf(range)
@@ -1807,7 +1803,7 @@ function typeArrayConstructor(
         #=  ExpOrigin.FOR is used here as a marker that this expression may contain iterators.
         =#
         @assign next_origin = intBitOr(next_origin, ExpOrigin.FOR)
-        @assign (arg, ty, exp_var) = Typing.typeExp(call.exp, next_origin, info)
+        @assign (arg, ty, exp_var) = typeExp(call.exp, next_origin, info)
         @assign variability = Variability.variabilityMax(variability, exp_var)
         @assign ty = Type.liftArrayLeftList(ty, dims)
         @assign variability = Variability.variabilityMax(variability, exp_var)
@@ -1984,10 +1980,10 @@ function instNormalCall(
   @assign callExp = begin
     @match name begin
       "size" => begin
-        BuiltinCall.makeSizeExp(args, named_args, info)
+        makeSizeExp(args, named_args, info)
       end
       "array" => begin
-        BuiltinCall.makeArrayExp(args, named_args, info)
+        makeArrayExp(args, named_args, info)
       end
       _ => begin
         #=  size creates Expression.SIZE instead of Expression.CALL.
@@ -1998,7 +1994,7 @@ function instNormalCall(
         =#
         #=  Absyn.FOR_ITER_FARG and that is handled in instIteratorCall.
         =#
-        @assign fn_ref = instFunction(functionName, scope, info)
+        @assign (fn_ref, _, _) = instFunction(functionName, scope, info)
         CALL_EXPRESSION(UNTYPED_CALL(fn_ref, args, named_args, scope))
       end
     end

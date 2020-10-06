@@ -2,7 +2,7 @@
 import ..ComponentReference
 import ..Flags
 import ..Util
-import ..DAE
+import DAE
 
 function convert(
   flatModel::FlatModel,
@@ -623,18 +623,15 @@ function convertStateSelectAttribute(binding::Binding)::Option{DAE.StateSelect}
   local node::InstNode
   local name::String
   local exp::Expression =
-    P_Expression.Expression.getBindingExp(getTypedExp(binding))
-
+    getBindingExp(getTypedExp(binding))
   @assign name = begin
     @match exp begin
-      P_Expression.Expression.ENUM_LITERAL(__) => begin
+      ENUM_LITERAL(__) => begin
         exp.name
       end
-
       CREF_EXPRESSION(cref = CREF(node = node)) => begin
         name(node)
       end
-
       _ => begin
         Error.assertion(
           false,
@@ -921,20 +918,20 @@ function convertInitialEquation(
     local body::List{DAE.Element}
     @match eq begin
       EQUATION_EQUALITY(__) => begin
-        @assign e1 = P_Expression.Expression.toDAE(eq.lhs)
-        @assign e2 = P_Expression.Expression.toDAE(eq.rhs)
+        @assign e1 = toDAE(eq.lhs)
+        @assign e2 = toDAE(eq.rhs)
         _cons(if isComplex(eq.ty)
-          DAE.Element.INITIAL_COMPLEX_EQUATION(e1, e2, eq.source)
+          DAE.INITIAL_COMPLEX_EQUATION(e1, e2, eq.source)
         else
-          DAE.Element.INITIALEQUATION(e1, e2, eq.source)
+          DAE.INITIALEQUATION(e1, e2, eq.source)
         end, elements)
       end
 
       EQUATION_ARRAY_EQUALITY(__) => begin
-        @assign e1 = P_Expression.Expression.toDAE(eq.lhs)
-        @assign e2 = P_Expression.Expression.toDAE(eq.rhs)
-        @assign dims = List(P_Dimension.Dimension.toDAE(d) for d in arrayDims(eq.ty))
-        _cons(DAE.Element.INITIAL_ARRAY_EQUATION(dims, e1, e2, eq.source), elements)
+        @assign e1 = toDAE(eq.lhs)
+        @assign e2 = toDAE(eq.rhs)
+        @assign dims = list(toDAE(d) for d in arrayDims(eq.ty))
+        _cons(DAE.INITIAL_ARRAY_EQUATION(dims, e1, e2, eq.source), elements)
       end
 
       EQUATION_FOR(__) => begin
@@ -1501,7 +1498,7 @@ function makeTypeVar(component::InstNode)::DAE.Var
   local attr::Attributes
 
   @assign comp = component(resolveOuter(component))
-  @assign attr = P_Component.getAttributes(comp)
+  @assign attr = getAttributes(comp)
   @assign typeVar = DAE.TYPES_VAR(
     name(component),
     toDAE(attr, visibility(component)),
@@ -1522,7 +1519,7 @@ function makeTypeRecordVar(component::InstNode)::DAE.Var
   local bind_from_outside::Bool
   local ty::M_Type
   @assign comp = component(component)
-  @assign attr = P_Component.getAttributes(comp)
+  @assign attr = getAttributes(comp)
   if P_Component.isConst(comp) && P_Component.hasBinding(comp)
     @assign vis = Visibility.PROTECTED
   else

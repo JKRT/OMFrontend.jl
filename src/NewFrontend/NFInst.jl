@@ -57,7 +57,7 @@ import DAE
                    @debug "Inst expressions done"
                    #=  Mark structural parameters.
                    =#
-                   #updateImplicitVariability(inst_cls, Flags.isSet(Flags.EVAL_PARAM))
+                   updateImplicitVariability(inst_cls, false #== Flags.isSet(Flags.EVAL_PARAM) ==#)
                    #execStat("NFInst.updateImplicitVariability")
                    #=  Type the class.
                    =#

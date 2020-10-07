@@ -82,15 +82,15 @@ function isMultiLine(eq::Equation)::Bool
   local singleLine::Bool
   @assign singleLine = begin
     @match eq begin
-      FOR(__) => begin
+      EQUATION_FOR(__) => begin
         true
       end
 
-      IF(__) => begin
+      EQUATION_IF(__) => begin
         true
       end
 
-      WHEN(__) => begin
+      EQUATION_WHEN(__) => begin
         true
       end
 
@@ -454,11 +454,11 @@ function contains(eq::Equation, func::PredFn)::Bool
   end
   @assign res = begin
     @match eq begin
-      FOR(__) => begin
+      EQUATION_FOR(__) => begin
         containsList(eq.body, func)
       end
 
-      IF(__) => begin
+      EQUATION_IF(__) => begin
         for b in eq.branches
           @assign () = begin
             @match b begin
@@ -479,7 +479,7 @@ function contains(eq::Equation, func::PredFn)::Bool
         false
       end
 
-      WHEN(__) => begin
+      EQUATION_WHEN(__) => begin
         for b in eq.branches
           @assign () = begin
             @match b begin

@@ -135,11 +135,8 @@ function instantiateSCodeToDAE(@nospecialize(elementToInstantiate::String), @nos
   # make sure we have all the flags loaded!
   # Main.Flags.new(Flags.emptyFlags)
   @info "Parsing buildin stuff"
-  path = realpath(realpath(Base.find_package("HybridDAEParser") * "./../../"))
-  path = path * "/lib/NFModelicaBuiltin.mo"
-  @show path
   GC.enable(false) #=This C stuff can be a bit flaky..=#
-  p = parseFile(path, 2 #== MetaModelica ==#)
+  p = parseFile("../lib/NFModelicaBuiltin.mo", 2 #== MetaModelica ==#)
   @info "SCode translation"
   s = HybridDAEParser.translateToSCode(p)
   p = Main.listAppend(s, inProgram)

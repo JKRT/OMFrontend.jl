@@ -377,7 +377,7 @@ function mapExp(
   if mapBody
     @assign sections = P_Sections.Sections.mapExp(getSections(cls), mapFn)
     @assign cls = cls.setSections(sections, cls)
-    updateClass(cls, fn.node)
+    updateClass!(cls, fn.node)
   end
   return fn
 end
@@ -896,7 +896,7 @@ function applyPartialApplicationArg(
   return (argExp, outInputs, outSlots)
 end
 
-function typePartialApplication(
+function typePartialApplication!(
   exp::Expression,
   origin::ORIGIN_Type,
   info::SourceInfo,
@@ -969,14 +969,14 @@ function typeFunctionBody(fn::M_Function)::M_Function
   #=  Type the bindings of the outputs and local variables.
   =#
   for c in fn.outputs
-    typeComponentBinding(c, ORIGIN_FUNCTION)
+    typeComponentBinding!(c, ORIGIN_FUNCTION)
   end
   for c in fn.locals
-    typeComponentBinding(c, ORIGIN_FUNCTION)
+    typeComponentBinding!(c, ORIGIN_FUNCTION)
   end
   #=  Type the algorithm section of the function, if it has one.
   =#
-  typeFunctionSections(fn.node, ORIGIN_FUNCTION)
+  typeFunctionSections!(fn.node, ORIGIN_FUNCTION)
   #=  Type any derivatives of the function.
   =#
   for fn_der in fn.derivatives
@@ -992,8 +992,8 @@ function typeFunctionSignature(fn::M_Function)::M_Function
   local node::InstNode = fn.node
 
   if !isTyped(fn)
-    typeClassType(node, EMPTY_BINDING, ORIGIN_FUNCTION, node)
-    typeComponents(node, ORIGIN_FUNCTION)
+    typeClassType!(node, EMPTY_BINDING, ORIGIN_FUNCTION, node)
+    typeComponents!(node, ORIGIN_FUNCTION)
     if isPartial(node)
       applyComponents(
         classTree(getClass(node)),
@@ -1001,7 +1001,7 @@ function typeFunctionSignature(fn::M_Function)::M_Function
       )
     end
     for c in fn.inputs
-      typeComponentBinding(c, ORIGIN_FUNCTION)
+      typeComponentBinding!(c, ORIGIN_FUNCTION)
     end
     @assign fn.slots = makeSlots(fn.inputs)
     checkParamTypes(fn)
@@ -1010,7 +1010,7 @@ function typeFunctionSignature(fn::M_Function)::M_Function
   return fn
 end
 
-function typeFunction(fn::M_Function)::M_Function
+function typeFunction!(fn::M_Function)::M_Function
 
   @assign fn = typeFunctionSignature(fn)
   @assign fn = typeFunctionBody(fn)
@@ -2528,7 +2528,7 @@ function makeSlot(@nospecialize(componentArg::InstNode), @nospecialize(index::In
       SlotEvalStatus.NOT_EVALUATED,
     )
   catch e
-    #    Error.assertion(false, getInstanceName() + " got invalid component", sourceInfo())
+    #Error.assertion(false, getInstanceName() + " got invalid component", sourceInfo())
     @error "Error. Our error was $e"
     fail()
   end

@@ -552,7 +552,7 @@ function simplifyFunction(func::M_Function)
                 @assign fn_body.statements = simplifyStatements(fn_body.statements)
                 @assign sections.algorithms = list(fn_body)
                 @assign cls.sections = sections
-                updateClass(cls, func.node)
+                updateClass!(cls, func.node)
                 ()
               end
 

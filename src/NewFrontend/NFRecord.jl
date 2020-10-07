@@ -129,7 +129,7 @@ function collectRecordParams(
   @assign tree = classTree(getClass(recNode))
   @assign () = begin
     @match tree begin
-      FLAT_TREE(components = comps) => begin
+      CLASS_FLAT_TREE(components = comps) => begin
         for i = arrayLength(comps):(-1):1
           @assign comp = comps[i]
           @assign (inputs, locals) = collectRecordParam(comp, inputs, locals)

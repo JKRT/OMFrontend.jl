@@ -75,7 +75,6 @@ include("./NewFrontend/NFConnectionSets.jl")
 include("./NewFrontend/NFFunctionDerivative.jl")
 include("./NewFrontend/NFFunction.jl")
 include("./NewFrontend/NFExpression.jl")
-include("./NewFrontend/NFBinding.jl")
 include("./NewFrontend/NFSubscript.jl")
 include("./NewFrontend/NFFlatten.jl")
 include("./NewFrontend/NFConvertDAE.jl")
@@ -137,10 +136,10 @@ function instantiateSCodeToDAE(@nospecialize(elementToInstantiate::String), @nos
   @info "Parsing buildin stuff"
   GC.enable(false) #=This C stuff can be a bit flaky..=#
   p = parseFile("../lib/NFModelicaBuiltin.mo", 2 #== MetaModelica ==#)
+  GC.enable(true)
   @info "SCode translation"
   s = HybridDAEParser.translateToSCode(p)
   p = Main.listAppend(s, inProgram)
-  GC.enable(true)
   Main.instClassInProgram(Absyn.IDENT(elementToInstantiate), p)
 end
 
@@ -162,6 +161,7 @@ function testSpinDAEExport()
     (dae, cache) = instantiateSCodeToDAE("HelloWorld", scodeProgram)
   @info "Exporting to file"
   exportDAERepresentationToFile("testDAE.jl", "$dae")
+  @show dae
   @info "DAE Exported"
 end
 

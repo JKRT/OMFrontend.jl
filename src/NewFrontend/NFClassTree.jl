@@ -1059,7 +1059,7 @@ function instantiate(
       end
     end
 end
-  updateClass(cls, clsNode)
+  updateClass!(cls, clsNode)
   return (clsNode, instance, classCount, compCount)
 end
 

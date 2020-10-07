@@ -577,7 +577,7 @@ function typeDerCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{
   end
   @error "@match list(arg) = args"
   arg = listHead(args)
-  @assign (arg, ty, variability) = typeExp(arg, origin, info)
+  @assign (arg, ty, variability) = typeExp!(arg, origin, info)
   @assign ety = arrayElementType(ty)
   if isInteger(ety)
     @assign ty = setArrayElementType(ty, TYPE_REAL())

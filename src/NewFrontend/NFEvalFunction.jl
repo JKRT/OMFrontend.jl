@@ -411,7 +411,7 @@ function buildRecordBinding(recordNode::InstNode, repl::ReplTree.Tree)::Expressi
 
   @assign result = begin
     @match cls begin
-      INSTANCED_CLASS(elements = FLAT_TREE(components = comps)) =>
+      INSTANCED_CLASS(elements = CLASS_FLAT_TREE(components = comps)) =>
         begin
           @assign bindings = nil
           #=  Create a replacement tree for just the record instance. This is

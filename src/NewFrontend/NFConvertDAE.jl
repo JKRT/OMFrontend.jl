@@ -1477,8 +1477,8 @@ function makeTypeVars(complexCls::InstNode)::List{DAE.Var}
       INSTANCED_CLASS(restriction = P_Restriction.Restriction.RECORD(__)) => begin
         List(makeTypeRecordVar(c) for c in getComponents(cls.elements))
       end
-      INSTANCED_CLASS(elements = FLAT_TREE(__)) => begin
-        List(
+      INSTANCED_CLASS(elements = CLASS_FLAT_TREE(__)) => begin
+        list(
           makeTypeVar(c)
           for
           c in getComponents(cls.elements) if !isOnlyOuter(c)

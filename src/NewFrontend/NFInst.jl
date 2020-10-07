@@ -62,7 +62,7 @@ import DAE
                    #=  Type the class.
                    =#
                     @info "TYPECLASS(inst_cls, name)"
-                    typeClass(inst_cls, name)
+                    typeClass!(inst_cls, name)
                     @info "AFTER type class"
                    #=  Flatten the model and evaluate constants in it.
                     =#
@@ -155,7 +155,7 @@ function makeTopNode(topClasses::List{<:SCode.Element}) ::InstNode
   @assign elems = classTree(cls)
   mapClasses(elems, markBuiltinTypeNodes)
   @assign cls = setClassTree(elems, cls)
-  @assign topNode = updateClass(cls, topNode)
+  @assign topNode = updateClass!(cls, topNode)
   topNode
 end
 
@@ -172,7 +172,7 @@ function partialInstClass(node::InstNode) ::InstNode
     @match getClass(node) begin
       NOT_INSTANTIATED(__)  => begin
         @assign c = partialInstClass2(definition(node), node)
-        @assign node = updateClass(c, node)
+        @assign node = updateClass!(c, node)
         ()
       end
 
@@ -313,7 +313,7 @@ function expandClassParts(def::SCode.Element, node::InstNode, info::SourceInfo) 
   #=  Change the class to an empty expanded class, to avoid instantiation loops.
   =#
   @assign cls = initExpandedClass(cls)
-  @assign node = updateClass(cls, node)
+  @assign node = updateClass!(cls, node)
   @match EXPANDED_CLASS(elements = cls_tree, modifier = mod, prefixes = prefs) = cls
   @assign builtin_ext = mapFoldExtends(cls_tree, expandExtends, EMPTY_NODE())
   if name(builtin_ext) == "ExternalObject"
@@ -325,7 +325,7 @@ function expandClassParts(def::SCode.Element, node::InstNode, info::SourceInfo) 
     @assign cls_tree = expand(cls_tree)
     @assign res = fromSCode(SCodeUtil.getClassRestriction(def))
     @assign cls = EXPANDED_CLASS(cls_tree, mod, prefs, res)
-    @assign node = updateClass(cls, node)
+    @assign node = updateClass!(cls, node)
   end
   node
 end
@@ -458,7 +458,7 @@ function expandExternalObject(clsTree::ClassTree, node::InstNode) ::InstNode
   #=  possible to call the constructor or destructor explicitly.
   =#
   @assign c = PARTIAL_BUILTIN(TYPE_COMPLEX(node, eo_ty), NFClassTree.EMPTY_FLAT, MODIFIER_NOMOD(), NFClass.DEFAULT_PREFIXES, RESTRICTION_EXTERNAL_OBJECT())
-  @assign node = updateClass(c, node)
+  @assign node = updateClass!(c, node)
   node
 end
 
@@ -586,7 +586,7 @@ function expandClassDerived(element::SCode.Element, definition::SCode.ClassDef, 
   @assign mod = getModifier(cls)
   @assign res = P_Restriction.Restriction.fromSCode(SCodeUtil.getClassRestriction(element))
   @assign cls = EXPANDED_DERIVED(ext_node, mod, listArray(dims), prefs, attrs, res)
-  @assign node = updateClass(cls, node)
+  @assign node = updateClass!(cls, node)
   node
 end
 
@@ -705,7 +705,7 @@ function instClassDef(cls::Class, outerMod::Modifier, attributes::Attributes, us
         #=  Remove duplicate elements. =#
         @assign cls_tree = replaceDuplicates(cls_tree)
         checkDuplicates(cls_tree)
-        updateClass(setClassTree(cls_tree, inst_cls), node)
+        updateClass!(setClassTree(cls_tree, inst_cls), node)
         ()
       end
 
@@ -728,7 +728,7 @@ function instClassDef(cls::Class, outerMod::Modifier, attributes::Attributes, us
         @assign cls.dims = arrayCopy(cls.dims)
         #=  Update the parentArg's type with the new class instance.
         =#
-        @assign node = updateClass(cls, node)
+        @assign node = updateClass!(cls, node)
         updateComponentType(parentArg, node)
         ()
       end
@@ -750,7 +750,7 @@ function instClassDef(cls::Class, outerMod::Modifier, attributes::Attributes, us
         @assign mod = merge(outer_mod, mod)
         applyModifier(mod, cls_tree, name(node))
         @assign inst_cls = INSTANCED_BUILTIN(ty, cls_tree, res)
-        @assign node = updateClass(inst_cls, node)
+        @assign node = updateClass!(inst_cls, node)
         ()
       end
 
@@ -949,13 +949,13 @@ function instExtends(node::InstNode, attributes::Attributes, useBinding::Bool, v
           @assign vis = ExtendsVisibility.DERIVED_PROTECTED
         end
         @assign cls.baseClass = instExtends(cls.baseClass, attributes, useBinding, vis, instLevel)
-        @assign node = updateClass(cls, node)
+        @assign node = updateClass!(cls, node)
         ()
       end
 
       PARTIAL_BUILTIN(__)  => begin
         @assign inst_cls = INSTANCED_BUILTIN(cls.ty, cls.elements, cls.restriction)
-        @assign node = updateClass(inst_cls, node)
+        @assign node = updateClass!(inst_cls, node)
         ()
       end
 
@@ -1881,7 +1881,7 @@ function instExpressions(node::InstNode, scope::InstNode = node, sections::Secti
         end
         @assign cls_tree = flatten(cls_tree)
         @assign inst_cls = INSTANCED_CLASS(ty, cls_tree, SECTIONS_EMPTY(), cls.restriction)
-        updateClass(inst_cls, node)
+        updateClass!(inst_cls, node)
         ()
       end
 
@@ -1897,13 +1897,13 @@ function instExpressions(node::InstNode, scope::InstNode = node, sections::Secti
         #=  Flatten the class tree so we don't need to deal with extends anymore.
         =#
         @assign cls.elements = flatten(cls_tree)
-        updateClass(cls, node)
+        updateClass!(cls, node)
         #=  Instantiate local equation/algorithm sections.
         =#
         @assign sections = instSections(node, scope, sections, isFunction(cls.restriction))
         @assign ty = makeComplexType(cls.restriction, node, cls)
         @assign inst_cls = INSTANCED_CLASS(ty, cls.elements, sections, cls.restriction)
-        updateClass(inst_cls, node)
+        updateClass!(inst_cls, node)
         instComplexType(ty)
         ()
       end
@@ -2782,7 +2782,7 @@ function insertGeneratedInners(node::InstNode, topScope::InstNode)
     @assign base_node = lastBaseClass(node)
     @assign cls = getClass(base_node)
     @assign cls_tree = appendComponentsToInstTree(inner_comps, classTree(cls))
-    updateClass(setClassTree(cls_tree, cls), base_node)
+    updateClass!(setClassTree(cls_tree, cls), base_node)
   end
 end
 

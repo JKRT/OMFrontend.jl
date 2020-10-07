@@ -1454,7 +1454,7 @@ function component(node::InstNode) ::Component
   component
 end
 
-function updateClass(cls::Class, node::InstNode)::InstNode
+function updateClass!(cls::Class, node::InstNode)::InstNode
   @assign node = begin
     @match node begin
       CLASS_NODE(__)  => begin

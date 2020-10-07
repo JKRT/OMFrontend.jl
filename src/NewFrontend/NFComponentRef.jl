@@ -101,7 +101,7 @@ function toListReverse(
   local crefs::List{ComponentRef}
   @assign crefs = begin
     @match cref begin
-      COMPONENT_REF_CREF(origin = Origin.COMPONENT_REF_CREF) => begin
+      COMPONENT_REF_CREF(origin = Origin.CREF) => begin
         toListReverse(cref.restCref, _cons(cref, accum))
       end
       _ => begin
@@ -117,7 +117,7 @@ function isFromCref(cref::ComponentRef)::Bool
 
   @assign fromCref = begin
     @match cref begin
-      COMPONENT_REF_CREF(origin = Origin.COMPONENT_REF_CREF) => begin
+      COMPONENT_REF_CREF(origin = Origin.CREF) => begin
         true
       end
 
@@ -139,7 +139,7 @@ function isDeleted(cref::ComponentRef)::Bool
   @assign isDeleted = begin
     local node::InstNode
     @match cref begin
-      COMPONENT_REF_CREF(node = node, origin = Origin.COMPONENT_REF_CREF) => begin
+      COMPONENT_REF_CREF(node = node, origin = Origin.CREF) => begin
         isComponent(node) && P_Component.isDeleted(component(node))
       end
 

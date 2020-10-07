@@ -80,7 +80,7 @@ function instOperatorFunctions(node::InstNode, info::SourceInfo)::InstNode
   @assign tree = classTree(getClass(node))
   @assign () = begin
     @match tree begin
-      FLAT_TREE(classes = mclss) => begin
+      CLASS_FLAT_TREE(classes = mclss) => begin
         for op in mclss
           P_Function.instFunctionNode(op)
           @assign funcs = P_Function.getCachedFuncs(op)

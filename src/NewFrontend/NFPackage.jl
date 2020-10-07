@@ -39,7 +39,7 @@ function collectConstants(flatModel::FlatModel, functions::FunctionTree)::FlatMo
   )
   @assign constants = FunctionTreeImpl.fold(functions, collectFuncConstants, constants)
   @assign vars =
-    listReverse(list(fromCref(c) for c in ConstantsSetImpl.listKeys(constants)))
+    listReverse(list(NFVariable_fromCref(c) for c in ConstantsSetImpl.listKeys(constants)))
   @assign flatModel.variables = listAppend(vars, flatModel.variables)
 #  execStat(getInstanceName()) TODO
   return flatModel
@@ -130,7 +130,7 @@ function collectFuncConstants(
   @assign () = begin
     @match cls begin
       INSTANCED_CLASS(
-        elements = FLAT_TREE(components = comps),
+        elements = CLASS_FLAT_TREE(components = comps),
         sections = sections,
       ) => begin
         for c in comps
@@ -244,7 +244,7 @@ function replaceFuncConstants(name::Absyn.Path, func::M_Function)::M_Function
   @assign () = begin
     @match cls begin
       INSTANCED_CLASS(
-        elements = FLAT_TREE(components = comps),
+        elements = CLASS_FLAT_TREE(components = comps),
         sections = sections,
       ) => begin
         for c in comps
@@ -264,7 +264,7 @@ function replaceFuncConstants(name::Absyn.Path, func::M_Function)::M_Function
                 for a in sections.algorithms
               )
               @assign cls.sections = sections
-              updateClass(cls, func.node)
+              updateClass!(cls, func.node)
               ()
             end
 
@@ -272,7 +272,7 @@ function replaceFuncConstants(name::Absyn.Path, func::M_Function)::M_Function
               @assign sections.args =
                 List(replaceExpConstants(arg) for arg in sections.args)
               @assign cls.sections = sections
-              updateClass(cls, func.node)
+              updateClass!(cls, func.node)
               ()
             end
 

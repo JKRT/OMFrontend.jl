@@ -3504,8 +3504,8 @@ function matchComplexTypes(
   @assign () = begin
     @match (cls1, cls2, expression) begin
       (
-        INSTANCED_CLASS(elements = FLAT_TREE(components = comps1)),
-        INSTANCED_CLASS(elements = FLAT_TREE(components = comps2)),
+        INSTANCED_CLASS(elements = CLASS_FLAT_TREE(components = comps1)),
+        INSTANCED_CLASS(elements = CLASS_FLAT_TREE(components = comps2)),
         RECORD_EXPRESSION(elements = elements),
       ) => begin
         @assign matchKind = MatchKind.PLUG_COMPATIBLE
@@ -3563,8 +3563,8 @@ function matchComplexTypes(
       end
 
       (
-        INSTANCED_CLASS(elements = FLAT_TREE(components = comps1)),
-        INSTANCED_CLASS(elements = FLAT_TREE(components = comps2)),
+        INSTANCED_CLASS(elements = CLASS_FLAT_TREE(components = comps1)),
+        INSTANCED_CLASS(elements = CLASS_FLAT_TREE(components = comps2)),
         _,
       ) => begin
         @assign matchKind = MatchKind.PLUG_COMPATIBLE

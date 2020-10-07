@@ -672,6 +672,10 @@ function instClassDef(cls::Class, outerMod::Modifier, attributes::Attributes, us
         mapExtends(cls_tree, (par) -> modifyExtends(scope = par))
         #=  Apply the modifiers of this scope.
         =#
+
+        strMod = toString(mod, true)
+        @info "Merged mod EXPANDED_CLASS: $strMod"
+
         applyModifier(mod, cls_tree, name(node))
         #=  Apply element redeclares.
         =#
@@ -718,6 +722,10 @@ function instClassDef(cls::Class, outerMod::Modifier, attributes::Attributes, us
         @assign mod = fromElement(definition(node), list(node), rootParent(node))
         @assign outer_mod = merge(outerMod, addParent(node, cls.modifier))
         @assign mod = merge(outer_mod, mod)
+
+        strMod = toString(mod, true)
+        @info "Merged mod EXPANDED_DERIVED: $strMod"
+
         @assign attrs = updateClassConnectorType(cls.restriction, cls.attributes)
         @assign attributes = mergeDerivedAttributes(attrs, attributes, parentArg)
         #=  Instantiate the base class and update the nodes.
@@ -748,6 +756,10 @@ function instClassDef(cls::Class, outerMod::Modifier, attributes::Attributes, us
         @assign mod = fromElement(definition(node), list(node), parent(node))
         @assign outer_mod = merge(outerMod, addParent(node, cls.modifier))
         @assign mod = merge(outer_mod, mod)
+
+        strMod = toString(mod, true)
+        @info "Merged mod PARTIAL_BUILTIN: $strMod"
+
         applyModifier(mod, cls_tree, name(node))
         @assign inst_cls = INSTANCED_BUILTIN(ty, cls_tree, res)
         @assign node = updateClass(inst_cls, node)
@@ -1001,6 +1013,7 @@ end
                          try
                            @assign node_ptrs = lookupElementsPtr(name(mod), cls)
                          catch
+                           @error "Missing modified element! "
                            Error.addSourceMessage(Error.MISSING_MODIFIED_ELEMENT, list(name(mod), clsName), info(mod))
                            fail()
                          end

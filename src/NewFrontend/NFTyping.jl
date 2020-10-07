@@ -951,14 +951,20 @@ function typeBindings(cls::InstNode, component::InstNode, origin::ORIGIN_Type)
     @match c begin
       INSTANCED_CLASS(elements = cls_tree && CLASS_TREE_FLAT_TREE(__)) => begin
         for c in cls_tree.components
+          str = name(c)
+          @info "Typing component (class): $str"
           typeComponentBinding(c, origin)
+          @info "Typing component (class): $str done"
         end
         ()
       end
 
       INSTANCED_BUILTIN(elements = cls_tree && CLASS_TREE_FLAT_TREE(__)) => begin
         for c in cls_tree.components
+          str = name(c)
+          @info "Typing component (builtin): $str"
           typeComponentBinding(c, origin)
+          @info "Typing component (builtin): $str done"
         end
         ()
       end
@@ -1013,18 +1019,26 @@ function typeComponentBinding(
         #ErrorExt.setCheckpoint(getInstanceName())
         #TODO
         @error "ErrorExt.setCheckpoint(getInstanceName())"
-        try
+        #try
+          @info "Typing binding ... for component: $nameStr"
           checkBindingEach(c.binding)
+          @info "Typing binding ... check each"
           @assign binding =
             typeBinding(binding, setFlag(origin, ORIGIN_BINDING))
+          @info "Typing binding ... after typeBinding"
+          str = toString(binding)
+          @info "Typed binding: $str"
           #if !(Config.getGraphicsExpMode() && stringEq(nameStr, "graphics")) TODO
-            @assign binding = matchBinding(binding, c.ty, nameStr, node)
+          @assign binding = matchBinding(binding, c.ty, nameStr, node)
           #end
           @assign comp_var = checkComponentBindingVariability(nameStr, c, binding, origin)
           if comp_var != attrs.variability
             @assign attrs.variability = comp_var
             @assign c.attributes = attrs
           end
+          str2 = toString(binding)
+          @info "Typed binding 2: $str2"
+        #==
         catch e
           if isBound(c.condition)
             @assign binding =
@@ -1034,7 +1048,7 @@ function typeComponentBinding(
             @error "Error in type componeent binding $e"
             fail()
           end
-        end
+        end ==#
 #        ErrorExt.delCheckpoint(getInstanceName()) TODO
         @assign c.binding = binding
         if isBound(c.condition)

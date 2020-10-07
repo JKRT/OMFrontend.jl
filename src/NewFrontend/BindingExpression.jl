@@ -240,7 +240,7 @@ end
 function nthEnumLiteral(ty::M_Type, n::Integer) ::Expression
   local exp::Expression
 
-  @assign exp = ENUM_LITERAL(ty, Type.nthEnumLiteral(ty, n), n)
+  @assign exp = ENUM_LITERAL_EXPRESSION(ty, Type.nthEnumLiteral(ty, n), n)
   exp
 end
 
@@ -465,7 +465,7 @@ function enumIndexExp(enumExp::Expression) ::Expression
 
   @assign indexExp = begin
     @match enumExp begin
-      ENUM_LITERAL(__)  => begin
+      ENUM_LITERAL_EXPRESSION(__)  => begin
         INTEGER(enumExp.index)
       end
 
@@ -560,7 +560,7 @@ function variability(exp::Expression) ::VariabilityType
         Variability.CONSTANT
       end
 
-      ENUM_LITERAL(__)  => begin
+      ENUM_LITERAL_EXPRESSION(__)  => begin
         Variability.CONSTANT
       end
 
@@ -1008,7 +1008,7 @@ function makeMinValue(ty::M_Type) ::Expression
       end
 
       TYPE_ENUMERATION(__)  => begin
-        ENUM_LITERAL(ty, listHead(ty.literals), 1)
+        ENUM_LITERAL_EXPRESSION(ty, listHead(ty.literals), 1)
       end
 
       ARRAY_TYPE(__)  => begin
@@ -1037,7 +1037,7 @@ function makeMaxValue(ty::M_Type) ::Expression
       end
 
       TYPE_ENUMERATION(__)  => begin
-        ENUM_LITERAL(ty, ListUtil.last(ty.literals), listLength(ty.literals))
+        ENUM_LITERAL_EXPRESSION(ty, ListUtil.last(ty.literals), listLength(ty.literals))
       end
 
       ARRAY_TYPE(__)  => begin
@@ -4739,23 +4739,23 @@ function toString(exp::Expression) ::String
 
   @assign str = begin
     @match exp begin
-      INTEGER(__)  => begin
+      INTEGER_EXPRESSION(__)  => begin
         intString(exp.value)
       end
 
-      REAL(__)  => begin
+      REAL_EXPRESSION(__)  => begin
         realString(exp.value)
       end
 
-      STRING(__)  => begin
+      STRING_EXPRESSION(__)  => begin
         "\\" + exp.value + "\\"
       end
 
-      BOOLEAN(__)  => begin
+      BOOLEAN_EXPRESSION(__)  => begin
         boolString(exp.value)
       end
 
-      ENUM_LITERAL(ty = t && TYPE_ENUMERATION(__))  => begin
+      ENUM_LITERAL_EXPRESSION(ty = t && TYPE_ENUMERATION(__))  => begin
         AbsynUtil.pathString(t.typePath) + "." + exp.name
       end
 
@@ -4767,7 +4767,7 @@ function toString(exp::Expression) ::String
         toString(exp.cref)
       end
 
-      TYPENAME(__)  => begin
+      TYPENAME_EXPRESSION(__)  => begin
         Type.typenameString(arrayElementType(exp.ty))
       end
 
@@ -4807,7 +4807,7 @@ function toString(exp::Expression) ::String
                                        end) + ")"
       end
 
-      END(__)  => begin
+      END_EXPRESSION(__)  => begin
         "end"
       end
 
@@ -4867,7 +4867,7 @@ function toString(exp::Expression) ::String
         toString(P_Pointer.access(exp.exp))
       end
 
-      EMPTY(__)  => begin
+      EMPTY_EXPRESSION(__)  => begin
         "#EMPTY#"
       end
 
@@ -4911,7 +4911,7 @@ function toInteger(exp::Expression) ::Integer
         end
       end
 
-      ENUM_LITERAL(__)  => begin
+      ENUM_LITERAL_EXPRESSION(__)  => begin
         exp.index
       end
     end
@@ -4925,7 +4925,7 @@ function makeEnumLiterals(enumType::M_Type) ::List{Expression}
   local lits::List{String}
 
   @match TYPE_ENUMERATION(literals = lits) = enumType
-  @assign literals = List(@do_threaded_for ENUM_LITERAL(enumType, l, i) (l, i) (lits, 1:listLength(lits)))
+  @assign literals = List(@do_threaded_for ENUM_LITERAL_EXPRESSION(enumType, l, i) (l, i) (lits, 1:listLength(lits)))
   literals
 end
 
@@ -4935,7 +4935,7 @@ function makeEnumLiteral(enumType::M_Type, index::Integer) ::Expression
   local literals::List{String}
 
   @match TYPE_ENUMERATION(literals = literals) = enumType
-  @assign literal = ENUM_LITERAL(enumType, listGet(literals, index), index)
+  @assign literal = ENUM_LITERAL_EXPRESSION(enumType, listGet(literals, index), index)
   literal
 end
 
@@ -5147,7 +5147,7 @@ function applyIndexSubscriptRange2(startExp::Expression, stepExp::Option{<:Expre
         end
       end
 
-      (P_Expression.Expression.ENUM_LITERAL(index = iidx), _)  => begin
+      (P_Expression.Expression.ENUM_LITERAL_EXPRESSION(index = iidx), _)  => begin
         @assign iidx = iidx + index - 1
         nthEnumLiteral(startExp.ty, iidx)
       end
@@ -5627,7 +5627,7 @@ function setType(ty::NFType, exp::Expression) ::Expression
 
   @assign () = begin
     @match exp begin
-      ENUM_LITERAL(__)  => begin
+      ENUM_LITERAL_EXPRESSION(__)  => begin
         @assign exp.ty = ty
         ()
       end
@@ -5751,7 +5751,7 @@ function typeOf(exp::Expression) ::M_Type
         TYPE_BOOLEAN()
       end
 
-      ENUM_LITERAL(__)  => begin
+      ENUM_LITERAL_EXPRESSION(__)  => begin
         exp.ty
       end
 
@@ -5982,8 +5982,8 @@ end
                          Util.boolCompare(exp1.value, b)
                        end
 
-                       ENUM_LITERAL(__)  => begin
-                         @match ENUM_LITERAL(ty = ty, index = i) = exp2
+                       ENUM_LITERAL_EXPRESSION(__)  => begin
+                         @match ENUM_LITERAL_EXPRESSION(ty = ty, index = i) = exp2
                          @assign comp = AbsynUtil.pathCompare(Type.enumName(exp1.ty), Type.enumName(ty))
                          if comp == 0
                            @assign comp = Util.intCompare(exp1.index, i)
@@ -6833,7 +6833,8 @@ function toString(binding::Binding, prefix::String = "")::String
       end
 
       RAW_BINDING(__) => begin
-        prefix + Dump.printExpStr(binding.bindingExp)
+        str = binding.bindingExp
+        prefix + "$str" # Dump.printExpStr(binding.bindingExp)
       end
 
       UNTYPED_BINDING(__) => begin

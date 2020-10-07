@@ -2,7 +2,7 @@
 import ..ComponentReference
 import ..Flags
 import ..Util
-import DAE
+import ..DAE
 
 function convert(
   flatModel::FlatModel,
@@ -203,6 +203,8 @@ function convertVarAttributes(
   local is_final_opt::Option{Bool}
   local elTy::M_Type
   local is_array::Bool = false
+
+  @info "convertVarAttributes: $attrs"
 
   @assign is_final =
     compAttrs.isFinal || compAttrs.variability == Variability.STRUCTURAL_PARAMETER
@@ -623,15 +625,18 @@ function convertStateSelectAttribute(binding::Binding)::Option{DAE.StateSelect}
   local node::InstNode
   local name::String
   local exp::Expression =
-    getBindingExp(getTypedExp(binding))
+    P_Expression.Expression.getBindingExp(getTypedExp(binding))
+
   @assign name = begin
     @match exp begin
-      ENUM_LITERAL(__) => begin
+      P_Expression.Expression.ENUM_LITERAL(__) => begin
         exp.name
       end
+
       CREF_EXPRESSION(cref = CREF(node = node)) => begin
         name(node)
       end
+
       _ => begin
         Error.assertion(
           false,
@@ -918,20 +923,20 @@ function convertInitialEquation(
     local body::List{DAE.Element}
     @match eq begin
       EQUATION_EQUALITY(__) => begin
-        @assign e1 = toDAE(eq.lhs)
-        @assign e2 = toDAE(eq.rhs)
+        @assign e1 = P_Expression.Expression.toDAE(eq.lhs)
+        @assign e2 = P_Expression.Expression.toDAE(eq.rhs)
         _cons(if isComplex(eq.ty)
-          DAE.INITIAL_COMPLEX_EQUATION(e1, e2, eq.source)
+          DAE.Element.INITIAL_COMPLEX_EQUATION(e1, e2, eq.source)
         else
-          DAE.INITIALEQUATION(e1, e2, eq.source)
+          DAE.Element.INITIALEQUATION(e1, e2, eq.source)
         end, elements)
       end
 
       EQUATION_ARRAY_EQUALITY(__) => begin
-        @assign e1 = toDAE(eq.lhs)
-        @assign e2 = toDAE(eq.rhs)
-        @assign dims = list(toDAE(d) for d in arrayDims(eq.ty))
-        _cons(DAE.INITIAL_ARRAY_EQUATION(dims, e1, e2, eq.source), elements)
+        @assign e1 = P_Expression.Expression.toDAE(eq.lhs)
+        @assign e2 = P_Expression.Expression.toDAE(eq.rhs)
+        @assign dims = List(P_Dimension.Dimension.toDAE(d) for d in arrayDims(eq.ty))
+        _cons(DAE.Element.INITIAL_ARRAY_EQUATION(dims, e1, e2, eq.source), elements)
       end
 
       EQUATION_FOR(__) => begin
@@ -1477,7 +1482,7 @@ function makeTypeVars(complexCls::InstNode)::List{DAE.Var}
       INSTANCED_CLASS(restriction = P_Restriction.Restriction.RECORD(__)) => begin
         List(makeTypeRecordVar(c) for c in getComponents(cls.elements))
       end
-      INSTANCED_CLASS(elements = CLASS_TREE_FLAT_TREE(__)) => begin
+      INSTANCED_CLASS(elements = FLAT_TREE(__)) => begin
         List(
           makeTypeVar(c)
           for
@@ -1498,7 +1503,7 @@ function makeTypeVar(component::InstNode)::DAE.Var
   local attr::Attributes
 
   @assign comp = component(resolveOuter(component))
-  @assign attr = getAttributes(comp)
+  @assign attr = P_Component.getAttributes(comp)
   @assign typeVar = DAE.TYPES_VAR(
     name(component),
     toDAE(attr, visibility(component)),
@@ -1519,7 +1524,7 @@ function makeTypeRecordVar(component::InstNode)::DAE.Var
   local bind_from_outside::Bool
   local ty::M_Type
   @assign comp = component(component)
-  @assign attr = getAttributes(comp)
+  @assign attr = P_Component.getAttributes(comp)
   if P_Component.isConst(comp) && P_Component.hasBinding(comp)
     @assign vis = Visibility.PROTECTED
   else

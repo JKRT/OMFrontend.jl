@@ -86,14 +86,14 @@ function instClassInProgram(classPath::Absyn.Path, program::SCode.Program)::Tupl
   @info "COLLECTED CONSTANTS"
   # if Flags.getConfigBool(Flags.FLAT_MODELICA)
   @debug "PRINTING FLAT MODELICA"
-  # printFlatString(flat_model, FunctionTreeImpl.listValues(funcs))
+  #printFlatString(flat_model, FunctionTreeImpl.listValues(funcs))
   # end
   #= Scalarize array components in the flat model.=#
-  @debug "Skipping NF_SCALARIZE"
+  @debug "Not skipping NF_SCALARIZE"
   #                  if Flags.isSet(Flags.NF_SCALARIZE)
-  #                    @assign flat_model = Scalarize.scalarize(flat_model, name)
+  # @assign flat_model = scalarize(flat_model, name)
   #                  else
-  @assign flat_model.variables = ListUtil.filterOnFalse(flat_model.variables, isEmptyArray)
+  # @assign flat_model.variables = ListUtil.filterOnFalse(flat_model.variables, isEmptyArray)
   #                   end
   #=  Remove empty arrays from variables =#
   @info "VERIFYING MODEL: "
@@ -1239,6 +1239,7 @@ function instComponent(node::InstNode, attributes::Attributes , innerMod::Modifi
   #=  An already instantiated component might be due to an instantiation loop, check it.
   =#
   @match COMPONENT_DEF(definition = def, modifier = outer_mod) = comp
+
   if isRedeclare(outer_mod)
     checkOuterComponentMod(outer_mod, def, comp_node)
     instComponentDef(def, MODIFIER_NOMOD(), MODIFIER_NOMOD(), DEFAULT_ATTR, useBinding, comp_node, parentNode, instLevel, originalAttr, isRedeclared = true)
@@ -1282,6 +1283,8 @@ function instComponentDef(component::SCode.Element, outerMod::Modifier, innerMod
         @assign mod = merge(mod, innerMod)
         @assign mod = merge(outerMod, mod)
         @assign mod = addParent(node, mod)
+        str = toString(mod, true)
+        @info "Merged mod: $str / $useBinding"
         checkOuterComponentMod(mod, component, node)
         @assign dims = list(DIMENSION_RAW_DIM(d) for d in component.attributes.arrayDims)
         bindingVar = if useBinding

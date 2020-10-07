@@ -82,10 +82,6 @@ keyCompare = (inKey1::String, inKey2::String) -> begin
   return res
 end
 
-function new()
-  return EMPTY()
-end
-
 @exportAll()
 end
 

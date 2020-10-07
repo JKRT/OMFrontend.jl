@@ -280,13 +280,13 @@ function splitRecordCref(exp::Expression) ::Expression
     local ty::M_Type
     local fields::List{Expression}
     @match outExp begin
-      CREF(ty = TYPE_COMPLEX(cls = cls), cref = cr)  => begin
+      COMPONENT_REF_CREF(ty = TYPE_COMPLEX(cls = cls), cref = cr)  => begin
         @assign comps = getComponents(classTree(getClass(cls)))
         @assign fields = nil
         for i in arrayLength(comps):(-1):1
           @assign ty = getType(comps[i])
           @assign field_cr = prefixCref(comps[i], ty, nil, cr)
-          @assign fields = _cons(CREF(ty, field_cr), fields)
+          @assign fields = _cons(COMPONENT_REF_CREF(ty, field_cr), fields)
         end
         makeRecord(scopePath(cls), outExp.ty, fields)
       end
@@ -366,13 +366,13 @@ end
                          listGet(recordExp.elements, index)
                        end
 
-                       CREF(ty = TYPE_COMPLEX(cls = node))  => begin
+                       COMPONENT_REF_CREF(ty = TYPE_COMPLEX(cls = node))  => begin
                          @assign cls_tree = classTree(getClass(node))
                          @match (node, false) = lookupElement(elementName, cls_tree)
                          @assign ty = getType(node)
                          @assign cref = prefixCref(node, ty, nil, recordExp.cref)
                          @assign ty = Type.liftArrayLeftList(ty, arrayDims(recordExp.ty))
-                         CREF(ty, cref)
+                         COMPONENT_REF_CREF(ty, cref)
                        end
 
                        ARRAY_EXPRESSION(elements =  nil(), ty = ARRAY_EXPRESSION_TYPE(elementType = TYPE_COMPLEX(cls = node)))  => begin
@@ -568,7 +568,7 @@ function variability(exp::Expression) ::VariabilityType
         Variability.DISCRETE
       end
 
-      CREF(__)  => begin
+      COMPONENT_REF_CREF(__)  => begin
         variability(exp.cref)
       end
 
@@ -1584,7 +1584,7 @@ function crefContainsShallow(cref::ComponentRef, func::ContainsPred) ::Bool
 
   @assign res = begin
     @match cref begin
-      CREF(__)  => begin
+      COMPONENT_REF_CREF(__)  => begin
         listContainsExpShallow(cref.subscripts, func) || crefContainsShallow(cref.restCref, func)
       end
 
@@ -1601,7 +1601,7 @@ function containsShallow(exp::Expression, func::ContainsPred) ::Bool
 
   @assign res = begin
     @match exp begin
-      CREF(__)  => begin
+      COMPONENT_REF_CREF(__)  => begin
         crefContainsShallow(exp.cref, func)
       end
 
@@ -1780,7 +1780,7 @@ function crefContains(cref::ComponentRef, func::ContainsPred) ::Bool
 
   @assign res = begin
     @match cref begin
-      CREF(__)  => begin
+      COMPONENT_REF_CREF(__)  => begin
         listContainsExp(cref.subscripts, func) || crefContains(cref.restCref, func)
       end
 
@@ -1801,7 +1801,7 @@ function contains(exp::Expression, func::ContainsPred) ::Bool
   @assign res = begin
     local e::Expression
     @match exp begin
-      CREF(__)  => begin
+      COMPONENT_REF_CREF(__)  => begin
         crefContains(exp.cref, func)
       end
       ARRAY_EXPRESSION(__)  => begin
@@ -2324,10 +2324,10 @@ function mapFoldCref(cref::ComponentRef, func::MapFunc, arg::ArgT)  where {ArgT}
     local subs::List{Subscript}
     local rest::ComponentRef
     @match cref begin
-      CREF(origin = Origin.CREF)  => begin
+      COMPONENT_REF_CREF(origin = Origin.CREF)  => begin
         @assign (subs, arg) = ListUtil.map1Fold(cref.subscripts, mapFoldExp, func, arg)
         @assign (rest, arg) = mapFoldCref(cref.restCref, func, arg)
-        CREF(cref.node, subs, cref.ty, cref.origin, rest)
+        COMPONENT_REF_CREF(cref.node, subs, cref.ty, cref.origin, rest)
       end
 
       _  => begin
@@ -2516,12 +2516,12 @@ function mapFold(exp::Expression, func::MapFunc, arg::ArgT)  where {ArgT}
         end
       end
 
-      CREF(__)  => begin
+      COMPONENT_REF_CREF(__)  => begin
         @assign (cr, arg) = mapFoldCref(exp.cref, func, arg)
         if referenceEq(exp.cref, cr)
           exp
         else
-          CREF(exp.ty, cr)
+          COMPONENT_REF_CREF(exp.ty, cr)
         end
       end
 
@@ -2748,7 +2748,7 @@ end
 function applyCref(cref::ComponentRef, func::ApplyFunc)
   @assign () = begin
     @match cref begin
-      CREF(origin = Origin.CREF)  => begin
+      COMPONENT_REF_CREF(origin = Origin.CREF)  => begin
         for s in cref.subscripts
           applyCrefSubscript(s, func)
         end
@@ -2859,7 +2859,7 @@ function apply(exp::Expression, func::ApplyFunc)
         ()
       end
 
-      CREF(__)  => begin
+      COMPONENT_REF_CREF(__)  => begin
         applyCref(exp.cref, func)
         ()
       end
@@ -4611,7 +4611,7 @@ function toFlatString(exp::Expression) ::String
         P_ClockKind.toString(clk)
       end
 
-      CREF(__)  => begin
+      COMPONENT_REF_CREF(__)  => begin
         toFlatString(exp.cref)
       end
 
@@ -4763,7 +4763,7 @@ function toString(exp::Expression) ::String
         P_ClockKind.toString(clk)
       end
 
-      CREF(__)  => begin
+      COMPONENT_REF_CREF(__)  => begin
         toString(exp.cref)
       end
 
@@ -4981,7 +4981,7 @@ function replaceIterator2(exp::Expression, iterator::InstNode, iteratorValue::Ex
   @assign exp = begin
     local node::InstNode
     @match exp begin
-      CREF(cref = CREF(node = node))  => begin
+      COMPONENT_REF_CREF(cref = COMPONENT_REF_CREF(node = node))  => begin
         if refEqual(iterator, node)
           iteratorValue
         else
@@ -5363,7 +5363,7 @@ function applySubscriptCref(subscript::Subscript, cref::ComponentRef, restSubscr
 
   @assign cr = applySubscripts(_cons(subscript, restSubscripts), cref)
   @assign ty = getSubscriptedType(cr)
-  @assign outExp = CREF(ty, cr)
+  @assign outExp = COMPONENT_REF_CREF(ty, cr)
   outExp
 end
 
@@ -5374,7 +5374,7 @@ end
 
                    @assign outExp = begin
                      @match exp begin
-                       CREF(__)  => begin
+                       COMPONENT_REF_CREF(__)  => begin
                          applySubscriptCref(subscript, exp.cref, restSubscripts)
                        end
 
@@ -5632,7 +5632,7 @@ function setType(ty::NFType, exp::Expression) ::Expression
         ()
       end
 
-      CREF(__)  => begin
+      COMPONENT_REF_CREF(__)  => begin
         @assign exp.ty = ty
         ()
       end
@@ -5759,7 +5759,7 @@ function typeOf(exp::Expression) ::M_Type
         TYPE_CLOCK()
       end
 
-      CREF(__)  => begin
+      COMPONENT_REF_CREF(__)  => begin
         exp.ty
       end
 
@@ -5991,8 +5991,8 @@ end
                          comp
                        end
 
-                       CREF(__)  => begin
-                         @match CREF(cref = cr) = exp2
+                       COMPONENT_REF_CREF(__)  => begin
+                         @match COMPONENT_REF_CREF(cref = cr) = exp2
                          compare(exp1.cref, cr)
                        end
 
@@ -6304,7 +6304,7 @@ function isWildCref(exp::Expression) ::Bool
 
   @assign wild = begin
     @match exp begin
-      CREF(cref = WILD(__))  => begin
+      COMPONENT_REF_CREF(cref = WILD(__))  => begin
         true
       end
 
@@ -6321,7 +6321,7 @@ function isCref(exp::Expression) ::Bool
 
   @assign isCref = begin
     @match exp begin
-      CREF(__)  => begin
+      COMPONENT_REF_CREF(__)  => begin
         true
       end
 

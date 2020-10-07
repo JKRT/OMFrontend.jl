@@ -130,7 +130,7 @@ function collectFuncConstants(
   @assign () = begin
     @match cls begin
       INSTANCED_CLASS(
-        elements = FLAT_TREE(components = comps),
+        elements = CLASS_TREE_FLAT_TREE(components = comps),
         sections = sections,
       ) => begin
         for c in comps
@@ -244,7 +244,7 @@ function replaceFuncConstants(name::Absyn.Path, func::M_Function)::M_Function
   @assign () = begin
     @match cls begin
       INSTANCED_CLASS(
-        elements = FLAT_TREE(components = comps),
+        elements = CLASS_TREE_FLAT_TREE(components = comps),
         sections = sections,
       ) => begin
         for c in comps

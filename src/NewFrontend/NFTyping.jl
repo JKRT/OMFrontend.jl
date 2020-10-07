@@ -1780,7 +1780,7 @@ function typeCrefDim(
           end
           @assign dim_count = begin
             @match c begin
-              P_Component.UNTYPED_COMPONENT(__) => begin
+              UNTYPED_COMPONENT(__) => begin
                 @assign dim_count = arrayLength(c.dimensions)
                 if index <= dim_count && index > 0
                   @assign dim = typeDimension(

@@ -2592,7 +2592,7 @@ function instEEquation(scodeEq::SCode.EEquation, scope::InstNode, origin::ORIGIN
         end
         @assign exp1 = instConnectorCref(scodeEq.crefLeft, scope, info)
         @assign exp2 = instConnectorCref(scodeEq.crefRight, scope, info)
-        Equation.CONNECT(exp1, exp2, makeSource(scodeEq.comment, info))
+        EQUATION_CONNECT(exp1, exp2, makeSource(scodeEq.comment, info))
       end
 
       SCode.EQ_FOR(info = info)  => begin
@@ -2601,7 +2601,7 @@ function instEEquation(scodeEq::SCode.EEquation, scope::InstNode, origin::ORIGIN
         @assign (for_scope, iter) = addIteratorToScope(scodeEq.index, scope, scodeEq.info)
         @assign next_origin = setFlag(origin, ORIGIN_FOR)
         @assign eql = instEEquations(scodeEq.eEquationLst, for_scope, next_origin)
-        Equation.FOR(iter, oexp, eql, makeSource(scodeEq.comment, info))
+        EQUATION_FOR(iter, oexp, eql, makeSource(scodeEq.comment, info))
       end
 
       SCode.EQ_IF(info = info)  => begin
@@ -2615,7 +2615,7 @@ function instEEquation(scodeEq::SCode.EEquation, scope::InstNode, origin::ORIGIN
         for branch in scodeEq.thenBranch
           @assign eql = instEEquations(branch, scope, next_origin)
           @match _cons(exp1, expl) = expl
-          @assign branches = _cons(Equation.makeBranch(exp1, eql), branches)
+          @assign branches = _cons(EQUATION_makeBranch(exp1, eql), branches)
         end
         #=  Instantiate the else-branch, if there is one, and make it a branch
         =#
@@ -2623,9 +2623,9 @@ function instEEquation(scodeEq::SCode.EEquation, scope::InstNode, origin::ORIGIN
         =#
         if ! listEmpty(scodeEq.elseBranch)
           @assign eql = instEEquations(scodeEq.elseBranch, scope, next_origin)
-          @assign branches = _cons(Equation.makeBranch(P_Expression.BOOLEAN_EXPRESSION(true), eql), branches)
+          @assign branches = _cons(makeBranch(P_Expression.BOOLEAN_EXPRESSION(true), eql), branches)
         end
-        Equation.IF(listReverse(branches), makeSource(scodeEq.comment, info))
+        EQUATION_IF(listReverse(branches), makeSource(scodeEq.comment, info))
       end
 
       SCode.EQ_WHEN(info = info)  => begin
@@ -2637,25 +2637,25 @@ function instEEquation(scodeEq::SCode.EEquation, scope::InstNode, origin::ORIGIN
         @assign next_origin = setFlag(origin, ORIGIN_WHEN)
         @assign exp1 = instExp(scodeEq.condition, scope, info)
         @assign eql = instEEquations(scodeEq.eEquationLst, scope, next_origin)
-        @assign branches = list(Equation.makeBranch(exp1, eql))
+        @assign branches = list(makeBranch(exp1, eql))
         for branch in scodeEq.elseBranches
           @assign exp1 = instExp(Util.tuple21(branch), scope, info)
           @assign eql = instEEquations(Util.tuple22(branch), scope, next_origin)
-          @assign branches = _cons(Equation.makeBranch(exp1, eql), branches)
+          @assign branches = _cons(makeBranch(exp1, eql), branches)
         end
-        Equation.WHEN(listReverse(branches), makeSource(scodeEq.comment, info))
+        EQUATION_WHEN(listReverse(branches), makeSource(scodeEq.comment, info))
       end
 
       SCode.EQ_ASSERT(info = info)  => begin
         @assign exp1 = instExp(scodeEq.condition, scope, info)
         @assign exp2 = instExp(scodeEq.message, scope, info)
         @assign exp3 = instExp(scodeEq.level, scope, info)
-        Equation.ASSERT(exp1, exp2, exp3, makeSource(scodeEq.comment, info))
+        EQUATION_ASSERT(exp1, exp2, exp3, makeSource(scodeEq.comment, info))
       end
 
       SCode.EQ_TERMINATE(info = info)  => begin
         @assign exp1 = instExp(scodeEq.message, scope, info)
-        Equation.TERMINATE(exp1, makeSource(scodeEq.comment, info))
+        EQUATION_TERMINATE(exp1, makeSource(scodeEq.comment, info))
       end
 
       SCode.EQ_REINIT(info = info)  => begin
@@ -2665,12 +2665,12 @@ function instEEquation(scodeEq::SCode.EEquation, scope::InstNode, origin::ORIGIN
         end
         @assign exp1 = instExp(scodeEq.cref, scope, info)
         @assign exp2 = instExp(scodeEq.expReinit, scope, info)
-        Equation.REINIT(exp1, exp2, makeSource(scodeEq.comment, info))
+        EQUATION_REINIT(exp1, exp2, makeSource(scodeEq.comment, info))
       end
 
       SCode.EQ_NORETCALL(info = info)  => begin
         @assign exp1 = instExp(scodeEq.exp, scope, info)
-        Equation.NORETCALL(exp1, makeSource(scodeEq.comment, info))
+        EQUATION_NORETCALL(exp1, makeSource(scodeEq.comment, info))
       end
 
       _  => begin
@@ -2791,7 +2791,7 @@ function updateImplicitVariability(node::InstNode, evalAllParams::Bool)
   local cls_tree::ClassTree
   @assign () = begin
     @match cls begin
-      INSTANCED_CLASS(elements = cls_tree && FLAT_TREE(__))  => begin
+      INSTANCED_CLASS(elements = cls_tree && CLASS_TREE_FLAT_TREE(__))  => begin
         for c in cls_tree.components
           updateImplicitVariabilityComp(c, evalAllParams)
         end
@@ -2807,7 +2807,7 @@ function updateImplicitVariability(node::InstNode, evalAllParams::Bool)
         ()
       end
 
-      INSTANCED_BUILTIN(elements = cls_tree && FLAT_TREE(__))  => begin
+      INSTANCED_BUILTIN(elements = cls_tree && CLASS_TREE_FLAT_TREE(__))  => begin
         for c in cls_tree.components
           updateImplicitVariabilityComp(c, evalAllParams)
         end
@@ -2821,16 +2821,16 @@ function updateImplicitVariability(node::InstNode, evalAllParams::Bool)
   end
 end
 
-function updateImplicitVariabilityComp(component::InstNode, evalAllParams::Bool)
-  local node::InstNode = resolveOuter(component)
+function updateImplicitVariabilityComp(co::InstNode, evalAllParams::Bool)
+  local node::InstNode = resolveOuter(co)
   local c::Component = component(node)
 
   @assign () = begin
-    local binding::Binding
+    local bnd::Binding
     local condition::Binding
     @match c begin
-      P_Component.UNTYPED_COMPONENT(binding = binding, condition = condition)  => begin
-        if isStructuralComponent(c, c.attributes, binding, node, evalAllParams)
+      UNTYPED_COMPONENT(binding = bnd, condition = condition)  => begin
+        if isStructuralComponent(c, c.attributes, bnd, node, evalAllParams)
           markStructuralParamsComp(c, node)
         end
         #=  Parameters used in array dimensions are structural.
@@ -2840,8 +2840,8 @@ function updateImplicitVariabilityComp(component::InstNode, evalAllParams::Bool)
         end
         #=  Parameters that determine the size of a component binding are structural.
         =#
-        if isBound(binding)
-          markStructuralParamsExpSize(getUntypedExp(binding))
+        if isBound(bnd)
+          markStructuralParamsExpSize(getUntypedExp(bnd))
         end
         #=  Parameters used in a component condition are structural.
         =#
@@ -2852,10 +2852,10 @@ function updateImplicitVariabilityComp(component::InstNode, evalAllParams::Bool)
         ()
       end
 
-      TYPE_ATTRIBUTE(__) where (listMember(name(component), list("fixed", "stateSelect")))  => begin
-        @assign binding = binding(c.modifier)
-        if isBound(binding)
-          markStructuralParamsExp(getUntypedExp(binding))
+      TYPE_ATTRIBUTE(__) where (listMember(name(co), list("fixed", "stateSelect")))  => begin
+        @assign bnd = binding(c.modifier)
+        if isBound(bnd)
+          markStructuralParamsExp(getUntypedExp(bnd))
         end
         ()
       end
@@ -2874,8 +2874,8 @@ function isStructuralComponent(component::Component, compAttrs::Attributes, comp
 
   if compAttrs.variability != Variability.PARAMETER
     @assign isStructural = false
-  elseif evalAllParams || P_Component.getEvaluateAnnotation(component)
-    if ! P_Component.getFixedAttribute(component)
+  elseif evalAllParams || getEvaluateAnnotation(component)
+    if ! getFixedAttribute(component)
       @assign isStructural = false
     elseif P_Component.isExternalObject(component)
       @assign isStructural = false
@@ -3025,7 +3025,7 @@ function markStructuralParamsDim(dimension::Dimension)
 end
 
 function markStructuralParamsExp(exp::Expression)
-  P_Expression.Expression.apply(exp, markStructuralParamsExp_traverser)
+  apply(exp, markStructuralParamsExp_traverser)
 end
 
 function markStructuralParamsExp_traverser(exp::Expression)
@@ -3063,14 +3063,14 @@ function markStructuralParamsComp(component::Component, node::InstNode)
 end
 
 function markStructuralParamsExpSize(exp::Expression)
-  P_Expression.Expression.apply(exp, markStructuralParamsExpSize_traverser)
+  apply(exp, markStructuralParamsExpSize_traverser)
 end
 
 function markStructuralParamsExpSize_traverser(exp::Expression)
   @assign () = begin
     local iters::List{Tuple{InstNode, Expression}}
     @match exp begin
-      CALL_EXPRESSION(call = P_Call.UNTYPED_ARRAY_CONSTRUCTOR(iters = iters))  => begin
+      CALL_EXPRESSION(call = UNTYPED_ARRAY_CONSTRUCTOR(iters = iters))  => begin
         for iter in iters
           markStructuralParamsExp(Util.tuple22(iter))
         end
@@ -3095,29 +3095,29 @@ function updateImplicitVariabilityEq(eq::Equation, inWhen::Bool = false)
     local exp::Expression
     local eql::List{Equation}
     @match eq begin
-      Equation.EQUALITY(__)  => begin
+      EQUATION_EQUALITY(__)  => begin
         if inWhen
           markImplicitWhenExp(eq.lhs)
         end
         ()
       end
 
-      Equation.CONNECT(__)  => begin
+      EQUATION_CONNECT(__)  => begin
         fold(eq.lhs, markStructuralParamsSubs, 0)
         fold(eq.rhs, markStructuralParamsSubs, 0)
         ()
       end
 
-      Equation.FOR(__)  => begin
+      EQUATION_FOR(__)  => begin
         updateImplicitVariabilityEql(eq.body, inWhen)
         ()
       end
 
-      Equation.IF(__)  => begin
+      EQUATION_IF(__)  => begin
         for branch in eq.branches
           @assign () = begin
             @match branch begin
-              P_Equation.Equation.BRANCH(__)  => begin
+              P_Equation.EQUATION_BRANCH(__)  => begin
                 updateImplicitVariabilityEql(branch.body, inWhen)
                 ()
               end
@@ -3127,11 +3127,11 @@ function updateImplicitVariabilityEq(eq::Equation, inWhen::Bool = false)
         ()
       end
 
-      Equation.WHEN(__)  => begin
+      EQUATION_WHEN(__)  => begin
         for branch in eq.branches
           @assign () = begin
             @match branch begin
-              P_Equation.Equation.BRANCH(__)  => begin
+              P_Equation.EQUATION_BRANCH(__)  => begin
                 updateImplicitVariabilityEql(branch.body, inWhen = true)
                 ()
               end

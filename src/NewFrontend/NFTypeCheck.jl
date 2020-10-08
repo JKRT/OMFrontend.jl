@@ -3349,7 +3349,7 @@ function matchExpressions_cast(
   exp2::Expression,
   type2::NFType,
   allowUnknown::Bool,
-)::Tuple{Expression, Expression, NFType, MatchKind}
+)::Tuple{Expression, Expression, NFType, MatchKindType}
   local matchKind::MatchKindType
   local compatibleType::NFType
 
@@ -3470,7 +3470,7 @@ function matchComplexTypes(
   expectedType::NFType,
   expression::Expression,
   allowUnknown::Bool,
-)::Tuple{Expression, NFType, MatchKind}
+)::Tuple{Expression, NFType, MatchKindType}
   local matchKind::MatchKindType = MatchKind.NOT_COMPATIBLE
   local compatibleType::NFType = actualType
 
@@ -3756,7 +3756,7 @@ function matchArrayExpressions(
   exp2::Expression,
   type2::NFType,
   allowUnknown::Bool,
-)::Tuple{Expression, Expression, NFType, MatchKind}
+)::Tuple{Expression, Expression, NFType, MatchKindType}
   local matchKind::MatchKindType
   local compatibleType::NFType
 
@@ -3783,7 +3783,7 @@ function matchArrayTypes(
   arrayType2::NFType,
   expression::Expression,
   allowUnknown::Bool,
-)::Tuple{Expression, NFType, MatchKind}
+)::Tuple{Expression, NFType, MatchKindType}
   local matchKind::MatchKindType
   local compatibleType::NFType
 
@@ -3811,7 +3811,7 @@ function matchArrayDims(
   ty::NFType,
   matchKind::MatchKindType,
   allowUnknown::Bool,
-)::Tuple{NFType, MatchKind}
+)::Tuple{NFType, MatchKindType}
 
   local rest_dims2::List{Dimension} = dims2
   local cdims::List{Dimension} = nil
@@ -3873,7 +3873,7 @@ function matchTupleTypes(
   tupleType2::NFType,
   expression::Expression,
   allowUnknown::Bool,
-)::Tuple{Expression, NFType, MatchKind}
+)::Tuple{Expression, NFType, MatchKindType}
   local matchKind::MatchKindType = MatchKind.EXACT
   local compatibleType::NFType = tupleType1
 
@@ -3908,7 +3908,7 @@ function matchBoxedExpressions(
   exp2::Expression,
   type2::NFType,
   allowUnknown::Bool,
-)::Tuple{Expression, Expression, NFType, MatchKind}
+)::Tuple{Expression, Expression, NFType, MatchKindType}
   local matchKind::MatchKindType
   local compatibleType::NFType
 

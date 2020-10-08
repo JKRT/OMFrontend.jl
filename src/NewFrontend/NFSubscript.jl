@@ -507,6 +507,10 @@ function toFlatString(subscript::Subscript)::String
   return string
 end
 
+function toStringList(::Union{Cons{Union{}}, Nil})::String
+  ""
+end
+
 function toStringList(subscripts::List{<:Subscript})::String
   local string::String
 

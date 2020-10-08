@@ -952,9 +952,7 @@ function typeBindings(cls::InstNode, component::InstNode, origin::ORIGIN_Type)
       INSTANCED_CLASS(elements = cls_tree && CLASS_TREE_FLAT_TREE(__)) => begin
         for c in cls_tree.components
           str = name(c)
-          @info "Typing component (class): $str"
           typeComponentBinding(c, origin)
-          @info "Typing component (class): $str done"
         end
         ()
       end
@@ -962,9 +960,7 @@ function typeBindings(cls::InstNode, component::InstNode, origin::ORIGIN_Type)
       INSTANCED_BUILTIN(elements = cls_tree && CLASS_TREE_FLAT_TREE(__)) => begin
         for c in cls_tree.components
           str = name(c)
-          @info "Typing component (builtin): $str"
           typeComponentBinding(c, origin)
-          @info "Typing component (builtin): $str done"
         end
         ()
       end

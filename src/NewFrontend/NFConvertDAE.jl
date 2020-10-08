@@ -204,8 +204,6 @@ function convertVarAttributes(
   local elTy::M_Type
   local is_array::Bool = false
 
-  @info "convertVarAttributes: $attrs"
-
   @assign is_final =
     compAttrs.isFinal || compAttrs.variability == Variability.STRUCTURAL_PARAMETER
   if listEmpty(attrs) && !is_final

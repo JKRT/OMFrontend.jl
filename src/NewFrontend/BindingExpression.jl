@@ -280,13 +280,13 @@ function splitRecordCref(exp::Expression) ::Expression
     local ty::M_Type
     local fields::List{Expression}
     @match outExp begin
-      COMPONENT_REF_CREF(ty = TYPE_COMPLEX(cls = cls), cref = cr)  => begin
+      CREF_EXPRESSION(ty = TYPE_COMPLEX(cls = cls), cref = cr)  => begin
         @assign comps = getComponents(classTree(getClass(cls)))
         @assign fields = nil
         for i in arrayLength(comps):(-1):1
           @assign ty = getType(comps[i])
           @assign field_cr = prefixCref(comps[i], ty, nil, cr)
-          @assign fields = _cons(COMPONENT_REF_CREF(ty, field_cr), fields)
+          @assign fields = _cons(CREF_EXPRESSION(ty, field_cr), fields)
         end
         makeRecord(scopePath(cls), outExp.ty, fields)
       end
@@ -366,13 +366,13 @@ end
                          listGet(recordExp.elements, index)
                        end
 
-                       COMPONENT_REF_CREF(ty = TYPE_COMPLEX(cls = node))  => begin
+                       CREF_EXPRESSION(ty = TYPE_COMPLEX(cls = node))  => begin
                          @assign cls_tree = classTree(getClass(node))
                          @match (node, false) = lookupElement(elementName, cls_tree)
                          @assign ty = getType(node)
                          @assign cref = prefixCref(node, ty, nil, recordExp.cref)
                          @assign ty = Type.liftArrayLeftList(ty, arrayDims(recordExp.ty))
-                         COMPONENT_REF_CREF(ty, cref)
+                         CREF_EXPRESSION(ty, cref)
                        end
 
                        ARRAY_EXPRESSION(elements =  nil(), ty = ARRAY_EXPRESSION_TYPE(elementType = TYPE_COMPLEX(cls = node)))  => begin
@@ -568,11 +568,11 @@ function variability(exp::Expression) ::VariabilityType
         Variability.DISCRETE
       end
 
-      COMPONENT_REF_CREF(__)  => begin
+      CREF_EXPRESSION(__)  => begin
         variability(exp.cref)
       end
 
-      TYPENAME(__)  => begin
+      TYPENAME_EXPRESSION(__)  => begin
         Variability.CONSTANT
       end
 
@@ -1601,7 +1601,7 @@ function containsShallow(exp::Expression, func::ContainsPred) ::Bool
 
   @assign res = begin
     @match exp begin
-      COMPONENT_REF_CREF(__)  => begin
+      CREF_EXPRESSION(__)  => begin
         crefContainsShallow(exp.cref, func)
       end
 
@@ -1801,7 +1801,7 @@ function contains(exp::Expression, func::ContainsPred) ::Bool
   @assign res = begin
     local e::Expression
     @match exp begin
-      COMPONENT_REF_CREF(__)  => begin
+      CREF_EXPRESSION(__)  => begin
         crefContains(exp.cref, func)
       end
       ARRAY_EXPRESSION(__)  => begin
@@ -2516,12 +2516,12 @@ function mapFold(exp::Expression, func::MapFunc, arg::ArgT)  where {ArgT}
         end
       end
 
-      COMPONENT_REF_CREF(__)  => begin
+      CREF_EXPRESSION(__)  => begin
         @assign (cr, arg) = mapFoldCref(exp.cref, func, arg)
         if referenceEq(exp.cref, cr)
           exp
         else
-          COMPONENT_REF_CREF(exp.ty, cr)
+          CREF_EXPRESSION(exp.ty, cr)
         end
       end
 
@@ -2859,7 +2859,7 @@ function apply(exp::Expression, func::ApplyFunc)
         ()
       end
 
-      COMPONENT_REF_CREF(__)  => begin
+      CREF_EXPRESSION(__)  => begin
         applyCref(exp.cref, func)
         ()
       end
@@ -4611,11 +4611,11 @@ function toFlatString(exp::Expression) ::String
         P_ClockKind.toString(clk)
       end
 
-      COMPONENT_REF_CREF(__)  => begin
+      CREF_EXPRESSION(__)  => begin
         toFlatString(exp.cref)
       end
 
-      TYPENAME(__)  => begin
+      TYPENAME_EXPRESSION(__)  => begin
         Type.typenameString(arrayElementType(exp.ty))
       end
 
@@ -4763,7 +4763,7 @@ function toString(exp::Expression) ::String
         P_ClockKind.toString(clk)
       end
 
-      COMPONENT_REF_CREF(__)  => begin
+      CREF_EXPRESSION(__)  => begin
         toString(exp.cref)
       end
 
@@ -4981,7 +4981,7 @@ function replaceIterator2(exp::Expression, iterator::InstNode, iteratorValue::Ex
   @assign exp = begin
     local node::InstNode
     @match exp begin
-      COMPONENT_REF_CREF(cref = COMPONENT_REF_CREF(node = node))  => begin
+      CREF_EXPRESSION(cref = CREF_EXPRESSION(node = node))  => begin
         if refEqual(iterator, node)
           iteratorValue
         else
@@ -5319,7 +5319,7 @@ function applyIndexSubscriptTypename(ty::M_Type, index::Subscript) ::Expression
       end
     end
   else
-    @assign subscriptedExp = SUBSCRIPTED_EXP_EXPRESSION(TYPENAME(ty), list(index), ty)
+    @assign subscriptedExp = SUBSCRIPTED_EXP_EXPRESSION(TYPENAME_EXPRESSION(ty), list(index), ty)
   end
   subscriptedExp
 end
@@ -5339,11 +5339,11 @@ function applySubscriptTypename(subscript::Subscript, ty::M_Type) ::Expression
       end
 
       SUBSCRIPT_SLICE(__)  => begin
-        SUBSCRIPTED_EXP_EXPRESSION(TYPENAME(ty), list(subscript), ARRAY_TYPE(ty, list(toDimension(sub))))
+        SUBSCRIPTED_EXP_EXPRESSION(TYPENAME_EXPRESSION(ty), list(subscript), ARRAY_TYPE(ty, list(toDimension(sub))))
       end
 
       SUBSCRIPT_WHOLE(__)  => begin
-        TYPENAME(ty)
+        TYPENAME_EXPRESSION(ty)
       end
 
       SUBSCRIPT_EXPANDED_SLICE(__)  => begin
@@ -5363,7 +5363,7 @@ function applySubscriptCref(subscript::Subscript, cref::ComponentRef, restSubscr
 
   @assign cr = applySubscripts(_cons(subscript, restSubscripts), cref)
   @assign ty = getSubscriptedType(cr)
-  @assign outExp = COMPONENT_REF_CREF(ty, cr)
+  @assign outExp = CREF_EXPRESSION(ty, cr)
   outExp
 end
 
@@ -5374,11 +5374,11 @@ end
 
                    @assign outExp = begin
                      @match exp begin
-                       COMPONENT_REF_CREF(__)  => begin
+                       CREF_EXPRESSION(__)  => begin
                          applySubscriptCref(subscript, exp.cref, restSubscripts)
                        end
 
-                       TYPENAME(__) where (listEmpty(restSubscripts))  => begin
+                       TYPENAME_EXPRESSION(__) where (listEmpty(restSubscripts))  => begin
                          applySubscriptTypename(subscript, exp.ty)
                        end
 
@@ -5632,12 +5632,12 @@ function setType(ty::NFType, exp::Expression) ::Expression
         ()
       end
 
-      COMPONENT_REF_CREF(__)  => begin
+      CREF_EXPRESSION(__)  => begin
         @assign exp.ty = ty
         ()
       end
 
-      TYPENAME(__)  => begin
+      TYPENAME_EXPRESSION(__)  => begin
         @assign exp.ty = ty
         ()
       end
@@ -5759,11 +5759,11 @@ function typeOf(exp::Expression) ::M_Type
         TYPE_CLOCK()
       end
 
-      COMPONENT_REF_CREF(__)  => begin
+      CREF_EXPRESSION(__)  => begin
         exp.ty
       end
 
-      TYPENAME(__)  => begin
+      TYPENAME_EXPRESSION(__)  => begin
         exp.ty
       end
 
@@ -5991,13 +5991,13 @@ end
                          comp
                        end
 
-                       COMPONENT_REF_CREF(__)  => begin
-                         @match COMPONENT_REF_CREF(cref = cr) = exp2
+                       CREF_EXPRESSION(__)  => begin
+                         @match CREF_EXPRESSION(cref = cr) = exp2
                          compare(exp1.cref, cr)
                        end
 
-                       TYPENAME(__)  => begin
-                         @match TYPENAME(ty = ty) = exp2
+                       TYPENAME_EXPRESSION(__)  => begin
+                         @match TYPENAME_EXPRESSION(ty = ty) = exp2
                          valueCompare(exp1.ty, ty)
                        end
 
@@ -6304,7 +6304,7 @@ function isWildCref(exp::Expression) ::Bool
 
   @assign wild = begin
     @match exp begin
-      COMPONENT_REF_CREF(cref = WILD(__))  => begin
+      CREF_EXPRESSION(cref = WILD(__))  => begin
         true
       end
 
@@ -6321,7 +6321,7 @@ function isCref(exp::Expression) ::Bool
 
   @assign isCref = begin
     @match exp begin
-      COMPONENT_REF_CREF(__)  => begin
+      CREF_EXPRESSION(__)  => begin
         true
       end
 

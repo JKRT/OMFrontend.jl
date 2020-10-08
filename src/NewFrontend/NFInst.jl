@@ -86,14 +86,14 @@ function instClassInProgram(classPath::Absyn.Path, program::SCode.Program)::Tupl
   @info "COLLECTED CONSTANTS"
   # if Flags.getConfigBool(Flags.FLAT_MODELICA)
   @debug "PRINTING FLAT MODELICA"
-  # printFlatString(flat_model, FunctionTreeImpl.listValues(funcs))
+  #printFlatString(flat_model, FunctionTreeImpl.listValues(funcs))
   # end
   #= Scalarize array components in the flat model.=#
-  @debug "Skipping NF_SCALARIZE"
+  @debug "Not skipping NF_SCALARIZE"
   #                  if Flags.isSet(Flags.NF_SCALARIZE)
-  #                    @assign flat_model = Scalarize.scalarize(flat_model, name)
+  # @assign flat_model = scalarize(flat_model, name)
   #                  else
-  @assign flat_model.variables = ListUtil.filterOnFalse(flat_model.variables, isEmptyArray)
+  # @assign flat_model.variables = ListUtil.filterOnFalse(flat_model.variables, isEmptyArray)
   #                   end
   #=  Remove empty arrays from variables =#
   @info "VERIFYING MODEL: "
@@ -672,6 +672,10 @@ function instClassDef(cls::Class, outerMod::Modifier, attributes::Attributes, us
         mapExtends(cls_tree, (par) -> modifyExtends(scope = par))
         #=  Apply the modifiers of this scope.
         =#
+
+        strMod = toString(mod, true)
+        @info "Merged mod EXPANDED_CLASS: $strMod"
+
         applyModifier(mod, cls_tree, name(node))
         #=  Apply element redeclares.
         =#
@@ -718,6 +722,10 @@ function instClassDef(cls::Class, outerMod::Modifier, attributes::Attributes, us
         @assign mod = fromElement(definition(node), list(node), rootParent(node))
         @assign outer_mod = merge(outerMod, addParent(node, cls.modifier))
         @assign mod = merge(outer_mod, mod)
+
+        strMod = toString(mod, true)
+        @info "Merged mod EXPANDED_DERIVED: $strMod"
+
         @assign attrs = updateClassConnectorType(cls.restriction, cls.attributes)
         @assign attributes = mergeDerivedAttributes(attrs, attributes, parentArg)
         #=  Instantiate the base class and update the nodes.
@@ -748,6 +756,10 @@ function instClassDef(cls::Class, outerMod::Modifier, attributes::Attributes, us
         @assign mod = fromElement(definition(node), list(node), parent(node))
         @assign outer_mod = merge(outerMod, addParent(node, cls.modifier))
         @assign mod = merge(outer_mod, mod)
+
+        strMod = toString(mod, true)
+        @info "Merged mod PARTIAL_BUILTIN: $strMod"
+
         applyModifier(mod, cls_tree, name(node))
         @assign inst_cls = INSTANCED_BUILTIN(ty, cls_tree, res)
         @assign node = updateClass(inst_cls, node)
@@ -1001,6 +1013,7 @@ end
                          try
                            @assign node_ptrs = lookupElementsPtr(name(mod), cls)
                          catch
+                           @error "Missing modified element! "
                            Error.addSourceMessage(Error.MISSING_MODIFIED_ELEMENT, list(name(mod), clsName), info(mod))
                            fail()
                          end
@@ -1239,6 +1252,7 @@ function instComponent(node::InstNode, attributes::Attributes , innerMod::Modifi
   #=  An already instantiated component might be due to an instantiation loop, check it.
   =#
   @match COMPONENT_DEF(definition = def, modifier = outer_mod) = comp
+
   if isRedeclare(outer_mod)
     checkOuterComponentMod(outer_mod, def, comp_node)
     instComponentDef(def, MODIFIER_NOMOD(), MODIFIER_NOMOD(), DEFAULT_ATTR, useBinding, comp_node, parentNode, instLevel, originalAttr, isRedeclared = true)
@@ -1282,6 +1296,8 @@ function instComponentDef(component::SCode.Element, outerMod::Modifier, innerMod
         @assign mod = merge(mod, innerMod)
         @assign mod = merge(outerMod, mod)
         @assign mod = addParent(node, mod)
+        str = toString(mod, true)
+        @info "Merged mod: $str / $useBinding"
         checkOuterComponentMod(mod, component, node)
         @assign dims = list(DIMENSION_RAW_DIM(d) for d in component.attributes.arrayDims)
         bindingVar = if useBinding
@@ -1316,7 +1332,7 @@ function instComponentDef(component::SCode.Element, outerMod::Modifier, innerMod
         #=  empty here, and let instClass set it for us instead.
         =#
         @assign inst_comp = UNTYPED_COMPONENT(EMPTY_NODE(), listArray(dims), bindingVar, condition, attr, SOME(component.comment), false, info)
-        updateComponent(inst_comp, node)
+        updateComponent!(inst_comp, node)
         #=  Instantiate the type of the component.
         =#
         @assign (ty_node, ty_attr) = instTypeSpec(component.typeSpec, mod, attr, useBinding && ! isBound(bindingVar), parentNode, node, info, instLevel)
@@ -1403,7 +1419,7 @@ function redeclareComponent(redeclareNode::InstNode, originalNode::InstNode, out
   @assign rdcl_type = REDECLARED_COMP(parent(originalNode))
   @assign rdcl_node = setNodeType(rdcl_type, redeclareNode)
   @assign rdcl_node = copyInstancePtr(originalNode, rdcl_node)
-  @assign rdcl_node = updateComponent(component(redeclareNode), rdcl_node)
+  @assign rdcl_node = updateComponent!(component(redeclareNode), rdcl_node)
   instComponent(rdcl_node, outerAttr, constrainingMod, true, instLevel, SOME(getAttributes(orig_comp)))
   @assign rdcl_comp = component(rdcl_node)
   @assign new_comp = begin
@@ -1448,7 +1464,7 @@ function redeclareComponent(redeclareNode::InstNode, originalNode::InstNode, out
       end
     end
   end
-  updateComponent(new_comp, redeclaredNode)
+  updateComponent!(new_comp, redeclaredNode)
 end
 
 """ #= Prints an error message and fails if it gets an outer component and a
@@ -2023,6 +2039,8 @@ end
 
 function instBuiltinAttribute(attribute::Modifier, node::InstNode) ::Modifier
 
+ strMod1 = toString(attribute, true)
+ @info ">instBuiltinAttribute($strMod1)"
 
   @assign () = begin
     local bindingVar::Binding
@@ -2043,6 +2061,9 @@ function instBuiltinAttribute(attribute::Modifier, node::InstNode) ::Modifier
       end
     end
   end
+
+  strMod2 = toString(attribute, true)
+  @info "<instBuiltinAttribute($strMod2)"
   attribute
 end
 
@@ -2065,7 +2086,7 @@ function instComponentExpressions(componentArg::InstNode)
         #=  which can otherwise happen with duplicate components at this stage.
         =#
         @assign c.instantiated = true
-        updateComponent(c, node)
+        updateComponent!(c, node)
         ()
       end
 
@@ -2083,7 +2104,7 @@ function instComponentExpressions(componentArg::InstNode)
 
       TYPE_ATTRIBUTE(__)  => begin
         @assign c.modifier = instBuiltinAttribute(c.modifier, componentArg)
-        updateComponent(c, node)
+        updateComponent!(c, node)
         ()
       end
       _  => begin
@@ -2592,7 +2613,7 @@ function instEEquation(scodeEq::SCode.EEquation, scope::InstNode, origin::ORIGIN
         end
         @assign exp1 = instConnectorCref(scodeEq.crefLeft, scope, info)
         @assign exp2 = instConnectorCref(scodeEq.crefRight, scope, info)
-        Equation.CONNECT(exp1, exp2, makeSource(scodeEq.comment, info))
+        EQUATION_CONNECT(exp1, exp2, makeSource(scodeEq.comment, info))
       end
 
       SCode.EQ_FOR(info = info)  => begin
@@ -2601,7 +2622,7 @@ function instEEquation(scodeEq::SCode.EEquation, scope::InstNode, origin::ORIGIN
         @assign (for_scope, iter) = addIteratorToScope(scodeEq.index, scope, scodeEq.info)
         @assign next_origin = setFlag(origin, ORIGIN_FOR)
         @assign eql = instEEquations(scodeEq.eEquationLst, for_scope, next_origin)
-        Equation.FOR(iter, oexp, eql, makeSource(scodeEq.comment, info))
+        EQUATION_FOR(iter, oexp, eql, makeSource(scodeEq.comment, info))
       end
 
       SCode.EQ_IF(info = info)  => begin
@@ -2615,7 +2636,7 @@ function instEEquation(scodeEq::SCode.EEquation, scope::InstNode, origin::ORIGIN
         for branch in scodeEq.thenBranch
           @assign eql = instEEquations(branch, scope, next_origin)
           @match _cons(exp1, expl) = expl
-          @assign branches = _cons(Equation.makeBranch(exp1, eql), branches)
+          @assign branches = _cons(EQUATION_makeBranch(exp1, eql), branches)
         end
         #=  Instantiate the else-branch, if there is one, and make it a branch
         =#
@@ -2623,9 +2644,9 @@ function instEEquation(scodeEq::SCode.EEquation, scope::InstNode, origin::ORIGIN
         =#
         if ! listEmpty(scodeEq.elseBranch)
           @assign eql = instEEquations(scodeEq.elseBranch, scope, next_origin)
-          @assign branches = _cons(Equation.makeBranch(P_Expression.BOOLEAN_EXPRESSION(true), eql), branches)
+          @assign branches = _cons(makeBranch(P_Expression.BOOLEAN_EXPRESSION(true), eql), branches)
         end
-        Equation.IF(listReverse(branches), makeSource(scodeEq.comment, info))
+        EQUATION_IF(listReverse(branches), makeSource(scodeEq.comment, info))
       end
 
       SCode.EQ_WHEN(info = info)  => begin
@@ -2637,25 +2658,25 @@ function instEEquation(scodeEq::SCode.EEquation, scope::InstNode, origin::ORIGIN
         @assign next_origin = setFlag(origin, ORIGIN_WHEN)
         @assign exp1 = instExp(scodeEq.condition, scope, info)
         @assign eql = instEEquations(scodeEq.eEquationLst, scope, next_origin)
-        @assign branches = list(Equation.makeBranch(exp1, eql))
+        @assign branches = list(makeBranch(exp1, eql))
         for branch in scodeEq.elseBranches
           @assign exp1 = instExp(Util.tuple21(branch), scope, info)
           @assign eql = instEEquations(Util.tuple22(branch), scope, next_origin)
-          @assign branches = _cons(Equation.makeBranch(exp1, eql), branches)
+          @assign branches = _cons(makeBranch(exp1, eql), branches)
         end
-        Equation.WHEN(listReverse(branches), makeSource(scodeEq.comment, info))
+        EQUATION_WHEN(listReverse(branches), makeSource(scodeEq.comment, info))
       end
 
       SCode.EQ_ASSERT(info = info)  => begin
         @assign exp1 = instExp(scodeEq.condition, scope, info)
         @assign exp2 = instExp(scodeEq.message, scope, info)
         @assign exp3 = instExp(scodeEq.level, scope, info)
-        Equation.ASSERT(exp1, exp2, exp3, makeSource(scodeEq.comment, info))
+        EQUATION_ASSERT(exp1, exp2, exp3, makeSource(scodeEq.comment, info))
       end
 
       SCode.EQ_TERMINATE(info = info)  => begin
         @assign exp1 = instExp(scodeEq.message, scope, info)
-        Equation.TERMINATE(exp1, makeSource(scodeEq.comment, info))
+        EQUATION_TERMINATE(exp1, makeSource(scodeEq.comment, info))
       end
 
       SCode.EQ_REINIT(info = info)  => begin
@@ -2665,12 +2686,12 @@ function instEEquation(scodeEq::SCode.EEquation, scope::InstNode, origin::ORIGIN
         end
         @assign exp1 = instExp(scodeEq.cref, scope, info)
         @assign exp2 = instExp(scodeEq.expReinit, scope, info)
-        Equation.REINIT(exp1, exp2, makeSource(scodeEq.comment, info))
+        EQUATION_REINIT(exp1, exp2, makeSource(scodeEq.comment, info))
       end
 
       SCode.EQ_NORETCALL(info = info)  => begin
         @assign exp1 = instExp(scodeEq.exp, scope, info)
-        Equation.NORETCALL(exp1, makeSource(scodeEq.comment, info))
+        EQUATION_NORETCALL(exp1, makeSource(scodeEq.comment, info))
       end
 
       _  => begin
@@ -2791,7 +2812,7 @@ function updateImplicitVariability(node::InstNode, evalAllParams::Bool)
   local cls_tree::ClassTree
   @assign () = begin
     @match cls begin
-      INSTANCED_CLASS(elements = cls_tree && FLAT_TREE(__))  => begin
+      INSTANCED_CLASS(elements = cls_tree && CLASS_TREE_FLAT_TREE(__))  => begin
         for c in cls_tree.components
           updateImplicitVariabilityComp(c, evalAllParams)
         end
@@ -2807,7 +2828,7 @@ function updateImplicitVariability(node::InstNode, evalAllParams::Bool)
         ()
       end
 
-      INSTANCED_BUILTIN(elements = cls_tree && FLAT_TREE(__))  => begin
+      INSTANCED_BUILTIN(elements = cls_tree && CLASS_TREE_FLAT_TREE(__))  => begin
         for c in cls_tree.components
           updateImplicitVariabilityComp(c, evalAllParams)
         end
@@ -2821,16 +2842,16 @@ function updateImplicitVariability(node::InstNode, evalAllParams::Bool)
   end
 end
 
-function updateImplicitVariabilityComp(component::InstNode, evalAllParams::Bool)
-  local node::InstNode = resolveOuter(component)
+function updateImplicitVariabilityComp(co::InstNode, evalAllParams::Bool)
+  local node::InstNode = resolveOuter(co)
   local c::Component = component(node)
 
   @assign () = begin
-    local binding::Binding
+    local bnd::Binding
     local condition::Binding
     @match c begin
-      P_Component.UNTYPED_COMPONENT(binding = binding, condition = condition)  => begin
-        if isStructuralComponent(c, c.attributes, binding, node, evalAllParams)
+      UNTYPED_COMPONENT(binding = bnd, condition = condition)  => begin
+        if isStructuralComponent(c, c.attributes, bnd, node, evalAllParams)
           markStructuralParamsComp(c, node)
         end
         #=  Parameters used in array dimensions are structural.
@@ -2840,8 +2861,8 @@ function updateImplicitVariabilityComp(component::InstNode, evalAllParams::Bool)
         end
         #=  Parameters that determine the size of a component binding are structural.
         =#
-        if isBound(binding)
-          markStructuralParamsExpSize(getUntypedExp(binding))
+        if isBound(bnd)
+          markStructuralParamsExpSize(getUntypedExp(bnd))
         end
         #=  Parameters used in a component condition are structural.
         =#
@@ -2852,10 +2873,10 @@ function updateImplicitVariabilityComp(component::InstNode, evalAllParams::Bool)
         ()
       end
 
-      TYPE_ATTRIBUTE(__) where (listMember(name(component), list("fixed", "stateSelect")))  => begin
-        @assign binding = binding(c.modifier)
-        if isBound(binding)
-          markStructuralParamsExp(getUntypedExp(binding))
+      TYPE_ATTRIBUTE(__) where (listMember(name(co), list("fixed", "stateSelect")))  => begin
+        @assign bnd = binding(c.modifier)
+        if isBound(bnd)
+          markStructuralParamsExp(getUntypedExp(bnd))
         end
         ()
       end
@@ -2874,8 +2895,8 @@ function isStructuralComponent(component::Component, compAttrs::Attributes, comp
 
   if compAttrs.variability != Variability.PARAMETER
     @assign isStructural = false
-  elseif evalAllParams || P_Component.getEvaluateAnnotation(component)
-    if ! P_Component.getFixedAttribute(component)
+  elseif evalAllParams || getEvaluateAnnotation(component)
+    if ! getFixedAttribute(component)
       @assign isStructural = false
     elseif P_Component.isExternalObject(component)
       @assign isStructural = false
@@ -3025,7 +3046,7 @@ function markStructuralParamsDim(dimension::Dimension)
 end
 
 function markStructuralParamsExp(exp::Expression)
-  P_Expression.Expression.apply(exp, markStructuralParamsExp_traverser)
+  apply(exp, markStructuralParamsExp_traverser)
 end
 
 function markStructuralParamsExp_traverser(exp::Expression)
@@ -3055,7 +3076,7 @@ function markStructuralParamsComp(component::Component, node::InstNode)
   local comp::Component
   local binding::Option{Expression}
   @assign comp = P_Component.setVariability(Variability.STRUCTURAL_PARAMETER, component)
-  updateComponent(comp, node)
+  updateComponent!(comp, node)
   @assign binding = untypedExp(P_Component.getBinding(comp))
   if isSome(binding)
     markStructuralParamsExp(Util.getOption(binding))
@@ -3063,14 +3084,14 @@ function markStructuralParamsComp(component::Component, node::InstNode)
 end
 
 function markStructuralParamsExpSize(exp::Expression)
-  P_Expression.Expression.apply(exp, markStructuralParamsExpSize_traverser)
+  apply(exp, markStructuralParamsExpSize_traverser)
 end
 
 function markStructuralParamsExpSize_traverser(exp::Expression)
   @assign () = begin
     local iters::List{Tuple{InstNode, Expression}}
     @match exp begin
-      CALL_EXPRESSION(call = P_Call.UNTYPED_ARRAY_CONSTRUCTOR(iters = iters))  => begin
+      CALL_EXPRESSION(call = UNTYPED_ARRAY_CONSTRUCTOR(iters = iters))  => begin
         for iter in iters
           markStructuralParamsExp(Util.tuple22(iter))
         end
@@ -3095,29 +3116,29 @@ function updateImplicitVariabilityEq(eq::Equation, inWhen::Bool = false)
     local exp::Expression
     local eql::List{Equation}
     @match eq begin
-      Equation.EQUALITY(__)  => begin
+      EQUATION_EQUALITY(__)  => begin
         if inWhen
           markImplicitWhenExp(eq.lhs)
         end
         ()
       end
 
-      Equation.CONNECT(__)  => begin
+      EQUATION_CONNECT(__)  => begin
         fold(eq.lhs, markStructuralParamsSubs, 0)
         fold(eq.rhs, markStructuralParamsSubs, 0)
         ()
       end
 
-      Equation.FOR(__)  => begin
+      EQUATION_FOR(__)  => begin
         updateImplicitVariabilityEql(eq.body, inWhen)
         ()
       end
 
-      Equation.IF(__)  => begin
+      EQUATION_IF(__)  => begin
         for branch in eq.branches
           @assign () = begin
             @match branch begin
-              P_Equation.Equation.BRANCH(__)  => begin
+              P_Equation.EQUATION_BRANCH(__)  => begin
                 updateImplicitVariabilityEql(branch.body, inWhen)
                 ()
               end
@@ -3127,11 +3148,11 @@ function updateImplicitVariabilityEq(eq::Equation, inWhen::Bool = false)
         ()
       end
 
-      Equation.WHEN(__)  => begin
+      EQUATION_WHEN(__)  => begin
         for branch in eq.branches
           @assign () = begin
             @match branch begin
-              P_Equation.Equation.BRANCH(__)  => begin
+              P_Equation.EQUATION_BRANCH(__)  => begin
                 updateImplicitVariabilityEql(branch.body, inWhen = true)
                 ()
               end
@@ -3186,7 +3207,7 @@ function markImplicitWhenExp_traverser(exp::Expression)
           @assign comp = component(node)
           if variability(comp) == Variability.CONTINUOUS
             @assign comp = P_Component.setVariability(Variability.IMPLICITLY_DISCRETE, comp)
-            updateComponent(comp, node)
+            updateComponent!(comp, node)
           end
         end
         ()

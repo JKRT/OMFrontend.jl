@@ -1006,11 +1006,22 @@ function mergeModifier(modifier::Modifier, component::Component)::Component
   @assign component = begin
     @match component begin
       COMPONENT_DEF(__) => begin
+        strMod1 = toString(modifier, true)
+        strMod2 = toString(component.modifier, true)
+        @info "c/mergeModifier($strMod1, $strMod2)"
         @assign component.modifier = merge(modifier, component.modifier)
+        strMod3 = toString(component.modifier, true)
+        @info "c/mergeModifier($strMod1, $strMod2) -> $strMod3"
         component
       end
       TYPE_ATTRIBUTE(__) => begin
-        TYPE_ATTRIBUTE(component.ty, merge(modifier, component.modifier))
+        strMod1 = toString(modifier, true)
+        strMod2 = toString(component.modifier, true)
+        @info "t/mergeModifier($strMod1, $strMod2)"
+        mod = merge(modifier, component.modifier)
+        strMod3 = toString(mod, true)
+        @info "t/mergeModifier($strMod1, $strMod2) -> $strMod3"
+        TYPE_ATTRIBUTE(component.ty, mod)
       end
     end
   end

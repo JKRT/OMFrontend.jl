@@ -512,12 +512,13 @@ function getTypeAttributes(cls::Class)::List{Modifier}
   try
     @assign comps = getComponents(classTree(cls))
     for c in comps
-      @assign mod = P_Component.getModifier(component(c))
-      if !P_Modifier.isEmpty(mod)
+      @assign mod = getModifier(component(c))
+      if !isEmpty(mod)
         @assign attributes = _cons(mod, attributes)
       end
     end
-  catch
+  catch e
+    @error "some $e stuff"
   end
   return attributes
 end

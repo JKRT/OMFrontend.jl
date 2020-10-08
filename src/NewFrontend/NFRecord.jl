@@ -76,7 +76,7 @@ function instDefaultConstructor(
   @assign (inputs, locals, all_params) = collectRecordParams(ctor_node)
   #=  Create the output record element, using the instance created above as both parent and type.
   =#
-  @assign out_comp = P_Component.UNTYPED_COMPONENT(
+  @assign out_comp = UNTYPED_COMPONENT(
     ctor_node,
     listArray(nil),
     EMPTY_BINDING,
@@ -129,7 +129,7 @@ function collectRecordParams(
   @assign tree = classTree(getClass(recNode))
   @assign () = begin
     @match tree begin
-      FLAT_TREE(components = comps) => begin
+      CLASS_TREE_FLAT_TREE(components = comps) => begin
         for i = arrayLength(comps):(-1):1
           @assign comp = comps[i]
           @assign (inputs, locals) = collectRecordParam(comp, inputs, locals)

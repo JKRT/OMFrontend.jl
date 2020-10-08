@@ -80,7 +80,7 @@ function instOperatorFunctions(node::InstNode, info::SourceInfo)::InstNode
   @assign tree = classTree(getClass(node))
   @assign () = begin
     @match tree begin
-      FLAT_TREE(classes = mclss) => begin
+      CLASS_TREE_FLAT_TREE(classes = mclss) => begin
         for op in mclss
           P_Function.instFunctionNode(op)
           @assign funcs = P_Function.getCachedFuncs(op)
@@ -185,7 +185,7 @@ function patchOperatorRecordConstructorBinding(fn::M_Function)::M_Function
     (fn) -> patchOperatorRecordConstructorBinding_traverser(constructorFn = fn),
   )
   @assign output_comp = P_Component.setBinding(output_binding, output_comp)
-  @assign output_node = updateComponent(output_comp, output_node)
+  @assign output_node = updateComponent!(output_comp, output_node)
   return fn
 end
 

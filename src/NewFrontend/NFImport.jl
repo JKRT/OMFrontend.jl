@@ -54,7 +54,7 @@ function instUnqualified(
   @assign tree = classTree(getClass(node))
   @assign () = begin
     @match tree begin
-      FLAT_TREE(__) => begin
+      CLASS_TREE_FLAT_TREE(__) => begin
         for cls in tree.classes
           @assign imps = _cons(RESOLVED_IMPORT(cls, info), imps)
         end

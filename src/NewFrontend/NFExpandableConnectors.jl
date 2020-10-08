@@ -392,7 +392,7 @@ function markComponentPresent(node::InstNode)
   return if ConnectorType.isPotentiallyPresent(cty)
     @assign cty = ConnectorType.setPresent(cty)
     @assign comp = P_Component.setConnectorType(cty, comp)
-    updateComponent(comp, node)
+    updateComponent!(comp, node)
   end
 end
 

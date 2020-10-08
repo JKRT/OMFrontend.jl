@@ -128,7 +128,7 @@ function fromBinding(binding::Binding)::ExpressionIterator
     local expl::List{Expression}
     @match binding begin
       TYPED_BINDING(eachType = NFBinding.EachType.REPEAT) => begin
-        @assign expl = P_Expression.Expression.arrayScalarElements(binding.bindingExp)
+        @assign expl = arrayScalarElements(binding.bindingExp)
         if listLength(expl) == 1
           EACH_ITERATOR(listHead(expl))
         else

@@ -64,7 +64,7 @@ function elaborate(
   =#
   #=  if they've been marked as present.
   =#
-  @assign vars = List(updatePotentiallyPresentVariable(v) for v in vars)
+  @assign vars = list(updatePotentiallyPresentVariable(v) for v in vars)
   @assign flatModel.variables = vars
   return (flatModel, connections)
 end

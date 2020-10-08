@@ -269,7 +269,7 @@ function isDeletedComponent(condition::Binding, prefix::ComponentRef)::Bool
     @assign cond = condition
     @assign exp = getTypedExp(cond)
     @assign exp = Ceval.evalExp(exp, Ceval.P_EvalTarget.CONDITION(getInfo(cond)))
-    @assign exp = P_Expression.Expression.stripBindingInfo(exp)
+    @assign exp = stripBindingInfo(exp)
     if arrayAllEqual(exp)
       @assign exp = arrayFirstScalar(exp)
     end
@@ -493,7 +493,7 @@ function getRecordBindings(binding::Binding, comps::Array{<:InstNode})::List{Bin
   @assign recordBindings = begin
     @match binding_exp begin
 RECORD_EXPRESSION(__) => begin
-        List(if P_Expression.Expression.isEmpty(e)
+        list(if isEmpty(e)
           EMPTY_BINDING
         else
           FLAT_BINDING(e, var)
@@ -557,7 +557,7 @@ function flattenComplexComponent(
     if comp_var <= Variability.STRUCTURAL_PARAMETER ||
        binding_var <= Variability.STRUCTURAL_PARAMETER
       @assign binding_exp =
-        P_Expression.Expression.stripBindingInfo(Ceval.evalExp(binding_exp))
+        stripBindingInfo(Ceval.evalExp(binding_exp))
     elseif binding_var == Variability.PARAMETER && P_Component.isFinal(comp)
       try
         @assign binding_exp =
@@ -568,8 +568,8 @@ function flattenComplexComponent(
     else
       @assign binding_exp = SimplifyExp.simplify(binding_exp)
     end
-    @assign binding_exp = P_Expression.Expression.splitRecordCref(binding_exp)
-    if !P_Expression.Expression.isRecordOrRecordArray(binding_exp)
+    @assign binding_exp = splitRecordCref(binding_exp)
+    if !isRecordOrRecordArray(binding_exp)
       @assign name = prefixCref(node, ty, nil, prefix)
       @assign eq = EQUATION_EQUALITY(
         CREF_EXPRESSION(ty, name),
@@ -917,13 +917,13 @@ function subscriptBindingOpt(
     @assign binding = begin
       @match b begin
         TYPED_BINDING(bindingExp = exp, bindingType = ty) => begin
-          @assign b.bindingExp = P_Expression.Expression.applySubscripts(subscripts, exp)
+          @assign b.bindingExp = applySubscripts(subscripts, exp)
           @assign b.bindingType = arrayElementType(ty)
           SOME(b)
         end
 
         FLAT_BINDING(bindingExp = exp) => begin
-          @assign b.bindingExp = P_Expression.Expression.applySubscripts(subscripts, exp)
+          @assign b.bindingExp = applySubscripts(subscripts, exp)
           SOME(b)
         end
 
@@ -1064,7 +1064,7 @@ function flattenBindingExp2(
       listAppend(listReverse(s) for s in subscriptsAll(pre))
     @assign binding_level = min(binding_level, listLength(subs))
     @assign subs = ListUtil.firstN_reverse(subs, binding_level)
-    @assign outExp = P_Expression.Expression.applySubscripts(subs, exp)
+    @assign outExp = applySubscripts(subs, exp)
   end
   #=  TODO: Optimize this, making a list of all subscripts in the prefix when
   =#
@@ -1177,7 +1177,7 @@ function flattenEquation(
       end
 
       EQUATION_WHEN(__) => begin
-        @assign eq.branches = List(flattenEqBranch(b, prefix) for b in eq.branches)
+        @assign eq.branches = list(flattenEqBranch(b, prefix) for b in eq.branches)
         _cons(eq, equations)
       end
 
@@ -1253,7 +1253,7 @@ function flattenIfEquation(
           =#
           if var <= Variability.STRUCTURAL_PARAMETER
             @assign cond = Ceval.evalExp(cond, target)
-            if !P_Expression.Expression.isBoolean(cond) && has_connect
+            if !isBoolean(cond) && has_connect
               Error.addInternalError(
                 "Failed to evaluate branch condition in if equation containing connect equations: `" +
                 toString(cond) +
@@ -1265,7 +1265,7 @@ function flattenIfEquation(
           end
           #=  Conditions in an if-equation that contains connects must be possible to evaluate.
           =#
-          if P_Expression.Expression.isTrue(cond)
+          if isTrue(cond)
             @assign branches = nil
             if listEmpty(bl)
               @assign equations = listAppend(eql, equations)
@@ -1275,7 +1275,7 @@ function flattenIfEquation(
                 bl,
               )
             end
-          elseif !P_Expression.Expression.isFalse(cond)
+          elseif !isFalse(cond)
             @assign bl = _cons(
               P_Equation.Equation.makeBranch(cond, listReverseInPlace(eql), var),
               bl,
@@ -1307,7 +1307,7 @@ function flattenIfEquation(
           if var <= Variability.STRUCTURAL_PARAMETER
             @assign cond = Ceval.evalExp(cond, target)
           end
-          if !P_Expression.Expression.isFalse(cond)
+          if !isFalse(cond)
             P_Equation.Equation.triggerErrors(branch)
           end
           bl
@@ -1396,7 +1396,7 @@ function unrollForLoop(
     @assign unrolled_body = mapExpList(
       body,
       (iter, val) ->
-        P_Expression.Expression.replaceIterator(iterator = iter, iteratorValue = val),
+        replaceIterator(iterator = iter, iteratorValue = val),
     )
     @assign unrolled_body = flattenEquations(unrolled_body, prefix)
     @assign equations = listAppend(unrolled_body, equations)
@@ -1573,7 +1573,7 @@ function resolveConnections(flatModel::FlatModel, name::String)::FlatModel
   =#
   @assign flatModel.equations = listAppend(conn_eql, flatModel.equations)
   @assign flatModel.variables =
-    List(v for v in flatModel.variables if P_Variable.Variable.isPresent(v))
+    list(v for v in flatModel.variables if P_Variable.Variable.isPresent(v))
   @assign ctable = CardinalityTable.fromConnections(conns)
   #=  Evaluate any connection operators if they're used.
   =#
@@ -1592,7 +1592,7 @@ function evaluateConnectionOperators(
 )::FlatModel
 
   @assign flatModel.variables =
-    List(evaluateBindingConnOp(c, sets, setsArray, ctable) for c in flatModel.variables)
+    list(evaluateBindingConnOp(c, sets, setsArray, ctable) for c in flatModel.variables)
   @assign flatModel.equations =
     evaluateEquationsConnOp(flatModel.equations, sets, setsArray, ctable)
   @assign flatModel.initialEquations =

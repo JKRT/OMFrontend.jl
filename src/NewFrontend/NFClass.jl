@@ -154,7 +154,7 @@ function makeRecordExp(clsNode::InstNode)::Expression
     getExp(P_Component.getImplicitBinding(component(f)))
     for f in fields
   )
-  @assign exp = P_Expression.Expression.makeRecord(scopePath(ty_node), ty, args)
+  @assign exp = makeRecord(scopePath(ty_node), ty, args)
   return exp
 end
 

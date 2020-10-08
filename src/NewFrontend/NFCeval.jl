@@ -199,7 +199,7 @@ function evalExp_impl(exp::Expression, target::EvalTarget)::Expression
         else
           makeArray(
             exp.ty,
-            List(evalExp_impl(e, target) for e in exp.elements),
+            list(evalExp_impl(e, target) for e in exp.elements),
             literal = true,
           )
         end
@@ -210,12 +210,12 @@ function evalExp_impl(exp::Expression, target::EvalTarget)::Expression
       end
 
       TUPLE_EXPRESSION(__) => begin
-        @assign exp.elements = List(evalExp_impl(e, target) for e in exp.elements)
+        @assign exp.elements = list(evalExp_impl(e, target) for e in exp.elements)
         exp
       end
 
 RECORD_EXPRESSION(__) => begin
-        @assign exp.elements = List(evalExp_impl(e, target) for e in exp.elements)
+        @assign exp.elements = list(evalExp_impl(e, target) for e in exp.elements)
         exp
       end
 
@@ -524,7 +524,7 @@ function subscriptEvaluatedBinding(
   @assign subs = getSubscripts(cref)
   @assign cr = stripSubscripts(cref)
   if evalSubscripts
-    @assign subs = List(eval(s) for s in subs)
+    @assign subs = list(eval(s) for s in subs)
   end
   #=  The rest of the cref contributes subscripts based on where the expressions
   =#
@@ -579,7 +579,7 @@ function subscriptEvaluatedBinding2(
               @assign cr_node = node(cr)
             end
             if evalSubscripts
-              @assign subs = List(eval(s) for s in subs)
+              @assign subs = list(eval(s) for s in subs)
             end
             @assign accum_subs = listAppend(subs, accum_subs)
           end
@@ -937,7 +937,7 @@ function evalRangeExp(rangeExp::Expression)::Expression
         (INTEGER_EXPRESSION(__), INTEGER_EXPRESSION(__)) =>
           begin
             @assign expl =
-              List(INTEGER_EXPRESSION(i) for i = (start.value):(stop.value))
+              list(INTEGER_EXPRESSION(i) for i = (start.value):(stop.value))
             (TYPE_INTEGER(), expl)
           end
 
@@ -1389,7 +1389,7 @@ function evalBinaryScalarArray(
       ARRAY_EXPRESSION(__) => begin
         makeArray(
           arrayExp.ty,
-          List(evalBinaryScalarArray(scalarExp, e, opFunc) for e in arrayExp.elements),
+          list(evalBinaryScalarArray(scalarExp, e, opFunc) for e in arrayExp.elements),
           literal = true,
         )
       end
@@ -1413,7 +1413,7 @@ function evalBinaryArrayScalar(
       ARRAY_EXPRESSION(__) => begin
         ARRAY_EXPRESSION(
           arrayExp.ty,
-          List(evalBinaryArrayScalar(e, scalarExp, opFunc) for e in arrayExp.elements),
+          list(evalBinaryArrayScalar(e, scalarExp, opFunc) for e in arrayExp.elements),
           literal = true,
         )
       end
@@ -1436,7 +1436,7 @@ function evalBinaryMulVectorMatrix(vectorExp::Expression, matrixExp::Expression)
   @assign exp = begin
     @match transposeArray(matrixExp) begin
       ARRAY_EXPRESSION(ARRAY_TYPE(ty, m <| _ <| nil()), expl) => begin
-        @assign expl = List(evalBinaryScalarProduct(vectorExp, e) for e in expl)
+        @assign expl = list(evalBinaryScalarProduct(vectorExp, e) for e in expl)
         makeArray(ARRAY_TYPE(ty, list(m)), expl, literal = true)
       end
 
@@ -1464,7 +1464,7 @@ function evalBinaryMulMatrixVector(matrixExp::Expression, vectorExp::Expression)
   @assign exp = begin
     @match matrixExp begin
       ARRAY_EXPRESSION(ARRAY_TYPE(ty, n <| _ <| nil()), expl) => begin
-        @assign expl = List(evalBinaryScalarProduct(e, vectorExp) for e in expl)
+        @assign expl = list(evalBinaryScalarProduct(e, vectorExp) for e in expl)
         makeArray(ARRAY_TYPE(ty, list(n)), expl, literal = true)
       end
 
@@ -1544,7 +1544,7 @@ function evalBinaryMatrixProduct(exp1::Expression, exp2::Expression)::Expression
           @assign expl1 = List(
             makeArray(
               row_ty,
-              List(evalBinaryScalarProduct(r, c) for c in expl2),
+              list(evalBinaryScalarProduct(r, c) for c in expl2),
               literal = true,
             ) for r in expl1
           )
@@ -1670,7 +1670,7 @@ function evalUnaryMinus(exp1::Expression)::Expression
       end
 
       ARRAY_EXPRESSION(__) => begin
-        @assign exp1.elements = List(evalUnaryMinus(e) for e in exp1.elements)
+        @assign exp1.elements = list(evalUnaryMinus(e) for e in exp1.elements)
         exp1
       end
 
@@ -2343,7 +2343,7 @@ function evalCall(call::Call, target::EvalTarget)::Expression
     local args::List{Expression}
     @match c begin
       P_Call.TYPED_CALL(__) => begin
-        @assign c.arguments = List(evalExp_impl(arg, target) for arg in c.arguments)
+        @assign c.arguments = list(evalExp_impl(arg, target) for arg in c.arguments)
         if P_Function.isBuiltin(c.fn)
           bindingExpMap(
             CALL_EXPRESSION(c),
@@ -2815,7 +2815,7 @@ function evalBuiltinCat(
     end
     fail()
   end
-  @assign es = List(e for e in args if !isEmptyArray(e))
+  @assign es = list(e for e in args if !isEmptyArray(e))
   @assign sz = listLength(es)
   if sz == 0
     @assign result = listHead(args)
@@ -2831,7 +2831,7 @@ function evalBuiltinCat(
     @assign result = arrayFromList(
       es,
       typeOf(listHead(es)),
-      List(P_Dimension.Dimension.fromInteger(d) for d in dims),
+      list(P_Dimension.Dimension.fromInteger(d) for d in dims),
     )
   end
   return result
@@ -3055,7 +3055,7 @@ function evalBuiltinFill2(fillValue::Expression, dims::List{<:Expression})::Expr
         end
       end
     end
-    @assign arr = List(result for e = 1:dim_size)
+    @assign arr = list(result for e = 1:dim_size)
     @assign arr_ty = Type.liftArrayLeft(arr_ty, P_Dimension.Dimension.fromInteger(dim_size))
     @assign result = makeArray(
       arr_ty,
@@ -3221,7 +3221,7 @@ function evalBuiltinMatrix(arg::Expression)::Expression
         else
           @match _cons(dim1, _cons(dim2, _)) = arrayDims(ty)
           @assign ty = Type.liftArrayLeft(arrayElementType(ty), dim2)
-          @assign expl = List(evalBuiltinMatrix2(e, ty) for e in arg.elements)
+          @assign expl = list(evalBuiltinMatrix2(e, ty) for e in arg.elements)
           @assign ty = Type.liftArrayLeft(ty, dim1)
           @assign result = makeArray(ty, expl)
         end
@@ -3251,7 +3251,7 @@ function evalBuiltinMatrix2(arg::Expression, ty::M_Type)::Expression
       ARRAY_EXPRESSION(__) => begin
         makeArray(
           ty,
-          List(toScalar(e) for e in arg.elements),
+          list(toScalar(e) for e in arg.elements),
           arg.literal,
         )
       end
@@ -4073,11 +4073,11 @@ function evalBuiltinTranspose(arg::Expression)::Expression
         elements = arr,
         literal = literal,
       ) => begin
-        @assign arrl = List(arrayElements(e) for e in arr)
+        @assign arrl = list(arrayElements(e) for e in arr)
         @assign arrl = ListUtil.transposeList(arrl)
         @assign ty = Type.liftArrayLeft(ty, dim1)
         @assign arr =
-          List(makeArray(ty, expl, literal) for expl in arrl)
+          list(makeArray(ty, expl, literal) for expl in arrl)
         @assign ty = Type.liftArrayLeft(ty, dim2)
         makeArray(ty, arr, literal)
       end
@@ -4393,7 +4393,7 @@ function evalBuiltinDynamicSelect(
   local s::Expression
   local d::Expression
 
-  @match list(s, d) = List(unbox(arg) for arg in args)
+  @match list(s, d) = list(unbox(arg) for arg in args)
   @assign s = evalExp(s, target)
   @assign result = s
   return result
@@ -4624,7 +4624,7 @@ function evalSize(
     @assign outExp = P_Dimension.Dimension.sizeExp(dim)
   else
     @assign (outExp, ty) = typeExp(exp, ORIGIN_CLASS, info)
-    @assign expl = List(P_Dimension.Dimension.sizeExp(d) for d in arrayDims(ty))
+    @assign expl = list(P_Dimension.Dimension.sizeExp(d) for d in arrayDims(ty))
     @assign dim = P_Dimension.Dimension.fromInteger(listLength(expl), Variability.PARAMETER)
     @assign outExp =
       makeArray(ARRAY_TYPE(TYPE_INTEGER(), list(dim)), expl)

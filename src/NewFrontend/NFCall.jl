@@ -235,8 +235,8 @@ function toDAE(@nospecialize(call::Call))::DAE.Exp
             res_id,
             NONE(),
           ),
-          P_Expression.Expression.toDAE(call.exp),
-          List(iteratorToDAE(iter) for iter in call.iters),
+          toDAE(call.exp),
+          list(iteratorToDAE(iter) for iter in call.iters),
         )
       end
 
@@ -247,13 +247,13 @@ function toDAE(@nospecialize(call::Call))::DAE.Exp
             P_Function.name(call.fn),
             Absyn.COMBINE(),
             toDAE(call.ty),
-            P_Expression.Expression.toDAEValueOpt(call.defaultExp),
+            toDAEValueOpt(call.defaultExp),
             fold_id,
             res_id,
-            P_Expression.Expression.toDAEOpt(fold_exp),
+            toDAEOpt(fold_exp),
           ),
-          P_Expression.Expression.toDAE(call.exp),
-          List(iteratorToDAE(iter) for iter in call.iters),
+          toDAE(call.exp),
+          list(iteratorToDAE(iter) for iter in call.iters),
         )
       end
 
@@ -310,7 +310,7 @@ function typedString(call::Call)::String
       TYPED_CALL(__) => begin
         @assign name = AbsynUtil.pathString(P_Function.name(call.fn))
         @assign arg_str = stringDelimitList(
-          List(toStringTyped(arg) for arg in call.arguments),
+          list(toStringTyped(arg) for arg in call.arguments),
           ", ",
         )
         name + "(" + arg_str + ")"
@@ -338,7 +338,7 @@ function toFlatString(call::Call)::String
       TYPED_CALL(__) => begin
         @assign name = AbsynUtil.pathString(P_Function.name(call.fn))
         @assign arg_str = stringDelimitList(
-          List(P_Expression.Expression.toFlatString(arg) for arg in call.arguments),
+          list(toFlatString(arg) for arg in call.arguments),
           ", ",
         )
         if P_Function.isBuiltin(call.fn)
@@ -353,12 +353,12 @@ function toFlatString(call::Call)::String
           @assign str = toFlatString(devectorizeCall(call))
         else
           @assign name = AbsynUtil.pathString(P_Function.name(NFBuiltinFuncs.ARRAY_FUNC))
-          @assign arg_str = P_Expression.Expression.toFlatString(call.exp)
+          @assign arg_str = toFlatString(call.exp)
           @assign c = stringDelimitList(
             List(
               name(Util.tuple21(iter)) +
               " in " +
-              P_Expression.Expression.toFlatString(Util.tuple22(iter))
+              toFlatString(Util.tuple22(iter))
               for iter in call.iters
             ),
             ", ",
@@ -376,12 +376,12 @@ function toFlatString(call::Call)::String
 
       TYPED_REDUCTION(__) => begin
         @assign name = AbsynUtil.pathString(P_Function.name(call.fn))
-        @assign arg_str = P_Expression.Expression.toFlatString(call.exp)
+        @assign arg_str = toFlatString(call.exp)
         @assign c = stringDelimitList(
           List(
             name(Util.tuple21(iter)) +
             " in " +
-            P_Expression.Expression.toFlatString(Util.tuple22(iter))
+            toFlatString(Util.tuple22(iter))
             for iter in call.iters
           ),
           ", ",
@@ -411,7 +411,7 @@ function toString(call::Call)::String
       UNTYPED_CALL(__) => begin
         @assign name = toString(call.ref)
         @assign arg_str = stringDelimitList(
-          List(toString(arg) for arg in call.arguments),
+          list(toString(arg) for arg in call.arguments),
           ", ",
         )
         name + "(" + arg_str + ")"
@@ -475,7 +475,7 @@ function toString(call::Call)::String
       TYPED_CALL(__) => begin
         @assign name = AbsynUtil.pathString(P_Function.name(call.fn))
         @assign arg_str = stringDelimitList(
-          List(toString(arg) for arg in call.arguments),
+          list(toString(arg) for arg in call.arguments),
           ", ",
         )
         name + "(" + arg_str + ")"
@@ -728,7 +728,7 @@ function compare(call1::Call, call2::Call)::Integer
     end
   end
   if comp == 0
-    @assign comp = P_Expression.Expression.compareList(arguments(call1), arguments(call2))
+    @assign comp = compareList(arguments(call1), arguments(call2))
   end
   return comp
 end
@@ -772,11 +772,11 @@ function variability(call::Call)::VariabilityType
           end
         end
         if !var_set
-          @assign var = P_Expression.Expression.variabilityList(call.arguments)
+          @assign var = variabilityList(call.arguments)
           for narg in call.named_args
             @assign var = variabilityMax(
               var,
-              P_Expression.Expression.variability(Util.tuple22(narg)),
+              variability(Util.tuple22(narg)),
             )
           end
         end
@@ -784,11 +784,11 @@ function variability(call::Call)::VariabilityType
       end
 
       UNTYPED_ARRAY_CONSTRUCTOR(__) => begin
-        P_Expression.Expression.variability(call.exp)
+        variability(call.exp)
       end
 
       UNTYPED_REDUCTION(__) => begin
-        P_Expression.Expression.variability(call.exp)
+        variability(call.exp)
       end
 
       TYPED_CALL(__) => begin
@@ -940,7 +940,7 @@ function unboxArgs(call::Call)::Call
     @match call begin
       TYPED_CALL(__) => begin
         @assign call.arguments =
-          List(P_Expression.Expression.unbox(arg) for arg in call.arguments)
+          list(unbox(arg) for arg in call.arguments)
         ()
       end
     end
@@ -1101,55 +1101,55 @@ function getSpecialReturnType(fn::M_Function, args::List{<:Expression})::NFType
   @assign ty = begin
     @match fn.path begin
       Absyn.IDENT("min") => begin
-        arrayElementType(typeOf(P_Expression.Expression.unbox(listHead(
+        arrayElementType(typeOf(unbox(listHead(
           args,
         ))))
       end
 
       Absyn.IDENT("max") => begin
-        arrayElementType(typeOf(P_Expression.Expression.unbox(listHead(
+        arrayElementType(typeOf(unbox(listHead(
           args,
         ))))
       end
 
       Absyn.IDENT("sum") => begin
-        arrayElementType(typeOf(P_Expression.Expression.unbox(listHead(
+        arrayElementType(typeOf(unbox(listHead(
           args,
         ))))
       end
 
       Absyn.IDENT("product") => begin
-        arrayElementType(typeOf(P_Expression.Expression.unbox(listHead(
+        arrayElementType(typeOf(unbox(listHead(
           args,
         ))))
       end
 
       Absyn.IDENT("previous") => begin
-        typeOf(P_Expression.Expression.unbox(listHead(args)))
+        typeOf(unbox(listHead(args)))
       end
 
       Absyn.IDENT("shiftSample") => begin
-        typeOf(P_Expression.Expression.unbox(listHead(args)))
+        typeOf(unbox(listHead(args)))
       end
 
       Absyn.IDENT("backSample") => begin
-        typeOf(P_Expression.Expression.unbox(listHead(args)))
+        typeOf(unbox(listHead(args)))
       end
 
       Absyn.IDENT("hold") => begin
-        typeOf(P_Expression.Expression.unbox(listHead(args)))
+        typeOf(unbox(listHead(args)))
       end
 
       Absyn.IDENT("superSample") => begin
-        typeOf(P_Expression.Expression.unbox(listHead(args)))
+        typeOf(unbox(listHead(args)))
       end
 
       Absyn.IDENT("subSample") => begin
-        typeOf(P_Expression.Expression.unbox(listHead(args)))
+        typeOf(unbox(listHead(args)))
       end
 
       Absyn.IDENT("DynamicSelect") => begin
-        typeOf(P_Expression.Expression.unbox(listHead(args)))
+        typeOf(unbox(listHead(args)))
       end
 
       _ => begin
@@ -1297,7 +1297,7 @@ function devectorizeCall(call::Call)::Call
   @match TYPED_ARRAY_CONSTRUCTOR(exp = exp, iters = iters) = call
   for i in iters
     @assign (iter_node, iter_exp) = i
-    @assign exp = P_Expression.Expression.replaceIterator(exp, iter_node, iter_exp)
+    @assign exp = replaceIterator(exp, iter_node, iter_exp)
   end
   @match CALL_EXPRESSION(call = outCall) = exp
   return outCall
@@ -1423,7 +1423,7 @@ function iteratorToDAE(iter::Tuple{<:InstNode, Expression})::DAE.ReductionIterat
   @assign (iter_node, iter_range) = iter
   @assign diter = DAE.REDUCTIONITER(
     name(iter_node),
-    P_Expression.Expression.toDAE(iter_range),
+    toDAE(iter_range),
     NONE(),
     toDAE(getType(iter_node)),
   )
@@ -1448,7 +1448,7 @@ function checkMatchingFunctions(call::Call, info::SourceInfo)::MatchedFunction
         @assign allfuncs = P_Function.getCachedFuncs(fn_node)
         if listLength(allfuncs) > 1
           @assign allfuncs =
-            List(fn for fn in allfuncs if !P_Function.isDefaultRecordConstructor(fn))
+            list(fn for fn in allfuncs if !P_Function.isDefaultRecordConstructor(fn))
         end
         P_Function.matchFunctions(allfuncs, call.arguments, call.named_args, info)
       end
@@ -1501,7 +1501,7 @@ function checkMatchingFunctions(call::Call, info::SourceInfo)::MatchedFunction
         Error.AMBIGUOUS_MATCHING_FUNCTIONS_NFINST,
         list(
           typedString(call),
-          P_Function.candidateFuncListString(List(mfn.func for mfn in matchedFunctions)),
+          P_Function.candidateFuncListString(list(mfn.func for mfn in matchedFunctions)),
         ),
         info,
       )
@@ -1661,19 +1661,19 @@ function reductionDefaultValue(fn::M_Function, ty::NFType)::Option{Expression}
     @assign defaultValue = begin
       @match AbsynUtil.pathFirstIdent(P_Function.name(fn)) begin
         "sum" => begin
-          SOME(P_Expression.Expression.makeZero(ty))
+          SOME(makeZero(ty))
         end
 
         "product" => begin
-          SOME(P_Expression.Expression.makeOne(ty))
+          SOME(makeOne(ty))
         end
 
         "min" => begin
-          SOME(P_Expression.Expression.makeMaxValue(ty))
+          SOME(makeMaxValue(ty))
         end
 
         "max" => begin
-          SOME(P_Expression.Expression.makeMinValue(ty))
+          SOME(makeMinValue(ty))
         end
 
         _ => begin

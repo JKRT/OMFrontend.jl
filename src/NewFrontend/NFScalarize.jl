@@ -96,9 +96,9 @@ function scalarize(flatModel::FlatModel, name::String)::FlatModel
   @assign flatModel.initialEquations =
     mapExpList(flatModel.initialEquations, expandComplexCref)
   @assign flatModel.initialEquations = scalarizeEquations(flatModel.initialEquations)
-  @assign flatModel.algorithms = List(scalarizeAlgorithm(a) for a in flatModel.algorithms)
+  @assign flatModel.algorithms = list(scalarizeAlgorithm(a) for a in flatModel.algorithms)
   @assign flatModel.initialAlgorithms =
-    List(scalarizeAlgorithm(a) for a in flatModel.initialAlgorithms)
+    list(scalarizeAlgorithm(a) for a in flatModel.initialAlgorithms)
   execStat(getInstanceName() + "(" + name + ")")
   return flatModel
 end
@@ -284,8 +284,8 @@ function scalarizeEquation(eq::Equation, equations::List{<:Equation})::List{Equa
         ty = ty,
         source = src,
       ) where {(isArray(ty))} => begin
-        if P_Expression.Expression.hasArrayCall(lhs) ||
-           P_Expression.Expression.hasArrayCall(rhs)
+        if hasArrayCall(lhs) ||
+           hasArrayCall(rhs)
           @assign equations =
             _cons(EQUATION_ARRAY_EQUALITY(lhs, rhs, ty, src), equations)
         else

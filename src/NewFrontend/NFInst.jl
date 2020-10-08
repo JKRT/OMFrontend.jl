@@ -2440,7 +2440,7 @@ function instPartEvalFunction(func::Absyn.ComponentRef, funcArgs::Absyn.Function
   @match Absyn.FunctionArgs.FUNCTIONARGS(argNames = nargs) = funcArgs
   @assign outExp = instCref(func, scope, info)
   if ! listEmpty(nargs)
-    @assign fn_ref = P_Expression.Expression.toCref(outExp)
+    @assign fn_ref = toCref(outExp)
     @assign args = list(instExp(arg.argValue, scope, info) for arg in nargs)
     @assign arg_names = list(arg.argName for arg in nargs)
     @assign outExp = PARTIAL_FUNCTION_APPLICATION_EXPRESSION(fn_ref, args, arg_names, TYPE_UNKNOWN())
@@ -2924,7 +2924,7 @@ function isBindingNotFixed(binding::Binding, requireFinal::Bool, maxDepth::Integ
     return isNotFixed
   end
   if hasExp(binding)
-    @assign isNotFixed = isExpressionNotFixed(P_Expression.Expression.getBindingExp(getExp(binding)), requireFinal, maxDepth)
+    @assign isNotFixed = isExpressionNotFixed(getBindingExp(getExp(binding)), requireFinal, maxDepth)
   else
     @assign isNotFixed = true
   end
@@ -2981,7 +2981,7 @@ function isExpressionNotFixed(exp::Expression, requireFinal::Bool = false, maxDe
         else
           @assign isNotFixed = true
         end
-        isNotFixed || P_Expression.Expression.containsShallow(exp, (requireFinal, maxDepth) -> isExpressionNotFixed(requireFinal = requireFinal, maxDepth = maxDepth))
+        isNotFixed || containsShallow(exp, (requireFinal, maxDepth) -> isExpressionNotFixed(requireFinal = requireFinal, maxDepth = maxDepth))
       end
 
       SIZE_EXPRESSION(__)  => begin
@@ -2997,13 +2997,13 @@ function isExpressionNotFixed(exp::Expression, requireFinal::Bool = false, maxDe
         if P_Call.isImpure(exp.call) || P_Call.isExternal(exp.call)
           @assign isNotFixed = true
         else
-          @assign isNotFixed = P_Expression.Expression.containsShallow(exp, (requireFinal, maxDepth) -> isExpressionNotFixed(requireFinal = requireFinal, maxDepth = maxDepth))
+          @assign isNotFixed = containsShallow(exp, (requireFinal, maxDepth) -> isExpressionNotFixed(requireFinal = requireFinal, maxDepth = maxDepth))
         end
         isNotFixed
       end
 
       _  => begin
-        P_Expression.Expression.containsShallow(exp, (requireFinal, maxDepth) -> isExpressionNotFixed(requireFinal = requireFinal, maxDepth = maxDepth))
+        containsShallow(exp, (requireFinal, maxDepth) -> isExpressionNotFixed(requireFinal = requireFinal, maxDepth = maxDepth))
       end
     end
   end

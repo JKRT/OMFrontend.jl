@@ -262,7 +262,7 @@ function typeStructor(node::InstNode)
   return @assign () = begin
     @match cache begin
       C_FUNCTION(funcs = fnl, typed = false) => begin
-        @assign fnl = List(P_Function.typeFunction(fn) for fn in fnl)
+        @assign fnl = list(P_Function.typeFunction(fn) for fn in fnl)
         @assign fnl = List(
           patchOperatorRecordConstructorBinding(fn) for fn in fnl
         )
@@ -1647,7 +1647,7 @@ function typeExpDim(
     @assign (dim, error) = nthDimensionBoundsChecked(ty, dimIndex)
     @assign typedExp = SOME(exp)
   else
-    @assign e = P_Expression.Expression.getBindingExp(exp)
+    @assign e = getBindingExp(exp)
     @assign (dim, error) = begin
       @match e begin
         ARRAY_EXPRESSION(ty = TYPE_UNKNOWN(__)) => begin
@@ -1698,7 +1698,7 @@ function typeArrayDim(
   if dimIndex < 1
     @assign dim = P_Dimension.Dimension.UNKNOWN()
     @assign error =
-      P_TypingError.OUT_OF_BOUNDS(P_Expression.Expression.dimensionCount(arrayExp))
+      P_TypingError.OUT_OF_BOUNDS(dimensionCount(arrayExp))
   else
     @assign (dim, error) = typeArrayDim2(arrayExp, dimIndex)
   end
@@ -2076,13 +2076,13 @@ function typeSubscript(
       end
 
       SUBSCRIPT_INDEX(index = e) => begin
-        (typeOf(e), P_Expression.Expression.variability(e))
+        (typeOf(e), variability(e))
       end
 
       SUBSCRIPT_SLICE(slice = e) => begin
         (
           Type.unliftArray(typeOf(e)),
-          P_Expression.Expression.variability(e),
+          variability(e),
         )
       end
 
@@ -2185,7 +2185,7 @@ function typeArray(
   #=  forget errors when handling annotations
   =#
   @assign arrayType = Type.liftArrayLeft(ty1, P_Dimension.Dimension.fromExpList(expl2))
-  @assign arrayExp = P_Expression.Expression.makeArray(arrayType, expl2)
+  @assign arrayExp = makeArray(arrayType, expl2)
   return (arrayExp, arrayType, variability)
 end
 
@@ -2219,7 +2219,7 @@ function typeMatrix(
     end
     for e in expl
       @match _cons(ty, tys) = tys
-      @assign (e, ty) = P_Expression.Expression.promote(e, ty, n)
+      @assign (e, ty) = promote(e, ty, n)
       @assign resTys = _cons(ty, resTys)
       @assign res = _cons(e, res)
     end
@@ -2230,7 +2230,7 @@ function typeMatrix(
       typeMatrixComma(listHead(elements), next_origin, info)
     if Type.dimensionCount(arrayType) < 2
       @assign (arrayExp, arrayType) =
-        P_Expression.Expression.promote(arrayExp, arrayType, n)
+        promote(arrayExp, arrayType, n)
     end
   end
   return (arrayExp, arrayType, variability)
@@ -2292,7 +2292,7 @@ function typeMatrixComma(
       @match _cons(ty1, tys) = tys
       @assign pos = pos - 1
       if Type.dimensionCount(ty1) != n
-        @assign (e, ty1) = P_Expression.Expression.promote(e, ty1, n)
+        @assign (e, ty1) = promote(e, ty1, n)
       end
       @assign ty2 = setArrayElementType(ty1, ty)
       @assign (e, ty3, mk) = matchTypes(ty1, ty2, e)
@@ -2503,7 +2503,7 @@ function typeSize(
           fail()
         end
         if variability <= Variability.STRUCTURAL_PARAMETER &&
-           !P_Expression.Expression.containsIterator(index, origin)
+           !containsIterator(index, origin)
           @assign index = Ceval.evalExp(index, Ceval.P_EvalTarget.IGNORE_ERRORS())
           @match INTEGER_EXPRESSION(iindex) = index
           @assign (dim, oexp, ty_err) = typeExpDim(exp, iindex, next_origin, info)
@@ -2600,7 +2600,7 @@ function evaluateEnd(
     local ty::M_Type
     local cr::ComponentRef
     @match exp begin
-      P_Expression.Expression.END(__) => begin
+      END(__) => begin
         P_Dimension.Dimension.endExp(dim, cref, index)
       end
 
@@ -2667,7 +2667,7 @@ function typeIfExpression(
     fail()
   end
   if cond_var <= Variability.STRUCTURAL_PARAMETER &&
-     !P_Expression.Expression.contains(cond, isNonConstantIfCondition)
+     !contains(cond, isNonConstantIfCondition)
     if evaluateCondition(cond, origin, info)
       @assign (ifExp, ty, var) = typeExp(tb, next_origin, info)
     else
@@ -2884,7 +2884,7 @@ function typeFunctionSections(classNode::InstNode, origin::ORIGIN_Type)
             SECTIONS_EXTERNAL(explicit = true) => begin
               @assign info = info(classNode)
               @assign sections.args =
-                List(typeExternalArg(arg, info, classNode) for arg in sections.args)
+                list(typeExternalArg(arg, info, classNode) for arg in sections.args)
               @assign sections.outputRef = typeCref(sections.outputRef, origin, info)
               sections
             end
@@ -2937,7 +2937,7 @@ function typeExternalArg(arg::Expression, info::SourceInfo, node::InstNode)::Exp
         @match SIZE_EXPRESSION(dimIndex = SOME(index)) = outArg
         #=  Size expression must have a constant dimension index.
         =#
-        if !P_Expression.Expression.isInteger(index)
+        if !isInteger(index)
           Error.addSourceMessage(
             Error.EXTERNAL_ARG_NONCONSTANT_SIZE_INDEX,
             list(toString(arg)),
@@ -3131,7 +3131,7 @@ function typeEquation(eq::Equation, origin::ORIGIN_Type)::Equation
           fail()
         end
         @assign next_origin = setFlag(origin, ORIGIN_FOR)
-        @assign body = List(typeEquation(e, next_origin) for e in eq.body)
+        @assign body = list(typeEquation(e, next_origin) for e in eq.body)
         FOR(eq.iterator, SOME(e1), body, eq.source)
       end
 
@@ -3394,13 +3394,13 @@ end
 
 function typeAlgorithm(alg::Algorithm, origin::ORIGIN_Type)::Algorithm
 
-  @assign alg.statements = List(typeStatement(s, origin) for s in alg.statements)
+  @assign alg.statements = list(typeStatement(s, origin) for s in alg.statements)
   return alg
 end
 
 function typeStatements(alg::List{<:Statement}, origin::ORIGIN_Type)::List{Statement}
 
-  @assign alg = List(typeStatement(stmt, origin) for stmt in alg)
+  @assign alg = list(typeStatement(stmt, origin) for stmt in alg)
   return alg
 end
 
@@ -3478,7 +3478,7 @@ function typeStatement(st::Statement, origin::ORIGIN_Type)::Statement
                   st.source,
                   Error.IF_CONDITION_TYPE_ERROR,
                 )
-                @assign sts1 = List(typeStatement(bst, next_origin) for bst in body)
+                @assign sts1 = list(typeStatement(bst, next_origin) for bst in body)
                 (e1, sts1)
               end
             end
@@ -3500,7 +3500,7 @@ function typeStatement(st::Statement, origin::ORIGIN_Type)::Statement
                   Error.WHEN_CONDITION_TYPE_ERROR,
                   allowVector = true,
                 )
-                @assign sts1 = List(typeStatement(bst, next_origin) for bst in body)
+                @assign sts1 = list(typeStatement(bst, next_origin) for bst in body)
                 (e1, sts1)
               end
             end
@@ -3574,12 +3574,12 @@ function typeStatement(st::Statement, origin::ORIGIN_Type)::Statement
           st.source,
           Error.WHILE_CONDITION_TYPE_ERROR,
         )
-        @assign sts1 = List(typeStatement(bst, origin) for bst in st.body)
+        @assign sts1 = list(typeStatement(bst, origin) for bst in st.body)
         P_Statement.Statement.WHILE(e1, sts1, st.source)
       end
 
       P_Statement.Statement.FAILURE(__) => begin
-        @assign sts1 = List(typeStatement(bst, origin) for bst in st.body)
+        @assign sts1 = list(typeStatement(bst, origin) for bst in st.body)
         P_Statement.Statement.FAILURE(sts1, st.source)
       end
 
@@ -3732,7 +3732,7 @@ function typeIfEquation(
             __,
           ) where {(b.conditionVar <= Variability.STRUCTURAL_PARAMETER)} => begin
             @assign b.condition = Ceval.evalExp(b.condition)
-            if P_Expression.Expression.isFalse(b.condition)
+            if isFalse(b.condition)
               bl2
             else
               _cons(b, bl2)

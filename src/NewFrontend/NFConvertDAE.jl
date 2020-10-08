@@ -625,11 +625,11 @@ function convertStateSelectAttribute(binding::Binding)::Option{DAE.StateSelect}
   local node::InstNode
   local name::String
   local exp::Expression =
-    P_Expression.Expression.getBindingExp(getTypedExp(binding))
+    getBindingExp(getTypedExp(binding))
 
   @assign name = begin
     @match exp begin
-      P_Expression.Expression.ENUM_LITERAL(__) => begin
+      ENUM_LITERAL(__) => begin
         exp.name
       end
 
@@ -720,7 +720,7 @@ function convertEquation(eq::Equation, elements::List{<:DAE.Element})::List{DAE.
             DAE.Element.COMPLEX_EQUATION(e1, e2, eq.source)
           elseif (isArray(eq.ty))
             DAE.Element.ARRAY_EQUATION(
-              List(P_Dimension.Dimension.toDAE(d) for d in arrayDims(eq.ty)),
+              list(P_Dimension.Dimension.toDAE(d) for d in arrayDims(eq.ty)),
               e1,
               e2,
               eq.source,
@@ -739,9 +739,9 @@ function convertEquation(eq::Equation, elements::List{<:DAE.Element})::List{DAE.
       end
 
       EQUATION_ARRAY_EQUALITY(__) => begin
-        @assign e1 = P_Expression.Expression.toDAE(eq.lhs)
-        @assign e2 = P_Expression.Expression.toDAE(eq.rhs)
-        @assign dims = List(P_Dimension.Dimension.toDAE(d) for d in arrayDims(eq.ty))
+        @assign e1 = toDAE(eq.lhs)
+        @assign e2 = toDAE(eq.rhs)
+        @assign dims = list(P_Dimension.Dimension.toDAE(d) for d in arrayDims(eq.ty))
         _cons(DAE.Element.ARRAY_EQUATION(dims, e1, e2, eq.source), elements)
       end
 
@@ -758,29 +758,29 @@ function convertEquation(eq::Equation, elements::List{<:DAE.Element})::List{DAE.
       end
 
       P_Equation.Equation.ASSERT(__) => begin
-        @assign e1 = P_Expression.Expression.toDAE(eq.condition)
-        @assign e2 = P_Expression.Expression.toDAE(eq.message)
-        @assign e3 = P_Expression.Expression.toDAE(eq.level)
+        @assign e1 = toDAE(eq.condition)
+        @assign e2 = toDAE(eq.message)
+        @assign e3 = toDAE(eq.level)
         _cons(DAE.Element.ASSERT(e1, e2, e3, eq.source), elements)
       end
 
       P_Equation.Equation.TERMINATE(__) => begin
         _cons(
-          DAE.Element.TERMINATE(P_Expression.Expression.toDAE(eq.message), eq.source),
+          DAE.Element.TERMINATE(toDAE(eq.message), eq.source),
           elements,
         )
       end
 
       EQUATION_REINIT(__) => begin
         @assign cr1 =
-          toDAE(P_Expression.Expression.toCref(eq.cref))
-        @assign e1 = P_Expression.Expression.toDAE(eq.reinitExp)
+          toDAE(toCref(eq.cref))
+        @assign e1 = toDAE(eq.reinitExp)
         _cons(DAE.Element.REINIT(cr1, e1, eq.source), elements)
       end
 
       P_Equation.Equation.NORETCALL(__) => begin
         _cons(
-          DAE.Element.NORETCALL(P_Expression.Expression.toDAE(eq.exp), eq.source),
+          DAE.Element.NORETCALL(toDAE(eq.exp), eq.source),
           elements,
         )
       end
@@ -816,7 +816,7 @@ function convertForEquation(forEquation::Equation)::DAE.Element
     isArray(ty),
     name(iterator),
     0,
-    P_Expression.Expression.toDAE(range),
+    toDAE(range),
     dbody,
     source,
   )
@@ -851,19 +851,19 @@ function convertIfEquation(
     end
   end
   @assign dbranches = if isInitial
-    List(convertInitialEquations(b) for b in branches)
+    list(convertInitialEquations(b) for b in branches)
   else
-    List(convertEquations(b) for b in branches)
+    list(convertEquations(b) for b in branches)
   end
   #=  Transform the last branch to an else-branch if its condition is true.
   =#
-  if P_Expression.Expression.isTrue(listHead(conds))
+  if isTrue(listHead(conds))
     @match _cons(else_branch, dbranches) = dbranches
     @assign conds = listRest(conds)
   else
     @assign else_branch = nil
   end
-  @assign dconds = listReverse(P_Expression.Expression.toDAE(c) for c in conds)
+  @assign dconds = listReverse(toDAE(c) for c in conds)
   @assign dbranches = listReverseInPlace(dbranches)
   @assign ifEquation = if isInitial
     DAE.Element.INITIAL_IF_EQUATION(dconds, dbranches, else_branch, source)
@@ -887,7 +887,7 @@ function convertWhenEquation(
     @assign when_eq = begin
       @match b begin
         P_Equation.Equation.BRANCH(__) => begin
-          @assign cond = P_Expression.Expression.toDAE(b.condition)
+          @assign cond = toDAE(b.condition)
           @assign els = convertEquations(b.body)
           SOME(DAE.Element.WHEN_EQUATION(cond, els, when_eq, source))
         end
@@ -923,8 +923,8 @@ function convertInitialEquation(
     local body::List{DAE.Element}
     @match eq begin
       EQUATION_EQUALITY(__) => begin
-        @assign e1 = P_Expression.Expression.toDAE(eq.lhs)
-        @assign e2 = P_Expression.Expression.toDAE(eq.rhs)
+        @assign e1 = toDAE(eq.lhs)
+        @assign e2 = toDAE(eq.rhs)
         _cons(if isComplex(eq.ty)
           DAE.Element.INITIAL_COMPLEX_EQUATION(e1, e2, eq.source)
         else
@@ -933,9 +933,9 @@ function convertInitialEquation(
       end
 
       EQUATION_ARRAY_EQUALITY(__) => begin
-        @assign e1 = P_Expression.Expression.toDAE(eq.lhs)
-        @assign e2 = P_Expression.Expression.toDAE(eq.rhs)
-        @assign dims = List(P_Dimension.Dimension.toDAE(d) for d in arrayDims(eq.ty))
+        @assign e1 = toDAE(eq.lhs)
+        @assign e2 = toDAE(eq.rhs)
+        @assign dims = list(P_Dimension.Dimension.toDAE(d) for d in arrayDims(eq.ty))
         _cons(DAE.Element.INITIAL_ARRAY_EQUATION(dims, e1, e2, eq.source), elements)
       end
 
@@ -948,16 +948,16 @@ function convertInitialEquation(
       end
 
       P_Equation.Equation.ASSERT(__) => begin
-        @assign e1 = P_Expression.Expression.toDAE(eq.condition)
-        @assign e2 = P_Expression.Expression.toDAE(eq.message)
-        @assign e3 = P_Expression.Expression.toDAE(eq.level)
+        @assign e1 = toDAE(eq.condition)
+        @assign e2 = toDAE(eq.message)
+        @assign e3 = toDAE(eq.level)
         _cons(DAE.Element.INITIAL_ASSERT(e1, e2, e3, eq.source), elements)
       end
 
       P_Equation.Equation.TERMINATE(__) => begin
         _cons(
           DAE.Element.INITIAL_TERMINATE(
-            P_Expression.Expression.toDAE(eq.message),
+            toDAE(eq.message),
             eq.source,
           ),
           elements,
@@ -966,7 +966,7 @@ function convertInitialEquation(
 
       P_Equation.Equation.NORETCALL(__) => begin
         _cons(
-          DAE.Element.INITIAL_NORETCALL(P_Expression.Expression.toDAE(eq.exp), eq.source),
+          DAE.Element.INITIAL_NORETCALL(toDAE(eq.exp), eq.source),
           elements,
         )
       end
@@ -1005,7 +1005,7 @@ end
 function convertStatements(statements::List{<:Statement})::List{DAE.P_Statement.Statement}
   local elements::List{DAE.P_Statement.Statement}
 
-  @assign elements = List(convertStatement(s) for s in statements)
+  @assign elements = list(convertStatement(s) for s in statements)
   return elements
 end
 
@@ -1041,28 +1041,28 @@ function convertStatement(stmt::Statement)::DAE.P_Statement.Statement
       end
 
       P_Statement.Statement.ASSERT(__) => begin
-        @assign e1 = P_Expression.Expression.toDAE(stmt.condition)
-        @assign e2 = P_Expression.Expression.toDAE(stmt.message)
-        @assign e3 = P_Expression.Expression.toDAE(stmt.level)
+        @assign e1 = toDAE(stmt.condition)
+        @assign e2 = toDAE(stmt.message)
+        @assign e3 = toDAE(stmt.level)
         DAE.P_Statement.Statement.STMT_ASSERT(e1, e2, e3, stmt.source)
       end
 
       P_Statement.Statement.TERMINATE(__) => begin
         DAE.P_Statement.Statement.STMT_TERMINATE(
-          P_Expression.Expression.toDAE(stmt.message),
+          toDAE(stmt.message),
           stmt.source,
         )
       end
 
       P_Statement.Statement.NORETCALL(__) => begin
         DAE.P_Statement.Statement.STMT_NORETCALL(
-          P_Expression.Expression.toDAE(stmt.exp),
+          toDAE(stmt.exp),
           stmt.source,
         )
       end
 
       P_Statement.Statement.WHILE(__) => begin
-        @assign e1 = P_Expression.Expression.toDAE(stmt.condition)
+        @assign e1 = toDAE(stmt.condition)
         @assign body = convertStatements(stmt.body)
         DAE.P_Statement.Statement.STMT_WHILE(e1, body, stmt.source)
       end
@@ -1101,7 +1101,7 @@ function convertAssignment(stmt::Statement)::DAE.P_Statement.Statement
     @assign daeStmt = begin
       @match expl begin
         nil() => begin
-          DAE.P_Statement.Statement.STMT_NORETCALL(P_Expression.Expression.toDAE(rhs), src)
+          DAE.P_Statement.Statement.STMT_NORETCALL(toDAE(rhs), src)
         end
 
         lhs <| nil() => begin
@@ -1110,8 +1110,8 @@ function convertAssignment(stmt::Statement)::DAE.P_Statement.Statement
           #=  (lhs) := call(...) => lhs := TSUB[call(...), 1]
           =#
           @assign dty = toDAE(ty)
-          @assign dlhs = P_Expression.Expression.toDAE(lhs)
-          @assign drhs = DAE.Exp.TSUB(P_Expression.Expression.toDAE(rhs), 1, dty)
+          @assign dlhs = toDAE(lhs)
+          @assign drhs = DAE.Exp.TSUB(toDAE(rhs), 1, dty)
           if isArray(ty)
             @assign daeStmt =
               DAE.P_Statement.Statement.STMT_ASSIGN_ARR(dty, dlhs, drhs, src)
@@ -1123,10 +1123,10 @@ function convertAssignment(stmt::Statement)::DAE.P_Statement.Statement
 
         _ => begin
           @assign dty = toDAE(ty)
-          @assign drhs = P_Expression.Expression.toDAE(rhs)
+          @assign drhs = toDAE(rhs)
           DAE.P_Statement.Statement.STMT_TUPLE_ASSIGN(
             dty,
-            List(P_Expression.Expression.toDAE(e) for e in expl),
+            list(toDAE(e) for e in expl),
             drhs,
             src,
           )
@@ -1135,8 +1135,8 @@ function convertAssignment(stmt::Statement)::DAE.P_Statement.Statement
     end
   else
     @assign dty = toDAE(ty)
-    @assign dlhs = P_Expression.Expression.toDAE(lhs)
-    @assign drhs = P_Expression.Expression.toDAE(rhs)
+    @assign dlhs = toDAE(lhs)
+    @assign drhs = toDAE(rhs)
     if isArray(ty)
       @assign daeStmt = DAE.P_Statement.Statement.STMT_ASSIGN_ARR(dty, dlhs, drhs, src)
     else
@@ -1169,7 +1169,7 @@ function convertForStatement(forStmt::Statement)::DAE.P_Statement.Statement
     isArray(ty),
     name(iterator),
     0,
-    P_Expression.Expression.toDAE(range),
+    toDAE(range),
     dbody,
     source,
   )
@@ -1191,9 +1191,9 @@ function convertIfStatement(
 
   for b in listReverse(ifBranches)
     @assign (cond, stmts) = b
-    @assign dcond = P_Expression.Expression.toDAE(cond)
+    @assign dcond = toDAE(cond)
     @assign dstmts = convertStatements(stmts)
-    if first && P_Expression.Expression.isTrue(cond)
+    if first && isTrue(cond)
       @assign else_stmt = DAE.Else.ELSE(dstmts)
     else
       @assign else_stmt = DAE.Else.ELSEIF(dcond, dstmts, else_stmt)
@@ -1218,7 +1218,7 @@ function convertWhenStatement(
   local when_stmt::Option{DAE.P_Statement.Statement} = NONE()
 
   for b in listReverse(whenBranches)
-    @assign cond = P_Expression.Expression.toDAE(Util.tuple21(b))
+    @assign cond = toDAE(Util.tuple21(b))
     @assign stmts = convertStatements(Util.tuple22(b))
     @assign when_stmt =
       SOME(DAE.P_Statement.Statement.STMT_WHEN(cond, nil, false, stmts, when_stmt, source))
@@ -1396,7 +1396,7 @@ function convertExternalDecl(
   @assign funcDef = begin
     @match extDecl begin
       SECTIONS_EXTERNAL(__) => begin
-        @assign args = List(convertExternalDeclArg(e) for e in extDecl.args)
+        @assign args = list(convertExternalDeclArg(e) for e in extDecl.args)
         @assign ret_arg = convertExternalDeclOutput(extDecl.outputRef)
         @assign decl = DAE.ExternalDecl.EXTERNALDECL(
           extDecl.name,
@@ -1439,13 +1439,13 @@ function convertExternalDeclArg(exp::Expression)::DAE.ExtArg
         DAE.ExtArg.EXTARGSIZE(
           toDAE(cref),
           toDAE(cref.ty),
-          P_Expression.Expression.toDAE(e),
+          toDAE(e),
         )
       end
 
       _ => begin
         DAE.ExtArg.EXTARGEXP(
-          P_Expression.Expression.toDAE(exp),
+          toDAE(exp),
           toDAE(typeOf(exp)),
         )
       end
@@ -1480,7 +1480,7 @@ function makeTypeVars(complexCls::InstNode)::List{DAE.Var}
   @assign typeVars = begin
     @match (@match getClass(complexCls) = cls) begin
       INSTANCED_CLASS(restriction = P_Restriction.Restriction.RECORD(__)) => begin
-        List(makeTypeRecordVar(c) for c in getComponents(cls.elements))
+        list(makeTypeRecordVar(c) for c in getComponents(cls.elements))
       end
       INSTANCED_CLASS(elements = FLAT_TREE(__)) => begin
         List(

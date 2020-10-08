@@ -159,7 +159,7 @@ function endExp(dim::Dimension, cref::ComponentRef, index::Integer)::Expression
       end
 
       DIMENSION_ENUM(enumType = ty && TYPE_ENUMERATION(__)) => begin
-        P_Expression.Expression.makeEnumLiteral(ty, listLength(ty.literals))
+        makeEnumLiteral(ty, listLength(ty.literals))
       end
 
       DIMENSION_EXP(__) => begin
@@ -342,7 +342,7 @@ function isEqualKnown(dim1::Dimension, dim2::Dimension)::Bool
       end
 
       (DIMENSION_EXP(__), DIMENSION_EXP(__)) => begin
-        P_Expression.Expression.isEqual(dim1.exp, dim2.exp)
+        isEqual(dim1.exp, dim2.exp)
       end
 
       (DIMENSION_EXP(__), _) => begin
@@ -375,7 +375,7 @@ function isEqual(dim1::Dimension, dim2::Dimension)::Bool
       end
 
       (DIMENSION_EXP(__), DIMENSION_EXP(__)) => begin
-        P_Expression.Expression.isEqual(dim1.exp, dim2.exp)
+        isEqual(dim1.exp, dim2.exp)
       end
 
       (DIMENSION_EXP(__), _) => begin
@@ -487,7 +487,7 @@ function toDAE(dim::Dimension)::DAE.P_Dimension.Dimension
         DAE.DIM_ENUM(ty.typePath, ty.literals, listLength(ty.literals))
       end
       DIMENSION_EXP(__) => begin
-        DAE.DIM_EXP(P_Expression.Expression.toDAE(dim.exp))
+        DAE.DIM_EXP(toDAE(dim.exp))
       end
       DIMENSION_UNKNOWN(__) => begin
         DAE.DIM_UNKNOWN()

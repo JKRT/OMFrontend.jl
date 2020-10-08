@@ -55,7 +55,7 @@ function toDAE(fnDer::FunctionDerivative)::DAE.FunctionDefinition
     P_Function.name(listHead(P_Function.getCachedFuncs(fnDer.derivedFn))),
     P_Function.name(listHead(P_Function.getCachedFuncs(fnDer.derivativeFn))),
     order,
-    List(conditionToDAE(c) for c in fnDer.conditions),
+    list(conditionToDAE(c) for c in fnDer.conditions),
     NONE(),
     List(
       P_Function.name(listHead(P_Function.getCachedFuncs(fn)))
@@ -168,7 +168,7 @@ function getDerivativeAttributes(
   info::SourceInfo,
 )::Tuple{Expression, List{Tuple{Integer, ConditionType}}}
   local conditions::List{Tuple{Integer, ConditionType}} = nil
-  local order::Expression = P_Expression.Expression.EMPTY(TYPE_UNKNOWN())
+  local order::Expression = EMPTY(TYPE_UNKNOWN())
 
   local id::String
   local mod::SCode.Mod
@@ -181,7 +181,7 @@ function getDerivativeAttributes(
     @assign () = begin
       @match (id, mod) begin
         ("order", SCode.Mod.MOD(binding = SOME(aexp))) => begin
-          if !P_Expression.Expression.isEmpty(order)
+          if !isEmpty(order)
             Error.addSourceMessage(
               Error.DUPLICATE_MODIFICATIONS,
               list(id, "derivative"),
@@ -231,7 +231,7 @@ function getDerivativeAttributes(
       end
     end
   end
-  if P_Expression.Expression.isEmpty(order)
+  if isEmpty(order)
     @assign order = INTEGER_EXPRESSION(1)
   end
   return (order, conditions)

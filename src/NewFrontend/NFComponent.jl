@@ -148,7 +148,7 @@ function isDeleted(component::Component)::Bool
     @match component begin
       TYPED_COMPONENT(condition = condition) => begin
         isBound(condition) &&
-        P_Expression.Expression.isFalse(getTypedExp(condition))
+        isFalse(getTypedExp(condition))
       end
 
       DELETED_COMPONENT(__) => begin
@@ -175,7 +175,7 @@ function getUnitAttribute(component::Component, defaultUnit::String = "")::Strin
     @assign unitString = defaultUnit
     return unitString
   end
-  @assign unit = P_Expression.Expression.getBindingExp(getExp(binding))
+  @assign unit = getBindingExp(getExp(binding))
   @assign unitString = begin
     @match unit begin
       STRING_EXPRESSION(__) => begin
@@ -208,7 +208,7 @@ function getFixedAttribute(component::Component)::Bool
   end
   @assign fixed =
     fixed &&
-    P_Expression.Expression.isTrue(P_Expression.Expression.getBindingExp(getExp(
+    isTrue(getBindingExp(getExp(
       binding,
     )))
   return fixed
@@ -817,7 +817,7 @@ function getImplicitBinding(component::Component)::Binding
         @assign record_exp = makeRecordExp(cls_node)
         @assign binding = FLAT_BINDING(
           record_exp,
-          P_Expression.Expression.variability(record_exp),
+          variability(record_exp),
         )
       catch
       end
@@ -1167,7 +1167,7 @@ function newEnum(enumType::M_Type, literalName::String, literalIndex::Integer)::
   local component::Component
 
   @assign component =
-    ENUM_LITERAL(P_Expression.Expression.ENUM_LITERAL(enumType, literalName, literalIndex))
+    ENUM_LITERAL(ENUM_LITERAL(enumType, literalName, literalIndex))
   return component
 end
 

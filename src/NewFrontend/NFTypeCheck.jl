@@ -322,7 +322,7 @@ function matchOverloadedBinaryOperator(
     @assign outType = P_Function.returnType(fn)
     @assign outExp = CALL_EXPRESSION(P_Call.makeTypedCall(
       matchedFunc.func,
-      List(Util.tuple31(a) for a in matchedFunc.args),
+      list(Util.tuple31(a) for a in matchedFunc.args),
       variabilityMax(var1, var2),
       outType,
     ))
@@ -332,7 +332,7 @@ function matchOverloadedBinaryOperator(
         Error.AMBIGUOUS_MATCHING_OPERATOR_FUNCTIONS_NFINST,
         list(
           toString(BINARY_EXPRESSION(exp1, op, exp2)),
-          P_Function.candidateFuncListString(List(mfn.func for mfn in matchedFunctions)),
+          P_Function.candidateFuncListString(list(mfn.func for mfn in matchedFunctions)),
         ),
         info,
       )
@@ -444,11 +444,11 @@ function checkOverloadedBinaryArrayAddSub2(
           @assign ty2 = arrayElementType(type2)
           try
             @assign (_, ty) = matchOverloadedBinaryOperator(
-              P_Expression.Expression.EMPTY(ty1),
+              EMPTY(ty1),
               ty1,
               var1,
               op,
-              P_Expression.Expression.EMPTY(ty2),
+              EMPTY(ty2),
               ty2,
               var2,
               candidates,
@@ -485,7 +485,7 @@ function checkOverloadedBinaryArrayAddSub2(
         #=  If the arrays are empty, match against the element types to get the expected return type.
         =#
         @assign outType = setArrayElementType(type1, ty)
-        @assign outExp = P_Expression.Expression.makeArray(outType, expl)
+        @assign outExp = makeArray(outType, expl)
         (outExp, outType)
       end
 
@@ -660,7 +660,7 @@ function checkOverloadedBinaryScalarArray2(
             type1,
             var1,
             op,
-            P_Expression.Expression.EMPTY(type2),
+            EMPTY(type2),
             ty,
             var2,
             candidates,
@@ -675,7 +675,7 @@ function checkOverloadedBinaryScalarArray2(
           )
         end
         @assign outType = setArrayElementType(exp2.ty, outType)
-        (P_Expression.Expression.makeArray(outType, nil), outType)
+        (makeArray(outType, nil), outType)
       end
 
       ARRAY_EXPRESSION(elements = expl) => begin
@@ -697,7 +697,7 @@ function checkOverloadedBinaryScalarArray2(
           exp2.ty,
           typeOf(listHead(expl)),
         )
-        (P_Expression.Expression.makeArray(outType, expl), outType)
+        (makeArray(outType, expl), outType)
       end
 
       _ => begin
@@ -770,7 +770,7 @@ function checkOverloadedBinaryArrayScalar2(
         try
           @assign ty = Type.unliftArray(type1)
           @assign (_, outType) = matchOverloadedBinaryOperator(
-            P_Expression.Expression.EMPTY(type1),
+            EMPTY(type1),
             ty,
             var1,
             op,
@@ -789,7 +789,7 @@ function checkOverloadedBinaryArrayScalar2(
           )
         end
         @assign outType = setArrayElementType(exp1.ty, outType)
-        (P_Expression.Expression.makeArray(outType, nil), outType)
+        (makeArray(outType, nil), outType)
       end
 
       ARRAY_EXPRESSION(elements = expl) => begin
@@ -811,7 +811,7 @@ function checkOverloadedBinaryArrayScalar2(
           exp1.ty,
           typeOf(listHead(expl)),
         )
-        (P_Expression.Expression.makeArray(outType, expl), outType)
+        (makeArray(outType, expl), outType)
       end
 
       _ => begin
@@ -942,17 +942,17 @@ function checkOverloadedBinaryArrayEW2(
   @assign is_array2 = isArray(type2)
   if is_array1 || is_array2
     @assign expl = nil
-    if P_Expression.Expression.isEmptyArray(exp1) ||
-       P_Expression.Expression.isEmptyArray(exp2)
+    if isEmptyArray(exp1) ||
+       isEmptyArray(exp2)
       @assign ty1 = arrayElementType(type1)
       @assign ty2 = arrayElementType(type2)
       try
         @assign (_, ty) = matchOverloadedBinaryOperator(
-          P_Expression.Expression.EMPTY(ty1),
+          EMPTY(ty1),
           ty1,
           var1,
           op,
-          P_Expression.Expression.EMPTY(ty2),
+          EMPTY(ty2),
           ty2,
           var2,
           candidates,
@@ -968,8 +968,8 @@ function checkOverloadedBinaryArrayEW2(
     elseif is_array1 && is_array2
       @assign ty1 = Type.unliftArray(type1)
       @assign ty2 = Type.unliftArray(type2)
-      @assign expl1 = P_Expression.Expression.arrayElements(exp1)
-      @assign expl2 = P_Expression.Expression.arrayElements(exp2)
+      @assign expl1 = arrayElements(exp1)
+      @assign expl2 = arrayElements(exp2)
       for e in expl1
         @match _cons(e2, expl2) = expl2
         @assign (e, ty) =
@@ -978,7 +978,7 @@ function checkOverloadedBinaryArrayEW2(
       end
     elseif is_array1
       @assign ty1 = Type.unliftArray(type1)
-      @assign expl1 = P_Expression.Expression.arrayElements(exp1)
+      @assign expl1 = arrayElements(exp1)
       for e in expl1
         @assign (e, ty) = checkOverloadedBinaryArrayEW2(
           e,
@@ -995,7 +995,7 @@ function checkOverloadedBinaryArrayEW2(
       end
     elseif is_array2
       @assign ty2 = Type.unliftArray(type2)
-      @assign expl2 = P_Expression.Expression.arrayElements(exp2)
+      @assign expl2 = arrayElements(exp2)
       for e in expl2
         @assign (e, ty) = checkOverloadedBinaryArrayEW2(
           exp1,
@@ -1012,7 +1012,7 @@ function checkOverloadedBinaryArrayEW2(
       end
     end
     @assign outType = setArrayElementType(type1, ty)
-    @assign outExp = P_Expression.Expression.makeArray(outType, listReverseInPlace(expl))
+    @assign outExp = makeArray(outType, listReverseInPlace(expl))
   else
     @assign (outExp, outType) = matchOverloadedBinaryOperator(
       exp1,
@@ -1119,7 +1119,7 @@ function implicitConstructAndMatch(
       Error.AMBIGUOUS_MATCHING_OPERATOR_FUNCTIONS_NFINST,
       list(
         toString(BINARY_EXPRESSION(exp1, op, exp2)),
-        P_Function.candidateFuncListString(List(Util.tuple31(fn) for fn in matchedfuncs)),
+        P_Function.candidateFuncListString(list(Util.tuple31(fn) for fn in matchedfuncs)),
       ),
       info,
     )
@@ -1961,7 +1961,7 @@ function checkOverloadedUnaryOperator(
     @assign outType = P_Function.returnType(matchedFunc.func)
     @assign outExp = CALL_EXPRESSION(P_Call.makeTypedCall(
       matchedFunc.func,
-      List(Util.tuple31(a) for a in matchedFunc.args),
+      list(Util.tuple31(a) for a in matchedFunc.args),
       var,
       outType,
     ))
@@ -1970,7 +1970,7 @@ function checkOverloadedUnaryOperator(
       Error.AMBIGUOUS_MATCHING_OPERATOR_FUNCTIONS_NFINST,
       list(
         toString(UNARY_EXPRESSION(inOp, inExp1)),
-        P_Function.candidateFuncListString(List(mfn.func for mfn in matchedFunctions)),
+        P_Function.candidateFuncListString(list(mfn.func for mfn in matchedFunctions)),
       ),
       info,
     )
@@ -3326,10 +3326,10 @@ function matchTypes(
         @assign (expression, compatibleType, matchKind) = matchTypes(
           actualType.ty,
           Type.unbox(expectedType),
-          P_Expression.Expression.unbox(expression),
+          unbox(expression),
           allowUnknown,
         )
-        @assign expression = P_Expression.Expression.box(expression)
+        @assign expression = box(expression)
         @assign compatibleType = Type.box(compatibleType)
         compatibleType
       end
@@ -3400,7 +3400,7 @@ function matchExpressions_cast(
         =#
         #=  not alone on the rhs of an equation is \"tuple subscripted\" by typeExp.
         =#
-        @assign exp2 = P_Expression.Expression.tupleElement(exp2, compatibleType, 1)
+        @assign exp2 = tupleElement(exp2, compatibleType, 1)
         @assign (exp2, compatibleType, matchKind) =
           matchTypes(compatibleType, type1, exp2, allowUnknown)
         if isCompatibleMatch(matchKind)
@@ -3427,7 +3427,7 @@ function matchExpressions_cast(
 
       (TYPE_METABOXED(__), _) => begin
         @assign (exp1, exp2, compatibleType, matchKind) = matchExpressions(
-          P_Expression.Expression.unbox(exp1),
+          unbox(exp1),
           type1.ty,
           exp2,
           type2,
@@ -3440,7 +3440,7 @@ function matchExpressions_cast(
         @assign (exp1, exp2, compatibleType, matchKind) = matchExpressions(
           exp1,
           type1,
-          P_Expression.Expression.unbox(exp2),
+          unbox(exp2),
           type2.ty,
           allowUnknown,
         )
@@ -3448,12 +3448,12 @@ function matchExpressions_cast(
       end
 
       (_, TYPE_POLYMORPHIC(__)) => begin
-        @assign exp1 = P_Expression.Expression.box(exp1)
+        @assign exp1 = box(exp1)
         (Type.box(type1), MatchKind.GENERIC)
       end
 
       (TYPE_POLYMORPHIC(__), _) => begin
-        @assign exp2 = P_Expression.Expression.box(exp2)
+        @assign exp2 = box(exp2)
         (Type.box(type2), MatchKind.GENERIC)
       end
 
@@ -3915,13 +3915,13 @@ function matchBoxedExpressions(
   local e1::Expression
   local e2::Expression
 
-  @assign e1 = P_Expression.Expression.unbox(exp1)
-  @assign e2 = P_Expression.Expression.unbox(exp2)
+  @assign e1 = unbox(exp1)
+  @assign e2 = unbox(exp2)
   @assign (e1, e2, compatibleType, matchKind) =
     matchExpressions(e1, Type.unbox(type1), e2, Type.unbox(type2), allowUnknown)
   if isCastMatch(matchKind)
-    @assign exp1 = P_Expression.Expression.box(e1)
-    @assign exp2 = P_Expression.Expression.box(e2)
+    @assign exp1 = box(e1)
+    @assign exp2 = box(e2)
   end
   @assign compatibleType = Type.box(compatibleType)
   return (exp1, exp2, compatibleType, matchKind)
@@ -4003,7 +4003,7 @@ function matchTypes_cast(
       (TYPE_METABOXED(__), _) => begin
         #=  Allow unknown types in some cases, e.g. () has type METALIST(UNKNOWN)
         =#
-        @assign expression = P_Expression.Expression.unbox(expression)
+        @assign expression = unbox(expression)
         @assign (expression, compatibleType, matchKind) =
           matchTypes(actualType.ty, expectedType, expression, allowUnknown)
         (compatibleType, if isCompatibleMatch(matchKind)
@@ -4016,7 +4016,7 @@ function matchTypes_cast(
       (_, TYPE_METABOXED(__)) => begin
         @assign (expression, compatibleType, matchKind) =
           matchTypes(actualType, expectedType.ty, expression, allowUnknown)
-        @assign expression = P_Expression.Expression.box(expression)
+        @assign expression = box(expression)
         @assign compatibleType = Type.box(compatibleType)
         (compatibleType, if isCompatibleMatch(matchKind)
           MatchKind.CAST
@@ -4152,10 +4152,10 @@ function getRangeTypeInt(
         #=  Ranges like 1:n have size n.
         =#
         @assign dim_exp = SimplifyExp.simplify(stopExp)
-        P_Dimension.Dimension.fromExp(dim_exp, P_Expression.Expression.variability(dim_exp))
+        P_Dimension.Dimension.fromExp(dim_exp, variability(dim_exp))
       end
 
-      (_, NONE(), _) where {(P_Expression.Expression.isEqual(startExp, stopExp))} => begin
+      (_, NONE(), _) where {(isEqual(startExp, stopExp))} => begin
         P_Dimension.Dimension.fromInteger(1)
       end
 
@@ -4172,14 +4172,14 @@ function getRangeTypeInt(
           startExp,
         )
         @assign var = variabilityMax(
-          P_Expression.Expression.variability(stopExp),
-          P_Expression.Expression.variability(startExp),
+          variability(stopExp),
+          variability(startExp),
         )
         if isSome(stepExp)
           @match SOME(step_exp) = stepExp
           @assign var = variabilityMax(
             var,
-            P_Expression.Expression.variability(step_exp),
+            variability(step_exp),
           )
           @assign dim_exp = CALL_EXPRESSION(P_Call.makeTypedCall(
             NFBuiltinFuncs.DIV_INT,
@@ -4248,7 +4248,7 @@ function getRangeTypeReal(
         ))
       end
 
-      (_, NONE(), _) where {(P_Expression.Expression.isEqual(startExp, stopExp))} => begin
+      (_, NONE(), _) where {(isEqual(startExp, stopExp))} => begin
         P_Dimension.Dimension.fromInteger(1)
       end
 
@@ -4259,14 +4259,14 @@ function getRangeTypeReal(
           startExp,
         )
         @assign var = variabilityMax(
-          P_Expression.Expression.variability(stopExp),
-          P_Expression.Expression.variability(startExp),
+          variability(stopExp),
+          variability(startExp),
         )
         if isSome(stepExp)
           @match SOME(step_exp) = stepExp
           @assign var = variabilityMax(
             var,
-            P_Expression.Expression.variability(step_exp),
+            variability(step_exp),
           )
           @assign dim_exp = BINARY_EXPRESSION(
             dim_exp,
@@ -4322,12 +4322,12 @@ function getRangeTypeBool(startExp::Expression, stopExp::Expression)::Dimension
       end
 
       _ => begin
-        if P_Expression.Expression.isEqual(startExp, stopExp)
+        if isEqual(startExp, stopExp)
           @assign dim = P_Dimension.Dimension.fromInteger(1)
         else
           @assign var = variabilityMax(
-            P_Expression.Expression.variability(startExp),
-            P_Expression.Expression.variability(stopExp),
+            variability(startExp),
+            variability(stopExp),
           )
           @assign dim_exp = IF_EXPRESSION(
             RELATION_EXPRESSION(
@@ -4363,26 +4363,26 @@ function getRangeTypeEnum(startExp::Expression, stopExp::Expression)::Dimension
     local dim_exp::Expression
     local var::VariabilityType
     @match (startExp, stopExp) begin
-      (P_Expression.Expression.ENUM_LITERAL(__), P_Expression.Expression.ENUM_LITERAL(__)) => begin
+      (ENUM_LITERAL(__), ENUM_LITERAL(__)) => begin
         P_Dimension.Dimension.fromInteger(max(stopExp.index - startExp.index + 1, 0))
       end
 
-      (P_Expression.Expression.ENUM_LITERAL(index = 1), _) => begin
-        P_Dimension.Dimension.fromExp(stopExp, P_Expression.Expression.variability(stopExp))
+      (ENUM_LITERAL(index = 1), _) => begin
+        P_Dimension.Dimension.fromExp(stopExp, variability(stopExp))
       end
 
       _ => begin
-        if P_Expression.Expression.isEqual(startExp, stopExp)
+        if isEqual(startExp, stopExp)
           @assign dim = P_Dimension.Dimension.fromInteger(1)
         else
           @assign var = variabilityMax(
-            P_Expression.Expression.variability(startExp),
-            P_Expression.Expression.variability(stopExp),
+            variability(startExp),
+            variability(stopExp),
           )
           @assign dim_exp = BINARY_EXPRESSION(
-            P_Expression.Expression.enumIndexExp(startExp),
+            enumIndexExp(startExp),
             P_Operator.Operator.makeSub(TYPE_INTEGER()),
-            P_Expression.Expression.enumIndexExp(stopExp),
+            enumIndexExp(stopExp),
           )
           @assign dim_exp = BINARY_EXPRESSION(
             dim_exp,
@@ -4493,7 +4493,7 @@ function printBindingTypeError(
     @assign (_, _, mk) = matchTypes(
       arrayElementType(bindingType),
       arrayElementType(componentType),
-      P_Expression.Expression.EMPTY(bindingType),
+      EMPTY(bindingType),
       true,
     )
     if !Config.getGraphicsExpMode()
@@ -4532,11 +4532,11 @@ function checkDimensionType(exp::Expression, ty::NFType, info::SourceInfo)
   return if !isInteger(ty)
     @assign () = begin
       @match exp begin
-        P_Expression.Expression.TYPENAME(ty = ARRAY_TYPE(elementType = TYPE_BOOLEAN(__))) => begin
+        TYPENAME(ty = ARRAY_TYPE(elementType = TYPE_BOOLEAN(__))) => begin
           ()
         end
 
-        P_Expression.Expression.TYPENAME(
+        TYPENAME(
           ty = ARRAY_TYPE(elementType = TYPE_ENUMERATION(__)),
         ) => begin
           ()

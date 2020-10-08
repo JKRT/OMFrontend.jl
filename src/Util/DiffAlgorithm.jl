@@ -146,13 +146,13 @@ function diffSeq(
   elseif len1 < 1
     @assign out = ListUtil.append_reverse(
       prefixes,
-      _cons((Diff.Add, List(arr2[e] for e = start2:end2)), suffixes),
+      _cons((Diff.Add, list(arr2[e] for e = start2:end2)), suffixes),
     )
     return out
   elseif len2 < 1
     @assign out = ListUtil.append_reverse(
       prefixes,
-      _cons((Diff.Delete, List(arr1[e] for e = start1:end1)), suffixes),
+      _cons((Diff.Delete, list(arr1[e] for e = start1:end1)), suffixes),
     )
     return out
   end
@@ -165,7 +165,7 @@ function diffSeq(
   else
     false
   end
-    @assign out = list((Diff.Equal, List(arr1[e] for e = start1:end1)))
+    @assign out = list((Diff.Equal, list(arr1[e] for e = start1:end1)))
     return out
   end
   #=  trim off common prefix; guaranteed to be a good solution

@@ -175,7 +175,7 @@ function replaceCrefNode(exp::Expression, node::InstNode, value::Expression)::Ex
         refEqual(node, cr_node) &&
         !isFromCref(rest_cr)
       )} => begin
-        P_Expression.Expression.applySubscripts(subs, value)
+        applySubscripts(subs, value)
       end
 
       _ => begin
@@ -195,7 +195,7 @@ function replaceCrefNode(exp::Expression, node::InstNode, value::Expression)::Ex
   @assign repl_ty =
     mapDims(ty, (node, value) -> replaceDimExp(node = node, value = value))
   if !referenceEq(ty, repl_ty)
-    @assign exp = P_Expression.Expression.setType(repl_ty, exp)
+    @assign exp = setType(repl_ty, exp)
   end
   return exp
 end

@@ -446,7 +446,7 @@ function makeDAEType(fn::M_Function, boxTypes::Bool = false)::DAE.Type
     @assign ppar = P_Prefixes.parallelismToDAE(P_Component.parallelism(comp))
     @assign pdefault = Util.applyOption(
       typedExp(P_Component.getBinding(comp)),
-      P_Expression.Expression.toDAE,
+      toDAE,
     )
     @assign params =
       _cons(DAE.FuncArg.FUNCARG(pname, ptype, pconst, ppar, pdefault), params)
@@ -939,7 +939,7 @@ function typePartialApplication(
     @match _cons(arg_name, rest_names) = rest_names
     @assign (arg, inputs, slots) =
       applyPartialApplicationArg(arg_name, arg, arg_ty, inputs, slots, fn, info)
-    @assign ty_args = _cons(P_Expression.Expression.box(arg), ty_args)
+    @assign ty_args = _cons(box(arg), ty_args)
     @assign variability = variabilityMax(variability, arg_var)
   end
   @assign fn.inputs = inputs
@@ -1412,7 +1412,7 @@ function fillDefaultSlot2(slot::Slot, slots::Array{<:Slot}, info::SourceInfo)::T
         @assign outArg = (
           exp,
           typeOf(exp),
-          P_Expression.Expression.variability(exp),
+          variability(exp),
         )
         @assign slot.arg = SOME(outArg)
         @assign slot.evalStatus = SlotEvalStatus.EVALUATED
@@ -1724,7 +1724,7 @@ function callString(
   local str::String
 
   @assign str =
-    stringDelimitList(List(toString(arg) for arg in posArgs), ", ")
+    stringDelimitList(list(toString(arg) for arg in posArgs), ", ")
   if !listEmpty(namedArgs)
     @assign str =
       str +

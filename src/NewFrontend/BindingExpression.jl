@@ -4620,11 +4620,11 @@ function toFlatString(exp::Expression) ::String
       end
 
       ARRAY_EXPRESSION(__)  => begin
-        "{" + stringDelimitList(List(toFlatString(e) for e in exp.elements), ", ") + "}"
+        "{" + stringDelimitList(list(toFlatString(e) for e in exp.elements), ", ") + "}"
       end
 
       MATRIX_EXPRESSION(__)  => begin
-        "[" + stringDelimitList(List(stringDelimitList(List(toFlatString(e) for e in el), ", ") for el in exp.elements), "; ") + "]"
+        "[" + stringDelimitList(list(stringDelimitList(list(toFlatString(e) for e in el), ", ") for el in exp.elements), "; ") + "]"
       end
 
       RANGE_EXPRESSION(__)  => begin
@@ -4636,7 +4636,7 @@ function toFlatString(exp::Expression) ::String
       end
 
       TUPLE_EXPRESSION(__)  => begin
-        "(" + stringDelimitList(List(toFlatString(e) for e in exp.elements), ", ") + ")"
+        "(" + stringDelimitList(list(toFlatString(e) for e in exp.elements), ", ") + ")"
       end
 
       RECORD_EXPRESSION(__)  => begin
@@ -4772,11 +4772,11 @@ function toString(exp::Expression) ::String
       end
 
       ARRAY_EXPRESSION(__)  => begin
-        "{" + stringDelimitList(List(toString(e) for e in exp.elements), ", ") + "}"
+        "{" + stringDelimitList(list(toString(e) for e in exp.elements), ", ") + "}"
       end
 
       MATRIX_EXPRESSION(__)  => begin
-        "[" + stringDelimitList(List(stringDelimitList(List(toString(e) for e in el), ", ") for el in exp.elements), "; ") + "]"
+        "[" + stringDelimitList(list(stringDelimitList(list(toString(e) for e in el), ", ") for el in exp.elements), "; ") + "]"
       end
 
       RANGE_EXPRESSION(__)  => begin
@@ -4788,7 +4788,7 @@ function toString(exp::Expression) ::String
       end
 
       TUPLE_EXPRESSION(__)  => begin
-        "(" + stringDelimitList(List(toString(e) for e in exp.elements), ", ") + ")"
+        "(" + stringDelimitList(list(toString(e) for e in exp.elements), ", ") + ")"
       end
 
       RECORD_EXPRESSION(__)  => begin
@@ -5147,7 +5147,7 @@ function applyIndexSubscriptRange2(startExp::Expression, stepExp::Option{<:Expre
         end
       end
 
-      (P_Expression.Expression.ENUM_LITERAL_EXPRESSION(index = iidx), _)  => begin
+      (ENUM_LITERAL_EXPRESSION(index = iidx), _)  => begin
         @assign iidx = iidx + index - 1
         nthEnumLiteral(startExp.ty, iidx)
       end
@@ -5204,7 +5204,7 @@ function applySubscriptRange(subscript::Subscript, exp::Expression) ::Expression
       end
 
       SUBSCRIPT_EXPANDED_SLICE(__)  => begin
-        @assign expl = List(applyIndexSubscriptRange(exp, i) for i in sub.indices)
+        @assign expl = list(applyIndexSubscriptRange(exp, i) for i in sub.indices)
         @match RANGE_EXPRESSION(ty = ty) = exp
         makeArray(Type.liftArrayLeft(ty, P_Dimension.Dimension.fromInteger(listLength(expl))), expl)
       end
@@ -5264,7 +5264,7 @@ function applySubscriptArray(subscript::Subscript, exp::Expression, restSubscrip
         else
           @match ARRAY_EXPRESSION(ty = ty, elements = expl, literal = literal) = exp
           @match _cons(s, rest_subs) = restSubscripts
-          @assign expl = List(applySubscript(s, e, rest_subs) for e in expl)
+          @assign expl = list(applySubscript(s, e, rest_subs) for e in expl)
           @assign el_count = listLength(expl)
           @assign ty = if el_count > 0
             typeOf(listHead(expl))
@@ -5279,7 +5279,7 @@ function applySubscriptArray(subscript::Subscript, exp::Expression, restSubscrip
 
       SUBSCRIPT_EXPANDED_SLICE(__)  => begin
         @match ARRAY_EXPRESSION(ty = ty, literal = literal) = exp
-        @assign expl = List(applyIndexSubscriptArray(exp, i, restSubscripts) for i in sub.indices)
+        @assign expl = list(applyIndexSubscriptArray(exp, i, restSubscripts) for i in sub.indices)
         @assign el_count = listLength(expl)
         @assign ty = if el_count > 0
           typeOf(listHead(expl))
@@ -5347,7 +5347,7 @@ function applySubscriptTypename(subscript::Subscript, ty::M_Type) ::Expression
       end
 
       SUBSCRIPT_EXPANDED_SLICE(__)  => begin
-        @assign expl = List(applyIndexSubscriptTypename(ty, i) for i in sub.indices)
+        @assign expl = list(applyIndexSubscriptTypename(ty, i) for i in sub.indices)
         makeArray(Type.liftArrayLeft(ty, P_Dimension.Dimension.fromInteger(listLength(expl))), expl, literal = true)
       end
     end
@@ -5455,7 +5455,7 @@ function makeRealMatrix(values::List{<:List{<:AbstractFloat}}) ::Expression
     @assign exp = makeEmptyArray(ty)
   else
     @assign ty = ARRAY_TYPE(TYPE_REAL(), list(P_Dimension.Dimension.fromInteger(listLength(listHead(values)))))
-    @assign expl = List(makeArray(ty, List(REAL(v) for v in row), literal = true) for row in values)
+    @assign expl = list(makeArray(ty, list(REAL(v) for v in row), literal = true) for row in values)
     @assign ty = Type.liftArrayLeft(ty, P_Dimension.Dimension.fromInteger(listLength(expl)))
     @assign exp = makeArray(ty, expl, literal = true)
   end
@@ -5465,14 +5465,14 @@ end
 function makeRealArray(values::List{<:AbstractFloat}) ::Expression
   local exp::Expression
 
-  @assign exp = makeArray(ARRAY_TYPE(TYPE_REAL(), list(P_Dimension.Dimension.fromInteger(listLength(values)))), List(REAL(v) for v in values), literal = true)
+  @assign exp = makeArray(ARRAY_TYPE(TYPE_REAL(), list(P_Dimension.Dimension.fromInteger(listLength(values)))), list(REAL(v) for v in values), literal = true)
   exp
 end
 
 function makeIntegerArray(values::List{<:Integer}) ::Expression
   local exp::Expression
 
-  @assign exp = makeArray(ARRAY_TYPE(TYPE_INTEGER(), list(P_Dimension.Dimension.fromInteger(listLength(values)))), List(INTEGER(v) for v in values), literal = true)
+  @assign exp = makeArray(ARRAY_TYPE(TYPE_INTEGER(), list(P_Dimension.Dimension.fromInteger(listLength(values)))), list(INTEGER(v) for v in values), literal = true)
   exp
 end
 

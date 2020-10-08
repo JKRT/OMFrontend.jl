@@ -126,7 +126,7 @@ function simplifyEquation(eq::Equation, equations::List{<:Equation})::List{Equat
 
       P_Equation.Equation.ASSERT(__) => begin
         @assign eq.condition = SimplifyExp.simplify(eq.condition)
-        if P_Expression.Expression.isTrue(eq.condition)
+        if isTrue(eq.condition)
           equations
         else
           _cons(eq, equations)
@@ -140,7 +140,7 @@ function simplifyEquation(eq::Equation, equations::List{<:Equation})::List{Equat
 
       P_Equation.Equation.NORETCALL(__) => begin
         @assign e = SimplifyExp.simplify(eq.exp)
-        if P_Expression.Expression.isCall(e)
+        if isCall(e)
           @assign eq.exp = removeEmptyFunctionArguments(e)
           @assign equations = _cons(eq, equations)
         end
@@ -279,7 +279,7 @@ function simplifyStatement(stmt::Statement, statements::List{<:Statement})::List
 
       P_Statement.Statement.NORETCALL(__) => begin
         @assign e = SimplifyExp.simplify(stmt.exp)
-        if P_Expression.Expression.isCall(e)
+        if isCall(e)
           @assign stmt.exp = removeEmptyFunctionArguments(e)
           @assign statements = _cons(stmt, statements)
         end
@@ -355,7 +355,7 @@ function simplifyTupleElement(
   for lhs in lhsTuple
     @match _cons(rhs, rest_rhs) = rest_rhs
     @match _cons(ety, rest_ty) = rest_ty
-    if !P_Expression.Expression.isWildCref(lhs)
+    if !isWildCref(lhs)
       @assign statements = _cons(makeFn(lhs, rhs, ety, src), statements)
     end
   end
@@ -429,7 +429,7 @@ function simplifyIfEqBranches(
           @assign cond = SimplifyExp.simplify(cond)
           #=  A branch with condition true will always be selected when encountered.
           =#
-          if P_Expression.Expression.isTrue(cond)
+          if isTrue(cond)
             if listEmpty(accum)
               for eq in body
                 @assign elements = simplifyEquation(eq, elements)
@@ -446,7 +446,7 @@ function simplifyIfEqBranches(
               )
               return
             end
-          elseif !P_Expression.Expression.isFalse(cond)
+          elseif !isFalse(cond)
             @assign accum = _cons(
               P_Equation.Equation.makeBranch(cond, simplifyEquations(body)),
               accum,
@@ -474,7 +474,7 @@ function simplifyIfEqBranches(
           =#
           #=  stored in it.
           =#
-          if !P_Expression.Expression.isFalse(cond)
+          if !isFalse(cond)
             P_Equation.Equation.triggerErrors(branch)
           end
           accum
@@ -508,7 +508,7 @@ function simplifyIfStmtBranches(
   for branch in branches
     @assign (cond, body) = branch
     @assign cond = SimplifyExp.simplify(cond)
-    if P_Expression.Expression.isTrue(cond)
+    if isTrue(cond)
       if listEmpty(accum)
         @assign elements = listAppend(listReverse(simplifyFunc(body)), elements)
         return elements
@@ -516,7 +516,7 @@ function simplifyIfStmtBranches(
         @assign accum = _cons((cond, simplifyFunc(body)), accum)
         break
       end
-    elseif !P_Expression.Expression.isFalse(cond)
+    elseif !isFalse(cond)
       @assign accum = _cons((cond, simplifyFunc(body)), accum)
     end
   end

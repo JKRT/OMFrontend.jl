@@ -401,7 +401,7 @@ function printHashSet(hashSet::HashSet)
   local printKey::FuncKeyString
 
   @assign (_, _, _, _, (_, _, printKey)) = hashSet
-  return print(stringDelimitList(List(printKey(e) for e in hashSetList(hashSet)), "\\n"))
+  return print(stringDelimitList(list(printKey(e) for e in hashSetList(hashSet)), "\\n"))
 end
 
 """ #=  =#"""

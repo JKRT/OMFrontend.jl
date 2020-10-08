@@ -93,7 +93,7 @@ function subscriptedTypeName(expType::M_Type, subscriptTypes::List{<:M_Type})::S
 
   local strl::List{String}
 
-  @assign strl = List(toString(t) for t in subscriptTypes)
+  @assign strl = list(toString(t) for t in subscriptTypes)
   @assign strl = _cons("_", strl)
   @assign strl = _cons(toString(expType), strl)
   @assign strl = _cons("subscript", strl)
@@ -396,12 +396,12 @@ function toDAE(ty::M_Type, makeTypeVars::Bool = true)::DAE.Type
       ARRAY_TYPE(__) => begin
         DAE.T_ARRAY(
           toDAE(ty.elementType, makeTypeVars),
-          List(P_Dimension.Dimension.toDAE(d) for d in ty.dimensions),
+          list(P_Dimension.Dimension.toDAE(d) for d in ty.dimensions),
         )
       end
 
       TYPE_TUPLE(__) => begin
-        DAE.T_TUPLE(List(toDAE(t) for t in ty.types), ty.names)
+        DAE.T_TUPLE(list(toDAE(t) for t in ty.types), ty.names)
       end
 
       TYPE_FUNCTION(__) => begin
@@ -714,7 +714,7 @@ function mapDims(ty::M_Type, func::FuncT)::M_Type
         ()
       end
       TYPE_TUPLE(__) => begin
-        @assign ty.types = List(mapDims(t, func) for t in ty.types)
+        @assign ty.types = list(mapDims(t, func) for t in ty.types)
         ()
       end
       TYPE_FUNCTION(fn = fn) => begin

@@ -135,9 +135,9 @@ function toFlatStream(eq::Equation, indent::String, s)
   @assign s = begin
     @match eq begin
       EQUALITY(__) => begin
-        @assign s = IOStream.append(s, P_Expression.Expression.toFlatString(eq.lhs))
+        @assign s = IOStream.append(s, toFlatString(eq.lhs))
         @assign s = IOStream.append(s, " = ")
-        @assign s = IOStream.append(s, P_Expression.Expression.toFlatString(eq.rhs))
+        @assign s = IOStream.append(s, toFlatString(eq.rhs))
         s
       end
 
@@ -149,17 +149,17 @@ function toFlatStream(eq::Equation, indent::String, s)
       end
 
       ARRAY_EQUALITY(__) => begin
-        @assign s = IOStream.append(s, P_Expression.Expression.toFlatString(eq.lhs))
+        @assign s = IOStream.append(s, toFlatString(eq.lhs))
         @assign s = IOStream.append(s, " = ")
-        @assign s = IOStream.append(s, P_Expression.Expression.toFlatString(eq.rhs))
+        @assign s = IOStream.append(s, toFlatString(eq.rhs))
         s
       end
 
       CONNECT(__) => begin
         @assign s = IOStream.append(s, "connect(")
-        @assign s = IOStream.append(s, P_Expression.Expression.toFlatString(eq.lhs))
+        @assign s = IOStream.append(s, toFlatString(eq.lhs))
         @assign s = IOStream.append(s, " = ")
-        @assign s = IOStream.append(s, P_Expression.Expression.toFlatString(eq.rhs))
+        @assign s = IOStream.append(s, toFlatString(eq.rhs))
         @assign s = IOStream.append(s, ")")
         s
       end
@@ -171,7 +171,7 @@ function toFlatStream(eq::Equation, indent::String, s)
           @assign s = IOStream.append(s, " in ")
           @assign s = IOStream.append(
             s,
-            P_Expression.Expression.toFlatString(Util.getOption(eq.range)),
+            toFlatString(Util.getOption(eq.range)),
           )
         end
         @assign s = IOStream.append(s, " loop\\n")
@@ -209,33 +209,33 @@ function toFlatStream(eq::Equation, indent::String, s)
 
       ASSERT(__) => begin
         @assign s = IOStream.append(s, "assert(")
-        @assign s = IOStream.append(s, P_Expression.Expression.toFlatString(eq.condition))
+        @assign s = IOStream.append(s, toFlatString(eq.condition))
         @assign s = IOStream.append(s, ", ")
-        @assign s = IOStream.append(s, P_Expression.Expression.toFlatString(eq.message))
+        @assign s = IOStream.append(s, toFlatString(eq.message))
         @assign s = IOStream.append(s, ", ")
-        @assign s = IOStream.append(s, P_Expression.Expression.toFlatString(eq.level))
+        @assign s = IOStream.append(s, toFlatString(eq.level))
         @assign s = IOStream.append(s, ")")
         s
       end
 
       TERMINATE(__) => begin
         @assign s = IOStream.append(s, "terminate(")
-        @assign s = IOStream.append(s, P_Expression.Expression.toFlatString(eq.message))
+        @assign s = IOStream.append(s, toFlatString(eq.message))
         @assign s = IOStream.append(s, ")")
         s
       end
 
       REINIT(__) => begin
         @assign s = IOStream.append(s, "reinit(")
-        @assign s = IOStream.append(s, P_Expression.Expression.toFlatString(eq.cref))
+        @assign s = IOStream.append(s, toFlatString(eq.cref))
         @assign s = IOStream.append(s, ", ")
-        @assign s = IOStream.append(s, P_Expression.Expression.toFlatString(eq.reinitExp))
+        @assign s = IOStream.append(s, toFlatString(eq.reinitExp))
         @assign s = IOStream.append(s, ")")
         s
       end
 
       NORETCALL(__) => begin
-        IOStream.append(s, P_Expression.Expression.toFlatString(eq.exp))
+        IOStream.append(s, toFlatString(eq.exp))
       end
 
       _ => begin
@@ -627,7 +627,7 @@ function mapExpBranch(branch::Branch, func::MapExpFn)::Branch
     @match branch begin
       BRANCH(__) => begin
         @assign cond = func(branch.condition)
-        @assign eql = List(mapExp(e, func) for e in branch.body)
+        @assign eql = list(mapExp(e, func) for e in branch.body)
         BRANCH(cond, branch.conditionVar, eql)
       end
 
@@ -677,18 +677,18 @@ function mapExp(eq::Equation, func::MapExpFn)::Equation
       end
 
       FOR(__) => begin
-        @assign eq.body = List(mapExp(e, func) for e in eq.body)
+        @assign eq.body = list(mapExp(e, func) for e in eq.body)
         @assign eq.range = Util.applyOption(eq.range, func)
         eq
       end
 
       IF(__) => begin
-        @assign eq.branches = List(mapExpBranch(b, func) for b in eq.branches)
+        @assign eq.branches = list(mapExpBranch(b, func) for b in eq.branches)
         eq
       end
 
       WHEN(__) => begin
-        @assign eq.branches = List(mapExpBranch(b, func) for b in eq.branches)
+        @assign eq.branches = list(mapExpBranch(b, func) for b in eq.branches)
         eq
       end
 
@@ -743,7 +743,7 @@ end
 
 function mapExpList(eql::List{<:Equation}, func::MapExpFn)::List{Equation}
 
-  @assign eql = List(mapExp(eq, func) for eq in eql)
+  @assign eql = list(mapExp(eq, func) for eq in eql)
   return eql
 end
 
@@ -752,7 +752,7 @@ function map(eq::Equation, func::MapFn)::Equation
   @assign () = begin
     @match eq begin
       FOR(__) => begin
-        @assign eq.body = List(map(e, func) for e in eq.body)
+        @assign eq.body = list(map(e, func) for e in eq.body)
         ()
       end
 
@@ -761,7 +761,7 @@ function map(eq::Equation, func::MapFn)::Equation
           begin
             @match b begin
               BRANCH(__) => begin
-                @assign b.body = List(map(e, func) for e in b.body)
+                @assign b.body = list(map(e, func) for e in b.body)
                 b
               end
 
@@ -779,7 +779,7 @@ function map(eq::Equation, func::MapFn)::Equation
           begin
             @match b begin
               BRANCH(__) => begin
-                @assign b.body = List(map(e, func) for e in b.body)
+                @assign b.body = list(map(e, func) for e in b.body)
                 b
               end
 
@@ -989,7 +989,7 @@ function toFlatStream(
     @match branch begin
       BRANCH(__) => begin
         @assign s =
-          IOStream.append(s, P_Expression.Expression.toFlatString(branch.condition))
+          IOStream.append(s, toFlatString(branch.condition))
         @assign s = IOStream.append(s, " then\\n")
         @assign s = toFlatStreamList(branch.body, indent + "  ", s)
         s

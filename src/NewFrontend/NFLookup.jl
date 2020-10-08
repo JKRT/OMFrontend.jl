@@ -530,7 +530,7 @@ function lookupSimpleBuiltinCref(name::String, subs::List{<:Absyn.Subscript}) ::
     end
   end
   if ! listEmpty(subs)
-    @assign cref = setSubscripts(List(SUBSCRIPT_RAW_SUBSCRIPT(s) for s in subs), cref)
+    @assign cref = setSubscripts(list(SUBSCRIPT_RAW_SUBSCRIPT(s) for s in subs), cref)
   end
   (node, cref, state)
 end

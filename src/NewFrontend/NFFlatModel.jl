@@ -56,7 +56,7 @@ function reconstructRecordInstance(
     @assign record_binding = EMPTY_BINDING
   else
     @assign field_exps = listReverseInPlace(field_exps)
-    @assign record_exp = P_Expression.Expression.makeRecord(
+    @assign record_exp = makeRecord(
       scopePath(classScope(record_node)),
       record_ty,
       field_exps,
@@ -120,7 +120,7 @@ function collectSubscriptedFlatType(
 
   @assign exp_ty = typeOf(exp)
   @assign dims = ListUtil.firstN(arrayDims(exp_ty), listLength(subs))
-  @assign sub_tyl = List(P_Dimension.Dimension.subscriptType(d) for d in dims)
+  @assign sub_tyl = list(P_Dimension.Dimension.subscriptType(d) for d in dims)
   @assign name = Type.subscriptedTypeName(exp_ty, sub_tyl)
   @assign types = TypeTree.add(
     types,

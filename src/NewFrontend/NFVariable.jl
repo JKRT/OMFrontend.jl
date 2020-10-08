@@ -45,7 +45,7 @@ function toFlatStream(
       end
       @assign b = Util.tuple22(a)
       @assign binding_dims =
-        Type.dimensionCount(typeOf(P_Expression.Expression.getBindingExp(getExp(
+        Type.dimensionCount(typeOf(getBindingExp(getExp(
           b,
         ))))
       if var_dims > binding_dims

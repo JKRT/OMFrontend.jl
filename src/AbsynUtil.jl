@@ -7275,13 +7275,13 @@ function traverseExpShallow(inExp::Exp, inArg::ArgT, inFunc::FuncT) where {ArgT}
       end
 
       ARRAY(__) => begin
-        @assign outExp.arrayExp = List(inFunc(e, inArg) for e in outExp.arrayExp)
+        @assign outExp.arrayExp = list(inFunc(e, inArg) for e in outExp.arrayExp)
         ()
       end
 
       MATRIX(__) => begin
         @assign outExp.matrix =
-          List(List(inFunc(e, inArg) for e in lst) for lst in outExp.matrix)
+          list(list(inFunc(e, inArg) for e in lst) for lst in outExp.matrix)
         ()
       end
 
@@ -7293,7 +7293,7 @@ function traverseExpShallow(inExp::Exp, inArg::ArgT, inFunc::FuncT) where {ArgT}
       end
 
       TUPLE(__) => begin
-        @assign outExp.expressions = List(inFunc(e, inArg) for e in outExp.expressions)
+        @assign outExp.expressions = list(inFunc(e, inArg) for e in outExp.expressions)
         ()
       end
 
@@ -7309,7 +7309,7 @@ function traverseExpShallow(inExp::Exp, inArg::ArgT, inFunc::FuncT) where {ArgT}
       end
 
       LIST(__) => begin
-        @assign outExp.exps = List(inFunc(e, inArg) for e in outExp.exps)
+        @assign outExp.exps = list(inFunc(e, inArg) for e in outExp.exps)
         ()
       end
 
@@ -7337,7 +7337,7 @@ function traverseExpShallowFuncArgs(
   @assign outArgs = begin
     @match outArgs begin
       FUNCTIONARGS(__) => begin
-        @assign outArgs.args = List(inFunc(arg, inArg) for arg in outArgs.args)
+        @assign outArgs.args = list(inFunc(arg, inArg) for arg in outArgs.args)
         outArgs
       end
 

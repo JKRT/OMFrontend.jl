@@ -78,7 +78,7 @@ function filterSubMods(mod::SCode.Mod, filter::FilterFunc)::SCode.Mod
   @assign mod = begin
     @match mod begin
       SCode.MOD(__) => begin
-        @assign mod.subModLst = List(m for m in mod.subModLst if filter(m))
+        @assign mod.subModLst = list(m for m in mod.subModLst if filter(m))
         begin
           @match mod begin
             SCode.MOD(subModLst = nil(), binding = NONE()) => begin
@@ -6967,7 +6967,7 @@ function stripCommentsFromProgram(
 )::SCode.Program
 
   @assign program =
-    List(stripCommentsFromElement(e, stripAnnotations, stripComments) for e in program)
+    list(stripCommentsFromElement(e, stripAnnotations, stripComments) for e in program)
   return program
 end
 
@@ -7017,7 +7017,7 @@ function stripCommentsFromMod(mod::SCode.Mod, stripAnn::Bool, stripCmt::Bool)::S
     @match mod begin
       SCode.MOD(__) => begin
         @assign mod.subModLst =
-          List(stripCommentsFromSubMod(m, stripAnn, stripCmt) for m in mod.subModLst)
+          list(stripCommentsFromSubMod(m, stripAnn, stripCmt) for m in mod.subModLst)
         ()
       end
 
@@ -7060,7 +7060,7 @@ function stripCommentsFromClassDef(
     @match cdef begin
       SCode.PARTS(__) => begin
         @assign el =
-          List(stripCommentsFromElement(e, stripAnn, stripCmt) for e in cdef.elementLst)
+          list(stripCommentsFromElement(e, stripAnn, stripCmt) for e in cdef.elementLst)
         @assign eql = List(
           stripCommentsFromEquation(eq, stripAnn, stripCmt)
           for eq in cdef.normalEquationLst
@@ -7097,7 +7097,7 @@ function stripCommentsFromClassDef(
 
       SCode.ENUMERATION(__) => begin
         @assign cdef.enumLst =
-          List(stripCommentsFromEnum(e, stripAnn, stripCmt) for e in cdef.enumLst)
+          list(stripCommentsFromEnum(e, stripAnn, stripCmt) for e in cdef.enumLst)
         cdef
       end
 
@@ -7166,11 +7166,11 @@ function stripCommentsFromEEquation(
     @match eq begin
       SCode.EQ_IF(__) => begin
         @assign eq.thenBranch = List(
-          List(stripCommentsFromEEquation(e, stripAnn, stripCmt) for e in branch)
+          list(stripCommentsFromEEquation(e, stripAnn, stripCmt) for e in branch)
           for branch in eq.thenBranch
         )
         @assign eq.elseBranch =
-          List(stripCommentsFromEEquation(e, stripAnn, stripCmt) for e in eq.elseBranch)
+          list(stripCommentsFromEEquation(e, stripAnn, stripCmt) for e in eq.elseBranch)
         @assign eq.comment = stripCommentsFromComment(eq.comment, stripAnn, stripCmt)
         ()
       end
@@ -7243,7 +7243,7 @@ function stripCommentsFromWhenEqBranch(
   local body::List{SCode.EEquation}
 
   @assign (cond, body) = branch
-  @assign body = List(stripCommentsFromEEquation(e, stripAnn, stripCmt) for e in body)
+  @assign body = list(stripCommentsFromEEquation(e, stripAnn, stripCmt) for e in body)
   @assign branch = (cond, body)
   return branch
 end
@@ -7255,7 +7255,7 @@ function stripCommentsFromAlgorithm(
 )::SCode.AlgorithmSection
 
   @assign alg.statements =
-    List(stripCommentsFromStatement(s, stripAnn, stripCmt) for s in alg.statements)
+    list(stripCommentsFromStatement(s, stripAnn, stripCmt) for s in alg.statements)
   return alg
 end
 
@@ -7289,7 +7289,7 @@ function stripCommentsFromStatement(
 
       SCode.ALG_FOR(__) => begin
         @assign stmt.forBody =
-          List(stripCommentsFromStatement(s, stripAnn, stripCmt) for s in stmt.forBody)
+          list(stripCommentsFromStatement(s, stripAnn, stripCmt) for s in stmt.forBody)
         @assign stmt.comment = stripCommentsFromComment(stmt.comment, stripAnn, stripCmt)
         ()
       end
@@ -7355,9 +7355,9 @@ function stripCommentsFromStatement(
 
       SCode.ALG_TRY(__) => begin
         @assign stmt.body =
-          List(stripCommentsFromStatement(s, stripAnn, stripCmt) for s in stmt.body)
+          list(stripCommentsFromStatement(s, stripAnn, stripCmt) for s in stmt.body)
         @assign stmt.elseBody =
-          List(stripCommentsFromStatement(s, stripAnn, stripCmt) for s in stmt.elseBody)
+          list(stripCommentsFromStatement(s, stripAnn, stripCmt) for s in stmt.elseBody)
         @assign stmt.comment = stripCommentsFromComment(stmt.comment, stripAnn, stripCmt)
         ()
       end
@@ -7381,7 +7381,7 @@ function stripCommentsFromStatementBranch(
   local body::List{SCode.Statement}
 
   @assign (cond, body) = branch
-  @assign body = List(stripCommentsFromStatement(s, stripAnn, stripCmt) for s in body)
+  @assign body = list(stripCommentsFromStatement(s, stripAnn, stripCmt) for s in body)
   @assign branch = (cond, body)
   return branch
 end

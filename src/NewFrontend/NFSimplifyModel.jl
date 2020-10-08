@@ -240,7 +240,7 @@ function simplifyStatement(stmt::Statement, statements::List{<:Statement})::List
         @assign dim = Type.nthDimension(ty, 1)
         #= if Dimension.isOne(dim) then
         =#
-        #=   e := Expression.applySubscript(Subscript.INDEX(Expression.INTEGER(1)), e);
+        #=   e := Expression.applySubscript(Subscript.INDEX(Expression.INTEGER_EXPRESSION(1)), e);
         =#
         #=   body := Statement.mapExpList(stmt.body,
         =#

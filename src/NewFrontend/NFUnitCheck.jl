@@ -389,7 +389,7 @@ function foldEquation2(
       EQUATION_EQUALITY(__) => begin
         @assign temp = BINARY_EXPRESSION(
           eq.rhs,
-          P_Operator.Operator.makeSub(TYPE_REAL()),
+          makeSub(TYPE_REAL()),
           eq.lhs,
         )
         if dumpEqInitStruct
@@ -403,7 +403,7 @@ function foldEquation2(
       EQUATION_ARRAY_EQUALITY(__) => begin
         @assign temp = BINARY_EXPRESSION(
           eq.rhs,
-          P_Operator.Operator.makeSub(TYPE_REAL()),
+          makeSub(TYPE_REAL()),
           eq.lhs,
         )
         if dumpEqInitStruct

@@ -414,7 +414,7 @@ function makeEqualityAssert(
   @assign rhs_exp = fromCref(rhsCref)
   if isReal(ty)
     @assign exp =
-      BINARY_EXPRESSION(lhs_exp, P_Operator.Operator.makeSub(ty), rhs_exp)
+      BINARY_EXPRESSION(lhs_exp, makeSub(ty), rhs_exp)
     @assign exp = CALL_EXPRESSION(P_Call.makeTypedCall(
       NFBuiltinFuncs.ABS_REAL,
       list(exp),
@@ -422,12 +422,12 @@ function makeEqualityAssert(
     ))
     @assign exp = RELATION_EXPRESSION(
       exp,
-      P_Operator.Operator.makeLessEq(ty),
+      makeLessEq(ty),
       P_Expression.REAL_EXPRESSION(0.0),
     )
   else
     @assign exp =
-      RELATION_EXPRESSION(lhs_exp, P_Operator.Operator.makeEqual(ty), rhs_exp)
+      RELATION_EXPRESSION(lhs_exp, makeEqual(ty), rhs_exp)
   end
   #=  Modelica doesn't allow == for Reals, so to keep the flat Modelica
   =#
@@ -498,7 +498,7 @@ function generateFlowEquations(elements::List{<:Connector})::List{Equation}
     for e in c_rest
       @assign sum = BINARY_EXPRESSION(
         sum,
-        P_Operator.Operator.makeAdd(TYPE_REAL()),
+        makeAdd(TYPE_REAL()),
         makeFlowExp(e),
       )
       @assign src = ElementSource.mergeSources(src, e.source)
@@ -522,7 +522,7 @@ function makeFlowExp(element::Connector)::Expression
   @assign face = element.face
   if face == Face.OUTSIDE
     @assign exp =
-      UNARY_EXPRESSION(P_Operator.Operator.makeUMinus(TYPE_REAL()), exp)
+      UNARY_EXPRESSION(makeUMinus(TYPE_REAL()), exp)
   end
   return exp
 end
@@ -659,7 +659,7 @@ function streamSumEquationExp(
     @assign inside_sum2 = sumMap(insideElements, sumInside2, flowThreshold)
     @assign sumExp = BINARY_EXPRESSION(
       inside_sum1,
-      P_Operator.Operator.makeDiv(TYPE_REAL()),
+      makeDiv(TYPE_REAL()),
       inside_sum2,
     )
   elseif listEmpty(insideElements)
@@ -667,7 +667,7 @@ function streamSumEquationExp(
     @assign outside_sum2 = sumMap(outsideElements, sumOutside2, flowThreshold)
     @assign sumExp = BINARY_EXPRESSION(
       outside_sum1,
-      P_Operator.Operator.makeDiv(TYPE_REAL()),
+      makeDiv(TYPE_REAL()),
       outside_sum2,
     )
   else
@@ -678,13 +678,13 @@ function streamSumEquationExp(
     @assign sumExp = BINARY_EXPRESSION(
       BINARY_EXPRESSION(
         outside_sum1,
-        P_Operator.Operator.makeAdd(TYPE_REAL()),
+        makeAdd(TYPE_REAL()),
         inside_sum1,
       ),
-      P_Operator.Operator.makeDiv(TYPE_REAL()),
+      makeDiv(TYPE_REAL()),
       BINARY_EXPRESSION(
         outside_sum2,
-        P_Operator.Operator.makeAdd(TYPE_REAL()),
+        makeAdd(TYPE_REAL()),
         inside_sum2,
       ),
     )
@@ -711,7 +711,7 @@ function sumMap(
   for e in listRest(elements)
     @assign exp = BINARY_EXPRESSION(
       func(e, flowThreshold),
-      P_Operator.Operator.makeAdd(TYPE_REAL()),
+      makeAdd(TYPE_REAL()),
       exp,
     )
   end
@@ -754,7 +754,7 @@ function sumOutside1(element::Connector, flowThreshold::Expression)::Expression
   @assign (stream_exp, flow_exp) = streamFlowExp(element)
   @assign exp = BINARY_EXPRESSION(
     makePositiveMaxCall(flow_exp, element, flowThreshold),
-    P_Operator.Operator.makeMul(TYPE_REAL()),
+    makeMul(TYPE_REAL()),
     makeInStreamCall(stream_exp),
   )
   return exp
@@ -772,10 +772,10 @@ function sumInside1(element::Connector, flowThreshold::Expression)::Expression
 
   @assign (stream_exp, flow_exp) = streamFlowExp(element)
   @assign flow_exp =
-    UNARY_EXPRESSION(P_Operator.Operator.makeUMinus(TYPE_REAL()), flow_exp)
+    UNARY_EXPRESSION(makeUMinus(TYPE_REAL()), flow_exp)
   @assign exp = BINARY_EXPRESSION(
     makePositiveMaxCall(flow_exp, element, flowThreshold),
-    P_Operator.Operator.makeMul(TYPE_REAL()),
+    makeMul(TYPE_REAL()),
     stream_exp,
   )
   return exp
@@ -804,7 +804,7 @@ function sumInside2(element::Connector, flowThreshold::Expression)::Expression
 
   @assign flow_exp = flowExp(element)
   @assign flow_exp =
-    UNARY_EXPRESSION(P_Operator.Operator.makeUMinus(TYPE_REAL()), flow_exp)
+    UNARY_EXPRESSION(makeUMinus(TYPE_REAL()), flow_exp)
   @assign exp = makePositiveMaxCall(flow_exp, element, flowThreshold)
   return exp
 end
@@ -845,7 +845,7 @@ function makePositiveMaxCall(
     @assign nominal_exp = getBindingExp(nominal_exp)
     @assign flow_threshold = BINARY_EXPRESSION(
       flowThreshold,
-      P_Operator.Operator.makeMul(TYPE_REAL()),
+      makeMul(TYPE_REAL()),
       nominal_exp,
     )
   else
@@ -1146,7 +1146,7 @@ function evaluateActualStream(
     @assign stream_exp = fromCref(streamCref)
     @assign instream_exp = evaluateInStream(streamCref, sets, setsArray, ctable)
     @assign op =
-      P_Operator.Operator.makeGreater(nodeType(flow_cr))
+      makeGreater(nodeType(flow_cr))
     @assign exp = IF_EXPRESSION(
       RELATION_EXPRESSION(flow_exp, op, P_Expression.REAL_EXPRESSION(0.0)),
       instream_exp,
@@ -1284,7 +1284,7 @@ function makeSmoothCall(arg::Expression, order::Integer)::Expression
 
   @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(
     NFBuiltinFuncs.SMOOTH,
-    list(DAE.INTEGER(order), arg),
+    list(DAE.INTEGER_EXPRESSION(order), arg),
     variability(arg),
   ))
   return callExp

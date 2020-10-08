@@ -1614,7 +1614,7 @@ function reductionFoldExpression(
         "product" => begin
           SOME(BINARY_EXPRESSION(
             reductionFoldIterator(resultId, reductionType),
-            P_Operator.Operator.makeMul(reductionType),
+            makeMul(reductionType),
             reductionFoldIterator(foldId, reductionType),
           ))
         end

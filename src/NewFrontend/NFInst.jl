@@ -2193,7 +2193,7 @@ function instExp(absynExp::Absyn.Exp, scope::InstNode, info::SourceInfo) ::Expre
         @assign e1 = instExp(absynExp.start, scope, info)
         @assign oe = instExpOpt(absynExp.step, scope, info)
         @assign e3 = instExp(absynExp.stop, scope, info)
-        Expression.RANGE(TYPE_UNKNOWN(), e1, oe, e3)
+        RANGE_EXPRESSION(TYPE_UNKNOWN(), e1, oe, e3)
       end
 
       Absyn.TUPLE(__)  => begin
@@ -2218,20 +2218,20 @@ function instExp(absynExp::Absyn.Exp, scope::InstNode, info::SourceInfo) ::Expre
         @assign e1 = instExp(absynExp.exp1, scope, info)
         @assign e2 = instExp(absynExp.exp2, scope, info)
         @assign op = fromAbsyn(absynExp.op)
-        Expression.LBINARY(e1, op, e2)
+        LBINARY_EXPRESSION(e1, op, e2)
       end
 
       Absyn.LUNARY(__)  => begin
         @assign e1 = instExp(absynExp.exp, scope, info)
         @assign op = fromAbsyn(absynExp.op)
-        Expression.LUNARY(op, e1)
+        LUNARY_EXPRESSION(op, e1)
       end
 
       Absyn.RELATION(__)  => begin
         @assign e1 = instExp(absynExp.exp1, scope, info)
         @assign e2 = instExp(absynExp.exp2, scope, info)
-        @assign op = P_Operator.Operator.fromAbsyn(absynExp.op)
-        Expression.RELATION(e1, op, e2)
+        @assign op = fromAbsyn(absynExp.op)
+        RELATION_EXPRESSION(e1, op, e2)
       end
 
       Absyn.IFEXP(__)  => begin
@@ -2239,11 +2239,11 @@ function instExp(absynExp::Absyn.Exp, scope::InstNode, info::SourceInfo) ::Expre
         for branch in listReverse(absynExp.elseIfBranch)
           @assign e1 = instExp(Util.tuple21(branch), scope, info)
           @assign e2 = instExp(Util.tuple22(branch), scope, info)
-          @assign e3 = Expression.IF(e1, e2, e3)
+          @assign e3 = IF_EXPRESSION(e1, e2, e3)
         end
         @assign e1 = instExp(absynExp.ifExp, scope, info)
         @assign e2 = instExp(absynExp.trueBranch, scope, info)
-        Expression.IF(e1, e2, e3)
+        IF_EXPRESSION(e1, e2, e3)
       end
 
       Absyn.CALL(__)  => begin
@@ -2255,7 +2255,7 @@ function instExp(absynExp::Absyn.Exp, scope::InstNode, info::SourceInfo) ::Expre
       end
 
       Absyn.END(__)  => begin
-        Expression.END()
+        END_EXPRESSION()
       end
       _  => begin
         @error "UNKNOWN EXPRESSION!"

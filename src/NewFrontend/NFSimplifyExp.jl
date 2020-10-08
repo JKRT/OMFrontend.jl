@@ -298,9 +298,9 @@ function simplifySumProduct(arg::Expression, call::Call, isSum::Bool)::Expressio
     else
       @match _cons(exp, args) = args
       @assign op = if isSum
-        P_Operator.Operator.makeAdd(ty)
+        makeAdd(ty)
       else
-        P_Operator.Operator.makeMul(ty)
+        makeMul(ty)
       end
       for e in args
         @assign exp = BINARY_EXPRESSION(exp, op, e)
@@ -500,7 +500,7 @@ function simplifyBinaryAdd(exp1::Expression, op::Operator, exp2::Expression)::Ex
   elseif isNegated(exp2)
     @assign outExp = BINARY_EXPRESSION(
       exp1,
-      P_Operator.Operator.negate(op),
+      negate(op),
       negate(exp2),
     )
   else
@@ -520,7 +520,7 @@ function simplifyBinarySub(exp1::Expression, op::Operator, exp2::Expression)::Ex
 
   if isZero(exp1)
     @assign outExp = UNARY_EXPRESSION(
-      P_Operator.Operator.makeUMinus(P_Operator.Operator.typeOf(op)),
+      makeUMinus(typeOf(op)),
       exp2,
     )
   elseif isZero(exp2)
@@ -528,7 +528,7 @@ function simplifyBinarySub(exp1::Expression, op::Operator, exp2::Expression)::Ex
   elseif isNegated(exp2)
     @assign outExp = BINARY_EXPRESSION(
       exp1,
-      P_Operator.Operator.negate(op),
+      negate(op),
       negate(exp2),
     )
   else
@@ -602,7 +602,7 @@ function simplifyBinaryPow(exp1::Expression, op::Operator, exp2::Expression)::Ex
   local outExp::Expression
 
   if isZero(exp2)
-    @assign outExp = makeOne(P_Operator.Operator.typeOf(op))
+    @assign outExp = makeOne(typeOf(op))
   elseif isOne(exp2)
     @assign outExp = exp1
   else
@@ -700,13 +700,13 @@ function simplifyLogicBinaryAnd(
         =#
         #=  e and true => e
         =#
-        @assign o = P_Operator.Operator.unlift(op)
+        @assign o = unlift(op)
         @assign expl =
           list(@do_threaded_for simplifyLogicBinaryAnd(e1, o, e2) (e1, e2) (
             exp1.elements,
             exp2.elements,
           ))
-        makeArray(P_Operator.Operator.typeOf(op), expl)
+        makeArray(typeOf(op), expl)
       end
 
       _ => begin
@@ -749,13 +749,13 @@ function simplifyLogicBinaryOr(exp1::Expression, op::Operator, exp2::Expression)
         =#
         #=  e or false => e
         =#
-        @assign o = P_Operator.Operator.unlift(op)
+        @assign o = unlift(op)
         @assign expl =
           list(@do_threaded_for simplifyLogicBinaryAnd(e1, o, e2) (e1, e2) (
             exp1.elements,
             exp2.elements,
           ))
-        makeArray(P_Operator.Operator.typeOf(op), expl)
+        makeArray(typeOf(op), expl)
       end
 
       _ => begin

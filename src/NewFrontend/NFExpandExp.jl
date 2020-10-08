@@ -135,7 +135,7 @@ function expandLogicalUnary(exp::Expression, op::Operator)::Tuple{Expression, Bo
   local scalar_op::Operator
 
   @assign (outExp, expanded) = expand(exp)
-  @assign scalar_op = P_Operator.Operator.scalarize(op)
+  @assign scalar_op = scalarize(op)
   if expanded
     @assign outExp = mapArrayElements(
       outExp,
@@ -168,7 +168,7 @@ function expandLogicalBinary(exp::Expression)::Tuple{Expression, Bool}
   local op::Operator
 
   @match LBINARY_EXPRESSION(exp1 = exp1, operator = op, exp2 = exp2) = exp
-  if isArray(P_Operator.Operator.typeOf(op))
+  if isArray(typeOf(op))
     @assign (exp1, expanded) = expand(exp1)
     if expanded
       @assign (exp2, expanded) = expand(exp2)
@@ -192,7 +192,7 @@ function expandUnary(exp::Expression, op::Operator)::Tuple{Expression, Bool}
   local scalar_op::Operator
 
   @assign (outExp, expanded) = expand(exp)
-  @assign scalar_op = P_Operator.Operator.scalarize(op)
+  @assign scalar_op = scalarize(op)
   if expanded
     @assign outExp = mapArrayElements(
       outExp,
@@ -253,7 +253,7 @@ function expandBinaryPowMatrix(exp::Expression)::Tuple{Expression, Bool}
         #=  a ^ 0 = identity(size(a, 1))
         =#
         @assign n =
-          P_Dimension.Dimension.size(listHead(arrayDims(P_Operator.Operator.typeOf(
+          P_Dimension.Dimension.size(listHead(arrayDims(typeOf(
             op,
           ))))
         (makeIdentityMatrix(n, TYPE_REAL()), true)
@@ -366,8 +366,8 @@ function makeScalarProduct(exp1::Expression, exp2::Expression)::Expression
   if listEmpty(expl1)
     @assign exp = makeZero(elem_ty)
   else
-    @assign mul_op = P_Operator.Operator.makeMul(elem_ty)
-    @assign add_op = P_Operator.Operator.makeAdd(elem_ty)
+    @assign mul_op = makeMul(elem_ty)
+    @assign add_op = makeAdd(elem_ty)
     @assign expl1 =
       List(@do_threaded_for SimplifyExp.simplifyBinaryOp(e1, mul_op, e2) (e1, e2) (
         expl1,
@@ -491,7 +491,7 @@ function expandBinaryArrayScalar(
   @assign (exp1, expanded) = expand(exp1)
   if expanded
     @assign op = OPERATOR(
-      arrayElementType(P_Operator.Operator.typeOf(op)),
+      arrayElementType(typeOf(op)),
       scalarOp,
     )
     @assign outExp = mapArrayElements(
@@ -541,7 +541,7 @@ function expandBinaryScalarArray(
   @assign (exp2, expanded) = expand(exp2)
   if expanded
     @assign op = OPERATOR(
-      arrayElementType(P_Operator.Operator.typeOf(op)),
+      arrayElementType(typeOf(op)),
       scalarOp,
     )
     @assign outExp = mapArrayElements(
@@ -570,7 +570,7 @@ function expandBinaryElementWise2(
 
   @assign expl1 = arrayElements(exp1)
   @assign expl2 = arrayElements(exp2)
-  @assign ty = P_Operator.Operator.typeOf(op)
+  @assign ty = typeOf(op)
   @assign eop = setType(Type.unliftArray(ty), op)
   if Type.dimensionCount(ty) > 1
     @assign expl =
@@ -594,7 +594,7 @@ function expandBinaryElementWise(exp::Expression)::Tuple{Expression, Bool}
   local op::Operator
 
   @match BINARY_EXPRESSION(exp1 = exp1, operator = op, exp2 = exp2) = exp
-  if isArray(P_Operator.Operator.typeOf(op))
+  if isArray(typeOf(op))
     @assign (exp1, expanded) = expand(exp1)
     if expanded
       @assign (exp2, expanded) = expand(exp2)

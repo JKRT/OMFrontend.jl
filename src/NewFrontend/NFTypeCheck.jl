@@ -146,7 +146,7 @@ function checkOverloadedBinaryOperator(
   local ety1::M_Type
   local ety2::M_Type
 
-  @assign op_str = P_Operator.Operator.symbol(P_Operator.Operator.stripEW(op), "'")
+  @assign op_str = symbol(stripEW(op), "'")
   @assign ety1 = arrayElementType(type1)
   @assign ety2 = arrayElementType(type2)
   @assign candidates = OperatorOverloading.lookupOperatorFunctionsInType(op_str, ety1)
@@ -167,12 +167,12 @@ function checkOverloadedBinaryOperator(
       info,
     )
   end
-  if P_Operator.Operator.isElementWise(op)
+  if isElementWise(op)
     @assign (outExp, outType) = checkOverloadedBinaryArrayEW(
       exp1,
       type1,
       var1,
-      P_Operator.Operator.stripEW(op),
+      stripEW(op),
       exp2,
       type2,
       var2,
@@ -216,7 +216,7 @@ function matchOverloadedBinaryOperator(
   local matchedFunctions::List{MatchedFunction}
   local exactMatches::List{MatchedFunction}
   local fn::M_Function
-  local oop::P_Operator.Operator.Op
+  local oop::Op
 
   @assign args = list((exp1, type1, var1), (exp2, type2, var2))
   @assign matchedFunctions = P_Function.matchFunctionsSilent(candidates, args, nil, info)
@@ -1450,7 +1450,7 @@ function checkBinaryOperationAdd(
     end
   end
   @assign binaryExp =
-    BINARY_EXPRESSION(e1, P_Operator.Operator.makeAdd(resultType), e2)
+    BINARY_EXPRESSION(e1, makeAdd(resultType), e2)
   if !valid
     printUnresolvableTypeError(binaryExp, list(type1, type2), info)
   end
@@ -1490,7 +1490,7 @@ function checkBinaryOperationSub(
     end
   end
   @assign binaryExp =
-    BINARY_EXPRESSION(e1, P_Operator.Operator.makeSub(resultType), e2)
+    BINARY_EXPRESSION(e1, makeSub(resultType), e2)
   if !valid
     printUnresolvableTypeError(binaryExp, list(type1, type2), info)
   end
@@ -1634,7 +1634,7 @@ function checkBinaryOperationDiv(
   @assign (resultType, op) = begin
     @match (isArray(ty1), isArray(ty2), isElementWise) begin
       (false, false, _) => begin
-        (ty1, P_Operator.Operator.makeDiv(ty1))
+        (ty1, makeDiv(ty1))
       end
 
       (_, false, _) => begin
@@ -1658,14 +1658,14 @@ function checkBinaryOperationDiv(
         =#
         @assign (_, _, mk) = matchArrayTypes(ty1, ty2, e1, true)
         @assign valid = valid && isCompatibleMatch(mk)
-        (ty1, P_Operator.Operator.makeDiv(ty1))
+        (ty1, makeDiv(ty1))
       end
 
       _ => begin
         #=  Anything else is an error.
         =#
         @assign valid = false
-        (ty1, P_Operator.Operator.makeDiv(ty1))
+        (ty1, makeDiv(ty1))
       end
     end
   end
@@ -1749,7 +1749,7 @@ function checkBinaryOperationPowEW(
   @assign (resultType, op) = begin
     @match (isArray(ty1), isArray(ty2)) begin
       (false, false) => begin
-        (ty1, P_Operator.Operator.makePow(ty1))
+        (ty1, makePow(ty1))
       end
 
       (_, false) => begin
@@ -1773,7 +1773,7 @@ function checkBinaryOperationPowEW(
         =#
         @assign (_, _, mk) = matchArrayTypes(ty1, ty2, e1, true)
         @assign valid = valid && isCompatibleMatch(mk)
-        (ty1, P_Operator.Operator.makePow(ty1))
+        (ty1, makePow(ty1))
       end
     end
   end
@@ -1846,7 +1846,7 @@ function checkBinaryOperationEW(
         #=  array * scalar => Op.{elemOp}_ARRAY_SCALAR.
         =#
         @assign resultType = Type.copyDims(type1, resultType)
-        @assign op = P_Operator.Operator.makeArrayScalar(resultType, elemOp)
+        @assign op = makeArrayScalar(resultType, elemOp)
         (resultType, op)
       end
 
@@ -1854,7 +1854,7 @@ function checkBinaryOperationEW(
         #=  scalar * array => Op.{elemOp}_SCALAR_ARRAY;
         =#
         @assign resultType = Type.copyDims(type2, resultType)
-        @assign op = P_Operator.Operator.makeScalarArray(resultType, elemOp)
+        @assign op = makeScalarArray(resultType, elemOp)
         (resultType, op)
       end
 
@@ -1934,7 +1934,7 @@ function checkOverloadedUnaryOperator(
   local matchedFunctions::List{MatchedFunction} = nil
   local exactMatches::List{MatchedFunction}
 
-  @assign opstr = P_Operator.Operator.symbol(inOp, "'")
+  @assign opstr = symbol(inOp, "'")
   @assign candidates = OperatorOverloading.lookupOperatorFunctionsInType(opstr, inType1)
   #= for fn in candidates loop
   =#
@@ -2089,7 +2089,7 @@ function checkRelationOperation(
             Error.WARNING_RELATION_ON_REAL,
             list(
               toString(outExp),
-              P_Operator.Operator.symbol(operator, ""),
+              symbol(operator, ""),
             ),
             info,
           )
@@ -4168,7 +4168,7 @@ function getRangeTypeInt(
         =#
         @assign dim_exp = BINARY_EXPRESSION(
           stopExp,
-          P_Operator.Operator.makeSub(TYPE_INTEGER()),
+          makeSub(TYPE_INTEGER()),
           startExp,
         )
         @assign var = variabilityMax(
@@ -4189,7 +4189,7 @@ function getRangeTypeInt(
         end
         @assign dim_exp = BINARY_EXPRESSION(
           dim_exp,
-          P_Operator.Operator.makeAdd(TYPE_INTEGER()),
+          makeAdd(TYPE_INTEGER()),
           INTEGER_EXPRESSION(1),
         )
         @assign dim_exp = CALL_EXPRESSION(P_Call.makeTypedCall(
@@ -4255,7 +4255,7 @@ function getRangeTypeReal(
       _ => begin
         @assign dim_exp = BINARY_EXPRESSION(
           stopExp,
-          P_Operator.Operator.makeSub(TYPE_REAL()),
+          makeSub(TYPE_REAL()),
           startExp,
         )
         @assign var = variabilityMax(
@@ -4270,12 +4270,12 @@ function getRangeTypeReal(
           )
           @assign dim_exp = BINARY_EXPRESSION(
             dim_exp,
-            P_Operator.Operator.makeDiv(TYPE_REAL()),
+            makeDiv(TYPE_REAL()),
             step_exp,
           )
           @assign dim_exp = BINARY_EXPRESSION(
             dim_exp,
-            P_Operator.Operator.makeAdd(TYPE_REAL()),
+            makeAdd(TYPE_REAL()),
             P_Expression.REAL_EXPRESSION(5e-15),
           )
         end
@@ -4291,7 +4291,7 @@ function getRangeTypeReal(
         ))
         @assign dim_exp = BINARY_EXPRESSION(
           dim_exp,
-          P_Operator.Operator.makeAdd(TYPE_INTEGER()),
+          makeAdd(TYPE_INTEGER()),
           INTEGER_EXPRESSION(1),
         )
         @assign dim_exp = SimplifyExp.simplify(dim_exp)
@@ -4332,14 +4332,14 @@ function getRangeTypeBool(startExp::Expression, stopExp::Expression)::Dimension
           @assign dim_exp = IF_EXPRESSION(
             RELATION_EXPRESSION(
               startExp,
-              P_Operator.Operator.makeEqual(TYPE_BOOLEAN()),
+              makeEqual(TYPE_BOOLEAN()),
               stopExp,
             ),
             INTEGER_EXPRESSION(1),
             IF_EXPRESSION(
               RELATION_EXPRESSION(
                 startExp,
-                P_Operator.Operator.makeLess(TYPE_BOOLEAN()),
+                makeLess(TYPE_BOOLEAN()),
                 stopExp,
               ),
               INTEGER_EXPRESSION(2),
@@ -4381,12 +4381,12 @@ function getRangeTypeEnum(startExp::Expression, stopExp::Expression)::Dimension
           )
           @assign dim_exp = BINARY_EXPRESSION(
             enumIndexExp(startExp),
-            P_Operator.Operator.makeSub(TYPE_INTEGER()),
+            makeSub(TYPE_INTEGER()),
             enumIndexExp(stopExp),
           )
           @assign dim_exp = BINARY_EXPRESSION(
             dim_exp,
-            P_Operator.Operator.makeAdd(TYPE_INTEGER()),
+            makeAdd(TYPE_INTEGER()),
             INTEGER_EXPRESSION(1),
           )
           @assign dim_exp = SimplifyExp.simplify(dim_exp)

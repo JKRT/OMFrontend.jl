@@ -761,7 +761,7 @@ function vectorizeEquation(
             end
           end
         end
-        @match list(P_Dimension.Dimension.INTEGER(size = stop)) = dimensions
+        @match list(P_Dimension.Dimension.INTEGER_EXPRESSION(size = stop)) = dimensions
         @assign range = RANGE_EXPRESSION(
           ARRAY_TYPE(TYPE_INTEGER(), dimensions),
           INTEGER_EXPRESSION(1),
@@ -831,7 +831,7 @@ function vectorizeAlgorithm(
             end
           end
         end
-        @match list(P_Dimension.Dimension.INTEGER(size = stop)) = dimensions
+        @match list(P_Dimension.Dimension.INTEGER_EXPRESSION(size = stop)) = dimensions
         @assign range = RANGE_EXPRESSION(
           ARRAY_TYPE(TYPE_INTEGER(), dimensions),
           INTEGER_EXPRESSION(1),

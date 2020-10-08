@@ -30,7 +30,7 @@ const REAL =
     SCode.noComment,
     AbsynUtil.dummyInfo,
   )::SCode.Element
-const INTEGER =
+const INTEGER_EXPRESSION =
   SCode.CLASS(
     "Integer",
     SCode.defaultPrefixes,
@@ -453,7 +453,7 @@ const INTEGER_CLASS_TREE =
 const INTEGER_NODE =
   CLASS_NODE(
     "Integer",
-    Elements.INTEGER,
+    Elements.INTEGER_EXPRESSION,
     Visibility.PUBLIC,
     P_Pointer.createImmutable(PARTIAL_BUILTIN(
       TYPE_INTEGER(),

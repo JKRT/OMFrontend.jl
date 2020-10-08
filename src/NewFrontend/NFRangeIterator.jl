@@ -159,7 +159,7 @@ function fromDim(dim::Dimension)::RangeIterator
     local ty::M_Type
     local expl::List{Expression}
     @match dim begin
-      P_Dimension.Dimension.INTEGER(__) => begin
+      P_Dimension.Dimension.INTEGER_EXPRESSION(__) => begin
         INT_RANGE(1, dim.size)
       end
 

@@ -90,7 +90,7 @@ function first(dim::Dimension)::Subscript
 
   @assign sub = begin
     @match dim begin
-      P_Dimension.Dimension.INTEGER(__) => begin
+      P_Dimension.Dimension.INTEGER_EXPRESSION(__) => begin
         INDEX(INTEGER_EXPRESSION(1))
       end
 

@@ -436,7 +436,7 @@ function tupleElement(exp::Expression, ty::M_Type, index::Integer) ::Expression
       end
 
       _  => begin
-        TUPLE_EXPRESSION_ELEMENT(exp, index, ty)
+        TUPLE_ELEMENT_EXPRESSION(exp, index, ty)
       end
     end
   end

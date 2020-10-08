@@ -253,7 +253,7 @@ function replaceFuncConstants(name::Absyn.Path, func::M_Function)::M_Function
           @assign eval_binding = replaceBindingConstants(binding)
           if !referenceEq(binding, eval_binding)
             @assign comp = P_Component.setBinding(eval_binding, comp)
-            updateComponent(comp, c)
+            updateComponent!(comp, c)
           end
         end
         @assign () = begin

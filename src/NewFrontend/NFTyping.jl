@@ -473,7 +473,7 @@ function typeComponent(inComponent::InstNode, origin::ORIGIN_Type)::NFType
         =#
         @assign ty = typeClassType(c.classInst, c.binding, origin, inComponent)
         @assign ty = liftArrayLeftList(ty, arrayList(c.dimensions))
-        updateComponent(setType(ty, c), node)
+        updateComponent!(setType(ty, c), node)
         #=  Check that flow/stream variables are Real.
         =#
         checkComponentStreamAttribute(c.attributes.connectorType, ty, inComponent)
@@ -588,7 +588,7 @@ function typeIterator(
         #=  The type of the iterator is the element type of the range expression.
         =#
         @assign c = P_Component.ITERATOR(arrayElementType(ty), var, info)
-        updateComponent(c, iterator)
+        updateComponent!(c, iterator)
         (exp, ty, var)
       end
 
@@ -1020,7 +1020,7 @@ function typeComponentBinding(
         #TODO
         @error "ErrorExt.setCheckpoint(getInstanceName())"
         #try
-          @info "Typing binding ... for component: $nameStr"
+          @info "Typing TC/UB ... for component: $nameStr"
           checkBindingEach(c.binding)
           @info "Typing binding ... check each"
           @assign binding =
@@ -1054,7 +1054,7 @@ function typeComponentBinding(
         if isBound(c.condition)
           @assign c.condition = typeComponentCondition(c.condition, origin)
         end
-        updateComponent(c, node)
+        updateComponent!(c, node)
         if typeChildren
           typeBindings(c.classInst, inComponent, origin)
         end
@@ -1064,6 +1064,8 @@ function typeComponentBinding(
       TYPED_COMPONENT(__) => begin
         #=  A component without a binding, or with a binding that's already been typed.
         =#
+        @assign nameStr = name(inComponent)
+        @info "Typing TC/TB binding ... for component: $nameStr"
         checkBindingEach(c.binding)
         if isTyped(c.binding)
           @assign c.binding =
@@ -1071,7 +1073,7 @@ function typeComponentBinding(
         end
         if isBound(c.condition)
           @assign c.condition = typeComponentCondition(c.condition, origin)
-          updateComponent(c, node)
+          updateComponent!(c, node)
         end
         if typeChildren
           typeBindings(c.classInst, inComponent, origin)
@@ -1090,6 +1092,7 @@ function typeComponentBinding(
         #=  component. Type only the binding and let the case above handle the rest.
         =#
         @assign nameStr = name(inComponent)
+        @info "Typing UC/UB binding ... for component: $nameStr"
         checkBindingEach(c.binding)
         @assign binding =
           typeBinding(c.binding, setFlag(origin, ORIGIN_BINDING))
@@ -1099,7 +1102,7 @@ function typeComponentBinding(
           @assign c.attributes = attrs
         end
         @assign c.binding = binding
-        updateComponent(c, node)
+        updateComponent!(c, node)
         ()
       end
 
@@ -1112,9 +1115,11 @@ function typeComponentBinding(
       end
 
       TYPE_ATTRIBUTE(__) => begin
+        @assign nameStr = name(inComponent)
+        @info "Typing TA binding ... for component: $nameStr"
         @assign c.modifier =
           typeTypeAttribute(c.modifier, c.ty, parent(inComponent), origin)
-        updateComponent(c, node)
+        updateComponent!(c, node)
         ()
       end
 

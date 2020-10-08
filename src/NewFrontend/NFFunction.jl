@@ -349,7 +349,7 @@ function mapExpParameter(node::InstNode, mapFn::MapFunc)
     end
   end
   return if dirty
-    updateComponent(comp, node)
+    updateComponent!(comp, node)
   end
 end
 
@@ -959,7 +959,7 @@ function boxFunctionParameter(component::InstNode)
 
   @assign comp = component(component)
   @assign comp = P_Component.setType(Type.box(P_Component.getType(comp)), comp)
-  return updateComponent(comp, component)
+  return updateComponent!(comp, component)
 end
 
 """ #= Types the body of a function, along with any bindings of local variables

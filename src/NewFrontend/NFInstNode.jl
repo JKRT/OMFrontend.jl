@@ -1429,7 +1429,7 @@ function replaceComponent(component::Component, node::InstNode) ::InstNode
   node
 end
 
-function updateComponent(component::Component, node::InstNode) ::InstNode
+function updateComponent!(component::Component, node::InstNode) ::InstNode
   @assign node = begin
     @match node begin
       COMPONENT_NODE(__)  => begin

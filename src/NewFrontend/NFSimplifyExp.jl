@@ -880,7 +880,7 @@ function simplifyTupleElement(tupleExp::Expression)::Expression
   local index::Integer
   local ty::M_Type
 
-  @match TUPLE_EXPRESSION_ELEMENT(e, index, ty) = tupleExp
+  @match TUPLE_ELEMENT_EXPRESSION(e, index, ty) = tupleExp
   @assign e = simplify(e)
   @assign tupleExp = P_Expression.Expression.tupleElement(e, ty, index)
   return tupleExp

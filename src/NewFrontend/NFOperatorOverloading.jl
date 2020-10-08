@@ -185,7 +185,7 @@ function patchOperatorRecordConstructorBinding(fn::M_Function)::M_Function
     (fn) -> patchOperatorRecordConstructorBinding_traverser(constructorFn = fn),
   )
   @assign output_comp = P_Component.setBinding(output_binding, output_comp)
-  @assign output_node = updateComponent(output_comp, output_node)
+  @assign output_node = updateComponent!(output_comp, output_node)
   return fn
 end
 

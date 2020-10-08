@@ -321,7 +321,7 @@ function deleteComponent(compNode::InstNode)
     return
   end
   @assign comp = component(compNode)
-  updateComponent(P_Component.DELETED_COMPONENT(comp), compNode)
+  updateComponent!(P_Component.DELETED_COMPONENT(comp), compNode)
   return deleteClassComponents(P_Component.classInstance(comp))
 end
 
@@ -464,9 +464,9 @@ end
 
 function flattenTypeAttribute(attr::Modifier, prefix::ComponentRef)::Tuple{String, Binding}
   local outAttr::Tuple{String, Binding}
-  local binding::Binding
-  @assign binding = flattenBinding(P_Modifier.binding(attr), prefix, isTypeAttribute = true)
-  @assign outAttr = (P_Modifier.name(attr), binding)
+  local bnd::Binding
+  @assign bnd = flattenBinding(binding(attr), prefix, true)
+  @assign outAttr = (name(attr), bnd)
   return outAttr
 end
 

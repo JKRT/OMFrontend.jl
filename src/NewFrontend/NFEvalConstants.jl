@@ -39,7 +39,7 @@ function evaluateBinding(
   if isBound(binding)
     @assign exp = getTypedExp(binding)
     if structural
-      @assign eexp = Ceval.evalExp(exp, Ceval.P_EvalTarget.ATTRIBUTE(binding))
+      @assign eexp = evalExp(exp, ATTRIBUTE(binding))
     else
       @assign eexp = evaluateExp(exp, constVariability)
     end

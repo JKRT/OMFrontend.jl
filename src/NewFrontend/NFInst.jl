@@ -1332,7 +1332,7 @@ function instComponentDef(component::SCode.Element, outerMod::Modifier, innerMod
         #=  empty here, and let instClass set it for us instead.
         =#
         @assign inst_comp = UNTYPED_COMPONENT(EMPTY_NODE(), listArray(dims), bindingVar, condition, attr, SOME(component.comment), false, info)
-        updateComponent(inst_comp, node)
+        updateComponent!(inst_comp, node)
         #=  Instantiate the type of the component.
         =#
         @assign (ty_node, ty_attr) = instTypeSpec(component.typeSpec, mod, attr, useBinding && ! isBound(bindingVar), parentNode, node, info, instLevel)
@@ -1419,7 +1419,7 @@ function redeclareComponent(redeclareNode::InstNode, originalNode::InstNode, out
   @assign rdcl_type = REDECLARED_COMP(parent(originalNode))
   @assign rdcl_node = setNodeType(rdcl_type, redeclareNode)
   @assign rdcl_node = copyInstancePtr(originalNode, rdcl_node)
-  @assign rdcl_node = updateComponent(component(redeclareNode), rdcl_node)
+  @assign rdcl_node = updateComponent!(component(redeclareNode), rdcl_node)
   instComponent(rdcl_node, outerAttr, constrainingMod, true, instLevel, SOME(getAttributes(orig_comp)))
   @assign rdcl_comp = component(rdcl_node)
   @assign new_comp = begin
@@ -1464,7 +1464,7 @@ function redeclareComponent(redeclareNode::InstNode, originalNode::InstNode, out
       end
     end
   end
-  updateComponent(new_comp, redeclaredNode)
+  updateComponent!(new_comp, redeclaredNode)
 end
 
 """ #= Prints an error message and fails if it gets an outer component and a
@@ -2039,6 +2039,8 @@ end
 
 function instBuiltinAttribute(attribute::Modifier, node::InstNode) ::Modifier
 
+ strMod1 = toString(attribute, true)
+ @info ">instBuiltinAttribute($strMod1)"
 
   @assign () = begin
     local bindingVar::Binding
@@ -2059,6 +2061,9 @@ function instBuiltinAttribute(attribute::Modifier, node::InstNode) ::Modifier
       end
     end
   end
+
+  strMod2 = toString(attribute, true)
+  @info "<instBuiltinAttribute($strMod2)"
   attribute
 end
 
@@ -2081,7 +2086,7 @@ function instComponentExpressions(componentArg::InstNode)
         #=  which can otherwise happen with duplicate components at this stage.
         =#
         @assign c.instantiated = true
-        updateComponent(c, node)
+        updateComponent!(c, node)
         ()
       end
 
@@ -2099,7 +2104,7 @@ function instComponentExpressions(componentArg::InstNode)
 
       TYPE_ATTRIBUTE(__)  => begin
         @assign c.modifier = instBuiltinAttribute(c.modifier, componentArg)
-        updateComponent(c, node)
+        updateComponent!(c, node)
         ()
       end
       _  => begin
@@ -3071,7 +3076,7 @@ function markStructuralParamsComp(component::Component, node::InstNode)
   local comp::Component
   local binding::Option{Expression}
   @assign comp = P_Component.setVariability(Variability.STRUCTURAL_PARAMETER, component)
-  updateComponent(comp, node)
+  updateComponent!(comp, node)
   @assign binding = untypedExp(P_Component.getBinding(comp))
   if isSome(binding)
     markStructuralParamsExp(Util.getOption(binding))
@@ -3202,7 +3207,7 @@ function markImplicitWhenExp_traverser(exp::Expression)
           @assign comp = component(node)
           if variability(comp) == Variability.CONTINUOUS
             @assign comp = P_Component.setVariability(Variability.IMPLICITLY_DISCRETE, comp)
-            updateComponent(comp, node)
+            updateComponent!(comp, node)
           end
         end
         ()

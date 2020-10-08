@@ -331,7 +331,7 @@ function convertRealVarAttributes(
       end
     end
   end
-  @assign attributes = SOME(DAE.VariableAttributes.VAR_ATTR_REAL(
+  @assign attributes = SOME(DAE.VAR_ATTR_REAL(
     quantity,
     unit,
     displayUnit,
@@ -409,7 +409,7 @@ function convertIntVarAttributes(
       end
     end
   end
-  @assign attributes = SOME(DAE.VariableAttributes.VAR_ATTR_INT(
+  @assign attributes = SOME(DAE.VAR_ATTR_INT(
     quantity,
     min,
     max,
@@ -471,7 +471,7 @@ function convertBoolVarAttributes(
       end
     end
   end
-  @assign attributes = SOME(DAE.VariableAttributes.VAR_ATTR_BOOL(
+  @assign attributes = SOME(DAE.VAR_ATTR_BOOL(
     quantity,
     start,
     fixed,
@@ -529,7 +529,7 @@ function convertStringVarAttributes(
       end
     end
   end
-  @assign attributes = SOME(DAE.VariableAttributes.VAR_ATTR_STRING(
+  @assign attributes = SOME(DAE.VAR_ATTR_STRING(
     quantity,
     start,
     fixed,
@@ -599,7 +599,7 @@ function convertEnumVarAttributes(
       end
     end
   end
-  @assign attributes = SOME(DAE.VariableAttributes.VAR_ATTR_ENUMERATION(
+  @assign attributes = SOME(DAE.VAR_ATTR_ENUMERATION(
     quantity,
     min,
     max,
@@ -615,7 +615,7 @@ end
 
 function convertVarAttribute(binding::Binding)::Option{DAE.Exp}
   local attribute::Option{DAE.Exp} =
-    SOME(P_Expression.Expression.toDAE(getTypedExp(binding)))
+    SOME(toDAE(getTypedExp(binding)))
   return attribute
 end
 

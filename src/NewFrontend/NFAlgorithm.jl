@@ -34,7 +34,7 @@ function foldExp(alg::Algorithm, func::FoldFunc, arg::ArgT) where {ArgT}
 end
 
 function mapExpList(algs::List{<:Algorithm}, func::MapFunc)::List{Algorithm}
-  @assign algs = List(mapExp(alg, func) for alg in algs)
+  @assign algs = list(mapExp(alg, func) for alg in algs)
   return algs
 end
 

@@ -10,12 +10,12 @@ function expandCrefSet(crefs::List{<:ComponentRef})::List{ComponentRef}
   local exp::Expression
   local expl::List{Expression}
   for cref in crefs
-    @assign exp = P_Expression.Expression.fromCref(cref)
+    @assign exp = fromCref(cref)
     @assign exp = P_ExpandExp.ExpandExp.expandCref(exp)
-    if P_Expression.Expression.isArray(exp)
-      @assign expl = P_Expression.Expression.arrayElements(exp)
+    if isArray(exp)
+      @assign expl = arrayElements(exp)
       @assign outCrefs =
-        listAppend(List(P_Expression.Expression.toCref(e) for e in expl), outCrefs)
+        listAppend(list(toCref(e) for e in expl), outCrefs)
     else
       @assign outCrefs = _cons(cref, outCrefs)
     end

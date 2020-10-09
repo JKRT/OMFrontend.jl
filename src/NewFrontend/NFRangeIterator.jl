@@ -159,7 +159,7 @@ function fromDim(dim::Dimension)::RangeIterator
     local ty::M_Type
     local expl::List{Expression}
     @match dim begin
-      P_Dimension.Dimension.INTEGER(__) => begin
+      P_Dimension.Dimension.INTEGER_EXPRESSION(__) => begin
         INT_RANGE(1, dim.size)
       end
 
@@ -171,7 +171,7 @@ function fromDim(dim::Dimension)::RangeIterator
       end
 
       P_Dimension.Dimension.ENUM(enumType = ty && TYPE_ENUMERATION(__)) => begin
-        ARRAY_RANGE(P_Expression.Expression.makeEnumLiterals(ty))
+        ARRAY_RANGE(makeEnumLiterals(ty))
       end
 
       P_Dimension.Dimension.EXP(__) => begin
@@ -243,9 +243,9 @@ function fromExp(exp::Expression)::RangeIterator
       end
 
       RANGE_EXPRESSION(
-        start = P_Expression.Expression.ENUM_LITERAL(ty = ty, index = istart),
+        start = ENUM_LITERAL(ty = ty, index = istart),
         step = NONE(),
-        stop = P_Expression.Expression.ENUM_LITERAL(index = istop),
+        stop = ENUM_LITERAL(index = istop),
       ) => begin
         @match TYPE_ENUMERATION(typePath = _, literals = literals) = ty
         @assign values = nil
@@ -255,7 +255,7 @@ function fromExp(exp::Expression)::RangeIterator
           end
           for i = istart:istop
             @assign values = _cons(
-              P_Expression.Expression.ENUM_LITERAL(ty, listHead(literals), i),
+              ENUM_LITERAL(ty, listHead(literals), i),
               values,
             )
             @assign literals = listRest(literals)
@@ -265,7 +265,7 @@ function fromExp(exp::Expression)::RangeIterator
         ARRAY_RANGE(values)
       end
 
-      P_Expression.Expression.TYPENAME(
+      TYPENAME(
         ty = ARRAY_TYPE(elementType = ty && TYPE_ENUMERATION(literals = literals)),
       ) => begin
         #=  enumeration type based range
@@ -275,7 +275,7 @@ function fromExp(exp::Expression)::RangeIterator
         for l in literals
           @assign istep = istep + 1
           @assign values =
-            _cons(P_Expression.Expression.ENUM_LITERAL(ty, l, istep), values)
+            _cons(ENUM_LITERAL(ty, l, istep), values)
         end
         ARRAY_RANGE(values)
       end

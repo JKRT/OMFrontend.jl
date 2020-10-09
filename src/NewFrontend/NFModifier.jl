@@ -124,7 +124,7 @@ function toFlatString(mod::Modifier, printName::Bool = true)::String
         @assign submods = ModTable.listValues(mod.subModifiers)
         if !listEmpty(submods)
           @assign subs_str =
-            "(" + stringDelimitList(List(toFlatString(s) for s in submods), ", ") + ")"
+            "(" + stringDelimitList(list(toFlatString(s) for s in submods), ", ") + ")"
           @assign binding_sep = " = "
         else
           @assign subs_str = ""

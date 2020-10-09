@@ -1486,7 +1486,7 @@ function replaceDuplicates4(
 )::DuplicateTree.Entry
 
   @assign entry.node = SOME(node)
-  @assign entry.children = List(replaceDuplicates4(c, node) for c in entry.children)
+  @assign entry.children = list(replaceDuplicates4(c, node) for c in entry.children)
   return entry
 end
 
@@ -1501,7 +1501,7 @@ function replaceDuplicates3(
   @assign node = P_Pointer.access(node_ptr)
   @assign entry.node = SOME(node)
   P_Pointer.update(node_ptr, kept)
-  @assign entry.children = List(replaceDuplicates3(c, kept, tree) for c in entry.children)
+  @assign entry.children = list(replaceDuplicates3(c, kept, tree) for c in entry.children)
   return entry
 end
 
@@ -1529,7 +1529,7 @@ function replaceDuplicates2(
         @assign kept = P_Pointer.access(node_ptr)
         @assign entry.node = SOME(kept)
         @assign entry.children =
-          List(replaceDuplicates3(c, kept, tree) for c in entry.children)
+          list(replaceDuplicates3(c, kept, tree) for c in entry.children)
         ()
       end
 
@@ -1721,7 +1721,7 @@ function offsetDuplicates(
 
   @assign parent = offsetDuplicate(entry.entry, classOffset, componentOffset)
   @assign children =
-    List(offsetDuplicates(name, c, classOffset, componentOffset) for c in entry.children)
+    list(offsetDuplicates(name, c, classOffset, componentOffset) for c in entry.children)
   @assign offsetEntry = DuplicateTree.ENTRY(parent, NONE(), children, entry.ty)
   return offsetEntry
 end

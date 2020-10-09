@@ -51,7 +51,7 @@ function replaceConstants(
 )::Tuple{FlatModel, FunctionTree}
 
   @assign flatModel.variables =
-    List(replaceVariableConstants(c) for c in flatModel.variables)
+    list(replaceVariableConstants(c) for c in flatModel.variables)
   @assign flatModel.equations =
     mapExpList(flatModel.equations, replaceExpConstants)
   @assign flatModel.initialEquations =
@@ -270,7 +270,7 @@ function replaceFuncConstants(name::Absyn.Path, func::M_Function)::M_Function
 
             SECTIONS_EXTERNAL(__) => begin
               @assign sections.args =
-                List(replaceExpConstants(arg) for arg in sections.args)
+                list(replaceExpConstants(arg) for arg in sections.args)
               @assign cls.sections = sections
               updateClass(cls, func.node)
               ()

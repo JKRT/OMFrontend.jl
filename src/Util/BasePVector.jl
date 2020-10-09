@@ -154,7 +154,7 @@ function addList(inVector::Vector, inList::List{<:T})::Vector
   #=  Check if we have enough space left in the tail for the whole list.
   =#
   if tail_len + list_len <= 32
-    @assign node_lst = List(VALUE(v) for v in inList)
+    @assign node_lst = list(VALUE(v) for v in inList)
     @assign tail = arrayAppend(tail, listArray(node_lst))
     @assign sz = sz + list_len
   else
@@ -179,7 +179,7 @@ function addList(inVector::Vector, inList::List{<:T})::Vector
       @assign (root, shift) = pushTail(root, tail, sz, shift)
       @assign rest_len = rest_len - 32
     end
-    @assign node_lst = List(VALUE(v) for v in rest)
+    @assign node_lst = list(VALUE(v) for v in rest)
     @assign tail = listArray(node_lst)
     @assign sz = sz + arrayLength(tail)
   end

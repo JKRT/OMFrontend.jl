@@ -116,7 +116,7 @@ function mapExp(sections::Sections, mapFn::MapFn)::Sections
         SECTIONS(eq, ieq, alg, ialg)
       end
       SECTIONS_EXTERNAL(__) => begin
-        @assign sections.args = List(mapFn(e) for e in sections.args)
+        @assign sections.args = list(mapFn(e) for e in sections.args)
         sections
       end
       _ => begin
@@ -144,10 +144,10 @@ function map1(
   @assign () = begin
     @match sections begin
       SECTIONS(__) => begin
-        @assign eq = List(eqFn(e, arg) for e in sections.equations)
-        @assign ieq = List(ieqFn(e, arg) for e in sections.initialEquations)
-        @assign alg = List(algFn(a, arg) for a in sections.algorithms)
-        @assign ialg = List(ialgFn(a, arg) for a in sections.initialAlgorithms)
+        @assign eq = list(eqFn(e, arg) for e in sections.equations)
+        @assign ieq = list(ieqFn(e, arg) for e in sections.initialEquations)
+        @assign alg = list(algFn(a, arg) for a in sections.algorithms)
+        @assign ialg = list(ialgFn(a, arg) for a in sections.initialAlgorithms)
         @assign sections = SECTIONS(eq, ieq, alg, ialg)
         ()
       end

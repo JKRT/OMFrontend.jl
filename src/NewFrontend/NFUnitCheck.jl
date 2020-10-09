@@ -266,7 +266,7 @@ function foldBindingExp(
   if isReal(var.ty) && isBound(var.binding)
     @assign binding_exp = getTypedExp(var.binding)
     @assign eq = P_Equation.Equation.makeEquality(
-      P_Expression.Expression.fromCref(var.name),
+      fromCref(var.name),
       binding_exp,
       var.ty,
       ElementSource.createElementSource(var.info),
@@ -389,11 +389,11 @@ function foldEquation2(
       EQUATION_EQUALITY(__) => begin
         @assign temp = BINARY_EXPRESSION(
           eq.rhs,
-          P_Operator.Operator.makeSub(TYPE_REAL()),
+          makeSub(TYPE_REAL()),
           eq.lhs,
         )
         if dumpEqInitStruct
-          ExpressionDump.dumpExp(P_Expression.Expression.toDAE(temp))
+          ExpressionDump.dumpExp(toDAE(temp))
         end
         @assign (_, htCr2U, htS2U, htU2S, fnCache, inconsistentUnits) =
           insertUnitInEquation(temp, Unit.MASTER(nil), htCr2U, htS2U, htU2S, fnCache)
@@ -403,11 +403,11 @@ function foldEquation2(
       EQUATION_ARRAY_EQUALITY(__) => begin
         @assign temp = BINARY_EXPRESSION(
           eq.rhs,
-          P_Operator.Operator.makeSub(TYPE_REAL()),
+          makeSub(TYPE_REAL()),
           eq.lhs,
         )
         if dumpEqInitStruct
-          ExpressionDump.dumpExp(P_Expression.Expression.toDAE(temp))
+          ExpressionDump.dumpExp(toDAE(temp))
         end
         @assign (_, htCr2U, htS2U, htU2S, fnCache, inconsistentUnits) =
           insertUnitInEquation(temp, Unit.MASTER(nil), htCr2U, htS2U, htU2S, fnCache)
@@ -1057,12 +1057,12 @@ function parseFunctionUnits(funcName::String, func::M_Function)::Functionargs
   local out_args::List{String}
 
   @assign in_units =
-    List(P_Component.getUnitAttribute(component(p), "NONE") for p in func.inputs)
+    list(P_Component.getUnitAttribute(component(p), "NONE") for p in func.inputs)
   @assign out_units = List(
     P_Component.getUnitAttribute(component(p), "NONE") for p in func.outputs
   )
-  @assign in_args = List(name(p) for p in func.inputs)
-  @assign out_args = List(name(p) for p in func.outputs)
+  @assign in_args = list(name(p) for p in func.inputs)
+  @assign out_args = list(name(p) for p in func.outputs)
   @assign outArgs = FUNCTIONUNITS(funcName, in_args, out_args, in_units, out_units)
   return outArgs
 end

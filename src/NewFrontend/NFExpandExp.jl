@@ -62,14 +62,14 @@ function expandGeneric2(
       sub <| rest_subs => begin
         @assign t = Type.unliftArray(ty)
         @assign expl =
-          List(expandGeneric2(rest_subs, exp, t, _cons(s, accum)) for s in sub)
-        P_Expression.Expression.makeArray(ty, expl)
+          list(expandGeneric2(rest_subs, exp, t, _cons(s, accum)) for s in sub)
+        makeArray(ty, expl)
       end
 
       nil() => begin
         @assign outExp = exp
         for s in listReverse(accum)
-          @assign outExp = P_Expression.Expression.applySubscript(s, outExp)
+          @assign outExp = applySubscript(s, outExp)
         end
         outExp
       end
@@ -135,7 +135,7 @@ function expandLogicalUnary(exp::Expression, op::Operator)::Tuple{Expression, Bo
   local scalar_op::Operator
 
   @assign (outExp, expanded) = expand(exp)
-  @assign scalar_op = P_Operator.Operator.scalarize(op)
+  @assign scalar_op = scalarize(op)
   if expanded
     @assign outExp = mapArrayElements(
       outExp,
@@ -150,8 +150,8 @@ end
 function makeLBinaryOp(exp1::Expression, op::Operator, exp2::Expression)::Expression
   local exp::Expression
 
-  if P_Expression.Expression.isScalarLiteral(exp1) &&
-     P_Expression.Expression.isScalarLiteral(exp2)
+  if isScalarLiteral(exp1) &&
+     isScalarLiteral(exp2)
     @assign exp = Ceval.evalLogicBinaryOp(exp1, op, exp2)
   else
     @assign exp = LBINARY_EXPRESSION(exp1, op, exp2)
@@ -168,7 +168,7 @@ function expandLogicalBinary(exp::Expression)::Tuple{Expression, Bool}
   local op::Operator
 
   @match LBINARY_EXPRESSION(exp1 = exp1, operator = op, exp2 = exp2) = exp
-  if isArray(P_Operator.Operator.typeOf(op))
+  if isArray(typeOf(op))
     @assign (exp1, expanded) = expand(exp1)
     if expanded
       @assign (exp2, expanded) = expand(exp2)
@@ -192,7 +192,7 @@ function expandUnary(exp::Expression, op::Operator)::Tuple{Expression, Bool}
   local scalar_op::Operator
 
   @assign (outExp, expanded) = expand(exp)
-  @assign scalar_op = P_Operator.Operator.scalarize(op)
+  @assign scalar_op = scalarize(op)
   if expanded
     @assign outExp = mapArrayElements(
       outExp,
@@ -253,10 +253,10 @@ function expandBinaryPowMatrix(exp::Expression)::Tuple{Expression, Bool}
         #=  a ^ 0 = identity(size(a, 1))
         =#
         @assign n =
-          P_Dimension.Dimension.size(listHead(arrayDims(P_Operator.Operator.typeOf(
+          P_Dimension.Dimension.size(listHead(arrayDims(typeOf(
             op,
           ))))
-        (P_Expression.Expression.makeIdentityMatrix(n, TYPE_REAL()), true)
+        (makeIdentityMatrix(n, TYPE_REAL()), true)
       end
 
       INTEGER_EXPRESSION(n) => begin
@@ -285,7 +285,7 @@ function makeBinaryMatrixProduct2(
 )::List{Expression}
   local outRow::List{Expression}
 
-  @assign outRow = List(makeScalarProduct(row, e) for e in matrix)
+  @assign outRow = list(makeScalarProduct(row, e) for e in matrix)
   return outRow
 end
 
@@ -306,17 +306,17 @@ function makeBinaryMatrixProduct(exp1::Expression, exp2::Expression)::Expression
   #=  since we can do row-row multiplications instead of row-column.
   =#
   @match ARRAY_EXPRESSION(ARRAY_TYPE(dimensions = list(p, _)), expl2) =
-    P_Expression.Expression.transposeArray(exp2)
+    transposeArray(exp2)
   @assign mat_ty = ARRAY_TYPE(ty, list(n, p))
   if listEmpty(expl2)
-    @assign exp = P_Expression.Expression.makeZero(mat_ty)
+    @assign exp = makeZero(mat_ty)
   else
     @assign row_ty = ARRAY_TYPE(ty, list(p))
     @assign expl1 = List(
-      P_Expression.Expression.makeArray(row_ty, makeBinaryMatrixProduct2(e, expl2))
+      makeArray(row_ty, makeBinaryMatrixProduct2(e, expl2))
       for e in expl1
     )
-    @assign exp = P_Expression.Expression.makeArray(mat_ty, expl1)
+    @assign exp = makeArray(mat_ty, expl1)
   end
   #=  If any of the matrices' dimensions are zero, the result will be a matrix
   =#
@@ -364,10 +364,10 @@ function makeScalarProduct(exp1::Expression, exp2::Expression)::Expression
   @match ARRAY_EXPRESSION(_, expl2) = exp2
   @assign elem_ty = Type.unliftArray(ty)
   if listEmpty(expl1)
-    @assign exp = P_Expression.Expression.makeZero(elem_ty)
+    @assign exp = makeZero(elem_ty)
   else
-    @assign mul_op = P_Operator.Operator.makeMul(elem_ty)
-    @assign add_op = P_Operator.Operator.makeAdd(elem_ty)
+    @assign mul_op = makeMul(elem_ty)
+    @assign add_op = makeAdd(elem_ty)
     @assign expl1 =
       List(@do_threaded_for SimplifyExp.simplifyBinaryOp(e1, mul_op, e2) (e1, e2) (
         expl1,
@@ -421,12 +421,12 @@ function expandBinaryMatrixVector(exp::Expression)::Tuple{Expression, Bool}
     @match ARRAY_EXPRESSION(ARRAY_TYPE(ty, list(n, _)), expl) = exp1
     @assign ty = ARRAY_TYPE(ty, list(n))
     if listEmpty(expl)
-      @assign outExp = P_Expression.Expression.makeZero(ty)
+      @assign outExp = makeZero(ty)
     else
       @assign (exp2, expanded) = expand(exp2)
       if expanded
-        @assign expl = List(makeScalarProduct(e1, exp2) for e1 in expl)
-        @assign outExp = P_Expression.Expression.makeArray(ty, expl)
+        @assign expl = list(makeScalarProduct(e1, exp2) for e1 in expl)
+        @assign outExp = makeArray(ty, expl)
       else
         @assign outExp = exp
       end
@@ -454,15 +454,15 @@ function expandBinaryVectorMatrix(exp::Expression)::Tuple{Expression, Bool}
   @assign (exp2, expanded) = expand(exp2)
   if expanded
     @match ARRAY_EXPRESSION(ARRAY_TYPE(ty, list(m, _)), expl) =
-      P_Expression.Expression.transposeArray(exp2)
+      transposeArray(exp2)
     @assign ty = ARRAY_TYPE(ty, list(m))
     if listEmpty(expl)
-      @assign outExp = P_Expression.Expression.makeZero(ty)
+      @assign outExp = makeZero(ty)
     else
       @assign (exp1, expanded) = expand(exp1)
       if expanded
-        @assign expl = List(makeScalarProduct(exp1, e2) for e2 in expl)
-        @assign outExp = P_Expression.Expression.makeArray(ty, expl)
+        @assign expl = list(makeScalarProduct(exp1, e2) for e2 in expl)
+        @assign outExp = makeArray(ty, expl)
       else
         @assign outExp = exp
       end
@@ -491,7 +491,7 @@ function expandBinaryArrayScalar(
   @assign (exp1, expanded) = expand(exp1)
   if expanded
     @assign op = OPERATOR(
-      arrayElementType(P_Operator.Operator.typeOf(op)),
+      arrayElementType(typeOf(op)),
       scalarOp,
     )
     @assign outExp = mapArrayElements(
@@ -541,7 +541,7 @@ function expandBinaryScalarArray(
   @assign (exp2, expanded) = expand(exp2)
   if expanded
     @assign op = OPERATOR(
-      arrayElementType(P_Operator.Operator.typeOf(op)),
+      arrayElementType(typeOf(op)),
       scalarOp,
     )
     @assign outExp = mapArrayElements(
@@ -568,9 +568,9 @@ function expandBinaryElementWise2(
   local ty::M_Type
   local eop::Operator
 
-  @assign expl1 = P_Expression.Expression.arrayElements(exp1)
-  @assign expl2 = P_Expression.Expression.arrayElements(exp2)
-  @assign ty = P_Operator.Operator.typeOf(op)
+  @assign expl1 = arrayElements(exp1)
+  @assign expl2 = arrayElements(exp2)
+  @assign ty = typeOf(op)
   @assign eop = setType(Type.unliftArray(ty), op)
   if Type.dimensionCount(ty) > 1
     @assign expl =
@@ -581,7 +581,7 @@ function expandBinaryElementWise2(
   else
     @assign expl = List(@do_threaded_for func(e1, eop, e2) (e1, e2) (expl1, expl2))
   end
-  @assign exp = P_Expression.Expression.makeArray(ty, expl)
+  @assign exp = makeArray(ty, expl)
   return exp
 end
 
@@ -594,7 +594,7 @@ function expandBinaryElementWise(exp::Expression)::Tuple{Expression, Bool}
   local op::Operator
 
   @match BINARY_EXPRESSION(exp1 = exp1, operator = op, exp2 = exp2) = exp
-  if isArray(P_Operator.Operator.typeOf(op))
+  if isArray(typeOf(op))
     @assign (exp1, expanded) = expand(exp1)
     if expanded
       @assign (exp2, expanded) = expand(exp2)
@@ -706,7 +706,7 @@ function expandSize(exp::Expression)::Tuple{Expression, Bool}
           SIZE_EXPRESSION(e, SOME(INTEGER_EXPRESSION(i)))
           for i = 1:dims
         )
-        P_Expression.Expression.makeArray(
+        makeArray(
           ARRAY_TYPE(ty, list(P_Dimension.Dimension.fromInteger(dims))),
           expl,
         )
@@ -752,7 +752,7 @@ function expandArrayConstructor2(
       @assign expl =
         _cons(expandArrayConstructor2(exp, el_ty, ranges_rest, iters_rest), expl)
     end
-    @assign result = P_Expression.Expression.makeArray(ty, listReverseInPlace(expl))
+    @assign result = makeArray(ty, listReverseInPlace(expl))
   end
   #=  Normally it wouldn't be the expansion's task to simplify expressions,
   =#
@@ -786,7 +786,7 @@ function expandArrayConstructor(
   for i in iterators
     @assign (node, range) = i
     @assign iter = P_Pointer.create(INTEGER_EXPRESSION(0))
-    @assign e = P_Expression.Expression.replaceIterator(
+    @assign e = replaceIterator(
       e,
       node,
       MUTABLE_EXPRESSION(iter),
@@ -816,8 +816,8 @@ function expandBuiltinGeneric2(
 
       ARRAY_EXPRESSION(__) => begin
         @assign expl =
-          List(expandBuiltinGeneric2(e, fn, ty, var, attr) for e in exp.elements)
-        P_Expression.Expression.makeArray(setArrayElementType(exp.ty, ty), expl)
+          list(expandBuiltinGeneric2(e, fn, ty, var, attr) for e in exp.elements)
+        makeArray(setArrayElementType(exp.ty, ty), expl)
       end
 
       _ => begin
@@ -853,7 +853,7 @@ function expandBuiltinTranspose(arg::Expression)::Tuple{Expression, Bool}
 
   @assign (outExp, expanded) = expand(arg)
   if expanded
-    @assign outExp = P_Expression.Expression.transposeArray(outExp)
+    @assign outExp = transposeArray(outExp)
   end
   return (outExp, expanded)
 end
@@ -881,7 +881,7 @@ function expandBuiltinPromote(args::List{<:Expression})::Tuple{Expression, Bool}
   @match INTEGER_EXPRESSION(value = n) = nexp
   @assign (eexp, expanded) = expand(eexp)
   @assign exp =
-    P_Expression.Expression.promote(eexp, typeOf(eexp), n)
+    promote(eexp, typeOf(eexp), n)
   return (exp, expanded)
 end
 
@@ -999,7 +999,7 @@ function expandTypename(ty::M_Type)::Expression
     local lits::List{Expression}
     @match ty begin
       ARRAY_TYPE(elementType = TYPE_BOOLEAN(__)) => begin
-        P_Expression.Expression.makeArray(
+        makeArray(
           ty,
           list(
             P_Expression.BOOLEAN_EXPRESSION(false),
@@ -1010,8 +1010,8 @@ function expandTypename(ty::M_Type)::Expression
       end
 
       ARRAY_TYPE(elementType = TYPE_ENUMERATION(__)) => begin
-        @assign lits = P_Expression.Expression.makeEnumLiterals(ty.elementType)
-        P_Expression.Expression.makeArray(ty, lits, true)
+        @assign lits = makeEnumLiterals(ty.elementType)
+        makeArray(ty, lits, true)
       end
 
       _ => begin
@@ -1053,7 +1053,7 @@ function expandCref4(
           typeOf(listHead(expl)),
           P_Dimension.Dimension.fromExpList(expl),
         )
-        P_Expression.Expression.makeArray(arr_ty, expl)
+        makeArray(arr_ty, expl)
       end
 
       _ => begin
@@ -1135,7 +1135,7 @@ function expandCref(crefExp::Expression)::Tuple{Expression, Bool}
     @match crefExp begin
       CREF_EXPRESSION(cref = CREF(__)) => begin
         if Type.hasZeroDimension(crefExp.ty)
-          @assign arrayExp = P_Expression.Expression.makeEmptyArray(crefExp.ty)
+          @assign arrayExp = makeEmptyArray(crefExp.ty)
           @assign expanded = true
         elseif Type.hasKnownSize(crefExp.ty)
           @assign subs = expandCref2(crefExp.cref)
@@ -1206,7 +1206,7 @@ function expand(exp::Expression)::Tuple{Expression, Bool}
         (exp, expanded)
       end
 
-      P_Expression.Expression.TYPENAME(__) => begin
+      TYPENAME(__) => begin
         (expandTypename(exp.ty), true)
       end
 

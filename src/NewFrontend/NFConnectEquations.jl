@@ -157,7 +157,7 @@ function evaluateOperators(
                 @match P_Function.name(call.fn) begin
                   Absyn.IDENT("inStream") => begin
                     evaluateInStream(
-                      P_Expression.Expression.toCref(listHead(call.arguments)),
+                      toCref(listHead(call.arguments)),
                       sets,
                       setsArray,
                       ctable,
@@ -166,7 +166,7 @@ function evaluateOperators(
 
                   Absyn.IDENT("actualStream") => begin
                     evaluateActualStream(
-                      P_Expression.Expression.toCref(listHead(call.arguments)),
+                      toCref(listHead(call.arguments)),
                       sets,
                       setsArray,
                       ctable,
@@ -193,14 +193,14 @@ function evaluateOperators(
 
             P_Call.TYPED_REDUCTION(
               __,
-            ) where {(P_Expression.Expression.contains(call.exp, isStreamCall))} =>
+            ) where {(contains(call.exp, isStreamCall))} =>
               begin
                 evaluateOperatorReductionExp(exp, sets, setsArray, ctable)
               end
 
             P_Call.TYPED_ARRAY_CONSTRUCTOR(
               __,
-            ) where {(P_Expression.Expression.contains(call.exp, isStreamCall))} =>
+            ) where {(contains(call.exp, isStreamCall))} =>
               begin
                 evaluateOperatorArrayConstructorExp(exp, sets, setsArray, ctable)
               end
@@ -410,24 +410,24 @@ function makeEqualityAssert(
   #= source := ElementSource.addElementSourceConnect(source, (lhsCref, rhsCref));
   =#
   @assign ty = getComponentType(lhsCref)
-  @assign lhs_exp = P_Expression.Expression.fromCref(lhsCref)
-  @assign rhs_exp = P_Expression.Expression.fromCref(rhsCref)
+  @assign lhs_exp = fromCref(lhsCref)
+  @assign rhs_exp = fromCref(rhsCref)
   if isReal(ty)
     @assign exp =
-      BINARY_EXPRESSION(lhs_exp, P_Operator.Operator.makeSub(ty), rhs_exp)
+      BINARY_EXPRESSION(lhs_exp, makeSub(ty), rhs_exp)
     @assign exp = CALL_EXPRESSION(P_Call.makeTypedCall(
       NFBuiltinFuncs.ABS_REAL,
       list(exp),
-      P_Expression.Expression.variability(exp),
+      variability(exp),
     ))
     @assign exp = RELATION_EXPRESSION(
       exp,
-      P_Operator.Operator.makeLessEq(ty),
+      makeLessEq(ty),
       P_Expression.REAL_EXPRESSION(0.0),
     )
   else
     @assign exp =
-      RELATION_EXPRESSION(lhs_exp, P_Operator.Operator.makeEqual(ty), rhs_exp)
+      RELATION_EXPRESSION(lhs_exp, makeEqual(ty), rhs_exp)
   end
   #=  Modelica doesn't allow == for Reals, so to keep the flat Modelica
   =#
@@ -492,13 +492,13 @@ function generateFlowEquations(elements::List{<:Connector})::List{Equation}
   @match _cons(c, c_rest) = elements
   @assign src = c.source
   if listEmpty(c_rest)
-    @assign sum = P_Expression.Expression.fromCref(c.name)
+    @assign sum = fromCref(c.name)
   else
     @assign sum = makeFlowExp(c)
     for e in c_rest
       @assign sum = BINARY_EXPRESSION(
         sum,
-        P_Operator.Operator.makeAdd(TYPE_REAL()),
+        makeAdd(TYPE_REAL()),
         makeFlowExp(e),
       )
       @assign src = ElementSource.mergeSources(src, e.source)
@@ -516,13 +516,13 @@ function makeFlowExp(element::Connector)::Expression
 
   local face::FaceType
 
-  @assign exp = P_Expression.Expression.fromCref(element.name)
+  @assign exp = fromCref(element.name)
   #=  TODO: Remove unnecessary variable 'face' once #4502 is fixed.
   =#
   @assign face = element.face
   if face == Face.OUTSIDE
     @assign exp =
-      UNARY_EXPRESSION(P_Operator.Operator.makeUMinus(TYPE_REAL()), exp)
+      UNARY_EXPRESSION(makeUMinus(TYPE_REAL()), exp)
   end
   return exp
 end
@@ -571,8 +571,8 @@ function generateStreamEquations(
         =#
         #=  cr2 = inStream(cr1);
         =#
-        @assign cref1 = P_Expression.Expression.fromCref(cr1)
-        @assign cref2 = P_Expression.Expression.fromCref(cr2)
+        @assign cref1 = fromCref(cr1)
+        @assign cref2 = fromCref(cr2)
         @assign e1 = makeInStreamCall(cref2)
         @assign e2 = makeInStreamCall(cref1)
         @assign src = ElementSource.mergeSources(src1, src2)
@@ -618,7 +618,7 @@ function streamEquationGeneral(
   local src::DAE.ElementSource
 
   for e in outsideElements
-    @assign cref_exp = P_Expression.Expression.fromCref(e.name)
+    @assign cref_exp = fromCref(e.name)
     @assign outside = removeStreamSetElement(e.name, outsideElements)
     @assign res = streamSumEquationExp(outside, insideElements, flowThreshold)
     @assign src = ElementSource.addAdditionalComment(
@@ -659,7 +659,7 @@ function streamSumEquationExp(
     @assign inside_sum2 = sumMap(insideElements, sumInside2, flowThreshold)
     @assign sumExp = BINARY_EXPRESSION(
       inside_sum1,
-      P_Operator.Operator.makeDiv(TYPE_REAL()),
+      makeDiv(TYPE_REAL()),
       inside_sum2,
     )
   elseif listEmpty(insideElements)
@@ -667,7 +667,7 @@ function streamSumEquationExp(
     @assign outside_sum2 = sumMap(outsideElements, sumOutside2, flowThreshold)
     @assign sumExp = BINARY_EXPRESSION(
       outside_sum1,
-      P_Operator.Operator.makeDiv(TYPE_REAL()),
+      makeDiv(TYPE_REAL()),
       outside_sum2,
     )
   else
@@ -678,13 +678,13 @@ function streamSumEquationExp(
     @assign sumExp = BINARY_EXPRESSION(
       BINARY_EXPRESSION(
         outside_sum1,
-        P_Operator.Operator.makeAdd(TYPE_REAL()),
+        makeAdd(TYPE_REAL()),
         inside_sum1,
       ),
-      P_Operator.Operator.makeDiv(TYPE_REAL()),
+      makeDiv(TYPE_REAL()),
       BINARY_EXPRESSION(
         outside_sum2,
-        P_Operator.Operator.makeAdd(TYPE_REAL()),
+        makeAdd(TYPE_REAL()),
         inside_sum2,
       ),
     )
@@ -711,7 +711,7 @@ function sumMap(
   for e in listRest(elements)
     @assign exp = BINARY_EXPRESSION(
       func(e, flowThreshold),
-      P_Operator.Operator.makeAdd(TYPE_REAL()),
+      makeAdd(TYPE_REAL()),
       exp,
     )
   end
@@ -726,8 +726,8 @@ function streamFlowExp(element::Connector)::Tuple{Expression, Expression}
   local stream_cr::ComponentRef
 
   @assign stream_cr = Connector.name(element)
-  @assign streamExp = P_Expression.Expression.fromCref(stream_cr)
-  @assign flowExp = P_Expression.Expression.fromCref(associatedFlowCref(stream_cr))
+  @assign streamExp = fromCref(stream_cr)
+  @assign flowExp = fromCref(associatedFlowCref(stream_cr))
   return (streamExp, flowExp)
 end
 
@@ -738,7 +738,7 @@ function flowExp(element::Connector)::Expression
   local flow_cr::ComponentRef
 
   @assign flow_cr = associatedFlowCref(Connector.name(element))
-  @assign flowExp = P_Expression.Expression.fromCref(flow_cr)
+  @assign flowExp = fromCref(flow_cr)
   return flowExp
 end
 
@@ -754,7 +754,7 @@ function sumOutside1(element::Connector, flowThreshold::Expression)::Expression
   @assign (stream_exp, flow_exp) = streamFlowExp(element)
   @assign exp = BINARY_EXPRESSION(
     makePositiveMaxCall(flow_exp, element, flowThreshold),
-    P_Operator.Operator.makeMul(TYPE_REAL()),
+    makeMul(TYPE_REAL()),
     makeInStreamCall(stream_exp),
   )
   return exp
@@ -772,10 +772,10 @@ function sumInside1(element::Connector, flowThreshold::Expression)::Expression
 
   @assign (stream_exp, flow_exp) = streamFlowExp(element)
   @assign flow_exp =
-    UNARY_EXPRESSION(P_Operator.Operator.makeUMinus(TYPE_REAL()), flow_exp)
+    UNARY_EXPRESSION(makeUMinus(TYPE_REAL()), flow_exp)
   @assign exp = BINARY_EXPRESSION(
     makePositiveMaxCall(flow_exp, element, flowThreshold),
-    P_Operator.Operator.makeMul(TYPE_REAL()),
+    makeMul(TYPE_REAL()),
     stream_exp,
   )
   return exp
@@ -804,7 +804,7 @@ function sumInside2(element::Connector, flowThreshold::Expression)::Expression
 
   @assign flow_exp = flowExp(element)
   @assign flow_exp =
-    UNARY_EXPRESSION(P_Operator.Operator.makeUMinus(TYPE_REAL()), flow_exp)
+    UNARY_EXPRESSION(makeUMinus(TYPE_REAL()), flow_exp)
   @assign exp = makePositiveMaxCall(flow_exp, element, flowThreshold)
   return exp
 end
@@ -816,7 +816,7 @@ function makeInStreamCall(streamExp::Expression)::Expression
   @assign inStreamCall = CALL_EXPRESSION(P_Call.makeTypedCall(
     NFBuiltinFuncs.IN_STREAM,
     list(streamExp),
-    P_Expression.Expression.variability(streamExp),
+    variability(streamExp),
   ))
   return inStreamCall
 end
@@ -842,10 +842,10 @@ function makePositiveMaxCall(
     lookupAttributeValue("nominal", getClass(flow_node))
   if isSome(nominal_oexp)
     @match SOME(nominal_exp) = nominal_oexp
-    @assign nominal_exp = P_Expression.Expression.getBindingExp(nominal_exp)
+    @assign nominal_exp = getBindingExp(nominal_exp)
     @assign flow_threshold = BINARY_EXPRESSION(
       flowThreshold,
-      P_Operator.Operator.makeMul(TYPE_REAL()),
+      makeMul(TYPE_REAL()),
       nominal_exp,
     )
   else
@@ -1020,11 +1020,11 @@ function generateInStreamExp(
   local f1::FaceType
   local f2::FaceType
 
-  @assign reducedStreams = List(s for s in streams if !isZeroFlowMinMax(s, streamCref))
+  @assign reducedStreams = list(s for s in streams if !isZeroFlowMinMax(s, streamCref))
   @assign exp = begin
     @match reducedStreams begin
       Connector.CONNECTOR(face = Face.INSIDE) <| nil() => begin
-        P_Expression.Expression.fromCref(streamCref)
+        fromCref(streamCref)
       end
 
       Connector.CONNECTOR(face = Face.INSIDE) <|
@@ -1041,7 +1041,7 @@ function generateInStreamExp(
         =#
         @match list(Connector.CONNECTOR(name = cr)) =
           removeStreamSetElement(streamCref, reducedStreams)
-        P_Expression.Expression.fromCref(cr)
+        fromCref(cr)
       end
 
       Connector.CONNECTOR(face = f1) <|
@@ -1101,12 +1101,12 @@ function isZeroFlow(element::Connector, attr::String)::Bool
 
   @assign flow_exp = flowExp(element)
   @assign flow_node =
-    node(P_Expression.Expression.toCref(flow_exp))
+    node(toCref(flow_exp))
   @assign attr_oexp = lookupAttributeValue(attr, getClass(flow_node))
   if isSome(attr_oexp)
     @match SOME(attr_exp) = attr_oexp
     @assign isZero =
-      P_Expression.Expression.isZero(P_Expression.Expression.getBindingExp(attr_exp))
+      isZero(getBindingExp(attr_exp))
   else
     @assign isZero = false
   end
@@ -1140,13 +1140,13 @@ function evaluateActualStream(
   if flow_dir == 1
     @assign exp = evaluateInStream(streamCref, sets, setsArray, ctable)
   elseif flow_dir == (-1)
-    @assign exp = P_Expression.Expression.fromCref(streamCref)
+    @assign exp = fromCref(streamCref)
   else
-    @assign flow_exp = P_Expression.Expression.fromCref(flow_cr)
-    @assign stream_exp = P_Expression.Expression.fromCref(streamCref)
+    @assign flow_exp = fromCref(flow_cr)
+    @assign stream_exp = fromCref(streamCref)
     @assign instream_exp = evaluateInStream(streamCref, sets, setsArray, ctable)
     @assign op =
-      P_Operator.Operator.makeGreater(nodeType(flow_cr))
+      makeGreater(nodeType(flow_cr))
     @assign exp = IF_EXPRESSION(
       RELATION_EXPRESSION(flow_exp, op, P_Expression.REAL_EXPRESSION(0.0)),
       instream_exp,
@@ -1184,7 +1184,7 @@ function evaluateActualStreamMul(
   @match (@match CREF_EXPRESSION(cref = cr) = e1) =
     evaluateOperators(crefExp, sets, setsArray, ctable)
   @assign e2 = evaluateActualStream(
-    P_Expression.Expression.toCref(actualStreamArg),
+    toCref(actualStreamArg),
     sets,
     setsArray,
     ctable,
@@ -1219,10 +1219,10 @@ function evaluateFlowDirection(flowCref::ComponentRef)::Integer
   @assign flow_cls = getClass(node(flowCref))
   @assign omin = lookupAttributeValue("min", flow_cls)
   @assign omin =
-    SimplifyExp.simplifyOpt(Util.applyOption(omin, P_Expression.Expression.getBindingExp))
+    SimplifyExp.simplifyOpt(Util.applyOption(omin, getBindingExp))
   @assign omax = lookupAttributeValue("max", flow_cls)
   @assign omax =
-    SimplifyExp.simplifyOpt(Util.applyOption(omax, P_Expression.Expression.getBindingExp))
+    SimplifyExp.simplifyOpt(Util.applyOption(omax, getBindingExp))
   @assign direction = begin
     @match (omin, omax) begin
       (NONE(), NONE()) => begin
@@ -1284,8 +1284,8 @@ function makeSmoothCall(arg::Expression, order::Integer)::Expression
 
   @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(
     NFBuiltinFuncs.SMOOTH,
-    list(DAE.INTEGER(order), arg),
-    P_Expression.Expression.variability(arg),
+    list(DAE.INTEGER_EXPRESSION(order), arg),
+    variability(arg),
   ))
   return callExp
 end

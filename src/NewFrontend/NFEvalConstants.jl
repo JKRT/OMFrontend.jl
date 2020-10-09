@@ -185,12 +185,12 @@ function evaluateEquation(eq::Equation, constVariability::VariabilityType)::Equa
       end
       EQUATION_IF(__) => begin
         @assign eq.branches =
-          List(evaluateEqBranch(b, constVariability) for b in eq.branches)
+          list(evaluateEqBranch(b, constVariability) for b in eq.branches)
         eq
       end
       EQUATION_WHEN(__) => begin
         @assign eq.branches =
-          List(evaluateEqBranch(b, constVariability) for b in eq.branches)
+          list(evaluateEqBranch(b, constVariability) for b in eq.branches)
         eq
       end
       P_Equation.Equation.ASSERT(__) => begin
@@ -261,7 +261,7 @@ function evaluateStatements(
   constVariability::VariabilityType,
 )::List{Statement}
   local outStmts::List{Statement} =
-    List(evaluateStatement(s, constVariability) for s in stmts)
+    list(evaluateStatement(s, constVariability) for s in stmts)
   return outStmts
 end
 
@@ -291,13 +291,13 @@ function evaluateStatement(stmt::Statement, constVariability::VariabilityType)::
 
       P_Statement.Statement.IF(__) => begin
         @assign stmt.branches =
-          List(evaluateStmtBranch(b, constVariability) for b in stmt.branches)
+          list(evaluateStmtBranch(b, constVariability) for b in stmt.branches)
         stmt
       end
 
       P_Statement.Statement.WHEN(__) => begin
         @assign stmt.branches =
-          List(evaluateStmtBranch(b, constVariability) for b in stmt.branches)
+          list(evaluateStmtBranch(b, constVariability) for b in stmt.branches)
         stmt
       end
 
@@ -394,7 +394,7 @@ function evaluateFuncExpTraverser(
             Ceval.P_EvalTarget.IGNORE_ERRORS(),
             evalSubscripts = false,
           )
-          @assign outExp = P_Expression.Expression.stripBindingInfo(outExp)
+          @assign outExp = stripBindingInfo(outExp)
           @assign outChanged = true
         elseif outChanged
           @assign outExp = CREF_EXPRESSION(
@@ -411,7 +411,7 @@ function evaluateFuncExpTraverser(
 
       _ => begin
         if outChanged
-          P_Expression.Expression.retype(e)
+          retype(e)
         else
           e
         end

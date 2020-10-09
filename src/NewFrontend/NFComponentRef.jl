@@ -101,7 +101,7 @@ function toListReverse(
   local crefs::List{ComponentRef}
   @assign crefs = begin
     @match cref begin
-      COMPONENT_REF_CREF(origin = Origin.COMPONENT_REF_CREF) => begin
+      COMPONENT_REF_CREF(origin = Origin.CREF) => begin
         toListReverse(cref.restCref, _cons(cref, accum))
       end
       _ => begin
@@ -117,7 +117,7 @@ function isFromCref(cref::ComponentRef)::Bool
 
   @assign fromCref = begin
     @match cref begin
-      COMPONENT_REF_CREF(origin = Origin.COMPONENT_REF_CREF) => begin
+      COMPONENT_REF_CREF(origin = Origin.CREF) => begin
         true
       end
 
@@ -139,7 +139,7 @@ function isDeleted(cref::ComponentRef)::Bool
   @assign isDeleted = begin
     local node::InstNode
     @match cref begin
-      COMPONENT_REF_CREF(node = node, origin = Origin.COMPONENT_REF_CREF) => begin
+      COMPONENT_REF_CREF(node = node, origin = Origin.CREF) => begin
         isComponent(node) && P_Component.isDeleted(component(node))
       end
 
@@ -162,7 +162,7 @@ function evaluateSubscripts(cref::ComponentRef)::ComponentRef
       end
 
       COMPONENT_REF_CREF(origin = Origin.CREF) => begin
-        @assign subs = List(eval(s) for s in cref.subscripts)
+        @assign subs = list(eval(s) for s in cref.subscripts)
         COMPONENT_REF_CREF(cref.node, subs, cref.ty, cref.origin, evaluateSubscripts(cref.restCref))
       end
 
@@ -185,7 +185,7 @@ function simplifySubscripts(cref::ComponentRef)::ComponentRef
       end
 
       COMPONENT_REF_CREF(origin = Origin.CREF) => begin
-        @assign subs = List(simplify(s) for s in cref.subscripts)
+        @assign subs = list(simplify(s) for s in cref.subscripts)
         COMPONENT_REF_CREF(cref.node, subs, cref.ty, cref.origin, simplifySubscripts(cref.restCref))
       end
 
@@ -281,7 +281,7 @@ function scalarize(cref::ComponentRef)::List{ComponentRef}
         @assign dims = arrayDims(cref.ty)
         @assign subs = scalarizeList(cref.subscripts, dims)
         @assign subs = ListUtil.combination(subs)
-        List(setSubscripts(s, cref) for s in subs)
+        list(setSubscripts(s, cref) for s in subs)
       end
 
       _ => begin
@@ -450,7 +450,7 @@ function toDAE_impl(
         @assign dcref = DAE.CREF_QUAL(
           name(cref.node),
           dty,
-          List(toDAE(s) for s in cref.subscripts),
+          list(toDAE(s) for s in cref.subscripts),
           accumCref,
         )
         toDAE_impl(cref.restCref, dcref)

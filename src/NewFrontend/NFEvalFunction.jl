@@ -283,7 +283,7 @@ function evaluateRecordConstructor(
   #=  Create a new record expression from the list of arguments.
   =#
   @assign result =
-    P_Expression.Expression.makeRecord(P_Function.name(fn), ty, listReverseInPlace(expl))
+    makeRecord(P_Function.name(fn), ty, listReverseInPlace(expl))
   #=  Constant evaluate the expression if requested.
   =#
   if evaluate
@@ -327,7 +327,7 @@ function addMutableReplacement(node::InstNode, repl::ReplTree.Tree)::ReplTree.Tr
   local repl_exp::Expression
 
   @assign repl_exp = getBindingExp(node, repl)
-  @assign repl_exp = P_Expression.Expression.makeMutable(repl_exp)
+  @assign repl_exp = makeMutable(repl_exp)
   @assign repl = ReplTree.add(repl, node, repl_exp)
   return repl
 end
@@ -339,7 +339,7 @@ function getBindingExp(node::InstNode, repl::ReplTree.Tree)::Expression
 
   @assign binding = P_Component.getBinding(component(node))
   if isBound(binding)
-    @assign bindingExp = P_Expression.Expression.getBindingExp(getExp(binding))
+    @assign bindingExp = getBindingExp(getExp(binding))
   else
     @assign bindingExp = buildBinding(node, repl)
   end
@@ -356,9 +356,9 @@ function buildBinding(node::InstNode, repl::ReplTree.Tree)::Expression
   @assign result = begin
     @match ty begin
       ARRAY_TYPE(__) where {(Type.hasKnownSize(ty))} => begin
-        P_Expression.Expression.fillType(
+        fillType(
           ty,
-          P_Expression.Expression.EMPTY(arrayElementType(ty)),
+          EMPTY(arrayElementType(ty)),
         )
       end
 
@@ -367,7 +367,7 @@ function buildBinding(node::InstNode, repl::ReplTree.Tree)::Expression
       end
 
       _ => begin
-        P_Expression.Expression.EMPTY(ty)
+        EMPTY(ty)
       end
     end
   end
@@ -432,7 +432,7 @@ function buildRecordBinding(recordNode::InstNode, repl::ReplTree.Tree)::Expressi
           =#
           @assign local_repl = ReplTree.new()
           for i = arrayLength(comps):(-1):1
-            @assign exp = P_Expression.Expression.makeMutable(getBindingExp(comps[i], repl))
+            @assign exp = makeMutable(getBindingExp(comps[i], repl))
             @assign local_repl = ReplTree.add(local_repl, comps[i], exp)
             @assign bindings = _cons(exp, bindings)
           end
@@ -446,7 +446,7 @@ function buildRecordBinding(recordNode::InstNode, repl::ReplTree.Tree)::Expressi
             local_repl,
             (local_repl) -> applyBindingReplacement(repl = local_repl),
           )
-          P_Expression.Expression.makeRecord(
+          makeRecord(
             scopePath(cls_node),
             cls.ty,
             bindings,
@@ -536,7 +536,7 @@ function applyReplacementCref(
       @assign outExp = exp
       return outExp
     end
-    @assign outExp = P_Expression.Expression.applySubscripts(
+    @assign outExp = applySubscripts(
       getSubscripts(listHead(cref_parts)),
       outExp,
     )
@@ -545,10 +545,10 @@ function applyReplacementCref(
       try
         for cr in cref_parts
           @assign node = node(cr)
-          @assign outExp = P_Expression.Expression.makeImmutable(outExp)
+          @assign outExp = makeImmutable(outExp)
           @assign outExp =
-            P_Expression.Expression.recordElement(name(node), outExp)
-          @assign outExp = P_Expression.Expression.applySubscripts(
+            recordElement(name(node), outExp)
+          @assign outExp = applySubscripts(
             getSubscripts(cr),
             outExp,
           )
@@ -577,7 +577,7 @@ end
 
 function optimizeBody(body::List{<:Statement})::List{Statement}
 
-  @assign body = List(P_Statement.Statement.map(s, optimizeStatement) for s in body)
+  @assign body = list(P_Statement.Statement.map(s, optimizeStatement) for s in body)
   return body
 end
 
@@ -594,13 +594,13 @@ function optimizeStatement(stmt::Statement)::Statement
         #=  Make a mutable expression with a placeholder value.
         =#
         @assign iter_exp =
-          P_Expression.Expression.makeMutable(P_Expression.Expression.EMPTY(TYPE_UNKNOWN()))
+          makeMutable(EMPTY(TYPE_UNKNOWN()))
         #=  Replace the iterator with the expression in the body of the for loop.
         =#
         @assign stmt.body = List(
           P_Statement.Statement.mapExp(
             s,
-            (stmt.iterator, iter_exp) -> P_Expression.Expression.replaceIterator(
+            (stmt.iterator, iter_exp) -> replaceIterator(
               iterator = stmt.iterator,
               iteratorValue = iter_exp,
             ),
@@ -639,7 +639,7 @@ function createResult(repl::ReplTree.Tree, outputs::List{<:InstNode})::Expressio
       @assign expl = _cons(e, expl)
     end
     @assign expl = listReverseInPlace(expl)
-    @assign types = List(typeOf(e) for e in expl)
+    @assign types = list(typeOf(e) for e in expl)
     @assign exp = TUPLE_EXPRESSION(TYPE_TUPLE(types, NONE()), expl)
   end
   return exp
@@ -648,7 +648,7 @@ end
 function assertAssignedOutput(outputNode::InstNode, value::Expression)
   return @assign () = begin
     @match value begin
-      P_Expression.Expression.EMPTY(__) => begin
+      EMPTY(__) => begin
         Error.addSourceMessage(
           Error.UNASSIGNED_FUNCTION_OUTPUT,
           list(name(outputNode)),
@@ -818,7 +818,7 @@ function assignSubscriptedVariable(
 )
   local subs::List{Subscript}
 
-  @assign subs = List(eval(s) for s in subscripts)
+  @assign subs = list(eval(s) for s in subscripts)
   return P_Pointer.update(variable, assignArrayElement(P_Pointer.access(variable), subs, value))
 end
 
@@ -841,8 +841,8 @@ function assignArrayElement(
       (
         ARRAY_EXPRESSION(__),
         SUBSCRIPT_INDEX(sub) <| rest_subs,
-      ) where {(P_Expression.Expression.isScalarLiteral(sub))} => begin
-        @assign idx = P_Expression.Expression.toInteger(sub)
+      ) where {(isScalarLiteral(sub))} => begin
+        @assign idx = toInteger(sub)
         if listEmpty(rest_subs)
           @assign arrayExp.elements = ListUtil.set(arrayExp.elements, idx, value)
         else
@@ -856,18 +856,18 @@ function assignArrayElement(
       end
 
       (ARRAY_EXPRESSION(__), SUBSCRIPT_SLICE(sub) <| rest_subs) => begin
-        @assign subs = P_Expression.Expression.arrayElements(sub)
-        @assign vals = P_Expression.Expression.arrayElements(value)
+        @assign subs = arrayElements(sub)
+        @assign vals = arrayElements(value)
         if listEmpty(rest_subs)
           for s in subs
             @match _cons(val, vals) = vals
-            @assign idx = P_Expression.Expression.toInteger(s)
+            @assign idx = toInteger(s)
             @assign arrayExp.elements = ListUtil.set(arrayExp.elements, idx, val)
           end
         else
           for s in subs
             @match _cons(val, vals) = vals
-            @assign idx = P_Expression.Expression.toInteger(s)
+            @assign idx = toInteger(s)
             @assign arrayExp.elements = ListUtil.set(
               arrayExp.elements,
               idx,
@@ -881,12 +881,12 @@ function assignArrayElement(
       (ARRAY_EXPRESSION(__), SUBSCRIPT_WHOLE(__) <| rest_subs) =>
         begin
           if listEmpty(rest_subs)
-            @assign arrayExp.elements = P_Expression.Expression.arrayElements(value)
+            @assign arrayExp.elements = arrayElements(value)
           else
             @assign arrayExp.elements =
               List(@do_threaded_for assignArrayElement(e, rest_subs, v) (e, v) (
                 arrayExp.elements,
-                P_Expression.Expression.arrayElements(value),
+                arrayElements(value),
               ))
           end
           arrayExp
@@ -942,7 +942,7 @@ function assignRecord(lhs::Expression, rhs::Expression)::Expression
     local ty::M_Type
     @match rhs begin
 RECORD_EXPRESSION(__) => begin
-        @match P_Expression.Expression.RECORD(elements = elems) = lhs
+        @match RECORD(elements = elems) = lhs
         for v in rhs.elements
           @match _cons(e, elems) = elems
           assignVariable(e, v)
@@ -951,7 +951,7 @@ RECORD_EXPRESSION(__) => begin
       end
 
       CREF_EXPRESSION(__) => begin
-        @match P_Expression.Expression.RECORD(elements = elems) = lhs
+        @match RECORD(elements = elems) = lhs
         @assign cls_tree =
           classTree(getClass(node(rhs.cref)))
         @assign comps = getComponents(cls_tree)
@@ -1035,7 +1035,7 @@ function evaluateIf(
 
   for branch in branches
     @assign (cond, body) = branch
-    if P_Expression.Expression.isTrue(Ceval.evalExp(cond, P_EvalTarget.STATEMENT(source)))
+    if isTrue(Ceval.evalExp(cond, P_EvalTarget.STATEMENT(source)))
       @assign ctrl = evaluateStatements(body)
       return ctrl
     end
@@ -1054,7 +1054,7 @@ function evaluateAssert(condition::Expression, assertStmt::Statement)::FlowContr
   local target::EvalTarget =
     P_EvalTarget.STATEMENT(P_Statement.Statement.source(assertStmt))
 
-  if P_Expression.Expression.isFalse(Ceval.evalExp(condition, target))
+  if isFalse(Ceval.evalExp(condition, target))
     @match P_Statement.Statement.ASSERT(message = msg, level = lvl, source = source) =
       assertStmt
     @assign msg = Ceval.evalExp(msg, target)
@@ -1063,7 +1063,7 @@ function evaluateAssert(condition::Expression, assertStmt::Statement)::FlowContr
       @match (msg, lvl) begin
         (
           STRING_EXPRESSION(__),
-          P_Expression.Expression.ENUM_LITERAL(name = "warning"),
+          ENUM_LITERAL(name = "warning"),
         ) => begin
           Error.addSourceMessage(
             Error.ASSERT_TRIGGERED_WARNING,
@@ -1075,7 +1075,7 @@ function evaluateAssert(condition::Expression, assertStmt::Statement)::FlowContr
 
         (
           STRING_EXPRESSION(__),
-          P_Expression.Expression.ENUM_LITERAL(name = "error"),
+          ENUM_LITERAL(name = "error"),
         ) => begin
           Error.addSourceMessage(
             Error.ASSERT_TRIGGERED_ERROR,
@@ -1123,7 +1123,7 @@ function evaluateWhile(
   local limit::Integer = Flags.getConfigInt(Flags.EVAL_LOOP_LIMIT)
   local target::EvalTarget = P_EvalTarget.STATEMENT(source)
 
-  while P_Expression.Expression.isTrue(Ceval.evalExp(condition, target))
+  while isTrue(Ceval.evalExp(condition, target))
     @assign ctrl = evaluateStatements(body)
     if ctrl != FlowControl.NEXT
       if ctrl == FlowControl.BREAK
@@ -1219,10 +1219,10 @@ const FILE_TYPE_PATH =
 const FILE_TYPE_TYPE = TYPE_ENUMERATION(FILE_TYPE_PATH, FILE_TYPE_NAMES)::M_Type
 const FILE_TYPE_LITERALS =
   list(
-    P_Expression.Expression.ENUM_LITERAL(FILE_TYPE_TYPE, "NoFile", 1),
-    P_Expression.Expression.ENUM_LITERAL(FILE_TYPE_TYPE, "RegularFile", 2),
-    P_Expression.Expression.ENUM_LITERAL(FILE_TYPE_TYPE, "Directory", 3),
-    P_Expression.Expression.ENUM_LITERAL(FILE_TYPE_TYPE, "SpecialFile", 4),
+    ENUM_LITERAL(FILE_TYPE_TYPE, "NoFile", 1),
+    ENUM_LITERAL(FILE_TYPE_TYPE, "RegularFile", 2),
+    ENUM_LITERAL(FILE_TYPE_TYPE, "Directory", 3),
+    ENUM_LITERAL(FILE_TYPE_TYPE, "SpecialFile", 4),
   )::List
 const COMPARE_NAMES = list("Less", "Equal", "Greater")::List
 const COMPARE_PATH =
@@ -1236,9 +1236,9 @@ const COMPARE_PATH =
 const COMPARE_TYPE = TYPE_ENUMERATION(COMPARE_PATH, COMPARE_NAMES)::M_Type
 const COMPARE_LITERALS =
   list(
-    P_Expression.Expression.ENUM_LITERAL(COMPARE_TYPE, "Less", 1),
-    P_Expression.Expression.ENUM_LITERAL(COMPARE_TYPE, "Equal", 2),
-    P_Expression.Expression.ENUM_LITERAL(COMPARE_TYPE, "Greater", 3),
+    ENUM_LITERAL(COMPARE_TYPE, "Less", 1),
+    ENUM_LITERAL(COMPARE_TYPE, "Equal", 2),
+    ENUM_LITERAL(COMPARE_TYPE, "Greater", 3),
   )::List
 
 function evaluateKnownExternal(name::String, args::List{<:Expression})::Expression
@@ -1434,10 +1434,10 @@ function evaluateOpenModelicaRegex(args::List{<:Expression})::Expression
       P_Expression.BOOLEAN_EXPRESSION(extended) <|
       P_Expression.BOOLEAN_EXPRESSION(insensitive) <| nil() => begin
         @assign (n, strs) = System.regex(str, re, i, extended, insensitive)
-        @assign expl = List(STRING_EXPRESSION(s) for s in strs)
+        @assign expl = list(STRING_EXPRESSION(s) for s in strs)
         @assign strs_ty =
           ARRAY_TYPE(TYPE_STRING(), list(P_Dimension.Dimension.fromInteger(i)))
-        @assign strs_exp = P_Expression.Expression.makeArray(strs_ty, expl, true)
+        @assign strs_exp = makeArray(strs_ty, expl, true)
         TUPLE_EXPRESSION(
           TYPE_TUPLE(list(TYPE_INTEGER(), strs_ty), NONE()),
           list(INTEGER_EXPRESSION(n), strs_exp),

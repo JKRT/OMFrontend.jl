@@ -326,7 +326,7 @@
               local conns::List{Connector}
 
               @assign conns = Connector.split(conn, scalarize = ScalarizeSetting.PREFIX)
-              @assign crefs = List(getOverconstrainedCref(c.name) for c in conns if ! Connector.isDeleted(c) && isOverconstrainedCref(c.name))
+              @assign crefs = list(getOverconstrainedCref(c.name) for c in conns if ! Connector.isDeleted(c) && isOverconstrainedCref(c.name))
               @assign crefs = ListUtil.uniqueOnTrue(crefs, isEqual)
           crefs
         end
@@ -448,7 +448,7 @@
 
               local unique_roots::UniqueRoots = graph.uniqueRoots
 
-              for root in P_Expression.Expression.arrayScalarElements(roots)
+              for root in arrayScalarElements(roots)
                 @assign unique_roots = begin
                   @match root begin
                     CREF_EXPRESSION(__)  => begin
@@ -1169,7 +1169,7 @@
                         @assign connections = getConnections(graph)
                         @assign table = ListUtil.fold(connections, addConnectionsRooted, table)
                         @assign rooted = setRootDistance(inRoots, table, 0, nil, NFHashTable.emptyHashTable())
-                        @assign outEquations = List(P_Equation.Equation.mapExp(eq, (rooted, inRoots, graph, P_Equation.Equation.info(eq)) -> evaluateOperators(rooted = rooted, roots = inRoots, graph = graph, info = P_Equation.Equation.info(eq))) for eq in inEquations)
+                        @assign outEquations = list(P_Equation.Equation.mapExp(eq, (rooted, inRoots, graph, P_Equation.Equation.info(eq)) -> evaluateOperators(rooted = rooted, roots = inRoots, graph = graph, info = P_Equation.Equation.info(eq))) for eq in inEquations)
                       outEquations
                   end
                 end
@@ -1301,7 +1301,7 @@
                                       print("- NFOCConnectionGraph.evalConnectionsOperatorsHelper: Connections.uniqueRootsIndicies(" + toString(uroots) + "," + toString(nodes) + "," + toString(message) + ")\\n")
                                     end
                                     @assign lst = ListUtil.fill(INTEGER_EXPRESSION(1), listLength(lst))
-                                  P_Expression.Expression.makeArray(TYPE_INTEGER(), lst)
+                                  makeArray(TYPE_INTEGER(), lst)
                                 end
                               end
                             end

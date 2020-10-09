@@ -280,13 +280,13 @@ function splitRecordCref(exp::Expression) ::Expression
     local ty::M_Type
     local fields::List{Expression}
     @match outExp begin
-      COMPONENT_REF_CREF(ty = TYPE_COMPLEX(cls = cls), cref = cr)  => begin
+      CREF_EXPRESSION(ty = TYPE_COMPLEX(cls = cls), cref = cr)  => begin
         @assign comps = getComponents(classTree(getClass(cls)))
         @assign fields = nil
         for i in arrayLength(comps):(-1):1
           @assign ty = getType(comps[i])
           @assign field_cr = prefixCref(comps[i], ty, nil, cr)
-          @assign fields = _cons(COMPONENT_REF_CREF(ty, field_cr), fields)
+          @assign fields = _cons(CREF_EXPRESSION(ty, field_cr), fields)
         end
         makeRecord(scopePath(cls), outExp.ty, fields)
       end
@@ -366,13 +366,13 @@ end
                          listGet(recordExp.elements, index)
                        end
 
-                       COMPONENT_REF_CREF(ty = TYPE_COMPLEX(cls = node))  => begin
+                       CREF_EXPRESSION(ty = TYPE_COMPLEX(cls = node))  => begin
                          @assign cls_tree = classTree(getClass(node))
                          @match (node, false) = lookupElement(elementName, cls_tree)
                          @assign ty = getType(node)
                          @assign cref = prefixCref(node, ty, nil, recordExp.cref)
                          @assign ty = Type.liftArrayLeftList(ty, arrayDims(recordExp.ty))
-                         COMPONENT_REF_CREF(ty, cref)
+                         CREF_EXPRESSION(ty, cref)
                        end
 
                        ARRAY_EXPRESSION(elements =  nil(), ty = ARRAY_EXPRESSION_TYPE(elementType = TYPE_COMPLEX(cls = node)))  => begin
@@ -466,7 +466,7 @@ function enumIndexExp(enumExp::Expression) ::Expression
   @assign indexExp = begin
     @match enumExp begin
       ENUM_LITERAL_EXPRESSION(__)  => begin
-        INTEGER(enumExp.index)
+        INTEGER_EXPRESSION(enumExp.index)
       end
 
       _  => begin
@@ -544,19 +544,19 @@ function variability(exp::Expression) ::VariabilityType
   local var::VariabilityType
   @assign var = begin
     @match exp begin
-      INTEGER(__)  => begin
+      INTEGER_EXPRESSION(__)  => begin
         Variability.CONSTANT
       end
 
-      REAL(__)  => begin
+      REAL_EXPRESSION(__)  => begin
         Variability.CONSTANT
       end
 
-      STRING(__)  => begin
+      STRING_EXPRESSION(__)  => begin
         Variability.CONSTANT
       end
 
-      BOOLEAN(__)  => begin
+      BOOLEAN_EXPRESSION(__)  => begin
         Variability.CONSTANT
       end
 
@@ -568,11 +568,11 @@ function variability(exp::Expression) ::VariabilityType
         Variability.DISCRETE
       end
 
-      COMPONENT_REF_CREF(__)  => begin
+      CREF_EXPRESSION(__)  => begin
         variability(exp.cref)
       end
 
-      TYPENAME(__)  => begin
+      TYPENAME_EXPRESSION(__)  => begin
         Variability.CONSTANT
       end
 
@@ -622,7 +622,7 @@ function variability(exp::Expression) ::VariabilityType
         variabilityMax(variability(exp.exp1), variability(exp.exp2))
       end
 
-      UNARY(__)  => begin
+      UNARY_EXPRESSION(__)  => begin
         variability(exp.exp)
       end
 
@@ -713,7 +713,7 @@ function promote2(exp::Expression, isArray::Bool, dims::Integer, types::List{<:M
         if expanded
           @assign outExp = promote2(outExp, true, dims, types)
         else
-          @assign outExp = CALL_EXPRESSION(makeTypedCall(NFBuiltinFuncs.PROMOTE, list(exp, INTEGER(dims)), variability(exp), listHead(types)))
+          @assign outExp = CALL_EXPRESSION(makeTypedCall(NFBuiltinFuncs.PROMOTE, list(exp, INTEGER_EXPRESSION(dims)), variability(exp), listHead(types)))
         end
         outExp
       end
@@ -897,11 +897,11 @@ function negate(exp::Expression) ::Expression
 
   @assign exp = begin
     @match exp begin
-      INTEGER(__)  => begin
-        INTEGER(-exp.value)
+      INTEGER_EXPRESSION(__)  => begin
+        INTEGER_EXPRESSION(-exp.value)
       end
 
-      REAL(__)  => begin
+      REAL_EXPRESSION(__)  => begin
         REAL(-exp.value)
       end
 
@@ -909,12 +909,12 @@ function negate(exp::Expression) ::Expression
         CAST_EXPRESSION(exp.ty, negate(exp.exp))
       end
 
-      UNARY(__)  => begin
+      UNARY_EXPRESSION(__)  => begin
         exp.exp
       end
 
       _  => begin
-        UNARY(OPERATOR(typeOf(exp), P_NFOperator.Op.UMINUS), exp)
+        UNARY_EXPRESSION(OPERATOR(typeOf(exp), P_NFOperator.Op.UMINUS), exp)
       end
     end
   end
@@ -926,11 +926,11 @@ function isNegated(exp::Expression) ::Bool
 
   @assign negated = begin
     @match exp begin
-      INTEGER(__)  => begin
+      INTEGER_EXPRESSION(__)  => begin
         exp.value < 0
       end
 
-      REAL(__)  => begin
+      REAL_EXPRESSION(__)  => begin
         exp.value < 0
       end
 
@@ -938,7 +938,7 @@ function isNegated(exp::Expression) ::Bool
         isNegated(exp.exp)
       end
 
-      UNARY(__)  => begin
+      UNARY_EXPRESSION(__)  => begin
         true
       end
 
@@ -1000,11 +1000,11 @@ function makeMinValue(ty::M_Type) ::Expression
       end
 
       TYPE_INTEGER(__)  => begin
-        INTEGER(-System.intMaxLit())
+        INTEGER_EXPRESSION(-System.intMaxLit())
       end
 
       TYPE_BOOLEAN(__)  => begin
-        BOOLEAN(false)
+        BOOLEAN_EXPRESSION(false)
       end
 
       TYPE_ENUMERATION(__)  => begin
@@ -1025,15 +1025,15 @@ function makeMaxValue(ty::M_Type) ::Expression
   @assign exp = begin
     @match ty begin
       TYPE_REAL(__)  => begin
-        REAL(System.realMaxLit())
+        REAL_EXPRESSION(System.realMaxLit())
       end
 
       TYPE_INTEGER(__)  => begin
-        INTEGER(System.intMaxLit())
+        INTEGER_EXPRESSION(System.intMaxLit())
       end
 
       TYPE_BOOLEAN(__)  => begin
-        BOOLEAN(true)
+        BOOLEAN_EXPRESSION(true)
       end
 
       TYPE_ENUMERATION(__)  => begin
@@ -1054,11 +1054,11 @@ function makeOne(ty::M_Type) ::Expression
   @assign zeroExp = begin
     @match ty begin
       TYPE_REAL(__)  => begin
-        REAL(1.0)
+        REAL_EXPRESSION(1.0)
       end
 
       TYPE_INTEGER(__)  => begin
-        INTEGER(1)
+        INTEGER_EXPRESSION(1)
       end
 
       ARRAY_TYPE(__)  => begin
@@ -1089,11 +1089,11 @@ function makeZero(ty::M_Type) ::Expression
   @assign zeroExp = begin
     @match ty begin
       TYPE_REAL(__)  => begin
-        REAL(0.0)
+        REAL_EXPRESSION(0.0)
       end
 
       TYPE_INTEGER(__)  => begin
-        INTEGER(0)
+        INTEGER_EXPRESSION(0)
       end
 
       ARRAY_TYPE(__)  => begin
@@ -1208,7 +1208,7 @@ function isBoolean(exp::Expression) ::Bool
 
   @assign isBool = begin
     @match exp begin
-      BOOLEAN(__)  => begin
+      BOOLEAN_EXPRESSION(__)  => begin
         true
       end
 
@@ -1225,7 +1225,7 @@ function isInteger(exp::Expression) ::Bool
 
   @assign isInteger = begin
     @match exp begin
-      INTEGER(__)  => begin
+      INTEGER_EXPRESSION(__)  => begin
         true
       end
 
@@ -1286,19 +1286,19 @@ function isScalarLiteral(exp::Expression) ::Bool
 
   @assign literal = begin
     @match exp begin
-      INTEGER(__)  => begin
+      INTEGER_EXPRESSION(__)  => begin
         true
       end
 
-      REAL(__)  => begin
+      REAL_EXPRESSION(__)  => begin
         true
       end
 
-      STRING(__)  => begin
+      STRING_EXPRESSION(__)  => begin
         true
       end
 
-      BOOLEAN(__)  => begin
+      BOOLEAN_EXPRESSION(__)  => begin
         true
       end
 
@@ -1319,15 +1319,15 @@ function isNegative(exp::Expression) ::Bool
 
   @assign negative = begin
     @match exp begin
-      INTEGER(__)  => begin
+      INTEGER_EXPRESSION(__)  => begin
         exp.value < 0
       end
 
-      REAL(__)  => begin
+      REAL_EXPRESSION(__)  => begin
         exp.value < 0
       end
 
-      BOOLEAN(__)  => begin
+      BOOLEAN_EXPRESSION(__)  => begin
         false
       end
 
@@ -1339,7 +1339,7 @@ function isNegative(exp::Expression) ::Bool
         isNegative(exp.exp)
       end
 
-      UNARY(__)  => begin
+      UNARY_EXPRESSION(__)  => begin
         ! isNegative(exp.exp)
       end
 
@@ -1356,11 +1356,11 @@ function isOne(exp::Expression) ::Bool
 
   @assign isOne = begin
     @match exp begin
-      INTEGER(__)  => begin
+      INTEGER_EXPRESSION(__)  => begin
         exp.value == 1
       end
 
-      REAL(__)  => begin
+      REAL_EXPRESSION(__)  => begin
         exp.value == 1.0
       end
 
@@ -1377,15 +1377,15 @@ function isOne(exp::Expression) ::Bool
 end
 
 function isZero(exp::Expression) ::Bool
-  local isZero::Bool
+  local isZ::Bool
 
-  @assign isZero = begin
+  @assign isZ = begin
     @match exp begin
-      INTEGER(__)  => begin
+      INTEGER_EXPRESSION(__)  => begin
         exp.value == 0
       end
 
-      REAL(__)  => begin
+      REAL_EXPRESSION(__)  => begin
         exp.value == 0.0
       end
 
@@ -1393,7 +1393,7 @@ function isZero(exp::Expression) ::Bool
         isZero(exp.exp)
       end
 
-      UNARY(__)  => begin
+      UNARY_EXPRESSION(__)  => begin
         isZero(exp.exp)
       end
 
@@ -1402,7 +1402,7 @@ function isZero(exp::Expression) ::Bool
       end
     end
   end
-  isZero
+  isZ
 end
 
 function containsIterator(exp::Expression, origin::ORIGIN_Type) ::Bool
@@ -1601,7 +1601,7 @@ function containsShallow(exp::Expression, func::ContainsPred) ::Bool
 
   @assign res = begin
     @match exp begin
-      COMPONENT_REF_CREF(__)  => begin
+      CREF_EXPRESSION(__)  => begin
         crefContainsShallow(exp.cref, func)
       end
 
@@ -1644,7 +1644,7 @@ function containsShallow(exp::Expression, func::ContainsPred) ::Bool
         func(exp.exp1) || func(exp.exp2)
       end
 
-      UNARY(__)  => begin
+      UNARY_EXPRESSION(__)  => begin
         func(exp.exp)
       end
 
@@ -1801,7 +1801,7 @@ function contains(exp::Expression, func::ContainsPred) ::Bool
   @assign res = begin
     local e::Expression
     @match exp begin
-      COMPONENT_REF_CREF(__)  => begin
+      CREF_EXPRESSION(__)  => begin
         crefContains(exp.cref, func)
       end
       ARRAY_EXPRESSION(__)  => begin
@@ -1835,7 +1835,7 @@ function contains(exp::Expression, func::ContainsPred) ::Bool
       BINARY_EXPRESSION(__)  => begin
         contains(exp.exp1, func) || contains(exp.exp2, func)
       end
-      UNARY(__)  => begin
+      UNARY_EXPRESSION(__)  => begin
         contains(exp.exp, func)
       end
       LBINARY_EXPRESSION(__)  => begin
@@ -2516,12 +2516,12 @@ function mapFold(exp::Expression, func::MapFunc, arg::ArgT)  where {ArgT}
         end
       end
 
-      COMPONENT_REF_CREF(__)  => begin
+      CREF_EXPRESSION(__)  => begin
         @assign (cr, arg) = mapFoldCref(exp.cref, func, arg)
         if referenceEq(exp.cref, cr)
           exp
         else
-          COMPONENT_REF_CREF(exp.ty, cr)
+          CREF_EXPRESSION(exp.ty, cr)
         end
       end
 
@@ -2599,12 +2599,12 @@ function mapFold(exp::Expression, func::MapFunc, arg::ArgT)  where {ArgT}
         end
       end
 
-      UNARY(__)  => begin
+      UNARY_EXPRESSION(__)  => begin
         @assign (e1, arg) = mapFold(exp.exp, func, arg)
         if referenceEq(exp.exp, e1)
           exp
         else
-          UNARY(exp.operator, e1)
+          UNARY_EXPRESSION(exp.operator, e1)
         end
       end
 
@@ -2859,7 +2859,7 @@ function apply(exp::Expression, func::ApplyFunc)
         ()
       end
 
-      COMPONENT_REF_CREF(__)  => begin
+      CREF_EXPRESSION(__)  => begin
         applyCref(exp.cref, func)
         ()
       end
@@ -4135,19 +4135,19 @@ function toDAEValue(exp::Expression) ::Values.Value
     local fields::List{Record.P_Field}
     local field_names::List{String}
     @match exp begin
-      INTEGER(__)  => begin
-        Values.INTEGER(exp.value)
+      INTEGER_EXPRESSION(__)  => begin
+        Values.INTEGER_EXPRESSION(exp.value)
       end
 
-      REAL(__)  => begin
-        Values.REAL(exp.value)
+      REAL_EXPRESSION(__)  => begin
+        Values.REAL_EXPRESSION(exp.value)
       end
 
-      STRING(__)  => begin
-        Values.STRING(exp.value)
+      STRING_EXPRESSION(__)  => begin
+        Values.STRING_EXPRESSION(exp.value)
       end
 
-      BOOLEAN(__)  => begin
+      BOOLEAN_EXPRESSION(__)  => begin
         Values.BOOL(exp.value)
       end
 
@@ -4400,7 +4400,7 @@ function isNonAssociativeExp(exp::Expression) ::Bool
   @assign isAssociative = begin
     @match exp begin
       BINARY_EXPRESSION(__)  => begin
-        P_Operator.Operator.isNonAssociative(exp.operator)
+        isNonAssociative(exp.operator)
       end
 
       LBINARY_EXPRESSION(__)  => begin
@@ -4421,7 +4421,7 @@ function isAssociativeExp(exp::Expression) ::Bool
   @assign isAssociative = begin
     @match exp begin
       BINARY_EXPRESSION(__)  => begin
-        P_Operator.Operator.isAssociative(exp.operator)
+        isAssociative(exp.operator)
       end
 
       LBINARY_EXPRESSION(__)  => begin
@@ -4441,7 +4441,7 @@ function priority(exp::Expression, lhs::Bool) ::Integer
 
   @assign priority = begin
     @match exp begin
-      INTEGER(__)  => begin
+      INTEGER_EXPRESSION(__)  => begin
         if exp.value < 0
           4
         else
@@ -4449,7 +4449,7 @@ function priority(exp::Expression, lhs::Bool) ::Integer
         end
       end
 
-      REAL(__)  => begin
+      REAL_EXPRESSION(__)  => begin
         if exp.value < 0.0
           4
         else
@@ -4458,7 +4458,7 @@ function priority(exp::Expression, lhs::Bool) ::Integer
       end
 
       BINARY_EXPRESSION(__)  => begin
-        P_Operator.Operator.priority(exp.operator, lhs)
+        priority(exp.operator, lhs)
       end
 
       UNARY_EXPRESSION(__)  => begin
@@ -4466,7 +4466,7 @@ function priority(exp::Expression, lhs::Bool) ::Integer
       end
 
       LBINARY_EXPRESSION(__)  => begin
-        P_Operator.Operator.priority(exp.operator, lhs)
+        priority(exp.operator, lhs)
       end
 
       LUNARY_EXPRESSION(__)  => begin
@@ -4587,19 +4587,19 @@ function toFlatString(exp::Expression) ::String
 
   @assign str = begin
     @match exp begin
-      INTEGER(__)  => begin
+      INTEGER_EXPRESSION(__)  => begin
         intString(exp.value)
       end
 
-      REAL(__)  => begin
+      REAL_EXPRESSION(__)  => begin
         realString(exp.value)
       end
 
-      STRING(__)  => begin
+      STRING_EXPRESSION(__)  => begin
         "\\" + exp.value + "\\"
       end
 
-      BOOLEAN(__)  => begin
+      BOOLEAN_EXPRESSION(__)  => begin
         boolString(exp.value)
       end
 
@@ -4611,20 +4611,20 @@ function toFlatString(exp::Expression) ::String
         P_ClockKind.toString(clk)
       end
 
-      COMPONENT_REF_CREF(__)  => begin
+      CREF_EXPRESSION(__)  => begin
         toFlatString(exp.cref)
       end
 
-      TYPENAME(__)  => begin
+      TYPENAME_EXPRESSION(__)  => begin
         Type.typenameString(arrayElementType(exp.ty))
       end
 
       ARRAY_EXPRESSION(__)  => begin
-        "{" + stringDelimitList(List(toFlatString(e) for e in exp.elements), ", ") + "}"
+        "{" + stringDelimitList(list(toFlatString(e) for e in exp.elements), ", ") + "}"
       end
 
       MATRIX_EXPRESSION(__)  => begin
-        "[" + stringDelimitList(List(stringDelimitList(List(toFlatString(e) for e in el), ", ") for el in exp.elements), "; ") + "]"
+        "[" + stringDelimitList(list(stringDelimitList(list(toFlatString(e) for e in el), ", ") for el in exp.elements), "; ") + "]"
       end
 
       RANGE_EXPRESSION(__)  => begin
@@ -4636,7 +4636,7 @@ function toFlatString(exp::Expression) ::String
       end
 
       TUPLE_EXPRESSION(__)  => begin
-        "(" + stringDelimitList(List(toFlatString(e) for e in exp.elements), ", ") + ")"
+        "(" + stringDelimitList(list(toFlatString(e) for e in exp.elements), ", ") + ")"
       end
 
       RECORD_EXPRESSION(__)  => begin
@@ -4660,23 +4660,23 @@ function toFlatString(exp::Expression) ::String
       end
 
       BINARY_EXPRESSION(__)  => begin
-        operandFlatString(exp.exp1, exp, true) + P_Operator.Operator.symbol(exp.operator) + operandFlatString(exp.exp2, exp, false)
+        operandFlatString(exp.exp1, exp, true) + symbol(exp.operator) + operandFlatString(exp.exp2, exp, false)
       end
 
       UNARY_EXPRESSION(__)  => begin
-        P_Operator.Operator.symbol(exp.operator, "") + operandFlatString(exp.exp, exp, false)
+        symbol(exp.operator, "") + operandFlatString(exp.exp, exp, false)
       end
 
       LBINARY_EXPRESSION(__)  => begin
-        operandFlatString(exp.exp1, exp, true) + P_Operator.Operator.symbol(exp.operator) + operandFlatString(exp.exp2, exp, false)
+        operandFlatString(exp.exp1, exp, true) + symbol(exp.operator) + operandFlatString(exp.exp2, exp, false)
       end
 
       LUNARY_EXPRESSION(__)  => begin
-        P_Operator.Operator.symbol(exp.operator, "") + " " + operandFlatString(exp.exp, exp, false)
+        symbol(exp.operator, "") + " " + operandFlatString(exp.exp, exp, false)
       end
 
       RELATION_EXPRESSION(__)  => begin
-        operandFlatString(exp.exp1, exp, true) + P_Operator.Operator.symbol(exp.operator) + operandFlatString(exp.exp2, exp, false)
+        operandFlatString(exp.exp1, exp, true) + symbol(exp.operator) + operandFlatString(exp.exp2, exp, false)
       end
 
       IF_EXPRESSION(__)  => begin
@@ -4763,7 +4763,7 @@ function toString(exp::Expression) ::String
         P_ClockKind.toString(clk)
       end
 
-      COMPONENT_REF_CREF(__)  => begin
+      CREF_EXPRESSION(__)  => begin
         toString(exp.cref)
       end
 
@@ -4772,11 +4772,11 @@ function toString(exp::Expression) ::String
       end
 
       ARRAY_EXPRESSION(__)  => begin
-        "{" + stringDelimitList(List(toString(e) for e in exp.elements), ", ") + "}"
+        "{" + stringDelimitList(list(toString(e) for e in exp.elements), ", ") + "}"
       end
 
       MATRIX_EXPRESSION(__)  => begin
-        "[" + stringDelimitList(List(stringDelimitList(List(toString(e) for e in el), ", ") for el in exp.elements), "; ") + "]"
+        "[" + stringDelimitList(list(stringDelimitList(list(toString(e) for e in el), ", ") for el in exp.elements), "; ") + "]"
       end
 
       RANGE_EXPRESSION(__)  => begin
@@ -4788,7 +4788,7 @@ function toString(exp::Expression) ::String
       end
 
       TUPLE_EXPRESSION(__)  => begin
-        "(" + stringDelimitList(List(toString(e) for e in exp.elements), ", ") + ")"
+        "(" + stringDelimitList(list(toString(e) for e in exp.elements), ", ") + ")"
       end
 
       RECORD_EXPRESSION(__)  => begin
@@ -4812,23 +4812,23 @@ function toString(exp::Expression) ::String
       end
 
       BINARY_EXPRESSION(__)  => begin
-        operandString(exp.exp1, exp, true) + P_Operator.Operator.symbol(exp.operator) + operandString(exp.exp2, exp, false)
+        operandString(exp.exp1, exp, true) + symbol(exp.operator) + operandString(exp.exp2, exp, false)
       end
 
       UNARY_EXPRESSION(__)  => begin
-        P_Operator.Operator.symbol(exp.operator, "") + operandString(exp.exp, exp, false)
+        symbol(exp.operator, "") + operandString(exp.exp, exp, false)
       end
 
       LBINARY_EXPRESSION(__)  => begin
-        operandString(exp.exp1, exp, true) + P_Operator.Operator.symbol(exp.operator) + operandString(exp.exp2, exp, false)
+        operandString(exp.exp1, exp, true) + symbol(exp.operator) + operandString(exp.exp2, exp, false)
       end
 
       LUNARY_EXPRESSION(__)  => begin
-        P_Operator.Operator.symbol(exp.operator, "") + " " + operandString(exp.exp, exp, false)
+        symbol(exp.operator, "") + " " + operandString(exp.exp, exp, false)
       end
 
       RELATION_EXPRESSION(__)  => begin
-        operandString(exp.exp1, exp, true) + P_Operator.Operator.symbol(exp.operator) + operandString(exp.exp2, exp, false)
+        operandString(exp.exp1, exp, true) + symbol(exp.operator) + operandString(exp.exp2, exp, false)
       end
 
       IF_EXPRESSION(__)  => begin
@@ -4899,11 +4899,11 @@ function toInteger(exp::Expression) ::Integer
 
   @assign i = begin
     @match exp begin
-      INTEGER(__)  => begin
+      INTEGER_EXPRESSION(__)  => begin
         exp.value
       end
 
-      BOOLEAN(__)  => begin
+      BOOLEAN_EXPRESSION(__)  => begin
         if exp.value
           1
         else
@@ -4981,7 +4981,7 @@ function replaceIterator2(exp::Expression, iterator::InstNode, iteratorValue::Ex
   @assign exp = begin
     local node::InstNode
     @match exp begin
-      COMPONENT_REF_CREF(cref = COMPONENT_REF_CREF(node = node))  => begin
+      CREF_EXPRESSION(cref = CREF_EXPRESSION(node = node))  => begin
         if refEqual(iterator, node)
           iteratorValue
         else
@@ -5147,7 +5147,7 @@ function applyIndexSubscriptRange2(startExp::Expression, stepExp::Option{<:Expre
         end
       end
 
-      (P_Expression.Expression.ENUM_LITERAL_EXPRESSION(index = iidx), _)  => begin
+      (ENUM_LITERAL_EXPRESSION(index = iidx), _)  => begin
         @assign iidx = iidx + index - 1
         nthEnumLiteral(startExp.ty, iidx)
       end
@@ -5204,7 +5204,7 @@ function applySubscriptRange(subscript::Subscript, exp::Expression) ::Expression
       end
 
       SUBSCRIPT_EXPANDED_SLICE(__)  => begin
-        @assign expl = List(applyIndexSubscriptRange(exp, i) for i in sub.indices)
+        @assign expl = list(applyIndexSubscriptRange(exp, i) for i in sub.indices)
         @match RANGE_EXPRESSION(ty = ty) = exp
         makeArray(Type.liftArrayLeft(ty, P_Dimension.Dimension.fromInteger(listLength(expl))), expl)
       end
@@ -5264,7 +5264,7 @@ function applySubscriptArray(subscript::Subscript, exp::Expression, restSubscrip
         else
           @match ARRAY_EXPRESSION(ty = ty, elements = expl, literal = literal) = exp
           @match _cons(s, rest_subs) = restSubscripts
-          @assign expl = List(applySubscript(s, e, rest_subs) for e in expl)
+          @assign expl = list(applySubscript(s, e, rest_subs) for e in expl)
           @assign el_count = listLength(expl)
           @assign ty = if el_count > 0
             typeOf(listHead(expl))
@@ -5279,7 +5279,7 @@ function applySubscriptArray(subscript::Subscript, exp::Expression, restSubscrip
 
       SUBSCRIPT_EXPANDED_SLICE(__)  => begin
         @match ARRAY_EXPRESSION(ty = ty, literal = literal) = exp
-        @assign expl = List(applyIndexSubscriptArray(exp, i, restSubscripts) for i in sub.indices)
+        @assign expl = list(applyIndexSubscriptArray(exp, i, restSubscripts) for i in sub.indices)
         @assign el_count = listLength(expl)
         @assign ty = if el_count > 0
           typeOf(listHead(expl))
@@ -5319,7 +5319,7 @@ function applyIndexSubscriptTypename(ty::M_Type, index::Subscript) ::Expression
       end
     end
   else
-    @assign subscriptedExp = SUBSCRIPTED_EXP_EXPRESSION(TYPENAME(ty), list(index), ty)
+    @assign subscriptedExp = SUBSCRIPTED_EXP_EXPRESSION(TYPENAME_EXPRESSION(ty), list(index), ty)
   end
   subscriptedExp
 end
@@ -5339,15 +5339,15 @@ function applySubscriptTypename(subscript::Subscript, ty::M_Type) ::Expression
       end
 
       SUBSCRIPT_SLICE(__)  => begin
-        SUBSCRIPTED_EXP_EXPRESSION(TYPENAME(ty), list(subscript), ARRAY_TYPE(ty, list(toDimension(sub))))
+        SUBSCRIPTED_EXP_EXPRESSION(TYPENAME_EXPRESSION(ty), list(subscript), ARRAY_TYPE(ty, list(toDimension(sub))))
       end
 
       SUBSCRIPT_WHOLE(__)  => begin
-        TYPENAME(ty)
+        TYPENAME_EXPRESSION(ty)
       end
 
       SUBSCRIPT_EXPANDED_SLICE(__)  => begin
-        @assign expl = List(applyIndexSubscriptTypename(ty, i) for i in sub.indices)
+        @assign expl = list(applyIndexSubscriptTypename(ty, i) for i in sub.indices)
         makeArray(Type.liftArrayLeft(ty, P_Dimension.Dimension.fromInteger(listLength(expl))), expl, literal = true)
       end
     end
@@ -5363,7 +5363,7 @@ function applySubscriptCref(subscript::Subscript, cref::ComponentRef, restSubscr
 
   @assign cr = applySubscripts(_cons(subscript, restSubscripts), cref)
   @assign ty = getSubscriptedType(cr)
-  @assign outExp = COMPONENT_REF_CREF(ty, cr)
+  @assign outExp = CREF_EXPRESSION(ty, cr)
   outExp
 end
 
@@ -5374,11 +5374,11 @@ end
 
                    @assign outExp = begin
                      @match exp begin
-                       COMPONENT_REF_CREF(__)  => begin
+                       CREF_EXPRESSION(__)  => begin
                          applySubscriptCref(subscript, exp.cref, restSubscripts)
                        end
 
-                       TYPENAME(__) where (listEmpty(restSubscripts))  => begin
+                       TYPENAME_EXPRESSION(__) where (listEmpty(restSubscripts))  => begin
                          applySubscriptTypename(subscript, exp.ty)
                        end
 
@@ -5455,7 +5455,7 @@ function makeRealMatrix(values::List{<:List{<:AbstractFloat}}) ::Expression
     @assign exp = makeEmptyArray(ty)
   else
     @assign ty = ARRAY_TYPE(TYPE_REAL(), list(P_Dimension.Dimension.fromInteger(listLength(listHead(values)))))
-    @assign expl = List(makeArray(ty, List(REAL(v) for v in row), literal = true) for row in values)
+    @assign expl = list(makeArray(ty, list(REAL_EXPRESSION(v) for v in row), literal = true) for row in values)
     @assign ty = Type.liftArrayLeft(ty, P_Dimension.Dimension.fromInteger(listLength(expl)))
     @assign exp = makeArray(ty, expl, literal = true)
   end
@@ -5465,14 +5465,14 @@ end
 function makeRealArray(values::List{<:AbstractFloat}) ::Expression
   local exp::Expression
 
-  @assign exp = makeArray(ARRAY_TYPE(TYPE_REAL(), list(P_Dimension.Dimension.fromInteger(listLength(values)))), List(REAL(v) for v in values), literal = true)
+  @assign exp = makeArray(ARRAY_TYPE(TYPE_REAL(), list(P_Dimension.Dimension.fromInteger(listLength(values)))), list(REAL_EXPRESSION(v) for v in values), literal = true)
   exp
 end
 
 function makeIntegerArray(values::List{<:Integer}) ::Expression
   local exp::Expression
 
-  @assign exp = makeArray(ARRAY_TYPE(TYPE_INTEGER(), list(P_Dimension.Dimension.fromInteger(listLength(values)))), List(INTEGER(v) for v in values), literal = true)
+  @assign exp = makeArray(ARRAY_TYPE(TYPE_INTEGER(), list(P_Dimension.Dimension.fromInteger(listLength(values)))), list(INTEGER_EXPRESSION(v) for v in values), literal = true)
   exp
 end
 
@@ -5493,24 +5493,24 @@ end
 function stringValue(exp::Expression) ::String
   local value::String
 
-  @match STRING(value = value) = exp
+  @match STRING_EXPRESSION(value = value) = exp
   value
 end
 
 function makeInteger(value::Integer) ::Expression
-  local exp::Expression = INTEGER(value)
+  local exp::Expression = INTEGER_EXPRESSION(value)
   exp
 end
 
 function integerValue(exp::Expression) ::Integer
   local value::Integer
 
-  @match INTEGER(value = value) = exp
+  @match INTEGER_EXPRESSION(value = value) = exp
   value
 end
 
 function makeReal(value::AbstractFloat) ::Expression
-  local exp::Expression = REAL(value)
+  local exp::Expression = REAL_EXPRESSION(value)
   exp
 end
 
@@ -5519,11 +5519,11 @@ function realValue(exp::Expression) ::AbstractFloat
 
   @assign value = begin
     @match exp begin
-      REAL(__)  => begin
+      REAL_EXPRESSION(__)  => begin
         exp.value
       end
 
-      INTEGER(__)  => begin
+      INTEGER_EXPRESSION(__)  => begin
         intReal(exp.value)
       end
     end
@@ -5550,7 +5550,7 @@ end
          REAL_EXPRESSION(intReal(exp.value))
        end
        (BOOLEAN_EXPRESSION(__), TYPE_REAL(__)) where (Flags.isSet(Flags.NF_API))  => begin
-         REAL(if exp.value
+         REAL_EXPRESSION(if exp.value
               1.0
               else
               0.0
@@ -5583,7 +5583,7 @@ end
        (UNARY_EXPRESSION(__), _)  => begin
          #=  Unary operators (i.e. -) are handled by casting the operand.
          =#
-         @assign t = setArrayElementType(P_Operator.Operator.typeOf(exp.operator), ety)
+         @assign t = setArrayElementType(typeOf(exp.operator), ety)
          UNARY_EXPRESSION(setType(t, exp.operator), typeCast(exp.exp, ety))
        end
        (IF_EXPRESSION(__), _)  => begin
@@ -5632,12 +5632,12 @@ function setType(ty::NFType, exp::Expression) ::Expression
         ()
       end
 
-      COMPONENT_REF_CREF(__)  => begin
+      CREF_EXPRESSION(__)  => begin
         @assign exp.ty = ty
         ()
       end
 
-      TYPENAME(__)  => begin
+      TYPENAME_EXPRESSION(__)  => begin
         @assign exp.ty = ty
         ()
       end
@@ -5735,19 +5735,19 @@ function typeOf(exp::Expression) ::M_Type
 
   @assign ty = begin
     @match exp begin
-      INTEGER(__)  => begin
+      INTEGER_EXPRESSION(__)  => begin
         TYPE_INTEGER()
       end
 
-      REAL(__)  => begin
+      REAL_EXPRESSION(__)  => begin
         TYPE_REAL()
       end
 
-      STRING(__)  => begin
+      STRING_EXPRESSION(__)  => begin
         TYPE_STRING()
       end
 
-      BOOLEAN(__)  => begin
+      BOOLEAN_EXPRESSION(__)  => begin
         TYPE_BOOLEAN()
       end
 
@@ -5759,11 +5759,11 @@ function typeOf(exp::Expression) ::M_Type
         TYPE_CLOCK()
       end
 
-      COMPONENT_REF_CREF(__)  => begin
+      CREF_EXPRESSION(__)  => begin
         exp.ty
       end
 
-      TYPENAME(__)  => begin
+      TYPENAME_EXPRESSION(__)  => begin
         exp.ty
       end
 
@@ -5800,23 +5800,23 @@ function typeOf(exp::Expression) ::M_Type
       end
 
       BINARY_EXPRESSION(__)  => begin
-        P_Operator.Operator.typeOf(exp.operator)
+        typeOf(exp.operator)
       end
 
       UNARY_EXPRESSION(__)  => begin
-        P_Operator.Operator.typeOf(exp.operator)
+        typeOf(exp.operator)
       end
 
       LBINARY_EXPRESSION(__)  => begin
-        P_Operator.Operator.typeOf(exp.operator)
+        typeOf(exp.operator)
       end
 
       LUNARY_EXPRESSION(__)  => begin
-        P_Operator.Operator.typeOf(exp.operator)
+        typeOf(exp.operator)
       end
 
       RELATION_EXPRESSION(__)  => begin
-        P_Operator.Operator.typeOf(exp.operator)
+        typeOf(exp.operator)
       end
 
       IF_EXPRESSION(__)  => begin
@@ -5962,23 +5962,23 @@ end
                      local clk2::ClockKind
                      local me::Pointer{Expression}
                      @match exp1 begin
-                       INTEGER(__)  => begin
-                         @match INTEGER(value = i) = exp2
+                       INTEGER_EXPRESSION(__)  => begin
+                         @match INTEGER_EXPRESSION(value = i) = exp2
                          Util.intCompare(exp1.value, i)
                        end
 
-                       REAL(__)  => begin
-                         @match REAL(value = r) = exp2
+                       REAL_EXPRESSION(__)  => begin
+                         @match REAL_EXPRESSION(value = r) = exp2
                          Util.realCompare(exp1.value, r)
                        end
 
-                       STRING(__)  => begin
-                         @match STRING(value = s) = exp2
+                       STRING_EXPRESSION(__)  => begin
+                         @match STRING_EXPRESSION(value = s) = exp2
                          Util.stringCompare(exp1.value, s)
                        end
 
-                       BOOLEAN(__)  => begin
-                         @match BOOLEAN(value = b) = exp2
+                       BOOLEAN_EXPRESSION(__)  => begin
+                         @match BOOLEAN_EXPRESSION(value = b) = exp2
                          Util.boolCompare(exp1.value, b)
                        end
 
@@ -5991,13 +5991,13 @@ end
                          comp
                        end
 
-                       COMPONENT_REF_CREF(__)  => begin
-                         @match COMPONENT_REF_CREF(cref = cr) = exp2
+                       CREF_EXPRESSION(__)  => begin
+                         @match CREF_EXPRESSION(cref = cr) = exp2
                          compare(exp1.cref, cr)
                        end
 
-                       TYPENAME(__)  => begin
-                         @match TYPENAME(ty = ty) = exp2
+                       TYPENAME_EXPRESSION(__)  => begin
+                         @match TYPENAME_EXPRESSION(ty = ty) = exp2
                          valueCompare(exp1.ty, ty)
                        end
 
@@ -6059,7 +6059,7 @@ end
 
                        BINARY_EXPRESSION(__)  => begin
                          @match BINARY_EXPRESSION(exp1 = e1, operator = op, exp2 = e2) = exp2
-                         @assign comp = P_Operator.Operator.compare(exp1.operator, op)
+                         @assign comp = compare(exp1.operator, op)
                          if comp == 0
                            @assign comp = compare(exp1.exp1, e1)
                            if comp == 0
@@ -6071,7 +6071,7 @@ end
 
                        UNARY_EXPRESSION(__)  => begin
                          @match UNARY_EXPRESSION(operator = op, exp = e1) = exp2
-                         @assign comp = P_Operator.Operator.compare(exp1.operator, op)
+                         @assign comp = compare(exp1.operator, op)
                          if comp == 0
                            compare(exp1.exp, e1)
                          else
@@ -6081,7 +6081,7 @@ end
 
                        LBINARY_EXPRESSION(__)  => begin
                          @match LBINARY_EXPRESSION(exp1 = e1, operator = op, exp2 = e2) = exp2
-                         @assign comp = P_Operator.Operator.compare(exp1.operator, op)
+                         @assign comp = compare(exp1.operator, op)
                          if comp == 0
                            @assign comp = compare(exp1.exp1, e1)
                            if comp == 0
@@ -6093,7 +6093,7 @@ end
 
 LUNARY_EXPRESSION(__)  => begin
   @match LUNARY_EXPRESSION(operator = op, exp = e1) = exp2
-  @assign comp = P_Operator.Operator.compare(exp1.operator, op)
+  @assign comp = compare(exp1.operator, op)
   if comp == 0
     compare(exp1.exp, e1)
   else
@@ -6103,7 +6103,7 @@ end
 
 RELATION_EXPRESSION(__)  => begin
   @match RELATION_EXPRESSION(exp1 = e1, operator = op, exp2 = e2) = exp2
-  @assign comp = P_Operator.Operator.compare(exp1.operator, op)
+  @assign comp = compare(exp1.operator, op)
   if comp == 0
     @assign comp = compare(exp1.exp1, e1)
     if comp == 0
@@ -6228,7 +6228,7 @@ function isFalse(exp::Expression) ::Bool
 
   @assign isTrue = begin
     @match exp begin
-      BOOLEAN(false)  => begin
+      BOOLEAN_EXPRESSION(false)  => begin
         true
       end
 
@@ -6245,7 +6245,7 @@ function isAllTrue(exp::Expression) ::Bool
 
   @assign isTrue = begin
     @match exp begin
-      BOOLEAN(true)  => begin
+      BOOLEAN_EXPRESSION(true)  => begin
         true
       end
 
@@ -6272,7 +6272,7 @@ function isTrue(exp::Expression) ::Bool
 
   @assign isTrue = begin
     @match exp begin
-      BOOLEAN(true)  => begin
+      BOOLEAN_EXPRESSION(true)  => begin
         true
       end
 
@@ -6304,7 +6304,7 @@ function isWildCref(exp::Expression) ::Bool
 
   @assign wild = begin
     @match exp begin
-      COMPONENT_REF_CREF(cref = WILD(__))  => begin
+      CREF_EXPRESSION(cref = WILD(__))  => begin
         true
       end
 
@@ -6321,7 +6321,7 @@ function isCref(exp::Expression) ::Bool
 
   @assign isCref = begin
     @match exp begin
-      COMPONENT_REF_CREF(__)  => begin
+      CREF_EXPRESSION(__)  => begin
         true
       end
 

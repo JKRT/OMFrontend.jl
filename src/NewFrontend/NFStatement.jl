@@ -559,7 +559,7 @@ end
 
 function mapExpList(stmtl::List{<:Statement}, func::MapFunc)::List{Statement}
 
-  @assign stmtl = List(mapExp(s, func) for s in stmtl)
+  @assign stmtl = list(mapExp(s, func) for s in stmtl)
   return stmtl
 end
 
@@ -568,13 +568,13 @@ function map(stmt::Statement, func::MapFn)::Statement
   @assign () = begin
     @match stmt begin
       FOR(__) => begin
-        @assign stmt.body = List(map(s, func) for s in stmt.body)
+        @assign stmt.body = list(map(s, func) for s in stmt.body)
         ()
       end
 
       IF(__) => begin
         @assign stmt.branches = List(
-          (Util.tuple21(b), List(map(s, func) for s in Util.tuple22(b)))
+          (Util.tuple21(b), list(map(s, func) for s in Util.tuple22(b)))
           for b in stmt.branches
         )
         ()
@@ -582,14 +582,14 @@ function map(stmt::Statement, func::MapFn)::Statement
 
       WHEN(__) => begin
         @assign stmt.branches = List(
-          (Util.tuple21(b), List(map(s, func) for s in Util.tuple22(b)))
+          (Util.tuple21(b), list(map(s, func) for s in Util.tuple22(b)))
           for b in stmt.branches
         )
         ()
       end
 
       WHILE(__) => begin
-        @assign stmt.body = List(map(s, func) for s in stmt.body)
+        @assign stmt.body = list(map(s, func) for s in stmt.body)
         ()
       end
 

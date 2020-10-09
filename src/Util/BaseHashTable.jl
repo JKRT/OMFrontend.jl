@@ -184,7 +184,7 @@ function dumpHashTableStatistics(hashTable::HashTable)
     @match hashTable begin
       (hvec, _, _, _) => begin
         print("index list lengths:\\n")
-        print(stringDelimitList(List(intString(listLength(l)) for l in hvec), ","))
+        print(stringDelimitList(list(intString(listLength(l)) for l in hvec), ","))
         print("\\n")
         print(
           "non-zero: " +

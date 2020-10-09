@@ -93,7 +93,7 @@ function evaluateCardinality(arg, table::Table)
   catch
     @assign count = 0
   end
-  @assign res = INTEGER(count)
+  @assign res = INTEGER_EXPRESSION(count)
   return res
 end
 

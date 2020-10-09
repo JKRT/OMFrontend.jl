@@ -27,7 +27,7 @@ function toInteger(subscript::Subscript)::Integer
   @assign int = begin
     @match subscript begin
       INDEX(__) => begin
-        P_Expression.Expression.toInteger(subscript.index)
+        toInteger(subscript.index)
       end
     end
   end
@@ -68,7 +68,7 @@ function fromExp(exp::Expression)::Subscript
         INDEX(exp)
       end
 
-      P_Expression.Expression.ENUM_LITERAL(__) => begin
+      ENUM_LITERAL(__) => begin
         INDEX(exp)
       end
 
@@ -90,7 +90,7 @@ function first(dim::Dimension)::Subscript
 
   @assign sub = begin
     @match dim begin
-      P_Dimension.Dimension.INTEGER(__) => begin
+      P_Dimension.Dimension.INTEGER_EXPRESSION(__) => begin
         INDEX(INTEGER_EXPRESSION(1))
       end
 
@@ -99,7 +99,7 @@ function first(dim::Dimension)::Subscript
       end
 
       P_Dimension.Dimension.ENUM(__) => begin
-        INDEX(P_Expression.Expression.nthEnumLiteral(dim.enumType, 1))
+        INDEX(nthEnumLiteral(dim.enumType, 1))
       end
     end
   end
@@ -169,7 +169,7 @@ function mergeList(
               =#
               if !isWhole(new_sub)
                 @assign outSubs = _cons(
-                  SUBSCRIPT_INDEX(P_Expression.Expression.applySubscript(
+                  SUBSCRIPT_INDEX(applySubscript(
                     new_sub,
                     old_sub.slice,
                   )),
@@ -230,15 +230,15 @@ function variability(subscript::Subscript)::VariabilityType
   @assign var = begin
     @match subscript begin
       UNTYPED(__) => begin
-        P_Expression.Expression.variability(subscript.exp)
+        variability(subscript.exp)
       end
 
       INDEX(__) => begin
-        P_Expression.Expression.variability(subscript.index)
+        variability(subscript.index)
       end
 
       SLICE(__) => begin
-        P_Expression.Expression.variability(subscript.slice)
+        variability(subscript.slice)
       end
 
       WHOLE(__) => begin
@@ -284,9 +284,9 @@ function expandSlice(subscript::Subscript)::Tuple{Subscript, Bool}
     @match subscript begin
       SLICE(__) => begin
         @assign exp = P_ExpandExp.ExpandExp.expand(subscript.slice)
-        if P_Expression.Expression.isArray(exp)
+        if isArray(exp)
           @assign outSubscript = EXPANDED_SLICE(List(
-            INDEX(e) for e in P_Expression.Expression.arrayElements(exp)
+            INDEX(e) for e in arrayElements(exp)
           ))
           @assign expanded = true
         else
@@ -385,7 +385,7 @@ function scalarize(subscript::Subscript, dimension::Dimension)::List{Subscript}
           INDEX(e)
           for
           e in
-          P_Expression.Expression.arrayElements(P_ExpandExp.ExpandExp.expand(subscript.slice))
+          arrayElements(P_ExpandExp.ExpandExp.expand(subscript.slice))
         )
       end
 
@@ -484,15 +484,15 @@ function toFlatString(subscript::Subscript)::String
       end
 
       UNTYPED(__) => begin
-        P_Expression.Expression.toFlatString(subscript.exp)
+        toFlatString(subscript.exp)
       end
 
       INDEX(__) => begin
-        P_Expression.Expression.toFlatString(subscript.index)
+        toFlatString(subscript.index)
       end
 
       SLICE(__) => begin
-        P_Expression.Expression.toFlatString(subscript.slice)
+        toFlatString(subscript.slice)
       end
 
       EXPANDED_SLICE(__) => begin
@@ -505,6 +505,10 @@ function toFlatString(subscript::Subscript)::String
     end
   end
   return string
+end
+
+function toStringList(::Union{Cons{Union{}}, Nil})::String
+  ""
 end
 
 function toStringList(subscripts::List{<:Subscript})::String
@@ -553,11 +557,11 @@ function toDAEExp(subscript::Subscript)::DAE.Exp
   @assign daeExp = begin
     @match subscript begin
       INDEX(__) => begin
-        P_Expression.Expression.toDAE(subscript.index)
+        toDAE(subscript.index)
       end
 
       SLICE(__) => begin
-        P_Expression.Expression.toDAE(subscript.slice)
+        toDAE(subscript.slice)
       end
 
       _ => begin
@@ -579,11 +583,11 @@ function toDAE(subscript::Subscript)::DAE.P_Subscript.Subscript
   @assign daeSubscript = begin
     @match subscript begin
       INDEX(__) => begin
-        DAE.INDEX(P_Expression.Expression.toDAE(subscript.index))
+        DAE.INDEX(toDAE(subscript.index))
       end
 
       SLICE(__) => begin
-        DAE.SLICE(P_Expression.Expression.toDAE(subscript.slice))
+        DAE.SLICE(toDAE(subscript.slice))
       end
 
       WHOLE(__) => begin
@@ -800,17 +804,17 @@ function applyExp(subscript::Subscript, func::ApplyFunc)
   return @assign () = begin
     @match subscript begin
       UNTYPED(__) => begin
-        P_Expression.Expression.apply(subscript.exp, func)
+        apply(subscript.exp, func)
         ()
       end
 
       INDEX(__) => begin
-        P_Expression.Expression.apply(subscript.index, func)
+        apply(subscript.index, func)
         ()
       end
 
       SLICE(__) => begin
-        P_Expression.Expression.apply(subscript.slice, func)
+        apply(subscript.slice, func)
         ()
       end
 
@@ -887,15 +891,15 @@ function containsExp(subscript::Subscript, func::ContainsPred)::Bool
   @assign res = begin
     @match subscript begin
       UNTYPED(__) => begin
-        P_Expression.Expression.contains(subscript.exp, func)
+        contains(subscript.exp, func)
       end
 
       INDEX(__) => begin
-        P_Expression.Expression.contains(subscript.index, func)
+        contains(subscript.index, func)
       end
 
       SLICE(__) => begin
-        P_Expression.Expression.contains(subscript.slice, func)
+        contains(subscript.slice, func)
       end
 
       _ => begin
@@ -946,17 +950,17 @@ function compare(subscript1::Subscript, subscript2::Subscript)::Integer
     @match subscript1 begin
       UNTYPED(__) => begin
         @match UNTYPED(exp = e) = subscript2
-        P_Expression.Expression.compare(subscript1.exp, e)
+        compare(subscript1.exp, e)
       end
 
       INDEX(__) => begin
         @match INDEX(index = e) = subscript2
-        P_Expression.Expression.compare(subscript1.index, e)
+        compare(subscript1.index, e)
       end
 
       SLICE(__) => begin
         @match SLICE(slice = e) = subscript2
-        P_Expression.Expression.compare(subscript1.slice, e)
+        compare(subscript1.slice, e)
       end
 
       WHOLE(__) => begin
@@ -998,15 +1002,15 @@ function isEqual(subscript1::Subscript, subscript2::Subscript)::Bool
       end
 
       (UNTYPED(__), UNTYPED(__)) => begin
-        P_Expression.Expression.isEqual(subscript1.exp, subscript2.exp)
+        isEqual(subscript1.exp, subscript2.exp)
       end
 
       (INDEX(__), INDEX(__)) => begin
-        P_Expression.Expression.isEqual(subscript1.index, subscript2.index)
+        isEqual(subscript1.index, subscript2.index)
       end
 
       (SLICE(__), SLICE(__)) => begin
-        P_Expression.Expression.isEqual(subscript1.slice, subscript2.slice)
+        isEqual(subscript1.slice, subscript2.slice)
       end
 
       (WHOLE(__), WHOLE(__)) => begin
@@ -1026,7 +1030,7 @@ function isScalarLiteral(sub::Subscript)::Bool
   @assign isScalarLiteral = begin
     @match sub begin
       INDEX(__) => begin
-        P_Expression.Expression.isScalarLiteral(sub.index)
+        isScalarLiteral(sub.index)
       end
       _ => begin
         false

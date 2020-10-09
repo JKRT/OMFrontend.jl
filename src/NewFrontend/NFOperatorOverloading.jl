@@ -238,7 +238,7 @@ function patchOperatorRecordConstructorBinding_traverser(
       CALL_EXPRESSION(
         call = P_Call.TYPED_CALL(fn = fn, ty = ty, arguments = args),
       ) where {(referenceEq(constructorFn.node, fn.node))} => begin
-        P_Expression.Expression.makeRecord(P_Function.name(constructorFn), ty, args)
+        makeRecord(P_Function.name(constructorFn), ty, args)
       end
 
       _ => begin

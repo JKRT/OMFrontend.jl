@@ -1352,7 +1352,7 @@ function stringPadRight(inString::String, inPadWidth::Integer, inPadString::Stri
 
   @assign pad_length = inPadWidth - stringLength(inString)
   if pad_length > 0
-    @assign pad_str = stringAppendList(List(inPadString for i = 1:pad_length))
+    @assign pad_str = stringAppendList(list(inPadString for i = 1:pad_length))
     @assign outString = inString + pad_str
   else
     @assign outString = inString
@@ -1371,7 +1371,7 @@ function stringPadLeft(inString::String, inPadWidth::Integer, inPadString::Strin
 
   @assign pad_length = inPadWidth - stringLength(inString)
   if pad_length > 0
-    @assign pad_str = stringAppendList(List(inPadString for i = 1:pad_length))
+    @assign pad_str = stringAppendList(list(inPadString for i = 1:pad_length))
     @assign outString = pad_str + inString
   else
     @assign outString = inString

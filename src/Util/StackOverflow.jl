@@ -124,7 +124,7 @@ function readableStacktraceMessages()::List{String}
     @assign symbols = list("[bt] [Symbols are not generated when running the test suite]")
     return symbols
   end
-  for symbol in List(stripAddresses(s) for s in getStacktraceMessages())
+  for symbol in list(stripAddresses(s) for s in getStacktraceMessages())
     if prev == ""
     elseif symbol != prev
       @assign symbols = _cons("[bt] #" + String(prevN) + (

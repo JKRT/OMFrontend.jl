@@ -289,7 +289,7 @@ function makeCatExp(n::Integer, args::List{<:Expression}, tys::List{<:M_Type}, v
   end
   @assign maxn = max(listLength(d) for d in dimsLst)
   if maxn != min(listLength(d) for d in dimsLst)
-    Error.addSourceMessageAndFail(Error.NF_DIFFERENT_NUM_DIM_IN_ARGUMENTS, list(stringDelimitList(List(String(listLength(d)) for d in dimsLst), ", "), "cat"), info)
+    Error.addSourceMessageAndFail(Error.NF_DIFFERENT_NUM_DIM_IN_ARGUMENTS, list(stringDelimitList(list(String(listLength(d)) for d in dimsLst), ", "), "cat"), info)
   end
   if n < 1 || n > maxn
     Error.addSourceMessageAndFail(Error.NF_CAT_WRONG_DIMENSION, list(String(maxn), String(n)), info)
@@ -334,7 +334,7 @@ function makeCatExp(n::Integer, args::List{<:Expression}, tys::List{<:M_Type}, v
   =#
   @assign dims = arrayDims(resTy)
   @assign resTyToMatch = ARRAY_TYPE(arrayElementType(resTy), ListUtil.set(dims, n, P_Dimension.Dimension.UNKNOWN()))
-  @assign dims = List(listGet(lst, n) for lst in dimsLst)
+  @assign dims = list(listGet(lst, n) for lst in dimsLst)
   @assign sumDim = P_Dimension.Dimension.fromInteger(0)
   for d in dims
     @assign sumDim = P_Dimension.Dimension.add(sumDim, d)
@@ -446,10 +446,10 @@ function typeOverloadedStringCall(overloadedType::M_Type, args::List{<:TypedArg}
     for arg in matchedFunc.args
       @assign var = variabilityMax(var, Util.tuple33(arg))
     end
-    @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(matchedFunc.func, List(Util.tuple31(a) for a in matchedFunc.args), var, outType))
+    @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(matchedFunc.func, list(Util.tuple31(a) for a in matchedFunc.args), var, outType))
     return (callExp, outType, var)
   else
-    Error.addSourceMessage(Error.AMBIGUOUS_MATCHING_FUNCTIONS_NFINST, list(P_Call.typedString(call), P_Function.candidateFuncListString(List(mfn.func for mfn in matchedFunctions))), info)
+    Error.addSourceMessage(Error.AMBIGUOUS_MATCHING_FUNCTIONS_NFINST, list(P_Call.typedString(call), P_Function.candidateFuncListString(list(mfn.func for mfn in matchedFunctions))), info)
     fail()
   end
   (callExp, outType, var)
@@ -1602,11 +1602,11 @@ function typeClockCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tupl
   @assign callExp = begin
     @match args begin
       nil()  => begin
-        P_Expression.Expression.CLKCONST(P_Expression.P_ClockKind.Expression.INFERRED_CLOCK())
+        CLKCONST(P_Expression.P_ClockKind.Expression.INFERRED_CLOCK())
       end
 
       e1 <|  nil()  => begin
-        P_Expression.Expression.CLKCONST(P_Expression.P_ClockKind.REAL_EXPRESSION_CLOCK(e1))
+        CLKCONST(P_Expression.P_ClockKind.REAL_EXPRESSION_CLOCK(e1))
       end
 
       e1 <| e2 <|  nil()  => begin
@@ -1621,15 +1621,15 @@ function typeClockCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tupl
               #=  Clock(intervalCounter, resolution) - integer clock.
               =#
               Error.assertionOrAddSourceMessage(integerValue(e2) >= 1, Error.WRONG_VALUE_OF_ARG, list("Clock", "resolution", toString(e2), "=> 1"), info)
-              P_Expression.Expression.CLKCONST(INTEGER_EXPRESSION_CLOCK(e1, e2))
+              CLKCONST(INTEGER_EXPRESSION_CLOCK(e1, e2))
             end
 
             TYPE_REAL(__)  => begin
-              P_Expression.Expression.CLKCONST(P_Expression.BOOLEAN_EXPRESSION_CLOCK(e1, e2))
+              CLKCONST(P_Expression.BOOLEAN_EXPRESSION_CLOCK(e1, e2))
             end
 
             TYPE_STRING(__)  => begin
-              P_Expression.Expression.CLKCONST(P_Expression.Expression.SOLVER_CLOCK(e1, e2))
+              CLKCONST(SOLVER_CLOCK(e1, e2))
             end
           end
         end
@@ -1706,7 +1706,7 @@ function typeSampleCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tup
       ((e, t, v) <|  nil(),  nil()) where (Config.synchronousFeaturesAllowed())  => begin
         #=  sample(u) - inferred clock
         =#
-        @assign ty_call = P_Call.makeTypedCall(clockedSample, list(e, P_Expression.Expression.CLKCONST(P_Expression.P_ClockKind.Expression.INFERRED_CLOCK())), v, t)
+        @assign ty_call = P_Call.makeTypedCall(clockedSample, list(e, CLKCONST(P_Expression.P_ClockKind.Expression.INFERRED_CLOCK())), v, t)
         (CALL_EXPRESSION(ty_call), t, v)
       end
 
@@ -1783,7 +1783,7 @@ function typeActualInStreamCall2(name::String, fn::M_Function, arg::Expression, 
       end
 
       ARRAY_EXPRESSION(__)  => begin
-        @assign arg.elements = List(typeActualInStreamCall2(name, fn, e, var, info) for e in arg.elements)
+        @assign arg.elements = list(typeActualInStreamCall2(name, fn, e, var, info) for e in arg.elements)
         arg
       end
 
@@ -1821,7 +1821,7 @@ function typeDynamicSelectCall(name::String, call::Call, origin::ORIGIN_Type, in
   if listLength(args) != 2
     Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), toString(fn_ref) + "(static expression, dynamic expression)"), info)
   end
-  @match list(expStatic, expDynamic) = List(unbox(arg) for arg in args)
+  @match list(expStatic, expDynamic) = list(unbox(arg) for arg in args)
   @assign (arg1, ty1, var1) = typeExp(expStatic, origin, info)
   @assign arg1 = P_ExpandExp.ExpandExp.expand(arg1)
   #=  if we cannot typecheck the dynamic part, ignore it!

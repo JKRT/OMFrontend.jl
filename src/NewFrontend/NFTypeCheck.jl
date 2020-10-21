@@ -680,7 +680,7 @@ function checkOverloadedBinaryScalarArray2(
 
       ARRAY_EXPRESSION(elements = expl) => begin
         @assign ty = Type.unliftArray(type2)
-        @assign expl = List(
+        @assign expl = list(
           checkOverloadedBinaryScalarArray2(
             exp1,
             type1,
@@ -794,7 +794,7 @@ function checkOverloadedBinaryArrayScalar2(
 
       ARRAY_EXPRESSION(elements = expl) => begin
         @assign ty = Type.unliftArray(type1)
-        @assign expl = List(
+        @assign expl = list(
           checkOverloadedBinaryArrayScalar2(
             e,
             ty,

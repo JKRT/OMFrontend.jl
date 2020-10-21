@@ -256,7 +256,7 @@ function traverseEquationItemList(
   local arg2::TypeA = inTypeA
 
   @assign outTpl = (
-    List(
+    list(
       begin
         local ei::EquationItem
         local ei_1::EquationItem
@@ -288,7 +288,7 @@ function traverseExpEqItemTupleList(
   local arg2::TypeA = inTypeA
 
   @assign outTpl = (
-    List(
+    list(
       begin
         local e::Exp
         local eilst::List{EquationItem}
@@ -7255,7 +7255,7 @@ function traverseExpShallow(inExp::Exp, inArg::ArgT, inFunc::FuncT) where {ArgT}
         @assign outExp.ifExp = inFunc(outExp.ifExp, inArg)
         @assign outExp.trueBranch = inFunc(outExp.trueBranch, inArg)
         @assign outExp.elseBranch = inFunc(outExp.elseBranch, inArg)
-        @assign outExp.elseIfBranch = List(
+        @assign outExp.elseIfBranch = list(
           (inFunc(Util.tuple21(e), inArg), inFunc(Util.tuple22(e), inArg))
           for e in outExp.elseIfBranch
         )
@@ -7343,7 +7343,7 @@ function traverseExpShallowFuncArgs(
 
       FOR_ITER_FARG(__) => begin
         @assign outArgs.exp = inFunc(outArgs.exp, inArg)
-        @assign outArgs.iterators = List(
+        @assign outArgs.iterators = list(
           traverseExpShallowIterator(it, inArg, inFunc) for it in outArgs.iterators
         )
         outArgs

@@ -161,7 +161,7 @@ end
   end
 
   @Record ARRAY_EXPRESSION begin
-    ty::M_Type
+    ty::NFType
     elements::List{Expression}
     literal #= True if the array is known to only contain literal expressions. =#::Bool
   end

@@ -1058,7 +1058,7 @@ function parseFunctionUnits(funcName::String, func::M_Function)::Functionargs
 
   @assign in_units =
     list(P_Component.getUnitAttribute(component(p), "NONE") for p in func.inputs)
-  @assign out_units = List(
+  @assign out_units = list(
     P_Component.getUnitAttribute(component(p), "NONE") for p in func.outputs
   )
   @assign in_args = list(name(p) for p in func.inputs)

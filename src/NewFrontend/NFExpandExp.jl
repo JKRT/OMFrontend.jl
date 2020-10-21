@@ -91,8 +91,8 @@ function expandGeneric(exp::Expression)::Tuple{Expression, Bool}
     @assign expanded = Type.hasKnownSize(ty)
     if expanded
       @assign dims = arrayDims(ty)
-      @assign subs = List(
-        List(
+      @assign subs = list(
+        list(
           SUBSCRIPT_INDEX(e)
           for
           e in
@@ -312,7 +312,7 @@ function makeBinaryMatrixProduct(exp1::Expression, exp2::Expression)::Expression
     @assign exp = makeZero(mat_ty)
   else
     @assign row_ty = ARRAY_TYPE(ty, list(p))
-    @assign expl1 = List(
+    @assign expl1 = list(
       makeArray(row_ty, makeBinaryMatrixProduct2(e, expl2))
       for e in expl1
     )
@@ -369,7 +369,7 @@ function makeScalarProduct(exp1::Expression, exp2::Expression)::Expression
     @assign mul_op = makeMul(elem_ty)
     @assign add_op = makeAdd(elem_ty)
     @assign expl1 =
-      List(@do_threaded_for SimplifyExp.simplifyBinaryOp(e1, mul_op, e2) (e1, e2) (
+      list(@do_threaded_for SimplifyExp.simplifyBinaryOp(e1, mul_op, e2) (e1, e2) (
         expl1,
         expl2,
       ))
@@ -574,12 +574,12 @@ function expandBinaryElementWise2(
   @assign eop = setType(Type.unliftArray(ty), op)
   if Type.dimensionCount(ty) > 1
     @assign expl =
-      List(@do_threaded_for expandBinaryElementWise2(e1, eop, e2, func) (e1, e2) (
+      list(@do_threaded_for expandBinaryElementWise2(e1, eop, e2, func) (e1, e2) (
         expl1,
         expl2,
       ))
   else
-    @assign expl = List(@do_threaded_for func(e1, eop, e2) (e1, e2) (expl1, expl2))
+    @assign expl = list(@do_threaded_for func(e1, eop, e2) (e1, e2) (expl1, expl2))
   end
   @assign exp = makeArray(ty, expl)
   return exp
@@ -702,7 +702,7 @@ function expandSize(exp::Expression)::Tuple{Expression, Bool}
       SIZE_EXPRESSION(exp = e, dimIndex = NONE()) => begin
         @assign ty = typeOf(e)
         @assign dims = Type.dimensionCount(ty)
-        @assign expl = List(
+        @assign expl = list(
           SIZE_EXPRESSION(e, SOME(INTEGER_EXPRESSION(i)))
           for i = 1:dims
         )
@@ -1045,7 +1045,7 @@ function expandCref4(
       end
 
       SUBSCRIPT_EXPANDED_SLICE(indices = slice) <| rest => begin
-        @assign expl = List(
+        @assign expl = list(
           expandCref4(rest, _cons(idx, comb), accum, restSubs, cref, crefType)
           for idx in slice
         )

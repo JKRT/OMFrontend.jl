@@ -381,7 +381,7 @@ function scalarize(subscript::Subscript, dimension::Dimension)::List{Subscript}
       end
 
       SLICE(__) => begin
-        List(
+        list(
           INDEX(e)
           for
           e in

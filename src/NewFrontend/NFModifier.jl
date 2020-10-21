@@ -544,7 +544,7 @@ function fromElement(
         create(
           element.modifications,
           "",
-          P_ModifierScope.EXTENDS(element.baseClassPath),
+          SCOPE_EXTENDS(element.baseClassPath),
           parents,
           scope,
         )
@@ -560,7 +560,7 @@ function fromElement(
         create(
           def.modifications,
           element.name,
-          P_ModifierScope.CLASS(element.name),
+          SCOPE_CLASS(element.name),
           parents,
           scope,
         )
@@ -570,7 +570,7 @@ function fromElement(
         create(
           def.modifications,
           element.name,
-          P_ModifierScope.CLASS(element.name),
+          SCOPE_CLASS(element.name),
           parents,
           scope,
         )

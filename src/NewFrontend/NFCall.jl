@@ -280,7 +280,7 @@ function typedString(call::Call)::String
       ARG_TYPED_CALL(__) => begin
         @assign name = toString(call.ref)
         @assign arg_str = stringDelimitList(
-          List(
+          list(
             "/*" +
             Type.toString(Util.tuple32(arg)) +
             "*/ " +
@@ -355,7 +355,7 @@ function toFlatString(call::Call)::String
           @assign name = AbsynUtil.pathString(P_Function.name(NFBuiltinFuncs.ARRAY_FUNC))
           @assign arg_str = toFlatString(call.exp)
           @assign c = stringDelimitList(
-            List(
+            list(
               name(Util.tuple21(iter)) +
               " in " +
               toFlatString(Util.tuple22(iter))
@@ -378,7 +378,7 @@ function toFlatString(call::Call)::String
         @assign name = AbsynUtil.pathString(P_Function.name(call.fn))
         @assign arg_str = toFlatString(call.exp)
         @assign c = stringDelimitList(
-          List(
+          list(
             name(Util.tuple21(iter)) +
             " in " +
             toFlatString(Util.tuple22(iter))
@@ -420,7 +420,7 @@ function toString(call::Call)::String
       ARG_TYPED_CALL(__) => begin
         @assign name = toString(call.ref)
         @assign arg_str = stringDelimitList(
-          List(
+          list(
             toString(Util.tuple31(arg)) for arg in call.arguments
           ),
           ", ",
@@ -445,7 +445,7 @@ function toString(call::Call)::String
         @assign name = AbsynUtil.pathString(P_Function.name(NFBuiltinFuncs.ARRAY_FUNC))
         @assign arg_str = toString(call.exp)
         @assign c = stringDelimitList(
-          List(
+          list(
             name(Util.tuple21(iter)) +
             " in " +
             toString(Util.tuple22(iter))
@@ -461,7 +461,7 @@ function toString(call::Call)::String
         @assign name = toString(call.ref)
         @assign arg_str = toString(call.exp)
         @assign c = stringDelimitList(
-          List(
+          list(
             name(Util.tuple21(iter)) +
             " in " +
             toString(Util.tuple22(iter))
@@ -485,7 +485,7 @@ function toString(call::Call)::String
         @assign name = AbsynUtil.pathString(P_Function.name(NFBuiltinFuncs.ARRAY_FUNC))
         @assign arg_str = toString(call.exp)
         @assign c = stringDelimitList(
-          List(
+          list(
             name(Util.tuple21(iter)) +
             " in " +
             toString(Util.tuple22(iter))
@@ -501,7 +501,7 @@ function toString(call::Call)::String
         @assign name = AbsynUtil.pathString(P_Function.name(call.fn))
         @assign arg_str = toString(call.exp)
         @assign c = stringDelimitList(
-          List(
+          list(
             name(Util.tuple21(iter)) +
             " in " +
             toString(Util.tuple22(iter))

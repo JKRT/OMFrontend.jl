@@ -57,7 +57,7 @@ function toDAE(fnDer::FunctionDerivative)::DAE.FunctionDefinition
     order,
     list(conditionToDAE(c) for c in fnDer.conditions),
     NONE(),
-    List(
+    list(
       P_Function.name(listHead(P_Function.getCachedFuncs(fn)))
       for fn in fnDer.lowerOrderDerivatives
     ),
@@ -122,7 +122,7 @@ end
 
 function addLowerOrderDerivative2(fn::M_Function, lowerDerNode::InstNode)::M_Function
 
-  @assign fn.derivatives = List(
+  @assign fn.derivatives = list(
     begin
       @match fn_der begin
         FUNCTION_DER(__) => begin

@@ -282,7 +282,7 @@ function clone(node::InstNode) ::InstNode
         @assign cls = P_Pointer.access(node.cls)
         @assign cls = classTreeApply(cls, clone)
         @assign node.cls = P_Pointer.create(cls)
-        @assign node.caches = P_CachedData.empty()
+        @assign node.caches = empty()
         ()
       end
 
@@ -1637,9 +1637,9 @@ end
          end
 
 function rootTypeParent(nodeType::InstNodeType, node::InstNode) ::InstNode
-  local parent::InstNode
+  local parentNode::InstNode
 
-  @assign parent = begin
+  @assign parentNode = begin
     @match nodeType begin
       ROOT_CLASS(__) where (! isEmpty(nodeType.parent))  => begin
         nodeType.parent
@@ -1652,13 +1652,13 @@ function rootTypeParent(nodeType::InstNodeType, node::InstNode) ::InstNode
       end
     end
   end
-  parent
+  parentNode
 end
 
 function rootParent(node::InstNode) ::InstNode
-  local parent::InstNode
+  local parentNode::InstNode
 
-  @assign parent = begin
+  @assign parentNode = begin
     @match node begin
       CLASS_NODE(__)  => begin
         rootTypeParent(node.nodeType, node)
@@ -1669,7 +1669,7 @@ function rootParent(node::InstNode) ::InstNode
       end
     end
   end
-  parent
+  parentNode
 end
 
 function derivedParent(node::InstNode) ::InstNode

@@ -211,7 +211,7 @@ function partialInstClass2(definition::SCode.Element, scope::InstNode) ::Class
         fromEnumeration(cdef.enumLst, ty, prefs, scope)
       end
       _  => begin
-        PARTIAL_CLASS(NFClassTree.EMPTY, MODIFIER_NOMOD(), prefs)
+        PARTIAL_CLASS(CLASS_TREE_EMPTY_TREE(), MODIFIER_NOMOD(), prefs)
       end
     end
   end
@@ -568,7 +568,7 @@ function expandClassDerived(element::SCode.Element, definition::SCode.ClassDef, 
   @match SCode.DERIVED(typeSpec = ty, attributes = sattrs) = definition
   #=  Look up the class that's being derived from and expand it.
   =#
-  @match _cons(ext_node, _) = Lookup.lookupBaseClassName(AbsynUtil.typeSpecPath(ty), parent(node), info)
+  @match _cons(ext_node, _) = lookupBaseClassName(AbsynUtil.typeSpecPath(ty), parent(node), info)
   #=  Check that the class isn't extending itself, i.e. class A = A.
   =#
   if referenceEq(ext_node, node)
@@ -584,7 +584,7 @@ function expandClassDerived(element::SCode.Element, definition::SCode.ClassDef, 
   @assign attrs = instDerivedAttributes(sattrs)
   @assign dims = list(DIMENSION_RAW_DIM(d) for d in AbsynUtil.typeSpecDimensions(ty))
   @assign mod = getModifier(cls)
-  @assign res = P_Restriction.Restriction.fromSCode(SCodeUtil.getClassRestriction(element))
+  @assign res = fromSCode(SCodeUtil.getClassRestriction(element))
   @assign cls = EXPANDED_DERIVED(ext_node, mod, listArray(dims), prefs, attrs, res)
   @assign node = updateClass(cls, node)
   node
@@ -599,7 +599,7 @@ function instDerivedAttributes(scodeAttr::SCode.Attributes) ::Attributes
 
   @assign attributes = begin
     @match scodeAttr begin
-      SCode.Attributes.ATTR(connectorType = SCode.ConnectorType.POTENTIAL(__), variability = SCode.Variability.VAR(__), direction = Absyn.Direction.BIDIR(__))  => begin
+      SCode.ATTR(connectorType = SCode.POTENTIAL(__), variability = SCode.VAR(__), direction = Absyn.BIDIR(__))  => begin
         DEFAULT_ATTR
       end
 
@@ -2181,7 +2181,7 @@ function instExp(absynExp::Absyn.Exp, scope::InstNode, info::SourceInfo) ::Expre
 
       Absyn.ARRAY(__)  => begin
         @assign expl = list(instExp(e, scope, info) for e in absynExp.arrayExp)
-        makeArray(TYPE_UNKNOWN(), expl)
+        ARRAY_EXPRESSION(TYPE_UNKNOWN(), expl, false) # makeArray(TYPE_UNKNOWN(), expl)
       end
 
       Absyn.MATRIX(__)  => begin

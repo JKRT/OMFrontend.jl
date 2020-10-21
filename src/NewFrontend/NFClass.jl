@@ -150,7 +150,7 @@ function makeRecordExp(clsNode::InstNode)::Expression
   @match (@match TYPE_COMPLEX(complexTy = COMPLEX_RECORD(ty_node)) = ty) =
     getType(cls, clsNode)
   @assign fields = getComponents(classTree(cls))
-  @assign args = List(
+  @assign args = list(
     getExp(P_Component.getImplicitBinding(component(f)))
     for f in fields
   )

@@ -1641,7 +1641,7 @@ function evaluateEquationsConnOp(
   ctable::CardinalityTable.Table,
 )::List{Equation}
 
-  @assign equations = List(
+  @assign equations = list(
     P_Equation.Equation.mapExp(
       eq,
       (sets, setsArray, ctable) -> ConnectEquations.evaluateOperators(

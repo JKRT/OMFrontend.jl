@@ -501,14 +501,14 @@ function mapExp(stmt::Statement, func::MapFunc)::Statement
       end
 
       IF(__) => begin
-        @assign stmt.branches = List(
+        @assign stmt.branches = list(
           (func(Util.tuple21(b)), mapExpList(Util.tuple22(b), func)) for b in stmt.branches
         )
         stmt
       end
 
       WHEN(__) => begin
-        @assign stmt.branches = List(
+        @assign stmt.branches = list(
           (func(Util.tuple21(b)), mapExpList(Util.tuple22(b), func)) for b in stmt.branches
         )
         stmt
@@ -573,7 +573,7 @@ function map(stmt::Statement, func::MapFn)::Statement
       end
 
       IF(__) => begin
-        @assign stmt.branches = List(
+        @assign stmt.branches = list(
           (Util.tuple21(b), list(map(s, func) for s in Util.tuple22(b)))
           for b in stmt.branches
         )
@@ -581,7 +581,7 @@ function map(stmt::Statement, func::MapFn)::Statement
       end
 
       WHEN(__) => begin
-        @assign stmt.branches = List(
+        @assign stmt.branches = list(
           (Util.tuple21(b), list(map(s, func) for s in Util.tuple22(b)))
           for b in stmt.branches
         )

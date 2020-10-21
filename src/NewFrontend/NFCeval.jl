@@ -910,7 +910,7 @@ function evalRangeExp(rangeExp::Expression)::Expression
         ) => begin
           #=  The compiler decided to randomly dislike using step.value here, hence istep.
           =#
-          @assign expl = List(
+          @assign expl = list(
             INTEGER_EXPRESSION(i) for i = (start.value):istep:(stop.value)
           )
           (TYPE_INTEGER(), expl)
@@ -957,7 +957,7 @@ function evalRangeExp(rangeExp::Expression)::Expression
           ENUM_LITERAL(ty = ty && TYPE_ENUMERATION(__)),
           ENUM_LITERAL(__),
         ) => begin
-          @assign expl = List(
+          @assign expl = list(
             ENUM_LITERAL(ty, listGet(ty.literals, i), i)
             for i = (start.index):(stop.index)
           )
@@ -1179,7 +1179,7 @@ function evalBinaryAdd(exp1::Expression, exp2::Expression)::Expression
       ) where {(listLength(exp1.elements) == listLength(exp2.elements))} => begin
         makeArray(
           exp1.ty,
-          List(@do_threaded_for evalBinaryAdd(e1, e2) (e1, e2) (
+          list(@do_threaded_for evalBinaryAdd(e1, e2) (e1, e2) (
             exp1.elements,
             exp2.elements,
           )),
@@ -1220,7 +1220,7 @@ function evalBinarySub(exp1::Expression, exp2::Expression)::Expression
       ) where {(listLength(exp1.elements) == listLength(exp2.elements))} => begin
         makeArray(
           exp1.ty,
-          List(@do_threaded_for evalBinarySub(e1, e2) (e1, e2) (
+          list(@do_threaded_for evalBinarySub(e1, e2) (e1, e2) (
             exp1.elements,
             exp2.elements,
           )),
@@ -1261,7 +1261,7 @@ function evalBinaryMul(exp1::Expression, exp2::Expression)::Expression
       ) where {(listLength(exp1.elements) == listLength(exp2.elements))} => begin
         makeArray(
           exp1.ty,
-          List(@do_threaded_for evalBinaryMul(e1, e2) (e1, e2) (
+          list(@do_threaded_for evalBinaryMul(e1, e2) (e1, e2) (
             exp1.elements,
             exp2.elements,
           )),
@@ -1319,7 +1319,7 @@ function evalBinaryDiv(exp1::Expression, exp2::Expression, target::EvalTarget)::
       ) where {(listLength(exp1.elements) == listLength(exp2.elements))} => begin
         makeArray(
           exp1.ty,
-          List(@do_threaded_for evalBinaryDiv(e1, e2, target) (e1, e2) (
+          list(@do_threaded_for evalBinaryDiv(e1, e2, target) (e1, e2) (
             exp1.elements,
             exp2.elements,
           )),
@@ -1356,7 +1356,7 @@ function evalBinaryPow(exp1::Expression, exp2::Expression)::Expression
       ) where {(listLength(exp1.elements) == listLength(exp2.elements))} => begin
         makeArray(
           exp1.ty,
-          List(@do_threaded_for evalBinaryPow(e1, e2) (e1, e2) (
+          list(@do_threaded_for evalBinaryPow(e1, e2) (e1, e2) (
             exp1.elements,
             exp2.elements,
           )),
@@ -1541,7 +1541,7 @@ function evalBinaryMatrixProduct(exp1::Expression, exp2::Expression)::Expression
           @assign exp = makeZero(mat_ty)
         else
           @assign row_ty = ARRAY_TYPE(elem_ty, list(p))
-          @assign expl1 = List(
+          @assign expl1 = list(
             makeArray(
               row_ty,
               list(evalBinaryScalarProduct(r, c) for c in expl2),
@@ -1779,7 +1779,7 @@ function evalLogicBinaryAnd(
       ARRAY_EXPRESSION(__) => begin
         @match ARRAY_EXPRESSION(elements = expl) = evalExp_impl(exp2, target)
         @assign expl =
-          List(@do_threaded_for evalLogicBinaryAnd(e1, e2, target) (e1, e2) (
+          list(@do_threaded_for evalLogicBinaryAnd(e1, e2, target) (e1, e2) (
             exp1.elements,
             expl,
           ))
@@ -1825,7 +1825,7 @@ function evalLogicBinaryOr(
       ARRAY_EXPRESSION(__) => begin
         @match ARRAY_EXPRESSION(elements = expl) = evalExp_impl(exp2, target)
         @assign expl =
-          List(@do_threaded_for evalLogicBinaryOr(e1, e2, target) (e1, e2) (
+          list(@do_threaded_for evalLogicBinaryOr(e1, e2, target) (e1, e2) (
             exp1.elements,
             expl,
           ))
@@ -4663,7 +4663,7 @@ function evalSubscriptedExp(
       end
     end
   end
-  @assign subs = List(
+  @assign subs = list(
     mapShallowExp(s, (target) -> evalExp_impl(target = target))
     for s in subscripts
   )

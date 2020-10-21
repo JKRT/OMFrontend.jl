@@ -757,7 +757,7 @@ function map(eq::Equation, func::MapFn)::Equation
       end
 
       IF(__) => begin
-        @assign eq.branches = List(
+        @assign eq.branches = list(
           begin
             @match b begin
               BRANCH(__) => begin
@@ -775,7 +775,7 @@ function map(eq::Equation, func::MapFn)::Equation
       end
 
       WHEN(__) => begin
-        @assign eq.branches = List(
+        @assign eq.branches = list(
           begin
             @match b begin
               BRANCH(__) => begin

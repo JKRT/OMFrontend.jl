@@ -4925,7 +4925,7 @@ function makeEnumLiterals(enumType::M_Type) ::List{Expression}
   local lits::List{String}
 
   @match TYPE_ENUMERATION(literals = lits) = enumType
-  @assign literals = List(@do_threaded_for ENUM_LITERAL_EXPRESSION(enumType, l, i) (l, i) (lits, 1:listLength(lits)))
+  @assign literals = list(@do_threaded_for ENUM_LITERAL_EXPRESSION(enumType, l, i) (l, i) (lits, 1:listLength(lits)))
   literals
 end
 

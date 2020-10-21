@@ -784,7 +784,7 @@ function evaluateExtRealMatrixArg(arg::Expression)::List{List{AbstractFloat}}
       end
 
       2 => begin
-        List(
+        list(
           list(getExtRealValue(e) for e in arrayElements(row))
           for row in expl
         )

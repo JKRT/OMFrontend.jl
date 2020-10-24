@@ -348,7 +348,7 @@ function scalarizeIfEquation(
   local var::VariabilityType
 
   for b in branches
-    @match P_Equation.Equation.BRANCH(cond, var, body) = b
+    @match EQUATION_BRANCH(cond, var, body) = b
     @assign body = scalarizeEquations(body)
     if !listEmpty(body)
       @assign bl = _cons(P_Equation.Equation.makeBranch(cond, body, var), bl)
@@ -379,7 +379,7 @@ function scalarizeWhenEquation(
   local var::VariabilityType
 
   for b in branches
-    @match P_Equation.Equation.BRANCH(cond, var, body) = b
+    @match EQUATION_BRANCH(cond, var, body) = b
     @assign body = scalarizeEquations(body)
     if isArray(typeOf(cond))
       @assign cond = P_ExpandExp.ExpandExp.expand(cond)

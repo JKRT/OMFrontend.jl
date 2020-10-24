@@ -436,7 +436,7 @@ function makeEqualityAssert(
   #=  For any other type, generate assertion for 'lhs == rhs'.
   =#
   @assign equalityAssert =
-    P_Equation.Equation.ASSERT(exp, EQ_ASSERT_STR, NFBuiltin.ASSERTIONLEVEL_ERROR, source)
+    Equation.ASSERT(exp, EQ_ASSERT_STR, NFBuiltin.ASSERTIONLEVEL_ERROR, source)
   return equalityAssert
 end
 
@@ -920,7 +920,7 @@ function evaluateOperatorReductionExp(
             fail()
           end
           @assign iter_exp = Ceval.evalExp(iter_exp)
-          @assign ty = Type.liftArrayLeftList(
+          @assign ty = liftArrayLeftList(
             ty,
             arrayDims(typeOf(iter_exp)),
           )
@@ -1219,10 +1219,10 @@ function evaluateFlowDirection(flowCref::ComponentRef)::Integer
   @assign flow_cls = getClass(node(flowCref))
   @assign omin = lookupAttributeValue("min", flow_cls)
   @assign omin =
-    SimplifyExp.simplifyOpt(Util.applyOption(omin, getBindingExp))
+    simplifyOpt(Util.applyOption(omin, getBindingExp))
   @assign omax = lookupAttributeValue("max", flow_cls)
   @assign omax =
-    SimplifyExp.simplifyOpt(Util.applyOption(omax, getBindingExp))
+    simplifyOpt(Util.applyOption(omax, getBindingExp))
   @assign direction = begin
     @match (omin, omax) begin
       (NONE(), NONE()) => begin

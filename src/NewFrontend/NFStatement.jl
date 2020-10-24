@@ -746,12 +746,10 @@ function updateImplicitVariabilityStmt(stmt::Statement, inWhen::Bool)
 end
 
 function markStructuralParamsSubs(exp::Expression, dummy::Integer) ::Integer
-
-
   @assign () = begin
     @match exp begin
       CREF_EXPRESSION(__)  => begin
-        ComponentRef.foldSubscripts(exp.cref, markStructuralParamsSub, 0)
+          foldSubscripts(exp.cref, markStructuralParamsSub, 0)
         ()
       end
 
@@ -803,7 +801,7 @@ function instStatement(scodeStmt::SCode.Statement, scope::InstNode, origin::ORIG
         end
         if ! listEmpty(scodeStmt.elseBranch)
           @assign stmtl = instStatements(scodeStmt.elseBranch, scope, next_origin)
-          @assign branches = _cons((P_Expression.BOOLEAN_EXPRESSION(true), stmtl), branches)
+          @assign branches = _cons((BOOLEAN_EXPRESSION(true), stmtl), branches)
         end
         ALG_IF(listReverse(branches), makeSource(scodeStmt.comment, info))
       end

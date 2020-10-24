@@ -707,7 +707,7 @@ function convertEquation(eq::Equation, elements::List{<:DAE.Element})::List{DAE.
     local e3::DAE.Exp
     local cr1::DAE.ComponentRef
     local cr2::DAE.ComponentRef
-    local dims::List{DAE.P_Dimension.Dimension}
+    local dims::List{DAE.Dimension}
     local body::List{DAE.Element}
     @match eq begin
       EQUATION_EQUALITY(__) => begin
@@ -718,7 +718,7 @@ function convertEquation(eq::Equation, elements::List{<:DAE.Element})::List{DAE.
             DAE.Element.COMPLEX_EQUATION(e1, e2, eq.source)
           elseif (isArray(eq.ty))
             DAE.Element.ARRAY_EQUATION(
-              list(P_Dimension.Dimension.toDAE(d) for d in arrayDims(eq.ty)),
+              list(toDAE(d) for d in arrayDims(eq.ty)),
               e1,
               e2,
               eq.source,
@@ -739,7 +739,7 @@ function convertEquation(eq::Equation, elements::List{<:DAE.Element})::List{DAE.
       EQUATION_ARRAY_EQUALITY(__) => begin
         @assign e1 = toDAE(eq.lhs)
         @assign e2 = toDAE(eq.rhs)
-        @assign dims = list(P_Dimension.Dimension.toDAE(d) for d in arrayDims(eq.ty))
+        @assign dims = list(toDAE(d) for d in arrayDims(eq.ty))
         _cons(DAE.Element.ARRAY_EQUATION(dims, e1, e2, eq.source), elements)
       end
 
@@ -755,14 +755,14 @@ function convertEquation(eq::Equation, elements::List{<:DAE.Element})::List{DAE.
         _cons(convertWhenEquation(eq.branches, eq.source), elements)
       end
 
-      P_Equation.Equation.ASSERT(__) => begin
+      EQUATION_ASSERT(__) => begin
         @assign e1 = toDAE(eq.condition)
         @assign e2 = toDAE(eq.message)
         @assign e3 = toDAE(eq.level)
         _cons(DAE.Element.ASSERT(e1, e2, e3, eq.source), elements)
       end
 
-      P_Equation.Equation.TERMINATE(__) => begin
+      EQUATION_TERMINATE(__) => begin
         _cons(
           DAE.Element.TERMINATE(toDAE(eq.message), eq.source),
           elements,
@@ -776,7 +776,7 @@ function convertEquation(eq::Equation, elements::List{<:DAE.Element})::List{DAE.
         _cons(DAE.Element.REINIT(cr1, e1, eq.source), elements)
       end
 
-      P_Equation.Equation.NORETCALL(__) => begin
+      EQUATION_NORETCALL(__) => begin
         _cons(
           DAE.Element.NORETCALL(toDAE(eq.exp), eq.source),
           elements,
@@ -837,7 +837,7 @@ function convertIfEquation(
   for branch in ifBranches
     @assign (conds, branches) = begin
       @match branch begin
-        P_Equation.Equation.BRANCH(__) => begin
+        EQUATION_BRANCH(__) => begin
           (_cons(branch.condition, conds), _cons(branch.body, branches))
         end
 
@@ -872,7 +872,7 @@ function convertIfEquation(
 end
 
 function convertWhenEquation(
-  whenBranches::List{<:Equation},
+  whenBranches::List{<:Equation_Branch},
   source::DAE.ElementSource,
 )::DAE.Element
   local whenEquation::DAE.Element
@@ -884,10 +884,10 @@ function convertWhenEquation(
   for b in listReverse(whenBranches)
     @assign when_eq = begin
       @match b begin
-        P_Equation.Equation.BRANCH(__) => begin
+        EQUATION_BRANCH(__) => begin
           @assign cond = toDAE(b.condition)
           @assign els = convertEquations(b.body)
-          SOME(DAE.Element.WHEN_EQUATION(cond, els, when_eq, source))
+          SOME(DAE.WHEN_EQUATION(cond, els, when_eq, source))
         end
       end
     end
@@ -917,7 +917,7 @@ function convertInitialEquation(
     local e2::DAE.Exp
     local e3::DAE.Exp
     local cref::DAE.ComponentRef
-    local dims::List{DAE.P_Dimension.Dimension}
+    local dims::List{DAE.Dimension}
     local body::List{DAE.Element}
     @match eq begin
       EQUATION_EQUALITY(__) => begin
@@ -933,7 +933,7 @@ function convertInitialEquation(
       EQUATION_ARRAY_EQUALITY(__) => begin
         @assign e1 = toDAE(eq.lhs)
         @assign e2 = toDAE(eq.rhs)
-        @assign dims = list(P_Dimension.Dimension.toDAE(d) for d in arrayDims(eq.ty))
+        @assign dims = list(toDAE(d) for d in arrayDims(eq.ty))
         _cons(DAE.Element.INITIAL_ARRAY_EQUATION(dims, e1, e2, eq.source), elements)
       end
 
@@ -945,14 +945,14 @@ function convertInitialEquation(
         _cons(convertIfEquation(eq.branches, eq.source, isInitial = true), elements)
       end
 
-      P_Equation.Equation.ASSERT(__) => begin
+      EQUATION_ASSERT(__) => begin
         @assign e1 = toDAE(eq.condition)
         @assign e2 = toDAE(eq.message)
         @assign e3 = toDAE(eq.level)
         _cons(DAE.Element.INITIAL_ASSERT(e1, e2, e3, eq.source), elements)
       end
 
-      P_Equation.Equation.TERMINATE(__) => begin
+      EQUATION_TERMINATE(__) => begin
         _cons(
           DAE.Element.INITIAL_TERMINATE(
             toDAE(eq.message),
@@ -962,7 +962,7 @@ function convertInitialEquation(
         )
       end
 
-      P_Equation.Equation.NORETCALL(__) => begin
+      EQUATION_NORETCALL(__) => begin
         _cons(
           DAE.Element.INITIAL_NORETCALL(toDAE(eq.exp), eq.source),
           elements,
@@ -1309,7 +1309,7 @@ function convertFunction(func::M_Function)::DAE.Function
         toDAE(func, def)
       end
       INSTANCED_CLASS(
-        restriction = P_Restriction.Restriction.RECORD_CONSTRUCTOR(__),
+        restriction = RECORD_CONSTRUCTOR(__),
       ) => begin
         DAE.RECORD_CONSTRUCTOR(
           name(func),
@@ -1477,7 +1477,7 @@ function makeTypeVars(complexCls::InstNode)::List{DAE.Var}
   local type_var::DAE.Var
   @assign typeVars = begin
     @match (@match getClass(complexCls) = cls) begin
-      INSTANCED_CLASS(restriction = P_Restriction.Restriction.RECORD(__)) => begin
+      INSTANCED_CLASS(restriction = RESTRICTION_RECORD(__)) => begin
         list(makeTypeRecordVar(c) for c in getComponents(cls.elements))
       end
       INSTANCED_CLASS(elements = FLAT_TREE(__)) => begin
@@ -1505,7 +1505,7 @@ function makeTypeVar(component::InstNode)::DAE.Var
   @assign typeVar = DAE.TYPES_VAR(
     name(component),
     toDAE(attr, visibility(component)),
-    toDAE(P_Component.getType(comp)),
+    toDAE(getType(comp)),
     toDAE(P_Component.getBinding(comp)),
     false,
     NONE(),
@@ -1531,7 +1531,7 @@ function makeTypeRecordVar(component::InstNode)::DAE.Var
   @assign binding = P_Component.getBinding(comp)
   @assign binding = mapExp(binding, stripScopePrefixExp)
   @assign bind_from_outside = parentCount(binding) > 1
-  @assign ty = P_Component.getType(comp)
+  @assign ty = getType(comp)
   @assign ty = mapDims(ty, stripScopePrefixFromDim)
   @assign typeVar = DAE.TYPES_VAR(
     name(component),

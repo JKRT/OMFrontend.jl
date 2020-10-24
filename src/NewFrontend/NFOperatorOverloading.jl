@@ -43,13 +43,13 @@ function instConstructor(path::Absyn.Path, recordNode::InstNode, info::SourceInf
   #=  Check if the operator record has an overloaded constructor declared.
   =#
   try
-    @assign ctor_ref = P_Function.lookupFunctionSimple("'constructor'", recordNode)
+    @assign ctor_ref = lookupFunctionSimple("'constructor'", recordNode)
     @assign ctor_overloaded = true
   catch
     @assign ctor_overloaded = false
   end
   if ctor_overloaded
-    @assign (_, ctor_node) = P_Function.instFunctionRef(ctor_ref, info)
+    @assign (_, ctor_node) = instFunctionRef(ctor_ref, info)
     @assign ctor_path = scopePath(ctor_node, includeRoot = true)
     for f in P_Function.getCachedFuncs(ctor_node)
       checkOperatorConstructorOutput(f, lastBaseClass(recordNode), ctor_path, info)
@@ -122,23 +122,21 @@ end
 
 function lookupOperatorFunctionsInType(operatorName::String, ty::M_Type)::List{M_Function}
   local functions::List{M_Function}
-
   local node::InstNode
   local fn_ref::ComponentRef
   local is_defined::Bool
-
   @assign functions = begin
     @match arrayElementType(ty) begin
       TYPE_COMPLEX(cls = node) => begin
         try
-          @assign fn_ref = P_Function.lookupFunctionSimple(operatorName, node)
+          @assign fn_ref = lookupFunctionSimple(operatorName, node)
           @assign is_defined = true
         catch
           @assign is_defined = false
         end
         if is_defined
-          @assign fn_ref = P_Function.instFunctionRef(fn_ref, info(node))
-          @assign functions = P_Function.typeRefCache(fn_ref)
+          @assign fn_ref = instFunctionRef(fn_ref, info(node))
+          @assign functions = typeRefCache(fn_ref)
         else
           @assign functions = nil
         end

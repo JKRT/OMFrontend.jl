@@ -6,6 +6,7 @@ MapExpFn = Function
 MapFn = Function
 ApplyFn = Function
 @UniontypeDecl NFEquation
+@UniontypeDecl Equation_Branch
 ComponentRef = NFComponentRef
 import ..Util
 Equation = NFEquation
@@ -35,12 +36,12 @@ Equation = NFEquation
   end
 
   @Record EQUATION_WHEN begin
-    branches::List{Branch}
+    branches::List{Equation_Branch}
     source::DAE.ElementSource
   end
 
   @Record EQUATION_IF begin
-    branches::List{Branch}
+    branches::List{Equation_Branch}
     source::DAE.ElementSource
   end
 
@@ -78,22 +79,33 @@ Equation = NFEquation
   end
 end
 
+
+@UniontypeDecl Equation_Branch
+@Uniontype Equation_Branch begin
+  @Record EQUATION_INVALID_BRANCH begin
+    branch::Equation_Branch
+    errors::List
+  end
+  @Record EQUATION_BRANCH begin
+    condition::Expression
+    conditionVar
+    body::List
+  end
+end
+
 function isMultiLine(eq::Equation)::Bool
   local singleLine::Bool
   @assign singleLine = begin
     @match eq begin
-      FOR(__) => begin
+      EQUATION_FOR(__) => begin
         true
       end
-
-      IF(__) => begin
+      EQUATION_IF(__) => begin
         true
       end
-
-      WHEN(__) => begin
+      EQUATION_WHEN(__) => begin
         true
       end
-
       _ => begin
         false
       end
@@ -447,22 +459,20 @@ end
 
 function contains(eq::Equation, func::PredFn)::Bool
   local res::Bool
-
   if func(eq)
     @assign res = true
     return res
   end
   @assign res = begin
     @match eq begin
-      FOR(__) => begin
+      EQUATION_FOR(__) => begin
         containsList(eq.body, func)
       end
-
-      IF(__) => begin
+      EQUATION_IF(__) => begin
         for b in eq.branches
           @assign () = begin
             @match b begin
-              BRANCH(__) => begin
+              EQUATION_BRANCH(__) => begin
                 if containsList(b.body, func)
                   @assign res = true
                   return
@@ -478,12 +488,11 @@ function contains(eq::Equation, func::PredFn)::Bool
         end
         false
       end
-
-      WHEN(__) => begin
+      EQUATION_WHEN(__) => begin
         for b in eq.branches
           @assign () = begin
             @match b begin
-              BRANCH(__) => begin
+              EQUATION_BRANCH(__) => begin
                 if containsList(b.body, func)
                   @assign res = true
                   return
@@ -542,7 +551,7 @@ function foldExp(eq::Equation, func::FoldFunc, arg::ArgT) where {ArgT}
         for b in eq.branches
           @assign () = begin
             @match b begin
-              BRANCH(__) => begin
+              EQUATION_BRANCH(__) => begin
                 @assign arg = func(b.condition, arg)
                 @assign arg = foldExpList(b.body, func, arg)
                 ()
@@ -561,7 +570,7 @@ function foldExp(eq::Equation, func::FoldFunc, arg::ArgT) where {ArgT}
         for b in eq.branches
           @assign () = begin
             @match b begin
-              BRANCH(__) => begin
+              EQUATION_BRANCH(__) => begin
                 @assign arg = func(b.condition, arg)
                 @assign arg = foldExpList(b.body, func, arg)
                 ()
@@ -576,14 +585,14 @@ function foldExp(eq::Equation, func::FoldFunc, arg::ArgT) where {ArgT}
         ()
       end
 
-      P_Equation.Equation.ASSERT(__) => begin
+      EQUATION_ASSERT(__) => begin
         @assign arg = func(eq.condition, arg)
         @assign arg = func(eq.message, arg)
         @assign arg = func(eq.level, arg)
         ()
       end
 
-      P_Equation.Equation.TERMINATE(__) => begin
+      EQUATION_TERMINATE(__) => begin
         @assign arg = func(eq.message, arg)
         ()
       end
@@ -594,7 +603,7 @@ function foldExp(eq::Equation, func::FoldFunc, arg::ArgT) where {ArgT}
         ()
       end
 
-      P_Equation.Equation.NORETCALL(__) => begin
+      EQUATION_NORETCALL(__) => begin
         @assign arg = func(eq.exp, arg)
         ()
       end
@@ -618,17 +627,17 @@ function foldExpList(eq::Nil{Any}, func::FoldFunc, arg::ArgT) where {ArgT}
   return arg
 end
 
-function mapExpBranch(branch::Branch, func::MapExpFn)::Branch
+function mapExpBranch(branch::Equation_Branch, func::MapExpFn)::Equation_Branch
 
   local cond::Expression
   local eql::List{Equation}
 
   @assign branch = begin
     @match branch begin
-      BRANCH(__) => begin
+      EQUATION_BRANCH(__) => begin
         @assign cond = func(branch.condition)
         @assign eql = list(mapExp(e, func) for e in branch.body)
-        BRANCH(cond, branch.conditionVar, eql)
+        EQUATION_BRANCH(cond, branch.conditionVar, eql)
       end
 
       _ => begin
@@ -751,16 +760,15 @@ function map(eq::Equation, func::MapFn)::Equation
 
   @assign () = begin
     @match eq begin
-      FOR(__) => begin
+      EQUATION_FOR(__) => begin
         @assign eq.body = list(map(e, func) for e in eq.body)
         ()
       end
-
-      IF(__) => begin
+      EQUATION_IF(__) => begin
         @assign eq.branches = List(
           begin
             @match b begin
-              BRANCH(__) => begin
+              EQUATION_BRANCH(__) => begin
                 @assign b.body = list(map(e, func) for e in b.body)
                 b
               end
@@ -773,8 +781,7 @@ function map(eq::Equation, func::MapFn)::Equation
         )
         ()
       end
-
-      WHEN(__) => begin
+      EQUATION_WHEN(__) => begin
         @assign eq.branches = List(
           begin
             @match b begin
@@ -875,47 +882,37 @@ function source(eq::Equation)::DAE.ElementSource
 
   @assign source = begin
     @match eq begin
-      EQUALITY(__) => begin
+      EQUATION_EQUALITY(__) => begin
         eq.source
       end
-
-      CREF_EQUALITY(__) => begin
+      EQUATION_CREF_EQUALITY(__) => begin
         eq.source
       end
-
-      ARRAY_EQUALITY(__) => begin
+      EQUATION_ARRAY_EQUALITY(__) => begin
         eq.source
       end
-
-      CONNECT(__) => begin
+      EQUATION_CONNECT(__) => begin
         eq.source
       end
-
-      FOR(__) => begin
+      EQUATION_FOR(__) => begin
         eq.source
       end
-
-      IF(__) => begin
+      EQUATION_IF(__) => begin
         eq.source
       end
-
-      WHEN(__) => begin
+      EQUATION_WHEN(__) => begin
         eq.source
       end
-
-      ASSERT(__) => begin
+      EQUATION_ASSERT(__) => begin
         eq.source
       end
-
-      TERMINATE(__) => begin
+      EQUATION_TERMINATE(__) => begin
         eq.source
       end
-
-      REINIT(__) => begin
+      EQUATION_REINIT(__) => begin
         eq.source
       end
-
-      NORETCALL(__) => begin
+      EQUATION_NORETCALL(__) => begin
         eq.source
       end
     end
@@ -923,7 +920,7 @@ function source(eq::Equation)::DAE.ElementSource
   return source
 end
 
-function makeIf(branches::List{<:Branch}, src::DAE.ElementSource)::Equation
+function makeIf(branches::List{<:Equation_Branch}, src::DAE.ElementSource)::Equation
   local eq::Equation
   @assign eq = IF(branches, src)
   return eq
@@ -933,9 +930,9 @@ function makeBranch(
   condition::Expression,
   body::List{<:Equation},
   condVar = Variability.CONTINUOUS,
-)::Branch
-  local branch::Branch
-  @assign branch = BRANCH(condition, condVar, body)
+)::Equation_Branch
+  local branch::Equation_Branch
+  @assign branch = EQUATION_BRANCH(condition, condVar, body)
   return branch
 end
 
@@ -951,20 +948,7 @@ function makeEquality(
 end
 
 
-@UniontypeDecl Branch
-@Uniontype Branch begin
-  @Record INVALID_BRANCH begin
-    branch::Branch
-    errors::List
-  end
-  @Record BRANCH begin
-    condition::Expression
-    conditionVar
-    body::List
-  end
-end
-
-function triggerErrors(branch::Branch)
+function triggerErrors(branch::Equation_Branch)
   return @assign () = begin
     @match branch begin
       INVALID_BRANCH(__) => begin
@@ -980,14 +964,13 @@ function triggerErrors(branch::Branch)
 end
 
 function toFlatStream(
-  branch::Branch,
+  branch::Equation_Branch,
   indent::String,
   s,
 )
-
   @assign s = begin
     @match branch begin
-      BRANCH(__) => begin
+      EQUATION_BRANCH(__) => begin
         @assign s =
           IOStream.append(s, toFlatString(branch.condition))
         @assign s = IOStream.append(s, " then\\n")
@@ -1003,13 +986,13 @@ function toFlatStream(
   return s
 end
 
-function toStream(branch::Branch, indent::String, s)
+function toStream(branch::Equation_Branch, indent::String, s)
   @assign s = begin
     @match branch begin
-      BRANCH(__) => begin
-        @assign s = IOStream.append(s, toString(branch.condition))
-        @assign s = IOStream.append(s, " then\\n")
-        @assign s = toStreamList(branch.body, indent + "  ", s)
+      EQUATION_BRANCH(__) => begin
+        s = IOStream.append(s, toString(branch.condition))
+        s = IOStream.append(s, " then\\n")
+        s = toStreamList(branch.body, indent + "  ", s)
         s
       end
       INVALID_BRANCH(__) => begin

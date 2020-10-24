@@ -677,19 +677,19 @@ function simplifyLogicBinaryAnd(
     #=  false and e => false
     =#
     @match (exp1, exp2) begin
-      (P_Expression.BOOLEAN_EXPRESSION(false), _) => begin
+      (BOOLEAN_EXPRESSION(false), _) => begin
         exp1
       end
 
-      (_, P_Expression.BOOLEAN_EXPRESSION(false)) => begin
+      (_, BOOLEAN_EXPRESSION(false)) => begin
         exp2
       end
 
-      (P_Expression.BOOLEAN_EXPRESSION(true), _) => begin
+      (BOOLEAN_EXPRESSION(true), _) => begin
         exp2
       end
 
-      (_, P_Expression.BOOLEAN_EXPRESSION(true)) => begin
+      (_, BOOLEAN_EXPRESSION(true)) => begin
         exp1
       end
 
@@ -726,19 +726,19 @@ function simplifyLogicBinaryOr(exp1::Expression, op::Operator, exp2::Expression)
     #=  true or e => true
     =#
     @match (exp1, exp2) begin
-      (P_Expression.BOOLEAN_EXPRESSION(true), _) => begin
+      (BOOLEAN_EXPRESSION(true), _) => begin
         exp1
       end
 
-      (_, P_Expression.BOOLEAN_EXPRESSION(true)) => begin
+      (_, BOOLEAN_EXPRESSION(true)) => begin
         exp2
       end
 
-      (P_Expression.BOOLEAN_EXPRESSION(false), _) => begin
+      (BOOLEAN_EXPRESSION(false), _) => begin
         exp2
       end
 
-      (_, P_Expression.BOOLEAN_EXPRESSION(false)) => begin
+      (_, BOOLEAN_EXPRESSION(false)) => begin
         exp1
       end
 
@@ -813,14 +813,13 @@ function simplifyIf(ifExp::Expression)::Expression
   @assign cond = simplify(cond)
   @assign ifExp = begin
     @match cond begin
-      P_Expression.BOOLEAN_EXPRESSION(__) => begin
+      BOOLEAN_EXPRESSION(__) => begin
         simplify(if cond.value
           tb
         else
           fb
         end)
       end
-
       _ => begin
         @assign tb = simplify(tb)
         @assign fb = simplify(fb)

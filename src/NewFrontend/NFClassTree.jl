@@ -390,14 +390,12 @@ function applyLocalComponents(tree::ClassTree, func::FuncT)
         end
         ()
       end
-
       CLASS_TREE_PARTIAL_TREE(__) => begin
         for c in tree.components
           func(c)
         end
         ()
       end
-
       CLASS_TREE_EXPANDED_TREE(__) => begin
         for c in tree.components
           func(c)

@@ -36,13 +36,11 @@ function instClassInProgram(classPath::Absyn.Path, program::SCode.Program)::Tupl
   @assign cls = lookupClassName(classPath, top, AbsynUtil.dummyInfo, false)
   @assign cls = setNodeType(ROOT_CLASS(EMPTY_NODE()), cls)
   #=  Initialize the storage for automatically generated inner elements. =#
-  @debug "Test test test!"
   @assign top = setInnerOuterCache(top, C_TOP_SCOPE(NodeTree.new(), cls))
-  @debug "OK we have a cache!"
   #=  Instantiate the class. =#
-  @debug "FIRST INST CALL!"
+  @info "FIRST INST CALL!"
   @assign inst_cls = instantiateN1(cls, EMPTY_NODE())
-  @debug "AFTER INST CALL"
+  @info "AFTER INST CALL"
   insertGeneratedInners(inst_cls, top)
   #execStat("NFInst.instantiate(" + name + ")")
   @debug "INSTANTIATION STEP 1 DONE!"
@@ -62,48 +60,47 @@ function instClassInProgram(classPath::Absyn.Path, program::SCode.Program)::Tupl
   #=  Type the class.
   =#
   @info "TYPECLASS(inst_cls, name)"
-  typeClass(inst_cls, name)
+#  typeClass(inst_cls, name)
   @info "AFTER type class"
-  #=  Flatten the model and evaluate constants in it.
-  =#
-  @info "START FLATTENING!"
-  @assign flat_model = flatten(inst_cls, name)
-  @info "CONSTANT EVALUATION"
-  @assign flat_model = evaluate(flat_model)
-  @info "FLATTENING DONE: flat_model"
-  #= Do unit checking =#
-  #  @assign flat_model = UnitCheck.checkUnits(flat_model) TODO
-  #=  Apply simplifications to the model.=#
-  @assign flat_model = simplify(flat_model)
-  #=  Collect a tree of all functions that are still used in the flat model.=#
-  @info "COLLECT FUNCTIONS"
-  @assign funcs = collectFunctions(flat_model, name)
-  @info "COLLECTED FUNCTIONS!"
-  #=  Collect package constants that couldn't be substituted with their values =#
-  #=  (e.g. because they where used with non-constant subscripts), and add them to the model. =#
-  @info "COLLECT CONSTANTS"
-  @assign flat_model = collectConstants(flat_model, funcs)
-  @info "COLLECTED CONSTANTS"
-  # if Flags.getConfigBool(Flags.FLAT_MODELICA)
-  @debug "PRINTING FLAT MODELICA"
-  #printFlatString(flat_model, FunctionTreeImpl.listValues(funcs))
-  # end
-  #= Scalarize array components in the flat model.=#
-  @debug "Not skipping NF_SCALARIZE"
-  #                  if Flags.isSet(Flags.NF_SCALARIZE)
-  # @assign flat_model = scalarize(flat_model, name)
-  #                  else
-  # @assign flat_model.variables = ListUtil.filterOnFalse(flat_model.variables, isEmptyArray)
-  #                   end
-  #=  Remove empty arrays from variables =#
-  @info "VERIFYING MODEL: "
-  verify(flat_model)
-  #                   if Flags.isSet(Flags.NF_DUMP_FLAT)
-  #                     print("FlatModel:\\n" + toString(flat_model) + "\\n")
-  #                  end
-  #=  Convert the flat model to a DAE.=#
-  @debug "CONVERT TO THE DAE REPRESENTATION"
-  (dae, daeFuncs) = convert(flat_model, funcs, name, info(inst_cls))
+  # # #=  Flatten the model and evaluate    constants in it. =#
+  # @info "START FLATTENING!"
+  # @assign flat_model = flatten(inst_cls, name)
+  # @info "CONSTANT EVALUATION"
+  # @assign flat_model = evaluate(flat_model)
+  # @info "FLATTENING DONE: flat_model"
+  # #= Do unit checking =#
+  # #  @assign flat_model = UnitCheck.checkUnits(flat_model) TODO
+  # #=  Apply simplifications to the model.=#
+  # @assign flat_model = simplify(flat_model)
+  # #=  Collect a tree of all functions that are still used in the flat model.=#
+  # @info "COLLECT FUNCTIONS"
+  # @assign funcs = collectFunctions(flat_model, name)
+  # # @info "COLLECTED FUNCTIONS!"
+  # #=  Collect package constants that couldn't be substituted with their values =#
+  # #=  (e.g. because they where used with non-constant subscripts), and add them to the model. =#
+  # @info "COLLECT CONSTANTS"
+  # @assign flat_model = collectConstants(flat_model, funcs)
+  # @info "COLLECTED CONSTANTS"
+  # # if Flags.getConfigBool(Flags.FLAT_MODELICA)
+  # @debug "PRINTING FLAT MODELICA"
+  # #printFlatString(flat_model, FunctionTreeImpl.listValues(funcs))
+  # # end
+  # #= Scalarize array components in the flat model.=#
+  # @debug "Not skipping NF_SCALARIZE"
+  # #                  if Flags.isSet(Flags.NF_SCALARIZE)
+  # # @assign flat_model = scalarize(flat_model, name)
+  # #                  else
+  # # @assign flat_model.variables = ListUtil.filterOnFalse(flat_model.variables, isEmptyArray)
+  # #                   end
+  # #=  Remove empty arrays from variables =#
+  # @info "VERIFYING MODEL: "
+  # verify(flat_model)
+  # #                   if Flags.isSet(Flags.NF_DUMP_FLAT)
+  # #                     print("FlatModel:\\n" + toString(flat_model) + "\\n")
+  # #                  end
+  # #=  Convert the flat model to a DAE.=#
+  # @debug "CONVERT TO THE DAE REPRESENTATION"
+  # (dae, daeFuncs) = convert(flat_model, funcs, name, info(inst_cls))
   return (dae, daeFuncs)
 end
 
@@ -211,7 +208,7 @@ function partialInstClass2(definition::SCode.Element, scope::InstNode) ::Class
         fromEnumeration(cdef.enumLst, ty, prefs, scope)
       end
       _  => begin
-        PARTIAL_CLASS(NFClassTree.EMPTY, MODIFIER_NOMOD(), prefs)
+        PARTIAL_CLASS(EMPTY_CLASS_TREE, MODIFIER_NOMOD(), prefs)
       end
     end
   end
@@ -568,7 +565,7 @@ function expandClassDerived(element::SCode.Element, definition::SCode.ClassDef, 
   @match SCode.DERIVED(typeSpec = ty, attributes = sattrs) = definition
   #=  Look up the class that's being derived from and expand it.
   =#
-  @match _cons(ext_node, _) = Lookup.lookupBaseClassName(AbsynUtil.typeSpecPath(ty), parent(node), info)
+  @match _cons(ext_node, _) = lookupBaseClassName(AbsynUtil.typeSpecPath(ty), parent(node), info)
   #=  Check that the class isn't extending itself, i.e. class A = A.
   =#
   if referenceEq(ext_node, node)
@@ -584,7 +581,7 @@ function expandClassDerived(element::SCode.Element, definition::SCode.ClassDef, 
   @assign attrs = instDerivedAttributes(sattrs)
   @assign dims = list(DIMENSION_RAW_DIM(d) for d in AbsynUtil.typeSpecDimensions(ty))
   @assign mod = getModifier(cls)
-  @assign res = P_Restriction.Restriction.fromSCode(SCodeUtil.getClassRestriction(element))
+  @assign res = fromSCode(SCodeUtil.getClassRestriction(element))
   @assign cls = EXPANDED_DERIVED(ext_node, mod, listArray(dims), prefs, attrs, res)
   @assign node = updateClass(cls, node)
   node
@@ -599,7 +596,7 @@ function instDerivedAttributes(scodeAttr::SCode.Attributes) ::Attributes
 
   @assign attributes = begin
     @match scodeAttr begin
-      SCode.Attributes.ATTR(connectorType = SCode.ConnectorType.POTENTIAL(__), variability = SCode.Variability.VAR(__), direction = Absyn.Direction.BIDIR(__))  => begin
+      SCode.ATTR(connectorType = SCode.POTENTIAL(__), variability = SCode.VAR(__), direction = Absyn.BIDIR(__))  => begin
         DEFAULT_ATTR
       end
 
@@ -752,6 +749,7 @@ function instClassDef(cls::Class, outerMod::Modifier, attributes::Attributes, us
       PARTIAL_BUILTIN(ty = ty, restriction = res)  => begin
         @assign (node, par) = instantiate(node, parentArg)
         updateComponentType(parentArg, node)
+        @info "Type of node in partial builtin, $ty"
         @assign cls_tree = classTree(getClass(node))
         @assign mod = fromElement(definition(node), list(node), parent(node))
         @assign outer_mod = merge(outerMod, addParent(node, cls.modifier))
@@ -1221,7 +1219,7 @@ function redeclareEnum(redeclareClass::Class, originalClass::Class, prefixes::Pr
       end
 
       _  => begin
-        Error.addMultiSourceMessage(Error.REDECLARE_CLASS_NON_SUBTYPE, list(P_Restriction.Restriction.toString(restriction(originalClass)), name(originalNode)), list(info(redeclareNode), info(originalNode)))
+        Error.addMultiSourceMessage(Error.REDECLARE_CLASS_NON_SUBTYPE, list(toString(restriction(originalClass)), name(originalNode)), list(info(redeclareNode), info(originalNode)))
         fail()
       end
     end
@@ -1529,7 +1527,7 @@ function mergeComponentAttributes(outerAttr::Attributes, innerAttr::Attributes, 
     @assign cty = ConnectorType.merge(outerAttr.connectorType, innerAttr.connectorType, node)
     @assign par = mergeParallelism(outerAttr.parallelism, innerAttr.parallelism, node)
     @assign var = variabilityMin(outerAttr.variability, innerAttr.variability)
-    if P_Restriction.Restriction.isFunction(parentRestriction)
+    if isFunction(parentRestriction)
       @assign dir = innerAttr.direction
     else
       @assign dir = mergeDirection(outerAttr.direction, innerAttr.direction, node)
@@ -1872,7 +1870,7 @@ function instExpressions(node::InstNode, scope::InstNode = node, sections::Secti
   local res::Restriction
   local dims::Array{Dimension}
   local dim_scope::InstNode
-  local info::SourceInfo
+  local infoVar::SourceInfo
   local ty::NFType
   @assign () = begin
     @match cls begin
@@ -1927,11 +1925,11 @@ function instExpressions(node::InstNode, scope::InstNode = node, sections::Secti
       EXPANDED_DERIVED(dims = dims)  => begin
         @assign sections = instExpressions(cls.baseClass, scope, sections)
         @assign dim_scope = parent(node)
-        @assign info = info(node)
+        @assign infoVar = info(node)
         for i in 1:arrayLength(dims)
-          @assign dims[i] = instDimension(dims[i], dim_scope, info)
+          @assign dims[i] = instDimension(dims[i], dim_scope, infoVar)
         end
-        if P_Restriction.Restriction.isRecord(cls.restriction)
+        if isRecord(cls.restriction)
           instRecordConstructor(node)
         end
         ()
@@ -2355,7 +2353,7 @@ function instCrefFunction(cref::ComponentRef, info::SourceInfo) ::Expression
 
   local fn_ref::ComponentRef
 
-  @assign fn_ref = P_Function.instFunctionRef(cref, info)
+  @assign fn_ref = instFunctionRef(cref, info)
   @assign crefExp = CREF_EXPRESSION(TYPE_UNKNOWN(), fn_ref)
   crefExp
 end
@@ -2592,7 +2590,7 @@ function instEEquation(scodeEq::SCode.EEquation, scope::InstNode, origin::ORIGIN
     local oexp::Option{Expression}
     local expl::List{Expression}
     local eql::List{Equation}
-    local branches::List{P_Equation.Equation}
+    local branches::List{Equation_Branch}
     local info::SourceInfo
     local for_scope::InstNode
     local iter::InstNode
@@ -2636,7 +2634,7 @@ function instEEquation(scodeEq::SCode.EEquation, scope::InstNode, origin::ORIGIN
         for branch in scodeEq.thenBranch
           @assign eql = instEEquations(branch, scope, next_origin)
           @match _cons(exp1, expl) = expl
-          @assign branches = _cons(EQUATION_makeBranch(exp1, eql), branches)
+          @assign branches = _cons(makeBranch(exp1, eql), branches)
         end
         #=  Instantiate the else-branch, if there is one, and make it a branch
         =#
@@ -2644,7 +2642,7 @@ function instEEquation(scodeEq::SCode.EEquation, scope::InstNode, origin::ORIGIN
         =#
         if ! listEmpty(scodeEq.elseBranch)
           @assign eql = instEEquations(scodeEq.elseBranch, scope, next_origin)
-          @assign branches = _cons(makeBranch(P_Expression.BOOLEAN_EXPRESSION(true), eql), branches)
+          @assign branches = _cons(makeBranch(BOOLEAN_EXPRESSION(true), eql), branches)
         end
         EQUATION_IF(listReverse(branches), makeSource(scodeEq.comment, info))
       end
@@ -2655,10 +2653,10 @@ function instEEquation(scodeEq::SCode.EEquation, scope::InstNode, origin::ORIGIN
         elseif flagSet(origin, ORIGIN_INITIAL)
           Error.addSourceMessageAndFail(Error.INITIAL_WHEN, nil, info)
         end
-        @assign next_origin = setFlag(origin, ORIGIN_WHEN)
-        @assign exp1 = instExp(scodeEq.condition, scope, info)
-        @assign eql = instEEquations(scodeEq.eEquationLst, scope, next_origin)
-        @assign branches = list(makeBranch(exp1, eql))
+        next_origin = setFlag(origin, ORIGIN_WHEN)
+        exp1 = instExp(scodeEq.condition, scope, info)
+        eql = instEEquations(scodeEq.eEquationLst, scope, next_origin)
+        branches = list(makeBranch(exp1, eql))
         for branch in scodeEq.elseBranches
           @assign exp1 = instExp(Util.tuple21(branch), scope, info)
           @assign eql = instEEquations(Util.tuple22(branch), scope, next_origin)
@@ -3018,7 +3016,7 @@ function getRecordFieldBinding(comp::Component, node::InstNode) ::Binding
   @assign binding = P_Component.getBinding(comp)
   if isUnbound(binding)
     @assign parent = parent(node)
-    if isComponent(parent) && P_Restriction.Restriction.isRecord(restriction(getClass(parent)))
+    if isComponent(parent) && isRecord(restriction(getClass(parent)))
       @assign binding = getRecordFieldBinding(component(parent), parent)
     end
   end
@@ -3075,7 +3073,7 @@ end
 function markStructuralParamsComp(component::Component, node::InstNode)
   local comp::Component
   local binding::Option{Expression}
-  @assign comp = P_Component.setVariability(Variability.STRUCTURAL_PARAMETER, component)
+  @assign comp = setVariability(Variability.STRUCTURAL_PARAMETER, component)
   updateComponent!(comp, node)
   @assign binding = untypedExp(P_Component.getBinding(comp))
   if isSome(binding)
@@ -3152,8 +3150,8 @@ function updateImplicitVariabilityEq(eq::Equation, inWhen::Bool = false)
         for branch in eq.branches
           @assign () = begin
             @match branch begin
-              P_Equation.EQUATION_BRANCH(__)  => begin
-                updateImplicitVariabilityEql(branch.body, inWhen = true)
+                EQUATION_BRANCH(__)  => begin
+                updateImplicitVariabilityEql(branch.body, true)
                 ()
               end
             end
@@ -3194,7 +3192,7 @@ function markStructuralParamsSub(sub::Subscript, dummy::Integer = 0) ::Integer
 end
 
 function markImplicitWhenExp(exp::Expression)
-  Expression.apply(exp, markImplicitWhenExp_traverser)
+    apply(exp, markImplicitWhenExp_traverser)
 end
 
 function markImplicitWhenExp_traverser(exp::Expression)
@@ -3202,11 +3200,11 @@ function markImplicitWhenExp_traverser(exp::Expression)
     local node::InstNode
     local comp::Component
     @match exp begin
-      Expression.CREF(cref = COMPONENT_REF_CREF(node = node))  => begin
+      CREF_EXPRESSION(cref = COMPONENT_REF_CREF(node = node))  => begin
         if isComponent(node)
           @assign comp = component(node)
           if variability(comp) == Variability.CONTINUOUS
-            @assign comp = P_Component.setVariability(Variability.IMPLICITLY_DISCRETE, comp)
+            @assign comp = setVariability(Variability.IMPLICITLY_DISCRETE, comp)
             updateComponent!(comp, node)
           end
         end

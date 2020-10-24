@@ -292,7 +292,7 @@ function setDimensions(dims::List{<:Dimension}, component::Component)::Component
       end
       TYPED_COMPONENT(__) => begin
         @assign component.ty =
-          Type.liftArrayLeftList(arrayElementType(component.ty), dims)
+          liftArrayLeftList(arrayElementType(component.ty), dims)
         ()
       end
       _ => begin
@@ -758,7 +758,7 @@ function hasBinding(component::Component, parent::InstNode = EMPTY_NODE())::Bool
   #=  its own binding equation.
   =#
   @assign cls = getClass(classInstance(component))
-  if !P_Restriction.Restriction.isRecord(restriction(cls))
+  if !isRecord(restriction(cls))
     @assign b = false
     return b
   end

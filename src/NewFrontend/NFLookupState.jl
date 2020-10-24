@@ -321,7 +321,6 @@ function lookupStateString(state::LookupState)::String
       LOOKUP_STATE_BEGIN(__) => begin
         "<begin>"
       end
-
       LOOKUP_STATE_COMP(__) => begin
         System.gettext("component")
       end
@@ -364,7 +363,6 @@ end
 
 function isError(state::LookupState)::Bool
   local isError::Bool
-
   @assign isError = begin
     @match state begin
       LOOKUP_STATE_ERROR(__) => begin

@@ -137,7 +137,7 @@ function evaluateDimension(dim::Dimension)::Dimension
         if referenceEq(e, dim.exp)
           dim
         else
-          P_Dimension.Dimension.fromExp(e, dim.var)
+          fromExp(e, dim.var)
         end
       end
 
@@ -193,13 +193,13 @@ function evaluateEquation(eq::Equation, constVariability::VariabilityType)::Equa
           list(evaluateEqBranch(b, constVariability) for b in eq.branches)
         eq
       end
-      P_Equation.Equation.ASSERT(__) => begin
+      EQUATION_ASSERT(__) => begin
         @assign e1 = evaluateExp(eq.condition, constVariability)
         @assign e2 = evaluateExp(eq.message, constVariability)
         @assign e3 = evaluateExp(eq.level, constVariability)
-        P_Equation.Equation.ASSERT(e1, e2, e3, eq.source)
+        EQUATION_ASSERT(e1, e2, e3, eq.source)
       end
-      P_Equation.Equation.TERMINATE(__) => begin
+      EQUATION_TERMINATE(__) => begin
         @assign eq.message = evaluateExp(eq.message, constVariability)
         eq
       end
@@ -207,7 +207,7 @@ function evaluateEquation(eq::Equation, constVariability::VariabilityType)::Equa
         @assign eq.reinitExp = evaluateExp(eq.reinitExp, constVariability)
         eq
       end
-      P_Equation.Equation.NORETCALL(__) => begin
+      EQUATION_NORETCALL(__) => begin
         @assign eq.exp = evaluateExp(eq.exp, constVariability)
         eq
       end
@@ -219,18 +219,18 @@ function evaluateEquation(eq::Equation, constVariability::VariabilityType)::Equa
   return eq
 end
 
-function evaluateEqBranch(branch::Branch, constVariability::VariabilityType)::Branch
-  local outBranch::Branch
+function evaluateEqBranch(branch::Equation_Branch, constVariability::VariabilityType)::Equation_Branch
+  local outBranch::Equation_Branch
 
   @assign outBranch = begin
     local condition::Expression
     local body::List{Equation}
     @match branch begin
-      BRANCH(condition = condition, body = body) => begin
+      EQUATION_BRANCH(condition = condition, body = body) => begin
         @assign condition =
-          evaluateExp(condition, constVariability = Variability.STRUCTURAL_PARAMETER)
+          evaluateExp(condition, Variability.STRUCTURAL_PARAMETER)
         @assign body = evaluateEquations(body, constVariability)
-        BRANCH(condition, branch.conditionVar, body)
+        EQUATION_BRANCH(condition, branch.conditionVar, body)
       end
 
       _ => begin

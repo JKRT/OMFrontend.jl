@@ -1768,7 +1768,7 @@ function evalLogicBinaryAnd(
   @assign exp = begin
     local expl::List{Expression}
     @matchcontinue exp1 begin
-      P_Expression.BOOLEAN_EXPRESSION(__) => begin
+      BOOLEAN_EXPRESSION(__) => begin
         if exp1.value
           evalExp_impl(exp2, target)
         else
@@ -1814,7 +1814,7 @@ function evalLogicBinaryOr(
   @assign exp = begin
     local expl::List{Expression}
     @match exp1 begin
-      P_Expression.BOOLEAN_EXPRESSION(__) => begin
+      BOOLEAN_EXPRESSION(__) => begin
         if exp1.value
           exp1
         else
@@ -1878,8 +1878,8 @@ function evalLogicUnaryNot(exp1::Expression)::Expression
 
   @assign exp = begin
     @match exp1 begin
-      P_Expression.BOOLEAN_EXPRESSION(__) => begin
-        P_Expression.BOOLEAN_EXPRESSION(!exp1.value)
+      BOOLEAN_EXPRESSION(__) => begin
+        BOOLEAN_EXPRESSION(!exp1.value)
       end
 
       ARRAY_EXPRESSION(__) => begin
@@ -1982,7 +1982,7 @@ function evalRelationOp_dispatch(
       end
     end
   end
-  @assign exp = P_Expression.BOOLEAN_EXPRESSION(res)
+  @assign exp = BOOLEAN_EXPRESSION(res)
   return exp
 end
 
@@ -1999,7 +1999,7 @@ function evalRelationLess(exp1::Expression, exp2::Expression)::Bool
         exp1.value < exp2.value
       end
 
-      (P_Expression.BOOLEAN_EXPRESSION(__), P_Expression.BOOLEAN_EXPRESSION(__)) => begin
+      (BOOLEAN_EXPRESSION(__), BOOLEAN_EXPRESSION(__)) => begin
         exp1.value < exp2.value
       end
 
@@ -2044,7 +2044,7 @@ function evalRelationLessEq(exp1::Expression, exp2::Expression)::Bool
         exp1.value <= exp2.value
       end
 
-      (P_Expression.BOOLEAN_EXPRESSION(__), P_Expression.BOOLEAN_EXPRESSION(__)) => begin
+      (BOOLEAN_EXPRESSION(__), BOOLEAN_EXPRESSION(__)) => begin
         exp1.value <= exp2.value
       end
 
@@ -2089,7 +2089,7 @@ function evalRelationGreater(exp1::Expression, exp2::Expression)::Bool
         exp1.value > exp2.value
       end
 
-      (P_Expression.BOOLEAN_EXPRESSION(__), P_Expression.BOOLEAN_EXPRESSION(__)) => begin
+      (BOOLEAN_EXPRESSION(__), BOOLEAN_EXPRESSION(__)) => begin
         exp1.value > exp2.value
       end
 
@@ -2134,7 +2134,7 @@ function evalRelationGreaterEq(exp1::Expression, exp2::Expression)::Bool
         exp1.value >= exp2.value
       end
 
-      (P_Expression.BOOLEAN_EXPRESSION(__), P_Expression.BOOLEAN_EXPRESSION(__)) => begin
+      (BOOLEAN_EXPRESSION(__), BOOLEAN_EXPRESSION(__)) => begin
         exp1.value >= exp2.value
       end
 
@@ -2179,7 +2179,7 @@ function evalRelationEqual(exp1::Expression, exp2::Expression)::Bool
         exp1.value == exp2.value
       end
 
-      (P_Expression.BOOLEAN_EXPRESSION(__), P_Expression.BOOLEAN_EXPRESSION(__)) => begin
+      (BOOLEAN_EXPRESSION(__), BOOLEAN_EXPRESSION(__)) => begin
         exp1.value == exp2.value
       end
 
@@ -2224,7 +2224,7 @@ function evalRelationNotEqual(exp1::Expression, exp2::Expression)::Bool
         exp1.value != exp2.value
       end
 
-      (P_Expression.BOOLEAN_EXPRESSION(__), P_Expression.BOOLEAN_EXPRESSION(__)) => begin
+      (BOOLEAN_EXPRESSION(__), BOOLEAN_EXPRESSION(__)) => begin
         exp1.value != exp2.value
       end
 
@@ -2288,7 +2288,7 @@ function evalIfExp2(ifExp::Expression, target::EvalTarget)::Expression
   ) = ifExp
   @assign result = begin
     @match cond begin
-      P_Expression.BOOLEAN_EXPRESSION(__) => begin
+      BOOLEAN_EXPRESSION(__) => begin
         evalExp_impl(if cond.value
           btrue
         else
@@ -2713,7 +2713,7 @@ function evalBuiltinArray(args::List{<:Expression})::Expression
   local ty::M_Type
 
   @assign ty = typeOf(listHead(args))
-  @assign ty = Type.liftArrayLeft(ty, P_Dimension.Dimension.fromInteger(listLength(args)))
+  @assign ty = liftArrayLeft(ty, P_Dimension.Dimension.fromInteger(listLength(args)))
   @assign result = makeArray(ty, args, literal = true)
   return result
 end
@@ -2924,7 +2924,7 @@ function evalBuiltinDiagonal(arg::Expression)::Expression
       ARRAY_EXPRESSION(elements = elems) => begin
         @assign n = listLength(elems)
         @assign elem_ty = typeOf(listHead(elems))
-        @assign row_ty = Type.liftArrayLeft(elem_ty, P_Dimension.Dimension.fromInteger(n))
+        @assign row_ty = liftArrayLeft(elem_ty, P_Dimension.Dimension.fromInteger(n))
         @assign zero = makeZero(elem_ty)
         for e in listReverse(elems)
           @assign row = nil
@@ -2942,7 +2942,7 @@ function evalBuiltinDiagonal(arg::Expression)::Expression
             _cons(makeArray(row_ty, row, e_lit), rows)
         end
         makeArray(
-          Type.liftArrayLeft(row_ty, P_Dimension.Dimension.fromInteger(n)),
+          liftArrayLeft(row_ty, P_Dimension.Dimension.fromInteger(n)),
           rows,
           arg_lit,
         )
@@ -3056,7 +3056,7 @@ function evalBuiltinFill2(fillValue::Expression, dims::List{<:Expression})::Expr
       end
     end
     @assign arr = list(result for e = 1:dim_size)
-    @assign arr_ty = Type.liftArrayLeft(arr_ty, P_Dimension.Dimension.fromInteger(dim_size))
+    @assign arr_ty = liftArrayLeft(arr_ty, P_Dimension.Dimension.fromInteger(dim_size))
     @assign result = makeArray(
       arr_ty,
       arr,
@@ -3220,9 +3220,9 @@ function evalBuiltinMatrix(arg::Expression)::Expression
           @assign result = arg
         else
           @match _cons(dim1, _cons(dim2, _)) = arrayDims(ty)
-          @assign ty = Type.liftArrayLeft(arrayElementType(ty), dim2)
+          @assign ty = liftArrayLeft(arrayElementType(ty), dim2)
           @assign expl = list(evalBuiltinMatrix2(e, ty) for e in arg.elements)
-          @assign ty = Type.liftArrayLeft(ty, dim1)
+          @assign ty = liftArrayLeft(ty, dim1)
           @assign result = makeArray(ty, expl)
         end
         result
@@ -3326,7 +3326,7 @@ function evalBuiltinMax2(exp1::Expression, exp2::Expression)::Expression
         end
       end
 
-      (P_Expression.BOOLEAN_EXPRESSION(__), P_Expression.BOOLEAN_EXPRESSION(__)) => begin
+      (BOOLEAN_EXPRESSION(__), BOOLEAN_EXPRESSION(__)) => begin
         if exp1.value < exp2.value
           exp2
         else
@@ -3423,7 +3423,7 @@ function evalBuiltinMin2(exp1::Expression, exp2::Expression)::Expression
         end
       end
 
-      (P_Expression.BOOLEAN_EXPRESSION(__), P_Expression.BOOLEAN_EXPRESSION(__)) => begin
+      (BOOLEAN_EXPRESSION(__), BOOLEAN_EXPRESSION(__)) => begin
         if exp1.value > exp2.value
           exp2
         else
@@ -3784,7 +3784,7 @@ function evalBuiltinSkew(arg::Expression)::Expression
           list(negate(x2), x1, zero),
           literal,
         )
-        @assign ty = Type.liftArrayLeft(ty, P_Dimension.Dimension.fromInteger(3))
+        @assign ty = liftArrayLeft(ty, P_Dimension.Dimension.fromInteger(3))
         makeArray(ty, list(y1, y2, y3), literal)
       end
 
@@ -3832,14 +3832,14 @@ function evalBuiltinString(args::List{<:Expression})::Expression
     @match args begin
       arg <|
       INTEGER_EXPRESSION(min_len) <|
-      P_Expression.BOOLEAN_EXPRESSION(left_justified) <| nil() => begin
+      BOOLEAN_EXPRESSION(left_justified) <| nil() => begin
         @assign str = begin
           @match arg begin
             INTEGER_EXPRESSION(__) => begin
               intString(arg.value)
             end
 
-            P_Expression.BOOLEAN_EXPRESSION(__) => begin
+            BOOLEAN_EXPRESSION(__) => begin
               boolString(arg.value)
             end
 
@@ -3867,7 +3867,7 @@ function evalBuiltinString(args::List{<:Expression})::Expression
       P_Expression.REAL_EXPRESSION(r) <|
       INTEGER_EXPRESSION(significant_digits) <|
       INTEGER_EXPRESSION(min_len) <|
-      P_Expression.BOOLEAN_EXPRESSION(left_justified) <| nil() => begin
+      BOOLEAN_EXPRESSION(left_justified) <| nil() => begin
         @assign format =
           "%" +
           (
@@ -4075,10 +4075,10 @@ function evalBuiltinTranspose(arg::Expression)::Expression
       ) => begin
         @assign arrl = list(arrayElements(e) for e in arr)
         @assign arrl = ListUtil.transposeList(arrl)
-        @assign ty = Type.liftArrayLeft(ty, dim1)
+        @assign ty = liftArrayLeft(ty, dim1)
         @assign arr =
           list(makeArray(ty, expl, literal) for expl in arrl)
-        @assign ty = Type.liftArrayLeft(ty, dim2)
+        @assign ty = liftArrayLeft(ty, dim2)
         makeArray(ty, arr, literal)
       end
 
@@ -4098,7 +4098,7 @@ function evalBuiltinVector(arg::Expression)::Expression
   local ty::M_Type
 
   @assign expl = fold(arg, evalBuiltinVector2, nil)
-  @assign ty = Type.liftArrayLeft(
+  @assign ty = liftArrayLeft(
     arrayElementType(typeOf(arg)),
     P_Dimension.Dimension.fromInteger(listLength(expl)),
   )
@@ -4341,7 +4341,7 @@ function evalBooleanClock(args::List{<:Expression})::Expression
     local interval::Expression
     @match args begin
       condition &&
-      P_Expression.BOOLEAN_EXPRESSION(__) <| interval &&
+      BOOLEAN_EXPRESSION(__) <| interval &&
       P_Expression.REAL_EXPRESSION(__) <| nil() => begin
         CLKCONST(P_Expression.P_ClockKind.BOOLEAN_EXPRESSION_CLOCK(
           condition,
@@ -4431,7 +4431,7 @@ function evalArrayConstructor2(
   @assign ty = typeOf(e)
   for r in ranges
     @assign ty =
-      Type.liftArrayLeftList(ty, arrayDims(typeOf(r)))
+      liftArrayLeftList(ty, arrayDims(typeOf(r)))
     @assign types = _cons(ty, types)
   end
   @assign result = evalArrayConstructor3(e, ranges, iters, types)

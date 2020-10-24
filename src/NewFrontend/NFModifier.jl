@@ -560,7 +560,7 @@ function fromElement(
         create(
           def.modifications,
           element.name,
-          P_ModifierScope.CLASS(element.name),
+          SCOPE_CLASS(element.name),
           parents,
           scope,
         )
@@ -570,7 +570,7 @@ function fromElement(
         create(
           def.modifications,
           element.name,
-          P_ModifierScope.CLASS(element.name),
+          SCOPE_CLASS(element.name),
           parents,
           scope,
         )

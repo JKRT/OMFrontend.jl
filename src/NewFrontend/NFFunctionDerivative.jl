@@ -76,7 +76,7 @@ function typeDerivative(fnDer::FunctionDerivative)
   P_Function.typeNodeCache(fnDer.derivativeFn)
   @assign info = info(fnDer.derivedFn)
   @assign (order, order_ty, var) = typeExp(fnDer.order, ORIGIN_FUNCTION, info)
-  @assign (order, _, mk) = TypeCheck.matchTypes(order_ty, TYPE_INTEGER(), order)
+  @assign (order, _, mk) = matchTypes(order_ty, TYPE_INTEGER(), order)
   if TypeCheck.isIncompatibleMatch(mk)
     Error.addSourceMessage(
       Error.VARIABLE_BINDING_TYPE_MISMATCH,

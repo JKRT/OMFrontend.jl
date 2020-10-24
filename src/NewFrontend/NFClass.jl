@@ -98,7 +98,7 @@ function toFlatStream(
   @assign s = begin
     @match cls begin
       INSTANCED_CLASS(__) => begin
-        @assign s = IOStream.append(s, P_Restriction.Restriction.toString(cls.restriction))
+        @assign s = IOStream.append(s, toString(cls.restriction))
         @assign s = IOStream.append(s, " '")
         @assign s = IOStream.append(s, name)
         @assign s = IOStream.append(s, "'\\n")
@@ -121,7 +121,7 @@ function toFlatStream(
       end
 
       TYPED_DERIVED(__) => begin
-        @assign s = IOStream.append(s, P_Restriction.Restriction.toString(cls.restriction))
+        @assign s = IOStream.append(s, toString(cls.restriction))
         @assign s = IOStream.append(s, " '")
         @assign s = IOStream.append(s, name)
         @assign s = IOStream.append(s, "' = '")
@@ -337,18 +337,18 @@ end
 
 function isExpandableConnectorClass(cls::Class)::Bool
   local isConnector::Bool =
-    P_Restriction.Restriction.isExpandableConnector(restriction(cls))
+    isExpandableConnector(restriction(cls))
   return isConnector
 end
 
 function isNonexpandableConnectorClass(cls::Class)::Bool
   local isConnector::Bool =
-    P_Restriction.Restriction.isNonexpandableConnector(restriction(cls))
+    isNonexpandableConnector(restriction(cls))
   return isConnector
 end
 
 function isConnectorClass(cls::Class)::Bool
-  local isConnector::Bool = P_Restriction.Restriction.isConnector(restriction(cls))
+  local isConnector::Bool = isConnector(restriction(cls))
   return isConnector
 end
 
@@ -468,7 +468,6 @@ function getType(cls::Class, clsNode::InstNode)::NFType
       PARTIAL_BUILTIN(__) => begin
         cls.ty
       end
-
       EXPANDED_DERIVED(__) => begin
         getType(getClass(cls.baseClass), cls.baseClass)
       end
@@ -476,14 +475,12 @@ function getType(cls::Class, clsNode::InstNode)::NFType
       INSTANCED_CLASS(__) => begin
         cls.ty
       end
-
       INSTANCED_BUILTIN(__) => begin
         begin
           @match cls.ty begin
             TYPE_POLYMORPHIC("") => begin
               TYPE_POLYMORPHIC(name(clsNode))
             end
-
             _ => begin
               cls.ty
             end
@@ -817,9 +814,9 @@ function classTree(cls::Class)::ClassTree
       end
     end
   end
-  @debug "Our resulting tree in class tree"
-  str = LookupTree.printTreeStr(lookupTree(tree))
-  @debug str
+  @info "Our resulting tree in class tree"
+#  str = LookupTree.printTreeStr(lookupTree(tree))
+  @info "Value of str"
   return tree
 end
 
@@ -951,7 +948,7 @@ function makeRecordConstructor(fields::List{<:InstNode}, out::InstNode)::Class
     TYPE_UNKNOWN(),
     tree,
     SECTIONS_EMPTY(),
-    P_Restriction.Restriction.RECORD_CONSTRUCTOR(),
+    RECORD_CONSTRUCTOR(),
   )
   return cls
 end
@@ -972,7 +969,7 @@ function fromEnumeration(
     tree,
     MODIFIER_NOMOD(),
     prefixes,
-    P_Restriction.Restriction.ENUMERATION(),
+    ENUMERATION(),
   )
   return cls
 end

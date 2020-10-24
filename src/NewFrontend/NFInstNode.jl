@@ -195,7 +195,7 @@ function hasBinding(node::InstNode) ::Bool
   @assign hasBinding = begin
     @match node begin
       COMPONENT_NODE(__)  => begin
-        P_Component.hasBinding(P_Pointer.access(node.component)) || hasBinding(derivedParent(node))
+          hasBinding(P_Pointer.access(node.component)) || hasBinding(derivedParent(node))
       end
       _  => begin
         false
@@ -210,7 +210,7 @@ function isModel(node::InstNode) ::Bool
   @assign isModel = begin
     @match node begin
       CLASS_NODE(__)  => begin
-        P_Restriction.Restriction.isModel(restriction(P_Pointer.access(node.cls)))
+        isModel(restriction(P_Pointer.access(node.cls)))
       end
       COMPONENT_NODE(__)  => begin
         isModel(P_Component.classInstance(P_Pointer.access(node.component)))
@@ -282,7 +282,7 @@ function clone(node::InstNode) ::InstNode
         @assign cls = P_Pointer.access(node.cls)
         @assign cls = classTreeApply(cls, clone)
         @assign node.cls = P_Pointer.create(cls)
-        @assign node.caches = P_CachedData.empty()
+        @assign node.caches = empty()
         ()
       end
 
@@ -343,7 +343,7 @@ function toFullDAEType(clsNode::InstNode) ::DAE.Type
             end
 
             _  => begin
-              @assign state = P_Restriction.Restriction.toDAE(restriction(cls), scopePath(clsNode, includeRoot = true))
+              @assign state = toDAE(restriction(cls), scopePath(clsNode, includeRoot = true))
               @assign vars = ConvertDAE.makeTypeVars(clsNode)
               @assign outType = DAE.Type.T_COMPLEX(state, vars, NONE())
               Pointer.update(clsNode.cls, DAE_TYPE(outType))
@@ -389,7 +389,7 @@ function toPartialDAEType(clsNode::InstNode) ::DAE.Type
             end
 
             _  => begin
-              @assign state = P_Restriction.Restriction.toDAE(restriction(cls), scopePath(clsNode, includeRoot = true))
+              @assign state = toDAE(restriction(cls), scopePath(clsNode, includeRoot = true))
               DAE.Type.T_COMPLEX(state, nil, NONE())
             end
           end
@@ -1595,13 +1595,11 @@ end
 
 function classScope(node::InstNode) ::InstNode
   local scope::InstNode
-
   @assign scope = begin
     @match node begin
       COMPONENT_NODE(__)  => begin
-        P_Component.classInstance(P_Pointer.access(node.component))
+        classInstance(P_Pointer.access(node.component))
       end
-
       _  => begin
         node
       end
@@ -1625,7 +1623,7 @@ end
                end
 
                COMPONENT_NODE(__)  => begin
-                 parentScope(P_Component.classInstance(P_Pointer.access(node.component)))
+                 parentScope(classInstance(P_Pointer.access(node.component)))
                end
 
                IMPLICIT_SCOPE(__)  => begin
@@ -1637,9 +1635,8 @@ end
          end
 
 function rootTypeParent(nodeType::InstNodeType, node::InstNode) ::InstNode
-  local parent::InstNode
-
-  @assign parent = begin
+  local parentVar::InstNode
+  @assign parentVar = begin
     @match nodeType begin
       ROOT_CLASS(__) where (! isEmpty(nodeType.parent))  => begin
         nodeType.parent
@@ -1652,7 +1649,7 @@ function rootTypeParent(nodeType::InstNodeType, node::InstNode) ::InstNode
       end
     end
   end
-  parent
+  parentVar
 end
 
 function rootParent(node::InstNode) ::InstNode
@@ -1873,11 +1870,10 @@ end
 
 function isExpandableConnector(node::InstNode) ::Bool
   local isConnector::Bool
-
   @assign isConnector = begin
     @match node begin
       COMPONENT_NODE(__)  => begin
-        P_Component.isExpandableConnector(component(node))
+        isExpandableConnector(component(node))
       end
 
       _  => begin

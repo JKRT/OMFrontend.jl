@@ -447,7 +447,7 @@ function variabilityToSCode(var)::SCode.Variability
       end
 
       _ => begin
-        SCode.Variability.VAR()
+        SCode.VAR()
       end
     end
   end

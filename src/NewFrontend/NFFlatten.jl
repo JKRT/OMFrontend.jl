@@ -275,7 +275,7 @@ function isDeletedComponent(condition::Binding, prefix::ComponentRef)::Bool
     end
     @assign isDeleted = begin
       @match exp begin
-        P_Expression.BOOLEAN_EXPRESSION(__) => begin
+        BOOLEAN_EXPRESSION(__) => begin
           !exp.value
         end
 
@@ -333,7 +333,7 @@ function deleteClassComponents(clsNode::InstNode)
     @match cls begin
       INSTANCED_CLASS(
         elements = CLASS_TREE_FLAT_TREE(components = comps),
-      ) where {(!P_Restriction.Restriction.isType(cls.restriction))} => begin
+      ) where {(!isType(cls.restriction))} => begin
         for c in comps
           deleteComponent(c)
         end
@@ -439,7 +439,7 @@ function flattenSimpleComponent(
       (
         "fixed",
         FLAT_BINDING(
-          P_Expression.BOOLEAN_EXPRESSION(false),
+          BOOLEAN_EXPRESSION(false),
           Variability.CONSTANT,
         ),
       ),
@@ -566,7 +566,7 @@ function flattenComplexComponent(
         @error  "e"
       end
     else
-      @assign binding_exp = SimplifyExp.simplify(binding_exp)
+      @assign binding_exp = simplify(binding_exp)
     end
     @assign binding_exp = splitRecordCref(binding_exp)
     if !isRecordOrRecordArray(binding_exp)
@@ -643,7 +643,7 @@ function flattenArray(
       P_Sections.Sections.SECTIONS(nil, nil, nil, nil),
     )
     for v in vrs
-      @assign v.ty = Type.liftArrayLeftList(v.ty, dimensions)
+      @assign v.ty = liftArrayLeftList(v.ty, dimensions)
       @assign vars = _cons(v, vars)
     end
     @assign () = begin
@@ -1181,16 +1181,16 @@ function flattenEquation(
         _cons(eq, equations)
       end
 
-      P_Equation.Equation.ASSERT(__) => begin
+      EQUATION_ASSERT(__) => begin
         @assign e1 = flattenExp(eq.condition, prefix)
         @assign e2 = flattenExp(eq.message, prefix)
         @assign e3 = flattenExp(eq.level, prefix)
-        _cons(P_Equation.Equation.ASSERT(e1, e2, e3, eq.source), equations)
+        _cons(EQUATION_ASSERT(e1, e2, e3, eq.source), equations)
       end
 
-      P_Equation.Equation.TERMINATE(__) => begin
+      EQUATION_TERMINATE(__) => begin
         @assign e1 = flattenExp(eq.message, prefix)
-        _cons(P_Equation.Equation.TERMINATE(e1, eq.source), equations)
+        _cons(EQUATION_TERMINATE(e1, eq.source), equations)
       end
 
       EQUATION_REINIT(__) => begin
@@ -1199,11 +1199,10 @@ function flattenEquation(
         _cons(EQUATION_REINIT(e1, e2, eq.source), equations)
       end
 
-      P_Equation.Equation.NORETCALL(__) => begin
+      EQUATION_NORETCALL(__) => begin
         @assign e1 = flattenExp(eq.exp, prefix)
-        _cons(P_Equation.Equation.NORETCALL(e1, eq.source), equations)
+        _cons(EQUATION_NORETCALL(e1, eq.source), equations)
       end
-
       _ => begin
         _cons(eq, equations)
       end
@@ -1218,7 +1217,7 @@ function flattenIfEquation(
   equations::List{<:Equation},
 )::List{Equation}
 
-  local branch::Equation
+  local branch::Equation_Branch
   local branches::List{P_Equation.Equation}
   local bl::List{P_Equation.Equation} = nil
   local cond::Expression
@@ -1244,7 +1243,7 @@ function flattenIfEquation(
     @match _cons(branch, branches) = branches
     @assign bl = begin
       @match branch begin
-        P_Equation.Equation.BRANCH(cond, var, eql) => begin
+        EQUATION_BRANCH(cond, var, eql) => begin
           #=  Flatten the condition and body of the branch.
           =#
           @assign cond = flattenExp(cond, prefix)
@@ -1297,7 +1296,7 @@ function flattenIfEquation(
         end
 
         P_Equation.Equation.INVALID_BRANCH(
-          branch = P_Equation.Equation.BRANCH(
+          branch = EQUATION_BRANCH(
             condition = cond,
             conditionVar = var,
           ),
@@ -1340,7 +1339,7 @@ function isConnectEq(eq::Equation)::Bool
         true
       end
 
-      P_Equation.Equation.NORETCALL(
+      EQUATION_NORETCALL(
         exp = CALL_EXPRESSION(call = P_Call.TYPED_CALL(fn = fn)),
       ) => begin
         AbsynUtil.pathFirstIdent(P_Function.name(fn)) == "Connections"
@@ -1355,18 +1354,18 @@ function isConnectEq(eq::Equation)::Bool
 end
 
 function flattenEqBranch(
-  branch::Equation,
+  branch::Equation_Branch,
   prefix::ComponentRef,
-)::Equation
+)::Equation_Branch
 
   local exp::Expression
   local eql::List{Equation}
   local var::VariabilityType
 
-  @match P_Equation.Equation.BRANCH(exp, var, eql) = branch
+  @match EQUATION_BRANCH(exp, var, eql) = branch
   @assign exp = flattenExp(exp, prefix)
   @assign eql = flattenEquations(eql, prefix)
-  @assign branch = P_Equation.Equation.makeBranch(exp, listReverseInPlace(eql), var)
+  @assign branch = makeBranch(exp, listReverseInPlace(eql), var)
   return branch
 end
 
@@ -1784,7 +1783,7 @@ function collectEquationFuncs(eq::Equation, funcs::FunctionTree)::FunctionTree
         ()
       end
 
-      P_Equation.Equation.ASSERT(__) => begin
+      EQUATION_ASSERT(__) => begin
         @assign funcs = collectExpFuncs(eq.condition, funcs)
         @assign funcs = collectExpFuncs(eq.message, funcs)
         @assign funcs = collectExpFuncs(eq.level, funcs)
@@ -1801,7 +1800,7 @@ function collectEquationFuncs(eq::Equation, funcs::FunctionTree)::FunctionTree
         ()
       end
 
-      P_Equation.Equation.NORETCALL(__) => begin
+      EQUATION_NORETCALL(__) => begin
         @assign funcs = collectExpFuncs(eq.exp, funcs)
         ()
       end
@@ -1815,12 +1814,12 @@ function collectEquationFuncs(eq::Equation, funcs::FunctionTree)::FunctionTree
 end
 
 function collectEqBranchFuncs(
-  branch::Equation,
+  branch::Equation_Branch,
   funcs::FunctionTree,
 )::FunctionTree
   @assign () = begin
     @match branch begin
-      P_Equation.Equation.BRANCH(__) => begin
+      EQUATION_BRANCH(__) => begin
         @assign funcs = collectExpFuncs(branch.condition, funcs)
         @assign funcs = ListUtil.fold(branch.body, collectEquationFuncs, funcs)
         ()
@@ -1984,7 +1983,7 @@ function collectClassFunctions(clsNode::InstNode, funcs::FunctionTree)::Function
       ) => begin
         for c in cls_tree.components
           @assign comp = component(c)
-          @assign funcs = collectTypeFuncs(P_Component.getType(comp), funcs)
+          @assign funcs = collectTypeFuncs(getType(comp), funcs)
           @assign binding = P_Component.getBinding(comp)
           if isExplicitlyBound(binding)
             @assign funcs = collectExpFuncs(getTypedExp(binding), funcs)

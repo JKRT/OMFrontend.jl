@@ -165,8 +165,8 @@ function fromDim(dim::Dimension)::RangeIterator
 
       P_Dimension.Dimension.BOOLEAN(__) => begin
         ARRAY_RANGE(list(
-          P_Expression.BOOLEAN_EXPRESSION(false),
-          P_Expression.BOOLEAN_EXPRESSION(true),
+          BOOLEAN_EXPRESSION(false),
+          BOOLEAN_EXPRESSION(true),
         ))
       end
 

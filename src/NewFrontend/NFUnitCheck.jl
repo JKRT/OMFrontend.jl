@@ -415,7 +415,7 @@ function foldEquation2(
       end
 
       EQUATION_WHEN(
-        branches = P_Equation.Equation.BRANCH(body = eql) <| _,
+        branches = EQUATION_BRANCH(body = eql) <| _,
       ) => begin
         @assign inconsistentUnits = nil
         for e in eql
@@ -426,7 +426,7 @@ function foldEquation2(
         inconsistentUnits
       end
 
-      P_Equation.Equation.NORETCALL(__) => begin
+      EQUATION_NORETCALL(__) => begin
         @assign (_, htCr2U, htS2U, htU2S, fnCache, inconsistentUnits) =
           insertUnitInEquation(eq.exp, Unit.MASTER(nil), htCr2U, htS2U, htU2S, fnCache)
         inconsistentUnits

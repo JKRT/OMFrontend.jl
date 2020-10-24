@@ -55,11 +55,11 @@ function simplifyDimension(dim::Dimension)::Dimension
     local e::Expression
     @match dim begin
       P_Dimension.Dimension.EXP(__) => begin
-        @assign e = SimplifyExp.simplify(dim.exp)
+        @assign e = simplify(dim.exp)
         if referenceEq(e, dim.exp)
           dim
         else
-          P_Dimension.Dimension.fromExp(e, dim.var)
+          fromExp(e, dim.var)
         end
       end
 
@@ -96,7 +96,7 @@ function simplifyEquation(eq::Equation, equations::List{<:Equation})::List{Equat
       EQUATION_ARRAY_EQUALITY(__) => begin
         @assign ty = mapDims(eq.ty, simplifyDimension)
         if !Type.isEmptyArray(ty)
-          @assign rhs = removeEmptyFunctionArguments(SimplifyExp.simplify(eq.rhs))
+          @assign rhs = removeEmptyFunctionArguments(simplify(eq.rhs))
           @assign equations = _cons(
             EQUATION_ARRAY_EQUALITY(eq.lhs, rhs, ty, eq.source),
             equations,
@@ -113,8 +113,8 @@ function simplifyEquation(eq::Equation, equations::List{<:Equation})::List{Equat
         @assign eq.branches = list(
           begin
             @match b begin
-              P_Equation.Equation.BRANCH(__) => begin
-                @assign b.condition = SimplifyExp.simplify(b.condition)
+              EQUATION_BRANCH(__) => begin
+                @assign b.condition = simplify(b.condition)
                 @assign b.body = simplifyEquations(b.body)
                 b
               end
@@ -124,8 +124,8 @@ function simplifyEquation(eq::Equation, equations::List{<:Equation})::List{Equat
         _cons(eq, equations)
       end
 
-      P_Equation.Equation.ASSERT(__) => begin
-        @assign eq.condition = SimplifyExp.simplify(eq.condition)
+      EQUATION_ASSERT(__) => begin
+        @assign eq.condition = simplify(eq.condition)
         if isTrue(eq.condition)
           equations
         else
@@ -134,12 +134,12 @@ function simplifyEquation(eq::Equation, equations::List{<:Equation})::List{Equat
       end
 
       EQUATION_REINIT(__) => begin
-        @assign eq.reinitExp = SimplifyExp.simplify(eq.reinitExp)
+        @assign eq.reinitExp = simplify(eq.reinitExp)
         _cons(eq, equations)
       end
 
-      P_Equation.Equation.NORETCALL(__) => begin
-        @assign e = SimplifyExp.simplify(eq.exp)
+      EQUATION_NORETCALL(__) => begin
+        @assign e = simplify(eq.exp)
         if isCall(e)
           @assign eq.exp = removeEmptyFunctionArguments(e)
           @assign equations = _cons(eq, equations)
@@ -253,7 +253,7 @@ function simplifyStatement(stmt::Statement, statements::List{<:Statement})::List
         #= elseif not Dimension.isZero(dim) then
         =#
         if !P_Dimension.Dimension.isZero(dim)
-          @assign stmt.range = SOME(SimplifyExp.simplify(e))
+          @assign stmt.range = SOME(simplify(e))
           @assign stmt.body = simplifyStatements(stmt.body)
           @assign statements = _cons(stmt, statements)
         end
@@ -272,13 +272,13 @@ function simplifyStatement(stmt::Statement, statements::List{<:Statement})::List
 
       P_Statement.Statement.WHEN(__) => begin
         @assign stmt.branches = list(
-          (SimplifyExp.simplify(Util.tuple21(b)), simplifyStatements(Util.tuple22(b))) for b in stmt.branches
+          (simplify(Util.tuple21(b)), simplifyStatements(Util.tuple22(b))) for b in stmt.branches
         )
         _cons(stmt, statements)
       end
 
       P_Statement.Statement.NORETCALL(__) => begin
-        @assign e = SimplifyExp.simplify(stmt.exp)
+        @assign e = simplify(stmt.exp)
         if isCall(e)
           @assign stmt.exp = removeEmptyFunctionArguments(e)
           @assign statements = _cons(stmt, statements)
@@ -309,9 +309,9 @@ function simplifyAssignment(stmt::Statement, statements::List{<:Statement})::Lis
   if Type.isEmptyArray(ty)
     return statements
   end
-  @assign lhs = SimplifyExp.simplify(lhs)
+  @assign lhs = simplify(lhs)
   @assign lhs = removeEmptyTupleElements(lhs)
-  @assign rhs = SimplifyExp.simplify(rhs)
+  @assign rhs = simplify(rhs)
   @assign rhs = removeEmptyFunctionArguments(rhs)
   @assign statements = begin
     @match (lhs, rhs) begin
@@ -425,8 +425,8 @@ function simplifyIfEqBranches(
   for branch in branches
     @assign accum = begin
       @match branch begin
-        P_Equation.Equation.BRANCH(cond, var, body) => begin
-          @assign cond = SimplifyExp.simplify(cond)
+        EQUATION_BRANCH(cond, var, body) => begin
+          @assign cond = simplify(cond)
           #=  A branch with condition true will always be selected when encountered.
           =#
           if isTrue(cond)
@@ -462,7 +462,7 @@ function simplifyIfEqBranches(
         end
 
         P_Equation.Equation.INVALID_BRANCH(
-          branch = P_Equation.Equation.BRANCH(
+          branch = EQUATION_BRANCH(
             condition = cond,
             conditionVar = var,
           ),
@@ -507,7 +507,7 @@ function simplifyIfStmtBranches(
 
   for branch in branches
     @assign (cond, body) = branch
-    @assign cond = SimplifyExp.simplify(cond)
+    @assign cond = simplify(cond)
     if isTrue(cond)
       if listEmpty(accum)
         @assign elements = listAppend(listReverse(simplifyFunc(body)), elements)
@@ -541,7 +541,7 @@ function simplifyFunction(func::M_Function)
 
   return if !P_Function.isSimplified(func)
     P_Function.markSimplified(func)
-    P_Function.mapExp(func, SimplifyExp.simplify, mapBody = false)
+    P_Function.mapExp(func, simplify, mapBody = false)
     @assign cls = getClass(func.node)
     @assign () = begin
       @match cls begin

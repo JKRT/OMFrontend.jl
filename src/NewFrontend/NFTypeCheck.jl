@@ -219,7 +219,7 @@ function matchOverloadedBinaryOperator(
   local oop::Op
 
   @assign args = list((exp1, type1, var1), (exp2, type2, var2))
-  @assign matchedFunctions = P_Function.matchFunctionsSilent(candidates, args, nil, info)
+  @assign matchedFunctions = matchFunctionsSilent(candidates, args, nil, info)
   #=  We only allow exact matches for operator overloading. e.g. no casting or generic matches.
   =#
   @assign exactMatches = P_MatchedFunction.getExactMatches(matchedFunctions)
@@ -1944,7 +1944,7 @@ function checkOverloadedUnaryOperator(
   =#
   @assign args = list((inExp1, inType1, var))
   @assign matchedFunctions =
-    P_Function.matchFunctionsSilent(candidates, args, nil, info, vectorize = false)
+    matchFunctionsSilent(candidates, args, nil, info, vectorize = false)
   #=  We only allow exact matches for operator overloading. e.g. no casting or generic matches.
   =#
   @assign exactMatches = P_MatchedFunction.getExactMatches(matchedFunctions)
@@ -2008,7 +2008,7 @@ function checkLogicalBinaryOperation(
     setType(resultType, operator),
     e2,
   )
-  if !isCompatibleMatch(mk) || !Type.isBoolean(arrayElementType(resultType))
+  if !isCompatibleMatch(mk) || !isBoolean(arrayElementType(resultType))
     printUnresolvableTypeError(outExp, list(type1, type2), info)
   end
   return (outExp, resultType)
@@ -2083,7 +2083,7 @@ function checkRelationOperation(
         #=  Print a warning for == or <> with Real operands in a model.
         =#
         @assign o = operator.op
-        if ExpOrigin.flagNotSet(origin, ORIGIN_FUNCTION) &&
+        if flagNotSet(origin, ORIGIN_FUNCTION) &&
            (o == Op.EQUAL || o == Op.NEQUAL)
           Error.addStrictMessage(
             Error.WARNING_RELATION_ON_REAL,
@@ -3576,8 +3576,8 @@ function matchComplexTypes(
             @assign comp2 = component(comps2[i])
             if P_Component.isTyped(comp2)
               @assign (_, _, mk) = matchTypes(
-                P_Component.getType(comp1),
-                P_Component.getType(comp2),
+                getType(comp1),
+                getType(comp2),
                 expression,
                 allowUnknown,
               )
@@ -4151,8 +4151,8 @@ function getRangeTypeInt(
       (INTEGER_EXPRESSION(1), NONE(), _) => begin
         #=  Ranges like 1:n have size n.
         =#
-        @assign dim_exp = SimplifyExp.simplify(stopExp)
-        P_Dimension.Dimension.fromExp(dim_exp, variability(dim_exp))
+        @assign dim_exp = simplify(stopExp)
+        fromExp(dim_exp, variability(dim_exp))
       end
 
       (_, NONE(), _) where {(isEqual(startExp, stopExp))} => begin
@@ -4197,8 +4197,8 @@ function getRangeTypeInt(
           list(dim_exp, INTEGER_EXPRESSION(0)),
           var,
         ))
-        @assign dim_exp = SimplifyExp.simplify(dim_exp)
-        P_Dimension.Dimension.fromExp(dim_exp, var)
+        @assign dim_exp = simplify(dim_exp)
+        fromExp(dim_exp, var)
       end
     end
   end
@@ -4294,8 +4294,8 @@ function getRangeTypeReal(
           makeAdd(TYPE_INTEGER()),
           INTEGER_EXPRESSION(1),
         )
-        @assign dim_exp = SimplifyExp.simplify(dim_exp)
-        P_Dimension.Dimension.fromExp(dim_exp, var)
+        @assign dim_exp = simplify(dim_exp)
+        fromExp(dim_exp, var)
       end
     end
   end
@@ -4310,7 +4310,7 @@ function getRangeTypeBool(startExp::Expression, stopExp::Expression)::Dimension
     local dim_exp::Expression
     local var::VariabilityType
     @match (startExp, stopExp) begin
-      (P_Expression.BOOLEAN_EXPRESSION(__), P_Expression.BOOLEAN_EXPRESSION(__)) => begin
+      (BOOLEAN_EXPRESSION(__), BOOLEAN_EXPRESSION(__)) => begin
         @assign sz = if startExp.value == stopExp.value
           1
         elseif (startExp.value < stopExp.value)
@@ -4346,8 +4346,8 @@ function getRangeTypeBool(startExp::Expression, stopExp::Expression)::Dimension
               INTEGER_EXPRESSION(0),
             ),
           )
-          @assign dim_exp = SimplifyExp.simplify(dim_exp)
-          @assign dim = P_Dimension.Dimension.fromExp(dim_exp, var)
+          @assign dim_exp = simplify(dim_exp)
+          @assign dim = fromExp(dim_exp, var)
         end
         dim
       end
@@ -4368,7 +4368,7 @@ function getRangeTypeEnum(startExp::Expression, stopExp::Expression)::Dimension
       end
 
       (ENUM_LITERAL(index = 1), _) => begin
-        P_Dimension.Dimension.fromExp(stopExp, variability(stopExp))
+        fromExp(stopExp, variability(stopExp))
       end
 
       _ => begin
@@ -4389,8 +4389,8 @@ function getRangeTypeEnum(startExp::Expression, stopExp::Expression)::Dimension
             makeAdd(TYPE_INTEGER()),
             INTEGER_EXPRESSION(1),
           )
-          @assign dim_exp = SimplifyExp.simplify(dim_exp)
-          @assign dim = P_Dimension.Dimension.fromExp(dim_exp, var)
+          @assign dim_exp = simplify(dim_exp)
+          @assign dim = fromExp(dim_exp, var)
         end
         dim
       end

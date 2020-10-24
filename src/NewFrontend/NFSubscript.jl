@@ -64,7 +64,7 @@ function fromExp(exp::Expression)::Subscript
         INDEX(exp)
       end
 
-      P_Expression.BOOLEAN_EXPRESSION(__) => begin
+      BOOLEAN_EXPRESSION(__) => begin
         INDEX(exp)
       end
 
@@ -95,7 +95,7 @@ function first(dim::Dimension)::Subscript
       end
 
       P_Dimension.Dimension.BOOLEAN(__) => begin
-        INDEX(P_Expression.BOOLEAN_EXPRESSION(false))
+        INDEX(BOOLEAN_EXPRESSION(false))
       end
 
       P_Dimension.Dimension.ENUM(__) => begin
@@ -428,11 +428,11 @@ function simplify(subscript::Subscript)::Subscript
   @assign outSubscript = begin
     @match subscript begin
       INDEX(__) => begin
-        INDEX(SimplifyExp.simplify(subscript.index))
+        INDEX(simplify(subscript.index))
       end
 
       SLICE(__) => begin
-        SLICE(SimplifyExp.simplify(subscript.slice))
+        SLICE(simplify(subscript.slice))
       end
 
       _ => begin

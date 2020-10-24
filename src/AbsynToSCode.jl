@@ -2261,7 +2261,7 @@ function translateEquation(
         @assign body = translateEEquations(inEquation.whenEquations, inIsInitial)
         @assign (conditions, bodies) =
           ListUtil.map1_2(inEquation.elseWhenEquations, translateEqBranch, inIsInitial)
-        @assign branches = List(@do_threaded_for (c, b) (c, b) (conditions, bodies))
+        @assign branches = list(@do_threaded_for (c, b) (c, b) (conditions, bodies))
         SCode.EQ_WHEN(inEquation.whenExp, body, branches, inComment, inInfo)
       end
 

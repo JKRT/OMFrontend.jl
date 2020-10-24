@@ -393,10 +393,10 @@ function toDAE(ty::M_Type, makeTypeVars::Bool = true)::DAE.Type
         DAE.T_CLOCK_DEFAULT
       end
 
-      ARRAY_TYPE(__) => begin
+      TYPE_ARRAY(__) => begin
         DAE.T_ARRAY(
           toDAE(ty.elementType, makeTypeVars),
-          list(P_Dimension.Dimension.toDAE(d) for d in ty.dimensions),
+          list(toDAE(d) for d in ty.dimensions),
         )
       end
 
@@ -960,15 +960,13 @@ function firstTupleType(ty::M_Type)::M_Type
   return outTy
 end
 
-function isPolymorphic(ty::M_Type)::Bool
+function isPolymorphic(ty::NFType)::Bool
   local isPolymorphic::Bool
-
   @assign isPolymorphic = begin
     @match ty begin
-      POLYMORPHIC(__) => begin
+      TYPE_POLYMORPHIC(__) => begin
         true
       end
-
       _ => begin
         false
       end
@@ -1391,15 +1389,13 @@ function isScalar(ty::M_Type)::Bool
   return isScalar
 end
 
-function isClock(ty::M_Type)::Bool
+function isClock(ty::NFType)::Bool
   local isClock::Bool
-
   @assign isClock = begin
     @match ty begin
-      CLOCK(__) => begin
+      TYPE_CLOCK(__) => begin
         true
       end
-
       _ => begin
         false
       end
@@ -1425,15 +1421,13 @@ function isString(ty::M_Type)::Bool
   return isString
 end
 
-function isBoolean(ty::M_Type)::Bool
+function isBoolean(ty::NFType)::Bool
   local isBool::Bool
-
   @assign isBool = begin
     @match ty begin
-      BOOLEAN(__) => begin
+      TYPE_BOOLEAN(__) => begin
         true
       end
-
       _ => begin
         false
       end

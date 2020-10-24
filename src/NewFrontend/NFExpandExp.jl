@@ -196,7 +196,7 @@ function expandUnary(exp::Expression, op::Operator)::Tuple{Expression, Bool}
   if expanded
     @assign outExp = mapArrayElements(
       outExp,
-      (scalar_op) -> SimplifyExp.simplifyUnaryOp(op = scalar_op),
+      (scalar_op) -> simplifyUnaryOp(op = scalar_op),
     )
   end
   return (outExp, expanded)
@@ -369,12 +369,12 @@ function makeScalarProduct(exp1::Expression, exp2::Expression)::Expression
     @assign mul_op = makeMul(elem_ty)
     @assign add_op = makeAdd(elem_ty)
     @assign expl1 =
-      List(@do_threaded_for SimplifyExp.simplifyBinaryOp(e1, mul_op, e2) (e1, e2) (
+      List(@do_threaded_for simplifyBinaryOp(e1, mul_op, e2) (e1, e2) (
         expl1,
         expl2,
       ))
     @assign exp =
-      ListUtil.reduce(expl1, (add_op) -> SimplifyExp.simplifyBinaryOp(op = add_op))
+      ListUtil.reduce(expl1, (add_op) -> simplifyBinaryOp(op = add_op))
   end
   #=  Scalar product of two empty arrays. The result is defined in the spec
   =#
@@ -496,7 +496,7 @@ function expandBinaryArrayScalar(
     )
     @assign outExp = mapArrayElements(
       exp1,
-      (op, exp2) -> SimplifyExp.simplifyBinaryOp(op = op, exp2 = exp2),
+      (op, exp2) -> simplifyBinaryOp(op = op, exp2 = exp2),
     )
   else
     @assign outExp = exp
@@ -518,7 +518,7 @@ function makeScalarArrayBinary_traverser(
       end
 
       _ => begin
-        SimplifyExp.simplifyBinaryOp(exp1, op, exp2)
+        simplifyBinaryOp(exp1, op, exp2)
       end
     end
   end
@@ -546,7 +546,7 @@ function expandBinaryScalarArray(
     )
     @assign outExp = mapArrayElements(
       exp2,
-      (op, exp1) -> SimplifyExp.simplifyBinaryOp(op = op, exp1 = exp1),
+      (op, exp1) -> simplifyBinaryOp(op = op, exp1 = exp1),
     )
   else
     @assign outExp = exp
@@ -601,7 +601,7 @@ function expandBinaryElementWise(exp::Expression)::Tuple{Expression, Bool}
     end
     if expanded
       @assign outExp =
-        expandBinaryElementWise2(exp1, op, exp2, SimplifyExp.simplifyBinaryOp)
+        expandBinaryElementWise2(exp1, op, exp2, simplifyBinaryOp)
     else
       @assign outExp = exp
     end
@@ -740,7 +740,7 @@ function expandArrayConstructor2(
   local el_ty::M_Type
 
   if listEmpty(ranges)
-    @assign result = expand(SimplifyExp.simplify(exp))
+    @assign result = expand(simplify(exp))
   else
     @match _cons(range, ranges_rest) = ranges
     @match _cons(iter, iters_rest) = iterators
@@ -1002,8 +1002,8 @@ function expandTypename(ty::M_Type)::Expression
         makeArray(
           ty,
           list(
-            P_Expression.BOOLEAN_EXPRESSION(false),
-            P_Expression.BOOLEAN_EXPRESSION(true),
+            BOOLEAN_EXPRESSION(false),
+            BOOLEAN_EXPRESSION(true),
           ),
           true,
         )
@@ -1049,9 +1049,9 @@ function expandCref4(
           expandCref4(rest, _cons(idx, comb), accum, restSubs, cref, crefType)
           for idx in slice
         )
-        @assign arr_ty = Type.liftArrayLeft(
+        @assign arr_ty = liftArrayLeft(
           typeOf(listHead(expl)),
-          P_Dimension.Dimension.fromExpList(expl),
+          fromExpList(expl),
         )
         makeArray(arr_ty, expl)
       end

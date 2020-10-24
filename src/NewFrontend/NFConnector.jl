@@ -211,7 +211,7 @@ function splitImpl2(
 
   for comp in comps
     @assign c = component(comp)
-    @assign ty = P_Component.getType(c)
+    @assign ty = getType(c)
     @assign cty = P_Component.connectorType(c)
     if !ConnectorType.isPotentiallyPresent(cty)
       @assign cref = append(
@@ -249,7 +249,7 @@ function splitImpl(
       end
 
       TYPE_COMPLEX(complexTy = COMPLEX_EXTERNAL_OBJECT(__)) => begin
-        _cons(CONNECTOR(name, Type.liftArrayLeftList(ty, dims), face, cty, source), conns)
+        _cons(CONNECTOR(name, liftArrayLeftList(ty, dims), face, cty, source), conns)
       end
 
       TYPE_COMPLEX(__) => begin
@@ -298,7 +298,7 @@ function splitImpl(
       end
 
       _ => begin
-        _cons(CONNECTOR(name, Type.liftArrayLeftList(ty, dims), face, cty, source), conns)
+        _cons(CONNECTOR(name, liftArrayLeftList(ty, dims), face, cty, source), conns)
       end
     end
   end

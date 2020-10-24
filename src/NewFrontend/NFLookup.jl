@@ -19,8 +19,9 @@ function lookupBaseClassName(name::Absyn.Path, scope::InstNode, info::SourceInfo
   local state::LookupState
   try
     @assign (nodes, state) = lookupNames(name, scope)
-  catch
-    Error.addSourceMessage(Error.LOOKUP_BASECLASS_ERROR, list(AbsynUtil.pathString(name), scopeName(scope)), info)
+  catch e
+    @error "Error looking up base class $e"
+    #Error.addSourceMessage(Error.LOOKUP_BASECLASS_ERROR, list(AbsynUtil.pathString(name), scopeName(scope)), info)
     fail()
   end
   assertClass(state, listHead(nodes), name, info)
@@ -41,7 +42,7 @@ function lookupComponent(cref::Absyn.ComponentRef, scope::InstNode #= The scope 
     # Error.addSourceMessageAndFail(Error.LOOKUP_VARIABLE_ERROR, list(Dump.printComponentRefStr(cref), scopeName(scope)), info)
     treee = lookupTree(scope.cls.x.elements)
     @error "Lookupvariable error for cref:$cref in scope $(scope.name). Error: $e"
-    @error "Our tree was" LookupTree.printTreeStr(treee)
+    @error "Our tree was $(LookupTree.printTreeStr(treee))"
     @error "Repr3: $treee"
     fail()
   end
@@ -59,7 +60,8 @@ function lookupConnector(cref::Absyn.ComponentRef, scope::InstNode #= The scope 
 
   try
     @assign (foundCref, foundScope, state) = lookupCref(cref, scope)
-  catch
+  catch e
+    @error "Error looking up connector: $e"
     Error.addSourceMessageAndFail(Error.LOOKUP_VARIABLE_ERROR, list(Dump.printComponentRefStr(cref), scopeName(scope)), info)
   end
   @assign nodeVar = node(foundCref)
@@ -273,7 +275,8 @@ function lookupInner(outerNode::InstNode, scope::InstNode) ::InstNode
       @assign innerNode = resolveOuter(lookupElement(name, getClass(cur_scope)))
       @match true = isInner(innerNode)
       return innerNode
-    catch
+    catch e
+      @error "DBG error $e"
       @assign prev_scope = cur_scope
       @assign cur_scope = derivedParent(cur_scope)
     end
@@ -287,9 +290,9 @@ end
 function lookupLocalSimpleName(n::String, scope::InstNode) ::Tuple{InstNode, Bool}
   local isImport::Bool = false
   local node::InstNode
-  @debug "Looking up simple name $n"
+  @info "Looking up simple name $n"
   @assign (node, isImport) = lookupElement(n, getClass(scope))
-  @debug "We lookup an element"
+  @info "We lookup an element"
   @assign node = resolveInner(node)
   return (node, isImport)
 end
@@ -300,9 +303,10 @@ function lookupSimpleName(nameStr::String, scope::InstNode) ::InstNode
   for i in 1:Global.recursionDepthLimit
     try
       (node, _) = lookupLocalSimpleName(nameStr, cur_scope)
-      @debug "The node is resolved $node"
+      @info "The node $nameStr is resolved in some scope"
       return node
-    catch
+    catch e
+      @error "DBG Error: $e"
       if nameStr == name(cur_scope) && isClass(cur_scope)
         @assign node = cur_scope
         return node
@@ -384,9 +388,9 @@ function lookupFirstIdent(name::String, scope::InstNode) ::Tuple{InstNode, Looku
   try
     @assign node = lookupSimpleBuiltinName(name)
     @assign state = LOOKUP_STATE_PREDEF_CLASS()
-  catch
+  catch e
     @assign node = lookupSimpleName(name, scope)
-    @debug "Lookup sucessfull in lookupfirstIdent for $name"
+    @error "DBG ERROR:for $name, with $e"
     @assign state = nodeState(node)
   end
   (node, state)
@@ -475,7 +479,7 @@ end
 
 function lookupSimpleBuiltinName(name::String) ::InstNode
   local builtin::InstNode
-  @debug "Calling lookupSimpleBuiltinName with $name"
+  @info "Calling lookupSimpleBuiltinName with $name"
   @assign builtin = begin
     @match name begin
       "Real"  => begin
@@ -671,7 +675,8 @@ function lookupCrefInNode(cref::Absyn.Path, node::InstNode, foundCref::Component
   @assign cls = getClass(scope)
   try
     @assign (n, is_import) = lookupElement(name, cls)
-  catch
+  catch e
+    @error "DBG Error $e"
     @match true = isComponent(node)
     @match true = isExpandableConnectorClass(cls)
     @assign foundCref = fromAbsynCref(cref, foundCref)

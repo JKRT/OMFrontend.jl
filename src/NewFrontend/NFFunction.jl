@@ -93,13 +93,11 @@ end
 
 function isVectorized(mk::FunctionMatchKind)::Bool
   local b::Bool
-
   @assign b = begin
     @match mk begin
-      VECTORIZED(__) => begin
+      VECTORIZED_MATCH_KIND(__) => begin
         true
       end
-
       _ => begin
         false
       end
@@ -127,13 +125,11 @@ end
 
 function isValid(mk::FunctionMatchKind)::Bool
   local b::Bool
-
   @assign b = begin
     @match mk begin
-      NOT_COMPATIBLE(__) => begin
+      NOT_COMPATIBLE_MATCH_KIND(__) => begin
         false
       end
-
       _ => begin
         true
       end
@@ -436,7 +432,7 @@ function makeDAEType(fn::M_Function, boxTypes::Bool = false)::DAE.Type
   for param in fn.inputs
     @assign comp = component(param)
     @assign pname = name(param)
-    @assign ty = P_Component.getType(comp)
+    @assign ty = getType(comp)
     @assign ptype = toDAE(if boxTypes
       Type.box(ty)
     else
@@ -858,14 +854,14 @@ function applyPartialApplicationArg(
   local rest_inputs::List{InstNode} = inputs
   local s::Slot
   local rest_slots::List{Slot} = slots
-  local mk::TypeCheck.MatchKind
+  local mk::MatchKindType
 
   while !listEmpty(rest_inputs)
     @match _cons(i, rest_inputs) = rest_inputs
     @match _cons(s, rest_slots) = rest_slots
     if s.name == argName
       @assign (argExp, _, mk) =
-        TypeCheck.matchTypes(argType, getType(i), argExp, true)
+        matchTypes(argType, getType(i), argExp, true)
       if TypeCheck.isIncompatibleMatch(mk)
         Error.addSourceMessage(
           Error.NAMED_ARG_TYPE_MISMATCH,
@@ -958,7 +954,7 @@ function boxFunctionParameter(component::InstNode)
   local comp::Component
 
   @assign comp = component(component)
-  @assign comp = P_Component.setType(Type.box(P_Component.getType(comp)), comp)
+  @assign comp = P_Component.setType(Type.box(getType(comp)), comp)
   return updateComponent!(comp, component)
 end
 
@@ -1120,7 +1116,7 @@ function matchFunctions(
     @assign (m_args, matchKind) = matchFunction(func, args, named_args, info, vectorize)
     if isValid(matchKind)
       @assign matchedFunctions =
-        _cons(P_MatchedFunction.MATCHED_FUNC(func, m_args, matchKind), matchedFunctions)
+        _cons(MATCHED_FUNC(func, m_args, matchKind), matchedFunctions)
     end
   end
   return matchedFunctions
@@ -1221,9 +1217,9 @@ function matchArgVectorized(
   =#
   #=  the dimensions to vectorize over has been removed from the argument's type.
   =#
-  @assign rest_ty = Type.liftArrayLeftList(arrayElementType(argTy), rest_dims)
+  @assign rest_ty = liftArrayLeftList(arrayElementType(argTy), rest_dims)
   @assign (argExp, argTy, matchKind) =
-    TypeCheck.matchTypes(rest_ty, inputTy, argExp, allowUnknown = false)
+    matchTypes(rest_ty, inputTy, argExp, allowUnknown = false)
   return (argExp, argTy, vectArg, vectDims, matchKind)
 end
 
@@ -1245,7 +1241,7 @@ function matchArgs(
   local input_ty::M_Type
   local ty::M_Type
   local arg_var::VariabilityType
-  local mk::TypeCheck.MatchKind
+  local mk::MatchKindType
   local vect_arg::Expression = INTEGER_EXPRESSION(0)
   local vect_dims::List{Dimension} = nil
   local matched::Bool
@@ -1270,15 +1266,16 @@ function matchArgs(
       @assign funcMatchKind = NO_MATCH
       return (args, funcMatchKind)
     end
-    @assign input_ty = P_Component.getType(comp)
+    input_ty = getType(comp)
+    allowUnknown = true
     @assign (arg_exp, ty, mk) =
-      TypeCheck.matchTypes(arg_ty, input_ty, arg_exp, allowUnknown = true)
-    @assign matched = TypeCheck.isValidArgumentMatch(mk)
+      matchTypes(arg_ty, input_ty, arg_exp, allowUnknown)
+    @assign matched = isValidArgumentMatch(mk)
     if !matched && vectorize
       @assign (arg_exp, ty, vect_arg, vect_dims, mk) =
         matchArgVectorized(arg_exp, arg_ty, input_ty, vect_arg, vect_dims, info)
       @assign vectorized_args = _cons(arg_idx, vectorized_args)
-      @assign matched = TypeCheck.isValidArgumentMatch(mk)
+      @assign matched = isValidArgumentMatch(mk)
     end
     if !matched
       Error.addSourceMessage(
@@ -1296,9 +1293,9 @@ function matchArgs(
       @assign funcMatchKind = NO_MATCH
       return (args, funcMatchKind)
     end
-    if TypeCheck.isCastMatch(mk)
+    if isCastMatch(mk)
       @assign funcMatchKind = CAST_MATCH
-    elseif TypeCheck.isGenericMatch(mk)
+    elseif isGenericMatch(mk)
       @assign funcMatchKind = GENERIC_MATCH
     end
     @assign checked_args = _cons((arg_exp, ty, arg_var), checked_args)
@@ -1782,7 +1779,7 @@ function signatureString(fn::M_Function, printTypes::Bool = true)::String
       end
     end
     if printTypes && P_Component.isTyped(c)
-      @assign ty = P_Component.getType(c)
+      @assign ty = getType(c)
       @assign var_s = P_Prefixes.unparseVariability(variability(c), ty)
       @assign input_str = var_s + Type.toString(ty) + " " + input_str
     end
@@ -1972,13 +1969,11 @@ function getCachedFuncs(inNode::InstNode)::List{M_Function}
 end
 
 function instFunction3(fnNode::InstNode)::InstNode
-  @error "Calling inst function 3"
   @assign fnNode = instantiateN1(fnNode, EMPTY_NODE())
   #=  Set up an empty function cache to signal that this function is
   =#
   #=  currently being instantiatdded, so recursive functions can be handled.
   =#
-  @error "Callng cache init func!"
   cacheInitFunc(fnNode)
   instExpressions(fnNode)
   #@info "Returning in instfunction3"

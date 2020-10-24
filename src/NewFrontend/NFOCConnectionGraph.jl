@@ -176,7 +176,7 @@
               for eq in flatModel.equations
                 @assign eql = begin
                   @match eq begin
-                    P_Equation.Equation.NORETCALL(exp = CALL_EXPRESSION(call && P_Call.TYPED_CALL(arguments = lst)), source = source)  => begin
+                    EQUATION_NORETCALL(exp = CALL_EXPRESSION(call && P_Call.TYPED_CALL(arguments = lst)), source = source)  => begin
                       begin
                         @match identifyConnectionsOperator(P_Function.name(call.fn)) begin
                           ConnectionsOperator.ROOT  => begin
@@ -301,12 +301,12 @@
                         @assign rhsArr = stripSubscripts(rhs)
                         @assign ty1 = getComponentType(lhsArr)
                         @assign ty2 = getComponentType(rhsArr)
-                        @assign fcref_rhs = P_Function.lookupFunctionSimple("equalityConstraint", classScope(node(lhs)))
-                        @assign (fcref_rhs, fn_node_rhs, _) = P_Function.instFunctionRef(fcref_rhs, ElementSource.getInfo(source))
+                        @assign fcref_rhs = lookupFunctionSimple("equalityConstraint", classScope(node(lhs)))
+                        @assign (fcref_rhs, fn_node_rhs, _) = instFunctionRef(fcref_rhs, ElementSource.getInfo(source))
                         @assign expRHS = CALL_EXPRESSION(UNTYPED_CALL(fcref_rhs, list(CREF_EXPRESSION(ty1, lhsArr), CREF_EXPRESSION(ty2, rhsArr)), nil, fn_node_rhs))
                         @assign (expRHS, ty, var) = typeExp(expRHS, origin, ElementSource.getInfo(source))
-                        @assign fcref_lhs = P_Function.lookupFunctionSimple("fill", topScope(node(clhs)))
-                        @assign (fcref_lhs, fn_node_lhs, _) = P_Function.instFunctionRef(fcref_lhs, ElementSource.getInfo(source))
+                        @assign fcref_lhs = lookupFunctionSimple("fill", topScope(node(clhs)))
+                        @assign (fcref_lhs, fn_node_lhs, _) = instFunctionRef(fcref_lhs, ElementSource.getInfo(source))
                         @assign expLHS = CALL_EXPRESSION(UNTYPED_CALL(fcref_lhs, _cons(P_Expression.REAL_EXPRESSION(0.0), ListUtil.map(arrayDims(ty), P_Dimension.Dimension.sizeExp)), nil, fn_node_lhs))
                         @assign (expLHS, ty, var) = typeExp(expLHS, origin, ElementSource.getInfo(source))
                         @assign replaceEq = EQUATION_EQUALITY(expRHS, expLHS, ty, source)
@@ -1227,7 +1227,7 @@
                                     if Flags.isSet(Flags.CGRAPH)
                                       print("- NFOCConnectionGraph.evalConnectionsOperatorsHelper: " + toString(exp) + " = false\\n")
                                     end
-                                  P_Expression.BOOLEAN_EXPRESSION(false)
+                                  BOOLEAN_EXPRESSION(false)
                                 end
 
                                 CREF_EXPRESSION(cref = cref) <|  nil()  => begin
@@ -1260,7 +1260,7 @@
                                      =#
                                      #=  add an error message:
                                      =#
-                                  P_Expression.BOOLEAN_EXPRESSION(result)
+                                  BOOLEAN_EXPRESSION(result)
                                 end
                               end
                             end
@@ -1276,7 +1276,7 @@
                                     if Flags.isSet(Flags.CGRAPH)
                                       print("- NFOCConnectionGraph.evalConnectionsOperatorsHelper: " + toString(exp) + " = false\\n")
                                     end
-                                  P_Expression.BOOLEAN_EXPRESSION(false)
+                                  BOOLEAN_EXPRESSION(false)
                                 end
 
                                 CREF_EXPRESSION(cref = cref) <|  nil()  => begin
@@ -1284,7 +1284,7 @@
                                     if Flags.isSet(Flags.CGRAPH)
                                       print("- NFOCConnectionGraph.evalConnectionsOperatorsHelper: " + toString(exp) + " = " + boolString(result) + "\\n")
                                     end
-                                  P_Expression.BOOLEAN_EXPRESSION(result)
+                                  BOOLEAN_EXPRESSION(result)
                                 end
                               end
                             end

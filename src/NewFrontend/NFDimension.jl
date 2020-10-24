@@ -155,7 +155,7 @@ function endExp(dim::Dimension, cref::ComponentRef, index::Integer)::Expression
       end
 
       BOOLEAN(__) => begin
-        P_Expression.BOOLEAN_EXPRESSION(true)
+        BOOLEAN_EXPRESSION(true)
       end
 
       DIMENSION_ENUM(enumType = ty && TYPE_ENUMERATION(__)) => begin
@@ -471,19 +471,19 @@ function add(a::Dimension, b::Dimension)::Dimension
   return c
 end
 
-function toDAE(dim::Dimension)::DAE.P_Dimension.Dimension
-  local daeDim::DAE.P_Dimension.Dimension
+function toDAE(dim::Dimension)::DAE.Dimension
+  local daeDim::DAE.Dimension
 
   @assign daeDim = begin
     local ty::M_Type
     @match dim begin
-      INTEGER_EXPRESSION(__) => begin
+      DIMENSION_INTEGER(__) => begin
         DAE.DIM_INTEGER(dim.size)
       end
-      BOOLEAN(__) => begin
+      DIMENSION_BOOLEAN(__) => begin
         DAE.DIM_BOOLEAN()
       end
-      ENUM(enumType = ty && TYPE_ENUMERATION(__)) => begin
+      DIMENSION_ENUM(enumType = ty && TYPE_ENUMERATION(__)) => begin
         DAE.DIM_ENUM(ty.typePath, ty.literals, listLength(ty.literals))
       end
       DIMENSION_EXP(__) => begin
@@ -498,12 +498,12 @@ function toDAE(dim::Dimension)::DAE.P_Dimension.Dimension
 end
 
 function fromExpList(expl::List{<:Expression})::Dimension
-  local dim::Dimension = INTEGER_EXPRESSION(listLength(expl), Variability.CONSTANT)
+  local dim::Dimension = DIMENSION_INTEGER(listLength(expl), Variability.CONSTANT)
   return dim
 end
 
 function fromInteger(n::Integer, var::VariabilityType = Variability.CONSTANT)::Dimension
-  local dim::Dimension = INTEGER_EXPRESSION(n, var)
+  local dim::Dimension = DIMENSION_INTEGER(n, var)
   return dim
 end
 

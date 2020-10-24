@@ -135,7 +135,7 @@ function collectComponentFlatTypes(component::InstNode, types::TypeTree)::TypeTr
   local comp::Component
 
   @assign comp = component(component)
-  @assign types = collectFlatType(P_Component.getType(comp), types)
+  @assign types = collectFlatType(getType(comp), types)
   @assign types = collectBindingFlatTypes(P_Component.getBinding(comp), types)
   return types
 end
@@ -252,7 +252,7 @@ function collectAlgorithmFlatTypes(alg::Algorithm, types::TypeTree)::TypeTree
 end
 
 function collectEqBranchFlatTypes(
-  branch::Branch,
+  branch::Equation_Branch,
   types::TypeTree,
 )::TypeTree
   @assign () = begin

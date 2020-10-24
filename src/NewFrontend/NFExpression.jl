@@ -49,7 +49,7 @@ end
   end
 
   @Record EMPTY_EXPRESSION begin
-    ty::M_Type
+    ty::NFType
   end
 
   @Record MUTABLE_EXPRESSION begin
@@ -64,28 +64,28 @@ end
     recordExp::Expression
     index::Integer
     fieldName::String
-    ty::M_Type
+    ty::NFType
   end
 
   @Record TUPLE_ELEMENT_EXPRESSION begin
     tupleExp::Expression
     index::Integer
-    ty::M_Type
+    ty::NFType
   end
 
   @Record SUBSCRIPTED_EXP_EXPRESSION begin
     exp::Expression
     subscripts::List{Subscript}
-    ty::M_Type
+    ty::NFType
   end
 
   @Record UNBOX_EXPRESSION begin
     exp::Expression
-    ty::M_Type
+    ty::NFType
   end
 
   @Record CAST_EXPRESSION begin
-    ty::M_Type
+    ty::NFType
     exp::Expression
   end
 
@@ -138,17 +138,17 @@ end
   @Record RECORD_EXPRESSION begin
     path
     #=  Maybe not needed since the type contains the name. Prefix? =#
-    ty::M_Type
+    ty::NFType
     elements::List{Expression}
   end
 
   @Record TUPLE_EXPRESSION begin
-    ty::M_Type
+    ty::NFType
     elements::List{Expression}
   end
 
   @Record RANGE_EXPRESSION begin
-    ty::M_Type
+    ty::NFType
     start::Expression
     step::Option{Expression}
     stop::Expression
@@ -161,7 +161,7 @@ end
   end
 
   @Record ARRAY_EXPRESSION begin
-    ty::M_Type
+    ty::NFType
     elements::List{Expression}
     literal #= True if the array is known to only contain literal expressions. =#::Bool
   end

@@ -57,7 +57,7 @@ function toDAE(fnDer::FunctionDerivative)::DAE.FunctionDefinition
     order,
     list(conditionToDAE(c) for c in fnDer.conditions),
     NONE(),
-    List(
+    list(
       P_Function.name(listHead(P_Function.getCachedFuncs(fn)))
       for fn in fnDer.lowerOrderDerivatives
     ),
@@ -76,7 +76,7 @@ function typeDerivative(fnDer::FunctionDerivative)
   P_Function.typeNodeCache(fnDer.derivativeFn)
   @assign info = info(fnDer.derivedFn)
   @assign (order, order_ty, var) = typeExp(fnDer.order, ORIGIN_FUNCTION, info)
-  @assign (order, _, mk) = matchTypes(order_ty, TYPE_INTEGER(), order)
+  @assign (order, _, mk) = TypeCheck.matchTypes(order_ty, TYPE_INTEGER(), order)
   if TypeCheck.isIncompatibleMatch(mk)
     Error.addSourceMessage(
       Error.VARIABLE_BINDING_TYPE_MISMATCH,
@@ -122,7 +122,7 @@ end
 
 function addLowerOrderDerivative2(fn::M_Function, lowerDerNode::InstNode)::M_Function
 
-  @assign fn.derivatives = List(
+  @assign fn.derivatives = list(
     begin
       @match fn_der begin
         FUNCTION_DER(__) => begin

@@ -259,7 +259,7 @@ function replaceFuncConstants(name::Absyn.Path, func::M_Function)::M_Function
         @assign () = begin
           @match sections begin
             P_Sections.Sections.SECTIONS(__) => begin
-              @assign sections.algorithms = List(
+              @assign sections.algorithms = list(
                 P_Algorithm.Algorithm.mapExp(a, replaceExpConstants)
                 for a in sections.algorithms
               )

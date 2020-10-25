@@ -141,7 +141,7 @@ function applyReplacementsDAEElts(
     @assign outDae = inDae
     return outDae
   end
-  @assign outDae = List(
+  @assign outDae = list(
     begin
       local cr::DAE.ComponentRef
       local cr2::DAE.ComponentRef

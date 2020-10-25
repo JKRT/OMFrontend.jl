@@ -872,7 +872,7 @@ function convertIfEquation(
 end
 
 function convertWhenEquation(
-  whenBranches::List{<:Equation_Branch},
+  whenBranches::List{<:Equation},
   source::DAE.ElementSource,
 )::DAE.Element
   local whenEquation::DAE.Element
@@ -1356,7 +1356,7 @@ function convertFunctionParam(node::InstNode)::DAE.Element
         @assign cref = fromNode(node, ty)
         @assign binding = toDAEExp(comp.binding)
         @assign cls = getClass(comp.classInst)
-        @assign ty_attr = List(
+        @assign ty_attr = list(
           (P_Modifier.name(m), P_Modifier.binding(m))
           for m in getTypeAttributes(cls)
         )
@@ -1481,7 +1481,7 @@ function makeTypeVars(complexCls::InstNode)::List{DAE.Var}
         list(makeTypeRecordVar(c) for c in getComponents(cls.elements))
       end
       INSTANCED_CLASS(elements = FLAT_TREE(__)) => begin
-        List(
+        list(
           makeTypeVar(c)
           for
           c in getComponents(cls.elements) if !isOnlyOuter(c)

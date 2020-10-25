@@ -60,47 +60,48 @@ function instClassInProgram(classPath::Absyn.Path, program::SCode.Program)::Tupl
   #=  Type the class.
   =#
   @info "TYPECLASS(inst_cls, name)"
-#  typeClass(inst_cls, name)
+  typeClass(inst_cls, name)
   @info "AFTER type class"
-  # # #=  Flatten the model and evaluate    constants in it. =#
-  # @info "START FLATTENING!"
-  # @assign flat_model = flatten(inst_cls, name)
-  # @info "CONSTANT EVALUATION"
-  # @assign flat_model = evaluate(flat_model)
-  # @info "FLATTENING DONE: flat_model"
-  # #= Do unit checking =#
-  # #  @assign flat_model = UnitCheck.checkUnits(flat_model) TODO
-  # #=  Apply simplifications to the model.=#
-  # @assign flat_model = simplify(flat_model)
-  # #=  Collect a tree of all functions that are still used in the flat model.=#
-  # @info "COLLECT FUNCTIONS"
-  # @assign funcs = collectFunctions(flat_model, name)
-  # # @info "COLLECTED FUNCTIONS!"
-  # #=  Collect package constants that couldn't be substituted with their values =#
-  # #=  (e.g. because they where used with non-constant subscripts), and add them to the model. =#
-  # @info "COLLECT CONSTANTS"
-  # @assign flat_model = collectConstants(flat_model, funcs)
-  # @info "COLLECTED CONSTANTS"
-  # # if Flags.getConfigBool(Flags.FLAT_MODELICA)
-  # @debug "PRINTING FLAT MODELICA"
-  # #printFlatString(flat_model, FunctionTreeImpl.listValues(funcs))
-  # # end
-  # #= Scalarize array components in the flat model.=#
-  # @debug "Not skipping NF_SCALARIZE"
-  # #                  if Flags.isSet(Flags.NF_SCALARIZE)
-  # # @assign flat_model = scalarize(flat_model, name)
-  # #                  else
-  # # @assign flat_model.variables = ListUtil.filterOnFalse(flat_model.variables, isEmptyArray)
-  # #                   end
-  # #=  Remove empty arrays from variables =#
-  # @info "VERIFYING MODEL: "
-  # verify(flat_model)
-  # #                   if Flags.isSet(Flags.NF_DUMP_FLAT)
-  # #                     print("FlatModel:\\n" + toString(flat_model) + "\\n")
-  # #                  end
-  # #=  Convert the flat model to a DAE.=#
-  # @debug "CONVERT TO THE DAE REPRESENTATION"
-  # (dae, daeFuncs) = convert(flat_model, funcs, name, info(inst_cls))
+  #=  Flatten the model and evaluate constants in it.
+  =#
+  @info "START FLATTENING!"
+  @assign flat_model = flatten(inst_cls, name)
+  @info "CONSTANT EVALUATION"
+  @assign flat_model = evaluate(flat_model)
+  @info "FLATTENING DONE: flat_model"
+  #= Do unit checking =#
+  #  @assign flat_model = UnitCheck.checkUnits(flat_model) TODO
+  #=  Apply simplifications to the model.=#
+  @assign flat_model = simplify(flat_model)
+  #=  Collect a tree of all functions that are still used in the flat model.=#
+  @info "COLLECT FUNCTIONS"
+  @assign funcs = collectFunctions(flat_model, name)
+  @info "COLLECTED FUNCTIONS!"
+  #=  Collect package constants that couldn't be substituted with their values =#
+  #=  (e.g. because they where used with non-constant subscripts), and add them to the model. =#
+  @info "COLLECT CONSTANTS"
+  @assign flat_model = collectConstants(flat_model, funcs)
+  @info "COLLECTED CONSTANTS"
+  # if Flags.getConfigBool(Flags.FLAT_MODELICA)
+  @debug "PRINTING FLAT MODELICA"
+  #printFlatString(flat_model, FunctionTreeImpl.listValues(funcs))
+  # end
+  #= Scalarize array components in the flat model.=#
+  @debug "Not skipping NF_SCALARIZE"
+  #                  if Flags.isSet(Flags.NF_SCALARIZE)
+  # @assign flat_model = scalarize(flat_model, name)
+  #                  else
+  # @assign flat_model.variables = ListUtil.filterOnFalse(flat_model.variables, isEmptyArray)
+  #                   end
+  #=  Remove empty arrays from variables =#
+  @info "VERIFYING MODEL: "
+  verify(flat_model)
+  #                   if Flags.isSet(Flags.NF_DUMP_FLAT)
+  #                     print("FlatModel:\\n" + toString(flat_model) + "\\n")
+  #                  end
+  #=  Convert the flat model to a DAE.=#
+  @debug "CONVERT TO THE DAE REPRESENTATION"
+  (dae, daeFuncs) = convert(flat_model, funcs, name, info(inst_cls))
   return (dae, daeFuncs)
 end
 
@@ -208,7 +209,7 @@ function partialInstClass2(definition::SCode.Element, scope::InstNode) ::Class
         fromEnumeration(cdef.enumLst, ty, prefs, scope)
       end
       _  => begin
-        PARTIAL_CLASS(EMPTY_CLASS_TREE, MODIFIER_NOMOD(), prefs)
+        PARTIAL_CLASS(CLASS_TREE_EMPTY_TREE(), MODIFIER_NOMOD(), prefs)
       end
     end
   end
@@ -749,7 +750,6 @@ function instClassDef(cls::Class, outerMod::Modifier, attributes::Attributes, us
       PARTIAL_BUILTIN(ty = ty, restriction = res)  => begin
         @assign (node, par) = instantiate(node, parentArg)
         updateComponentType(parentArg, node)
-        @info "Type of node in partial builtin, $ty"
         @assign cls_tree = classTree(getClass(node))
         @assign mod = fromElement(definition(node), list(node), parent(node))
         @assign outer_mod = merge(outerMod, addParent(node, cls.modifier))
@@ -2653,10 +2653,10 @@ function instEEquation(scodeEq::SCode.EEquation, scope::InstNode, origin::ORIGIN
         elseif flagSet(origin, ORIGIN_INITIAL)
           Error.addSourceMessageAndFail(Error.INITIAL_WHEN, nil, info)
         end
-        next_origin = setFlag(origin, ORIGIN_WHEN)
-        exp1 = instExp(scodeEq.condition, scope, info)
-        eql = instEEquations(scodeEq.eEquationLst, scope, next_origin)
-        branches = list(makeBranch(exp1, eql))
+        @assign next_origin = setFlag(origin, ORIGIN_WHEN)
+        @assign exp1 = instExp(scodeEq.condition, scope, info)
+        @assign eql = instEEquations(scodeEq.eEquationLst, scope, next_origin)
+        @assign branches = list(makeBranch(exp1, eql))
         for branch in scodeEq.elseBranches
           @assign exp1 = instExp(Util.tuple21(branch), scope, info)
           @assign eql = instEEquations(Util.tuple22(branch), scope, next_origin)
@@ -3151,7 +3151,7 @@ function updateImplicitVariabilityEq(eq::Equation, inWhen::Bool = false)
           @assign () = begin
             @match branch begin
                 EQUATION_BRANCH(__)  => begin
-                updateImplicitVariabilityEql(branch.body, true)
+                updateImplicitVariabilityEql(branch.body, #= inWhen =# true)
                 ()
               end
             end

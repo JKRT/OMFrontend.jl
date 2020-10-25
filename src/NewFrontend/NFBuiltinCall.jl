@@ -550,7 +550,7 @@ function typePreChangeCall(@nospecialize(name::String), @nospecialize(call::Call
     #@match list(fn) = typeRefCache(fn_ref)
   fn = listHead(typeRefCache(fn_ref))
   callExp = CALL_EXPRESSION(makeTypedCall(fn, list(arg), var, ty))
-  (callExp, ty, var)
+  (callExp, ty, variability)
 end
 
 function typeDerCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, NFType, VariabilityType}
@@ -1832,9 +1832,9 @@ function typeDynamicSelectCall(name::String, call::Call, origin::ORIGIN_Type, in
   =#
   #=  https:trac.openmodelica.org/OpenModelica/ticket/5631
   =#
-  try e
+  try
     @assign (arg2, ty2, var2) = typeExp(expDynamic, origin, info)
-  catch
+  catch e
     @error "DBG error: $e"
     @assign variability = var1
     @assign callExp = arg1

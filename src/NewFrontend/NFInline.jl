@@ -210,7 +210,7 @@ function replaceDimExp(dim::Dimension, node::InstNode, value::Expression)::Dimen
           dim.exp,
           (node, value) -> replaceCrefNode(node = node, value = value),
         )
-        fromExp(exp, dim.var)
+        P_Dimension.Dimension.fromExp(exp, dim.var)
       end
 
       _ => begin

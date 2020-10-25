@@ -544,7 +544,7 @@ function fromElement(
         create(
           element.modifications,
           "",
-          P_ModifierScope.EXTENDS(element.baseClassPath),
+          SCOPE_EXTENDS(element.baseClassPath),
           parents,
           scope,
         )

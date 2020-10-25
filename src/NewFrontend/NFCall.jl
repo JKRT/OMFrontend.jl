@@ -160,7 +160,7 @@ function retype(call::Call)::Call
             dims,
           )
         end
-        @assign call.ty = liftArrayLeftList(arrayElementType(call.ty), dims)
+        @assign call.ty = Type.liftArrayLeftList(arrayElementType(call.ty), dims)
         ()
       end
 
@@ -280,7 +280,7 @@ function typedString(call::Call)::String
       ARG_TYPED_CALL(__) => begin
         @assign name = toString(call.ref)
         @assign arg_str = stringDelimitList(
-          List(
+          list(
             "/*" +
             Type.toString(Util.tuple32(arg)) +
             "*/ " +
@@ -355,7 +355,7 @@ function toFlatString(call::Call)::String
           @assign name = AbsynUtil.pathString(P_Function.name(NFBuiltinFuncs.ARRAY_FUNC))
           @assign arg_str = toFlatString(call.exp)
           @assign c = stringDelimitList(
-            List(
+            list(
               name(Util.tuple21(iter)) +
               " in " +
               toFlatString(Util.tuple22(iter))
@@ -378,7 +378,7 @@ function toFlatString(call::Call)::String
         @assign name = AbsynUtil.pathString(P_Function.name(call.fn))
         @assign arg_str = toFlatString(call.exp)
         @assign c = stringDelimitList(
-          List(
+          list(
             name(Util.tuple21(iter)) +
             " in " +
             toFlatString(Util.tuple22(iter))
@@ -420,7 +420,7 @@ function toString(call::Call)::String
       ARG_TYPED_CALL(__) => begin
         @assign name = toString(call.ref)
         @assign arg_str = stringDelimitList(
-          List(
+          list(
             toString(Util.tuple31(arg)) for arg in call.arguments
           ),
           ", ",
@@ -445,7 +445,7 @@ function toString(call::Call)::String
         @assign name = AbsynUtil.pathString(P_Function.name(NFBuiltinFuncs.ARRAY_FUNC))
         @assign arg_str = toString(call.exp)
         @assign c = stringDelimitList(
-          List(
+          list(
             name(Util.tuple21(iter)) +
             " in " +
             toString(Util.tuple22(iter))
@@ -461,7 +461,7 @@ function toString(call::Call)::String
         @assign name = toString(call.ref)
         @assign arg_str = toString(call.exp)
         @assign c = stringDelimitList(
-          List(
+          list(
             name(Util.tuple21(iter)) +
             " in " +
             toString(Util.tuple22(iter))
@@ -485,7 +485,7 @@ function toString(call::Call)::String
         @assign name = AbsynUtil.pathString(P_Function.name(NFBuiltinFuncs.ARRAY_FUNC))
         @assign arg_str = toString(call.exp)
         @assign c = stringDelimitList(
-          List(
+          list(
             name(Util.tuple21(iter)) +
             " in " +
             toString(Util.tuple22(iter))
@@ -501,7 +501,7 @@ function toString(call::Call)::String
         @assign name = AbsynUtil.pathString(P_Function.name(call.fn))
         @assign arg_str = toString(call.exp)
         @assign c = stringDelimitList(
-          List(
+          list(
             name(Util.tuple21(iter)) +
             " in " +
             toString(Util.tuple22(iter))
@@ -881,7 +881,7 @@ function matchTypedNormalCall(call::Call, origin::ORIGIN_Type, info::SourceInfo)
   =#
   #=  see https:trac.openmodelica.org/OpenModelica/ticket/5133
   =#
-  @assign var = if isImpure(func) || isOMImpure(func)
+  @assign var = if P_Function.isImpure(func) || P_Function.isOMImpure(func)
     Variability.PARAMETER
   else
     Variability.CONSTANT
@@ -892,15 +892,15 @@ function matchTypedNormalCall(call::Call, origin::ORIGIN_Type, info::SourceInfo)
     @assign var = variabilityMax(var, arg_var)
   end
   @assign args = listReverseInPlace(args)
-  @assign ty = returnType(func)
+  @assign ty = P_Function.returnType(func)
   #=  Hack to fix return type of some builtin functions.
   =#
-  if isPolymorphic(ty)
+  if Type.isPolymorphic(ty)
     @assign ty = getSpecialReturnType(func, args)
   end
-  if var == Variability.PARAMETER && P_isExternal(func)
+  if var == Variability.PARAMETER && P_Function.isExternal(func)
     @assign var = Variability.NON_STRUCTURAL_PARAMETER
-  elseif isDiscrete(ty) && var == Variability.CONTINUOUS
+  elseif Type.isDiscrete(ty) && var == Variability.CONTINUOUS
     @assign var = Variability.IMPLICITLY_DISCRETE
   end
   #=  Mark external functions with parameter expressions as non-structural,
@@ -911,7 +911,7 @@ function matchTypedNormalCall(call::Call, origin::ORIGIN_Type, info::SourceInfo)
   =#
   #=  treated as implicitly discrete if the arguments are continuous.
   =#
-  @assign (ty,_) = evaluateCallType(ty, func, args)
+  @assign ty = evaluateCallType(ty, func, args)
   @assign call = makeTypedCall(func, args, var, ty)
   #=  If the matching was a vectorized one then create a map call
   =#
@@ -919,7 +919,7 @@ function matchTypedNormalCall(call::Call, origin::ORIGIN_Type, info::SourceInfo)
   =#
   #=  and subscipting it with an iterator for each dim and creating a map call.
   =#
-  if isVectorized(matchedFunc)
+  if P_MatchedFunction.isVectorized(matchedFunc)
     @assign call = vectorizeCall(call, matchedFunc.mk, scope, info)
   end
   return call
@@ -969,14 +969,16 @@ function makeTypedCall(
 end
 
 function typeNormalCall(call::Call, origin::ORIGIN_Type, info::SourceInfo)::Call
+
   @assign call = begin
     local fnl::List{M_Function}
     local is_external::Bool
     @match call begin
       UNTYPED_CALL(__) => begin
-        @assign fnl = typeRefCache(call.ref)
+        @assign fnl = P_Function.typeRefCache(call.ref)
         typeArgs(call, origin, info)
       end
+
       _ => begin
         Error.assertion(
           false,
@@ -1018,7 +1020,7 @@ function typeCall(
             @assign outExp = toRecordExpression(ty_call, ty)
           else
             if P_Function.hasUnboxArgs(P_Call.typedFunction(ty_call))
-              @assign outExp = CALL_EXPRESSION(unboxArgs(ty_call))
+              @assign outExp = CALL_EXPRESSION(P_Call.unboxArgs(ty_call))
             else
               @assign outExp = CALL_EXPRESSION(ty_call)
             end
@@ -1165,6 +1167,7 @@ end
 
 function evaluateCallTypeDimExp(exp::Expression, ptree::ParameterTree)::Expression
   local outExp::Expression
+
   @assign outExp = begin
     local node::InstNode
     local oexp::Option{Expression}
@@ -1233,11 +1236,10 @@ function evaluateCallTypeDim(
         ErrorExt.setCheckpoint(getInstanceName())
         try
           @assign exp = Ceval.evalExp(exp, Ceval.P_EvalTarget.IGNORE_ERRORS())
-        catch e
-            @error "DBG error $e"
+        catch
         end
         ErrorExt.rollBack(getInstanceName())
-        fromExp(exp, Variability.CONSTANT)
+        P_Dimension.Dimension.fromExp(exp, Variability.CONSTANT)
       end
 
       _ => begin
@@ -1252,13 +1254,14 @@ function evaluateCallType(
   ty::NFType,
   fn::M_Function,
   args::List{<:Expression},
-  ptree::ParameterTree = ParameterTreeImpl.EMPTY(),
+  ptree::ParameterTree = ParameterTree.EMPTY(),
 )::Tuple{NFType, ParameterTree}
+
   @assign ty = begin
     local dims::List{Dimension}
     local tys::List{NFType}
     @match ty begin
-      TYPE_ARRAY(__) => begin
+      ARRAY_TYPE(__) => begin
         @assign (dims, ptree) =
           ListUtil.map1Fold(ty.dimensions, evaluateCallTypeDim, (fn, args), ptree)
         @assign ty.dimensions = dims
@@ -1390,7 +1393,7 @@ function vectorizeCall(
         =#
         #=  Make a cref expression from the iterator
         =#
-        @assign vect_ty = liftArrayLeftList(base_call.ty, mk.vectDims)
+        @assign vect_ty = Type.liftArrayLeftList(base_call.ty, mk.vectDims)
         @assign base_call.arguments = call_args
         TYPED_ARRAY_CONSTRUCTOR(
           vect_ty,
@@ -1429,24 +1432,25 @@ end
 
 function checkMatchingFunctions(call::Call, info::SourceInfo)::MatchedFunction
   local matchedFunc::MatchedFunction
+
   local matchedFunctions::List{MatchedFunction}
   local exactMatches::List{MatchedFunction}
   local func::M_Function
   local allfuncs::List{M_Function}
   local fn_node::InstNode
-  local numerr::Integer = 0 #Error.getNumErrorMessages() TODOx
+  local numerr::Integer = Error.getNumErrorMessages()
   local errors::List{Integer}
 
-@error "TODO ErrorExt.setCheckpoint(\"NFCall:checkMatchingFunctions\")"
+  ErrorExt.setCheckpoint("NFCall:checkMatchingFunctions")
   @assign matchedFunctions = begin
     @match call begin
-      ARG_TYPED_CALL(ref = COMPONENT_REF_CREF(node = fn_node)) => begin
-        @assign allfuncs = getCachedFuncs(fn_node)
+      ARG_TYPED_CALL(ref = CREF(node = fn_node)) => begin
+        @assign allfuncs = P_Function.getCachedFuncs(fn_node)
         if listLength(allfuncs) > 1
           @assign allfuncs =
-            list(fn for fn in allfuncs if !isDefaultRecordConstructor(fn))
+            list(fn for fn in allfuncs if !P_Function.isDefaultRecordConstructor(fn))
         end
-        matchFunctions(allfuncs, call.arguments, call.named_args, info)
+        P_Function.matchFunctions(allfuncs, call.arguments, call.named_args, info)
       end
     end
   end
@@ -1486,8 +1490,7 @@ function checkMatchingFunctions(call::Call, info::SourceInfo)::MatchedFunction
   =#
   #=  about matching. We have one matching func if we reach here.
   =#
-  #ErrorExt.rollBack("NFCall:checkMatchingFunctions")
-  @error "ErrorExt.rollBack(\"NFCall:checkMatchingFunctions\")"
+  ErrorExt.rollBack("NFCall:checkMatchingFunctions")
   if listLength(matchedFunctions) > 1
     @assign exactMatches = P_MatchedFunction.getExactMatches(matchedFunctions)
     if listEmpty(exactMatches)
@@ -1510,7 +1513,7 @@ function checkMatchingFunctions(call::Call, info::SourceInfo)::MatchedFunction
   end
   #=  Overwrite the actual function name with the overload name for builtin functions.
   =#
-  if isBuiltin(matchedFunc.func)
+  if P_Function.isBuiltin(matchedFunc.func)
     @assign func = matchedFunc.func
     @assign func.path = nameConsiderBuiltin(func)
     @assign matchedFunc.func = func
@@ -1730,7 +1733,7 @@ function typeReduction(
         @assign next_origin = intBitOr(next_origin, ExpOrigin.FOR)
         @assign (arg, ty, exp_var) = typeExp(call.exp, next_origin, info)
         @assign variability = Variability.variabilityMax(variability, exp_var)
-        @match list(fn) = typeRefCache(call.ref)
+        @match list(fn) = P_Function.typeRefCache(call.ref)
         TypeCheck.checkReductionType(ty, P_Function.name(fn), call.exp, info)
         @assign fold_id = Util.getTempVariableIndex()
         @assign res_id = Util.getTempVariableIndex()
@@ -1802,7 +1805,7 @@ function typeArrayConstructor(
         @assign next_origin = intBitOr(next_origin, ExpOrigin.FOR)
         @assign (arg, ty, exp_var) = typeExp(call.exp, next_origin, info)
         @assign variability = Variability.variabilityMax(variability, exp_var)
-        @assign ty = liftArrayLeftList(ty, dims)
+        @assign ty = Type.liftArrayLeftList(ty, dims)
         @assign variability = Variability.variabilityMax(variability, exp_var)
         (TYPED_ARRAY_CONSTRUCTOR(ty, variability, arg, iters), ty, variability)
       end

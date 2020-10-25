@@ -2,7 +2,7 @@ const SimplifyFunc = Function
 const MakeElement = Function
 const MakeFunc = Function
 
-function simplify(flatModel::FlatModel)::FlatModel
+function simplifyFlatModel(flatModel::FlatModel)::FlatModel
   @assign flatModel.variables = list(simplifyVariable(v) for v in flatModel.variables)
   @assign flatModel.equations = simplifyEquations(flatModel.equations)
   @assign flatModel.initialEquations = simplifyEquations(flatModel.initialEquations)

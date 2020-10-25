@@ -597,7 +597,7 @@ function optimizeStatement(stmt::Statement)::Statement
           makeMutable(EMPTY(TYPE_UNKNOWN()))
         #=  Replace the iterator with the expression in the body of the for loop.
         =#
-        @assign stmt.body = List(
+        @assign stmt.body = list(
           P_Statement.Statement.mapExp(
             s,
             (stmt.iterator, iter_exp) -> replaceIterator(
@@ -884,7 +884,7 @@ function assignArrayElement(
             @assign arrayExp.elements = arrayElements(value)
           else
             @assign arrayExp.elements =
-              List(@do_threaded_for assignArrayElement(e, rest_subs, v) (e, v) (
+              list(@do_threaded_for assignArrayElement(e, rest_subs, v) (e, v) (
                 arrayExp.elements,
                 arrayElements(value),
               ))
@@ -1513,7 +1513,7 @@ function evaluateExternal2(
   local ext_args::List{Expression}
 
   @assign repl = createReplacements(fn, args)
-  @assign ext_args = List(
+  @assign ext_args = list(
     map(e, (repl) -> applyReplacements2(repl = repl))
     for e in extArgs
   )

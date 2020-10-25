@@ -872,7 +872,7 @@ function convertIfEquation(
 end
 
 function convertWhenEquation(
-  whenBranches::List{<:Equation},
+  whenBranches::List{<:Equation_Branch},
   source::DAE.ElementSource,
 )::DAE.Element
   local whenEquation::DAE.Element

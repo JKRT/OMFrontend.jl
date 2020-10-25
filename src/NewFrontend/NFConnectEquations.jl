@@ -287,12 +287,12 @@ function generatePotentialEquations(elements::List{<:Connector})::List{Equation}
 
   @assign c1 = listHead(elements)
   if Connector.variability(c1) > Variability.PARAMETER
-    @assign equations = List(
+    @assign equations = list(
       makeEqualityEquation(c1.name, c1.source, c2.name, c2.source)
       for c2 in listRest(elements)
     )
   else
-    @assign equations = List(
+    @assign equations = list(
       makeEqualityAssert(c1.name, c1.source, c2.name, c2.source)
       for c2 in listRest(elements)
     )

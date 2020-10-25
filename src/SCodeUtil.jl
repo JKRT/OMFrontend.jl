@@ -7061,19 +7061,19 @@ function stripCommentsFromClassDef(
       SCode.PARTS(__) => begin
         @assign el =
           list(stripCommentsFromElement(e, stripAnn, stripCmt) for e in cdef.elementLst)
-        @assign eql = List(
+        @assign eql = list(
           stripCommentsFromEquation(eq, stripAnn, stripCmt)
           for eq in cdef.normalEquationLst
         )
-        @assign ieql = List(
+        @assign ieql = list(
           stripCommentsFromEquation(ieq, stripAnn, stripCmt)
           for ieq in cdef.initialEquationLst
         )
-        @assign alg = List(
+        @assign alg = list(
           stripCommentsFromAlgorithm(a, stripAnn, stripCmt)
           for a in cdef.normalAlgorithmLst
         )
-        @assign ialg = List(
+        @assign ialg = list(
           stripCommentsFromAlgorithm(ia, stripAnn, stripCmt)
           for ia in cdef.initialAlgorithmLst
         )
@@ -7165,7 +7165,7 @@ function stripCommentsFromEEquation(
   @assign () = begin
     @match eq begin
       SCode.EQ_IF(__) => begin
-        @assign eq.thenBranch = List(
+        @assign eq.thenBranch = list(
           list(stripCommentsFromEEquation(e, stripAnn, stripCmt) for e in branch)
           for branch in eq.thenBranch
         )
@@ -7191,7 +7191,7 @@ function stripCommentsFromEEquation(
       end
 
       SCode.EQ_FOR(__) => begin
-        @assign eq.eEquationLst = List(
+        @assign eq.eEquationLst = list(
           stripCommentsFromEEquation(e, stripAnn, stripCmt) for e in eq.eEquationLst
         )
         @assign eq.comment = stripCommentsFromComment(eq.comment, stripAnn, stripCmt)
@@ -7199,10 +7199,10 @@ function stripCommentsFromEEquation(
       end
 
       SCode.EQ_WHEN(__) => begin
-        @assign eq.eEquationLst = List(
+        @assign eq.eEquationLst = list(
           stripCommentsFromEEquation(e, stripAnn, stripCmt) for e in eq.eEquationLst
         )
-        @assign eq.elseBranches = List(
+        @assign eq.elseBranches = list(
           stripCommentsFromWhenEqBranch(b, stripAnn, stripCmt) for b in eq.elseBranches
         )
         @assign eq.comment = stripCommentsFromComment(eq.comment, stripAnn, stripCmt)
@@ -7273,14 +7273,14 @@ function stripCommentsFromStatement(
       end
 
       SCode.ALG_IF(__) => begin
-        @assign stmt.trueBranch = List(
+        @assign stmt.trueBranch = list(
           stripCommentsFromStatement(s, stripAnn, stripCmt) for s in stmt.trueBranch
         )
-        @assign stmt.elseIfBranch = List(
+        @assign stmt.elseIfBranch = list(
           stripCommentsFromStatementBranch(b, stripAnn, stripCmt)
           for b in stmt.elseIfBranch
         )
-        @assign stmt.elseBranch = List(
+        @assign stmt.elseBranch = list(
           stripCommentsFromStatement(s, stripAnn, stripCmt) for s in stmt.elseBranch
         )
         @assign stmt.comment = stripCommentsFromComment(stmt.comment, stripAnn, stripCmt)
@@ -7295,7 +7295,7 @@ function stripCommentsFromStatement(
       end
 
       SCode.ALG_PARFOR(__) => begin
-        @assign stmt.parforBody = List(
+        @assign stmt.parforBody = list(
           stripCommentsFromStatement(s, stripAnn, stripCmt) for s in stmt.parforBody
         )
         @assign stmt.comment = stripCommentsFromComment(stmt.comment, stripAnn, stripCmt)
@@ -7303,7 +7303,7 @@ function stripCommentsFromStatement(
       end
 
       SCode.ALG_WHILE(__) => begin
-        @assign stmt.whileBody = List(
+        @assign stmt.whileBody = list(
           stripCommentsFromStatement(s, stripAnn, stripCmt) for s in stmt.whileBody
         )
         @assign stmt.comment = stripCommentsFromComment(stmt.comment, stripAnn, stripCmt)
@@ -7311,7 +7311,7 @@ function stripCommentsFromStatement(
       end
 
       SCode.ALG_WHEN_A(__) => begin
-        @assign stmt.branches = List(
+        @assign stmt.branches = list(
           stripCommentsFromStatementBranch(b, stripAnn, stripCmt) for b in stmt.branches
         )
         @assign stmt.comment = stripCommentsFromComment(stmt.comment, stripAnn, stripCmt)

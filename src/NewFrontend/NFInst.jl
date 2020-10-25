@@ -72,7 +72,7 @@ function instClassInProgram(classPath::Absyn.Path, program::SCode.Program)::Tupl
   #= Do unit checking =#
   #  @assign flat_model = UnitCheck.checkUnits(flat_model) TODO
   #=  Apply simplifications to the model.=#
-  @assign flat_model = simplify(flat_model)
+  @assign flat_model = simplifyFlatModel(flat_model)
   #=  Collect a tree of all functions that are still used in the flat model.=#
   @info "COLLECT FUNCTIONS"
   @assign funcs = collectFunctions(flat_model, name)

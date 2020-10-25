@@ -185,7 +185,7 @@ function simplifySubscripts(cref::ComponentRef)::ComponentRef
       end
 
       COMPONENT_REF_CREF(origin = Origin.CREF) => begin
-        @assign subs = list(simplify(s) for s in cref.subscripts)
+        @assign subs = list(simplifySubscript(s) for s in cref.subscripts)
         COMPONENT_REF_CREF(cref.node, subs, cref.ty, cref.origin, simplifySubscripts(cref.restCref))
       end
 

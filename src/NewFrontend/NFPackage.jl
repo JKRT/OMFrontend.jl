@@ -39,7 +39,7 @@ function collectConstants(flatModel::FlatModel, functions::FunctionTree)::FlatMo
   )
   @assign constants = FunctionTreeImpl.fold(functions, collectFuncConstants, constants)
   @assign vars =
-    listReverse(list(fromCref(c) for c in ConstantsSetImpl.listKeys(constants)))
+    listReverse(list(Variable_fromCref(c) for c in ConstantsSetImpl.listKeys(constants)))
   @assign flatModel.variables = listAppend(vars, flatModel.variables)
 #  execStat(getInstanceName()) TODO
   return flatModel

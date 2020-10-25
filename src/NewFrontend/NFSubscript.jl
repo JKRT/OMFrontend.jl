@@ -422,17 +422,17 @@ function toDimension(subscript::Subscript)::Dimension
   return dimension
 end
 
-function simplify(subscript::Subscript)::Subscript
+function simplifySubscript(subscript::Subscript)::Subscript
   local outSubscript::Subscript
 
   @assign outSubscript = begin
     @match subscript begin
       INDEX(__) => begin
-        INDEX(simplify(subscript.index))
+        INDEX(simplifySubscript(subscript.index))
       end
 
       SLICE(__) => begin
-        SLICE(simplify(subscript.slice))
+        SLICE(simplifySubscript(subscript.slice))
       end
 
       _ => begin

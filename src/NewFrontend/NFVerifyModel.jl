@@ -64,10 +64,10 @@ function whenEquationIfCrefs(
   local crefs2::List{ComponentRef}
   local rest_branches::List{P_Equation.Equation}
   local body::List{Equation}
-  @match _cons(EQUATION_BRANCH(body = body), rest_branches) = branches
+  @match _cons(P_Equation.Equation.BRANCH(body = body), rest_branches) = branches
   @assign crefs1 = whenEquationBranchCrefs(body)
   for branch in rest_branches
-    @match EQUATION_BRANCH(body = body) = branch
+    @match P_Equation.Equation.BRANCH(body = body) = branch
     @assign crefs2 = whenEquationBranchCrefs(body)
     checkCrefSetEquality(crefs1, crefs2, Error.WHEN_IF_VARIABLE_MISMATCH, source)
   end
@@ -131,7 +131,7 @@ end
 
 """ #= Checks that each branch in a when-equation has the same set of crefs on the lhs. =#"""
 function verifyWhenEquation(
-  branches::List{<:Equation_Branch},
+  branches::List{<:Equation},
   source::DAE.ElementSource,
 )
   local crefs1::List{ComponentRef}
@@ -142,10 +142,10 @@ function verifyWhenEquation(
   if ListUtil.hasOneElement(branches)
     return
   end
-  @match _cons(EQUATION_BRANCH(body = body), rest_branches) = branches
+  @match _cons(P_Equation.Equation.BRANCH(body = body), rest_branches) = branches
   @assign crefs1 = whenEquationBranchCrefs(body)
   return for branch in rest_branches
-    @match EQUATION_BRANCH(body = body) = branch
+    @match P_Equation.Equation.BRANCH(body = body) = branch
     @assign crefs2 = whenEquationBranchCrefs(body)
     checkCrefSetEquality(
       crefs1,

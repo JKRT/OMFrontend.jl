@@ -263,7 +263,7 @@ function typeStructor(node::InstNode)
     @match cache begin
       C_FUNCTION(funcs = fnl, typed = false) => begin
         @assign fnl = list(P_Function.typeFunction(fn) for fn in fnl)
-        @assign fnl = List(
+        @assign fnl = list(
           patchOperatorRecordConstructorBinding(fn) for fn in fnl
         )
         setFuncCache(
@@ -3464,7 +3464,7 @@ function typeStatement(st::Statement, origin::ORIGIN_Type)::Statement
       P_Statement.Statement.IF(__) => begin
         @assign next_origin = setFlag(origin, ORIGIN_IF)
         @assign cond_origin = setFlag(next_origin, ORIGIN_CONDITION)
-        @assign tybrs = List(
+        @assign tybrs = list(
           begin
             @match br begin
               (cond, body) => begin
@@ -3485,7 +3485,7 @@ function typeStatement(st::Statement, origin::ORIGIN_Type)::Statement
 
       P_Statement.Statement.WHEN(__) => begin
         @assign next_origin = setFlag(origin, ORIGIN_WHEN)
-        @assign tybrs = List(
+        @assign tybrs = list(
           begin
             @match br begin
               (cond, body) => begin

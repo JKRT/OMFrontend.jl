@@ -21,7 +21,7 @@ end
 
 function printImportError(imp1::Import, imp2::Import)
   local err_msg::ErrorTypes.Message
-  Error.addSourceMessage(Error.ERROR_FROM_HERE, nil, info(imp1))
+  Error.addSourceMessage(Error.ERROR_FROM_HERE, nil, Import_info(imp1))
   @assign err_msg = begin
     @match imp2 begin
       UNRESOLVED_IMPORT(__) => begin
@@ -121,7 +121,7 @@ function resolve(imp::Import)::Tuple{InstNode, Bool, Import}
   return (node, changed, outImport)
 end
 
-function info(imp::Import)::SourceInfo
+function Import_info(imp::Import)::SourceInfo
   local info::SourceInfo
 
   @assign info = begin

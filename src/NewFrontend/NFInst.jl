@@ -101,7 +101,7 @@ function instClassInProgram(classPath::Absyn.Path, program::SCode.Program)::Tupl
   #                  end
   #=  Convert the flat model to a DAE.=#
   @debug "CONVERT TO THE DAE REPRESENTATION"
-  (dae, daeFuncs) = convert(flat_model, funcs, name, info(inst_cls))
+  (dae, daeFuncs) = convert(flat_model, funcs, name, InstNode_info(inst_cls))
   return (dae, daeFuncs)
 end
 
@@ -428,7 +428,7 @@ end
                      else
                        @assign name = AbsynUtil.pathString(basePath)
                      end
-                     Error.addMultiSourceMessage(Error.REPLACEABLE_BASE_CLASS, list(name(base), name), list(info(base), info))
+                     Error.addMultiSourceMessage(Error.REPLACEABLE_BASE_CLASS, list(name(base), name), list(InstNode_info(base), info))
                      fail()
                    end
                  end
@@ -464,7 +464,7 @@ function checkBuiltinTypeExtends(builtinExtends::InstNode, tree::ClassTree, node
   #=  A class extending from a builtin type may not have other components or baseclasses.
   =#
   if componentCount(tree) > 0 || extendsCount(tree) > 1
-    #Error.addSourceMessage(Error.BUILTIN_EXTENDS_INVALID_ELEMENTS, list(name(builtinExtends)), info(node))
+    #Error.addSourceMessage(Error.BUILTIN_EXTENDS_INVALID_ELEMENTS, list(name(builtinExtends)), InstNode_info(node))
     @error "Extends invalid elements!"
     fail()
   end
@@ -490,7 +490,7 @@ end
                        =#
                        for comp in tree.components
                          if isComponent(comp)
-                           Error.addSourceMessage(Error.EXTERNAL_OBJECT_INVALID_ELEMENT, list(name(node), name(comp)), info(comp))
+                           Error.addSourceMessage(Error.EXTERNAL_OBJECT_INVALID_ELEMENT, list(name(node), name(comp)), Component_info(comp))
                            fail()
                          end
                        end
@@ -500,7 +500,7 @@ end
                          for ext in tree.exts
                            if name(ext) != "ExternalObject"
                              @match CLASS_NODE(nodeType = BASE_CLASS(definition = SCode.EXTENDS(baseClassPath = base_path))) = ext
-                             Error.addSourceMessage(Error.EXTERNAL_OBJECT_INVALID_ELEMENT, list(name(node), "extends " + AbsynUtil.pathString(base_path)), info(ext))
+                             Error.addSourceMessage(Error.EXTERNAL_OBJECT_INVALID_ELEMENT, list(name(node), "extends " + AbsynUtil.pathString(base_path)), InstNode_info(ext))
                              fail()
                            end
                          end
@@ -525,20 +525,20 @@ end
                              _  => begin
                                #=  Found some other element => error.
                                =#
-                               Error.addSourceMessage(Error.EXTERNAL_OBJECT_INVALID_ELEMENT, list(name(node), name(cls)), info(cls))
+                               Error.addSourceMessage(Error.EXTERNAL_OBJECT_INVALID_ELEMENT, list(name(node), name(cls)), InstNode_info(cls))
                                fail()
                              end
                            end
                          end
                        end
                        if isEmpty(constructor)
-                         Error.addSourceMessage(Error.EXTERNAL_OBJECT_MISSING_STRUCTOR, list(name(node), "constructor"), info(node))
+                         Error.addSourceMessage(Error.EXTERNAL_OBJECT_MISSING_STRUCTOR, list(name(node), "constructor"), InstNode_info(node))
                          fail()
                        end
                        #=  The constructor is missing.
                        =#
                        if isEmpty(destructor)
-                         Error.addSourceMessage(Error.EXTERNAL_OBJECT_MISSING_STRUCTOR, list(name(node), "destructor"), info(node))
+                         Error.addSourceMessage(Error.EXTERNAL_OBJECT_MISSING_STRUCTOR, list(name(node), "destructor"), InstNode_info(node))
                          fail()
                        end
                        #=  The destructor is missing.
@@ -622,7 +622,7 @@ function instClass(node::InstNode, modifier::Modifier, attributes::Attributes = 
   #=  Give an error for modifiers such as (A = B), i.e. attempting to replace a =#
   #=  class without using redeclare. =#
   if hasBinding(outer_mod)
-    Error.addSourceMessage(Error.MISSING_REDECLARE_IN_CLASS_MOD, list(name(node)), getInfo(binding(outer_mod)))
+    Error.addSourceMessage(Error.MISSING_REDECLARE_IN_CLASS_MOD, list(name(node)), Binding_getInfo(binding(outer_mod)))
     fail()
   end
   @debug "CALLING INSTCLASSDEF"
@@ -898,7 +898,7 @@ function modifyExtends(extendsNode::InstNode, scope::InstNode) ::InstNode
           #=  (probably an inherited element) is an error.
           =#
           if ! referenceEq(definition(extendsNode), definition(ext_node))
-            Error.addMultiSourceMessage(Error.FOUND_OTHER_BASECLASS, list(AbsynUtil.pathString(elem.baseClassPath)), list(info(extendsNode), info(ext_node)))
+            Error.addMultiSourceMessage(Error.FOUND_OTHER_BASECLASS, list(AbsynUtil.pathString(elem.baseClassPath)), list(InstNode_info(extendsNode), InstNode_info(ext_node)))
             fail()
           end
           ()
@@ -997,7 +997,7 @@ end
                          try
                            @assign (node, _) = lookupElement(name(mod), cls)
                          catch
-                           #Error.addSourceMessage(Error.MISSING_MODIFIED_ELEMENT, list(name(mod), clsName), info(mod))
+                           #Error.addSourceMessage(Error.MISSING_MODIFIED_ELEMENT, list(name(mod), clsName), Mofifier_info(mod))
                            @error "Missing modified element! "
                            fail()
                          end
@@ -1012,7 +1012,7 @@ end
                            @assign node_ptrs = lookupElementsPtr(name(mod), cls)
                          catch
                            @error "Missing modified element! "
-                           Error.addSourceMessage(Error.MISSING_MODIFIED_ELEMENT, list(name(mod), clsName), info(mod))
+                           Error.addSourceMessage(Error.MISSING_MODIFIED_ELEMENT, list(name(mod), clsName), Modifier_info(mod))
                            fail()
                          end
                          for node_ptr in node_ptrs
@@ -1122,7 +1122,7 @@ function redeclareClass(redeclareNode::InstNode, originalNode::InstNode, outerMo
   #=  Check that the redeclare element is actually a class.
   =#
   if ! isClass(redeclareNode)
-    Error.addMultiSourceMessage(Error.INVALID_REDECLARE_AS, list(typeName(originalNode), name(originalNode), typeName(redeclareNode)), list(info(redeclareNode), info(originalNode)))
+    Error.addMultiSourceMessage(Error.INVALID_REDECLARE_AS, list(typeName(originalNode), name(originalNode), typeName(redeclareNode)), list(InstNode_info(redeclareNode), InstNode_info(originalNode)))
     fail()
   end
   partialInstClass(originalNode)
@@ -1141,7 +1141,7 @@ function redeclareClass(redeclareNode::InstNode, originalNode::InstNode, outerMo
           #=  if the redeclaring class is empty.
           =#
           if ! SCodeUtil.isEmptyClassDef(SCodeUtil.getClassDef(definition(redeclareNode)))
-            Error.addSourceMessage(Error.BUILTIN_EXTENDS_INVALID_ELEMENTS, list(name(redeclareNode)), info(redeclareNode))
+            Error.addSourceMessage(Error.BUILTIN_EXTENDS_INVALID_ELEMENTS, list(name(redeclareNode)), InstNode_info(redeclareNode))
             fail()
           end
           #=  Class extends of a builtin type is only allowed if the extending class is empty,
@@ -1210,7 +1210,7 @@ function redeclareEnum(redeclareClass::Class, originalClass::Class, prefixes::Pr
     @match (redeclaredClass, originalClass) begin
       (PARTIAL_BUILTIN(ty = TYPE_ENUMERATION(literals = lits1)), PARTIAL_BUILTIN(ty = TYPE_ENUMERATION(literals = lits2)))  => begin
         if ! (listEmpty(lits2) || ListUtil.isEqualOnTrue(lits1, lits2, stringEq))
-          Error.addMultiSourceMessage(Error.REDECLARE_ENUM_NON_SUBTYPE, list(name(originalNode)), list(info(redeclareNode), info(originalNode)))
+          Error.addMultiSourceMessage(Error.REDECLARE_ENUM_NON_SUBTYPE, list(name(originalNode)), list(InstNode_info(redeclareNode), InstNode_info(originalNode)))
           fail()
         end
         @assign redeclaredClass.prefixes = prefixes
@@ -1219,7 +1219,7 @@ function redeclareEnum(redeclareClass::Class, originalClass::Class, prefixes::Pr
       end
 
       _  => begin
-        Error.addMultiSourceMessage(Error.REDECLARE_CLASS_NON_SUBTYPE, list(toString(restriction(originalClass)), name(originalNode)), list(info(redeclareNode), info(originalNode)))
+        Error.addMultiSourceMessage(Error.REDECLARE_CLASS_NON_SUBTYPE, list(toString(restriction(originalClass)), name(originalNode)), list(InstNode_info(redeclareNode), InstNode_info(originalNode)))
         fail()
       end
     end
@@ -1389,7 +1389,7 @@ function updateComponentConnectorType(attributes::Attributes, restriction::Restr
       @assign attributes.connectorType = cty
     end
   elseif isFlowOrStream(cty) && ! isRedeclared
-    Error.addStrictMessage(Error.CONNECTOR_PREFIX_OUTSIDE_CONNECTOR, list(toString(cty)), info(component))
+    Error.addStrictMessage(Error.CONNECTOR_PREFIX_OUTSIDE_CONNECTOR, list(toString(cty)), Copmonent_info(component))
     @assign attributes.connectorType = unsetFlowStream(cty)
   end
   attributes
@@ -1410,7 +1410,7 @@ function redeclareComponent(redeclareNode::InstNode, originalNode::InstNode, out
   #=  Check that the redeclare element actually is a component.
   =#
   if ! isComponent(redeclareNode)
-    Error.addMultiSourceMessage(Error.INVALID_REDECLARE_AS, list(typeName(originalNode), name(originalNode), typeName(redeclareNode)), list(info(redeclareNode), info(originalNode)))
+    Error.addMultiSourceMessage(Error.INVALID_REDECLARE_AS, list(typeName(originalNode), name(originalNode), typeName(redeclareNode)), list(InstNode_info(redeclareNode), InstNode_info(originalNode)))
     fail()
   end
   @assign orig_comp = component(originalNode)
@@ -1438,7 +1438,7 @@ function redeclareComponent(redeclareNode::InstNode, originalNode::InstNode, out
         #=  A redeclare is not allowed to have a condition expression.
         =#
         if isBound(rdcl_comp.condition)
-          Error.addSourceMessage(Error.REDECLARE_CONDITION, list(name(redeclareNode)), info(redeclareNode))
+          Error.addSourceMessage(Error.REDECLARE_CONDITION, list(name(redeclareNode)), InstNode_info(redeclareNode))
           fail()
         end
         @assign condition = orig_comp.condition
@@ -1469,7 +1469,7 @@ end
              non-empty modifier. =#"""
                function checkOuterComponentMod(mod::Modifier, component::SCode.Element, node::InstNode)
                  if ! isEmpty(mod) && AbsynUtil.isOnlyOuter(SCodeUtil.prefixesInnerOuter(SCodeUtil.elementPrefixes(component)))
-                   Error.addSourceMessage(Error.OUTER_ELEMENT_MOD, list(toString(mod, printName = false), name(node)), info(node))
+                   Error.addSourceMessage(Error.OUTER_ELEMENT_MOD, list(toString(mod, printName = false), name(node)), InstNode_info(node))
                    fail()
                  end
                end
@@ -1578,7 +1578,7 @@ function checkDeclaredComponentAttributes(attr::Attributes, parentRestriction::R
 end
 
 function invalidComponentPrefixError(prefix::String, node::InstNode, restriction)
-  Error.addSourceMessage(Error.INVALID_COMPONENT_PREFIX, list(prefix, name(node), toString(restriction)), info(node))
+  Error.addSourceMessage(Error.INVALID_COMPONENT_PREFIX, list(prefix, name(node), toString(restriction)), InstNode_info(node))
 end
 
 function assertNotInputOutput(dir, node::InstNode, restriction)
@@ -1736,7 +1736,7 @@ function mergeRedeclaredClassPrefixes(origPrefs::Prefixes, redeclPrefs::Prefixes
 end
 
 function printRedeclarePrefixError(node::InstNode, prefix1::String, prefix2::String)
-  Error.addSourceMessageAndFail(Error.REDECLARE_MISMATCHED_PREFIX, list(prefix1, name(node), prefix2), info(node))
+  Error.addSourceMessageAndFail(Error.REDECLARE_MISMATCHED_PREFIX, list(prefix1, name(node), prefix2), InstNode_info(node))
 end
 
 function updateComponentVariability(attr::Attributes, cls::Class, clsNode::InstNode) ::Attributes
@@ -1816,7 +1816,7 @@ end
                    while ! isEmpty(parent)
                      @assign parent_type = classScope(parent)
                      if referenceEq(definition(componentType), definition(parent_type))
-                       Error.addSourceMessage(Error.RECURSIVE_DEFINITION, list(name(component), name(classScope(parent(component)))), info(component))
+                       Error.addSourceMessage(Error.RECURSIVE_DEFINITION, list(name(component), name(classScope(parent(component)))), InstNode_info(component))
                        fail()
                      end
                      @assign parent = parent(parent)
@@ -1824,7 +1824,7 @@ end
                  end
 
                  if limitReached
-                   Error.addSourceMessage(Error.INST_RECURSION_LIMIT_REACHED, list(AbsynUtil.pathString(scopePath(component))), info(component))
+                   Error.addSourceMessage(Error.INST_RECURSION_LIMIT_REACHED, list(AbsynUtil.pathString(scopePath(component))), InstNode_info(component))
                    fail()
                  end
                  #=  If we couldn't determine the exact cause of the recursion, print a generic error.
@@ -1870,7 +1870,7 @@ function instExpressions(node::InstNode, scope::InstNode = node, sections::Secti
   local res::Restriction
   local dims::Array{Dimension}
   local dim_scope::InstNode
-  local infoVar::SourceInfo
+  local info::SourceInfo
   local ty::NFType
   @assign () = begin
     @match cls begin
@@ -1890,7 +1890,7 @@ function instExpressions(node::InstNode, scope::InstNode = node, sections::Secti
         elseif SCodeUtil.hasBooleanNamedAnnotationInClass(definition(node), "__OpenModelica_builtinType")
           @assign ty = TYPE_COMPLEX(node, ComplexType.CLASS())
         else
-          Error.addSourceMessage(Error.MISSING_TYPE_BASETYPE, list(name(node)), info(node))
+          Error.addSourceMessage(Error.MISSING_TYPE_BASETYPE, list(name(node)), infoInstNode_info(node))
           fail()
         end
         @assign cls_tree = flatten(cls_tree)
@@ -1925,9 +1925,9 @@ function instExpressions(node::InstNode, scope::InstNode = node, sections::Secti
       EXPANDED_DERIVED(dims = dims)  => begin
         @assign sections = instExpressions(cls.baseClass, scope, sections)
         @assign dim_scope = parent(node)
-        @assign infoVar = info(node)
+        @assign info = InstNode_info(node)
         for i in 1:arrayLength(dims)
-          @assign dims[i] = instDimension(dims[i], dim_scope, infoVar)
+          @assign dims[i] = instDimension(dims[i], dim_scope, info)
         end
         if isRecord(cls.restriction)
           instRecordConstructor(node)
@@ -2025,9 +2025,9 @@ function instRecordConstructor(node::InstNode)
       _  => begin
         cacheInitFunc(node)
         if SCodeUtil.isOperatorRecord(definition(node))
-          OperatorOverloading.instConstructor(scopePath(node, includeRoot = true), node, info(node))
+          OperatorOverloading.instConstructor(scopePath(node, includeRoot = true), node, InstNode_info(node))
         else
-          Record.instDefaultConstructor(scopePath(node, includeRoot = true), node, info(node))
+          Record.instDefaultConstructor(scopePath(node, includeRoot = true), node, InstNode_info(node))
         end
         ()
       end
@@ -2051,7 +2051,7 @@ function instBuiltinAttribute(attribute::Modifier, node::InstNode) ::Modifier
       MODIFIER_REDECLARE(__)  => begin
         #=  Redeclaration of builtin attributes is not allowed.
         =#
-        Error.addSourceMessage(Error.INVALID_REDECLARE_IN_BASIC_TYPE, list(name(attribute)), info(attribute))
+        Error.addSourceMessage(Error.INVALID_REDECLARE_IN_BASIC_TYPE, list(name(attribute)), Modifier_info(attribute))
         fail()
       end
       _  => begin
@@ -2507,16 +2507,16 @@ function instExternalDecl(@nospecialize(extDecl::SCode.ExternalDecl), @nospecial
     local lang::String
     local args::List{Expression}
     local ret_cref::ComponentRef
-    local infoVar::SourceInfo
+    local info::SourceInfo
     @match extDecl begin
       SCode.EXTERNALDECL(__)  => begin
-        @assign infoVar = info(scope)
+        @assign info = InstNode_info(scope)
         @assign nameVar = Util.getOptionOrDefault(extDecl.funcName, name(scope))
         @assign lang = Util.getOptionOrDefault(extDecl.lang, "C")
-        checkExternalDeclLanguage(lang, infoVar)
-        @assign args = list(instExp(arg, scope, infoVar) for arg in extDecl.args)
+        checkExternalDeclLanguage(lang, info)
+        @assign args = list(instExp(arg, scope, info) for arg in extDecl.args)
         if isSome(extDecl.output_)
-          @assign ret_cref = Lookup.lookupLocalComponent(Util.getOption(extDecl.output_), scope, infoVar)
+          @assign ret_cref = Lookup.lookupLocalComponent(Util.getOption(extDecl.output_), scope, info)
         else
           @assign ret_cref = COMPONENT_REF_EMPTY()
         end

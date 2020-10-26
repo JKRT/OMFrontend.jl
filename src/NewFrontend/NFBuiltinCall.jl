@@ -427,7 +427,7 @@ function typeOverloadedStringCall(overloadedType::M_Type, args::List{<:TypedArg}
   end
   #=  If there's no 'String' overload, let the normal String handler print the error.
   =#
-  @assign fn_ref = instFunctionRef(fn_ref, info(recopnode))
+  @assign fn_ref = instFunctionRef(fn_ref, InstNode_info(recopnode))
   @assign candidates = typeRefCache(fn_ref)
   #= for fn in candidates loop
   =#
@@ -1673,7 +1673,7 @@ function typeSampleCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tup
 
   @match ARG_TYPED_CALL(fn_ref, args, namedArgs) = P_Call.typeNormalCall(call, origin, info)
   @assign recopnode = node(fn_ref)
-  @assign fn_ref = instFunctionRef(fn_ref, info(recopnode))
+  @assign fn_ref = instFunctionRef(fn_ref, InstNode_info(recopnode))
   @match list(normalSample, clockedSample) = typeRefCache(fn_ref)
   @assign (callExp, outType, var) = begin
     @match (args, namedArgs) begin

@@ -872,15 +872,15 @@ function applyList(eql::List{<:Equation}, func::ApplyFn)
   end
 end
 
-function info(eq::Equation)::SourceInfo
-  local info::SourceInfo = ElementSource.getInfo(source(eq))
+function Equation_info(eq::Equation)::SourceInfo
+  local info::SourceInfo = DAE.ElementSource_getInfo(source(eq))
   return info
 end
 
 function source(eq::Equation)::DAE.ElementSource
-  local source::DAE.ElementSource
+  local sourceVar::DAE.ElementSource
 
-  @assign source = begin
+  @assign sourceVar = begin
     @match eq begin
       EQUATION_EQUALITY(__) => begin
         eq.source
@@ -917,7 +917,7 @@ function source(eq::Equation)::DAE.ElementSource
       end
     end
   end
-  return source
+  return sourceVar
 end
 
 function makeIf(branches::List{<:Equation_Branch}, src::DAE.ElementSource)::Equation

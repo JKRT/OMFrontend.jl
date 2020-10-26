@@ -145,7 +145,7 @@ function sortConnections(
               c1
             end),
           ),
-          Connector.getInfo(c1),
+          Connector_getInfo(c1),
         )
       end
     elseif is_undeclared1 || is_undeclared2
@@ -153,7 +153,7 @@ function sortConnections(
         Error.addSourceMessageAndFail(
           Error.UNDECLARED_CONNECTION,
           list(Connector.toString(c1), Connector.toString(c2)),
-          Connector.getInfo(c1),
+          Connector_getInfo(c1),
         )
       else
         @assign undeclaredConnections = _cons(conn, undeclaredConnections)
@@ -235,7 +235,7 @@ function getExpandableConnectorsInConnector(c1::Connector)::List{Connector}
             Connector.fromCref(
               name,
               ty,
-              ElementSource.createElementSource(info(n)),
+              ElementSource_createElementSource(info(n)),
             ),
             ecl,
           )
@@ -421,7 +421,7 @@ function augmentExpandableConnector(
   if isName(exp_node)
     Error.addInternalError(
       "Augmenting a virtual element in an expandable connector is not yet supported.",
-      Connector.getInfo(conn),
+      Connector_getInfo(conn),
     )
     fail()
   end
@@ -450,7 +450,7 @@ function augmentExpandableConnector(
         NFComponent.DEFAULT_ATTR,
         nil,
         SOME(SCode.COMMENT(NONE(), SOME("virtual variable in expandable connector"))),
-        ElementSource.getInfo(c.source),
+        ElementSource_getInfo(c.source),
       )
       @assign vars = _cons(var, vars)
     else
@@ -524,7 +524,7 @@ function updateExpandableConnection(
     Error.addSourceMessageAndFail(
       Error.INVALID_CONNECTOR_VARIABLE,
       list(toString(e1), toString(e2)),
-      Connector.getInfo(c1),
+      Connector_getInfo(c1),
     )
   end
   @assign conns = _cons(P_Connection.Connection.CONNECTION(c1, c2), conns)

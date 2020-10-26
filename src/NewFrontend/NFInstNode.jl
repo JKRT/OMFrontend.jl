@@ -1313,7 +1313,7 @@ function getType(@nospecialize(node::InstNode))::NFType
   ty
 end
 
-function info(node::InstNode) ::SourceInfo
+function InstNode_info(node::InstNode) ::SourceInfo
   local info::SourceInfo
 
   @assign info = begin

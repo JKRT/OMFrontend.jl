@@ -21,7 +21,7 @@ function convert(
   @assign elems = convertAlgorithms(flatModel.algorithms, elems)
   @assign elems = convertInitialAlgorithms(flatModel.initialAlgorithms, elems)
   @assign class_elem =
-    DAE.COMP(name, elems, createElementSource(info), flatModel.comment)
+    DAE.COMP(name, elems, DAE.ElementSource_createElementSource(info), flatModel.comment)
   @assign dae = DAE.DAE_LIST(list(class_elem))
   return (dae, daeFunctions)
 end
@@ -98,7 +98,7 @@ function makeDAEVar(
   else
     ty
   end)
-  @assign source = createElementSource(info)
+  @assign source = DAE.ElementSource_createElementSource(info)
   if settings.addTypeToSource
     @assign source = addComponentTypeToSource(cref, source)
   end
@@ -160,8 +160,9 @@ function addComponentTypeToSource(
   @assign source = begin
     @match cref begin
       COMPONENT_REF_CREF(__) => begin
-        @assign source = createElementSource(source)
-        addComponentTypeToSource(cref.restCref, source)
+        # TODO!  @assign source = DAE.ElementSource_createElementSource(source)
+        # addComponentTypeToSource(cref.restCref, source)
+        source
       end
 
       _ => begin

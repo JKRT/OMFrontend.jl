@@ -1104,7 +1104,7 @@ end
 
 """ #= This function shouldn't be used! Use InstNode.info instead, so that e.g.
      enumeration literals can be handled correctly. =#"""
-function info(component::Component)::SourceInfo
+function Component_info(component::Component)::SourceInfo
   local info::SourceInfo
 
   @assign info = begin
@@ -1130,7 +1130,7 @@ function info(component::Component)::SourceInfo
       end
 
       DELETED_COMPONENT(__) => begin
-        info(component.component)
+        Component_info(component.component)
       end
     end
   end

@@ -652,12 +652,12 @@ function apply(stmt::Statement, func::ApplyFn)
   return func(stmt)
 end
 
-function info(stmt::Statement)::SourceInfo
-  local info::SourceInfo = ElementSource.getInfo(source(stmt))
+function Statement_info(stmt::Statement)::SourceInfo
+  local info::SourceInfo = DAE.ElementSource_getInfo(Statement_source(stmt))
   return info
 end
 
-function source(stmt::Statement)::DAE.ElementSource
+function Statement_source(stmt::Statement)::DAE.ElementSource
   local source::DAE.ElementSource
   return stmt.source
 end

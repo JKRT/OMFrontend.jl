@@ -298,7 +298,7 @@ function scalarizeEquation(eq::Equation, equations::List{<:Equation})::List{Equa
                 getInstanceName() +
                 " could not expand rhs " +
                 toString(eq.rhs),
-                ElementSource.getInfo(src),
+                ElementSource_getInfo(src),
               )
             end
             @assign (lhs_iter, lhs) =

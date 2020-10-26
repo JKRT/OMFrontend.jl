@@ -43,9 +43,6 @@ include("./FrontendUtil/Prefix.jl")
 "
 TODO
 "
-function createElementSource(source)
-  return DAE.emptyElementSource
-end
 
 @nospecialize
 #=New Frontend=#

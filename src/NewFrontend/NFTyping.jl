@@ -340,7 +340,7 @@ function typeClassType(
           Error.addSourceMessage(
             Error.META_FUNCTION_NO_PARTIAL_PREFIX,
             list(AbsynUtil.pathString(P_Function.name(fn))),
-            info(instanceNode),
+            InstNode_info(instanceNode),
           )
           fail()
         end
@@ -355,7 +355,7 @@ function typeClassType(
       end
 
       EXPANDED_DERIVED(__) => begin
-        typeDimensions(cls.dims, clsNode, componentBinding, origin, info(clsNode))
+        typeDimensions(cls.dims, clsNode, componentBinding, origin, InstNode_info(clsNode))
         @assign ty = typeClassType(cls.baseClass, componentBinding, origin, instanceNode)
         @assign ty = Type.liftArrayLeftList(ty, arrayList(cls.dims))
         @assign ty_cls = TYPED_DERIVED(ty, cls.baseClass, cls.restriction)
@@ -415,7 +415,7 @@ function makeConnectorType(ctree::ClassTree, isExpandable::Bool)::ComplexType
       else
         Error.addInternalError(
           "Invalid connector type on component " + name(c),
-          info(c),
+          InstNode_info(c),
         )
         fail()
       end
@@ -527,7 +527,7 @@ function checkComponentStreamAttribute(
       Error.addSourceMessageAndFail(
         Error.NON_REAL_FLOW_OR_STREAM,
         list(ConnectorType.toString(cty), name(component)),
-        info(component),
+        InstNode_info(component),
       )
     end
   end
@@ -1157,7 +1157,7 @@ function checkComponentBindingVariability(
         "'" + toString(P_Component.getBinding(component)) + "'",
         P_Prefixes.variabilityString(bind_eff_var),
       ),
-      getInfo(binding),
+      Binding_getInfo(binding),
     )
     fail()
   end
@@ -1187,7 +1187,7 @@ function typeBinding(binding::Binding, origin::ORIGIN_Type)::Binding
     local each_ty::EachTypeType
     @match binding begin
       UNTYPED_BINDING(bindingExp = exp) => begin
-        @assign info = getInfo(binding)
+        @assign info = Binding_getInfo(binding)
         @assign (exp, ty, var) = typeExp(exp, origin, info)
         if binding.isEach
           @assign each_ty = EachType.EACH
@@ -1233,7 +1233,7 @@ function checkBindingEach(binding::Binding)
     # Error.addStrictMessage(
     #   Error.EACH_ON_NON_ARRAY,
     #   list(name(listHead(parents))),
-    #   getInfo(binding),
+    #   Binding_getInfo(binding),
     # )
   end
 end
@@ -1248,7 +1248,7 @@ function typeComponentCondition(condition::Binding, origin::ORIGIN_Type)::Bindin
     local mk::MatchKind
     @match condition begin
       UNTYPED_BINDING(bindingExp = exp) => begin
-        @assign info = getInfo(condition)
+        @assign info = Binding_getInfo(condition)
         @assign (exp, ty, var) =
           typeExp(exp, setFlag(origin, ORIGIN_CONDITION), info)
         @assign (exp, _, mk) = matchTypes(ty, TYPE_BOOLEAN(), exp)
@@ -1341,7 +1341,7 @@ function typeTypeAttribute(
                 "'" + toString(binding) + "'",
                 P_Prefixes.variabilityString(variability(binding)),
               ),
-              getInfo(binding),
+              Binding_getInfo(binding),
             )
             fail()
           end
@@ -1417,44 +1417,44 @@ function typeExp2(
       UNARY_EXPRESSION(__) => typeUnaryExpression(exp, origin, info)
       LBINARY_EXPRESSION(__) => typeLBinaryExpression(exp, origin, info)
 
-      # LUNARY_EXPRESSION(__) => begin
-      #   @assign next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
-      #   @assign (e1, ty1, var1) = typeExp(exp.exp, next_origin, info)
-      #   @assign (exp, ty) =
-      #     checkLogicalUnaryOperation(e1, ty1, var1, exp.operator, info)
-      #   (exp, ty, var1)
-      # end
+      LUNARY_EXPRESSION(__) => begin
+         @assign next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
+         @assign (e1, ty1, var1) = typeExp(exp.exp, next_origin, info)
+         @assign (exp, ty) =
+           checkLogicalUnaryOperation(e1, ty1, var1, exp.operator, info)
+         (exp, ty, var1)
+      end
 
-      # RELATION_EXPRESSION(__) => begin
-      #   @assign next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
-      #   @assign (e1, ty1, var1) = typeExp(exp.exp1, next_origin, info)
-      #   @assign (e2, ty2, var2) = typeExp(exp.exp2, next_origin, info)
-      #   @assign (exp, ty) = checkRelationOperation(
-      #     e1,
-      #     ty1,
-      #     var1,
-      #     exp.operator,
-      #     e2,
-      #     ty2,
-      #     var2,
-      #     origin,
-      #     info,
-      #   )
-      #   @assign variability = variabilityMax(var1, var2)
-      #   #=  A relation involving continuous expressions which is not inside
-      #   =#
-      #   #=  noEvent is a discrete expression.
-      #   =#
-      #   if flagNotSet(origin, ORIGIN_NOEVENT) &&
-      #      variability == Variability.CONTINUOUS
-      #     @assign variability = Variability.DISCRETE
-      #   end
-      #   (exp, ty, variability)
-      # end
+      RELATION_EXPRESSION(__) => begin
+         @assign next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
+         @assign (e1, ty1, var1) = typeExp(exp.exp1, next_origin, info)
+         @assign (e2, ty2, var2) = typeExp(exp.exp2, next_origin, info)
+         @assign (exp, ty) = checkRelationOperation(
+           e1,
+           ty1,
+           var1,
+           exp.operator,
+           e2,
+           ty2,
+           var2,
+           origin,
+           info,
+         )
+         @assign variability = variabilityMax(var1, var2)
+        #=  A relation involving continuous expressions which is not inside
+        #   =#
+        #   #=  noEvent is a discrete expression.
+        #   =#
+        if flagNotSet(origin, ORIGIN_NOEVENT) &&
+          variability == Variability.CONTINUOUS
+          @assign variability = Variability.DISCRETE
+        end
+        (exp, ty, variability)
+      end
 
-      # IF_EXPRESSION(__) => begin
-      #   typeIfExpression(exp, origin, info)
-      # end
+      IF_EXPRESSION(__) => begin
+        typeIfExpression(exp, origin, info)
+      end
 
       CALL_EXPRESSION(__) => begin
         (e1, ty, var1) = typeCall(exp, origin, info)
@@ -1474,25 +1474,25 @@ function typeExp2(
         typeExp(exp.exp, next_origin, info)
       end
 
-      # SUBSCRIPTED_EXP_EXPRESSION(__) => begin
-      #   (exp, exp.ty, variability(exp))
-      # end
+      SUBSCRIPTED_EXP_EXPRESSION(__) => begin
+        (exp, exp.ty, variability(exp))
+      end
 
-      # MUTABLE_EXPRESSION(__) => begin
-      #   #=  Subscripted expressions are assumed to already be typed.
-      #   =#
-      #   @assign e1 = P_Pointer.access(exp.exp)
-      #   @assign (e1, ty, variability) = typeExp(e1, origin, info)
-      #   @assign exp.exp = P_Pointer.create(e1)
-      #   (exp, ty, variability)
-      # end
+      MUTABLE_EXPRESSION(__) => begin
+        #=  Subscripted expressions are assumed to already be typed. =#
+        @assign e1 = P_Pointer.access(exp.exp)
+        @assign (e1, ty, variability) = typeExp(e1, origin, info)
+        @assign exp.exp = P_Pointer.create(e1)
+        (exp, ty, variability)
+      end
 
-      # PARTIAL_FUNCTION_APPLICATION_EXPRESSION(__) => begin
-      #   typePartialApplication(exp, origin, info)
-      # end
+      PARTIAL_FUNCTION_APPLICATION_EXPRESSION(__) => begin
+        typePartialApplication(exp, origin, info)
+      end
 
       BINDING_EXP(__) => typeBindingExp(exp, origin, info)
-_ => begin
+
+      _ => begin
         @info "Attempted to type"
         fail()
       end
@@ -2799,7 +2799,7 @@ function typeClassSections(classNode::InstNode, originArg::ORIGIN_Type)
                   P_Restriction.Restriction.toString(cls.restriction),
                   "external declaration",
                 ),
-                info(classNode),
+                InstNode_info(classNode),
               )
               fail()
             end
@@ -2865,20 +2865,20 @@ function typeFunctionSections(classNode::InstNode, origin::ORIGIN_Type)
                 Error.addSourceMessage(
                   Error.EQUATION_TRANSITION_FAILURE,
                   list("function"),
-                  info(classNode),
+                  InstNode_info(classNode),
                 )
               else
                 Error.addSourceMessage(
                   Error.MULTIPLE_SECTIONS_IN_FUNCTION,
                   list(name(classNode)),
-                  info(classNode),
+                  InstNode_info(classNode),
                 )
               end
               fail()
             end
 
             SECTIONS_EXTERNAL(explicit = true) => begin
-              @assign info = info(classNode)
+              @assign info = InstNode_info(classNode)
               @assign sections.args =
                 list(typeExternalArg(arg, info, classNode) for arg in sections.args)
               @assign sections.outputRef = typeCref(sections.outputRef, origin, info)
@@ -3016,7 +3016,7 @@ function makeDefaultExternalCall(extDecl::Sections, fnNode::InstNode)::Sections
           Error.addSourceMessage(
             Error.EXT_FN_SINGLE_RETURN_ARRAY,
             list(extDecl.language),
-            info(fnNode),
+            InstNode_info(fnNode),
           )
         end
         #=  If we have a single output, set the external declaration's output to
@@ -3223,7 +3223,7 @@ function typeConnect(
   local info::SourceInfo
   local eql::List{Equation}
 
-  @assign info = ElementSource.getInfo(source)
+  @assign info = ElementSource_ElementSource_getInfo(source)
   #=  Connections may not be used in if-equations unless the conditions are
   =#
   #=  parameter expressions.
@@ -3419,7 +3419,7 @@ function typeStatement(st::Statement, origin::ORIGIN_Type)::Statement
     local info::SourceInfo
     @match st begin
       P_Statement.Statement.ASSIGNMENT(__) => begin
-        @assign info = ElementSource.getInfo(st.source)
+        @assign info = DAE.ElementSource_getInfo(st.source)
         @assign (e1, ty1) =
           typeExp(st.lhs, setFlag(origin, ORIGIN_LHS), info)
         @assign (e2, ty2) =
@@ -3444,7 +3444,7 @@ function typeStatement(st::Statement, origin::ORIGIN_Type)::Statement
       end
 
       P_Statement.Statement.FOR(__) => begin
-        @assign info = ElementSource.getInfo(st.source)
+        @assign info = DAE.ElementSource_getInfo(st.source)
         if isSome(st.range)
           @match SOME(e1) = st.range
           @assign e1 = typeIterator(st.iterator, e1, origin, structural = false)
@@ -3506,7 +3506,7 @@ function typeStatement(st::Statement, origin::ORIGIN_Type)::Statement
       end
 
       P_Statement.Statement.ASSERT(__) => begin
-        @assign info = ElementSource.getInfo(st.source)
+        @assign info = DAE.ElementSource_getInfo(st.source)
         @assign next_origin = setFlag(origin, ORIGIN_ASSERT)
         @assign e1 = typeOperatorArg(
           st.condition,
@@ -3539,7 +3539,7 @@ function typeStatement(st::Statement, origin::ORIGIN_Type)::Statement
       end
 
       P_Statement.Statement.TERMINATE(__) => begin
-        @assign info = ElementSource.getInfo(st.source)
+        @assign info = DAE.ElementSource_getInfo(st.source)
         #=  terminate is not allowed in a function context.
         =#
         if flagSet(origin, ORIGIN_FUNCTION)
@@ -3559,7 +3559,7 @@ function typeStatement(st::Statement, origin::ORIGIN_Type)::Statement
       end
 
       P_Statement.Statement.NORETCALL(__) => begin
-        @assign e1 = typeExp(st.exp, origin, ElementSource.getInfo(st.source))
+        @assign e1 = typeExp(st.exp, origin, DAE.ElementSource_getInfo(st.source))
         P_Statement.Statement.NORETCALL(e1, st.source)
       end
 
@@ -3647,7 +3647,7 @@ function typeCondition(
   local info::SourceInfo
   local ety::M_Type
 
-  @assign info = ElementSource.getInfo(source)
+  @assign info = DAE.ElementSource_getInfo(source)
   @assign (condition, ty, variability) = typeExp(condition, origin, info)
   @assign ety = if allowVector
     arrayElementType(ty)
@@ -3810,12 +3810,12 @@ function typeWhenEquation(
     if Type.isClock(ty)
       if listLength(branches) != 1
         if referenceEq(branch, listHead(branches))
-          Error.addSourceMessage(Error.ELSE_WHEN_CLOCK, nil, ElementSource.getInfo(source))
+          Error.addSourceMessage(Error.ELSE_WHEN_CLOCK, nil, DAE.ElementSource_getInfo(source))
         else
           Error.addSourceMessage(
             Error.CLOCKED_WHEN_BRANCH,
             nil,
-            ElementSource.getInfo(source),
+            DAE.ElementSource_getInfo(source),
           )
         end
         fail()
@@ -3878,7 +3878,7 @@ function typeReinit(
   local cref::ComponentRef
   local info::SourceInfo
 
-  @assign info = ElementSource.getInfo(source)
+  @assign info = DAE.ElementSource_getInfo(source)
   @assign (crefExp, ty1, _) = typeExp(crefExp, origin, info)
   @assign (exp, ty2, _) = typeExp(exp, origin, info)
   #=  The first argument must be a cref.

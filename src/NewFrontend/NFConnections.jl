@@ -46,7 +46,7 @@ function makeConnectors(
       " failed to expand connector `" +
       toString(cref) +
       "\\n",
-      ElementSource.getInfo(source),
+      ElementSource_getInfo(source),
     )
   end
   #=  Connectors should only have structural parameter subscripts, so it
@@ -83,7 +83,7 @@ function collect(flatModel::FlatModel)::Tuple{FlatModel, Connections}
         var.name,
         var.ty,
         Face.INSIDE,
-        ElementSource.createElementSource(P_Component.info(comp)),
+        ElementSource_createElementSource(P_Component.info(comp)),
       )
       @assign conns = addFlow(c1, conns)
     end

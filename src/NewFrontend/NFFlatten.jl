@@ -268,7 +268,7 @@ function isDeletedComponent(condition::Binding, prefix::ComponentRef)::Bool
   if isBound(condition)
     @assign cond = condition
     @assign exp = getTypedExp(cond)
-    @assign exp = Ceval.evalExp(exp, Ceval.P_EvalTarget.CONDITION(getInfo(cond)))
+    @assign exp = Ceval.evalExp(exp, Ceval.P_EvalTarget.CONDITION(Binding_getInfo(cond)))
     @assign exp = stripBindingInfo(exp)
     if arrayAllEqual(exp)
       @assign exp = arrayFirstScalar(exp)
@@ -299,7 +299,7 @@ function isDeletedComponent(condition::Binding, prefix::ComponentRef)::Bool
           Error.addSourceMessage(
             Error.CONDITIONAL_EXP_WITHOUT_VALUE,
             list(toString(exp)),
-            getInfo(cond),
+            Binding_getInfo(cond),
           )
           fail()
         end
@@ -421,7 +421,7 @@ function flattenSimpleComponent(
   #       CREF_EXPRESSION(ty, name),
   #       getTypedExp(binding),
   #       ty,
-  #       ElementSource.createElementSource(info),
+  #       ElementSource_createElementSource(info),
   #     )
   #     @assign sections = prependEquation(eq, sections)
   #     @assign binding = EMPTY_BINDING
@@ -575,7 +575,7 @@ function flattenComplexComponent(
         CREF_EXPRESSION(ty, name),
         binding_exp,
         ty,
-        ElementSource.createElementSource(info(node)),
+        ElementSource_createElementSource(info(node)),
       )
       @assign sections = P_Sections.Sections.prependEquation(
         eq,

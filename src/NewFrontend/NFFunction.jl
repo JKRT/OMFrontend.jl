@@ -493,7 +493,7 @@ function toDAE(fn::M_Function, def::DAE.FunctionDefinition)::DAE.P_Function
     impr,
     ity,
     unused_inputs,
-    ElementSource.createElementSource(info(fn.node)),
+    ElementSource_createElementSource(info(fn.node)),
     SCodeUtil.getElementComment(definition(fn.node)),
   )
   return daeFn

@@ -4197,8 +4197,8 @@ function getRangeTypeInt(
           list(dim_exp, INTEGER_EXPRESSION(0)),
           var,
         ))
-        @assign dim_exp = simplify(dim_exp)
-        fromExp(dim_exp, var)
+        @assign dim_exp = SimplifyExp.simplify(dim_exp)
+        P_Dimension.Dimension.fromExp(dim_exp, var)
       end
     end
   end
@@ -4294,8 +4294,8 @@ function getRangeTypeReal(
           makeAdd(TYPE_INTEGER()),
           INTEGER_EXPRESSION(1),
         )
-        @assign dim_exp = simplify(dim_exp)
-        fromExp(dim_exp, var)
+        @assign dim_exp = SimplifyExp.simplify(dim_exp)
+        P_Dimension.Dimension.fromExp(dim_exp, var)
       end
     end
   end
@@ -4310,7 +4310,7 @@ function getRangeTypeBool(startExp::Expression, stopExp::Expression)::Dimension
     local dim_exp::Expression
     local var::VariabilityType
     @match (startExp, stopExp) begin
-      (BOOLEAN_EXPRESSION(__), BOOLEAN_EXPRESSION(__)) => begin
+      (P_Expression.BOOLEAN_EXPRESSION(__), P_Expression.BOOLEAN_EXPRESSION(__)) => begin
         @assign sz = if startExp.value == stopExp.value
           1
         elseif (startExp.value < stopExp.value)
@@ -4346,8 +4346,8 @@ function getRangeTypeBool(startExp::Expression, stopExp::Expression)::Dimension
               INTEGER_EXPRESSION(0),
             ),
           )
-          @assign dim_exp = simplify(dim_exp)
-          @assign dim = fromExp(dim_exp, var)
+          @assign dim_exp = SimplifyExp.simplify(dim_exp)
+          @assign dim = P_Dimension.Dimension.fromExp(dim_exp, var)
         end
         dim
       end
@@ -4368,7 +4368,7 @@ function getRangeTypeEnum(startExp::Expression, stopExp::Expression)::Dimension
       end
 
       (ENUM_LITERAL(index = 1), _) => begin
-        fromExp(stopExp, variability(stopExp))
+        P_Dimension.Dimension.fromExp(stopExp, variability(stopExp))
       end
 
       _ => begin
@@ -4389,8 +4389,8 @@ function getRangeTypeEnum(startExp::Expression, stopExp::Expression)::Dimension
             makeAdd(TYPE_INTEGER()),
             INTEGER_EXPRESSION(1),
           )
-          @assign dim_exp = simplify(dim_exp)
-          @assign dim = fromExp(dim_exp, var)
+          @assign dim_exp = SimplifyExp.simplify(dim_exp)
+          @assign dim = P_Dimension.Dimension.fromExp(dim_exp, var)
         end
         dim
       end
@@ -4481,7 +4481,7 @@ function printBindingTypeError(
   local comp_ty_str::String
   local mk::MatchKindType
 
-  @assign binding_info = getInfo(binding)
+  @assign binding_info = Binding_getInfo(binding)
   @assign comp_info = info(component)
   return if Type.isScalar(bindingType) && isArray(componentType)
     Error.addMultiSourceMessage(

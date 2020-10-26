@@ -404,7 +404,7 @@ function hasBinding(modifier::Modifier)::Bool
   return hasBinding
 end
 
-function info(modifier::Modifier)::SourceInfo
+function Modifier_info(modifier::Modifier)::SourceInfo
   local info::SourceInfo
 
   @assign info = begin

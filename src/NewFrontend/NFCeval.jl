@@ -37,7 +37,7 @@ Operator = NFOperator
 #import ..ElementSource
 
 @UniontypeDecl EvalTarget
-function getInfo(target::EvalTarget)::SourceInfo
+function EvalTarget_getInfo(target::EvalTarget)::SourceInfo
   local info::SourceInfo
 
   @assign info = begin
@@ -47,7 +47,7 @@ function getInfo(target::EvalTarget)::SourceInfo
       end
 
       ATTRIBUTE(__) => begin
-        getInfo(target.binding)
+        Binding_getInfo(target.binding)
       end
 
       RANGE(__) => begin
@@ -63,7 +63,7 @@ function getInfo(target::EvalTarget)::SourceInfo
       end
 
       STATEMENT(__) => begin
-        ElementSource.getInfo(target.source)
+        DAE.ElementSource_getInfo(target.source)
       end
 
       _ => begin
@@ -875,7 +875,7 @@ function evalRange(rangeExp::Expression, target::EvalTarget)::Expression
       step_exp,
       stop_exp,
       arrayElementType(ty),
-      P_EvalTarget.getInfo(target),
+      EvalTarget_getInfo(target),
     )
     @assign result = RANGE_EXPRESSION(ty, start_exp, step_exp, stop_exp)
   else
@@ -1296,7 +1296,7 @@ function evalBinaryDiv(exp1::Expression, exp2::Expression, target::EvalTarget)::
               toString(exp1),
               toString(exp2),
             ),
-            P_EvalTarget.getInfo(target),
+            EvalTarget_getInfo(target),
           )
           fail()
         else
@@ -2690,7 +2690,7 @@ function evalBuiltinAcos(arg::Expression, target::EvalTarget)::Expression
             Error.addSourceMessage(
               Error.ARGUMENT_OUT_OF_RANGE,
               list(String(x), "acos", "-1 <= x <= 1"),
-              P_EvalTarget.getInfo(target),
+              EvalTarget_getInfo(target),
             )
           end
           fail()
@@ -2731,7 +2731,7 @@ function evalBuiltinAsin(arg::Expression, target::EvalTarget)::Expression
             Error.addSourceMessage(
               Error.ARGUMENT_OUT_OF_RANGE,
               list(String(x), "asin", "-1 <= x <= 1"),
-              P_EvalTarget.getInfo(target),
+              EvalTarget_getInfo(target),
             )
           end
           fail()
@@ -2810,7 +2810,7 @@ function evalBuiltinCat(
       Error.addSourceMessage(
         Error.ARGUMENT_OUT_OF_RANGE,
         list(String(n), "cat", "1 <= x <= " + String(nd)),
-        P_EvalTarget.getInfo(target),
+        EvalTarget_getInfo(target),
       )
     end
     fail()
@@ -2973,7 +2973,7 @@ function evalBuiltinDiv(args::List{<:Expression}, target::EvalTarget)::Expressio
             Error.addSourceMessage(
               Error.DIVISION_BY_ZERO,
               list(String(ix), String(iy)),
-              P_EvalTarget.getInfo(target),
+              EvalTarget_getInfo(target),
             )
           end
           fail()
@@ -2988,7 +2988,7 @@ function evalBuiltinDiv(args::List{<:Expression}, target::EvalTarget)::Expressio
               Error.addSourceMessage(
                 Error.DIVISION_BY_ZERO,
                 list(String(rx), String(ry)),
-                P_EvalTarget.getInfo(target),
+                EvalTarget_getInfo(target),
               )
             end
             fail()
@@ -3155,7 +3155,7 @@ function evalBuiltinLog10(arg::Expression, target::EvalTarget)::Expression
             Error.addSourceMessage(
               Error.ARGUMENT_OUT_OF_RANGE,
               list(String(x), "log10", "x > 0"),
-              P_EvalTarget.getInfo(target),
+              EvalTarget_getInfo(target),
             )
           end
           fail()
@@ -3185,7 +3185,7 @@ function evalBuiltinLog(arg::Expression, target::EvalTarget)::Expression
             Error.addSourceMessage(
               Error.ARGUMENT_OUT_OF_RANGE,
               list(String(x), "log", "x > 0"),
-              P_EvalTarget.getInfo(target),
+              EvalTarget_getInfo(target),
             )
           end
           fail()
@@ -3474,7 +3474,7 @@ function evalBuiltinMod(args::List{<:Expression}, target::EvalTarget)::Expressio
             Error.addSourceMessage(
               Error.MODULO_BY_ZERO,
               list(String(x.value), String(y.value)),
-              P_EvalTarget.getInfo(target),
+              EvalTarget_getInfo(target),
             )
           end
           fail()
@@ -3488,7 +3488,7 @@ function evalBuiltinMod(args::List{<:Expression}, target::EvalTarget)::Expressio
             Error.addSourceMessage(
               Error.MODULO_BY_ZERO,
               list(String(x.value), String(y.value)),
-              P_EvalTarget.getInfo(target),
+              EvalTarget_getInfo(target),
             )
           end
           fail()
@@ -3624,7 +3624,7 @@ function evalBuiltinRem(args::List{<:Expression}, target::EvalTarget)::Expressio
             Error.addSourceMessage(
               Error.REM_ARG_ZERO,
               list(String(x.value), String(y.value)),
-              P_EvalTarget.getInfo(target),
+              EvalTarget_getInfo(target),
             )
           end
           fail()
@@ -3638,7 +3638,7 @@ function evalBuiltinRem(args::List{<:Expression}, target::EvalTarget)::Expressio
             Error.addSourceMessage(
               Error.REM_ARG_ZERO,
               list(String(x.value), String(y.value)),
-              P_EvalTarget.getInfo(target),
+              EvalTarget_getInfo(target),
             )
           end
           fail()
@@ -4615,7 +4615,7 @@ function evalSize(
   local expl::List{Expression}
   local info::SourceInfo
 
-  @assign info = P_EvalTarget.getInfo(target)
+  @assign info = EvalTarget_getInfo(target)
   if isSome(optIndex)
     @assign index_exp = evalExp_impl(Util.getOption(optIndex), target)
     @assign index = toInteger(index_exp)
@@ -4742,10 +4742,10 @@ function printUnboundError(component::Component, target::EvalTarget, exp::Expres
               Error.UNBOUND_PARAMETER_EVALUATE_TRUE,
               list(toString(exp) + "(fixed = true)"),
               list(
-                info(node(toCref(
+                InstNode_info(node(toCref(
                   exp,
                 ))),
-                P_EvalTarget.getInfo(target),
+                EvalTarget_getInfo(target),
               ),
             )
           end
@@ -4754,10 +4754,10 @@ function printUnboundError(component::Component, target::EvalTarget, exp::Expres
             Error.UNBOUND_CONSTANT,
             list(toString(exp)),
             list(
-              info(node(toCref(
+              InstNode_info(node(toCref(
                 exp,
               ))),
-              P_EvalTarget.getInfo(target),
+              EvalTarget_getInfo(target),
             ),
           )
           fail()

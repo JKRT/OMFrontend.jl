@@ -119,7 +119,7 @@ function variability(conn::Connector)::VariabilityType
   return var
 end
 
-function getInfo(conn::Connector)::SourceInfo
+function Connector_getInfo(conn::Connector)::SourceInfo
   local info::SourceInfo = conn.source.info
   return info
 end

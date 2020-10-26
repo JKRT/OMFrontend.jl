@@ -7034,7 +7034,7 @@ function getType(binding::Binding)::NFType
   return ty
 end
 
-function getInfo(binding::Binding)::SourceInfo
+function Binding_getInfo(binding::Binding)::SourceInfo
   local info::SourceInfo
 
   @assign info = begin

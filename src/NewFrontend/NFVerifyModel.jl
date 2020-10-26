@@ -49,7 +49,7 @@ function checkCrefSetEquality(
   end
   #=  Couldn't get the sets to match, print an error and fail.
   =#
-  Error.addSourceMessage(errMsg, nil, ElementSource.getInfo(source))
+  Error.addSourceMessage(errMsg, nil, ElementSource_getInfo(source))
   return fail()
 end
 

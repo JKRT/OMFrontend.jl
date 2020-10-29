@@ -16,6 +16,8 @@ end
 
 ParameterTree = ParameterTreeImpl.Tree
 
+import ..ErrorExt
+
 @Uniontype Call begin
   @Record TYPED_REDUCTION begin
     fn::M_Function
@@ -160,7 +162,7 @@ function retype(call::Call)::Call
             dims,
           )
         end
-        @assign call.ty = Type.liftArrayLeftList(arrayElementType(call.ty), dims)
+        @assign call.ty = liftArrayLeftList(arrayElementType(call.ty), dims)
         ()
       end
 
@@ -975,7 +977,7 @@ function typeNormalCall(call::Call, origin::ORIGIN_Type, info::SourceInfo)::Call
     local is_external::Bool
     @match call begin
       UNTYPED_CALL(__) => begin
-        @assign fnl = P_Function.typeRefCache(call.ref)
+        @assign fnl = typeRefCache(call.ref)
         typeArgs(call, origin, info)
       end
 
@@ -1239,7 +1241,7 @@ function evaluateCallTypeDim(
         catch
         end
         ErrorExt.rollBack(getInstanceName())
-        P_Dimension.Dimension.fromExp(exp, Variability.CONSTANT)
+        fromExp(exp, Variability.CONSTANT)
       end
 
       _ => begin
@@ -1393,7 +1395,7 @@ function vectorizeCall(
         =#
         #=  Make a cref expression from the iterator
         =#
-        @assign vect_ty = Type.liftArrayLeftList(base_call.ty, mk.vectDims)
+        @assign vect_ty = liftArrayLeftList(base_call.ty, mk.vectDims)
         @assign base_call.arguments = call_args
         TYPED_ARRAY_CONSTRUCTOR(
           vect_ty,
@@ -1438,7 +1440,7 @@ function checkMatchingFunctions(call::Call, info::SourceInfo)::MatchedFunction
   local func::M_Function
   local allfuncs::List{M_Function}
   local fn_node::InstNode
-  local numerr::Integer = Error.getNumErrorMessages()
+  local numerr::Integer = 0 # TODO Error.getNumErrorMessages()
   local errors::List{Integer}
 
   ErrorExt.setCheckpoint("NFCall:checkMatchingFunctions")
@@ -1733,7 +1735,7 @@ function typeReduction(
         @assign next_origin = intBitOr(next_origin, ExpOrigin.FOR)
         @assign (arg, ty, exp_var) = typeExp(call.exp, next_origin, info)
         @assign variability = Variability.variabilityMax(variability, exp_var)
-        @match list(fn) = P_Function.typeRefCache(call.ref)
+        @match list(fn) = typeRefCache(call.ref)
         TypeCheck.checkReductionType(ty, P_Function.name(fn), call.exp, info)
         @assign fold_id = Util.getTempVariableIndex()
         @assign res_id = Util.getTempVariableIndex()
@@ -1805,7 +1807,7 @@ function typeArrayConstructor(
         @assign next_origin = intBitOr(next_origin, ExpOrigin.FOR)
         @assign (arg, ty, exp_var) = typeExp(call.exp, next_origin, info)
         @assign variability = Variability.variabilityMax(variability, exp_var)
-        @assign ty = Type.liftArrayLeftList(ty, dims)
+        @assign ty = liftArrayLeftList(ty, dims)
         @assign variability = Variability.variabilityMax(variability, exp_var)
         (TYPED_ARRAY_CONSTRUCTOR(ty, variability, arg, iters), ty, variability)
       end

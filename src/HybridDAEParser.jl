@@ -40,9 +40,9 @@ include("./SCodeUtil.jl")
 include("./AbsynToSCode.jl")
 #=Utility for frontend=#
 include("./FrontendUtil/Prefix.jl")
-"
-TODO
-"
+
+include("./Util/Error.jl")
+include("./Util/ErrorExt.jl")
 
 @nospecialize
 #=New Frontend=#
@@ -56,9 +56,9 @@ include("./NewFrontend/NFSections.jl")
 include("./NewFrontend/NFRecord.jl")
 include("./NewFrontend/NFOperatorOverloading.jl")
 include("./NewFrontend/NFCeval.jl")
+include("./NewFrontend/NFEquation.jl")
 include("./NewFrontend/NFTyping.jl")
 include("./NewFrontend/NFInst.jl")
-include("./NewFrontend/NFEquation.jl")
 include("./NewFrontend/NFAlgorithm.jl")
 include("./NewFrontend/NFStatement.jl")
 include("./NewFrontend/NFBinding.jl")

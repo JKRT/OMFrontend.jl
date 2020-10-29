@@ -407,7 +407,7 @@ end
                          @match TYPE_COMPLEX(cls = node) = arrayElementType(ty)
                          @assign cls = getClass(node)
                          @assign index = lookupComponentIndex(elementName, cls)
-                         @assign ty = Type.liftArrayRightList(getType(nthComponent(index, cls)), arrayDims(ty))
+                         @assign ty = liftArrayRightList(getType(nthComponent(index, cls)), arrayDims(ty))
                          RECORD_ELEMENT_EXPRESSION(recordExp, index, elementName, ty)
                        end
                      end
@@ -4359,7 +4359,7 @@ function toDAE(exp::Expression)::DAE.Exp
       end
 
       PARTIAL_FUNCTION_APPLICATION_EXPRESSION(__)  => begin
-        @match _cons(fn, _) = P_Function.typeRefCache(exp.fn)
+        @match _cons(fn, _) = typeRefCache(exp.fn)
         DAE.PARTEVALFUNCTION(P_Function.nameConsiderBuiltin(fn), list(toDAE(arg) for arg in exp.args), toDAE(exp.ty), toDAE(TYPE_FUNCTION(fn, FunctionTYPE_FUNCTIONAL_VARIABLE)))
       end
 

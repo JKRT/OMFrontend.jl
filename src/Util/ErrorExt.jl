@@ -33,7 +33,7 @@ using ExportAll
 * See the full OSMC License conditions for more details.
 *
 */ =#
-import Main.ErrorTypes
+import ..Error.ErrorTypes
 
 function registerModelicaFormatError()
   return @error "TODO: Defined in the runtime"

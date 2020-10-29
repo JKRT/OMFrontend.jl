@@ -13,6 +13,8 @@ end
 
 TranslatableContent = String
 
-
+export gettext
+export notrans
+export TranslatableContent
 
 end

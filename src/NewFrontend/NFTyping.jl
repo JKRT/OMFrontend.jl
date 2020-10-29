@@ -357,7 +357,7 @@ function typeClassType(
       EXPANDED_DERIVED(__) => begin
         typeDimensions(cls.dims, clsNode, componentBinding, origin, InstNode_info(clsNode))
         @assign ty = typeClassType(cls.baseClass, componentBinding, origin, instanceNode)
-        @assign ty = Type.liftArrayLeftList(ty, arrayList(cls.dims))
+        @assign ty = liftArrayLeftList(ty, arrayList(cls.dims))
         @assign ty_cls = TYPED_DERIVED(ty, cls.baseClass, cls.restriction)
         updateClass(ty_cls, clsNode)
         ty
@@ -724,7 +724,7 @@ function typeDimension(
           )
           fail()
         end
-        @assign dim = P_Dimension.Dimension.fromExp(
+        @assign dim = fromExp(
           arrayFirstScalar(exp),
           var,
         )
@@ -853,7 +853,7 @@ function typeDimension(
                 exp,
                 Ceval.P_EvalTarget.DIMENSION(component, index, exp, info),
               )
-              P_Dimension.Dimension.fromExp(exp, dim.var)
+              fromExp(exp, dim.var)
             end
 
             P_Dimension.Dimension.UNKNOWN(__) => begin
@@ -1712,7 +1712,7 @@ function typeArrayDim2(
   @assign (dim, error) = begin
     @match (arrayExp, dimIndex) begin
       (ARRAY_EXPRESSION(__), 1) => begin
-        (P_Dimension.Dimension.fromExpList(arrayExp.elements), P_TypingError.NO_ERROR())
+        (fromExpList(arrayExp.elements), P_TypingError.NO_ERROR())
       end
 
       (ARRAY_EXPRESSION(__), _) => begin
@@ -2119,7 +2119,7 @@ function typeArray(
   elements::List{<:Expression},
   origin::ORIGIN_Type,
   info::SourceInfo,
-)::Tuple{Expression, M_Type, Variability}
+)::Tuple{Expression, M_Type, VariabilityType}
   local variability::VariabilityType = Variability.CONSTANT
   local arrayType::M_Type = TYPE_UNKNOWN()
   local arrayExp::Expression
@@ -2132,7 +2132,7 @@ function typeArray(
   local ty2::M_Type
   local ty3::M_Type
   local tys::List{M_Type} = nil
-  local mk::MatchKind
+  local mk::MatchKindType
   local n::Integer = 1
   local next_origin::ORIGIN_Type
 
@@ -2162,7 +2162,7 @@ function typeArray(
     @assign (exp, _, mk) = matchTypes(ty2, ty1, e)
     @assign expl2 = _cons(exp, expl2)
     @assign n = n - 1
-    if !Config.getGraphicsExpMode()
+    if true ## !Config.getGraphicsExpMode()
       if isIncompatibleMatch(mk)
         Error.addSourceMessage(
           Error.NF_ARRAY_TYPE_MISMATCH,
@@ -2180,7 +2180,7 @@ function typeArray(
   end
   #=  forget errors when handling annotations
   =#
-  @assign arrayType = Type.liftArrayLeft(ty1, P_Dimension.Dimension.fromExpList(expl2))
+  @assign arrayType = liftArrayLeft(ty1, fromExpList(expl2))
   @assign arrayExp = makeArray(arrayType, expl2)
   return (arrayExp, arrayType, variability)
 end
@@ -2629,7 +2629,7 @@ function typeIfExpression(
   ifExp::Expression,
   origin::ORIGIN_Type,
   info::SourceInfo,
-)::Tuple{Expression, M_Type, Variability}
+)::Tuple{Expression, M_Type, VariabilityType}
   local var::VariabilityType
   local ty::M_Type
 
@@ -2645,7 +2645,7 @@ function typeIfExpression(
   local cond_var::VariabilityType
   local tb_var::VariabilityType
   local fb_var::VariabilityType
-  local ty_match::MatchKind
+  local ty_match::MatchKindType
 
   @match IF_EXPRESSION(condition = cond, trueBranch = tb, falseBranch = fb) =
     ifExp
@@ -3605,7 +3605,7 @@ function typeEqualityEquation(
   if flagSet(origin, ORIGIN_WHEN) &&
      flagNotSet(origin, ORIGIN_CLOCKED)
     if checkLhsInWhen(lhsExp)
-      fold(lhsExp, Inst.markStructuralParamsSubs, 0)
+      fold(lhsExp, markStructuralParamsSubs, 0)
     else
       Error.addSourceMessage(
         Error.WHEN_EQ_LHS,
@@ -3637,10 +3637,10 @@ function typeCondition(
   condition::Expression,
   origin::ORIGIN_Type,
   source::DAE.ElementSource,
-  errorMsg,
+  errorMsg;
   allowVector::Bool = false,
   allowClock::Bool = false,
-)::Tuple{Expression, M_Type, Variability}
+)::Tuple{Expression, M_Type, VariabilityType}
   local variability::VariabilityType
   local ty::M_Type
 
@@ -3654,7 +3654,7 @@ function typeCondition(
   else
     ty
   end
-  if !(Type.isBoolean(ety) || allowClock && Type.isClock(ety))
+  if !(isBoolean(ety) || allowClock && isClock(ety))
     # Error.addSourceMessage(
     #   errorMsg,
     #   list(toString(condition), Type.toString(ty)),
@@ -3666,7 +3666,7 @@ function typeCondition(
 end
 
 function typeIfEquation(
-  branches::List{<:Equation},
+  branches::List{<:Equation_Branch},
   origin::ORIGIN_Type,
   source::DAE.ElementSource,
 )::Equation
@@ -3676,7 +3676,7 @@ function typeIfEquation(
   local eql::List{Equation}
   local accum_var::VariabilityType = Variability.CONSTANT
   local var::VariabilityType
-  local bl::List{Equation} = nil
+  local bl::List{Equation_Branch} = nil
   local bl2::List{Equation} = nil
   local next_origin::Type = setFlag(origin, ORIGIN_IF)
   local cond_origin::Type = setFlag(next_origin, ORIGIN_CONDITION)
@@ -3684,7 +3684,7 @@ function typeIfEquation(
   #=  Type the conditions of all the branches.
   =#
   for b in branches
-    @match BRANCH(cond, _, eql) = b
+    @match EQUATION_BRANCH(cond, _, eql) = b
     @assign (cond, _, var) =
       typeCondition(cond, cond_origin, source, Error.IF_CONDITION_TYPE_ERROR)
     if var > Variability.PARAMETER || Inst.isExpressionNotFixed(cond, maxDepth = 100)
@@ -3694,11 +3694,11 @@ function typeIfEquation(
       Inst.markStructuralParamsExp(cond)
     end
     @assign accum_var = variabilityMax(accum_var, var)
-    @assign bl = _cons(BRANCH(cond, var, eql), bl)
+    @assign bl = _cons(EQUATION_BRANCH(cond, var, eql), bl)
   end
 
   for b in bl
-    @match BRANCH(cond, var, eql) = b
+    @match EQUATION_BRANCH(cond, var, eql) = b
     ErrorExt.setCheckpoint(getInstanceName())
     try
       @assign eql = list(typeEquation(e, next_origin) for e in eql)
@@ -3724,7 +3724,7 @@ function typeIfEquation(
     for b in bl
       @assign bl2 = begin
         @match b begin
-          BRANCH(
+          EQUATION_BRANCH(
             __,
           ) where {(b.conditionVar <= Variability.STRUCTURAL_PARAMETER)} => begin
             @assign b.condition = Ceval.evalExp(b.condition)
@@ -3784,7 +3784,7 @@ function isNonConstantIfCondition(@nospecialize(exp::Expression))::Bool
 end
 
 function typeWhenEquation(
-  branches::List{<:Equation},
+  branches::List{<:Equation_Branch},
   origin::ORIGIN_Type,
   source::DAE.ElementSource,
 )::Equation
@@ -3798,7 +3798,7 @@ function typeWhenEquation(
   local var::VariabilityType
 
   for branch in branches
-    @match BRANCH(cond, _, body) = branch
+    @match EQUATION_BRANCH(cond, _, body) = branch
     @assign (cond, ty, var) = typeCondition(
       cond,
       origin,
@@ -3807,7 +3807,7 @@ function typeWhenEquation(
       allowVector = true,
       allowClock = true,
     )
-    if Type.isClock(ty)
+    if isClock(ty)
       if listLength(branches) != 1
         if referenceEq(branch, listHead(branches))
           Error.addSourceMessage(Error.ELSE_WHEN_CLOCK, nil, DAE.ElementSource_getInfo(source))

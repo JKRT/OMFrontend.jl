@@ -2035,7 +2035,7 @@ function checkLogicalUnaryOperation(
   end
   @assign outExp =
     LUNARY_EXPRESSION(setType(type1, operator), exp1)
-  if !Type.isBoolean(arrayElementType(type1))
+  if !isBoolean(arrayElementType(type1))
     printUnresolvableTypeError(outExp, list(type1), info)
   end
   return (outExp, resultType)
@@ -3231,7 +3231,7 @@ end
 function matchTypes(
   actualType::NFType,
   expectedType::NFType,
-  expression::Expression,
+  expression::Expression;
   allowUnknown::Bool = false,
 )::Tuple{Expression, NFType, MatchKindType}
   local matchKind::MatchKindType
@@ -4198,7 +4198,7 @@ function getRangeTypeInt(
           var,
         ))
         @assign dim_exp = SimplifyExp.simplify(dim_exp)
-        P_Dimension.Dimension.fromExp(dim_exp, var)
+        fromExp(dim_exp, var)
       end
     end
   end
@@ -4295,7 +4295,7 @@ function getRangeTypeReal(
           INTEGER_EXPRESSION(1),
         )
         @assign dim_exp = SimplifyExp.simplify(dim_exp)
-        P_Dimension.Dimension.fromExp(dim_exp, var)
+        fromExp(dim_exp, var)
       end
     end
   end
@@ -4347,7 +4347,7 @@ function getRangeTypeBool(startExp::Expression, stopExp::Expression)::Dimension
             ),
           )
           @assign dim_exp = SimplifyExp.simplify(dim_exp)
-          @assign dim = P_Dimension.Dimension.fromExp(dim_exp, var)
+          @assign dim = fromExp(dim_exp, var)
         end
         dim
       end
@@ -4368,7 +4368,7 @@ function getRangeTypeEnum(startExp::Expression, stopExp::Expression)::Dimension
       end
 
       (ENUM_LITERAL(index = 1), _) => begin
-        P_Dimension.Dimension.fromExp(stopExp, variability(stopExp))
+        fromExp(stopExp, variability(stopExp))
       end
 
       _ => begin
@@ -4390,7 +4390,7 @@ function getRangeTypeEnum(startExp::Expression, stopExp::Expression)::Dimension
             INTEGER_EXPRESSION(1),
           )
           @assign dim_exp = SimplifyExp.simplify(dim_exp)
-          @assign dim = P_Dimension.Dimension.fromExp(dim_exp, var)
+          @assign dim = fromExp(dim_exp, var)
         end
         dim
       end
@@ -4433,7 +4433,7 @@ function matchBinding(
             end
           end
         end
-        @assign (exp, ty, ty_match) = matchTypes(exp_ty, comp_ty, exp, true)
+        @assign (exp, ty, ty_match) = matchTypes(exp_ty, comp_ty, exp, allowUnknown = true)
         if !isValidAssignmentMatch(ty_match)
           printBindingTypeError(name, binding, comp_ty, exp_ty, component)
           fail()

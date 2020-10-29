@@ -39,16 +39,104 @@ prefixToStr = Function
 *
 */ =#
 
-import Main.ErrorTypes
+import ..Gettext
 
-import Main.Gettext
+module ErrorTypes
 
+using MetaModelica
+#= ExportAll is not good practice but it makes it so that we do not have to write export after each function :( =#
+using ExportAll
+#= Necessary to write declarations for your uniontypes until Julia adds support for mutually recursive types =#
+
+import ..Gettext
+
+@UniontypeDecl Severity
+@UniontypeDecl MessageType
+@UniontypeDecl Message
+@UniontypeDecl TotalMessage
+
+#= severity of message =#
+@Uniontype Severity begin
+    @Record INTERNAL begin
+
+    end
+
+    @Record ERROR begin
+
+    end
+
+    @Record WARNING begin
+
+    end
+
+    @Record NOTIFICATION begin
+
+    end
+end
+
+#= runtime scripting /interpretation error =#
+@Uniontype MessageType begin
+    @Record SYNTAX begin
+
+    end
+
+    @Record GRAMMAR begin
+
+    end
+
+    @Record TRANSLATION begin
+
+    end
+
+    @Record SYMBOLIC begin
+
+    end
+
+    @Record SIMULATION begin
+
+    end
+
+    @Record SCRIPTING begin
+
+    end
+end
+
+ErrorID = ModelicaInteger  #= Unique error id. Used to
+      look up message string and type and severity =#
+
+@Uniontype Message begin
+    @Record MESSAGE begin
+
+             id::ErrorID
+             ty::MessageType
+             severity::Severity
+             message::Gettext.TranslatableContent
+    end
+end
+
+@Uniontype TotalMessage begin
+     @Record TOTALMESSAGE begin
+
+              msg::Message
+              info::SourceInfo
+     end
+end
+
+MessageTokens = List
+
+@exportAll()
+
+end # ErrorTypes
+
+
+#=
 import Main.ErrorExt
 import Main.Flags
 import Main.Global
 import Main.System
 import Main.Testsuite
 import Main.Util
+=#
 
 const LOOKUP_ERROR =
   ErrorTypes.MESSAGE(
@@ -4387,6 +4475,9 @@ const DUPLICATE_VARIABLE_ERROR =
     ErrorTypes.ERROR(),
     Gettext.gettext("Duplicate elements:\\n %s."),
   )::ErrorTypes.Message
+
+
+#==
 const dummyInfo = SOURCEINFO("", false, 0, 0, 0, 0, 0.0)::SourceInfo
 
 function clearCurrentComponent()
@@ -4941,6 +5032,8 @@ function terminateError(message::String, info::SourceInfo)
   print(ErrorExt.printMessagesStr())
   return System.exit(-1)
 end
+
+==#
 
 @exportAll()
 end

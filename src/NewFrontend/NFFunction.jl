@@ -961,17 +961,14 @@ end
 """ #= Types the body of a function, along with any bindings of local variables
      and outputs. =#"""
 function typeFunctionBody(fn::M_Function)::M_Function
-
-  #=  Type the bindings of the outputs and local variables.
-  =#
+  #=  Type the bindings of the outputs and local variables. =#
   for c in fn.outputs
     typeComponentBinding(c, ORIGIN_FUNCTION)
   end
   for c in fn.locals
     typeComponentBinding(c, ORIGIN_FUNCTION)
   end
-  #=  Type the algorithm section of the function, if it has one.
-  =#
+  #=  Type the algorithm section of the function, if it has one. =#
   typeFunctionSections(fn.node, ORIGIN_FUNCTION)
   #=  Type any derivatives of the function.
   =#
@@ -983,10 +980,8 @@ end
 
 """ #= Types a function's parameters, local components and default arguments. =#"""
 function typeFunctionSignature(fn::M_Function)::M_Function
-
   local attr::DAE.FunctionAttributes
   local node::InstNode = fn.node
-
   if !isTyped(fn)
     typeClassType(node, EMPTY_BINDING, ORIGIN_FUNCTION, node)
     typeComponents(node, ORIGIN_FUNCTION)
@@ -1025,7 +1020,7 @@ end
 
 """ #= Returns the function(s) in the cache of the given node, and types them if
      they are not already typed. =#"""
-function typeNodeCache(functionNode::InstNode)::List{M_Function}
+function typeNodeCache(@nospecialize(functionNode::InstNode))::List{M_Function}
   local functions::List{M_Function}
   local fn_node::InstNode
   local typed::Bool
@@ -1036,9 +1031,9 @@ function typeNodeCache(functionNode::InstNode)::List{M_Function}
   #=  Type the function(s) if not already done.
   =#
   if !typed
-    @assign functions = list(typeFunctionSignature(f) for f in functions)
+    functions = list(typeFunctionSignature(f) for f in functions)
     setFuncCache(fn_node, C_FUNCTION(functions, true, special))
-    @assign functions = list(typeFunctionBody(f) for f in functions)
+    functions = list(typeFunctionBody(f) for f in functions)
     setFuncCache(fn_node, C_FUNCTION(functions, true, special))
   end
   return functions
@@ -1046,7 +1041,7 @@ end
 
 """ #= Returns the function(s) referenced by the given cref, and types them if
      they are not already typed. =#"""
-function typeRefCache(functionRef::ComponentRef)::List{M_Function}
+function typeRefCache(@nospecialize(functionRef::ComponentRef))::List{M_Function}
   local functions::List{M_Function}
   @assign functions = begin
     @match functionRef begin
@@ -1068,13 +1063,11 @@ end
 
 function isTyped(fn::M_Function)::Bool
   local isTyped::Bool
-
   @assign isTyped = begin
     @match fn.returnType begin
       TYPE_UNKNOWN(__) => begin
         false
       end
-
       _ => begin
         true
       end

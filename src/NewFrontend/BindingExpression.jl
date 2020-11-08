@@ -201,24 +201,28 @@ end
                    outExp
                  end
 
-""" #= Returns the expression contained in a binding expression, if the given
-               expression is a binding expression. =#"""
-                 function getBindingExp(bindingExp::Expression) ::Expression
-                   local outExp::Expression
+"""
+    Returns the expression contained in a binding expression, if the given
+    expression is a binding expression.
+"""
+function getBindingExp(@nospecialize(bindingExp::Expression))::Expression
+  getBindingExp2(bindingExp)
+end
 
-                   @assign outExp = begin
-                     @match bindingExp begin
-                       BINDING_EXP(__)  => begin
-                         getBindingExp(bindingExp.exp)
-                       end
-
-                       _  => begin
-                         bindingExp
-                       end
-                     end
-                   end
-                   outExp
-                 end
+function getBindingExp2(@nospecialize(bindingExp::Expression))::Expression
+  local outExp::Expression
+  @assign outExp = begin
+    @match bindingExp begin
+      BINDING_EXP(__)  => begin
+        getBindingExp(bindingExp.exp)
+      end
+      _  => begin
+        bindingExp
+      end
+    end
+  end
+  outExp
+end
 
 function isBindingExp(exp::Expression) ::Bool
   local isBindingExp::Bool
@@ -7362,13 +7366,11 @@ end
 
 function isBound(binding::Binding)::Bool
   local isBound::Bool
-
   @assign isBound = begin
     @match binding begin
       UNBOUND(__) => begin
         false
       end
-
       _ => begin
         true
       end

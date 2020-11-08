@@ -281,10 +281,10 @@ function typeStructor(node::InstNode)
 end
 
 function typeClassType(
-  clsNode::InstNode,
-  componentBinding::Binding,
+  @nospecialize(clsNode::InstNode),
+  @nospecialize(componentBinding::Binding),
   origin::ORIGIN_Type,
-  instanceNode::InstNode,
+  @nospecialize(instanceNode::InstNode),
 )::NFType
   local ty::NFType
 
@@ -941,13 +941,20 @@ function getRecordElementBinding(component::InstNode)::Tuple{Binding, Integer}
   return (binding, parentDims)
 end
 
-function typeBindings(cls::InstNode, component::InstNode, origin::ORIGIN_Type)
+function typeBindings(@nospecialize(cls::InstNode),
+                      @nospecialize(component::InstNode),
+                      @nospecialize(origin::ORIGIN_Type))
+  typeBindings2(cls, component, origin)
+end
+
+function typeBindings2(@nospecialize(cls::InstNode),
+                      @nospecialize(component::InstNode),
+                      @nospecialize(origin::ORIGIN_Type))
   local c::Class
   local cls_tree::ClassTree
   local node::InstNode
-
-  @assign c = getClass(cls)
-  return @assign () = begin
+  c = getClass(cls)
+  return () = begin
     @match c begin
       INSTANCED_CLASS(elements = cls_tree && CLASS_TREE_FLAT_TREE(__)) => begin
         for c in cls_tree.components
@@ -987,9 +994,15 @@ function typeBindings(cls::InstNode, component::InstNode, origin::ORIGIN_Type)
 end
 
 function typeComponentBinding(
-  inComponent::InstNode,
-  origin::ORIGIN_Type,
-  typeChildren::Bool = true,
+  @nospecialize(inComponent::InstNode),
+  @nospecialize(origin::ORIGIN_Type))
+  typeComponentBinding2(inComponent, origin, true)
+end
+
+function typeComponentBinding2(
+  @nospecialize(inComponent::InstNode),
+  @nospecialize(origin::ORIGIN_Type),
+  typeChildren::Bool,
 )
   local node::InstNode = resolveOuter(inComponent)
   local c::Component
@@ -1003,7 +1016,7 @@ function typeComponentBinding(
   local bind_eff_var::VariabilityType
   local attrs::Attributes
 
-  @assign c = component(node)
+  c = component(node)
   () = begin
     @match c begin
       TYPED_COMPONENT(
@@ -1048,7 +1061,7 @@ function typeComponentBinding(
 #        ErrorExt.delCheckpoint(getInstanceName()) TODO
         @assign c.binding = binding
         if isBound(c.condition)
-          @assign c.condition = typeComponentCondition(c.condition, origin)
+        @assign c.condition = typeComponentCondition(c.condition, origin)
         end
         updateComponent!(c, node)
         if typeChildren
@@ -1239,7 +1252,6 @@ function checkBindingEach(binding::Binding)
 end
 
 function typeComponentCondition(condition::Binding, origin::ORIGIN_Type)::Binding
-
   @assign condition = begin
     local exp::Expression
     local ty::M_Type
@@ -3641,27 +3653,29 @@ function typeCondition(
   allowVector::Bool = false,
   allowClock::Bool = false,
 )::Tuple{Expression, M_Type, VariabilityType}
-  local variability::VariabilityType
-  local ty::M_Type
+  # local variability::VariabilityType
+  # local ty::M_Type
 
-  local info::SourceInfo
-  local ety::M_Type
+  # local info::SourceInfo
+  # local ety::M_Type
 
-  @assign info = DAE.ElementSource_getInfo(source)
-  @assign (condition, ty, variability) = typeExp(condition, origin, info)
-  @assign ety = if allowVector
-    arrayElementType(ty)
-  else
-    ty
-  end
-  if !(isBoolean(ety) || allowClock && isClock(ety))
-    # Error.addSourceMessage(
-    #   errorMsg,
-    #   list(toString(condition), Type.toString(ty)),
-    #   info,
-    # )
-    fail()
-  end
+  # info = sourceInfo() #DAE.emptyElementSource #TODO: DAE.ElementSource_getInfo(source)
+  # (condition, ty, variability) =
+  #   typeExp(condition, origin, info)
+  # @assign ety = if allowVector
+  #   arrayElementType(ty)
+  # else
+  #   ty
+  # end
+  # if !(isBoolean(ety) || allowClock && isClock(ety))
+  #   # Error.addSourceMessage(
+  #   #   errorMsg,
+  #   #   list(toString(condition), Type.toString(ty)),
+  #   #   info,
+  #   # )
+  #   fail()
+  # end
+  fail()
   return (condition, ty, variability)
 end
 

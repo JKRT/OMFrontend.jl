@@ -21,7 +21,7 @@ function convert(
   @assign elems = convertAlgorithms(flatModel.algorithms, elems)
   @assign elems = convertInitialAlgorithms(flatModel.initialAlgorithms, elems)
   @assign class_elem =
-    DAE.COMP(name, elems, DAE.ElementSource_createElementSource(info), flatModel.comment)
+    DAE.COMP(name, elems, DAE.emptyElementSource, flatModel.comment) # TODO DAE.ElementSource_createElementSource(info)
   @assign dae = DAE.DAE_LIST(list(class_elem))
   return (dae, daeFunctions)
 end
@@ -98,7 +98,7 @@ function makeDAEVar(
   else
     ty
   end)
-  @assign source = DAE.ElementSource_createElementSource(info)
+  @assign source = DAE.emptyElementSource #ElementSource_createElementSource(info)
   if settings.addTypeToSource
     @assign source = addComponentTypeToSource(cref, source)
   end
@@ -1418,7 +1418,7 @@ function convertExternalDeclArg(exp::Expression)::DAE.ExtArg
     local cref::ComponentRef
     local e::Expression
     @match exp begin
-      CREF_EXPRESSION(cref = cref && CREF(__)) =>
+      CREF_EXPRESSION(cref = cref && COMPONENT_REF_CREF(__)) =>
         begin
           @assign dir =
             P_Prefixes.directionToAbsyn(P_Component.direction(component(cref.node)))
@@ -1431,7 +1431,7 @@ function convertExternalDeclArg(exp::Expression)::DAE.ExtArg
 
       SIZE_EXPRESSION(
         exp = CREF_EXPRESSION(
-          cref = cref && CREF(__),
+          cref = cref && COMPONENT_REF_CREF(__),
         ),
         dimIndex = SOME(e),
       ) => begin

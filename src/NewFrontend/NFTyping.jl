@@ -147,7 +147,7 @@ function isSingleExpression(origin::M_Type)::Bool
   return isSingle
 end
 
-function setFlag(origin, flag)
+function setFlag(origin, flag)::Integer
   local newOrigin
   @assign newOrigin = intBitOr(origin, flag)
   return newOrigin
@@ -3653,29 +3653,29 @@ function typeCondition(
   allowVector::Bool = false,
   allowClock::Bool = false,
 )::Tuple{Expression, M_Type, VariabilityType}
-  # local variability::VariabilityType
-  # local ty::M_Type
+  local variability::VariabilityType
+  local ty::M_Type
 
-  # local info::SourceInfo
-  # local ety::M_Type
+  local info::SourceInfo
+  local ety::M_Type
 
-  # info = sourceInfo() #DAE.emptyElementSource #TODO: DAE.ElementSource_getInfo(source)
-  # (condition, ty, variability) =
-  #   typeExp(condition, origin, info)
-  # @assign ety = if allowVector
-  #   arrayElementType(ty)
-  # else
-  #   ty
-  # end
-  # if !(isBoolean(ety) || allowClock && isClock(ety))
-  #   # Error.addSourceMessage(
-  #   #   errorMsg,
-  #   #   list(toString(condition), Type.toString(ty)),
-  #   #   info,
-  #   # )
-  #   fail()
-  # end
-  fail()
+  info = sourceInfo() #DAE.emptyElementSource #TODO: DAE.ElementSource_getInfo(source)
+  (condition, ty, variability) =
+    typeExp(condition, origin, info)
+  @assign ety = if allowVector
+    arrayElementType(ty)
+  else
+    ty
+  end
+  if !(isBoolean(ety) || allowClock && isClock(ety))
+    # Error.addSourceMessage(
+    #   errorMsg,
+    #   list(toString(condition), Type.toString(ty)),
+    #   info,
+    # )
+    fail()
+  end
+#  fail()
   return (condition, ty, variability)
 end
 

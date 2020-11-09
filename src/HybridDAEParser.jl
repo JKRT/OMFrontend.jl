@@ -44,7 +44,15 @@ include("./FrontendUtil/Prefix.jl")
 include("./Util/Error.jl")
 include("./Util/ErrorExt.jl")
 
-@nospecialize
+
+#= Disable type inference for this module =#
+if isdefined(Base, :Experimental) && isdefined(Base.Experimental, Symbol("@compiler_options"))
+    println("Setting compiler options..")
+    Base.Experimental.@compiler_options compile=min optimize=2 infer=false
+else
+    throw("@compiler_options is not available.\n 
+           This package only works for a version of Julia with @compiler_options")
+end
 #=New Frontend=#
 include("./FrontendInterfaces/NFInterfaces.jl")
 include("./NewFrontend/NFType.jl")

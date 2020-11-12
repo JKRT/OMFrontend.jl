@@ -515,7 +515,7 @@ function getTypeAttributes(cls::Class)::List{Modifier}
       end
     end
   catch e
-    @error "some $e stuff"
+    @error "Error: $e"
   end
   return attributes
 end
@@ -814,9 +814,9 @@ function classTree(cls::Class)::ClassTree
       end
     end
   end
-  @info "Our resulting tree in class tree"
+  @debug "Our resulting tree in class tree"
 #  str = LookupTree.printTreeStr(lookupTree(tree))
-  @info "Value of str"
+  @debug "Value of str"
   return tree
 end
 

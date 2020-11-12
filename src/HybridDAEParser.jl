@@ -47,7 +47,8 @@ include("./Util/ErrorExt.jl")
 
 #= Disable type inference for this module =#
 if isdefined(Base, :Experimental) && isdefined(Base.Experimental, Symbol("@compiler_options"))
-    println("Setting compiler options..")
+    @info "Setting compiler options.."
+    @info "Base.Experimental.@compiler_options compile=min optimize=2 infer=false"
     Base.Experimental.@compiler_options compile=min optimize=2 infer=false
 else
     throw("@compiler_options is not available.\n 
@@ -138,13 +139,12 @@ function instantiateSCodeToDAE(@nospecialize(elementToInstantiate::String), @nos
   Main.Global.initialize()
   # make sure we have all the flags loaded!
   # Main.Flags.new(Flags.emptyFlags)
-  @info "Parsing buildin stuff"
+  @debug "Parsing buildin stuff"
   path = realpath(realpath(Base.find_package("HybridDAEParser") * "./../../"))
   path = path * "/lib/NFModelicaBuiltin.mo"
-  @show path
   GC.enable(false) #=This C stuff can be a bit flaky..=#
   p = parseFile(path, 2 #== MetaModelica ==#)
-  @info "SCode translation"
+  @debug "SCode translation"
   s = HybridDAEParser.translateToSCode(p)
   p = Main.listAppend(s, inProgram)
   GC.enable(true)
@@ -154,22 +154,22 @@ end
 function testSpin()
     p = parseFile("./src\\example.mo")
     scodeProgram = translateToSCode(p)
-    @info "Translation to SCode"
-    @info "SCode -> DAE"
+    @debug "Translation to SCode"
+    @debug "SCode -> DAE"
     (dae, cache) = instantiateSCodeToDAE("HelloWorld", scodeProgram)
-    @info "After DAE Translation"
+    @debug "After DAE Translation"
   return dae
 end
 
 function testSpinDAEExport()
-    p = parseFile("example.mo")
-    scodeProgram = translateToSCode(p)
-    @info "Translation to SCode"
-    @info "SCode -> DAE"
-    (dae, cache) = instantiateSCodeToDAE("HelloWorld", scodeProgram)
-  @info "Exporting to file"
+  p = parseFile("example.mo")
+  scodeProgram = translateToSCode(p)
+  @debug "Translation to SCode"
+  @debug "SCode -> DAE"
+  (dae, cache) = instantiateSCodeToDAE("HelloWorld", scodeProgram)
+  @debug "Exporting to file"
   exportDAERepresentationToFile("testDAE.jl", "$dae")
-  @info "DAE Exported"
+  @debug "DAE Exported"
 end
 
 function exportDAERepresentationToFile(fileName::String, contents::String)

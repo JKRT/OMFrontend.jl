@@ -1968,7 +1968,7 @@ function instFunction3(fnNode::InstNode)::InstNode
   =#
   cacheInitFunc(fnNode)
   instExpressions(fnNode)
-  #@info "Returning in instfunction3"
+  #@debug "Returning in instfunction3"
   return fnNode
 end
 
@@ -2023,10 +2023,8 @@ function instFunction2(
         if SCodeUtil.isOperator(def)
           checkOperatorRestrictions(fnNode)
         end
-        @error "Before set node type"
         @assign fnNode =
           setNodeType(ROOT_CLASS(parent), fnNode)
-        @error "After setNodeType"
         @assign fnNode = instFunction3(fnNode)
         @assign fn = new(fnPath, fnNode)
         @assign specialBuiltin = isSpecialBuiltin(fn)

@@ -38,9 +38,9 @@ function instClassInProgram(classPath::Absyn.Path, program::SCode.Program)::Tupl
   #=  Initialize the storage for automatically generated inner elements. =#
   @assign top = setInnerOuterCache(top, C_TOP_SCOPE(NodeTree.new(), cls))
   #=  Instantiate the class. =#
-  @info "FIRST INST CALL!"
+  @debug "FIRST INST CALL!"
   @assign inst_cls = instantiateN1(cls, EMPTY_NODE())
-  @info "AFTER INST CALL"
+  @debug "AFTER INST CALL"
   insertGeneratedInners(inst_cls, top)
   #execStat("NFInst.instantiate(" + name + ")")
   @debug "INSTANTIATION STEP 1 DONE!"
@@ -59,29 +59,29 @@ function instClassInProgram(classPath::Absyn.Path, program::SCode.Program)::Tupl
   #execStat("NFInst.updateImplicitVariability")
   #=  Type the class.
   =#
-  @info "TYPECLASS(inst_cls, name)"
+  @debug "TYPECLASS(inst_cls, name)"
   typeClass(inst_cls, name)
-  @info "AFTER type class"
+  @debug "AFTER type class"
   #=  Flatten the model and evaluate constants in it.
   =#
-  @info "START FLATTENING!"
+  @debug "START FLATTENING!"
   @assign flat_model = flatten(inst_cls, name)
-  @info "CONSTANT EVALUATION"
+  @debug "CONSTANT EVALUATION"
   @assign flat_model = evaluate(flat_model)
-  @info "FLATTENING DONE: flat_model"
+  @debug "FLATTENING DONE: flat_model"
   #= Do unit checking =#
   #  @assign flat_model = UnitCheck.checkUnits(flat_model) TODO
   #=  Apply simplifications to the model.=#
   @assign flat_model = simplifyFlatModel(flat_model)
   #=  Collect a tree of all functions that are still used in the flat model.=#
-  @info "COLLECT FUNCTIONS"
+  @debug "COLLECT FUNCTIONS"
   @assign funcs = collectFunctions(flat_model, name)
-  @info "COLLECTED FUNCTIONS!"
+  @debug "COLLECTED FUNCTIONS!"
   #=  Collect package constants that couldn't be substituted with their values =#
   #=  (e.g. because they where used with non-constant subscripts), and add them to the model. =#
-  @info "COLLECT CONSTANTS"
+  @debug "COLLECT CONSTANTS"
   @assign flat_model = collectConstants(flat_model, funcs)
-  @info "COLLECTED CONSTANTS"
+  @debug "COLLECTED CONSTANTS"
   # if Flags.getConfigBool(Flags.FLAT_MODELICA)
   @debug "PRINTING FLAT MODELICA"
   #printFlatString(flat_model, FunctionTreeImpl.listValues(funcs))
@@ -94,7 +94,7 @@ function instClassInProgram(classPath::Absyn.Path, program::SCode.Program)::Tupl
   # @assign flat_model.variables = ListUtil.filterOnFalse(flat_model.variables, isEmptyArray)
   #                   end
   #=  Remove empty arrays from variables =#
-  @info "VERIFYING MODEL: "
+  @debug "VERIFYING MODEL: "
   verify(flat_model)
   #                   if Flags.isSet(Flags.NF_DUMP_FLAT)
   #                     print("FlatModel:\\n" + toString(flat_model) + "\\n")
@@ -655,7 +655,7 @@ function instClassDef(cls::Class, outerMod::Modifier, attributes::Attributes, us
         end
         updateComponentType(parentArg, node)
         @assign attributes = updateClassConnectorType(res, attributes)
-        @error "The questions is the semantics here double check!!"
+        @debug "The questions is the semantics here double check!!"
         inst_cls = getClass(node)
         cls_tree = inst_cls.elements
         #=  Fetch modification on the class definition (for class extends).
@@ -672,7 +672,7 @@ function instClassDef(cls::Class, outerMod::Modifier, attributes::Attributes, us
         =#
 
         strMod = toString(mod, true)
-        @info "Merged mod EXPANDED_CLASS: $strMod"
+        @debug "Merged mod EXPANDED_CLASS: $strMod"
 
         applyModifier(mod, cls_tree, name(node))
         #=  Apply element redeclares.
@@ -686,8 +686,7 @@ function instClassDef(cls::Class, outerMod::Modifier, attributes::Attributes, us
         =#
         redeclareClasses(cls_tree)
         #=  Instantiate the extends nodes. =#
-        @debug "BEFORE MAPEXETENDS WITH CLS_TREE"
-        @error "Double check this line. Might be ome translation error here."
+        @debug "Double check this line. Might be ome translation error here."
         mapExtends(cls_tree, (attributes, useBinding, visibility, instLevel)
                    -> instExtends(attributes = attributes,
                                   useBinding = useBinding,
@@ -722,7 +721,7 @@ function instClassDef(cls::Class, outerMod::Modifier, attributes::Attributes, us
         @assign mod = merge(outer_mod, mod)
 
         strMod = toString(mod, true)
-        @info "Merged mod EXPANDED_DERIVED: $strMod"
+        @debug "Merged mod EXPANDED_DERIVED: $strMod"
 
         @assign attrs = updateClassConnectorType(cls.restriction, cls.attributes)
         @assign attributes = mergeDerivedAttributes(attrs, attributes, parentArg)
@@ -756,7 +755,7 @@ function instClassDef(cls::Class, outerMod::Modifier, attributes::Attributes, us
         @assign mod = merge(outer_mod, mod)
 
         strMod = toString(mod, true)
-        @info "Merged mod PARTIAL_BUILTIN: $strMod"
+        @debug "Merged mod PARTIAL_BUILTIN: $strMod"
 
         applyModifier(mod, cls_tree, name(node))
         @assign inst_cls = INSTANCED_BUILTIN(ty, cls_tree, res)
@@ -1295,7 +1294,7 @@ function instComponentDef(component::SCode.Element, outerMod::Modifier, innerMod
         @assign mod = merge(outerMod, mod)
         @assign mod = addParent(node, mod)
         str = toString(mod, true)
-        @info "Merged mod: $str / $useBinding"
+        @debug "Merged mod: $str / $useBinding"
         checkOuterComponentMod(mod, component, node)
         @assign dims = list(DIMENSION_RAW_DIM(d) for d in component.attributes.arrayDims)
         bindingVar = if useBinding
@@ -2038,7 +2037,7 @@ end
 function instBuiltinAttribute(attribute::Modifier, node::InstNode) ::Modifier
 
  strMod1 = toString(attribute, true)
- @info ">instBuiltinAttribute($strMod1)"
+ @debug ">instBuiltinAttribute($strMod1)"
 
   @assign () = begin
     local bindingVar::Binding
@@ -2061,7 +2060,7 @@ function instBuiltinAttribute(attribute::Modifier, node::InstNode) ::Modifier
   end
 
   strMod2 = toString(attribute, true)
-  @info "<instBuiltinAttribute($strMod2)"
+  @debug "<instBuiltinAttribute($strMod2)"
   attribute
 end
 

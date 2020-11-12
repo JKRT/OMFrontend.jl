@@ -576,7 +576,6 @@ function typeDerCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{
   if listLength(args) != 1
     Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), "der(Real) => Real"), info)
   end
-  @error "@match list(arg) = args"
   arg = listHead(args)
   @assign (arg, ty, variability) = typeExp(arg, origin, info)
   @assign ety = arrayElementType(ty)
@@ -586,7 +585,6 @@ function typeDerCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{
   elseif ! isReal(ety)
     Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list("1", toString(fn_ref), "", toString(arg), Type.toString(ty), "Real"), info)
   end
-  @error "@match list(fn) = typeRefCache(fn_ref) TODO"
   fn = listHead(typeRefCache(fn_ref))
   @assign callExp = CALL_EXPRESSION(makeTypedCall(fn, list(arg), variability, ty))
   (callExp, ty, variability)

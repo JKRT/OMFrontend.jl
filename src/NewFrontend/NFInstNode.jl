@@ -134,18 +134,17 @@ function getPackageCache(in_caches::Array{<:CachedData}) ::CachedData
 end
 
 function setFuncCache(in_caches::Array{<:CachedData}, in_cache::CachedData)
-  #@info "Setting func cache  with $in_caches and $in_cache"
+  #@debug "Setting func cache  with $in_caches and $in_cache"
   arrayUpdate(in_caches, 1, in_cache)
 end
 
 function getFuncCache(in_caches::Array{<:CachedData}) ::CachedData
-#  @info in_caches
+#  @debug in_caches
   local out_cache::CachedData = arrayGet(in_caches, 1)
   out_cache
 end
 
 function addFunc(fn::M_Function, specialBuiltin::Bool, caches::Array{<:CachedData})
-  @error "ADD FUNC CALLED"
   local func_cache::CachedData
   @assign func_cache = getFuncCache(caches)
   @assign func_cache = begin

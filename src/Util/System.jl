@@ -577,7 +577,7 @@
          sets the external flag that signals the
          presence of stream connectors in a model =#"""
         function setHasStreamConnectors(hasStream::Bool)
-            @info "TODO: Defined in the runtime: setHasStreamConnectors"
+            @error "TODO: Defined in the runtime: setHasStreamConnectors"
         end
 
         """ #= @author: adrpo

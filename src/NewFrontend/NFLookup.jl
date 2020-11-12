@@ -290,9 +290,9 @@ end
 function lookupLocalSimpleName(n::String, scope::InstNode) ::Tuple{InstNode, Bool}
   local isImport::Bool = false
   local node::InstNode
-  @info "Looking up simple name $n"
+  @debug "Looking up simple name $n"
   @assign (node, isImport) = lookupElement(n, getClass(scope))
-  @info "We lookup an element"
+  @debug "We lookup an element"
   @assign node = resolveInner(node)
   return (node, isImport)
 end
@@ -303,10 +303,9 @@ function lookupSimpleName(nameStr::String, scope::InstNode) ::InstNode
   for i in 1:Global.recursionDepthLimit
     try
       (node, _) = lookupLocalSimpleName(nameStr, cur_scope)
-      @info "The node $nameStr is resolved in some scope"
+      @debug "The node $nameStr is resolved in some scope"
       return node
     catch e
-      @error "DBG Error: $e"
       if nameStr == name(cur_scope) && isClass(cur_scope)
         @assign node = cur_scope
         return node
@@ -389,9 +388,8 @@ function lookupFirstIdent(name::String, scope::InstNode) ::Tuple{InstNode, Looku
     @assign node = lookupSimpleBuiltinName(name)
     @assign state = LOOKUP_STATE_PREDEF_CLASS()
   catch e
-    @assign node = lookupSimpleName(name, scope)
-    @error "DBG ERROR:for $name, with $e"
-    @assign state = nodeState(node)
+    node = lookupSimpleName(name, scope)
+    state = nodeState(node)
   end
   (node, state)
 end
@@ -479,7 +477,7 @@ end
 
 function lookupSimpleBuiltinName(name::String) ::InstNode
   local builtin::InstNode
-  @info "Calling lookupSimpleBuiltinName with $name"
+  @debug "Calling lookupSimpleBuiltinName with $name"
   @assign builtin = begin
     @match name begin
       "Real"  => begin
@@ -590,8 +588,7 @@ function lookupSimpleCref(name::String, subs::List{<:Absyn.Subscript}, scope::In
         @debug "After from absyn. Returning..."
         return (node, cref, foundScope, state)
       catch e
-        @error "Error.. $e"
-        @assign foundScope = parentScope(foundScope)
+        foundScope = parentScope(foundScope)
       end
     end
     #    Error.addMessage(Error.RECURSION_DEPTH_REACHED, list(String(Global.recursionDepthLimit), scopeName(foundScope)))

@@ -1027,16 +1027,16 @@ function typeComponentBinding2(
         @assign binding = c.binding
         #ErrorExt.setCheckpoint(getInstanceName())
         #TODO
-        @error "ErrorExt.setCheckpoint(getInstanceName())"
-        #try
-          @info "Typing TC/UB ... for component: $nameStr"
+        @debug "ErrorExt.setCheckpoint(getInstanceName())"
+        try
+          @debug "Typing TC/UB ... for component: $nameStr"
           checkBindingEach(c.binding)
-          @info "Typing binding ... check each"
+          @debug "Typing binding ... check each"
           @assign binding =
             typeBinding(binding, setFlag(origin, ORIGIN_BINDING))
-          @info "Typing binding ... after typeBinding"
+          @debug "Typing binding ... after typeBinding"
           str = toString(binding)
-          @info "Typed binding: $str"
+          @debug "Typed binding: $str"
           #if !(Config.getGraphicsExpMode() && stringEq(nameStr, "graphics")) TODO
           @assign binding = matchBinding(binding, c.ty, nameStr, node)
           #end
@@ -1046,8 +1046,8 @@ function typeComponentBinding2(
             @assign c.attributes = attrs
           end
           str2 = toString(binding)
-          @info "Typed binding 2: $str2"
-        #==
+          @debug "Typed binding 2: $str2"
+
         catch e
           if isBound(c.condition)
             @assign binding =
@@ -1057,8 +1057,8 @@ function typeComponentBinding2(
             @error "Error in type componeent binding $e"
             fail()
           end
-        end ==#
-#        ErrorExt.delCheckpoint(getInstanceName()) TODO
+        end
+        #        ErrorExt.delCheckpoint(getInstanceName()) TODO
         @assign c.binding = binding
         if isBound(c.condition)
         @assign c.condition = typeComponentCondition(c.condition, origin)
@@ -1074,7 +1074,7 @@ function typeComponentBinding2(
         #=  A component without a binding, or with a binding that's already been typed.
         =#
         @assign nameStr = name(inComponent)
-        @info "Typing TC/TB binding ... for component: $nameStr"
+        @debug "Typing TC/TB binding ... for component: $nameStr"
         checkBindingEach(c.binding)
         if isTyped(c.binding)
           @assign c.binding =
@@ -1101,7 +1101,7 @@ function typeComponentBinding2(
         #=  component. Type only the binding and let the case above handle the rest.
         =#
         @assign nameStr = name(inComponent)
-        @info "Typing UC/UB binding ... for component: $nameStr"
+        @debug "Typing UC/UB binding ... for component: $nameStr"
         checkBindingEach(c.binding)
         @assign binding =
           typeBinding(c.binding, setFlag(origin, ORIGIN_BINDING))
@@ -1125,7 +1125,7 @@ function typeComponentBinding2(
 
       TYPE_ATTRIBUTE(__) => begin
         @assign nameStr = name(inComponent)
-        @info "Typing TA binding ... for component: $nameStr"
+        @debug "Typing TA binding ... for component: $nameStr"
         @assign c.modifier =
           typeTypeAttribute(c.modifier, c.ty, parent(inComponent), origin)
         updateComponent!(c, node)
@@ -1505,7 +1505,7 @@ function typeExp2(
       BINDING_EXP(__) => typeBindingExp(exp, origin, info)
 
       _ => begin
-        @info "Attempted to type"
+        @debug "Attempted to type"
         fail()
       end
     end

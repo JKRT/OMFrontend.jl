@@ -644,7 +644,6 @@ function evalComponentStartBinding(
   try
     @assign start_node = lookupElement("start", getClass(node))
   catch
-    @error "Could not lookup start!"
     return outExp
   end
   #=  Make sure we have an actual start attribute, and didn't just find some

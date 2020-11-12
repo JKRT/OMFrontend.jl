@@ -838,7 +838,7 @@ function vectorizeAlgorithm(
           NONE(),
           INTEGER_EXPRESSION(stop),
         )
-        @error "Manually check this error. It has to do with higher order functions in the translation"
+        @debug "Manually check this error. It has to do with higher order functions in the translation"
         @assign body = mapExpList(
           alg.statements,
           (x) -> addIterator(

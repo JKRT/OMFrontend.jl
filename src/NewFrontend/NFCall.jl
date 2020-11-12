@@ -1954,9 +1954,7 @@ function instNormalCall(
   @assign name = AbsynUtil.crefFirstIdent(functionName)
   #=  try to inst the parameters =#
   try
-  @error "Here we have an error"
   @assign (args, named_args) = instArgs(functionArgs, scope, info)
-  @error "Did we get here. After calling instArgs in NFCall"
  catch e
     if false #=Config.getGraphicsExpMode() && stringEq(name, "DynamicSelect") TODO =#
       @assign callExp = begin
@@ -1968,7 +1966,7 @@ function instNormalCall(
       end
       return callExp
     else
-      @debug "Failed with the following error $e"
+      @error "Failed with the following error $e"
       fail()
     end
   end

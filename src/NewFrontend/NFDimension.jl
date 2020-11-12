@@ -517,7 +517,7 @@ function fromExp(exp::Expression, var::VariabilityType)::Dimension
       EXPRESSION_INTEGER(__) => begin
         INTEGER_EXPRESSION(exp.value, var)
       end
-      EXPRESSION_TYPENAME(ty = ARRAY_TYPE(elementType = ty)) => begin
+      EXPRESSION_TYPENAME(ty = TYPE_ARRAY(elementType = ty)) => begin
         begin
           @match ty begin
             TYPE_BOOLEAN(__) => begin

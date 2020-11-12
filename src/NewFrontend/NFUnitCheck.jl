@@ -338,7 +338,7 @@ function foldEquation2(
       EQUATION_EQUALITY(
         lhs = lhs && TUPLE_EXPRESSION(__),
         rhs = rhs && CALL_EXPRESSION(__),
-      ) where {(!P_Function.isBuiltin(P_Call.typedFunction(rhs.call)))} => begin
+      ) where {(!isBuiltin(P_Call.typedFunction(rhs.call)))} => begin
         @assign fn_name =
           AbsynUtil.pathString(AbsynUtil.makeNotFullyQualified(P_Call.functionName(rhs.call)))
         @assign (_, out_vars, _, out_units) = getCallUnits(fn_name, rhs.call, fnCache)
@@ -360,7 +360,7 @@ function foldEquation2(
 
       EQUATION_EQUALITY(
         rhs = rhs && CALL_EXPRESSION(__),
-      ) where {(!P_Function.isBuiltin(P_Call.typedFunction(rhs.call)))} => begin
+      ) where {(!isBuiltin(P_Call.typedFunction(rhs.call)))} => begin
         @assign fn_name =
           AbsynUtil.pathString(AbsynUtil.makeNotFullyQualified(P_Call.functionName(rhs.call)))
         @assign (_, out_vars, _, out_units, fnCache) =
@@ -977,7 +977,7 @@ function insertUnitInEquationCall(
         (op_unit, inconsistentUnits)
       end
 
-      Absyn.IDENT(__) where {(P_Function.isBuiltin(P_Call.typedFunction(call)))} => begin
+      Absyn.IDENT(__) where {(isBuiltin(P_Call.typedFunction(call)))} => begin
         @assign (htCr2U, htS2U, htU2S, fnCache, inconsistentUnits) =
           foldCallArg(call_args, htCr2U, htS2U, htU2S, fnCache)
         (Unit.MASTER(nil), inconsistentUnits)

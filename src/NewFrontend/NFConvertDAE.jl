@@ -774,7 +774,7 @@ function convertEquation(eq::Equation, elements::List{<:DAE.Element})::List{DAE.
         @assign cr1 =
           toDAE(toCref(eq.cref))
         @assign e1 = toDAE(eq.reinitExp)
-        _cons(DAE.Element.REINIT(cr1, e1, eq.source), elements)
+        _cons(DAE.REINIT(cr1, e1, eq.source), elements)
       end
 
       EQUATION_NORETCALL(__) => begin

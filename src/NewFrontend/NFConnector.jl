@@ -266,7 +266,7 @@ function splitImpl(
         conns
       end
 
-      ARRAY_TYPE(
+      TYPE_ARRAY(
         elementType = ety && TYPE_COMPLEX(__),
       ) where {(scalarize >= ScalarizeSetting.PREFIX)} => begin
         for c in scalarize(name)
@@ -275,7 +275,7 @@ function splitImpl(
         conns
       end
 
-      ARRAY_TYPE(elementType = ety) => begin
+      TYPE_ARRAY(elementType = ety) => begin
         if scalarize == ScalarizeSetting.ALL
           for c in scalarize(name)
             @assign conns = splitImpl(c, ety, face, source, cty, scalarize, conns, dims)

@@ -719,7 +719,7 @@ function makeComponentBinding(
 
       (
         TYPED_COMPONENT(
-          ty = ty && ARRAY_TYPE(
+          ty = ty && TYPE_ARRAY(
             elementType = TYPE_COMPLEX(complexTy = COMPLEX_RECORD(rec_node)),
           ),
         ),
@@ -972,7 +972,7 @@ function evalRangeExp(rangeExp::Expression)::Expression
     end
   end
   @assign exp = makeArray(
-    ARRAY_TYPE(ty, list(P_Dimension.Dimension.fromInteger(listLength(expl)))),
+    TYPE_ARRAY(ty, list(P_Dimension.Dimension.fromInteger(listLength(expl)))),
     expl,
     literal = true,
   )
@@ -1435,9 +1435,9 @@ function evalBinaryMulVectorMatrix(vectorExp::Expression, matrixExp::Expression)
 
   @assign exp = begin
     @match transposeArray(matrixExp) begin
-      ARRAY_EXPRESSION(ARRAY_TYPE(ty, m <| _ <| nil()), expl) => begin
+      ARRAY_EXPRESSION(TYPE_ARRAY(ty, m <| _ <| nil()), expl) => begin
         @assign expl = list(evalBinaryScalarProduct(vectorExp, e) for e in expl)
-        makeArray(ARRAY_TYPE(ty, list(m)), expl, literal = true)
+        makeArray(TYPE_ARRAY(ty, list(m)), expl, literal = true)
       end
 
       _ => begin
@@ -1463,9 +1463,9 @@ function evalBinaryMulMatrixVector(matrixExp::Expression, vectorExp::Expression)
 
   @assign exp = begin
     @match matrixExp begin
-      ARRAY_EXPRESSION(ARRAY_TYPE(ty, n <| _ <| nil()), expl) => begin
+      ARRAY_EXPRESSION(TYPE_ARRAY(ty, n <| _ <| nil()), expl) => begin
         @assign expl = list(evalBinaryScalarProduct(e, vectorExp) for e in expl)
-        makeArray(ARRAY_TYPE(ty, list(n)), expl, literal = true)
+        makeArray(TYPE_ARRAY(ty, list(n)), expl, literal = true)
       end
 
       _ => begin
@@ -1491,7 +1491,7 @@ function evalBinaryScalarProduct(exp1::Expression, exp2::Expression)::Expression
     local rest_e2::List{Expression}
     @match (exp1, exp2) begin
       (
-        ARRAY_EXPRESSION(ty = ARRAY_TYPE(elem_ty)),
+        ARRAY_EXPRESSION(ty = TYPE_ARRAY(elem_ty)),
         ARRAY_EXPRESSION(__),
       ) where {(listLength(exp1.elements) == listLength(exp2.elements))} => begin
         @assign exp = makeZero(elem_ty)
@@ -1533,14 +1533,14 @@ function evalBinaryMatrixProduct(exp1::Expression, exp2::Expression)::Expression
   @assign exp = begin
     @match (exp1, e2) begin
       (
-        ARRAY_EXPRESSION(ARRAY_TYPE(elem_ty, n <| _ <| nil()), expl1),
-        ARRAY_EXPRESSION(ARRAY_TYPE(_, p <| _ <| nil()), expl2),
+        ARRAY_EXPRESSION(TYPE_ARRAY(elem_ty, n <| _ <| nil()), expl1),
+        ARRAY_EXPRESSION(TYPE_ARRAY(_, p <| _ <| nil()), expl2),
       ) => begin
-        @assign mat_ty = ARRAY_TYPE(elem_ty, list(n, p))
+        @assign mat_ty = TYPE_ARRAY(elem_ty, list(n, p))
         if listEmpty(expl2)
           @assign exp = makeZero(mat_ty)
         else
-          @assign row_ty = ARRAY_TYPE(elem_ty, list(p))
+          @assign row_ty = TYPE_ARRAY(elem_ty, list(p))
           @assign expl1 = list(
             makeArray(
               row_ty,
@@ -2344,7 +2344,7 @@ function evalCall(call::Call, target::EvalTarget)::Expression
     @match c begin
       P_Call.TYPED_CALL(__) => begin
         @assign c.arguments = list(evalExp_impl(arg, target) for arg in c.arguments)
-        if P_Function.isBuiltin(c.fn)
+        if isBuiltin(c.fn)
           bindingExpMap(
             CALL_EXPRESSION(c),
             (target) -> evalxp(target = target),
@@ -4069,7 +4069,7 @@ function evalBuiltinTranspose(arg::Expression)::Expression
   @assign result = begin
     @match arg begin
       ARRAY_EXPRESSION(
-        ty = ARRAY_TYPE(elementType = ty, dimensions = dim1 <| dim2 <| rest_dims),
+        ty = TYPE_ARRAY(elementType = ty, dimensions = dim1 <| dim2 <| rest_dims),
         elements = arr,
         literal = literal,
       ) => begin
@@ -4627,7 +4627,7 @@ function evalSize(
     @assign expl = list(P_Dimension.Dimension.sizeExp(d) for d in arrayDims(ty))
     @assign dim = P_Dimension.Dimension.fromInteger(listLength(expl), Variability.PARAMETER)
     @assign outExp =
-      makeArray(ARRAY_TYPE(TYPE_INTEGER(), list(dim)), expl)
+      makeArray(TYPE_ARRAY(TYPE_INTEGER(), list(dim)), expl)
   end
   #=  Evaluate the index.
   =#

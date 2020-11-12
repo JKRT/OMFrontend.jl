@@ -52,13 +52,13 @@ function toDAE(fnDer::FunctionDerivative)::DAE.FunctionDefinition
 
   @match INTEGER_EXPRESSION(order) = fnDer.order
   @assign derDef = DAE.FunctionDefinition.FUNCTION_DER_MAPPER(
-    P_Function.name(listHead(P_Function.getCachedFuncs(fnDer.derivedFn))),
-    P_Function.name(listHead(P_Function.getCachedFuncs(fnDer.derivativeFn))),
+    P_Function.name(listHead(getCachedFuncs(fnDer.derivedFn))),
+    P_Function.name(listHead(getCachedFuncs(fnDer.derivativeFn))),
     order,
     list(conditionToDAE(c) for c in fnDer.conditions),
     NONE(),
     list(
-      P_Function.name(listHead(P_Function.getCachedFuncs(fn)))
+      P_Function.name(listHead(getCachedFuncs(fn)))
       for fn in fnDer.lowerOrderDerivatives
     ),
   )

@@ -891,12 +891,12 @@ function unliftType(component::Component)::Component
   @assign () = begin
     local ty::M_Type
     @match component begin
-      TYPED_COMPONENT(ty = ARRAY_TYPE(elementType = ty)) => begin
+      TYPED_COMPONENT(ty = TYPE_ARRAY(elementType = ty)) => begin
         @assign component.ty = ty
         ()
       end
 
-      ITERATOR(ty = ARRAY_TYPE(elementType = ty)) => begin
+      ITERATOR(ty = TYPE_ARRAY(elementType = ty)) => begin
         @assign component.ty = ty
         ()
       end

@@ -575,7 +575,7 @@ function unparseVariability(var, ty::Integer)::String
       end
 
       Variability.DISCRETE => begin
-        if Type.isDiscrete(ty)
+        if isDiscrete(ty)
           ""
         else
           "discrete "

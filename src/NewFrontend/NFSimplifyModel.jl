@@ -570,7 +570,7 @@ function simplifyFunction(func::M_Function)
       end
     end
     for fn_der in func.derivatives
-      for der_fn in P_Function.getCachedFuncs(fn_der.derivativeFn)
+      for der_fn in getCachedFuncs(fn_der.derivativeFn)
         simplifyFunction(der_fn)
       end
     end

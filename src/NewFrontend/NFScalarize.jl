@@ -233,7 +233,7 @@ function expandComplexCref_traverser(exp::Expression)::Expression
 
   @assign () = begin
     @match exp begin
-      CREF_EXPRESSION(ty = ARRAY_TYPE(__)) => begin
+      CREF_EXPRESSION(ty = TYPE_ARRAY(__)) => begin
         #=  Expand crefs where any of the prefix nodes are arrays. For example if
         =#
         #=  b in a.b.c is SomeType[2] we expand it into {a.b[1].c, a.b[2].c}.

@@ -349,7 +349,7 @@ function collectFlatType(ty::M_Type, types::TypeTree)::TypeTree
         @assign types = TypeTree.add(types, ty.typePath, ty)
         ()
       end
-      ARRAY_TYPE(__) => begin
+      TYPE_ARRAY(__) => begin
         @assign types = P_Dimension.Dimension.foldExpList(
           ty.dimensions,
           collectExpFlatTypes_traverse,

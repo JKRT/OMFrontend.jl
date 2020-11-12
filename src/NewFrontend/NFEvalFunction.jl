@@ -355,7 +355,7 @@ function buildBinding(node::InstNode, repl::ReplTree.Tree)::Expression
   @assign ty = mapDims(ty, (repl) -> applyReplacementsDim(repl = repl))
   @assign result = begin
     @match ty begin
-      ARRAY_TYPE(__) where {(Type.hasKnownSize(ty))} => begin
+      TYPE_ARRAY(__) where {(Type.hasKnownSize(ty))} => begin
         fillType(
           ty,
           EMPTY(arrayElementType(ty)),
@@ -1380,7 +1380,7 @@ function evaluateKnownExternal(name::String, args::List{<:Expression})::Expressi
       ) => begin
         @assign dims = ModelicaExternalC.ModelicaIO_readMatrixSizes(s1, s2)
         ARRAY_EXPRESSION(
-          ARRAY_TYPE(TYPE_INTEGER(), list(P_Dimension.Dimension.fromInteger(2))),
+          TYPE_ARRAY(TYPE_INTEGER(), list(P_Dimension.Dimension.fromInteger(2))),
           list(
             INTEGER_EXPRESSION(dims[1]),
             INTEGER_EXPRESSION(dims[2]),
@@ -1436,7 +1436,7 @@ function evaluateOpenModelicaRegex(args::List{<:Expression})::Expression
         @assign (n, strs) = System.regex(str, re, i, extended, insensitive)
         @assign expl = list(STRING_EXPRESSION(s) for s in strs)
         @assign strs_ty =
-          ARRAY_TYPE(TYPE_STRING(), list(P_Dimension.Dimension.fromInteger(i)))
+          TYPE_ARRAY(TYPE_STRING(), list(P_Dimension.Dimension.fromInteger(i)))
         @assign strs_exp = makeArray(strs_ty, expl, true)
         TUPLE_EXPRESSION(
           TYPE_TUPLE(list(TYPE_INTEGER(), strs_ty), NONE()),
@@ -1488,7 +1488,7 @@ function evaluateModelicaIO_readRealMatrix(
     ncol,
     verboseRead,
   )
-  @assign ty = ARRAY_TYPE(TYPE_REAL(), list(P_Dimension.Dimension.fromInteger(ncol)))
+  @assign ty = TYPE_ARRAY(TYPE_REAL(), list(P_Dimension.Dimension.fromInteger(ncol)))
   for r = 1:nrow
     @assign row = nil
     for c = 1:ncol

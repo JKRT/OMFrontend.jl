@@ -222,7 +222,7 @@ function matchOverloadedBinaryOperator(
   @assign matchedFunctions = matchFunctionsSilent(candidates, args, nil, info)
   #=  We only allow exact matches for operator overloading. e.g. no casting or generic matches.
   =#
-  @assign exactMatches = P_MatchedFunction.getExactMatches(matchedFunctions)
+  @assign exactMatches = getExactMatches(matchedFunctions)
   if listEmpty(exactMatches)
     ErrorExt.setCheckpoint("NFTypeCheck:implicitConstruction")
     try
@@ -319,7 +319,7 @@ function matchOverloadedBinaryOperator(
   elseif listLength(exactMatches) == 1
     @match _cons(matchedFunc, _) = exactMatches
     @assign fn = matchedFunc.func
-    @assign outType = P_Function.returnType(fn)
+    @assign outType = returnType(fn)
     @assign outExp = CALL_EXPRESSION(P_Call.makeTypedCall(
       matchedFunc.func,
       list(Util.tuple31(a) for a in matchedFunc.args),
@@ -1107,7 +1107,7 @@ function implicitConstructAndMatch(
   =#
   if listLength(matchedfuncs) == 1
     @match _cons((operfn, list(exp1, exp2), var), _) = matchedfuncs
-    @assign outType = P_Function.returnType(operfn)
+    @assign outType = returnType(operfn)
     @assign outExp = CALL_EXPRESSION(P_Call.makeTypedCall(
       operfn,
       list(exp1, exp2),
@@ -1549,11 +1549,11 @@ function checkBinaryOperationMul(
       end
 
       (nil(), _) => begin
-        (ARRAY_TYPE(resultType, dims2), Op.MUL_SCALAR_ARRAY)
+        (TYPE_ARRAY(resultType, dims2), Op.MUL_SCALAR_ARRAY)
       end
 
       (_, nil()) => begin
-        (ARRAY_TYPE(resultType, dims1), Op.MUL_ARRAY_SCALAR)
+        (TYPE_ARRAY(resultType, dims1), Op.MUL_ARRAY_SCALAR)
       end
 
       (dim11 <| nil(), dim21 <| nil()) => begin
@@ -1573,21 +1573,21 @@ function checkBinaryOperationMul(
         #=  vector[n] * matrix[n, m] = vector[m]
         =#
         @assign valid = isEqual(dim11, dim21)
-        (ARRAY_TYPE(resultType, list(dim22)), Op.MUL_VECTOR_MATRIX)
+        (TYPE_ARRAY(resultType, list(dim22)), Op.MUL_VECTOR_MATRIX)
       end
 
       (dim11 <| dim12 <| nil(), dim21 <| nil()) => begin
         #=  matrix[n, m] * vector[m] = vector[n]
         =#
         @assign valid = isEqual(dim12, dim21)
-        (ARRAY_TYPE(resultType, list(dim11)), Op.MUL_MATRIX_VECTOR)
+        (TYPE_ARRAY(resultType, list(dim11)), Op.MUL_MATRIX_VECTOR)
       end
 
       (dim11 <| dim12 <| nil(), dim21 <| dim22 <| nil()) => begin
         #=  matrix[n, m] * matrix[m, p] = vector[n, p]
         =#
         @assign valid = isEqual(dim12, dim21)
-        (ARRAY_TYPE(resultType, list(dim11, dim22)), Op.MATRIX_PRODUCT)
+        (TYPE_ARRAY(resultType, list(dim11, dim22)), Op.MATRIX_PRODUCT)
       end
 
       _ => begin
@@ -1947,7 +1947,7 @@ function checkOverloadedUnaryOperator(
     matchFunctionsSilent(candidates, args, nil, info, vectorize = false)
   #=  We only allow exact matches for operator overloading. e.g. no casting or generic matches.
   =#
-  @assign exactMatches = P_MatchedFunction.getExactMatches(matchedFunctions)
+  @assign exactMatches = getExactMatches(matchedFunctions)
   if listEmpty(exactMatches)
     printUnresolvableTypeError(
       UNARY_EXPRESSION(inOp, inExp1),
@@ -1958,7 +1958,7 @@ function checkOverloadedUnaryOperator(
   end
   if listLength(exactMatches) == 1
     @match _cons(matchedFunc, _) = exactMatches
-    @assign outType = P_Function.returnType(matchedFunc.func)
+    @assign outType = returnType(matchedFunc.func)
     @assign outExp = CALL_EXPRESSION(P_Call.makeTypedCall(
       matchedFunc.func,
       list(Util.tuple31(a) for a in matchedFunc.args),
@@ -3184,7 +3184,7 @@ function matchExpressions(
         type1
       end
 
-      ARRAY_TYPE(__) => begin
+      TYPE_ARRAY(__) => begin
         @assign (exp1, exp2, compatibleType, matchKind) =
           matchArrayExpressions(exp1, type1, exp2, type2, allowUnknown)
         compatibleType
@@ -3289,7 +3289,7 @@ function matchTypes(
         actualType
       end
 
-      ARRAY_TYPE(__) => begin
+      TYPE_ARRAY(__) => begin
         @assign (expression, compatibleType, matchKind) =
           matchArrayTypes(actualType, expectedType, expression, allowUnknown)
         compatibleType
@@ -3765,8 +3765,8 @@ function matchArrayExpressions(
   local dims1::List{Dimension}
   local dims2::List{Dimension}
 
-  @match ARRAY_TYPE(elementType = ety1, dimensions = dims1) = type1
-  @match ARRAY_TYPE(elementType = ety2, dimensions = dims2) = type2
+  @match TYPE_ARRAY(elementType = ety1, dimensions = dims1) = type1
+  @match TYPE_ARRAY(elementType = ety2, dimensions = dims2) = type2
   #=  Check that the element types are compatible.
   =#
   @assign (exp1, exp2, compatibleType, matchKind) =
@@ -3792,8 +3792,8 @@ function matchArrayTypes(
   local dims1::List{Dimension}
   local dims2::List{Dimension}
 
-  @match ARRAY_TYPE(elementType = ety1, dimensions = dims1) = arrayType1
-  @match ARRAY_TYPE(elementType = ety2, dimensions = dims2) = arrayType2
+  @match TYPE_ARRAY(elementType = ety1, dimensions = dims1) = arrayType1
+  @match TYPE_ARRAY(elementType = ety2, dimensions = dims2) = arrayType2
   #=  Check that the element types are compatible.
   =#
   @assign (expression, compatibleType, matchKind) =
@@ -3838,7 +3838,7 @@ function matchArrayDims(
     end
     @assign cdims = _cons(dim1, cdims)
   end
-  @assign ty = ARRAY_TYPE(ty, listReverseInPlace(cdims))
+  @assign ty = TYPE_ARRAY(ty, listReverseInPlace(cdims))
   return (ty, matchKind)
 end
 
@@ -4110,7 +4110,7 @@ function getRangeType(
       end
     end
   end
-  @assign rangeType = ARRAY_TYPE(rangeElemType, list(dim))
+  @assign rangeType = TYPE_ARRAY(rangeElemType, list(dim))
   return rangeType
 end
 
@@ -4485,7 +4485,7 @@ function printBindingTypeError(
   @assign comp_info = info(component)
   return if Type.isScalar(bindingType) && isArray(componentType)
     Error.addMultiSourceMessage(
-      Error.MODIFIER_NON_ARRAY_TYPE_ERROR,
+      Error.MODIFIER_NON_TYPE_ARRAY_ERROR,
       list(toString(binding), name),
       list(binding_info, comp_info),
     )
@@ -4532,12 +4532,12 @@ function checkDimensionType(exp::Expression, ty::NFType, info::SourceInfo)
   return if !isInteger(ty)
     @assign () = begin
       @match exp begin
-        TYPENAME(ty = ARRAY_TYPE(elementType = TYPE_BOOLEAN(__))) => begin
+        TYPENAME(ty = TYPE_ARRAY(elementType = TYPE_BOOLEAN(__))) => begin
           ()
         end
 
         TYPENAME(
-          ty = ARRAY_TYPE(elementType = TYPE_ENUMERATION(__)),
+          ty = TYPE_ARRAY(elementType = TYPE_ENUMERATION(__)),
         ) => begin
           ()
         end

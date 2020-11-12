@@ -105,7 +105,7 @@ function typeCast(callExp::CALL_EXPRESSION, ty::NFType)::Expression
   @match CALL_EXPRESSION(call = call) = callExp
   @assign callExp = begin
     @match call begin
-      TYPED_CALL(__) where {(P_Function.isBuiltin(call.fn))} => begin
+      TYPED_CALL(__) where {(isBuiltin(call.fn))} => begin
         @assign cast_ty = setArrayElementType(call.ty, ty)
         begin
           @match AbsynUtil.pathFirstIdent(P_Function.name(call.fn)) begin
@@ -343,7 +343,7 @@ function toFlatString(call::Call)::String
           list(toFlatString(arg) for arg in call.arguments),
           ", ",
         )
-        if P_Function.isBuiltin(call.fn)
+        if isBuiltin(call.fn)
           stringAppendList(list(name, "(", arg_str, ")"))
         else
           stringAppendList(list("'", name, "'(", arg_str, ")"))
@@ -388,7 +388,7 @@ function toFlatString(call::Call)::String
           ),
           ", ",
         )
-        if P_Function.isBuiltin(call.fn)
+        if isBuiltin(call.fn)
           stringAppendList(list(name, "(", arg_str, " for ", c, ")"))
         else
           stringAppendList(list("'", name, "'(", arg_str, " for ", c, ")"))
@@ -660,11 +660,11 @@ function isImpure(call::Call)::Bool
   @assign isImpure = begin
     @match call begin
       UNTYPED_CALL(__) => begin
-        P_Function.isImpure(listHead(P_Function.getRefCache(call.ref)))
+        isImpure(listHead(P_Function.getRefCache(call.ref)))
       end
 
       TYPED_CALL(__) => begin
-        P_Function.isImpure(call.fn) || P_Function.isOMImpure(call.fn)
+        isImpure(call.fn) || isOMImpure(call.fn)
       end
 
       _ => begin
@@ -883,7 +883,7 @@ function matchTypedNormalCall(call::Call, origin::ORIGIN_Type, info::SourceInfo)
   =#
   #=  see https:trac.openmodelica.org/OpenModelica/ticket/5133
   =#
-  @assign var = if P_Function.isImpure(func) || P_Function.isOMImpure(func)
+  @assign var = if isImpure(func) || isOMImpure(func)
     Variability.PARAMETER
   else
     Variability.CONSTANT
@@ -894,15 +894,15 @@ function matchTypedNormalCall(call::Call, origin::ORIGIN_Type, info::SourceInfo)
     @assign var = variabilityMax(var, arg_var)
   end
   @assign args = listReverseInPlace(args)
-  @assign ty = P_Function.returnType(func)
+  @assign ty = returnType(func)
   #=  Hack to fix return type of some builtin functions.
   =#
-  if Type.isPolymorphic(ty)
+  if isPolymorphic(ty)
     @assign ty = getSpecialReturnType(func, args)
   end
   if var == Variability.PARAMETER && P_Function.isExternal(func)
     @assign var = Variability.NON_STRUCTURAL_PARAMETER
-  elseif Type.isDiscrete(ty) && var == Variability.CONTINUOUS
+  elseif isDiscrete(ty) && var == Variability.CONTINUOUS
     @assign var = Variability.IMPLICITLY_DISCRETE
   end
   #=  Mark external functions with parameter expressions as non-structural,
@@ -913,7 +913,7 @@ function matchTypedNormalCall(call::Call, origin::ORIGIN_Type, info::SourceInfo)
   =#
   #=  treated as implicitly discrete if the arguments are continuous.
   =#
-  @assign ty = evaluateCallType(ty, func, args)
+  (ty, _) = evaluateCallType(ty, func, args)
   @assign call = makeTypedCall(func, args, var, ty)
   #=  If the matching was a vectorized one then create a map call
   =#
@@ -921,7 +921,7 @@ function matchTypedNormalCall(call::Call, origin::ORIGIN_Type, info::SourceInfo)
   =#
   #=  and subscipting it with an iterator for each dim and creating a map call.
   =#
-  if P_MatchedFunction.isVectorized(matchedFunc)
+  if isVectorized(matchedFunc)
     @assign call = vectorizeCall(call, matchedFunc.mk, scope, info)
   end
   return call
@@ -1256,27 +1256,24 @@ function evaluateCallType(
   ty::NFType,
   fn::M_Function,
   args::List{<:Expression},
-  ptree::ParameterTree = ParameterTree.EMPTY(),
+  ptree::ParameterTree = ParameterTreeImpl.EMPTY(),
 )::Tuple{NFType, ParameterTree}
-
   @assign ty = begin
     local dims::List{Dimension}
     local tys::List{NFType}
     @match ty begin
-      ARRAY_TYPE(__) => begin
+      TYPE_ARRAY(__) => begin
         @assign (dims, ptree) =
           ListUtil.map1Fold(ty.dimensions, evaluateCallTypeDim, (fn, args), ptree)
         @assign ty.dimensions = dims
         ty
       end
-
       TYPE_TUPLE(__) => begin
         @assign (tys, ptree) =
           ListUtil.map2Fold(ty.types, evaluateCallType, fn, args, ptree)
         @assign ty.types = tys
         ty
       end
-
       _ => begin
         ty
       end
@@ -1359,7 +1356,7 @@ function vectorizeCall(
             getInstanceName() + " got unknown dimension for vectorized call",
             info,
           )
-          @assign ty = ARRAY_TYPE(TYPE_INTEGER(), list(dim))
+          @assign ty = TYPE_ARRAY(TYPE_INTEGER(), list(dim))
           @assign exp = RANGE_EXPRESSION(
             ty,
             INTEGER_EXPRESSION(1),
@@ -1446,13 +1443,13 @@ function checkMatchingFunctions(call::Call, info::SourceInfo)::MatchedFunction
   ErrorExt.setCheckpoint("NFCall:checkMatchingFunctions")
   @assign matchedFunctions = begin
     @match call begin
-      ARG_TYPED_CALL(ref = CREF(node = fn_node)) => begin
-        @assign allfuncs = P_Function.getCachedFuncs(fn_node)
+      ARG_TYPED_CALL(ref = COMPONENT_REF_CREF(node = fn_node)) => begin
+        @assign allfuncs = getCachedFuncs(fn_node)
         if listLength(allfuncs) > 1
           @assign allfuncs =
             list(fn for fn in allfuncs if !P_Function.isDefaultRecordConstructor(fn))
         end
-        P_Function.matchFunctions(allfuncs, call.arguments, call.named_args, info)
+        matchFunctions(allfuncs, call.arguments, call.named_args, info)
       end
     end
   end
@@ -1494,7 +1491,7 @@ function checkMatchingFunctions(call::Call, info::SourceInfo)::MatchedFunction
   =#
   ErrorExt.rollBack("NFCall:checkMatchingFunctions")
   if listLength(matchedFunctions) > 1
-    @assign exactMatches = P_MatchedFunction.getExactMatches(matchedFunctions)
+    @assign exactMatches = getExactMatches(matchedFunctions)
     if listEmpty(exactMatches)
       @assign exactMatches = P_MatchedFunction.getExactVectorizedMatches(matchedFunctions)
     end
@@ -1515,7 +1512,7 @@ function checkMatchingFunctions(call::Call, info::SourceInfo)::MatchedFunction
   end
   #=  Overwrite the actual function name with the overload name for builtin functions.
   =#
-  if P_Function.isBuiltin(matchedFunc.func)
+  if isBuiltin(matchedFunc.func)
     @assign func = matchedFunc.func
     @assign func.path = nameConsiderBuiltin(func)
     @assign matchedFunc.func = func
@@ -1585,7 +1582,7 @@ function reductionFoldExpression(
         "sum" => begin
           @match TYPE_COMPLEX(cls = op_node) = reductionType
           @assign op_node = lookupElement("'+'", getClass(op_node))
-          P_Function.instFunctionNode(op_node)
+          instFunctionNode(op_node)
           @match list(fn) = P_Function.typeNodeCache(op_node)
           SOME(CALL_EXPRESSION(makeTypedCall(
             fn,

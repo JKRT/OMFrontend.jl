@@ -925,7 +925,7 @@ function typePartialApplication(
   @assign inputs = fn.inputs
   @assign slots = fn.slots
   @assign rest_names = arg_names
-  @assign variability = if P_Function.isImpure(fn) || P_Function.isOMImpure(fn)
+  @assign variability = if isImpure(fn) || isOMImpure(fn)
     Variability.PARAMETER
   else
     Variability.CONSTANT
@@ -1260,9 +1260,8 @@ function matchArgs(
       return (args, funcMatchKind)
     end
     input_ty = getType(comp)
-    allowUnknown = true
     @assign (arg_exp, ty, mk) =
-      matchTypes(arg_ty, input_ty, arg_exp, allowUnknown)
+      matchTypes(arg_ty, input_ty, arg_exp, allowUnknown = true)
     @assign matched = isValidArgumentMatch(mk)
     if !matched && vectorize
       @assign (arg_exp, ty, vect_arg, vect_dims, mk) =
@@ -2251,7 +2250,7 @@ function isValidParamType(ty::NFType)::Bool
         true
       end
 
-      ARRAY_TYPE(__) => begin
+      TYPE_ARRAY(__) => begin
         isValidParamType(ty.elementType)
       end
 

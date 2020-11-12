@@ -333,7 +333,7 @@ function makeCatExp(n::Integer, args::List{<:Expression}, tys::List{<:M_Type}, v
   #=  with the concatenated dimension set to unknown.
   =#
   @assign dims = arrayDims(resTy)
-  @assign resTyToMatch = ARRAY_TYPE(arrayElementType(resTy), ListUtil.set(dims, n, P_Dimension.Dimension.UNKNOWN()))
+  @assign resTyToMatch = TYPE_ARRAY(arrayElementType(resTy), ListUtil.set(dims, n, P_Dimension.Dimension.UNKNOWN()))
   @assign dims = list(listGet(lst, n) for lst in dimsLst)
   @assign sumDim = P_Dimension.Dimension.fromInteger(0)
   for d in dims
@@ -341,7 +341,7 @@ function makeCatExp(n::Integer, args::List{<:Expression}, tys::List{<:M_Type}, v
   end
   #=  Create the concatenated dimension
   =#
-  @assign resTy = ARRAY_TYPE(arrayElementType(resTy), ListUtil.set(arrayDims(resTy), n, sumDim))
+  @assign resTy = TYPE_ARRAY(arrayElementType(resTy), ListUtil.set(arrayDims(resTy), n, sumDim))
   @assign tys2 = tys3
   @assign tys3 = nil
   @assign res = nil
@@ -436,14 +436,14 @@ function typeOverloadedStringCall(overloadedType::M_Type, args::List{<:TypedArg}
   #= end for;
   =#
   @assign matchedFunctions = matchFunctionsSilent(candidates, args, namedArgs, info)
-  @assign exactMatches = P_MatchedFunction.getExactMatches(matchedFunctions)
+  @assign exactMatches = getExactMatches(matchedFunctions)
   if listEmpty(exactMatches)
     Error.addSourceMessage(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.typedString(call), P_Function.candidateFuncListString(candidates)), info)
     fail()
   end
   if listLength(exactMatches) == 1
     @match _cons(matchedFunc, _) = exactMatches
-    @assign outType = P_Function.returnType(matchedFunc.func)
+    @assign outType = returnType(matchedFunc.func)
     for arg in matchedFunc.args
       @assign var = variabilityMax(var, Util.tuple33(arg))
     end
@@ -612,8 +612,8 @@ function typeDiagonalCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::T
   @assign (arg, ty, variability) = typeExp(listHead(args), origin, info)
   @assign ty = begin
     @match ty begin
-      ARRAY_TYPE(dimensions = dim <|  nil())  => begin
-        ARRAY_TYPE(ty.elementType, list(dim, dim))
+      TYPE_ARRAY(dimensions = dim <|  nil())  => begin
+        TYPE_ARRAY(ty.elementType, list(dim, dim))
       end
 
       _  => begin
@@ -997,7 +997,7 @@ function typeVectorCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tup
       end
     end
   end
-  @assign ty = ARRAY_TYPE(arrayElementType(ty), list(vector_dim))
+  @assign ty = TYPE_ARRAY(arrayElementType(ty), list(vector_dim))
   @match list(fn) = typeRefCache(fn_ref)
   @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(fn, list(arg), variability, ty))
   (callExp, ty, variability)
@@ -1041,7 +1041,7 @@ function typeMatrixCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tup
       end
       @assign i = i + 1
     end
-    @assign ty = ARRAY_TYPE(arrayElementType(ty), list(dim1, dim2))
+    @assign ty = TYPE_ARRAY(arrayElementType(ty), list(dim1, dim2))
     @match list(fn) = typeRefCache(fn_ref)
     @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(fn, list(arg), variability, ty))
   end
@@ -1141,8 +1141,8 @@ function typeTransposeCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::
   @assign (arg, ty, variability) = typeExp(listHead(args), origin, info)
   @assign ty = begin
     @match ty begin
-      ARRAY_TYPE(dimensions = dim1 <| dim2 <| rest_dims)  => begin
-        ARRAY_TYPE(ty.elementType, _cons(dim2, _cons(dim1, rest_dims)))
+      TYPE_ARRAY(dimensions = dim1 <| dim2 <| rest_dims)  => begin
+        TYPE_ARRAY(ty.elementType, _cons(dim2, _cons(dim1, rest_dims)))
       end
 
       _  => begin
@@ -1473,7 +1473,7 @@ end
                   end
                   @match list(fn) = typeRefCache(fn_ref)
                   assert(listLength(arrayDims(ty1)) == listLength(arrayDims(ty2)), "the first two parameters need to have the same size")
-                  @assign ty = ARRAY_TYPE(Type.TYPE_INTEGER(), arrayDims(ty1))
+                  @assign ty = TYPE_ARRAY(Type.TYPE_INTEGER(), arrayDims(ty1))
                   @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(fn, list(arg1, arg2), var, ty))
                   (callExp, ty, var)
                 end
@@ -1493,7 +1493,7 @@ function checkConnectionsArgument(arg::Expression, ty::M_Type, fnRef::ComponentR
               =#
               @assign ty2 = begin
                 @match ty2 begin
-                  ARRAY_TYPE(__) where (listLength(subscriptsAllFlat(arg.cref)) == listLength(ty2.dimensions))  => begin
+                  TYPE_ARRAY(__) where (listLength(subscriptsAllFlat(arg.cref)) == listLength(ty2.dimensions))  => begin
                     ty2.elementType
                   end
 
@@ -1510,7 +1510,7 @@ function checkConnectionsArgument(arg::Expression, ty::M_Type, fnRef::ComponentR
               =#
               @assign ty2 = begin
                 @match ty2 begin
-                  ARRAY_TYPE(__) where (listLength(subscriptsAllFlat(arg.cref)) == listLength(ty2.dimensions))  => begin
+                  TYPE_ARRAY(__) where (listLength(subscriptsAllFlat(arg.cref)) == listLength(ty2.dimensions))  => begin
                     ty2.elementType
                   end
 

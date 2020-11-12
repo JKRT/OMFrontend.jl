@@ -321,7 +321,7 @@ end
                          listGet(recordExp.elements, index)
                        end
 
-                       ARRAY_EXPRESSION(elements =  nil(), ty = ARRAY_TYPE(elementType = TYPE_COMPLEX(cls = node)))  => begin
+                       ARRAY_EXPRESSION(elements =  nil(), ty = TYPE_ARRAY(elementType = TYPE_COMPLEX(cls = node)))  => begin
                          makeEmptyArray(getType(nthComponent(index, getClass(node))))
                        end
 
@@ -330,7 +330,7 @@ end
                          makeArray(setArrayElementType(recordExp.ty, typeOf(listHead(expl))), expl)
                        end
 
-                       RECORD_ELEMENT_EXPRESSION(ty = ARRAY_TYPE(elementType = TYPE_COMPLEX(cls = node)))  => begin
+                       RECORD_ELEMENT_EXPRESSION(ty = TYPE_ARRAY(elementType = TYPE_COMPLEX(cls = node)))  => begin
                          @assign node = nthComponent(index, getClass(node))
                          RECORD_ELEMENT_EXPRESSION(recordExp, index, name(node), liftArrayLeftList(getType(node), arrayDims(recordExp.ty)))
                        end
@@ -386,7 +386,7 @@ end
                          makeArray(ty, nil)
                        end
 
-                       ARRAY_EXPRESSION(ty = ARRAY_TYPE(elementType = TYPE_COMPLEX(cls = node)))  => begin
+                       ARRAY_EXPRESSION(ty = TYPE_ARRAY(elementType = TYPE_COMPLEX(cls = node)))  => begin
                          @assign index = lookupComponentIndex(elementName, getClass(node))
                          @assign expl = list(nthRecordElement(index, e) for e in recordExp.elements)
                          @assign ty = liftArrayLeft(typeOf(listHead(expl)), P_Dimension.Dimension.fromInteger(listLength(expl)))
@@ -781,7 +781,7 @@ function makeIdentityMatrix(n::Integer, elementType::M_Type) ::Expression
 
   @assign zero = makeZero(elementType)
   @assign one = makeOne(elementType)
-  @assign row_ty = ARRAY_TYPE(elementType, list(P_Dimension.Dimension.fromInteger(n)))
+  @assign row_ty = TYPE_ARRAY(elementType, list(P_Dimension.Dimension.fromInteger(n)))
   for i in 1:n
     @assign row = nil
     for j in 2:i
@@ -809,14 +809,14 @@ function transposeArray(arrayExp::Expression) ::Expression
   local matrix::List{List{Expression}}
   local literal::Bool
 
-  @match ARRAY(ARRAY_TYPE(ty, _cons(dim1, _cons(dim2, rest_dims))), expl, literal) = arrayExp
+  @match ARRAY(TYPE_ARRAY(ty, _cons(dim1, _cons(dim2, rest_dims))), expl, literal) = arrayExp
   if ! listEmpty(expl)
-    @assign row_ty = ARRAY_TYPE(ty, _cons(dim1, rest_dims))
+    @assign row_ty = TYPE_ARRAY(ty, _cons(dim1, rest_dims))
     @assign matrix = list(arrayElements(e) for e in expl)
     @assign matrix = ListUtil.transposeList(matrix)
     @assign expl = list(makeArray(row_ty, row, literal) for row in matrix)
   end
-  @assign outExp = makeArray(ARRAY_TYPE(ty, _cons(dim2, _cons(dim1, rest_dims))), expl, literal)
+  @assign outExp = makeArray(TYPE_ARRAY(ty, _cons(dim2, _cons(dim1, rest_dims))), expl, literal)
   outExp
 end
 
@@ -1015,7 +1015,7 @@ function makeMinValue(ty::M_Type) ::Expression
         ENUM_LITERAL_EXPRESSION(ty, listHead(ty.literals), 1)
       end
 
-      ARRAY_TYPE(__)  => begin
+      TYPE_ARRAY(__)  => begin
         makeArray(ty, ListUtil.fill(makeMaxValue(Type.unliftArray(ty)), P_Dimension.Dimension.size(listHead(ty.dimensions))), literal = true)
       end
     end
@@ -1044,7 +1044,7 @@ function makeMaxValue(ty::M_Type) ::Expression
         ENUM_LITERAL_EXPRESSION(ty, ListUtil.last(ty.literals), listLength(ty.literals))
       end
 
-      ARRAY_TYPE(__)  => begin
+      TYPE_ARRAY(__)  => begin
         ARRAY_EXPRESSION(ty, ListUtil.fill(makeMaxValue(Type.unliftArray(ty)), P_Dimension.Dimension.size(listHead(ty.dimensions))), literal = true)
       end
     end
@@ -1065,7 +1065,7 @@ function makeOne(ty::M_Type) ::Expression
         INTEGER_EXPRESSION(1)
       end
 
-      ARRAY_TYPE(__)  => begin
+      TYPE_ARRAY(__)  => begin
         ARRAY_EXPRESSION(ty, ListUtil.fill(makeZero(Type.unliftArray(ty)), P_Dimension.Dimension.size(listHead(ty.dimensions))), literal = true)
       end
     end
@@ -1080,7 +1080,7 @@ function makeOperatorRecordZero(recordNode::InstNode) ::Expression
   local fn::P_Function.P_Function
 
   @assign op_node = lookupElement("'0'", getClass(recordNode))
-  P_Function.P_Function.instFunctionNode(op_node)
+  P_Function.instFunctionNode(op_node)
   @match list(fn) = P_Function.P_Function.typeNodeCache(op_node)
   @assign zeroExp = CALL_EXPRESSION(makeTypedCall(fn, nil, Variability.CONSTANT))
   @assign zeroExp = Ceval.evalExp(zeroExp)
@@ -1100,7 +1100,7 @@ function makeZero(ty::M_Type) ::Expression
         INTEGER_EXPRESSION(0)
       end
 
-      ARRAY_TYPE(__)  => begin
+      TYPE_ARRAY(__)  => begin
         ARRAY_EXPRESSION(ty, ListUtil.fill(makeZero(Type.unliftArray(ty)), P_Dimension.Dimension.size(listHead(ty.dimensions))), literal = true)
       end
 
@@ -5199,7 +5199,7 @@ function applySubscriptRange(subscript::Subscript, exp::Expression) ::Expression
 
       SUBSCRIPT_SLICE(__)  => begin
         @match RANGE_EXPRESSION(ty = ty) = exp
-        @assign ty = ARRAY_TYPE(Type.unliftArray(ty), list(toDimension(sub)))
+        @assign ty = TYPE_ARRAY(Type.unliftArray(ty), list(toDimension(sub)))
         SUBSCRIPTED_EXP_EXPRESSION(exp, list(subscript), ty)
       end
 
@@ -5343,7 +5343,7 @@ function applySubscriptTypename(subscript::Subscript, ty::M_Type) ::Expression
       end
 
       SUBSCRIPT_SLICE(__)  => begin
-        SUBSCRIPTED_EXP_EXPRESSION(TYPENAME_EXPRESSION(ty), list(subscript), ARRAY_TYPE(ty, list(toDimension(sub))))
+        SUBSCRIPTED_EXP_EXPRESSION(TYPENAME_EXPRESSION(ty), list(subscript), TYPE_ARRAY(ty, list(toDimension(sub))))
       end
 
       SUBSCRIPT_WHOLE(__)  => begin
@@ -5455,10 +5455,10 @@ function makeRealMatrix(values::List{<:List{<:AbstractFloat}}) ::Expression
   local expl::List{Expression}
 
   if listEmpty(values)
-    @assign ty = ARRAY_TYPE(TYPE_REAL(), list(P_Dimension.Dimension.fromInteger(0), P_Dimension.Dimension.UNKNOWN()))
+    @assign ty = TYPE_ARRAY(TYPE_REAL(), list(P_Dimension.Dimension.fromInteger(0), P_Dimension.Dimension.UNKNOWN()))
     @assign exp = makeEmptyArray(ty)
   else
-    @assign ty = ARRAY_TYPE(TYPE_REAL(), list(P_Dimension.Dimension.fromInteger(listLength(listHead(values)))))
+    @assign ty = TYPE_ARRAY(TYPE_REAL(), list(P_Dimension.Dimension.fromInteger(listLength(listHead(values)))))
     @assign expl = list(makeArray(ty, list(REAL_EXPRESSION(v) for v in row), literal = true) for row in values)
     @assign ty = liftArrayLeft(ty, P_Dimension.Dimension.fromInteger(listLength(expl)))
     @assign exp = makeArray(ty, expl, literal = true)
@@ -5469,14 +5469,14 @@ end
 function makeRealArray(values::List{<:AbstractFloat}) ::Expression
   local exp::Expression
 
-  @assign exp = makeArray(ARRAY_TYPE(TYPE_REAL(), list(P_Dimension.Dimension.fromInteger(listLength(values)))), list(REAL_EXPRESSION(v) for v in values), literal = true)
+  @assign exp = makeArray(TYPE_ARRAY(TYPE_REAL(), list(P_Dimension.Dimension.fromInteger(listLength(values)))), list(REAL_EXPRESSION(v) for v in values), literal = true)
   exp
 end
 
 function makeIntegerArray(values::List{<:Integer}) ::Expression
   local exp::Expression
 
-    @assign exp = makeArray(ARRAY_TYPE(TYPE_INTEGER(),
+    @assign exp = makeArray(TYPE_ARRAY(TYPE_INTEGER(),
                                        list(fromInteger(listLength(values)))), list(INTEGER_EXPRESSION(v) for v in values), true)
   exp
 end

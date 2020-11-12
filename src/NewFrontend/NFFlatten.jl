@@ -763,7 +763,7 @@ function vectorizeEquation(
         end
         @match list(P_Dimension.Dimension.INTEGER_EXPRESSION(size = stop)) = dimensions
         @assign range = RANGE_EXPRESSION(
-          ARRAY_TYPE(TYPE_INTEGER(), dimensions),
+          TYPE_ARRAY(TYPE_INTEGER(), dimensions),
           INTEGER_EXPRESSION(1),
           NONE(),
           INTEGER_EXPRESSION(stop),
@@ -833,7 +833,7 @@ function vectorizeAlgorithm(
         end
         @match list(P_Dimension.Dimension.INTEGER_EXPRESSION(size = stop)) = dimensions
         @assign range = RANGE_EXPRESSION(
-          ARRAY_TYPE(TYPE_INTEGER(), dimensions),
+          TYPE_ARRAY(TYPE_INTEGER(), dimensions),
           INTEGER_EXPRESSION(1),
           NONE(),
           INTEGER_EXPRESSION(stop),
@@ -1790,7 +1790,7 @@ function collectEquationFuncs(eq::Equation, funcs::FunctionTree)::FunctionTree
         ()
       end
 
-      P_Equation.Equation.TERMINATE(__) => begin
+      EQUATION_TERMINATE(__) => begin
         @assign funcs = collectExpFuncs(eq.message, funcs)
         ()
       end
@@ -1804,7 +1804,6 @@ function collectEquationFuncs(eq::Equation, funcs::FunctionTree)::FunctionTree
         @assign funcs = collectExpFuncs(eq.exp, funcs)
         ()
       end
-
       _ => begin
         ()
       end
@@ -1957,7 +1956,7 @@ function flattenFunction(@nospecialize(func::M_Function), @nospecialize(funcs::F
       @assign funcs = FunctionTree.add(funcs, P_Function.name(fn), fn)
       @assign funcs = collectClassFunctions(fn.node, funcs)
       for fn_der in fn.derivatives
-        for der_fn in P_Function.getCachedFuncs(fn_der.derivativeFn)
+        for der_fn in getCachedFuncs(fn_der.derivativeFn)
           @assign funcs = flattenFunction(der_fn, funcs)
         end
       end

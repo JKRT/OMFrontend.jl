@@ -209,7 +209,7 @@ function typeComponents(@nospecialize(cls::InstNode), origin::ORIGIN_Type)
         ()
       end
 
-      TYPED_DERIVED(ty = ARRAY_TYPE(__)) => begin
+      TYPED_DERIVED(ty = TYPE_ARRAY(__)) => begin
         #=  For derived types with dimensions we keep them as they are, because we
         =#
         #=  need to preserve the dimensions.
@@ -3023,7 +3023,7 @@ function makeDefaultExternalCall(extDecl::Sections, fnNode::InstNode)::Sections
         =#
         #=  though it's not a single output.
         =#
-        if single_output && isArray(P_Function.returnType(fn))
+        if single_output && isArray(returnType(fn))
           @assign single_output = false
           Error.addSourceMessage(
             Error.EXT_FN_SINGLE_RETURN_ARRAY,
@@ -3195,12 +3195,12 @@ function typeEquation(eq::Equation, origin::ORIGIN_Type)::Equation
           1,
           info,
         )
-        TERMINATE(e1, eq.source)
+        EQUATION_TERMINATE(e1, eq.source)
       end
 
       EQUATION_REINIT(__) => begin
         @assign (e1, e2) = typeReinit(eq.cref, eq.reinitExp, origin, eq.source)
-        REINIT(e1, e2, eq.source)
+        EQUATION_REINIT(e1, e2, eq.source)
       end
 
       EQUATION_NORETCALL(__) => begin
@@ -3803,9 +3803,8 @@ function typeWhenEquation(
   source::DAE.ElementSource,
 )::Equation
   local whenEq::Equation
-
   local next_origin::ORIGIN_Type = setFlag(origin, ORIGIN_WHEN)
-  local accum_branches::List{Equation} = nil
+  local accum_branches::List{<:Equation_Branch} = nil
   local cond::Expression
   local body::List{Equation}
   local ty::M_Type
@@ -3837,11 +3836,10 @@ function typeWhenEquation(
         @assign next_origin = setFlag(origin, ORIGIN_CLOCKED)
       end
     end
-    @assign body = list(typeEquation(eq, next_origin) for eq in body)
-    @assign accum_branches =
-      _cons(makeBranch(cond, body, var), accum_branches)
+      body = list(typeEquation(eq, next_origin) for eq in body)
+      accum_branches = _cons(makeBranch(cond, body, var), accum_branches)
   end
-  @assign whenEq = WHEN(listReverseInPlace(accum_branches), source)
+  whenEq = EQUATION_WHEN(listReverseInPlace(accum_branches), source)
   return whenEq
 end
 
@@ -3886,13 +3884,13 @@ function typeReinit(
 )::Tuple{Expression, Expression}
 
   local var::VariabilityType
-  local mk::MatchKind
-  local ty1::M_Type
-  local ty2::M_Type
+  local mk::MatchKindType
+  local ty1::NFType
+  local ty2::NFType
   local cref::ComponentRef
   local info::SourceInfo
 
-  @assign info = DAE.ElementSource_getInfo(source)
+  @assign info = sourceInfo() #TODO: DAE.ElementSource_getInfo(source)
   @assign (crefExp, ty1, _) = typeExp(crefExp, origin, info)
   @assign (exp, ty2, _) = typeExp(exp, origin, info)
   #=  The first argument must be a cref.
@@ -3928,8 +3926,8 @@ function typeReinit(
   end
   #=  The first argument must be a subtype of Real.
   =#
-  @assign (_, _, mk) =
-    matchTypes(arrayElementType(ty1), REAL(), crefExp)
+  (_, _, mk) =
+    matchTypes(arrayElementType(ty1), TYPE_REAL(), crefExp)
   if isIncompatibleMatch(mk)
     Error.addSourceMessage(
       Error.REINIT_MUST_BE_REAL,

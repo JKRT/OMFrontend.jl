@@ -171,8 +171,8 @@ function simplifyCall(callExp::Expression)::Expression
         end
         @assign args = list(simplify(arg) for arg in args)
         @assign call.arguments = args
-        @assign builtin = P_Function.isBuiltin(call.fn)
-        @assign is_pure = !P_Function.isImpure(call.fn)
+        @assign builtin = isBuiltin(call.fn)
+        @assign is_pure = !isImpure(call.fn)
         #=  Use Ceval for builtin pure functions with literal arguments.
         =#
         if builtin
@@ -356,7 +356,7 @@ function simplifyArrayConstructor(call::Call)::Expression
   @assign outExp = begin
     @matchcontinue iters begin
       (iter, e) <| nil() => begin
-        @match ARRAY_TYPE(dimensions = list(dim)) = typeOf(e)
+        @match TYPE_ARRAY(dimensions = list(dim)) = typeOf(e)
         @assign dim_size = P_Dimension.Dimension.size(dim)
         if dim_size == 0
           @assign outExp = makeEmptyArray(ty)
@@ -413,7 +413,7 @@ function simplifySize(sizeExp::Expression)::Expression
         @assign dims = arrayDims(typeOf(sizeExp.exp))
         if listUtil.all(dims, (x, y=true) -> P_Dimension.Dimension.isKnown(x, y))
           @assign exp = makeArray(
-            ARRAY_TYPE(
+            TYPE_ARRAY(
               TYPE_INTEGER(),
               list(P_Dimension.Dimension.fromInteger(listLength(dims))),
             ),
@@ -844,7 +844,7 @@ function simplifyCast(exp::Expression, ty::M_Type)::Expression
         P_Expression.REAL_EXPRESSION(intReal(exp.value))
       end
 
-      (ARRAY_TYPE(elementType = TYPE_REAL(__)), ARRAY_EXPRESSION(__)) =>
+      (TYPE_ARRAY(elementType = TYPE_REAL(__)), ARRAY_EXPRESSION(__)) =>
         begin
           @assign ety = Type.unliftArray(ty)
           @assign exp.elements = list(simplifyCast(e, ety) for e in exp.elements)

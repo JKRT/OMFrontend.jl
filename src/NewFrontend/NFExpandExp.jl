@@ -300,18 +300,18 @@ function makeBinaryMatrixProduct(exp1::Expression, exp2::Expression)::Expression
   local n::Dimension
   local p::Dimension
 
-  @match ARRAY_EXPRESSION(ARRAY_TYPE(ty, list(n, _)), expl1) = exp1
+  @match ARRAY_EXPRESSION(TYPE_ARRAY(ty, list(n, _)), expl1) = exp1
   #=  Transpose the second matrix. This makes it easier to do the multiplication,
   =#
   #=  since we can do row-row multiplications instead of row-column.
   =#
-  @match ARRAY_EXPRESSION(ARRAY_TYPE(dimensions = list(p, _)), expl2) =
+  @match ARRAY_EXPRESSION(TYPE_ARRAY(dimensions = list(p, _)), expl2) =
     transposeArray(exp2)
-  @assign mat_ty = ARRAY_TYPE(ty, list(n, p))
+  @assign mat_ty = TYPE_ARRAY(ty, list(n, p))
   if listEmpty(expl2)
     @assign exp = makeZero(mat_ty)
   else
-    @assign row_ty = ARRAY_TYPE(ty, list(p))
+    @assign row_ty = TYPE_ARRAY(ty, list(p))
     @assign expl1 = List(
       makeArray(row_ty, makeBinaryMatrixProduct2(e, expl2))
       for e in expl1
@@ -418,8 +418,8 @@ function expandBinaryMatrixVector(exp::Expression)::Tuple{Expression, Bool}
   @match BINARY_EXPRESSION(exp1 = exp1, exp2 = exp2) = exp
   @assign (exp1, expanded) = expand(exp1)
   if expanded
-    @match ARRAY_EXPRESSION(ARRAY_TYPE(ty, list(n, _)), expl) = exp1
-    @assign ty = ARRAY_TYPE(ty, list(n))
+    @match ARRAY_EXPRESSION(TYPE_ARRAY(ty, list(n, _)), expl) = exp1
+    @assign ty = TYPE_ARRAY(ty, list(n))
     if listEmpty(expl)
       @assign outExp = makeZero(ty)
     else
@@ -453,9 +453,9 @@ function expandBinaryVectorMatrix(exp::Expression)::Tuple{Expression, Bool}
   @match BINARY_EXPRESSION(exp1 = exp1, exp2 = exp2) = exp
   @assign (exp2, expanded) = expand(exp2)
   if expanded
-    @match ARRAY_EXPRESSION(ARRAY_TYPE(ty, list(m, _)), expl) =
+    @match ARRAY_EXPRESSION(TYPE_ARRAY(ty, list(m, _)), expl) =
       transposeArray(exp2)
-    @assign ty = ARRAY_TYPE(ty, list(m))
+    @assign ty = TYPE_ARRAY(ty, list(m))
     if listEmpty(expl)
       @assign outExp = makeZero(ty)
     else
@@ -707,7 +707,7 @@ function expandSize(exp::Expression)::Tuple{Expression, Bool}
           for i = 1:dims
         )
         makeArray(
-          ARRAY_TYPE(ty, list(P_Dimension.Dimension.fromInteger(dims))),
+          TYPE_ARRAY(ty, list(P_Dimension.Dimension.fromInteger(dims))),
           expl,
         )
       end
@@ -959,7 +959,7 @@ function expandCall(call::Call, exp::Expression)::Tuple{Expression, Bool}
     @matchcontinue call begin
       P_Call.TYPED_CALL(
         __,
-      ) where {(P_Function.isBuiltin(call.fn) && !P_Function.isImpure(call.fn))} => begin
+      ) where {(isBuiltin(call.fn) && !isImpure(call.fn))} => begin
         expandcall.fn, call.arguments, call)
       end
 
@@ -998,7 +998,7 @@ function expandTypename(ty::M_Type)::Expression
   @assign outExp = begin
     local lits::List{Expression}
     @match ty begin
-      ARRAY_TYPE(elementType = TYPE_BOOLEAN(__)) => begin
+      TYPE_ARRAY(elementType = TYPE_BOOLEAN(__)) => begin
         makeArray(
           ty,
           list(
@@ -1009,7 +1009,7 @@ function expandTypename(ty::M_Type)::Expression
         )
       end
 
-      ARRAY_TYPE(elementType = TYPE_ENUMERATION(__)) => begin
+      TYPE_ARRAY(elementType = TYPE_ENUMERATION(__)) => begin
         @assign lits = makeEnumLiterals(ty.elementType)
         makeArray(ty, lits, true)
       end
@@ -1190,11 +1190,11 @@ function expand(exp::Expression)::Tuple{Expression, Bool}
   @assign (exp, expanded) = begin
     local expl::List{Expression}
     @match exp begin
-      CREF_EXPRESSION(ty = ARRAY_TYPE(__)) => begin
+      CREF_EXPRESSION(ty = TYPE_ARRAY(__)) => begin
         expandCref(exp)
       end
 
-      ARRAY_EXPRESSION(ty = ARRAY_TYPE(dimensions = nil())) => begin
+      ARRAY_EXPRESSION(ty = TYPE_ARRAY(dimensions = nil())) => begin
         (exp, true)
       end
 

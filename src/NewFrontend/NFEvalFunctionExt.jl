@@ -805,8 +805,8 @@ function assignVariableExt(variable::Expression, value::Expression)
   @assign exp = begin
     @match (typeOf(variable), value) begin
       (
-        ARRAY_TYPE(dimensions = _ <| nil()),
-        ARRAY_EXPRESSION(ty = ARRAY_TYPE(dimensions = _ <| _ <| nil())),
+        TYPE_ARRAY(dimensions = _ <| nil()),
+        ARRAY_EXPRESSION(ty = TYPE_ARRAY(dimensions = _ <| _ <| nil())),
       ) => begin
         makeArray(
           Type.unliftArray(value.ty),

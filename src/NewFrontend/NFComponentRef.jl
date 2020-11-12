@@ -34,7 +34,7 @@ function isComplexArray2(cref::ComponentRef)::Bool
   @assign complexArray = begin
     @match cref begin
       COMPONENT_REF_CREF(
-        ty = ARRAY_TYPE(__),
+        ty = TYPE_ARRAY(__),
       ) where {(isArray(Type.subscript(cref.ty, cref.subscripts)))} => begin
         true
       end
@@ -277,7 +277,7 @@ function scalarize(cref::ComponentRef)::List{ComponentRef}
     local dims::List{Dimension}
     local subs::List{List{Subscript}}
     @match cref begin
-      COMPONENT_REF_CREF(ty = ARRAY_TYPE(__)) => begin
+      COMPONENT_REF_CREF(ty = TYPE_ARRAY(__)) => begin
         @assign dims = arrayDims(cref.ty)
         @assign subs = scalarizeList(cref.subscripts, dims)
         @assign subs = ListUtil.combination(subs)

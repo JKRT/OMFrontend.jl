@@ -266,7 +266,7 @@ function fromExp(exp::Expression)::RangeIterator
       end
 
       TYPENAME(
-        ty = ARRAY_TYPE(elementType = ty && TYPE_ENUMERATION(literals = literals)),
+        ty = TYPE_ARRAY(elementType = ty && TYPE_ENUMERATION(literals = literals)),
       ) => begin
         #=  enumeration type based range
         =#

@@ -131,12 +131,12 @@ end
 
 """ #= Checks that each branch in a when-equation has the same set of crefs on the lhs. =#"""
 function verifyWhenEquation(
-  branches::List{<:Equation},
+  branches::List{<:Equation_Branch},
   source::DAE.ElementSource,
 )
   local crefs1::List{ComponentRef}
   local crefs2::List{ComponentRef}
-  local rest_branches::List{P_Equation.Equation}
+  local rest_branches::List{Equation_Branch}
   local body::List{Equation}
   #=  Only when-equation with more than one branch needs to be checked. =#
   if ListUtil.hasOneElement(branches)

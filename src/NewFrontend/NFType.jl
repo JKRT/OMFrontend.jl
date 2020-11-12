@@ -107,7 +107,7 @@ function sizeType(arrayTy::M_Type)::M_Type
   if Type.isUnknown(arrayTy)
     @assign sizeTy = TYPE_UNKNOWN()
   else
-    @assign sizeTy = ARRAY_TYPE(
+    @assign sizeTy = TYPE_ARRAY(
       TYPE_INTEGER(),
       list(P_Dimension.Dimension.fromInteger(dimensionCount(arrayTy))),
     )
@@ -266,7 +266,7 @@ function isDiscrete(ty::M_Type)::Bool
       end
 
       TYPE_FUNCTION(__) => begin
-        isDiscrete(P_Function.returnType(ty.fn))
+        isDiscrete(returnType(ty.fn))
       end
       _ => begin
         false
@@ -366,13 +366,11 @@ end
 
 function toDAE(ty::M_Type, makeTypeVars::Bool = true)::DAE.Type
   local daeTy::DAE.Type
-
   @assign daeTy = begin
     @match ty begin
       TYPE_INTEGER(__) => begin
         DAE.T_INTEGER_DEFAULT
       end
-
       TYPE_REAL(__) => begin
         DAE.T_REAL_DEFAULT
       end
@@ -413,7 +411,7 @@ function toDAE(ty::M_Type, makeTypeVars::Bool = true)::DAE.Type
 
             FunctionTYPE_FUNCTION_REFERENCE => begin
               DAE.T_FUNCTION_REFERENCE_FUNC(
-                P_Function.isBuiltin(ty.fn),
+                isBuiltin(ty.fn),
                 P_Function.makeDAEType(ty.fn),
               )
             end
@@ -518,7 +516,7 @@ function toFlatString(ty::M_Type)::String
         "enumeration(:)"
       end
 
-      ARRAY_TYPE(__) => begin
+      TYPE_ARRAY(__) => begin
         toString(ty.elementType) +
         "[" +
         stringDelimitList(
@@ -690,7 +688,7 @@ function foldDims(ty::M_Type, func::FuncT, arg::ArgT) where {ArgT}
       end
 
       TYPE_FUNCTION(__) => begin
-        foldDims(P_Function.returnType(ty.fn), func, arg)
+        foldDims(returnType(ty.fn), func, arg)
       end
 
       TYPE_METABOXED(__) => begin
@@ -762,7 +760,7 @@ function hasKnownSize(ty::M_Type)::Bool
       end
 
       TYPE_FUNCTION(__) => begin
-        hasKnownSize(P_Function.returnType(ty.fn))
+        hasKnownSize(returnType(ty.fn))
       end
 
       _ => begin
@@ -809,7 +807,7 @@ function nthDimension(ty::M_Type, index::Integer)::Dimension
       end
 
       TYPE_FUNCTION(__) => begin
-        nthDimension(P_Function.returnType(ty.fn), index)
+        nthDimension(returnType(ty.fn), index)
       end
 
       TYPE_METABOXED(__) => begin
@@ -851,7 +849,7 @@ function arrayDims(ty::NFType)::List{Dimension}
         ty.dimensions
       end
       TYPE_FUNCTION(__) => begin
-        arrayDims(P_Function.returnType(ty.fn))
+        arrayDims(returnType(ty.fn))
       end
       TYPE_METABOXED(__) => begin
         arrayDims(ty.ty)
@@ -928,7 +926,7 @@ function nthTupleType(ty::M_Type, n::Integer)::M_Type
       end
 
       TYPE_ARRAY(__) => begin
-        ARRAY_TYPE(nthTupleType(ty.elementType, n), ty.dimensions)
+        TYPE_ARRAY(nthTupleType(ty.elementType, n), ty.dimensions)
       end
 
       _ => begin
@@ -949,7 +947,7 @@ function firstTupleType(ty::M_Type)::M_Type
       end
 
       TYPE_ARRAY(__) => begin
-        ARRAY_TYPE(firstTupleType(ty.elementType), ty.dimensions)
+        TYPE_ARRAY(firstTupleType(ty.elementType), ty.dimensions)
       end
 
       _ => begin
@@ -1060,7 +1058,7 @@ function isScalarBuiltin(ty::M_Type)::Bool
       end
 
       TYPE_FUNCTION(__) => begin
-        isScalarBuiltin(P_Function.returnType(ty.fn))
+        isScalarBuiltin(returnType(ty.fn))
       end
 
       _ => begin
@@ -1134,7 +1132,7 @@ function isBasic(ty::M_Type)::Bool
       end
 
       TYPE_FUNCTION(__) => begin
-        isBasic(P_Function.returnType(ty.fn))
+        isBasic(returnType(ty.fn))
       end
 
       _ => begin

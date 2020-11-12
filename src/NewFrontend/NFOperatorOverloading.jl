@@ -51,7 +51,7 @@ function instConstructor(path::Absyn.Path, recordNode::InstNode, info::SourceInf
   if ctor_overloaded
     @assign (_, ctor_node) = instFunctionRef(ctor_ref, info)
     @assign ctor_path = scopePath(ctor_node, includeRoot = true)
-    for f in P_Function.getCachedFuncs(ctor_node)
+    for f in getCachedFuncs(ctor_node)
       checkOperatorConstructorOutput(f, lastBaseClass(recordNode), ctor_path, info)
       @assign recordNode = cacheAddFunc(recordNode, f, false)
     end
@@ -82,8 +82,8 @@ function instOperatorFunctions(node::InstNode, info::SourceInfo)::InstNode
     @match tree begin
       CLASS_TREE_FLAT_TREE(classes = mclss) => begin
         for op in mclss
-          P_Function.instFunctionNode(op)
-          @assign funcs = P_Function.getCachedFuncs(op)
+          instFunctionNode(op)
+          @assign funcs = getCachedFuncs(op)
           @assign allfuncs = listAppend(funcs, allfuncs)
         end
         #= path := InstNode.scopePath(op, includeRoot = true);

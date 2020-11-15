@@ -848,7 +848,7 @@ function typeDimension(
         @assign dim = begin
           @match dim begin
             P_Dimension.Dimension.EXP(exp = exp) => begin
-              Inst.markStructuralParamsExp(exp)
+              markStructuralParamsExp(exp)
               @assign exp = Ceval.evalExp(
                 exp,
                 Ceval.P_EvalTarget.DIMENSION(component, index, exp, info),
@@ -1167,7 +1167,7 @@ function checkComponentBindingVariability(
       list(
         name,
         P_Prefixes.variabilityString(comp_eff_var),
-        "'" + toString(P_Component.getBinding(component)) + "'",
+        "'" + toString(getBinding(component)) + "'",
         P_Prefixes.variabilityString(bind_eff_var),
       ),
       Binding_getInfo(binding),
@@ -2075,7 +2075,7 @@ function typeSubscript(
           @assign outSubscript = SUBSCRIPT_SLICE(e)
           @assign ty = Type.unliftArray(ty)
           if flagSet(origin, ORIGIN_EQUATION)
-            Inst.markStructuralParamsExp(e)
+            markStructuralParamsExp(e)
           end
         else
           @assign outSubscript = SUBSCRIPT_INDEX(e)
@@ -2396,7 +2396,7 @@ function typeRange(
   @assign rangeExp =
     RANGE_EXPRESSION(rangeType, start_exp, ostep_exp, stop_exp)
   if variability <= Variability.PARAMETER && !flagSet(origin, ORIGIN_FUNCTION)
-    Inst.markStructuralParamsExp(rangeExp)
+    markStructuralParamsExp(rangeExp)
   end
   return (rangeExp, rangeType, variability)
 end
@@ -3691,9 +3691,9 @@ function typeIfEquation(
   local accum_var::VariabilityType = Variability.CONSTANT
   local var::VariabilityType
   local bl::List{Equation_Branch} = nil
-  local bl2::List{Equation} = nil
-  local next_origin::Type = setFlag(origin, ORIGIN_IF)
-  local cond_origin::Type = setFlag(next_origin, ORIGIN_CONDITION)
+  local bl2::List{Equation_Branch} = nil
+  local next_origin::ORIGIN_Type = setFlag(origin, ORIGIN_IF)
+  local cond_origin::ORIGIN_Type = setFlag(next_origin, ORIGIN_CONDITION)
 
   #=  Type the conditions of all the branches.
   =#
@@ -3701,11 +3701,11 @@ function typeIfEquation(
     @match EQUATION_BRANCH(cond, _, eql) = b
     @assign (cond, _, var) =
       typeCondition(cond, cond_origin, source, Error.IF_CONDITION_TYPE_ERROR)
-    if var > Variability.PARAMETER || Inst.isExpressionNotFixed(cond, maxDepth = 100)
+    if var > Variability.PARAMETER || isExpressionNotFixed(cond, maxDepth = 100)
       @assign next_origin = setFlag(next_origin, ORIGIN_NONEXPANDABLE)
     elseif var == Variability.PARAMETER && accum_var <= Variability.PARAMETER
       @assign var = Variability.STRUCTURAL_PARAMETER
-      Inst.markStructuralParamsExp(cond)
+      markStructuralParamsExp(cond)
     end
     @assign accum_var = variabilityMax(accum_var, var)
     @assign bl = _cons(EQUATION_BRANCH(cond, var, eql), bl)
@@ -3732,7 +3732,7 @@ function typeIfEquation(
   =#
   #=  scalarization breaks currently.
   =#
-  if !Flags.isSet(Flags.NF_SCALARIZE)
+  if false !Flags.isSet(Flags.NF_SCALARIZE)
     @assign bl = bl2
     @assign bl2 = nil
     for b in bl
@@ -3757,7 +3757,7 @@ function typeIfEquation(
     end
     @assign bl2 = listReverseInPlace(bl2)
   end
-  @assign ifEq = IF(bl2, source)
+  @assign ifEq = EQUATION_IF(bl2, source)
   return ifEq
 end
 

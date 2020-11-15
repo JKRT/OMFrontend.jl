@@ -405,11 +405,9 @@ function isExternalObject(component::Component)::Bool
       UNTYPED_COMPONENT(__) => begin
         isExternalObject(getClass(component.classInst))
       end
-
       TYPED_COMPONENT(__) => begin
-        Type.isExternalObject(component.ty)
+          isExternalObject(component.ty)
       end
-
       _ => begin
         false
       end

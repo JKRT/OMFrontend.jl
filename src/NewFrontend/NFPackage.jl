@@ -100,7 +100,7 @@ function collectExpConstants_traverser(@nospecialize(exp::Expression), @nospecia
               stripSubscriptsAll(cref),
             )
             @assign constants = collectBindingConstants(
-              P_Component.getBinding(component(node(
+              getBinding(component(node(
                 cref,
               ))),
               constants,
@@ -135,7 +135,7 @@ function collectFuncConstants(
       ) => begin
         for c in comps
           @assign constants = collectBindingConstants(
-            P_Component.getBinding(component(c)),
+            getBinding(component(c)),
             constants,
           )
         end
@@ -249,7 +249,7 @@ function replaceFuncConstants(name::Absyn.Path, func::M_Function)::M_Function
       ) => begin
         for c in comps
           @assign comp = component(c)
-          @assign binding = P_Component.getBinding(comp)
+          @assign binding = getBinding(comp)
           @assign eval_binding = replaceBindingConstants(binding)
           if !referenceEq(binding, eval_binding)
             @assign comp = P_Component.setBinding(eval_binding, comp)

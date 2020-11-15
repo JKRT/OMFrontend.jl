@@ -841,7 +841,7 @@ function simplifyCast(exp::Expression, ty::M_Type)::Expression
     local ety::M_Type
     @match (ty, exp) begin
       (TYPE_REAL(__), INTEGER_EXPRESSION(__)) => begin
-        P_Expression.REAL_EXPRESSION(intReal(exp.value))
+        REAL_EXPRESSION(intReal(exp.value))
       end
 
       (TYPE_ARRAY(elementType = TYPE_REAL(__)), ARRAY_EXPRESSION(__)) =>

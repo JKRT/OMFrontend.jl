@@ -973,12 +973,11 @@ function isPolymorphic(ty::NFType)::Bool
   return isPolymorphic
 end
 
-function isKnown(ty::M_Type)::Bool
+function isKnown(ty::NFType)::Bool
   local isKnown::Bool
-
   @assign isKnown = begin
     @match ty begin
-      UNKNOWN(__) => begin
+      TYPE_UNKNOWN(__) => begin
         false
       end
 
@@ -992,10 +991,9 @@ end
 
 function isUnknown(ty::M_Type)::Bool
   local isUnknown::Bool
-
   @assign isUnknown = begin
     @match ty begin
-      UNKNOWN(__) => begin
+      TYPE_UNKNOWN(__) => begin
         true
       end
 

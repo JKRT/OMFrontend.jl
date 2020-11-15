@@ -307,7 +307,7 @@
                         @assign (expRHS, ty, var) = typeExp(expRHS, origin, ElementSource_getInfo(source))
                         @assign fcref_lhs = lookupFunctionSimple("fill", topScope(node(clhs)))
                         @assign (fcref_lhs, fn_node_lhs, _) = instFunctionRef(fcref_lhs, ElementSource_getInfo(source))
-                        @assign expLHS = CALL_EXPRESSION(UNTYPED_CALL(fcref_lhs, _cons(P_Expression.REAL_EXPRESSION(0.0), ListUtil.map(arrayDims(ty), P_Dimension.Dimension.sizeExp)), nil, fn_node_lhs))
+                        @assign expLHS = CALL_EXPRESSION(UNTYPED_CALL(fcref_lhs, _cons(REAL_EXPRESSION(0.0), ListUtil.map(arrayDims(ty), P_Dimension.Dimension.sizeExp)), nil, fn_node_lhs))
                         @assign (expLHS, ty, var) = typeExp(expLHS, origin, ElementSource_getInfo(source))
                         @assign replaceEq = EQUATION_EQUALITY(expRHS, expLHS, ty, source)
                         @assign eqsEqualityConstraint = list(replaceEq)

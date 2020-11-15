@@ -4220,7 +4220,7 @@ function getRangeTypeReal(
     local step_exp::Expression
     local var::VariabilityType
     @match (startExp, stepExp, stopExp) begin
-      (P_Expression.REAL_EXPRESSION(__), NONE(), P_Expression.REAL_EXPRESSION(__)) =>
+      (REAL_EXPRESSION(__), NONE(), REAL_EXPRESSION(__)) =>
         begin
           P_Dimension.Dimension.fromInteger(Util.realRangeSize(
             startExp.value,
@@ -4230,9 +4230,9 @@ function getRangeTypeReal(
         end
 
       (
-        P_Expression.REAL_EXPRESSION(value = start),
-        SOME(P_Expression.REAL_EXPRESSION(value = step)),
-        P_Expression.REAL_EXPRESSION(__),
+        REAL_EXPRESSION(value = start),
+        SOME(REAL_EXPRESSION(value = step)),
+        REAL_EXPRESSION(__),
       ) => begin
         #=  Check that adding step to start actually produces a different value,
         =#
@@ -4276,7 +4276,7 @@ function getRangeTypeReal(
           @assign dim_exp = BINARY_EXPRESSION(
             dim_exp,
             makeAdd(TYPE_REAL()),
-            P_Expression.REAL_EXPRESSION(5e-15),
+            REAL_EXPRESSION(5e-15),
           )
         end
         @assign dim_exp = CALL_EXPRESSION(P_Call.makeTypedCall(

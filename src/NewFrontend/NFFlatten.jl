@@ -545,7 +545,7 @@ function flattenComplexComponent(
   @assign binding = if isSome(outerBinding)
     Util.getOption(outerBinding)
   else
-    P_Component.getBinding(comp)
+    getBinding(comp)
   end
   #=  Create an equation if there's a binding on a complex component.
   =#
@@ -558,7 +558,7 @@ function flattenComplexComponent(
        binding_var <= Variability.STRUCTURAL_PARAMETER
       @assign binding_exp =
         stripBindingInfo(Ceval.evalExp(binding_exp))
-    elseif binding_var == Variability.PARAMETER && P_Component.isFinal(comp)
+    elseif binding_var == Variability.PARAMETER && isFinal(comp)
       try
         @assign binding_exp =
           stripBindingInfo(Ceval.evalExp(binding_exp))
@@ -1218,26 +1218,26 @@ function flattenIfEquation(
 )::List{Equation}
 
   local branch::Equation_Branch
-  local branches::List{P_Equation.Equation}
-  local bl::List{P_Equation.Equation} = nil
+  local branches::List{Equation_Branch}
+  local bl::List{Equation_Branch} = nil
   local cond::Expression
   local eql::List{Equation}
   local var::VariabilityType
   local has_connect::Bool
   local src::DAE.ElementSource
   local info::SourceInfo
-  local target::Ceval.P_EvalTarget
+  local target::EvalTarget
 
   @match EQUATION_IF(branches = branches, source = src) = eq
-  @assign has_connect = P_Equation.Equation.contains(eq, isConnectEq)
+  @assign has_connect = contains(eq, isConnectEq)
   #=  Print errors for unbound constants/parameters if the if-equation contains
   =#
   #=  connects, since we must select a branch in that case.
   =#
   @assign target = if has_connect
-    Ceval.P_EvalTarget.GENERIC(P_Equation.Equation.info(eq))
+    GENERIC(info(eq))
   else
-    Ceval.P_EvalTarget.IGNORE_ERRORS()
+    IGNORE_ERRORS()
   end
   while !listEmpty(branches)
     @match _cons(branch, branches) = branches
@@ -1251,13 +1251,13 @@ function flattenIfEquation(
           #=  Evaluate structural conditions.
           =#
           if var <= Variability.STRUCTURAL_PARAMETER
-            @assign cond = Ceval.evalExp(cond, target)
+            @assign cond = evalExp(cond, target)
             if !isBoolean(cond) && has_connect
               Error.addInternalError(
                 "Failed to evaluate branch condition in if equation containing connect equations: `" +
                 toString(cond) +
                 "`",
-                P_Equation.Equation.info(eq),
+                info(eq),
               )
               fail()
             end
@@ -1270,13 +1270,13 @@ function flattenIfEquation(
               @assign equations = listAppend(eql, equations)
             else
               @assign bl = _cons(
-                P_Equation.Equation.makeBranch(cond, listReverseInPlace(eql), var),
+                  makeBranch(cond, listReverseInPlace(eql), var),
                 bl,
               )
             end
           elseif !isFalse(cond)
             @assign bl = _cons(
-              P_Equation.Equation.makeBranch(cond, listReverseInPlace(eql), var),
+                makeBranch(cond, listReverseInPlace(eql), var),
               bl,
             )
           end
@@ -1294,8 +1294,7 @@ function flattenIfEquation(
           =#
           bl
         end
-
-        P_Equation.Equation.INVALID_BRANCH(
+          EQUATION_INVALID_BRANCH(
           branch = EQUATION_BRANCH(
             condition = cond,
             conditionVar = var,
@@ -1304,10 +1303,10 @@ function flattenIfEquation(
           #=  An invalid branch must have a false condition, anything else is an error.
           =#
           if var <= Variability.STRUCTURAL_PARAMETER
-            @assign cond = Ceval.evalExp(cond, target)
+            @assign cond = evalExp(cond, target)
           end
           if !isFalse(cond)
-            P_Equation.Equation.triggerErrors(branch)
+            triggerErrors(branch)
           end
           bl
         end
@@ -1340,9 +1339,9 @@ function isConnectEq(eq::Equation)::Bool
       end
 
       EQUATION_NORETCALL(
-        exp = CALL_EXPRESSION(call = P_Call.TYPED_CALL(fn = fn)),
+        exp = CALL_EXPRESSION(call = TYPED_CALL(fn = fn)),
       ) => begin
-        AbsynUtil.pathFirstIdent(P_Function.name(fn)) == "Connections"
+        AbsynUtil.pathFirstIdent(name(fn)) == "Connections"
       end
 
       _ => begin
@@ -1983,7 +1982,7 @@ function collectClassFunctions(clsNode::InstNode, funcs::FunctionTree)::Function
         for c in cls_tree.components
           @assign comp = component(c)
           @assign funcs = collectTypeFuncs(getType(comp), funcs)
-          @assign binding = P_Component.getBinding(comp)
+          @assign binding = getBinding(comp)
           if isExplicitlyBound(binding)
             @assign funcs = collectExpFuncs(getTypedExp(binding), funcs)
           end

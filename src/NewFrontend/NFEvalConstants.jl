@@ -96,7 +96,7 @@ function evaluateExpTraverser(
           @assign outExp = evalCref(
             cref,
             outExp,
-            Ceval.P_EvalTarget.IGNORE_ERRORS(),
+            IGNORE_ERRORS(),
             evalSubscripts = false,
           )
           @assign outExp = stripBindingInfo(outExp)

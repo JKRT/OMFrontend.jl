@@ -60,7 +60,7 @@ function instConstructor(path::Absyn.Path, recordNode::InstNode, info::SourceInf
   =#
   #=  function(s) to the record node.
   =#
-  #= ctor_node := ComponentRef.node(ctor_ref);
+  #= ctor_node := node(ctor_ref);
   =#
   #= ctor_node := Function.instFunction2(ctor_path, ctor_node, info);
   =#
@@ -174,7 +174,7 @@ function patchOperatorRecordConstructorBinding(fn::M_Function)::M_Function
   end
   @assign output_node = listHead(fn.outputs)
   @assign output_comp = component(output_node)
-  @assign output_binding = P_Component.getBinding(output_comp)
+  @assign output_binding = getBinding(output_comp)
   if !isBound(output_binding)
     return fn
   end

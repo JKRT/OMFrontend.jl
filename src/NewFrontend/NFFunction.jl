@@ -257,7 +257,7 @@ function foldExpParameter(node::InstNode, foldFn::FoldFunc, arg::ArgT) where {Ar
   local cls::Class
 
   @assign comp = component(node)
-  @assign arg = foldExp(P_Component.getBinding(comp), foldFn, arg)
+  @assign arg = foldExp(getBinding(comp), foldFn, arg)
   @assign () = begin
     @match comp begin
       TYPED_COMPONENT(__) => begin
@@ -316,7 +316,7 @@ function mapExpParameter(node::InstNode, mapFn::MapFunc)
   local dirty::Bool = false
 
   @assign comp = component(node)
-  @assign binding = P_Component.getBinding(comp)
+  @assign binding = getBinding(comp)
   @assign binding2 = mapExp(binding, mapFn)
   if !referenceEq(binding, binding2)
     @assign comp = P_Component.setBinding(binding2, comp)
@@ -441,7 +441,7 @@ function makeDAEType(fn::M_Function, boxTypes::Bool = false)::DAE.Type
     @assign pconst = P_Prefixes.variabilityToDAEConst(variability(comp))
     @assign ppar = P_Prefixes.parallelismToDAE(P_Component.parallelism(comp))
     @assign pdefault = Util.applyOption(
-      typedExp(P_Component.getBinding(comp)),
+      typedExp(getBinding(comp)),
       toDAE,
     )
     @assign params =

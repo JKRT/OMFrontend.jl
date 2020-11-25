@@ -2895,7 +2895,7 @@ function isStructuralComponent(component::Component, compAttrs::Attributes, comp
   elseif evalAllParams || getEvaluateAnnotation(component)
     if ! getFixedAttribute(component)
       @assign isStructural = false
-    elseif P_Component.isExternalObject(component)
+    elseif isExternalObject(component)
       @assign isStructural = false
     elseif ! hasBinding(compNode)
       if ! evalAllParams && ! Flags.getConfigBool(Flags.CHECK_MODEL)
@@ -2921,7 +2921,7 @@ function isBindingNotFixed(binding::Binding, requireFinal::Bool, maxDepth::Integ
     return isNotFixed
   end
   if hasExp(binding)
-    @assign isNotFixed = isExpressionNotFixed(getBindingExp(getExp(binding)), requireFinal, maxDepth)
+    @assign isNotFixed = isExpressionNotFixed(getBindingExp(getExp(binding)), requireFinal = requireFinal, maxDepth = maxDepth)
   else
     @assign isNotFixed = true
   end
@@ -2934,7 +2934,7 @@ function isComponentBindingNotFixed(component::Component, node::InstNode, requir
   local binding::Binding
   local parent::InstNode
 
-  @assign binding = P_Component.getBinding(component)
+  @assign binding = getBinding(component)
   if isUnbound(binding)
     if isRecord || isRecord(node)
       @assign isNotFixed = false
@@ -2954,24 +2954,24 @@ function isComponentBindingNotFixed(component::Component, node::InstNode, requir
   isNotFixed
 end
 
-function isExpressionNotFixed(exp::Expression, requireFinal::Bool = false, maxDepth::Integer = 4) ::Bool
+function isExpressionNotFixed(exp::Expression; requireFinal::Bool = false, maxDepth::Integer = 4) ::Bool
   local isNotFixed::Bool
 
   @assign isNotFixed = begin
-    local node::InstNode
+    local nodeVar::InstNode
     local c::Component
     local var::VariabilityType
     local e::Expression
     @match exp begin
       CREF_EXPRESSION(__)  => begin
-        @assign node = ComponentRef.node(exp.cref)
-        if isComponent(node)
-          @assign c = component(node)
+        @assign nodeVar = node(exp.cref)
+        if isComponent(nodeVar)
+          @assign c = component(nodeVar)
           @assign var = variability(c)
           if var <= Variability.STRUCTURAL_PARAMETER
             @assign isNotFixed = false
-          elseif var == Variability.PARAMETER && (! requireFinal || P_Component.isFinal(c)) && ! P_Component.isExternalObject(c) && P_Component.getFixedAttribute(c)
-            @assign isNotFixed = isComponentBindingNotFixed(c, node, requireFinal, maxDepth - 1)
+          elseif var == Variability.PARAMETER && (! requireFinal || isFinal(c)) && ! isExternalObject(c) && getFixedAttribute(c)
+            @assign isNotFixed = isComponentBindingNotFixed(c, nodeVar, requireFinal, maxDepth - 1)
           else
             @assign isNotFixed = true
           end
@@ -3000,7 +3000,7 @@ function isExpressionNotFixed(exp::Expression, requireFinal::Bool = false, maxDe
       end
 
       _  => begin
-        containsShallow(exp, (requireFinal, maxDepth) -> isExpressionNotFixed(requireFinal = requireFinal, maxDepth = maxDepth))
+        containsShallow(exp, (exp) -> isExpressionNotFixed(exp))
       end
     end
   end
@@ -3012,7 +3012,7 @@ function getRecordFieldBinding(comp::Component, node::InstNode) ::Binding
 
   local parent::InstNode
 
-  @assign binding = P_Component.getBinding(comp)
+  @assign binding = getBinding(comp)
   if isUnbound(binding)
     @assign parent = parent(node)
     if isComponent(parent) && isRecord(restriction(getClass(parent)))
@@ -3074,7 +3074,7 @@ function markStructuralParamsComp(component::Component, node::InstNode)
   local binding::Option{Expression}
   @assign comp = setVariability(Variability.STRUCTURAL_PARAMETER, component)
   updateComponent!(comp, node)
-  @assign binding = untypedExp(P_Component.getBinding(comp))
+  @assign binding = untypedExp(getBinding(comp))
   if isSome(binding)
     markStructuralParamsExp(Util.getOption(binding))
   end
@@ -3135,8 +3135,8 @@ function updateImplicitVariabilityEq(eq::Equation, inWhen::Bool = false)
         for branch in eq.branches
           @assign () = begin
             @match branch begin
-              P_Equation.EQUATION_BRANCH(__)  => begin
-                updateImplicitVariabilityEql(branch.body, inWhen)
+                EQUATION_BRANCH(__)  => begin
+                  updateImplicitVariabilityEql(branch.body, inWhen)
                 ()
               end
             end

@@ -337,7 +337,7 @@ function getBindingExp(node::InstNode, repl::ReplTree.Tree)::Expression
 
   local binding::Binding
 
-  @assign binding = P_Component.getBinding(component(node))
+  @assign binding = getBinding(component(node))
   if isBound(binding)
     @assign bindingExp = getBindingExp(getExp(binding))
   else
@@ -1313,7 +1313,7 @@ function evaluateKnownExternal(name::String, args::List{<:Expression})::Expressi
         @assign (i, r) = ModelicaExternalC.Strings_scanReal(s1, i, b)
         TUPLE_EXPRESSION(
           TYPE_TUPLE(list(TYPE_INTEGER(), TYPE_REAL()), NONE()),
-          list(INTEGER_EXPRESSION(i), P_Expression.REAL_EXPRESSION(r)),
+          list(INTEGER_EXPRESSION(i), REAL_EXPRESSION(r)),
         )
       end
 
@@ -1492,7 +1492,7 @@ function evaluateModelicaIO_readRealMatrix(
   for r = 1:nrow
     @assign row = nil
     for c = 1:ncol
-      @assign row = _cons(P_Expression.REAL_EXPRESSION(matrix[r, c]), row)
+      @assign row = _cons(REAL_EXPRESSION(matrix[r, c]), row)
     end
     @assign rows = _cons(ARRAY_EXPRESSION(ty, row, literal = true), rows)
   end

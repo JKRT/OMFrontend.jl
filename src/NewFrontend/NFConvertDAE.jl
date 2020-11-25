@@ -1507,7 +1507,7 @@ function makeTypeVar(component::InstNode)::DAE.Var
     name(component),
     toDAE(attr, visibility(component)),
     toDAE(getType(comp)),
-    toDAE(P_Component.getBinding(comp)),
+    toDAE(getBinding(comp)),
     false,
     NONE(),
   )
@@ -1529,7 +1529,7 @@ function makeTypeRecordVar(component::InstNode)::DAE.Var
   else
     @assign vis = visibility(component)
   end
-  @assign binding = P_Component.getBinding(comp)
+  @assign binding = getBinding(comp)
   @assign binding = mapExp(binding, stripScopePrefixExp)
   @assign bind_from_outside = parentCount(binding) > 1
   @assign ty = getType(comp)

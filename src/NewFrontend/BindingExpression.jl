@@ -76,14 +76,12 @@ function bindingExpMap4(exp::Expression, subs::List{<:Subscript}) ::Expression
   outExp
 end
 
-function bindingExpMap3(exp::Expression, evalFunc::EvalFunc, subs::List{<:Subscript}) ::Expression
+function bindingExpMap3(exp::Expression, evalFunc::EvalFunc, subs::List{<:Subscript})::Expression
   local result::Expression
-
   local e1::Expression
   local e2::Expression
   local op::Operator
-
-  @assign result = map(exp, (subs) -> bindingExpMap4(subs = subs))
+  @assign result = map(exp, (x) -> bindingExpMap4(x, subs)) #TODO?
   @assign result = evalFunc(result)
   result
 end
@@ -100,7 +98,8 @@ function bindingExpMap2(exp::Expression, evalFunc::EvalFunc, mostPropagatedCount
 
   @match BINDING_EXP(exp = e, expType = exp_ty, parents = parents, isEach = is_each) = mostPropagatedExp
   @assign dims = ListUtil.firstN(arrayDims(exp_ty), mostPropagatedCount)
-  @assign result = vectorize(exp, dims, (evalFunc) -> bindingExpMap3(evalFunc = evalFunc))
+  func = (x, y) -> bindingExpMap3(x, evalFunc, y)
+  @assign result = vectorize(exp, dims, func)
   @assign (exp_ty, bind_ty) = bindingExpType(result, mostPropagatedCount)
   @assign result = BINDING_EXP(result, exp_ty, bind_ty, parents, is_each)
   result
@@ -173,8 +172,8 @@ end
                    @assign dimCount = begin
                      @match exp begin
                        BINDING_EXP(isEach = false)  => begin
-                         if Type.isKnown(exp.expType)
-                           @assign dimCount = Type.dimensionCount(exp.expType) - Type.dimensionCount(exp.bindingType)
+                         if isKnown(exp.expType)
+                           @assign dimCount = dimensionCount(exp.expType) - dimensionCount(exp.bindingType)
                          else
                            @assign dimCount = 0
                            for parent in listRest(exp.parents)
@@ -1656,7 +1655,7 @@ function containsShallow(exp::Expression, func::ContainsPred) ::Bool
         func(exp.exp1) || func(exp.exp2)
       end
 
-      LUNARY(__)  => begin
+      LUNARY_EXPRESSION(__)  => begin
         func(exp.exp)
       end
 
@@ -1695,7 +1694,6 @@ function containsShallow(exp::Expression, func::ContainsPred) ::Bool
       BOX_EXPRESSION(__)  => begin
         func(exp.exp)
       end
-
       _  => begin
         false
       end
@@ -5135,12 +5133,12 @@ function applyIndexSubscriptRange2(startExp::Expression, stepExp::Option{<:Expre
         INTEGER_EXPRESSION(startExp.value + index - 1)
       end
 
-      (P_Expression.REAL_EXPRESSION(__), SOME(P_Expression.REAL_EXPRESSION(ridx)))  => begin
-        P_Expression.REAL_EXPRESSION(startExp.value + (index - 1) * ridx)
+      (REAL_EXPRESSION(__), SOME(REAL_EXPRESSION(ridx)))  => begin
+        REAL_EXPRESSION(startExp.value + (index - 1) * ridx)
       end
 
-      (P_Expression.REAL_EXPRESSION(__), _)  => begin
-        P_Expression.REAL_EXPRESSION(startExp.value + index - 1.0)
+      (REAL_EXPRESSION(__), _)  => begin
+        REAL_EXPRESSION(startExp.value + index - 1.0)
       end
 
       (BOOLEAN_EXPRESSION(__), _)  => begin

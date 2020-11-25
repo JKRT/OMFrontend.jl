@@ -784,7 +784,7 @@ function insertUnitInEquation(
       BINARY_EXPRESSION(
         exp1,
         OPERATOR(op = Op.POW),
-        exp2 && P_Expression.REAL_EXPRESSION(__),
+        exp2 && REAL_EXPRESSION(__),
       ) => begin
         #=  POW
         =#
@@ -800,7 +800,7 @@ function insertUnitInEquation(
       BINARY_EXPRESSION(
         exp1,
         OPERATOR(op = Op.POW),
-        exp2 && P_Expression.REAL_EXPRESSION(__),
+        exp2 && REAL_EXPRESSION(__),
       ) where {(Unit.isUnit(unit))} => begin
         @match (Unit.MASTER(varList = vars), htCr2U, htS2U, htU2S, fnCache, icu1) =
           insertUnitInEquation(exp1, Unit.MASTER(nil), htCr2U, htS2U, htU2S, fnCache)
@@ -813,7 +813,7 @@ function insertUnitInEquation(
       BINARY_EXPRESSION(
         exp1,
         OPERATOR(op = Op.POW),
-        P_Expression.REAL_EXPRESSION(__),
+        REAL_EXPRESSION(__),
       ) => begin
         @assign (_, htCr2U, htS2U, htU2S, fnCache, icu1) =
           insertUnitInEquation(exp1, Unit.MASTER(nil), htCr2U, htS2U, htU2S, fnCache)

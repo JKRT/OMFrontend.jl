@@ -136,7 +136,7 @@ function collectComponentFlatTypes(component::InstNode, types::TypeTree)::TypeTr
 
   @assign comp = component(component)
   @assign types = collectFlatType(getType(comp), types)
-  @assign types = collectBindingFlatTypes(P_Component.getBinding(comp), types)
+  @assign types = collectBindingFlatTypes(getBinding(comp), types)
   return types
 end
 

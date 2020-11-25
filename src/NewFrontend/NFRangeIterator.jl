@@ -124,7 +124,7 @@ function next(iterator::RangeIterator)::Tuple{RangeIterator, Expression}
       end
 
       REAL_RANGE(__) => begin
-        @assign nextExp = P_Expression.REAL_EXPRESSION(
+        @assign nextExp = REAL_EXPRESSION(
           iterator.start + iterator.stepsize * iterator.current,
         )
         @assign iterator.current = iterator.current + 1
@@ -227,17 +227,17 @@ function fromExp(exp::Expression)::RangeIterator
       end
 
       RANGE_EXPRESSION(
-        start = P_Expression.REAL_EXPRESSION(rstart),
-        step = SOME(P_Expression.REAL_EXPRESSION(rstep)),
-        stop = P_Expression.REAL_EXPRESSION(rstop),
+        start = REAL_EXPRESSION(rstart),
+        step = SOME(REAL_EXPRESSION(rstep)),
+        stop = REAL_EXPRESSION(rstop),
       ) => begin
         REAL_RANGE(rstart, rstep, 0, Util.realRangeSize(rstart, rstep, rstop))
       end
 
       RANGE_EXPRESSION(
-        start = P_Expression.REAL_EXPRESSION(rstart),
+        start = REAL_EXPRESSION(rstart),
         step = NONE(),
-        stop = P_Expression.REAL_EXPRESSION(rstop),
+        stop = REAL_EXPRESSION(rstop),
       ) => begin
         REAL_RANGE(rstart, 1.0, 0, Util.realRangeSize(rstart, 1.0, rstop))
       end

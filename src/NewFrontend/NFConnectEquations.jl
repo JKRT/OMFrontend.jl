@@ -112,7 +112,7 @@ function generateEquations(sets::Array{<:List{<:Connector}})::List{Equation}
   =#
   @assign potfunc = generatePotentialEquations
   @assign flowThreshold =
-    P_Expression.REAL_EXPRESSION(Flags.getConfigReal(Flags.FLOW_THRESHOLD))
+    REAL_EXPRESSION(Flags.getConfigReal(Flags.FLOW_THRESHOLD))
   for set in sets
     @assign cty = getSetType(set)
     if ConnectorType.isPotential(cty)
@@ -423,7 +423,7 @@ function makeEqualityAssert(
     @assign exp = RELATION_EXPRESSION(
       exp,
       makeLessEq(ty),
-      P_Expression.REAL_EXPRESSION(0.0),
+      REAL_EXPRESSION(0.0),
     )
   else
     @assign exp =
@@ -505,7 +505,7 @@ function generateFlowEquations(elements::List{<:Connector})::List{Equation}
     end
   end
   @assign equations =
-    list(EQUATION_EQUALITY(sum, P_Expression.REAL_EXPRESSION(0.0), c.ty, src))
+    list(EQUATION_EQUALITY(sum, REAL_EXPRESSION(0.0), c.ty, src))
   return equations
 end
 
@@ -1064,7 +1064,7 @@ function generateInStreamExp(
         @assign exp = streamSumEquationExp(
           outside,
           inside,
-          P_Expression.REAL_EXPRESSION(flowThreshold),
+          REAL_EXPRESSION(flowThreshold),
         )
         #=  Evaluate any inStream calls that were generated.
         =#
@@ -1148,7 +1148,7 @@ function evaluateActualStream(
     @assign op =
       makeGreater(nodeType(flow_cr))
     @assign exp = IF_EXPRESSION(
-      RELATION_EXPRESSION(flow_exp, op, P_Expression.REAL_EXPRESSION(0.0)),
+      RELATION_EXPRESSION(flow_exp, op, REAL_EXPRESSION(0.0)),
       instream_exp,
       stream_exp,
     )
@@ -1229,7 +1229,7 @@ function evaluateFlowDirection(flowCref::ComponentRef)::Integer
         0
       end
 
-      (SOME(P_Expression.REAL_EXPRESSION(min_val)), NONE()) => begin
+      (SOME(REAL_EXPRESSION(min_val)), NONE()) => begin
         if min_val >= 0
           1
         else
@@ -1237,7 +1237,7 @@ function evaluateFlowDirection(flowCref::ComponentRef)::Integer
         end
       end
 
-      (NONE(), SOME(P_Expression.REAL_EXPRESSION(max_val))) => begin
+      (NONE(), SOME(REAL_EXPRESSION(max_val))) => begin
         if max_val <= 0
           -1
         else
@@ -1246,8 +1246,8 @@ function evaluateFlowDirection(flowCref::ComponentRef)::Integer
       end
 
       (
-        SOME(P_Expression.REAL_EXPRESSION(min_val)),
-        SOME(P_Expression.REAL_EXPRESSION(max_val)),
+        SOME(REAL_EXPRESSION(min_val)),
+        SOME(REAL_EXPRESSION(max_val)),
       ) => begin
         if min_val >= 0 && max_val >= min_val
           1

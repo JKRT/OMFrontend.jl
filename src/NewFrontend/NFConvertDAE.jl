@@ -925,9 +925,9 @@ function convertInitialEquation(
         @assign e1 = toDAE(eq.lhs)
         @assign e2 = toDAE(eq.rhs)
         _cons(if isComplex(eq.ty)
-          DAE.Element.INITIAL_COMPLEX_EQUATION(e1, e2, eq.source)
+          DAE.INITIAL_COMPLEX_EQUATION(e1, e2, eq.source)
         else
-          DAE.Element.INITIALEQUATION(e1, e2, eq.source)
+          DAE.INITIALEQUATION(e1, e2, eq.source)
         end, elements)
       end
 
@@ -935,7 +935,7 @@ function convertInitialEquation(
         @assign e1 = toDAE(eq.lhs)
         @assign e2 = toDAE(eq.rhs)
         @assign dims = list(toDAE(d) for d in arrayDims(eq.ty))
-        _cons(DAE.Element.INITIAL_ARRAY_EQUATION(dims, e1, e2, eq.source), elements)
+        _cons(DAE.INITIAL_ARRAY_EQUATION(dims, e1, e2, eq.source), elements)
       end
 
       EQUATION_FOR(__) => begin

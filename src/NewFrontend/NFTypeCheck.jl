@@ -96,7 +96,7 @@ function checkBinaryOperation(
         end
 
         Op.DIV => begin
-          checkBinaryOperationDiv(exp1, type1, exp2, type2, info, isElementWise = false)
+          checkBinaryOperationDiv(exp1, type1, exp2, type2, info, false)
         end
 
         Op.POW => begin
@@ -1622,10 +1622,10 @@ function checkBinaryOperationDiv(
   local valid::Bool
   local op::Operator
   @assign (e1, ty1, mk) =
-    matchTypes(type1, setArrayElementType(type1, TYPE_REAL()), exp1, true)
+    matchTypes(type1, setArrayElementType(type1, TYPE_REAL()), exp1; allowUnknown = true)
   @assign valid = isCompatibleMatch(mk)
   @assign (e2, ty2, mk) =
-    matchTypes(type2, setArrayElementType(type2, TYPE_REAL()), exp2, true)
+    matchTypes(type2, setArrayElementType(type2, TYPE_REAL()), exp2; allowUnknown = true)
   @assign valid = valid && isCompatibleMatch(mk)
   #=  Division is always element-wise, the only difference between / and ./ is
   =#
@@ -1741,10 +1741,10 @@ function checkBinaryOperationPowEW(
   #=  are compatible with ecah other we check if each type is compatible with Real.
   =#
   @assign (e1, ty1, mk) =
-    matchTypes(type1, setArrayElementType(type1, TYPE_REAL()), exp1, true)
+    matchTypes(type1, setArrayElementType(type1, TYPE_REAL()), exp1, allowUnknown = true)
   @assign valid = isCompatibleMatch(mk)
   @assign (e2, ty2, mk) =
-    matchTypes(type2, setArrayElementType(type2, TYPE_REAL()), exp2, true)
+    matchTypes(type2, setArrayElementType(type2, TYPE_REAL()), exp2, allowUnknown = true)
   @assign valid = valid && isCompatibleMatch(mk)
   @assign (resultType, op) = begin
     @match (isArray(ty1), isArray(ty2)) begin

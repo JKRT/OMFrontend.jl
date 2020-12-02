@@ -217,11 +217,11 @@ end
                          end
 
                          Absyn.WILD(__)  => begin
-                           (WILD(), scope, P_LookupState.PREDEF_COMP())
+                           (WILD(), scope, P_LookupState.LOOKUP_STATE_PREDEF_COMP())
                          end
 
                          Absyn.ALLWILD(__)  => begin
-                           (WILD(), scope, P_LookupState.PREDEF_COMP())
+                           (WILD(), scope, P_LookupState.LOOKUP_STATE_PREDEF_COMP())
                          end
                        end
                      end
@@ -511,7 +511,7 @@ function lookupSimpleBuiltinCref(name::String, subs::List{<:Absyn.Subscript}) ::
   @assign (node, cref, state) = begin
     @match name begin
       "time"  => begin
-        (NFBuiltin.TIME, NFBuiltin.TIME_CREF, PREDEF_COMP())
+        (NFBuiltin.TIME, NFBuiltin.TIME_CREF, LOOKUP_STATE_PREDEF_COMP())
       end
 
       "Boolean"  => begin

@@ -1576,20 +1576,18 @@ function topComponent(node::InstNode) ::InstNode
 end
 
 function topScope(node::InstNode) ::InstNode
-  local topScope::InstNode
-
-  @assign topScope = begin
+  local ts::InstNode
+  @assign ts = begin
     @match node begin
       CLASS_NODE(nodeType = TOP_SCOPE(__))  => begin
         node
       end
-
       _  => begin
         topScope(parentScope(node))
       end
     end
   end
-  topScope
+  ts
 end
 
 function classScope(node::InstNode) ::InstNode

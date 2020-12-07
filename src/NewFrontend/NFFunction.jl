@@ -398,8 +398,8 @@ function hasUnboxArgs(fn::M_Function)::Bool
 
   @assign res = begin
     @match fn.attributes begin
-      DAE.FunctionAttributes.FUNCTION_ATTRIBUTES(
-        isBuiltin = DAE.FunctionBuiltin.FUNCTION_BUILTIN(unboxArgs = res),
+      DAE.FUNCTION_ATTRIBUTES(
+        isBuiltin = DAE.FUNCTION_BUILTIN(unboxArgs = res),
       ) => begin
         res
       end

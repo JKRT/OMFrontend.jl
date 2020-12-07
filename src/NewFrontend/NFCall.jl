@@ -621,7 +621,7 @@ function inlineType(call::Call)::DAE.InlineType
 
   @assign inlineTy = begin
     @match call begin
-      TYPED_CALL(attributes = P_CallAttributes.CALL_ATTR(inlineType = inlineTy)) => begin
+      TYPED_CALL(attributes = CALL_ATTR(inlineType = inlineTy)) => begin
         inlineTy
       end
 
@@ -1021,12 +1021,12 @@ function typeCall(
           if isRecordConstructor(ty_call)
             @assign outExp = toRecordExpression(ty_call, ty)
           else
-            if P_Function.hasUnboxArgs(P_Call.typedFunction(ty_call))
-              @assign outExp = CALL_EXPRESSION(P_Call.unboxArgs(ty_call))
+            if hasUnboxArgs(typedFunction(ty_call))
+              @assign outExp = CALL_EXPRESSION(unboxArgs(ty_call))
             else
               @assign outExp = CALL_EXPRESSION(ty_call)
             end
-            @assign outExp = Inline.inlineCallExp(outExp)
+            @assign outExp = inlineCallExp(outExp)
           end
         end
         outExp

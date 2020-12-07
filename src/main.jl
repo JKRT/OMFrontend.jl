@@ -106,4 +106,6 @@ include("./NewFrontend/NFSimplifyExp.jl")
 include("./NewFrontend/NFPackage.jl")
 #= Model verification =#
 include("./NewFrontend/NFVerifyModel.jl")
+include("./NewFrontend/NFInline.jl")
+
 end

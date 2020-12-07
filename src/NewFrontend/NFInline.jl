@@ -1,8 +1,3 @@
-module NFInline
-
-using MetaModelica
-using ExportAll
-
 #= /*
 * This file is part of OpenModelica.
 *
@@ -33,48 +28,23 @@ using ExportAll
 * See the full OSMC Public License conditions for more details.
 *
 */ =#
-import ..P_NFComponentRef
-P_ComponentRef = P_NFComponentRef
-ComponentRef = P_NFComponentRef.NFComponentRef
-import DAE.InlineType
-import ..P_NFDimension
-P_Dimension = P_NFDimension
-Dimension = P_NFDimension.NFDimension
-import ..P_NFExpression
-P_Expression = P_NFExpression
-Expression = P_NFExpression.NFExpression
-import ..Flags
-import ..NFCall.P_Call
-import ..NFFunction.P_Function
-import ..NFInstNode.P_InstNode
-import ..P_NFStatement
-P_Statement = P_NFStatement
-Statement = P_NFStatement.NFStatement
-import ..P_NFSubscript
-P_Subscript = P_NFSubscript
-Subscript = P_NFSubscript.NFSubscript
-import ..P_NFType
-P_M_Type = P_NFType
-M_Type = NFType
+
 
 function inlineCallExp(callExp::Expression)::Expression
   local result::Expression
-
   @assign result = begin
     local call::Call
     local shouldInline::Bool
     @match callExp begin
-      CALL_EXPRESSION(call = call && P_Call.TYPED_CALL(__)) => begin
+      CALL_EXPRESSION(call = call && TYPED_CALL(__)) => begin
         @assign shouldInline = begin
-          @match P_Call.inlineType(call) begin
-            DAE.InlineType.BUILTIN_EARLY_INLINE(__) => begin
+          @match inlineType(call) begin
+            DAE.BUILTIN_EARLY_INLINE(__) => begin
               true
             end
-
-            DAE.InlineType.EARLY_INLINE(__) where {(Flags.isSet(Flags.INLINE_FUNCTIONS))} => begin
+            DAE.EARLY_INLINE(__) where {(Flags.isSet(Flags.INLINE_FUNCTIONS))} => begin
               true
             end
-
             _ => begin
               false
             end
@@ -86,7 +56,6 @@ function inlineCallExp(callExp::Expression)::Expression
           callExp
         end
       end
-
       _ => begin
         callExp
       end
@@ -97,9 +66,8 @@ end
 
 function inlineCall(call::Call)::Expression
   local exp::Expression
-
   @assign exp = begin
-    local fn::M_Function
+    local fn::M_Function3
     local arg::Expression
     local args::List{Expression}
     local inputs::List{InstNode}
@@ -108,11 +76,11 @@ function inlineCall(call::Call)::Expression
     local body::List{Statement}
     local stmt::Statement
     @match call begin
-      P_Call.TYPED_CALL(
-        fn = fn && P_Function.FUNCTION(inputs = inputs, outputs = outputs, locals = locals),
+      TYPED_CALL(
+        fn = fn && FUNCTION(inputs = inputs, outputs = outputs, locals = locals),
         arguments = args,
       ) => begin
-        @assign body = P_Function.getBody(fn)
+        @assign body = getBody(fn)
         #=  This function can so far only handle functions with exactly one
         =#
         #=  statement and output and no local variables.
@@ -249,7 +217,4 @@ function getOutputExp(stmt::Statement, outputNode::InstNode, call::Call)::Expres
     end
   end
   return exp
-end
-
-@exportAll()
 end

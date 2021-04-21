@@ -1,4 +1,4 @@
-name = "HybridDAEParser"
+name = "OMFrontend.jl"
 uuid = "b10394b5-f439-4073-a0c5-e09cb00cf46c"
 authors = ["John Tinnerholm <johti17@liu.se>", "Martin Sjölund <martin.sjolund@liu.se>", "Adrian Pop <adrian.pop@liu.se>"]
 version = "0.1.0"

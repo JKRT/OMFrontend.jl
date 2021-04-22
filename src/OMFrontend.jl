@@ -38,7 +38,7 @@ function instantiateSCodeToDAE(@nospecialize(elementToInstantiate::String), @nos
   GC.enable(false) #=This C stuff can be a bit flaky..=#
   p = parseFile(path, 2 #== MetaModelica ==#)
   @debug "SCode translation"
-  s = HybridDAEParser.translateToSCode(p)
+  s = OMFrontend.translateToSCode(p)
   p = Main.listAppend(s, inProgram)
   GC.enable(true)
   Main.instClassInProgram(Absyn.IDENT(elementToInstantiate), p)

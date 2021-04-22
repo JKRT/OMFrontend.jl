@@ -1,8 +1,7 @@
 "
-  A parser of the Hybrid DAE.
-  Parses a textual top-level module description into DAE.
+  An experimental Julia frontend for the Modelica language
 "
-module HybridDAEParser
+module OMFrontend
 
 import Absyn
 import SCode

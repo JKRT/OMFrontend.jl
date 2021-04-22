@@ -7,7 +7,7 @@ Works when including the file in the terminal. Does not seem to work when run vi
 
 =#
 
-import HybridDAEParser
+import OMFrontend
 import Absyn
 import SCode
 import DAE

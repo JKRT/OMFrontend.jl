@@ -15,14 +15,14 @@ import DAE
 using Test
 
 function flatten(modelName::String, modelFile::String)
-  p = HybridDAEParser.parseFile(modelFile)
-  scodeProgram = HybridDAEParser.translateToSCode(p)
-  (dae, cache) = HybridDAEParser.instantiateSCodeToDAE(modelName, scodeProgram)
+  p = OMFrontend.parseFile(modelFile)
+  scodeProgram = OMFrontend.translateToSCode(p)
+  (dae, cache) = OMFrontend.instantiateSCodeToDAE(modelName, scodeProgram)
 end
 
 function parseAndLowerToScode(modelName::String, modelFile::String)
-  p = HybridDAEParser.parseFile(modelFile)
-  scodeProgram = HybridDAEParser.translateToSCode(p)
+  p = OMFrontend.parseFile(modelFile)
+  scodeProgram = OMFrontend.translateToSCode(p)
 end
 
 @testset "Absyn -> SCode test" begin

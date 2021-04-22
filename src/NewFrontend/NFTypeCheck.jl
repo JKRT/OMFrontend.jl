@@ -1695,7 +1695,7 @@ function checkBinaryOperationPow(
   #=  The first operand of ^ should be Real.
   =#
   @assign (e1, resultType, mk) =
-    matchTypes(type1, setArrayElementType(type1, TYPE_REAL()), exp1, true)
+    matchTypes(type1, setArrayElementType(type1, TYPE_REAL()), exp1; allowUnknown = true)
   @assign valid = isCompatibleMatch(mk)
   if isArray(resultType)
     @assign valid = valid && Type.isSquareMatrix(resultType)
@@ -1703,7 +1703,7 @@ function checkBinaryOperationPow(
     @assign op = OPERATOR(resultType, Op.POW_MATRIX)
     @assign e2 = exp2
   else
-    @assign (e2, _, mk) = matchTypes(type2, TYPE_REAL(), exp2, true)
+    @assign (e2, _, mk) = matchTypes(type2, TYPE_REAL(), exp2; allowUnknown = true)
     @assign valid = valid && isCompatibleMatch(mk)
     @assign op = OPERATOR(resultType, Op.POW)
   end
@@ -4129,7 +4129,7 @@ function getRangeTypeInt(
     local var::VariabilityType
     @match (startExp, stepExp, stopExp) begin
       (INTEGER_EXPRESSION(__), NONE(), INTEGER_EXPRESSION(__)) => begin
-        P_Dimension.Dimension.fromInteger(max(stopExp.value - startExp.value + 1, 0))
+        fromInteger(max(stopExp.value - startExp.value + 1, 0))
       end
 
       (
@@ -4192,12 +4192,12 @@ function getRangeTypeInt(
           makeAdd(TYPE_INTEGER()),
           INTEGER_EXPRESSION(1),
         )
-        @assign dim_exp = CALL_EXPRESSION(P_Call.makeTypedCall(
+        @assign dim_exp = CALL_EXPRESSION(makeTypedCall(
           NFBuiltinFuncs.MAX_INT,
           list(dim_exp, INTEGER_EXPRESSION(0)),
           var,
         ))
-        @assign dim_exp = SimplifyExp.simplify(dim_exp)
+        @assign dim_exp = simplify(dim_exp)
         fromExp(dim_exp, var)
       end
     end
@@ -4482,8 +4482,8 @@ function printBindingTypeError(
   local mk::MatchKindType
 
   @assign binding_info = Binding_getInfo(binding)
-  @assign comp_info = info(component)
-  return if Type.isScalar(bindingType) && isArray(componentType)
+  @assign comp_info = InstNode_info(component)
+  return if isScalar(bindingType) && isArray(componentType)
     Error.addMultiSourceMessage(
       Error.MODIFIER_NON_TYPE_ARRAY_ERROR,
       list(toString(binding), name),
@@ -4493,7 +4493,7 @@ function printBindingTypeError(
     @assign (_, _, mk) = matchTypes(
       arrayElementType(bindingType),
       arrayElementType(componentType),
-      EMPTY(bindingType),
+      EMPTY_BINDING(bindingType),
       true,
     )
     if !Config.getGraphicsExpMode()

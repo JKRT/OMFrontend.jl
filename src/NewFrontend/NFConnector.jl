@@ -8,7 +8,7 @@ const FaceType = Integer
 @Uniontype NFConnector begin
   @Record CONNECTOR begin
     name::ComponentRef
-    ty::M_Type
+    ty::NFType
     face::FaceType
     cty::ConnectorType.TYPE
     source::DAE.ElementSource
@@ -133,7 +133,7 @@ end
 function fromExp(
   exp::Expression,
   source::DAE.ElementSource,
-  conns::List{<:Connector} = nil,
+  conns::List{<:Connector} = nil
 )::List{Connector}
 
   @assign conns = begin
@@ -166,21 +166,21 @@ end
 
 function fromFacedCref(
   cref::ComponentRef,
-  ty::M_Type,
+  ty::NFType,
   face::FaceType,
   source::DAE.ElementSource,
 )::Connector
   local conn::Connector
 
-  local node::InstNode = node(cref)
+  local nodeVar::InstNode = node(cref)
   local comp::Component
   local cty::ConnectorType.TYPE
   local res::Restriction
 
-  if isComponent(node)
-    @assign comp = component(node)
-    @assign res = restriction(getClass(P_Component.classInstance(comp)))
-    @assign cty = P_Component.connectorType(comp)
+  if isComponent(nodeVar)
+    @assign comp = component(nodeVar)
+    @assign res = restriction(getClass(classInstance(comp)))
+    @assign cty = connectorType(comp)
   else
     @assign cty = intBitOr(ConnectorType.VIRTUAL, ConnectorType.POTENTIAL)
   end
@@ -189,7 +189,7 @@ function fromFacedCref(
   return conn
 end
 
-function fromCref(cref::ComponentRef, ty::M_Type, source::DAE.ElementSource)::Connector
+function fromCref(cref::ComponentRef, ty::NFType, source::DAE.ElementSource)::Connector
   local conn::Connector = fromFacedCref(cref, ty, crefFace(cref), source)
   return conn
 end
@@ -312,7 +312,7 @@ function crefFace(cref::ComponentRef)::FaceType
   local face::FaceType
   @assign face = begin
     @match cref begin
-      CREF(restCref = EMPTY(__)) => begin
+      COMPONENT_REF_CREF(restCref = COMPONENT_REF_EMPTY(__)) => begin
         Face.OUTSIDE
       end
 

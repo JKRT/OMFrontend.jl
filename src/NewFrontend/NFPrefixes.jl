@@ -1,6 +1,5 @@
 
 @UniontypeDecl Replaceable
-
 M_Type = NFType
 
 module ConnectorType
@@ -11,7 +10,6 @@ TYPE = Integer
 
 using MetaModelica
 using ExportAll
-
 
 const NON_CONNECTOR = 0::Integer
 const POTENTIAL = intBitLShift(1, 0)::Integer #= A connector element without a prefix. =#
@@ -76,7 +74,7 @@ function merge(
 
   #=  If both the outer and the inner has flow or stream, give an error.
   =#
-  if intBitAnd(outerCty, FLOW_STREAM_MASK) > 0 && intBitAnd(innerCty, FLOW_STREAM_MASK) > 0
+  if intBitAnd(outerCty, ConnectorType.FLOW_STREAM_MASK) > 0 && intBitAnd(innerCty, ConnectorType.FLOW_STREAM_MASK) > 0
     printPrefixError(toString(outerCty), toString(innerCty), node)
   end
   @assign cty = intBitOr(outerCty, innerCty)
@@ -92,7 +90,7 @@ end
 
 function setPotential(cty::Integer)::Integer
 
-  @assign cty = intBitOr(cty, POTENTIAL)
+  @assign cty = intBitOr(cty, ConnectorType.POTENTIAL)
   return cty
 end
 
@@ -126,13 +124,12 @@ end
 function isConnector(cty::Integer)::Bool
   local isConnector::Bool
 
-  @assign isConnector = intBitAnd(cty, CONNECTOR) > 0
+  @assign isConnector = intBitAnd(cty, ConnectorType.CONNECTOR) > 0
   return isConnector
 end
 
 function setConnector(cty::Integer)::Integer
-
-  @assign cty = intBitOr(cty, CONNECTOR)
+  @assign cty = intBitOr(cty, ConnectorType.CONNECTOR)
   return cty
 end
 

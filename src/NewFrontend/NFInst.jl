@@ -1382,7 +1382,7 @@ function updateComponentConnectorType(attributes::Attributes, restriction::Restr
       @assign cty = intBitAnd(cty, intBitNot(intBitOr(ConnectorType.CONNECTOR, ConnectorType.EXPANDABLE)))
     end
     if ! isFlowOrStream(cty)
-      @assign cty = ConnectorType.setPotential(cty)
+      @assign cty = setPotential(cty)
     end
     if cty != attributes.connectorType
       @assign attributes.connectorType = cty
@@ -1603,30 +1603,30 @@ end
 
 function mergeDerivedAttributes(outerAttr::Attributes, innerAttr::Attributes, node::InstNode) ::Attributes
   local attr::Attributes
-  local cty::ConnectorType.TYPE
-  local par::Parallelism
+  local cty::Integer#ConnectorType.TYPE
+  local par::ParallelismType
   local var::VariabilityType
   local dir::DirectionType
-  local io::InnerOuter
+  local io::Integer
   local fin::Bool
   local redecl::Bool
-  local repl::Replaceable
-
+  local repl#::Replaceable type conversion work with this change?
   if referenceEq(innerAttr, DEFAULT_ATTR) && outerAttr.connectorType == 0
-    @assign attr = outerAttr
+    attr = outerAttr
   elseif referenceEq(outerAttr, DEFAULT_ATTR) && innerAttr.connectorType == 0
-    @assign attr = innerAttr
+    attr = innerAttr
   else
-    @match Attributes.ATTRIBUTES(cty, par, var, dir, io, fin, redecl, repl) = outerAttr
-    @assign cty = ConnectorType.merge(cty, innerAttr.connectorType, node, isClass = true)
-    @assign var = variabilityMin(var, innerAttr.variability)
-    @assign dir = mergeDirection(dir, innerAttr.direction, node, allowSame = true)
-    @assign attr = Attributes.ATTRIBUTES(cty, par, var, dir, io, fin, redecl, repl)
+    #= The present error is here =#
+    @match ATTRIBUTES(cty, par, var, dir, io, fin, redecl, repl) = outerAttr
+    cty = merge(cty, innerAttr.connectorType, node, true)
+    var = variabilityMin(var, innerAttr.variability)
+    dir = mergeDirection(dir, innerAttr.direction, node, #= allowSame = true=# true)
+    attr = ATTRIBUTES(cty, par, var, dir, io, fin, redecl, repl)
   end
   attr
 end
 
-function mergeRedeclaredComponentAttributes(origAttr::Attributes, redeclAttr::Attributes, node::InstNode) ::Attributes
+function mergeRedeclaredComponentAttributes(origAttr::Attributes, redeclAttr::Attributes, node::InstNode)::Attributes
   local attr::Attributes
   local cty::ConnectorType.TYPE
   local rcty::ConnectorType.TYPE
@@ -2702,16 +2702,14 @@ end
 
 function instConnectorCref(absynCref::Absyn.ComponentRef, scope::InstNode, info::SourceInfo) ::Expression
   local outExp::Expression
-
   local cref::ComponentRef
   local prefix::ComponentRef
   local found_scope::InstNode
-
-  @assign (cref, found_scope) = Lookup.lookupConnector(absynCref, scope, info)
+  @assign (cref, found_scope) = lookupConnector(absynCref, scope, info)
   @assign cref = instCrefSubscripts(cref, scope, info)
-  @assign prefix = ComponentRef.fromNodeList(scopeList(found_scope))
-  if ! ComponentRef.isEmpty(prefix)
-    @assign cref = ComponentRef.append(cref, prefix)
+  @assign prefix = fromNodeList(scopeList(found_scope))
+  if ! isEmpty(prefix)
+    @assign cref = append(cref, prefix)
   end
   @assign outExp = CREF_EXPRESSION(TYPE_UNKNOWN(), cref)
   outExp

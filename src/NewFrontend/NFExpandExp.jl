@@ -1,48 +1,10 @@
-module P_NFExpandExp
-
 using MetaModelica
 using ExportAll
 #= Forward declarations for uniontypes until Julia adds support for mutual recursion =#
-
 MakeFn = Function
-@UniontypeDecl NFExpandExp
-
-import ..P_NFExpression
-P_Expression = P_NFExpression
-Expression = P_NFExpression.NFExpression
-import ..P_EvalTarget
-P_EvalTarget = P_EvalTarget
-EvalTarget = P_EvalTarget.EvalTarget
-using MetaModelica.Dangerous
-import ..NFPrefixes.Variability
-import ..NFSimplifyExp
-SimplifyExp = NFSimplifyExp
-import ..NFInstNode.P_InstNode
-import ..NFCeval
-Ceval = NFCeval
-import ..P_NFOperator
-P_Operator = P_NFOperator
-Operator = P_NFOperator.NFOperator
-import ..NFFunction.P_Function
-import ..P_NFComponentRef
-P_ComponentRef = P_NFComponentRef
-ComponentRef = P_NFComponentRef.NFComponentRef
-import ..P_NFDimension
-P_Dimension = P_NFDimension
-Dimension = P_NFDimension.NFDimension
-import ..NFCall.P_Call
-import ..P_NFType
-P_M_Type = P_NFType
-M_Type = NFType
-import ..P_NFSubscript
-P_Subscript = P_NFSubscript
-Subscript = P_NFSubscript.NFSubscript
-import ..P_NFExpressionIterator
-P_ExpressionIterator = P_NFExpressionIterator
-ExpressionIterator = P_NFExpressionIterator.NFExpressionIterator
-import ..P_NFRangeIterator
-P_RangeIterator = P_NFRangeIterator
-RangeIterator = P_NFRangeIterator.NFRangeIterator
+#@UniontypeDecl NFExpandExp
+#@Uniontype NFExpandExp begin
+#end
 
 function expandGeneric2(
   subs::List{<:List{<:Subscript}},
@@ -477,7 +439,7 @@ end
 
 function expandBinaryArrayScalar(
   exp::Expression,
-  scalarOp::P_NFOperator.Op,
+  scalarOp::OpType,
 )::Tuple{Expression, Bool}
   local expanded::Bool
   local outExp::Expression
@@ -527,7 +489,7 @@ end
 
 function expandBinaryScalarArray(
   exp::Expression,
-  scalarOp::P_NFOperator.Op,
+  scalarOp::OpType,
 )::Tuple{Expression, Bool}
   local expanded::Bool
   local outExp::Expression
@@ -804,7 +766,7 @@ function expandBuiltinGeneric2(
   fn::M_Function,
   ty::M_Type,
   var::VariabilityType,
-  attr::NFCall.P_CallAttributes,
+  attr::CallAttributes
 )::Expression
 
   @assign exp = begin
@@ -907,11 +869,11 @@ function expandBuiltinCat(args::List{<:Expression}, call::Call)::Tuple{Expressio
   return (exp, expanded)
 end
 
-function expand
+function expand(
   fn::M_Function,
   args::List{<:Expression},
   call::Call,
-)::Tuple{Expression, Bool}
+  )::Tuple{Expression, Bool}
   local expanded::Bool
   local outExp::Expression
 
@@ -954,19 +916,14 @@ end
 function expandCall(call::Call, exp::Expression)::Tuple{Expression, Bool}
   local expanded::Bool
   local outExp::Expression
-
   @assign (outExp, expanded) = begin
     @matchcontinue call begin
-      P_Call.TYPED_CALL(
-        __,
-      ) where {(isBuiltin(call.fn) && !isImpure(call.fn))} => begin
-        expandcall.fn, call.arguments, call)
+      TYPED_CALL(__) where isBuiltin(call.fn) && !isImpure(call.fn) => begin
+        expandcall.fn, call.arguments, call
       end
-
-      P_Call.TYPED_ARRAY_CONSTRUCTOR(__) => begin
+      TYPED_ARRAY_CONSTRUCTOR(__) => begin
         expandArrayConstructor(call.exp, call.ty, call.iters)
       end
-
       _ => begin
         expandGeneric(exp)
       end
@@ -1025,11 +982,11 @@ end
 
 function expandCref4(
   subs::List{<:Subscript},
-  comb::List{<:Subscript} = nil,
-  accum::List{<:List{<:Subscript}} = nil,
+  comb::List{<:Subscript}, #== nil,=#
+  accum::List{<:List{<:Subscript}}, #= = nil, =#
   restSubs::List{<:List{<:Subscript}},
   cref::ComponentRef,
-  crefType::M_Type,
+  crefType::NFType,
 )::Expression
   local arrayExp::Expression
 
@@ -1103,11 +1060,11 @@ function expandCref2(
 
   local cr_subs::List{Subscript} = nil
   local dims::List{Dimension}
-  import ..P_NFComponentRef.Origin
+#  import ..P_NFComponentRef.Origin
 
   @assign subs = begin
     @match cref begin
-      CREF(origin = Origin.CREF) => begin
+      COMPONENT_REF_CREF(origin = Origin.CREF) => begin
         @assign dims = arrayDims(cref.ty)
         @assign cr_subs = expandList(cref.subscripts, dims)
         if listEmpty(cr_subs) && !listEmpty(dims)
@@ -1206,7 +1163,7 @@ function expand(exp::Expression)::Tuple{Expression, Bool}
         (exp, expanded)
       end
 
-      TYPENAME(__) => begin
+      TYPENAME_EXPRESSION(__) => begin
         (expandTypename(exp.ty), true)
       end
 
@@ -1254,7 +1211,3 @@ function expand(exp::Expression)::Tuple{Expression, Bool}
   return (exp, expanded)
 end
 
-@Uniontype NFExpandExp begin end
-
-@exportAll()
-end

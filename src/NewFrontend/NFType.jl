@@ -364,7 +364,7 @@ function subscript(ty::M_Type, subs::List{<:Subscript})::M_Type
   return ty
 end
 
-function toDAE(ty::M_Type, makeTypeVars::Bool = true)::DAE.Type
+function toDAE(ty::NFType; makeTypeVars::Bool = true)::DAE.Type
   local daeTy::DAE.Type
   @assign daeTy = begin
     @match ty begin

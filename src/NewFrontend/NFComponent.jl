@@ -8,10 +8,10 @@ Expression = NFExpression
 @Uniontype Attributes begin
   @Record ATTRIBUTES begin
     connectorType::Integer #=ConnectorType.M_Type=#
-    parallelism
-    variability
-    direction
-    innerOuter
+    parallelism::Integer
+    variability::Integer
+    direction::Integer
+    innerOuter::Integer
     isFinal::Bool
     isRedeclare::Bool
     isReplaceable

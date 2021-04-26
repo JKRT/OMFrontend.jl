@@ -6,13 +6,13 @@ Current Status:
 Works when including the file in the terminal. Does not seem to work when run via tests.
 
 =#
-
 import OMFrontend
 import Absyn
 import SCode
 import DAE
 
 using Test
+using MetaModelica
 
 function flatten(modelName::String, modelFile::String)
   p = OMFrontend.parseFile(modelFile)
@@ -24,6 +24,9 @@ function parseAndLowerToScode(modelName::String, modelFile::String)
   p = OMFrontend.parseFile(modelFile)
   scodeProgram = OMFrontend.translateToSCode(p)
 end
+
+
+@testset "Frontend tests. Check if we can transform the abstract tree to SCode and that we are able to flatten without exceptions" begin
 
 @testset "Absyn -> SCode test" begin
   @test try
@@ -60,7 +63,14 @@ end
   catch e
     throw(e)
     false
-  end  
+  end
+  @test try
+    parseAndLowerToScode("Influenza", "./Models/Influenza.mo")
+    true
+  catch e
+    throw(e)
+    false
+  end
 end
 
 @testset "SCode -> DAE test" begin
@@ -87,7 +97,7 @@ end
     throw(e)
     false
   end
-  
+
   @test try
     flatten("SimpleCircuit", "./Models/SimpleCircuit.mo")
     true
@@ -103,5 +113,15 @@ end
     throw(e)
     false
   end
-  
+
+  @test try
+    flatten("Influenza", "./Models/Influenza.mo")
+    true
+  catch e
+    throw(e)
+    false
+  end
+
+end
+
 end

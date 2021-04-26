@@ -269,43 +269,45 @@ function isConnector(res::Restriction)::Bool
   return isConnector
 end
 
-function toDAE(res::Restriction, path::Absyn.Path)::ClassInf.State
-  local state::ClassInf.State
+import DAE.ClassInf
+
+function toDAE(res::Restriction, path::Absyn.Path)::ClassInf.SMNode
+  local state::ClassInf.SMNode
 
   @assign state = begin
     @match res begin
       RESTRICTION_CLASS(__) => begin
-        ClassInf.State.UNKNOWN(path)
+        ClassInf.UNKNOWN(path)
       end
       RESTRICTION_CONNECTOR(__) => begin
-        ClassInf.State.CONNECTOR(path, res.isExpandable)
+        ClassInf.CONNECTOR(path, res.isExpandable)
       end
       RESTRICTION_ENUMERATION(__) => begin
-        ClassInf.State.ENUMERATION(path)
+        ClassInf.ENUMERATION(path)
       end
       RESTRICTION_EXTERNAL_OBJECT(__) => begin
-        ClassInf.State.EXTERNAL_OBJ(path)
+        ClassInf.EXTERNAL_OBJ(path)
       end
       RESTRICTION_FUNCTION(__) => begin
-        ClassInf.State.FUNCTION(path, false)
+        ClassInf.FUNCTION(path, false)
       end
       RESTRICTION_MODEL(__) => begin
-        ClassInf.State.MODEL(path)
+        ClassInf.MODEL(path)
       end
       RESTRICTION_OPERATOR(__) => begin
-        ClassInf.State.FUNCTION(path, false)
+        ClassInf.FUNCTION(path, false)
       end
       RESTRICTION_RECORD(__) => begin
-        ClassInf.State.RECORD(path)
+        ClassInf.RECORD(path)
       end
       RESTRICTION_TYPE(__) => begin
-        ClassInf.State.TYPE(path)
+        ClassInf.TYPE(path)
       end
       RESTRICTION_CLOCK(__) => begin
-        ClassInf.State.TYPE_CLOCK(path)
+        ClassInf.TYPE_CLOCK(path)
       end
       _ => begin
-        ClassInf.State.UNKNOWN(path)
+        ClassInf.UNKNOWN(path)
       end
     end
   end

@@ -377,7 +377,7 @@ function toPartialDAEType(clsNode::InstNode) ::DAE.Type
 
   @assign outType = begin
     local cls::Class
-    local state::ClassInf.State
+    local state::ClassInf.SMNode
     @match clsNode begin
       CLASS_NODE(__)  => begin
         @assign cls = P_Pointer.access(clsNode.cls)
@@ -389,7 +389,7 @@ function toPartialDAEType(clsNode::InstNode) ::DAE.Type
 
             _  => begin
               @assign state = toDAE(restriction(cls), scopePath(clsNode, includeRoot = true))
-              DAE.Type.T_COMPLEX(state, nil, NONE())
+              DAE.T_COMPLEX(state, nil, NONE())
             end
           end
         end
@@ -1148,7 +1148,7 @@ function scopePath2(node::InstNode, includeRoot::Bool, accumPath::Absyn.Path) ::
   path
 end
 
-function scopePath(node::InstNode, includeRoot::Bool = false #= Whether to include the root class name or not. =#) ::Absyn.Path
+function scopePath(node::InstNode; includeRoot::Bool = false #= Whether to include the root class name or not. =#) ::Absyn.Path
   local path::Absyn.Path
 
   @assign path = begin
@@ -1882,12 +1882,12 @@ function isExpandableConnector(node::InstNode) ::Bool
 end
 
 function isConnector(node::InstNode) ::Bool
-  local isConnector::Bool
+  local isConnectorBool::Bool
 
-  @assign isConnector = begin
+  @assign isConnectorBool = begin
     @match node begin
       COMPONENT_NODE(__)  => begin
-        P_Component.isConnector(component(node))
+        isConnector(component(node))
       end
 
       NAME_NODE(__)  => begin
@@ -1899,7 +1899,7 @@ function isConnector(node::InstNode) ::Bool
       end
     end
   end
-  isConnector
+  isConnectorBool
 end
 
 function isName(node::InstNode) ::Bool

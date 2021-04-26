@@ -16,7 +16,7 @@ Connections = NFConnections
 
 function makeConnectors(
   cref::ComponentRef,
-  ty::M_Type,
+  ty::NFType,
   source::DAE.ElementSource,
 )::List{Connector}
   local connectors::List{Connector}
@@ -26,19 +26,20 @@ function makeConnectors(
   local expanded::Bool
 
   @assign cr = evaluateSubscripts(cref)
-  if !Flags.isSet(Flags.NF_SCALARIZE)
-    @assign connectors = list(Connector.fromCref(
-      cr,
-      getSubscriptedType(cr),
-      source,
-    ))
-    return connectors
-  end
-  @assign cref_exp =
+  #= If we are to expand the connectors or not. Let's assume not for now=#  #= Change by John (johti17) 2021-04-26=#
+  # if !Flags.isSet(Flags.NF_SCALARIZE)
+  #   @assign connectors = list(Connector.fromCref(
+  #     cr,
+  #     getSubscriptedType(cr),
+  #     source,
+  #   ))
+  #   return connectors
+  # end
+  cref_exp =
     CREF_EXPRESSION(getSubscriptedType(cr), cr)
-  @assign (cref_exp, expanded) = P_ExpandExp.ExpandExp.expand(cref_exp)
+  (cref_exp, expanded) = expand(cref_exp)
   if expanded
-    @assign connectors = Connector.fromExp(cref_exp, source)
+    connectors = fromExp(cref_exp, source)
   else
     Error.assertion(
       false,
@@ -107,7 +108,7 @@ function collect(flatModel::FlatModel)::Tuple{FlatModel, Connections}
             for c1 in cl1
               @match _cons(c2, cl2) = cl2
               @assign conns =
-                addConnection(P_Connection.Connection.CONNECTION(c1, c2), conns)
+                addConnection(CONNECTION(c1, c2), conns)
             end
           end
           eql

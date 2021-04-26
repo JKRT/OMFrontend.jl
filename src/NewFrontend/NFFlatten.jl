@@ -356,7 +356,7 @@ function isComplexComponent(ty::NFType)::Bool
   local isComplex::Bool
   @assign isComplex = begin
     @match ty begin
-      TYPE_COMPLEX(complexTy = EXTERNAL_OBJECT(__)) => begin
+      TYPE_COMPLEX(complexTy = COMPLEX_EXTERNAL_OBJECT(__)) => begin
         false
       end
       TYPE_COMPLEX(__) => begin
@@ -523,7 +523,7 @@ function flattenComplexComponent(
   node::InstNode,
   comp::Component,
   cls::Class,
-  ty::M_Type,
+  ty::NFType,
   visibility::VisibilityType,
   outerBinding::Option{<:Binding},
   prefix::ComponentRef,
@@ -1057,7 +1057,7 @@ function flattenBindingExp2(
     end
   end
   for parent in parents
-    @assign binding_level = binding_level + Type.dimensionCount(getType(parent))
+    @assign binding_level = binding_level + dimensionCount(getType(parent))
   end
   if binding_level > 0
     @assign subs =

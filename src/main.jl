@@ -67,6 +67,7 @@ include("./NewFrontend/NFVariable.jl")
 include("./NewFrontend/NFFlatModel.jl")
 include("./NewFrontend/NFConnector.jl")
 include("./NewFrontend/NFConnections.jl")
+include("./NewFrontend/NFConnection.jl")
 include("./NewFrontend/NFCardinalityTable.jl")
 import .NFCardinalityTable
 include("./NewFrontend/NFConnectionSets.jl")
@@ -95,6 +96,7 @@ include("./NewFrontend/NFOperator.jl")
 include("./NewFrontend/NFTypeCheck.jl")
 include("./NewFrontend/NFExpandableConnectors.jl")
 include("./NewFrontend/NFEvalConstants.jl")
+include("./NewFrontend/NFExpandExp.jl")
 
 #= TODO: NOT IN USE=#
 #include("./NewFrontend/NFUnit.jl")

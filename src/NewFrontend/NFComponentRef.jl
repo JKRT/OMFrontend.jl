@@ -134,13 +134,13 @@ function isFromCref(cref::ComponentRef)::Bool
 end
 
 function isDeleted(cref::ComponentRef)::Bool
-  local isDeleted::Bool
+  local isDeletedBool::Bool
 
-  @assign isDeleted = begin
+  @assign isDeletedBool = begin
     local node::InstNode
     @match cref begin
       COMPONENT_REF_CREF(node = node, origin = Origin.CREF) => begin
-        isComponent(node) && P_Component.isDeleted(component(node))
+        isComponent(node) && isDeleted(component(node))
       end
 
       _ => begin
@@ -148,7 +148,7 @@ function isDeleted(cref::ComponentRef)::Bool
       end
     end
   end
-  return isDeleted
+  return isDeletedBool
 end
 
 function evaluateSubscripts(cref::ComponentRef)::ComponentRef
@@ -441,7 +441,7 @@ function toDAE_impl(
         accumCref
       end
       COMPONENT_REF_CREF(__) => begin
-        @assign ty = if Type.isUnknown(cref.ty)
+        @assign ty = if isUnknown(cref.ty)
           getType(cref.node)
         else
           cref.ty
@@ -553,15 +553,15 @@ function compare(cref1::ComponentRef, cref2::ComponentRef)::Integer
   @assign comp = begin
     @match (cref1, cref2) begin
       (COMPONENT_REF_CREF(__), COMPONENT_REF_CREF(__)) => begin
-        @assign comp =
+        comp =
           stringCompare(name(cref1.node), name(cref2.node))
         if comp != 0
-          return
+          return comp #? - John
         end
-        @assign comp =
+         comp =
           compareList(cref1.subscripts, cref2.subscripts)
         if comp != 0
-          return
+          return comp #? - John
         end
         compare(cref1.restCref, cref2.restCref)
       end

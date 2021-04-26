@@ -39,8 +39,7 @@ FuncType = Function
 *
 */ =#
 
-import ..P_NFConnector
-= P_NFConnector
+import ..P_NFConnector= P_NFConnector
 Connector = NFConnector
 import DAE
 import ..NFConnectionSets.ConnectionSets
@@ -78,8 +77,7 @@ import ..NFClass.P_Class
 import ..NFBinding.P_Binding
 import ..NFFunction.P_Function
 import ..Global
-import ..NFBuiltinCall
-= NFBuiltinCall
+import ..NFBuiltinCall= NFBuiltinCall
 import ..NFComplexType
 ComplexType = NFComplexType
 import ..P_NFExpandExp

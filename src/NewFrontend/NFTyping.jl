@@ -3230,12 +3230,12 @@ function typeConnect(
   local rhs_ty::M_Type
   local lhs_var::VariabilityType
   local rhs_var::VariabilityType
-  local mk::MatchKind
+  local mk::MatchKindType
   local next_origin::Integer
   local info::SourceInfo
   local eql::List{Equation}
 
-  @assign info = ElementSource_ElementSource_getInfo(source)
+  @assign info =  sourceInfo() #TODO: DAE.ElementSource_getInfo(source) ElementSource_getInfo(source)
   #=  Connections may not be used in if-equations unless the conditions are
   =#
   #=  parameter expressions.
@@ -3262,9 +3262,9 @@ function typeConnect(
   =#
   #=  the connection handling.
   =#
-  if !(Type.isExpandableConnector(lhs_ty) || Type.isExpandableConnector(rhs_ty))
+  if !(isExpandableConnector(lhs_ty) || isExpandableConnector(rhs_ty))
     @assign (lhs, rhs, _, mk) =
-      matchExpressions(lhs, lhs_ty, rhs, rhs_ty, allowUnknown = true)
+      matchExpressions(lhs, lhs_ty, rhs, rhs_ty, true#=allowUnknown = true=#)
     if isIncompatibleMatch(mk)
       Error.addSourceMessage(
         Error.INVALID_CONNECTOR_VARIABLE,
@@ -3277,9 +3277,8 @@ function typeConnect(
       fail()
     end
   end
-  #=  TODO: Better error message.
-  =#
-  @assign connEq = CONNECT(lhs, rhs, source)
+  #=  TODO: Better error message.=#
+  @assign connEq = EQUATION_CONNECT(lhs, rhs, source)
   return connEq
 end
 
@@ -3302,7 +3301,7 @@ function checkConnector(connExp::Expression, info::SourceInfo)
   return @assign () = begin
     @match connExp begin
       CREF_EXPRESSION(
-        cref = cr && CREF(origin = Origin.CREF),
+        cref = cr && COMPONENT_REF_CREF(origin = Origin.CREF),
       ) => begin
         if !isConnector(cr.node)
           Error.addSourceMessageAndFail(
@@ -3351,19 +3350,17 @@ end
 
 """ #= Helper function for checkConnector. Checks that a connector cref uses the
    correct form, i.e. either c1.c2...cn or m.c. =#"""
-function checkConnectorForm(cref::ComponentRef, isConnector::Bool = true)::Bool
+function checkConnectorForm(cref::ComponentRef, isConnectorBool::Bool = true)::Bool
   local valid::Bool
-
   @assign valid = begin
     @match cref begin
-      CREF(origin = Origin.CREF) => begin
-        if isConnector
+      COMPONENT_REF_CREF(origin = Origin.CREF) => begin
+        if isConnectorBool
           checkConnectorForm(cref.restCref, isConnector(cref.node))
         else
           false
         end
       end
-
       _ => begin
         true
       end

@@ -379,7 +379,7 @@ function applyReplacementsDim(repl::ReplTree.Tree, dim::Dimension)::Dimension
   @assign dim = begin
     local exp::Expression
     @match dim begin
-      P_Dimension.Dimension.EXP(__) => begin
+      DIMENSION_EXP(__) => begin
         @assign exp = map(
           dim.exp,
           (repl) -> applyReplacements2(repl = repl),
@@ -1063,7 +1063,7 @@ function evaluateAssert(condition::Expression, assertStmt::Statement)::FlowContr
       @match (msg, lvl) begin
         (
           STRING_EXPRESSION(__),
-          ENUM_LITERAL(name = "warning"),
+          ENUM_LITERAL_EXPRESSION(name = "warning"),
         ) => begin
           Error.addSourceMessage(
             Error.ASSERT_TRIGGERED_WARNING,
@@ -1075,7 +1075,7 @@ function evaluateAssert(condition::Expression, assertStmt::Statement)::FlowContr
 
         (
           STRING_EXPRESSION(__),
-          ENUM_LITERAL(name = "error"),
+          ENUM_LITERAL_EXPRESSION(name = "error"),
         ) => begin
           Error.addSourceMessage(
             Error.ASSERT_TRIGGERED_ERROR,
@@ -1219,10 +1219,10 @@ const FILE_TYPE_PATH =
 const FILE_TYPE_TYPE = TYPE_ENUMERATION(FILE_TYPE_PATH, FILE_TYPE_NAMES)::M_Type
 const FILE_TYPE_LITERALS =
   list(
-    ENUM_LITERAL(FILE_TYPE_TYPE, "NoFile", 1),
-    ENUM_LITERAL(FILE_TYPE_TYPE, "RegularFile", 2),
-    ENUM_LITERAL(FILE_TYPE_TYPE, "Directory", 3),
-    ENUM_LITERAL(FILE_TYPE_TYPE, "SpecialFile", 4),
+    ENUM_LITERAL_EXPRESSION(FILE_TYPE_TYPE, "NoFile", 1),
+    ENUM_LITERAL_EXPRESSION(FILE_TYPE_TYPE, "RegularFile", 2),
+    ENUM_LITERAL_EXPRESSION(FILE_TYPE_TYPE, "Directory", 3),
+    ENUM_LITERAL_EXPRESSION(FILE_TYPE_TYPE, "SpecialFile", 4),
   )::List
 const COMPARE_NAMES = list("Less", "Equal", "Greater")::List
 const COMPARE_PATH =
@@ -1236,9 +1236,9 @@ const COMPARE_PATH =
 const COMPARE_TYPE = TYPE_ENUMERATION(COMPARE_PATH, COMPARE_NAMES)::M_Type
 const COMPARE_LITERALS =
   list(
-    ENUM_LITERAL(COMPARE_TYPE, "Less", 1),
-    ENUM_LITERAL(COMPARE_TYPE, "Equal", 2),
-    ENUM_LITERAL(COMPARE_TYPE, "Greater", 3),
+    ENUM_LITERAL_EXPRESSION(COMPARE_TYPE, "Less", 1),
+    ENUM_LITERAL_EXPRESSION(COMPARE_TYPE, "Equal", 2),
+    ENUM_LITERAL_EXPRESSION(COMPARE_TYPE, "Greater", 3),
   )::List
 
 function evaluateKnownExternal(name::String, args::List{<:Expression})::Expression

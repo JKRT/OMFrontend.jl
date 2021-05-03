@@ -619,7 +619,7 @@ function variability(component::Component)
         component.variability
       end
 
-      ENUM_LITERAL(__) => begin
+      ENUM_LITERAL_EXPRESSION(__) => begin
         Variability.CONSTANT
       end
 

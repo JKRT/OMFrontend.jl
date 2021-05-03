@@ -174,7 +174,7 @@ function fromDim(dim::Dimension)::RangeIterator
         ARRAY_RANGE(makeEnumLiterals(ty))
       end
 
-      P_Dimension.Dimension.EXP(__) => begin
+      DIMENSION_EXP(__) => begin
         fromExp(dim.exp)
       end
 
@@ -243,9 +243,9 @@ function fromExp(exp::Expression)::RangeIterator
       end
 
       RANGE_EXPRESSION(
-        start = ENUM_LITERAL(ty = ty, index = istart),
+        start = ENUM_LITERAL_EXPRESSION(ty = ty, index = istart),
         step = NONE(),
-        stop = ENUM_LITERAL(index = istop),
+        stop = ENUM_LITERAL_EXPRESSION(index = istop),
       ) => begin
         @match TYPE_ENUMERATION(typePath = _, literals = literals) = ty
         @assign values = nil
@@ -255,7 +255,7 @@ function fromExp(exp::Expression)::RangeIterator
           end
           for i = istart:istop
             @assign values = _cons(
-              ENUM_LITERAL(ty, listHead(literals), i),
+              ENUM_LITERAL_EXPRESSION(ty, listHead(literals), i),
               values,
             )
             @assign literals = listRest(literals)
@@ -275,7 +275,7 @@ function fromExp(exp::Expression)::RangeIterator
         for l in literals
           @assign istep = istep + 1
           @assign values =
-            _cons(ENUM_LITERAL(ty, l, istep), values)
+            _cons(ENUM_LITERAL_EXPRESSION(ty, l, istep), values)
         end
         ARRAY_RANGE(values)
       end

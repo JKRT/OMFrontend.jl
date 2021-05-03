@@ -1305,7 +1305,7 @@ function isScalarLiteral(exp::Expression) ::Bool
         true
       end
 
-      ENUM_LITERAL(__)  => begin
+      ENUM_LITERAL_EXPRESSION(__)  => begin
         true
       end
 
@@ -1334,7 +1334,7 @@ function isNegative(exp::Expression) ::Bool
         false
       end
 
-      ENUM_LITERAL(__)  => begin
+      ENUM_LITERAL_EXPRESSION(__)  => begin
         false
       end
 
@@ -4153,7 +4153,7 @@ function toDAEValue(exp::Expression) ::Values.Value
         Values.BOOL(exp.value)
       end
 
-      ENUM_LITERAL(ty = ty && TYPE_ENUMERATION(__))  => begin
+      ENUM_LITERAL_EXPRESSION(ty = ty && TYPE_ENUMERATION(__))  => begin
         Values.ENUM_LITERAL(AbsynUtil.suffixPath(ty.typePath, exp.name), exp.index)
       end
 
@@ -4439,9 +4439,9 @@ function isAssociativeExp(exp::Expression) ::Bool
 end
 
 function priority(exp::Expression, lhs::Bool) ::Integer
-  local priority::Integer
+  local priorityVar::Integer
 
-  @assign priority = begin
+  priorityVar = begin
     @match exp begin
       INTEGER_EXPRESSION(__)  => begin
         if exp.value < 0
@@ -4492,7 +4492,7 @@ function priority(exp::Expression, lhs::Bool) ::Integer
       end
     end
   end
-  priority
+  priorityVar
 end
 
 """ #= Helper function to toString, prints an operator and adds parentheses as needed. =#"""
@@ -4605,7 +4605,7 @@ function toFlatString(exp::Expression) ::String
         boolString(exp.value)
       end
 
-      ENUM_LITERAL(ty = t && TYPE_ENUMERATION(__))  => begin
+      ENUM_LITERAL_EXPRESSION(ty = t && TYPE_ENUMERATION(__))  => begin
         "'" + AbsynUtil.pathString(t.typePath) + "'." + exp.name
       end
 
@@ -4846,11 +4846,11 @@ function toString(exp::Expression) ::String
       end
 
       CAST_EXPRESSION(__)  => begin
-        if Flags.isSet(Flags.NF_API)
-          toString(exp.exp)
-        else
-          "CAST_EXPRESSION(" + Type.toString(exp.ty) + ", " + toString(exp.exp) + ")"
-        end
+        #if Flags.isSet(Flags.NF_API) Changes by me, John
+        toString(exp.exp)
+#        else
+#          "CAST_EXPRESSION(" + Type.toString(exp.ty) + ", " + toString(exp.exp) + ")"
+ #       end
       end
 
       SUBSCRIPTED_EXP_EXPRESSION(__)  => begin
@@ -5453,7 +5453,7 @@ function makeRealMatrix(values::List{<:List{<:AbstractFloat}}) ::Expression
   local expl::List{Expression}
 
   if listEmpty(values)
-    @assign ty = TYPE_ARRAY(TYPE_REAL(), list(P_Dimension.Dimension.fromInteger(0), P_Dimension.Dimension.UNKNOWN()))
+    @assign ty = TYPE_ARRAY(TYPE_REAL(), list(P_Dimension.Dimension.fromInteger(0), DIMENSION_UNKNOWN()))
     @assign exp = makeEmptyArray(ty)
   else
     @assign ty = TYPE_ARRAY(TYPE_REAL(), list(P_Dimension.Dimension.fromInteger(listLength(listHead(values)))))

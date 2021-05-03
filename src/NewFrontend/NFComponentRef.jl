@@ -746,9 +746,8 @@ function getSubscripts(cref::ComponentRef)::List{Subscript}
 end
 
 function hasSubscripts(cref::ComponentRef)::Bool
-  local hasSubscripts::Bool
-
-  @assign hasSubscripts = begin
+  local hs::Bool
+  @assign hs = begin
     @match cref begin
       COMPONENT_REF_CREF(__) => begin
         !listEmpty(cref.subscripts) || hasSubscripts(cref.restCref)
@@ -759,7 +758,7 @@ function hasSubscripts(cref::ComponentRef)::Bool
       end
     end
   end
-  return hasSubscripts
+  return hs
 end
 
 function applySubscripts2(
@@ -1072,7 +1071,7 @@ function isEmpty(cref::ComponentRef)::Bool
   return isEmpty
 end
 
-function makeIterator(node::InstNode, ty::M_Type)::ComponentRef
+function makeIterator(node::InstNode, ty::NFType)::ComponentRef
   local cref::ComponentRef = COMPONENT_REF_CREF(node, nil, ty, Origin.ITERATOR, COMPONENT_REF_EMPTY())
   return cref
 end

@@ -953,11 +953,11 @@ function evalRangeExp(rangeExp::Expression)::Expression
           end
 
         (
-          ENUM_LITERAL(ty = ty && TYPE_ENUMERATION(__)),
-          ENUM_LITERAL(__),
+          ENUM_LITERAL_EXPRESSION(ty = ty && TYPE_ENUMERATION(__)),
+          ENUM_LITERAL_EXPRESSION(__),
         ) => begin
           @assign expl = list(
-            ENUM_LITERAL(ty, listGet(ty.literals, i), i)
+            ENUM_LITERAL_EXPRESSION(ty, listGet(ty.literals, i), i)
             for i = (start.index):(stop.index)
           )
           (ty, expl)
@@ -2007,8 +2007,8 @@ function evalRelationLess(exp1::Expression, exp2::Expression)::Bool
       end
 
       (
-        ENUM_LITERAL(__),
-        ENUM_LITERAL(__),
+        ENUM_LITERAL_EXPRESSION(__),
+        ENUM_LITERAL_EXPRESSION(__),
       ) => begin
         exp1.index < exp2.index
       end
@@ -2052,8 +2052,8 @@ function evalRelationLessEq(exp1::Expression, exp2::Expression)::Bool
       end
 
       (
-        ENUM_LITERAL(__),
-        ENUM_LITERAL(__),
+        ENUM_LITERAL_EXPRESSION(__),
+        ENUM_LITERAL_EXPRESSION(__),
       ) => begin
         exp1.index <= exp2.index
       end
@@ -2097,8 +2097,8 @@ function evalRelationGreater(exp1::Expression, exp2::Expression)::Bool
       end
 
       (
-        ENUM_LITERAL(__),
-        ENUM_LITERAL(__),
+        ENUM_LITERAL_EXPRESSION(__),
+        ENUM_LITERAL_EXPRESSION(__),
       ) => begin
         exp1.index > exp2.index
       end
@@ -2142,8 +2142,8 @@ function evalRelationGreaterEq(exp1::Expression, exp2::Expression)::Bool
       end
 
       (
-        ENUM_LITERAL(__),
-        ENUM_LITERAL(__),
+        ENUM_LITERAL_EXPRESSION(__),
+        ENUM_LITERAL_EXPRESSION(__),
       ) => begin
         exp1.index >= exp2.index
       end
@@ -2187,8 +2187,8 @@ function evalRelationEqual(exp1::Expression, exp2::Expression)::Bool
       end
 
       (
-        ENUM_LITERAL(__),
-        ENUM_LITERAL(__),
+        ENUM_LITERAL_EXPRESSION(__),
+        ENUM_LITERAL_EXPRESSION(__),
       ) => begin
         exp1.index == exp2.index
       end
@@ -2232,8 +2232,8 @@ function evalRelationNotEqual(exp1::Expression, exp2::Expression)::Bool
       end
 
       (
-        ENUM_LITERAL(__),
-        ENUM_LITERAL(__),
+        ENUM_LITERAL_EXPRESSION(__),
+        ENUM_LITERAL_EXPRESSION(__),
       ) => begin
         exp1.index != exp2.index
       end
@@ -3128,7 +3128,7 @@ function evalBuiltinIntegerEnum(arg::Expression)::Expression
 
   @assign result = begin
     @match arg begin
-      ENUM_LITERAL(__) => begin
+      ENUM_LITERAL_EXPRESSION(__) => begin
         INTEGER_EXPRESSION(arg.index)
       end
 
@@ -3334,8 +3334,8 @@ function evalBuiltinMax2(exp1::Expression, exp2::Expression)::Expression
       end
 
       (
-        ENUM_LITERAL(__),
-        ENUM_LITERAL(__),
+        ENUM_LITERAL_EXPRESSION(__),
+        ENUM_LITERAL_EXPRESSION(__),
       ) => begin
         if exp1.index < exp2.index
           exp2
@@ -3431,8 +3431,8 @@ function evalBuiltinMin2(exp1::Expression, exp2::Expression)::Expression
       end
 
       (
-        ENUM_LITERAL(__),
-        ENUM_LITERAL(__),
+        ENUM_LITERAL_EXPRESSION(__),
+        ENUM_LITERAL_EXPRESSION(__),
       ) => begin
         if exp1.index > exp2.index
           exp2
@@ -3842,7 +3842,7 @@ function evalBuiltinString(args::List{<:Expression})::Expression
               boolString(arg.value)
             end
 
-            ENUM_LITERAL(__) => begin
+            ENUM_LITERAL_EXPRESSION(__) => begin
               arg.name
             end
 

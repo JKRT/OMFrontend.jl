@@ -222,12 +222,12 @@ end
 """ #= Returns the expected type of a subscript for the given dimension. =#"""
 function subscriptType(dim::Dimension)::M_Type
   local ty::M_Type
-  @assign ty = begin
+  ty = begin
     @match dim begin
-      INTEGER_EXPRESSION(__) => begin
+      DIMENSION_INTEGER(__) => begin
         TYPE_INTEGER()
       end
-      BOOLEAN(__) => begin
+      DIMENSION_BOOLEAN(__) => begin
         TYPE_BOOLEAN()
       end
       DIMENSION_ENUM(__) => begin
@@ -514,10 +514,10 @@ function fromExp(exp::Expression, var::VariabilityType)::Dimension
     local cref::ComponentRef
     local ty::M_Type
     @match exp begin
-      EXPRESSION_INTEGER(__) => begin
-        INTEGER_EXPRESSION(exp.value, var)
+      INTEGER_EXPRESSION(__) => begin
+        DIMENSION_INTEGER(exp.value, var)
       end
-      EXPRESSION_TYPENAME(ty = TYPE_ARRAY(elementType = ty)) => begin
+      TYPENAME_EXPRESSION(ty = TYPE_ARRAY(elementType = ty)) => begin
         begin
           @match ty begin
             TYPE_BOOLEAN(__) => begin

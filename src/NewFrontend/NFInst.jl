@@ -1753,9 +1753,9 @@ function isDiscreteClass(clsNode::InstNode) ::Bool
   local base_node::InstNode
   local cls::Class
   local exts::Array{InstNode}
-  @assign base_node = lastBaseClass(clsNode)
-  @assign cls = getClass(base_node)
-  @assign discrete = begin
+  base_node = lastBaseClass(clsNode)
+  cls = getClass(base_node)
+  discrete = begin
     @match cls begin
       EXPANDED_CLASS(restriction = RESTRICTION_TYPE(__))  => begin
         @assign exts = getExtends(cls.elements)
@@ -1837,16 +1837,16 @@ function instDimension(dimension::Dimension, scope::InstNode, info::SourceInfo) 
     local dim::Absyn.Subscript
     local exp::Expression
     @match dimension begin
-      P_Dimension.Dimension.RAW_DIM(dim = dim)  => begin
+      DIMENSION_RAW_DIM(dim = dim)  => begin
         begin
           @match dim begin
             Absyn.NOSUB(__)  => begin
-              P_Dimension.Dimension.UNKNOWN()
+              DIMENSION_UNKNOWN()
             end
 
             Absyn.SUBSCRIPT(__)  => begin
               @assign exp = instExp(dim.subscript, scope, info)
-              P_Dimension.Dimension.UNTYPED(exp, false)
+              DIMENSION_UNTYPED(exp, false)
             end
           end
         end
@@ -2381,7 +2381,7 @@ function instCrefTypename(@nospecialize(cref::ComponentRef), @nospecialize(node:
 end
 
 function checkUnsubscriptableCref(cref::ComponentRef, info::SourceInfo)
-  if ComponentRef.hasSubscripts(cref)
+  if hasSubscripts(cref)
     Error.addSourceMessage(Error.WRONG_NUMBER_OF_SUBSCRIPTS, list(ComponentRef.toString(cref), String(listLength(ComponentRef.getSubscripts(cref))), "0"), info)
     fail()
   end
@@ -2721,14 +2721,19 @@ function makeSource(comment::SCode.Comment, info::SourceInfo) ::DAE.ElementSourc
   source
 end
 
-function addIteratorToScope(name::String, scope::InstNode, info::SourceInfo, iter_type::M_Type = TYPE_UNKNOWN()) ::Tuple{InstNode, InstNode}
+
+function addIteratorToScope(name::String, scope::InstNode, info::SourceInfo) ::Tuple{InstNode, InstNode}
+  addIteratorToScope(name, scope, info, TYPE_UNKNOWN())
+end
+
+function addIteratorToScope(name::String, scope::InstNode, info::SourceInfo, iter_type::NFType = TYPE_UNKNOWN()) ::Tuple{InstNode, InstNode}
   local iterator::InstNode
 
 
   local iter_comp::Component
 
   @assign scope = openImplicitScope(scope)
-  @assign iter_comp = P_Component.ITERATOR(iter_type, Variability.CONTINUOUS, info)
+  @assign iter_comp = ITERATOR_COMPONENT(iter_type, Variability.CONTINUOUS, info)
   @assign iterator = fromComponent(name, iter_comp, scope)
   @assign scope = addIterator(iterator, scope)
   (scope, iterator)
@@ -3023,12 +3028,12 @@ end
 function markStructuralParamsDim(dimension::Dimension)
   @assign () = begin
     @match dimension begin
-      P_Dimension.Dimension.UNTYPED(__)  => begin
+      DIMENSION_UNTYPED(__)  => begin
         markStructuralParamsExp(dimension.dimension)
         ()
       end
 
-      P_Dimension.Dimension.EXP(__)  => begin
+      DIMENSION_EXP(__)  => begin
         markStructuralParamsExp(dimension.exp)
         ()
       end

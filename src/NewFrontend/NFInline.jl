@@ -173,7 +173,7 @@ function replaceDimExp(dim::Dimension, node::InstNode, value::Expression)::Dimen
   @assign dim = begin
     local exp::Expression
     @match dim begin
-      P_Dimension.Dimension.EXP(__) => begin
+      DIMENSION_EXP(__) => begin
         @assign exp = map(
           dim.exp,
           (node, value) -> replaceCrefNode(node = node, value = value),

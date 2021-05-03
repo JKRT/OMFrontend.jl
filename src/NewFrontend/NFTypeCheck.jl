@@ -4363,11 +4363,11 @@ function getRangeTypeEnum(startExp::Expression, stopExp::Expression)::Dimension
     local dim_exp::Expression
     local var::VariabilityType
     @match (startExp, stopExp) begin
-      (ENUM_LITERAL(__), ENUM_LITERAL(__)) => begin
+      (ENUM_LITERAL_EXPRESSION(__), ENUM_LITERAL_EXPRESSION(__)) => begin
         P_Dimension.Dimension.fromInteger(max(stopExp.index - startExp.index + 1, 0))
       end
 
-      (ENUM_LITERAL(index = 1), _) => begin
+      (ENUM_LITERAL_EXPRESSION(index = 1), _) => begin
         fromExp(stopExp, variability(stopExp))
       end
 

@@ -40,10 +40,11 @@ function lookupComponent(cref::Absyn.ComponentRef, scope::InstNode #= The scope 
     @match false = isName(nodeVar)
   catch e
     # Error.addSourceMessageAndFail(Error.LOOKUP_VARIABLE_ERROR, list(Dump.printComponentRefStr(cref), scopeName(scope)), info)
-    treee = lookupTree(scope.cls.x.elements)
-    @error "Lookupvariable error for cref:$cref in scope $(scope.name). Error: $e"
-    @error "Our tree was $(LookupTree.printTreeStr(treee))"
-    @error "Repr3: $treee"
+    #treee = lookupTree(scope.cls.x.elements)
+#    @error "Lookupvariable error for cref:$cref in scope $(scope.name). Error: $e"
+#    @error "Our tree was $(LookupTree.printTreeStr(treee))"
+    #    @error "Repr3: $treee"
+    @error e
     fail()
   end
   @assign state = fixTypenameState(nodeVar, state)
@@ -136,11 +137,13 @@ function lookupFunctionNameSilent(cref::Absyn.ComponentRef, scope::InstNode #= T
   (foundCref, foundScope)
 end
 
-""" #= Changes calls to external objects so that the constructor is called instead,
+""" 
+  Changes calls to external objects so that the constructor is called instead,
                  i.e. a call such as
                    'ExtObj eo = ExtObj(...)'
                  is changed to
-                   'ExtObj eo = ExtObj.constructor(...)' =#"""
+                   'ExtObj eo = ExtObj.constructor(...)' 
+"""
  function fixExternalObjectCall(node::InstNode, cref::ComponentRef, state::LookupState) ::Tuple{ComponentRef, LookupState}
    local cls::Class
    local constructor::InstNode
@@ -590,6 +593,7 @@ function lookupSimpleCref(name::String, subs::List{<:Absyn.Subscript}, scope::In
         return (node, cref, foundScope, state)
       catch e
         foundScope = parentScope(foundScope)
+#        fail()
       end
     end
     #    Error.addMessage(Error.RECURSION_DEPTH_REACHED, list(String(Global.recursionDepthLimit), scopeName(foundScope)))
@@ -637,17 +641,17 @@ end
                      (node, foundScope)
                    end
 
-function lookupIterator(name::String, iterators::List{<:InstNode}) ::InstNode
-  local iterator::InstNode
-
+function lookupIterator(iteratorName::String, iterators::List{<:InstNode})::InstNode
+  local it::InstNode
   for i in iterators
-    if name == name(i)
-      @assign iterator = i
-      return iterator
+    if iteratorName == name(i)
+#      @info "Iterator located"
+      it = i
+      return it
     end
   end
   fail()
-  iterator
+#  throw("Iterator lookup error") #Addition by me, John May 2021
 end
 
 function lookupCrefInNode(cref::Absyn.ComponentRef #=modification-040321=#, node::InstNode, foundCref::ComponentRef, foundScope::InstNode, state::LookupState) ::Tuple{ComponentRef, InstNode, LookupState}

@@ -131,7 +131,7 @@ function evaluateDimension(dim::Dimension)::Dimension
   @assign outDim = begin
     local e::Expression
     @match dim begin
-      P_Dimension.Dimension.EXP(__) => begin
+      DIMENSION_EXP(__) => begin
         @assign e =
           evaluateExp(dim.exp, constVariability = Variability.STRUCTURAL_PARAMETER)
         if referenceEq(e, dim.exp)

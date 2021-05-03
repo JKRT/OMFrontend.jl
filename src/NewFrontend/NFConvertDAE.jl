@@ -628,7 +628,7 @@ function convertStateSelectAttribute(binding::Binding)::Option{DAE.StateSelect}
 
   @assign name = begin
     @match exp begin
-      ENUM_LITERAL(__) => begin
+      ENUM_LITERAL_EXPRESSION(__) => begin
         exp.name
       end
 
@@ -809,7 +809,7 @@ function convertForEquation(forEquation::Equation)::DAE.Element
     source = source,
   ) = forEquation
   @assign dbody = convertEquations(body)
-  @match P_Component.ITERATOR(ty = ty) = component(iterator)
+  @match ITERATOR_COMPONENT(ty = ty) = component(iterator)
   @assign forDAE = DAE.Element.FOR_EQUATION(
     toDAE(ty),
     isArray(ty),
@@ -1162,7 +1162,7 @@ function convertForStatement(forStmt::Statement)::DAE.P_Statement.Statement
     source = source,
   ) = forStmt
   @assign dbody = convertStatements(body)
-  @match P_Component.ITERATOR(ty = ty) = component(iterator)
+  @match ITERATOR_COMPONENT(ty = ty) = component(iterator)
   @assign forDAE = DAE.P_Statement.Statement.STMT_FOR(
     toDAE(ty),
     isArray(ty),

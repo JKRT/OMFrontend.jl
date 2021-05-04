@@ -1169,7 +1169,7 @@
                         @assign connections = getConnections(graph)
                         @assign table = ListUtil.fold(connections, addConnectionsRooted, table)
                         @assign rooted = setRootDistance(inRoots, table, 0, nil, NFHashTable.emptyHashTable())
-                        @assign outEquations = list(P_Equation.Equation.mapExp(eq, (rooted, inRoots, graph, P_Equation.Equation.info(eq)) -> evaluateOperators(rooted = rooted, roots = inRoots, graph = graph, info = P_Equation.Equation.info(eq))) for eq in inEquations)
+                        @assign outEquations = list(P_Equation.Equation.mapExp(eq, (rooted, inRoots, graph, Equation_info(eq)) -> evaluateOperators(rooted = rooted, roots = inRoots, graph = graph, info = Equation_info(eq))) for eq in inEquations)
                       outEquations
                   end
                 end

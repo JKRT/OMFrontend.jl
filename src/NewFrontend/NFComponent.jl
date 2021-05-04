@@ -615,11 +615,11 @@ function variability(component::Component)
         variability
       end
 
-      ITERATOR(__) => begin
+      ITERATOR_COMPONENT(__) => begin
         component.variability
       end
 
-      ENUM_LITERAL(__) => begin
+      ENUM_LITERAL_COMPONENT(__) => begin
         Variability.CONSTANT
       end
 

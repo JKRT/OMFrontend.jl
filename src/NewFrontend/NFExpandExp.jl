@@ -856,7 +856,7 @@ function expandBuiltinCat(args::List{<:Expression}, call::Call)::Tuple{Expressio
   @assign (expl, expanded) = expandList(listRest(args))
   if expanded
     @assign exp =
-      Ceval.evalBuiltinCat(listHead(args), expl, Ceval.P_EvalTarget.IGNORE_ERRORS())
+      Ceval.evalBuiltinCat(listHead(args), expl, Ceval.EVALTARGET_IGNORE_ERRORS())
   else
     @assign exp = expandGeneric(CALL_EXPRESSION(call))
   end

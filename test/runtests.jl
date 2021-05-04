@@ -121,6 +121,14 @@ end
     throw(e)
     false
   end
+  
+  @test try
+    flatten("Casc6", "./Models/Casc6.mo")
+    true
+  catch e
+    throw(e)
+    false
+  end
 
 end
 

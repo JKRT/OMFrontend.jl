@@ -552,8 +552,23 @@ function typeIterator(
   iterator::InstNode,
   range::Expression,
   origin::ORIGIN_Type,
-  structural::Bool,
-)::Tuple{Expression, M_Type, Variability} #= If the iteration range must be a parameter expression or not. =#
+  structural::Bool
+)::Tuple{Expression, NFType, VariabilityType} #= If the iteration range must be a parameter expression or not. =#
+  typeIterator(
+    iterator::InstNode,
+    range::Expression,
+    origin::ORIGIN_Type,
+    structural::Bool
+  )
+end
+
+
+function typeIterator(
+  iterator::InstNode,
+  range::Expression,
+  origin::ORIGIN_Type;
+  structural::Bool
+)::Tuple{Expression, NFType, VariabilityType} #= If the iteration range must be a parameter expression or not. =#
   local var::VariabilityType
   local ty::M_Type
   local outRange::Expression
@@ -564,9 +579,9 @@ function typeIterator(
 
   @assign (outRange, ty, var) = begin
     @match c begin
-      P_Component.ITERATOR(info = info) => begin
+      ITERATOR_COMPONENT(info = info) => begin
         @assign (exp, ty, var) =
-          typeExp(range, ORIGIN_setFlag(origin, ORIGIN_ITERATION_RANGE), info)
+          typeExp(range, setFlag(origin, ORIGIN_ITERATION_RANGE), info)
         #=  If the iteration range is structural, it must be a parameter expression.
         =#
         if structural && var > Variability.PARAMETER
@@ -578,7 +593,7 @@ function typeIterator(
         end
         #=  The iteration range must be a vector expression.
         =#
-        if !Type.isVector(ty)
+        if !isVector(ty)
           Error.addSourceMessageAndFail(
             Error.FOR_EXPRESSION_ERROR,
             list(toString(exp), Type.toString(ty)),
@@ -587,7 +602,7 @@ function typeIterator(
         end
         #=  The type of the iterator is the element type of the range expression.
         =#
-        @assign c = P_Component.ITERATOR(arrayElementType(ty), var, info)
+        @assign c = ITERATOR_COMPONENT(arrayElementType(ty), var, info)
         updateComponent!(c, iterator)
         (exp, ty, var)
       end
@@ -652,7 +667,7 @@ function typeDimension(
     #=  give different results depending on the declaration order of components.
     =#
     @match dimension begin
-      P_Dimension.Dimension.UNTYPED(isProcessing = true) => begin
+      DIMENSION_UNTYPED(isProcessing = true) => begin
         #=  Only give an error if we're not in a function.
         =#
         if ORIGIN_flagNotSet(origin, ORIGIN_FUNCTION)
@@ -675,30 +690,30 @@ function typeDimension(
         =#
         #=  If we are in a functions we allow e.g. size expression of unknown dimensions.
         =#
-        @assign dim = P_Dimension.Dimension.UNKNOWN()
+        @assign dim = DIMENSION_UNKNOWN()
         arrayUpdate(dimensions, index, dim)
         dim
       end
 
-      P_Dimension.Dimension.UNTYPED(__) => begin
+      DIMENSION_UNTYPED(__) => begin
         #=  If the dimension is not typed, type it.
         =#
         arrayUpdate(
           dimensions,
           index,
-          P_Dimension.Dimension.UNTYPED(dimension.dimension, true),
+          DIMENSION_UNTYPED(dimension.dimension, true),
         )
         @assign (exp, ty, var) = typeExp(
           dimension.dimension,
-          ORIGIN_setFlag(origin, ORIGIN_DIMENSION),
+          setFlag(origin, ORIGIN_DIMENSION),
           info,
         )
         checkDimensionType(exp, ty, info)
-        if ORIGIN_flagNotSet(origin, ORIGIN_FUNCTION)
+        if flagNotSet(origin, ORIGIN_FUNCTION)
           if var <= Variability.PARAMETER
-            @assign exp = Ceval.evalExp(
+            @assign exp = evalExp(
               exp,
-              Ceval.P_EvalTarget.DIMENSION(component, index, exp, info),
+              EVALTARGET_DIMENSION(component, index, exp, info),
             )
           else
             Error.addSourceMessage(
@@ -710,9 +725,9 @@ function typeDimension(
           end
         else
           if var <= Variability.STRUCTURAL_PARAMETER
-            @assign exp = Ceval.evalExp(
+            @assign exp = evalExp(
               exp,
-              Ceval.P_EvalTarget.DIMENSION(component, index, exp, info),
+              EVALTARGET_DIMENSION(component, index, exp, info),
             )
           end
         end
@@ -732,13 +747,13 @@ function typeDimension(
         dim
       end
 
-      P_Dimension.Dimension.UNKNOWN(
+      DIMENSION_UNKNOWN(
         __,
-      ) where {(ORIGIN_flagSet(origin, ORIGIN_FUNCTION))} => begin
+      ) where {(flagSet(origin, ORIGIN_FUNCTION))} => begin
         dimension
       end
 
-      P_Dimension.Dimension.UNKNOWN(__) => begin
+      DIMENSION_UNKNOWN(__) => begin
         #=  If the dimension is unknown in a function, keep it unknown.
         =#
         #=  If the dimension is unknown in a class, try to infer it from the components binding.
@@ -783,7 +798,7 @@ function typeDimension(
               @assign (dim, oexp, ty_err) = typeExpDim(
                 b.bindingExp,
                 dim_index,
-                ORIGIN_setFlag(origin, ORIGIN_DIMENSION),
+                setFlag(origin, ORIGIN_DIMENSION),
                 info,
               )
               #=  If the deduced dimension is unknown, evaluate the binding and try again.
@@ -796,7 +811,7 @@ function typeDimension(
                 end
                 @assign exp = Ceval.evalExp(
                   exp,
-                  Ceval.P_EvalTarget.DIMENSION(component, index, exp, info),
+                  DIMENSION(component, index, exp, info),
                 )
                 @assign (dim, ty_err) = nthDimensionBoundsChecked(
                   typeOf(exp),
@@ -816,7 +831,7 @@ function typeDimension(
               if P_Dimension.Dimension.isUnknown(dim) && !P_TypingError.isError(ty_err)
                 @assign exp = Ceval.evalExp(
                   b.bindingExp,
-                  Ceval.P_EvalTarget.DIMENSION(component, index, b.bindingExp, info),
+                  DIMENSION(component, index, b.bindingExp, info),
                 )
                 @assign (dim, ty_err) = nthDimensionBoundsChecked(
                   typeOf(exp),
@@ -847,16 +862,16 @@ function typeDimension(
         =#
         @assign dim = begin
           @match dim begin
-            P_Dimension.Dimension.EXP(exp = exp) => begin
+            DIMENSION_EXP(exp = exp) => begin
               markStructuralParamsExp(exp)
               @assign exp = Ceval.evalExp(
                 exp,
-                Ceval.P_EvalTarget.DIMENSION(component, index, exp, info),
+                DIMENSION(component, index, exp, info),
               )
               fromExp(exp, dim.var)
             end
 
-            P_Dimension.Dimension.UNKNOWN(__) => begin
+            DIMENSION_UNKNOWN(__) => begin
               Error.addInternalError(
                 getInstanceName() + " returned unknown dimension in a non-function context",
                 info,
@@ -1008,7 +1023,7 @@ function typeComponentBinding2(
   local c::Component
   local binding::Binding
   local cls::InstNode
-  local matchKind::MatchKind
+  local matchKind::MatchKindType
   local nameStr::String
   local comp_var::VariabilityType
   local comp_eff_var::VariabilityType
@@ -1235,10 +1250,10 @@ function typeBinding(binding::Binding, origin::ORIGIN_Type)::Binding
 end
 
 function checkBindingEach(binding::Binding)
-  local parents::List{InstNode}
+  local parentBindings::List{InstNode}
   if isEach(binding)
-    @assign parents = listRest(parents(binding))
-    for parent in parents
+    parentBindings = listRest(parents(binding))
+    for parent in parentBindings
       if isArray(getType(parent))
         return
       end
@@ -1257,7 +1272,7 @@ function typeComponentCondition(condition::Binding, origin::ORIGIN_Type)::Bindin
     local ty::M_Type
     local var::VariabilityType
     local info::SourceInfo
-    local mk::MatchKind
+    local mk::MatchKindType
     @match condition begin
       UNTYPED_BINDING(bindingExp = exp) => begin
         @assign info = Binding_getInfo(condition)
@@ -1704,7 +1719,7 @@ function typeArrayDim(
   #=  We don't yet know the number of dimensions, but the index must at least be 1.
   =#
   if dimIndex < 1
-    @assign dim = P_Dimension.Dimension.UNKNOWN()
+    @assign dim = DIMENSION_UNKNOWN()
     @assign error =
       P_TypingError.OUT_OF_BOUNDS(dimensionCount(arrayExp))
   else
@@ -1736,7 +1751,7 @@ function typeArrayDim2(
         =#
         #=  expression can be empty, so just traverse into the first element.
         =#
-        @assign dim = P_Dimension.Dimension.UNKNOWN()
+        @assign dim = DIMENSION_UNKNOWN()
         @assign error = P_TypingError.OUT_OF_BOUNDS(dimCount)
         (dim, error)
       end
@@ -1848,7 +1863,7 @@ function typeCrefDim(
       end
     end
   end
-  @assign dim = P_Dimension.Dimension.UNKNOWN()
+  @assign dim = DIMENSION_UNKNOWN()
   @assign error = P_TypingError.OUT_OF_BOUNDS(dim_total)
   return (dim, error)
 end
@@ -1867,7 +1882,7 @@ function nthDimensionBoundsChecked(
   local index::Integer = dimIndex + offset
 
   if index < 1 || index > dim_size
-    @assign dim = P_Dimension.Dimension.UNKNOWN()
+    @assign dim = DIMENSION_UNKNOWNy()
     @assign error = P_TypingError.OUT_OF_BOUNDS(dim_size - offset)
   else
     @assign dim = Type.nthDimension(ty, index)
@@ -2030,10 +2045,10 @@ function typeSubscripts(
   end
   for s in subscripts
     @match _cons(dim, dims) = dims
-    @assign (sub, var) = typeSubscript(s, dim, cref, i, next_origin, info)
-    @assign typedSubs = _cons(sub, typedSubs)
-    @assign variability = variabilityMax(variability, var)
-    @assign i = i + 1
+    (sub, var) = typeSubscript(s, dim, cref, i, next_origin, info)
+    typedSubs = _cons(sub, typedSubs)
+    variability = variabilityMax(variability, var)
+    i = i + 1
     if var == Variability.PARAMETER
       Inst.markStructuralParamsSub(sub)
     end
@@ -2053,34 +2068,33 @@ function typeSubscript(
   dimension::Dimension,
   cref::ComponentRef,
   index::Integer,
-  origin::Type,
+  origin::ORIGIN_Type,
   info::SourceInfo,
-)::Tuple{Subscript, Variability}
-  local variability::VariabilityType = Variability.CONSTANT
+)::Tuple{Subscript, VariabilityType}
+  local variabilityVar::VariabilityType = Variability.CONSTANT
   local outSubscript::Subscript = subscript
-
   local e::Expression
-  local ty::M_Type
-  local ety::M_Type
-  local mk::MatchKind
+  local ty::NFType
+  local ety::NFType
+  local mk::MatchKindType
 
-  @assign (ty, variability) = begin
+  (ty, variabilityVar) = begin
     @match subscript begin
       SUBSCRIPT_UNTYPED(__) => begin
         #=  An untyped subscript, type the expression and create a typed subscript.
         =#
-        @assign e = evaluateEnd(subscript.exp, dimension, cref, index, origin, info)
-        @assign (e, ty, variability) = typeExp(e, origin, info)
+        e = evaluateEnd(subscript.exp, dimension, cref, index, origin, info)
+        (e, ty, variabilityVar) = typeExp(e, origin, info)
         if isArray(ty)
-          @assign outSubscript = SUBSCRIPT_SLICE(e)
-          @assign ty = Type.unliftArray(ty)
+          outSubscript = SUBSCRIPT_SLICE(e)
+          ty = Type.unliftArray(ty)
           if flagSet(origin, ORIGIN_EQUATION)
             markStructuralParamsExp(e)
           end
         else
-          @assign outSubscript = SUBSCRIPT_INDEX(e)
+          outSubscript = SUBSCRIPT_INDEX(e)
         end
-        (ty, variability)
+        (ty, variabilityVar)
       end
 
       SUBSCRIPT_INDEX(index = e) => begin
@@ -2090,12 +2104,12 @@ function typeSubscript(
       SUBSCRIPT_SLICE(slice = e) => begin
         (
           Type.unliftArray(typeOf(e)),
-          variability(e),
+          variability(e)
         )
       end
 
       SUBSCRIPT_WHOLE(__) => begin
-        (TYPE_UNKNOWN(), P_Dimension.Dimension.variability(dimension))
+        (TYPE_UNKNOWN(), variability(dimension), END_EXPRESSION())
       end
 
       _ => begin
@@ -2108,10 +2122,10 @@ function typeSubscript(
   end
   #=  Type check the subscript's type against the expected subscript type for the dimension.
   =#
-  @assign ety = P_Dimension.Dimension.subscriptType(dimension)
+  ety = subscriptType(dimension)
   #=  We can have both : subscripts and : dimensions here, so we need to allow unknowns.
   =#
-  @assign (_, _, mk) = matchTypes(ty, ety, e, allowUnknown = true)
+  (_, _, mk) = matchTypes(ty, ety, EMPTY_EXPRESSION(ty), allowUnknown = true)
   if isIncompatibleMatch(mk)
     Error.addSourceMessage(
       Error.SUBSCRIPT_TYPE_MISMATCH,
@@ -2124,7 +2138,7 @@ function typeSubscript(
     )
     fail()
   end
-  return (outSubscript, variability)
+  return (outSubscript, variabilityVar)
 end
 
 function typeArray(
@@ -2265,7 +2279,7 @@ function typeMatrixComma(
   local tys2::List{M_Type}
   local n::Integer = 2
   local pos::Integer
-  local mk::MatchKind
+  local mk::MatchKindType
 
   Error.assertion(
     !listEmpty(elements),
@@ -2332,7 +2346,7 @@ function typeRange(
   rangeExp::Expression,
   origin::ORIGIN_Type,
   info::SourceInfo,
-)::Tuple{Expression, M_Type, Variability}
+)::Tuple{Expression, M_Type, VariabilityType}
   local variability::VariabilityType
   local rangeType::M_Type
 
@@ -2347,8 +2361,8 @@ function typeRange(
   local start_var::VariabilityType
   local step_var::VariabilityType
   local stop_var::VariabilityType
-  local ty_match::MatchKind
-  local next_origin::ORIGIN_Type = ORIGIN_setFlag(origin, ORIGIN_SUBEXPRESSION)
+  local ty_match::MatchKindType
+  local next_origin::ORIGIN_Type = setFlag(origin, ORIGIN_SUBEXPRESSION)
 
   @match RANGE_EXPRESSION(
     start = start_exp,
@@ -2479,7 +2493,7 @@ function typeSize(
   local index::Expression
   local exp_ty::M_Type
   local index_ty::M_Type
-  local ty_match::MatchKind
+  local ty_match::MatchKindType
   local iindex::Integer
   local dim_size::Integer
   local dim::Dimension
@@ -2608,8 +2622,8 @@ function evaluateEnd(
     local ty::M_Type
     local cr::ComponentRef
     @match exp begin
-      END(__) => begin
-        P_Dimension.Dimension.endExp(dim, cref, index)
+      END_EXPRESSION(__) => begin
+        endExp(dim, cref, index)
       end
 
       CREF_EXPRESSION(__) => begin
@@ -2619,12 +2633,13 @@ function evaluateEnd(
       _ => begin
         mapShallow(
           exp,
-          (dim, cref, index, info, origin) -> evaluateEnd(
-            dim = dim,
-            cref = cref,
-            index = index,
-            info = info,
-            origin = origin,
+          (xx, x = dim, y = cref, z = index, zz = origin, zzz = info) -> evaluateEnd(
+            xx,
+            x,
+            y,
+            z,
+            zz,
+            zzz,
           ),
         )
       end
@@ -3126,10 +3141,10 @@ function typeEquation(eq::Equation, origin::ORIGIN_Type)::Equation
       end
 
       EQUATION_FOR(__) => begin
-        @assign info = DAE.emptyElementSource
+        info = sourceInfo() #DAE.emptyElementSource -John
         if isSome(eq.range)
           @match SOME(e1) = eq.range
-          @assign e1 = typeIterator(eq.iterator, e1, origin, structural = true)
+          (e1, _, _) = typeIterator(eq.iterator, e1, origin; structural = true)
         else
           Error.assertion(
             false,
@@ -3138,9 +3153,9 @@ function typeEquation(eq::Equation, origin::ORIGIN_Type)::Equation
           )
           fail()
         end
-        @assign next_origin = setFlag(origin, ORIGIN_FOR)
-        @assign body = list(typeEquation(e, next_origin) for e in eq.body)
-        FOR(eq.iterator, SOME(e1), body, eq.source)
+        next_origin = setFlag(origin, ORIGIN_FOR)
+        body = list(typeEquation(e, next_origin) for e in eq.body)
+        EQUATION_FOR(eq.iterator, SOME(e1), body, eq.source)
       end
 
       EQUATION_IF(__) => begin
@@ -3152,9 +3167,9 @@ function typeEquation(eq::Equation, origin::ORIGIN_Type)::Equation
       end
 
       EQUATION_ASSERT(__) => begin
-        @assign info = DAE.emptyElementSource
-        @assign next_origin = setFlag(origin, ORIGIN_ASSERT)
-        @assign e1 = typeOperatorArg(
+        info = DAE.emptyElementSource
+        next_origin = setFlag(origin, ORIGIN_ASSERT)
+        (e1, _, _) = typeOperatorArg(
           eq.condition,
           TYPE_BOOLEAN(),
           setFlag(next_origin, ORIGIN_CONDITION),
@@ -3422,7 +3437,7 @@ function typeStatement(st::Statement, origin::ORIGIN_Type)::Statement
     local body::List{Statement}
     local tybrs::List{Tuple{Expression, List{Statement}}}
     local iterator::InstNode
-    local mk::MatchKind
+    local mk::MatchKindType
     local next_origin::ORIGIN_Type
     local cond_origin::ORIGIN_Type
     local info::SourceInfo
@@ -3851,7 +3866,7 @@ function typeOperatorArg(
 )::Expression
 
   local ty::M_Type
-  local mk::MatchKind
+  local mk::MatchKindType
 
   @assign (arg, ty, _) = typeExp(arg, origin, info)
   @assign (arg, _, mk) = matchTypes(ty, expectedType, arg)

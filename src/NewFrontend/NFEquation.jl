@@ -146,7 +146,7 @@ function toFlatStream(eq::Equation, indent::String, s)
   @assign s = IOStream.append(s, indent)
   @assign s = begin
     @match eq begin
-      EQUALITY(__) => begin
+      EQUATION_EQUALITY(__) => begin
         @assign s = IOStream.append(s, toFlatString(eq.lhs))
         @assign s = IOStream.append(s, " = ")
         @assign s = IOStream.append(s, toFlatString(eq.rhs))
@@ -291,7 +291,7 @@ function toStream(eq::Equation, indent::String, s)
   @assign s = IOStream.append(s, indent)
   @assign s = begin
     @match eq begin
-      EQUALITY(__) => begin
+      EQUATION_EQUALITY(__) => begin
         @assign s = IOStream.append(s, toString(eq.lhs))
         @assign s = IOStream.append(s, " = ")
         @assign s = IOStream.append(s, toString(eq.rhs))
@@ -649,19 +649,18 @@ function mapExpBranch(branch::Equation_Branch, func::MapExpFn)::Equation_Branch
 end
 
 function mapExp(eq::Equation, func::MapExpFn)::Equation
-
   @assign eq = begin
     local e1::Expression
     local e2::Expression
     local e3::Expression
     @match eq begin
-      EQUALITY(__) => begin
-        @assign e1 = func(eq.lhs)
-        @assign e2 = func(eq.rhs)
+      EQUATION_EQUALITY(__) => begin
+        e1 = func(eq.lhs)
+        e2 = func(eq.rhs)
         if referenceEq(e1, eq.lhs) && referenceEq(e2, eq.rhs)
           eq
         else
-          EQUALITY(e1, e2, eq.ty, eq.source)
+          EQUATION_EQUALITY(e1, e2, eq.ty, eq.source)
         end
       end
 
@@ -873,7 +872,7 @@ function applyList(eql::List{<:Equation}, func::ApplyFn)
 end
 
 function Equation_info(eq::Equation)::SourceInfo
-  local info::SourceInfo = DAE.ElementSource_getInfo(source(eq))
+  local info::SourceInfo = sourceInfo() #DAE.ElementSource_getInfo(source(eq))
   return info
 end
 
@@ -943,7 +942,7 @@ function makeEquality(
   src::DAE.ElementSource,
 )::Equation
   local eq::Equation
-  @assign eq = EQUALITY(lhs, rhs, ty, src)
+  @assign eq = EQUATION_EQUALITY(lhs, rhs, ty, src)
   return eq
 end
 

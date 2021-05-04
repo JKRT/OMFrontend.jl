@@ -1170,7 +1170,7 @@ function Errorfunction(
     local info::SourceInfo
     @match (inexpList, inEq, inHtU2S) begin
       (expList, _, _) => begin
-        @assign info = P_Equation.Equation.info(inEq)
+        @assign info = Equation_info(inEq)
         @assign s = P_Equation.Equation.toString(inEq)
         @assign s1 = Errorfunction2(expList, inHtU2S)
         @assign s2 =

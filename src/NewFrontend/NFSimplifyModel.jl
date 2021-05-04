@@ -54,7 +54,7 @@ function simplifyDimension(dim::Dimension)::Dimension
   @assign outDim = begin
     local e::Expression
     @match dim begin
-      P_Dimension.Dimension.EXP(__) => begin
+      DIMENSION_EXP(__) => begin
         @assign e = simplify(dim.exp)
         if referenceEq(e, dim.exp)
           dim

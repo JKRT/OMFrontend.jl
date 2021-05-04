@@ -217,7 +217,7 @@ function replaceExpConstants_traverser(exp::Expression)::Expression
       CREF_EXPRESSION(cref = cref && CREF(__)) =>
         begin
           if isPackageConstant(cref)
-            Ceval.evalExp(exp, Ceval.P_EvalTarget.IGNORE_ERRORS())
+            Ceval.evalExp(exp, Ceval.EVALTARGET_IGNORE_ERRORS())
           else
             exp
           end

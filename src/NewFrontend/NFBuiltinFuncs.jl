@@ -1,12 +1,8 @@
-module NFBuiltinFuncs
-
-using MetaModelica
-using ExportAll
 
 #= /*
 * This file is part of OpenModelica.
 *
-* Copyright (c) 1998-2014, Open Source Modelica Consortium (OSMC),
+* Copyright (c) 1998-CurrentYear, Open Source Modelica Consortium (OSMC),
 * c/o Linköpings universitet, Department of Computer and Information Science,
 * SE-58183 Linköping, Sweden.
 *
@@ -33,56 +29,27 @@ using ExportAll
 * See the full OSMC Public License conditions for more details.
 *
 */ =#
-import ..NFClass.P_Class
-import ..NFClassTree.ree
-import ..NFFunction.P_Function
-import ..NFFunction.P_Slot
-import ..NFFunction.SlotType
-import ..NFFunction.FuncType
-import ..NFInstNode.P_CachedData
-import ..NFInstNode.P_InstNode
-import ..NFInstNode.InstNodeType
-import ..NFComponent.P_Component
-import ..P_NFType
-P_M_Type = P_NFType
-M_Type = NFType
-import ..P_NFExpression
-P_Expression = P_NFExpression
-Expression = P_NFExpression.NFExpression
-import Absyn
-import ..AbsynUtil
-using Absyn: Path, TypeSpec
-import ..SCode
-using SCode: Mod, Comment
-import DAE
-import ..NFBuiltin
-Builtin = NFBuiltin
-import ..NFBinding
-import ..Pointer
-import ..NFPrefixes.Visibility
-import ..P_NFRestriction
-P_Restriction = P_NFRestriction
-Restriction = P_NFRestriction.NFRestriction
-import ..P_NFComponentRef
-P_ComponentRef = P_NFComponentRef
-ComponentRef = P_NFComponentRef.NFComponentRef
-import ..P_NFComponentRef.Origin
-import ..NFModifier.P_Modifier
-import ..P_NFSections
-P_Sections = P_NFSections
-Sections = P_NFSections.NFSections
-import ..NFFunction.SlotEvalStatus
-import ..NFFunction.FunctionStatus
 
+module NFBuiltinFuncs
+
+import ..AbsynUtil
+import Absyn
+import DAE
+import SCode
+
+using ..Main
+using MetaModelica
+using ExportAll
 using MetaModelica.Dangerous
+
 
 const DUMMY_ELEMENT =
   SCode.CLASS(
     "DummyFunction",
     SCode.defaultPrefixes,
-    SCode.Encapsulated.ENCAPSULATED(),
-    SCode.Partial.NOT_PARTIAL(),
-    SCode.RESTRICTION_R_FUNCTION(SCode.FunctionRestriction.FR_NORMAL_FUNCTION(false)),
+    SCode.ENCAPSULATED(),
+    SCode.NOT_PARTIAL(),
+    SCode.R_FUNCTION(SCode.FR_NORMAL_FUNCTION(false)),
     SCode.PARTS(nil, nil, nil, nil, nil, nil, nil, NONE()),
     SCode.COMMENT(NONE(), NONE()),
     AbsynUtil.dummyInfo,
@@ -91,11 +58,11 @@ const DUMMY_ELEMENT =
 =#
 const INT_COMPONENT =
   TYPED_COMPONENT(
-    NFInstNode.EMPTY_NODE(),
+    EMPTY_NODE(),
     TYPE_INTEGER(),
     EMPTY_BINDING,
     EMPTY_BINDING,
-    NFComponent.DEFAULT_ATTR,
+    DEFAULT_ATTR,
     NONE(),
     NONE(),
     AbsynUtil.dummyInfo,
@@ -112,11 +79,11 @@ const INT_PARAM =
 =#
 const REAL_COMPONENT =
   TYPED_COMPONENT(
-    NFInstNode.EMPTY_NODE(),
+    EMPTY_NODE(),
     TYPE_REAL(),
     EMPTY_BINDING,
     EMPTY_BINDING,
-    NFComponent.DEFAULT_ATTR,
+    DEFAULT_ATTR,
     NONE(),
     NONE(),
     AbsynUtil.dummyInfo,
@@ -133,11 +100,11 @@ const REAL_PARAM =
 =#
 const BOOL_COMPONENT =
   TYPED_COMPONENT(
-    NFInstNode.EMPTY_NODE(),
+    EMPTY_NODE(),
     TYPE_BOOLEAN(),
     EMPTY_BINDING,
     EMPTY_BINDING,
-    NFComponent.DEFAULT_ATTR,
+    DEFAULT_ATTR,
     NONE(),
     NONE(),
     AbsynUtil.dummyInfo,
@@ -154,11 +121,11 @@ const BOOL_PARAM =
 =#
 const STRING_COMPONENT =
   TYPED_COMPONENT(
-    NFInstNode.EMPTY_NODE(),
+    EMPTY_NODE(),
     TYPE_STRING(),
     EMPTY_BINDING,
     EMPTY_BINDING,
-    NFComponent.DEFAULT_ATTR,
+    DEFAULT_ATTR,
     NONE(),
     NONE(),
     AbsynUtil.dummyInfo,
@@ -175,11 +142,11 @@ const STRING_PARAM =
 =#
 const ENUM_COMPONENT =
   TYPED_COMPONENT(
-    NFInstNode.EMPTY_NODE(),
+    EMPTY_NODE(),
     TYPE_ENUMERATION_ANY(),
     EMPTY_BINDING,
     EMPTY_BINDING,
-    NFComponent.DEFAULT_ATTR,
+    DEFAULT_ATTR,
     NONE(),
     NONE(),
     AbsynUtil.dummyInfo,
@@ -196,12 +163,12 @@ const ENUM_PARAM =
 =#
 const EMPTY_NODE_CACHE =
   listArrayLiteral(list(
-    NFInstNode.P_CachedData.NO_CACHE(),
-    NFInstNode.P_CachedData.NO_CACHE(),
-    NFInstNode.P_CachedData.NO_CACHE(),
+    C_NO_CACHE(),
+    C_NO_CACHE(),
+    C_NO_CACHE(),
   ))::Array
 const INTEGER_DUMMY_NODE =
-  NFInstNode.CLASS_NODE(
+  CLASS_NODE(
     "Integer",
     DUMMY_ELEMENT,
     Visibility.PUBLIC,
@@ -210,14 +177,15 @@ const INTEGER_DUMMY_NODE =
     EMPTY_NODE(),
     NORMAL_CLASS(),
   )::InstNode
+
 const INTEGER_FUNCTION =
-  P_Function.FUNCTION(
-    Path.IDENT("Integer"),
+  M_FUNCTION(
+    Absyn.IDENT("Integer"),
     INTEGER_DUMMY_NODE,
     list(ENUM_PARAM),
     nil,
     nil,
-    list(P_Slot.SLOT(
+    list(SLOT(
       "e",
       SlotType.POSITIONAL,
       NONE(),
@@ -238,28 +206,28 @@ const INTEGER_NODE =
     Visibility.PUBLIC,
     P_Pointer.createImmutable(INSTANCED_CLASS(
       TYPE_UNKNOWN(),
-      EMPTY_TREE(),
+      CLASS_TREE_EMPTY_TREE(),
       SECTIONS_EMPTY(),
       RESTRICTION_FUNCTION(),
     )),
     listArrayLiteral(list(
-      NFInstNode.C_FUNCTION(list(INTEGER_FUNCTION), true, false),
-      NFInstNode.P_CachedData.NO_CACHE(),
-      NFInstNode.P_CachedData.NO_CACHE(),
+      C_FUNCTION(list(INTEGER_FUNCTION), true, false),
+      C_NO_CACHE(),
+      C_NO_CACHE(),
     )),
     EMPTY_NODE(),
     BUILTIN_CLASS(),
   )::InstNode
 const INTEGER_CREF =
-  CREF(
+  COMPONENT_REF_CREF(
     INTEGER_NODE,
     nil,
     TYPE_INTEGER(),
     Origin.CREF,
-    EMPTY(),
+    COMPONENT_REF_EMPTY(),
   )::ComponentRef
 const STRING_DUMMY_NODE =
-  NFInstNode.CLASS_NODE(
+  CLASS_NODE(
     "String",
     DUMMY_ELEMENT,
     Visibility.PUBLIC,
@@ -271,14 +239,14 @@ const STRING_DUMMY_NODE =
 #=  String(r, significantDigits=d, minimumLength=0, leftJustified=true)
 =#
 const STRING_REAL =
-  P_Function.FUNCTION(
-    Path.IDENT("String"),
+  M_FUNCTION(
+    Absyn.IDENT("String"),
     STRING_DUMMY_NODE,
     list(REAL_PARAM, INT_PARAM, INT_PARAM, BOOL_PARAM),
     list(STRING_PARAM),
     nil,
     list(
-      P_Slot.SLOT(
+      SLOT(
         "r",
         SlotType.POSITIONAL,
         NONE(),
@@ -286,7 +254,7 @@ const STRING_REAL =
         1,
         SlotEvalStatus.NOT_EVALUATED,
       ),
-      P_Slot.SLOT(
+      SLOT(
         "significantDigits",
         SlotType.NAMED,
         SOME(INTEGER_EXPRESSION(6)),
@@ -294,7 +262,7 @@ const STRING_REAL =
         2,
         SlotEvalStatus.NOT_EVALUATED,
       ),
-      P_Slot.SLOT(
+      SLOT(
         "minimumLength",
         SlotType.NAMED,
         SOME(INTEGER_EXPRESSION(0)),
@@ -302,7 +270,7 @@ const STRING_REAL =
         3,
         SlotEvalStatus.NOT_EVALUATED,
       ),
-      P_Slot.SLOT(
+      SLOT(
         "leftJustified",
         SlotType.NAMED,
         SOME(BOOLEAN_EXPRESSION(true)),
@@ -320,14 +288,14 @@ const STRING_REAL =
 #=  String(r, format=\"-0.6g\")
 =#
 const STRING_REAL_FORMAT =
-  P_Function.FUNCTION(
-    Path.IDENT("String"),
+  M_FUNCTION(
+    Absyn.IDENT("String"),
     STRING_DUMMY_NODE,
     list(REAL_PARAM, STRING_PARAM),
     list(STRING_PARAM),
     nil,
     list(
-      P_Slot.SLOT(
+      SLOT(
         "r",
         SlotType.POSITIONAL,
         NONE(),
@@ -335,7 +303,7 @@ const STRING_REAL_FORMAT =
         1,
         SlotEvalStatus.NOT_EVALUATED,
       ),
-      P_Slot.SLOT(
+      SLOT(
         "format",
         SlotType.NAMED,
         NONE(),
@@ -353,14 +321,14 @@ const STRING_REAL_FORMAT =
 #=  String(i, minimumLength=0, leftJustified=true)
 =#
 const STRING_INT =
-  P_Function.FUNCTION(
-    Path.IDENT("String"),
+  M_FUNCTION(
+    Absyn.IDENT("String"),
     STRING_DUMMY_NODE,
     list(INT_PARAM, INT_PARAM, BOOL_PARAM),
     list(STRING_PARAM),
     nil,
     list(
-      P_Slot.SLOT(
+      SLOT(
         "i",
         SlotType.POSITIONAL,
         NONE(),
@@ -368,7 +336,7 @@ const STRING_INT =
         1,
         SlotEvalStatus.NOT_EVALUATED,
       ),
-      P_Slot.SLOT(
+      SLOT(
         "minimumLength",
         SlotType.NAMED,
         SOME(INTEGER_EXPRESSION(0)),
@@ -376,7 +344,7 @@ const STRING_INT =
         2,
         SlotEvalStatus.NOT_EVALUATED,
       ),
-      P_Slot.SLOT(
+      SLOT(
         "leftJustified",
         SlotType.NAMED,
         SOME(BOOLEAN_EXPRESSION(true)),
@@ -394,14 +362,14 @@ const STRING_INT =
 #=  String(b, minimumLength=0, leftJustified=true)
 =#
 const STRING_BOOL =
-  P_Function.FUNCTION(
-    Path.IDENT("String"),
+  M_FUNCTION(
+    Absyn.IDENT("String"),
     STRING_DUMMY_NODE,
     list(BOOL_PARAM, INT_PARAM, BOOL_PARAM),
     list(STRING_PARAM),
     nil,
     list(
-      P_Slot.SLOT(
+      SLOT(
         "b",
         SlotType.POSITIONAL,
         NONE(),
@@ -409,7 +377,7 @@ const STRING_BOOL =
         1,
         SlotEvalStatus.NOT_EVALUATED,
       ),
-      P_Slot.SLOT(
+      SLOT(
         "minimumLength",
         SlotType.NAMED,
         SOME(INTEGER_EXPRESSION(0)),
@@ -417,7 +385,7 @@ const STRING_BOOL =
         2,
         SlotEvalStatus.NOT_EVALUATED,
       ),
-      P_Slot.SLOT(
+      SLOT(
         "leftJustified",
         SlotType.NAMED,
         SOME(BOOLEAN_EXPRESSION(true)),
@@ -435,14 +403,14 @@ const STRING_BOOL =
 #=  String(e, minimumLength=0, leftJustified=true)
 =#
 const STRING_ENUM =
-  P_Function.FUNCTION(
-    Path.IDENT("String"),
+  M_FUNCTION(
+    Absyn.IDENT("String"),
     STRING_DUMMY_NODE,
     list(ENUM_PARAM, INT_PARAM, BOOL_PARAM),
     list(STRING_PARAM),
     nil,
     list(
-      P_Slot.SLOT(
+      SLOT(
         "e",
         SlotType.POSITIONAL,
         NONE(),
@@ -450,7 +418,7 @@ const STRING_ENUM =
         1,
         SlotEvalStatus.NOT_EVALUATED,
       ),
-      P_Slot.SLOT(
+      SLOT(
         "minimumLength",
         SlotType.NAMED,
         SOME(INTEGER_EXPRESSION(0)),
@@ -458,7 +426,7 @@ const STRING_ENUM =
         2,
         SlotEvalStatus.NOT_EVALUATED,
       ),
-      P_Slot.SLOT(
+      SLOT(
         "leftJustified",
         SlotType.NAMED,
         SOME(BOOLEAN_EXPRESSION(true)),
@@ -480,34 +448,34 @@ const STRING_NODE =
     Visibility.PUBLIC,
     P_Pointer.createImmutable(PARTIAL_BUILTIN(
       TYPE_STRING(),
-      EMPTY_TREE(),
+      CLASS_TREE_EMPTY_TREE(),
       MODIFIER_NOMOD(),
-      NFClass.DEFAULT_PREFIXES,
+      DEFAULT_PREFIXES,
       RESTRICTION_TYPE(),
     )),
     listArrayLiteral(list(
-      NFInstNode.C_FUNCTION(
+      C_FUNCTION(
         list(STRING_ENUM, STRING_INT, STRING_BOOL, STRING_REAL, STRING_REAL_FORMAT),
         true,
         true,
       ),
-      NFInstNode.P_CachedData.NO_CACHE(),
-      NFInstNode.P_CachedData.NO_CACHE(),
+      C_NO_CACHE(),
+      C_NO_CACHE(),
     )),
     EMPTY_NODE(),
     BUILTIN_CLASS(),
   )::InstNode
 const STRING_CREF =
-  CREF(
+  COMPONENT_REF_CREF(
     STRING_NODE,
     nil,
     TYPE_INTEGER(),
     Origin.CREF,
-    EMPTY(),
+    COMPONENT_REF_EMPTY(),
   )::ComponentRef
 const ABS_REAL =
-  P_Function.FUNCTION(
-    Path.IDENT("abs"),
+  M_FUNCTION(
+    Absyn.IDENT("abs"),
     EMPTY_NODE(),
     list(REAL_PARAM, REAL_PARAM),
     list(REAL_PARAM),
@@ -520,8 +488,8 @@ const ABS_REAL =
     P_Pointer.createImmutable(0),
   )::M_Function
 const MAX_INT =
-  P_Function.FUNCTION(
-    Path.IDENT("max"),
+  M_FUNCTION(
+    Absyn.IDENT("max"),
     EMPTY_NODE(),
     list(INT_PARAM, INT_PARAM),
     list(INT_PARAM),
@@ -534,8 +502,8 @@ const MAX_INT =
     P_Pointer.createImmutable(0),
   )::M_Function
 const MAX_REAL =
-  P_Function.FUNCTION(
-    Path.IDENT("max"),
+  M_FUNCTION(
+    Absyn.IDENT("max"),
     EMPTY_NODE(),
     list(REAL_PARAM, REAL_PARAM),
     list(REAL_PARAM),
@@ -548,8 +516,8 @@ const MAX_REAL =
     P_Pointer.createImmutable(0),
   )::M_Function
 const DIV_INT =
-  P_Function.FUNCTION(
-    Path.IDENT("div"),
+  M_FUNCTION(
+    Absyn.IDENT("div"),
     EMPTY_NODE(),
     list(INT_PARAM, INT_PARAM),
     list(INT_PARAM),
@@ -562,8 +530,8 @@ const DIV_INT =
     P_Pointer.createImmutable(0),
   )::M_Function
 const FLOOR =
-  P_Function.FUNCTION(
-    Path.IDENT("floor"),
+  M_FUNCTION(
+    Absyn.IDENT("floor"),
     EMPTY_NODE(),
     list(REAL_PARAM),
     list(REAL_PARAM),
@@ -576,8 +544,8 @@ const FLOOR =
     P_Pointer.createImmutable(0),
   )::M_Function
 const INTEGER_REAL =
-  P_Function.FUNCTION(
-    Path.IDENT("integer"),
+  M_FUNCTION(
+    Absyn.IDENT("integer"),
     EMPTY_NODE(),
     list(REAL_PARAM),
     list(INT_PARAM),
@@ -590,8 +558,8 @@ const INTEGER_REAL =
     P_Pointer.createImmutable(0),
   )::M_Function
 const INTEGER_ENUM =
-  P_Function.FUNCTION(
-    Path.IDENT("Integer"),
+  M_FUNCTION(
+    Absyn.IDENT("Integer"),
     EMPTY_NODE(),
     list(ENUM_PARAM),
     list(INT_PARAM),
@@ -604,8 +572,8 @@ const INTEGER_ENUM =
     P_Pointer.createImmutable(0),
   )::M_Function
 const POSITIVE_MAX_REAL =
-  P_Function.FUNCTION(
-    Path.IDENT("OMCPositiveMax"),
+  M_FUNCTION(
+    Absyn.IDENT("OMCPositiveMax"),
     EMPTY_NODE(),
     list(REAL_PARAM, REAL_PARAM),
     list(REAL_PARAM),
@@ -618,8 +586,8 @@ const POSITIVE_MAX_REAL =
     P_Pointer.createImmutable(0),
   )::M_Function
 const IN_STREAM =
-  P_Function.FUNCTION(
-    Path.IDENT("inStream"),
+  M_FUNCTION(
+    Absyn.IDENT("inStream"),
     EMPTY_NODE(),
     list(REAL_PARAM),
     list(REAL_PARAM),
@@ -632,8 +600,8 @@ const IN_STREAM =
     P_Pointer.createImmutable(0),
   )::M_Function
 const PROMOTE =
-  P_Function.FUNCTION(
-    Path.IDENT("promote"),
+  M_FUNCTION(
+    Absyn.IDENT("promote"),
     EMPTY_NODE(),
     nil,
     nil,
@@ -646,8 +614,8 @@ const PROMOTE =
     P_Pointer.createImmutable(0),
   )::M_Function
 const CAT =
-  P_Function.FUNCTION(
-    Path.IDENT("cat"),
+  M_FUNCTION(
+    Absyn.IDENT("cat"),
     EMPTY_NODE(),
     nil,
     nil,
@@ -660,8 +628,8 @@ const CAT =
     P_Pointer.createImmutable(0),
   )::M_Function
 const ARRAY_FUNC =
-  P_Function.FUNCTION(
-    Path.IDENT("array"),
+  M_FUNCTION(
+    Absyn.IDENT("array"),
     EMPTY_NODE(),
     nil,
     nil,
@@ -674,8 +642,8 @@ const ARRAY_FUNC =
     P_Pointer.createImmutable(0),
   )::M_Function
 const FILL_FUNC =
-  P_Function.FUNCTION(
-    Path.IDENT("fill"),
+  M_FUNCTION(
+    Absyn.IDENT("fill"),
     EMPTY_NODE(),
     nil,
     nil,
@@ -688,8 +656,8 @@ const FILL_FUNC =
     P_Pointer.createImmutable(0),
   )::M_Function
 const SMOOTH =
-  P_Function.FUNCTION(
-    Path.IDENT("smooth"),
+  M_FUNCTION(
+    Absyn.IDENT("smooth"),
     EMPTY_NODE(),
     nil,
     nil,
@@ -703,11 +671,11 @@ const SMOOTH =
   )::M_Function
 const CLOCK_COMPONENT =
   TYPED_COMPONENT(
-    NFInstNode.EMPTY_NODE(),
+    EMPTY_NODE(),
     TYPE_CLOCK(),
     EMPTY_BINDING,
     EMPTY_BINDING,
-    NFComponent.DEFAULT_ATTR,
+    DEFAULT_ATTR,
     NONE(),
     NONE(),
     AbsynUtil.dummyInfo,
@@ -721,7 +689,7 @@ const CLOCK_PARAM =
     NORMAL_COMP(),
   )::InstNode
 const CLOCK_DUMMY_NODE =
-  NFInstNode.CLASS_NODE(
+  CLASS_NODE(
     "Clock",
     DUMMY_ELEMENT,
     Visibility.PUBLIC,
@@ -733,8 +701,8 @@ const CLOCK_DUMMY_NODE =
 #=  Clock() - inferred clock
 =#
 const CLOCK_INFERED =
-  P_Function.FUNCTION(
-    Path.IDENT("Clock"),
+  M_FUNCTION(
+    Absyn.IDENT("Clock"),
     CLOCK_DUMMY_NODE,
     nil,
     list(CLOCK_PARAM),
@@ -749,14 +717,14 @@ const CLOCK_INFERED =
 #=  Clock(intervalCounter, resolution = 1) - clock with Integer interval
 =#
 const CLOCK_INT =
-  P_Function.FUNCTION(
-    Path.IDENT("Clock"),
+  M_FUNCTION(
+    Absyn.IDENT("Clock"),
     CLOCK_DUMMY_NODE,
     list(INT_PARAM, INT_PARAM),
     list(CLOCK_PARAM),
     nil,
     list(
-      P_Slot.SLOT(
+      SLOT(
         "intervalCounter",
         SlotType.GENERIC,
         NONE(),
@@ -764,7 +732,7 @@ const CLOCK_INT =
         1,
         SlotEvalStatus.NOT_EVALUATED,
       ),
-      P_Slot.SLOT(
+      SLOT(
         "resolution",
         SlotType.GENERIC,
         SOME(INTEGER_EXPRESSION(1)),
@@ -782,13 +750,13 @@ const CLOCK_INT =
 #=  Clock(interval) - clock with Real interval
 =#
 const CLOCK_REAL =
-  P_Function.FUNCTION(
-    Path.IDENT("Clock"),
+  M_FUNCTION(
+    Absyn.IDENT("Clock"),
     CLOCK_DUMMY_NODE,
     list(REAL_PARAM),
     list(CLOCK_PARAM),
     nil,
-    list(P_Slot.SLOT(
+    list(SLOT(
       "interval",
       SlotType.GENERIC,
       NONE(),
@@ -805,14 +773,14 @@ const CLOCK_REAL =
 #=  Clock(condition, startInterval = 0.0) - Boolean clock, triggered by zero-crossing events
 =#
 const CLOCK_BOOL =
-  P_Function.FUNCTION(
-    Path.IDENT("Clock"),
+  M_FUNCTION(
+    Absyn.IDENT("Clock"),
     CLOCK_DUMMY_NODE,
     list(BOOL_PARAM, REAL_PARAM),
     list(CLOCK_PARAM),
     nil,
     list(
-      P_Slot.SLOT(
+      SLOT(
         "condition",
         SlotType.GENERIC,
         NONE(),
@@ -820,7 +788,7 @@ const CLOCK_BOOL =
         1,
         SlotEvalStatus.NOT_EVALUATED,
       ),
-      P_Slot.SLOT(
+      SLOT(
         "startInterval",
         SlotType.GENERIC,
         SOME(REAL_EXPRESSION(0.0)),
@@ -838,15 +806,15 @@ const CLOCK_BOOL =
 #=  Clock(c, solverMethod) - Solver clock
 =#
 const CLOCK_SOLVER =
-  P_Function.FUNCTION(
-    Path.IDENT("Clock"),
+  M_FUNCTION(
+    Absyn.IDENT("Clock"),
     CLOCK_DUMMY_NODE,
     list(CLOCK_PARAM, STRING_PARAM),
     list(CLOCK_PARAM),
     nil,
     list(
-      P_Slot.SLOT("c", SlotType.GENERIC, NONE(), NONE(), 1, SlotEvalStatus.NOT_EVALUATED),
-      P_Slot.SLOT(
+      SLOT("c", SlotType.GENERIC, NONE(), NONE(), 1, SlotEvalStatus.NOT_EVALUATED),
+      SLOT(
         "solverMethod",
         SlotType.GENERIC,
         NONE(),
@@ -868,30 +836,30 @@ const CLOCK_NODE =
     Visibility.PUBLIC,
     P_Pointer.createImmutable(PARTIAL_BUILTIN(
       TYPE_CLOCK(),
-      EMPTY_TREE(),
+      CLASS_TREE_EMPTY_TREE(),
       MODIFIER_NOMOD(),
-      NFClass.DEFAULT_PREFIXES,
+      DEFAULT_PREFIXES,
       RESTRICTION_TYPE(),
     )),
     listArrayLiteral(list(
-      NFInstNode.C_FUNCTION(
+      C_FUNCTION(
         list(CLOCK_INFERED, CLOCK_INT, CLOCK_REAL, CLOCK_BOOL, CLOCK_SOLVER),
         true,
         true,
       ),
-      NFInstNode.P_CachedData.NO_CACHE(),
-      NFInstNode.P_CachedData.NO_CACHE(),
+      C_NO_CACHE(),
+      C_NO_CACHE(),
     )),
     EMPTY_NODE(),
     BUILTIN_CLASS(),
   )::InstNode
 const CLOCK_CREF =
-  CREF(
+  COMPONENT_REF_CREF(
     CLOCK_NODE,
     nil,
     TYPE_INTEGER(),
     Origin.CREF,
-    EMPTY(),
+    COMPONENT_REF_EMPTY(),
   )::ComponentRef
 
 @exportAll()

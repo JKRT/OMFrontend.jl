@@ -1147,7 +1147,7 @@ function fillUnknownVectorizedDims(
 
   for dim in dims
     if P_Dimension.Dimension.isUnknown(dim)
-      @assign dim = P_Dimension.Dimension.EXP(
+      @assign dim = DIMENSION_EXP(
         SIZE_EXPRESSION(argExp, SOME(INTEGER_EXPRESSION(i))),
         Variability.CONTINUOUS,
       )

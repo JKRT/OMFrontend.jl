@@ -1229,7 +1229,7 @@ function evaluateCallTypeDim(
   @assign dim = begin
     local exp::Expression
     @match dim begin
-      P_Dimension.Dimension.EXP(__) => begin
+      DIMENSION_EXP(__) => begin
         @assign ptree = buildParameterTree(fnArgs, ptree)
         @assign exp = map(
           dim.exp,
@@ -1237,7 +1237,7 @@ function evaluateCallTypeDim(
         )
         ErrorExt.setCheckpoint(getInstanceName())
         try
-          @assign exp = Ceval.evalExp(exp, Ceval.P_EvalTarget.IGNORE_ERRORS())
+          @assign exp = Ceval.evalExp(exp, Ceval.EVALTARGET_IGNORE_ERRORS())
         catch
         end
         ErrorExt.rollBack(getInstanceName())
@@ -1365,7 +1365,7 @@ function vectorizeCall(
           )
           @assign iter = fromComponent(
             "i" + intString(i),
-            P_Component.ITERATOR(TYPE_INTEGER(), Variability.CONSTANT, info),
+            ITERATOR_COMPONENT(TYPE_INTEGER(), Variability.CONSTANT, info),
             scope,
           )
           @assign iters = _cons((iter, exp), iters)

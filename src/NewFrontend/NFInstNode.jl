@@ -66,6 +66,55 @@ FuncType = Function
   end
 end
 
+
+
+@Uniontype InstNode begin
+  @Record EMPTY_NODE begin
+  end
+
+  @Record EXP_NODE begin
+    exp::Expression
+  end
+
+  @Record IMPLICIT_SCOPE begin
+    parentScope::InstNode
+    locals::List{InstNode}
+  end
+
+  @Record NAME_NODE begin
+    name::String
+  end
+
+  @Record REF_NODE begin
+    index::Integer
+  end
+
+  @Record INNER_OUTER_NODE begin
+    innerNode::InstNode
+    outerNode::InstNode
+  end
+
+  @Record COMPONENT_NODE begin
+    name::String
+    visibility
+    component::Pointer{Component}
+    parent #= The instance that this component is part of. =#::InstNode
+    nodeType::InstNodeType
+  end
+
+  @Record CLASS_NODE begin
+    name::String
+    definition::SCode.Element
+    visibility
+    cls::Pointer
+    caches::Array{CachedData}
+    parentScope::InstNode
+    nodeType::InstNodeType
+  end
+
+end
+
+
 module NodeTree
 
 import ..Main.InstNode
@@ -2149,50 +2198,4 @@ function new(definition::SCode.Element, parent::InstNode) ::InstNode
     end
   end
   node
-end
-
-@Uniontype InstNode begin
-  @Record EMPTY_NODE begin
-  end
-
-  @Record EXP_NODE begin
-    exp::Expression
-  end
-
-  @Record IMPLICIT_SCOPE begin
-    parentScope::InstNode
-    locals::List{InstNode}
-  end
-
-  @Record NAME_NODE begin
-    name::String
-  end
-
-  @Record REF_NODE begin
-    index::Integer
-  end
-
-  @Record INNER_OUTER_NODE begin
-    innerNode::InstNode
-    outerNode::InstNode
-  end
-
-  @Record COMPONENT_NODE begin
-    name::String
-    visibility
-    component::Pointer{Component}
-    parent #= The instance that this component is part of. =#::InstNode
-    nodeType::InstNodeType
-  end
-
-  @Record CLASS_NODE begin
-    name::String
-    definition::SCode.Element
-    visibility
-    cls::Pointer
-    caches::Array{CachedData}
-    parentScope::InstNode
-    nodeType::InstNodeType
-  end
-
 end

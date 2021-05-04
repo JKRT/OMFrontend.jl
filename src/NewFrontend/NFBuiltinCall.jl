@@ -333,7 +333,7 @@ function makeCatExp(n::Integer, args::List{<:Expression}, tys::List{<:M_Type}, v
   #=  with the concatenated dimension set to unknown.
   =#
   @assign dims = arrayDims(resTy)
-  @assign resTyToMatch = TYPE_ARRAY(arrayElementType(resTy), ListUtil.set(dims, n, P_Dimension.Dimension.UNKNOWN()))
+  @assign resTyToMatch = TYPE_ARRAY(arrayElementType(resTy), ListUtil.set(dims, n, DIMENSION_UNKNOWN()))
   @assign dims = list(listGet(lst, n) for lst in dimsLst)
   @assign sumDim = P_Dimension.Dimension.fromInteger(0)
   for d in dims

@@ -1305,7 +1305,7 @@ function isScalarLiteral(exp::Expression) ::Bool
         true
       end
 
-      ENUM_LITERAL(__)  => begin
+      ENUM_LITERAL_EXPRESSION(__)  => begin
         true
       end
 
@@ -1334,7 +1334,7 @@ function isNegative(exp::Expression) ::Bool
         false
       end
 
-      ENUM_LITERAL(__)  => begin
+      ENUM_LITERAL_EXPRESSION(__)  => begin
         false
       end
 
@@ -1355,28 +1355,24 @@ function isNegative(exp::Expression) ::Bool
 end
 
 function isOne(exp::Expression) ::Bool
-  local isOne::Bool
-
-  @assign isOne = begin
+  local isOneVar::Bool
+  isOneVar = begin
     @match exp begin
       INTEGER_EXPRESSION(__)  => begin
         exp.value == 1
       end
-
       REAL_EXPRESSION(__)  => begin
         exp.value == 1.0
       end
-
       CAST_EXPRESSION(__)  => begin
         isOne(exp.exp)
       end
-
       _  => begin
         false
       end
     end
   end
-  isOne
+  isOneVar
 end
 
 function isZero(exp::Expression) ::Bool
@@ -1883,15 +1879,12 @@ end
 
 function containsOpt(exp::Option{<:Expression}, func::ContainsPred) ::Bool
   local res::Bool
-
   local e::Expression
-
-  @assign res = begin
+  res = begin
     @match exp begin
       SOME(e)  => begin
         contains(e, func)
       end
-
       _  => begin
         false
       end
@@ -1903,16 +1896,14 @@ end
 
 
 function mapFoldCrefShallow(cref::ComponentRef, func::MapFunc, arg::ArgT)  where {ArgT}
-
   local outCref::ComponentRef
-
-  @assign outCref = begin
+  outCref = begin
     local subs::List{Subscript}
     local rest::ComponentRef
     @match cref begin
       COMPONENT_REF_CREF(origin = Origin.CREF)  => begin
-        @assign (subs, arg) = ListUtil.map1Fold(cref.subscripts, mapFoldExpShallow, func, arg)
-        @assign (rest, arg) = mapFoldCrefShallow(cref.restCref, func, arg)
+        (subs, arg) = ListUtil.map1Fold(cref.subscripts, mapFoldExpShallow, func, arg)
+        (rest, arg) = mapFoldCrefShallow(cref.restCref, func, arg)
         COMPONENT_REF_CREF(cref.node, subs, cref.ty, cref.origin, rest)
       end
       _  => begin
@@ -2267,7 +2258,7 @@ function mapFoldShallow(exp::Expression, func::MapFunc, arg::ArgT)  where {ArgT}
 
       SUBSCRIPTED_EXP_EXPRESSION(__)  => begin
         @assign (e1, arg) = func(exp.exp, arg)
-        @assign (subs, arg) = ListUtil.mapFold(exp.subscripts, (func) -> mapFoldExpShallow(func = func), arg)
+        @assign (subs, arg) = ListUtil.mapFold(exp.subscripts, (ss) -> mapFoldExpShallow(ss, func), arg)
         SUBSCRIPTED_EXP_EXPRESSION(e1, subs, exp.ty)
       end
 
@@ -3015,15 +3006,13 @@ function applyList(expl::List{<:Expression}, func::ApplyFunc)
 end
 
 function foldCref(cref::ComponentRef, func::FoldFunc, arg::ArgT)  where {ArgT}
-
-  @assign () = begin
+  () = begin
     @match cref begin
       COMPONENT_REF_CREF(origin = Origin.CREF)  => begin
-        @assign arg = ListUtil.fold(cref.subscripts, (func) -> foldExp(func = func), arg)
-        @assign arg = foldCref(cref.restCref, func, arg)
+        arg = ListUtil.fold(cref.subscripts, (x, y) -> foldExp(x, func, y), arg) #=TODO: Look at the x, y change here=#
+        arg = foldCref(cref.restCref, func, arg)
         ()
       end
-
       _  => begin
         ()
       end
@@ -4052,8 +4041,8 @@ _  => begin
 end
 end
 end
-@assign outExp = func(outExp)
-outExp
+  outExp = func(outExp)
+  outExp
 end
 
 function dimensionCount(@nospecialize(exp::Expression))::Integer
@@ -4153,7 +4142,7 @@ function toDAEValue(exp::Expression) ::Values.Value
         Values.BOOL(exp.value)
       end
 
-      ENUM_LITERAL(ty = ty && TYPE_ENUMERATION(__))  => begin
+      ENUM_LITERAL_EXPRESSION(ty = ty && TYPE_ENUMERATION(__))  => begin
         Values.ENUM_LITERAL(AbsynUtil.suffixPath(ty.typePath, exp.name), exp.index)
       end
 
@@ -4439,9 +4428,9 @@ function isAssociativeExp(exp::Expression) ::Bool
 end
 
 function priority(exp::Expression, lhs::Bool) ::Integer
-  local priority::Integer
+  local priorityVar::Integer
 
-  @assign priority = begin
+  priorityVar = begin
     @match exp begin
       INTEGER_EXPRESSION(__)  => begin
         if exp.value < 0
@@ -4492,7 +4481,7 @@ function priority(exp::Expression, lhs::Bool) ::Integer
       end
     end
   end
-  priority
+  priorityVar
 end
 
 """ #= Helper function to toString, prints an operator and adds parentheses as needed. =#"""
@@ -4605,7 +4594,7 @@ function toFlatString(exp::Expression) ::String
         boolString(exp.value)
       end
 
-      ENUM_LITERAL(ty = t && TYPE_ENUMERATION(__))  => begin
+      ENUM_LITERAL_EXPRESSION(ty = t && TYPE_ENUMERATION(__))  => begin
         "'" + AbsynUtil.pathString(t.typePath) + "'." + exp.name
       end
 
@@ -4846,11 +4835,11 @@ function toString(exp::Expression) ::String
       end
 
       CAST_EXPRESSION(__)  => begin
-        if Flags.isSet(Flags.NF_API)
-          toString(exp.exp)
-        else
-          "CAST_EXPRESSION(" + Type.toString(exp.ty) + ", " + toString(exp.exp) + ")"
-        end
+        #if Flags.isSet(Flags.NF_API) Changes by me, John
+        toString(exp.exp)
+#        else
+#          "CAST_EXPRESSION(" + Type.toString(exp.ty) + ", " + toString(exp.exp) + ")"
+ #       end
       end
 
       SUBSCRIPTED_EXP_EXPRESSION(__)  => begin
@@ -4978,19 +4967,16 @@ function arrayFromList(inExps::List{<:Expression}, elemTy::M_Type, inDims::List{
 end
 
 function replaceIterator2(exp::Expression, iterator::InstNode, iteratorValue::Expression) ::Expression
-
-
   @assign exp = begin
     local node::InstNode
     @match exp begin
-      CREF_EXPRESSION(cref = CREF_EXPRESSION(node = node))  => begin
+      CREF_EXPRESSION(cref = COMPONENT_REF_CREF(node = node))  => begin
         if refEqual(iterator, node)
           iteratorValue
         else
           exp
         end
       end
-
       _  => begin
         exp
       end
@@ -5000,10 +4986,7 @@ function replaceIterator2(exp::Expression, iterator::InstNode, iteratorValue::Ex
 end
 
 function replaceIterator(exp::Expression, iterator::InstNode, iteratorValue::Expression) ::Expression
-
-
-  @assign exp = map(exp, (iterator, iteratorValue) -> replaceIterator2(iterator = iterator, iteratorValue = iteratorValue))
-  exp
+  map(exp, (x) -> replaceIterator2(x,  iterator, iteratorValue))
 end
 
 function makeSubscriptedExp(subscripts::List{<:Subscript}, exp::Expression) ::Expression
@@ -5453,7 +5436,7 @@ function makeRealMatrix(values::List{<:List{<:AbstractFloat}}) ::Expression
   local expl::List{Expression}
 
   if listEmpty(values)
-    @assign ty = TYPE_ARRAY(TYPE_REAL(), list(P_Dimension.Dimension.fromInteger(0), P_Dimension.Dimension.UNKNOWN()))
+    @assign ty = TYPE_ARRAY(TYPE_REAL(), list(P_Dimension.Dimension.fromInteger(0), DIMENSION_UNKNOWN()))
     @assign exp = makeEmptyArray(ty)
   else
     @assign ty = TYPE_ARRAY(TYPE_REAL(), list(P_Dimension.Dimension.fromInteger(listLength(listHead(values)))))
@@ -6562,7 +6545,6 @@ function containsExp(binding::Binding, predFn::PredFunc)::Bool
 end
 
 function foldExp(binding::Binding, foldFn::FoldFunc, arg::ArgT) where {ArgT}
-
   @assign arg = begin
     @match binding begin
       UNTYPED_BINDING(__) => begin

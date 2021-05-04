@@ -511,17 +511,17 @@ function patchElementModFinal(
     @assign mod = begin
       @match mod begin
         SCode.MOD(__) => begin
-          @assign mod.finalPrefix = SCode.Final.FINAL()
+          @assign mod.finalPrefix = SCode.FINAL()
           mod
         end
 
         SCode.REDECL(__) => begin
-          @assign mod.finalPrefix = SCode.Final.FINAL()
+          @assign mod.finalPrefix = SCode.FINAL()
           mod
         end
 
         _ => begin
-          SCode.MOD(SCode.Final.FINAL(), SCode.Each.NOT_EACH(), nil, NONE(), info)
+          SCode.MOD(SCode.Final.FINAL(), SCode.NOT_EACH(), nil, NONE(), info)
         end
       end
     end

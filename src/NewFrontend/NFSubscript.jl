@@ -424,17 +424,14 @@ end
 
 function simplifySubscript(subscript::Subscript)::Subscript
   local outSubscript::Subscript
-
-  @assign outSubscript = begin
+  outSubscript = begin
     @match subscript begin
       SUBSCRIPT_INDEX(__) => begin
-        SUBSCRIPT_INDEX(simplifySubscript(subscript.index))
+        SUBSCRIPT_INDEX(simplify(subscript.index))
       end
-
       SLICE(__) => begin
-        SLICE(simplifySubscript(subscript.slice))
+        SUBSCRIPT_SLICE(simplify(subscript.slice))
       end
-
       _ => begin
         subscript
       end
@@ -577,8 +574,8 @@ function toDAEExp(subscript::Subscript)::DAE.Exp
   return daeExp
 end
 
-function toDAE(subscript::Subscript)::DAE.P_Subscript.Subscript
-  local daeSubscript::DAE.P_Subscript.Subscript
+function toDAE(subscript::Subscript)::DAE.Subscript
+  local daeSubscript::DAE.Subscript
 
   @assign daeSubscript = begin
     @match subscript begin
@@ -608,39 +605,34 @@ function toDAE(subscript::Subscript)::DAE.P_Subscript.Subscript
 end
 
 function mapFoldExpShallow(subscript::Subscript, func::MapFunc, arg::ArgT) where {ArgT}
-
   local outSubscript::Subscript
-
-  @assign outSubscript = begin
+  outSubscript = begin
     local exp::Expression
     @match subscript begin
-      UNTYPED(__) => begin
-        @assign (exp, arg) = func(subscript.exp, arg)
+      SUBSCRIPT_UNTYPED(__) => begin
+        (exp, arg) = func(subscript.exp, arg)
         if referenceEq(subscript.exp, exp)
           subscript
         else
-          UNTYPED(exp)
+          SUBSCRIPT_UNTYPED(exp)
         end
       end
-
       SUBSCRIPT_INDEX(__) => begin
-        @assign (exp, arg) = func(subscript.index, arg)
+        (exp, arg) = func(subscript.index)
         if referenceEq(subscript.index, exp)
           subscript
         else
           SUBSCRIPT_INDEX(exp)
         end
       end
-
-      SLICE(__) => begin
-        @assign (exp, arg) = func(subscript.slice, arg)
+      SUBSCRIPT_SLICE(__) => begin
+        (exp, arg) = func(subscript.slice, arg)
         if referenceEq(subscript.slice, exp)
           subscript
         else
-          SLICE(exp)
+          SUBSCRIPT_SLICE(exp)
         end
       end
-
       _ => begin
         subscript
       end
@@ -656,12 +648,12 @@ function mapFoldExp(subscript::Subscript, func::MapFunc, arg::ArgT) where {ArgT}
   @assign outSubscript = begin
     local exp::Expression
     @match subscript begin
-      UNTYPED(__) => begin
+      SUBSCRIPT_UNTYPED(__) => begin
         @assign (exp, arg) = mapFold(subscript.exp, func, arg)
         if referenceEq(subscript.exp, exp)
           subscript
         else
-          UNTYPED(exp)
+          SUBSCRIPT_UNTYPED(exp)
         end
       end
 
@@ -674,12 +666,12 @@ function mapFoldExp(subscript::Subscript, func::MapFunc, arg::ArgT) where {ArgT}
         end
       end
 
-      SLICE(__) => begin
+      SUBSCRIPT_SLICE(__) => begin
         @assign (exp, arg) = mapFold(subscript.slice, func, arg)
         if referenceEq(subscript.slice, exp)
           subscript
         else
-          SLICE(exp)
+          SUBSCRIPT_SLICE(exp)
         end
       end
 
@@ -696,7 +688,7 @@ function foldExp(subscript::Subscript, func::FoldFunc, arg::ArgT) where {ArgT}
 
   @assign result = begin
     @match subscript begin
-      UNTYPED(__) => begin
+      SUBSCRIPT_UNTYPED(__) => begin
         fold(subscript.exp, func, arg)
       end
 
@@ -704,7 +696,7 @@ function foldExp(subscript::Subscript, func::FoldFunc, arg::ArgT) where {ArgT}
         fold(subscript.index, func, arg)
       end
 
-      SLICE(__) => begin
+      SUBSCRIPT_SLICE(__) => begin
         fold(subscript.slice, func, arg)
       end
 
@@ -723,12 +715,12 @@ function mapShallowExp(subscript::Subscript, func::MapFunc)::Subscript
     local e1::Expression
     local e2::Expression
     @match subscript begin
-      UNTYPED(exp = e1) => begin
+      SUBSCRIPT_UNTYPED(exp = e1) => begin
         @assign e2 = func(e1)
         if referenceEq(e1, e2)
           subscript
         else
-          UNTYPED(e2)
+          SUBSCRIPT_UNTYPED(e2)
         end
       end
 
@@ -741,12 +733,12 @@ function mapShallowExp(subscript::Subscript, func::MapFunc)::Subscript
         end
       end
 
-      SLICE(slice = e1) => begin
+      SUBSCRIPT_SLICE(slice = e1) => begin
         @assign e2 = func(e1)
         if referenceEq(e1, e2)
           subscript
         else
-          SLICE(e2)
+          SUBSCRIPT_SLICE(e2)
         end
       end
 
@@ -765,12 +757,12 @@ function mapExp(subscript::Subscript, func::MapFunc)::Subscript
     local e1::Expression
     local e2::Expression
     @match subscript begin
-      UNTYPED(exp = e1) => begin
+      SUBSCRIPT_UNTYPED(exp = e1) => begin
         @assign e2 = map(e1, func)
         if referenceEq(e1, e2)
           subscript
         else
-          UNTYPED(e2)
+          SUBSCRIPT_UNTYPED(e2)
         end
       end
 
@@ -783,12 +775,12 @@ function mapExp(subscript::Subscript, func::MapFunc)::Subscript
         end
       end
 
-      SLICE(slice = e1) => begin
+      SUBSCRIPT_SLICE(slice = e1) => begin
         @assign e2 = map(e1, func)
         if referenceEq(e1, e2)
           subscript
         else
-          SLICE(e2)
+          SUBSCRIPT_SLICE(e2)
         end
       end
 

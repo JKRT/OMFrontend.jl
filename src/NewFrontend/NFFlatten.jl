@@ -1152,18 +1152,18 @@ function flattenEquation(
     local eql::List{Equation}
     @match eq begin
       EQUATION_EQUALITY(__) => begin
-        @assign e1 = flattenExp(eq.lhs, prefix)
-        @assign e2 = flattenExp(eq.rhs, prefix)
+        e1 = flattenExp(eq.lhs, prefix)
+        e2 = flattenExp(eq.rhs, prefix)
         _cons(EQUATION_EQUALITY(e1, e2, eq.ty, eq.source), equations)
       end
 
       EQUATION_FOR(__) => begin
-        if Flags.isSet(Flags.NF_SCALARIZE)
-          @assign eql = unrollForLoop(eq, prefix, equations)
-        else
-          @assign eql = splitForLoop(eq, prefix, equations)
-        end
-        eql
+#        if Flags.isSet(Flags.NF_SCALARIZE) Currently we unroll everything -John Tinnerholm 2021-05-04
+        eql = unrollForLoop(eq, prefix, equations)
+        #else
+        #eql = splitForLoop(eq, prefix, equations)
+#        end
+#        eql
       end
 
       EQUATION_CONNECT(__) => begin
@@ -1362,9 +1362,9 @@ function flattenEqBranch(
   local var::VariabilityType
 
   @match EQUATION_BRANCH(exp, var, eql) = branch
-  @assign exp = flattenExp(exp, prefix)
-  @assign eql = flattenEquations(eql, prefix)
-  @assign branch = makeBranch(exp, listReverseInPlace(eql), var)
+  exp = flattenExp(exp, prefix)
+  eql = flattenEquations(eql, prefix)
+  branch = makeBranch(exp, listReverseInPlace(eql), var)
   return branch
 end
 
@@ -1385,19 +1385,18 @@ function unrollForLoop(
     forLoop
   #=  Unroll the loop by replacing the iterator with each of its values in the for loop body.
   =#
-  @assign range = flattenExp(range, prefix)
-  @assign range =
-    Ceval.evalExp(range, Ceval.P_EvalTarget.RANGE(P_Equation.Equation.info(forLoop)))
-  @assign range_iter = P_RangeIterator.RangeIterator.fromExp(range)
-  while P_RangeIterator.RangeIterator.hasNext(range_iter)
-    @assign (range_iter, val) = P_RangeIterator.RangeIterator.next(range_iter)
-    @assign unrolled_body = mapExpList(
+  range = flattenExp(range, prefix)
+  range =
+    evalExp(range, EVALTARGET_RANGE(Equation_info(forLoop)))
+  range_iter = RangeIterator_fromExp(range)
+  while hasNext(range_iter)
+    (range_iter, val) = next(range_iter)
+    unrolled_body = mapExpList(
       body,
-      (iter, val) ->
-        replaceIterator(iterator = iter, iteratorValue = val),
+      (expArg) -> replaceIterator(expArg, iter, val),
     )
-    @assign unrolled_body = flattenEquations(unrolled_body, prefix)
-    @assign equations = listAppend(unrolled_body, equations)
+    unrolled_body = flattenEquations(unrolled_body, prefix)
+    equations = listAppend(unrolled_body, equations)
   end
   return equations
 end
@@ -1683,17 +1682,17 @@ function collectTypeFuncs(ty::NFType, funcs::FunctionTree)::FunctionTree
     local fn::M_Function
     @match ty begin
       TYPE_ARRAY(__) => begin
-        @assign funcs = P_Dimension.Dimension.foldExpList(
+        funcs = foldExpList(
           ty.dimensions,
           collectExpFuncs_traverse,
           funcs,
         )
-        @assign funcs = collectTypeFuncs(ty.elementType, funcs)
+        funcs = collectTypeFuncs(ty.elementType, funcs)
         ()
       end
 
       TYPE_FUNCTION(fn = fn) => begin
-        @assign funcs = flattenFunction(fn, funcs)
+        funcs = flattenFunction(fn, funcs)
         ()
       end
 
@@ -1904,7 +1903,7 @@ function collectStmtBranchFuncs(
 end
 
 function collectExpFuncs(exp::Expression, funcs::FunctionTree)::FunctionTree
-  @assign funcs = fold(exp, collectExpFuncs_traverse, funcs)
+  funcs = fold(exp, collectExpFuncs_traverse, funcs)
   return funcs
 end
 

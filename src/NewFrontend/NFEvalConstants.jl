@@ -39,7 +39,7 @@ function evaluateBinding(
   if isBound(binding)
     @assign exp = getTypedExp(binding)
     if structural
-      @assign eexp = evalExp(exp, ATTRIBUTE(binding))
+      @assign eexp = evalExp(exp, EVALTARGET_ATTRIBUTE(binding))
     else
       @assign eexp = evaluateExp(exp, constVariability)
     end
@@ -88,7 +88,7 @@ function evaluateExpTraverser(
     @match exp begin
       CREF_EXPRESSION(__) => begin
         @debug "Evaluate exp traverser"
-        (outExp, outChanged) = mapFoldShallow(exp, (x) -> evaluateExpTraverser(x, constVariability), false)
+        (outExp, outChanged) = mapFoldShallow(exp, (x) -> evaluateExpTraverser(x, constVariability, changed), false)
         cref = outExp.cref
         ty = outExp.ty
         #=  Evaluate constants and structural parameters.=#
@@ -391,7 +391,7 @@ function evaluateFuncExpTraverser(
           @assign outExp = Ceval.evalCref(
             e.cref,
             e,
-            Ceval.P_EvalTarget.IGNORE_ERRORS(),
+            Ceval.EVALTARGET_IGNORE_ERRORS(),
             evalSubscripts = false,
           )
           @assign outExp = stripBindingInfo(outExp)

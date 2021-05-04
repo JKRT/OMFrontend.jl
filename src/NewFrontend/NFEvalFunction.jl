@@ -191,7 +191,7 @@ function evaluateExternal(fn::M_Function, args::List{<:Expression})::Expression
     ann = ann,
   ) = getSections(getClass(fn.node))
   if lang == "builtin"
-    @assign result = Ceval.evalfn, args, P_EvalTarget.IGNORE_ERRORS())
+    @assign result = Ceval.evalfn, args, EVALTARGET_IGNORE_ERRORS())
   elseif isKnownExternalFunc(name, ann)
     @assign result = evaluateKnownExternal(name, args)
   else

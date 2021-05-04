@@ -175,7 +175,6 @@ function evaluateSubscripts(cref::ComponentRef)::ComponentRef
 end
 
 function simplifySubscripts(cref::ComponentRef)::ComponentRef
-
   @assign cref = begin
     local subs::List{Subscript}
     @match cref begin
@@ -183,12 +182,10 @@ function simplifySubscripts(cref::ComponentRef)::ComponentRef
         @assign cref.restCref = simplifySubscripts(cref.restCref)
         cref
       end
-
       COMPONENT_REF_CREF(origin = Origin.CREF) => begin
         @assign subs = list(simplifySubscript(s) for s in cref.subscripts)
         COMPONENT_REF_CREF(cref.node, subs, cref.ty, cref.origin, simplifySubscripts(cref.restCref))
       end
-
       _ => begin
         cref
       end

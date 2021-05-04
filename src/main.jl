@@ -109,5 +109,7 @@ include("./NewFrontend/NFPackage.jl")
 #= Model verification =#
 include("./NewFrontend/NFVerifyModel.jl")
 include("./NewFrontend/NFInline.jl")
-
+#=  Builtin functions =#
+include("./NewFrontend/NFBuiltinFuncs.jl")
+include("./NewFrontend/NFRangeIterator.jl")
 end

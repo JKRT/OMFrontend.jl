@@ -1237,7 +1237,7 @@ function evaluateCallTypeDim(
         )
         ErrorExt.setCheckpoint(getInstanceName())
         try
-          @assign exp = Ceval.evalExp(exp, Ceval.P_EvalTarget.IGNORE_ERRORS())
+          @assign exp = Ceval.evalExp(exp, Ceval.EVALTARGET_IGNORE_ERRORS())
         catch
         end
         ErrorExt.rollBack(getInstanceName())

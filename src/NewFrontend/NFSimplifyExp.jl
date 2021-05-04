@@ -452,10 +452,10 @@ function simplifyBinaryOp(exp1::Expression, op::Operator, exp2::Expression)::Exp
   local outExp::Expression
 
   if isLiteral(exp1) && isLiteral(exp2)
-    @assign outExp = Ceval.evalBinaryOp(
-      P_ExpandExp.ExpandExp.expand(exp1),
+    @assign outExp = evalBinaryOp(
+      expand(exp1)[1],
       op,
-      P_ExpandExp.ExpandExp.expand(exp2),
+      expand(exp2)[1],
     )
     @assign outExp = stripBindingInfo(outExp)
   else
@@ -834,26 +834,23 @@ function simplifyIf(ifExp::Expression)::Expression
   return ifExp
 end
 
-function simplifyCast(exp::Expression, ty::M_Type)::Expression
+function simplifyCast(exp::Expression, ty::NFType)::Expression
   local castExp::Expression
-
-  @assign castExp = begin
-    local ety::M_Type
+  castExp = begin
+    local ety::NFType
     @match (ty, exp) begin
       (TYPE_REAL(__), INTEGER_EXPRESSION(__)) => begin
         REAL_EXPRESSION(intReal(exp.value))
       end
-
       (TYPE_ARRAY(elementType = TYPE_REAL(__)), ARRAY_EXPRESSION(__)) =>
         begin
-          @assign ety = Type.unliftArray(ty)
-          @assign exp.elements = list(simplifyCast(e, ety) for e in exp.elements)
-          @assign exp.ty = setArrayElementType(exp.ty, arrayElementType(ty))
+          ety = Type.unliftArray(ty)
+          exp.elements = list(simplifyCast(e, ety) for e in exp.elements)
+          exp.ty = setArrayElementType(exp.ty, arrayElementType(ty))
           exp
         end
-
       _ => begin
-        CAST(ty, exp)
+        CAST_EXPRESSION(ty, exp)
       end
     end
   end

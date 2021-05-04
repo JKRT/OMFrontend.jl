@@ -393,7 +393,7 @@ function toDAE(ty::NFType; makeTypeVars::Bool = true)::DAE.Type
 
       TYPE_ARRAY(__) => begin
         DAE.T_ARRAY(
-          toDAE(ty.elementType, makeTypeVars),
+          toDAE(ty.elementType; makeTypeVars = makeTypeVars),
           list(toDAE(d) for d in ty.dimensions),
         )
       end

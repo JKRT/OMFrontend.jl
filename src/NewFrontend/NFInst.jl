@@ -2409,18 +2409,18 @@ function instCrefSubscripts(cref::ComponentRef, scope::InstNode, info::SourceInf
   cref
 end
 
-function instSubscript(subscript::Subscript, scope::InstNode, info::SourceInfo) ::Subscript
+function instSubscript(subscript::Subscript, scope::InstNode, info::SourceInfo)::Subscript
   local outSubscript::Subscript
   local exp::Expression
   local absynSub::Absyn.Subscript
   @match SUBSCRIPT_RAW_SUBSCRIPT(subscript = absynSub) = subscript
-  @assign outSubscript = begin
+  outSubscript = begin
     @match absynSub begin
       Absyn.NOSUB(__)  => begin
         SUBSCRIPT_WHOLE()
       end
       Absyn.SUBSCRIPT(__)  => begin
-        @assign exp = instExp(absynSub.subscript, scope, info)
+        exp = instExp(absynSub.subscript, scope, info)
         fromExp(exp)
       end
     end

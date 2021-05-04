@@ -42,27 +42,27 @@ function EvalTarget_getInfo(target::EvalTarget)::SourceInfo
 
   @assign info = begin
     @match target begin
-      DIMENSION(__) => begin
+      EVALTARGET_DIMENSION(__) => begin
         target.info
       end
 
-      ATTRIBUTE(__) => begin
+      EVALTARGET_ATTRIBUTE(__) => begin
         Binding_getInfo(target.binding)
       end
 
-      RANGE(__) => begin
+      EVALTARGET_RANGE(__) => begin
         target.info
       end
 
-      CONDITION(__) => begin
+      EVALTARGET_CONDITION(__) => begin
         target.info
       end
 
-      GENERIC(__) => begin
+      EVALTARGET_GENERIC(__) => begin
         target.info
       end
 
-      STATEMENT(__) => begin
+      EVALTARGET_STATEMENT(__) => begin
         DAE.ElementSource_getInfo(target.source)
       end
 
@@ -112,47 +112,45 @@ function hasInfo(target::EvalTarget)::Bool
 end
 
 function isRange(target::EvalTarget)::Bool
-  local isRange::Bool
-
-  @assign isRange = begin
+  local isR::Bool
+  @assign isR = begin
     @match target begin
-      RANGE(__) => begin
+      EVALTARGET_RANGE(__) => begin
         true
       end
-
       _ => begin
         false
       end
     end
   end
-  return isRange
+  return isR
 end
 
 @Uniontype EvalTarget begin
-  @Record IGNORE_ERRORS begin
+  @Record EVALTARGET_IGNORE_ERRORS begin
   end
 
-  @Record STATEMENT begin
+  @Record EVALTARGET_STATEMENT begin
     source::DAE.ElementSource
   end
 
-  @Record GENERIC begin
+  @Record EVALTARGET_GENERIC begin
     info::SourceInfo
   end
 
-  @Record CONDITION begin
+  @Record EVALTARGET_CONDITION begin
     info::SourceInfo
   end
 
-  @Record RANGE begin
+  @Record EVALTARGET_RANGE begin
     info::SourceInfo
   end
 
-  @Record ATTRIBUTE begin
+  @Record EVALTARGET_ATTRIBUTE begin
     binding::Binding
   end
 
-  @Record DIMENSION begin
+  @Record EVALTARGET_DIMENSION begin
     component::InstNode
     index::Integer
     exp::Expression
@@ -163,7 +161,7 @@ end
 
 function evalExp(
   exp::Expression,
-  target::EvalTarget = P_EvalTarget.IGNORE_ERRORS(),
+  target::EvalTarget = EVALTARGET_IGNORE_ERRORS(),
 )::Expression
 
   @assign exp = getBindingExp(evalExp_impl(exp, target))
@@ -301,7 +299,7 @@ end
 
 function evalExpOpt(
   oexp::Option{<:Expression},
-  target::EvalTarget = P_EvalTarget.IGNORE_ERRORS(),
+  target::EvalTarget = EVALTARGET_IGNORE_ERRORS(),
 )::Option{Expression}
 
   @assign oexp = begin
@@ -325,7 +323,7 @@ end
    be evaluated many times, for example the expression in an array constructor. =#"""
 function evalExpPartial(
   exp::Expression,
-  target::EvalTarget = P_EvalTarget.IGNORE_ERRORS(),
+  target::EvalTarget = EVALTARGET_IGNORE_ERRORS(),
   evaluated::Bool = true,
 )::Tuple{Expression, Bool}
   local outEvaluated::Bool #= True if the whole expression is evaluated, otherwise false. =#
@@ -813,7 +811,7 @@ function makeRecordBindingExp(
       CREF(c, nil, ty, P_NFComponentRef.Origin.CREF, cref)
     @assign arg = CREF_EXPRESSION(ty, cr)
     if variability(component(c)) <= Variability.PARAMETER
-      @assign arg = evalExp_impl(arg, P_EvalTarget.IGNORE_ERRORS())
+      @assign arg = evalExp_impl(arg, EVALTARGET_IGNORE_ERRORS())
     end
     @assign args = _cons(arg, args)
   end
@@ -868,8 +866,8 @@ function evalRange(rangeExp::Expression, target::EvalTarget)::Expression
   @assign start_exp = evalExp(start_exp, target)
   @assign step_exp = evalExpOpt(step_exp, target)
   @assign stop_exp = evalExp(stop_exp, target)
-  if P_EvalTarget.isRange(target)
-    @assign ty = TypeCheck.getRangeType(
+  if isRange(target)
+    @assign ty = getRangeType(
       start_exp,
       step_exp,
       stop_exp,
@@ -1017,7 +1015,7 @@ function evalBinaryOp(
   exp1::Expression,
   op::Operator,
   exp2::Expression,
-  target::EvalTarget = P_EvalTarget.IGNORE_ERRORS(),
+  target::EvalTarget = EVALTARGET_IGNORE_ERRORS(),
 )::Expression
   local exp::Expression
 
@@ -1055,7 +1053,7 @@ function evalBinaryOp_dispatch(
   exp1::Expression,
   op::Operator,
   exp2::Expression,
-  target::EvalTarget = P_EvalTarget.IGNORE_ERRORS(),
+  target::EvalTarget = EVALTARGET_IGNORE_ERRORS(),
 )::Expression
   local exp::Expression
 
@@ -1690,7 +1688,7 @@ function evalLogicBinaryOp(
   exp1::Expression,
   op::Operator,
   exp2::Expression,
-  target::EvalTarget = P_EvalTarget.IGNORE_ERRORS(),
+  target::EvalTarget = EVALTARGET_IGNORE_ERRORS(),
 )::Expression
   local exp::Expression
 
@@ -4457,7 +4455,7 @@ function createIterationRanges(
       MUTABLE_EXPRESSION(iter),
     )
     @assign iters = _cons(iter, iters)
-    @assign ranges = _cons(evalExp_impl(range, P_EvalTarget.IGNORE_ERRORS()), ranges)
+    @assign ranges = _cons(evalExp_impl(range, EVALTARGET_IGNORE_ERRORS()), ranges)
   end
   return (exp, ranges, iters)
 end
@@ -4482,7 +4480,7 @@ function evalArrayConstructor3(
   local rest_ty::List{M_Type}
 
   if listEmpty(ranges)
-    @assign result = evalExp_impl(exp, P_EvalTarget.IGNORE_ERRORS())
+    @assign result = evalExp_impl(exp, EVALTARGET_IGNORE_ERRORS())
   else
     @match _cons(range, ranges_rest) = ranges
     @match _cons(iter, iters_rest) = iterators
@@ -4584,7 +4582,7 @@ function evalReduction3(
   local el_ty::M_Type
 
   if listEmpty(ranges)
-    @assign result = fn(foldExp, evalExp_impl(exp, P_EvalTarget.IGNORE_ERRORS()))
+    @assign result = fn(foldExp, evalExp_impl(exp, EVALTARGET_IGNORE_ERRORS()))
   else
     @match _cons(range, ranges_rest) = ranges
     @match _cons(iter, iters_rest) = iterators
@@ -4707,7 +4705,7 @@ end
 function printUnboundError(component::Component, target::EvalTarget, exp::Expression)
   return @assign () = begin
     @match target begin
-      P_EvalTarget.IGNORE_ERRORS(__) => begin
+      EVALTARGET_IGNORE_ERRORS(__) => begin
         ()
       end
 

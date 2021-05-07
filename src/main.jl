@@ -39,8 +39,8 @@ include("./Util/ErrorExt.jl")
 
 #= Disable type inference for this module =#
 if isdefined(Base, :Experimental) && isdefined(Base.Experimental, Symbol("@compiler_options"))
-    @info "Setting compiler options.."
-    @info "Base.Experimental.@compiler_options compile=all optimize=3 infer=false"
+#    @info "Setting compiler options.."
+#    @info "Base.Experimental.@compiler_options compile=all optimize=3 infer=false"
 #    Base.Experimental.@compiler_options compile=min optimize=3 infer=false
 else
     throw("@compiler_options is not available.\n 
@@ -51,7 +51,7 @@ include("./FrontendInterfaces/NFInterfaces.jl")
 include("./NewFrontend/NFType.jl")
 include("./NewFrontend/NFComplexType.jl")
 include("./NewFrontend/NFPrefixes.jl")
-include("./NewFrontEnd/NFComponent.jl")
+include("./NewFrontend/NFComponent.jl")
 include("./NewFrontend/NFInstNode.jl")
 include("./NewFrontend/NFSections.jl")
 include("./NewFrontend/NFRecord.jl")

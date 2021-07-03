@@ -96,7 +96,7 @@ function evaluateExpTraverser(
           @assign outExp = evalCref(
             cref,
             outExp,
-            IGNORE_ERRORS(),
+            EVALTARGET_IGNORE_ERRORS(),
             evalSubscripts = false,
           )
           @assign outExp = stripBindingInfo(outExp)

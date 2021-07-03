@@ -1227,7 +1227,6 @@ function flattenIfEquation(
   local src::DAE.ElementSource
   local info::SourceInfo
   local target::EvalTarget
-
   @match EQUATION_IF(branches = branches, source = src) = eq
   @assign has_connect = contains(eq, isConnectEq)
   #=  Print errors for unbound constants/parameters if the if-equation contains
@@ -1237,7 +1236,7 @@ function flattenIfEquation(
   @assign target = if has_connect
     GENERIC(info(eq))
   else
-    IGNORE_ERRORS()
+    EVALTARGET_IGNORE_ERRORS()
   end
   while !listEmpty(branches)
     @match _cons(branch, branches) = branches

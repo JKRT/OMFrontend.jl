@@ -823,8 +823,8 @@ function convertForEquation(forEquation::Equation)::DAE.Element
 end
 
 function convertIfEquation(
-  ifBranches::List{<:Equation},
-  source::DAE.ElementSource,
+  ifBranches::List{<:Equation_Branch},
+  source::DAE.ElementSource;
   isInitial::Bool,
 )::DAE.Element
   local ifEquation::DAE.Element
@@ -862,12 +862,12 @@ function convertIfEquation(
   else
     @assign else_branch = nil
   end
-  @assign dconds = listReverse(toDAE(c) for c in conds)
+  @assign dconds = listReverse(list(toDAE(c) for c in conds))
   @assign dbranches = listReverseInPlace(dbranches)
   @assign ifEquation = if isInitial
-    DAE.Element.INITIAL_IF_EQUATION(dconds, dbranches, else_branch, source)
+    DAE.INITIAL_IF_EQUATION(dconds, dbranches, else_branch, source)
   else
-    DAE.Element.IF_EQUATION(dconds, dbranches, else_branch, source)
+    DAE.IF_EQUATION(dconds, dbranches, else_branch, source)
   end
   return ifEquation
 end

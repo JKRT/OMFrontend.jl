@@ -79,8 +79,6 @@ Equation = NFEquation
   end
 end
 
-
-@UniontypeDecl Equation_Branch
 @Uniontype Equation_Branch begin
   @Record EQUATION_INVALID_BRANCH begin
     branch::Equation_Branch
@@ -921,7 +919,7 @@ end
 
 function makeIf(branches::List{<:Equation_Branch}, src::DAE.ElementSource)::Equation
   local eq::Equation
-  @assign eq = IF(branches, src)
+  @assign eq = EQUATION_IF(branches, src)
   return eq
 end
 

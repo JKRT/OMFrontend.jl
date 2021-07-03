@@ -362,7 +362,7 @@ function simplifyArrayConstructor(call::Call)::Expression
           @assign outExp = makeEmptyArray(ty)
         elseif dim_size == 1
           @match (ARRAY_EXPRESSION(elements = list(e)), _) =
-            P_ExpandExp.ExpandExp.expand(e)
+            expand(e)
           @assign exp = replaceIterator(exp, iter, e)
           @assign exp = makeArray(ty, list(exp))
           @assign outExp = simplify(exp)

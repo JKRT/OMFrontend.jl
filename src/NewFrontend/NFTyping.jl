@@ -40,8 +40,6 @@ Subscript = NFSubscript
 ComplexType = NFComplexType
 Restriction = NFRestriction
 
-@nospecialize
-
 @UniontypeDecl TypingError
 function isError(error::TypingError)::Bool
   local isError::Bool
@@ -956,15 +954,15 @@ function getRecordElementBinding(component::InstNode)::Tuple{Binding, Integer}
   return (binding, parentDims)
 end
 
-function typeBindings(@nospecialize(cls::InstNode),
-                      @nospecialize(component::InstNode),
-                      @nospecialize(origin::ORIGIN_Type))
+function typeBindings(cls::InstNode,
+                      component::InstNode,
+                      origin::ORIGIN_Type)
   typeBindings2(cls, component, origin)
 end
 
-function typeBindings2(@nospecialize(cls::InstNode),
-                      @nospecialize(component::InstNode),
-                      @nospecialize(origin::ORIGIN_Type))
+function typeBindings2(cls::InstNode,
+                      component::InstNode,
+                       origin::ORIGIN_Type)
   local c::Class
   local cls_tree::ClassTree
   local node::InstNode
@@ -1009,14 +1007,14 @@ function typeBindings2(@nospecialize(cls::InstNode),
 end
 
 function typeComponentBinding(
-  @nospecialize(inComponent::InstNode),
-  @nospecialize(origin::ORIGIN_Type))
+  inComponent::InstNode,
+  origin::ORIGIN_Type)
   typeComponentBinding2(inComponent, origin, true)
 end
 
 function typeComponentBinding2(
-  @nospecialize(inComponent::InstNode),
-  @nospecialize(origin::ORIGIN_Type),
+  inComponent::InstNode,
+  origin::ORIGIN_Type,
   typeChildren::Bool,
 )
   local node::InstNode = resolveOuter(inComponent)
@@ -1038,8 +1036,8 @@ function typeComponentBinding2(
         binding = UNTYPED_BINDING(__),
         attributes = attrs,
       ) => begin
-        @assign nameStr = name(inComponent)
-        @assign binding = c.binding
+        nameStr = name(inComponent)
+        binding = c.binding
         #ErrorExt.setCheckpoint(getInstanceName())
         #TODO
         @debug "ErrorExt.setCheckpoint(getInstanceName())"
@@ -1215,14 +1213,14 @@ function typeBinding(binding::Binding, origin::ORIGIN_Type)::Binding
     local each_ty::EachTypeType
     @match binding begin
       UNTYPED_BINDING(bindingExp = exp) => begin
-        @assign info = Binding_getInfo(binding)
-        @assign (exp, ty, var) = typeExp(exp, origin, info)
+        info = Binding_getInfo(binding)
+        (exp, ty, var) = typeExp(exp, origin, info)
         if binding.isEach
-          @assign each_ty = EachType.EACH
+          each_ty = EachType.EACH
         elseif isClassBinding(binding)
-          @assign each_ty = EachType.REPEAT
+          each_ty = EachType.REPEAT
         else
-          @assign each_ty = EachType.NOT_EACH
+          each_ty = EachType.NOT_EACH
         end
         TYPED_BINDING(exp, ty, var, each_ty, false, false, binding.info)
       end
@@ -1384,9 +1382,9 @@ function typeTypeAttribute(
 end
 
 function typeExp(
-  @nospecialize(exp::Expression),
-  @nospecialize(origin::ORIGIN_Type),
-  @nospecialize(info::SourceInfo),
+  exp::Expression,
+  origin::ORIGIN_Type,
+  info::SourceInfo
 )::Tuple{Expression, NFType, VariabilityType}
   typeExp2(exp, origin, info)
 end
@@ -1394,9 +1392,9 @@ end
 """ #= Types an untyped expression, returning the typed expression itself along with
    its type and variability. =#"""
 function typeExp2(
-  @nospecialize(exp::Expression),
-  @nospecialize(origin::ORIGIN_Type),
-  @nospecialize(info::SourceInfo),
+  exp::Expression,
+  origin::ORIGIN_Type,
+  info::SourceInfo
 )::Tuple{Expression, NFType, VariabilityType}
   local variability::VariabilityType
   local ty::NFType
@@ -1967,17 +1965,17 @@ function typeCref2(
         =#
         #=  the given origin, e.g. for package constants used in a function.
         =#
-        @assign node_origin =
+        node_origin =
           if isFunction(explicitParent(cref.node))
             ORIGIN_FUNCTION
           else
             ORIGIN_CLASS
           end
-        @assign node_ty = typeComponent(cref.node, node_origin)
-        @assign (subs, subs_var) =
+        node_ty = typeComponent(cref.node, node_origin)
+        (subs, subs_var) =
           typeSubscripts(cref.subscripts, node_ty, cref, origin, info)
-        @assign (rest_cr, rest_var) = typeCref2(cref.restCref, origin, info, false)
-        @assign subsVariability = variabilityMax(subs_var, rest_var)
+         (rest_cr, rest_var) = typeCref2(cref.restCref, origin, info, false)
+        subsVariability = variabilityMax(subs_var, rest_var)
         (
           COMPONENT_REF_CREF(cref.node, subs, node_ty, cref.origin, rest_cr),
           subsVariability,
@@ -2012,7 +2010,7 @@ function typeSubscripts(
   cref::ComponentRef,
   origin::ORIGIN_Type,
   info::SourceInfo,
-)::Tuple{List{Subscript}, VariabilityType}
+)
   local variability::VariabilityType = Variability.CONSTANT
   local typedSubs::List{Subscript}
 
@@ -2024,13 +2022,13 @@ function typeSubscripts(
   local var::VariabilityType
 
   if listEmpty(subscripts)
-    @assign typedSubs = subscripts
+    typedSubs = subscripts
     return (typedSubs, variability)
   end
-  @assign dims = arrayDims(crefType)
-  @assign typedSubs = nil
-  @assign next_origin = setFlag(origin, ORIGIN_SUBSCRIPT)
-  @assign i = 1
+  dims = arrayDims(crefType)
+  typedSubs = nil
+  next_origin = setFlag(origin, ORIGIN_SUBSCRIPT)
+  i = 1
   if listLength(subscripts) > listLength(dims)
     Error.addSourceMessage(
       Error.WRONG_NUMBER_OF_SUBSCRIPTS,
@@ -2059,7 +2057,7 @@ function typeSubscripts(
   =#
   #=        the backend relies on it.
   =#
-  @assign typedSubs = listReverseInPlace(typedSubs)
+  typedSubs = listReverseInPlace(typedSubs)
   return (typedSubs, variability)
 end
 

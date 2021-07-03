@@ -71,17 +71,16 @@ function simplifyDimension(dim::Dimension)::Dimension
   return outDim
 end
 
-function simplifyEquations(eql::List{<:Equation})::List{Equation}
+function simplifyEquations(eql::List{<:Equation})
   local outEql::List{Equation} = nil
-
   for eq in eql
-    @assign outEql = simplifyEquation(eq, outEql)
+    outEql = simplifyEquation(eq, outEql)
   end
-  @assign outEql = listReverseInPlace(outEql)
+  outEql = listReverseInPlace(outEql)
   return outEql
 end
 
-function simplifyEquation(eq::Equation, equations::List{<:Equation})::List{Equation}
+function simplifyEquation(eq::Equation, equations::List{<:Equation})
   @assign equations = begin
     local e::Expression
     local lhs::Expression
@@ -191,16 +190,15 @@ function simplifyEqualityEquation(eq::Equation, equations::List{<:Equation})::Li
   return equations
 end
 
-function simplifyAlgorithms(algs::List{<:Algorithm})::List{Algorithm}
+function simplifyAlgorithms(algs::List{<:Algorithm})
   local outAlgs::List{Algorithm} = nil
-
   for alg in algs
-    @assign alg = simplifyAlgorithm(alg)
+    alg = simplifyAlgorithm(alg)
     if !listEmpty(alg.statements)
-      @assign outAlgs = _cons(alg, outAlgs)
+      outAlgs = _cons(alg, outAlgs)
     end
   end
-  @assign outAlgs = listReverseInPlace(outAlgs)
+  outAlgs = listReverseInPlace(outAlgs)
   return outAlgs
 end
 

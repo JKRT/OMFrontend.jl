@@ -57,10 +57,10 @@ function flatten(classInst::InstNode, name::String)::FlatModel
   @assign flatModel = begin
     @match sections begin
       SECTIONS(__) => begin
-        @assign eql = listReverseInPlace(sections.equations)
-        @assign ieql = listReverseInPlace(sections.initialEquations)
-        @assign alg = listReverseInPlace(sections.algorithms)
-        @assign ialg = listReverseInPlace(sections.initialAlgorithms)
+        eql = listReverseInPlace(sections.equations)
+        ieql = listReverseInPlace(sections.initialEquations)
+        alg = listReverseInPlace(sections.algorithms)
+        ialg = listReverseInPlace(sections.initialAlgorithms)
         FLAT_MODEL(name, vars, eql, ieql, alg, ialg, cmt)
       end
 
@@ -1113,11 +1113,11 @@ function flattenSections(
     local ialg::List{Algorithm}
     @match sections begin
       SECTIONS(__) => begin
-        @assign eq = flattenEquations(sections.equations, prefix)
-        @assign ieq = flattenEquations(sections.initialEquations, prefix)
-        @assign alg = flattenAlgorithms(sections.algorithms, prefix)
-        @assign ialg = flattenAlgorithms(sections.initialAlgorithms, prefix)
-        @assign accumSections =
+        eq = flattenEquations(sections.equations, prefix)
+        ieq = flattenEquations(sections.initialEquations, prefix)
+        alg = flattenAlgorithms(sections.algorithms, prefix)
+        ialg = flattenAlgorithms(sections.initialAlgorithms, prefix)
+        accumSections =
           prepend(eq, ieq, alg, ialg, accumSections)
         ()
       end
@@ -1130,11 +1130,10 @@ function flattenSections(
   return accumSections
 end
 
-function flattenEquations(eql::List{<:Equation}, prefix::ComponentRef)::List{Equation}
+function flattenEquations(eql::List{<:Equation}, prefix::ComponentRef)
   local equations::List{Equation} = nil
-
   for eq in eql
-    @assign equations = flattenEquation(eq, prefix, equations)
+    equations = flattenEquation(eq, prefix, equations)
   end
   return equations
 end
@@ -1143,7 +1142,7 @@ function flattenEquation(
   eq::Equation,
   prefix::ComponentRef,
   equations::List{<:Equation},
-)::List{Equation}
+)
 
   @assign equations = begin
     local e1::Expression
@@ -1189,18 +1188,18 @@ function flattenEquation(
       end
 
       EQUATION_TERMINATE(__) => begin
-        @assign e1 = flattenExp(eq.message, prefix)
+        e1 = flattenExp(eq.message, prefix)
         _cons(EQUATION_TERMINATE(e1, eq.source), equations)
       end
 
       EQUATION_REINIT(__) => begin
-        @assign e1 = flattenExp(eq.cref, prefix)
-        @assign e2 = flattenExp(eq.reinitExp, prefix)
+        e1 = flattenExp(eq.cref, prefix)
+        e2 = flattenExp(eq.reinitExp, prefix)
         _cons(EQUATION_REINIT(e1, e2, eq.source), equations)
       end
 
       EQUATION_NORETCALL(__) => begin
-        @assign e1 = flattenExp(eq.exp, prefix)
+        e1 = flattenExp(eq.exp, prefix)
         _cons(EQUATION_NORETCALL(e1, eq.source), equations)
       end
       _ => begin

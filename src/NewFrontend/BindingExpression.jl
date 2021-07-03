@@ -3669,13 +3669,13 @@ end
 
 function mapCref(cref::ComponentRef, func::MapFunc) ::ComponentRef
   local outCref::ComponentRef
-  @assign outCref = begin
+  outCref = begin
     local subs::List{Subscript}
     local rest::ComponentRef
     @match cref begin
       COMPONENT_REF_CREF(origin = Origin.CREF)  => begin
-        @assign subs = list(mapExp(s, func) for s in cref.subscripts)
-        @assign rest = mapCref(cref.restCref, func)
+        subs = list(mapExp(s, func) for s in cref.subscripts)
+        rest = mapCref(cref.restCref, func)
         COMPONENT_REF_CREF(cref.node, subs, cref.ty, cref.origin, rest)
       end
       _  => begin

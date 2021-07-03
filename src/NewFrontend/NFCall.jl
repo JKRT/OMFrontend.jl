@@ -1943,7 +1943,7 @@ function instNormalCall(
   functionArgs::Absyn.FunctionArgs,
   scope::InstNode,
   info::SourceInfo,
-)::Expression
+)
   local callExp::Expression
 
   local fn_ref::ComponentRef
@@ -1951,13 +1951,13 @@ function instNormalCall(
   local named_args::List{NamedArg}
   local name::String
 
-  @assign name = AbsynUtil.crefFirstIdent(functionName)
+  name = AbsynUtil.crefFirstIdent(functionName)
   #=  try to inst the parameters =#
   try
-  @assign (args, named_args) = instArgs(functionArgs, scope, info)
+    (args, named_args) = instArgs(functionArgs, scope, info)
  catch e
     if false #=Config.getGraphicsExpMode() && stringEq(name, "DynamicSelect") TODO =#
-      @assign callExp = begin
+      callExp = begin
         @match functionArgs begin
           Absyn.FUNCTIONARGS(__) => begin
             instExp(listHead(functionArgs.args), scope, info)

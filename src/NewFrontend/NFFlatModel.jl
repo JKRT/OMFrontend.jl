@@ -1,4 +1,3 @@
-@UniontypeDecl NFFlatModel
 @Uniontype NFFlatModel begin
   @Record FLAT_MODEL begin
     name::String
@@ -10,6 +9,7 @@
     comment::Option{SCode.Comment}
   end
 end
+
 const FlatModel = NFFlatModel
 
 module TypeTreeImpl

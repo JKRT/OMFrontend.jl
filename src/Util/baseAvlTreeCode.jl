@@ -286,22 +286,19 @@ function toList(
 end
 
 """ #= Constructs a list of all the values in the tree. =#"""
-function listValues(tree::Tree, lst::List{<:Value} = nil)::List{Value}
-
+function listValues(tree::Tree, lst::List{<:Value} = nil) where {T <: Value}
   @assign lst = begin
     local value::Value
     @match tree begin
       NODE(value = value) => begin
-        @assign lst = listValues(tree.right, lst)
-        @assign lst = _cons(value, lst)
-        @assign lst = listValues(tree.left, lst)
+        lst = listValues(tree.right, lst)
+        lst = _cons(value, lst)
+        lst = listValues(tree.left, lst)
         lst
       end
-
       LEAF(value = value) => begin
         _cons(value, lst)
       end
-
       _ => begin
         lst
       end

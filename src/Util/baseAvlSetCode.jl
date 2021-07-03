@@ -251,8 +251,7 @@ end
 
 function setTreeLeftRight(orig::Tree; left::Tree = EMPTY(), right::Tree = EMPTY())::Tree
   local res::Tree
-
-  @assign res = begin
+  res = begin
     @match (orig, left, right) begin
       (NODE(__), EMPTY(__), EMPTY(__)) => begin
         LEAF(orig.key, orig.value)
@@ -363,9 +362,9 @@ function referenceEqOrEmpty(t1::Tree, t2::Tree)::Bool
 end
 
 """ #= Balances a Tree =#"""
-function balance(inTree::Tree)::Tree
+function balance(inTree::Tree)
   local outTree::Tree = inTree
-  @assign outTree = begin
+  outTree = begin
     local lh::Integer
     local rh::Integer
     local diff::Integer
@@ -376,11 +375,11 @@ function balance(inTree::Tree)::Tree
         inTree
       end
       NODE(__) => begin
-        @assign lh = height(outTree.left)
-        @assign rh = height(outTree.right)
-        @assign diff = lh - rh
+        lh = height(outTree.left)
+        rh = height(outTree.right)
+        diff = lh - rh
         if diff < (-1)
-          @assign balanced_tree = if calculateBalance(outTree.right) > 0
+          balanced_tree = if calculateBalance(outTree.right) > 0
             rotateLeft(setTreeLeftRight(
               outTree,
               left = outTree.left,
@@ -390,7 +389,7 @@ function balance(inTree::Tree)::Tree
             rotateLeft(outTree)
           end
         elseif diff > 1
-          @assign balanced_tree = if calculateBalance(outTree.left) < 0
+          balanced_tree = if calculateBalance(outTree.left) < 0
             rotateRight(setTreeLeftRight(
               outTree,
               left = rotateLeft(outTree.left),
@@ -401,9 +400,9 @@ function balance(inTree::Tree)::Tree
           end
         elseif outTree.height != max(lh, rh) + 1
           @assign outTree.height = max(lh, rh) + 1
-          @assign balanced_tree = outTree
+          balanced_tree = outTree
         else
-          @assign balanced_tree = outTree
+          balanced_tree = outTree
         end
         balanced_tree
       end
@@ -486,15 +485,14 @@ function rotateRight(inNode::Tree)::Tree
     local child::Tree
     @match outNode begin
       NODE(left = child && NODE(__)) => begin
-        @assign node = setTreeLeftRight(outNode, left = child.right, right = outNode.right)
+        node = setTreeLeftRight(outNode, left = child.right, right = outNode.right)
         setTreeLeftRight(child, right = node, left = child.left)
       end
 
       NODE(left = child && LEAF(__)) => begin
-        @assign node = setTreeLeftRight(outNode, left = EMPTY(), right = outNode.right)
+        node = setTreeLeftRight(outNode, left = EMPTY(), right = outNode.right)
         setTreeLeftRight(child, right = node, left = EMPTY())
       end
-
       _ => begin
         inNode
       end

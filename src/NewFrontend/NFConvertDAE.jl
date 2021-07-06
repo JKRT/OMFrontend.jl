@@ -14,12 +14,12 @@ function convert(
   local dae::DAE.DAE_LIST
   local elems::List{DAE.Element}
   local class_elem::DAE.Element
-  @assign daeFunctions = convertFunctionTree(functions)
-  @assign elems = convertVariables(flatModel.variables, nil)
-  @assign elems = convertEquations(flatModel.equations, elems)
-  @assign elems = convertInitialEquations(flatModel.initialEquations, elems)
-  @assign elems = convertAlgorithms(flatModel.algorithms, elems)
-  @assign elems = convertInitialAlgorithms(flatModel.initialAlgorithms, elems)
+  daeFunctions = convertFunctionTree(functions)
+  elems = convertVariables(flatModel.variables, nil)
+  elems = convertEquations(flatModel.equations, elems)
+  elems = convertInitialEquations(flatModel.initialEquations, elems)
+  elems = convertAlgorithms(flatModel.algorithms, elems)
+  elems = convertInitialAlgorithms(flatModel.initialAlgorithms, elems)
   @assign class_elem =
     DAE.COMP(name, elems, DAE.emptyElementSource, flatModel.comment) # TODO DAE.ElementSource_createElementSource(info)
   @assign dae = DAE.DAE_LIST(list(class_elem))
@@ -694,9 +694,8 @@ function convertEquations(
   equations::List{<:Equation},
   elements::List{<:DAE.Element} = nil,
 )::List{DAE.Element}
-
   for eq in listReverse(equations)
-    @assign elements = convertEquation(eq, elements)
+    elements = convertEquation(eq, elements)
   end
   return elements
 end
@@ -827,8 +826,8 @@ function convertIfEquation(
   source::DAE.ElementSource;
   isInitial::Bool,
 )::DAE.Element
+  @info "Converting if equation"
   local ifEquation::DAE.Element
-
   local conds::List{Expression} = nil
   local branches::List{List{Equation}} = nil
   local dconds::List{DAE.Exp}

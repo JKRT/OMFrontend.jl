@@ -3765,9 +3765,9 @@ function typeIfEquation(
         end
       end
     end
-    @assign bl2 = listReverseInPlace(bl2)
+    bl2 = listReverseInPlace(bl2)
   end
-  @assign ifEq = EQUATION_IF(bl2, source)
+  ifEq = EQUATION_IF(bl2, source)
   return ifEq
 end
 

@@ -2621,10 +2621,9 @@ function instEEquation(scodeEq::SCode.EEquation, scope::InstNode, origin::ORIGIN
         @assign eql = instEEquations(scodeEq.eEquationLst, for_scope, next_origin)
         EQUATION_FOR(iter, oexp, eql, makeSource(scodeEq.comment, info))
       end
-
+      
       SCode.EQ_IF(info = info)  => begin
-        #=  Instantiate the conditions.
-        =#
+        #=  Instantiate the conditions.=#
         @assign expl = list(instExp(c, scope, info) for c in scodeEq.condition)
         #=  Instantiate each branch and pair it up with a condition.
         =#

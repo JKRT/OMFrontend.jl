@@ -13,6 +13,22 @@ include("main.jl")
 #= Cache for NFModelicaBuiltin. We only use the result once! =#
 const NFModelicaBuiltinCache = Dict()
 
+"""
+  This function loads builtin Modelica libraries.
+"""
+function __init__()
+  if ! haskey(NFModelicaBuiltinCache, "NFModelicaBuiltin")
+    path = realpath(realpath(Base.find_package("OMFrontend") * "./../../"))
+    path *= "/lib/NFModelicaBuiltin.mo"
+    GC.enable(false) #=This C stuff can be a bit flaky..=#
+    p = parseFile(path, 2 #== MetaModelica ==#)
+    @debug "SCode translation"
+    s = OMFrontend.translateToSCode(p)
+    NFModelicaBuiltinCache["NFModelicaBuiltin"] = s
+    GC.enable(true)
+  end
+end
+
 function parseFile(file::String, acceptedGram::Int64 = 1)::Absyn.Program
   return OpenModelicaParser.parseFile(file, acceptedGram)
 end
@@ -37,20 +53,9 @@ function instantiateSCodeToDAE(elementToInstantiate::String, inProgram::SCode.Pr
   # make sure we have all the flags loaded!
   # Main.Flags.new(Flags.emptyFlags)
   @debug "Parsing buildin stuff"
-  if ! haskey(NFModelicaBuiltinCache, "NFModelicaBuiltin")
-    path = realpath(realpath(Base.find_package("OMFrontend") * "./../../"))
-    path *= "/lib/NFModelicaBuiltin.mo"
-    GC.enable(false) #=This C stuff can be a bit flaky..=#
-    p = parseFile(path, 2 #== MetaModelica ==#)
-    @debug "SCode translation"
-    s = OMFrontend.translateToSCode(p)
-    NFModelicaBuiltinCache["NFModelicaBuiltin"] = s
-  else
-    s = NFModelicaBuiltinCache["NFModelicaBuiltin"]
-  end
-  p = listAppend(s, inProgram)
-  GC.enable(true)
-  Main.instClassInProgram(Absyn.IDENT(elementToInstantiate), p)
+  builtinSCode = NFModelicaBuiltinCache["NFModelicaBuiltin"]
+  program = listAppend(builtinSCode, inProgram)
+  Main.instClassInProgram(Absyn.IDENT(elementToInstantiate), program)
 end
 
 function testSpin()

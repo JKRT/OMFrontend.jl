@@ -428,19 +428,19 @@ function simplifyIfEqBranches(
           if isTrue(cond)
             if listEmpty(accum)
               for eq in body
-                @assign elements = simplifyEquation(eq, elements)
+                elements = simplifyEquation(eq, elements)
               end
-              return
+              return elements
             else
-              @assign accum = _cons(
+              accum = _cons(
                 makeBranch(cond, simplifyEquations(body)),
                 accum,
               )
-              @assign elements = _cons(
+              elements = _cons(
                 makeIf(listReverseInPlace(accum), src),
                 elements,
               )
-              #return WTF?
+              return elements #TODO: John WTF?
             end
           elseif !isFalse(cond)
             @assign accum = _cons(

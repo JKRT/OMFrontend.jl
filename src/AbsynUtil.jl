@@ -4,91 +4,21 @@ using MetaModelica
 using ExportAll
 #= Forward declarations for uniontypes until Julia adds support for mutual recursion =#
 
-FuncTplToTpl = Function
+const FuncTplToTpl = Function
 
-FuncType = Function
+const FuncTplToTpl = Function
 
-FuncType = Function
+const FuncType = Function
 
-FuncTplToTpl = Function
+const ModFunc = Function
 
-FuncType = Function
+const MapFunc = Function
 
-FuncType = Function
+const FuncType = Function
 
-FuncType = Function
+const FuncT = Function
 
-FuncType = Function
-
-FuncType = Function
-
-FuncType = Function
-
-FuncType = Function
-
-FuncType = Function
-
-FuncType = Function
-
-FuncType = Function
-
-FuncType = Function
-
-FuncType = Function
-
-FuncType = Function
-
-FuncType = Function
-
-FuncType = Function
-
-FuncType = Function
-
-FuncType = Function
-
-FuncType = Function
-
-FuncType = Function
-
-FuncType = Function
-
-ModFunc = Function
-
-ModFunc = Function
-
-MapFunc = Function
-
-FuncType = Function
-
-FuncType = Function
-
-FuncType = Function
-
-FuncType = Function
-
-FuncType = Function
-
-FuncType = Function
-
-FuncType = Function
-
-FuncT = Function
-
-FuncT = Function
-
-FuncT = Function
-
-FuncType = Function
-
-FuncType = Function
-
-FuncType = Function
-
-FuncType = Function
-
-FuncType = Function
-
-FuncType = Function
+const FuncType = Function
 
 #= /*
 * This file is part of OpenModelica.

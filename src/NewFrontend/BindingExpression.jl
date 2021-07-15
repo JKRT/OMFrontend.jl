@@ -1,5 +1,5 @@
 function addBindingExpParent(parent::InstNode, exp::Expression) ::Expression
-  @assign () = begin
+   () = begin
     @match exp begin
       BINDING_EXP(__)  => begin
         @assign exp.parents = _cons(parent, exp.parents)

@@ -662,43 +662,43 @@ function mapExp(eq::Equation, func::MapExpFn)::Equation
         end
       end
 
-      ARRAY_EQUALITY(__) => begin
+      EQUATION_ARRAY_EQUALITY(__) => begin
+        e1 = func(eq.lhs)
+        e2 = func(eq.rhs)
+        if referenceEq(e1, eq.lhs) && referenceEq(e2, eq.rhs)
+          eq
+        else
+          EQUATION_ARRAY_EQUALITY(e1, e2, eq.ty, eq.source)
+        end
+      end
+
+       EQUATION_CONNECT(__) => begin
         @assign e1 = func(eq.lhs)
         @assign e2 = func(eq.rhs)
         if referenceEq(e1, eq.lhs) && referenceEq(e2, eq.rhs)
           eq
         else
-          ARRAY_EQUALITY(e1, e2, eq.ty, eq.source)
+           EQUATION_CONNECT(e1, e2, eq.source)
         end
       end
 
-      CONNECT(__) => begin
-        @assign e1 = func(eq.lhs)
-        @assign e2 = func(eq.rhs)
-        if referenceEq(e1, eq.lhs) && referenceEq(e2, eq.rhs)
-          eq
-        else
-          CONNECT(e1, e2, eq.source)
-        end
-      end
-
-      FOR(__) => begin
+       EQUATION_FOR(__) => begin
         @assign eq.body = list(mapExp(e, func) for e in eq.body)
         @assign eq.range = Util.applyOption(eq.range, func)
         eq
       end
 
-      IF(__) => begin
+       EQUATION_IF(__) => begin
         @assign eq.branches = list(mapExpBranch(b, func) for b in eq.branches)
         eq
       end
 
-      WHEN(__) => begin
+       EQUATION_WHEN(__) => begin
         @assign eq.branches = list(mapExpBranch(b, func) for b in eq.branches)
         eq
       end
 
-      ASSERT(__) => begin
+       EQUATION_ASSERT(__) => begin
         @assign e1 = func(eq.condition)
         @assign e2 = func(eq.message)
         @assign e3 = func(eq.level)
@@ -707,35 +707,35 @@ function mapExp(eq::Equation, func::MapExpFn)::Equation
            referenceEq(e3, eq.level)
           eq
         else
-          ASSERT(e1, e2, e3, eq.source)
+          EQUATION_ASSERT(e1, e2, e3, eq.source)
         end
       end
 
-      TERMINATE(__) => begin
+       EQUATION_TERMINATE(__) => begin
         @assign e1 = func(eq.message)
         if referenceEq(e1, eq.message)
           eq
         else
-          TERMINATE(e1, eq.source)
+          EQUATION_TERMINATE(e1, eq.source)
         end
       end
 
-      REINIT(__) => begin
+       EQUATION_REINIT(__) => begin
         @assign e1 = func(eq.cref)
         @assign e2 = func(eq.reinitExp)
         if referenceEq(e1, eq.cref) && referenceEq(e2, eq.reinitExp)
           eq
         else
-          REINIT(e1, e2, eq.source)
+           EQUATION_REINIT(e1, e2, eq.source)
         end
       end
 
-      NORETCALL(__) => begin
+       EQUATION_NORETCALL(__) => begin
         @assign e1 = func(eq.exp)
         if referenceEq(e1, eq.exp)
           eq
         else
-          NORETCALL(e1, eq.source)
+          EQUATION_NORETCALL(e1, eq.source)
         end
       end
 

@@ -325,7 +325,7 @@ function lookupNameWithError(name::Absyn.Path, scope::InstNode, info::SourceInfo
   local state::LookupState
   local node::InstNode
   try
-    @assign (node, state) = lookupName(name, scope, checkAccessViolations)
+    (node, state) = lookupName(name, scope, checkAccessViolations)
   catch
     #   Error.addSourceMessage(errorType, list(AbsynUtil.pathString(name), scopeName(scope)), info)
     @error "Lookup error for path: $name"
@@ -389,8 +389,8 @@ function lookupFirstIdent(name::String, scope::InstNode) ::Tuple{InstNode, Looku
   local state::LookupState
   local node::InstNode
   try
-    @assign node = lookupSimpleBuiltinName(name)
-    @assign state = LOOKUP_STATE_PREDEF_CLASS()
+    node = lookupSimpleBuiltinName(name)
+    state = LOOKUP_STATE_PREDEF_CLASS()
   catch e
     node = lookupSimpleName(name, scope)
     state = nodeState(node)
@@ -407,7 +407,7 @@ end
                        return (node, state)
                      end
                      if ! selfReference
-                       @assign node = Inst.instPackage(node)
+                       @assign node = instPackage(node)
                      end
                      #=  Look up the path in the scope.
                      =#

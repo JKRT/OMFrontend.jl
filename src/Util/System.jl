@@ -1,11 +1,12 @@
   module System
+  
+  using MetaModelica
+  using ExportAll
+  #= Forward declarations for uniontypes until Julia adds support for mutual recursion =#
 
-    using MetaModelica
-    using ExportAll
-    #= Forward declarations for uniontypes until Julia adds support for mutual recursion =#
 
-
-    ForkFunction = Function
+  ForkFunction = Function
+  
 
          #= /*
          * This file is part of OpenModelica.

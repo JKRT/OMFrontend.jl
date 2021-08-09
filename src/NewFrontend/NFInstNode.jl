@@ -850,12 +850,10 @@ function getInnerOuterCache(inNode::InstNode) ::CachedData
 end
 
 function clearPackageCache(node::InstNode) ::InstNode
-
-
   @assign () = begin
     @match node begin
       CLASS_NODE(__)  => begin
-        P_CachedData.clearPackageCache(node.caches)
+        clearPackageCache(node.caches)
         ()
       end
 
@@ -874,7 +872,7 @@ function setPackageCache(node::InstNode, in_pack_cache::CachedData) ::InstNode
   @assign () = begin
     @match node begin
       CLASS_NODE(__)  => begin
-        P_CachedData.setPackageCache(node.caches, in_pack_cache)
+        setPackageCache(node.caches, in_pack_cache)
         ()
       end
 
@@ -893,7 +891,7 @@ function getPackageCache(inNode::InstNode) ::CachedData
   @assign pack_cache = begin
     @match inNode begin
       CLASS_NODE(__)  => begin
-        P_CachedData.getPackageCache(inNode.caches)
+        getPackageCache(inNode.caches)
       end
 
       _  => begin

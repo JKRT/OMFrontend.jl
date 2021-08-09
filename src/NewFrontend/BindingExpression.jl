@@ -5778,7 +5778,7 @@ function typeOf(exp::Expression) ::M_Type
         end
       end
 
-      END(__)  => begin
+      END_EXPRESSION(__)  => begin
         TYPE_INTEGER()
       end
 
@@ -7121,20 +7121,18 @@ function recordFieldBinding(fieldNode::InstNode, recordBinding::Binding)::Bindin
 end
 
 function isCrefExp(binding::Binding)::Bool
-  local isCref::Bool
-
-  @assign isCref = begin
+  local isCrefVar::Bool
+  isCrefVar = begin
     @match binding begin
       TYPED_BINDING(__) => begin
         isCref(getBindingExp(binding.bindingExp))
       end
-
       _ => begin
         false
       end
     end
   end
-  return isCref
+  return isCrefVar
 end
 
 function isRecordExp(binding::Binding)::Bool

@@ -1,8 +1,9 @@
 import Absyn
 import SCode
 import DAE
-""" #= Instantiates a class given by its fully qualified path, with the result being
-                 a DAE. =#"""
+""" 
+  Instantiates a class given by its fully qualified path, with the result being a DAE.
+"""
 function instClassInProgram(classPath::Absyn.Path, program::SCode.Program)::Tuple{DAE.DAE_LIST, DAE.FunctionTree}
   local daeFuncs::DAE.FunctionTree
   local dae::DAE.DAE_LIST
@@ -29,17 +30,17 @@ function instClassInProgram(classPath::Absyn.Path, program::SCode.Program)::Tupl
   #System.setHasStreamConnectors(false)
   #=  Create a root node from the given top-level classes.
   =#
-  @assign top = makeTopNode(program)
+  top = makeTopNode(program)
   name = AbsynUtil.pathString(classPath)
   #=  Look up the class to instantiate and mark it as the root class.
   =#
-  @assign cls = lookupClassName(classPath, top, AbsynUtil.dummyInfo, false)
-  @assign cls = setNodeType(ROOT_CLASS(EMPTY_NODE()), cls)
+  cls = lookupClassName(classPath, top, AbsynUtil.dummyInfo, false)
+  cls = setNodeType(ROOT_CLASS(EMPTY_NODE()), cls)
   #=  Initialize the storage for automatically generated inner elements. =#
-  @assign top = setInnerOuterCache(top, C_TOP_SCOPE(NodeTree.new(), cls))
+  top = setInnerOuterCache(top, C_TOP_SCOPE(NodeTree.new(), cls))
   #=  Instantiate the class. =#
   @debug "FIRST INST CALL!"
-  @assign inst_cls = instantiateN1(cls, EMPTY_NODE())
+  inst_cls = instantiateN1(cls, EMPTY_NODE())
   @debug "AFTER INST CALL"
   insertGeneratedInners(inst_cls, top)
   #execStat("NFInst.instantiate(" + name + ")")
@@ -847,13 +848,13 @@ end
                        =#
                        #=  the package uses itself somehow.
                        =#
-                       setPackageCache(node, C_CachedData.PACKAGE(node))
+                       setPackageCache(node, C_PACKAGE(node))
                        #=  Instantiate the node.
                        =#
                        @assign inst = instantiate(node)
                        #=  Cache the instantiated node and instantiate expressions in it too.
                        =#
-                       setPackageCache(node, C_CachedData.PACKAGE(inst))
+                       setPackageCache(node, C_PACKAGE(inst))
                        instExpressions(inst)
                        inst
                      end

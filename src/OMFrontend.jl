@@ -11,6 +11,10 @@ using MetaModelica
 include("main.jl")
 
 #= Cache for NFModelicaBuiltin. We only use the result once! =#
+"""
+Cache for NFModelicaBuiltin.
+This cache is initialized when the module is loaded.
+"""
 const NFModelicaBuiltinCache = Dict()
 
 """
@@ -44,18 +48,21 @@ function instSCode(inProgram::SCode.Program)
 end
 
 
-"
+"""
   Instantiates and translates to DAE.
-"
+  The element to instantiate should be provided in the following format:
+  <component>.<component_1>.<component_2>...
+"""
 function instantiateSCodeToDAE(elementToInstantiate::String, inProgram::SCode.Program)
   # initialize globals
   Main.Global.initialize()
   # make sure we have all the flags loaded!
   # Main.Flags.new(Flags.emptyFlags)
   @debug "Parsing buildin stuff"
-  builtinSCode = NFModelicaBuiltinCache["NFModelicaBuiltin"]
-  program = listAppend(builtinSCode, inProgram)
-  Main.instClassInProgram(Absyn.IDENT(elementToInstantiate), program)
+  local builtinSCode = NFModelicaBuiltinCache["NFModelicaBuiltin"]
+  local program = listAppend(builtinSCode, inProgram)
+  local path = Main.AbsynUtil.stringPath(elementToInstantiate)
+  Main.instClassInProgram(path, program)
 end
 
 function testSpin()

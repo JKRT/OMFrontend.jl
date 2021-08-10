@@ -867,8 +867,6 @@ function clearPackageCache(node::InstNode) ::InstNode
 end
 
 function setPackageCache(node::InstNode, in_pack_cache::CachedData) ::InstNode
-
-
   @assign () = begin
     @match node begin
       CLASS_NODE(__)  => begin

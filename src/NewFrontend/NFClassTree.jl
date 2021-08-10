@@ -862,9 +862,9 @@ function instantiate(
   =#
   #=  Clone the class node by replacing the class in the node with itself.
   =#
-  @assign cls = getClass(clsNode)
-  @assign clsNode = replaceClass(cls, clsNode)
-  @assign () = begin
+  cls = getClass(clsNode)
+  clsNode = replaceClass(cls, clsNode)
+  () = begin
     @match cls begin
       EXPANDED_CLASS(elements = CLASS_TREE_INSTANTIATED_TREE(__)) => begin
         ()
@@ -1052,7 +1052,7 @@ function instantiate(
       _ => begin
         ###Error.assertion(false, getInstanceName() + " got invalid class", sourceInfo())
         str = clsNode.name
-        @error "Got an invalid class $cls"
+        @error "Got an invalid class $cls for $(str)"
         fail()
       end
     end

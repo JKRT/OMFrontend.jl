@@ -830,47 +830,44 @@ function instExternalObjectStructors(ty::M_Type, parent::InstNode)
 end
 
 """ #= This function instantiates a package given a package node. If the package has
-             already been instantiated, then the cached instance from the node is
-             returned. Otherwise the node is fully instantiated, the instance is added to
-             the node's cache, and the instantiated node is returned. =#"""
-               function instPackage(node::InstNode) ::InstNode
-                 local cache::CachedData
-                 local inst::InstNode
-                 @assign cache = getPackageCache(node)
-                 @assign node = begin
-                   @match cache begin
-                     C_PACKAGE(__)  => begin
-                       cache.instance
-                     end
-
-                     C_NO_CACHE(__)  => begin
-                       #=  Cache the package node itself first, to avoid instantiation loops if
-                       =#
-                       #=  the package uses itself somehow.
-                       =#
-                       setPackageCache(node, C_PACKAGE(node))
-                       #=  Instantiate the node.
-                       =#
-                       @assign inst = instantiate(node)
-                       #=  Cache the instantiated node and instantiate expressions in it too.
-                       =#
-                       setPackageCache(node, C_PACKAGE(inst))
-                       instExpressions(inst)
-                       inst
-                     end
-
-                     _  => begin
-                       Error.assertion(false, getInstanceName() + " got invalid instance cache", sourceInfo())
-                       fail()
-                     end
-                   end
-                 end
-                 node
-               end
+       already been instantiated, then the cached instance from the node is
+       returned. Otherwise the node is fully instantiated, the instance is added to
+       the node's cache, and the instantiated node is returned. 
+=#"""
+function instPackage(node::InstNode) ::InstNode
+  local cache::CachedData
+  local inst::InstNode
+  @assign cache = getPackageCache(node)
+  @assign node = begin
+    @match cache begin
+      C_PACKAGE(__)  => begin
+        cache.instance
+      end
+      C_NO_CACHE(__)  => begin
+        #=  Cache the package node itself first, to avoid instantiation loops if
+        =#
+        #=  the package uses itself somehow.
+        =#
+        setPackageCache(node, C_PACKAGE(node))
+        #=  Instantiate the node.=#
+        @info "Our Node $(node.name)"
+        inst = instantiateN1(node, EMPTY_NODE()) #=Wrong function call was generated here...=#
+        #=  Cache the instantiated node and instantiate expressions in it too.
+        =#
+        setPackageCache(node, C_PACKAGE(inst))
+        instExpressions(inst)
+        inst
+      end
+      _  => begin
+        Error.assertion(false, getInstanceName() + " got invalid instance cache", sourceInfo())
+        fail()
+      end
+    end
+  end
+  node
+end
 
 function modifyExtends(extendsNode::InstNode, scope::InstNode) ::InstNode
-
-
   local elem::SCode.Element
   local ext_mod::Modifier
   local ext_node::InstNode
@@ -996,9 +993,9 @@ end
                        for mod in mods
                          try
                            @assign (node, _) = lookupElement(name(mod), cls)
-                         catch
+                         catch e
                            #Error.addSourceMessage(Error.MISSING_MODIFIED_ELEMENT, list(name(mod), clsName), Mofifier_info(mod))
-                           @error "Missing modified element! "
+                           @error "Missing modified element!. Error was $(e)"
                            fail()
                          end
                          componentApply(node, mergeModifier, mod)
@@ -1010,7 +1007,7 @@ end
                        for mod in mods
                          try
                            @assign node_ptrs = lookupElementsPtr(name(mod), cls)
-                         catch
+                         catch e
                            @error "Missing modified element! "
                            Error.addSourceMessage(Error.MISSING_MODIFIED_ELEMENT, list(name(mod), clsName), Modifier_info(mod))
                            fail()

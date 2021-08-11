@@ -2155,9 +2155,9 @@ function newExtends(definition::SCode.Element, parent::InstNode) ::InstNode
   local name::String
   local vis::SCode.Visibility
 
-  @match SCode.Element.EXTENDS(baseClassPath = base_path, visibility = vis) = definition
-  @assign name = AbsynUtil.pathLastIdent(base_path)
-  @assign node = CLASS_NODE(name, definition, visibilityFromSCode(vis), P_Pointer.create(NOT_INSTANTIATED()), P_CachedData.empty(), parent, BASE_CLASS(parent, definition))
+  @match SCode.EXTENDS(baseClassPath = base_path, visibility = vis) = definition
+  name = AbsynUtil.pathLastIdent(base_path)
+  node = CLASS_NODE(name, definition, visibilityFromSCode(vis), P_Pointer.create(NOT_INSTANTIATED()), #=P_CachedData.=#empty(), parent, BASE_CLASS(parent, definition))
   node
 end
 

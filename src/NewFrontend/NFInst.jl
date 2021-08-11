@@ -330,9 +330,6 @@ function expandClassParts(def::SCode.Element, node::InstNode, info::SourceInfo) 
 end
 
 function expandExtends(ext::InstNode, builtinExt::InstNode = EMPTY_NODE()) ::Tuple{InstNode, InstNode}
-
-
-
   local def::SCode.Element
   local base_path::Absyn.Path
   local base_nodes::List{InstNode}
@@ -342,22 +339,22 @@ function expandExtends(ext::InstNode, builtinExt::InstNode = EMPTY_NODE()) ::Tup
   local smod::SCode.Mod
   local ann::Option{SCode.Annotation}
   local info::SourceInfo
-
   if isEmpty(ext)
     return (ext, builtinExt)
   end
   @assign def = definition(ext)
   @assign () = begin
     @match def begin
-      SCode.Element.EXTENDS(base_path, vis, smod, ann, info)  => begin
+      SCode.EXTENDS(base_path, vis, smod, ann, info)  => begin
         #=  Look up the base class and expand it.
         =#
-        @assign scope = parent(ext)
-        @match (@match _cons(base_node, _) = base_nodes) = Lookup.lookupBaseClassName(base_path, scope, info)
+        scope = parent(ext)
+        res = @match _cons(base_node, _) = base_nodes
+        @match (res) = lookupBaseClassName(base_path, scope, info)
         checkExtendsLoop(base_node, base_path, info)
         checkReplaceableBaseClass(base_nodes, base_path, info)
-        @assign base_node = expand(base_node)
-        @assign ext = setNodeType(BASE_CLASS(scope, def), base_node)
+        base_node = expand(base_node)
+        ext = setNodeType(BASE_CLASS(scope, def), base_node)
         #=  If the extended class is a builtin class, like Real or any type derived
         =#
         #=  from Real, then return it so we can handle it properly in expandClass.

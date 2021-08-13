@@ -3683,6 +3683,7 @@ function typeCondition(
     #   list(toString(condition), Type.toString(ty)),
     #   info,
     # )
+    @error "Error in  condition with the type $(ty)"
     fail()
   end
 #  fail()

@@ -1358,9 +1358,9 @@ function getType(@nospecialize(node::InstNode))::NFType
 end
 
 function InstNode_info(node::InstNode) ::SourceInfo
-  local info::SourceInfo
+  local infoV::SourceInfo
 
-  @assign info = begin
+  @assign infoV = begin
     local ty::InstNodeType
     @matchcontinue node begin
       CLASS_NODE(nodeType = ty && BASE_CLASS(__))  => begin
@@ -1372,7 +1372,7 @@ function InstNode_info(node::InstNode) ::SourceInfo
       end
 
       COMPONENT_NODE(__)  => begin
-        P_Component.info(P_Pointer.access(node.component))
+        info(P_Pointer.access(node.component))
       end
 
       COMPONENT_NODE(__)  => begin
@@ -1383,7 +1383,7 @@ function InstNode_info(node::InstNode) ::SourceInfo
       end
     end
   end
-  info
+  infoV
 end
 
 function setDefinition(definition::SCode.Element, node::InstNode) ::InstNode

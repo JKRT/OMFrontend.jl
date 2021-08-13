@@ -22,7 +22,7 @@ function lookupBaseClassName(name::Absyn.Path, scope::InstNode, info::SourceInfo
   catch e
     @error "Error looking up base class $e"
     #Error.addSourceMessage(Error.LOOKUP_BASECLASS_ERROR, list(AbsynUtil.pathString(name), scopeName(scope)), info)
-    fail()
+    throw(e)
   end
   assertClass(state, listHead(nodes), name, info)
   nodes
@@ -455,20 +455,20 @@ function lookupLocalNames(name::Absyn.Path, scope::InstNode, nodes::List{<:InstN
     return (nodes, state)
   end
   if ! selfReference
-    @assign node = Inst.instPackage(node)
+    @assign node = instPackage(node)
   end
   @assign (nodes, state) = begin
     @match name begin
       Absyn.IDENT(__)  => begin
-        @assign node = lookupLocalSimpleName(name.name, node)
+        (node, _) = lookupLocalSimpleName(name.name, node)
         @debug "Here we are!"
-        @assign state = next(node, state)
+        state = next(node, state)
         (_cons(node, nodes), state)
       end
 
       Absyn.QUALIFIED(__)  => begin
-        @assign node = lookupLocalSimpleName(name.name, node)
-        @assign state = next(node, state)
+        (node, _) = lookupLocalSimpleName(name.name, node)
+        state = next(node, state)
         lookupLocalNames(name.path, node, _cons(node, nodes), state)
       end
 

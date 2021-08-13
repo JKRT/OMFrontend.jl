@@ -342,15 +342,16 @@ function expandExtends(ext::InstNode, builtinExt::InstNode = EMPTY_NODE()) ::Tup
   if isEmpty(ext)
     return (ext, builtinExt)
   end
-  @assign def = definition(ext)
-  @assign () = begin
+  def = definition(ext)
+  () = begin
     @match def begin
       SCode.EXTENDS(base_path, vis, smod, ann, info)  => begin
         #=  Look up the base class and expand it.
         =#
         scope = parent(ext)
-        res = @match _cons(base_node, _) = base_nodes
-        @match (res) = lookupBaseClassName(base_path, scope, info)
+        #        @match (@match _cons(base_node, _) = base_nodes) = lookupBaseClassName(base_path, scope, info)
+        base_nodes = lookupBaseClassName(base_path, scope, info) #Modification by me:)
+        base_node = listHead(base_nodes)
         checkExtendsLoop(base_node, base_path, info)
         checkReplaceableBaseClass(base_nodes, base_path, info)
         base_node = expand(base_node)
@@ -665,7 +666,7 @@ function instClassDef(cls::Class, outerMod::Modifier, attributes::Attributes, us
         @assign mod = merge(outer_mod, mod)
         #=  Apply the modifiers of extends nodes.
         =#
-        mapExtends(cls_tree, (par) -> modifyExtends(scope = par))
+        mapExtends(cls_tree, (extendsNodeX) -> modifyExtends(extendsNodeX, par))
         #=  Apply the modifiers of this scope.
         =#
 
@@ -685,11 +686,11 @@ function instClassDef(cls::Class, outerMod::Modifier, attributes::Attributes, us
         redeclareClasses(cls_tree)
         #=  Instantiate the extends nodes. =#
         @debug "Double check this line. Might be ome translation error here."
-        mapExtends(cls_tree, (attributes, useBinding, visibility, instLevel)
-                   -> instExtends(attributes = attributes,
-                                  useBinding = useBinding,
-                                  visibility = ExtendsVisibility.PUBLIC,
-                                  instLevel = instLevel + 1))
+        mapExtends(cls_tree, (nodeX) -> instExtends(nodeX,
+                                                    attributes,
+                                                    useBinding,
+                                                    ExtendsVisibility.PUBLIC,
+                                                    instLevel + 1))
         # #=  Instantiate local components. =#
         @debug "Here we are"
         instCp = (node) -> instComponent(
@@ -884,9 +885,8 @@ function modifyExtends(extendsNode::InstNode, scope::InstNode) ::InstNode
     @assign () = begin
       @match elem begin
         SCode.EXTENDS(__)  => begin
-          #=  TODO: Lookup the base class and merge its modifier.
-          =#
-          @match _cons(ext_node, _) = Lookup.lookupBaseClassName(elem.baseClassPath, scope, elem.info)
+          #=  TODO: Lookup the base class and merge its modifier. =#
+          @match _cons(ext_node, _) = lookupBaseClassName(elem.baseClassPath, scope, elem.info)
           #=  Finding a different element than before expanding extends
           =#
           #=  (probably an inherited element) is an error.
@@ -914,16 +914,18 @@ ExtendsVisibility = #= Enumeration =# (() -> begin
                                        PROTECTED  = 3
                                        ()->(PUBLIC ;DERIVED_PROTECTED ;PROTECTED )
                                        end)()
+
 const ExtendsVisibilityType = Integer
-function instExtends(node::InstNode, attributes::Attributes, useBinding::Bool, visibility::ExtendsVisibilityType, instLevel::Integer) ::InstNode
+function instExtends(node::InstNode, attributes::Attributes, useBinding::Bool,
+                     visibility::ExtendsVisibilityType, instLevel::Integer)::InstNode
   local cls::Class
   local inst_cls::Class
   local cls_tree::ClassTree
-  local vis::ExtendsVisibility = visibility
+  local vis::ExtendsVisibilityType = visibility
   @assign cls = getClass(node)
   @assign () = begin
     @match cls begin
-      EXPANDED_CLASS(elements = cls_tree && INSTANTIATED_TREE(__))  => begin
+      EXPANDED_CLASS(elements = cls_tree && CLASS_TREE_INSTANTIATED_TREE(__))  => begin
         if vis == ExtendsVisibility.PUBLIC && isProtectedBaseClass(node) || vis == ExtendsVisibility.DERIVED_PROTECTED
           @assign vis = ExtendsVisibility.PROTECTED
         end
@@ -940,11 +942,12 @@ function instExtends(node::InstNode, attributes::Attributes, useBinding::Bool, v
           end
         end
         noMod = MODIFIER_NOMOD()
-        x = (node, attributes, noMod, useBinding, vis, instLevel) -> instExtends(node, attributes, noMod, useBinding, vis, instLevel)
-        mapExtends(cls_tree, y)
-
-        y = (node, attributes, noMod, useBinding, instLevel, N = NONE()) -> instComponent(node, attributes, noMod , useBinding, instLevel, N)
-        applyLocalComponents(cls_tree, x)
+        x = (nodeX) ->
+          instExtends(node, attributes, useBinding, vis, instLevel)
+        mapExtends(cls_tree, x)
+        y = (nodeX) ->
+          instComponent(nodeX, attributes, noMod , useBinding, instLevel, NONE())
+        applyLocalComponents(cls_tree, y)
         ()
       end
 

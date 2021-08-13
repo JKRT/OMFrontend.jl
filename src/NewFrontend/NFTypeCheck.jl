@@ -4532,11 +4532,11 @@ function checkDimensionType(exp::Expression, ty::NFType, info::SourceInfo)
   return if !isInteger(ty)
     @assign () = begin
       @match exp begin
-        TYPENAME(ty = TYPE_ARRAY(elementType = TYPE_BOOLEAN(__))) => begin
+        TYPENAME_EXPRESSION(ty = TYPE_ARRAY(elementType = TYPE_BOOLEAN(__))) => begin
           ()
         end
 
-        TYPENAME(
+        TYPENAME_EXPRESSION(
           ty = TYPE_ARRAY(elementType = TYPE_ENUMERATION(__)),
         ) => begin
           ()

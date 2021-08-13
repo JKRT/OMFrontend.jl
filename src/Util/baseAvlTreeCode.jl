@@ -407,24 +407,21 @@ end
 """ #= Traverses the tree in depth-first pre-order and applies the given function to
    each node, in the process updating the given argument. =#"""
 function fold(inTree::Tree, inFunc::FoldFunc, inStartValue::FT) where {FT}
-  local outResult::FT = inStartValue
-
-  @assign outResult = begin
+  local outResult = inStartValue
+  outResult = begin
     local key::Key
     local value::Value
     @match inTree begin
       NODE(key = key, value = value) => begin
-        @assign outResult = fold(inTree.left, inFunc, outResult)
-        @assign outResult = inFunc(key, value, outResult)
-        @assign outResult = fold(inTree.right, inFunc, outResult)
+        outResult = fold(inTree.left, inFunc, outResult)
+        outResult = inFunc(key, value, outResult)
+        outResult = fold(inTree.right, inFunc, outResult)
         outResult
       end
-
       LEAF(key = key, value = value) => begin
-        @assign outResult = inFunc(key, value, outResult)
+        outResult = inFunc(key, value, outResult)
         outResult
-      end
-
+      end 
       _ => begin
         outResult
       end

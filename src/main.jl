@@ -14,6 +14,7 @@ import Absyn
 import SCode
 import DAE
 import ListUtil
+import ArrayUtil
 include("./Util/Pointer.jl")
 import .P_Pointer
 Pointer = P_Pointer.Pointer

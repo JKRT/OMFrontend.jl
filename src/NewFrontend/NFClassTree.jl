@@ -435,7 +435,8 @@ end
 function mapExtends(tree::ClassTree, func::FuncT)
   local exts::Array{InstNode} = getExtends(tree)
   for i = 1:arrayLength(exts)
-    arrayUpdateNoBoundsChecking(exts, i, func(arrayGetNoBoundsChecking(exts, i)))
+    res = arrayGetNoBoundsChecking(exts, i)
+    arrayUpdateNoBoundsChecking(exts, i, func(res))
   end
   return
 end
@@ -1932,18 +1933,22 @@ function expandExtends(
   =#
   #=  Join the two duplicate trees together.
   =#
-  @assign conf_func =
-    (duplicates, ext_dups) ->
-      addInheritedElementConflict(duplicates = duplicates, extDuplicates = ext_dups)
+  conf_func =
+    (newEntry, oldEntry, name) ->
+      addInheritedElementConflict(newEntry, oldEntry, name, duplicates, ext_dups)
   #=  Copy entries from the extends node's lookup tree.
   =#
-  @assign tree = LookupTree.fold(
+  foldFunc = (nameX, entryX, treeX) -> addInheritedElement(
+      nameX,
+      entryX,
+      classOffset,
+      componentOffset,
+      conf_func,
+      treeX,
+    )
+  tree = LookupTree.fold(
     ext_tree,
-    (classOffset, componentOffset, conf_func) -> addInheritedElement(
-      classOffset = classOffset,
-      componentOffset = componentOffset,
-      conflictFunc = conf_func,
-    ),
+    foldFunc,
     tree,
   )
   return tree #= The lookup tree to add names to =#
@@ -2470,12 +2475,10 @@ function instExtendsComps(
   comps::Array{<:Pointer{<:InstNode}},
   index::Integer,
 )::Integer #= The first free index in comps =#
-
   local ext_comps_ptrs::Array{Pointer{InstNode}}
   local ext_comps::Array{InstNode}
   local comp_count::Integer
   local ext_comp::InstNode
-
   @assign () = begin
     @match classTree(getClass(extNode)) begin
       CLASS_TREE_INSTANTIATED_TREE(components = ext_comps_ptrs) => begin
@@ -2486,7 +2489,6 @@ function instExtendsComps(
         end
         ()
       end
-
       CLASS_TREE_FLAT_TREE(components = ext_comps) => begin
         @assign comp_count = arrayLength(ext_comps)
         if comp_count > 0
@@ -2497,7 +2499,6 @@ function instExtendsComps(
         end
         ()
       end
-
       _ => begin
         ()
       end

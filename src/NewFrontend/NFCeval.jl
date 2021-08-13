@@ -1027,7 +1027,7 @@ function evalBinaryOp(
   if max_prop_count >= 0
     @assign exp = bindingExpMap2(
       BINARY_EXPRESSION(exp1, op, exp2),
-      (target) -> evalBinaryExp(target = target),
+      (x) -> evalBinaryExp(x, target), #Change by me:) John
       max_prop_count,
       max_prop_exp,
     )
@@ -1039,7 +1039,6 @@ end
 
 function evalBinaryExp(binaryExp::Expression, target::EvalTarget)::Expression
   local result::Expression
-
   local e1::Expression
   local e2::Expression
   local op::Operator

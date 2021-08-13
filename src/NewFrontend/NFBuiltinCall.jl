@@ -724,7 +724,7 @@ function typeMinMaxCall(name::String, call::Call, origin::ORIGIN_Type, info::Sou
   (callExp, ty, var)
 end
 
-function typeSumCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
+function typeSumCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
   local variability::VariabilityType
   local ty::M_Type
   local callExp::Expression
@@ -744,12 +744,12 @@ function typeSumCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{
   end
   @assign (arg, ty, variability) = typeExp(listHead(args), origin, info)
   @assign ty = arrayElementType(ty)
-  @match list(fn) = typeRefCache(fn_ref)
-  @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(fn, list(arg), variability, ty))
+  fn = listHead(typeRefCache(fn_ref))
+  @assign callExp = CALL_EXPRESSION(makeTypedCall(fn, list(arg), variability, ty))
   (callExp, ty, variability)
 end
 
-function typeProductCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
+function typeProductCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
   local variability::VariabilityType
   local ty::M_Type
   local callExp::Expression
@@ -769,8 +769,9 @@ function typeProductCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tu
   end
   @assign (arg, ty, variability) = typeExp(listHead(args), origin, info)
   @assign ty = arrayElementType(ty)
-  @match list(fn) = typeRefCache(fn_ref)
-  @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(fn, list(arg), variability, ty))
+  res = typeRefCache(fn_ref)
+  fn = listHead(res)
+  callExp = CALL_EXPRESSION(makeTypedCall(fn, list(arg), variability, ty))
   (callExp, ty, variability)
 end
 

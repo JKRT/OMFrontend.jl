@@ -1286,7 +1286,7 @@ function isEmptyArray(ty::M_Type)::Bool
   @assign isEmpty = begin
     @match ty begin
       TYPE_ARRAY(__) => begin
-        ListUtil.exist(ty.dimensions, P_Dimension.Dimension.isZero)
+        ListUtil.exist(ty.dimensions, isZero)
       end
 
       _ => begin

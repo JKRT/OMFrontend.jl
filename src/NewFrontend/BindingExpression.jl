@@ -617,7 +617,7 @@ function variability(exp::Expression) ::VariabilityType
         var
       end
 
-      END(__)  => begin
+      END_EXPRESSION(__)  => begin
         Variability.PARAMETER
       end
 

@@ -24,11 +24,13 @@ function __init__()
   if ! haskey(NFModelicaBuiltinCache, "NFModelicaBuiltin")
     path = realpath(realpath(Base.find_package("OMFrontend") * "./../../"))
     path *= "/lib/NFModelicaBuiltin.mo"
-    GC.enable(false) #=This C stuff can be a bit flaky..=#
+    #= The external C stuff can be a bit flaky.. =#
+    GC.enable(false) 
     p = parseFile(path, 2 #== MetaModelica ==#)
     @debug "SCode translation"
     s = OMFrontend.translateToSCode(p)
     NFModelicaBuiltinCache["NFModelicaBuiltin"] = s
+    #=Enable GC again.=#
     GC.enable(true)
   end
 end

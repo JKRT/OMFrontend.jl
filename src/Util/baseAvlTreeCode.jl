@@ -535,7 +535,7 @@ function mapFold(inTree::Tree, inFunc::MapFunc, inStartValue::FT) where {FT}
   return (outTree, outResult)
 end
 
-function setTreeLeftRight(orig::Tree, left::Tree = EMPTY(), right::Tree = EMPTY())::Tree
+function setTreeLeftRight(orig::Tree, left::Tree, right::Tree)::Tree
   setTreeLeftRight(orig, left = left, right = right)
 end
 

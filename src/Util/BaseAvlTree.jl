@@ -36,59 +36,10 @@ using ExportAll
 #= Forward declarations for uniontypes until Julia adds support for mutual recursion =#
 using ..BaseAvlSet #= Modelica extend clause =#
 
+Key = Integer
 Value = Integer
 
 include("./baseAvlTreeCode.jl")
-""" #= Balances a Tree =#"""
-function balance(inTree::Tree)::Tree
-  local outTree::Tree = inTree
-  @assign outTree = begin
-    local lh::Integer
-    local rh::Integer
-    local diff::Integer
-    local child::Tree
-    local balanced_tree::Tree
-    @match outTree begin
-      LEAF(__) => begin
-        inTree
-      end
-      NODE(__) => begin
-        @assign lh = height(outTree.left)
-        @assign rh = height(outTree.right)
-        @assign diff = lh - rh
-        if diff < (-1)
-          @assign balanced_tree = if calculateBalance(outTree.right) > 0
-            rotateLeft(setTreeLeftRight(
-              outTree,
-              left = outTree.left,
-              right = rotateRight(outTree.right),
-            ))
-          else
-            rotateLeft(outTree)
-          end
-        elseif diff > 1
-          @assign balanced_tree = if calculateBalance(outTree.left) < 0
-            rotateRight(setTreeLeftRight(
-              outTree,
-              left = rotateLeft(outTree.left),
-              right = outTree.right,
-            ))
-          else
-            rotateRight(outTree)
-          end
-        elseif outTree.height != max(lh, rh) + 1
-          @assign outTree.height = max(lh, rh) + 1
-          @assign balanced_tree = outTree
-        else
-          @assign balanced_tree = outTree
-        end
-        balanced_tree
-      end
-    end
-  end
-  return outTree
-end
-
 
 @exportAll()
 end

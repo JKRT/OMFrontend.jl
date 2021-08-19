@@ -232,6 +232,7 @@ function balance(inTree::Tree)
   return outTree
 end
 
+
 function height(inNode::Tree)::Integer
   local outHeight::Integer
   @assign outHeight = begin

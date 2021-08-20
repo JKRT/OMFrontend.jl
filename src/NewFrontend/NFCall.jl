@@ -5,16 +5,14 @@ using ExportAll
 import ..Main.Expression
 
 #= Modelica extend clause =#
-Key = String
-Value = Expression
+const Key = String
+const   Value = Expression
 
 include("../Util/baseAvlTreeCode.jl")
-include("../Util/baseAvlSetCode.jl")
 
-@exportAll()
-end
+end #=ParameterTreeImpl=#
 
-ParameterTree = ParameterTreeImpl.Tree
+const ParameterTree = ParameterTreeImpl.Tree
 
 import ..ErrorExt
 
@@ -69,8 +67,6 @@ import ..ErrorExt
     call_scope::InstNode
   end
 end
-
-
 
 @UniontypeDecl CallAttributes
 

@@ -82,7 +82,6 @@ const Connector = NFConnector
 
 #= Modelica extend clause =#
 include("../Util/baseAvlTreeCode.jl")
-include("../Util/baseAvlSetCode.jl")
 
 function emptySet(size::Integer)::HashSet
   local set::HashSet

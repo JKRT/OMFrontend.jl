@@ -124,15 +124,10 @@ using ExportAll
 Key = String
 Value = InstNode
 include("../Util/baseAvlTreeCode.jl")
-include("../Util/baseAvlSetCode.jl")
 
 keyCompare = (inKey1::String, inKey2::String) -> begin
   res = stringCompare(inKey1, inKey2)
   return res
-end
-
-function new()
-  return EMPTY()
 end
 
 @exportAll()

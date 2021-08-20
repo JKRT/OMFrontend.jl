@@ -10,7 +10,6 @@ Key = String
 Value = Modifier
 #= Modelica extend clause =#
 include("../Util/baseAvlTreeCode.jl")
-include("../Util/baseAvlSetCode.jl")
 
 
 keyCompare = (inKey1::String, inKey2::String) -> begin

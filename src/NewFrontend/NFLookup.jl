@@ -4,7 +4,7 @@ MatchType = #= Enumeration =# (() -> begin
                                PARTIAL  = 3
                                ()->(FOUND ;NOT_FOUND ;PARTIAL )
                                end)()
-const MatchTypeTy = Integer
+const MatchTypeTy = Int
 
 function lookupClassName(name::Absyn.Path, scope::InstNode, info::SourceInfo, checkAccessViolations::Bool = true) ::InstNode
   local node::InstNode

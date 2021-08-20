@@ -45,10 +45,10 @@ import ..Util
 using MetaModelica
 
 Key = String
-Value = Integer
+Value = Int
 Table = Tuple
 
-function emptyCardinalityTable(size::Integer)::Table
+function emptyCardinalityTable(size::Int)::Table
   local table::Table
   @assign table = BaseHashTable.emptyHashTableWork(
     size,
@@ -74,7 +74,7 @@ end
 
 function addConnector(conn, table::Table)::Table
   local conn_str::String
-  local count::Integer
+  local count::Int
   @assign conn_str = Main.Connector.toString(conn)
   try
     @assign count = BaseHashTable.get(conn_str, table)
@@ -87,7 +87,7 @@ end
 
 function evaluateCardinality(arg, table::Table)
   local res::Expression
-  local count::Integer
+  local count::Int
   try
     @assign count = BaseHashTable.get(toString(arg), table)
   catch

@@ -186,8 +186,8 @@ function scalarizeTypeAttributes(
   local iters::Array{ExpressionIterator}
   local names::List{String} = nil
 
-  local len::Integer
-  local i::Integer
+  local len::Int
+  local i::Int
   local name::String
   local binding::Binding
 
@@ -210,7 +210,7 @@ function nextTypeAttributes(
 )::List{Tuple{String, Binding}}
   local attrs::List{Tuple{String, Binding}} = nil
 
-  local i::Integer = 1
+  local i::Int = 1
   local iter::ExpressionIterator
   local exp::Expression
 

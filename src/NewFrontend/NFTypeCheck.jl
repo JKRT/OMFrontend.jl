@@ -13,7 +13,7 @@ MatchKind = (
   end
 )()
 
-const MatchKindType = Integer
+const MatchKindType = Int
 
 function isCompatibleMatch(kind::MatchKindType)::Bool
   local isCompatible::Bool = kind != MatchKind.NOT_COMPATIBLE
@@ -4123,7 +4123,7 @@ function getRangeTypeInt(
   local dim::Dimension
 
   @assign dim = begin
-    local step::Integer
+    local step::Int
     local step_exp::Expression
     local dim_exp::Expression
     local var::VariabilityType
@@ -4306,7 +4306,7 @@ function getRangeTypeBool(startExp::Expression, stopExp::Expression)::Dimension
   local dim::Dimension
 
   @assign dim = begin
-    local sz::Integer
+    local sz::Int
     local dim_exp::Expression
     local var::VariabilityType
     @match (startExp, stopExp) begin

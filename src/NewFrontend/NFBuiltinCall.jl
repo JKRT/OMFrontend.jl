@@ -209,7 +209,7 @@ end
 function makeSizeExp(posArgs::List{<:Expression}, namedArgs::List{<:NamedArg}, info::SourceInfo) ::Expression
   local callExp::Expression
 
-  local argc::Integer = listLength(posArgs)
+  local argc::Int = listLength(posArgs)
   local arg1::Expression
   local arg2::Expression
 
@@ -252,7 +252,7 @@ function makeArrayExp(posArgs::List{<:Expression}, namedArgs::List{<:NamedArg}, 
   arrayExp
 end
 
-function makeCatExp(n::Integer, args::List{<:Expression}, tys::List{<:M_Type}, variability::VariabilityType, info::SourceInfo) ::Tuple{Expression, M_Type}
+function makeCatExp(n::Int, args::List{<:Expression}, tys::List{<:M_Type}, variability::VariabilityType, info::SourceInfo) ::Tuple{Expression, M_Type}
   local ty::M_Type
   local callExp::Expression
 
@@ -268,8 +268,8 @@ function makeCatExp(n::Integer, args::List{<:Expression}, tys::List{<:M_Type}, v
   local ty2::M_Type
   local resTyToMatch::M_Type
   local mk::TypeCheck.MatchKind
-  local maxn::Integer
-  local pos::Integer
+  local maxn::Int
+  local pos::Int
   local sumDim::Dimension
 
   Error.assertion(listLength(args) == listLength(tys) && listLength(args) >= 1, getInstanceName() + " got wrong input sizes", sourceInfo())
@@ -1016,8 +1016,8 @@ function typeMatrixCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tup
   local dims::List{Dimension}
   local dim1::Dimension
   local dim2::Dimension
-  local i::Integer
-  local ndims::Integer
+  local i::Int
+  local ndims::Int
 
   @match UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
   assertNoNamedParams("matrix", named_args, info)
@@ -1067,7 +1067,7 @@ function typeCatCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{
   local var::VariabilityType
   local mk::TypeCheck.MatchKind
   local fn::M_Function
-  local n::Integer
+  local n::Int
 
   @match UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
   assertNoNamedParams("cat", named_args, info)
@@ -1270,7 +1270,7 @@ function typePotentialRootCall(call::Call, origin::ORIGIN_Type, info::SourceInfo
   local arg1::Expression
   local arg2::Expression
   local fn::M_Function
-  local args_len::Integer
+  local args_len::Int
   local name::String
 
   @match UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
@@ -1376,7 +1376,7 @@ function typeUniqueRootCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) :
   local arg1::Expression
   local arg2::Expression
   local fn::M_Function
-  local args_len::Integer
+  local args_len::Int
   local name::String
 
   Error.addSourceMessage(Error.NON_STANDARD_OPERATOR, list("Connections.uniqueRoot"), info)
@@ -1433,7 +1433,7 @@ end
                   local arg2::Expression
                   local arg3::Expression
                   local fn::M_Function
-                  local args_len::Integer
+                  local args_len::Int
                   local name::String
                   local ty1::M_Type
                   local ty2::M_Type
@@ -1477,7 +1477,7 @@ end
                   (callExp, ty, var)
                 end
 
-function checkConnectionsArgument(arg::Expression, ty::M_Type, fnRef::ComponentRef, argIndex::Integer, info::SourceInfo)
+function checkConnectionsArgument(arg::Expression, ty::M_Type, fnRef::ComponentRef, argIndex::Int, info::SourceInfo)
   @assign () = begin
     local ty2::M_Type
     local node::InstNode
@@ -1596,7 +1596,7 @@ function typeClockCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tupl
 
   local ty_call::Call
   local args::List{Expression}
-  local args_count::Integer
+  local args_count::Int
   local e1::Expression
   local e2::Expression
 

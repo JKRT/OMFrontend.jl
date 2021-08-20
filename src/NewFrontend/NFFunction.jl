@@ -9,7 +9,7 @@ SlotType = (() -> begin #= Enumeration =#
   #= Determines which type of argument a slot accepts. =#
   () -> (POSITIONAL; NAMED; GENERIC)  #= Accepts both positional and named arguments. =#
 end)()
-const SlotTypeType = Integer
+const SlotTypeType = Int
 
 SlotEvalStatus = (() -> begin #= Enumeration =#
   NOT_EVALUATED = 1
@@ -17,7 +17,7 @@ SlotEvalStatus = (() -> begin #= Enumeration =#
   EVALUATED = 3
   () -> (NOT_EVALUATED; EVALUATING; EVALUATED)
 end)()
-const SlotEvalStatusType = Integer
+const SlotEvalStatusType = Int
 
 @UniontypeDecl Slot
 
@@ -68,7 +68,7 @@ end
     ty::SlotTypeType
     default::Option{Expression}
     arg::Option{TypedArg}
-    index::Integer
+    index::Int
     evalStatus::SlotEvalStatusType
   end
 end
@@ -146,7 +146,7 @@ end
     #=  When vectorizing a call exact argument matches are allowed to not be vectorized =#
     #=  Instead they are added to each call as is. =#
     #=  This list represents which args should be vectorized. =#
-    vectorizedArgs::List{Integer}
+    vectorizedArgs::List{Int}
     baseMatch::FunctionMatchKind
   end
   @Record GENERIC_MATCH_KIND begin
@@ -200,7 +200,7 @@ FunctionStatus = (() -> begin #= Enumeration =#
   () -> (BUILTIN; INITIAL; EVALUATED; SIMPLIFIED; COLLECTED)  #= The function has been added to the function tree. =#
 end)()
 
-const FunctionStatusType = Integer
+const FunctionStatusType = Int
 
 
 using MetaModelica
@@ -466,7 +466,7 @@ function toDAE(fn::M_Function, def::DAE.FunctionDefinition)::DAE.P_Function
   local ity::DAE.InlineType
   local ty::DAE.Type
   local defs::List{DAE.FunctionDefinition}
-  local unused_inputs::List{Integer}
+  local unused_inputs::List{Int}
 
   @assign vis = SCode.PUBLIC()
   #=  TODO: Use the actual visibility.
@@ -1143,7 +1143,7 @@ function fillUnknownVectorizedDims(
 )::List{Dimension}
   local outDims::List{Dimension} = nil
 
-  local i::Integer = 1
+  local i::Int = 1
 
   for dim in dims
     if P_Dimension.Dimension.isUnknown(dim)
@@ -1175,7 +1175,7 @@ function matchArgVectorized(
   local rest_dims::List{Dimension}
   local rest_ty::M_Type
   local mk::TypeCheck.MatchKind
-  local vect_dims_count::Integer
+  local vect_dims_count::Int
 
   @assign arg_dims = arrayDims(argTy)
   @assign input_dims = arrayDims(inputTy)
@@ -1227,7 +1227,7 @@ function matchArgs(
   local comp::Component
   local inputs::List{InstNode} = func.inputs
   local input_node::InstNode
-  local arg_idx::Integer = 1
+  local arg_idx::Int = 1
   local checked_args::List{TypedArg} = nil
   local arg_exp::Expression
   local arg_ty::M_Type
@@ -1238,7 +1238,7 @@ function matchArgs(
   local vect_arg::Expression = INTEGER_EXPRESSION(0)
   local vect_dims::List{Dimension} = nil
   local matched::Bool
-  local vectorized_args::List{Integer} = nil
+  local vectorized_args::List{Int} = nil
 
   for arg in args
     @assign (arg_exp, arg_ty, arg_var) = arg
@@ -1564,9 +1564,9 @@ function fillArgs(
   local remaining_slots::List{Slot}
   local filled_named_args::List{TypedArg}
   local slots_arr::Array{Slot}
-  local pos_arg_count::Integer
-  local slot_count::Integer
-  local index::Integer = 1
+  local pos_arg_count::Int
+  local slot_count::Int
+  local index::Int = 1
 
   @assign slots = fn.slots
   @assign pos_arg_count = listLength(posArgs)
@@ -2490,7 +2490,7 @@ function hasOMPure(cmt::SCode.Comment)::Bool
   return res
 end
 
-function makeSlot(@nospecialize(componentArg::InstNode), @nospecialize(index::Integer))::Slot
+function makeSlot(@nospecialize(componentArg::InstNode), @nospecialize(index::Int))::Slot
   local slot::Slot
   local comp::Component
   local default::Option{Expression}
@@ -2525,7 +2525,7 @@ end
 
 function makeSlots(@nospecialize(inputs::List{<:InstNode}))::List{Slot}
   local slots::List{Slot} = nil
-  local index::Integer = 1
+  local index::Int = 1
   for i in inputs
     @assign slots = _cons(makeSlot(i, index), slots)
     @assign index = index + 1
@@ -2537,7 +2537,7 @@ end
 function paramDirection(@nospecialize(componentArg::InstNode))::DirectionType
   local direction::DirectionType
   local cty::ConnectorType.TYPE
-  local io::Integer
+  local io::Int
   local vis::VisibilityType
   local var::VariabilityType
 
@@ -2695,11 +2695,11 @@ function analyseUnusedParametersExp(
   return params
 end
 
-function analyseUnusedParameters(fn::M_Function)::List{Integer}
-  local unusedInputs::List{Integer} = nil
+function analyseUnusedParameters(fn::M_Function)::List{Int}
+  local unusedInputs::List{Int} = nil
 
   local inputs::List{InstNode}
-  local index::Integer
+  local index::Int
 
   @assign inputs = foldExp(fn, analyseUnusedParametersExp, fn.inputs)
   for i in inputs

@@ -55,7 +55,7 @@ ComponentRef = P_NFComponentRef.NFComponentRef
 
 Key = ComponentRef
 
-Value = Integer
+Value = Int
 
 HashTableCrefFunctionsType = Tuple
 
@@ -74,7 +74,7 @@ end
 
 """ #= Returns an empty HashTable.
  Using the bucketsize size =#"""
-function emptyHashTableSized(size::Integer)::HashTable
+function emptyHashTableSized(size::Int)::HashTable
   local hashTable::HashTable
 
   @assign hashTable = BaseHashTable.emptyHashTableWork(

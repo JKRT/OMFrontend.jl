@@ -6,13 +6,13 @@ using ExportAll
 
 @Uniontype Entry begin
   @Record IMPORT begin
-    index::Integer
+    index::Int
   end
   @Record COMPONENT begin
-    index::Integer
+    index::Int
   end
   @Record CLASS begin
-    index::Integer
+    index::Int
   end
 end
 
@@ -31,7 +31,7 @@ MapFunc = Function
   @Record NODE begin
     key::Key #= The key of the node. =#
     value::Value
-    height::Integer #= Height of tree, used for balancing =#
+    height::Int #= Height of tree, used for balancing =#
     left::Tree #= Left subtree. =#
     right::Tree #= Right subtree. =#
   end
@@ -48,7 +48,7 @@ function hasKey(inTree::Tree, inKey::Key)::Bool
   local comp::Bool = false
 
   local key::Key
-  local key_comp::Integer
+  local key_comp::Int
   local tree::Tree
 
   @assign key = begin
@@ -135,9 +135,9 @@ end
 function balance(inTree::Tree)
   local outTree::Tree = inTree
   outTree = begin
-    local lh::Integer
-    local rh::Integer
-    local diff::Integer
+    local lh::Int
+    local rh::Int
+    local diff::Int
     local child::Tree
     local balanced_tree::Tree
     @match outTree begin
@@ -182,8 +182,8 @@ function balance(inTree::Tree)
 end
 
 
-function height(inNode::Tree)::Integer
-  local outHeight::Integer
+function height(inNode::Tree)::Int
+  local outHeight::Int
   @assign outHeight = begin
     @match inNode begin
       NODE(__) => begin
@@ -200,8 +200,8 @@ function height(inNode::Tree)::Integer
   return outHeight
 end
 
-function calculateBalance(inNode::Tree)::Integer
-  local outBalance::Integer
+function calculateBalance(inNode::Tree)::Int
+  local outBalance::Int
 
   outBalance = begin
     @match inNode begin
@@ -320,7 +320,7 @@ function add(
   @assign tree = begin
     local key::Key
     local value::Value
-    local key_comp::Integer
+    local key_comp::Int
     local outTree::Tree
     #=  Empty tree.
     =#
@@ -914,7 +914,7 @@ function intersection(tree1::Tree, tree2::Tree)::Tree
   local keylist2::List{Key}
   local k1::Key
   local k2::Key
-  local key_comp::Integer
+  local key_comp::Int
 
   if isEmpty(tree1)
     @assign rest2 = tree2
@@ -1050,8 +1050,8 @@ function isEqual(entry1::Entry, entry2::Entry)::Bool
   return isEqual
 end
 
-function index(entry::Entry)::Integer
-  local index::Integer
+function index(entry::Entry)::Int
+  local index::Int
   @assign index = begin
     @match entry begin
       CLASS(__) => begin

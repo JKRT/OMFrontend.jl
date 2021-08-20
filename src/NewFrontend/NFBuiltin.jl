@@ -798,7 +798,7 @@ function makeBuiltinLookupTree(
   classes::List{<:String} = nil,
 ) #= Not used in the tree, only to identify the printout. =#
   local ltree::LookupTree.= LookupTree.new()
-  local i::Integer
+  local i::Int
   @assign i = 1
   for comp in components
     @assign ltree = LookupTree.add(ltree, comp, LookupTree.COMPONENT(i))

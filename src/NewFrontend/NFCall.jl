@@ -697,8 +697,8 @@ function isExternal(call::Call)::Bool
   return isExternal
 end
 
-function compare(call1::Call, call2::Call)::Integer
-  local comp::Integer
+function compare(call1::Call, call2::Call)::Int
+  local comp::Int
 
   @assign comp = begin
     @match (call1, call2) begin
@@ -1333,13 +1333,13 @@ function vectorizeCall(
   local exp::Expression
   local iters::List{Tuple{InstNode, Expression}}
   local iter::InstNode
-  local i::Integer
-  local vect_idx::Integer
+  local i::Int
+  local vect_idx::Int
   local b::Bool
   local call_args::List{Expression}
   local vect_args::List{Expression}
   local sub::Subscript
-  local vect_idxs::List{Integer}
+  local vect_idxs::List{Int}
 
   @assign vectorized_call = begin
     @match (base_call, mk) begin
@@ -1433,8 +1433,8 @@ function checkMatchingFunctions(call::Call, info::SourceInfo)::MatchedFunction
   local func::M_Function
   local allfuncs::List{M_Function}
   local fn_node::InstNode
-  local numerr::Integer = 0 # TODO Error.getNumErrorMessages()
-  local errors::List{Integer}
+  local numerr::Int = 0 # TODO Error.getNumErrorMessages()
+  local errors::List{Int}
 
   ErrorExt.setCheckpoint("NFCall:checkMatchingFunctions")
   @assign matchedFunctions = begin

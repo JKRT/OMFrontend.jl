@@ -13,9 +13,9 @@ function addBindingExpParent(parent::InstNode, exp::Expression) ::Expression
   exp
 end
 
-function mostPropagatedSubExp_traverser(exp::Expression, mostPropagated::Tuple{<:Integer, Expression}) ::Tuple{Integer, Expression}
-  local max_prop::Integer
-  local exp_prop::Integer
+function mostPropagatedSubExp_traverser(exp::Expression, mostPropagated::Tuple{<:Int, Expression}) ::Tuple{Int, Expression}
+  local max_prop::Int
+  local exp_prop::Int
   if isBindingExp(exp)
     @assign (max_prop, _) = mostPropagated
     @assign exp_prop = propagatedDimCount(exp)
@@ -30,8 +30,8 @@ end
                expressions, as well as the number of dimensions it's been propagated
                through. Returns the first expression and -1 as the number of dimensions
                if neither expression contains any binding expressions. =#"""
-                 function mostPropagatedSubExpBinary(exp1::Expression, exp2::Expression) ::Tuple{Expression, Integer}
-                   local maxPropCount::Integer
+                 function mostPropagatedSubExpBinary(exp1::Expression, exp2::Expression) ::Tuple{Expression, Int}
+                   local maxPropCount::Int
                    local maxPropExp::Expression
 
                    #=  TODO: Optimize this, there's no need to check for bindings in e.g. literal arrays.
@@ -45,8 +45,8 @@ end
                as the number of dimensions it's been propagated through. Returns the
                expression itself and -1 as the number of dimensions if it doesn't contain
                any binding expressions. =#"""
-                 function mostPropagatedSubExp(exp::Expression) ::Tuple{Expression, Integer}
-                   local maxPropCount::Integer
+                 function mostPropagatedSubExp(exp::Expression) ::Tuple{Expression, Int}
+                   local maxPropCount::Int
                    local maxPropExp::Expression
 
                    #=  TODO: Optimize this, there's no need to check for bindings in e.g. literal arrays.
@@ -59,7 +59,7 @@ function bindingExpMap4(exp::Expression, subs::List{<:Subscript}) ::Expression
   local outExp::Expression
 
   @assign outExp = begin
-    local prop_count::Integer
+    local prop_count::Int
     local prop_subs::List{Subscript}
     @match exp begin
       BINDING_EXP(__)  => begin
@@ -86,7 +86,7 @@ function bindingExpMap3(exp::Expression, evalFunc::EvalFunc, subs::List{<:Subscr
   result
 end
 
-function bindingExpMap2(exp::Expression, evalFunc::EvalFunc, mostPropagatedCount::Integer, mostPropagatedExp::Expression) ::Expression
+function bindingExpMap2(exp::Expression, evalFunc::EvalFunc, mostPropagatedCount::Int, mostPropagatedExp::Expression) ::Expression
   local result::Expression
 
   local exp_ty::M_Type
@@ -110,7 +110,7 @@ function bindingExpMap(exp::Expression, evalFunc::EvalFunc) ::Expression
   local result::Expression
 
   local max_prop_exp::Expression
-  local max_prop_count::Integer
+  local max_prop_count::Int
 
   @assign (max_prop_exp, max_prop_count) = mostPropagatedSubExp(exp)
   if max_prop_count >= 0
@@ -151,7 +151,7 @@ end
 
 """ #= Calculates the expression type and binding type of an expression given the
                number of dimensions it's been propagated through. =#"""
-                 function bindingExpType(exp::Expression, propagatedDimCount::Integer) ::Tuple{M_Type, M_Type}
+                 function bindingExpType(exp::Expression, propagatedDimCount::Int) ::Tuple{M_Type, M_Type}
                    local bindingType::M_Type
                    local expType::M_Type
 
@@ -166,8 +166,8 @@ end
 
 """ #= Returns the number of dimensions a binding expression has been propagated
                through. =#"""
-                 function propagatedDimCount(exp::Expression) ::Integer
-                   local dimCount::Integer
+                 function propagatedDimCount(exp::Expression) ::Int
+                   local dimCount::Int
 
                    @assign dimCount = begin
                      @match exp begin
@@ -240,7 +240,7 @@ function isBindingExp(exp::Expression) ::Bool
   isBindingExp
 end
 
-function nthEnumLiteral(ty::M_Type, n::Integer) ::Expression
+function nthEnumLiteral(ty::M_Type, n::Int) ::Expression
   local exp::Expression
 
   @assign exp = ENUM_LITERAL_EXPRESSION(ty, Type.nthEnumLiteral(ty, n), n)
@@ -309,7 +309,7 @@ end
 
 """ #= Returns the nth field of a record expression. If the expression is an array
                it will return an array with the nth field in each array element. =#"""
-                 function nthRecordElement(index::Integer, recordExp::Expression) ::Expression
+                 function nthRecordElement(index::Int, recordExp::Expression) ::Expression
                    local outExp::Expression
 
                    @assign outExp = begin
@@ -359,7 +359,7 @@ end
                      local cls::Class
                      local cls_tree::ClassTree
                      local ty::M_Type
-                     local index::Integer
+                     local index::Int
                      local expl::List{Expression}
                      local cref::ComponentRef
                      @match recordExp begin
@@ -418,7 +418,7 @@ end
                    outExp
                  end
 
-function tupleElement(exp::Expression, ty::M_Type, index::Integer) ::Expression
+function tupleElement(exp::Expression, ty::M_Type, index::Int) ::Expression
   local tupleElem::Expression
 
   @assign tupleElem = begin
@@ -686,7 +686,7 @@ function variability(exp::Expression) ::VariabilityType
   var
 end
 
-function promote2(exp::Expression, isArray::Bool, dims::Integer, types::List{<:M_Type}) ::Expression
+function promote2(exp::Expression, isArray::Bool, dims::Int, types::List{<:M_Type}) ::Expression
   local outExp::Expression
 
   @assign outExp = begin
@@ -735,7 +735,7 @@ function promote2(exp::Expression, isArray::Bool, dims::Integer, types::List{<:M
   outExp
 end
 
-function promote(e::Expression, ty::M_Type, n::Integer) ::Tuple{Expression, M_Type}
+function promote(e::Expression, ty::M_Type, n::Int) ::Tuple{Expression, M_Type}
 
 
 
@@ -769,7 +769,7 @@ function promote(e::Expression, ty::M_Type, n::Integer) ::Tuple{Expression, M_Ty
   (e, ty)
 end
 
-function makeIdentityMatrix(n::Integer, elementType::M_Type) ::Expression
+function makeIdentityMatrix(n::Int, elementType::M_Type) ::Expression
   local matrix::Expression
 
   local zero::Expression
@@ -4045,8 +4045,8 @@ end
   outExp
 end
 
-function dimensionCount(@nospecialize(exp::Expression))::Integer
-  local dimCount::Integer
+function dimensionCount(@nospecialize(exp::Expression))::Int
+  local dimCount::Int
   @assign dimCount = begin
     @match exp begin
       ARRAY_EXPRESSION(ty = TYPE_UNKNOWN(__))  => begin
@@ -4427,8 +4427,8 @@ function isAssociativeExp(exp::Expression) ::Bool
   isAssociative
 end
 
-function priority(exp::Expression, lhs::Bool) ::Integer
-  local priorityVar::Integer
+function priority(exp::Expression, lhs::Bool) ::Int
+  local priorityVar::Int
 
   priorityVar = begin
     @match exp begin
@@ -4488,8 +4488,8 @@ end
 function operandFlatString(operand::Expression, operator::Expression, lhs::Bool) ::String
   local str::String
 
-  local operand_prio::Integer
-  local operator_prio::Integer
+  local operand_prio::Int
+  local operator_prio::Int
   local parenthesize::Bool = false
 
   @assign str = toFlatString(operand)
@@ -4518,8 +4518,8 @@ end
 function operandString(operand::Expression, operator::Expression, lhs::Bool) ::String
   local str::String
 
-  local operand_prio::Integer
-  local operator_prio::Integer
+  local operand_prio::Int
+  local operator_prio::Int
   local parenthesize::Bool = false
 
   @assign str = toString(operand)
@@ -4885,8 +4885,8 @@ function toStringTyped(exp::Expression) ::String
   str
 end
 
-function toInteger(exp::Expression) ::Integer
-  local i::Integer
+function toInteger(exp::Expression) ::Int
+  local i::Int
 
   @assign i = begin
     @match exp begin
@@ -4920,7 +4920,7 @@ function makeEnumLiterals(enumType::M_Type) ::List{Expression}
   literals
 end
 
-function makeEnumLiteral(enumType::M_Type, index::Integer) ::Expression
+function makeEnumLiteral(enumType::M_Type, index::Int) ::Expression
   local literal::Expression
 
   local literals::List{String}
@@ -4938,7 +4938,7 @@ function arrayFromList_impl(inExps::List{<:Expression}, elemTy::M_Type, inDims::
   local ty::M_Type
   local newlst::List{Expression}
   local partexps::List{List{Expression}}
-  local dimsize::Integer
+  local dimsize::Int
 
   Error.assertion(! listEmpty(inDims), "Empty dimension list given in arrayFromList.", sourceInfo())
   @match _cons(ldim, restdims) = inDims
@@ -4996,7 +4996,7 @@ function makeSubscriptedExp(subscripts::List{<:Subscript}, exp::Expression) ::Ex
   local subs::List{Subscript}
   local extra_subs::List{Subscript}
   local ty::M_Type
-  local dim_count::Integer
+  local dim_count::Int
 
   #=  If the expression is already a SUBSCRIPTED_EXP_EXPRESSION we need to concatenate the
   =#
@@ -5100,10 +5100,10 @@ function applySubscriptCall(subscript::Subscript, exp::Expression, restSubscript
   outExp
 end
 
-function applyIndexSubscriptRange2(startExp::Expression, stepExp::Option{<:Expression}, stopExp::Expression, index::Integer) ::Expression
+function applyIndexSubscriptRange2(startExp::Expression, stepExp::Option{<:Expression}, stopExp::Expression, index::Int) ::Expression
   local subscriptedExp::Expression
 
-  local iidx::Integer
+  local iidx::Int
   local ridx::AbstractFloat
 
   @assign subscriptedExp = begin
@@ -5229,7 +5229,7 @@ function applySubscriptArray(subscript::Subscript, exp::Expression, restSubscrip
   local rest_subs::List{Subscript}
   local expl::List{Expression}
   local ty::M_Type
-  local el_count::Integer
+  local el_count::Int
   local literal::Bool
 
   @assign sub = expandSlice(subscript)
@@ -5283,7 +5283,7 @@ function applyIndexSubscriptTypename(ty::M_Type, index::Subscript) ::Expression
   local subscriptedExp::Expression
 
   local idx_exp::Expression
-  local idx::Integer
+  local idx::Int
 
   @assign idx_exp = toExp(index)
   if isScalarLiteral(idx_exp)
@@ -5313,7 +5313,7 @@ function applySubscriptTypename(subscript::Subscript, ty::M_Type) ::Expression
   local outExp::Expression
 
   local sub::Subscript
-  local index::Integer
+  local index::Int
   local expl::List{Expression}
 
   @assign sub = expandSlice(subscript)
@@ -5454,7 +5454,7 @@ function makeRealArray(values::List{<:AbstractFloat}) ::Expression
   exp
 end
 
-function makeIntegerArray(values::List{<:Integer}) ::Expression
+function makeIntegerArray(values::List{<:Int}) ::Expression
   local exp::Expression
 
     @assign exp = makeArray(TYPE_ARRAY(TYPE_INTEGER(),
@@ -5481,13 +5481,13 @@ function stringValue(exp::Expression) ::String
   value
 end
 
-function makeInteger(value::Integer) ::Expression
+function makeInteger(value::Int) ::Expression
   local exp::Expression = INTEGER_EXPRESSION(value)
   exp
 end
 
-function integerValue(exp::Expression) ::Integer
-  local value::Integer
+function integerValue(exp::Expression) ::Int
+  local value::Int
   @match INTEGER_EXPRESSION(value = value) = exp
   value
 end
@@ -5834,7 +5834,7 @@ function typeOf(exp::Expression) ::M_Type
         typeOf(P_Pointer.access(exp.exp))
       end
 
-      EMPTY(__)  => begin
+      EMPTY_EXPRESSION(__)  => begin
         exp.ty
       end
 
@@ -5854,8 +5854,8 @@ function typeOf(exp::Expression) ::M_Type
   ty
 end
 
-function compareList(expl1::List{<:Expression}, expl2::List{<:Expression}) ::Integer
-  local comp::Integer
+function compareList(expl1::List{<:Expression}, expl2::List{<:Expression}) ::Int
+  local comp::Int
 
   local e2::Expression
   local rest_expl2::List{Expression} = expl2
@@ -5879,8 +5879,8 @@ function compareList(expl1::List{<:Expression}, expl2::List{<:Expression}) ::Int
   comp
 end
 
-function compareOpt(expl1::Option{<:Expression}, expl2::Option{<:Expression}) ::Integer
-  local comp::Integer
+function compareOpt(expl1::Option{<:Expression}, expl2::Option{<:Expression}) ::Int
+  local comp::Int
 
   local e1::Expression
   local e2::Expression
@@ -5910,8 +5910,8 @@ end
 """ #= Checks whether two expressions are equal, and returns 0 if they are.
                If the first expression is 'less' than the second it returns an integer
                less than 0, otherwise an integer greater than 0. =#"""
-                 function compare(exp1::Expression, exp2::Expression) ::Integer
-                   local comp::Integer
+                 function compare(exp1::Expression, exp2::Expression) ::Int
+                   local comp::Int
 
                    #=  Check if the expressions are the same object.
                    =#
@@ -5926,7 +5926,7 @@ end
                      return comp
                    end
                    @assign comp = begin
-                     local i::Integer
+                     local i::Int
                      local r::AbstractFloat
                      local s::String
                      local b::Bool
@@ -6454,8 +6454,8 @@ function toDAE(ick::ClockKind) ::DAE.P_ClockKind
   ock
 end
 
-function compare(ck1::ClockKind, ck2::ClockKind) ::Integer
-  local comp::Integer
+function compare(ck1::ClockKind, ck2::ClockKind) ::Int
+  local comp::Int
 
   @assign comp = begin
     local i1::Expression
@@ -6845,8 +6845,8 @@ end
 
 """ #= Returns the number of dimensions that the binding was propagated through to
      get to the element it belongs to. =#"""
-function propagatedDimCount(binding::Binding)::Integer
-  local count::Integer
+function propagatedDimCount(binding::Binding)::Int
+  local count::Int
 
   @assign count = begin
     @match binding begin
@@ -6897,8 +6897,8 @@ function addParent(parent::InstNode, binding::Binding)::Binding
   return binding
 end
 
-function parentCount(binding::Binding)::Integer
-  local count::Integer = listLength(parents(binding))
+function parentCount(binding::Binding)::Int
+  local count::Int = listLength(parents(binding))
   return count
 end
 

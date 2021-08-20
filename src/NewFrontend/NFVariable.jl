@@ -22,8 +22,8 @@ function toFlatStream(
 )
   local first::Bool
   local b::Binding
-  local var_dims::Integer
-  local binding_dims::Integer
+  local var_dims::Int
+  local binding_dims::Int
   @assign s = append(s, indent)
   if var.visibility == Visibility.PROTECTED
     @assign s = append(s, "protected ")

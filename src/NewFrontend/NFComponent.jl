@@ -7,11 +7,11 @@ Expression = NFExpression
 
 @Uniontype Attributes begin
   @Record ATTRIBUTES begin
-    connectorType::Integer #=ConnectorType.M_Type=#
-    parallelism::Integer
-    variability::Integer
-    direction::Integer
-    innerOuter::Integer
+    connectorType::Int #=ConnectorType.M_Type=#
+    parallelism::Int
+    variability::Int
+    direction::Int
+    innerOuter::Int
     isFinal::Bool
     isRedeclare::Bool
     isReplaceable
@@ -265,8 +265,8 @@ function comment(component::Component)::Option{SCode.Comment}
   return comment
 end
 
-function dimensionCount(@nospecialize(component::Component))::Integer
-  local count::Integer
+function dimensionCount(@nospecialize(component::Component))::Int
+  local count::Int
   @assign count = begin
     @match component begin
       UNTYPED_COMPONENT(__) => begin
@@ -1161,7 +1161,7 @@ function definition(component::Component)::SCode.Element
   return definition
 end
 
-function newEnum(enumType::M_Type, literalName::String, literalIndex::Integer)::Component
+function newEnum(enumType::M_Type, literalName::String, literalIndex::Int)::Component
   local component::Component
 
   @assign component =

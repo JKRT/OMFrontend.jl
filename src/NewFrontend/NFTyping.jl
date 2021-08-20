@@ -58,14 +58,14 @@ end
 
 @Uniontype TypingError begin
   @Record OUT_OF_BOUNDS begin
-    upperBound::Integer
+    upperBound::Int
   end
   @Record NO_ERROR begin
   end
 end
 
-ORIGIN_Type = Integer
-M_Type = Integer
+ORIGIN_Type = Int
+M_Type = Int
 #=  Flag values:
 =#
 const ORIGIN_CLASS = 0
@@ -145,7 +145,7 @@ function isSingleExpression(origin::M_Type)::Bool
   return isSingle
 end
 
-function setFlag(origin, flag)::Integer
+function setFlag(origin, flag)::Int
   local newOrigin
   @assign newOrigin = intBitOr(origin, flag)
   return newOrigin
@@ -513,7 +513,7 @@ function typeComponent(inComponent::InstNode, origin::ORIGIN_Type)::NFType
 end
 
 function checkComponentStreamAttribute(
-  cty::Integer,
+  cty::Int,
   ty::NFType,
   component::InstNode,
 )
@@ -634,7 +634,7 @@ end
 
 function typeDimension(
   dimensions::Array{<:Dimension},
-  index::Integer,
+  index::Int,
   component::InstNode,
   binding::Binding,
   origin::ORIGIN_Type,
@@ -650,8 +650,8 @@ function typeDimension(
     local b::Binding
     local ty::M_Type
     local ty_err::TypingError
-    local parent_dims::Integer
-    local dim_index::Integer
+    local parent_dims::Int
+    local dim_index::Int
     #=  Print an error when a dimension that's currently being processed is
     =#
     #=  found, which indicates a dependency loop. Another way of handling this
@@ -923,8 +923,8 @@ end
 
 """ #= Tries to fetch the binding for a given record field by using the binding of
    the record instance. =#"""
-function getRecordElementBinding(component::InstNode)::Tuple{Binding, Integer}
-  local parentDims::Integer = 0
+function getRecordElementBinding(component::InstNode)::Tuple{Binding, Int}
+  local parentDims::Int = 0
   local binding::Binding
 
   local parent::InstNode
@@ -1621,7 +1621,7 @@ function typeBindingExp(
   local parents::List{InstNode}
   local is_each::Bool
   local exp_ty::M_Type
-  local parent_dims::Integer
+  local parent_dims::Int
 
   @match BINDING_EXP(e, _, _, parents, is_each) = exp
   @assign (e, exp_ty, variability) = typeExp(e, origin, info)
@@ -1652,7 +1652,7 @@ end
    returned dimension is undefined. =#"""
 function typeExpDim(
   @nospecialize(exp::Expression),
-  dimIndex::Integer,
+  dimIndex::Int,
   origin::ORIGIN_Type,
   info::SourceInfo,
 )::Tuple{Dimension, Option{Expression}, TypingError}
@@ -1709,7 +1709,7 @@ end
    e.g.  nthDimensionBoundsChecked on its type. =#"""
 function typeArrayDim(
   arrayExp::Expression,
-  dimIndex::Integer,
+  dimIndex::Int,
 )::Tuple{Dimension, TypingError}
   local error::TypingError
   local dim::Dimension
@@ -1728,8 +1728,8 @@ end
 
 function typeArrayDim2(
   arrayExp::Expression,
-  dimIndex::Integer,
-  dimCount::Integer = 0,
+  dimIndex::Int,
+  dimCount::Int = 0,
 )::Tuple{Dimension, TypingError}
   local error::TypingError
   local dim::Dimension
@@ -1760,7 +1760,7 @@ end
 
 function typeCrefDim(
   cref::ComponentRef,
-  dimIndex::Integer,
+  dimIndex::Int,
   origin::ORIGIN_Type,
   info::SourceInfo,
 )::Tuple{Dimension, TypingError}
@@ -1769,9 +1769,9 @@ function typeCrefDim(
 
   local crl::List{ComponentRef}
   local subs::List{Subscript}
-  local index::Integer
-  local dim_count::Integer
-  local dim_total::Integer = 0
+  local index::Int
+  local dim_count::Int
+  local dim_total::Int = 0
   local node::InstNode
   local c::Component
   local ty::M_Type
@@ -1870,14 +1870,14 @@ end
    indicating whether the index was valid or not. =#"""
 function nthDimensionBoundsChecked(
   ty::M_Type,
-  dimIndex::Integer,
-  offset::Integer = 0,
+  dimIndex::Int,
+  offset::Int = 0,
 )::Tuple{Dimension, TypingError} #= The number of dimensions to skip due to subscripts. =#
   local error::TypingError
   local dim::Dimension
 
-  local dim_size::Integer = Type.dimensionCount(ty)
-  local index::Integer = dimIndex + offset
+  local dim_size::Int = Type.dimensionCount(ty)
+  local index::Int = dimIndex + offset
 
   if index < 1 || index > dim_size
     @assign dim = DIMENSION_UNKNOWNy()
@@ -2016,8 +2016,8 @@ function typeSubscripts(
 
   local dims::List{Dimension}
   local dim::Dimension
-  local next_origin::Integer
-  local i::Integer
+  local next_origin::Int
+  local i::Int
   local sub::Subscript
   local var::VariabilityType
 
@@ -2065,7 +2065,7 @@ function typeSubscript(
   subscript::Subscript,
   dimension::Dimension,
   cref::ComponentRef,
-  index::Integer,
+  index::Int,
   origin::ORIGIN_Type,
   info::SourceInfo,
 )::Tuple{Subscript, VariabilityType}
@@ -2157,7 +2157,7 @@ function typeArray(
   local ty3::M_Type
   local tys::List{M_Type} = nil
   local mk::MatchKindType
-  local n::Integer = 1
+  local n::Int = 1
   local next_origin::ORIGIN_Type
 
   @assign next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
@@ -2226,7 +2226,7 @@ function typeMatrix(
   local ty::M_Type = TYPE_UNKNOWN()
   local tys::List{M_Type} = nil
   local resTys::List{M_Type} = nil
-  local n::Integer = 2
+  local n::Int = 2
   local next_origin::ORIGIN_Type = setFlag(origin, ORIGIN_SUBEXPRESSION)
 
   if listLength(elements) > 1
@@ -2275,8 +2275,8 @@ function typeMatrixComma(
   local ty3::M_Type
   local tys::List{M_Type} = nil
   local tys2::List{M_Type}
-  local n::Integer = 2
-  local pos::Integer
+  local n::Int = 2
+  local pos::Int
   local mk::MatchKindType
 
   Error.assertion(
@@ -2492,8 +2492,8 @@ function typeSize(
   local exp_ty::M_Type
   local index_ty::M_Type
   local ty_match::MatchKindType
-  local iindex::Integer
-  local dim_size::Integer
+  local iindex::Int
+  local dim_size::Int
   local dim::Dimension
   local ty_err::TypingError
   local oexp::Option{Expression}
@@ -2572,7 +2572,7 @@ end
 function checkSizeTypingError(
   typingError::TypingError,
   @nospecialize(exp::Expression),
-  index::Integer,
+  index::Int,
   info::SourceInfo,
 )
   return @assign () = begin
@@ -2610,7 +2610,7 @@ function evaluateEnd(
   @nospecialize(exp::Expression),
   dim::Dimension,
   cref::ComponentRef,
-  index::Integer,
+  index::Int,
   origin::ORIGIN_Type,
   info::SourceInfo,
 )::Expression
@@ -2781,7 +2781,7 @@ function typeClassSections(classNode::InstNode, originArg::ORIGIN_Type)
   local components::Array{InstNode}
   local sections::Sections
   local info::SourceInfo
-  local initial_origin::Integer
+  local initial_origin::Int
   @assign cls = getClass(classNode)
    _ = begin
     @match cls begin
@@ -3127,7 +3127,7 @@ function typeEquation(eq::Equation, origin::ORIGIN_Type)::Equation
     local mk::MatchKindType
     local var::VariabilityType
     local bvar::VariabilityType
-    local next_origin::Integer
+    local next_origin::Int
     local info::SourceInfo
     @match eq begin
       EQUATION_EQUALITY(__) => begin
@@ -3244,7 +3244,7 @@ function typeConnect(
   local lhs_var::VariabilityType
   local rhs_var::VariabilityType
   local mk::MatchKindType
-  local next_origin::Integer
+  local next_origin::Int
   local info::SourceInfo
   local eql::List{Equation}
 
@@ -3860,7 +3860,7 @@ function typeOperatorArg(
   origin::ORIGIN_Type,
   operatorName::String,
   argName::String,
-  argIndex::Integer,
+  argIndex::Int,
   info::SourceInfo,
 )::Expression
 

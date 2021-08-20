@@ -716,7 +716,7 @@ function vectorizeEquation(
   @assign veqn = begin
     local prefix_node::InstNode
     local iter::InstNode
-    local stop::Integer
+    local stop::Int
     local range::Expression
     @match eqn begin
       EQUATION_EQUALITY(
@@ -787,7 +787,7 @@ function vectorizeAlgorithm(
   @assign valg = begin
     local prefix_node::InstNode
     local iter::InstNode
-    local stop::Integer
+    local stop::Int
     local range::Expression
     local body::List{Statement}
     @match alg begin
@@ -869,7 +869,7 @@ function addIterator_traverse(
 
   local restString::String
   local prefixString::String = toString(prefix)
-  local prefixLength::Integer = stringLength(prefixString)
+  local prefixLength::Int = stringLength(prefixString)
 
   @assign exp = begin
     local restCref::ComponentRef
@@ -943,7 +943,7 @@ function flattenBinding(
   @assign binding = begin
     local subs::List{Subscript}
     local accum_subs::List{Subscript}
-    local binding_level::Integer
+    local binding_level::Int
     local bind_exp::Expression
     local pars::List{InstNode}
     local par::InstNode
@@ -995,7 +995,7 @@ function flattenBindingExp(
   local outExp::Expression
   local subs::List{Subscript}
   local accum_subs::List{Subscript}
-  local binding_level::Integer
+  local binding_level::Int
   local parents::List{InstNode}
   local pre::ComponentRef
   local cr_node::InstNode
@@ -1030,7 +1030,7 @@ function flattenBindingExp2(
 )::Expression
   local outExp::Expression = exp
 
-  local binding_level::Integer = 0
+  local binding_level::Int = 0
   local subs::List{Subscript}
   local pre::ComponentRef = prefix
   local pre_node::InstNode

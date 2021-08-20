@@ -170,8 +170,8 @@ function box(ty::M_Type)::M_Type
   return boxedType
 end
 
-function enumSize(ty::M_Type)::Integer
-  local size::Integer
+function enumSize(ty::M_Type)::Int
+  local size::Int
 
   local literals::List{String}
 
@@ -665,7 +665,7 @@ function toString(ty::M_Type)::String
   return str
 end
 
-function nthEnumLiteral(ty::M_Type, index::Integer)::String
+function nthEnumLiteral(ty::M_Type, index::Int)::String
   local literal::String
 
   local literals::List{String}
@@ -771,13 +771,13 @@ function hasKnownSize(ty::M_Type)::Bool
   return isKnown
 end
 
-function dimensionDiff(ty1::M_Type, ty2::M_Type)::Integer
-  local diff::Integer = dimensionCount(ty1) - dimensionCount(ty2)
+function dimensionDiff(ty1::M_Type, ty2::M_Type)::Int
+  local diff::Int = dimensionCount(ty1) - dimensionCount(ty2)
   return diff
 end
 
-function dimensionCount(@nospecialize(ty::NFType))::Integer
-  local dimCount::Integer
+function dimensionCount(@nospecialize(ty::NFType))::Int
+  local dimCount::Int
   @assign dimCount = begin
     @match ty begin
       TYPE_ARRAY(__) => begin
@@ -797,7 +797,7 @@ function dimensionCount(@nospecialize(ty::NFType))::Integer
   return dimCount
 end
 
-function nthDimension(ty::M_Type, index::Integer)::Dimension
+function nthDimension(ty::M_Type, index::Int)::Dimension
   local dim::Dimension
 
   @assign dim = begin
@@ -916,7 +916,7 @@ function arrayElementType(ty::M_Type)::M_Type
   return elementTy
 end
 
-function nthTupleType(ty::M_Type, n::Integer)::M_Type
+function nthTupleType(ty::M_Type, n::Int)::M_Type
   local outTy::M_Type
 
   @assign outTy = begin
@@ -1466,7 +1466,7 @@ function isInteger(ty::M_Type)::Bool
   return isInteger
 end
 
-function unliftArrayN(N::Integer, ty::M_Type)::M_Type
+function unliftArrayN(N::Int, ty::M_Type)::M_Type
 
   local el_ty::M_Type
   local dims::List{Dimension}

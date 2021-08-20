@@ -16,7 +16,7 @@ EntryType = (() -> begin #= Enumeration =#
   ENTRY = 3
   () -> (DUPLICATE; REDECLARE; ENTRY)
 end)()
-const EntryTypeTy = Integer
+const EntryTypeTy = Int
 
 @Uniontype Entry begin
   @Record DUPLICATE_TREE_ENTRY begin

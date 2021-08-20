@@ -404,8 +404,8 @@ end
 """ #= Checks that all parts of a name used as a base class are transitively
              non-replaceable. =#"""
                function checkReplaceableBaseClass(baseClasses::List{<:InstNode}, basePath::Absyn.Path, info::SourceInfo)
-                 local i::Integer = 0
-                 local pos::Integer
+                 local i::Int = 0
+                 local pos::Int
                  local name::String
                  local rest::List{InstNode}
 
@@ -611,7 +611,7 @@ function instDerivedAttributes(scodeAttr::SCode.Attributes) ::Attributes
   attributes
 end
 
-function instClass(node::InstNode, modifier::Modifier, attributes::Attributes = DEFAULT_ATTR, useBinding::Bool = false, instLevel::Integer = 0, parent = EMPTY_NODE) ::Tuple{InstNode, Attributes}
+function instClass(node::InstNode, modifier::Modifier, attributes::Attributes = DEFAULT_ATTR, useBinding::Bool = false, instLevel::Int = 0, parent = EMPTY_NODE) ::Tuple{InstNode, Attributes}
   local cls::Class
   local outer_mod::Modifier
   @debug "INST CLASS CALLED. CALLING GETCLASS ON NODE."
@@ -629,7 +629,7 @@ function instClass(node::InstNode, modifier::Modifier, attributes::Attributes = 
   (node, attributes)
 end
 
-function instClassDef(cls::Class, outerMod::Modifier, attributes::Attributes, useBinding::Bool, node::InstNode, parentArg::InstNode, instLevel::Integer) ::Tuple{Attributes, InstNode}
+function instClassDef(cls::Class, outerMod::Modifier, attributes::Attributes, useBinding::Bool, node::InstNode, parentArg::InstNode, instLevel::Int) ::Tuple{Attributes, InstNode}
   local par::InstNode
   local base_node::InstNode
   local inst_cls::Class
@@ -915,9 +915,9 @@ ExtendsVisibility = #= Enumeration =# (() -> begin
                                        ()->(PUBLIC ;DERIVED_PROTECTED ;PROTECTED )
                                        end)()
 
-const ExtendsVisibilityType = Integer
+const ExtendsVisibilityType = Int
 function instExtends(node::InstNode, attributes::Attributes, useBinding::Bool,
-                     visibility::ExtendsVisibilityType, instLevel::Integer)::InstNode
+                     visibility::ExtendsVisibilityType, instLevel::Int)::InstNode
   local cls::Class
   local inst_cls::Class
   local cls_tree::ClassTree
@@ -1063,7 +1063,7 @@ function redeclareClasses(tree::ClassTree) ::ClassTree
   tree
 end
 
-function redeclareElements(chain::List, instLevel::Integer)
+function redeclareElements(chain::List, instLevel::Int)
   local node::InstNode
   local node_ptr::Pointer{InstNode}
 
@@ -1096,7 +1096,7 @@ function redeclareClassElement(redeclareCls::Pointer, replaceableCls::Pointer)::
   outCls
 end
 
-function redeclareComponentElement(redeclareComp::Pointer{<:InstNode}, replaceableComp::Pointer{<:InstNode}, instLevel::Integer) ::Pointer{InstNode}
+function redeclareComponentElement(redeclareComp::Pointer{<:InstNode}, replaceableComp::Pointer{<:InstNode}, instLevel::Int) ::Pointer{InstNode}
   local outComp::Pointer{InstNode}
   local rdcl_node::InstNode
   local repl_node::InstNode
@@ -1224,7 +1224,7 @@ function redeclareEnum(redeclareClass::Class, originalClass::Class, prefixes::Pr
   redeclaredClass
 end
 
-function instComponent(node::InstNode, attributes::Attributes , innerMod::Modifier, useBinding::Bool, instLevel::Integer, originalAttr = NONE())
+function instComponent(node::InstNode, attributes::Attributes , innerMod::Modifier, useBinding::Bool, instLevel::Int, originalAttr = NONE())
   local comp::Component
   local def::SCode.Element
   local comp_node::InstNode
@@ -1265,7 +1265,7 @@ function instComponent(node::InstNode, attributes::Attributes , innerMod::Modifi
   end
 end
 
-function instComponentDef(component::SCode.Element, outerMod::Modifier, innerMod::Modifier, attributes::Attributes, useBinding::Bool, node::InstNode, parentNode::InstNode, instLevel::Integer, originalAttr::Option{<:Attributes} = NONE(), isRedeclared::Bool = false)
+function instComponentDef(component::SCode.Element, outerMod::Modifier, innerMod::Modifier, attributes::Attributes, useBinding::Bool, node::InstNode, parentNode::InstNode, instLevel::Int, originalAttr::Option{<:Attributes} = NONE(), isRedeclared::Bool = false)
   @assign () = begin
     local info::SourceInfo
     local decl_mod::Modifier
@@ -1392,7 +1392,7 @@ function updateComponentConnectorType(attributes::Attributes, restriction::Restr
   attributes
 end
 
-function redeclareComponent(redeclareNode::InstNode, originalNode::InstNode, outerMod::Modifier, constrainingMod::Modifier, outerAttr::Attributes, redeclaredNode::InstNode, instLevel::Integer)
+function redeclareComponent(redeclareNode::InstNode, originalNode::InstNode, outerMod::Modifier, constrainingMod::Modifier, outerAttr::Attributes, redeclaredNode::InstNode, instLevel::Int)
   local orig_comp::Component
   local rdcl_comp::Component
   local new_comp::Component
@@ -1601,11 +1601,11 @@ end
 
 function mergeDerivedAttributes(outerAttr::Attributes, innerAttr::Attributes, node::InstNode) ::Attributes
   local attr::Attributes
-  local cty::Integer#ConnectorType.TYPE
+  local cty::Int#ConnectorType.TYPE
   local par::ParallelismType
   local var::VariabilityType
   local dir::DirectionType
-  local io::Integer
+  local io::Int
   local fin::Bool
   local redecl::Bool
   local repl#::Replaceable type conversion work with this change?
@@ -1771,7 +1771,7 @@ function isDiscreteClass(clsNode::InstNode) ::Bool
   discrete
 end
 
-function instTypeSpec(typeSpec::Absyn.TypeSpec, modifier::Modifier, attributes::Attributes, useBinding::Bool, scope::InstNode, parent::InstNode, info::SourceInfo, instLevel::Integer) ::Tuple{InstNode, Attributes}
+function instTypeSpec(typeSpec::Absyn.TypeSpec, modifier::Modifier, attributes::Attributes, useBinding::Bool, scope::InstNode, parent::InstNode, info::SourceInfo, instLevel::Int) ::Tuple{InstNode, Attributes}
   local outAttributes::Attributes
   local node::InstNode
 
@@ -2908,7 +2908,7 @@ function isStructuralComponent(component::Component, compAttrs::Attributes, comp
   isStructural
 end
 
-function isBindingNotFixed(binding::Binding, requireFinal::Bool, maxDepth::Integer = 4) ::Bool
+function isBindingNotFixed(binding::Binding, requireFinal::Bool, maxDepth::Int = 4) ::Bool
   local isNotFixed::Bool
 
   if maxDepth == 0
@@ -2923,7 +2923,7 @@ function isBindingNotFixed(binding::Binding, requireFinal::Bool, maxDepth::Integ
   isNotFixed
 end
 
-function isComponentBindingNotFixed(component::Component, node::InstNode, requireFinal::Bool, maxDepth::Integer, isRecord::Bool = false) ::Bool
+function isComponentBindingNotFixed(component::Component, node::InstNode, requireFinal::Bool, maxDepth::Int, isRecord::Bool = false) ::Bool
   local isNotFixed::Bool
 
   local binding::Binding
@@ -2949,7 +2949,7 @@ function isComponentBindingNotFixed(component::Component, node::InstNode, requir
   isNotFixed
 end
 
-function isExpressionNotFixed(exp::Expression; requireFinal::Bool = false, maxDepth::Integer = 4) ::Bool
+function isExpressionNotFixed(exp::Expression; requireFinal::Bool = false, maxDepth::Int = 4) ::Bool
   local isNotFixed::Bool
 
   @assign isNotFixed = begin
@@ -3162,7 +3162,7 @@ function updateImplicitVariabilityEq(eq::Equation, inWhen::Bool = false)
 end
 
 
-function markStructuralParamsSub(sub::Subscript, dummy::Integer = 0) ::Integer
+function markStructuralParamsSub(sub::Subscript, dummy::Int = 0) ::Int
   @assign () = begin
     @match sub begin
       SUBSCRIPT_UNTYPED(__)  => begin

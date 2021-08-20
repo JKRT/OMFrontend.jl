@@ -1272,7 +1272,7 @@ function scopeListClass(clsNode::InstNode, ty::InstNodeType, includeRoot::Bool, 
   scopes
 end
 
-function scopeList(node::InstNode, includeRoot::Bool = false #= Whether to include the root class name or not. =#, accumScopes::List{<:InstNode} = nil) ::List{InstNode}
+function scopeList(node::InstNode, includeRoot::Bool, accumScopes::List{<:InstNode} = nil) ::List{InstNode}
   scopeList(node, includeRoot = includeRoot, accumScopes = accumScopes)
 end
 

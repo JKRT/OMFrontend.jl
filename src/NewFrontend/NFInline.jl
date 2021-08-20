@@ -32,12 +32,12 @@
 
 function inlineCallExp(callExp::Expression)::Expression
   local result::Expression
-  @assign result = begin
+  result = begin
     local call::Call
     local shouldInline::Bool
     @match callExp begin
       CALL_EXPRESSION(call = call && TYPED_CALL(__)) => begin
-        @assign shouldInline = begin
+        shouldInline = begin
           @match inlineType(call) begin
             DAE.BUILTIN_EARLY_INLINE(__) => begin
               true
@@ -66,7 +66,7 @@ end
 
 function inlineCall(call::Call)::Expression
   local exp::Expression
-  @assign exp = begin
+  exp = begin
     local fn::M_Function3
     local arg::Expression
     local args::List{Expression}
@@ -80,13 +80,13 @@ function inlineCall(call::Call)::Expression
         fn = fn && FUNCTION(inputs = inputs, outputs = outputs, locals = locals),
         arguments = args,
       ) => begin
-        @assign body = getBody(fn)
+        body = getBody(fn)
         #=  This function can so far only handle functions with exactly one
         =#
         #=  statement and output and no local variables.
         =#
         if listLength(body) != 1 || listLength(outputs) != 1 || listLength(locals) > 0
-          @assign exp = CALL_EXPRESSION(call)
+          exp = CALL_EXPRESSION(call)
           return
         end
         Error.assertion(
@@ -96,7 +96,7 @@ function inlineCall(call::Call)::Expression
           AbsynUtil.pathString(P_Function.name(fn)),
           sourceInfo(),
         )
-        @assign stmt = listHead(body)
+        stmt = listHead(body)
         #=  TODO: Instead of repeating this for each input we should probably
         =#
         #=        just build a lookup tree or hash table and go through the
@@ -105,7 +105,7 @@ function inlineCall(call::Call)::Expression
         =#
         for i in inputs
           @match _cons(arg, args) = args
-          @assign stmt = P_Statement.Statement.mapExp(
+          stmt = P_Statement.Statement.mapExp(
             stmt,
             () -> map(
               func = (i, arg) -> replaceCrefNode(node = i, value = arg),
@@ -131,7 +131,7 @@ function replaceCrefNode(exp::Expression, node::InstNode, value::Expression)::Ex
   local ty::M_Type
   local repl_ty::M_Type
 
-  @assign exp = begin
+  exp = begin
     @match exp begin
       CREF_EXPRESSION(
         cref = CREF(
@@ -159,22 +159,22 @@ function replaceCrefNode(exp::Expression, node::InstNode, value::Expression)::Ex
   =#
   #=  Replace expressions in dimensions too.
   =#
-  @assign ty = typeOf(exp)
-  @assign repl_ty =
+  ty = typeOf(exp)
+  repl_ty =
     mapDims(ty, (node, value) -> replaceDimExp(node = node, value = value))
   if !referenceEq(ty, repl_ty)
-    @assign exp = setType(repl_ty, exp)
+    exp = setType(repl_ty, exp)
   end
   return exp
 end
 
 function replaceDimExp(dim::Dimension, node::InstNode, value::Expression)::Dimension
 
-  @assign dim = begin
+  dim = begin
     local exp::Expression
     @match dim begin
       DIMENSION_EXP(__) => begin
-        @assign exp = map(
+        exp = map(
           dim.exp,
           (node, value) -> replaceCrefNode(node = node, value = value),
         )
@@ -192,7 +192,7 @@ end
 function getOutputExp(stmt::Statement, outputNode::InstNode, call::Call)::Expression
   local exp::Expression
 
-  @assign exp = begin
+  exp = begin
     local cr_node::InstNode
     local rest_cr::ComponentRef
     @match stmt begin

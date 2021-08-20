@@ -1,13 +1,13 @@
 
 function evaluate(flatModel::FlatModel)::FlatModel
   local const_var::VariabilityType = Variability.STRUCTURAL_PARAMETER
-  @assign flatModel.variables =
+  #= Complex assign=#@assign flatModel.variables =
     list(evaluateVariable(v, const_var) for v in flatModel.variables)
-  @assign flatModel.equations = evaluateEquations(flatModel.equations, const_var)
-  @assign flatModel.initialEquations =
+  #= Complex assign=#@assign flatModel.equations = evaluateEquations(flatModel.equations, const_var)
+  #= Complex assign=#@assign flatModel.initialEquations =
     evaluateEquations(flatModel.initialEquations, const_var)
-  @assign flatModel.algorithms = evaluateAlgorithms(flatModel.algorithms, const_var)
-  @assign flatModel.initialAlgorithms =
+  #= Complex assign=#@assign flatModel.algorithms = evaluateAlgorithms(flatModel.algorithms, const_var)
+  #= Complex assign=#@assign flatModel.initialAlgorithms =
     evaluateAlgorithms(flatModel.initialAlgorithms, const_var)
 #  execStat(getInstanceName())
   return flatModel
@@ -15,15 +15,15 @@ end
 
 function evaluateVariable(var::Variable, constVariability::VariabilityType)::Variable
   local binding::Binding
-  @assign binding = evaluateBinding(
+  binding = evaluateBinding(
     var.binding,
     variability(var) <= constVariability,
     constVariability,
   )
   if !referenceEq(binding, var.binding)
-    @assign var.binding = binding
+    #= complex assign=#@assign var.binding = binding
   end
-  @assign var.typeAttributes = list(
+  #= Complex assign=#@assign var.typeAttributes = list(
     evaluateTypeAttribute(a, Variability.STRUCTURAL_PARAMETER) for a in var.typeAttributes
   )
   return var
@@ -37,14 +37,14 @@ function evaluateBinding(
   local exp::Expression
   local eexp::Expression
   if isBound(binding)
-    @assign exp = getTypedExp(binding)
+    exp = getTypedExp(binding)
     if structural
-      @assign eexp = evalExp(exp, EVALTARGET_ATTRIBUTE(binding))
+      eexp = evalExp(exp, EVALTARGET_ATTRIBUTE(binding))
     else
-      @assign eexp = evaluateExp(exp, constVariability)
+      eexp = evaluateExp(exp, constVariability)
     end
     if !referenceEq(exp, eexp)
-      @assign binding = setTypedExp(eexp, binding)
+      binding = setTypedExp(eexp, binding)
     end
   end
   return binding
@@ -58,11 +58,11 @@ function evaluateTypeAttribute(
   local binding::Binding
   local sbinding::Binding
   local structural::Bool
-  @assign (name, binding) = attribute
-  @assign structural = name == "fixed" || name == "stateSelect"
-  @assign sbinding = evaluateBinding(binding, structural, constVariability)
+  (name, binding) = attribute
+  structural = name == "fixed" || name == "stateSelect"
+  sbinding = evaluateBinding(binding, structural, constVariability)
   if !referenceEq(binding, sbinding)
-    @assign attribute = (name, sbinding)
+    attribute = (name, sbinding)
   end
   return attribute
 end
@@ -84,7 +84,7 @@ function evaluateExpTraverser(
   local cref::ComponentRef
   local ty::M_Type
   local var::VariabilityType
-  @assign outExp = begin
+  outExp = begin
     @match exp begin
       CREF_EXPRESSION(__) => begin
         @debug "Evaluate exp traverser"
@@ -93,16 +93,16 @@ function evaluateExpTraverser(
         ty = outExp.ty
         #=  Evaluate constants and structural parameters.=#
         if nodeVariability(cref) <= constVariability
-          @assign outExp = evalCref(
+          outExp = evalCref(
             cref,
             outExp,
             EVALTARGET_IGNORE_ERRORS(),
             evalSubscripts = false,
           )
-          @assign outExp = stripBindingInfo(outExp)
-          @assign outChanged = true
+          outExp = stripBindingInfo(outExp)
+          outChanged = true
         elseif outChanged
-          @assign outExp = CREF_EXPRESSION(
+          outExp = CREF_EXPRESSION(
             getSubscriptedType(cref),
             cref,
           )
@@ -122,17 +122,17 @@ function evaluateExpTraverser(
       end
     end
   end
-  @assign outChanged = changed || outChanged
+  outChanged = changed || outChanged
   return (outExp, outChanged)
 end
 
 function evaluateDimension(dim::Dimension)::Dimension
   local outDim::Dimension
-  @assign outDim = begin
+  outDim = begin
     local e::Expression
     @match dim begin
       DIMENSION_EXP(__) => begin
-        @assign e =
+        e =
           evaluateExp(dim.exp, constVariability = Variability.STRUCTURAL_PARAMETER)
         if referenceEq(e, dim.exp)
           dim
@@ -158,57 +158,57 @@ function evaluateEquations(
 end
 
 function evaluateEquation(eq::Equation, constVariability::VariabilityType)::Equation
-  @assign eq = begin
+  eq = begin
     local e1::Expression
     local e2::Expression
     local e3::Expression
     local ty::M_Type
     @match eq begin
       EQUATION_EQUALITY(__) => begin
-        @assign ty = mapDims(eq.ty, evaluateDimension)
-        @assign e1 = evaluateExp(eq.lhs, constVariability)
-        @assign e2 = evaluateExp(eq.rhs, constVariability)
+        ty = mapDims(eq.ty, evaluateDimension)
+        e1 = evaluateExp(eq.lhs, constVariability)
+        e2 = evaluateExp(eq.rhs, constVariability)
         EQUATION_EQUALITY(e1, e2, ty, eq.source)
       end
       EQUATION_ARRAY_EQUALITY(__) => begin
-        @assign ty = mapDims(eq.ty, evaluateDimension)
-        @assign e2 = evaluateExp(eq.rhs, constVariability)
+        ty = mapDims(eq.ty, evaluateDimension)
+        e2 = evaluateExp(eq.rhs, constVariability)
         EQUATION_ARRAY_EQUALITY(eq.lhs, e2, ty, eq.source)
       end
       EQUATION_FOR(__) => begin
-        @assign eq.range = Util.applyOption(
+        #= complex assign=#@assign eq.range = Util.applyOption(
           eq.range,
           (constVariability) -> evaluateExp(constVariability = constVariability),
         )
-        @assign eq.body = evaluateEquations(eq.body, constVariability)
+        #= complex assign=#@assign eq.body = evaluateEquations(eq.body, constVariability)
         eq
       end
       EQUATION_IF(__) => begin
-        @assign eq.branches =
+        #= complex assign=#@assign eq.branches =
           list(evaluateEqBranch(b, constVariability) for b in eq.branches)
         eq
       end
       EQUATION_WHEN(__) => begin
-        @assign eq.branches =
+        #= complex assign=#@assign eq.branches =
           list(evaluateEqBranch(b, constVariability) for b in eq.branches)
         eq
       end
       EQUATION_ASSERT(__) => begin
-        @assign e1 = evaluateExp(eq.condition, constVariability)
-        @assign e2 = evaluateExp(eq.message, constVariability)
-        @assign e3 = evaluateExp(eq.level, constVariability)
+        e1 = evaluateExp(eq.condition, constVariability)
+        e2 = evaluateExp(eq.message, constVariability)
+        e3 = evaluateExp(eq.level, constVariability)
         EQUATION_ASSERT(e1, e2, e3, eq.source)
       end
       EQUATION_TERMINATE(__) => begin
-        @assign eq.message = evaluateExp(eq.message, constVariability)
+        #= complex assign=#@assign eq.message = evaluateExp(eq.message, constVariability)
         eq
       end
       EQUATION_REINIT(__) => begin
-        @assign eq.reinitExp = evaluateExp(eq.reinitExp, constVariability)
+        #= Complex assign=#@assign eq.reinitExp = evaluateExp(eq.reinitExp, constVariability)
         eq
       end
       EQUATION_NORETCALL(__) => begin
-        @assign eq.exp = evaluateExp(eq.exp, constVariability)
+        #= complex assign=#@assign eq.exp = evaluateExp(eq.exp, constVariability)
         eq
       end
       _ => begin
@@ -222,14 +222,14 @@ end
 function evaluateEqBranch(branch::Equation_Branch, constVariability::VariabilityType)::Equation_Branch
   local outBranch::Equation_Branch
 
-  @assign outBranch = begin
+  outBranch = begin
     local condition::Expression
     local body::List{Equation}
     @match branch begin
       EQUATION_BRANCH(condition = condition, body = body) => begin
-        @assign condition =
+        condition =
           evaluateExp(condition, Variability.STRUCTURAL_PARAMETER)
-        @assign body = evaluateEquations(body, constVariability)
+        body = evaluateEquations(body, constVariability)
         EQUATION_BRANCH(condition, branch.conditionVar, body)
       end
 
@@ -252,7 +252,7 @@ end
 
 function evaluateAlgorithm(alg::Algorithm, constVariability::VariabilityType)::Algorithm
 
-  @assign alg.statements = evaluateStatements(alg.statements, constVariability)
+  #= complex assign=#@assign alg.statements = evaluateStatements(alg.statements, constVariability)
   return alg
 end
 
@@ -267,60 +267,60 @@ end
 
 function evaluateStatement(stmt::Statement, constVariability::VariabilityType)::Statement
 
-  @assign stmt = begin
+  stmt = begin
     local e1::Expression
     local e2::Expression
     local e3::Expression
     local ty::M_Type
     @match stmt begin
       P_Statement.Statement.ASSIGNMENT(__) => begin
-        @assign ty = mapDims(stmt.ty, evaluateDimension)
-        @assign e1 = evaluateExp(stmt.lhs, constVariability)
-        @assign e2 = evaluateExp(stmt.rhs, constVariability)
+        ty = mapDims(stmt.ty, evaluateDimension)
+        e1 = evaluateExp(stmt.lhs, constVariability)
+        e2 = evaluateExp(stmt.rhs, constVariability)
         P_Statement.Statement.ASSIGNMENT(e1, e2, ty, stmt.source)
       end
 
       P_Statement.Statement.FOR(__) => begin
-        @assign stmt.range = Util.applyOption(
+        #= complex assign=#@assign stmt.range = Util.applyOption(
           stmt.range,
           (constVariability) -> evaluateExp(constVariability = constVariability),
         )
-        @assign stmt.body = evaluateStatements(stmt.body, constVariability)
+        #= complex assign=#@assign stmt.body = evaluateStatements(stmt.body, constVariability)
         stmt
       end
 
       P_Statement.Statement.IF(__) => begin
-        @assign stmt.branches =
+        #= complex assign=#@assign stmt.branches =
           list(evaluateStmtBranch(b, constVariability) for b in stmt.branches)
         stmt
       end
 
       P_Statement.Statement.WHEN(__) => begin
-        @assign stmt.branches =
+        #= complex assign=#@assign stmt.branches =
           list(evaluateStmtBranch(b, constVariability) for b in stmt.branches)
         stmt
       end
 
       P_Statement.Statement.ASSERT(__) => begin
-        @assign e1 = evaluateExp(stmt.condition, constVariability)
-        @assign e2 = evaluateExp(stmt.message, constVariability)
-        @assign e3 = evaluateExp(stmt.level, constVariability)
+        e1 = evaluateExp(stmt.condition, constVariability)
+        e2 = evaluateExp(stmt.message, constVariability)
+        e3 = evaluateExp(stmt.level, constVariability)
         P_Statement.Statement.ASSERT(e1, e2, e3, stmt.source)
       end
 
       P_Statement.Statement.TERMINATE(__) => begin
-        @assign stmt.message = evaluateExp(stmt.message, constVariability)
+        #= complex assign=#@assign stmt.message = evaluateExp(stmt.message, constVariability)
         stmt
       end
 
       P_Statement.Statement.NORETCALL(__) => begin
-        @assign stmt.exp = evaluateExp(stmt.exp, constVariability)
+        #= complex assign=#@assign stmt.exp = evaluateExp(stmt.exp, constVariability)
         stmt
       end
 
       P_Statement.Statement.WHILE(__) => begin
-        @assign stmt.condition = evaluateExp(stmt.condition, constVariability)
-        @assign stmt.body = evaluateStatements(stmt.body, constVariability)
+        #= complex assign=#@assign stmt.condition = evaluateExp(stmt.condition, constVariability)
+        #= complex assign=#@assign stmt.body = evaluateStatements(stmt.body, constVariability)
         stmt
       end
 
@@ -339,10 +339,10 @@ function evaluateStmtBranch(
   local outBranch::Tuple{Expression, List{Statement}}
   local cond::Expression
   local body::List{Statement}
-  @assign (cond, body) = branch
-  @assign cond = evaluateExp(cond, constVariability = Variability.STRUCTURAL_PARAMETER)
-  @assign body = evaluateStatements(body, constVariability)
-  @assign outBranch = (cond, body)
+  (cond, body) = branch
+  cond = evaluateExp(cond, constVariability = Variability.STRUCTURAL_PARAMETER)
+  body = evaluateStatements(body, constVariability)
+  outBranch = (cond, body)
   return outBranch
 end
 
@@ -352,7 +352,7 @@ function evaluateFunction(func::M_Function)::M_Function
   local sections::Sections
   if !isEvaluated(func)
     markEvaluated(func)
-    @assign func =
+    func =
       mapExp(func, (x) -> evaluateFuncExp(x, fnNode = func.node))
     for fn_der in func.derivatives
       for der_fn in getCachedFuncs(fn_der.derivativeFn)
@@ -365,7 +365,7 @@ end
 
 function evaluateFuncExp(exp::Expression, fnNode::InstNode)::Expression
   local outExp::Expression
-  @assign outExp = evaluateFuncExpTraverser(exp, fnNode, false)
+  outExp = evaluateFuncExpTraverser(exp, fnNode, false)
   return outExp
 end
 
@@ -379,30 +379,30 @@ function evaluateFuncExpTraverser(
 
   local e::Expression
 
-  @assign (e, outChanged) = mapFoldShallow(
+  (e, outChanged) = mapFoldShallow(
     exp,
     (fnNode) -> evaluateFuncExpTraverser(fnNode = fnNode),
     false,
   )
-  @assign outExp = begin
+  outExp = begin
     @match e begin
       CREF_EXPRESSION(__) => begin
         if !isLocalFunctionVariable(e.cref, fnNode)
-          @assign outExp = Ceval.evalCref(
+          outExp = Ceval.evalCref(
             e.cref,
             e,
             Ceval.EVALTARGET_IGNORE_ERRORS(),
             evalSubscripts = false,
           )
-          @assign outExp = stripBindingInfo(outExp)
-          @assign outChanged = true
+          outExp = stripBindingInfo(outExp)
+          outChanged = true
         elseif outChanged
-          @assign outExp = CREF_EXPRESSION(
+          outExp = CREF_EXPRESSION(
             getSubscriptedType(e.cref),
             e.cref,
           )
         else
-          @assign outExp = e
+          outExp = e
         end
         #=  If the cref's subscripts changed, recalculate its type.
         =#
@@ -418,7 +418,7 @@ function evaluateFuncExpTraverser(
       end
     end
   end
-  @assign outChanged = changed || outChanged
+  outChanged = changed || outChanged
   return (outExp, outChanged)
 end
 
@@ -426,15 +426,15 @@ function isLocalFunctionVariable(cref::ComponentRef, fnNode::InstNode)::Bool
   local res::Bool
   local node::InstNode
   if isPackageConstant(cref)
-    @assign res = false
+    res = false
   elseif nodeVariability(cref) <= Variability.PARAMETER
-    @assign node =
+    node =
       derivedParent(node(firstNonScope(
         cref,
       )))
-    @assign res = refEqual(fnNode, node)
+    res = refEqual(fnNode, node)
   else
-    @assign res = true
+    res = true
   end
   return res
 end

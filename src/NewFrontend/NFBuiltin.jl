@@ -799,14 +799,14 @@ function makeBuiltinLookupTree(
 ) #= Not used in the tree, only to identify the printout. =#
   local ltree::LookupTree.= LookupTree.new()
   local i::Int
-  @assign i = 1
+   i = 1
   for comp in components
-    @assign ltree = LookupTree.add(ltree, comp, LookupTree.COMPONENT(i))
-    @assign i = i + 1
+     ltree = LookupTree.add(ltree, comp, LookupTree.COMPONENT(i))
+     i = i + 1
   end
   for cls in classes
-    @assign ltree = LookupTree.add(ltree, cls, LookupTree.COMPONENT(i))
-    @assign i = i + 1
+     ltree = LookupTree.add(ltree, cls, LookupTree.COMPONENT(i))
+     i = i + 1
   end
   print("Lookup tree for " + name + ":\\n")
   print(anyString(ltree))

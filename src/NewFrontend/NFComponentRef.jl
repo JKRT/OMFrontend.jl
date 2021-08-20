@@ -31,7 +31,7 @@ end
 
 function isComplexArray2(cref::ComponentRef)::Bool
   local complexArray::Bool
-  @assign complexArray = begin
+  complexArray = begin
     @match cref begin
       COMPONENT_REF_CREF(
         ty = TYPE_ARRAY(__),
@@ -54,7 +54,7 @@ end
 function isComplexArray(cref::ComponentRef)::Bool
   local complexArray::Bool
 
-  @assign complexArray = begin
+  complexArray = begin
     @match cref begin
       COMPONENT_REF_CREF(__) => begin
         isComplexArray2(cref.restCref)
@@ -71,14 +71,14 @@ end
 function depth(cref::ComponentRef)::Int
   local d::Int = 0
 
-  @assign d = begin
+  d = begin
     @match cref begin
       COMPONENT_REF_CREF(restCref = COMPONENT_REF_EMPTY(__)) => begin
         d + 1
       end
 
       COMPONENT_REF_CREF(__) => begin
-        @assign d = 1 + depth(cref.restCref)
+        d = 1 + depth(cref.restCref)
         d
       end
 
@@ -99,7 +99,7 @@ function toListReverse(
   accum::List{<:ComponentRef} = nil,
 )::List{ComponentRef}
   local crefs::List{ComponentRef}
-  @assign crefs = begin
+  crefs = begin
     @match cref begin
       COMPONENT_REF_CREF(origin = Origin.CREF) => begin
         toListReverse(cref.restCref, _cons(cref, accum))
@@ -115,7 +115,7 @@ end
 function isFromCref(cref::ComponentRef)::Bool
   local fromCref::Bool
 
-  @assign fromCref = begin
+  fromCref = begin
     @match cref begin
       COMPONENT_REF_CREF(origin = Origin.CREF) => begin
         true
@@ -136,7 +136,7 @@ end
 function isDeleted(cref::ComponentRef)::Bool
   local isDeletedBool::Bool
 
-  @assign isDeletedBool = begin
+  isDeletedBool = begin
     local node::InstNode
     @match cref begin
       COMPONENT_REF_CREF(node = node, origin = Origin.CREF) => begin
@@ -153,16 +153,16 @@ end
 
 function evaluateSubscripts(cref::ComponentRef)::ComponentRef
 
-  @assign cref = begin
+  cref = begin
     local subs::List{Subscript}
     @match cref begin
       COMPONENT_REF_CREF(subscripts = nil(), origin = Origin.CREF) => begin
-        @assign cref.restCref = evaluateSubscripts(cref.restCref)
+        #= Complex assign=#@assign cref.restCref = evaluateSubscripts(cref.restCref)
         cref
       end
 
       COMPONENT_REF_CREF(origin = Origin.CREF) => begin
-        @assign subs = list(eval(s) for s in cref.subscripts)
+        subs = list(eval(s) for s in cref.subscripts)
         COMPONENT_REF_CREF(cref.node, subs, cref.ty, cref.origin, evaluateSubscripts(cref.restCref))
       end
 
@@ -175,15 +175,15 @@ function evaluateSubscripts(cref::ComponentRef)::ComponentRef
 end
 
 function simplifySubscripts(cref::ComponentRef)::ComponentRef
-  @assign cref = begin
+  cref = begin
     local subs::List{Subscript}
     @match cref begin
       COMPONENT_REF_CREF(subscripts = nil(), origin = Origin.CREF) => begin
-        @assign cref.restCref = simplifySubscripts(cref.restCref)
+        #= Complex assign=#@assign cref.restCref = simplifySubscripts(cref.restCref)
         cref
       end
       COMPONENT_REF_CREF(origin = Origin.CREF) => begin
-        @assign subs = list(simplifySubscript(s) for s in cref.subscripts)
+        subs = list(simplifySubscript(s) for s in cref.subscripts)
         COMPONENT_REF_CREF(cref.node, subs, cref.ty, cref.origin, simplifySubscripts(cref.restCref))
       end
       _ => begin
@@ -197,7 +197,7 @@ end
 """ #= Strips all subscripts from a cref. =#"""
 function stripSubscriptsAll(cref::ComponentRef)::ComponentRef
   local strippedCref::ComponentRef
-  @assign strippedCref = begin
+  strippedCref = begin
     @match cref begin
       COMPONENT_REF_CREF(__) => begin
         COMPONENT_REF_CREF(cref.node, nil, cref.ty, cref.origin, stripSubscriptsAll(cref.restCref))
@@ -216,7 +216,7 @@ function stripSubscripts(cref::ComponentRef)::Tuple{ComponentRef, List{Subscript
   local subs::List{Subscript}
   local strippedCref::ComponentRef
 
-  @assign (strippedCref, subs) = begin
+  (strippedCref, subs) = begin
     @match cref begin
       COMPONENT_REF_CREF(__) => begin
         (COMPONENT_REF_CREF(cref.node, nil, cref.ty, cref.origin, cref.restCref), cref.subscripts)
@@ -233,7 +233,7 @@ end
 function isPackageConstant2(cref::ComponentRef)::Bool
   local isPkgConst::Bool
 
-  @assign isPkgConst = begin
+  isPkgConst = begin
     @match cref begin
       COMPONENT_REF_CREF(node = CLASS_NODE(__)) => begin
         isUserdefinedClass(cref.node)
@@ -262,7 +262,7 @@ function isPackageConstant(cref::ComponentRef)::Bool
   =#
   #=        be collected by Package.collectConstants.
   =#
-  @assign isPkgConst =
+  isPkgConst =
     nodeVariability(cref) <= Variability.PARAMETER && isPackageConstant2(cref)
   return isPkgConst
 end
@@ -270,14 +270,14 @@ end
 function scalarize(cref::ComponentRef)::List{ComponentRef}
   local crefs::List{ComponentRef}
 
-  @assign crefs = begin
+  crefs = begin
     local dims::List{Dimension}
     local subs::List{List{Subscript}}
     @match cref begin
       COMPONENT_REF_CREF(ty = TYPE_ARRAY(__)) => begin
-        @assign dims = arrayDims(cref.ty)
-        @assign subs = scalarizeList(cref.subscripts, dims)
-        @assign subs = ListUtil.combination(subs)
+        dims = arrayDims(cref.ty)
+        subs = scalarizeList(cref.subscripts, dims)
+        subs = ListUtil.combination(subs)
         list(setSubscripts(s, cref) for s in subs)
       end
 
@@ -293,7 +293,7 @@ function fromNodeList(nodes::List{<:InstNode})::ComponentRef
   local cref::ComponentRef = COMPONENT_REF_EMPTY()
 
   for n in nodes
-    @assign cref = COMPONENT_REF_CREF(n, nil, getType(n), Origin.SCOPE, cref)
+    cref = COMPONENT_REF_CREF(n, nil, getType(n), Origin.SCOPE, cref)
   end
   return cref
 end
@@ -301,7 +301,7 @@ end
 function toPath_impl(cref::ComponentRef, accumPath::Absyn.Path)::Absyn.Path
   local path::Absyn.Path
 
-  @assign path = begin
+  path = begin
     @match cref begin
       COMPONENT_REF_CREF(__) => begin
         toPath_impl(cref.restCref, Absyn.QUALIFIED(name(cref.node), accumPath))
@@ -318,7 +318,7 @@ end
 function toPath(cref::ComponentRef)::Absyn.Path
   local path::Absyn.Path
 
-  @assign path = begin
+  path = begin
     @match cref begin
       COMPONENT_REF_CREF(__) => begin
         toPath_impl(cref.restCref, Absyn.IDENT(name(cref.node)))
@@ -336,22 +336,22 @@ end
 function listToString(crs::List{<:ComponentRef})::String
   local str::String
 
-  @assign str = "{" + stringDelimitList(ListUtil.map(crs, toString), ",") + "}"
+  str = "{" + stringDelimitList(ListUtil.map(crs, toString), ",") + "}"
   return str
 end
 
 function toFlatString_impl(cref::ComponentRef, strl::List{<:String})::List{String}
 
-  @assign strl = begin
+  strl = begin
     local str::String
     @match cref begin
       COMPONENT_REF_CREF(__) => begin
-        @assign str =
+        str =
           name(cref.node) +
           toFlatStringList(cref.subscripts)
         if Type.isRecord(cref.ty) && !listEmpty(strl)
-          @assign strl = _cons("'" + listHead(strl), listRest(strl))
-          @assign str = str + "'"
+          strl = _cons("'" + listHead(strl), listRest(strl))
+          str = str + "'"
         end
         toFlatString_impl(cref.restCref, _cons(str, strl))
       end
@@ -379,9 +379,9 @@ function toFlatString(cref::ComponentRef)::String
   local subs::List{Subscript}
   local strl::List{String} = nil
 
-  @assign (cr, subs) = stripSubscripts(cref)
-  @assign strl = toFlatString_impl(cr, strl)
-  @assign str = stringAppendList(list(
+  (cr, subs) = stripSubscripts(cref)
+  strl = toFlatString_impl(cr, strl)
+  str = stringAppendList(list(
     "'",
     stringDelimitList(strl, "."),
     "'",
@@ -392,11 +392,11 @@ end
 
 function toString_impl(cref::ComponentRef, strl::List{<:String})::List{String}
 
-  @assign strl = begin
+  strl = begin
     local str::String
     @match cref begin
       COMPONENT_REF_CREF(__) => begin
-        @assign str =
+        str =
           name(cref.node) + toStringList(cref.subscripts)
         toString_impl(cref.restCref, _cons(str, strl))
       end
@@ -420,7 +420,7 @@ end
 function toString(cref::ComponentRef)::String
   local str::String
 
-  @assign str = stringDelimitList(toString_impl(cref, nil), ".")
+  str = stringDelimitList(toString_impl(cref, nil), ".")
   return str
 end
 
@@ -430,7 +430,7 @@ function toDAE_impl(
 )::DAE.ComponentRef
   local dcref::DAE.ComponentRef
 
-  @assign dcref = begin
+  dcref = begin
     local ty::M_Type
     local dty::DAE.Type
     @match cref begin
@@ -438,13 +438,13 @@ function toDAE_impl(
         accumCref
       end
       COMPONENT_REF_CREF(__) => begin
-        @assign ty = if isUnknown(cref.ty)
+        ty = if isUnknown(cref.ty)
           getType(cref.node)
         else
           cref.ty
         end
-        @assign dty = toDAE(ty, makeTypeVars = false)
-        @assign dcref = DAE.CREF_QUAL(
+        dty = toDAE(ty, makeTypeVars = false)
+        dcref = DAE.CREF_QUAL(
           name(cref.node),
           dty,
           list(toDAE(s) for s in cref.subscripts),
@@ -459,10 +459,10 @@ end
 
 function toDAE(cref::ComponentRef)::DAE.ComponentRef
   local dcref::DAE.ComponentRef
-  @assign dcref = begin
+  dcref = begin
     @match cref begin
       COMPONENT_REF_CREF(__) => begin
-        @assign dcref = DAE.CREF_IDENT(
+        dcref = DAE.CREF_IDENT(
           name(cref.node),
           toDAE(cref.ty),
           list(toDAE(s) for s in cref.subscripts),
@@ -482,10 +482,10 @@ function isPrefix(cref1::ComponentRef, cref2::ComponentRef)::Bool
   local isPrefix::Bool
 
   if referenceEq(cref1, cref2)
-    @assign isPrefix = true
+    isPrefix = true
     return isPrefix
   end
-  @assign isPrefix = begin
+  isPrefix = begin
     @match (cref1, cref2) begin
       (COMPONENT_REF_CREF(__), COMPONENT_REF_CREF(__)) => begin
         if name(cref1.node) == name(cref2.node)
@@ -517,10 +517,10 @@ function isEqual(cref1::ComponentRef, cref2::ComponentRef)::Bool
   local isEqual::Bool
 
   if referenceEq(cref1, cref2)
-    @assign isEqual = true
+    isEqual = true
     return isEqual
   end
-  @assign isEqual = begin
+  isEqual = begin
     @match (cref1, cref2) begin
       (COMPONENT_REF_CREF(__), COMPONENT_REF_CREF(__)) => begin
         name(cref1.node) == name(cref2.node) &&
@@ -547,7 +547,7 @@ end
 function compare(cref1::ComponentRef, cref2::ComponentRef)::Int
   local comp::Int
 
-  @assign comp = begin
+  comp = begin
     @match (cref1, cref2) begin
       (COMPONENT_REF_CREF(__), COMPONENT_REF_CREF(__)) => begin
         comp =
@@ -581,11 +581,11 @@ end
 
 function foldSubscripts(cref::ComponentRef, func::FuncT, arg::ArgT) where {ArgT}
 
-  @assign arg = begin
+  arg = begin
     @match cref begin
       COMPONENT_REF_CREF(origin = Origin.CREF) => begin
         for sub in cref.subscripts
-          @assign arg = func(sub, arg)
+          arg = func(sub, arg)
         end
         foldSubscripts(cref.restCref, func, arg)
       end
@@ -603,7 +603,7 @@ end
 function transferSubscripts(srcCref::ComponentRef, dstCref::ComponentRef)::ComponentRef
   local cref::ComponentRef
 
-  @assign cref = begin
+  cref = begin
     @match (srcCref, dstCref) begin
       (COMPONENT_REF_EMPTY(__), _) => begin
         dstCref
@@ -618,13 +618,13 @@ function transferSubscripts(srcCref::ComponentRef, dstCref::ComponentRef)::Compo
       end
 
       (COMPONENT_REF_CREF(__), COMPONENT_REF_CREF(origin = Origin.CREF)) => begin
-        @assign dstCref.restCref = transferSubscripts(srcCref, dstCref.restCref)
+        #= Complex assign=#@assign dstCref.restCref = transferSubscripts(srcCref, dstCref.restCref)
         dstCref
       end
 
       (COMPONENT_REF_CREF(__), COMPONENT_REF_CREF(__)) where {(refEqual(srcCref.node, dstCref.node))} =>
         begin
-          @assign cref = transferSubscripts(srcCref.restCref, dstCref.restCref)
+          cref = transferSubscripts(srcCref.restCref, dstCref.restCref)
           COMPONENT_REF_CREF(dstCref.node, srcCref.subscripts, dstCref.ty, dstCref.origin, cref)
         end
 
@@ -653,7 +653,7 @@ function subscriptsN(cref::ComponentRef, n::Int)::List{List{Subscript}}
       break
     end
     @match COMPONENT_REF_CREF(subscripts = subs, restCref = rest) = rest
-    @assign subscripts = _cons(subs, subscripts)
+    subscripts = _cons(subs, subscripts)
   end
   return subscripts
 end
@@ -673,7 +673,7 @@ function subscriptsAll(
 )::List{List{Subscript}}
   local subscripts::List{List{Subscript}}
 
-  @assign subscripts = begin
+  subscripts = begin
     @match cref begin
       COMPONENT_REF_CREF(__) => begin
         subscriptsAll(cref.restCref, _cons(cref.subscripts, accumSubs))
@@ -693,13 +693,13 @@ function setSubscriptsList(
   cref::ComponentRef,
 )::ComponentRef
 
-  @assign cref = begin
+  cref = begin
     local subs::List{Subscript}
     local rest_subs::List{List{Subscript}}
     local rest_cref::ComponentRef
     @match (subscripts, cref) begin
       (subs <| rest_subs, COMPONENT_REF_CREF(__)) => begin
-        @assign rest_cref = setSubscriptsList(rest_subs, cref.restCref)
+        rest_cref = setSubscriptsList(rest_subs, cref.restCref)
         COMPONENT_REF_CREF(cref.node, subs, cref.ty, cref.origin, rest_cref)
       end
 
@@ -714,10 +714,10 @@ end
 """ #= Sets the subscripts of the first part of a cref. =#"""
 function setSubscripts(subscripts::List{<:Subscript}, cref::ComponentRef)::ComponentRef
 
-  @assign () = begin
+  () = begin
     @match cref begin
       COMPONENT_REF_CREF(__) => begin
-        @assign cref.subscripts = subscripts
+        #= complex assign=#@assign cref.subscripts = subscripts
         ()
       end
     end
@@ -728,7 +728,7 @@ end
 function getSubscripts(cref::ComponentRef)::List{Subscript}
   local subscripts::List{Subscript}
 
-  @assign subscripts = begin
+  subscripts = begin
     @match cref begin
       COMPONENT_REF_CREF(__) => begin
         cref.subscripts
@@ -744,7 +744,7 @@ end
 
 function hasSubscripts(cref::ComponentRef)::Bool
   local hs::Bool
-  @assign hs = begin
+  hs = begin
     @match cref begin
       COMPONENT_REF_CREF(__) => begin
         !listEmpty(cref.subscripts) || hasSubscripts(cref.restCref)
@@ -763,14 +763,14 @@ function applySubscripts2(
   cref::ComponentRef,
 )::Tuple{List{Subscript}, ComponentRef}
 
-  @assign (subscripts, cref) = begin
+  (subscripts, cref) = begin
     local rest_cref::ComponentRef
     local cref_subs::List{Subscript}
     @match cref begin
       COMPONENT_REF_CREF(subscripts = cref_subs) => begin
-        @assign (subscripts, rest_cref) = applySubscripts2(subscripts, cref.restCref)
+        (subscripts, rest_cref) = applySubscripts2(subscripts, cref.restCref)
         if !listEmpty(subscripts)
-          @assign (cref_subs, subscripts) = mergeList(
+          (cref_subs, subscripts) = mergeList(
             subscripts,
             cref_subs,
             Type.dimensionCount(cref.ty),
@@ -795,10 +795,10 @@ end
 
 function addSubscript(subscript::Subscript, cref::ComponentRef)::ComponentRef
 
-  @assign () = begin
+  () = begin
     @match cref begin
       COMPONENT_REF_CREF(__) => begin
-        @assign cref.subscripts = listAppend(cref.subscripts, list(subscript))
+        #= complex assign=#@assign cref.subscripts = listAppend(cref.subscripts, list(subscript))
         ()
       end
     end
@@ -819,11 +819,11 @@ function subscriptsVariability(
   var::VariabilityType = Variability.CONSTANT,
 )::VariabilityType
 
-  @assign () = begin
+  () = begin
     @match cref begin
       COMPONENT_REF_CREF(origin = Origin.CREF) => begin
         for sub in cref.subscripts
-          @assign var =
+          var =
             variabilityMax(var, variability(sub))
         end
         ()
@@ -840,7 +840,7 @@ end
 """ #= Returns the variability of the component node the cref refers to. =#"""
 function nodeVariability(cref::ComponentRef)::VariabilityType
   local var::VariabilityType
-  @assign var = begin
+  var = begin
     @match cref begin
       COMPONENT_REF_CREF(node = COMPONENT_NODE(__)) => begin
         variability(component(cref.node))
@@ -855,10 +855,10 @@ end
 
 function getSubscriptedType2(restCref::ComponentRef, accumTy::NFType)::NFType
   local ty::NFType
-  @assign ty = begin
+  ty = begin
     @match restCref begin
       COMPONENT_REF_CREF(origin = Origin.CREF) => begin
-        @assign ty = liftArrayLeftList(
+        ty = liftArrayLeftList(
           accumTy,
           arrayDims(subscript(restCref.ty, restCref.subscripts)),
         )
@@ -875,7 +875,7 @@ end
 """ #= Returns the type of a cref, with the subscripts taken into account. =#"""
 function getSubscriptedType(cref::ComponentRef)::NFType
   local ty::NFType
-  @assign ty = begin
+  ty = begin
     @match cref begin
       COMPONENT_REF_CREF(__) => begin
         getSubscriptedType2(cref.restCref, subscript(cref.ty, cref.subscripts))
@@ -893,7 +893,7 @@ end
 function getComponentType(cref::ComponentRef)::M_Type
   local ty::M_Type
 
-  @assign ty = begin
+  ty = begin
     @match cref begin
       COMPONENT_REF_CREF(__) => begin
         cref.ty
@@ -909,10 +909,10 @@ end
 
 function append(cref::ComponentRef, restCref::ComponentRef)::ComponentRef
 
-  @assign cref = begin
+  cref = begin
     @match cref begin
       COMPONENT_REF_CREF(__) => begin
-        @assign cref.restCref = append(cref.restCref, restCref)
+        #= Complex assign=#@assign cref.restCref = append(cref.restCref, restCref)
         cref
       end
 
@@ -929,7 +929,7 @@ function firstNonScope(cref::ComponentRef)::ComponentRef
 
   local rest_cr::ComponentRef = rest(cref)
 
-  @assign first = begin
+  first = begin
     @match rest_cr begin
       COMPONENT_REF_CREF(origin = Origin.SCOPE) => begin
         cref
@@ -956,7 +956,7 @@ end
 
 function firstName(cref::ComponentRef)::String
   local nameVar::String
-  @assign nameVar = begin
+  nameVar = begin
     @match cref begin
       COMPONENT_REF_CREF(__) => begin
         name(cref.node)
@@ -971,10 +971,10 @@ end
 
 function updateNodeType(cref::ComponentRef)::ComponentRef
 
-  @assign () = begin
+  () = begin
     @match cref begin
       COMPONENT_REF_CREF(__) => begin
-        @assign cref.ty = getType(cref.node)
+        #= complex assign=#@assign cref.ty = getType(cref.node)
         ()
       end
 
@@ -996,7 +996,7 @@ end
 function containsNode(cref::ComponentRef, node::InstNode)::Bool
   local res::Bool
 
-  @assign res = begin
+  res = begin
     @match cref begin
       COMPONENT_REF_CREF(__) => begin
         refEqual(cref.node, node) || containsNode(cref.restCref, node)
@@ -1020,7 +1020,7 @@ end
 function isIterator(cref::ComponentRef)::Bool
   local isIterator::Bool
 
-  @assign isIterator = begin
+  isIterator = begin
     @match cref begin
       COMPONENT_REF_CREF(origin = Origin.ITERATOR) => begin
         true
@@ -1037,7 +1037,7 @@ end
 function isSimple(cref::ComponentRef)::Bool
   local isSimple::Bool
 
-  @assign isSimple = begin
+  isSimple = begin
     @match cref begin
       COMPONENT_REF_CREF(restCref = COMPONENT_REF_EMPTY(__)) => begin
         true
@@ -1054,7 +1054,7 @@ end
 function isEmpty(cref::ComponentRef)::Bool
   local isEmpty::Bool
 
-  @assign isEmpty = begin
+  isEmpty = begin
     @match cref begin
       COMPONENT_REF_EMPTY(__) => begin
         true
@@ -1083,7 +1083,7 @@ function fromAbsynCref(
   restCref::ComponentRef = COMPONENT_REF_EMPTY(),
 )::ComponentRef
   local cref::ComponentRef
-  @assign cref = begin
+  cref = begin
     @match acref begin
       Absyn.CREF_IDENT(__) => begin
         fromAbsyn(NAME_NODE(acref.name), acref.subscripts, restCref)
@@ -1115,8 +1115,8 @@ function fromAbsyn(
 )::ComponentRef
   local cref::ComponentRef
   local sl::List{Subscript}
-  @assign sl = list(SUBSCRIPT_RAW_SUBSCRIPT(s) for s in subs)
-  @assign cref = COMPONENT_REF_CREF(node, sl, TYPE_UNKNOWN(), Origin.CREF, restCref)
+  sl = list(SUBSCRIPT_RAW_SUBSCRIPT(s) for s in subs)
+  cref = COMPONENT_REF_CREF(node, sl, TYPE_UNKNOWN(), Origin.CREF, restCref)
   return cref
 end
 

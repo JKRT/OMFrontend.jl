@@ -191,9 +191,9 @@
         function getKnownUnits() ::HashTableStringToUnit.HashTable
               local outKnownUnits::HashTableStringToUnit.HashTable
 
-              @assign outKnownUnits = HashTableStringToUnit.emptyHashTableSized(Util.nextPrime(4 * listLength(LU_COMPLEXUNITS)))
+              outKnownUnits = HashTableStringToUnit.emptyHashTableSized(Util.nextPrime(4 * listLength(LU_COMPLEXUNITS)))
               for unit in LU_COMPLEXUNITS
-                @assign outKnownUnits = BaseHashTable.add(unit, outKnownUnits)
+                outKnownUnits = BaseHashTable.add(unit, outKnownUnits)
               end
           outKnownUnits
         end
@@ -204,11 +204,11 @@
               local s::String
               local ut::Unit
 
-              @assign outKnownUnitsInverse = HashTableUnitToString.emptyHashTableSized(Util.nextPrime(4 * listLength(LU_COMPLEXUNITS)))
+              outKnownUnitsInverse = HashTableUnitToString.emptyHashTableSized(Util.nextPrime(4 * listLength(LU_COMPLEXUNITS)))
               for unit in LU_COMPLEXUNITS
-                @assign (s, ut) = unit
+                (s, ut) = unit
                 if ! BaseHashTable.hasKey(ut, outKnownUnitsInverse)
-                  @assign outKnownUnitsInverse = BaseHashTable.add((ut, s), outKnownUnitsInverse)
+                  outKnownUnitsInverse = BaseHashTable.add((ut, s), outKnownUnitsInverse)
                 end
               end
           outKnownUnitsInverse
@@ -217,7 +217,7 @@
         function isUnit(inUnit::Unit) ::Bool
               local b::Bool
 
-              @assign b = begin
+              b = begin
                 @match inUnit begin
                   UNIT(__)  => begin
                     true
@@ -234,7 +234,7 @@
         function isMaster(unit::Unit) ::Bool
               local res::Bool
 
-              @assign res = begin
+              res = begin
                 @match unit begin
                   MASTER(__)  => begin
                     true
@@ -253,15 +253,15 @@
 
               local str::String
 
-              @assign str = unit2string(inKey)
-              @assign outHash = stringHashDjb2Mod(str, inMod)
+              str = unit2string(inKey)
+              outHash = stringHashDjb2Mod(str, inMod)
           outHash
         end
 
         function unitEqual(inKey::Unit, inKey2::Unit) ::Bool
               local res::Bool
 
-              @assign res = begin
+              res = begin
                   local factor1::AbstractFloat
                   local factor2::AbstractFloat
                   local r::AbstractFloat
@@ -297,7 +297,7 @@
                   end
 
                   (UNIT(factor1, i1, i2, i3, i4, i5, i6, i7), UNIT(factor2, j1, j2, j3, j4, j5, j6, j7))  => begin
-                      @assign r = realMax(realAbs(factor1), realAbs(factor2))
+                      r = realMax(realAbs(factor1), realAbs(factor2))
                       @match true = realLe(realDiv(realAbs(realSub(factor1, factor2)), r), 1e-3)
                       @match true = intEq(i1, j1)
                       @match true = intEq(i2, j2)
@@ -333,7 +333,7 @@
         function unit2string(inUnit::Unit) ::String
               local outString::String
 
-              @assign outString = begin
+              outString = begin
                   local s::String
                   local str::String
                   local b::Bool
@@ -348,118 +348,118 @@
                   local i7::Int
                 @match inUnit begin
                   UNIT(factor1, i1, i2, i3, i4, i5, i6, i7)  => begin
-                      @assign str = realString(factor1) + " * "
-                      @assign b = false
-                      @assign s = "mol^(" + intString(i1) + ")"
-                      @assign s = if intEq(i1, 0)
+                      str = realString(factor1) + " * "
+                      b = false
+                      s = "mol^(" + intString(i1) + ")"
+                      s = if intEq(i1, 0)
                             ""
                           else
                             s
                           end
-                      @assign b = b || intNe(i1, 0)
-                      @assign str = str + s
-                      @assign s = if b && intNe(i2, 0)
+                      b = b || intNe(i1, 0)
+                      str = str + s
+                      s = if b && intNe(i2, 0)
                             " * "
                           else
                             ""
                           end
-                      @assign str = str + s
-                      @assign s = "cd^(" + intString(i2) + ")"
-                      @assign s = if intEq(i2, 0)
+                      str = str + s
+                      s = "cd^(" + intString(i2) + ")"
+                      s = if intEq(i2, 0)
                             ""
                           else
                             s
                           end
-                      @assign b = b || intNe(i2, 0)
-                      @assign str = str + s
-                      @assign s = if b && intNe(i3, 0)
+                      b = b || intNe(i2, 0)
+                      str = str + s
+                      s = if b && intNe(i3, 0)
                             " * "
                           else
                             ""
                           end
-                      @assign str = str + s
-                      @assign s = "m^(" + intString(i3) + ")"
-                      @assign s = if intEq(i3, 0)
+                      str = str + s
+                      s = "m^(" + intString(i3) + ")"
+                      s = if intEq(i3, 0)
                             ""
                           else
                             s
                           end
-                      @assign b = b || intNe(i3, 0)
-                      @assign str = str + s
-                      @assign s = if b && intNe(i4, 0)
+                      b = b || intNe(i3, 0)
+                      str = str + s
+                      s = if b && intNe(i4, 0)
                             " * "
                           else
                             ""
                           end
-                      @assign str = str + s
-                      @assign s = "s^(" + intString(i4) + ")"
-                      @assign s = if intEq(i4, 0)
+                      str = str + s
+                      s = "s^(" + intString(i4) + ")"
+                      s = if intEq(i4, 0)
                             ""
                           else
                             s
                           end
-                      @assign b = b || intNe(i4, 0)
-                      @assign str = str + s
-                      @assign s = if b && intNe(i5, 0)
+                      b = b || intNe(i4, 0)
+                      str = str + s
+                      s = if b && intNe(i5, 0)
                             " * "
                           else
                             ""
                           end
-                      @assign str = str + s
-                      @assign s = "A^(" + intString(i5) + ")"
-                      @assign s = if intEq(i5, 0)
+                      str = str + s
+                      s = "A^(" + intString(i5) + ")"
+                      s = if intEq(i5, 0)
                             ""
                           else
                             s
                           end
-                      @assign b = b || intNe(i5, 0)
-                      @assign str = str + s
-                      @assign s = if b && intNe(i6, 0)
+                      b = b || intNe(i5, 0)
+                      str = str + s
+                      s = if b && intNe(i6, 0)
                             " * "
                           else
                             ""
                           end
-                      @assign str = str + s
-                      @assign s = "K^(" + intString(i6) + ")"
-                      @assign s = if intEq(i6, 0)
+                      str = str + s
+                      s = "K^(" + intString(i6) + ")"
+                      s = if intEq(i6, 0)
                             ""
                           else
                             s
                           end
-                      @assign b = b || intNe(i6, 0)
-                      @assign str = str + s
-                      @assign s = if b && intNe(i7, 0)
+                      b = b || intNe(i6, 0)
+                      str = str + s
+                      s = if b && intNe(i7, 0)
                             " * "
                           else
                             ""
                           end
-                      @assign str = str + s
-                      @assign s = "g^(" + intString(i7) + ")"
-                      @assign s = if intEq(i7, 0)
+                      str = str + s
+                      s = "g^(" + intString(i7) + ")"
+                      s = if intEq(i7, 0)
                             ""
                           else
                             s
                           end
-                      @assign b = b || intNe(i7, 0)
-                      @assign str = str + s
-                      @assign s = if b
+                      b = b || intNe(i7, 0)
+                      str = str + s
+                      s = if b
                             ""
                           else
                             "1"
                           end
-                      @assign str = str + s
+                      str = str + s
                     str
                   end
 
                   MASTER(crefList)  => begin
-                      @assign str = "MASTER("
-                      @assign str = str + printListCr(crefList)
-                      @assign str = str + ")"
+                      str = "MASTER("
+                      str = str + printListCr(crefList)
+                      str = str + ")"
                     str
                   end
 
                   UNKNOWN(s)  => begin
-                      @assign str = "UNKOWN(" + s + ")"
+                      str = "UNKOWN(" + s + ")"
                     str
                   end
                 end
@@ -473,7 +473,7 @@
         function printListCr(inlCr::List{<:ComponentRef}) ::String
               local outS::String
 
-              @assign outS = begin
+              outS = begin
                   local lCr::List{ComponentRef}
                   local cr::ComponentRef
                   local s::String
@@ -483,13 +483,13 @@
                   end
 
                   cr <|  nil()  => begin
-                      @assign s = toString(cr)
+                      s = toString(cr)
                     s
                   end
 
                   cr <| lCr  => begin
-                      @assign s = toString(cr)
-                      @assign s = s + ", " + printListCr(lCr)
+                      s = toString(cr)
+                      s = s + ", " + printListCr(lCr)
                     s
                   end
                 end
@@ -518,15 +518,15 @@
 
               @match UNIT(factor1, i1, i2, i3, i4, i5, i6, i7) = inUnit1
               @match UNIT(factor2, j1, j2, j3, j4, j5, j6, j7) = inUnit2
-              @assign factor1 = factor1 * factor2
-              @assign i1 = i1 + j1
-              @assign i2 = i2 + j2
-              @assign i3 = i3 + j3
-              @assign i4 = i4 + j4
-              @assign i5 = i5 + j5
-              @assign i6 = i6 + j6
-              @assign i7 = i7 + j7
-              @assign outUnit = UNIT(factor1, i1, i2, i3, i4, i5, i6, i7)
+              factor1 = factor1 * factor2
+              i1 = i1 + j1
+              i2 = i2 + j2
+              i3 = i3 + j3
+              i4 = i4 + j4
+              i5 = i5 + j5
+              i6 = i6 + j6
+              i7 = i7 + j7
+              outUnit = UNIT(factor1, i1, i2, i3, i4, i5, i6, i7)
           outUnit
         end
 
@@ -552,15 +552,15 @@
 
               @match UNIT(factor1, i1, i2, i3, i4, i5, i6, i7) = inUnit1
               @match UNIT(factor2, j1, j2, j3, j4, j5, j6, j7) = inUnit2
-              @assign factor1 = factor1 / factor2
-              @assign i1 = i1 - j1
-              @assign i2 = i2 - j2
-              @assign i3 = i3 - j3
-              @assign i4 = i4 - j4
-              @assign i5 = i5 - j5
-              @assign i6 = i6 - j6
-              @assign i7 = i7 - j7
-              @assign outUnit = UNIT(factor1, i1, i2, i3, i4, i5, i6, i7)
+              factor1 = factor1 / factor2
+              i1 = i1 - j1
+              i2 = i2 - j2
+              i3 = i3 - j3
+              i4 = i4 - j4
+              i5 = i5 - j5
+              i6 = i6 - j6
+              i7 = i7 - j7
+              outUnit = UNIT(factor1, i1, i2, i3, i4, i5, i6, i7)
           outUnit
         end
 
@@ -577,26 +577,26 @@
               local i7::Int
 
               @match UNIT(factor, i1, i2, i3, i4, i5, i6, i7) = inUnit
-              @assign factor = realPow(factor, intReal(inExp))
-              @assign i1 = i1 * inExp
-              @assign i2 = i2 * inExp
-              @assign i3 = i3 * inExp
-              @assign i4 = i4 * inExp
-              @assign i5 = i5 * inExp
-              @assign i6 = i6 * inExp
-              @assign i7 = i7 * inExp
-              @assign outUnit = UNIT(factor, i1, i2, i3, i4, i5, i6, i7)
+              factor = realPow(factor, intReal(inExp))
+              i1 = i1 * inExp
+              i2 = i2 * inExp
+              i3 = i3 * inExp
+              i4 = i4 * inExp
+              i5 = i5 * inExp
+              i6 = i6 * inExp
+              i7 = i7 * inExp
+              outUnit = UNIT(factor, i1, i2, i3, i4, i5, i6, i7)
           outUnit
         end
 
         function unitMulReal(inUnit::Unit, inFactor::AbstractFloat) ::Unit
               local outUnit::Unit
 
-              @assign outUnit = begin
+              outUnit = begin
                   local unit::Unit
                 @match inUnit begin
                   unit && UNIT(__)  => begin
-                      @assign unit.factor = unit.factor * inFactor
+                      #= complex assign=#@assign unit.factor = unit.factor * inFactor
                     unit
                   end
 
@@ -622,32 +622,32 @@
               local i6::Int
               local i7::Int
 
-              @assign i = realInt(inExponent)
-              @assign r = realDiv(1.0, inExponent)
+              i = realInt(inExponent)
+              r = realDiv(1.0, inExponent)
               @match UNIT(factor, i1, i2, i3, i4, i5, i6, i7) = inUnit
-              @assign factor = realPow(factor, r)
-              @assign r = realDiv(intReal(i1), inExponent)
-              @assign i1 = intDiv(i1, i)
+              factor = realPow(factor, r)
+              r = realDiv(intReal(i1), inExponent)
+              i1 = intDiv(i1, i)
               @match true = realEq(r, intReal(i1))
-              @assign r = realDiv(intReal(i2), inExponent)
-              @assign i2 = intDiv(i2, i)
+              r = realDiv(intReal(i2), inExponent)
+              i2 = intDiv(i2, i)
               @match true = realEq(r, intReal(i2))
-              @assign r = realDiv(intReal(i3), inExponent)
-              @assign i3 = intDiv(i3, i)
+              r = realDiv(intReal(i3), inExponent)
+              i3 = intDiv(i3, i)
               @match true = realEq(r, intReal(i3))
-              @assign r = realDiv(intReal(i4), inExponent)
-              @assign i4 = intDiv(i4, i)
+              r = realDiv(intReal(i4), inExponent)
+              i4 = intDiv(i4, i)
               @match true = realEq(r, intReal(i4))
-              @assign r = realDiv(intReal(i5), inExponent)
-              @assign i5 = intDiv(i5, i)
+              r = realDiv(intReal(i5), inExponent)
+              i5 = intDiv(i5, i)
               @match true = realEq(r, intReal(i5))
-              @assign r = realDiv(intReal(i6), inExponent)
-              @assign i6 = intDiv(i6, i)
+              r = realDiv(intReal(i6), inExponent)
+              i6 = intDiv(i6, i)
               @match true = realEq(r, intReal(i6))
-              @assign r = realDiv(intReal(i7), inExponent)
-              @assign i7 = intDiv(i7, i)
+              r = realDiv(intReal(i7), inExponent)
+              i7 = intDiv(i7, i)
               @match true = realEq(r, intReal(i7))
-              @assign outUnit = UNIT(factor, i1, i2, i3, i4, i5, i6, i7)
+              outUnit = UNIT(factor, i1, i2, i3, i4, i5, i6, i7)
           outUnit
         end
 
@@ -655,7 +655,7 @@
         function unitString(inUnit::Unit, inHtU2S::HashTableUnitToString.HashTable = getKnownUnitsInverse()) ::String
               local outString::String
 
-              @assign outString = begin
+              outString = begin
                   local s::String
                   local s1::String
                   local s2::String
@@ -669,133 +669,133 @@
                   local unit::Unit
                 @match inUnit begin
                   _ where (BaseHashTable.hasKey(inUnit, inHtU2S))  => begin
-                      @assign s = BaseHashTable.get(inUnit, inHtU2S)
+                      s = BaseHashTable.get(inUnit, inHtU2S)
                     s
                   end
 
                   unit && UNIT(__)  => begin
-                      @assign s = prefix2String(unit.factor)
-                      @assign s = if realEq(unit.factor, 1.0)
+                      s = prefix2String(unit.factor)
+                      s = if realEq(unit.factor, 1.0)
                             ""
                           else
                             s
                           end
-                      @assign b = false
-                      @assign sExponent = if intEq(unit.mol, 1)
+                      b = false
+                      sExponent = if intEq(unit.mol, 1)
                             ""
                           else
                             intString(unit.mol)
                           end
-                      @assign s1 = "mol" + sExponent
-                      @assign s1 = if intEq(unit.mol, 0)
+                      s1 = "mol" + sExponent
+                      s1 = if intEq(unit.mol, 0)
                             ""
                           else
                             s1
                           end
-                      @assign b = b || intNe(unit.mol, 0)
-                      @assign s2 = if b && intNe(unit.cd, 0)
+                      b = b || intNe(unit.mol, 0)
+                      s2 = if b && intNe(unit.cd, 0)
                             "."
                           else
                             ""
                           end
-                      @assign sExponent = if intEq(unit.cd, 1)
+                      sExponent = if intEq(unit.cd, 1)
                             ""
                           else
                             intString(unit.cd)
                           end
-                      @assign s2 = s2 + "cd" + sExponent
-                      @assign s2 = if intEq(unit.cd, 0)
+                      s2 = s2 + "cd" + sExponent
+                      s2 = if intEq(unit.cd, 0)
                             ""
                           else
                             s2
                           end
-                      @assign b = b || intNe(unit.cd, 0)
-                      @assign s3 = if b && intNe(unit.m, 0)
+                      b = b || intNe(unit.cd, 0)
+                      s3 = if b && intNe(unit.m, 0)
                             "."
                           else
                             ""
                           end
-                      @assign sExponent = if intEq(unit.m, 1)
+                      sExponent = if intEq(unit.m, 1)
                             ""
                           else
                             intString(unit.m)
                           end
-                      @assign s3 = s3 + "m" + sExponent
-                      @assign s3 = if intEq(unit.m, 0)
+                      s3 = s3 + "m" + sExponent
+                      s3 = if intEq(unit.m, 0)
                             ""
                           else
                             s3
                           end
-                      @assign b = b || intNe(unit.m, 0)
-                      @assign s4 = if b && intNe(unit.s, 0)
+                      b = b || intNe(unit.m, 0)
+                      s4 = if b && intNe(unit.s, 0)
                             "."
                           else
                             ""
                           end
-                      @assign sExponent = if intEq(unit.s, 1)
+                      sExponent = if intEq(unit.s, 1)
                             ""
                           else
                             intString(unit.s)
                           end
-                      @assign s4 = s4 + "s" + sExponent
-                      @assign s4 = if intEq(unit.s, 0)
+                      s4 = s4 + "s" + sExponent
+                      s4 = if intEq(unit.s, 0)
                             ""
                           else
                             s4
                           end
-                      @assign b = b || intNe(unit.s, 0)
-                      @assign s5 = if b && intNe(unit.A, 0)
+                      b = b || intNe(unit.s, 0)
+                      s5 = if b && intNe(unit.A, 0)
                             "."
                           else
                             ""
                           end
-                      @assign sExponent = if intEq(unit.A, 1)
+                      sExponent = if intEq(unit.A, 1)
                             ""
                           else
                             intString(unit.A)
                           end
-                      @assign s5 = s5 + "A" + sExponent
-                      @assign s5 = if intEq(unit.A, 0)
+                      s5 = s5 + "A" + sExponent
+                      s5 = if intEq(unit.A, 0)
                             ""
                           else
                             s5
                           end
-                      @assign b = b || intNe(unit.A, 0)
-                      @assign s6 = if b && intNe(unit.K, 0)
+                      b = b || intNe(unit.A, 0)
+                      s6 = if b && intNe(unit.K, 0)
                             "."
                           else
                             ""
                           end
-                      @assign sExponent = if intEq(unit.K, 1)
+                      sExponent = if intEq(unit.K, 1)
                             ""
                           else
                             intString(unit.K)
                           end
-                      @assign s6 = s6 + "K" + sExponent
-                      @assign s6 = if intEq(unit.K, 0)
+                      s6 = s6 + "K" + sExponent
+                      s6 = if intEq(unit.K, 0)
                             ""
                           else
                             s6
                           end
-                      @assign b = b || intNe(unit.K, 0)
-                      @assign s7 = if b && intNe(unit.g, 0)
+                      b = b || intNe(unit.K, 0)
+                      s7 = if b && intNe(unit.g, 0)
                             "."
                           else
                             ""
                           end
-                      @assign sExponent = if intEq(unit.g, 1)
+                      sExponent = if intEq(unit.g, 1)
                             ""
                           else
                             intString(unit.g)
                           end
-                      @assign s7 = s7 + "g" + sExponent
-                      @assign s7 = if intEq(unit.g, 0)
+                      s7 = s7 + "g" + sExponent
+                      s7 = if intEq(unit.g, 0)
                             ""
                           else
                             s7
                           end
-                      @assign b = b || intNe(unit.g, 0)
-                      @assign s = if b
+                      b = b || intNe(unit.g, 0)
+                      s = if b
                             s + s1 + s2 + s3 + s4 + s5 + s6 + s7
                           else
                             "1"
@@ -815,7 +815,7 @@
         function prefix2String(inReal::AbstractFloat) ::String
               local outPrefix::String
 
-              @assign outPrefix = begin
+              outPrefix = begin
                 @match inReal begin
                   1e-24  => begin
                     "y"
@@ -909,12 +909,12 @@
               local charList::List{String}
               local tokenList::List{Token}
 
-              @assign charList = stringListStringChar(inUnitString)
+              charList = stringListStringChar(inUnitString)
               if listEmpty(charList)
                 fail()
               end
-              @assign tokenList = lexer(charList)
-              @assign outUnit = parser3(list(true, true), tokenList, UNIT(1e0, 0, 0, 0, 0, 0, 0, 0), inKnownUnits)
+              tokenList = lexer(charList)
+              outUnit = parser3(list(true, true), tokenList, UNIT(1e0, 0, 0, 0, 0, 0, 0, 0), inKnownUnits)
               if ! isUnit(outUnit)
                 if Flags.isSet(Flags.FAILTRACE)
                   Debug.traceln(getInstanceName() + ": failed to parse unit string " + inUnitString)
@@ -927,7 +927,7 @@
         function parser3(inMul::List{<:Bool} #= true=Mul, false=Div, initial call with true =#, inTokenList::List{<:Token} #= Tokenliste =#, inUnit::Unit #= initial call with UNIT(1e0, 0, 0, 0, 0, 0, 0, 0) =#, inHtS2U::HashTableStringToUnit.HashTable) ::Unit
               local outUnit::Unit
 
-              @assign outUnit = begin
+              outUnit = begin
                   local s::String
                   local s1::String
                   local s2::String
@@ -946,63 +946,63 @@
                   end
 
                   (bMul <| bRest, T_NUMBER(number = 1) <| tokens, _, _)  => begin
-                      @assign ut = UNIT(1e0, 0, 0, 0, 0, 0, 0, 0)
-                      @assign ut = if bMul
+                      ut = UNIT(1e0, 0, 0, 0, 0, 0, 0, 0)
+                      ut = if bMul
                             unitMul(inUnit, ut)
                           else
                             unitDiv(inUnit, ut)
                           end
-                      @assign ut = parser3(bRest, tokens, ut, inHtS2U)
+                      ut = parser3(bRest, tokens, ut, inHtS2U)
                     ut
                   end
 
                   (bMul <| bRest, T_UNIT(unit = s) <| T_NUMBER(exponent) <| tokens, _, _)  => begin
-                      @assign ut = unitToken2unit(s, inHtS2U)
-                      @assign ut = unitPow(ut, exponent)
-                      @assign ut = if bMul
+                      ut = unitToken2unit(s, inHtS2U)
+                      ut = unitPow(ut, exponent)
+                      ut = if bMul
                             unitMul(inUnit, ut)
                           else
                             unitDiv(inUnit, ut)
                           end
-                      @assign ut = parser3(bRest, tokens, ut, inHtS2U)
+                      ut = parser3(bRest, tokens, ut, inHtS2U)
                     ut
                   end
 
                   (bMul <| bRest, T_UNIT(unit = s) <| tokens, _, _)  => begin
-                      @assign ut = unitToken2unit(s, inHtS2U)
-                      @assign ut = if bMul
+                      ut = unitToken2unit(s, inHtS2U)
+                      ut = if bMul
                             unitMul(inUnit, ut)
                           else
                             unitDiv(inUnit, ut)
                           end
-                      @assign ut = parser3(bRest, tokens, ut, inHtS2U)
+                      ut = parser3(bRest, tokens, ut, inHtS2U)
                     ut
                   end
 
                   (bMul <| _, T_MUL(__) <| T_LPAREN(__) <| tokens, _, _)  => begin
-                      @assign ut = parser3(_cons(bMul, _cons(bMul, inMul)), tokens, inUnit, inHtS2U)
+                      ut = parser3(_cons(bMul, _cons(bMul, inMul)), tokens, inUnit, inHtS2U)
                     ut
                   end
 
                   (bMul <| _, T_DIV(__) <| T_LPAREN(__) <| tokens, _, _)  => begin
-                      @assign b = ! bMul
-                      @assign ut = parser3(_cons(b, _cons(b, inMul)), tokens, inUnit, inHtS2U)
+                      b = ! bMul
+                      ut = parser3(_cons(b, _cons(b, inMul)), tokens, inUnit, inHtS2U)
                     ut
                   end
 
                   (_ <| bRest, T_RPAREN(__) <| tokens, _, _)  => begin
-                      @assign ut = parser3(bRest, tokens, inUnit, inHtS2U)
+                      ut = parser3(bRest, tokens, inUnit, inHtS2U)
                     ut
                   end
 
                   (bMul <| _, T_MUL(__) <| tokens, _, _)  => begin
-                      @assign ut = parser3(_cons(bMul, inMul), tokens, inUnit, inHtS2U)
+                      ut = parser3(_cons(bMul, inMul), tokens, inUnit, inHtS2U)
                     ut
                   end
 
                   (bMul <| _, T_DIV(__) <| tokens, _, _)  => begin
-                      @assign b = ! bMul
-                      @assign ut = parser3(_cons(b, inMul), tokens, inUnit, inHtS2U)
+                      b = ! bMul
+                      ut = parser3(_cons(b, inMul), tokens, inUnit, inHtS2U)
                     ut
                   end
 
@@ -1034,22 +1034,22 @@
         function unitToken2unit(inS::String, inHtS2U::HashTableStringToUnit.HashTable) ::Unit
               local outUnit::Unit
 
-              @assign outUnit = begin
+              outUnit = begin
                   local s::String
                   local s2::String
                   local r::AbstractFloat
                   local ut::Unit
                 @matchcontinue (inS, inHtS2U) begin
                   (_, _)  => begin
-                      @assign ut = BaseHashTable.get(inS, inHtS2U)
+                      ut = BaseHashTable.get(inS, inHtS2U)
                     ut
                   end
 
                   _  => begin
-                        @assign s = stringGetStringChar(inS, 1)
-                        @assign (r, s) = getPrefix(s, inS)
-                        @assign ut = unitToken2unit(s, inHtS2U)
-                        @assign ut = unitMulReal(ut, r)
+                        s = stringGetStringChar(inS, 1)
+                        (r, s) = getPrefix(s, inS)
+                        ut = unitToken2unit(s, inHtS2U)
+                        ut = unitMulReal(ut, r)
                       ut
                   end
                 end
@@ -1061,122 +1061,122 @@
               local outUnit::String
               local outR::AbstractFloat
 
-              @assign (outR, outUnit) = begin
+              (outR, outUnit) = begin
                   local strRest::List{String}
                   local s::String
                 @matchcontinue (inS, inS2) begin
                   ("y", _)  => begin
                       @match _cons(_, strRest) = stringListStringChar(inS2)
-                      @assign s = stringCharListString(strRest)
+                      s = stringCharListString(strRest)
                     (1e-24, s)
                   end
 
                   ("z", _)  => begin
                       @match _cons(_, strRest) = stringListStringChar(inS2)
-                      @assign s = stringCharListString(strRest)
+                      s = stringCharListString(strRest)
                     (1e-21, s)
                   end
 
                   ("a", _)  => begin
                       @match _cons(_, strRest) = stringListStringChar(inS2)
-                      @assign s = stringCharListString(strRest)
+                      s = stringCharListString(strRest)
                     (1e-18, s)
                   end
 
                   ("f", _)  => begin
                       @match _cons(_, strRest) = stringListStringChar(inS2)
-                      @assign s = stringCharListString(strRest)
+                      s = stringCharListString(strRest)
                     (1e-15, s)
                   end
 
                   ("p", _)  => begin
                       @match _cons(_, strRest) = stringListStringChar(inS2)
-                      @assign s = stringCharListString(strRest)
+                      s = stringCharListString(strRest)
                     (1e-12, s)
                   end
 
                   ("u", _)  => begin
                       @match _cons(_, strRest) = stringListStringChar(inS2)
-                      @assign s = stringCharListString(strRest)
+                      s = stringCharListString(strRest)
                     (1e-6, s)
                   end
 
                   ("m", _)  => begin
                       @match _cons(_, strRest) = stringListStringChar(inS2)
-                      @assign s = stringCharListString(strRest)
+                      s = stringCharListString(strRest)
                     (1e-3, s)
                   end
 
                   ("c", _)  => begin
                       @match _cons(_, strRest) = stringListStringChar(inS2)
-                      @assign s = stringCharListString(strRest)
+                      s = stringCharListString(strRest)
                     (1e-2, s)
                   end
 
                   ("d", _)  => begin
-                      @assign strRest = stringListStringChar(inS2)
+                      strRest = stringListStringChar(inS2)
                       @match _cons("d", _cons("a", strRest)) = strRest
-                      @assign s = stringCharListString(strRest)
+                      s = stringCharListString(strRest)
                     (1e1, s)
                   end
 
                   ("d", _)  => begin
                       @match _cons(_, strRest) = stringListStringChar(inS2)
-                      @assign s = stringCharListString(strRest)
+                      s = stringCharListString(strRest)
                     (1e-1, s)
                   end
 
                   ("h", _)  => begin
                       @match _cons(_, strRest) = stringListStringChar(inS2)
-                      @assign s = stringCharListString(strRest)
+                      s = stringCharListString(strRest)
                     (1e2, s)
                   end
 
                   ("k", _)  => begin
                       @match _cons(_, strRest) = stringListStringChar(inS2)
-                      @assign s = stringCharListString(strRest)
+                      s = stringCharListString(strRest)
                     (1e3, s)
                   end
 
                   ("M", _)  => begin
                       @match _cons(_, strRest) = stringListStringChar(inS2)
-                      @assign s = stringCharListString(strRest)
+                      s = stringCharListString(strRest)
                     (1e6, s)
                   end
 
                   ("G", _)  => begin
                       @match _cons(_, strRest) = stringListStringChar(inS2)
-                      @assign s = stringCharListString(strRest)
+                      s = stringCharListString(strRest)
                     (1e9, s)
                   end
 
                   ("T", _)  => begin
                       @match _cons(_, strRest) = stringListStringChar(inS2)
-                      @assign s = stringCharListString(strRest)
+                      s = stringCharListString(strRest)
                     (1e12, s)
                   end
 
                   ("P", _)  => begin
                       @match _cons(_, strRest) = stringListStringChar(inS2)
-                      @assign s = stringCharListString(strRest)
+                      s = stringCharListString(strRest)
                     (1e15, s)
                   end
 
                   ("E", _)  => begin
                       @match _cons(_, strRest) = stringListStringChar(inS2)
-                      @assign s = stringCharListString(strRest)
+                      s = stringCharListString(strRest)
                     (1e18, s)
                   end
 
                   ("Z", _)  => begin
                       @match _cons(_, strRest) = stringListStringChar(inS2)
-                      @assign s = stringCharListString(strRest)
+                      s = stringCharListString(strRest)
                     (1e21, s)
                   end
 
                   ("Y", _)  => begin
                       @match _cons(_, strRest) = stringListStringChar(inS2)
-                      @assign s = stringCharListString(strRest)
+                      s = stringCharListString(strRest)
                     (1e24, s)
                   end
 
@@ -1231,7 +1231,7 @@
         function lexer(inCharList::List{<:String}) ::List{Token}
               local outTokenList::List{Token}
 
-              @assign outTokenList = begin
+              outTokenList = begin
                   local charList::List{String}
                   local number::String
                   local unit::String
@@ -1243,53 +1243,53 @@
                   end
 
                   "." <| charList  => begin
-                      @assign tokenList = lexer(charList)
+                      tokenList = lexer(charList)
                     _cons(T_MUL(), tokenList)
                   end
 
                   "(" <| charList  => begin
-                      @assign tokenList = lexer(charList)
+                      tokenList = lexer(charList)
                     _cons(T_LPAREN(), tokenList)
                   end
 
                   ")" <| charList  => begin
-                      @assign tokenList = lexer(charList)
+                      tokenList = lexer(charList)
                     _cons(T_RPAREN(), tokenList)
                   end
 
                   "/" <| charList  => begin
-                      @assign tokenList = lexer(charList)
+                      tokenList = lexer(charList)
                     _cons(T_DIV(), tokenList)
                   end
 
                   "+" <| charList  => begin
-                      @assign (charList, number) = popNumber(charList)
+                      (charList, number) = popNumber(charList)
                       @match false = number == ""
-                      @assign tokenList = lexer(charList)
-                      @assign i = stringInt(number)
+                      tokenList = lexer(charList)
+                      i = stringInt(number)
                     _cons(T_NUMBER(i), tokenList)
                   end
 
                   "-" <| charList  => begin
-                      @assign (charList, number) = popNumber(charList)
+                      (charList, number) = popNumber(charList)
                       @match false = number == ""
-                      @assign tokenList = lexer(charList)
-                      @assign i = -stringInt(number)
+                      tokenList = lexer(charList)
+                      i = -stringInt(number)
                     _cons(T_NUMBER(i), tokenList)
                   end
 
                   charList  => begin
-                      @assign (charList, number) = popNumber(charList)
+                      (charList, number) = popNumber(charList)
                       @match false = number == ""
-                      @assign tokenList = lexer(charList)
-                      @assign i = stringInt(number)
+                      tokenList = lexer(charList)
+                      i = stringInt(number)
                     _cons(T_NUMBER(i), tokenList)
                   end
 
                   charList  => begin
-                      @assign (charList, unit) = popUnit(charList)
+                      (charList, unit) = popUnit(charList)
                       @match false = unit == ""
-                      @assign tokenList = lexer(charList)
+                      tokenList = lexer(charList)
                     _cons(T_UNIT(unit), tokenList)
                   end
 
@@ -1306,7 +1306,7 @@
               local outUnit::String
               local outCharList::List{String}
 
-              @assign (outCharList, outUnit) = begin
+              (outCharList, outUnit) = begin
                   local s1::String
                   local s2::String
                   local strRest::List{String}
@@ -1317,13 +1317,13 @@
 
                   s1 <| strRest  => begin
                       @match true = stringCompare(s1, "a") >= 0 && stringCompare(s1, "z") <= 0
-                      @assign (strRest, s2) = popUnit(strRest)
+                      (strRest, s2) = popUnit(strRest)
                     (strRest, s1 + s2)
                   end
 
                   s1 <| strRest  => begin
                       @match true = stringCompare(s1, "A") >= 0 && stringCompare(s1, "Z") <= 0
-                      @assign (strRest, s2) = popUnit(strRest)
+                      (strRest, s2) = popUnit(strRest)
                     (strRest, s1 + s2)
                   end
 
@@ -1339,7 +1339,7 @@
               local outNumber::String
               local outCharList::List{String}
 
-              @assign (outCharList, outNumber) = begin
+              (outCharList, outNumber) = begin
                   local s1::String
                   local s2::String
                   local strRest::List{String}
@@ -1350,9 +1350,9 @@
                   end
 
                   s1 <| strRest  => begin
-                      @assign i = stringInt(s1)
+                      i = stringInt(s1)
                       @match true = intString(i) == s1
-                      @assign (strRest, s2) = popNumber(strRest)
+                      (strRest, s2) = popNumber(strRest)
                     (strRest, s1 + s2)
                   end
 

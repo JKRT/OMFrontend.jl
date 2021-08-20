@@ -10,18 +10,18 @@ function expandCrefSet(crefs::List{<:ComponentRef})::List{ComponentRef}
   local exp::Expression
   local expl::List{Expression}
   for cref in crefs
-    @assign exp = fromCref(cref)
-    @assign exp = P_ExpandExp.ExpandExp.expandCref(exp)
+     exp = fromCref(cref)
+     exp = P_ExpandExp.ExpandExp.expandCref(exp)
     if isArray(exp)
-      @assign expl = arrayElements(exp)
-      @assign outCrefs =
+       expl = arrayElements(exp)
+       outCrefs =
         listAppend(list(toCref(e) for e in expl), outCrefs)
     else
-      @assign outCrefs = _cons(cref, outCrefs)
+       outCrefs = _cons(cref, outCrefs)
     end
   end
-  @assign outCrefs = ListUtil.sort(outCrefs, isGreater)
-  @assign outCrefs = ListUtil.sortedUnique(outCrefs, isEqual)
+   outCrefs = ListUtil.sort(outCrefs, isGreater)
+   outCrefs = ListUtil.sortedUnique(outCrefs, isEqual)
   return outCrefs
 end
 
@@ -65,15 +65,15 @@ function whenEquationIfCrefs(
   local rest_branches::List{P_Equation.Equation}
   local body::List{Equation}
   @match _cons(P_Equation.Equation.BRANCH(body = body), rest_branches) = branches
-  @assign crefs1 = whenEquationBranchCrefs(body)
+   crefs1 = whenEquationBranchCrefs(body)
   for branch in rest_branches
     @match P_Equation.Equation.BRANCH(body = body) = branch
-    @assign crefs2 = whenEquationBranchCrefs(body)
+     crefs2 = whenEquationBranchCrefs(body)
     checkCrefSetEquality(crefs1, crefs2, Error.WHEN_IF_VARIABLE_MISMATCH, source)
   end
   #=  All the branches must have the same set of crefs on the lhs.
   =#
-  @assign crefs = listAppend(crefs1, crefs)
+   crefs = listAppend(crefs1, crefs)
   return crefs
 end
 
@@ -81,7 +81,7 @@ function whenEquationEqualityCrefs(
   lhsExp::Expression,
   crefs::List{<:ComponentRef},
 )::List{ComponentRef}
-  @assign crefs = begin
+   crefs = begin
     @match lhsExp begin
       CREF_EXPRESSION(__) => begin
         _cons(lhsExp.cref, crefs)
@@ -100,7 +100,7 @@ end
 function whenEquationBranchCrefs(eql::List{<:Equation})::List{ComponentRef}
   local crefs::List{ComponentRef} = nil
   for eq in eql
-    @assign crefs = begin
+     crefs = begin
       @match eq begin
         EQUATION_EQUALITY(__) => begin
           whenEquationEqualityCrefs(eq.lhs, crefs)
@@ -124,8 +124,8 @@ function whenEquationBranchCrefs(eql::List{<:Equation})::List{ComponentRef}
       end
     end
   end
-  @assign crefs = ListUtil.sort(crefs, isGreater)
-  @assign crefs = ListUtil.sortedUnique(crefs, isEqual)
+   crefs = ListUtil.sort(crefs, isGreater)
+   crefs = ListUtil.sortedUnique(crefs, isEqual)
   return crefs
 end
 
@@ -143,10 +143,10 @@ function verifyWhenEquation(
     return
   end
   @match _cons(P_Equation.Equation.BRANCH(body = body), rest_branches) = branches
-  @assign crefs1 = whenEquationBranchCrefs(body)
+   crefs1 = whenEquationBranchCrefs(body)
   return for branch in rest_branches
     @match P_Equation.Equation.BRANCH(body = body) = branch
-    @assign crefs2 = whenEquationBranchCrefs(body)
+     crefs2 = whenEquationBranchCrefs(body)
     checkCrefSetEquality(
       crefs1,
       crefs2,
@@ -157,7 +157,7 @@ function verifyWhenEquation(
 end
 
 function verifyEquation(eq::Equation)
-  return @assign () = begin
+  return  () = begin
     @match eq begin
       EQUATION_WHEN(__) => begin
         verifyWhenEquation(eq.branches, eq.source)

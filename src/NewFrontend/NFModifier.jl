@@ -56,7 +56,7 @@ const EMPTY_MOD = MODIFIER_NOMOD()::Modifier
 
 function toString(scope::ModifierScope)::String
   local string::String
-  @assign string = begin
+  string = begin
     @match scope begin
       COMPONENT(__) => begin
         "component " + scope.name
@@ -76,7 +76,7 @@ end
 
 function name(scope::ModifierScope)::String
   local name::String
-  @assign name = begin
+  name = begin
     @match scope begin
       COMPONENT(__) => begin
         scope.name
@@ -94,7 +94,7 @@ end
 
 function fromElement(element::SCode.Element)::ModifierScope
   local scope::ModifierScope
-  @assign scope = begin
+  scope = begin
     @match element begin
       SCode.Element.COMPONENT(__) => begin
         COMPONENT(element.name)
@@ -113,27 +113,27 @@ end
 
 function toFlatString(mod::Modifier, printName::Bool = true)::String
   local string::String
-  @assign string = begin
+  string = begin
     local submods::List{Modifier}
     local subs_str::String
     local binding_str::String
     local binding_sep::String
     @match mod begin
       MODIFIER_MODIFIER(__) => begin
-        @assign submods = ModTable.listValues(mod.subModifiers)
+        submods = ModTable.listValues(mod.subModifiers)
         if !listEmpty(submods)
-          @assign subs_str =
+          subs_str =
             "(" + stringDelimitList(list(toFlatString(s) for s in submods), ", ") + ")"
-          @assign binding_sep = " = "
+          binding_sep = " = "
         else
-          @assign subs_str = ""
-          @assign binding_sep = if printName
+          subs_str = ""
+          binding_sep = if printName
             " = "
           else
             "= "
           end
         end
-        @assign binding_str = toFlatString(mod.binding, binding_sep)
+        binding_str = toFlatString(mod.binding, binding_sep)
         if printName
           mod.name + subs_str + binding_str
         else
@@ -152,27 +152,27 @@ end
 function toString(mod::Modifier, printName::Bool = true)::String
   local string::String
 
-  @assign string = begin
+  string = begin
     local submods::List{Modifier}
     local subs_str::String
     local binding_str::String
     local binding_sep::String
     @match mod begin
       MODIFIER_MODIFIER(__) => begin
-        @assign submods = ModTable.listValues(mod.subModifiers)
+        submods = ModTable.listValues(mod.subModifiers)
         if !listEmpty(submods)
-          @assign subs_str =
+          subs_str =
             "(" + stringDelimitList(list(toString(s) for s in submods), ", ") + ")"
-          @assign binding_sep = " = "
+          binding_sep = " = "
         else
-          @assign subs_str = ""
-          @assign binding_sep = if printName
+          subs_str = ""
+          binding_sep = if printName
             " = "
           else
             "= "
           end
         end
-        @assign binding_str = toString(mod.binding, binding_sep)
+        binding_str = toString(mod.binding, binding_sep)
         if printName
           mod.name + subs_str + binding_str
         else
@@ -193,10 +193,10 @@ function toString(mod::Modifier, printName::Bool = true)::String
 end
 
 function map(mod::Modifier, func::FuncT)::Modifier
-  @assign () = begin
+  () = begin
     @match mod begin
       MODIFIER_MODIFIER(__) => begin
-        @assign mod.subModifiers = ModTable.map(mod.subModifiers, func)
+        #= Complex assign=#@assign mod.subModifiers = ModTable.map(mod.subModifiers, func)
         ()
       end
 
@@ -211,7 +211,7 @@ end
 function isFinal(mod::Modifier)::Bool
   local isFinal::Bool
 
-  @assign isFinal = begin
+  isFinal = begin
     @match mod begin
       MODIFIER_MODIFIER(finalPrefix = SCode.FINAL(__)) => begin
         true
@@ -228,7 +228,7 @@ end
 function isEach(mod::Modifier)::Bool
   local isEach::Bool
 
-  @assign isEach = begin
+  isEach = begin
     @match mod begin
       MODIFIER_MODIFIER(eachPrefix = SCode.EACH(__)) => begin
         true
@@ -260,7 +260,7 @@ end
 function isRedeclare(mod::Modifier)::Bool
   local isRedeclare::Bool
 
-  @assign isRedeclare = begin
+  isRedeclare = begin
     @match mod begin
       MODIFIER_REDECLARE(__) => begin
         true
@@ -277,7 +277,7 @@ end
 function isEmpty(mod::Modifier)::Bool
   local isEmpty::Bool
 
-  @assign isEmpty = begin
+  isEmpty = begin
     @match mod begin
       MODIFIER_NOMOD(__) => begin
         true
@@ -294,7 +294,7 @@ end
 function merge(outerMod::Modifier, innerMod::Modifier, name::String = "")::Modifier
   local mergedMod::Modifier
 
-  @assign mergedMod = begin
+  mergedMod = begin
     local submods::ModTable.Tree
     local binding::Binding
     #=  One of the modifiers is NOMOD, return the other.
@@ -312,12 +312,12 @@ function merge(outerMod::Modifier, innerMod::Modifier, name::String = "")::Modif
         #=  Two modifiers, merge bindings and submodifiers.
         =#
         checkFinalOverride(innerMod.finalPrefix, outerMod, innerMod.info)
-        @assign binding = if isBound(outerMod.binding)
+        binding = if isBound(outerMod.binding)
           outerMod.binding
         else
           innerMod.binding
         end
-        @assign submods =
+        submods =
           ModTable.join(innerMod.subModifiers, outerMod.subModifiers, merge)
         MODIFIER_MODIFIER(
           outerMod.name,
@@ -330,12 +330,12 @@ function merge(outerMod::Modifier, innerMod::Modifier, name::String = "")::Modif
       end
 
       (MODIFIER_REDECLARE(__), MODIFIER_MODIFIER(__)) => begin
-        @assign outerMod.mod = merge(outerMod.mod, innerMod)
+        #= Complex assign=#@assign outerMod.mod = merge(outerMod.mod, innerMod)
         outerMod
       end
 
       (MODIFIER_MODIFIER(__), MODIFIER_REDECLARE(__)) => begin
-        @assign innerMod.mod = merge(outerMod, innerMod.mod)
+        #= Complex assign=#@assign innerMod.mod = merge(outerMod, innerMod.mod)
         innerMod
       end
 
@@ -358,10 +358,10 @@ end
 
 function setBinding(binding::Binding, modifier::Modifier)::Modifier
 
-  @assign () = begin
+  () = begin
     @match modifier begin
       MODIFIER_MODIFIER(__) => begin
-        @assign modifier.binding = binding
+        #= complex assign=#@assign modifier.binding = binding
         ()
       end
     end
@@ -371,7 +371,7 @@ end
 
 function binding(modifier::Modifier)::Binding
   local binding::Binding
-  @assign binding = begin
+  binding = begin
     @match modifier begin
       MODIFIER_MODIFIER(__) => begin
         modifier.binding
@@ -387,7 +387,7 @@ end
 function hasBinding(modifier::Modifier)::Bool
   local hasBinding::Bool
 
-  @assign hasBinding = begin
+  hasBinding = begin
     @match modifier begin
       MODIFIER_MODIFIER(__) => begin
         isBound(modifier.binding)
@@ -404,7 +404,7 @@ end
 function Modifier_info(modifier::Modifier)::SourceInfo
   local info::SourceInfo
 
-  @assign info = begin
+  info = begin
     @match modifier begin
       MODIFIER_MODIFIER(__) => begin
         modifier.info
@@ -425,7 +425,7 @@ end
 function name(modifier::Modifier)::String
   local name::String
 
-  @assign name = begin
+  name = begin
     @match modifier begin
       MODIFIER_MODIFIER(__) => begin
         modifier.name
@@ -442,7 +442,7 @@ end
 function lookupModifier(modName::String, modifier::Modifier)::Modifier
   local subMod::Modifier
 
-  @assign subMod = begin
+  subMod = begin
     @matchcontinue modifier begin
       MODIFIER_MODIFIER(__) => begin
         ModTable.get(modifier.subModifiers, modName)
@@ -457,11 +457,11 @@ end
 
 function addParent_work(name::String, parentNode::InstNode, mod::Modifier)::Modifier
   local outMod::Modifier
-  @assign outMod = begin
+  outMod = begin
     local binding::Binding
     @match mod begin
       MODIFIER_MODIFIER(binding = binding) => begin
-        @assign mod.binding = addParent(parentNode, binding)
+        #= complex assign=#@assign mod.binding = addParent(parentNode, binding)
         if !isEach(binding)
           map(mod, (x,y) -> addParent_work(x, parentNode, y))
         else
@@ -479,11 +479,11 @@ end
 
 function addParent(parentNode::InstNode, mod::Modifier)::Modifier
   local outMod::Modifier
-  @assign outMod = begin
+  outMod = begin
     local binding::Binding
     @match mod begin
       MODIFIER_MODIFIER(binding = binding) => begin
-        @assign mod.binding = addParent(parentNode, binding)
+        #= complex assign=#@assign mod.binding = addParent(parentNode, binding)
         map(mod, (x,y) -> addParent_work(x, parentNode, y))
       end
       _ => begin
@@ -505,15 +505,15 @@ function patchElementModFinal(
 )::SCode.Mod
 
   if SCodeUtil.finalBool(SCodeUtil.prefixesFinal(prefixes))
-    @assign mod = begin
+    mod = begin
       @match mod begin
         SCode.MOD(__) => begin
-          @assign mod.finalPrefix = SCode.FINAL()
+          #= Complex assign=#@assign mod.finalPrefix = SCode.FINAL()
           mod
         end
 
         SCode.REDECL(__) => begin
-          @assign mod.finalPrefix = SCode.FINAL()
+          #= Complex assign=#@assign mod.finalPrefix = SCode.FINAL()
           mod
         end
 
@@ -533,7 +533,7 @@ function fromElement(
 )::Modifier
   local mod::Modifier
 
-  @assign mod = begin
+  mod = begin
     local def::SCode.ClassDef
     local smod::SCode.Mod
     @match element begin
@@ -548,7 +548,7 @@ function fromElement(
       end
 
       SCode.COMPONENT(__) => begin
-        @assign smod =
+        smod =
           patchElementModFinal(element.prefixes, element.info, element.modifications)
         create(smod, element.name, SCOPE_COMPONENT(element.name), parents, scope)
       end
@@ -584,20 +584,20 @@ end
 function stripSCodeMod(elem::SCode.Element)::Tuple{SCode.Element, SCode.Mod}
   local mod::SCode.Mod
 
-  @assign mod = begin
+  mod = begin
     local cdef::SCode.ClassDef
     @match elem begin
       SCode.CLASS(classDef = cdef && SCode.ClassDef.DERIVED(modifications = mod)) => begin
         if !SCodeUtil.isEmptyMod(mod)
-          @assign cdef.modifications = SCode.NOMOD()
-          @assign elem.classDef = cdef
+          #= complex assign=#@assign cdef.modifications = SCode.NOMOD()
+          #= Complex assign=#@assign elem.classDef = cdef
         end
         mod
       end
 
       SCode.Element.COMPONENT(modifications = mod) => begin
         if !SCodeUtil.isEmptyMod(mod)
-          @assign elem.modifications = SCode.NOMOD()
+          #= complex assign=#@assign elem.modifications = SCode.NOMOD()
         end
         mod
       end
@@ -619,7 +619,7 @@ function create(
 )::Modifier
   local newMod::Modifier
 
-  @assign newMod = begin
+  newMod = begin
     local submod_lst::List{Tuple{String, Modifier}}
     local submod_table::ModTable.Tree
     local binding::Binding
@@ -674,14 +674,14 @@ function mergeLocal(
 )::Modifier
   local mod::Modifier
   local comp_name::String
-  @assign mod = begin
+  mod = begin
     @match (mod1, mod2) begin
       (MODIFIER_MODIFIER(__), MODIFIER_MODIFIER(binding = UNBOUND(__))) => begin
         #=  The second modifier has no binding, use the binding from the first.
         =#
         lst = mod1.name <| prefix
         @debug "Value of $lst"
-        @assign mod1.subModifiers = ModTable.join(
+        #= Complex assign=#@assign mod1.subModifiers = ModTable.join(
           mod1.subModifiers,
           mod2.subModifiers,
           (x, scope, lst) ->
@@ -693,7 +693,7 @@ function mergeLocal(
         =#
         lst = mod1.name <| prefix
         @debug "Value of $lst"
-        @assign mod2.subModifiers = ModTable.join(
+        #= Complex assign=#@assign mod2.subModifiers = ModTable.join(
           mod2.subModifiers,
           mod1.subModifiers,
           (x) ->
@@ -704,7 +704,7 @@ function mergeLocal(
       _ => begin
         #=  Both modifiers modify the same element, give duplicate modification error.
         =#
-        @assign comp_name =
+        comp_name =
           stringDelimitList(listReverse(_cons(P_Modifier.name(mod1), prefix)), ".")
         Error.addMultiSourceMessage(
           Error.DUPLICATE_MODIFICATIONS,
@@ -725,7 +725,7 @@ function checkFinalOverride(
   outerMod::Modifier,
   innerInfo::SourceInfo,
 )
-  return @assign _ = begin
+  return _ = begin
     @match innerFinal begin
       SCode.FINAL(__) => begin
         Error.addMultiSourceMessage(

@@ -7,7 +7,7 @@ Connection = NFConnection
 
 function toString(conn::Connection)::String
   local str::String
-  @assign str =
+  str =
     "connect(" +
     Connector.toString(conn.lhs) +
     ", " +

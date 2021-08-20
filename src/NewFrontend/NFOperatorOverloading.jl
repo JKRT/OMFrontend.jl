@@ -43,17 +43,17 @@ function instConstructor(path::Absyn.Path, recordNode::InstNode, info::SourceInf
   #=  Check if the operator record has an overloaded constructor declared.
   =#
   try
-    @assign ctor_ref = lookupFunctionSimple("'constructor'", recordNode)
-    @assign ctor_overloaded = true
+     ctor_ref = lookupFunctionSimple("'constructor'", recordNode)
+     ctor_overloaded = true
   catch
-    @assign ctor_overloaded = false
+     ctor_overloaded = false
   end
   if ctor_overloaded
-    @assign (_, ctor_node) = instFunctionRef(ctor_ref, info)
-    @assign ctor_path = scopePath(ctor_node, includeRoot = true)
+     (_, ctor_node) = instFunctionRef(ctor_ref, info)
+     ctor_path = scopePath(ctor_node, includeRoot = true)
     for f in getCachedFuncs(ctor_node)
       checkOperatorConstructorOutput(f, lastBaseClass(recordNode), ctor_path, info)
-      @assign recordNode = cacheAddFunc(recordNode, f, false)
+       recordNode = cacheAddFunc(recordNode, f, false)
     end
   end
   #=  If it has an overloaded constructor, instantiate it and add the
@@ -64,7 +64,7 @@ function instConstructor(path::Absyn.Path, recordNode::InstNode, info::SourceInf
   =#
   #= ctor_node := Function.instFunction2(ctor_path, ctor_node, info);
   =#
-  @assign recordNode = Record.instDefaultConstructor(path, recordNode, info)
+   recordNode = Record.instDefaultConstructor(path, recordNode, info)
   return recordNode
 end
 
@@ -77,21 +77,21 @@ function instOperatorFunctions(node::InstNode, info::SourceInfo)::InstNode
   local funcs::List{M_Function}
 
   checkOperatorRestrictions(node)
-  @assign tree = classTree(getClass(node))
-  @assign () = begin
+   tree = classTree(getClass(node))
+   () = begin
     @match tree begin
       CLASS_TREE_FLAT_TREE(classes = mclss) => begin
         for op in mclss
           instFunctionNode(op)
-          @assign funcs = getCachedFuncs(op)
-          @assign allfuncs = listAppend(funcs, allfuncs)
+           funcs = getCachedFuncs(op)
+           allfuncs = listAppend(funcs, allfuncs)
         end
         #= path := InstNode.scopePath(op, includeRoot = true);
         =#
         #= Function.instFunction2(path, op, info);
         =#
         for f in allfuncs
-          @assign node = cacheAddFunc(node, f, false)
+           node = cacheAddFunc(node, f, false)
         end
         ()
       end
@@ -125,20 +125,20 @@ function lookupOperatorFunctionsInType(operatorName::String, ty::M_Type)::List{M
   local node::InstNode
   local fn_ref::ComponentRef
   local is_defined::Bool
-  @assign functions = begin
+   functions = begin
     @match arrayElementType(ty) begin
       TYPE_COMPLEX(cls = node) => begin
         try
-          @assign fn_ref = lookupFunctionSimple(operatorName, node)
-          @assign is_defined = true
+           fn_ref = lookupFunctionSimple(operatorName, node)
+           is_defined = true
         catch
-          @assign is_defined = false
+           is_defined = false
         end
         if is_defined
-          @assign fn_ref = instFunctionRef(fn_ref, info(node))
-          @assign functions = typeRefCache(fn_ref)
+           fn_ref = instFunctionRef(fn_ref, info(node))
+           functions = typeRefCache(fn_ref)
         else
-          @assign functions = nil
+           functions = nil
         end
         functions
       end
@@ -172,18 +172,18 @@ function patchOperatorRecordConstructorBinding(fn::M_Function)::M_Function
   if listLength(fn.outputs) != 1
     return fn
   end
-  @assign output_node = listHead(fn.outputs)
-  @assign output_comp = component(output_node)
-  @assign output_binding = getBinding(output_comp)
+   output_node = listHead(fn.outputs)
+   output_comp = component(output_node)
+   output_binding = getBinding(output_comp)
   if !isBound(output_binding)
     return fn
   end
-  @assign output_binding = mapExp(
+   output_binding = mapExp(
     output_binding,
     (fn) -> patchOperatorRecordConstructorBinding_traverser(constructorFn = fn),
   )
-  @assign output_comp = P_Component.setBinding(output_binding, output_comp)
-  @assign output_node = updateComponent!(output_comp, output_node)
+   output_comp = P_Component.setBinding(output_binding, output_comp)
+   output_node = updateComponent!(output_comp, output_node)
   return fn
 end
 
@@ -204,8 +204,8 @@ function checkOperatorConstructorOutput(
     )
     fail()
   end
-  @assign output_node = listHead(fn.outputs)
-  @assign output_ty = classScope(output_node)
+   output_node = listHead(fn.outputs)
+   output_ty = classScope(output_node)
   return if !isSame(output_ty, recordNode)
     Error.addSourceMessage(
       Error.OPERATOR_OVERLOADING_INVALID_OUTPUT_TYPE,
@@ -231,7 +231,7 @@ function patchOperatorRecordConstructorBinding_traverser(
   local args::List{Expression}
   local ty::M_Type
 
-  @assign outExp = begin
+   outExp = begin
     @match exp begin
       CALL_EXPRESSION(
         call = P_Call.TYPED_CALL(fn = fn, ty = ty, arguments = args),

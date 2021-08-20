@@ -22,7 +22,7 @@ end
 function printImportError(imp1::Import, imp2::Import)
   local err_msg::ErrorTypes.Message
   Error.addSourceMessage(Error.ERROR_FROM_HERE, nil, Import_info(imp1))
-  @assign err_msg = begin
+  err_msg = begin
     @match imp2 begin
       UNRESOLVED_IMPORT(__) => begin
         Error.MULTIPLE_QUALIFIED_IMPORTS_WITH_SAME_NAME
@@ -49,17 +49,17 @@ function instUnqualified(
   local elements::List{InstNode}
 
   @match Absyn.Import.UNQUAL_IMPORT(path = path) = imp
-  @assign node = Lookup.lookupImport(path, scope, info)
-  @assign node = Inst.instPackage(node)
-  @assign tree = classTree(getClass(node))
-  @assign () = begin
+  node = Lookup.lookupImport(path, scope, info)
+  node = Inst.instPackage(node)
+  tree = classTree(getClass(node))
+  () = begin
     @match tree begin
       CLASS_TREE_FLAT_TREE(__) => begin
         for cls in tree.classes
-          @assign imps = _cons(RESOLVED_IMPORT(cls, info), imps)
+          imps = _cons(RESOLVED_IMPORT(cls, info), imps)
         end
         for comp in tree.components
-          @assign imps = _cons(RESOLVED_IMPORT(comp, info), imps)
+          imps = _cons(RESOLVED_IMPORT(comp, info), imps)
         end
         ()
       end
@@ -81,7 +81,7 @@ function instQualified(
   local node::InstNode
   local outImport::Import
 
-  @assign node = begin
+  node = begin
     @match imp begin
       Absyn.NAMED_IMPORT(__) => begin
         Lookup.lookupImport(imp.path, scope, info)
@@ -92,7 +92,7 @@ function instQualified(
       end
     end
   end
-  @assign outImport = RESOLVED_IMPORT(node, info)
+  outImport = RESOLVED_IMPORT(node, info)
   return (outImport, node)
 end
 
@@ -101,10 +101,10 @@ function resolve(imp::Import)::Tuple{InstNode, Bool, Import}
   local changed::Bool
   local node::InstNode
 
-  @assign (outImport, node, changed) = begin
+  (outImport, node, changed) = begin
     @match imp begin
       UNRESOLVED_IMPORT(__) => begin
-        @assign (outImport, node) = instQualified(imp.imp, imp.scope, imp.info)
+        (outImport, node) = instQualified(imp.imp, imp.scope, imp.info)
         (outImport, node, true)
       end
 
@@ -124,7 +124,7 @@ end
 function Import_info(imp::Import)::SourceInfo
   local info::SourceInfo
 
-  @assign info = begin
+  info = begin
     @match imp begin
       UNRESOLVED_IMPORT(__) => begin
         imp.info
@@ -141,7 +141,7 @@ end
 function name(imp::Import)::String
   local name::String
 
-  @assign name = begin
+  name = begin
     @match imp begin
       UNRESOLVED_IMPORT(__) => begin
         AbsynUtil.importName(imp.imp)

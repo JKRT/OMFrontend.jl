@@ -78,16 +78,16 @@ function Lapack_dgeev(args::List{<:Expression})
   local WI::List{AbstractFloat}
 
   @match list(jobvl, jobvr, n, a, lda, wr, wi, vl, ldvl, vr, ldvr, work, lwork, info) = args
-  @assign JOBVL = evaluateExtStringArg(jobvl)
-  @assign JOBVR = evaluateExtStringArg(jobvr)
-  @assign N = evaluateExtIntArg(n)
-  @assign A = evaluateExtRealMatrixArg(a)
-  @assign LDA = evaluateExtIntArg(lda)
-  @assign LDVL = evaluateExtIntArg(ldvl)
-  @assign LDVR = evaluateExtIntArg(ldvr)
-  @assign WORK = evaluateExtRealArrayArg(work)
-  @assign LWORK = evaluateExtIntArg(lwork)
-  @assign (A, WR, WI, VL, VR, WORK, INFO) =
+  JOBVL = evaluateExtStringArg(jobvl)
+  JOBVR = evaluateExtStringArg(jobvr)
+  N = evaluateExtIntArg(n)
+  A = evaluateExtRealMatrixArg(a)
+  LDA = evaluateExtIntArg(lda)
+  LDVL = evaluateExtIntArg(ldvl)
+  LDVR = evaluateExtIntArg(ldvr)
+  WORK = evaluateExtRealArrayArg(work)
+  LWORK = evaluateExtIntArg(lwork)
+  (A, WR, WI, VL, VR, WORK, INFO) =
     Lapack.dgeev(JOBVL, JOBVR, N, A, LDA, LDVL, LDVR, WORK, LWORK)
   assignVariableExt(a, makeRealMatrix(A))
   assignVariable(wr, makeRealArray(WR))
@@ -153,18 +153,18 @@ function Lapack_dgegv(args::List{<:Expression})
     lwork,
     info,
   ) = args
-  @assign JOBVL = evaluateExtStringArg(jobvl)
-  @assign JOBVR = evaluateExtStringArg(jobvr)
-  @assign N = evaluateExtIntArg(n)
-  @assign A = evaluateExtRealMatrixArg(a)
-  @assign LDA = evaluateExtIntArg(lda)
-  @assign B = evaluateExtRealMatrixArg(b)
-  @assign LDB = evaluateExtIntArg(ldb)
-  @assign LDVL = evaluateExtIntArg(ldvl)
-  @assign LDVR = evaluateExtIntArg(ldvr)
-  @assign WORK = evaluateExtRealArrayArg(work)
-  @assign LWORK = evaluateExtIntArg(lwork)
-  @assign (ALPHAR, ALPHAI, BETA, VL, VR, WORK, INFO) =
+  JOBVL = evaluateExtStringArg(jobvl)
+  JOBVR = evaluateExtStringArg(jobvr)
+  N = evaluateExtIntArg(n)
+  A = evaluateExtRealMatrixArg(a)
+  LDA = evaluateExtIntArg(lda)
+  B = evaluateExtRealMatrixArg(b)
+  LDB = evaluateExtIntArg(ldb)
+  LDVL = evaluateExtIntArg(ldvl)
+  LDVR = evaluateExtIntArg(ldvr)
+  WORK = evaluateExtRealArrayArg(work)
+  LWORK = evaluateExtIntArg(lwork)
+  (ALPHAR, ALPHAI, BETA, VL, VR, WORK, INFO) =
     Lapack.dgegv(JOBVL, JOBVR, N, A, LDA, B, LDB, LDVL, LDVR, WORK, LWORK)
   assignVariable(alphar, makeRealArray(ALPHAR))
   assignVariable(alphai, makeRealArray(ALPHAI))
@@ -200,17 +200,17 @@ function Lapack_dgels(args::List{<:Expression})
   local WORK::List{AbstractFloat}
 
   @match list(trans, m, n, nrhs, a, lda, b, ldb, work, lwork, info) = args
-  @assign TRANS = evaluateExtStringArg(trans)
-  @assign M = evaluateExtIntArg(m)
-  @assign N = evaluateExtIntArg(n)
-  @assign NRHS = evaluateExtIntArg(nrhs)
-  @assign A = evaluateExtRealMatrixArg(a)
-  @assign LDA = evaluateExtIntArg(lda)
-  @assign B = evaluateExtRealMatrixArg(b)
-  @assign LDB = evaluateExtIntArg(ldb)
-  @assign WORK = evaluateExtRealArrayArg(work)
-  @assign LWORK = evaluateExtIntArg(lwork)
-  @assign (A, B, WORK, INFO) = Lapack.dgels(TRANS, M, N, NRHS, A, LDA, B, LDB, WORK, LWORK)
+  TRANS = evaluateExtStringArg(trans)
+  M = evaluateExtIntArg(m)
+  N = evaluateExtIntArg(n)
+  NRHS = evaluateExtIntArg(nrhs)
+  A = evaluateExtRealMatrixArg(a)
+  LDA = evaluateExtIntArg(lda)
+  B = evaluateExtRealMatrixArg(b)
+  LDB = evaluateExtIntArg(ldb)
+  WORK = evaluateExtRealArrayArg(work)
+  LWORK = evaluateExtIntArg(lwork)
+  (A, B, WORK, INFO) = Lapack.dgels(TRANS, M, N, NRHS, A, LDA, B, LDB, WORK, LWORK)
   assignVariableExt(a, makeRealMatrix(A))
   assignVariableExt(b, makeRealMatrix(B))
   assignVariable(work, makeRealArray(WORK))
@@ -250,17 +250,17 @@ function Lapack_dgelsx(args::List{<:Expression})
   end
   #=  Some older versions of the MSL calls dgelsx with an extra lwork argument.
   =#
-  @assign M = evaluateExtIntArg(m)
-  @assign N = evaluateExtIntArg(n)
-  @assign NRHS = evaluateExtIntArg(nrhs)
-  @assign A = evaluateExtRealMatrixArg(a)
-  @assign LDA = evaluateExtIntArg(lda)
-  @assign B = evaluateExtRealMatrixArg(b)
-  @assign LDB = evaluateExtIntArg(ldb)
-  @assign JPVT = evaluateExtIntArrayArg(jpvt)
-  @assign RCOND = evaluateExtRealArg(rcond)
-  @assign WORK = evaluateExtRealArrayArg(work)
-  @assign (A, B, JPVT, RANK, INFO) =
+  M = evaluateExtIntArg(m)
+  N = evaluateExtIntArg(n)
+  NRHS = evaluateExtIntArg(nrhs)
+  A = evaluateExtRealMatrixArg(a)
+  LDA = evaluateExtIntArg(lda)
+  B = evaluateExtRealMatrixArg(b)
+  LDB = evaluateExtIntArg(ldb)
+  JPVT = evaluateExtIntArrayArg(jpvt)
+  RCOND = evaluateExtRealArg(rcond)
+  WORK = evaluateExtRealArrayArg(work)
+  (A, B, JPVT, RANK, INFO) =
     Lapack.dgelsx(M, N, NRHS, A, LDA, B, LDB, JPVT, RCOND, WORK)
   assignVariableExt(a, makeRealMatrix(A))
   assignVariableExt(b, makeRealMatrix(B))
@@ -298,18 +298,18 @@ function Lapack_dgelsy(args::List{<:Expression})
   local WORK::List{AbstractFloat}
 
   @match list(m, n, nrhs, a, lda, b, ldb, jpvt, rcond, rank, work, lwork, info) = args
-  @assign M = evaluateExtIntArg(m)
-  @assign N = evaluateExtIntArg(n)
-  @assign NRHS = evaluateExtIntArg(nrhs)
-  @assign A = evaluateExtRealMatrixArg(a)
-  @assign LDA = evaluateExtIntArg(lda)
-  @assign B = evaluateExtRealMatrixArg(b)
-  @assign LDB = evaluateExtIntArg(ldb)
-  @assign JPVT = evaluateExtIntArrayArg(jpvt)
-  @assign RCOND = evaluateExtRealArg(rcond)
-  @assign WORK = evaluateExtRealArrayArg(work)
-  @assign LWORK = evaluateExtIntArg(lwork)
-  @assign (A, B, JPVT, RANK, WORK, INFO) =
+  M = evaluateExtIntArg(m)
+  N = evaluateExtIntArg(n)
+  NRHS = evaluateExtIntArg(nrhs)
+  A = evaluateExtRealMatrixArg(a)
+  LDA = evaluateExtIntArg(lda)
+  B = evaluateExtRealMatrixArg(b)
+  LDB = evaluateExtIntArg(ldb)
+  JPVT = evaluateExtIntArrayArg(jpvt)
+  RCOND = evaluateExtRealArg(rcond)
+  WORK = evaluateExtRealArrayArg(work)
+  LWORK = evaluateExtIntArg(lwork)
+  (A, B, JPVT, RANK, WORK, INFO) =
     Lapack.dgelsy(M, N, NRHS, A, LDA, B, LDB, JPVT, RCOND, WORK, LWORK)
   assignVariableExt(a, makeRealMatrix(A))
   assignVariableExt(b, makeRealMatrix(B))
@@ -338,13 +338,13 @@ function Lapack_dgesv(args::List{<:Expression})
   local IPIV::List{Int}
 
   @match list(n, nrhs, a, lda, ipiv, b, ldb, info) = args
-  @assign N = evaluateExtIntArg(n)
-  @assign NRHS = evaluateExtIntArg(nrhs)
-  @assign A = evaluateExtRealMatrixArg(a)
-  @assign LDA = evaluateExtIntArg(lda)
-  @assign B = evaluateExtRealMatrixArg(b)
-  @assign LDB = evaluateExtIntArg(ldb)
-  @assign (A, IPIV, B, INFO) = Lapack.dgesv(N, NRHS, A, LDA, B, LDB)
+  N = evaluateExtIntArg(n)
+  NRHS = evaluateExtIntArg(nrhs)
+  A = evaluateExtRealMatrixArg(a)
+  LDA = evaluateExtIntArg(lda)
+  B = evaluateExtRealMatrixArg(b)
+  LDB = evaluateExtIntArg(ldb)
+  (A, IPIV, B, INFO) = Lapack.dgesv(N, NRHS, A, LDA, B, LDB)
   assignVariableExt(a, makeRealMatrix(A))
   assignVariable(ipiv, makeIntegerArray(IPIV))
   assignVariableExt(b, makeRealMatrix(B))
@@ -380,18 +380,18 @@ function Lapack_dgglse(args::List{<:Expression})
   local X::List{AbstractFloat}
 
   @match list(m, n, p, a, lda, b, ldb, c, d, x, work, lwork, info) = args
-  @assign M = evaluateExtIntArg(m)
-  @assign N = evaluateExtIntArg(n)
-  @assign P = evaluateExtIntArg(p)
-  @assign A = evaluateExtRealMatrixArg(a)
-  @assign LDA = evaluateExtIntArg(lda)
-  @assign B = evaluateExtRealMatrixArg(b)
-  @assign LDB = evaluateExtIntArg(ldb)
-  @assign C = evaluateExtRealArrayArg(c)
-  @assign D = evaluateExtRealArrayArg(d)
-  @assign WORK = evaluateExtRealArrayArg(work)
-  @assign LWORK = evaluateExtIntArg(lwork)
-  @assign (A, B, C, D, X, WORK, INFO) =
+  M = evaluateExtIntArg(m)
+  N = evaluateExtIntArg(n)
+  P = evaluateExtIntArg(p)
+  A = evaluateExtRealMatrixArg(a)
+  LDA = evaluateExtIntArg(lda)
+  B = evaluateExtRealMatrixArg(b)
+  LDB = evaluateExtIntArg(ldb)
+  C = evaluateExtRealArrayArg(c)
+  D = evaluateExtRealArrayArg(d)
+  WORK = evaluateExtRealArrayArg(work)
+  LWORK = evaluateExtIntArg(lwork)
+  (A, B, C, D, X, WORK, INFO) =
     Lapack.dgglse(M, N, P, A, LDA, B, LDB, C, D, WORK, LWORK)
   assignVariableExt(a, makeRealMatrix(A))
   assignVariableExt(b, makeRealMatrix(B))
@@ -421,14 +421,14 @@ function Lapack_dgtsv(args::List{<:Expression})
   local B::List{List{AbstractFloat}}
 
   @match list(n, nrhs, dl, d, du, b, ldb, info) = args
-  @assign N = evaluateExtIntArg(n)
-  @assign NRHS = evaluateExtIntArg(nrhs)
-  @assign DL = evaluateExtRealArrayArg(dl)
-  @assign D = evaluateExtRealArrayArg(d)
-  @assign DU = evaluateExtRealArrayArg(du)
-  @assign B = evaluateExtRealMatrixArg(b)
-  @assign LDB = evaluateExtIntArg(ldb)
-  @assign (DL, D, DU, B, INFO) = Lapack.dgtsv(N, NRHS, DL, D, DU, B, LDB)
+  N = evaluateExtIntArg(n)
+  NRHS = evaluateExtIntArg(nrhs)
+  DL = evaluateExtRealArrayArg(dl)
+  D = evaluateExtRealArrayArg(d)
+  DU = evaluateExtRealArrayArg(du)
+  B = evaluateExtRealMatrixArg(b)
+  LDB = evaluateExtIntArg(ldb)
+  (DL, D, DU, B, INFO) = Lapack.dgtsv(N, NRHS, DL, D, DU, B, LDB)
   assignVariable(dl, makeRealArray(DL))
   assignVariable(d, makeRealArray(D))
   assignVariable(du, makeRealArray(DU))
@@ -459,15 +459,15 @@ function Lapack_dgbsv(args::List{<:Expression})
   local IPIV::List{Int}
 
   @match list(n, kl, ku, nrhs, ab, ldab, ipiv, b, ldb, info) = args
-  @assign N = evaluateExtIntArg(n)
-  @assign KL = evaluateExtIntArg(kl)
-  @assign KU = evaluateExtIntArg(ku)
-  @assign NRHS = evaluateExtIntArg(nrhs)
-  @assign AB = evaluateExtRealMatrixArg(ab)
-  @assign LDAB = evaluateExtIntArg(ldab)
-  @assign B = evaluateExtRealMatrixArg(b)
-  @assign LDB = evaluateExtIntArg(ldb)
-  @assign (AB, IPIV, B, INFO) = Lapack.dgbsv(N, KL, KU, NRHS, AB, LDAB, B, LDB)
+  N = evaluateExtIntArg(n)
+  KL = evaluateExtIntArg(kl)
+  KU = evaluateExtIntArg(ku)
+  NRHS = evaluateExtIntArg(nrhs)
+  AB = evaluateExtRealMatrixArg(ab)
+  LDAB = evaluateExtIntArg(ldab)
+  B = evaluateExtRealMatrixArg(b)
+  LDB = evaluateExtIntArg(ldb)
+  (AB, IPIV, B, INFO) = Lapack.dgbsv(N, KL, KU, NRHS, AB, LDAB, B, LDB)
   assignVariableExt(ab, makeRealMatrix(AB))
   assignVariable(ipiv, makeIntegerArray(IPIV))
   assignVariableExt(b, makeRealMatrix(B))
@@ -505,17 +505,17 @@ function Lapack_dgesvd(args::List{<:Expression})
   local WORK::List{AbstractFloat}
 
   @match list(jobu, jobvt, m, n, a, lda, s, u, ldu, vt, ldvt, work, lwork, info) = args
-  @assign JOBU = evaluateExtStringArg(jobu)
-  @assign JOBVT = evaluateExtStringArg(jobvt)
-  @assign M = evaluateExtIntArg(m)
-  @assign N = evaluateExtIntArg(n)
-  @assign A = evaluateExtRealMatrixArg(a)
-  @assign LDA = evaluateExtIntArg(lda)
-  @assign LDU = evaluateExtIntArg(ldu)
-  @assign LDVT = evaluateExtIntArg(ldvt)
-  @assign WORK = evaluateExtRealArrayArg(work)
-  @assign LWORK = evaluateExtIntArg(lwork)
-  @assign (A, S, U, VT, WORK, INFO) =
+  JOBU = evaluateExtStringArg(jobu)
+  JOBVT = evaluateExtStringArg(jobvt)
+  M = evaluateExtIntArg(m)
+  N = evaluateExtIntArg(n)
+  A = evaluateExtRealMatrixArg(a)
+  LDA = evaluateExtIntArg(lda)
+  LDU = evaluateExtIntArg(ldu)
+  LDVT = evaluateExtIntArg(ldvt)
+  WORK = evaluateExtRealArrayArg(work)
+  LWORK = evaluateExtIntArg(lwork)
+  (A, S, U, VT, WORK, INFO) =
     Lapack.dgesvd(JOBU, JOBVT, M, N, A, LDA, LDU, LDVT, WORK, LWORK)
   assignVariableExt(a, makeRealMatrix(A))
   assignVariable(s, makeRealArray(S))
@@ -540,11 +540,11 @@ function Lapack_dgetrf(args::List{<:Expression})
   local IPIV::List{Int}
 
   @match list(m, n, a, lda, ipiv, info) = args
-  @assign M = evaluateExtIntArg(m)
-  @assign N = evaluateExtIntArg(n)
-  @assign A = evaluateExtRealMatrixArg(a)
-  @assign LDA = evaluateExtIntArg(lda)
-  @assign (A, IPIV, INFO) = Lapack.dgetrf(M, N, A, LDA)
+  M = evaluateExtIntArg(m)
+  N = evaluateExtIntArg(n)
+  A = evaluateExtRealMatrixArg(a)
+  LDA = evaluateExtIntArg(lda)
+  (A, IPIV, INFO) = Lapack.dgetrf(M, N, A, LDA)
   assignVariableExt(a, makeRealMatrix(A))
   assignVariable(ipiv, makeIntegerArray(IPIV))
   return assignVariable(info, makeInteger(INFO))
@@ -571,15 +571,15 @@ function Lapack_dgetrs(args::List{<:Expression})
   local IPIV::List{Int}
 
   @match list(trans, n, nrhs, a, lda, ipiv, b, ldb, info) = args
-  @assign TRANS = evaluateExtStringArg(trans)
-  @assign N = evaluateExtIntArg(n)
-  @assign NRHS = evaluateExtIntArg(nrhs)
-  @assign A = evaluateExtRealMatrixArg(a)
-  @assign LDA = evaluateExtIntArg(lda)
-  @assign IPIV = evaluateExtIntArrayArg(ipiv)
-  @assign B = evaluateExtRealMatrixArg(b)
-  @assign LDB = evaluateExtIntArg(ldb)
-  @assign (B, INFO) = Lapack.dgetrs(TRANS, N, NRHS, A, LDA, IPIV, B, LDB)
+  TRANS = evaluateExtStringArg(trans)
+  N = evaluateExtIntArg(n)
+  NRHS = evaluateExtIntArg(nrhs)
+  A = evaluateExtRealMatrixArg(a)
+  LDA = evaluateExtIntArg(lda)
+  IPIV = evaluateExtIntArrayArg(ipiv)
+  B = evaluateExtRealMatrixArg(b)
+  LDB = evaluateExtIntArg(ldb)
+  (B, INFO) = Lapack.dgetrs(TRANS, N, NRHS, A, LDA, IPIV, B, LDB)
   assignVariableExt(b, makeRealMatrix(B))
   return assignVariable(info, makeInteger(INFO))
 end
@@ -601,13 +601,13 @@ function Lapack_dgetri(args::List{<:Expression})
   local WORK::List{AbstractFloat}
 
   @match list(n, a, lda, ipiv, work, lwork, info) = args
-  @assign N = evaluateExtIntArg(n)
-  @assign A = evaluateExtRealMatrixArg(a)
-  @assign LDA = evaluateExtIntArg(lda)
-  @assign IPIV = evaluateExtIntArrayArg(ipiv)
-  @assign WORK = evaluateExtRealArrayArg(work)
-  @assign LWORK = evaluateExtIntArg(lwork)
-  @assign (A, WORK, INFO) = Lapack.dgetri(N, A, LDA, IPIV, WORK, LWORK)
+  N = evaluateExtIntArg(n)
+  A = evaluateExtRealMatrixArg(a)
+  LDA = evaluateExtIntArg(lda)
+  IPIV = evaluateExtIntArrayArg(ipiv)
+  WORK = evaluateExtRealArrayArg(work)
+  LWORK = evaluateExtIntArg(lwork)
+  (A, WORK, INFO) = Lapack.dgetri(N, A, LDA, IPIV, WORK, LWORK)
   assignVariableExt(a, makeRealMatrix(A))
   assignVariable(work, makeRealArray(WORK))
   return assignVariable(info, makeInteger(INFO))
@@ -632,13 +632,13 @@ function Lapack_dgeqpf(args::List{<:Expression})
   local TAU::List{AbstractFloat}
 
   @match list(m, n, a, lda, jpvt, tau, work, info) = args
-  @assign M = evaluateExtIntArg(m)
-  @assign N = evaluateExtIntArg(n)
-  @assign A = evaluateExtRealMatrixArg(a)
-  @assign LDA = evaluateExtIntArg(lda)
-  @assign JPVT = evaluateExtIntArrayArg(jpvt)
-  @assign WORK = evaluateExtRealArrayArg(work)
-  @assign (A, JPVT, TAU, INFO) = Lapack.dgeqpf(M, N, A, LDA, JPVT, WORK)
+  M = evaluateExtIntArg(m)
+  N = evaluateExtIntArg(n)
+  A = evaluateExtRealMatrixArg(a)
+  LDA = evaluateExtIntArg(lda)
+  JPVT = evaluateExtIntArrayArg(jpvt)
+  WORK = evaluateExtRealArrayArg(work)
+  (A, JPVT, TAU, INFO) = Lapack.dgeqpf(M, N, A, LDA, JPVT, WORK)
   assignVariableExt(a, makeRealMatrix(A))
   assignVariable(jpvt, makeIntegerArray(JPVT))
   assignVariable(tau, makeRealArray(TAU))
@@ -666,15 +666,15 @@ function Lapack_dorgqr(args::List{<:Expression})
   local WORK::List{AbstractFloat}
 
   @match list(m, n, k, a, lda, tau, work, lwork, info) = args
-  @assign M = evaluateExtIntArg(m)
-  @assign N = evaluateExtIntArg(n)
-  @assign K = evaluateExtIntArg(k)
-  @assign A = evaluateExtRealMatrixArg(a)
-  @assign LDA = evaluateExtIntArg(lda)
-  @assign TAU = evaluateExtRealArrayArg(tau)
-  @assign WORK = evaluateExtRealArrayArg(work)
-  @assign LWORK = evaluateExtIntArg(lwork)
-  @assign (A, WORK, INFO) = Lapack.dorgqr(M, N, K, A, LDA, TAU, WORK, LWORK)
+  M = evaluateExtIntArg(m)
+  N = evaluateExtIntArg(n)
+  K = evaluateExtIntArg(k)
+  A = evaluateExtRealMatrixArg(a)
+  LDA = evaluateExtIntArg(lda)
+  TAU = evaluateExtRealArrayArg(tau)
+  WORK = evaluateExtRealArrayArg(work)
+  LWORK = evaluateExtIntArg(lwork)
+  (A, WORK, INFO) = Lapack.dorgqr(M, N, K, A, LDA, TAU, WORK, LWORK)
   assignVariableExt(a, makeRealMatrix(A))
   assignVariable(work, makeRealArray(WORK))
   return assignVariable(info, makeInteger(INFO))
@@ -688,7 +688,7 @@ end
 function getExtIntValue(exp::Expression)::Int
   local value::Int
 
-  @assign value = begin
+  value = begin
     @match exp begin
       INTEGER_EXPRESSION(__) => begin
         exp.value
@@ -710,7 +710,7 @@ end
 function getExtRealValue(exp::Expression)::AbstractFloat
   local value::AbstractFloat
 
-  @assign value = begin
+  value = begin
     @match exp begin
       REAL_EXPRESSION(__) => begin
         exp.value
@@ -732,7 +732,7 @@ end
 function getExtStringValue(exp::Expression)::String
   local value::String
 
-  @assign value = begin
+  value = begin
     @match exp begin
       STRING_EXPRESSION(__) => begin
         exp.value
@@ -751,8 +751,8 @@ function evaluateExtIntArrayArg(arg::Expression)::List{Int}
 
   local expl::List{Expression}
 
-  @assign expl = arrayElements(Ceval.evalExp(arg))
-  @assign value = list(getExtIntValue(e) for e in expl)
+  expl = arrayElements(Ceval.evalExp(arg))
+  value = list(getExtIntValue(e) for e in expl)
   return value
 end
 
@@ -761,8 +761,8 @@ function evaluateExtRealArrayArg(arg::Expression)::List{AbstractFloat}
 
   local expl::List{Expression}
 
-  @assign expl = arrayElements(Ceval.evalExp(arg))
-  @assign value = list(getExtRealValue(e) for e in expl)
+  expl = arrayElements(Ceval.evalExp(arg))
+  value = list(getExtRealValue(e) for e in expl)
   return value
 end
 
@@ -777,7 +777,7 @@ function evaluateExtRealMatrixArg(arg::Expression)::List{List{AbstractFloat}}
   =#
   #=  matrices, so if the argument is a vector we convert it into a matrix.
   =#
-  @assign value = begin
+  value = begin
     @match Type.dimensionCount(ty) begin
       1 => begin
         list(list(getExtRealValue(e)) for e in expl)
@@ -802,7 +802,7 @@ end
 function assignVariableExt(variable::Expression, value::Expression)
   local exp::Expression
 
-  @assign exp = begin
+  exp = begin
     @match (typeOf(variable), value) begin
       (
         TYPE_ARRAY(dimensions = _ <| nil()),

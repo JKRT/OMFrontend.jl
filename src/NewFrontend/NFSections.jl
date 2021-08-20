@@ -34,7 +34,7 @@ end
 
 function isEmpty(sections::Sections)::Bool
   local isEmpty::Bool
-  @assign isEmpty = begin
+   isEmpty = begin
     @match sections begin
       EMPTY(__) => begin
         true
@@ -54,7 +54,7 @@ function apply(
   ieqFn::EquationFn = eqFn,
   ialgFn::AlgorithmFn = algFn,
 )
-  return @assign () = begin
+  return  () = begin
     @match sections begin
       SECTIONS(__) => begin
         for eq in sections.equations
@@ -79,14 +79,14 @@ function apply(
 end
 
 function foldExp(sections::Sections, foldFn::FoldFn, arg::ArgT) where {ArgT}
-  @assign arg = begin
+   arg = begin
     @match sections begin
       SECTIONS(__) => begin
-        @assign arg = foldExpList(sections.equations, foldFn, arg)
-        @assign arg =
+         arg = foldExpList(sections.equations, foldFn, arg)
+         arg =
           foldExpList(sections.initialEquations, foldFn, arg)
-        @assign arg = foldExpList(sections.algorithms, foldFn, arg)
-        @assign arg =
+         arg = foldExpList(sections.algorithms, foldFn, arg)
+         arg =
           foldExpList(sections.initialAlgorithms, foldFn, arg)
         arg
       end
@@ -106,17 +106,17 @@ function mapExp(sections::Sections, mapFn::MapFn)::Sections
   local ieq::List{Equation}
   local alg::List{Algorithm}
   local ialg::List{Algorithm}
-  @assign sections = begin
+   sections = begin
     @match sections begin
       SECTIONS(__) => begin
-        @assign eq = mapExpList(sections.equations, mapFn)
-        @assign ieq = mapExpList(sections.initialEquations, mapFn)
-        @assign alg = P_Algorithm.Algorithm.mapExpList(sections.algorithms, mapFn)
-        @assign ialg = P_Algorithm.Algorithm.mapExpList(sections.initialAlgorithms, mapFn)
+         eq = mapExpList(sections.equations, mapFn)
+         ieq = mapExpList(sections.initialEquations, mapFn)
+         alg = P_Algorithm.Algorithm.mapExpList(sections.algorithms, mapFn)
+         ialg = P_Algorithm.Algorithm.mapExpList(sections.initialAlgorithms, mapFn)
         SECTIONS(eq, ieq, alg, ialg)
       end
       SECTIONS_EXTERNAL(__) => begin
-        @assign sections.args = list(mapFn(e) for e in sections.args)
+         sections.args = list(mapFn(e) for e in sections.args)
         sections
       end
       _ => begin
@@ -141,14 +141,14 @@ function map1(
   local alg::List{Algorithm}
   local ialg::List{Algorithm}
 
-  @assign () = begin
+   () = begin
     @match sections begin
       SECTIONS(__) => begin
-        @assign eq = list(eqFn(e, arg) for e in sections.equations)
-        @assign ieq = list(ieqFn(e, arg) for e in sections.initialEquations)
-        @assign alg = list(algFn(a, arg) for a in sections.algorithms)
-        @assign ialg = list(ialgFn(a, arg) for a in sections.initialAlgorithms)
-        @assign sections = SECTIONS(eq, ieq, alg, ialg)
+         eq = list(eqFn(e, arg) for e in sections.equations)
+         ieq = list(ieqFn(e, arg) for e in sections.initialEquations)
+         alg = list(algFn(a, arg) for a in sections.algorithms)
+         ialg = list(ialgFn(a, arg) for a in sections.initialAlgorithms)
+         sections = SECTIONS(eq, ieq, alg, ialg)
         ()
       end
       _ => begin
@@ -170,14 +170,14 @@ function map(
   local ieq::List{Equation}
   local alg::List{Algorithm}
   local ialg::List{Algorithm}
-  @assign () = begin
+   () = begin
     @match sections begin
       SECTIONS(__) => begin
-        @assign eq = list(eqFn(e) for e in sections.equations)
-        @assign ieq = list(ieqFn(e) for e in sections.initialEquations)
-        @assign alg = list(algFn(a) for a in sections.algorithms)
-        @assign ialg = list(ialgFn(a) for a in sections.initialAlgorithms)
-        @assign sections = SECTIONS(eq, ieq, alg, ialg)
+         eq = list(eqFn(e) for e in sections.equations)
+         ieq = list(ieqFn(e) for e in sections.initialEquations)
+         alg = list(algFn(a) for a in sections.algorithms)
+         ialg = list(ialgFn(a) for a in sections.initialAlgorithms)
+         sections = SECTIONS(eq, ieq, alg, ialg)
         ()
       end
       _ => begin
@@ -191,7 +191,7 @@ end
 function join(sections1::Sections, sections2::Sections)::Sections
   local sections::Sections
 
-  @assign sections = begin
+   sections = begin
     @match (sections1, sections2) begin
       (SECTIONS_EMPTY(__), _) => begin
         sections2
@@ -222,7 +222,7 @@ function append(
   sections::Sections,
 )::Sections
 
-  @assign sections = begin
+   sections = begin
     @match sections begin
       SECTIONS(__) => begin
         SECTIONS(
@@ -247,13 +247,13 @@ function prependAlgorithm(
   isInitial::Bool = false,
 )::Sections
 
-  @assign sections = begin
+   sections = begin
     @match sections begin
       SECTIONS(__) => begin
         if isInitial
-          @assign sections.initialAlgorithms = _cons(alg, sections.initialAlgorithms)
+           sections.initialAlgorithms = _cons(alg, sections.initialAlgorithms)
         else
-          @assign sections.algorithms = _cons(alg, sections.algorithms)
+           sections.algorithms = _cons(alg, sections.algorithms)
         end
         sections
       end
@@ -285,13 +285,13 @@ function prependEquation(
   isInitial::Bool = false,
 )::Sections
 
-  @assign sections = begin
+   sections = begin
     @match sections begin
       SECTIONS(__) => begin
         if isInitial
-          @assign sections.initialEquations = _cons(eq, sections.initialEquations)
+           sections.initialEquations = _cons(eq, sections.initialEquations)
         else
-          @assign sections.equations = _cons(eq, sections.equations)
+           sections.equations = _cons(eq, sections.equations)
         end
         sections
       end
@@ -325,7 +325,7 @@ function prepend(
   sections::Sections,
 )::Sections
 
-  @assign sections = begin
+   sections = begin
     @match sections begin
       SECTIONS(__) => begin
         SECTIONS(
@@ -356,9 +356,9 @@ function new(
      listEmpty(initialEquations) &&
      listEmpty(algorithms) &&
      listEmpty(initialAlgorithms)
-    @assign sections = SECTIONS_EMPTY()
+     sections = SECTIONS_EMPTY()
   else
-    @assign sections = SECTIONS(equations, initialEquations, algorithms, initialAlgorithms)
+     sections = SECTIONS(equations, initialEquations, algorithms, initialAlgorithms)
   end
   return sections
 end

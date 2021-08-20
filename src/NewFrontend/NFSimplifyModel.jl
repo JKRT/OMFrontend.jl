@@ -3,18 +3,18 @@ const MakeElement = Function
 const MakeFunc = Function
 
 function simplifyFlatModel(flatModel::FlatModel)::FlatModel
-  @assign flatModel.variables = list(simplifyVariable(v) for v in flatModel.variables)
-  @assign flatModel.equations = simplifyEquations(flatModel.equations)
-  @assign flatModel.initialEquations = simplifyEquations(flatModel.initialEquations)
-  @assign flatModel.algorithms = simplifyAlgorithms(flatModel.algorithms)
-  @assign flatModel.initialAlgorithms = simplifyAlgorithms(flatModel.initialAlgorithms)
+  #= Complex assign=#@assign flatModel.variables = list(simplifyVariable(v) for v in flatModel.variables)
+  #= Complex assign=#@assign flatModel.equations = simplifyEquations(flatModel.equations)
+  #= Complex assign=#@assign flatModel.initialEquations = simplifyEquations(flatModel.initialEquations)
+  #= Complex assign=#@assign flatModel.algorithms = simplifyAlgorithms(flatModel.algorithms)
+  #= Complex assign=#@assign flatModel.initialAlgorithms = simplifyAlgorithms(flatModel.initialAlgorithms)
 #  execStat(getInstanceName()) TODO
   return flatModel
 end
 
 function simplifyVariable(var::Variable)::Variable
-  @assign var.binding = simplifyBinding(var.binding)
-  @assign var.typeAttributes = list(simplifyTypeAttribute(a) for a in var.typeAttributes)
+  #= complex assign=#@assign var.binding = simplifyBinding(var.binding)
+  #= Complex assign=#@assign var.typeAttributes = list(simplifyTypeAttribute(a) for a in var.typeAttributes)
   return var
 end
 
@@ -24,11 +24,11 @@ function simplifyBinding(binding::Binding)::Binding
   local sexp::Expression
 
   if isBound(binding)
-    @assign exp = getTypedExp(binding)
-    @assign sexp = simplify(exp)
-    @assign sexp = removeEmptyFunctionArguments(sexp)
+    exp = getTypedExp(binding)
+    sexp = simplify(exp)
+    sexp = removeEmptyFunctionArguments(sexp)
     if !referenceEq(exp, sexp)
-      @assign binding = setTypedExp(sexp, binding)
+      binding = setTypedExp(sexp, binding)
     end
   end
   return binding
@@ -40,10 +40,10 @@ function simplifyTypeAttribute(attribute::Tuple{<:String, Binding})::Tuple{Strin
   local binding::Binding
   local sbinding::Binding
 
-  @assign (name, binding) = attribute
-  @assign sbinding = simplifyBinding(binding)
+  (name, binding) = attribute
+  sbinding = simplifyBinding(binding)
   if !referenceEq(binding, sbinding)
-    @assign attribute = (name, sbinding)
+    attribute = (name, sbinding)
   end
   return attribute
 end
@@ -51,11 +51,11 @@ end
 function simplifyDimension(dim::Dimension)::Dimension
   local outDim::Dimension
 
-  @assign outDim = begin
+  outDim = begin
     local e::Expression
     @match dim begin
       DIMENSION_EXP(__) => begin
-        @assign e = simplify(dim.exp)
+        e = simplify(dim.exp)
         if referenceEq(e, dim.exp)
           dim
         else
@@ -81,7 +81,7 @@ function simplifyEquations(eql::List{<:Equation})
 end
 
 function simplifyEquation(eq::Equation, equations::List{<:Equation})
-  @assign equations = begin
+  equations = begin
     local e::Expression
     local lhs::Expression
     local rhs::Expression
@@ -92,10 +92,10 @@ function simplifyEquation(eq::Equation, equations::List{<:Equation})
       end
 
       EQUATION_ARRAY_EQUALITY(__) => begin
-        @assign ty = mapDims(eq.ty, simplifyDimension)
+        ty = mapDims(eq.ty, simplifyDimension)
         if !Type.isEmptyArray(ty)
-          @assign rhs = removeEmptyFunctionArguments(simplify(eq.rhs))
-          @assign equations = _cons(
+          rhs = removeEmptyFunctionArguments(simplify(eq.rhs))
+          equations = _cons(
             EQUATION_ARRAY_EQUALITY(eq.lhs, rhs, ty, eq.source),
             equations,
           )
@@ -108,12 +108,12 @@ function simplifyEquation(eq::Equation, equations::List{<:Equation})
       end
 
       EQUATION_WHEN(__) => begin
-        @assign eq.branches = list(
+        #= complex assign=#@assign eq.branches = list(
           begin
             @match b begin
               EQUATION_BRANCH(__) => begin
-                @assign b.condition = simplify(b.condition)
-                @assign b.body = simplifyEquations(b.body)
+                #= complex assign=#@assign b.condition = simplify(b.condition)
+                #= complex assign=#@assign b.body = simplifyEquations(b.body)
                 b
               end
             end
@@ -123,7 +123,7 @@ function simplifyEquation(eq::Equation, equations::List{<:Equation})
       end
 
       EQUATION_ASSERT(__) => begin
-        @assign eq.condition = simplify(eq.condition)
+        #= complex assign=#@assign eq.condition = simplify(eq.condition)
         if isTrue(eq.condition)
           equations
         else
@@ -132,15 +132,15 @@ function simplifyEquation(eq::Equation, equations::List{<:Equation})
       end
 
       EQUATION_REINIT(__) => begin
-        @assign eq.reinitExp = simplify(eq.reinitExp)
+        #= Complex assign=#@assign eq.reinitExp = simplify(eq.reinitExp)
         _cons(eq, equations)
       end
 
       EQUATION_NORETCALL(__) => begin
-        @assign e = simplify(eq.exp)
+        e = simplify(eq.exp)
         if isCall(e)
-          @assign eq.exp = removeEmptyFunctionArguments(e)
-          @assign equations = _cons(eq, equations)
+          #= complex assign=#@assign eq.exp = removeEmptyFunctionArguments(e)
+           equations = _cons(eq, equations)
         end
         equations
       end
@@ -161,15 +161,15 @@ function simplifyEqualityEquation(eq::Equation, equations::List{<:Equation})::Li
   local src::DAE.ElementSource
 
   @match EQUATION_EQUALITY(lhs = lhs, rhs = rhs, ty = ty, source = src) = eq
-  @assign ty = mapDims(ty, simplifyDimension)
+  ty = mapDims(ty, simplifyDimension)
   if isEmptyArray(ty)
     return equations
   end
-  @assign lhs = simplify(lhs)
-  @assign lhs = removeEmptyTupleElements(lhs)
-  @assign rhs = simplify(rhs)
-  @assign rhs = removeEmptyFunctionArguments(rhs)
-  @assign equations = begin
+  lhs = simplify(lhs)
+  lhs = removeEmptyTupleElements(lhs)
+  rhs = simplify(rhs)
+  rhs = removeEmptyFunctionArguments(rhs)
+  equations = begin
     @match (lhs, rhs) begin
       (TUPLE_EXPRESSION(__), TUPLE_EXPRESSION(__)) => begin
         simplifyTupleElement(
@@ -204,7 +204,7 @@ end
 
 function simplifyAlgorithm(alg::Algorithm)::Algorithm
 
-  @assign alg.statements = simplifyStatements(alg.statements)
+  #= complex assign=#@assign alg.statements = simplifyStatements(alg.statements)
   return alg
 end
 
@@ -212,15 +212,15 @@ function simplifyStatements(stmts::List{<:Statement})::List{Statement}
   local outStmts::List{Statement} = nil
 
   for s in stmts
-    @assign outStmts = simplifyStatement(s, outStmts)
+    outStmts = simplifyStatement(s, outStmts)
   end
-  @assign outStmts = listReverseInPlace(outStmts)
+  outStmts = listReverseInPlace(outStmts)
   return outStmts
 end
 
 function simplifyStatement(stmt::Statement, statements::List{<:Statement})::List{Statement}
 
-  @assign statements = begin
+  statements = begin
     local e::Expression
     local lhs::Expression
     local rhs::Expression
@@ -233,8 +233,8 @@ function simplifyStatement(stmt::Statement, statements::List{<:Statement})::List
       end
 
       P_Statement.Statement.FOR(range = SOME(e)) => begin
-        @assign ty = typeOf(e)
-        @assign dim = Type.nthDimension(ty, 1)
+        ty = typeOf(e)
+        dim = Type.nthDimension(ty, 1)
         #= if Dimension.isOne(dim) then
         =#
         #=   e := Expression.applySubscript(Subscript.INDEX(Expression.INTEGER_EXPRESSION(1)), e);
@@ -250,9 +250,9 @@ function simplifyStatement(stmt::Statement, statements::List{<:Statement})::List
         #= elseif not Dimension.isZero(dim) then
         =#
         if !P_Dimension.Dimension.isZero(dim)
-          @assign stmt.range = SOME(simplify(e))
-          @assign stmt.body = simplifyStatements(stmt.body)
-          @assign statements = _cons(stmt, statements)
+          #= complex assign=#@assign stmt.range = SOME(simplify(e))
+          #= complex assign=#@assign stmt.body = simplifyStatements(stmt.body)
+          statements = _cons(stmt, statements)
         end
         statements
       end
@@ -268,17 +268,17 @@ function simplifyStatement(stmt::Statement, statements::List{<:Statement})::List
       end
 
       P_Statement.Statement.WHEN(__) => begin
-        @assign stmt.branches = list(
+        #= complex assign=#@assign stmt.branches = list(
           (simplify(Util.tuple21(b)), simplifyStatements(Util.tuple22(b))) for b in stmt.branches
         )
         _cons(stmt, statements)
       end
 
       P_Statement.Statement.NORETCALL(__) => begin
-        @assign e = simplify(stmt.exp)
+        e = simplify(stmt.exp)
         if isCall(e)
-          @assign stmt.exp = removeEmptyFunctionArguments(e)
-          @assign statements = _cons(stmt, statements)
+          #= complex assign=#@assign stmt.exp = removeEmptyFunctionArguments(e)
+          statements = _cons(stmt, statements)
         end
         statements
       end
@@ -302,15 +302,15 @@ function simplifyAssignment(stmt::Statement, statements::List{<:Statement})::Lis
 
   @match P_Statement.Statement.ASSIGNMENT(lhs = lhs, rhs = rhs, ty = ty, source = src) =
     stmt
-  @assign ty = mapDims(ty, simplifyDimension)
+  ty = mapDims(ty, simplifyDimension)
   if Type.isEmptyArray(ty)
     return statements
   end
-  @assign lhs = simplify(lhs)
-  @assign lhs = removeEmptyTupleElements(lhs)
-  @assign rhs = simplify(rhs)
-  @assign rhs = removeEmptyFunctionArguments(rhs)
-  @assign statements = begin
+  lhs = simplify(lhs)
+  lhs = removeEmptyTupleElements(lhs)
+  rhs = simplify(rhs)
+  rhs = removeEmptyFunctionArguments(rhs)
+  statements = begin
     @match (lhs, rhs) begin
       (TUPLE_EXPRESSION(__), TUPLE_EXPRESSION(__)) => begin
         simplifyTupleElement(
@@ -353,7 +353,7 @@ function simplifyTupleElement(
     @match _cons(rhs, rest_rhs) = rest_rhs
     @match _cons(ety, rest_ty) = rest_ty
     if !isWildCref(lhs)
-      @assign statements = _cons(makeFn(lhs, rhs, ety, src), statements)
+      statements = _cons(makeFn(lhs, rhs, ety, src), statements)
     end
   end
   return statements
@@ -362,11 +362,11 @@ end
 """ #= Replaces tuple elements that has one or more zero dimension with _. =#"""
 function removeEmptyTupleElements(exp::Expression)::Expression
 
-  @assign () = begin
+  () = begin
     local tyl::List{M_Type}
     @match exp begin
       TUPLE_EXPRESSION(ty = TYPE_TUPLE(types = tyl)) => begin
-        @assign exp.elements = list(@do_threaded_for if Type.isEmptyArray(t)
+        #= complex assign=#@assign exp.elements = list(@do_threaded_for if Type.isEmptyArray(t)
           CREF_EXPRESSION(t, WILD())
         else
           e
@@ -386,10 +386,10 @@ function removeEmptyFunctionArguments(@nospecialize(exp::Expression), isArg::Boo
   local outExp::Expression
   local is_arg::Bool
   if isArg
-    @assign () = begin
+    () = begin
       @match exp begin
         CREF_EXPRESSION(__) where {(isEmptyArray(exp.ty))} => begin
-          @assign outExp =
+          outExp =
             fillType(exp.ty, INTEGER_EXPRESSION(0))
           return
           ()
@@ -400,8 +400,8 @@ function removeEmptyFunctionArguments(@nospecialize(exp::Expression), isArg::Boo
       end
     end
   end
-  @assign is_arg = isArg || isCall(exp)
-  @assign outExp = mapShallow(
+  is_arg = isArg || isCall(exp)
+  outExp = mapShallow(
     exp,
     (x, y = is_arg) -> removeEmptyFunctionArguments(x, y)
   )
@@ -420,10 +420,10 @@ function simplifyIfEqBranches(
   local accum::List{<:Equation_Branch} = nil
 
   for branch in branches
-    @assign accum = begin
+    accum = begin
       @match branch begin
         EQUATION_BRANCH(cond, var, body) => begin
-          @assign cond = simplify(cond)
+          cond = simplify(cond)
           #=  A branch with condition true will always be selected when encountered. =#
           if isTrue(cond)
             if listEmpty(accum)
@@ -443,7 +443,7 @@ function simplifyIfEqBranches(
               return elements #TODO: John WTF?
             end
           elseif !isFalse(cond)
-            @assign accum = _cons(
+            accum = _cons(
               makeBranch(cond, simplifyEquations(body)),
               accum,
             )
@@ -463,7 +463,7 @@ function simplifyIfEqBranches(
           ),
         ) => begin
           if var <= Variability.STRUCTURAL_PARAMETER
-            @assign cond = evalExp(cond)
+            cond = evalExp(cond)
           end
           #=  An invalid branch that can't be removed will trigger the errors
           =#
@@ -482,7 +482,7 @@ function simplifyIfEqBranches(
     end
   end
   if !listEmpty(accum)
-    @assign elements =
+    elements =
       _cons(makeIf(listReverseInPlace(accum), src), elements)
   end
   return elements
@@ -501,18 +501,18 @@ function simplifyIfStmtBranches(
   local accum::List{Tuple{Expression, List{ElemT}}} = nil
 
   for branch in branches
-    @assign (cond, body) = branch
-    @assign cond = simplify(cond)
+    (cond, body) = branch
+    cond = simplify(cond)
     if isTrue(cond)
       if listEmpty(accum)
-        @assign elements = listAppend(listReverse(simplifyFunc(body)), elements)
+        elements = listAppend(listReverse(simplifyFunc(body)), elements)
         return elements
       else
-        @assign accum = _cons((cond, simplifyFunc(body)), accum)
+        accum = _cons((cond, simplifyFunc(body)), accum)
         break
       end
     elseif !isFalse(cond)
-      @assign accum = _cons((cond, simplifyFunc(body)), accum)
+      accum = _cons((cond, simplifyFunc(body)), accum)
     end
   end
   #=  A branch with condition true will always be selected when encountered.
@@ -524,7 +524,7 @@ function simplifyIfStmtBranches(
   #=  Keep branches that are neither literal true or false.
   =#
   if !listEmpty(accum)
-    @assign elements = _cons(makeFunc(listReverseInPlace(accum), src), elements)
+    elements = _cons(makeFunc(listReverseInPlace(accum), src), elements)
   end
   return elements
 end
@@ -537,16 +537,16 @@ function simplifyFunction(func::M_Function)
   return if !P_Function.isSimplified(func)
     P_Function.markSimplified(func)
     P_Function.mapExp(func, simplify, mapBody = false)
-    @assign cls = getClass(func.node)
-    @assign () = begin
+    cls = getClass(func.node)
+    () = begin
       @match cls begin
         INSTANCED_CLASS(sections = sections) => begin
-          @assign () = begin
+          () = begin
             @match sections begin
               P_Sections.Sections.SECTIONS(algorithms = fn_body <| nil()) => begin
-                @assign fn_body.statements = simplifyStatements(fn_body.statements)
-                @assign sections.algorithms = list(fn_body)
-                @assign cls.sections = sections
+                #= complex assign=#@assign fn_body.statements = simplifyStatements(fn_body.statements)
+                #= complex assign=#@assign sections.algorithms = list(fn_body)
+                #= complex assign=#@assign cls.sections = sections
                 updateClass(cls, func.node)
                 ()
               end

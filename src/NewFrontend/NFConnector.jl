@@ -36,7 +36,7 @@ function split(
 )::List{Connector}
   local connl::List{Connector}
 
-  @assign connl = splitImpl(conn.name, conn.ty, conn.face, conn.source, conn.cty, scalarize)
+  connl = splitImpl(conn.name, conn.ty, conn.face, conn.source, conn.cty, scalarize)
   return connl
 end
 
@@ -68,7 +68,7 @@ end
 function setOutside(conn::Connector)::Connector
 
   if conn.face != Face.OUTSIDE
-    @assign conn.face = Face.OUTSIDE
+    #= complex assign=#@assign conn.face = Face.OUTSIDE
   end
   return conn
 end
@@ -80,7 +80,7 @@ function isInside(conn::Connector)::Bool
   #=  Needed due to #4502
   =#
 
-  @assign isInside = f == Face.INSIDE
+  isInside = f == Face.INSIDE
   return isInside
 end
 
@@ -91,7 +91,7 @@ function isOutside(conn::Connector)::Bool
   #=  Needed due to #4502
   =#
 
-  @assign isOutside = f == Face.OUTSIDE
+  isOutside = f == Face.OUTSIDE
   return isOutside
 end
 
@@ -136,7 +136,7 @@ function fromExp(
   conns::List{<:Connector} = nil
 )::List{Connector}
 
-  @assign conns = begin
+  conns = begin
     @match exp begin
       CREF_EXPRESSION(__) => begin
         _cons(fromCref(exp.cref, exp.ty, source), conns)
@@ -144,7 +144,7 @@ function fromExp(
 
       ARRAY_EXPRESSION(__) => begin
         for e in listReverse(exp.elements)
-          @assign conns = fromExp(e, source, conns)
+          conns = fromExp(e, source, conns)
         end
         conns
       end
@@ -178,13 +178,13 @@ function fromFacedCref(
   local res::Restriction
 
   if isComponent(nodeVar)
-    @assign comp = component(nodeVar)
-    @assign res = restriction(getClass(classInstance(comp)))
-    @assign cty = connectorType(comp)
+    comp = component(nodeVar)
+    res = restriction(getClass(classInstance(comp)))
+    cty = connectorType(comp)
   else
-    @assign cty = intBitOr(ConnectorType.VIRTUAL, ConnectorType.POTENTIAL)
+    cty = intBitOr(ConnectorType.VIRTUAL, ConnectorType.POTENTIAL)
   end
-  @assign conn =
+  conn =
     CONNECTOR(simplifySubscripts(cref), ty, face, cty, source)
   return conn
 end
@@ -210,15 +210,15 @@ function splitImpl2(
   local cty::ConnectorType.TYPE
 
   for comp in comps
-    @assign c = component(comp)
-    @assign ty = getType(c)
-    @assign cty = P_Component.connectorType(c)
+    c = component(comp)
+    ty = getType(c)
+    cty = P_Component.connectorType(c)
     if !ConnectorType.isPotentiallyPresent(cty)
-      @assign cref = append(
+      cref = append(
         fromNode(comp, ty),
         name,
       )
-      @assign conns = splitImpl(cref, ty, face, source, cty, scalarize, conns, dims)
+      conns = splitImpl(cref, ty, face, source, cty, scalarize, conns, dims)
     end
   end
   return conns
@@ -235,16 +235,16 @@ function splitImpl(
   dims::List{<:Dimension} = nil,
 )::List{Connector} #= accumulated dimensions if splitArrays = false =#
 
-  @assign conns = begin
+  conns = begin
     local ety::M_Type
     local ct::ComplexType
     local tree::ClassTree
     @match ty begin
       TYPE_COMPLEX(complexTy = ct && ComplexType.CONNECTOR(__)) => begin
-        @assign conns =
+        conns =
           splitImpl2(name, face, source, ct.potentials, scalarize, conns, dims)
-        @assign conns = splitImpl2(name, face, source, ct.flows, scalarize, conns, dims)
-        @assign conns = splitImpl2(name, face, source, ct.streams, scalarize, conns, dims)
+        conns = splitImpl2(name, face, source, ct.flows, scalarize, conns, dims)
+        conns = splitImpl2(name, face, source, ct.streams, scalarize, conns, dims)
         conns
       end
 
@@ -253,8 +253,8 @@ function splitImpl(
       end
 
       TYPE_COMPLEX(__) => begin
-        @assign tree = classTree(getClass(ty.cls))
-        @assign conns = splitImpl2(
+        tree = classTree(getClass(ty.cls))
+        conns = splitImpl2(
           name,
           face,
           source,
@@ -270,7 +270,7 @@ function splitImpl(
         elementType = ety && TYPE_COMPLEX(__),
       ) where {(scalarize >= ScalarizeSetting.PREFIX)} => begin
         for c in scalarize(name)
-          @assign conns = splitImpl(c, ety, face, source, cty, scalarize, conns, dims)
+          conns = splitImpl(c, ety, face, source, cty, scalarize, conns, dims)
         end
         conns
       end
@@ -278,11 +278,11 @@ function splitImpl(
       TYPE_ARRAY(elementType = ety) => begin
         if scalarize == ScalarizeSetting.ALL
           for c in scalarize(name)
-            @assign conns = splitImpl(c, ety, face, source, cty, scalarize, conns, dims)
+            conns = splitImpl(c, ety, face, source, cty, scalarize, conns, dims)
           end
         else
           if !Type.isEmptyArray(ty)
-            @assign conns = splitImpl(
+            conns = splitImpl(
               name,
               ety,
               face,
@@ -310,7 +310,7 @@ end
      connector, and an inside connector all other crefs. =#"""
 function crefFace(cref::ComponentRef)::FaceType
   local face::FaceType
-  @assign face = begin
+  face = begin
     @match cref begin
       COMPONENT_REF_CREF(restCref = COMPONENT_REF_EMPTY(__)) => begin
         Face.OUTSIDE

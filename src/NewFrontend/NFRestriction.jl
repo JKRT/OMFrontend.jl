@@ -44,7 +44,7 @@ Restriction = NFRestriction
 
 function toString(res::Restriction)::String
   local str::String
-  @assign str = begin
+   str = begin
     @match res begin
       Restriction_CLASS(__) => begin
         "class"
@@ -100,7 +100,7 @@ end
 
 function isModel(res::Restriction)::Bool
   local isModel::Bool
-  @assign isModel = begin
+   isModel = begin
     @match res begin
       RESTRICITON_MODEL(__) => begin
         true
@@ -116,7 +116,7 @@ end
 
 function isClock(res::Restriction)::Bool
   local isClock::Bool
-  @assign isClock = begin
+   isClock = begin
     @match res begin
       CLOCK(__) => begin
         true
@@ -132,7 +132,7 @@ end
 
 function isType(res::Restriction)::Bool
   local isType::Bool
-  @assign isType = begin
+   isType = begin
     @match res begin
       RESTRICTION_TYPE(__) => begin
         true
@@ -148,7 +148,7 @@ end
 
 function isOperator(res::Restriction)::Bool
   local isOperator::Bool
-  @assign isOperator = begin
+   isOperator = begin
     @match res begin
       RESTRICTION_OPERATOR(__) => begin
         true
@@ -164,7 +164,7 @@ end
 
 function isOperatorRecord(res::Restriction)::Bool
   local isOpRecord::Bool
-  @assign isOpRecord = begin
+   isOpRecord = begin
     @match res begin
       RESTRICTION_RECORD(__) => begin
         res.isOperator
@@ -179,7 +179,7 @@ end
 
 function isRecord(res::Restriction)::Bool
   local isRecord::Bool
-  @assign isRecord = begin
+   isRecord = begin
     @match res begin
       RESTRICTION_RECORD(__) => begin
         true
@@ -194,7 +194,7 @@ end
 
 function isFunction(res::Restriction)::Bool
   local isFunction::Bool
-  @assign isFunction = begin
+   isFunction = begin
     @match res begin
       RESTRICTION_FUNCTION(__) => begin
         true
@@ -209,7 +209,7 @@ end
 
 function isExternalObject(res::Restriction)::Bool
   local isExternalObject::Bool
-  @assign isExternalObject = begin
+   isExternalObject = begin
     @match res begin
       RESTRICTION_EXTERNAL_OBJECT(__) => begin
         true
@@ -225,7 +225,7 @@ end
 function isNonexpandableConnector(res::Restriction)::Bool
   local isNonexpandable::Bool
 
-  @assign isNonexpandable = begin
+   isNonexpandable = begin
     @match res begin
       RESTRICTION_CONNECTOR(__) => begin
         !res.isExpandable
@@ -240,7 +240,7 @@ end
 
 function isExpandableConnector(res::Restriction)::Bool
   local isConnector::Bool
-  @assign isConnector = begin
+   isConnector = begin
     @match res begin
       RESTRICTION_CONNECTOR(__) => begin
         res.isExpandable
@@ -256,7 +256,7 @@ end
 
 function isConnector(res::Restriction)::Bool
   local isConnector::Bool
-  @assign isConnector = begin
+   isConnector = begin
     @match res begin
       RESTRICTION_CONNECTOR(__) => begin
         true
@@ -274,7 +274,7 @@ import DAE.ClassInf
 function toDAE(res::Restriction, path::Absyn.Path)::ClassInf.SMNode
   local state::ClassInf.SMNode
 
-  @assign state = begin
+   state = begin
     @match res begin
       RESTRICTION_CLASS(__) => begin
         ClassInf.UNKNOWN(path)
@@ -316,7 +316,7 @@ end
 
 function fromSCode(sres::SCode.Restriction)::Restriction
   local res::Restriction
-  @assign res = begin
+   res = begin
     @match sres begin
       SCode.R_CLASS(__) => begin
         RESTRICTION_CLASS()

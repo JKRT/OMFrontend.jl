@@ -67,14 +67,14 @@ HashTable = Tuple
 function emptyHashTable()::HashTable
   local hashTable::HashTable
 
-  @assign hashTable = emptyHashTableSized(BaseHashTable.defaultBucketSize)
+  hashTable = emptyHashTableSized(BaseHashTable.defaultBucketSize)
   return hashTable
 end
 
 function id(inStr::String)::String
   local outStr::String
 
-  @assign outStr = inStr
+  outStr = inStr
   return outStr
 end
 
@@ -85,7 +85,7 @@ end
 function emptyHashTableSized(size::Int)::HashTable
   local hashTable::HashTable
 
-  @assign hashTable = BaseHashTable.emptyHashTableWork(
+  hashTable = BaseHashTable.emptyHashTableWork(
     size,
     (NFUnit.hashUnitMod, NFUnit.unitEqual, NFUnit.unit2string, id),
   )

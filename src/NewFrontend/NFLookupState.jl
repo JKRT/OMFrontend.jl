@@ -39,7 +39,7 @@ end
 
 function secondIdent(name::LookupStateName)::String
   local id::String
-  @assign id = begin
+  id = begin
     @match name begin
       LOOKUP_STATE_NAME_PATH(__) => begin
         AbsynUtil.pathSecondIdent(name.path)
@@ -55,7 +55,7 @@ end
 function firstIdent(name::LookupStateName)::String
   local id::String
 
-  @assign id = begin
+  id = begin
     @match name begin
       LOOKUP_STATE_NAME_PATH(__) => begin
         AbsynUtil.pathFirstIdent(name.path)
@@ -72,7 +72,7 @@ end
 function toString(name::LookupStateName)::String
   local str::String
 
-  @assign str = begin
+  str = begin
     @match name begin
       LOOKUP_STATE_NAME_PATH(__) => begin
         AbsynUtil.pathString(name.path)
@@ -117,7 +117,7 @@ function next2(
 )::LookupState
   local nextState::LookupState
 
-  @assign nextState = begin
+  nextState = begin
     local str::String
     #=  Transitions from BEGIN.
     =#
@@ -216,7 +216,7 @@ end
 """ #= Returns the lookup state of a given element. =#"""
 function elementState(element::SCode.Element)::LookupState
   local state::LookupState
-  @assign state = begin
+  state = begin
     @match element begin
       SCode.CLASS(restriction = SCode.R_PACKAGE(__)) => begin
         LOOKUP_STATE_PACKAGE()
@@ -240,9 +240,9 @@ end
 function nodeState(node::InstNode)::LookupState
   local state::LookupState
   if isComponent(node) || isName(node)
-    @assign state = LOOKUP_STATE_COMP()
+    state = LOOKUP_STATE_COMP()
   else
-    @assign state = elementState(definition(node))
+    state = elementState(definition(node))
   end
   return state
 end
@@ -251,7 +251,7 @@ end
      the element was not the first part of a name while being protected.
      I.e. P.a is allowed if P is protected, but not e.g. a.P or a.P.b. =#"""
 function checkProtection(node::InstNode, currentState::LookupState)
-  return @assign () = begin
+  return () = begin
     @match currentState begin
       LOOKUP_STATE_BEGIN(__) => begin
         ()
@@ -285,8 +285,8 @@ function next(
   if checkAccessViolations
     checkProtection(node, currentState)
   end
-  @assign entry_ty = nodeState(node)
-  @assign nextState = next2(entry_ty, currentState, node)
+  entry_ty = nodeState(node)
+  nextState = next2(entry_ty, currentState, node)
   return nextState
 end
 
@@ -302,9 +302,9 @@ function printFoundWrongTypeError(
   local found_str::String
   local expected_str::String
 
-  @assign name_str = P_LookupStateName.toString(name)
-  @assign found_str = lookupStateString(foundState)
-  @assign expected_str = lookupStateString(expectedState)
+  name_str = P_LookupStateName.toString(name)
+  found_str = lookupStateString(foundState)
+  expected_str = lookupStateString(expectedState)
   return Error.addSourceMessage(
     Error.LOOKUP_FOUND_WRONG_TYPE,
     list(name_str, expected_str, found_str),
@@ -316,7 +316,7 @@ end
 function lookupStateString(state::LookupState)::String
   local str::String
 
-  @assign str = begin
+  str = begin
     @match state begin
       LOOKUP_STATE_BEGIN(__) => begin
         "<begin>"
@@ -363,7 +363,7 @@ end
 
 function isError(state::LookupState)::Bool
   local isError::Bool
-  @assign isError = begin
+  isError = begin
     @match state begin
       LOOKUP_STATE_ERROR(__) => begin
         true
@@ -384,7 +384,7 @@ function assertState(
   name::LookupStateName,
   info::SourceInfo,
 )
-  return @assign () = begin
+  return () = begin
     local name_str::String
     local info2::SourceInfo
     #=  Found the expected kind of element.
@@ -456,7 +456,7 @@ function assertState(
       (LOOKUP_STATE_COMP_FUNC(__), _) => begin
         #=  Found a function via a component, but didn't expect a function.
         =#
-        @assign name_str = P_LookupStateName.toString(name)
+        name_str = P_LookupStateName.toString(name)
         Error.addSourceMessage(Error.FOUND_FUNC_NAME_VIA_COMP_NONCALL, list(name_str), info)
         fail()
       end
@@ -479,8 +479,8 @@ function assertState(
         =#
         #=  c.C1...Cn.f is allowed.
         =#
-        @assign name_str = name(node)
-        @assign info2 = info(node)
+        name_str = name(node)
+        info2 = info(node)
         Error.addSourceMessage(Error.NON_CLASS_IN_COMP_FUNC_NAME, list(name_str), info2)
         fail()
       end
@@ -488,7 +488,7 @@ function assertState(
       (LOOKUP_STATE_ERROR(errorState = LOOKUP_STATE_COMP_FUNC(__)), LOOKUP_STATE_COMP(__)) => begin
         #=  Found class when looking up a composite component name.
         =#
-        @assign name_str = name(node)
+        name_str = name(node)
         Error.addSourceMessage(
           Error.CLASS_IN_COMPOSITE_COMP_NAME,
           list(name_str, P_LookupStateName.toString(name)),
@@ -500,7 +500,7 @@ function assertState(
       (LOOKUP_STATE_ERROR(errorState = LOOKUP_STATE_COMP_FUNC(__)), _) => begin
         #=  Found class via composite component name when actually looking for a class.
         =#
-        @assign name_str = name(node)
+        name_str = name(node)
         Error.addSourceMessage(
           Error.LOOKUP_CLASS_VIA_COMP_COMP,
           list(name_str, P_LookupStateName.toString(name)),
@@ -512,7 +512,7 @@ function assertState(
       (LOOKUP_STATE_ERROR(errorState = LOOKUP_STATE_COMP_COMP(__)), LOOKUP_STATE_COMP(__)) => begin
         #=  Found class when looking up a composite component name.
         =#
-        @assign name_str = name(node)
+        name_str = name(node)
         Error.addSourceMessage(
           Error.CLASS_IN_COMPOSITE_COMP_NAME,
           list(name_str, P_LookupStateName.toString(name)),
@@ -524,7 +524,7 @@ function assertState(
       (LOOKUP_STATE_ERROR(errorState = LOOKUP_STATE_COMP_COMP(__)), _) => begin
         #=  Found class via composite component name when actually looking for a class.
         =#
-        @assign name_str = name(node)
+        name_str = name(node)
         Error.addSourceMessage(
           Error.LOOKUP_CLASS_VIA_COMP_COMP,
           list(name_str, P_LookupStateName.toString(name)),
@@ -538,7 +538,7 @@ function assertState(
         =#
         #=  identifier, e.g. A.B.C where B or C are imported names.
         =#
-        @assign name_str = name(node)
+        name_str = name(node)
         Error.addSourceMessage(
           Error.IMPORT_IN_COMPOSITE_NAME,
           list(name_str, P_LookupStateName.toString(name)),
@@ -562,7 +562,7 @@ end
 function isClass(state::LookupState)::Bool
   local isClass::Bool
 
-  @assign isClass = begin
+  isClass = begin
     @match state begin
       LOOKUP_STATE_COMP_CLASS(__) => begin
         true
@@ -587,7 +587,7 @@ end
 function isFunction(state::LookupState, node::InstNode)::Bool
   local isFunction::Bool
 
-  @assign isFunction = begin
+  isFunction = begin
     @match state begin
       LOOKUP_STATE_FUNC(__) => begin
         true
@@ -619,14 +619,14 @@ end
 
 function isCallableComponent(node::InstNode)::Bool
   local callable::Bool
-  @assign callable = isFunction(getClass(node))
+  callable = isFunction(getClass(node))
   return callable
 end
 
 function isCallableType(node::InstNode)::Bool
   local callable::Bool
   local def::SCode.Element = definition(node)
-  @assign callable = SCodeUtil.isRecord(def) || SCodeUtil.isOperator(def)
+  callable = SCodeUtil.isRecord(def) || SCodeUtil.isOperator(def)
   return callable
 end
 

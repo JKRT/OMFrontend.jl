@@ -50,7 +50,7 @@ Table = Tuple
 
 function emptyCardinalityTable(size::Int)::Table
   local table::Table
-  @assign table = BaseHashTable.emptyHashTableWork(
+  table = BaseHashTable.emptyHashTableWork(
     size,
     (stringHashDjb2Mod, stringEq, Util.id, intString),
   )
@@ -60,14 +60,14 @@ end
 function fromConnections(conns)::Table
   local table::Table
   if System.getUsesCardinality()
-    @assign table =
+    table =
       emptyCardinalityTable(max(1, Util.nextPrime(listLength(conns.connections))))
     for conn in conns.connections
-      @assign table = addConnector(conn.lhs, table)
-      @assign table = addConnector(conn.rhs, table)
+      table = addConnector(conn.lhs, table)
+      table = addConnector(conn.rhs, table)
     end
   else
-    @assign table = emptyCardinalityTable(1)
+    table = emptyCardinalityTable(1)
   end
   return table
 end
@@ -75,12 +75,12 @@ end
 function addConnector(conn, table::Table)::Table
   local conn_str::String
   local count::Int
-  @assign conn_str = Main.Connector.toString(conn)
+  conn_str = Main.Connector.toString(conn)
   try
-    @assign count = BaseHashTable.get(conn_str, table)
+    count = BaseHashTable.get(conn_str, table)
     BaseHashTable.update((conn_str, count + 1), table)
   catch
-    @assign table = BaseHashTable.add((conn_str, 1), table)
+    table = BaseHashTable.add((conn_str, 1), table)
   end
   return table
 end
@@ -89,11 +89,11 @@ function evaluateCardinality(arg, table::Table)
   local res::Expression
   local count::Int
   try
-    @assign count = BaseHashTable.get(toString(arg), table)
+    count = BaseHashTable.get(toString(arg), table)
   catch
-    @assign count = 0
+    count = 0
   end
-  @assign res = INTEGER_EXPRESSION(count)
+  res = INTEGER_EXPRESSION(count)
   return res
 end
 

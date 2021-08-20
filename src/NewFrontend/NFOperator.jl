@@ -59,7 +59,7 @@ function negate(op::Operator)::Operator
   local outOp::Operator
   local neg_op::OpType
 
-  @assign neg_op = begin
+  neg_op = begin
     @match op.op begin
       Op.ADD => begin
         Op.SUB
@@ -90,14 +90,14 @@ function negate(op::Operator)::Operator
       end
     end
   end
-  @assign outOp = OPERATOR(op.ty, neg_op)
+  outOp = OPERATOR(op.ty, neg_op)
   return outOp
 end
 
 function isElementWise(op::Operator)::Bool
   local ew::Bool
 
-  @assign ew = begin
+  ew = begin
     @match op.op begin
       Op.ADD_EW => begin
         true
@@ -129,30 +129,30 @@ end
 
 function stripEW(op::Operator)::Operator
 
-  @assign () = begin
+  () = begin
     @match op.op begin
       Op.ADD_EW => begin
-        @assign op.op = Op.ADD
+        #= complex assign=#@assign op.op = Op.ADD
         ()
       end
 
       Op.SUB_EW => begin
-        @assign op.op = Op.SUB
+        #= complex assign=#@assign op.op = Op.SUB
         ()
       end
 
       Op.MUL_EW => begin
-        @assign op.op = Op.MUL
+        #= complex assign=#@assign op.op = Op.MUL
         ()
       end
 
       Op.DIV_EW => begin
-        @assign op.op = Op.DIV
+        #= complex assign=#@assign op.op = Op.DIV
         ()
       end
 
       Op.POW_EW => begin
-        @assign op.op = Op.POW
+        #= complex assign=#@assign op.op = Op.POW
         ()
       end
 
@@ -169,7 +169,7 @@ function makeArrayScalar(ty::M_Type, op::OpType)::Operator
 
   local o::OpType
 
-  @assign o = begin
+  o = begin
     @match op begin
       Op.ADD => begin
         Op.ADD_ARRAY_SCALAR
@@ -192,14 +192,14 @@ function makeArrayScalar(ty::M_Type, op::OpType)::Operator
       end
     end
   end
-  @assign outOp = OPERATOR(ty, o)
+  outOp = OPERATOR(ty, o)
   return outOp
 end
 
 function makeScalarArray(ty::M_Type, op::OpType)::Operator
   local outOp::Operator
   local o::OpType
-  @assign o = begin
+  o = begin
     @match op begin
       Op.ADD => begin
         Op.ADD_SCALAR_ARRAY
@@ -222,7 +222,7 @@ function makeScalarArray(ty::M_Type, op::OpType)::Operator
       end
     end
   end
-  @assign outOp = OPERATOR(ty, o)
+  outOp = OPERATOR(ty, o)
   return outOp
 end
 
@@ -324,7 +324,7 @@ end
 function isNonAssociative(op::Operator)::Bool
   local isNonAssociative::Bool
 
-  @assign isNonAssociative = begin
+  isNonAssociative = begin
     @match op.op begin
       Op.POW => begin
         true
@@ -357,7 +357,7 @@ end
 function isAssociative(op::Operator)::Bool
   local isAssociative::Bool
 
-  @assign isAssociative = begin
+  isAssociative = begin
     @match op.op begin
       Op.ADD => begin
         true
@@ -386,7 +386,7 @@ end
 function priority(op::Operator, lhs::Bool)::Int
   local priority::Int
 
-  @assign priority = begin
+  priority = begin
     @match op.op begin
       Op.ADD => begin
         if lhs
@@ -459,7 +459,7 @@ end
 function symbol(op::Operator, spacing::String = " ")::String
   local symbol::String
 
-  @assign symbol = begin
+  symbol = begin
     @match op.op begin
       Op.ADD => begin
         "+"
@@ -609,22 +609,22 @@ function symbol(op::Operator, spacing::String = " ")::String
       end
     end
   end
-  @assign symbol = spacing + symbol + spacing
+  symbol = spacing + symbol + spacing
   return symbol
 end
 
 function unlift(op::Operator)::Operator
-  @assign op.ty = Type.unliftArray(op.ty)
+  #= complex assign=#@assign op.ty = Type.unliftArray(op.ty)
   return op
 end
 
 function scalarize(op::Operator)::Operator
-  @assign op.ty = arrayElementType(op.ty)
+  #= complex assign=#@assign op.ty = arrayElementType(op.ty)
   return op
 end
 
 function setType(ty::M_Type, op::Operator)::Operator
-  @assign op.ty = ty
+  #= complex assign=#@assign op.ty = ty
   return op
 end
 
@@ -637,8 +637,8 @@ function toDAE(op::Operator)::DAE.Operator #Tuple{DAE.Operator, Bool}
   local swapArguments::Bool = false #= The DAE structure only has array*scalar, not scalar*array, etc =#
   local daeOp::DAE.Operator
   local ty::DAE.Type
-  @assign ty = toDAE(op.ty)
-  @assign daeOp = begin
+  ty = toDAE(op.ty)
+  daeOp = begin
     @match op.op begin
       Op.ADD => begin
         if isArray(op.ty)
@@ -681,7 +681,7 @@ function toDAE(op::Operator)::DAE.Operator #Tuple{DAE.Operator, Bool}
       end
 
       Op.ADD_SCALAR_ARRAY => begin
-        @assign swapArguments = true
+        swapArguments = true
         DAE.ADD_ARRAY_SCALAR(ty)
       end
 
@@ -702,7 +702,7 @@ function toDAE(op::Operator)::DAE.Operator #Tuple{DAE.Operator, Bool}
       end
 
       Op.MUL_SCALAR_ARRAY => begin
-        @assign swapArguments = true
+        swapArguments = true
         DAE.MUL_ARRAY_SCALAR(ty)
       end
 
@@ -803,7 +803,7 @@ function fromAbsyn(inOperator::Absyn.Operator)::Operator
   local outOperator::Operator
   local op::OpType
 
-  @assign op = begin
+  op = begin
     @match inOperator begin
       Absyn.ADD(__) => begin
         Op.ADD
@@ -898,7 +898,7 @@ function fromAbsyn(inOperator::Absyn.Operator)::Operator
       end
     end
   end
-  @assign outOperator = OPERATOR(TYPE_UNKNOWN(), op)
+  outOperator = OPERATOR(TYPE_UNKNOWN(), op)
   return outOperator
 end
 
@@ -906,6 +906,6 @@ function compare(op1::Operator, op2::Operator)::Int
   local comp::Int
   local o1::OpType = op1.op
   local o2::OpType = op2.op
-  @assign comp = Util.intCompare(Int(o1), Int(o2))
+  comp = Util.intCompare(Int(o1), Int(o2))
   return comp
 end

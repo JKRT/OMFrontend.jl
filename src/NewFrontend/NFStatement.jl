@@ -69,7 +69,7 @@ end
 
 function isMultiLine(stmt::Statement)::Bool
   local multiLine::Bool
-  @assign multiLine = begin
+  multiLine = begin
     @match stmt begin
       ALG_FOR(__) => begin
         true
@@ -102,15 +102,15 @@ function toFlatStreamList(
   local first::Bool = true
 
   for stmt in stmtl
-    @assign multi_line = isMultiLine(stmt)
+    multi_line = isMultiLine(stmt)
     if first
-      @assign first = false
+      first = false
     elseif prev_multi_line || multi_line
-      @assign s = IOStream.append(s, "\\n")
+      s = IOStream.append(s, "\\n")
     end
-    @assign prev_multi_line = multi_line
-    @assign s = toFlatStream(stmt, indent, s)
-    @assign s = IOStream.append(s, ";\\n")
+    prev_multi_line = multi_line
+    s = toFlatStream(stmt, indent, s)
+    s = IOStream.append(s, ";\\n")
   end
   #=  Improve human parsability by separating statements that spans multiple
   =#
@@ -125,85 +125,85 @@ function toFlatStream(
   s,
 )
   local str::String
-  @assign s = IOStream.append(s, indent)
-  @assign s = begin
+  s = IOStream.append(s, indent)
+  s = begin
     @match stmt begin
       ALG_ASSIGNMENT(__) => begin
-        @assign s = IOStream.append(s, toFlatString(stmt.lhs))
-        @assign s = IOStream.append(s, " := ")
-        @assign s = IOStream.append(s, toFlatString(stmt.rhs))
+        s = IOStream.append(s, toFlatString(stmt.lhs))
+        #= Complex assign=#@assign s = IOStream.append(s, " := ")
+        s = IOStream.append(s, toFlatString(stmt.rhs))
         s
       end
 
       ALG_FUNCTION_ARRAY_INIT(__) => begin
-        @assign s = IOStream.append(s, "array init")
-        @assign s = IOStream.append(s, stmt.name)
+        s = IOStream.append(s, "array init")
+        s = IOStream.append(s, stmt.name)
         s
       end
 
       ALG_FOR(__) => begin
-        @assign s = IOStream.append(s, "for ")
-        @assign s = IOStream.append(s, name(stmt.iterator))
+        s = IOStream.append(s, "for ")
+        s = IOStream.append(s, name(stmt.iterator))
         if isSome(stmt.range)
-          @assign s = IOStream.append(s, " in ")
-          @assign s = IOStream.append(
+          s = IOStream.append(s, " in ")
+          s = IOStream.append(
             s,
             toFlatString(Util.getOption(stmt.range)),
           )
         end
-        @assign s = IOStream.append(s, " loop\\n")
-        @assign s = toFlatStreamList(stmt.body, indent + "  ", s)
-        @assign s = IOStream.append(s, indent)
-        @assign s = IOStream.append(s, "end for")
+        s = IOStream.append(s, " loop\\n")
+        s = toFlatStreamList(stmt.body, indent + "  ", s)
+        s = IOStream.append(s, indent)
+        s = IOStream.append(s, "end for")
         s
       end
 
       ALG_IF(__) => begin
-        @assign str = "if "
+        str = "if "
         for b in stmt.branches
-          @assign s = IOStream.append(s, str)
-          @assign s =
+          s = IOStream.append(s, str)
+          s =
             IOStream.append(s, toFlatString(Util.tuple21(b)))
-          @assign s = IOStream.append(s, " then\\n")
-          @assign s = toFlatStreamList(Util.tuple22(b), indent + "  ", s)
-          @assign s = IOStream.append(s, indent)
-          @assign str = "elseif "
+          s = IOStream.append(s, " then\\n")
+          s = toFlatStreamList(Util.tuple22(b), indent + "  ", s)
+          s = IOStream.append(s, indent)
+          str = "elseif "
         end
-        @assign s = IOStream.append(s, "end if")
+        s = IOStream.append(s, "end if")
         s
       end
 
       ALG_WHEN(__) => begin
-        @assign str = "when "
+        str = "when "
         for b in stmt.branches
-          @assign s = IOStream.append(s, str)
-          @assign s =
+          s = IOStream.append(s, str)
+          s =
             IOStream.append(s, toFlatString(Util.tuple21(b)))
-          @assign s = IOStream.append(s, " then\\n")
-          @assign s = toFlatStreamList(Util.tuple22(b), indent + "  ", s)
-          @assign s = IOStream.append(s, indent)
-          @assign str = "elsewhen "
+          s = IOStream.append(s, " then\\n")
+          s = toFlatStreamList(Util.tuple22(b), indent + "  ", s)
+          s = IOStream.append(s, indent)
+          str = "elsewhen "
         end
-        @assign s = IOStream.append(s, "end when")
+        s = IOStream.append(s, "end when")
         s
       end
 
       ALG_ASSERT(__) => begin
-        @assign s = IOStream.append(s, "assert(")
-        @assign s =
+        s = IOStream.append(s, "assert(")
+        s =
           IOStream.append(s, toFlatString(stmt.condition))
-        @assign s = IOStream.append(s, ", ")
-        @assign s = IOStream.append(s, toFlatString(stmt.message))
-        @assign s = IOStream.append(s, ", ")
-        @assign s = IOStream.append(s, toFlatString(stmt.level))
-        @assign s = IOStream.append(s, ")")
+        s = IOStream.append(s, ", ")
+        s = IOStream.append(s, toFlatString(stmt.message))
+        s = IOStream.append(s, ", ")
+        s = IOStream.append(s, toFlatString(stmt.level))
+        s = IOStream.append(s, ")")
         s
       end
 
       ALG_TERMINATE(__) => begin
-        @assign s = IOStream.append(s, "terminate(")
-        @assign s = IOStream.append(s, toFlatString(stmt.message))
-        @assign s = IOStream.append(s, ")")
+        s = IOStream.append(s, "terminate(")
+        s = IOStream.append(s, toFlatString(stmt.message))
+        s = IOStream.append(s, ")")
         s
       end
 
@@ -212,13 +212,13 @@ function toFlatStream(
       end
 
       ALG_WHILE(__) => begin
-        @assign s = IOStream.append(s, "while ")
-        @assign s =
+        s = IOStream.append(s, "while ")
+        s =
           IOStream.append(s, toFlatString(stmt.condition))
-        @assign s = IOStream.append(s, " then\\n")
-        @assign s = toFlatStreamList(stmt.body, indent + "  ", s)
-        @assign s = IOStream.append(s, indent)
-        @assign s = IOStream.append(s, "end while")
+        s = IOStream.append(s, " then\\n")
+        s = toFlatStreamList(stmt.body, indent + "  ", s)
+        s = IOStream.append(s, indent)
+        s = IOStream.append(s, "end while")
         s
       end
 
@@ -249,15 +249,15 @@ function toStreamList(
   local first::Bool = true
 
   for stmt in stmtl
-    @assign multi_line = isMultiLine(stmt)
+    multi_line = isMultiLine(stmt)
     if first
-      @assign first = false
+      first = false
     elseif prev_multi_line || multi_line
-      @assign s = IOStream.append(s, "\\n")
+      s = IOStream.append(s, "\\n")
     end
-    @assign prev_multi_line = multi_line
-    @assign s = toStream(stmt, indent, s)
-    @assign s = IOStream.append(s, ";\\n")
+    prev_multi_line = multi_line
+    s = toStream(stmt, indent, s)
+    s = IOStream.append(s, ";\\n")
   end
   #=  Improve human parsability by separating statements that spans multiple
   =#
@@ -270,84 +270,84 @@ function toStream(stmt::Statement, indent::String, s)
 
   local str::String
 
-  @assign s = IOStream.append(s, indent)
-  @assign s = begin
+  s = IOStream.append(s, indent)
+  s = begin
     @match stmt begin
       ASSIGNMENT(__) => begin
-        @assign s = IOStream.append(s, toString(stmt.lhs))
-        @assign s = IOStream.append(s, " := ")
-        @assign s = IOStream.append(s, toString(stmt.rhs))
+        s = IOStream.append(s, toString(stmt.lhs))
+        #= Complex assign=#@assign s = IOStream.append(s, " := ")
+        s = IOStream.append(s, toString(stmt.rhs))
         s
       end
 
       FUNCTION_ARRAY_INIT(__) => begin
-        @assign s = IOStream.append(s, "array init")
-        @assign s = IOStream.append(s, stmt.name)
+        s = IOStream.append(s, "array init")
+        s = IOStream.append(s, stmt.name)
         s
       end
 
       FOR(__) => begin
-        @assign s = IOStream.append(s, "for ")
-        @assign s = IOStream.append(s, name(stmt.iterator))
+        s = IOStream.append(s, "for ")
+        s = IOStream.append(s, name(stmt.iterator))
         if isSome(stmt.range)
-          @assign s = IOStream.append(s, " in ")
-          @assign s = IOStream.append(
+          s = IOStream.append(s, " in ")
+          s = IOStream.append(
             s,
             toString(Util.getOption(stmt.range)),
           )
         end
-        @assign s = IOStream.append(s, " loop\\n")
-        @assign s = toStreamList(stmt.body, indent + "  ", s)
-        @assign s = IOStream.append(s, indent)
-        @assign s = IOStream.append(s, "end for")
+        s = IOStream.append(s, " loop\\n")
+        s = toStreamList(stmt.body, indent + "  ", s)
+        s = IOStream.append(s, indent)
+        s = IOStream.append(s, "end for")
         s
       end
 
       IF(__) => begin
-        @assign str = "if "
+        str = "if "
         for b in stmt.branches
-          @assign s = IOStream.append(s, str)
-          @assign s =
+          s = IOStream.append(s, str)
+          s =
             IOStream.append(s, toString(Util.tuple21(b)))
-          @assign s = IOStream.append(s, " then\\n")
-          @assign s = toStreamList(Util.tuple22(b), indent + "  ", s)
-          @assign s = IOStream.append(s, indent)
-          @assign str = "elseif "
+          s = IOStream.append(s, " then\\n")
+          s = toStreamList(Util.tuple22(b), indent + "  ", s)
+          s = IOStream.append(s, indent)
+          str = "elseif "
         end
-        @assign s = IOStream.append(s, "end if")
+        s = IOStream.append(s, "end if")
         s
       end
 
       WHEN(__) => begin
-        @assign str = "when "
+        str = "when "
         for b in stmt.branches
-          @assign s = IOStream.append(s, str)
-          @assign s =
+          s = IOStream.append(s, str)
+          s =
             IOStream.append(s, toString(Util.tuple21(b)))
-          @assign s = IOStream.append(s, " then\\n")
-          @assign s = toStreamList(Util.tuple22(b), indent + "  ", s)
-          @assign s = IOStream.append(s, indent)
-          @assign str = "elsewhen "
+          s = IOStream.append(s, " then\\n")
+          s = toStreamList(Util.tuple22(b), indent + "  ", s)
+          s = IOStream.append(s, indent)
+          str = "elsewhen "
         end
-        @assign s = IOStream.append(s, "end when")
+        s = IOStream.append(s, "end when")
         s
       end
 
       ASSERT(__) => begin
-        @assign s = IOStream.append(s, "assert(")
-        @assign s = IOStream.append(s, toString(stmt.condition))
-        @assign s = IOStream.append(s, ", ")
-        @assign s = IOStream.append(s, toString(stmt.message))
-        @assign s = IOStream.append(s, ", ")
-        @assign s = IOStream.append(s, toString(stmt.level))
-        @assign s = IOStream.append(s, ")")
+        s = IOStream.append(s, "assert(")
+        s = IOStream.append(s, toString(stmt.condition))
+        s = IOStream.append(s, ", ")
+        s = IOStream.append(s, toString(stmt.message))
+        s = IOStream.append(s, ", ")
+        s = IOStream.append(s, toString(stmt.level))
+        s = IOStream.append(s, ")")
         s
       end
 
       TERMINATE(__) => begin
-        @assign s = IOStream.append(s, "terminate(")
-        @assign s = IOStream.append(s, toString(stmt.message))
-        @assign s = IOStream.append(s, ")")
+        s = IOStream.append(s, "terminate(")
+        s = IOStream.append(s, toString(stmt.message))
+        s = IOStream.append(s, ")")
         s
       end
 
@@ -356,12 +356,12 @@ function toStream(stmt::Statement, indent::String, s)
       end
 
       WHILE(__) => begin
-        @assign s = IOStream.append(s, "while ")
-        @assign s = IOStream.append(s, toString(stmt.condition))
-        @assign s = IOStream.append(s, " then\\n")
-        @assign s = toStreamList(stmt.body, indent + "  ", s)
-        @assign s = IOStream.append(s, indent)
-        @assign s = IOStream.append(s, "end while")
+        s = IOStream.append(s, "while ")
+        s = IOStream.append(s, toString(stmt.condition))
+        s = IOStream.append(s, " then\\n")
+        s = toStreamList(stmt.body, indent + "  ", s)
+        s = IOStream.append(s, indent)
+        s = IOStream.append(s, "end while")
         s
       end
 
@@ -386,9 +386,9 @@ function toStringList(stmtl::List{<:Statement}, indent::String = "")::String
 
   local s
 
-  @assign s = IOStream.create(getInstanceName(), IOStream.IOStreamType.LIST())
-  @assign s = toStreamList(stmtl, indent, s)
-  @assign str = IOStream.string(s)
+  s = IOStream.create(getInstanceName(), IOStream.IOStreamType.LIST())
+  s = toStreamList(stmtl, indent, s)
+  str = IOStream.string(s)
   IOStream.delete(s)
   return str
 end
@@ -398,67 +398,67 @@ function toString(stmt::Statement, indent::String = "")::String
 
   local s
 
-  @assign s = IOStream.create(getInstanceName(), IOStream.IOStreamType.LIST())
-  @assign s = toStream(stmt, indent, s)
-  @assign str = IOStream.string(s)
+  s = IOStream.create(getInstanceName(), IOStream.IOStreamType.LIST())
+  s = toStream(stmt, indent, s)
+  str = IOStream.string(s)
   IOStream.delete(s)
   return str
 end
 
 function foldExp(stmt::Statement, func::FoldFunc, arg::ArgT) where {ArgT}
 
-  @assign () = begin
+  () = begin
     @match stmt begin
       P_Statement.Statement.ASSIGNMENT(__) => begin
-        @assign arg = func(stmt.lhs, arg)
-        @assign arg = func(stmt.rhs, arg)
+        arg = func(stmt.lhs, arg)
+        arg = func(stmt.rhs, arg)
         ()
       end
 
       P_Statement.Statement.FOR(__) => begin
-        @assign arg = foldExpList(stmt.body, func, arg)
+        arg = foldExpList(stmt.body, func, arg)
         if isSome(stmt.range)
-          @assign arg = func(Util.getOption(stmt.range), arg)
+          arg = func(Util.getOption(stmt.range), arg)
         end
         ()
       end
 
       P_Statement.Statement.IF(__) => begin
         for b in stmt.branches
-          @assign arg = func(Util.tuple21(b), arg)
-          @assign arg = foldExpList(Util.tuple22(b), func, arg)
+          arg = func(Util.tuple21(b), arg)
+          arg = foldExpList(Util.tuple22(b), func, arg)
         end
         ()
       end
 
       P_Statement.Statement.WHEN(__) => begin
         for b in stmt.branches
-          @assign arg = func(Util.tuple21(b), arg)
-          @assign arg = foldExpList(Util.tuple22(b), func, arg)
+          arg = func(Util.tuple21(b), arg)
+          arg = foldExpList(Util.tuple22(b), func, arg)
         end
         ()
       end
 
       P_Statement.Statement.ASSERT(__) => begin
-        @assign arg = func(stmt.condition, arg)
-        @assign arg = func(stmt.message, arg)
-        @assign arg = func(stmt.level, arg)
+        arg = func(stmt.condition, arg)
+        arg = func(stmt.message, arg)
+        arg = func(stmt.level, arg)
         ()
       end
 
       P_Statement.Statement.TERMINATE(__) => begin
-        @assign arg = func(stmt.message, arg)
+        arg = func(stmt.message, arg)
         ()
       end
 
       P_Statement.Statement.NORETCALL(__) => begin
-        @assign arg = func(stmt.exp, arg)
+        arg = func(stmt.exp, arg)
         ()
       end
 
       P_Statement.Statement.WHILE(__) => begin
-        @assign arg = func(stmt.condition, arg)
-        @assign arg = foldExpList(stmt.body, func, arg)
+        arg = func(stmt.condition, arg)
+        arg = foldExpList(stmt.body, func, arg)
         ()
       end
 
@@ -473,20 +473,20 @@ end
 function foldExpList(stmt::List{Statement}, func::FoldFunc, arg::ArgT) where {ArgT}
 
   for s in stmt
-    @assign arg = foldExp(s, func, arg)
+    arg = foldExp(s, func, arg)
   end
   return arg
 end
 MapFunc = Function
 function mapExp(stmt::Statement, func::MapFunc)::Statement
-  @assign stmt = begin
+  stmt = begin
     local e1::Expression
     local e2::Expression
     local e3::Expression
     @match stmt begin
       ASSIGNMENT(__) => begin
-        @assign e1 = func(stmt.lhs)
-        @assign e2 = func(stmt.rhs)
+        e1 = func(stmt.lhs)
+        e2 = func(stmt.rhs)
         if referenceEq(e1, stmt.lhs) && referenceEq(e2, stmt.rhs)
           stmt
         else
@@ -495,29 +495,29 @@ function mapExp(stmt::Statement, func::MapFunc)::Statement
       end
 
       FOR(__) => begin
-        @assign stmt.body = mapExpList(stmt.body, func)
-        @assign stmt.range = Util.applyOption(stmt.range, func)
+        #= complex assign=#@assign stmt.body = mapExpList(stmt.body, func)
+        #= complex assign=#@assign stmt.range = Util.applyOption(stmt.range, func)
         stmt
       end
 
       IF(__) => begin
-        @assign stmt.branches = List(
+        #= complex assign=#@assign stmt.branches = List(
           (func(Util.tuple21(b)), mapExpList(Util.tuple22(b), func)) for b in stmt.branches
         )
         stmt
       end
 
       WHEN(__) => begin
-        @assign stmt.branches = List(
+        #= complex assign=#@assign stmt.branches = List(
           (func(Util.tuple21(b)), mapExpList(Util.tuple22(b), func)) for b in stmt.branches
         )
         stmt
       end
 
       ASSERT(__) => begin
-        @assign e1 = func(stmt.condition)
-        @assign e2 = func(stmt.message)
-        @assign e3 = func(stmt.level)
+        e1 = func(stmt.condition)
+        e2 = func(stmt.message)
+        e3 = func(stmt.level)
         if referenceEq(e1, stmt.condition) &&
            referenceEq(e2, stmt.message) &&
            referenceEq(e3, stmt.level)
@@ -528,7 +528,7 @@ function mapExp(stmt::Statement, func::MapFunc)::Statement
       end
 
       TERMINATE(__) => begin
-        @assign e1 = func(stmt.message)
+        e1 = func(stmt.message)
         if referenceEq(e1, stmt.message)
           stmt
         else
@@ -537,7 +537,7 @@ function mapExp(stmt::Statement, func::MapFunc)::Statement
       end
 
       NORETCALL(__) => begin
-        @assign e1 = func(stmt.exp)
+        e1 = func(stmt.exp)
         if referenceEq(e1, stmt.exp)
           stmt
         else
@@ -559,21 +559,21 @@ end
 
 function mapExpList(stmtl::List{<:Statement}, func::MapFunc)::List{Statement}
 
-  @assign stmtl = list(mapExp(s, func) for s in stmtl)
+  stmtl = list(mapExp(s, func) for s in stmtl)
   return stmtl
 end
 
 function map(stmt::Statement, func::MapFn)::Statement
 
-  @assign () = begin
+  () = begin
     @match stmt begin
       FOR(__) => begin
-        @assign stmt.body = list(map(s, func) for s in stmt.body)
+        #= complex assign=#@assign stmt.body = list(map(s, func) for s in stmt.body)
         ()
       end
 
       IF(__) => begin
-        @assign stmt.branches = List(
+        #= complex assign=#@assign stmt.branches = List(
           (Util.tuple21(b), list(map(s, func) for s in Util.tuple22(b)))
           for b in stmt.branches
         )
@@ -581,7 +581,7 @@ function map(stmt::Statement, func::MapFn)::Statement
       end
 
       WHEN(__) => begin
-        @assign stmt.branches = List(
+        #= complex assign=#@assign stmt.branches = List(
           (Util.tuple21(b), list(map(s, func) for s in Util.tuple22(b)))
           for b in stmt.branches
         )
@@ -589,7 +589,7 @@ function map(stmt::Statement, func::MapFn)::Statement
       end
 
       WHILE(__) => begin
-        @assign stmt.body = list(map(s, func) for s in stmt.body)
+        #= complex assign=#@assign stmt.body = list(map(s, func) for s in stmt.body)
         ()
       end
 
@@ -598,12 +598,12 @@ function map(stmt::Statement, func::MapFn)::Statement
       end
     end
   end
-  @assign stmt = func(stmt)
+  stmt = func(stmt)
   return stmt
 end
 
 function apply(stmt::Statement, func::ApplyFn)
-  @assign () = begin
+  () = begin
     @match stmt begin
       FOR(__) => begin
         for e in stmt.body
@@ -668,7 +668,7 @@ function makeIf(
 )::Statement
   local stmt::Statement
 
-  @assign stmt = IF(branches, src)
+  stmt = IF(branches, src)
   return stmt
 end
 
@@ -680,7 +680,7 @@ function makeAssignment(
 )::Statement
   local stmt::Statement
 
-  @assign stmt = ASSIGNMENT(lhs, rhs, ty, src)
+  stmt = ASSIGNMENT(lhs, rhs, ty, src)
   return stmt
 end
 
@@ -695,7 +695,7 @@ function updateImplicitVariabilityStmts(stmtl::List{<:Statement}, inWhen::Bool =
 end
 
 function updateImplicitVariabilityStmt(stmt::Statement, inWhen::Bool)
-  @assign () = begin
+  () = begin
     @match stmt begin
      ASSIGNMENT(__)  => begin
         if inWhen
@@ -746,7 +746,7 @@ function updateImplicitVariabilityStmt(stmt::Statement, inWhen::Bool)
 end
 
 function markStructuralParamsSubs(exp::Expression, dummy::Int) ::Int
-  @assign () = begin
+  () = begin
     @match exp begin
       CREF_EXPRESSION(__)  => begin
           foldSubscripts(exp.cref, markStructuralParamsSub, 0)
@@ -765,7 +765,7 @@ end
 
 function instStatement(scodeStmt::SCode.Statement, scope::InstNode, origin::ORIGIN_Type)::Statement
   local statement::Statement
-  @assign statement = begin
+  statement = begin
     local exp1::Expression
     local exp2::Expression
     local exp3::Expression
@@ -778,30 +778,30 @@ function instStatement(scodeStmt::SCode.Statement, scope::InstNode, origin::ORIG
     local next_origin::ORIGIN_Type
     @match scodeStmt begin
       SCode.ALG_ASSIGN(info = info)  => begin
-        @assign exp1 = instExp(scodeStmt.assignComponent, scope, info)
-        @assign exp2 = instExp(scodeStmt.value, scope, info)
+        exp1 = instExp(scodeStmt.assignComponent, scope, info)
+        exp2 = instExp(scodeStmt.value, scope, info)
         ALG_ASSIGNMENT(exp1, exp2, TYPE_UNKNOWN(), makeSource(scodeStmt.comment, info))
       end
 
       SCode.ALG_FOR(info = info)  => begin
-        @assign oexp = instExpOpt(scodeStmt.range, scope, info)
-        @assign (for_scope, iter) = addIteratorToScope(scodeStmt.index, scope, info)
-        @assign next_origin = setFlag(origin, ORIGIN_FOR)
-        @assign stmtl = instStatements(scodeStmt.forBody, for_scope, next_origin)
+        oexp = instExpOpt(scodeStmt.range, scope, info)
+        (for_scope, iter) = addIteratorToScope(scodeStmt.index, scope, info)
+        next_origin = setFlag(origin, ORIGIN_FOR)
+        stmtl = instStatements(scodeStmt.forBody, for_scope, next_origin)
         ALG_FOR(iter, oexp, stmtl, makeSource(scodeStmt.comment, info))
       end
 
       SCode.ALG_IF(info = info)  => begin
-        @assign branches = nil
-        @assign next_origin = setFlag(origin, ORIGIN_FOR)
+        branches = nil
+        next_origin = setFlag(origin, ORIGIN_FOR)
         for branch in _cons((scodeStmt.boolExpr, scodeStmt.trueBranch), scodeStmt.elseIfBranch)
-          @assign exp1 = instExp(Util.tuple21(branch), scope, info)
-          @assign stmtl = instStatements(Util.tuple22(branch), scope, next_origin)
-          @assign branches = _cons((exp1, stmtl), branches)
+          exp1 = instExp(Util.tuple21(branch), scope, info)
+          stmtl = instStatements(Util.tuple22(branch), scope, next_origin)
+          branches = _cons((exp1, stmtl), branches)
         end
         if ! listEmpty(scodeStmt.elseBranch)
-          @assign stmtl = instStatements(scodeStmt.elseBranch, scope, next_origin)
-          @assign branches = _cons((BOOLEAN_EXPRESSION(true), stmtl), branches)
+          stmtl = instStatements(scodeStmt.elseBranch, scope, next_origin)
+          branches = _cons((BOOLEAN_EXPRESSION(true), stmtl), branches)
         end
         ALG_IF(listReverse(branches), makeSource(scodeStmt.comment, info))
       end
@@ -816,25 +816,25 @@ function instStatement(scodeStmt::SCode.Statement, scope::InstNode, origin::ORIG
             Error.addSourceMessageAndFail(Error.INVALID_WHEN_STATEMENT_CONTEXT, nil, info)
           end
         end
-        @assign branches = nil
+        branches = nil
         for branch in scodeStmt.branches
-          @assign exp1 = instExp(Util.tuple21(branch), scope, info)
-          @assign next_origin = setFlag(origin, ORIGIN_WHEN)
-          @assign stmtl = instStatements(Util.tuple22(branch), scope, next_origin)
-          @assign branches = _cons((exp1, stmtl), branches)
+          exp1 = instExp(Util.tuple21(branch), scope, info)
+          next_origin = setFlag(origin, ORIGIN_WHEN)
+          stmtl = instStatements(Util.tuple22(branch), scope, next_origin)
+          branches = _cons((exp1, stmtl), branches)
         end
         ALG_WHEN(listReverse(branches), makeSource(scodeStmt.comment, info))
       end
 
       SCode.ALG_ASSERT(info = info)  => begin
-        @assign exp1 = instExp(scodeStmt.condition, scope, info)
-        @assign exp2 = instExp(scodeStmt.message, scope, info)
-        @assign exp3 = instExp(scodeStmt.level, scope, info)
+        exp1 = instExp(scodeStmt.condition, scope, info)
+        exp2 = instExp(scodeStmt.message, scope, info)
+        exp3 = instExp(scodeStmt.level, scope, info)
        ALG_ASSERT(exp1, exp2, exp3, makeSource(scodeStmt.comment, info))
       end
 
       SCode.ALG_TERMINATE(info = info)  => begin
-        @assign exp1 = instExp(scodeStmt.message, scope, info)
+        exp1 = instExp(scodeStmt.message, scope, info)
        ALG_TERMINATE(exp1, makeSource(scodeStmt.comment, info))
       end
 
@@ -844,14 +844,14 @@ function instStatement(scodeStmt::SCode.Statement, scope::InstNode, origin::ORIG
       end
 
       SCode.ALG_NORETCALL(info = info)  => begin
-        @assign exp1 = instExp(scodeStmt.exp, scope, info)
+        exp1 = instExp(scodeStmt.exp, scope, info)
        ALG_NORETCALL(exp1, makeSource(scodeStmt.comment, info))
       end
 
       SCode.ALG_WHILE(info = info)  => begin
-        @assign exp1 = instExp(scodeStmt.boolExpr, scope, info)
-        @assign next_origin = setFlag(origin, ORIGIN_WHILE)
-        @assign stmtl = instStatements(scodeStmt.whileBody, scope, next_origin)
+        exp1 = instExp(scodeStmt.boolExpr, scope, info)
+        next_origin = setFlag(origin, ORIGIN_WHILE)
+        stmtl = instStatements(scodeStmt.whileBody, scope, next_origin)
        ALG_WHILE(exp1, stmtl, makeSource(scodeStmt.comment, info))
       end
 
@@ -864,7 +864,7 @@ function instStatement(scodeStmt::SCode.Statement, scope::InstNode, origin::ORIG
       end
 
       SCode.ALG_FAILURE(__)  => begin
-        @assign stmtl = instStatements(scodeStmt.stmts, scope, origin)
+        stmtl = instStatements(scodeStmt.stmts, scope, origin)
        ALG_FAILURE(stmtl, makeSource(scodeStmt.comment, scodeStmt.info))
       end
 
@@ -879,18 +879,18 @@ end
 
 function instAlgorithmSections(algorithmSections::List{<:SCode.AlgorithmSection}, scope::InstNode, origin::ORIGIN_Type) ::List{Algorithm}
   local algs::List{Algorithm}
-  @assign algs = list(instAlgorithmSection(alg, scope, origin) for alg in algorithmSections)
+  algs = list(instAlgorithmSection(alg, scope, origin) for alg in algorithmSections)
   algs
 end
 
 function instAlgorithmSection(algorithmSection::SCode.AlgorithmSection, scope::InstNode, origin::ORIGIN_Type) ::Algorithm
   local alg::Algorithm
-  @assign alg = ALGORITHM(instStatements(algorithmSection.statements, scope, origin), DAE.emptyElementSource)
+  alg = ALGORITHM(instStatements(algorithmSection.statements, scope, origin), DAE.emptyElementSource)
   alg
 end
 
 function instStatements(scodeStmtl::List{<:SCode.Statement}, scope::InstNode, origin::ORIGIN_Type)::List{Statement}
   local statements::List{Statement}
-  @assign statements = list(instStatement(stmt, scope, origin) for stmt in scodeStmtl)
+  statements = list(instStatement(stmt, scope, origin) for stmt in scodeStmtl)
   statements
 end

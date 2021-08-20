@@ -68,7 +68,7 @@ HashTable = Tuple
 function emptyHashTable()::HashTable
   local hashTable::HashTable
 
-  @assign hashTable = emptyHashTableSized(BaseHashTable.defaultBucketSize)
+  hashTable = emptyHashTableSized(BaseHashTable.defaultBucketSize)
   return hashTable
 end
 
@@ -77,7 +77,7 @@ end
 function emptyHashTableSized(size::Int)::HashTable
   local hashTable::HashTable
 
-  @assign hashTable = BaseHashTable.emptyHashTableWork(
+  hashTable = BaseHashTable.emptyHashTableWork(
     size,
     (
       hash,

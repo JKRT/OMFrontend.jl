@@ -41,10 +41,10 @@ function map(iterator::RangeIterator, func::FuncT) where {T}
   local exp::Expression
 
   while hasNext(iter)
-    @assign (iter, exp) = next(iter)
-    @assign lst = _cons(func(exp), lst)
+     (iter, exp) = next(iter)
+     lst = _cons(func(exp), lst)
   end
-  @assign lst = listReverse(lst)
+   lst = listReverse(lst)
   return lst
 end
 
@@ -55,8 +55,8 @@ function toListReverse(iterator::RangeIterator)::List{Expression}
   local exp::Expression
 
   while hasNext(iter)
-    @assign (iter, exp) = next(iter)
-    @assign expl = _cons(exp, expl)
+     (iter, exp) = next(iter)
+     expl = _cons(exp, expl)
   end
   return expl
 end
@@ -69,7 +69,7 @@ end
 function hasNext(iterator::RangeIterator)::Bool
   local hasNext::Bool
 
-  @assign hasNext = begin
+   hasNext = begin
     @match iterator begin
       RANGEITERATOR_INT_RANGE(__) => begin
         iterator.current <= iterator.last
@@ -109,31 +109,31 @@ end
 function next(iterator::RangeIterator)::Tuple{RangeIterator, Expression}
   local nextExp::Expression
 
-  @assign nextExp = begin
+   nextExp = begin
     @match iterator begin
       RANGEITERATOR_INT_RANGE(__) => begin
-        @assign nextExp = INTEGER_EXPRESSION(iterator.current)
-        @assign iterator.current = iterator.current + 1
+         nextExp = INTEGER_EXPRESSION(iterator.current)
+         @assign iterator.current = iterator.current + 1
         nextExp
       end
 
       INT_STEP_RANGE(__) => begin
-        @assign nextExp = INTEGER_EXPRESSION(iterator.current)
-        @assign iterator.current = iterator.current + iterator.stepsize
+         nextExp = INTEGER_EXPRESSION(iterator.current)
+         @assign iterator.current = iterator.current + iterator.stepsize
         nextExp
       end
 
       REAL_RANGE(__) => begin
-        @assign nextExp = REAL_EXPRESSION(
-          iterator.start + iterator.stepsize * iterator.current,
+         nextExp = REAL_EXPRESSION(
+           iterator.start + iterator.stepsize * iterator.current,
         )
-        @assign iterator.current = iterator.current + 1
+         @assign iterator.current = iterator.current + 1
         nextExp
       end
 
       ARRAY_RANGE(__) => begin
-        @assign nextExp = listHead(iterator.values)
-        @assign iterator.values = listRest(iterator.values)
+         nextExp = listHead(iterator.values)
+         @assign iterator.values = listRest(iterator.values)
         nextExp
       end
 
@@ -155,7 +155,7 @@ end
 function fromDim(dim::Dimension)::RangeIterator
   local iterator::RangeIterator
 
-  @assign iterator = begin
+   iterator = begin
     local ty::M_Type
     local expl::List{Expression}
     @match dim begin
@@ -194,7 +194,7 @@ end
 function RangeIterator_fromExp(exp::Expression)::RangeIterator
   local iterator::RangeIterator
 
-  @assign iterator = begin
+   iterator = begin
     local istart::Int
     local istep::Int
     local istop::Int
@@ -248,19 +248,19 @@ function RangeIterator_fromExp(exp::Expression)::RangeIterator
         stop = ENUM_LITERAL_EXPRESSION(index = istop),
       ) => begin
         @match TYPE_ENUMERATION(typePath = _, literals = literals) = ty
-        @assign values = nil
+         values = nil
         if istart <= istop
           for i = 2:istart
-            @assign literals = listRest(literals)
+             literals = listRest(literals)
           end
           for i = istart:istop
-            @assign values = _cons(
+             values = _cons(
               ENUM_LITERAL_EXPRESSION(ty, listHead(literals), i),
               values,
             )
-            @assign literals = listRest(literals)
+             literals = listRest(literals)
           end
-          @assign values = listReverse(values)
+           values = listReverse(values)
         end
         RANGEITERATOR_ARRAY_RANGE(values)
       end
@@ -270,11 +270,11 @@ function RangeIterator_fromExp(exp::Expression)::RangeIterator
       ) => begin
         #=  enumeration type based range
         =#
-        @assign values = nil
-        @assign istep = 0
+         values = nil
+         istep = 0
         for l in literals
-          @assign istep = istep + 1
-          @assign values =
+           istep = istep + 1
+           values =
             _cons(ENUM_LITERAL_EXPRESSION(ty, l, istep), values)
         end
         RANGEITERATOR_ARRAY_RANGE(values)
@@ -291,7 +291,7 @@ end
 function isValid(iterator::RangeIterator)::Bool
   local isValid::Bool
 
-  @assign isValid = begin
+   isValid = begin
     @match iterator begin
       INVALID_RANGE(__) => begin
         false

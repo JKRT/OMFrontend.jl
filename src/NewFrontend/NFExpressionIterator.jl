@@ -27,12 +27,12 @@ function toList(iterator::ExpressionIterator)::List{Expression}
   local iter::ExpressionIterator
   local exp::Expression
 
-  @assign iter = iterator
+  iter = iterator
   while hasNext(iter)
-    @assign (iter, exp) = next(iter)
-    @assign expl = _cons(exp, expl)
+    (iter, exp) = next(iter)
+    expl = _cons(exp, expl)
   end
-  @assign expl = listReverse(expl)
+  expl = listReverse(expl)
   return expl
 end
 
@@ -44,10 +44,10 @@ function nextOpt(
   local exp::Expression
 
   if hasNext(iterator)
-    @assign (iterator, exp) = next(iterator)
-    @assign nextExp = SOME(exp)
+    (iterator, exp) = next(iterator)
+    nextExp = SOME(exp)
   else
-    @assign nextExp = NONE()
+    nextExp = NONE()
   end
   return (iterator, nextExp)
 end
@@ -55,7 +55,7 @@ end
 function next(iterator::ExpressionIterator)::Tuple{ExpressionIterator, Expression}
   local nextExp::Expression
 
-  @assign (iterator, nextExp) = begin
+  (iterator, nextExp) = begin
     local rest::List{Expression}
     local arr::List{Expression}
     local next::Expression
@@ -63,10 +63,10 @@ function next(iterator::ExpressionIterator)::Tuple{ExpressionIterator, Expressio
       ARRAY_ITERATOR(__) => begin
         @match _cons(next, rest) = iterator.slice
         if listEmpty(rest)
-          @assign (arr, rest) = nextArraySlice(iterator.array)
-          @assign iterator = ARRAY_ITERATOR(arr, rest)
+          (arr, rest) = nextArraySlice(iterator.array)
+          iterator = ARRAY_ITERATOR(arr, rest)
         else
-          @assign iterator.slice = rest
+          #= complex assign=#@assign iterator.slice = rest
         end
         (iterator, next)
       end
@@ -95,7 +95,7 @@ end
 function hasNext(iterator::ExpressionIterator)::Bool
   local hasNext::Bool
 
-  @assign hasNext = begin
+  hasNext = begin
     @match iterator begin
       ARRAY_ITERATOR(__) => begin
         !listEmpty(iterator.slice)
@@ -124,11 +124,11 @@ end
 function fromBinding(binding::Binding)::ExpressionIterator
   local iterator::ExpressionIterator
 
-  @assign iterator = begin
+  iterator = begin
     local expl::List{Expression}
     @match binding begin
       TYPED_BINDING(eachType = NFBinding.EachType.REPEAT) => begin
-        @assign expl = arrayScalarElements(binding.bindingExp)
+        expl = arrayScalarElements(binding.bindingExp)
         if listLength(expl) == 1
           EACH_ITERATOR(listHead(expl))
         else
@@ -155,7 +155,7 @@ end
 function fromExpOpt(optExp::Option{<:Expression})::ExpressionIterator
   local iterator::ExpressionIterator
 
-  @assign iterator = begin
+  iterator = begin
     local exp::Expression
     @match optExp begin
       SOME(exp) => begin
@@ -173,7 +173,7 @@ end
 function fromExp(exp::Expression)::ExpressionIterator
   local iterator::ExpressionIterator
 
-  @assign iterator = begin
+  iterator = begin
     local arr::List{Expression}
     local slice::List{Expression}
     local e::Expression
@@ -192,13 +192,13 @@ function fromExp(exp::Expression)::ExpressionIterator
             sourceInfo(),
           )
         end
-        @assign (arr, slice) = nextArraySlice(arr)
+        (arr, slice) = nextArraySlice(arr)
         ARRAY_ITERATOR(arr, slice)
       end
 
       CREF_EXPRESSION(__) => begin
-        @assign e = P_ExpandExp.ExpandExp.expandCref(exp)
-        @assign iterator = begin
+        e = P_ExpandExp.ExpandExp.expandCref(exp)
+        iterator = begin
           @match e begin
             ARRAY_EXPRESSION(__) => begin
               fromExp(e)
@@ -213,7 +213,7 @@ function fromExp(exp::Expression)::ExpressionIterator
       end
 
       _ => begin
-        @assign e = P_ExpandExp.ExpandExp.expand(exp)
+        e = P_ExpandExp.ExpandExp.expand(exp)
         if referenceEq(e, exp)
           SCALAR_ITERATOR(exp)
         else
@@ -234,18 +234,18 @@ function nextArraySlice(
   local arr::List{Expression}
 
   if listEmpty(Array)
-    @assign slice = nil
+    slice = nil
   else
-    @assign e = listHead(Array)
-    @assign (Array, slice) = begin
+    e = listHead(Array)
+    (Array, slice) = begin
       @match e begin
         ARRAY_EXPRESSION(__) => begin
-          @assign (arr, slice) = nextArraySlice(e.elements)
+          (arr, slice) = nextArraySlice(e.elements)
           if listEmpty(arr)
-            @assign Array = listRest(Array)
+            Array = listRest(Array)
           else
-            @assign e.elements = arr
-            @assign Array = _cons(e, listRest(Array))
+            #= complex assign=#@assign e.elements = arr
+            Array = _cons(e, listRest(Array))
           end
           (Array, slice)
         end

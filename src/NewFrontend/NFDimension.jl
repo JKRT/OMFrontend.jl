@@ -32,14 +32,14 @@ using Absyn: Exp, Path, Subscript
 
 function foldExpList(dims::List{Dimension}, func::FoldFunc, arg::ArgT) where {ArgT}
   for dim in dims
-    @assign arg = foldExp(dim, func, arg)
+    arg = foldExp(dim, func, arg)
   end
   return arg
 end
 
 function foldExp(dim::Dimension, func::FoldFunc, arg::ArgT) where {ArgT}
   local outArg::ArgT
-  @assign outArg = begin
+  outArg = begin
     @match dim begin
       DIMENSION_UNTYPED(__) => begin
         fold(dim.dimension, func, arg)
@@ -57,12 +57,12 @@ end
 
 function mapExp(dim::Dimension, func::MapFunc)::Dimension
   local outDim::Dimension
-  @assign outDim = begin
+  outDim = begin
     local e1::Expression
     local e2::Expression
     @match dim begin
       DIMENSION_UNTYPED(dimension = e1) => begin
-        @assign e2 = map(e1, func)
+        e2 = map(e1, func)
         if referenceEq(e1, e2)
           dim
         else
@@ -71,7 +71,7 @@ function mapExp(dim::Dimension, func::MapFunc)::Dimension
       end
 
       DIMENSION_EXP(exp = e1) => begin
-        @assign e2 = map(e1, func)
+        e2 = map(e1, func)
         if referenceEq(e1, e2)
           dim
         else
@@ -90,7 +90,7 @@ end
 function variability(dim::Dimension)::VariabilityType
   local var::VariabilityType
 
-  @assign var = begin
+  var = begin
     @match dim begin
       INTEGER_EXPRESSION(__) => begin
         dim.var
@@ -120,7 +120,7 @@ end
 function sizeExp(dim::Dimension)::Expression
   local sizeExp::Expression
 
-  @assign sizeExp = begin
+  sizeExp = begin
     local ty::M_Type
     @match dim begin
       INTEGER_EXPRESSION(__) => begin
@@ -147,7 +147,7 @@ end
 function endExp(dim::Dimension, cref::ComponentRef, index::Int)::Expression
   local sizeExp::Expression
 
-  @assign sizeExp = begin
+  sizeExp = begin
     local ty::M_Type
     @match dim begin
       INTEGER_EXPRESSION(__) => begin
@@ -188,7 +188,7 @@ end
 function toString(dim::Dimension)::String
   local str::String
 
-  @assign str = begin
+  str = begin
     local ty::M_Type
     @match dim begin
       INTEGER_EXPRESSION(__) => begin
@@ -247,7 +247,7 @@ end
 function isOne(dim::Dimension)::Bool
   local isOne::Bool
 
-  @assign isOne = begin
+  isOne = begin
     @match dim begin
       INTEGER_EXPRESSION(__) => begin
         dim.size == 1
@@ -266,7 +266,7 @@ end
 
 function isZero(dim::Dimension)::Bool
   local isZ::Bool
-  @assign isZ = begin
+  isZ = begin
     @match dim begin
       INTEGER_EXPRESSION(__) => begin
         dim.size == 0
@@ -285,7 +285,7 @@ end
 function isUnknown(dim::Dimension)::Bool
   local isUnk::Bool
 
-  @assign isUnk = begin
+  isUnk = begin
     @match dim begin
       UNKNOWN(__) => begin
         true
@@ -301,7 +301,7 @@ end
 function isKnown(dim::Dimension, allowExp::Bool = false)::Bool
   local known::Bool
 
-  @assign known = begin
+  known = begin
     @match dim begin
       INTEGER_EXPRESSION(__) => begin
         true
@@ -331,7 +331,7 @@ end
 function isEqualKnown(dim1::Dimension, dim2::Dimension)::Bool
   local isEqual::Bool
 
-  @assign isEqual = begin
+  isEqual = begin
     @match (dim1, dim2) begin
       (UNKNOWN(__), _) => begin
         false
@@ -364,7 +364,7 @@ end
 function isEqual(dim1::Dimension, dim2::Dimension)::Bool
   local isEq::Bool
 
-  @assign isEq = begin
+  isEq = begin
     @match (dim1, dim2) begin
       (UNKNOWN(__), _) => begin
         true
@@ -396,7 +396,7 @@ end
 
 function size(dim::Dimension)::Int
   local sz::Int
-  @assign sz = begin
+  sz = begin
     local ty::M_Type
     @match dim begin
       DIMENSION_INTEGER(__) => begin
@@ -416,7 +416,7 @@ end
 
 function add(a::Dimension, b::Dimension)::Dimension
   local c::Dimension
-  @assign c = begin
+  c = begin
     @match (a, b) begin
       (UNKNOWN(__), _) => begin
         UNKNOWN()
@@ -474,7 +474,7 @@ end
 function toDAE(dim::Dimension)::DAE.Dimension
   local daeDim::DAE.Dimension
 
-  @assign daeDim = begin
+  daeDim = begin
     local ty::M_Type
     @match dim begin
       DIMENSION_INTEGER(__) => begin
@@ -509,7 +509,7 @@ end
 
 function fromExp(exp::Expression, var::VariabilityType)::Dimension
   local dim::Dimension
-  @assign dim = begin
+  dim = begin
     local cls::Class
     local cref::ComponentRef
     local ty::M_Type

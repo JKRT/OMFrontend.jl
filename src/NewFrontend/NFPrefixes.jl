@@ -34,7 +34,7 @@ end
 
 function fromSCode(scodeCty::SCode.ConnectorType)::Int
   local cty::Int
-  @assign cty = begin
+   cty = begin
     @match scodeCty begin
       SCode.POTENTIAL(__) => begin
         0
@@ -53,13 +53,13 @@ end
 function toDAE(cty::Int)::DAE.ConnectorType
   local dcty::DAE.ConnectorType
   if intBitAnd(cty, ConnectorType.POTENTIAL) > 0
-    @assign dcty = DAE.POTENTIAL()
+     dcty = DAE.POTENTIAL()
   elseif intBitAnd(cty, ConnectorType.FLOW) > 0
-    @assign dcty = DAE.FLOW()
+     dcty = DAE.FLOW()
   elseif intBitAnd(cty, ConnectorType.STREAM) > 0
-    @assign dcty = DAE..STREAM(NONE())
+     dcty = DAE..STREAM(NONE())
   else
-    @assign dcty = DAE.NON_CONNECTOR()
+     dcty = DAE.NON_CONNECTOR()
   end
   return dcty
 end
@@ -77,46 +77,46 @@ function merge(
   if intBitAnd(outerCty, ConnectorType.FLOW_STREAM_MASK) > 0 && intBitAnd(innerCty, ConnectorType.FLOW_STREAM_MASK) > 0
     printPrefixError(toString(outerCty), toString(innerCty), node)
   end
-  @assign cty = intBitOr(outerCty, innerCty)
+   cty = intBitOr(outerCty, innerCty)
   return cty
 end
 
 function isPotential(cty::Int)::Bool
   local isPotential::Bool
 
-  @assign isPotential = intBitAnd(cty, POTENTIAL) > 0
+   isPotential = intBitAnd(cty, POTENTIAL) > 0
   return isPotential
 end
 
 function setPotential(cty::Int)::Int
 
-  @assign cty = intBitOr(cty, ConnectorType.POTENTIAL)
+   cty = intBitOr(cty, ConnectorType.POTENTIAL)
   return cty
 end
 
 function isFlow(cty::Int)::Bool
   local isFlow::Bool
-  @assign isFlow = intBitAnd(cty, ConnectorType.FLOW) > 0
+   isFlow = intBitAnd(cty, ConnectorType.FLOW) > 0
   return isFlow
 end
 
 function isStream(cty::Int)::Bool
   local isStream::Bool
 
-  @assign isStream = intBitAnd(cty, ConnectorType.STREAM) > 0
+   isStream = intBitAnd(cty, ConnectorType.STREAM) > 0
   return isStream
 end
 
 function isFlowOrStream(cty::Int)::Bool
   local isFlowOrStream::Bool
 
-  @assign isFlowOrStream = intBitAnd(cty, ConnectorType.FLOW_STREAM_MASK) > 0
+   isFlowOrStream = intBitAnd(cty, ConnectorType.FLOW_STREAM_MASK) > 0
   return isFlowOrStream
 end
 
 function unsetFlowStream(cty::Int)::Int
 
-  @assign cty = intBitAnd(cty, intBitNot(FLOW_STREAM_MASK))
+   cty = intBitAnd(cty, intBitNot(FLOW_STREAM_MASK))
   return cty
 end
 
@@ -124,12 +124,12 @@ end
 function isConnector(cty::Int)::Bool
   local isConnector::Bool
 
-  @assign isConnector = intBitAnd(cty, ConnectorType.CONNECTOR) > 0
+   isConnector = intBitAnd(cty, ConnectorType.CONNECTOR) > 0
   return isConnector
 end
 
 function setConnector(cty::Int)::Int
-  @assign cty = intBitOr(cty, ConnectorType.CONNECTOR)
+   cty = intBitOr(cty, ConnectorType.CONNECTOR)
   return cty
 end
 
@@ -137,18 +137,18 @@ end
      potentially present bits set, otherwise false. =#"""
 function isConnectorType(cty::Int)::Bool
   local isConnector::Bool
-  @assign isConnector = intBitAnd(cty, ConnectorType.CONNECTOR_MASK) > 0
+   isConnector = intBitAnd(cty, ConnectorType.CONNECTOR_MASK) > 0
   return isConnector
 end
 
 function isExpandable(cty::Int)::Bool
   local isExpandable::Bool
-  @assign isExpandable = intBitAnd(cty, EXPANDABLE) > 0
+   isExpandable = intBitAnd(cty, EXPANDABLE) > 0
   return isExpandable
 end
 
 function setExpandable(cty::Int)::Int
-  @assign cty = intBitOr(cty, EXPANDABLE)
+   cty = intBitOr(cty, EXPANDABLE)
   return cty
 end
 
@@ -157,27 +157,27 @@ end
 function isUndeclared(cty::Int)::Bool
   local isExpandableElement::Bool
 
-  @assign isExpandableElement = intBitAnd(cty, UNDECLARED_MASK) > 0
+   isExpandableElement = intBitAnd(cty, UNDECLARED_MASK) > 0
   return isExpandableElement
 end
 
 function isVirtual(cty::Int)::Bool
   local isVirtual::Bool
 
-  @assign isVirtual = intBitAnd(cty, VIRTUAL) > 0
+   isVirtual = intBitAnd(cty, VIRTUAL) > 0
   return isVirtual
 end
 
 function isPotentiallyPresent(cty::Int)::Bool
   local isPotentiallyPresent::Bool
 
-  @assign isPotentiallyPresent = intBitAnd(cty, POTENTIALLY_PRESENT) > 0
+   isPotentiallyPresent = intBitAnd(cty, POTENTIALLY_PRESENT) > 0
   return isPotentiallyPresent
 end
 
 function setPresent(cty::Int)::Int
 
-  @assign cty = intBitAnd(cty, intBitNot(POTENTIALLY_PRESENT))
+   cty = intBitAnd(cty, intBitNot(POTENTIALLY_PRESENT))
   return cty
 end
 
@@ -185,13 +185,13 @@ function toString(cty::Int)::String
   local str::String
 
   if intBitAnd(cty, FLOW) > 0
-    @assign str = "flow"
+     str = "flow"
   elseif intBitAnd(cty, STREAM) > 0
-    @assign str = "stream"
+     str = "stream"
   elseif intBitAnd(cty, EXPANDABLE) > 0
-    @assign str = "expandable"
+     str = "expandable"
   else
-    @assign str = ""
+     str = ""
   end
   return str
 end
@@ -200,11 +200,11 @@ function unparse(cty::Int)::String
   local str::String
 
   if intBitAnd(cty, FLOW) > 0
-    @assign str = "flow "
+     str = "flow "
   elseif intBitAnd(cty, STREAM) > 0
-    @assign str = "stream "
+     str = "stream "
   else
-    @assign str = ""
+     str = ""
   end
   return str
 end
@@ -215,27 +215,27 @@ function toDebugString(cty::Int)::String
   local strl::List{String} = nil
 
   if intBitAnd(cty, POTENTIAL) > 0
-    @assign strl = _cons("potential", strl)
+     strl = _cons("potential", strl)
   end
   if intBitAnd(cty, FLOW) > 0
-    @assign strl = _cons("flow", strl)
+     strl = _cons("flow", strl)
   end
   if intBitAnd(cty, STREAM) > 0
-    @assign strl = _cons("stream", strl)
+     strl = _cons("stream", strl)
   end
   if intBitAnd(cty, POTENTIALLY_PRESENT) > 0
-    @assign strl = _cons("potentially present", strl)
+     strl = _cons("potentially present", strl)
   end
   if intBitAnd(cty, VIRTUAL) > 0
-    @assign strl = _cons("virtual", strl)
+     strl = _cons("virtual", strl)
   end
   if intBitAnd(cty, CONNECTOR) > 0
-    @assign strl = _cons("connector", strl)
+     strl = _cons("connector", strl)
   end
   if intBitAnd(cty, EXPANDABLE) > 0
-    @assign strl = _cons("expandable", strl)
+     strl = _cons("expandable", strl)
   end
-  @assign str = stringDelimitList(strl, " ")
+   str = stringDelimitList(strl, " ")
   return str
 end
 
@@ -300,7 +300,7 @@ end
 
 function parallelismFromSCode(scodePar::SCode.Parallelism)::ParallelismType
   local par::ParallelismType
-  @assign par = begin
+   par = begin
     @match scodePar begin
       SCode.PARGLOBAL(__) => begin
         Parallelism.GLOBAL
@@ -319,7 +319,7 @@ end
 
 function parallelismToDAE(par)::DAE.VarParallelism
   local dpar::DAE.VarParallelism
-  @assign dpar = begin
+   dpar = begin
     @match par begin
       Parallelism.GLOBAL => begin
         DAE.PARGLOBAL()
@@ -339,7 +339,7 @@ end
 function parallelismString(par)::String
   local str::String
 
-  @assign str = begin
+   str = begin
     @match par begin
       Parallelism.GLOBAL => begin
         "parglobal"
@@ -360,7 +360,7 @@ end
 function unparseParallelism(par)::String
   local str::String
 
-  @assign str = begin
+   str = begin
     @match par begin
       Parallelism.GLOBAL => begin
         "parglobal "
@@ -386,11 +386,11 @@ function mergeParallelism(
   local par
 
   if outerPar == Parallelism.NON_PARALLEL
-    @assign par = innerPar
+     par = innerPar
   elseif innerPar == Parallelism.NON_PARALLEL
-    @assign par = outerPar
+     par = outerPar
   elseif innerPar == outerPar
-    @assign par = innerPar
+     par = innerPar
   else
     printPrefixError(parallelismString(outerPar), parallelismString(innerPar), node)
   end
@@ -399,7 +399,7 @@ end
 
 function variabilityFromSCode(scodeVar::SCode.Variability)
   local var
-  @assign var = begin
+   var = begin
     @match scodeVar begin
       SCode.CONST(__) => begin
         Variability.CONSTANT
@@ -421,7 +421,7 @@ end
 function variabilityToSCode(var)::SCode.Variability
   local scodeVar::SCode.Variability
 
-  @assign scodeVar = begin
+   scodeVar = begin
     @match var begin
       Variability.CONSTANT => begin
         SCode.Variability.CONST()
@@ -454,7 +454,7 @@ end
 function variabilityToDAE(var)::DAE.VarKind
   local varKind::DAE.VarKind
 
-  @assign varKind = begin
+   varKind = begin
     @match var begin
       Variability.CONSTANT => begin
         DAE.CONST()
@@ -487,7 +487,7 @@ end
 function variabilityToDAEConst(var)::DAE.Const
   local M_const::DAE.Const
 
-  @assign M_const = begin
+   M_const = begin
     @match var begin
       Variability.CONSTANT => begin
         DAE.Const.C_CONST()
@@ -516,7 +516,7 @@ end
 function variabilityString(var)::String
   local str::String
 
-  @assign str = begin
+   str = begin
     @match var begin
       Variability.CONSTANT => begin
         "constant"
@@ -553,7 +553,7 @@ end
 function unparseVariability(var, ty::Int)::String
   local str::String
 
-  @assign str = begin
+   str = begin
     @match var begin
       Variability.CONSTANT => begin
         "constant "
@@ -608,7 +608,7 @@ end
 function effectiveVariability(inVar)
   local outVar
 
-  @assign outVar = begin
+   outVar = begin
     @match inVar begin
       Variability.STRUCTURAL_PARAMETER => begin
         Variability.PARAMETER
@@ -633,7 +633,7 @@ end
 function directionFromSCode(scodeDir::Absyn.Direction)
   local dir
 
-  @assign dir = begin
+   dir = begin
     @match scodeDir begin
       Absyn.INPUT(__) => begin
         Direction.INPUT
@@ -651,7 +651,7 @@ end
 
 function directionToDAE(dir)::DAE.VarDirection
   local ddir::DAE.VarDirection
-  @assign ddir = begin
+   ddir = begin
     @match dir begin
       Direction.INPUT => begin
         DAE.INPUT()
@@ -670,7 +670,7 @@ end
 function directionToAbsyn(dir)::Absyn.Direction
   local adir::Absyn.Direction
 
-  @assign adir = begin
+   adir = begin
     @match dir begin
       Direction.INPUT => begin
         Absyn.INPUT()
@@ -691,7 +691,7 @@ end
 function directionString(dir)::String
   local str::String
 
-  @assign str = begin
+   str = begin
     @match dir begin
       Direction.INPUT => begin
         "input"
@@ -712,7 +712,7 @@ end
 function unparseDirection(dir)::String
   local str::String
 
-  @assign str = begin
+   str = begin
     @match dir begin
       Direction.INPUT => begin
         "input "
@@ -739,11 +739,11 @@ function mergeDirection(
   local dir
 
   if outerDir == Direction.NONE
-    @assign dir = innerDir
+     dir = innerDir
   elseif innerDir == Direction.NONE
-    @assign dir = outerDir
+     dir = outerDir
   elseif allowSame && outerDir == innerDir
-    @assign dir = innerDir
+     dir = innerDir
   else
     printPrefixError(directionString(outerDir), directionString(innerDir), node)
   end
@@ -752,7 +752,7 @@ end
 
 function innerOuterFromSCode(scodeIO::Absyn.InnerOuter)
   local io
-  @assign io = begin
+   io = begin
     @match scodeIO begin
       Absyn.NOT_INNER_OUTER(__) => begin
         InnerOuter.NOT_INNER_OUTER
@@ -774,7 +774,7 @@ end
 function innerOuterToAbsyn(inIO)::Absyn.InnerOuter
   local outIO::Absyn.InnerOuter
 
-  @assign outIO = begin
+   outIO = begin
     @match inIO begin
       InnerOuter.NOT_INNER_OUTER => begin
         Absyn.NOT_INNER_OUTER()
@@ -799,7 +799,7 @@ end
 function innerOuterString(io)::String
   local str::String
 
-  @assign str = begin
+   str = begin
     @match io begin
       InnerOuter.INNER => begin
         "inner"
@@ -824,7 +824,7 @@ end
 function unparseInnerOuter(io)::String
   local str::String
 
-  @assign str = begin
+   str = begin
     @match io begin
       InnerOuter.INNER => begin
         "inner "
@@ -848,7 +848,7 @@ end
 
 function visibilityFromSCode(scodeVis::SCode.Visibility)
   local vis
-  @assign vis = begin
+   vis = begin
     @match scodeVis begin
       SCode.PUBLIC(__) => begin
         Visibility.PUBLIC
@@ -909,7 +909,7 @@ end
 function unparseReplaceable(repl::Replaceable)::String
   local str::String
 
-  @assign str = begin
+   str = begin
     @match repl begin
       Replaceable.REPLACEABLE(__) => begin
         "replaceable "

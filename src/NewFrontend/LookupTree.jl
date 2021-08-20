@@ -267,7 +267,7 @@ function printTreeStr2(inTree::Tree, isLeft::Bool, inIndent::String)::String
   end
   return outString
 end
-
+#=
 function printNodeStr(inNode::Tree)::String
   local outString::String
   @assign outString = begin
@@ -285,7 +285,7 @@ function printNodeStr(inNode::Tree)::String
   end
   return outString
 end
-
+=#
 
 #= Default conflict resolving function for add. =#
  """ #= Conflict resolving function for add which fails on conflict. =#"""
@@ -902,37 +902,6 @@ function printTreeStr(inTree::Tree)::String
   return outString
 end
 
-function setTreeLeftRight(orig::Tree, left::Tree, right::Tree)::Tree
-  setTreeLeftRight(orig; left = left, right = right)
-end
-
-function setTreeLeftRight(orig::Tree; left::Tree = EMPTY(), right::Tree = EMPTY())::Tree
-  local res::Tree
-  res = begin
-    @match (orig, left, right) begin
-      (NODE(__), EMPTY(__), EMPTY(__)) => begin
-        LEAF(orig.key, orig.value)
-      end
-
-      (LEAF(__), EMPTY(__), EMPTY(__)) => begin
-        orig
-      end
-
-      (NODE(__), _, _) => begin
-        if referenceEqOrEmpty(orig.left, left) && referenceEqOrEmpty(orig.right, right)
-          orig
-        else
-          NODE(orig.key, orig.value, max(height(left), height(right)) + 1, left, right)
-        end
-      end
-
-      (LEAF(__), _, _) => begin
-        NODE(orig.key, orig.value, max(height(left), height(right)) + 1, left, right)
-      end
-    end
-  end
-  return res
-end
 
 """ #= Takes two sets and returns the intersection as well as the remainder
   of both sets after removing the duplicates in both sets. =#"""
@@ -1051,54 +1020,6 @@ function rotateRight(inNode::Tree)::Tree
   end
   return outNode
 end
-
-""" #= Helper function to printTreeStr. =#"""
-function printTreeStr2(inTree::Tree, isLeft::Bool, inIndent::String)::String
-  local outString::String
-  local val_node::Option{ValueNode}
-  local left::Option{Tree}
-  local right::Option{Tree}
-  local left_str::String
-  local right_str::String
-  outString = begin
-    @match inTree begin
-      NODE(__) => begin
-        printTreeStr2(inTree.left, true, inIndent + (
-          if isLeft
-            "     "
-          else
-            " │   "
-          end
-        )) +
-        inIndent +
-        (
-          if isLeft
-            " ┌"
-          else
-            " └"
-          end
-        ) +
-        "────" +
-        printNodeStr(inTree) +
-        "
-        " +
-        printTreeStr2(inTree.right, false, inIndent + (
-          if isLeft
-            " │   "
-          else
-            "     "
-          end
-        ))
-      end
-
-      _ => begin
-        ""
-      end
-    end
-  end
-  return outString
-end
-
 
 keyCompare = (inKey1::String, inKey2::String) -> begin
   res = stringCompare(inKey1, inKey2)

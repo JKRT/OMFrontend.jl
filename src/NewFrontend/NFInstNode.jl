@@ -124,15 +124,10 @@ using ExportAll
 Key = String
 Value = InstNode
 include("../Util/baseAvlTreeCode.jl")
-include("../Util/baseAvlSetCode.jl")
 
 keyCompare = (inKey1::String, inKey2::String) -> begin
   res = stringCompare(inKey1, inKey2)
   return res
-end
-
-function new()
-  return EMPTY()
 end
 
 @exportAll()
@@ -1277,7 +1272,7 @@ function scopeListClass(clsNode::InstNode, ty::InstNodeType, includeRoot::Bool, 
   scopes
 end
 
-function scopeList(node::InstNode, includeRoot::Bool = false #= Whether to include the root class name or not. =#, accumScopes::List{<:InstNode} = nil) ::List{InstNode}
+function scopeList(node::InstNode, includeRoot::Bool, accumScopes::List{<:InstNode} = nil) ::List{InstNode}
   scopeList(node, includeRoot = includeRoot, accumScopes = accumScopes)
 end
 

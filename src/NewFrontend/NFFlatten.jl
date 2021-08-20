@@ -12,24 +12,15 @@ Connector = NFConnector
 ComplexType = NFComplexType
 
 module FunctionTreeImpl
-using MetaModelica
-using ExportAll
-import ..Absyn
-import ..Main.M_Function
-Key = Absyn.Path
-Value = M_Function
-include("../Util/baseAvlTreeCode.jl")
-include("../Util/baseAvlSetCode.jl")
-
-
-addConflictDefault = addConflictKeep
-
-function new()
-  return EMPTY()
-end
-
-@exportAll()
-end
+  using MetaModelica
+  using ExportAll
+  import ..Absyn
+  import ..Main.M_Function
+  Key = Absyn.Path
+  Value = M_Function
+  include("../Util/baseAvlTreeCode.jl")
+  addConflictDefault = addConflictKeep
+end #= FunctionTreeImpl =#
 FunctionTree = FunctionTreeImpl.Tree
 const NFFunctionTree = FunctionTreeImpl
 

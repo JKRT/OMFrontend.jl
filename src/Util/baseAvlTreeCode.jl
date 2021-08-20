@@ -1,4 +1,3 @@
-@UniontypeDecl Tree
 valueStr = Function
 ConflictFunc = Function
 EachFunc = Function
@@ -22,6 +21,356 @@ MapFunc = Function
   end
 end
 
+""" #= Return an empty tree =#"""
+function new()::Tree
+  local outTree::Tree = EMPTY()
+  return outTree
+end
+
+""" #= Gets a value from the tree given a key. =#"""
+function hasKey(inTree::Tree, inKey::Key)::Bool
+  local comp::Bool = false
+
+  local key::Key
+  local key_comp::Integer
+  local tree::Tree
+
+  @assign key = begin
+    @match inTree begin
+      NODE(__) => begin
+        inTree.key
+      end
+
+      LEAF(__) => begin
+        inTree.key
+      end
+
+      EMPTY(__) => begin
+        return
+        fail()
+      end
+    end
+  end
+  @assign key_comp = keyCompare(inKey, key)
+  @assign comp = begin
+    @match (key_comp, inTree) begin
+      (0, _) => begin
+        true
+      end
+
+      (1, NODE(right = tree)) => begin
+        hasKey(tree, inKey)
+      end
+
+      (-1, NODE(left = tree)) => begin
+        hasKey(tree, inKey)
+      end
+
+      _ => begin
+        false
+      end
+    end
+  end
+  return comp
+end
+
+function isEmpty(tree::Tree)::Bool
+  local isEmpty::Bool
+  @assign isEmpty = begin
+    @match tree begin
+      EMPTY(__) => begin
+        true
+      end
+      _ => begin
+        false
+      end
+    end
+  end
+  return isEmpty
+end
+
+""" #= Converts the tree to a flat list of keys (in order). =#"""
+function listKeys(inTree::Tree, lst::List{<:Key} = nil)::List{Key}
+
+  @assign lst = begin
+    @match inTree begin
+      LEAF(__) => begin
+        _cons(inTree.key, lst)
+      end
+
+      NODE(__) => begin
+        lst = listKeys(inTree.right, lst)
+        lst = _cons(inTree.key, lst)
+        lst = listKeys(inTree.left, lst)
+        lst
+      end
+
+      _ => begin
+        lst
+      end
+    end
+  end
+  return lst
+end
+
+""" #= Converts the tree to a flat list of keys (in order). =#"""
+function listKeysReverse(inTree::Tree, lst::List{<:Key} = nil)::List{Key}
+
+  @assign lst = begin
+    @match inTree begin
+      LEAF(__) => begin
+        _cons(inTree.key, lst)
+      end
+
+      NODE(__) => begin
+        lst = listKeysReverse(inTree.left, lst)
+        lst = _cons(inTree.key, lst)
+        lst = listKeysReverse(inTree.right, lst)
+        lst
+      end
+
+      _ => begin
+        lst
+      end
+    end
+  end
+  return lst
+end
+
+
+""" #= Prints the tree to a string using UTF-8 box-drawing characters to construct a
+   graphical view of the tree. =#"""
+function printTreeStr(inTree::Tree)::String
+  local outString::String
+  local left::Tree
+  local right::Tree
+  outString = begin
+    @match inTree begin
+      EMPTY(__) => begin
+        "EMPTY()"
+      end
+      LEAF(__) => begin
+        printNodeStr(inTree)
+      end
+      NODE(left = left, right = right) => begin
+        printTreeStr2(left, true, "") +
+        printNodeStr(inTree) +
+        "
+        " +
+        printTreeStr2(right, false, "")
+      end
+    end
+  end
+  return outString
+end
+
+function referenceEqOrEmpty(t1::Tree, t2::Tree)::Bool
+  local b::Bool
+
+  @assign b = begin
+    @match (t1, t2) begin
+      (EMPTY(__), EMPTY(__)) => begin
+        true
+      end
+
+      _ => begin
+        referenceEq(t1, t2)
+      end
+    end
+  end
+  return b
+end
+
+""" #= Balances a Tree =#"""
+function balance(inTree::Tree)
+  local outTree::Tree = inTree
+  outTree = begin
+    local lh::Integer
+    local rh::Integer
+    local diff::Integer
+    local child::Tree
+    local balanced_tree::Tree
+    @match outTree begin
+      LEAF(__) => begin
+        inTree
+      end
+      NODE(__) => begin
+        lh = height(outTree.left)
+        rh = height(outTree.right)
+        diff = lh - rh
+        if diff < (-1)
+          balanced_tree = if calculateBalance(outTree.right) > 0
+            rotateLeft(setTreeLeftRight(
+              outTree,
+              left = outTree.left,
+              right = rotateRight(outTree.right),
+            ))
+          else
+            rotateLeft(outTree)
+          end
+        elseif diff > 1
+          balanced_tree = if calculateBalance(outTree.left) < 0
+            rotateRight(setTreeLeftRight(
+              outTree,
+              left = rotateLeft(outTree.left),
+              right = outTree.right,
+            ))
+          else
+            rotateRight(outTree)
+          end
+        elseif outTree.height != max(lh, rh) + 1
+          @assign outTree.height = max(lh, rh) + 1
+          balanced_tree = outTree
+        else
+          balanced_tree = outTree
+        end
+        balanced_tree
+      end
+    end
+  end
+  return outTree
+end
+
+
+function height(inNode::Tree)::Integer
+  local outHeight::Integer
+  @assign outHeight = begin
+    @match inNode begin
+      NODE(__) => begin
+        inNode.height
+      end
+      LEAF(__) => begin
+        1
+      end
+      _ => begin
+        0
+      end
+    end
+  end
+  return outHeight
+end
+
+function calculateBalance(inNode::Tree)::Integer
+  local outBalance::Integer
+
+  outBalance = begin
+    @match inNode begin
+      NODE(__) => begin
+        height(inNode.left) - height(inNode.right)
+      end
+
+      LEAF(__) => begin
+        0
+      end
+
+      _ => begin
+        0
+      end
+    end
+  end
+  return outBalance
+end
+
+""" #= Performs an AVL left rotation on the given tree. =#"""
+function rotateLeft(inNode::Tree)::Tree
+  local outNode::Tree = inNode
+
+  @assign outNode = begin
+    local node::Tree
+    local child::Tree
+    @match outNode begin
+      NODE(right = child && NODE(__)) => begin
+        node = setTreeLeftRight(outNode, outNode.left, child.left)
+        setTreeLeftRight(child, node, child.right)
+      end
+
+      NODE(right = child && LEAF(__)) => begin
+        node = setTreeLeftRight(outNode, outNode.left, EMPTY())
+        setTreeLeftRight(child, node, EMPTY())
+      end
+
+      _ => begin
+        inNode
+      end
+    end
+  end
+  return outNode
+end
+
+""" #= Performs an AVL right rotation on the given tree. =#"""
+function rotateRight(inNode::Tree)::Tree
+  local outNode::Tree = inNode
+
+  @assign outNode = begin
+    local node::Tree
+    local child::Tree
+    @match outNode begin
+      NODE(left = child && NODE(__)) => begin
+        node = setTreeLeftRight(outNode, left = child.right, right = outNode.right)
+        setTreeLeftRight(child, right = node, left = child.left)
+      end
+
+      NODE(left = child && LEAF(__)) => begin
+        node = setTreeLeftRight(outNode, left = EMPTY(), right = outNode.right)
+        setTreeLeftRight(child, right = node, left = EMPTY())
+      end
+      _ => begin
+        inNode
+      end
+    end
+  end
+  return outNode
+end
+
+""" #= Helper function to printTreeStr. =#"""
+function printTreeStr2(inTree::Tree, isLeft::Bool, inIndent::String)::String
+  local outString::String
+  local val_node::Option{ValueNode}
+  local left::Option{Tree}
+  local right::Option{Tree}
+  local left_str::String
+  local right_str::String
+  outString = begin
+    @match inTree begin
+      NODE(__) => begin
+        printTreeStr2(inTree.left, true, inIndent + (
+          if isLeft
+            "     "
+          else
+            " │   "
+          end
+        )) +
+        inIndent +
+        (
+          if isLeft
+            " ┌"
+          else
+            " └"
+          end
+        ) +
+        "────" +
+        printNodeStr(inTree) +
+        "
+        " +
+        printTreeStr2(inTree.right, false, inIndent + (
+          if isLeft
+            " │   "
+          else
+            "     "
+          end
+        ))
+      end
+
+      _ => begin
+        ""
+      end
+    end
+  end
+  return outString
+end
+
+
+#===#
 function printNodeStr(inNode::Tree)::String
   local outString::String
   @assign outString = begin
@@ -535,7 +884,7 @@ function mapFold(inTree::Tree, inFunc::MapFunc, inStartValue::FT) where {FT}
   return (outTree, outResult)
 end
 
-function setTreeLeftRight(orig::Tree, left::Tree = EMPTY(), right::Tree = EMPTY())::Tree
+function setTreeLeftRight(orig::Tree, left::Tree, right::Tree)::Tree
   setTreeLeftRight(orig, left = left, right = right)
 end
 

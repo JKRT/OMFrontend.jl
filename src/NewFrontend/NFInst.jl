@@ -2718,11 +2718,6 @@ function makeSource(comment::SCode.Comment, info::SourceInfo) ::DAE.ElementSourc
   source
 end
 
-
-function addIteratorToScope(name::String, scope::InstNode, info::SourceInfo) ::Tuple{InstNode, InstNode}
-  addIteratorToScope(name, scope, info, TYPE_UNKNOWN())
-end
-
 function addIteratorToScope(name::String, scope::InstNode, info::SourceInfo, iter_type::NFType = TYPE_UNKNOWN()) ::Tuple{InstNode, InstNode}
   local iterator::InstNode
 

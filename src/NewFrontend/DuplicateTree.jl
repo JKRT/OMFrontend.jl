@@ -1,16 +1,12 @@
 module DuplicateTree
 using MetaModelica
-using ExportAll
-#= Forward declarations for uniontypes until Julia adds support for mutual recursion =#
-using ..BaseAvlTree #= Modelica extend clause =#
 
 @UniontypeDecl Entry
-Key = String
-Value = Entry
+const Key = String
+const Value = Entry
 
 #= Modelica extend clause =#
 include("../Util/baseAvlTreeCode.jl")
-include("../Util/baseAvlSetCode.jl")
 
 import ..LookupTree
 import ..InstNode
@@ -20,7 +16,7 @@ EntryType = (() -> begin #= Enumeration =#
   ENTRY = 3
   () -> (DUPLICATE; REDECLARE; ENTRY)
 end)()
-EntryTypeTy = Integer
+const EntryTypeTy = Integer
 
 @Uniontype Entry begin
   @Record DUPLICATE_TREE_ENTRY begin
@@ -29,10 +25,6 @@ EntryTypeTy = Integer
     children::List{Entry}
     ty::EntryTypeTy
   end
-end
-
-function new()
-  return EMPTY();
 end
 
 function newRedeclare(entry::LookupTree.Entry) :Entry
@@ -52,11 +44,10 @@ end
 
 function idExistsInEntry(id::LookupTree.Entry, entry::Entry)::Bool
   local exists::Bool
-  @assign exists =
+    exists =
     LookupTree.isEqual(id, entry.entry) ||
     ListUtil.exist(entry.children, (id) -> idExistsInEntry(id = id))
   return exists
 end
 
-@exportAll()
 end

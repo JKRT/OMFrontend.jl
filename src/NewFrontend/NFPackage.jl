@@ -8,7 +8,6 @@ ComponentRef = NFComponentRef
 const Key = ComponentRef
 const Value = Integer
 include("../Util/baseAvlTreeCode.jl")
-include("../Util/baseAvlSetCode.jl")
 @exportAll()
 end
 

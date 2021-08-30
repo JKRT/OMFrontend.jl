@@ -67,10 +67,10 @@ function translateAbsyn2SCode(inProgram::Absyn.Program)::SCode.Program
       _ => begin
         #            InstHashTable.init()
         @match Absyn.PROGRAM(classes = inClasses) = inProgram
-        #                      System.setHasInnerOuterDefinitions(false)
-        #                      System.setHasExpandableConnectors(false)
-        #                      System.setHasOverconstrainedConnectors(false)
-        #System.setHasStreamConnectors(false)
+        System.setHasInnerOuterDefinitions(false)
+        System.setHasExpandableConnectors(false)
+        System.setHasOverconstrainedConnectors(false)
+        System.setHasStreamConnectors(false)
         @assign sp = list(translateClass(c) for c in inClasses)
         sp
       end

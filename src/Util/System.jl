@@ -522,20 +522,20 @@
           outString
         end
 
+        global memory = Array{Any,1}(missing, 1024)
+
         """ #= @author: adrpo
          sets the external flag that signals the
          presence of expandable connectors in a model =#"""
         function setHasExpandableConnectors(hasExpandable::Bool)
-            @error "TODO: Defined in the runtime"
+           memory[1] = hasExpandable
         end
 
         """ #= @author: adrpo
          retrieves the external flag that signals the
          presence of expandable connectors in a model =#"""
         function getHasExpandableConnectors() ::Bool
-              local hasExpandable::Bool
-
-            @error "TODO: Defined in the runtime"
+          local hasExpandable::Bool = memory[1]
           hasExpandable
         end
 
@@ -543,16 +543,14 @@
          sets the external flag that signals the
          presence of overconstrained connectors in a model =#"""
         function setHasOverconstrainedConnectors(hasOverconstrained::Bool)
-            #@error "TODO: Defined in the runtime"
+          memory[2] = hasOverconstrained
         end
 
         """ #= @author: adrpo
          retrieves the external flag that signals the
          presence of overconstrained connectors in a model =#"""
         function getHasOverconstrainedConnectors() ::Bool
-              local hasOverconstrained::Bool
-
-            @error "TODO: Defined in the runtime"
+          local hasOverconstrained::Bool = memory[2]
           hasOverconstrained
         end
 
@@ -560,16 +558,14 @@
          sets the external flag that signals the
          presence of expandable connectors in a model =#"""
         function setPartialInstantiation(isPartialInstantiation::Bool)
-            @error "TODO: Defined in the runtime"
+            memory[3] = isPartialInstantiation
         end
 
         """ #= @author: adrpo
          retrieves the external flag that signals the
          presence of expandable connectors in a model =#"""
         function getPartialInstantiation() ::Bool
-              local isPartialInstantiation::Bool
-
-            @error "TODO: Defined in the runtime"
+          local isPartialInstantiation::Bool = memory[3]
           isPartialInstantiation
         end
 
@@ -577,29 +573,25 @@
          sets the external flag that signals the
          presence of stream connectors in a model =#"""
         function setHasStreamConnectors(hasStream::Bool)
-            @error "TODO: Defined in the runtime: setHasStreamConnectors"
+            memory[4] = hasStream
         end
 
         """ #= @author: adrpo
          retrieves the external flag that signals the
          presence of stream connectors in a model =#"""
         function getHasStreamConnectors() ::Bool
-              local hasStream::Bool
-
-            @error "TODO: Defined in the runtime"
+          local hasStream::Bool = memory[4]
           hasStream
         end
 
         """ #= Sets the external flag that signals the use of the cardinality operator. =#"""
         function setUsesCardinality(inUses::Bool)
-          #@error "TODO: Defined in the runtime"
+          memory[5] = inUses
         end
 
         """ #= Retrieves the external flag that signals the use of the cardinality operator. =#"""
         function getUsesCardinality() ::Bool
-              local outUses::Bool
-
-            @error "TODO: Defined in the runtime"
+          local outUses::Bool = memory[5]
           outUses
         end
 
@@ -607,16 +599,14 @@
          sets the external flag that signals the presence
          of inner/outer comoponent definitions in a model =#"""
         function setHasInnerOuterDefinitions(hasInnerOuterDefinitions::Bool)
-            @error "TODO: Defined in the runtime"
+          memory[6] = hasInnerOuterDefinitions
         end
 
         """ #= @author: adrpo
          retrieves the external flag that signals the presence
          of inner/outer comoponent definitions in a model =#"""
         function getHasInnerOuterDefinitions() ::Bool
-              local hasInnerOuterDefinitions::Bool
-
-            @error "TODO: Defined in the runtime"
+          local hasInnerOuterDefinitions::Bool = memory[6]
           hasInnerOuterDefinitions
         end
 

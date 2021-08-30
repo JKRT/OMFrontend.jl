@@ -124,9 +124,9 @@ function evaluateNormal(fn::M_Function, args::List{<:Expression})::Expression
   local fn_body::List{Statement}
   local bindings::List{Binding}
   local repl::ReplTree.Tree
-  local call_count::Integer
-  local limit::Integer
-  local call_counter::Pointer{Integer} = fn.callCounter
+  local call_count::Int
+  local limit::Int
+  local call_counter::Pointer{Int} = fn.callCounter
   local ctrl::FlowControl
 
   #=  Functions contain a mutable call counter that's increased by one at the
@@ -832,7 +832,7 @@ function assignArrayElement(
   local sub::Expression
   local val::Expression
   local rest_subs::List{Subscript}
-  local idx::Integer
+  local idx::Int
   local subs::List{Expression}
   local vals::List{Expression}
 
@@ -988,8 +988,8 @@ function evaluateFor(
   local range_exp::Expression
   local value::Expression
   local body::List{Statement} = forBody
-  local i::Integer = 0
-  local limit::Integer = Flags.getConfigInt(Flags.EVAL_LOOP_LIMIT)
+  local i::Int = 0
+  local limit::Int = Flags.getConfigInt(Flags.EVAL_LOOP_LIMIT)
 
   @assign range_exp = Ceval.evalExp(Util.getOption(range), P_EvalTarget.STATEMENT(source))
   @assign range_iter = P_RangeIterator.RangeIterator.fromExp(range_exp)
@@ -1119,8 +1119,8 @@ function evaluateWhile(
 )::FlowControl
   local ctrl::FlowControl = FlowControl.NEXT
 
-  local i::Integer = 0
-  local limit::Integer = Flags.getConfigInt(Flags.EVAL_LOOP_LIMIT)
+  local i::Int = 0
+  local limit::Int = Flags.getConfigInt(Flags.EVAL_LOOP_LIMIT)
   local target::EvalTarget = P_EvalTarget.STATEMENT(source)
 
   while isTrue(Ceval.evalExp(condition, target))
@@ -1247,11 +1247,11 @@ function evaluateKnownExternal(name::String, args::List{<:Expression})::Expressi
   @assign result = begin
     local s1::String
     local s2::String
-    local i::Integer
-    local i2::Integer
+    local i::Int
+    local i2::Int
     local b::Bool
     local r::AbstractFloat
-    local dims::Integer[2]
+    local dims::Int[2]
     @match (name, args) begin
       ("ModelicaInternal_countLines", STRING_EXPRESSION(s1) <| nil()) =>
         begin
@@ -1415,8 +1415,8 @@ end
 function evaluateOpenModelicaRegex(args::List{<:Expression})::Expression
   local result::Expression
 
-  local n::Integer
-  local i::Integer
+  local n::Int
+  local i::Int
   local str::String
   local re::String
   local extended::Bool
@@ -1470,8 +1470,8 @@ end
 function evaluateModelicaIO_readRealMatrix(
   fileName::String,
   matrixName::String,
-  nrow::Integer,
-  ncol::Integer,
+  nrow::Int,
+  ncol::Int,
   verboseRead::Bool,
 )::Expression
   local result::Expression

@@ -868,15 +868,15 @@ function lookupAttributeBinding(name::String, cls::Class)::Binding
   return binding
 end
 
-function nthComponent(index::Integer, cls::Class)::InstNode
+function nthComponent(index::Int, cls::Class)::InstNode
   local component::InstNode
 
   @assign component = nthComponent(index, classTree(cls))
   return component
 end
 
-function lookupComponentIndex(name::String, cls::Class)::Integer
-  local index::Integer
+function lookupComponentIndex(name::String, cls::Class)::Int
+  local index::Int
 
   @assign index = lookupComponentIndex(name, classTree(cls))
   return index

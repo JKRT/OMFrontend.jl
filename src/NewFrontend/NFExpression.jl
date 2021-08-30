@@ -62,14 +62,14 @@ end
 
   @Record RECORD_ELEMENT_EXPRESSION begin
     recordExp::Expression
-    index::Integer
+    index::Int
     fieldName::String
     ty::NFType
   end
 
   @Record TUPLE_ELEMENT_EXPRESSION begin
     tupleExp::Expression
-    index::Integer
+    index::Int
     ty::NFType
   end
 
@@ -178,7 +178,7 @@ end
   @Record ENUM_LITERAL_EXPRESSION begin
     ty::NFType
     name::String
-    index::Integer
+    index::Int
   end
 
   @Record BOOLEAN_EXPRESSION begin
@@ -194,6 +194,6 @@ end
   end
 
   @Record INTEGER_EXPRESSION begin
-    value::Integer
+    value::Int
   end
 end

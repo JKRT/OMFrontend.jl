@@ -167,14 +167,13 @@ end
 
 function partialInstClass(node::InstNode) ::InstNode
   local c::Class
-  @assign () = begin
+  () = begin
     @match getClass(node) begin
       NOT_INSTANTIATED(__)  => begin
-        @assign c = partialInstClass2(definition(node), node)
-        @assign node = updateClass(c, node)
+        c = partialInstClass2(definition(node), node)
+        node = updateClass(c, node)
         ()
       end
-
       _  => begin
         ()
       end
@@ -380,62 +379,62 @@ end
 
 """ #= Gives an error if a base node is in the process of being expanded itself,
              since that means we have an extends loop in the model. =#"""
-               function checkExtendsLoop(node::InstNode, path::Absyn.Path, info::SourceInfo)
-                 @assign () = begin
-                   @match getClass(node) begin
-                     EXPANDED_CLASS(elements = PARTIAL_TREE(__))  => begin
-                       #=  expand begins by changing the class to an EXPANDED_CLASS, but keeps the
-                       =#
-                       #=  class tree. So finding a PARTIAL_TREE here means the class is in the
-                       =#
-                       #=  process of being expanded.
-                       =#
-                       Error.addSourceMessage(Error.EXTENDS_LOOP, list(AbsynUtil.pathString(path)), info)
-                       fail()
-                     end
+function checkExtendsLoop(node::InstNode, path::Absyn.Path, info::SourceInfo)
+  @assign () = begin
+    @match getClass(node) begin
+      EXPANDED_CLASS(elements = CLASS_TREE_PARTIAL_TREE(__))  => begin
+        #=  expand begins by changing the class to an EXPANDED_CLASS, but keeps the
+        =#
+        #=  class tree. So finding a PARTIAL_TREE here means the class is in the
+        =#
+        #=  process of being expanded.
+        =#
+        Error.addSourceMessage(Error.EXTENDS_LOOP, list(AbsynUtil.pathString(path)), info)
+        fail()
+      end
 
-                     _  => begin
-                       ()
-                     end
-                   end
-                 end
-               end
+      _  => begin
+        ()
+      end
+    end
+  end
+end
 
 """ #= Checks that all parts of a name used as a base class are transitively
              non-replaceable. =#"""
-               function checkReplaceableBaseClass(baseClasses::List{<:InstNode}, basePath::Absyn.Path, info::SourceInfo)
-                 local i::Integer = 0
-                 local pos::Integer
-                 local name::String
-                 local rest::List{InstNode}
+function checkReplaceableBaseClass(baseClasses::List{<:InstNode}, basePath::Absyn.Path, info::SourceInfo)
+  local i::Int = 0
+  local pos::Int
+  local name::String
+  local rest::List{InstNode}
 
-                 for base in baseClasses
-                   @assign i = i + 1
-                   if SCodeUtil.isElementReplaceable(definition(base))
-                     if listLength(baseClasses) > 1
-                       @assign rest = baseClasses
-                       @assign name = ""
-                       for j in 1:i - 1
-                         @assign name = "." + name(listHead(rest)) + name
-                         @assign rest = listRest(rest)
-                       end
-                       @assign name = "<" + name(listHead(rest)) + ">" + name
-                       @assign rest = listRest(rest)
-                       for n in rest
-                         @assign name = name(n) + "." + name
-                       end
-                     else
-                       @assign name = AbsynUtil.pathString(basePath)
-                     end
-                     Error.addMultiSourceMessage(Error.REPLACEABLE_BASE_CLASS, list(name(base), name), list(InstNode_info(base), info))
-                     fail()
-                   end
-                 end
-                 #=  The path might contain several classes with the same name, so mark the
-                 =#
-                 #=  class in the path string to make it clear which one we mean.
-                 =#
-               end
+  for base in baseClasses
+    @assign i = i + 1
+    if SCodeUtil.isElementReplaceable(definition(base))
+      if listLength(baseClasses) > 1
+        @assign rest = baseClasses
+        @assign name = ""
+        for j in 1:i - 1
+          @assign name = "." + name(listHead(rest)) + name
+          @assign rest = listRest(rest)
+        end
+        @assign name = "<" + name(listHead(rest)) + ">" + name
+        @assign rest = listRest(rest)
+        for n in rest
+          @assign name = name(n) + "." + name
+        end
+      else
+        @assign name = AbsynUtil.pathString(basePath)
+      end
+      Error.addMultiSourceMessage(Error.REPLACEABLE_BASE_CLASS, list(name(base), name), list(InstNode_info(base), info))
+      fail()
+    end
+  end
+  #=  The path might contain several classes with the same name, so mark the
+  =#
+  #=  class in the path string to make it clear which one we mean.
+  =#
+end
 
 function expandExternalObject(clsTree::ClassTree, node::InstNode) ::InstNode
 
@@ -611,7 +610,7 @@ function instDerivedAttributes(scodeAttr::SCode.Attributes) ::Attributes
   attributes
 end
 
-function instClass(node::InstNode, modifier::Modifier, attributes::Attributes = DEFAULT_ATTR, useBinding::Bool = false, instLevel::Integer = 0, parent = EMPTY_NODE) ::Tuple{InstNode, Attributes}
+function instClass(node::InstNode, modifier::Modifier, attributes::Attributes = DEFAULT_ATTR, useBinding::Bool = false, instLevel::Int = 0, parent = EMPTY_NODE) ::Tuple{InstNode, Attributes}
   local cls::Class
   local outer_mod::Modifier
   @debug "INST CLASS CALLED. CALLING GETCLASS ON NODE."
@@ -629,7 +628,7 @@ function instClass(node::InstNode, modifier::Modifier, attributes::Attributes = 
   (node, attributes)
 end
 
-function instClassDef(cls::Class, outerMod::Modifier, attributes::Attributes, useBinding::Bool, node::InstNode, parentArg::InstNode, instLevel::Integer) ::Tuple{Attributes, InstNode}
+function instClassDef(cls::Class, outerMod::Modifier, attributes::Attributes, useBinding::Bool, node::InstNode, parentArg::InstNode, instLevel::Int) ::Tuple{Attributes, InstNode}
   local par::InstNode
   local base_node::InstNode
   local inst_cls::Class
@@ -915,9 +914,9 @@ ExtendsVisibility = #= Enumeration =# (() -> begin
                                        ()->(PUBLIC ;DERIVED_PROTECTED ;PROTECTED )
                                        end)()
 
-const ExtendsVisibilityType = Integer
+const ExtendsVisibilityType = Int
 function instExtends(node::InstNode, attributes::Attributes, useBinding::Bool,
-                     visibility::ExtendsVisibilityType, instLevel::Integer)::InstNode
+                     visibility::ExtendsVisibilityType, instLevel::Int)::InstNode
   local cls::Class
   local inst_cls::Class
   local cls_tree::ClassTree
@@ -1063,7 +1062,7 @@ function redeclareClasses(tree::ClassTree) ::ClassTree
   tree
 end
 
-function redeclareElements(chain::List, instLevel::Integer)
+function redeclareElements(chain::List, instLevel::Int)
   local node::InstNode
   local node_ptr::Pointer{InstNode}
 
@@ -1096,7 +1095,7 @@ function redeclareClassElement(redeclareCls::Pointer, replaceableCls::Pointer)::
   outCls
 end
 
-function redeclareComponentElement(redeclareComp::Pointer{<:InstNode}, replaceableComp::Pointer{<:InstNode}, instLevel::Integer) ::Pointer{InstNode}
+function redeclareComponentElement(redeclareComp::Pointer{<:InstNode}, replaceableComp::Pointer{<:InstNode}, instLevel::Int) ::Pointer{InstNode}
   local outComp::Pointer{InstNode}
   local rdcl_node::InstNode
   local repl_node::InstNode
@@ -1224,7 +1223,7 @@ function redeclareEnum(redeclareClass::Class, originalClass::Class, prefixes::Pr
   redeclaredClass
 end
 
-function instComponent(node::InstNode, attributes::Attributes , innerMod::Modifier, useBinding::Bool, instLevel::Integer, originalAttr = NONE())
+function instComponent(node::InstNode, attributes::Attributes , innerMod::Modifier, useBinding::Bool, instLevel::Int, originalAttr = NONE())
   local comp::Component
   local def::SCode.Element
   local comp_node::InstNode
@@ -1265,7 +1264,7 @@ function instComponent(node::InstNode, attributes::Attributes , innerMod::Modifi
   end
 end
 
-function instComponentDef(component::SCode.Element, outerMod::Modifier, innerMod::Modifier, attributes::Attributes, useBinding::Bool, node::InstNode, parentNode::InstNode, instLevel::Integer, originalAttr::Option{<:Attributes} = NONE(), isRedeclared::Bool = false)
+function instComponentDef(component::SCode.Element, outerMod::Modifier, innerMod::Modifier, attributes::Attributes, useBinding::Bool, node::InstNode, parentNode::InstNode, instLevel::Int, originalAttr::Option{<:Attributes} = NONE(), isRedeclared::Bool = false)
   @assign () = begin
     local info::SourceInfo
     local decl_mod::Modifier
@@ -1392,7 +1391,7 @@ function updateComponentConnectorType(attributes::Attributes, restriction::Restr
   attributes
 end
 
-function redeclareComponent(redeclareNode::InstNode, originalNode::InstNode, outerMod::Modifier, constrainingMod::Modifier, outerAttr::Attributes, redeclaredNode::InstNode, instLevel::Integer)
+function redeclareComponent(redeclareNode::InstNode, originalNode::InstNode, outerMod::Modifier, constrainingMod::Modifier, outerAttr::Attributes, redeclaredNode::InstNode, instLevel::Int)
   local orig_comp::Component
   local rdcl_comp::Component
   local new_comp::Component
@@ -1508,7 +1507,7 @@ function mergeComponentAttributes(outerAttr::Attributes, innerAttr::Attributes, 
   local attr::Attributes
 
   local cty::ConnectorType.TYPE
-  local par::Parallelism
+  local par::ParallelismType
   local var::VariabilityType
   local dir::DirectionType
   local fin::Bool
@@ -1516,23 +1515,23 @@ function mergeComponentAttributes(outerAttr::Attributes, innerAttr::Attributes, 
   local repl::Replaceable
 
   if referenceEq(outerAttr, DEFAULT_ATTR) && innerAttr.connectorType == 0
-    @assign attr = innerAttr
+    attr = innerAttr
   elseif referenceEq(innerAttr, DEFAULT_ATTR)
-    @assign cty = ConnectorType.merge(outerAttr.connectorType, innerAttr.connectorType, node)
-    @assign attr = Attributes.ATTRIBUTES(cty, outerAttr.parallelism, outerAttr.variability, outerAttr.direction, innerAttr.innerOuter, outerAttr.isFinal, innerAttr.isRedeclare, innerAttr.isReplaceable)
+    cty = merge(outerAttr.connectorType, innerAttr.connectorType, node)
+    attr = ATTRIBUTES(cty, outerAttr.parallelism, outerAttr.variability, outerAttr.direction, innerAttr.innerOuter, outerAttr.isFinal, innerAttr.isRedeclare, innerAttr.isReplaceable)
   else
-    @assign cty = ConnectorType.merge(outerAttr.connectorType, innerAttr.connectorType, node)
-    @assign par = mergeParallelism(outerAttr.parallelism, innerAttr.parallelism, node)
-    @assign var = variabilityMin(outerAttr.variability, innerAttr.variability)
+    cty = merge(outerAttr.connectorType, innerAttr.connectorType, node)
+    par = mergeParallelism(outerAttr.parallelism, innerAttr.parallelism, node)
+     var = variabilityMin(outerAttr.variability, innerAttr.variability)
     if isFunction(parentRestriction)
-      @assign dir = innerAttr.direction
+      dir = innerAttr.direction
     else
-      @assign dir = mergeDirection(outerAttr.direction, innerAttr.direction, node)
+      dir = mergeDirection(outerAttr.direction, innerAttr.direction, node)
     end
-    @assign fin = outerAttr.isFinal || innerAttr.isFinal
-    @assign redecl = innerAttr.isRedeclare
-    @assign repl = innerAttr.isReplaceable
-    @assign attr = Attributes.ATTRIBUTES(cty, par, var, dir, innerAttr.innerOuter, fin, redecl, repl)
+    fin = outerAttr.isFinal || innerAttr.isFinal
+    redecl = innerAttr.isRedeclare
+    repl = innerAttr.isReplaceable
+    attr = ATTRIBUTES(cty, par, var, dir, innerAttr.innerOuter, fin, redecl, repl)
   end
   attr
 end
@@ -1601,11 +1600,11 @@ end
 
 function mergeDerivedAttributes(outerAttr::Attributes, innerAttr::Attributes, node::InstNode) ::Attributes
   local attr::Attributes
-  local cty::Integer#ConnectorType.TYPE
+  local cty::Int#ConnectorType.TYPE
   local par::ParallelismType
   local var::VariabilityType
   local dir::DirectionType
-  local io::Integer
+  local io::Int
   local fin::Bool
   local redecl::Bool
   local repl#::Replaceable type conversion work with this change?
@@ -1771,7 +1770,7 @@ function isDiscreteClass(clsNode::InstNode) ::Bool
   discrete
 end
 
-function instTypeSpec(typeSpec::Absyn.TypeSpec, modifier::Modifier, attributes::Attributes, useBinding::Bool, scope::InstNode, parent::InstNode, info::SourceInfo, instLevel::Integer) ::Tuple{InstNode, Attributes}
+function instTypeSpec(typeSpec::Absyn.TypeSpec, modifier::Modifier, attributes::Attributes, useBinding::Bool, scope::InstNode, parent::InstNode, info::SourceInfo, instLevel::Int) ::Tuple{InstNode, Attributes}
   local outAttributes::Attributes
   local node::InstNode
 
@@ -2718,11 +2717,6 @@ function makeSource(comment::SCode.Comment, info::SourceInfo) ::DAE.ElementSourc
   source
 end
 
-
-function addIteratorToScope(name::String, scope::InstNode, info::SourceInfo) ::Tuple{InstNode, InstNode}
-  addIteratorToScope(name, scope, info, TYPE_UNKNOWN())
-end
-
 function addIteratorToScope(name::String, scope::InstNode, info::SourceInfo, iter_type::NFType = TYPE_UNKNOWN()) ::Tuple{InstNode, InstNode}
   local iterator::InstNode
 
@@ -2913,7 +2907,7 @@ function isStructuralComponent(component::Component, compAttrs::Attributes, comp
   isStructural
 end
 
-function isBindingNotFixed(binding::Binding, requireFinal::Bool, maxDepth::Integer = 4) ::Bool
+function isBindingNotFixed(binding::Binding, requireFinal::Bool, maxDepth::Int = 4) ::Bool
   local isNotFixed::Bool
 
   if maxDepth == 0
@@ -2928,7 +2922,7 @@ function isBindingNotFixed(binding::Binding, requireFinal::Bool, maxDepth::Integ
   isNotFixed
 end
 
-function isComponentBindingNotFixed(component::Component, node::InstNode, requireFinal::Bool, maxDepth::Integer, isRecord::Bool = false) ::Bool
+function isComponentBindingNotFixed(component::Component, node::InstNode, requireFinal::Bool, maxDepth::Int, isRecord::Bool = false) ::Bool
   local isNotFixed::Bool
 
   local binding::Binding
@@ -2954,7 +2948,7 @@ function isComponentBindingNotFixed(component::Component, node::InstNode, requir
   isNotFixed
 end
 
-function isExpressionNotFixed(exp::Expression; requireFinal::Bool = false, maxDepth::Integer = 4) ::Bool
+function isExpressionNotFixed(exp::Expression; requireFinal::Bool = false, maxDepth::Int = 4) ::Bool
   local isNotFixed::Bool
 
   @assign isNotFixed = begin
@@ -3167,7 +3161,7 @@ function updateImplicitVariabilityEq(eq::Equation, inWhen::Bool = false)
 end
 
 
-function markStructuralParamsSub(sub::Subscript, dummy::Integer = 0) ::Integer
+function markStructuralParamsSub(sub::Subscript, dummy::Int = 0) ::Int
   @assign () = begin
     @match sub begin
       SUBSCRIPT_UNTYPED(__)  => begin

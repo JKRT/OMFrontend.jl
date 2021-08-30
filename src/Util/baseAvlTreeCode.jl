@@ -1,4 +1,3 @@
-@UniontypeDecl Tree
 valueStr = Function
 ConflictFunc = Function
 EachFunc = Function

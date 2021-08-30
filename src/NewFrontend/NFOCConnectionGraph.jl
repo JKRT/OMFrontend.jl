@@ -150,7 +150,7 @@
               local connected::FlatEdges
               local call::Call
               local lst::List{Expression}
-              local priority::Integer
+              local priority::Int
               local root::Expression
               local msg::Expression
               local c1::Connector
@@ -261,7 +261,7 @@
               local ty::M_Type
               local ty1::M_Type
               local ty2::M_Type
-              local priority::Integer
+              local priority::Int
               local root::Expression
               local msg::Expression
               local c1::Connector
@@ -1026,7 +1026,7 @@
           outStr
         end
 
-        function setRootDistance(finalRoots::List{<:ComponentRef}, table::NFHashTable3.HashTable, distance::Integer, nextLevel::List{<:ComponentRef}, irooted::NFHashTable.HashTable) ::NFHashTable.HashTable
+        function setRootDistance(finalRoots::List{<:ComponentRef}, table::NFHashTable3.HashTable, distance::Int, nextLevel::List{<:ComponentRef}, irooted::NFHashTable.HashTable) ::NFHashTable.HashTable
               local orooted::NFHashTable.HashTable
 
               @assign orooted = begin
@@ -1331,8 +1331,8 @@
               local result::Bool
 
               @assign result = begin
-                  local i1::Integer
-                  local i2::Integer
+                  local i1::Int
+                  local i2::Int
                 @matchcontinue (cref1, cref2, rooted) begin
                   (_, _, _)  => begin
                       @assign i1 = BaseHashTable.get(cref1, rooted)
@@ -1851,7 +1851,7 @@
                   local fileNameTraceRemovedConnections::String
                   local omhome::String
                   local brokenConnects::String
-                  local leftyExitStatus::Integer
+                  local leftyExitStatus::Int
                    #=  do not start graphviz if we don't have -d=cgraphGraphVizShow
                    =#
                 @matchcontinue (fileNameGraphViz, modelNameQualified) begin

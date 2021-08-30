@@ -86,7 +86,7 @@ end
   end
 
   @Record REF_NODE begin
-    index::Integer
+    index::Int
   end
 
   @Record INNER_OUTER_NODE begin
@@ -124,15 +124,10 @@ using ExportAll
 Key = String
 Value = InstNode
 include("../Util/baseAvlTreeCode.jl")
-include("../Util/baseAvlSetCode.jl")
 
 keyCompare = (inKey1::String, inKey2::String) -> begin
   res = stringCompare(inKey1, inKey2)
   return res
-end
-
-function new()
-  return EMPTY()
 end
 
 @exportAll()
@@ -155,7 +150,7 @@ end
   end
 end
 
-const NUMBER_OF_CACHES = 3::Integer
+const NUMBER_OF_CACHES = 3::Int
 
 function setInnerOuterCache(in_caches::Array{<:CachedData}, in_cache::CachedData) ::Array{CachedData}
   local out_caches::Array{CachedData} = arrayUpdate(in_caches, 3, in_cache)
@@ -724,8 +719,8 @@ function nameEqual(node1::InstNode, node2::InstNode) ::Bool
   equal
 end
 
-function refCompare(node1::InstNode, node2::InstNode) ::Integer
-  local res::Integer
+function refCompare(node1::InstNode, node2::InstNode) ::Int
+  local res::Int
   @assign res = begin
     @match (node1, node2) begin
       (CLASS_NODE(__), CLASS_NODE(__))  => begin
@@ -1277,7 +1272,7 @@ function scopeListClass(clsNode::InstNode, ty::InstNodeType, includeRoot::Bool, 
   scopes
 end
 
-function scopeList(node::InstNode, includeRoot::Bool = false #= Whether to include the root class name or not. =#, accumScopes::List{<:InstNode} = nil) ::List{InstNode}
+function scopeList(node::InstNode, includeRoot::Bool, accumScopes::List{<:InstNode} = nil) ::List{InstNode}
   scopeList(node, includeRoot = includeRoot, accumScopes = accumScopes)
 end
 

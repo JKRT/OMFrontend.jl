@@ -62,12 +62,12 @@ function Lapack_dgeev(args::List{<:Expression})
   local vl::Expression
   local vr::Expression
   local info::Expression
-  local INFO::Integer
-  local LDA::Integer
-  local LDVL::Integer
-  local LDVR::Integer
-  local LWORK::Integer
-  local N::Integer
+  local INFO::Int
+  local LDA::Int
+  local LDVL::Int
+  local LDVR::Int
+  local LWORK::Int
+  local N::Int
   local JOBVL::String
   local JOBVR::String
   local A::List{List{AbstractFloat}}
@@ -118,13 +118,13 @@ function Lapack_dgegv(args::List{<:Expression})
   local info::Expression
   local JOBVL::String
   local JOBVR::String
-  local N::Integer
-  local LDA::Integer
-  local LDB::Integer
-  local LDVL::Integer
-  local LDVR::Integer
-  local LWORK::Integer
-  local INFO::Integer
+  local N::Int
+  local LDA::Int
+  local LDB::Int
+  local LDVL::Int
+  local LDVR::Int
+  local LWORK::Int
+  local INFO::Int
   local A::List{List{AbstractFloat}}
   local B::List{List{AbstractFloat}}
   local VL::List{List{AbstractFloat}}
@@ -188,13 +188,13 @@ function Lapack_dgels(args::List{<:Expression})
   local lwork::Expression
   local info::Expression
   local TRANS::String
-  local M::Integer
-  local N::Integer
-  local NRHS::Integer
-  local LDA::Integer
-  local LDB::Integer
-  local LWORK::Integer
-  local INFO::Integer
+  local M::Int
+  local N::Int
+  local NRHS::Int
+  local LDA::Int
+  local LDB::Int
+  local LWORK::Int
+  local INFO::Int
   local A::List{List{AbstractFloat}}
   local B::List{List{AbstractFloat}}
   local WORK::List{AbstractFloat}
@@ -230,16 +230,16 @@ function Lapack_dgelsx(args::List{<:Expression})
   local rank::Expression
   local work::Expression
   local info::Expression
-  local M::Integer
-  local N::Integer
-  local NRHS::Integer
-  local LDA::Integer
-  local LDB::Integer
-  local RANK::Integer
-  local INFO::Integer
+  local M::Int
+  local N::Int
+  local NRHS::Int
+  local LDA::Int
+  local LDB::Int
+  local RANK::Int
+  local INFO::Int
   local A::List{List{AbstractFloat}}
   local B::List{List{AbstractFloat}}
-  local JPVT::List{Integer}
+  local JPVT::List{Int}
   local RCOND::AbstractFloat
   local WORK::List{AbstractFloat}
 
@@ -283,17 +283,17 @@ function Lapack_dgelsy(args::List{<:Expression})
   local work::Expression
   local lwork::Expression
   local info::Expression
-  local M::Integer
-  local N::Integer
-  local NRHS::Integer
-  local LDA::Integer
-  local LDB::Integer
-  local RANK::Integer
-  local LWORK::Integer
-  local INFO::Integer
+  local M::Int
+  local N::Int
+  local NRHS::Int
+  local LDA::Int
+  local LDB::Int
+  local RANK::Int
+  local LWORK::Int
+  local INFO::Int
   local A::List{List{AbstractFloat}}
   local B::List{List{AbstractFloat}}
-  local JPVT::List{Integer}
+  local JPVT::List{Int}
   local RCOND::AbstractFloat
   local WORK::List{AbstractFloat}
 
@@ -328,14 +328,14 @@ function Lapack_dgesv(args::List{<:Expression})
   local b::Expression
   local ldb::Expression
   local info::Expression
-  local N::Integer
-  local NRHS::Integer
-  local LDA::Integer
-  local LDB::Integer
-  local INFO::Integer
+  local N::Int
+  local NRHS::Int
+  local LDA::Int
+  local LDB::Int
+  local INFO::Int
   local A::List{List{AbstractFloat}}
   local B::List{List{AbstractFloat}}
-  local IPIV::List{Integer}
+  local IPIV::List{Int}
 
   @match list(n, nrhs, a, lda, ipiv, b, ldb, info) = args
   @assign N = evaluateExtIntArg(n)
@@ -365,13 +365,13 @@ function Lapack_dgglse(args::List{<:Expression})
   local work::Expression
   local lwork::Expression
   local info::Expression
-  local M::Integer
-  local N::Integer
-  local P::Integer
-  local LDA::Integer
-  local LDB::Integer
-  local LWORK::Integer
-  local INFO::Integer
+  local M::Int
+  local N::Int
+  local P::Int
+  local LDA::Int
+  local LDB::Int
+  local LWORK::Int
+  local INFO::Int
   local A::List{List{AbstractFloat}}
   local B::List{List{AbstractFloat}}
   local C::List{AbstractFloat}
@@ -411,10 +411,10 @@ function Lapack_dgtsv(args::List{<:Expression})
   local b::Expression
   local ldb::Expression
   local info::Expression
-  local N::Integer
-  local NRHS::Integer
-  local LDB::Integer
-  local INFO::Integer
+  local N::Int
+  local NRHS::Int
+  local LDB::Int
+  local INFO::Int
   local DL::List{AbstractFloat}
   local D::List{AbstractFloat}
   local DU::List{AbstractFloat}
@@ -447,16 +447,16 @@ function Lapack_dgbsv(args::List{<:Expression})
   local b::Expression
   local ldb::Expression
   local info::Expression
-  local N::Integer
-  local KL::Integer
-  local KU::Integer
-  local NRHS::Integer
-  local LDAB::Integer
-  local LDB::Integer
-  local INFO::Integer
+  local N::Int
+  local KL::Int
+  local KU::Int
+  local NRHS::Int
+  local LDAB::Int
+  local LDB::Int
+  local INFO::Int
   local AB::List{List{AbstractFloat}}
   local B::List{List{AbstractFloat}}
-  local IPIV::List{Integer}
+  local IPIV::List{Int}
 
   @match list(n, kl, ku, nrhs, ab, ldab, ipiv, b, ldb, info) = args
   @assign N = evaluateExtIntArg(n)
@@ -491,13 +491,13 @@ function Lapack_dgesvd(args::List{<:Expression})
   local info::Expression
   local JOBU::String
   local JOBVT::String
-  local M::Integer
-  local N::Integer
-  local LDA::Integer
-  local LDU::Integer
-  local LDVT::Integer
-  local LWORK::Integer
-  local INFO::Integer
+  local M::Int
+  local N::Int
+  local LDA::Int
+  local LDU::Int
+  local LDVT::Int
+  local LWORK::Int
+  local INFO::Int
   local A::List{List{AbstractFloat}}
   local U::List{List{AbstractFloat}}
   local VT::List{List{AbstractFloat}}
@@ -532,12 +532,12 @@ function Lapack_dgetrf(args::List{<:Expression})
   local lda::Expression
   local ipiv::Expression
   local info::Expression
-  local M::Integer
-  local N::Integer
-  local LDA::Integer
-  local INFO::Integer
+  local M::Int
+  local N::Int
+  local LDA::Int
+  local INFO::Int
   local A::List{List{AbstractFloat}}
-  local IPIV::List{Integer}
+  local IPIV::List{Int}
 
   @match list(m, n, a, lda, ipiv, info) = args
   @assign M = evaluateExtIntArg(m)
@@ -561,14 +561,14 @@ function Lapack_dgetrs(args::List{<:Expression})
   local ldb::Expression
   local info::Expression
   local TRANS::String
-  local N::Integer
-  local NRHS::Integer
-  local LDA::Integer
-  local LDB::Integer
-  local INFO::Integer
+  local N::Int
+  local NRHS::Int
+  local LDA::Int
+  local LDB::Int
+  local INFO::Int
   local A::List{List{AbstractFloat}}
   local B::List{List{AbstractFloat}}
-  local IPIV::List{Integer}
+  local IPIV::List{Int}
 
   @match list(trans, n, nrhs, a, lda, ipiv, b, ldb, info) = args
   @assign TRANS = evaluateExtStringArg(trans)
@@ -592,12 +592,12 @@ function Lapack_dgetri(args::List{<:Expression})
   local work::Expression
   local lwork::Expression
   local info::Expression
-  local N::Integer
-  local LDA::Integer
-  local LWORK::Integer
-  local INFO::Integer
+  local N::Int
+  local LDA::Int
+  local LWORK::Int
+  local INFO::Int
   local A::List{List{AbstractFloat}}
-  local IPIV::List{Integer}
+  local IPIV::List{Int}
   local WORK::List{AbstractFloat}
 
   @match list(n, a, lda, ipiv, work, lwork, info) = args
@@ -622,12 +622,12 @@ function Lapack_dgeqpf(args::List{<:Expression})
   local tau::Expression
   local work::Expression
   local info::Expression
-  local M::Integer
-  local N::Integer
-  local LDA::Integer
-  local INFO::Integer
+  local M::Int
+  local N::Int
+  local LDA::Int
+  local INFO::Int
   local A::List{List{AbstractFloat}}
-  local JPVT::List{Integer}
+  local JPVT::List{Int}
   local WORK::List{AbstractFloat}
   local TAU::List{AbstractFloat}
 
@@ -655,12 +655,12 @@ function Lapack_dorgqr(args::List{<:Expression})
   local work::Expression
   local lwork::Expression
   local info::Expression
-  local M::Integer
-  local N::Integer
-  local K::Integer
-  local LDA::Integer
-  local LWORK::Integer
-  local INFO::Integer
+  local M::Int
+  local N::Int
+  local K::Int
+  local LDA::Int
+  local LWORK::Int
+  local INFO::Int
   local A::List{List{AbstractFloat}}
   local TAU::List{AbstractFloat}
   local WORK::List{AbstractFloat}
@@ -680,13 +680,13 @@ function Lapack_dorgqr(args::List{<:Expression})
   return assignVariable(info, makeInteger(INFO))
 end
 
-function evaluateExtIntArg(arg::Expression)::Integer
-  local value::Integer = getExtIntValue(Ceval.evalExp(arg))
+function evaluateExtIntArg(arg::Expression)::Int
+  local value::Int = getExtIntValue(Ceval.evalExp(arg))
   return value
 end
 
-function getExtIntValue(exp::Expression)::Integer
-  local value::Integer
+function getExtIntValue(exp::Expression)::Int
+  local value::Int
 
   @assign value = begin
     @match exp begin
@@ -746,8 +746,8 @@ function getExtStringValue(exp::Expression)::String
   return value
 end
 
-function evaluateExtIntArrayArg(arg::Expression)::List{Integer}
-  local value::List{Integer}
+function evaluateExtIntArrayArg(arg::Expression)::List{Int}
+  local value::List{Int}
 
   local expl::List{Expression}
 

@@ -14,7 +14,7 @@ ConditionType = Int
     derivativeFn::InstNode
     derivedFn::InstNode
     order::Expression
-    conditions::List{Tuple{Integer, ConditionType}}
+    conditions::List{Tuple{Int, ConditionType}}
     lowerOrderDerivatives::List{InstNode}
   end
 end
@@ -23,11 +23,11 @@ import ..SCodeUtil
 import ..SCodeDump
 
 function conditionToDAE(
-  cond::Tuple{<:Integer, ConditionType},
-)::Tuple{Integer, DAE.derivativeCond}
-  local daeCond::Tuple{Integer, DAE.derivativeCond}
+  cond::Tuple{<:Int, ConditionType},
+)::Tuple{Int, DAE.derivativeCond}
+  local daeCond::Tuple{Int, DAE.derivativeCond}
 
-  local idx::Integer
+  local idx::Int
   local c::ConditionType
 
   @assign (idx, c) = cond
@@ -48,7 +48,7 @@ end
 function toDAE(fnDer::FunctionDerivative)::DAE.FunctionDefinition
   local derDef::DAE.FunctionDefinition
 
-  local order::Integer
+  local order::Int
 
   @match INTEGER_EXPRESSION(order) = fnDer.order
   @assign derDef = DAE.FunctionDefinition.FUNCTION_DER_MAPPER(
@@ -83,7 +83,7 @@ function typeDerivative(fnDer::FunctionDerivative)
       list(
         "order",
         toString(order),
-        "Integer",
+        "Int",
         Type.toString(order_ty),
       ),
       info,
@@ -143,8 +143,8 @@ function addLowerOrderDerivative(fnNode::InstNode, lowerDerNode::InstNode)
   )
 end
 
-function getInputIndex(name::String, fn::M_Function, info::SourceInfo)::Integer
-  local index::Integer = 1
+function getInputIndex(name::String, fn::M_Function, info::SourceInfo)::Int
+  local index::Int = 1
 
   for i in fn.inputs
     if name(i) == name
@@ -166,15 +166,15 @@ function getDerivativeAttributes(
   fn::M_Function,
   scope::InstNode,
   info::SourceInfo,
-)::Tuple{Expression, List{Tuple{Integer, ConditionType}}}
-  local conditions::List{Tuple{Integer, ConditionType}} = nil
+)::Tuple{Expression, List{Tuple{Int, ConditionType}}}
+  local conditions::List{Tuple{Int, ConditionType}} = nil
   local order::Expression = EMPTY(TYPE_UNKNOWN())
 
   local id::String
   local mod::SCode.Mod
   local aexp::Absyn.Exp
   local acref::Absyn.P_ComponentRef.ComponentRef
-  local index::Integer
+  local index::Int
 
   for attr in attrs
     @match SCode.SubMod.NAMEMOD(id, mod) = attr
@@ -250,7 +250,7 @@ function instDerivativeMod(
     local acref::Absyn.P_ComponentRef.ComponentRef
     local der_node::InstNode
     local order::Expression
-    local conds::List{Tuple{Integer, Condition}}
+    local conds::List{Tuple{Int, Condition}}
     @match mod begin
       SCode.Mod.MOD(subModLst = attrs, binding = SOME(Absyn.CREF(acref))) => begin
         @assign (_, der_node) = P_Function.instFunction(acref, scope, mod.info)

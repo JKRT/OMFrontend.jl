@@ -8,7 +8,7 @@ Origin = (() -> begin #= Enumeration =#
   ITERATOR = 3  #= From an iterator. =#
   () -> (CREF; SCOPE; ITERATOR)  #= From an iterator. =#
 end)()
-const OriginType = Integer
+const OriginType = Int
 
 
 @Uniontype NFComponentRef begin
@@ -68,8 +68,8 @@ function isComplexArray(cref::ComponentRef)::Bool
   return complexArray
 end
 
-function depth(cref::ComponentRef)::Integer
-  local d::Integer = 0
+function depth(cref::ComponentRef)::Int
+  local d::Int = 0
 
   @assign d = begin
     @match cref begin
@@ -328,8 +328,8 @@ function toPath(cref::ComponentRef)::Absyn.Path
   return path
 end
 
-function hash(cref::ComponentRef, mod::Integer)::Integer
-  local hash::Integer = stringHashDjb2Mod(toString(cref), mod)
+function hash(cref::ComponentRef, mod::Int)::Int
+  local hash::Int = stringHashDjb2Mod(toString(cref), mod)
   return hash
 end
 
@@ -544,8 +544,8 @@ function isEqual(cref1::ComponentRef, cref2::ComponentRef)::Bool
   return isEqual
 end
 
-function compare(cref1::ComponentRef, cref2::ComponentRef)::Integer
-  local comp::Integer
+function compare(cref1::ComponentRef, cref2::ComponentRef)::Int
+  local comp::Int
 
   @assign comp = begin
     @match (cref1, cref2) begin
@@ -642,7 +642,7 @@ function transferSubscripts(srcCref::ComponentRef, dstCref::ComponentRef)::Compo
 end
 
 """ #= Returns the subscripts of the N first parts of a cref in reverse order. =#"""
-function subscriptsN(cref::ComponentRef, n::Integer)::List{List{Subscript}}
+function subscriptsN(cref::ComponentRef, n::Int)::List{List{Subscript}}
   local subscripts::List{List{Subscript}} = nil
 
   local subs::List{Subscript}

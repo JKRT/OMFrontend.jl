@@ -3,7 +3,7 @@ Face = (() -> begin #= Enumeration =#
   OUTSIDE = 2
   () -> (INSIDE; OUTSIDE)
 end)()
-const FaceType = Integer
+const FaceType = Int
 
 @Uniontype NFConnector begin
   @Record CONNECTOR begin
@@ -23,7 +23,7 @@ ScalarizeSetting = (() -> begin #= Enumeration =#
                     () -> (NONE; PREFIX; ALL)  #= a[2].b[2] => {a[1].b[1], a[1].b[2], a[2].b[1], a[2].b[2]} =#
                     end)()
 
-const ScalarizeSettingType = Integer
+const ScalarizeSettingType = Int
 
 """ #= Splits a connector into its primitive components. =#"""
 function split(
@@ -40,8 +40,8 @@ function split(
   return connl
 end
 
-function hash(conn::Connector, mod::Integer)::Integer
-  local hash::Integer = hash(conn.name, mod)
+function hash(conn::Connector, mod::Int)::Int
+  local hash::Int = hash(conn.name, mod)
   return hash
 end
 

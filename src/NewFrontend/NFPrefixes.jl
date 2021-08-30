@@ -6,41 +6,41 @@ module ConnectorType
 
 import ..Main.NFType
 
-TYPE = Integer
+TYPE = Int
 
 using MetaModelica
 using ExportAll
 
-const NON_CONNECTOR = 0::Integer
-const POTENTIAL = intBitLShift(1, 0)::Integer #= A connector element without a prefix. =#
-const FLOW = intBitLShift(1, 1)::Integer #= A connector element with flow prefix. =#
-const STREAM = intBitLShift(1, 2)::Integer #= A connector element with stream prefix. =#
-const POTENTIALLY_PRESENT = intBitLShift(1, 3)::Integer #= An element declared inside an expandable connector. =#
-const VIRTUAL = intBitLShift(1, 4)::Integer #= A virtual connector used in a connection. =#
-const CONNECTOR = intBitLShift(1, 5)::Integer #= A non-expandable connector that contains elements. =#
-const EXPANDABLE = intBitLShift(1, 6)::Integer #= An expandable connector. =#
+const NON_CONNECTOR = 0::Int
+const POTENTIAL = intBitLShift(1, 0)::Int #= A connector element without a prefix. =#
+const FLOW = intBitLShift(1, 1)::Int #= A connector element with flow prefix. =#
+const STREAM = intBitLShift(1, 2)::Int #= A connector element with stream prefix. =#
+const POTENTIALLY_PRESENT = intBitLShift(1, 3)::Int #= An element declared inside an expandable connector. =#
+const VIRTUAL = intBitLShift(1, 4)::Int #= A virtual connector used in a connection. =#
+const CONNECTOR = intBitLShift(1, 5)::Int #= A non-expandable connector that contains elements. =#
+const EXPANDABLE = intBitLShift(1, 6)::Int #= An expandable connector. =#
 #=  flow/stream =#
-const FLOW_STREAM_MASK = intBitOr(FLOW, STREAM)::Integer
+const FLOW_STREAM_MASK = intBitOr(FLOW, STREAM)::Int
 #=  potential/flow/stream =#
-const PREFIX_MASK = intBitOr(POTENTIAL, FLOW_STREAM_MASK)::Integer
+const PREFIX_MASK = intBitOr(POTENTIAL, FLOW_STREAM_MASK)::Int
 #=  Some kind of connector, where anything inside an expandable connector also counts. =#
-const CONNECTOR_MASK = intBitOr(CONNECTOR, intBitOr(EXPANDABLE, POTENTIALLY_PRESENT))::Integer
+const CONNECTOR_MASK = intBitOr(CONNECTOR, intBitOr(EXPANDABLE, POTENTIALLY_PRESENT))::Int
 #=  An element in an expandable connector. =#
-const UNDECLARED_MASK = intBitOr(VIRTUAL, POTENTIALLY_PRESENT)::Integer
+const UNDECLARED_MASK = intBitOr(VIRTUAL, POTENTIALLY_PRESENT)::Int
 
 @exportAll()
 end
 
 
-function fromSCode(scodeCty::SCode.ConnectorType)::Integer
-  local cty::Integer
+function fromSCode(scodeCty::SCode.ConnectorType)::Int
+  local cty::Int
   @assign cty = begin
     @match scodeCty begin
       SCode.POTENTIAL(__) => begin
         0
       end
       SCode.FLOW(__) => begin
-        FLOW
+        ConnectorType.FLOW
       end
       SCode.STREAM(__) => begin
         STREAM
@@ -50,7 +50,7 @@ function fromSCode(scodeCty::SCode.ConnectorType)::Integer
   return cty
 end
 
-function toDAE(cty::Integer)::DAE.ConnectorType
+function toDAE(cty::Int)::DAE.ConnectorType
   local dcty::DAE.ConnectorType
   if intBitAnd(cty, ConnectorType.POTENTIAL) > 0
     @assign dcty = DAE.POTENTIAL()
@@ -65,12 +65,12 @@ function toDAE(cty::Integer)::DAE.ConnectorType
 end
 
 function merge(
-  outerCty::Integer,
-  innerCty::Integer,
+  outerCty::Int,
+  innerCty::Int,
   node::InstNode,
   isClass::Bool = false,
-)::Integer
-  local cty::Integer
+)::Int
+  local cty::Int
 
   #=  If both the outer and the inner has flow or stream, give an error.
   =#
@@ -81,107 +81,107 @@ function merge(
   return cty
 end
 
-function isPotential(cty::Integer)::Bool
+function isPotential(cty::Int)::Bool
   local isPotential::Bool
 
   @assign isPotential = intBitAnd(cty, POTENTIAL) > 0
   return isPotential
 end
 
-function setPotential(cty::Integer)::Integer
+function setPotential(cty::Int)::Int
 
   @assign cty = intBitOr(cty, ConnectorType.POTENTIAL)
   return cty
 end
 
-function isFlow(cty::Integer)::Bool
+function isFlow(cty::Int)::Bool
   local isFlow::Bool
   @assign isFlow = intBitAnd(cty, ConnectorType.FLOW) > 0
   return isFlow
 end
 
-function isStream(cty::Integer)::Bool
+function isStream(cty::Int)::Bool
   local isStream::Bool
 
   @assign isStream = intBitAnd(cty, ConnectorType.STREAM) > 0
   return isStream
 end
 
-function isFlowOrStream(cty::Integer)::Bool
+function isFlowOrStream(cty::Int)::Bool
   local isFlowOrStream::Bool
 
   @assign isFlowOrStream = intBitAnd(cty, ConnectorType.FLOW_STREAM_MASK) > 0
   return isFlowOrStream
 end
 
-function unsetFlowStream(cty::Integer)::Integer
+function unsetFlowStream(cty::Int)::Int
 
   @assign cty = intBitAnd(cty, intBitNot(FLOW_STREAM_MASK))
   return cty
 end
 
 """ #= Returns true if the connector type has the connector bit set, otherwise false. =#"""
-function isConnector(cty::Integer)::Bool
+function isConnector(cty::Int)::Bool
   local isConnector::Bool
 
   @assign isConnector = intBitAnd(cty, ConnectorType.CONNECTOR) > 0
   return isConnector
 end
 
-function setConnector(cty::Integer)::Integer
+function setConnector(cty::Int)::Int
   @assign cty = intBitOr(cty, ConnectorType.CONNECTOR)
   return cty
 end
 
 """ #= Returns treu if the connector type has the connector, expandable, or
      potentially present bits set, otherwise false. =#"""
-function isConnectorType(cty::Integer)::Bool
+function isConnectorType(cty::Int)::Bool
   local isConnector::Bool
   @assign isConnector = intBitAnd(cty, ConnectorType.CONNECTOR_MASK) > 0
   return isConnector
 end
 
-function isExpandable(cty::Integer)::Bool
+function isExpandable(cty::Int)::Bool
   local isExpandable::Bool
   @assign isExpandable = intBitAnd(cty, EXPANDABLE) > 0
   return isExpandable
 end
 
-function setExpandable(cty::Integer)::Integer
+function setExpandable(cty::Int)::Int
   @assign cty = intBitOr(cty, EXPANDABLE)
   return cty
 end
 
 """ #= Returns true if the connector type has the potentially present or virtual
      bits set, otherwise false. =#"""
-function isUndeclared(cty::Integer)::Bool
+function isUndeclared(cty::Int)::Bool
   local isExpandableElement::Bool
 
   @assign isExpandableElement = intBitAnd(cty, UNDECLARED_MASK) > 0
   return isExpandableElement
 end
 
-function isVirtual(cty::Integer)::Bool
+function isVirtual(cty::Int)::Bool
   local isVirtual::Bool
 
   @assign isVirtual = intBitAnd(cty, VIRTUAL) > 0
   return isVirtual
 end
 
-function isPotentiallyPresent(cty::Integer)::Bool
+function isPotentiallyPresent(cty::Int)::Bool
   local isPotentiallyPresent::Bool
 
   @assign isPotentiallyPresent = intBitAnd(cty, POTENTIALLY_PRESENT) > 0
   return isPotentiallyPresent
 end
 
-function setPresent(cty::Integer)::Integer
+function setPresent(cty::Int)::Int
 
   @assign cty = intBitAnd(cty, intBitNot(POTENTIALLY_PRESENT))
   return cty
 end
 
-function toString(cty::Integer)::String
+function toString(cty::Int)::String
   local str::String
 
   if intBitAnd(cty, FLOW) > 0
@@ -196,7 +196,7 @@ function toString(cty::Integer)::String
   return str
 end
 
-function unparse(cty::Integer)::String
+function unparse(cty::Int)::String
   local str::String
 
   if intBitAnd(cty, FLOW) > 0
@@ -209,7 +209,7 @@ function unparse(cty::Integer)::String
   return str
 end
 
-function toDebugString(cty::Integer)::String
+function toDebugString(cty::Int)::String
   local str::String
 
   local strl::List{String} = nil
@@ -245,7 +245,7 @@ Parallelism = (() -> begin #= Enumeration =#
   LOCAL = 3
   () -> (NON_PARALLEL; GLOBAL; LOCAL)
                end)()
-const ParallelismType = Integer
+const ParallelismType = Int
 
 Variability = (
   () -> begin #= Enumeration =#
@@ -262,7 +262,7 @@ Variability = (
   end
 )()
 
-const VariabilityType = Integer
+const VariabilityType = Int
 
 Direction = (() -> begin #= Enumeration =#
              NONE = 1
@@ -270,7 +270,7 @@ Direction = (() -> begin #= Enumeration =#
              OUTPUT = 3
              () -> (NONE; INPUT; OUTPUT)
              end)()
-const DirectionType = Integer
+const DirectionType = Int
 
 InnerOuter = (() -> begin #= Enumeration =#
               NOT_INNER_OUTER = 1
@@ -287,7 +287,7 @@ Visibility = (() -> begin #= Enumeration =#
               () -> (PUBLIC; PROTECTED)
               end)()
 
-const VisibilityType = Integer
+const VisibilityType = Int
 
 @Uniontype Replaceable begin
   @Record REPLACEABLE begin
@@ -550,7 +550,7 @@ function variabilityString(var)::String
   return str
 end
 
-function unparseVariability(var, ty::Integer)::String
+function unparseVariability(var, ty::Int)::String
   local str::String
 
   @assign str = begin

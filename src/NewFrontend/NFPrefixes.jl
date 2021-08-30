@@ -40,7 +40,7 @@ function fromSCode(scodeCty::SCode.ConnectorType)::Int
         0
       end
       SCode.FLOW(__) => begin
-        FLOW
+        ConnectorType.FLOW
       end
       SCode.STREAM(__) => begin
         STREAM

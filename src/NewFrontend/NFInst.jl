@@ -167,14 +167,13 @@ end
 
 function partialInstClass(node::InstNode) ::InstNode
   local c::Class
-  @assign () = begin
+  () = begin
     @match getClass(node) begin
       NOT_INSTANTIATED(__)  => begin
-        @assign c = partialInstClass2(definition(node), node)
-        @assign node = updateClass(c, node)
+        c = partialInstClass2(definition(node), node)
+        node = updateClass(c, node)
         ()
       end
-
       _  => begin
         ()
       end
@@ -380,62 +379,62 @@ end
 
 """ #= Gives an error if a base node is in the process of being expanded itself,
              since that means we have an extends loop in the model. =#"""
-               function checkExtendsLoop(node::InstNode, path::Absyn.Path, info::SourceInfo)
-                 @assign () = begin
-                   @match getClass(node) begin
-                     EXPANDED_CLASS(elements = PARTIAL_TREE(__))  => begin
-                       #=  expand begins by changing the class to an EXPANDED_CLASS, but keeps the
-                       =#
-                       #=  class tree. So finding a PARTIAL_TREE here means the class is in the
-                       =#
-                       #=  process of being expanded.
-                       =#
-                       Error.addSourceMessage(Error.EXTENDS_LOOP, list(AbsynUtil.pathString(path)), info)
-                       fail()
-                     end
+function checkExtendsLoop(node::InstNode, path::Absyn.Path, info::SourceInfo)
+  @assign () = begin
+    @match getClass(node) begin
+      EXPANDED_CLASS(elements = CLASS_TREE_PARTIAL_TREE(__))  => begin
+        #=  expand begins by changing the class to an EXPANDED_CLASS, but keeps the
+        =#
+        #=  class tree. So finding a PARTIAL_TREE here means the class is in the
+        =#
+        #=  process of being expanded.
+        =#
+        Error.addSourceMessage(Error.EXTENDS_LOOP, list(AbsynUtil.pathString(path)), info)
+        fail()
+      end
 
-                     _  => begin
-                       ()
-                     end
-                   end
-                 end
-               end
+      _  => begin
+        ()
+      end
+    end
+  end
+end
 
 """ #= Checks that all parts of a name used as a base class are transitively
              non-replaceable. =#"""
-               function checkReplaceableBaseClass(baseClasses::List{<:InstNode}, basePath::Absyn.Path, info::SourceInfo)
-                 local i::Int = 0
-                 local pos::Int
-                 local name::String
-                 local rest::List{InstNode}
+function checkReplaceableBaseClass(baseClasses::List{<:InstNode}, basePath::Absyn.Path, info::SourceInfo)
+  local i::Int = 0
+  local pos::Int
+  local name::String
+  local rest::List{InstNode}
 
-                 for base in baseClasses
-                   @assign i = i + 1
-                   if SCodeUtil.isElementReplaceable(definition(base))
-                     if listLength(baseClasses) > 1
-                       @assign rest = baseClasses
-                       @assign name = ""
-                       for j in 1:i - 1
-                         @assign name = "." + name(listHead(rest)) + name
-                         @assign rest = listRest(rest)
-                       end
-                       @assign name = "<" + name(listHead(rest)) + ">" + name
-                       @assign rest = listRest(rest)
-                       for n in rest
-                         @assign name = name(n) + "." + name
-                       end
-                     else
-                       @assign name = AbsynUtil.pathString(basePath)
-                     end
-                     Error.addMultiSourceMessage(Error.REPLACEABLE_BASE_CLASS, list(name(base), name), list(InstNode_info(base), info))
-                     fail()
-                   end
-                 end
-                 #=  The path might contain several classes with the same name, so mark the
-                 =#
-                 #=  class in the path string to make it clear which one we mean.
-                 =#
-               end
+  for base in baseClasses
+    @assign i = i + 1
+    if SCodeUtil.isElementReplaceable(definition(base))
+      if listLength(baseClasses) > 1
+        @assign rest = baseClasses
+        @assign name = ""
+        for j in 1:i - 1
+          @assign name = "." + name(listHead(rest)) + name
+          @assign rest = listRest(rest)
+        end
+        @assign name = "<" + name(listHead(rest)) + ">" + name
+        @assign rest = listRest(rest)
+        for n in rest
+          @assign name = name(n) + "." + name
+        end
+      else
+        @assign name = AbsynUtil.pathString(basePath)
+      end
+      Error.addMultiSourceMessage(Error.REPLACEABLE_BASE_CLASS, list(name(base), name), list(InstNode_info(base), info))
+      fail()
+    end
+  end
+  #=  The path might contain several classes with the same name, so mark the
+  =#
+  #=  class in the path string to make it clear which one we mean.
+  =#
+end
 
 function expandExternalObject(clsTree::ClassTree, node::InstNode) ::InstNode
 
@@ -1508,7 +1507,7 @@ function mergeComponentAttributes(outerAttr::Attributes, innerAttr::Attributes, 
   local attr::Attributes
 
   local cty::ConnectorType.TYPE
-  local par::Parallelism
+  local par::ParallelismType
   local var::VariabilityType
   local dir::DirectionType
   local fin::Bool
@@ -1516,23 +1515,23 @@ function mergeComponentAttributes(outerAttr::Attributes, innerAttr::Attributes, 
   local repl::Replaceable
 
   if referenceEq(outerAttr, DEFAULT_ATTR) && innerAttr.connectorType == 0
-    @assign attr = innerAttr
+    attr = innerAttr
   elseif referenceEq(innerAttr, DEFAULT_ATTR)
-    @assign cty = ConnectorType.merge(outerAttr.connectorType, innerAttr.connectorType, node)
-    @assign attr = Attributes.ATTRIBUTES(cty, outerAttr.parallelism, outerAttr.variability, outerAttr.direction, innerAttr.innerOuter, outerAttr.isFinal, innerAttr.isRedeclare, innerAttr.isReplaceable)
+    cty = merge(outerAttr.connectorType, innerAttr.connectorType, node)
+    attr = ATTRIBUTES(cty, outerAttr.parallelism, outerAttr.variability, outerAttr.direction, innerAttr.innerOuter, outerAttr.isFinal, innerAttr.isRedeclare, innerAttr.isReplaceable)
   else
-    @assign cty = ConnectorType.merge(outerAttr.connectorType, innerAttr.connectorType, node)
-    @assign par = mergeParallelism(outerAttr.parallelism, innerAttr.parallelism, node)
-    @assign var = variabilityMin(outerAttr.variability, innerAttr.variability)
+    cty = merge(outerAttr.connectorType, innerAttr.connectorType, node)
+    par = mergeParallelism(outerAttr.parallelism, innerAttr.parallelism, node)
+     var = variabilityMin(outerAttr.variability, innerAttr.variability)
     if isFunction(parentRestriction)
-      @assign dir = innerAttr.direction
+      dir = innerAttr.direction
     else
-      @assign dir = mergeDirection(outerAttr.direction, innerAttr.direction, node)
+      dir = mergeDirection(outerAttr.direction, innerAttr.direction, node)
     end
-    @assign fin = outerAttr.isFinal || innerAttr.isFinal
-    @assign redecl = innerAttr.isRedeclare
-    @assign repl = innerAttr.isReplaceable
-    @assign attr = Attributes.ATTRIBUTES(cty, par, var, dir, innerAttr.innerOuter, fin, redecl, repl)
+    fin = outerAttr.isFinal || innerAttr.isFinal
+    redecl = innerAttr.isRedeclare
+    repl = innerAttr.isReplaceable
+    attr = ATTRIBUTES(cty, par, var, dir, innerAttr.innerOuter, fin, redecl, repl)
   end
   attr
 end

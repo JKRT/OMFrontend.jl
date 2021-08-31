@@ -143,7 +143,7 @@ end
 
 function isExpandable(cty::Int)::Bool
   local isExpandable::Bool
-  @assign isExpandable = intBitAnd(cty, EXPANDABLE) > 0
+  @assign isExpandable = intBitAnd(cty, ConnectorType.EXPANDABLE) > 0
   return isExpandable
 end
 
@@ -157,7 +157,7 @@ end
 function isUndeclared(cty::Int)::Bool
   local isExpandableElement::Bool
 
-  @assign isExpandableElement = intBitAnd(cty, UNDECLARED_MASK) > 0
+  @assign isExpandableElement = intBitAnd(cty, ConnectorType.UNDECLARED_MASK) > 0
   return isExpandableElement
 end
 
@@ -171,13 +171,13 @@ end
 function isPotentiallyPresent(cty::Int)::Bool
   local isPotentiallyPresent::Bool
 
-  @assign isPotentiallyPresent = intBitAnd(cty, POTENTIALLY_PRESENT) > 0
+  @assign isPotentiallyPresent = intBitAnd(cty, ConnectorType.POTENTIALLY_PRESENT) > 0
   return isPotentiallyPresent
 end
 
 function setPresent(cty::Int)::Int
 
-  @assign cty = intBitAnd(cty, intBitNot(POTENTIALLY_PRESENT))
+  @assign cty = intBitAnd(cty, intBitNot(ConnectorType.POTENTIALLY_PRESENT))
   return cty
 end
 
@@ -223,7 +223,7 @@ function toDebugString(cty::Int)::String
   if intBitAnd(cty, STREAM) > 0
     @assign strl = _cons("stream", strl)
   end
-  if intBitAnd(cty, POTENTIALLY_PRESENT) > 0
+  if intBitAnd(cty, ConnectorType.POTENTIALLY_PRESENT) > 0
     @assign strl = _cons("potentially present", strl)
   end
   if intBitAnd(cty, VIRTUAL) > 0

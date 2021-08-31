@@ -1526,8 +1526,8 @@ function resolveConnections(flatModel::FlatModel, name::String)::FlatModel
   #=  add the broken connections  =#
   @assign conns = addBroken(broken, conns)
   #=  build the sets, check the broken connects =#
-  @assign csets = ConnectionSets.fromConnections(conns)
-  @assign csets_array = ConnectionSets.extractSets(csets)
+  csets = ConnectionSets.fromConnections(conns)
+  csets_array = ConnectionSets.extractSets(csets)
   #=  generate the equations =#
   @assign conn_eql = generateEquations(csets_array)
   #=  append the equalityConstraint call equations for the broken connects =#
@@ -1543,7 +1543,7 @@ function resolveConnections(flatModel::FlatModel, name::String)::FlatModel
   if System.getHasStreamConnectors() || System.getUsesCardinality()
     @assign flatModel = evaluateConnectionOperators(flatModel, csets, csets_array, ctable)
   end
-  execStat(getInstanceName() + "(" + name + ")")
+#  execStat(getInstanceName() + "(" + name + ")")
   return flatModel
 end
 

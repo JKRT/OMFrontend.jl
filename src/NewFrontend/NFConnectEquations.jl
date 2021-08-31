@@ -1,12 +1,3 @@
-module NFConnectEquations
-
-using MetaModelica
-using ExportAll
-#= Forward declarations for uniontypes until Julia adds support for mutual recursion =#
-
-potFunc = Function
-
-FuncType = Function
 
 #= /*
 * This file is part of OpenModelica.
@@ -39,61 +30,12 @@ FuncType = Function
 *
 */ =#
 
-import ..P_NFConnector= P_NFConnector
-Connector = NFConnector
-import DAE
-import ..NFConnectionSets.ConnectionSets
-ConnectionSets = NFConnectionSets.ConnectionSets
-import ..P_NFEquation
-P_Equation = P_NFEquation
-Equation = P_NFEquation.NFEquation
-import ..NFCardinalityTable
-CardinalityTable = NFCardinalityTable
+import ..ConnectionSets
 
-import ..ComponentReference
-import ..P_NFComponentRef
-P_ComponentRef = P_NFComponentRef
-ComponentRef = P_NFComponentRef.NFComponentRef
-import ..Config
-import ..ElementSource
-import ..P_NFExpression
-P_Expression = P_NFExpression
-Expression = P_NFExpression.NFExpression
-import ..Face
-Face = Face
-import ListUtil
-import ..NFPrefixes.ConnectorType
-import ..NFPrefixes.Variability
-import ..P_NFOperator
-P_Operator = P_NFOperator
-Operator = P_NFOperator.NFOperator
-import ..P_NFType
-P_M_Type = P_NFType
-M_Type = NFType
-import ..NFCall.P_Call
-import ..NFBuiltinFuncs
-import ..NFInstNode.P_InstNode
-import ..NFClass.P_Class
-import ..NFBinding.P_Binding
-import ..NFFunction.P_Function
-import ..Global
-import ..NFBuiltinCall= NFBuiltinCall
-import ..NFComplexType
-ComplexType = NFComplexType
-import ..P_NFExpandExp
-P_ExpandExp = P_NFExpandExp
-ExpandExp = P_NFExpandExp.NFExpandExp
-import ..NFPrefixes
-P_Prefixes = NFPrefixes
-Prefixes = NFPrefixes.Prefixes
-import ..NFComponent.P_Component
-import ..NFCeval
-Ceval = NFCeval
-import ..MetaModelica.Dangerous.listReverseInPlace
-import ..NFSimplifyExp
-SimplifyExp = NFSimplifyExp
-const EQ_ASSERT_STR =
-  STRING_EXPRESSION("Connected constants/parameters must be equal")::Expression
+const potFunc = Function
+FuncType = Function
+
+const EQ_ASSERT_STR = STRING_EXPRESSION("Connected constants/parameters must be equal")
 
 function generateEquations(sets::Array{<:List{<:Connector}})::List{Equation}
   local equations::List{Equation} = nil
@@ -109,8 +51,8 @@ function generateEquations(sets::Array{<:List{<:Connector}})::List{Equation}
   #=   generatePotentialEquationsOrdered else generatePotentialEquations;
   =#
   @assign potfunc = generatePotentialEquations
-  @assign flowThreshold =
-    REAL_EXPRESSION(Flags.getConfigReal(Flags.FLOW_THRESHOLD))
+  #@assign flowThreshold = REAL_EXPRESSION(Flags.getConfigReal(Flags.FLOW_THRESHOLD))
+  @assign flowThreshold = REAL_EXPRESSION(1e-7) #=Should be like this.. I think - John. Fix flag memory issue=#
   for set in sets
     @assign cty = getSetType(set)
     if ConnectorType.isPotential(cty)
@@ -134,7 +76,7 @@ function generateEquations(sets::Array{<:List{<:Connector}})::List{Equation}
   end
   return equations
 end
-
+const CardinalityTable = NFCardinalityTable
 function evaluateOperators(
   exp::Expression,
   sets::ConnectionSets.Sets,
@@ -437,47 +379,6 @@ function makeEqualityAssert(
     Equation.ASSERT(exp, EQ_ASSERT_STR, NFBuiltin.ASSERTIONLEVEL_ERROR, source)
   return equalityAssert
 end
-
-#= protected function shouldFlipPotentialEquation
-=#
-#=   \"If the flag +orderConnections=false is used, then we should keep the order of
-=#
-#=    the connector elements as they occur in the connection (if possible). In that
-=#
-#=    case we check if the cref of the first argument to the first connection
-=#
-#=    stored in the element source is a prefix of the connector element cref. If
-=#
-#=    it isn't, indicate that we should flip the generated equation.\"
-=#
-#=   input DAE.ComponentRef lhsCref;
-=#
-#=   input DAE.ElementSource lhsSource;
-=#
-#=   output Boolean shouldFlip;
-=#
-#= algorithm
-=#
-#=   shouldFlip := match lhsSource
-=#
-#=     local
-=#
-#=       DAE.ComponentRef lhs;
-=#
-#=
-=#
-#=     case DAE.SOURCE(connectEquationOptLst = (lhs, _) :: _)
-=#
-#=       then not ComponentReference.crefPrefixOf(lhs, lhsCref);
-=#
-#=
-=#
-#=     else false;
-=#
-#=   end match;
-=#
-#= end shouldFlipPotentialEquation;
-=#
 
 function generateFlowEquations(elements::List{<:Connector})::List{Equation}
   local equations::List{Equation}
@@ -1338,7 +1239,4 @@ function associatedFlowCref(streamCref::ComponentRef)::ComponentRef
   #=  Otherwise, remove the first part of the cref and try again.
   =#
   return flowCref
-end
-
-@exportAll()
 end

@@ -25,7 +25,7 @@ function instClassInProgram(classPath::Absyn.Path, program::SCode.Program)::Tupl
 
   #=  make sure we don't expand anything
   =#
-  #System.setUsesCardinality(false)
+  System.setUsesCardinality(false)
   #System.setHasOverconstrainedConnectors(false)
   #System.setHasStreamConnectors(false)
   #=  Create a root node from the given top-level classes.

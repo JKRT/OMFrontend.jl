@@ -144,7 +144,7 @@ end
 
 function isPresent(variable::Variable)::Bool
   local present::Bool =
-    !ConnectorType.isPotentiallyPresent(variable.attributes.connectorType)
+    !isPotentiallyPresent(variable.attributes.connectorType)
   return present
 end
 

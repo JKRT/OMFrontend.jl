@@ -523,20 +523,21 @@
           outString
         end
 
-        global memory = Array{Any,1}(missing, 1024)
-
+        #= TODO temporary structure introduced by Adrian=#
+        const global GLOBAL_MEMORY = Vector{Any}(missing, 1024)
+        #= I put it as a constant for now! - John =#
         """ #= @author: adrpo
          sets the external flag that signals the
          presence of expandable connectors in a model =#"""
         function setHasExpandableConnectors(hasExpandable::Bool)
-           memory[1] = hasExpandable
+           GLOBAL_MEMORY[1] = hasExpandable
         end
 
         """ #= @author: adrpo
          retrieves the external flag that signals the
          presence of expandable connectors in a model =#"""
         function getHasExpandableConnectors() ::Bool
-          local hasExpandable::Bool = memory[1]
+          local hasExpandable::Bool = GLOBAL_MEMORY[1]
           hasExpandable
         end
 
@@ -544,14 +545,14 @@
          sets the external flag that signals the
          presence of overconstrained connectors in a model =#"""
         function setHasOverconstrainedConnectors(hasOverconstrained::Bool)
-          memory[2] = hasOverconstrained
+          GLOBAL_MEMORY[2] = hasOverconstrained
         end
 
         """ #= @author: adrpo
          retrieves the external flag that signals the
          presence of overconstrained connectors in a model =#"""
         function getHasOverconstrainedConnectors() ::Bool
-          local hasOverconstrained::Bool = memory[2]
+          local hasOverconstrained::Bool = GLOBAL_MEMORY[2]
           hasOverconstrained
         end
 
@@ -559,14 +560,14 @@
          sets the external flag that signals the
          presence of expandable connectors in a model =#"""
         function setPartialInstantiation(isPartialInstantiation::Bool)
-            memory[3] = isPartialInstantiation
+            GLOBAL_MEMORY[3] = isPartialInstantiation
         end
 
         """ #= @author: adrpo
          retrieves the external flag that signals the
          presence of expandable connectors in a model =#"""
         function getPartialInstantiation() ::Bool
-          local isPartialInstantiation::Bool = memory[3]
+          local isPartialInstantiation::Bool = GLOBAL_MEMORY[3]
           isPartialInstantiation
         end
 
@@ -574,25 +575,25 @@
          sets the external flag that signals the
          presence of stream connectors in a model =#"""
         function setHasStreamConnectors(hasStream::Bool)
-            memory[4] = hasStream
+            GLOBAL_MEMORY[4] = hasStream
         end
 
         """ #= @author: adrpo
          retrieves the external flag that signals the
          presence of stream connectors in a model =#"""
         function getHasStreamConnectors() ::Bool
-          local hasStream::Bool = memory[4]
+          local hasStream::Bool = GLOBAL_MEMORY[4]
           hasStream
         end
 
         """ #= Sets the external flag that signals the use of the cardinality operator. =#"""
         function setUsesCardinality(inUses::Bool)
-          memory[5] = inUses
+          GLOBAL_MEMORY[5] = inUses
         end
 
         """ #= Retrieves the external flag that signals the use of the cardinality operator. =#"""
         function getUsesCardinality() ::Bool
-          local outUses::Bool = memory[5]
+          local outUses::Bool = GLOBAL_MEMORY[5]
           outUses
         end
 
@@ -600,14 +601,14 @@
          sets the external flag that signals the presence
          of inner/outer comoponent definitions in a model =#"""
         function setHasInnerOuterDefinitions(hasInnerOuterDefinitions::Bool)
-          memory[6] = hasInnerOuterDefinitions
+          GLOBAL_MEMORY[6] = hasInnerOuterDefinitions
         end
 
         """ #= @author: adrpo
          retrieves the external flag that signals the presence
          of inner/outer comoponent definitions in a model =#"""
         function getHasInnerOuterDefinitions() ::Bool
-          local hasInnerOuterDefinitions::Bool = memory[6]
+          local hasInnerOuterDefinitions::Bool = GLOBAL_MEMORY[6]
           hasInnerOuterDefinitions
         end
 

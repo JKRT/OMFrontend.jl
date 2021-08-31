@@ -40,6 +40,14 @@ function split(
   return connl
 end
 
+""" #= Splits a connector into its primitive components. Scalarize everything! =#"""
+function split(conn::CONNECTOR)::List{Connector}
+  local connl::List{Connector}
+  @assign connl = splitImpl(conn.name, conn.ty, conn.face, conn.source, conn.cty, ScalarizeSetting.ALL)
+  return connl
+end
+
+
 function hash(conn::Connector, mod::Int)::Int
   local hash::Int = hash(conn.name, mod)
   return hash

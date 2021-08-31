@@ -1197,10 +1197,9 @@ function isExpandableConnector(ty::M_Type)::Bool
 
   @assign isExpandable = begin
     @match ty begin
-      TYPE_COMPLEX(complexTy = ComplexType.EXPANDABLE_CONNECTOR(__)) => begin
+      TYPE_COMPLEX(complexTy = COMPLEX_EXPANDABLE_CONNECTOR(__)) => begin
         true
       end
-
       _ => begin
         false
       end

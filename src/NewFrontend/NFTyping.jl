@@ -393,23 +393,23 @@ function makeConnectorType(ctree::ClassTree, isExpandable::Bool)::ComplexType
 
   if isExpandable
     for c in enumerateComponents(ctree)
-      @assign cty = connectorType(component(c))
+      cty = connectorType(component(c))
       if intBitAnd(cty, ConnectorType.EXPANDABLE) > 0
-        @assign exps = _cons(c, exps)
+        exps = _cons(c, exps)
       else
-        @assign pots = _cons(c, pots)
+        pots = _cons(c, pots)
       end
     end
-    @assign connectorTy = ComplexType.EXPANDABLE_CONNECTOR(pots, exps)
+    connectorTy = COMPLEX_EXPANDABLE_CONNECTOR(pots, exps)
   else
     for c in enumerateComponents(ctree)
-      @assign cty = P_Component.connectorType(component(c))
+      cty = connectorType(component(c))
       if intBitAnd(cty, ConnectorType.FLOW) > 0
-        @assign flows = _cons(c, flows)
+        flows = _cons(c, flows)
       elseif intBitAnd(cty, ConnectorType.STREAM) > 0
-        @assign streams = _cons(c, streams)
+        streams = _cons(c, streams)
       elseif intBitAnd(cty, ConnectorType.POTENTIAL) > 0
-        @assign pots = _cons(c, pots)
+        pots = _cons(c, pots)
       else
         Error.addInternalError(
           "Invalid connector type on component " + name(c),
@@ -418,7 +418,7 @@ function makeConnectorType(ctree::ClassTree, isExpandable::Bool)::ComplexType
         fail()
       end
     end
-    @assign connectorTy = ComplexType.CONNECTOR(pots, flows, streams)
+    connectorTy = COMPLEX_CONNECTOR(pots, flows, streams)
     if !listEmpty(streams)
       System.setHasStreamConnectors(true)
     end
@@ -1170,10 +1170,10 @@ function checkComponentBindingVariability(
   local bind_var::VariabilityType
   local bind_eff_var::VariabilityType
 
-  @assign comp_var = variability(component)
-  @assign comp_eff_var = effectiveVariability(comp_var)
-  @assign bind_var = variability(binding)
-  @assign bind_eff_var = effectiveVariability(bind_var)
+  comp_var = variability(component)
+  comp_eff_var = effectiveVariability(comp_var)
+  bind_var = variability(binding)
+  bind_eff_var = effectiveVariability(bind_var)
   if bind_eff_var > comp_eff_var && flagNotSet(origin, ORIGIN_FUNCTION)
     Error.addSourceMessage(
       Error.HIGHER_VARIABILITY_BINDING,
@@ -1197,9 +1197,9 @@ function checkComponentBindingVariability(
     bind_var == Variability.STRUCTURAL_PARAMETER && isCrefExp(binding) ||
     bind_var == Variability.NON_STRUCTURAL_PARAMETER
   )
-    @assign var = bind_var
+    var = bind_var
   else
-    @assign var = comp_var
+    var = comp_var
   end
   return var
 end

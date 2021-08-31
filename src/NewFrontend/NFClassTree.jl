@@ -168,8 +168,7 @@ function enumerateComponents(tree::ClassTree)::List{InstNode}
   local comps::Array{InstNode}
 
   @match CLASS_TREE_FLAT_TREE(tree = ltree, components = comps) = tree
-  @assign components =
-    LookupTree.fold(ltree, (comps) -> enumerateComponents2(comps = comps), nil)
+  components = LookupTree.fold(ltree, (name, entry, components) -> enumerateComponents2(name, entry, comps, components), nil)
   return components
 end
 

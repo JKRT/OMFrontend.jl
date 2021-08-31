@@ -59,7 +59,7 @@ function instantiateSCodeToDAE(elementToInstantiate::String, inProgram::SCode.Pr
   # initialize globals
   Main.Global.initialize()
   # make sure we have all the flags loaded!
-  # Main.Flags.new(Flags.emptyFlags)
+#  Main.Flags.new(Flags.emptyFlags)
   @debug "Parsing buildin stuff"
   local builtinSCode = NFModelicaBuiltinCache["NFModelicaBuiltin"]
   local program = listAppend(builtinSCode, inProgram)

@@ -71,7 +71,7 @@ function translateAbsyn2SCode(inProgram::Absyn.Program)::SCode.Program
         System.setHasExpandableConnectors(false)
         System.setHasOverconstrainedConnectors(false)
         System.setHasStreamConnectors(false)
-        @assign sp = list(translateClass(c) for c in inClasses
+        @assign sp = list(translateClass(c) for c in inClasses)
         sp
       end
     end

@@ -26,7 +26,7 @@ function dummyPrint(args::Functionargs)::String
   local res::String = ""
   return res
 end
-function emptyCache(size::Integer)::Cache
+function emptyCache(size::Int)::Cache
   local table::Cache
   @assign table = BaseHashTable.emptyHashTableWork(
     size,
@@ -101,7 +101,7 @@ function updateVariable(
   local name::String
   local unit_str::String
   local binding::Binding
-  local unit_idx::Integer = 0
+  local unit_idx::Int = 0
   local unit::Unit.Unit
 
   if isReal(var.ty)
@@ -167,13 +167,13 @@ function notification2(
 
   local cr1::ComponentRef = EMPTY()
   local factor1::AbstractFloat = 0
-  local i1::Integer = 0
-  local i2::Integer = 0
-  local i3::Integer = 0
-  local i4::Integer = 0
-  local i5::Integer = 0
-  local i6::Integer = 0
-  local i7::Integer = 0
+  local i1::Int = 0
+  local i2::Int = 0
+  local i3::Int = 0
+  local i4::Int = 0
+  local i5::Int = 0
+  local i6::Int = 0
+  local i7::Int = 0
 
   @assign outS = stringAppendList(List(
     "\\" +
@@ -485,7 +485,7 @@ function insertUnitInEquation(
     local icu1::List{List{Tuple{Expression, Unit.Unit}}}
     local icu2::List{List{Tuple{Expression, Unit.Unit}}}
     local vars::List{ComponentRef}
-    local i::Integer
+    local i::Int
     local b::Bool
     #=  SUB equal summands
     =#
@@ -1166,7 +1166,7 @@ function Errorfunction(
     local expList::List{Tuple{Expression, Unit.Unit}}
     local exp1::Expression
     local exp2::Expression
-    local i::Integer
+    local i::Int
     local info::SourceInfo
     @match (inexpList, inEq, inHtU2S) begin
       (expList, _, _) => begin

@@ -71,18 +71,16 @@ function simplifyDimension(dim::Dimension)::Dimension
   return outDim
 end
 
-function simplifyEquations(eql::List{<:Equation})::List{Equation}
+function simplifyEquations(eql::List{<:Equation})
   local outEql::List{Equation} = nil
-
   for eq in eql
-    @assign outEql = simplifyEquation(eq, outEql)
+    outEql = simplifyEquation(eq, outEql)
   end
-  @assign outEql = listReverseInPlace(outEql)
+  outEql = listReverseInPlace(outEql)
   return outEql
 end
 
-function simplifyEquation(eq::Equation, equations::List{<:Equation})::List{Equation}
-
+function simplifyEquation(eq::Equation, equations::List{<:Equation})
   @assign equations = begin
     local e::Expression
     local lhs::Expression
@@ -192,16 +190,15 @@ function simplifyEqualityEquation(eq::Equation, equations::List{<:Equation})::Li
   return equations
 end
 
-function simplifyAlgorithms(algs::List{<:Algorithm})::List{Algorithm}
+function simplifyAlgorithms(algs::List{<:Algorithm})
   local outAlgs::List{Algorithm} = nil
-
   for alg in algs
-    @assign alg = simplifyAlgorithm(alg)
+    alg = simplifyAlgorithm(alg)
     if !listEmpty(alg.statements)
-      @assign outAlgs = _cons(alg, outAlgs)
+      outAlgs = _cons(alg, outAlgs)
     end
   end
-  @assign outAlgs = listReverseInPlace(outAlgs)
+  outAlgs = listReverseInPlace(outAlgs)
   return outAlgs
 end
 
@@ -412,7 +409,7 @@ function removeEmptyFunctionArguments(@nospecialize(exp::Expression), isArg::Boo
 end
 
 function simplifyIfEqBranches(
-  branches::List{<:Equation},
+  branches::List{<:Equation_Branch},
   src::DAE.ElementSource,
   elements::List{<:Equation},
 )::List{Equation}
@@ -420,35 +417,34 @@ function simplifyIfEqBranches(
   local cond::Expression
   local body::List{Equation}
   local var::VariabilityType
-  local accum::List{P_Equation.Equation} = nil
+  local accum::List{<:Equation_Branch} = nil
 
   for branch in branches
     @assign accum = begin
       @match branch begin
         EQUATION_BRANCH(cond, var, body) => begin
           @assign cond = simplify(cond)
-          #=  A branch with condition true will always be selected when encountered.
-          =#
+          #=  A branch with condition true will always be selected when encountered. =#
           if isTrue(cond)
             if listEmpty(accum)
               for eq in body
-                @assign elements = simplifyEquation(eq, elements)
+                elements = simplifyEquation(eq, elements)
               end
-              return
+              return elements
             else
-              @assign accum = _cons(
-                P_Equation.Equation.makeBranch(cond, simplifyEquations(body)),
+              accum = _cons(
+                makeBranch(cond, simplifyEquations(body)),
                 accum,
               )
-              @assign elements = _cons(
-                P_Equation.Equation.makeIf(listReverseInPlace(accum), src),
+              elements = _cons(
+                makeIf(listReverseInPlace(accum), src),
                 elements,
               )
-              return
+              return elements #TODO: John WTF?
             end
           elseif !isFalse(cond)
             @assign accum = _cons(
-              P_Equation.Equation.makeBranch(cond, simplifyEquations(body)),
+              makeBranch(cond, simplifyEquations(body)),
               accum,
             )
           end
@@ -460,8 +456,7 @@ function simplifyIfEqBranches(
           =#
           accum
         end
-
-        P_Equation.Equation.INVALID_BRANCH(
+        EQUATION_INVALID_BRANCH(
           branch = EQUATION_BRANCH(
             condition = cond,
             conditionVar = var,
@@ -488,7 +483,7 @@ function simplifyIfEqBranches(
   end
   if !listEmpty(accum)
     @assign elements =
-      _cons(P_Equation.Equation.makeIf(listReverseInPlace(accum), src), elements)
+      _cons(makeIf(listReverseInPlace(accum), src), elements)
   end
   return elements
 end

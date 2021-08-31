@@ -40,8 +40,6 @@ Subscript = NFSubscript
 ComplexType = NFComplexType
 Restriction = NFRestriction
 
-@nospecialize
-
 @UniontypeDecl TypingError
 function isError(error::TypingError)::Bool
   local isError::Bool
@@ -60,14 +58,14 @@ end
 
 @Uniontype TypingError begin
   @Record OUT_OF_BOUNDS begin
-    upperBound::Integer
+    upperBound::Int
   end
   @Record NO_ERROR begin
   end
 end
 
-ORIGIN_Type = Integer
-M_Type = Integer
+ORIGIN_Type = Int
+M_Type = Int
 #=  Flag values:
 =#
 const ORIGIN_CLASS = 0
@@ -147,7 +145,7 @@ function isSingleExpression(origin::M_Type)::Bool
   return isSingle
 end
 
-function setFlag(origin, flag)::Integer
+function setFlag(origin, flag)::Int
   local newOrigin
   @assign newOrigin = intBitOr(origin, flag)
   return newOrigin
@@ -395,23 +393,23 @@ function makeConnectorType(ctree::ClassTree, isExpandable::Bool)::ComplexType
 
   if isExpandable
     for c in enumerateComponents(ctree)
-      @assign cty = connectorType(component(c))
+      cty = connectorType(component(c))
       if intBitAnd(cty, ConnectorType.EXPANDABLE) > 0
-        @assign exps = _cons(c, exps)
+        exps = _cons(c, exps)
       else
-        @assign pots = _cons(c, pots)
+        pots = _cons(c, pots)
       end
     end
-    @assign connectorTy = ComplexType.EXPANDABLE_CONNECTOR(pots, exps)
+    connectorTy = COMPLEX_EXPANDABLE_CONNECTOR(pots, exps)
   else
     for c in enumerateComponents(ctree)
-      @assign cty = P_Component.connectorType(component(c))
+      cty = connectorType(component(c))
       if intBitAnd(cty, ConnectorType.FLOW) > 0
-        @assign flows = _cons(c, flows)
+        flows = _cons(c, flows)
       elseif intBitAnd(cty, ConnectorType.STREAM) > 0
-        @assign streams = _cons(c, streams)
+        streams = _cons(c, streams)
       elseif intBitAnd(cty, ConnectorType.POTENTIAL) > 0
-        @assign pots = _cons(c, pots)
+        pots = _cons(c, pots)
       else
         Error.addInternalError(
           "Invalid connector type on component " + name(c),
@@ -420,7 +418,7 @@ function makeConnectorType(ctree::ClassTree, isExpandable::Bool)::ComplexType
         fail()
       end
     end
-    @assign connectorTy = ComplexType.CONNECTOR(pots, flows, streams)
+    connectorTy = COMPLEX_CONNECTOR(pots, flows, streams)
     if !listEmpty(streams)
       System.setHasStreamConnectors(true)
     end
@@ -515,7 +513,7 @@ function typeComponent(inComponent::InstNode, origin::ORIGIN_Type)::NFType
 end
 
 function checkComponentStreamAttribute(
-  cty::Integer,
+  cty::Int,
   ty::NFType,
   component::InstNode,
 )
@@ -636,7 +634,7 @@ end
 
 function typeDimension(
   dimensions::Array{<:Dimension},
-  index::Integer,
+  index::Int,
   component::InstNode,
   binding::Binding,
   origin::ORIGIN_Type,
@@ -652,8 +650,8 @@ function typeDimension(
     local b::Binding
     local ty::M_Type
     local ty_err::TypingError
-    local parent_dims::Integer
-    local dim_index::Integer
+    local parent_dims::Int
+    local dim_index::Int
     #=  Print an error when a dimension that's currently being processed is
     =#
     #=  found, which indicates a dependency loop. Another way of handling this
@@ -925,8 +923,8 @@ end
 
 """ #= Tries to fetch the binding for a given record field by using the binding of
    the record instance. =#"""
-function getRecordElementBinding(component::InstNode)::Tuple{Binding, Integer}
-  local parentDims::Integer = 0
+function getRecordElementBinding(component::InstNode)::Tuple{Binding, Int}
+  local parentDims::Int = 0
   local binding::Binding
 
   local parent::InstNode
@@ -956,15 +954,15 @@ function getRecordElementBinding(component::InstNode)::Tuple{Binding, Integer}
   return (binding, parentDims)
 end
 
-function typeBindings(@nospecialize(cls::InstNode),
-                      @nospecialize(component::InstNode),
-                      @nospecialize(origin::ORIGIN_Type))
+function typeBindings(cls::InstNode,
+                      component::InstNode,
+                      origin::ORIGIN_Type)
   typeBindings2(cls, component, origin)
 end
 
-function typeBindings2(@nospecialize(cls::InstNode),
-                      @nospecialize(component::InstNode),
-                      @nospecialize(origin::ORIGIN_Type))
+function typeBindings2(cls::InstNode,
+                      component::InstNode,
+                       origin::ORIGIN_Type)
   local c::Class
   local cls_tree::ClassTree
   local node::InstNode
@@ -1009,14 +1007,14 @@ function typeBindings2(@nospecialize(cls::InstNode),
 end
 
 function typeComponentBinding(
-  @nospecialize(inComponent::InstNode),
-  @nospecialize(origin::ORIGIN_Type))
+  inComponent::InstNode,
+  origin::ORIGIN_Type)
   typeComponentBinding2(inComponent, origin, true)
 end
 
 function typeComponentBinding2(
-  @nospecialize(inComponent::InstNode),
-  @nospecialize(origin::ORIGIN_Type),
+  inComponent::InstNode,
+  origin::ORIGIN_Type,
   typeChildren::Bool,
 )
   local node::InstNode = resolveOuter(inComponent)
@@ -1038,8 +1036,8 @@ function typeComponentBinding2(
         binding = UNTYPED_BINDING(__),
         attributes = attrs,
       ) => begin
-        @assign nameStr = name(inComponent)
-        @assign binding = c.binding
+        nameStr = name(inComponent)
+        binding = c.binding
         #ErrorExt.setCheckpoint(getInstanceName())
         #TODO
         @debug "ErrorExt.setCheckpoint(getInstanceName())"
@@ -1172,10 +1170,10 @@ function checkComponentBindingVariability(
   local bind_var::VariabilityType
   local bind_eff_var::VariabilityType
 
-  @assign comp_var = variability(component)
-  @assign comp_eff_var = effectiveVariability(comp_var)
-  @assign bind_var = variability(binding)
-  @assign bind_eff_var = effectiveVariability(bind_var)
+  comp_var = variability(component)
+  comp_eff_var = effectiveVariability(comp_var)
+  bind_var = variability(binding)
+  bind_eff_var = effectiveVariability(bind_var)
   if bind_eff_var > comp_eff_var && flagNotSet(origin, ORIGIN_FUNCTION)
     Error.addSourceMessage(
       Error.HIGHER_VARIABILITY_BINDING,
@@ -1199,9 +1197,9 @@ function checkComponentBindingVariability(
     bind_var == Variability.STRUCTURAL_PARAMETER && isCrefExp(binding) ||
     bind_var == Variability.NON_STRUCTURAL_PARAMETER
   )
-    @assign var = bind_var
+    var = bind_var
   else
-    @assign var = comp_var
+    var = comp_var
   end
   return var
 end
@@ -1215,14 +1213,14 @@ function typeBinding(binding::Binding, origin::ORIGIN_Type)::Binding
     local each_ty::EachTypeType
     @match binding begin
       UNTYPED_BINDING(bindingExp = exp) => begin
-        @assign info = Binding_getInfo(binding)
-        @assign (exp, ty, var) = typeExp(exp, origin, info)
+        info = Binding_getInfo(binding)
+        (exp, ty, var) = typeExp(exp, origin, info)
         if binding.isEach
-          @assign each_ty = EachType.EACH
+          each_ty = EachType.EACH
         elseif isClassBinding(binding)
-          @assign each_ty = EachType.REPEAT
+          each_ty = EachType.REPEAT
         else
-          @assign each_ty = EachType.NOT_EACH
+          each_ty = EachType.NOT_EACH
         end
         TYPED_BINDING(exp, ty, var, each_ty, false, false, binding.info)
       end
@@ -1384,9 +1382,9 @@ function typeTypeAttribute(
 end
 
 function typeExp(
-  @nospecialize(exp::Expression),
-  @nospecialize(origin::ORIGIN_Type),
-  @nospecialize(info::SourceInfo),
+  exp::Expression,
+  origin::ORIGIN_Type,
+  info::SourceInfo
 )::Tuple{Expression, NFType, VariabilityType}
   typeExp2(exp, origin, info)
 end
@@ -1394,9 +1392,9 @@ end
 """ #= Types an untyped expression, returning the typed expression itself along with
    its type and variability. =#"""
 function typeExp2(
-  @nospecialize(exp::Expression),
-  @nospecialize(origin::ORIGIN_Type),
-  @nospecialize(info::SourceInfo),
+  exp::Expression,
+  origin::ORIGIN_Type,
+  info::SourceInfo
 )::Tuple{Expression, NFType, VariabilityType}
   local variability::VariabilityType
   local ty::NFType
@@ -1623,7 +1621,7 @@ function typeBindingExp(
   local parents::List{InstNode}
   local is_each::Bool
   local exp_ty::M_Type
-  local parent_dims::Integer
+  local parent_dims::Int
 
   @match BINDING_EXP(e, _, _, parents, is_each) = exp
   @assign (e, exp_ty, variability) = typeExp(e, origin, info)
@@ -1654,7 +1652,7 @@ end
    returned dimension is undefined. =#"""
 function typeExpDim(
   @nospecialize(exp::Expression),
-  dimIndex::Integer,
+  dimIndex::Int,
   origin::ORIGIN_Type,
   info::SourceInfo,
 )::Tuple{Dimension, Option{Expression}, TypingError}
@@ -1711,7 +1709,7 @@ end
    e.g.  nthDimensionBoundsChecked on its type. =#"""
 function typeArrayDim(
   arrayExp::Expression,
-  dimIndex::Integer,
+  dimIndex::Int,
 )::Tuple{Dimension, TypingError}
   local error::TypingError
   local dim::Dimension
@@ -1730,8 +1728,8 @@ end
 
 function typeArrayDim2(
   arrayExp::Expression,
-  dimIndex::Integer,
-  dimCount::Integer = 0,
+  dimIndex::Int,
+  dimCount::Int = 0,
 )::Tuple{Dimension, TypingError}
   local error::TypingError
   local dim::Dimension
@@ -1762,7 +1760,7 @@ end
 
 function typeCrefDim(
   cref::ComponentRef,
-  dimIndex::Integer,
+  dimIndex::Int,
   origin::ORIGIN_Type,
   info::SourceInfo,
 )::Tuple{Dimension, TypingError}
@@ -1771,9 +1769,9 @@ function typeCrefDim(
 
   local crl::List{ComponentRef}
   local subs::List{Subscript}
-  local index::Integer
-  local dim_count::Integer
-  local dim_total::Integer = 0
+  local index::Int
+  local dim_count::Int
+  local dim_total::Int = 0
   local node::InstNode
   local c::Component
   local ty::M_Type
@@ -1872,14 +1870,14 @@ end
    indicating whether the index was valid or not. =#"""
 function nthDimensionBoundsChecked(
   ty::M_Type,
-  dimIndex::Integer,
-  offset::Integer = 0,
+  dimIndex::Int,
+  offset::Int = 0,
 )::Tuple{Dimension, TypingError} #= The number of dimensions to skip due to subscripts. =#
   local error::TypingError
   local dim::Dimension
 
-  local dim_size::Integer = Type.dimensionCount(ty)
-  local index::Integer = dimIndex + offset
+  local dim_size::Int = Type.dimensionCount(ty)
+  local index::Int = dimIndex + offset
 
   if index < 1 || index > dim_size
     @assign dim = DIMENSION_UNKNOWNy()
@@ -1967,17 +1965,17 @@ function typeCref2(
         =#
         #=  the given origin, e.g. for package constants used in a function.
         =#
-        @assign node_origin =
+        node_origin =
           if isFunction(explicitParent(cref.node))
             ORIGIN_FUNCTION
           else
             ORIGIN_CLASS
           end
-        @assign node_ty = typeComponent(cref.node, node_origin)
-        @assign (subs, subs_var) =
+        node_ty = typeComponent(cref.node, node_origin)
+        (subs, subs_var) =
           typeSubscripts(cref.subscripts, node_ty, cref, origin, info)
-        @assign (rest_cr, rest_var) = typeCref2(cref.restCref, origin, info, false)
-        @assign subsVariability = variabilityMax(subs_var, rest_var)
+         (rest_cr, rest_var) = typeCref2(cref.restCref, origin, info, false)
+        subsVariability = variabilityMax(subs_var, rest_var)
         (
           COMPONENT_REF_CREF(cref.node, subs, node_ty, cref.origin, rest_cr),
           subsVariability,
@@ -2012,25 +2010,25 @@ function typeSubscripts(
   cref::ComponentRef,
   origin::ORIGIN_Type,
   info::SourceInfo,
-)::Tuple{List{Subscript}, VariabilityType}
+)
   local variability::VariabilityType = Variability.CONSTANT
   local typedSubs::List{Subscript}
 
   local dims::List{Dimension}
   local dim::Dimension
-  local next_origin::Integer
-  local i::Integer
+  local next_origin::Int
+  local i::Int
   local sub::Subscript
   local var::VariabilityType
 
   if listEmpty(subscripts)
-    @assign typedSubs = subscripts
+    typedSubs = subscripts
     return (typedSubs, variability)
   end
-  @assign dims = arrayDims(crefType)
-  @assign typedSubs = nil
-  @assign next_origin = setFlag(origin, ORIGIN_SUBSCRIPT)
-  @assign i = 1
+  dims = arrayDims(crefType)
+  typedSubs = nil
+  next_origin = setFlag(origin, ORIGIN_SUBSCRIPT)
+  i = 1
   if listLength(subscripts) > listLength(dims)
     Error.addSourceMessage(
       Error.WRONG_NUMBER_OF_SUBSCRIPTS,
@@ -2059,7 +2057,7 @@ function typeSubscripts(
   =#
   #=        the backend relies on it.
   =#
-  @assign typedSubs = listReverseInPlace(typedSubs)
+  typedSubs = listReverseInPlace(typedSubs)
   return (typedSubs, variability)
 end
 
@@ -2067,7 +2065,7 @@ function typeSubscript(
   subscript::Subscript,
   dimension::Dimension,
   cref::ComponentRef,
-  index::Integer,
+  index::Int,
   origin::ORIGIN_Type,
   info::SourceInfo,
 )::Tuple{Subscript, VariabilityType}
@@ -2159,7 +2157,7 @@ function typeArray(
   local ty3::M_Type
   local tys::List{M_Type} = nil
   local mk::MatchKindType
-  local n::Integer = 1
+  local n::Int = 1
   local next_origin::ORIGIN_Type
 
   @assign next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
@@ -2228,7 +2226,7 @@ function typeMatrix(
   local ty::M_Type = TYPE_UNKNOWN()
   local tys::List{M_Type} = nil
   local resTys::List{M_Type} = nil
-  local n::Integer = 2
+  local n::Int = 2
   local next_origin::ORIGIN_Type = setFlag(origin, ORIGIN_SUBEXPRESSION)
 
   if listLength(elements) > 1
@@ -2277,8 +2275,8 @@ function typeMatrixComma(
   local ty3::M_Type
   local tys::List{M_Type} = nil
   local tys2::List{M_Type}
-  local n::Integer = 2
-  local pos::Integer
+  local n::Int = 2
+  local pos::Int
   local mk::MatchKindType
 
   Error.assertion(
@@ -2494,8 +2492,8 @@ function typeSize(
   local exp_ty::M_Type
   local index_ty::M_Type
   local ty_match::MatchKindType
-  local iindex::Integer
-  local dim_size::Integer
+  local iindex::Int
+  local dim_size::Int
   local dim::Dimension
   local ty_err::TypingError
   local oexp::Option{Expression}
@@ -2574,7 +2572,7 @@ end
 function checkSizeTypingError(
   typingError::TypingError,
   @nospecialize(exp::Expression),
-  index::Integer,
+  index::Int,
   info::SourceInfo,
 )
   return @assign () = begin
@@ -2612,7 +2610,7 @@ function evaluateEnd(
   @nospecialize(exp::Expression),
   dim::Dimension,
   cref::ComponentRef,
-  index::Integer,
+  index::Int,
   origin::ORIGIN_Type,
   info::SourceInfo,
 )::Expression
@@ -2783,7 +2781,7 @@ function typeClassSections(classNode::InstNode, originArg::ORIGIN_Type)
   local components::Array{InstNode}
   local sections::Sections
   local info::SourceInfo
-  local initial_origin::Integer
+  local initial_origin::Int
   @assign cls = getClass(classNode)
    _ = begin
     @match cls begin
@@ -3129,7 +3127,7 @@ function typeEquation(eq::Equation, origin::ORIGIN_Type)::Equation
     local mk::MatchKindType
     local var::VariabilityType
     local bvar::VariabilityType
-    local next_origin::Integer
+    local next_origin::Int
     local info::SourceInfo
     @match eq begin
       EQUATION_EQUALITY(__) => begin
@@ -3246,7 +3244,7 @@ function typeConnect(
   local lhs_var::VariabilityType
   local rhs_var::VariabilityType
   local mk::MatchKindType
-  local next_origin::Integer
+  local next_origin::Int
   local info::SourceInfo
   local eql::List{Equation}
 
@@ -3685,6 +3683,7 @@ function typeCondition(
     #   list(toString(condition), Type.toString(ty)),
     #   info,
     # )
+    @error "Error in  condition with the type $(ty)"
     fail()
   end
 #  fail()
@@ -3767,9 +3766,9 @@ function typeIfEquation(
         end
       end
     end
-    @assign bl2 = listReverseInPlace(bl2)
+    bl2 = listReverseInPlace(bl2)
   end
-  @assign ifEq = EQUATION_IF(bl2, source)
+  ifEq = EQUATION_IF(bl2, source)
   return ifEq
 end
 
@@ -3861,7 +3860,7 @@ function typeOperatorArg(
   origin::ORIGIN_Type,
   operatorName::String,
   argName::String,
-  argIndex::Integer,
+  argIndex::Int,
   info::SourceInfo,
 )::Expression
 

@@ -1,7 +1,6 @@
-
 function printNodeStr(inNode::Tree)::String
   local outString::String
-  @assign outString = begin
+  outString = begin
     @match inNode begin
       NODE(__) => begin
         keyStr(inNode.key)
@@ -25,7 +24,7 @@ end
 function add(inTree::Tree, inKey::Key)::Tree
   local tree::Tree = inTree
 
-  @assign tree = begin
+  tree = begin
     local key::Key
     local key_comp::Integer
     local outTree::Tree
@@ -37,7 +36,7 @@ function add(inTree::Tree, inKey::Key)::Tree
       end
 
       NODE(key = key) => begin
-        @assign key_comp = keyCompare(inKey, key)
+        key_comp = keyCompare(inKey, key)
         if key_comp == (-1)
           @assign tree.left = add(tree.left, inKey)
         elseif key_comp == 1
@@ -55,13 +54,13 @@ function add(inTree::Tree, inKey::Key)::Tree
       end
 
       LEAF(key = key) => begin
-        @assign key_comp = keyCompare(inKey, key)
+        key_comp = keyCompare(inKey, key)
         if key_comp == (-1)
-          @assign outTree = NODE(tree.key, 2, LEAF(inKey), EMPTY())
+          outTree = NODE(tree.key, 2, LEAF(inKey), EMPTY())
         elseif key_comp == 1
-          @assign outTree = NODE(tree.key, 2, EMPTY(), LEAF(inKey))
+          outTree = NODE(tree.key, 2, EMPTY(), LEAF(inKey))
         else
-          @assign outTree = tree
+          outTree = tree
         end
         #=  Replace left branch.
         =#
@@ -157,9 +156,9 @@ function listKeys(inTree::Tree, lst::List{<:Key} = nil)::List{Key}
       end
 
       NODE(__) => begin
-        @assign lst = listKeys(inTree.right, lst)
-        @assign lst = _cons(inTree.key, lst)
-        @assign lst = listKeys(inTree.left, lst)
+        lst = listKeys(inTree.right, lst)
+        lst = _cons(inTree.key, lst)
+        lst = listKeys(inTree.left, lst)
         lst
       end
 
@@ -181,9 +180,9 @@ function listKeysReverse(inTree::Tree, lst::List{<:Key} = nil)::List{Key}
       end
 
       NODE(__) => begin
-        @assign lst = listKeysReverse(inTree.left, lst)
-        @assign lst = _cons(inTree.key, lst)
-        @assign lst = listKeysReverse(inTree.right, lst)
+        lst = listKeysReverse(inTree.left, lst)
+        lst = _cons(inTree.key, lst)
+        lst = listKeysReverse(inTree.right, lst)
         lst
       end
 
@@ -197,17 +196,16 @@ end
 
 """ #= Joins two trees by adding the second one to the first. =#"""
 function join(tree::Tree, treeToJoin::Tree)::Tree
-
-  @assign tree = begin
+  tree = begin
     @match treeToJoin begin
       EMPTY(__) => begin
         tree
       end
 
       NODE(__) => begin
-        @assign tree = add(tree, treeToJoin.key)
-        @assign tree = join(tree, treeToJoin.left)
-        @assign tree = join(tree, treeToJoin.right)
+        tree = add(tree, treeToJoin.key)
+        tree = join(tree, treeToJoin.left)
+        tree = join(tree, treeToJoin.right)
         tree
       end
 
@@ -225,7 +223,7 @@ function printTreeStr(inTree::Tree)::String
   local outString::String
   local left::Tree
   local right::Tree
-  @assign outString = begin
+  outString = begin
     @match inTree begin
       EMPTY(__) => begin
         "EMPTY()"
@@ -245,14 +243,13 @@ function printTreeStr(inTree::Tree)::String
   return outString
 end
 
-function setTreeLeftRight(orig::Tree, left::Tree = EMPTY(), right::Tree = EMPTY())::Tree
-  setTreeLeftRight(orig, left = left, right = right)
+function setTreeLeftRight(orig::Tree, left::Tree, right::Tree)::Tree
+  setTreeLeftRight(orig; left = left, right = right)
 end
 
 function setTreeLeftRight(orig::Tree; left::Tree = EMPTY(), right::Tree = EMPTY())::Tree
   local res::Tree
-
-  @assign res = begin
+  res = begin
     @match (orig, left, right) begin
       (NODE(__), EMPTY(__), EMPTY(__)) => begin
         LEAF(orig.key, orig.value)
@@ -304,10 +301,10 @@ function intersection(tree1::Tree, tree2::Tree)::Tree
   @match _cons(k1, keylist1) = listKeys(tree1)
   @match _cons(k2, keylist2) = listKeys(tree2)
   while true
-    @assign key_comp = keyCompare(k1, k2)
+    key_comp = keyCompare(k1, k2)
     if key_comp > 0
       if isPresent(rest2)
-        @assign rest2 = add(rest2, k2)
+        rest2 = add(rest2, k2)
       end
       if listEmpty(keylist2)
         break
@@ -315,14 +312,14 @@ function intersection(tree1::Tree, tree2::Tree)::Tree
       @match _cons(k2, keylist2) = keylist2
     elseif key_comp < 0
       if isPresent(rest1)
-        @assign rest1 = add(rest1, k1)
+        rest1 = add(rest1, k1)
       end
       if listEmpty(keylist1)
         break
       end
       @match _cons(k1, keylist1) = keylist1
     else
-      @assign intersect = add(intersect, k1)
+      intersect = add(intersect, k1)
       if listEmpty(keylist1) || listEmpty(keylist2)
         break
       end
@@ -334,12 +331,12 @@ function intersection(tree1::Tree, tree2::Tree)::Tree
   =#
   if isPresent(rest1) && !listEmpty(keylist1)
     for key in keylist1
-      @assign rest1 = add(rest1, key)
+      rest1 = add(rest1, key)
     end
   end
   if isPresent(rest2) && !listEmpty(keylist2)
     for key in keylist2
-      @assign rest2 = add(rest2, key)
+      rest2 = add(rest2, key)
     end
   end
   return intersect, rest1, rest2
@@ -363,9 +360,9 @@ function referenceEqOrEmpty(t1::Tree, t2::Tree)::Bool
 end
 
 """ #= Balances a Tree =#"""
-function balance(inTree::Tree)::Tree
+function balance(inTree::Tree)
   local outTree::Tree = inTree
-  @assign outTree = begin
+  outTree = begin
     local lh::Integer
     local rh::Integer
     local diff::Integer
@@ -376,11 +373,11 @@ function balance(inTree::Tree)::Tree
         inTree
       end
       NODE(__) => begin
-        @assign lh = height(outTree.left)
-        @assign rh = height(outTree.right)
-        @assign diff = lh - rh
+        lh = height(outTree.left)
+        rh = height(outTree.right)
+        diff = lh - rh
         if diff < (-1)
-          @assign balanced_tree = if calculateBalance(outTree.right) > 0
+          balanced_tree = if calculateBalance(outTree.right) > 0
             rotateLeft(setTreeLeftRight(
               outTree,
               left = outTree.left,
@@ -390,7 +387,7 @@ function balance(inTree::Tree)::Tree
             rotateLeft(outTree)
           end
         elseif diff > 1
-          @assign balanced_tree = if calculateBalance(outTree.left) < 0
+          balanced_tree = if calculateBalance(outTree.left) < 0
             rotateRight(setTreeLeftRight(
               outTree,
               left = rotateLeft(outTree.left),
@@ -401,9 +398,9 @@ function balance(inTree::Tree)::Tree
           end
         elseif outTree.height != max(lh, rh) + 1
           @assign outTree.height = max(lh, rh) + 1
-          @assign balanced_tree = outTree
+          balanced_tree = outTree
         else
-          @assign balanced_tree = outTree
+          balanced_tree = outTree
         end
         balanced_tree
       end
@@ -433,7 +430,7 @@ end
 function calculateBalance(inNode::Tree)::Integer
   local outBalance::Integer
 
-  @assign outBalance = begin
+  outBalance = begin
     @match inNode begin
       NODE(__) => begin
         height(inNode.left) - height(inNode.right)
@@ -460,12 +457,12 @@ function rotateLeft(inNode::Tree)::Tree
     local child::Tree
     @match outNode begin
       NODE(right = child && NODE(__)) => begin
-        @assign node = setTreeLeftRight(outNode, outNode.left, child.left)
+        node = setTreeLeftRight(outNode, outNode.left, child.left)
         setTreeLeftRight(child, node, child.right)
       end
 
       NODE(right = child && LEAF(__)) => begin
-        @assign node = setTreeLeftRight(outNode, outNode.left, EMPTY())
+        node = setTreeLeftRight(outNode, outNode.left, EMPTY())
         setTreeLeftRight(child, node, EMPTY())
       end
 
@@ -486,15 +483,14 @@ function rotateRight(inNode::Tree)::Tree
     local child::Tree
     @match outNode begin
       NODE(left = child && NODE(__)) => begin
-        @assign node = setTreeLeftRight(outNode, left = child.right, right = outNode.right)
+        node = setTreeLeftRight(outNode, left = child.right, right = outNode.right)
         setTreeLeftRight(child, right = node, left = child.left)
       end
 
       NODE(left = child && LEAF(__)) => begin
-        @assign node = setTreeLeftRight(outNode, left = EMPTY(), right = outNode.right)
+        node = setTreeLeftRight(outNode, left = EMPTY(), right = outNode.right)
         setTreeLeftRight(child, right = node, left = EMPTY())
       end
-
       _ => begin
         inNode
       end
@@ -506,14 +502,12 @@ end
 """ #= Helper function to printTreeStr. =#"""
 function printTreeStr2(inTree::Tree, isLeft::Bool, inIndent::String)::String
   local outString::String
-
   local val_node::Option{ValueNode}
   local left::Option{Tree}
   local right::Option{Tree}
   local left_str::String
   local right_str::String
-
-  @assign outString = begin
+  outString = begin
     @match inTree begin
       NODE(__) => begin
         printTreeStr2(inTree.left, true, inIndent + (

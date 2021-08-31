@@ -4,7 +4,7 @@ MatchType = #= Enumeration =# (() -> begin
                                PARTIAL  = 3
                                ()->(FOUND ;NOT_FOUND ;PARTIAL )
                                end)()
-const MatchTypeTy = Integer
+const MatchTypeTy = Int
 
 function lookupClassName(name::Absyn.Path, scope::InstNode, info::SourceInfo, checkAccessViolations::Bool = true) ::InstNode
   local node::InstNode
@@ -22,7 +22,7 @@ function lookupBaseClassName(name::Absyn.Path, scope::InstNode, info::SourceInfo
   catch e
     @error "Error looking up base class $e"
     #Error.addSourceMessage(Error.LOOKUP_BASECLASS_ERROR, list(AbsynUtil.pathString(name), scopeName(scope)), info)
-    fail()
+    throw(e)
   end
   assertClass(state, listHead(nodes), name, info)
   nodes
@@ -35,8 +35,8 @@ function lookupComponent(cref::Absyn.ComponentRef, scope::InstNode #= The scope 
   local state::LookupState
   local nodeVar::InstNode
   try
-    @assign (foundCref, foundScope, state) = lookupCref(cref, scope)
-    @assign nodeVar = node(foundCref)
+    (foundCref, foundScope, state) = lookupCref(cref, scope)
+    nodeVar = node(foundCref)
     @match false = isName(nodeVar)
   catch e
     # Error.addSourceMessageAndFail(Error.LOOKUP_VARIABLE_ERROR, list(Dump.printComponentRefStr(cref), scopeName(scope)), info)
@@ -44,7 +44,7 @@ function lookupComponent(cref::Absyn.ComponentRef, scope::InstNode #= The scope 
 #    @error "Lookupvariable error for cref:$cref in scope $(scope.name). Error: $e"
 #    @error "Our tree was $(LookupTree.printTreeStr(treee))"
     #    @error "Repr3: $treee"
-    @error e
+    @error "Variable lookup error: $(e)"
     fail()
   end
   @assign state = fixTypenameState(nodeVar, state)
@@ -280,7 +280,7 @@ function lookupInner(outerNode::InstNode, scope::InstNode) ::InstNode
       @match true = isInner(innerNode)
       return innerNode
     catch e
-      @error "DBG error $e"
+#      @error "DBG error $e"
       @assign prev_scope = cur_scope
       @assign cur_scope = derivedParent(cur_scope)
     end
@@ -310,11 +310,12 @@ function lookupSimpleName(nameStr::String, scope::InstNode) ::InstNode
       @debug "The node $nameStr is resolved in some scope"
       return node
     catch e
+#      @error "DBG error with $(e)"
       if nameStr == name(cur_scope) && isClass(cur_scope)
-        @assign node = cur_scope
+        node = cur_scope
         return node
       end
-      @assign cur_scope = parentScope(cur_scope)
+      cur_scope = parentScope(cur_scope)
     end
   end
   @error "Failed to lookup simple name for $nameStr in scope:$scope"
@@ -325,11 +326,12 @@ function lookupNameWithError(name::Absyn.Path, scope::InstNode, info::SourceInfo
   local state::LookupState
   local node::InstNode
   try
-    @assign (node, state) = lookupName(name, scope, checkAccessViolations)
-  catch
+    (node, state) = lookupName(name, scope, checkAccessViolations)
+  catch e
     #   Error.addSourceMessage(errorType, list(AbsynUtil.pathString(name), scopeName(scope)), info)
-    @error "Lookup error for path: $name"
-    fail()
+    @error "Lookup error for path: $(AbsynUtil.pathString(name)) in the scope $(scopeName(scope))
+       with the following error: $(e)"
+    throw(e)
   end
   (node, state)
 end
@@ -389,8 +391,8 @@ function lookupFirstIdent(name::String, scope::InstNode) ::Tuple{InstNode, Looku
   local state::LookupState
   local node::InstNode
   try
-    @assign node = lookupSimpleBuiltinName(name)
-    @assign state = LOOKUP_STATE_PREDEF_CLASS()
+    node = lookupSimpleBuiltinName(name)
+    state = LOOKUP_STATE_PREDEF_CLASS()
   catch e
     node = lookupSimpleName(name, scope)
     state = nodeState(node)
@@ -400,84 +402,84 @@ end
 
 """ #= Looks up a path in the given scope, without continuing the search in any
                  enclosing scopes if the path isn't found. =#"""
-                   function lookupLocalName(name::Absyn.Path, node::InstNode, state::LookupState, checkAccessViolations::Bool = true, selfReference::Bool = false) ::Tuple{InstNode, LookupState}
-                     local is_import::Bool
-                     if ! isClass(node)
-                       @assign state = P_LookupState.COMP_CLASS()
-                       return (node, state)
-                     end
-                     if ! selfReference
-                       @assign node = Inst.instPackage(node)
-                     end
-                     #=  Look up the path in the scope.
-                     =#
-                     @assign () = begin
-                       @match name begin
-                         Absyn.IDENT(__)  => begin
-                           @assign (node, is_import) = lookupLocalSimpleName(name.name, node)
-                           @debug "HERE WE ARE!"
-                           if is_import
-                             @assign state = ERROR(P_LookupState.IMPORT())
-                           else
-                             @assign state = next(node, state, checkAccessViolations)
-                           end
-                           ()
-                         end
+function lookupLocalName(name::Absyn.Path, node::InstNode, state::LookupState, checkAccessViolations::Bool = true, selfReference::Bool = false) ::Tuple{InstNode, LookupState}
+  local is_import::Bool
+  if ! isClass(node)
+    state =  LOOKUP_STATE_COMP_CLASS()
+    return (node, state)
+  end
+  if ! selfReference
+    node = instPackage(node)
+  end
+  #=  Look up the path in the scope.
+  =#
+  @assign () = begin
+    @match name begin
+      Absyn.IDENT(__)  => begin
+        @assign (node, is_import) = lookupLocalSimpleName(name.name, node)
+        @debug "HERE WE ARE!"
+        if is_import
+          @assign state = LOOKUP_STATE_ERROR(LOOKUP_STATE_IMPORT())
+        else
+          @assign state = next(node, state, checkAccessViolations)
+        end
+        ()
+      end
 
-                         Absyn.QUALIFIED(__)  => begin
-                           @assign (node, is_import) = lookupLocalSimpleName(name.name, node)
-                           if is_import
-                             @assign state = P_LookupState.ERROR(P_LookupState.IMPORT())
-                           else
-                             @assign state = next(node, state, checkAccessViolations)
-                             @assign (node, state) = lookupLocalName(name.path, node, state, checkAccessViolations)
-                           end
-                           ()
-                         end
+      Absyn.QUALIFIED(__)  => begin
+        @assign (node, is_import) = lookupLocalSimpleName(name.name, node)
+        if is_import
+          @assign state = LOOKUP_STATE_ERROR(LOOKUP_STATE_IMPORT())
+        else
+          @assign state = next(node, state, checkAccessViolations)
+          @assign (node, state) = lookupLocalName(name.path, node, state, checkAccessViolations)
+        end
+        ()
+      end
 
-                         _  => begin
-#                           Error.assertion(false, getInstanceName() + " was called with an invalid path.", sourceInfo())
-                           fail()
-                         end
-                       end
-                     end
-                     (node, state)
-                   end
+      _  => begin
+        #Error.assertion(false, getInstanceName() + " was called with an invalid path.", sourceInfo())
+        fail()
+      end
+    end
+  end
+  (node, state)
+end
 
 """ #= Looks up a path in the given scope, without continuing the search in any
                  enclosing scopes if the path isn't found. =#"""
-                   function lookupLocalNames(name::Absyn.Path, scope::InstNode, nodes::List{<:InstNode}, state::LookupState, selfReference::Bool = false) ::Tuple{List{InstNode}, LookupState}
-                     local node::InstNode = scope
-                     if ! isClass(scope)
-                       @assign state = P_LookupState.COMP_CLASS()
-                       return (nodes, state)
-                     end
-                     if ! selfReference
-                       @assign node = Inst.instPackage(node)
-                     end
-                     @assign (nodes, state) = begin
-                       @match name begin
-                         Absyn.IDENT(__)  => begin
-                           @assign node = lookupLocalSimpleName(name.name, node)
-                           @debug "Here we are!"
-                           @assign state = next(node, state)
-                           (_cons(node, nodes), state)
-                         end
+function lookupLocalNames(name::Absyn.Path, scope::InstNode, nodes::List{<:InstNode}, state::LookupState, selfReference::Bool = false) ::Tuple{List{InstNode}, LookupState}
+  local node::InstNode = scope
+  if ! isClass(scope)
+    @assign state = LOOKUP_STATE_COMP_CLASS()
+    return (nodes, state)
+  end
+  if ! selfReference
+    @assign node = instPackage(node)
+  end
+  @assign (nodes, state) = begin
+    @match name begin
+      Absyn.IDENT(__)  => begin
+        (node, _) = lookupLocalSimpleName(name.name, node)
+        @debug "Here we are!"
+        state = next(node, state)
+        (_cons(node, nodes), state)
+      end
 
-                         Absyn.QUALIFIED(__)  => begin
-                           @assign node = lookupLocalSimpleName(name.name, node)
-                           @assign state = next(node, state)
-                           lookupLocalNames(name.path, node, _cons(node, nodes), state)
-                         end
+      Absyn.QUALIFIED(__)  => begin
+        (node, _) = lookupLocalSimpleName(name.name, node)
+        state = next(node, state)
+        lookupLocalNames(name.path, node, _cons(node, nodes), state)
+      end
 
-                         _  => begin
-#                           Error.assertion(false, getInstanceName() + " was called with an invalid path.", sourceInfo())
-                           fail()
-                         end
-                       end
-                     end
-                     (nodes, state)
-                   end
+      _  => begin
+        #                           Error.assertion(false, getInstanceName() + " was called with an invalid path.", sourceInfo())
+        fail()
+      end
+    end
+  end
+  (nodes, state)
+end
 
 function lookupSimpleBuiltinName(name::String) ::InstNode
   local builtin::InstNode
@@ -551,8 +553,9 @@ function lookupSimpleCref(name::String, subs::List{<:Absyn.Subscript}, scope::In
   try
     @assign (node, cref, state) = lookupSimpleBuiltinCref(name, subs)
     @assign foundScope = topScope(foundScope)
-  catch
+  catch e
     @debug "Searching for scope in lookupSimplecref.. with $(typeof(scope))"
+#    @error "Another DBG error message: $(e)"
     for i in 1:Global.recursionDepthLimit
       try
         @debug "Searching..."
@@ -593,11 +596,12 @@ function lookupSimpleCref(name::String, subs::List{<:Absyn.Subscript}, scope::In
         return (node, cref, foundScope, state)
       catch e
         foundScope = parentScope(foundScope)
-#        fail()
+#        @error "DBG error message to be removed since the error is used for control flow: $(e)"
+        #fail()
       end
     end
     #    Error.addMessage(Error.RECURSION_DEPTH_REACHED, list(String(Global.recursionDepthLimit), scopeName(foundScope)))
-    @error "Recusrion depth reached failing.."
+    @error "Recursion depth reached failing.."
     fail()
   end
   (node, cref, foundScope, state)

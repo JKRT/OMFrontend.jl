@@ -96,7 +96,7 @@ function evaluateExpTraverser(
           @assign outExp = evalCref(
             cref,
             outExp,
-            IGNORE_ERRORS(),
+            EVALTARGET_IGNORE_ERRORS(),
             evalSubscripts = false,
           )
           @assign outExp = stripBindingInfo(outExp)
@@ -112,7 +112,7 @@ function evaluateExpTraverser(
         outExp
       end
       _ => begin
-        func = (x, y=constVariability) -> evaluateExpTraverser(x, y, false)
+        func = (x, y) -> evaluateExpTraverser(x, constVariability, false)
         (outExp, outChanged) = mapFoldShallow(exp, func, false)
         if outChanged
           retype(outExp)

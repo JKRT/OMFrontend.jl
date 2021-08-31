@@ -4,91 +4,21 @@ using MetaModelica
 using ExportAll
 #= Forward declarations for uniontypes until Julia adds support for mutual recursion =#
 
-FuncTplToTpl = Function
+const FuncTplToTpl = Function
 
-FuncType = Function
+const FuncTplToTpl = Function
 
-FuncType = Function
+const FuncType = Function
 
-FuncTplToTpl = Function
+const ModFunc = Function
 
-FuncType = Function
+const MapFunc = Function
 
-FuncType = Function
+const FuncType = Function
 
-FuncType = Function
+const FuncT = Function
 
-FuncType = Function
-
-FuncType = Function
-
-FuncType = Function
-
-FuncType = Function
-
-FuncType = Function
-
-FuncType = Function
-
-FuncType = Function
-
-FuncType = Function
-
-FuncType = Function
-
-FuncType = Function
-
-FuncType = Function
-
-FuncType = Function
-
-FuncType = Function
-
-FuncType = Function
-
-FuncType = Function
-
-FuncType = Function
-
-FuncType = Function
-
-ModFunc = Function
-
-ModFunc = Function
-
-MapFunc = Function
-
-FuncType = Function
-
-FuncType = Function
-
-FuncType = Function
-
-FuncType = Function
-
-FuncType = Function
-
-FuncType = Function
-
-FuncType = Function
-
-FuncT = Function
-
-FuncT = Function
-
-FuncT = Function
-
-FuncType = Function
-
-FuncType = Function
-
-FuncType = Function
-
-FuncType = Function
-
-FuncType = Function
-
-FuncType = Function
+const FuncType = Function
 
 #= /*
 * This file is part of OpenModelica.
@@ -2020,6 +1950,9 @@ function pathString(
   return s
 end
 
+"""
+I rewrote this to not use the string allocator - John
+"""
 function pathStringWork(
   inPath::Path,
   len::Integer,
@@ -2034,7 +1967,7 @@ function pathStringWork(
   local count::Integer = 0
   #=  Allocate a string of the exact required length
   =#
-  local sb::System.StringAllocator = System.StringAllocator(len)
+  local sb::String = "" #System.StringAllocator = System.StringAllocator(len)
 
   #=  Fill the string
   =#
@@ -2042,38 +1975,36 @@ function pathStringWork(
     @assign (p, count, b) = begin
       @match p begin
         IDENT(__) => begin
-          System.stringAllocatorStringCopy(sb, p.name, if reverse
-              len - count - stringLength(p.name)
-            else
-              count
-            end)
+          sb *= p.name
           (p, count + stringLength(p.name), false)
         end
 
         QUALIFIED(__) => begin
-          System.stringAllocatorStringCopy(
-            sb,
-            p.name,
-            if reverse
-              len - count - dlen - stringLength(p.name)
-            else
-              count
-            end,
-          )
-          System.stringAllocatorStringCopy(sb, delimiter, if reverse
-              len - count - dlen
-            else
-              count + stringLength(p.name)
-            end)
+          # System.stringAllocatorStringCopy(
+          #   sb,
+          #   p.name,
+          #   if reverse
+          #     len - count - dlen - stringLength(p.name)
+          #   else
+          #     count
+          #   end,
+          # )
+          # System.stringAllocatorStringCopy(sb, delimiter, if reverse
+          #     len - count - dlen
+          #   else
+          #     count + stringLength(p.name)
+          #   end)
+          sb = sb * p.name * delimiter
           (p.path, count + stringLength(p.name) + dlen, true)
         end
 
         FULLYQUALIFIED(__) => begin
-          System.stringAllocatorStringCopy(sb, delimiter, if reverse
-            len - count - dlen
-          else
-            count
-          end)
+          # System.stringAllocatorStringCopy(sb, delimiter, if reverse
+          #   len - count - dlen
+          # else
+          #   count
+          # end)
+          sb = sb * delimiter
           (p.path, count + dlen, true)
         end
       end
@@ -2081,7 +2012,8 @@ function pathStringWork(
   end
   #=  Return the string
   =#
-  @assign s = System.stringAllocatorResult(sb, s)
+  s = sb
+#  @info s
   return s
 end
 
@@ -2286,11 +2218,9 @@ end
 """ #= Converts a string into a qualified path. =#"""
 function stringPath(str::String)::Path
   local qualifiedPath::Path
-
   local paths::List{String}
-
-  @assign paths = Util.stringSplitAtChar(str, ".")
-  @assign qualifiedPath = stringListPath(paths)
+  paths = arrayList(split(str, ".")) #Util.stringSplitAtChar(str, ".")
+  qualifiedPath = stringListPath(paths)
   return qualifiedPath
 end
 

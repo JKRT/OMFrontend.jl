@@ -8,17 +8,17 @@
   @Record RANGEITERATOR_REAL_RANGE begin
     start::AbstractFloat
     stepsize::AbstractFloat
-    current::Integer
-    steps::Integer
+    current::Int
+    steps::Int
   end
   @Record RANGEITERATOR_INT_STEP_RANGE begin
-    current::Integer
-    stepsize::Integer
-    last::Integer
+    current::Int
+    stepsize::Int
+    last::Int
   end
   @Record RANGEITERATOR_INT_RANGE begin
-    current::Integer
-    last::Integer
+    current::Int
+    last::Int
   end
 end
 
@@ -195,9 +195,9 @@ function RangeIterator_fromExp(exp::Expression)::RangeIterator
   local iterator::RangeIterator
 
   @assign iterator = begin
-    local istart::Integer
-    local istep::Integer
-    local istop::Integer
+    local istart::Int
+    local istep::Int
+    local istop::Int
     local rstart::AbstractFloat
     local rstep::AbstractFloat
     local rstop::AbstractFloat

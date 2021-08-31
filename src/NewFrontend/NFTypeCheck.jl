@@ -13,7 +13,7 @@ MatchKind = (
   end
 )()
 
-const MatchKindType = Integer
+const MatchKindType = Int
 
 function isCompatibleMatch(kind::MatchKindType)::Bool
   local isCompatible::Bool = kind != MatchKind.NOT_COMPATIBLE
@@ -1521,11 +1521,11 @@ function checkBinaryOperationMul(
   local op::OpType
   local valid::Bool
 
-  @assign ty1 = arrayElementType(type1)
-  @assign ty2 = arrayElementType(type2)
-  @assign (e1, e2, resultType, mk) = matchExpressions(exp1, ty1, exp2, ty2, true)
-  @assign valid = isCompatibleMatch(mk)
-  @assign valid = begin
+  ty1 = arrayElementType(type1)
+  ty2 = arrayElementType(type2)
+  (e1, e2, resultType, mk) = matchExpressions(exp1, ty1, exp2, ty2, true)
+  valid = isCompatibleMatch(mk)
+  valid = begin
     @match resultType begin
       TYPE_INTEGER(__) => begin
         valid
@@ -1540,9 +1540,9 @@ function checkBinaryOperationMul(
       end
     end
   end
-  @assign dims1 = arrayDims(type1)
-  @assign dims2 = arrayDims(type2)
-  @assign (resultType, op) = begin
+  dims1 = arrayDims(type1)
+  dims2 = arrayDims(type2)
+  (resultType, op) = begin
     @match (dims1, dims2) begin
       (nil(), nil()) => begin
         (resultType, Op.MUL)
@@ -4123,7 +4123,7 @@ function getRangeTypeInt(
   local dim::Dimension
 
   @assign dim = begin
-    local step::Integer
+    local step::Int
     local step_exp::Expression
     local dim_exp::Expression
     local var::VariabilityType
@@ -4306,7 +4306,7 @@ function getRangeTypeBool(startExp::Expression, stopExp::Expression)::Dimension
   local dim::Dimension
 
   @assign dim = begin
-    local sz::Integer
+    local sz::Int
     local dim_exp::Expression
     local var::VariabilityType
     @match (startExp, stopExp) begin
@@ -4419,7 +4419,7 @@ function matchBinding(
             BINDING_EXP(
               __,
             ) where {(binding.eachType == EachType.NOT_EACH)} => begin
-              @assign dims = list(
+              dims = list(
                 arrayDims(getType(p)) for p in listRest(exp.parents)
               )
               (
@@ -4433,12 +4433,12 @@ function matchBinding(
             end
           end
         end
-        @assign (exp, ty, ty_match) = matchTypes(exp_ty, comp_ty, exp, allowUnknown = true)
+        (exp, ty, ty_match) = matchTypes(exp_ty, comp_ty, exp, allowUnknown = true)
         if !isValidAssignmentMatch(ty_match)
           printBindingTypeError(name, binding, comp_ty, exp_ty, component)
           fail()
         elseif isCastMatch(ty_match)
-          @assign binding = TYPED_BINDING(
+          binding = TYPED_BINDING(
             exp,
             ty,
             binding.variability,
@@ -4532,11 +4532,11 @@ function checkDimensionType(exp::Expression, ty::NFType, info::SourceInfo)
   return if !isInteger(ty)
     @assign () = begin
       @match exp begin
-        TYPENAME(ty = TYPE_ARRAY(elementType = TYPE_BOOLEAN(__))) => begin
+        TYPENAME_EXPRESSION(ty = TYPE_ARRAY(elementType = TYPE_BOOLEAN(__))) => begin
           ()
         end
 
-        TYPENAME(
+        TYPENAME_EXPRESSION(
           ty = TYPE_ARRAY(elementType = TYPE_ENUMERATION(__)),
         ) => begin
           ()

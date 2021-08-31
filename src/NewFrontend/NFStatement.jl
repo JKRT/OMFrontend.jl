@@ -745,7 +745,7 @@ function updateImplicitVariabilityStmt(stmt::Statement, inWhen::Bool)
   end
 end
 
-function markStructuralParamsSubs(exp::Expression, dummy::Integer) ::Integer
+function markStructuralParamsSubs(exp::Expression, dummy::Int) ::Int
   @assign () = begin
     @match exp begin
       CREF_EXPRESSION(__)  => begin

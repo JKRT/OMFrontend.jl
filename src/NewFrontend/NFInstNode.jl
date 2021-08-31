@@ -86,7 +86,7 @@ end
   end
 
   @Record REF_NODE begin
-    index::Integer
+    index::Int
   end
 
   @Record INNER_OUTER_NODE begin
@@ -124,15 +124,10 @@ using ExportAll
 Key = String
 Value = InstNode
 include("../Util/baseAvlTreeCode.jl")
-include("../Util/baseAvlSetCode.jl")
 
 keyCompare = (inKey1::String, inKey2::String) -> begin
   res = stringCompare(inKey1, inKey2)
   return res
-end
-
-function new()
-  return EMPTY()
 end
 
 @exportAll()
@@ -155,7 +150,7 @@ end
   end
 end
 
-const NUMBER_OF_CACHES = 3::Integer
+const NUMBER_OF_CACHES = 3::Int
 
 function setInnerOuterCache(in_caches::Array{<:CachedData}, in_cache::CachedData) ::Array{CachedData}
   local out_caches::Array{CachedData} = arrayUpdate(in_caches, 3, in_cache)
@@ -724,8 +719,8 @@ function nameEqual(node1::InstNode, node2::InstNode) ::Bool
   equal
 end
 
-function refCompare(node1::InstNode, node2::InstNode) ::Integer
-  local res::Integer
+function refCompare(node1::InstNode, node2::InstNode) ::Int
+  local res::Int
   @assign res = begin
     @match (node1, node2) begin
       (CLASS_NODE(__), CLASS_NODE(__))  => begin
@@ -850,12 +845,10 @@ function getInnerOuterCache(inNode::InstNode) ::CachedData
 end
 
 function clearPackageCache(node::InstNode) ::InstNode
-
-
   @assign () = begin
     @match node begin
       CLASS_NODE(__)  => begin
-        P_CachedData.clearPackageCache(node.caches)
+        clearPackageCache(node.caches)
         ()
       end
 
@@ -869,12 +862,10 @@ function clearPackageCache(node::InstNode) ::InstNode
 end
 
 function setPackageCache(node::InstNode, in_pack_cache::CachedData) ::InstNode
-
-
   @assign () = begin
     @match node begin
       CLASS_NODE(__)  => begin
-        P_CachedData.setPackageCache(node.caches, in_pack_cache)
+        setPackageCache(node.caches, in_pack_cache)
         ()
       end
 
@@ -893,7 +884,7 @@ function getPackageCache(inNode::InstNode) ::CachedData
   @assign pack_cache = begin
     @match inNode begin
       CLASS_NODE(__)  => begin
-        P_CachedData.getPackageCache(inNode.caches)
+        getPackageCache(inNode.caches)
       end
 
       _  => begin
@@ -1281,7 +1272,7 @@ function scopeListClass(clsNode::InstNode, ty::InstNodeType, includeRoot::Bool, 
   scopes
 end
 
-function scopeList(node::InstNode, includeRoot::Bool = false #= Whether to include the root class name or not. =#, accumScopes::List{<:InstNode} = nil) ::List{InstNode}
+function scopeList(node::InstNode, includeRoot::Bool, accumScopes::List{<:InstNode} = nil) ::List{InstNode}
   scopeList(node, includeRoot = includeRoot, accumScopes = accumScopes)
 end
 
@@ -1362,9 +1353,9 @@ function getType(@nospecialize(node::InstNode))::NFType
 end
 
 function InstNode_info(node::InstNode) ::SourceInfo
-  local info::SourceInfo
+  local infoV::SourceInfo
 
-  @assign info = begin
+  @assign infoV = begin
     local ty::InstNodeType
     @matchcontinue node begin
       CLASS_NODE(nodeType = ty && BASE_CLASS(__))  => begin
@@ -1376,7 +1367,7 @@ function InstNode_info(node::InstNode) ::SourceInfo
       end
 
       COMPONENT_NODE(__)  => begin
-        P_Component.info(P_Pointer.access(node.component))
+        info(P_Pointer.access(node.component))
       end
 
       COMPONENT_NODE(__)  => begin
@@ -1387,7 +1378,7 @@ function InstNode_info(node::InstNode) ::SourceInfo
       end
     end
   end
-  info
+  infoV
 end
 
 function setDefinition(definition::SCode.Element, node::InstNode) ::InstNode
@@ -2159,9 +2150,9 @@ function newExtends(definition::SCode.Element, parent::InstNode) ::InstNode
   local name::String
   local vis::SCode.Visibility
 
-  @match SCode.Element.EXTENDS(baseClassPath = base_path, visibility = vis) = definition
-  @assign name = AbsynUtil.pathLastIdent(base_path)
-  @assign node = CLASS_NODE(name, definition, visibilityFromSCode(vis), P_Pointer.create(NOT_INSTANTIATED()), P_CachedData.empty(), parent, BASE_CLASS(parent, definition))
+  @match SCode.EXTENDS(baseClassPath = base_path, visibility = vis) = definition
+  name = AbsynUtil.pathLastIdent(base_path)
+  node = CLASS_NODE(name, definition, visibilityFromSCode(vis), P_Pointer.create(NOT_INSTANTIATED()), #=P_CachedData.=#empty(), parent, BASE_CLASS(parent, definition))
   node
 end
 

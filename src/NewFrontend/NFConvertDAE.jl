@@ -14,12 +14,12 @@ function convert(
   local dae::DAE.DAE_LIST
   local elems::List{DAE.Element}
   local class_elem::DAE.Element
-  @assign daeFunctions = convertFunctionTree(functions)
-  @assign elems = convertVariables(flatModel.variables, nil)
-  @assign elems = convertEquations(flatModel.equations, elems)
-  @assign elems = convertInitialEquations(flatModel.initialEquations, elems)
-  @assign elems = convertAlgorithms(flatModel.algorithms, elems)
-  @assign elems = convertInitialAlgorithms(flatModel.initialAlgorithms, elems)
+  daeFunctions = convertFunctionTree(functions)
+  elems = convertVariables(flatModel.variables, nil)
+  elems = convertEquations(flatModel.equations, elems)
+  elems = convertInitialEquations(flatModel.initialEquations, elems)
+  elems = convertAlgorithms(flatModel.algorithms, elems)
+  elems = convertInitialAlgorithms(flatModel.initialAlgorithms, elems)
   @assign class_elem =
     DAE.COMP(name, elems, DAE.emptyElementSource, flatModel.comment) # TODO DAE.ElementSource_createElementSource(info)
   @assign dae = DAE.DAE_LIST(list(class_elem))
@@ -694,9 +694,8 @@ function convertEquations(
   equations::List{<:Equation},
   elements::List{<:DAE.Element} = nil,
 )::List{DAE.Element}
-
   for eq in listReverse(equations)
-    @assign elements = convertEquation(eq, elements)
+    elements = convertEquation(eq, elements)
   end
   return elements
 end
@@ -823,12 +822,12 @@ function convertForEquation(forEquation::Equation)::DAE.Element
 end
 
 function convertIfEquation(
-  ifBranches::List{<:Equation},
-  source::DAE.ElementSource,
+  ifBranches::List{<:Equation_Branch},
+  source::DAE.ElementSource;
   isInitial::Bool,
 )::DAE.Element
+  @info "Converting if equation"
   local ifEquation::DAE.Element
-
   local conds::List{Expression} = nil
   local branches::List{List{Equation}} = nil
   local dconds::List{DAE.Exp}
@@ -862,12 +861,12 @@ function convertIfEquation(
   else
     @assign else_branch = nil
   end
-  @assign dconds = listReverse(toDAE(c) for c in conds)
+  @assign dconds = listReverse(list(toDAE(c) for c in conds))
   @assign dbranches = listReverseInPlace(dbranches)
   @assign ifEquation = if isInitial
-    DAE.Element.INITIAL_IF_EQUATION(dconds, dbranches, else_branch, source)
+    DAE.INITIAL_IF_EQUATION(dconds, dbranches, else_branch, source)
   else
-    DAE.Element.IF_EQUATION(dconds, dbranches, else_branch, source)
+    DAE.IF_EQUATION(dconds, dbranches, else_branch, source)
   end
   return ifEquation
 end

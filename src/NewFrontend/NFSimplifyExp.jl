@@ -348,7 +348,7 @@ function simplifyArrayConstructor(call::Call)::Expression
   local iters::List{Tuple{InstNode, Expression}}
   local iter::InstNode
   local dim::Dimension
-  local dim_size::Integer
+  local dim_size::Int
   local expanded::Bool
 
   @match TYPED_ARRAY_CONSTRUCTOR(ty, var, exp, iters) = call
@@ -362,7 +362,7 @@ function simplifyArrayConstructor(call::Call)::Expression
           @assign outExp = makeEmptyArray(ty)
         elseif dim_size == 1
           @match (ARRAY_EXPRESSION(elements = list(e)), _) =
-            P_ExpandExp.ExpandExp.expand(e)
+            expand(e)
           @assign exp = replaceIterator(exp, iter, e)
           @assign exp = makeArray(ty, list(exp))
           @assign outExp = simplify(exp)
@@ -873,7 +873,7 @@ end
 function simplifyTupleElement(tupleExp::Expression)::Expression
 
   local e::Expression
-  local index::Integer
+  local index::Int
   local ty::M_Type
 
   @match TUPLE_ELEMENT_EXPRESSION(e, index, ty) = tupleExp

@@ -14,6 +14,7 @@ import Absyn
 import SCode
 import DAE
 import ListUtil
+import ArrayUtil
 include("./Util/Pointer.jl")
 import .P_Pointer
 Pointer = P_Pointer.Pointer
@@ -39,8 +40,8 @@ include("./Util/ErrorExt.jl")
 
 #= Disable type inference for this module =#
 if isdefined(Base, :Experimental) && isdefined(Base.Experimental, Symbol("@compiler_options"))
-    @info "Setting compiler options.."
-    @info "Base.Experimental.@compiler_options compile=all optimize=3 infer=false"
+#    @info "Setting compiler options.."
+#    @info "Base.Experimental.@compiler_options compile=all optimize=3 infer=false"
 #    Base.Experimental.@compiler_options compile=min optimize=3 infer=false
 else
     throw("@compiler_options is not available.\n 

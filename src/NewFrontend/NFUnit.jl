@@ -48,13 +48,13 @@
          @Uniontype Unit begin
               @Record UNIT begin
                       factor #= prefix =#::AbstractFloat
-                      mol #= exponent =#::Integer
-                      cd #= exponent =#::Integer
-                      m #= exponent =#::Integer
-                      s #= exponent =#::Integer
-                      A #= exponent =#::Integer
-                      K #= exponent =#::Integer
-                      g #= exponent =#::Integer
+                      mol #= exponent =#::Int
+                      cd #= exponent =#::Int
+                      m #= exponent =#::Int
+                      s #= exponent =#::Int
+                      A #= exponent =#::Int
+                      K #= exponent =#::Int
+                      g #= exponent =#::Int
                        #= Real K_shift;
                        =#
               end
@@ -70,7 +70,7 @@
 
          @Uniontype Token begin
               @Record T_NUMBER begin
-                      number::Integer
+                      number::Int
               end
 
               @Record T_UNIT begin
@@ -248,8 +248,8 @@
           res
         end
 
-        function hashUnitMod(inKey::Unit, inMod::Integer) ::Integer
-              local outHash::Integer
+        function hashUnitMod(inKey::Unit, inMod::Int) ::Int
+              local outHash::Int
 
               local str::String
 
@@ -265,20 +265,20 @@
                   local factor1::AbstractFloat
                   local factor2::AbstractFloat
                   local r::AbstractFloat
-                  local i1::Integer
-                  local i2::Integer
-                  local i3::Integer
-                  local i4::Integer
-                  local i5::Integer
-                  local i6::Integer
-                  local i7::Integer
-                  local j1::Integer
-                  local j2::Integer
-                  local j3::Integer
-                  local j4::Integer
-                  local j5::Integer
-                  local j6::Integer
-                  local j7::Integer
+                  local i1::Int
+                  local i2::Int
+                  local i3::Int
+                  local i4::Int
+                  local i5::Int
+                  local i6::Int
+                  local i7::Int
+                  local j1::Int
+                  local j2::Int
+                  local j3::Int
+                  local j4::Int
+                  local j5::Int
+                  local j6::Int
+                  local j7::Int
                   local s::String
                   local s2::String
                   local lcr::List{ComponentRef}
@@ -339,13 +339,13 @@
                   local b::Bool
                   local crefList::List{ComponentRef}
                   local factor1::AbstractFloat
-                  local i1::Integer
-                  local i2::Integer
-                  local i3::Integer
-                  local i4::Integer
-                  local i5::Integer
-                  local i6::Integer
-                  local i7::Integer
+                  local i1::Int
+                  local i2::Int
+                  local i3::Int
+                  local i4::Int
+                  local i5::Int
+                  local i6::Int
+                  local i7::Int
                 @match inUnit begin
                   UNIT(factor1, i1, i2, i3, i4, i5, i6, i7)  => begin
                       @assign str = realString(factor1) + " * "
@@ -501,20 +501,20 @@
               local outUnit::Unit
               local factor1::AbstractFloat
               local factor2::AbstractFloat
-              local i1::Integer
-              local i2::Integer
-              local i3::Integer
-              local i4::Integer
-              local i5::Integer
-              local i6::Integer
-              local i7::Integer
-              local j1::Integer
-              local j2::Integer
-              local j3::Integer
-              local j4::Integer
-              local j5::Integer
-              local j6::Integer
-              local j7::Integer
+              local i1::Int
+              local i2::Int
+              local i3::Int
+              local i4::Int
+              local i5::Int
+              local i6::Int
+              local i7::Int
+              local j1::Int
+              local j2::Int
+              local j3::Int
+              local j4::Int
+              local j5::Int
+              local j6::Int
+              local j7::Int
 
               @match UNIT(factor1, i1, i2, i3, i4, i5, i6, i7) = inUnit1
               @match UNIT(factor2, j1, j2, j3, j4, j5, j6, j7) = inUnit2
@@ -535,20 +535,20 @@
 
               local factor1::AbstractFloat
               local factor2::AbstractFloat
-              local i1::Integer
-              local i2::Integer
-              local i3::Integer
-              local i4::Integer
-              local i5::Integer
-              local i6::Integer
-              local i7::Integer
-              local j1::Integer
-              local j2::Integer
-              local j3::Integer
-              local j4::Integer
-              local j5::Integer
-              local j6::Integer
-              local j7::Integer
+              local i1::Int
+              local i2::Int
+              local i3::Int
+              local i4::Int
+              local i5::Int
+              local i6::Int
+              local i7::Int
+              local j1::Int
+              local j2::Int
+              local j3::Int
+              local j4::Int
+              local j5::Int
+              local j6::Int
+              local j7::Int
 
               @match UNIT(factor1, i1, i2, i3, i4, i5, i6, i7) = inUnit1
               @match UNIT(factor2, j1, j2, j3, j4, j5, j6, j7) = inUnit2
@@ -564,17 +564,17 @@
           outUnit
         end
 
-        function unitPow(inUnit::Unit, inExp::Integer #= exponent =#) ::Unit
+        function unitPow(inUnit::Unit, inExp::Int #= exponent =#) ::Unit
               local outUnit::Unit
 
               local factor::AbstractFloat
-              local i1::Integer
-              local i2::Integer
-              local i3::Integer
-              local i4::Integer
-              local i5::Integer
-              local i6::Integer
-              local i7::Integer
+              local i1::Int
+              local i2::Int
+              local i3::Int
+              local i4::Int
+              local i5::Int
+              local i6::Int
+              local i7::Int
 
               @match UNIT(factor, i1, i2, i3, i4, i5, i6, i7) = inUnit
               @assign factor = realPow(factor, intReal(inExp))
@@ -613,14 +613,14 @@
 
               local r::AbstractFloat
               local factor::AbstractFloat
-              local i::Integer
-              local i1::Integer
-              local i2::Integer
-              local i3::Integer
-              local i4::Integer
-              local i5::Integer
-              local i6::Integer
-              local i7::Integer
+              local i::Int
+              local i1::Int
+              local i2::Int
+              local i3::Int
+              local i4::Int
+              local i5::Int
+              local i6::Int
+              local i7::Int
 
               @assign i = realInt(inExponent)
               @assign r = realDiv(1.0, inExponent)
@@ -934,7 +934,7 @@
                   local unit::String
                   local tokens::List{Token}
                   local ut::Unit
-                  local exponent::Integer
+                  local exponent::Int
                   local bMul::Bool
                   local b::Bool
                   local bRest::List{Bool}
@@ -1236,7 +1236,7 @@
                   local number::String
                   local unit::String
                   local tokenList::List{Token}
-                  local i::Integer
+                  local i::Int
                 @matchcontinue inCharList begin
                    nil()  => begin
                     nil
@@ -1343,7 +1343,7 @@
                   local s1::String
                   local s2::String
                   local strRest::List{String}
-                  local i::Integer
+                  local i::Int
                 @matchcontinue inCharList begin
                    nil()  => begin
                     (nil, "")

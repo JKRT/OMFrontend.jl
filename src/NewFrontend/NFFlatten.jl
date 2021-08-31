@@ -12,24 +12,15 @@ Connector = NFConnector
 ComplexType = NFComplexType
 
 module FunctionTreeImpl
-using MetaModelica
-using ExportAll
-import ..Absyn
-import ..Main.M_Function
-Key = Absyn.Path
-Value = M_Function
-include("../Util/baseAvlTreeCode.jl")
-include("../Util/baseAvlSetCode.jl")
-
-
-addConflictDefault = addConflictKeep
-
-function new()
-  return EMPTY()
-end
-
-@exportAll()
-end
+  using MetaModelica
+  using ExportAll
+  import ..Absyn
+  import ..Main.M_Function
+  Key = Absyn.Path
+  Value = M_Function
+  include("../Util/baseAvlTreeCode.jl")
+  addConflictDefault = addConflictKeep
+end #= FunctionTreeImpl =#
 FunctionTree = FunctionTreeImpl.Tree
 const NFFunctionTree = FunctionTreeImpl
 
@@ -57,10 +48,10 @@ function flatten(classInst::InstNode, name::String)::FlatModel
   @assign flatModel = begin
     @match sections begin
       SECTIONS(__) => begin
-        @assign eql = listReverseInPlace(sections.equations)
-        @assign ieql = listReverseInPlace(sections.initialEquations)
-        @assign alg = listReverseInPlace(sections.algorithms)
-        @assign ialg = listReverseInPlace(sections.initialAlgorithms)
+        eql = listReverseInPlace(sections.equations)
+        ieql = listReverseInPlace(sections.initialEquations)
+        alg = listReverseInPlace(sections.algorithms)
+        ialg = listReverseInPlace(sections.initialAlgorithms)
         FLAT_MODEL(name, vars, eql, ieql, alg, ialg, cmt)
       end
 
@@ -725,7 +716,7 @@ function vectorizeEquation(
   @assign veqn = begin
     local prefix_node::InstNode
     local iter::InstNode
-    local stop::Integer
+    local stop::Int
     local range::Expression
     @match eqn begin
       EQUATION_EQUALITY(
@@ -796,7 +787,7 @@ function vectorizeAlgorithm(
   @assign valg = begin
     local prefix_node::InstNode
     local iter::InstNode
-    local stop::Integer
+    local stop::Int
     local range::Expression
     local body::List{Statement}
     @match alg begin
@@ -878,7 +869,7 @@ function addIterator_traverse(
 
   local restString::String
   local prefixString::String = toString(prefix)
-  local prefixLength::Integer = stringLength(prefixString)
+  local prefixLength::Int = stringLength(prefixString)
 
   @assign exp = begin
     local restCref::ComponentRef
@@ -952,7 +943,7 @@ function flattenBinding(
   @assign binding = begin
     local subs::List{Subscript}
     local accum_subs::List{Subscript}
-    local binding_level::Integer
+    local binding_level::Int
     local bind_exp::Expression
     local pars::List{InstNode}
     local par::InstNode
@@ -1004,7 +995,7 @@ function flattenBindingExp(
   local outExp::Expression
   local subs::List{Subscript}
   local accum_subs::List{Subscript}
-  local binding_level::Integer
+  local binding_level::Int
   local parents::List{InstNode}
   local pre::ComponentRef
   local cr_node::InstNode
@@ -1039,7 +1030,7 @@ function flattenBindingExp2(
 )::Expression
   local outExp::Expression = exp
 
-  local binding_level::Integer = 0
+  local binding_level::Int = 0
   local subs::List{Subscript}
   local pre::ComponentRef = prefix
   local pre_node::InstNode
@@ -1080,7 +1071,6 @@ function flattenExp(exp::Expression, prefix::ComponentRef)::Expression
 end
 
 function flattenExp_traverse(exp::Expression, prefix::ComponentRef)::Expression
-
   @assign exp = begin
     @match exp begin
       CREF_EXPRESSION(__) => begin
@@ -1096,8 +1086,8 @@ function flattenExp_traverse(exp::Expression, prefix::ComponentRef)::Expression
         exp
       end
     end
+    return exp
   end
-  return exp
 end
 
 function flattenSections(
@@ -1113,11 +1103,11 @@ function flattenSections(
     local ialg::List{Algorithm}
     @match sections begin
       SECTIONS(__) => begin
-        @assign eq = flattenEquations(sections.equations, prefix)
-        @assign ieq = flattenEquations(sections.initialEquations, prefix)
-        @assign alg = flattenAlgorithms(sections.algorithms, prefix)
-        @assign ialg = flattenAlgorithms(sections.initialAlgorithms, prefix)
-        @assign accumSections =
+        eq = flattenEquations(sections.equations, prefix)
+        ieq = flattenEquations(sections.initialEquations, prefix)
+        alg = flattenAlgorithms(sections.algorithms, prefix)
+        ialg = flattenAlgorithms(sections.initialAlgorithms, prefix)
+        accumSections =
           prepend(eq, ieq, alg, ialg, accumSections)
         ()
       end
@@ -1130,11 +1120,10 @@ function flattenSections(
   return accumSections
 end
 
-function flattenEquations(eql::List{<:Equation}, prefix::ComponentRef)::List{Equation}
+function flattenEquations(eql::List{<:Equation}, prefix::ComponentRef)
   local equations::List{Equation} = nil
-
   for eq in eql
-    @assign equations = flattenEquation(eq, prefix, equations)
+    equations = flattenEquation(eq, prefix, equations)
   end
   return equations
 end
@@ -1142,9 +1131,8 @@ end
 function flattenEquation(
   eq::Equation,
   prefix::ComponentRef,
-  equations::List{<:Equation},
-)::List{Equation}
-
+  inEquations::List{<:Equation},
+)
   @assign equations = begin
     local e1::Expression
     local e2::Expression
@@ -1154,12 +1142,12 @@ function flattenEquation(
       EQUATION_EQUALITY(__) => begin
         e1 = flattenExp(eq.lhs, prefix)
         e2 = flattenExp(eq.rhs, prefix)
-        _cons(EQUATION_EQUALITY(e1, e2, eq.ty, eq.source), equations)
+        _cons(EQUATION_EQUALITY(e1, e2, eq.ty, eq.source), inEquations)
       end
 
       EQUATION_FOR(__) => begin
 #        if Flags.isSet(Flags.NF_SCALARIZE) Currently we unroll everything -John Tinnerholm 2021-05-04
-        eql = unrollForLoop(eq, prefix, equations)
+        eql = unrollForLoop(eq, prefix, inEquations)
         #else
         #eql = splitForLoop(eq, prefix, equations)
 #        end
@@ -1169,42 +1157,42 @@ function flattenEquation(
       EQUATION_CONNECT(__) => begin
         @assign e1 = flattenExp(eq.lhs, prefix)
         @assign e2 = flattenExp(eq.rhs, prefix)
-        _cons(EQUATION_CONNECT(e1, e2, eq.source), equations)
+        _cons(EQUATION_CONNECT(e1, e2, eq.source), inEquations)
       end
 
       EQUATION_IF(__) => begin
-        flattenIfEquation(eq, prefix, equations)
+        flattenIfEquation(eq, prefix, inEquations)
       end
 
       EQUATION_WHEN(__) => begin
         @assign eq.branches = list(flattenEqBranch(b, prefix) for b in eq.branches)
-        _cons(eq, equations)
+        _cons(eq, inEquations)
       end
 
       EQUATION_ASSERT(__) => begin
         @assign e1 = flattenExp(eq.condition, prefix)
         @assign e2 = flattenExp(eq.message, prefix)
         @assign e3 = flattenExp(eq.level, prefix)
-        _cons(EQUATION_ASSERT(e1, e2, e3, eq.source), equations)
+        _cons(EQUATION_ASSERT(e1, e2, e3, eq.source), inEquations)
       end
 
       EQUATION_TERMINATE(__) => begin
-        @assign e1 = flattenExp(eq.message, prefix)
-        _cons(EQUATION_TERMINATE(e1, eq.source), equations)
+        e1 = flattenExp(eq.message, prefix)
+        _cons(EQUATION_TERMINATE(e1, eq.source), inEquations)
       end
 
       EQUATION_REINIT(__) => begin
-        @assign e1 = flattenExp(eq.cref, prefix)
-        @assign e2 = flattenExp(eq.reinitExp, prefix)
-        _cons(EQUATION_REINIT(e1, e2, eq.source), equations)
+        e1 = flattenExp(eq.cref, prefix)
+        e2 = flattenExp(eq.reinitExp, prefix)
+        _cons(EQUATION_REINIT(e1, e2, eq.source), inEquations)
       end
 
       EQUATION_NORETCALL(__) => begin
-        @assign e1 = flattenExp(eq.exp, prefix)
-        _cons(EQUATION_NORETCALL(e1, eq.source), equations)
+        e1 = flattenExp(eq.exp, prefix)
+        _cons(EQUATION_NORETCALL(e1, eq.source), inEquations)
       end
       _ => begin
-        _cons(eq, equations)
+        _cons(eq, inEquations)
       end
     end
   end
@@ -1216,7 +1204,6 @@ function flattenIfEquation(
   prefix::ComponentRef,
   equations::List{<:Equation},
 )::List{Equation}
-
   local branch::Equation_Branch
   local branches::List{Equation_Branch}
   local bl::List{Equation_Branch} = nil
@@ -1227,9 +1214,8 @@ function flattenIfEquation(
   local src::DAE.ElementSource
   local info::SourceInfo
   local target::EvalTarget
-
   @match EQUATION_IF(branches = branches, source = src) = eq
-  @assign has_connect = contains(eq, isConnectEq)
+  has_connect = contains(eq, isConnectEq)
   #=  Print errors for unbound constants/parameters if the if-equation contains
   =#
   #=  connects, since we must select a branch in that case.
@@ -1237,11 +1223,11 @@ function flattenIfEquation(
   @assign target = if has_connect
     GENERIC(info(eq))
   else
-    IGNORE_ERRORS()
+    EVALTARGET_IGNORE_ERRORS()
   end
   while !listEmpty(branches)
     @match _cons(branch, branches) = branches
-    @assign bl = begin
+    bl = begin
       @match branch begin
         EQUATION_BRANCH(cond, var, eql) => begin
           #=  Flatten the condition and body of the branch.
@@ -1264,28 +1250,25 @@ function flattenIfEquation(
           end
           #=  Conditions in an if-equation that contains connects must be possible to evaluate.
           =#
-          if isTrue(cond)
-            @assign branches = nil
-            if listEmpty(bl)
-              @assign equations = listAppend(eql, equations)
+          if isTrue(cond)           #=  The condition is true and the branch will thus always be selected =#
+            #=  if reached, so we can discard the remaining branches.          =#
+            branches = nil
+            if listEmpty(bl) #= If we haven't collected any other branches yet, replace the if-equation with this branch.=#
+              equations = listAppend(eql, equations)
             else
-              @assign bl = _cons(
+              bl = _cons(
                   makeBranch(cond, listReverseInPlace(eql), var),
                 bl,
               )
             end
           elseif !isFalse(cond)
-            @assign bl = _cons(
+            bl = _cons(
                 makeBranch(cond, listReverseInPlace(eql), var),
               bl,
             )
           end
-          #=  The condition is true and the branch will thus always be selected
-          =#
-          #=  if reached, so we can discard the remaining branches.
-          =#
-          #=  If we haven't collected any other branches yet, replace the if-equation with this branch.
-          =#
+
+
           #=  Otherwise, append this branch.
           =#
           #=  Only add the branch to the list of branches if the condition is not
@@ -1317,13 +1300,13 @@ function flattenIfEquation(
       end
     end
   end
-  #=  Add the flattened if-equation to the list of equations if there are any
-  =#
-  #=  branches still remaining.
-  =#
+  #=  Add the flattened if-equation to the list of equations if there are any =#
+  #=  branches still remaining. =#
   if !listEmpty(bl)
-    @assign equations =
-      _cons(EQUATION_IF(listReverseInPlace(bl), src), equations)
+#        @info equations
+    #    equations = _cons(EQUATION_IF(listReverseInPlace(bl), src), equations)
+    equations = _cons(EQUATION_IF(listReverseInPlace(bl), src), equations)
+    return equations
   end
   return equations
 end

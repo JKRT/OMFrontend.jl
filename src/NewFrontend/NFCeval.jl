@@ -152,7 +152,7 @@ end
 
   @Record EVALTARGET_DIMENSION begin
     component::InstNode
-    index::Integer
+    index::Int
     exp::Expression
     info::SourceInfo
   end
@@ -628,7 +628,7 @@ function evalComponentStartBinding(
   local binding::Binding
   local exp::Expression
   local subs::List{Subscript}
-  local pcount::Integer
+  local pcount::Int
 
   #=  Only use the start value if the component is a fixed parameter.
   =#
@@ -855,7 +855,7 @@ function evalRange(rangeExp::Expression, target::EvalTarget)::Expression
   local stop_exp::Expression
   local step_exp::Option{Expression}
   local max_prop_exp::Expression
-  local max_prop_count::Integer
+  local max_prop_count::Int
 
   @match RANGE_EXPRESSION(
     ty = ty,
@@ -892,7 +892,7 @@ function evalRangeExp(rangeExp::Expression)::Expression
   local expl::List{Expression}
   local ty::M_Type
   local literals::List{String}
-  local istep::Integer
+  local istep::Int
 
   @match RANGE_EXPRESSION(start = start, step = opt_step, stop = stop) =
     rangeExp
@@ -983,7 +983,7 @@ function evalRangeReal(
 )::List{Expression}
   local result::List{Expression}
 
-  local steps::Integer
+  local steps::Int
 
   @assign steps = Util.realRangeSize(start, step, stop)
   #=  Real ranges are tricky, make sure that start and stop are reproduced
@@ -1020,14 +1020,14 @@ function evalBinaryOp(
   local exp::Expression
 
   local max_prop_exp::Expression
-  local max_prop_count::Integer
+  local max_prop_count::Int
 
   @assign (max_prop_exp, max_prop_count) =
     mostPropagatedSubExpBinary(exp1, exp2)
   if max_prop_count >= 0
     @assign exp = bindingExpMap2(
       BINARY_EXPRESSION(exp1, op, exp2),
-      (target) -> evalBinaryExp(target = target),
+      (x) -> evalBinaryExp(x, target), #Change by me:) John
       max_prop_count,
       max_prop_exp,
     )
@@ -1039,7 +1039,6 @@ end
 
 function evalBinaryExp(binaryExp::Expression, target::EvalTarget)::Expression
   local result::Expression
-
   local e1::Expression
   local e2::Expression
   local op::Operator
@@ -1567,7 +1566,7 @@ end
 function evalBinaryPowMatrix(matrixExp::Expression, nExp::Expression)::Expression
   local exp::Expression
 
-  local n::Integer
+  local n::Int
 
   @assign exp = begin
     @match (matrixExp, nExp) begin
@@ -1595,7 +1594,7 @@ function evalBinaryPowMatrix(matrixExp::Expression, nExp::Expression)::Expressio
   return exp
 end
 
-function evalBinaryPowMatrix2(matrix::Expression, n::Integer)::Expression
+function evalBinaryPowMatrix2(matrix::Expression, n::Int)::Expression
   local exp::Expression
 
   @assign exp = begin
@@ -1694,7 +1693,7 @@ function evalLogicBinaryOp(
 
   local e1::Expression
   local max_prop_exp::Expression
-  local max_prop_count::Integer
+  local max_prop_count::Int
 
   @assign (max_prop_exp, max_prop_count) =
     mostPropagatedSubExpBinary(exp1, exp2)
@@ -1900,7 +1899,7 @@ function evalRelationOp(exp1::Expression, op::Operator, exp2::Expression)::Expre
   local exp::Expression
 
   local max_prop_exp::Expression
-  local max_prop_count::Integer
+  local max_prop_count::Int
 
   @assign (max_prop_exp, max_prop_count) =
     mostPropagatedSubExpBinary(exp1, exp2)
@@ -2463,7 +2462,7 @@ function eval(
         evalBuiltinInteger(listHead(args))
       end
 
-      "Integer" => begin
+      "Int" => begin
         evalBuiltinIntegerEnum(listHead(args))
       end
 
@@ -2792,12 +2791,12 @@ function evalBuiltinCat(
 )::Expression
   local result::Expression
 
-  local n::Integer
-  local nd::Integer
-  local sz::Integer
+  local n::Int
+  local nd::Int
+  local sz::Int
   local ty::M_Type
   local es::List{Expression}
-  local dims::List{Integer}
+  local dims::List{Int}
 
   @match INTEGER_EXPRESSION(n) = argN
   @assign ty = typeOf(listHead(args))
@@ -2907,8 +2906,8 @@ function evalBuiltinDiagonal(arg::Expression)::Expression
   local elems::List{Expression}
   local row::List{Expression}
   local rows::List{Expression} = nil
-  local n::Integer
-  local i::Integer = 1
+  local n::Int
+  local i::Int = 1
   local e_lit::Bool
   local arg_lit::Bool = true
 
@@ -2959,8 +2958,8 @@ function evalBuiltinDiv(args::List{<:Expression}, target::EvalTarget)::Expressio
 
   local rx::AbstractFloat
   local ry::AbstractFloat
-  local ix::Integer
-  local iy::Integer
+  local ix::Int
+  local iy::Int
 
   @assign result = begin
     @match args begin
@@ -3035,7 +3034,7 @@ end
 function evalBuiltinFill2(fillValue::Expression, dims::List{<:Expression})::Expression
   local result::Expression = fillValue
 
-  local dim_size::Integer
+  local dim_size::Int
   local arr::List{Expression}
   local arr_ty::M_Type = typeOf(result)
 
@@ -3203,7 +3202,7 @@ function evalBuiltinMatrix(arg::Expression)::Expression
   local result::Expression
 
   @assign result = begin
-    local dim_count::Integer
+    local dim_count::Int
     local expl::List{Expression}
     local dim1::Dimension
     local dim2::Dimension
@@ -3550,7 +3549,7 @@ function evalBuiltinProduct(arg::Expression)::Expression
   return result
 end
 
-function evalBuiltinProductInt(exp::Expression, result::Integer)::Integer
+function evalBuiltinProductInt(exp::Expression, result::Int)::Int
 
   @assign result = begin
     @match exp begin
@@ -3593,7 +3592,7 @@ end
 function evalBuiltinPromote(arg::Expression, argN::Expression)::Expression
   local result::Expression
 
-  local n::Integer
+  local n::Int
 
   if isInteger(argN)
     @match INTEGER_EXPRESSION(n) = argN
@@ -3817,11 +3816,11 @@ function evalBuiltinString(args::List{<:Expression})::Expression
 
   @assign result = begin
     local arg::Expression
-    local min_len::Integer
-    local str_len::Integer
-    local significant_digits::Integer
-    local idx::Integer
-    local c::Integer
+    local min_len::Int
+    local str_len::Int
+    local significant_digits::Int
+    local idx::Int
+    local c::Int
     local left_justified::Bool
     local str::String
     local format::String
@@ -3932,7 +3931,7 @@ function evalBuiltinSum(arg::Expression)::Expression
   return result
 end
 
-function evalBuiltinSumInt(exp::Expression, result::Integer)::Integer
+function evalBuiltinSumInt(exp::Expression, result::Int)::Int
 
   @assign result = begin
     @match exp begin
@@ -3976,7 +3975,7 @@ function evalBuiltinSymmetric(arg::Expression)::Expression
   local result::Expression
 
   local mat::Array{Array{Expression}}
-  local n::Integer
+  local n::Int
   local row_ty::M_Type
   local expl::List{Expression}
   local accum::List{Expression} = nil
@@ -4159,8 +4158,8 @@ end
 function evalIntBitAnd(args::List{<:Expression})::Expression
   local result::Expression
 
-  local i1::Integer
-  local i2::Integer
+  local i1::Int
+  local i2::Int
 
   @assign result = begin
     @match args begin
@@ -4181,8 +4180,8 @@ end
 function evalIntBitOr(args::List{<:Expression})::Expression
   local result::Expression
 
-  local i1::Integer
-  local i2::Integer
+  local i1::Int
+  local i2::Int
 
   @assign result = begin
     @match args begin
@@ -4203,8 +4202,8 @@ end
 function evalIntBitXor(args::List{<:Expression})::Expression
   local result::Expression
 
-  local i1::Integer
-  local i2::Integer
+  local i1::Int
+  local i2::Int
 
   @assign result = begin
     @match args begin
@@ -4225,8 +4224,8 @@ end
 function evalIntBitLShift(args::List{<:Expression})::Expression
   local result::Expression
 
-  local i1::Integer
-  local i2::Integer
+  local i1::Int
+  local i2::Int
 
   @assign result = begin
     @match args begin
@@ -4247,8 +4246,8 @@ end
 function evalIntBitRShift(args::List{<:Expression})::Expression
   local result::Expression
 
-  local i1::Integer
-  local i2::Integer
+  local i1::Int
+  local i2::Int
 
   @assign result = begin
     @match args begin
@@ -4605,7 +4604,7 @@ function evalSize(
   local outExp::Expression
 
   local index_exp::Expression
-  local index::Integer
+  local index::Int
   local ty_err::TypingError
   local dim::Dimension
   local ty::M_Type
@@ -4672,7 +4671,7 @@ function evalRecordElement(exp::Expression, target::EvalTarget)::Expression
   local result::Expression
 
   local e::Expression
-  local index::Integer
+  local index::Int
 
   @match RECORD_ELEMENT(recordExp = e, index = index) = exp
   @assign e = evalExp_impl(e, target)
@@ -4689,7 +4688,7 @@ function evalRecordElement(exp::Expression, target::EvalTarget)::Expression
   return result
 end
 
-function evalRecordElement2(exp::Expression, index::Integer)::Expression
+function evalRecordElement2(exp::Expression, index::Int)::Expression
   local result::Expression
 
   @assign result = begin

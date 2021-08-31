@@ -6,9 +6,8 @@ using ExportAll
 ComponentRef = NFComponentRef
 #= Modelica extend clause =#
 const Key = ComponentRef
-const Value = Integer
+const Value = Int
 include("../Util/baseAvlTreeCode.jl")
-include("../Util/baseAvlSetCode.jl")
 @exportAll()
 end
 

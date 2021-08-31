@@ -17,7 +17,7 @@ include("DuplicateTree.jl")
     tree::LookupTree.Tree
     classes::Array{Pointer{InstNode}}
     components::Array{Pointer{InstNode}}
-    localComponents::List{Integer}
+    localComponents::List{Int}
     exts::Array{InstNode}
     imports::Array{Import}
     duplicates::DuplicateTree.Tree
@@ -168,8 +168,7 @@ function enumerateComponents(tree::ClassTree)::List{InstNode}
   local comps::Array{InstNode}
 
   @match CLASS_TREE_FLAT_TREE(tree = ltree, components = comps) = tree
-  @assign components =
-    LookupTree.fold(ltree, (comps) -> enumerateComponents2(comps = comps), nil)
+  components = LookupTree.fold(ltree, (name, entry, components) -> enumerateComponents2(name, entry, comps, components), nil)
   return components
 end
 
@@ -248,13 +247,13 @@ function checkDuplicates(tree::ClassTree)
   end
 end
 
-function extendsCount(tree::ClassTree)::Integer
-  local count::Integer = arrayLength(getExtends(tree))
+function extendsCount(tree::ClassTree)::Int
+  local count::Int = arrayLength(getExtends(tree))
   return count
 end
 
-function componentCount(tree::ClassTree)::Integer
-  local count::Integer
+function componentCount(tree::ClassTree)::Int
+  local count::Int
 
   @assign count = begin
     @match tree begin
@@ -278,8 +277,8 @@ function componentCount(tree::ClassTree)::Integer
   return count
 end
 
-function classCount(tree::ClassTree)::Integer
-  local count::Integer
+function classCount(tree::ClassTree)::Int
+  local count::Int
 
   @assign count = begin
     @match tree begin
@@ -435,7 +434,8 @@ end
 function mapExtends(tree::ClassTree, func::FuncT)
   local exts::Array{InstNode} = getExtends(tree)
   for i = 1:arrayLength(exts)
-    arrayUpdateNoBoundsChecking(exts, i, func(arrayGetNoBoundsChecking(exts, i)))
+    res = arrayGetNoBoundsChecking(exts, i)
+    arrayUpdateNoBoundsChecking(exts, i, func(res))
   end
   return
 end
@@ -466,7 +466,7 @@ function mapClasses(tree::ClassTree, func::FuncT)
   end
 end
 
-function nthComponent(index::Integer, tree::ClassTree)::InstNode
+function nthComponent(index::Int, tree::ClassTree)::InstNode
   local component::InstNode
 
   @assign component = begin
@@ -491,8 +491,8 @@ function nthComponent(index::Integer, tree::ClassTree)::InstNode
   return component
 end
 
-function lookupComponentIndex(name::String, tree::ClassTree)::Integer
-  local index::Integer
+function lookupComponentIndex(name::String, tree::ClassTree)::Int
+  local index::Int
 
   @match LookupTree.COMPONENT(index = index) =
     LookupTree.get(lookupTree(tree), name)
@@ -540,7 +540,7 @@ end
 function flattenLookupTree2(
   key::LookupTree.Key,
   entry::LookupTree.Entry,
-  offsets::Array{<:Integer},
+  offsets::Array{<:Int},
 )::LookupTree.Entry
   local outEntry::LookupTree.Entry
 
@@ -566,7 +566,7 @@ end
        component array. =#"""
 function flattenLookupTree(
   tree::LookupTree.Tree,
-  offsets::Array{<:Integer},
+  offsets::Array{<:Int},
 )::LookupTree.Tree
   @assign tree = LookupTree.map(tree, (offsets) -> flattenLookupTree2(offsets = offsets))
   return tree
@@ -579,14 +579,14 @@ end
          createFlatOffsets(7, {2, 4, 5}) => {0, -1, 1, -1, -1, 3, 3}
        =#"""
 function createFlatOffsets(
-  elementCount::Integer,
-  duplicates::List{<:Integer},
-)::Array{Integer}
-  local offsets::Array{Integer}
+  elementCount::Int,
+  duplicates::List{<:Int},
+)::Array{Int}
+  local offsets::Array{Int}
 
-  local offset::Integer = 0
-  local dup::Integer
-  local rest_dups::List{Integer}
+  local offset::Int = 0
+  local dup::Int
+  local rest_dups::List{Int}
 
   @assign offsets = arrayCreateNoInit(elementCount, 0)
   @match _cons(dup, rest_dups) = duplicates
@@ -609,9 +609,9 @@ end
 function flattenElementsWithOffset(
   elements::Array{<:Pointer{<:InstNode}},
   flatElements::Array{<:InstNode},
-  offsets::Array{<:Integer},
+  offsets::Array{<:Int},
 )
-  local offset::Integer
+  local offset::Int
 
   return for i = 1:arrayLength(elements)
     @assign offset = arrayGetNoBoundsChecking(offsets, i)
@@ -648,10 +648,10 @@ function flatten(tree::ClassTree)::ClassTree
   @assign tree = begin
     local clss::Array{InstNode}
     local comps::Array{InstNode}
-    local comp_offsets::Array{Integer}
-    local clsc::Integer
-    local compc::Integer
-    local dup_comp::List{Integer}
+    local comp_offsets::Array{Int}
+    local clsc::Int
+    local compc::Int
+    local dup_comp::List{Int}
     local ltree::LookupTree.Tree
     @match tree begin
       CLASS_TREE_INSTANTIATED_TREE(__) => begin
@@ -710,8 +710,8 @@ function appendComponentsToInstTree(
     return tree
   else
     @assign () = begin
-      local comp_idx::Integer
-      local local_comps::List{Integer}
+      local comp_idx::Int
+      local local_comps::List{Int}
       @match tree begin
         CLASS_TREE_INSTANTIATED_TREE(__) => begin
           @assign comp_idx = arrayLength(tree.components)
@@ -797,7 +797,7 @@ function fromRecordConstructor(fields::List{<:InstNode}, out::InstNode)::ClassTr
   local tree::ClassTree = EMPTY_CLASS_TREE
 
   local ltree::LookupTree.Tree = LookupTree.new()
-  local i::Integer = 1
+  local i::Int = 1
   local comps::Array{InstNode}
 
   @assign comps = arrayCreateNoInit(listLength(fields) + 1, EMPTY_NODE())
@@ -828,9 +828,9 @@ function instantiate(
   clsNode::InstNode,
   instance::InstNode = EMPTY_NODE(),
   scope::InstNode = EMPTY_NODE(),
-)::Tuple{InstNode, InstNode, Integer, Integer}
-  local compCount::Integer = 0
-  local classCount::Integer = 0
+)::Tuple{InstNode, InstNode, Int, Int}
+  local compCount::Int = 0
+  local classCount::Int = 0
   local cls::Class
   local tree::ClassTree
   local ext_tree::ClassTree
@@ -842,11 +842,11 @@ function instantiate(
   local clss::Array{Pointer{InstNode}}
   local comps::Array{Pointer{InstNode}}
   local ext_clss::Array{Pointer{InstNode}}
-  local local_comps::List{Integer} = nil
-  local cls_idx::Integer = 1
-  local comp_idx::Integer = 1
-  local cls_count::Integer
-  local comp_count::Integer
+  local local_comps::List{Int} = nil
+  local cls_idx::Int = 1
+  local comp_idx::Int = 1
+  local cls_count::Int
+  local comp_count::Int
   local node::InstNode
   local parent_scope::InstNode
   local inner_node::InstNode
@@ -862,9 +862,9 @@ function instantiate(
   =#
   #=  Clone the class node by replacing the class in the node with itself.
   =#
-  @assign cls = getClass(clsNode)
-  @assign clsNode = replaceClass(cls, clsNode)
-  @assign () = begin
+  cls = getClass(clsNode)
+  clsNode = replaceClass(cls, clsNode)
+  () = begin
     @match cls begin
       EXPANDED_CLASS(elements = CLASS_TREE_INSTANTIATED_TREE(__)) => begin
         ()
@@ -1052,7 +1052,7 @@ function instantiate(
       _ => begin
         ###Error.assertion(false, getInstanceName() + " got invalid class", sourceInfo())
         str = clsNode.name
-        @error "Got an invalid class $cls"
+        @error "Got an invalid class $cls for $(str)"
         fail()
       end
     end
@@ -1072,10 +1072,10 @@ function expand(tree::ClassTree)::ClassTree
   local clss::Array{InstNode}
   local comps::Array{InstNode}
   local imps::Array{Import}
-  local ext_idxs::List{Tuple{Integer, Integer}} = nil
-  local ccount::Integer
-  local cls_idx::Integer
-  local comp_idx::Integer = 1
+  local ext_idxs::List{Tuple{Int, Int}} = nil
+  local ccount::Int
+  local cls_idx::Int
+  local comp_idx::Int = 1
   local dups::DuplicateTree.Tree
   local dups_ptr::Pointer
 
@@ -1145,8 +1145,8 @@ function addElementsToFlatTree(elements::List{<:InstNode}, tree::ClassTree)::Cla
   local comp_lst::List{InstNode} = nil
   local imports::Array{Import}
   local duplicates::DuplicateTree.Tree
-  local cls_idx::Integer
-  local comp_idx::Integer
+  local cls_idx::Int
+  local comp_idx::Int
   local lentry::LookupTree.Entry
   @match CLASS_TREE_FLAT_TREE(ltree, cls_arr, comp_arr, imports, duplicates) = tree
   @assign cls_idx = arrayLength(cls_arr)
@@ -1178,8 +1178,8 @@ function fromEnumeration(
   local tree::ClassTree
 
   local comps::Array{InstNode}
-  local attr_count::Integer = 5
-  local i::Integer = 0
+  local attr_count::Int = 5
+  local i::Int = 0
   local comp::InstNode
   local ltree::LookupTree.Tree
   local name::String
@@ -1264,16 +1264,16 @@ function fromSCode(
 
   local ltree::LookupTree.Tree
   local lentry::LookupTree.Entry
-  local clsc::Integer
-  local compc::Integer
-  local extc::Integer
-  local i::Integer
+  local clsc::Int
+  local compc::Int
+  local extc::Int
+  local i::Int
   local clss::Array{InstNode}
   local comps::Array{InstNode}
   local exts::Array{InstNode}
-  local cls_idx::Integer = 0
-  local ext_idx::Integer = 0
-  local comp_idx::Integer = 0
+  local cls_idx::Int = 0
+  local ext_idx::Int = 0
+  local comp_idx::Int = 0
   local dups::DuplicateTree.Tree
   local imps::List{Import} = nil
   local imps_arr::Array{Import}
@@ -1602,9 +1602,9 @@ end
 
 function enumerateDuplicates4(
   entry::LookupTree.Entry,
-  classes::List{<:Integer},
-  components::List{<:Integer},
-)::Tuple{List{Integer}, List{Integer}}
+  classes::List{<:Int},
+  components::List{<:Int},
+)::Tuple{List{Int}, List{Int}}
 
   @assign () = begin
     @match entry begin
@@ -1625,9 +1625,9 @@ end
 
 function enumerateDuplicates3(
   entry::DuplicateTree.Entry,
-  classes::List{<:Integer},
-  components::List{<:Integer},
-)::Tuple{List{Integer}, List{Integer}}
+  classes::List{<:Int},
+  components::List{<:Int},
+)::Tuple{List{Int}, List{Int}}
 
   @assign (classes, components) = enumerateDuplicates4(entry.entry, classes, components)
   for c in entry.children
@@ -1639,9 +1639,9 @@ end
 function enumerateDuplicates2(
   name::String,
   entry::DuplicateTree.Entry,
-  classes::List{<:Integer},
-  components::List{<:Integer},
-)::Tuple{List{Integer}, List{Integer}}
+  classes::List{<:Int},
+  components::List{<:Int},
+)::Tuple{List{Int}, List{Int}}
 
   for c in entry.children
     @assign (classes, components) = enumerateDuplicates3(c, classes, components)
@@ -1653,9 +1653,9 @@ end
        not including the ones that should be kept. =#"""
 function enumerateDuplicates(
   duplicates::DuplicateTree.Tree,
-)::Tuple{List{Integer}, List{Integer}}
-  local components::List{Integer}
-  local classes::List{Integer}
+)::Tuple{List{Int}, List{Int}}
+  local components::List{Int}
+  local classes::List{Int}
 
   if DuplicateTree.isEmpty(duplicates)
     @assign classes = nil
@@ -1685,8 +1685,8 @@ end
 
 function offsetDuplicate(
   entry::LookupTree.Entry,
-  classOffset::Integer,
-  componentOffset::Integer,
+  classOffset::Int,
+  componentOffset::Int,
 )::LookupTree.Entry
   local offsetEntry::LookupTree.Entry
 
@@ -1709,8 +1709,8 @@ end
 function offsetDuplicates(
   name::String,
   entry::DuplicateTree.Entry,
-  classOffset::Integer,
-  componentOffset::Integer,
+  classOffset::Int,
+  componentOffset::Int,
 )::DuplicateTree.Entry
   local offsetEntry::DuplicateTree.Entry
 
@@ -1737,8 +1737,8 @@ function addInheritedElementConflict(
   local dups::DuplicateTree.Tree
   local opt_dup_entry::Option{DuplicateTree.Entry}
   local dup_entry::DuplicateTree.Entry
-  local new_id::Integer = LookupTree.Entry.index(newEntry)
-  local old_id::Integer = LookupTree.index(oldEntry)
+  local new_id::Int = LookupTree.Entry.index(newEntry)
+  local old_id::Int = LookupTree.index(oldEntry)
   local ty::DuplicateTree.EntryType
 
   #=  Overwrite the existing entry if it's an import. This happens when a
@@ -1846,8 +1846,8 @@ end
 function addInheritedElement(
   name::String,
   entry::LookupTree.Entry,
-  classOffset::Integer,
-  componentOffset::Integer,
+  classOffset::Int,
+  componentOffset::Int,
   conflictFunc::LookupTree.ConflictFunc,
   tree::LookupTree.Tree,
 )::LookupTree.Tree
@@ -1879,8 +1879,8 @@ end
 function expandExtends(
   extendsNode::InstNode,
   tree::LookupTree.Tree,
-  classOffset::Integer,
-  componentOffset::Integer,
+  classOffset::Int,
+  componentOffset::Int,
   duplicates::Pointer{<:DuplicateTree.Tree},
 )::LookupTree.Tree #= Duplicate elements info. =#
 
@@ -1932,18 +1932,22 @@ function expandExtends(
   =#
   #=  Join the two duplicate trees together.
   =#
-  @assign conf_func =
-    (duplicates, ext_dups) ->
-      addInheritedElementConflict(duplicates = duplicates, extDuplicates = ext_dups)
+  conf_func =
+    (newEntry, oldEntry, name) ->
+      addInheritedElementConflict(newEntry, oldEntry, name, duplicates, ext_dups)
   #=  Copy entries from the extends node's lookup tree.
   =#
-  @assign tree = LookupTree.fold(
+  foldFunc = (nameX, entryX, treeX) -> addInheritedElement(
+      nameX,
+      entryX,
+      classOffset,
+      componentOffset,
+      conf_func,
+      treeX,
+    )
+  tree = LookupTree.fold(
     ext_tree,
-    (classOffset, componentOffset, conf_func) -> addInheritedElement(
-      classOffset = classOffset,
-      componentOffset = componentOffset,
-      conflictFunc = conf_func,
-    ),
+    foldFunc,
     tree,
   )
   return tree #= The lookup tree to add names to =#
@@ -1951,9 +1955,9 @@ end
 
 function countInheritedElements(
   extendsNode::InstNode,
-  classCount::Integer = 0,
-  componentCount::Integer = 0,
-)::Tuple{Integer, Integer}
+  classCount::Int = 0,
+  componentCount::Int = 0,
+)::Tuple{Int, Int}
 
   local clss::Array{InstNode}
   local comps::Array{InstNode}
@@ -1991,10 +1995,10 @@ end
 
 """ #= Counts the number of classes, components and extends clauses in a list of
        SCode elements. =#"""
-function countElements(elements::List{<:SCode.Element})::Tuple{Integer, Integer, Integer}
-  local extCount::Integer = 0
-  local compCount::Integer = 0
-  local classCount::Integer = 0
+function countElements(elements::List{<:SCode.Element})::Tuple{Int, Int, Int}
+  local extCount::Int = 0
+  local compCount::Int = 0
+  local classCount::Int = 0
 
   for e in elements
     @assign () = begin
@@ -2023,7 +2027,7 @@ function countElements(elements::List{<:SCode.Element})::Tuple{Integer, Integer,
   return (classCount, compCount, extCount)
 end
 
-function resolveImport(index::Integer, tree::ClassTree)::InstNode
+function resolveImport(index::Int, tree::ClassTree)::InstNode
   local element::InstNode
 
   local imports::Array{Import}
@@ -2060,7 +2064,7 @@ function resolveImport(index::Integer, tree::ClassTree)::InstNode
   return element
 end
 
-function resolveComponent(index::Integer, tree::ClassTree)::InstNode
+function resolveComponent(index::Int, tree::ClassTree)::InstNode
   local element::InstNode
 
   @assign element = begin
@@ -2077,7 +2081,7 @@ function resolveComponent(index::Integer, tree::ClassTree)::InstNode
   return element
 end
 
-function resolveClass(index::Integer, tree::ClassTree)::InstNode
+function resolveClass(index::Int, tree::ClassTree)::InstNode
   local element::InstNode
   @assign element = begin
     @match tree begin
@@ -2273,7 +2277,7 @@ end
 
 function addImport(
   imp::Import,
-  index::Integer,
+  index::Int,
   tree::LookupTree.Tree,
   imports::Array{<:Import},
 )::LookupTree.Tree
@@ -2313,7 +2317,7 @@ function findLocalConflictElement(entry::LookupTree.Entry, classTree::ClassTree)
   @assign node = begin
     local comps::Array{InstNode}
     local exts::Array{InstNode}
-    local i::Integer
+    local i::Int
     #=  For classes we can just use the normal resolveClass function.
     =#
     @match entry begin
@@ -2468,14 +2472,12 @@ end
 function instExtendsComps(
   extNode::InstNode,
   comps::Array{<:Pointer{<:InstNode}},
-  index::Integer,
-)::Integer #= The first free index in comps =#
-
+  index::Int,
+)::Int #= The first free index in comps =#
   local ext_comps_ptrs::Array{Pointer{InstNode}}
   local ext_comps::Array{InstNode}
-  local comp_count::Integer
+  local comp_count::Int
   local ext_comp::InstNode
-
   @assign () = begin
     @match classTree(getClass(extNode)) begin
       CLASS_TREE_INSTANTIATED_TREE(components = ext_comps_ptrs) => begin
@@ -2486,7 +2488,6 @@ function instExtendsComps(
         end
         ()
       end
-
       CLASS_TREE_FLAT_TREE(components = ext_comps) => begin
         @assign comp_count = arrayLength(ext_comps)
         if comp_count > 0
@@ -2497,7 +2498,6 @@ function instExtendsComps(
         end
         ()
       end
-
       _ => begin
         ()
       end

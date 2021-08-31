@@ -973,7 +973,7 @@ function evaluateInStream(
 
   local c::Connector
   local sl::List{Connector}
-  local set::Integer
+  local set::Int
 
   @assign c = Connector.CONNECTOR(
     cref,
@@ -1122,7 +1122,7 @@ function evaluateActualStream(
 )::Expression
   local exp::Expression
 
-  local flow_dir::Integer
+  local flow_dir::Int
   local flow_cr::ComponentRef
   local flow_exp::Expression
   local stream_exp::Expression
@@ -1205,8 +1205,8 @@ function evaluateActualStreamMul(
   return outExp
 end
 
-function evaluateFlowDirection(flowCref::ComponentRef)::Integer
-  local direction::Integer = 0
+function evaluateFlowDirection(flowCref::ComponentRef)::Int
+  local direction::Int = 0
 
   local flow_cls::Class
   local omin::Option{Expression}
@@ -1277,7 +1277,7 @@ function evaluateFlowDirection(flowCref::ComponentRef)::Integer
 end
 
 """ #= Creates a smooth(order, arg) call. =#"""
-function makeSmoothCall(arg::Expression, order::Integer)::Expression
+function makeSmoothCall(arg::Expression, order::Int)::Expression
   local callExp::Expression
 
   @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(

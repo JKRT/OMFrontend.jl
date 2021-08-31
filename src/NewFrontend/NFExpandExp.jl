@@ -164,7 +164,7 @@ function expandUnary(exp::Expression, op::Operator)::Tuple{Expression, Bool}
   return (outExp, expanded)
 end
 
-function expandBinaryPowMatrix2(matrix::Expression, n::Integer)::Expression
+function expandBinaryPowMatrix2(matrix::Expression, n::Int)::Expression
   local exp::Expression
 
   @assign exp = begin
@@ -206,7 +206,7 @@ function expandBinaryPowMatrix(exp::Expression)::Tuple{Expression, Bool}
   local exp1::Expression
   local exp2::Expression
   local op::Operator
-  local n::Integer
+  local n::Int
 
   @match BINARY_EXPRESSION(exp1 = exp1, operator = op, exp2 = exp2) = exp
   @assign (outExp, expanded) = begin
@@ -656,7 +656,7 @@ function expandSize(exp::Expression)::Tuple{Expression, Bool}
   local outExp::Expression
 
   @assign outExp = begin
-    local dims::Integer
+    local dims::Int
     local e::Expression
     local ty::M_Type
     local expl::List{Expression}
@@ -835,7 +835,7 @@ function expandBuiltinPromote(args::List{<:Expression})::Tuple{Expression, Bool}
   local expanded::Bool
   local exp::Expression
 
-  local n::Integer
+  local n::Int
   local eexp::Expression
   local nexp::Expression
 

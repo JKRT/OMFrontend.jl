@@ -76,15 +76,14 @@ using ExportAll
 
 import ..Main.NFConnector
 
-Value = Integer
+Value = Int
 Key = NFConnector
 const Connector = NFConnector
 
 #= Modelica extend clause =#
 include("../Util/baseAvlTreeCode.jl")
-include("../Util/baseAvlSetCode.jl")
 
-function emptySet(size::Integer)::HashSet
+function emptySet(size::Int)::HashSet
   local set::HashSet
   @assign set = BaseHashSet.emptyHashSetWork(
     size,
@@ -93,8 +92,8 @@ function emptySet(size::Integer)::HashSet
   return set
 end
 
-function hashConnector(conn::Connector, mod::Integer)::Integer
-  local res::Integer
+function hashConnector(conn::Connector, mod::Int)::Int
+  local res::Int
 
   @assign res = stringHashDjb2Mod(firstName(conn.name), mod)
   return res

@@ -29,7 +29,7 @@
 *
 */ =#
 
-const VariabilityType = Integer
+const VariabilityType = Int
 
 @UniontypeDecl Binding
 
@@ -52,7 +52,7 @@ const VariabilityType = Integer
     bindingExp::Expression
     bindingType
     variability::VariabilityType
-    eachType::Integer
+    eachType::Int
     evaluated::Bool
     isFlattened::Bool
     info::SourceInfo
@@ -89,4 +89,4 @@ EachType = (() -> begin #= Enumeration =#
   REPEAT = 3
   () -> (NOT_EACH; EACH; REPEAT)
 end)()
-EachTypeType = Integer
+EachTypeType = Int

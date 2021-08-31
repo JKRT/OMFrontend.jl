@@ -56,7 +56,6 @@ end
 
 @Uniontype ConfigFlag begin
   @Record CONFIG_FLAG begin
-
     index::Integer #= Unique index. =#
     name::String #= The whole name of the flag. =#
     shortname::Option{String} #= A short name one-character name for the flag. =#

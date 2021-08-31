@@ -45,7 +45,7 @@ Op = (
   end
 )()
 
-const OpType = Integer
+const OpType = Int
 
 
 @Uniontype NFOperator begin
@@ -383,8 +383,8 @@ function isAssociative(op::Operator)::Bool
   return isAssociative
 end
 
-function priority(op::Operator, lhs::Bool)::Integer
-  local priority::Integer
+function priority(op::Operator, lhs::Bool)::Int
+  local priority::Int
 
   @assign priority = begin
     @match op.op begin
@@ -902,10 +902,10 @@ function fromAbsyn(inOperator::Absyn.Operator)::Operator
   return outOperator
 end
 
-function compare(op1::Operator, op2::Operator)::Integer
-  local comp::Integer
+function compare(op1::Operator, op2::Operator)::Int
+  local comp::Int
   local o1::OpType = op1.op
   local o2::OpType = op2.op
-  @assign comp = Util.intCompare(Integer(o1), Integer(o2))
+  @assign comp = Util.intCompare(Int(o1), Int(o2))
   return comp
 end

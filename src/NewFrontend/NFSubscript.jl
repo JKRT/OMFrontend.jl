@@ -21,8 +21,8 @@ Subscript = NFSubscript
   end
 end
 
-function toInteger(subscript::Subscript)::Integer
-  local int::Integer
+function toInteger(subscript::Subscript)::Int
+  local int::Int
 
   @assign int = begin
     @match subscript begin
@@ -115,12 +115,12 @@ end
 function mergeList(
   newSubs::List{<:Subscript},
   oldSubs::List{<:Subscript},
-  dimensions::Integer,
+  dimensions::Int,
 )::Tuple{List{Subscript}, List{Subscript}} #= The number of dimensions to subscript =#
   local remainingSubs::List{Subscript} #= The subscripts that didn't fit =#
   local outSubs::List{Subscript} #= The merged subscripts, at most 'dimensions' many =#
 
-  local subs_count::Integer
+  local subs_count::Int
   local new_sub::Subscript
   local old_sub::Subscript
   local rest_old_subs::List{Subscript}
@@ -905,8 +905,8 @@ end
 function compareList(
   subscripts1::List{<:Subscript},
   subscripts2::List{<:Subscript},
-)::Integer
-  local comp::Integer
+)::Int
+  local comp::Int
 
   local s2::Subscript
   local rest_s2::List{Subscript} = subscripts2
@@ -926,8 +926,8 @@ function compareList(
   return comp
 end
 
-function compare(subscript1::Subscript, subscript2::Subscript)::Integer
-  local comp::Integer
+function compare(subscript1::Subscript, subscript2::Subscript)::Int
+  local comp::Int
 
   if referenceEq(subscript1, subscript2)
     @assign comp = 0

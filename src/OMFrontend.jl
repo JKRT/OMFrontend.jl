@@ -6,8 +6,34 @@ module OMFrontend
 import Absyn
 import SCode
 import OpenModelicaParser
+using MetaModelica
 
 include("main.jl")
+
+#= Cache for NFModelicaBuiltin. We only use the result once! =#
+"""
+Cache for NFModelicaBuiltin.
+This cache is initialized when the module is loaded.
+"""
+const NFModelicaBuiltinCache = Dict()
+
+"""
+  This function loads builtin Modelica libraries.
+"""
+function __init__()
+  if ! haskey(NFModelicaBuiltinCache, "NFModelicaBuiltin")
+    path = realpath(realpath(Base.find_package("OMFrontend") * "./../../"))
+    path *= "/lib/NFModelicaBuiltin.mo"
+    #= The external C stuff can be a bit flaky.. =#
+    GC.enable(false) 
+    p = parseFile(path, 2 #== MetaModelica ==#)
+    @debug "SCode translation"
+    s = OMFrontend.translateToSCode(p)
+    NFModelicaBuiltinCache["NFModelicaBuiltin"] = s
+    #=Enable GC again.=#
+    GC.enable(true)
+  end
+end
 
 function parseFile(file::String, acceptedGram::Int64 = 1)::Absyn.Program
   return OpenModelicaParser.parseFile(file, acceptedGram)
@@ -24,24 +50,21 @@ function instSCode(inProgram::SCode.Program)
 end
 
 
-"
+"""
   Instantiates and translates to DAE.
-"
-function instantiateSCodeToDAE(@nospecialize(elementToInstantiate::String), @nospecialize (inProgram::SCode.Program))
+  The element to instantiate should be provided in the following format:
+  <component>.<component_1>.<component_2>...
+"""
+function instantiateSCodeToDAE(elementToInstantiate::String, inProgram::SCode.Program)
   # initialize globals
   Main.Global.initialize()
   # make sure we have all the flags loaded!
   # Main.Flags.new(Flags.emptyFlags)
   @debug "Parsing buildin stuff"
-  path = realpath(realpath(Base.find_package("OMFrontend") * "./../../"))
-  path = path * "/lib/NFModelicaBuiltin.mo"
-  GC.enable(false) #=This C stuff can be a bit flaky..=#
-  p = parseFile(path, 2 #== MetaModelica ==#)
-  @debug "SCode translation"
-  s = OMFrontend.translateToSCode(p)
-  p = Main.listAppend(s, inProgram)
-  GC.enable(true)
-  Main.instClassInProgram(Absyn.IDENT(elementToInstantiate), p)
+  local builtinSCode = NFModelicaBuiltinCache["NFModelicaBuiltin"]
+  local program = listAppend(builtinSCode, inProgram)
+  local path = Main.AbsynUtil.stringPath(elementToInstantiate)
+  Main.instClassInProgram(path, program)
 end
 
 function testSpin()
@@ -65,9 +88,20 @@ function testSpinDAEExport()
   @debug "DAE Exported"
 end
 
+"""
+  Prints the DAE representation to a file
+"""
 function exportDAERepresentationToFile(fileName::String, contents::String)
   local fdesc = open(fileName, "w")
   write(fdesc, contents)
+  close(fdesc)
+end
+
+
+function exportSCodeRepresentationToFile(fileName::String, contents::List{SCode.CLASS})
+  local fdesc = open(fileName, "w")
+  local processedContents = replace(string(contents), "," => ",\n")
+  write(fdesc, processedContents)
   close(fdesc)
 end
 

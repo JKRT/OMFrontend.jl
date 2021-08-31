@@ -1,4 +1,3 @@
-@UniontypeDecl NFFlatModel
 @Uniontype NFFlatModel begin
   @Record FLAT_MODEL begin
     name::String
@@ -10,6 +9,7 @@
     comment::Option{SCode.Comment}
   end
 end
+
 const FlatModel = NFFlatModel
 
 module TypeTreeImpl
@@ -85,7 +85,7 @@ function reconstructRecordInstances(variables::List{<:Variable})::List{Variable}
   local var::Variable
   local parent_cr::ComponentRef
   local parent_ty::M_Type
-  local field_count::Integer
+  local field_count::Int
 
   while !listEmpty(rest_vars)
     @match _cons(var, rest_vars) = rest_vars

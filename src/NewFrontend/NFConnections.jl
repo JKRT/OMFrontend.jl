@@ -80,11 +80,12 @@ function collect(flatModel::FlatModel)::Tuple{FlatModel, Connections}
   for var in flatModel.variables
     @assign comp = component(node(var.name))
     if isFlow(comp)
-      @assign c1 = Connector.fromFacedCref(
+      c1 = fromFacedCref(
         var.name,
         var.ty,
         Face.INSIDE,
-        ElementSource_createElementSource(P_Component.info(comp)),
+        #=ElementSource_createElementSource(P_Component.info(comp)),=#
+        DAE.emptyElementSource
       )
       @assign conns = addFlow(c1, conns)
     end

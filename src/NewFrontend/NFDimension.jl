@@ -12,7 +12,7 @@
   @Record DIMENSION_BOOLEAN begin
   end
   @Record DIMENSION_INTEGER begin
-    size::Integer
+    size::Int
     var::VariabilityType
   end
   @Record DIMENSION_UNTYPED begin
@@ -144,7 +144,7 @@ function sizeExp(dim::Dimension)::Expression
 end
 
 """ #= Returns an expression for the last index in a dimension. =#"""
-function endExp(dim::Dimension, cref::ComponentRef, index::Integer)::Expression
+function endExp(dim::Dimension, cref::ComponentRef, index::Int)::Expression
   local sizeExp::Expression
 
   @assign sizeExp = begin
@@ -394,8 +394,8 @@ function isEqual(dim1::Dimension, dim2::Dimension)::Bool
   return isEq
 end
 
-function size(dim::Dimension)::Integer
-  local sz::Integer
+function size(dim::Dimension)::Int
+  local sz::Int
   @assign sz = begin
     local ty::M_Type
     @match dim begin
@@ -502,7 +502,7 @@ function fromExpList(expl::List{<:Expression})::Dimension
   return dim
 end
 
-function fromInteger(n::Integer, var::VariabilityType = Variability.CONSTANT)::Dimension
+function fromInteger(n::Int, var::VariabilityType = Variability.CONSTANT)::Dimension
   local dim::Dimension = DIMENSION_INTEGER(n, var)
   return dim
 end

@@ -10,7 +10,6 @@ Key = String
 Value = Modifier
 #= Modelica extend clause =#
 include("../Util/baseAvlTreeCode.jl")
-include("../Util/baseAvlSetCode.jl")
 
 
 keyCompare = (inKey1::String, inKey2::String) -> begin
@@ -243,15 +242,13 @@ function isEach(mod::Modifier)::Bool
   return isEach
 end
 
-function toList(mod::Modifier)::List{Modifier}
+function toList(mod::Modifier)
   local modList::List{Modifier}
-
-  @assign modList = begin
+  modList = begin
     @match mod begin
       MODIFIER_MODIFIER(__) => begin
         ModTable.listValues(mod.subModifiers)
       end
-
       _ => begin
         nil
       end
@@ -636,17 +633,17 @@ function create(
         MODIFIER_NOMOD()
       end
       SCode.MOD(__) => begin
-        @assign is_each = SCodeUtil.eachBool(mod.eachPrefix)
-        @assign binding =
+        is_each = SCodeUtil.eachBool(mod.eachPrefix)
+        binding =
           fromAbsyn(mod.binding, is_each, parents, scope, mod.info)
-        @assign pars = if is_each
+        pars = if is_each
           nil
         else
           parents
         end
-        @assign submod_lst =
+        submod_lst =
           list(tuple(m.ident, createSubMod(m, modScope, pars, scope)) for m in mod.subModLst)
-        @assign submod_table = ModTable.fromList(
+        submod_table = ModTable.fromList(
           submod_lst,
           (modScope, nil) -> mergeLocal(scope = modScope, prefix = nil),
         )
@@ -654,7 +651,7 @@ function create(
       end
 
       SCode.REDECL(element = elem) => begin
-        @assign node = new(elem, scope)
+        node = new(elem, scope)
         if isClass(node)
           Inst.partialInstClass(node)
         end

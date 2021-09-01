@@ -733,7 +733,11 @@ function convertEquation(eq::Equation, elements::List{<:DAE.Element})::List{DAE.
       EQUATION_CREF_EQUALITY(__) => begin
         @assign cr1 = toDAE(eq.lhs)
         @assign cr2 = toDAE(eq.rhs)
-        _cons(DAE.Element.EQUEQUATION(cr1, cr2, eq.source), elements)
+        #_cons(DAE.EQUEQUATION(cr1, cr2, eq.source), elements)
+        #Adrians suggestion
+        _cons(DAE.EQUATION(DAE.BINARY(DAE.CREF(cr1, cr1.identType),
+                                      DAE.SUB(cr1.identType),
+                                      DAE.CREF(cr2, cr2.identType)), DAE.RCONST(0.), eq.source), elements)
       end
 
       EQUATION_ARRAY_EQUALITY(__) => begin

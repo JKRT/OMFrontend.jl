@@ -20,7 +20,6 @@ const Sets = DataStructures.DisjointSets{Connector}
 
 """ #= Creates a new DisjointSets from a list of connection and flow variables. =#"""
 function fromConnections(connections)
-  @info "fromConnections called."
 #  @info "fromConnections: Our connections" connections
   local sets::Sets = Sets() # duh, is not possible to give sz size hint to DisjointSets! -Adrian Pop
   local sz = listLength(connections.connections) + listLength(connections.flows)
@@ -29,18 +28,17 @@ function fromConnections(connections)
   # Do this here if NF_SCALARIZE to use fast addList for scalarized flows.
 
   # if ! Flags.isSet(Flags.DISABLE_SINGLE_FLOW_EQ) && Flags.isSet(Flags.NF_SCALARIZE) then
-  sets = ListUtil.fold(connections.flows, addConnector, sets)
+  ListUtil.fold(connections.flows, addConnector, sets)
   # end
 
   # Add the connections.
-  sets = ListUtil.fold1(connections.connections, addConnection, connections.broken, sets)
+  ListUtil.fold1(connections.connections, addConnection, connections.broken, sets)
 
   # Add remaining flow variables to the sets, unless disabled by flag.
   # Do this after addConnection if not NF_SCALARIZE to get array dims right.
   # if ! Flags.isSet(Flags.DISABLE_SINGLE_FLOW_EQ) && ! Flags.isSet(Flags.NF_SCALARIZE) then
   # sets = ListUtil.fold(connections.flows, addSingleConnector, sets)
   # end
-  @info "Returning:" 
   return sets
 end
 
@@ -90,7 +88,7 @@ function isBroken(c1, c2, broken)::Bool
   # print("Check: connect(" + ComponentRef.toString(cr1) + ", " + ComponentRef.toString(cr2) + ")\n");
   for c in broken
     @match ((lhs, rhs, _)) = c
-    if isPrefix(lhs, cr1) && isPrefix(rhs, cr2) || isPrefix(lhs, cr2) && isPrefix(rhs, cr1)
+    if (isPrefix(lhs, cr1) && isPrefix(rhs, cr2)) || (isPrefix(lhs, cr2) && isPrefix(rhs, cr1))
       # print("Ignore broken: connect(" + Connector.toString(c1) + ", " + Connector.toString(c2) + ")\n")
       b = true
       break
@@ -148,7 +146,7 @@ John:
 
   TODO provide, two variants the original returned a tuple
 """
-function extractSets(sets)
+function extractSets2(sets)
   # output array<list<Entry>> setsArray "An array with all the sets.";
   # output Sets assignedSets "Sets with the roots assigned to sets.";
 #  @info "Extracting sets.."
@@ -199,15 +197,39 @@ function extractSets(sets)
   return setsArray
 end
 
-# function addList
-#   "Adds a list of entries to the disjoint-sets forest, in a more efficient
-#    manner than calling add repeatedly. This function assumes that the entries
-#    does not already exist in the forest. If the entries might exist already, use
-#    find instead."
-#   input list<Entry> entries;
-#   input output Sets sets;
-# protected
-# end addList;
+"""
+Returns an array indexed by the group index
+each pos contains a set array<list<Entry>>
+Author:johti17
+"""
+function extractSets(sets)
+  local parents::Vector{Int} = deepcopy(sets.internal.parents)
+  # Go through each node and assign a unique set index to each root node.
+  # The index is stored as a negative number to mark the node as a root. - Per
+  local setsArray = []
+  local numberOfGroups = sets.internal.ngroups #= Should be the number of element=#
+  for i in 1:length(parents) #TMP!
+    push!(setsArray, list())
+  end
+  local entries = sets.intmap
+  #= Why does Per reverse? above? =#
+  for (e, idx) in entries
+    # Follow the parent indices until we find the root.
+    parent_idx = parents[idx]
+    while true
+      tmp = parents[parent_idx];
+      if tmp == parent_idx
+        break
+      end
+    end
+    #= Now we have the parent =#
+    local set_idx = parent_idx
+    setsArray[set_idx] = _cons(e, setsArray[set_idx])
+  end
+  #=Our list is slightly to big.. Reduce it!=#
+  setsArray = filter(x -> !listEmpty(x), setsArray)
+  return setsArray
+end
 
 """
   Add a list of entries to the disjoint-sets forrest

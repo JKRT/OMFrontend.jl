@@ -323,7 +323,7 @@ function makeEqualityEquation(
 
   local source::DAE.ElementSource
 
-  @assign source = ElementSource.mergeSources(lhsSource, rhsSource)
+  @assign source = DAE.emptyElementSource #ElementSource.mergeSources(lhsSource, rhsSource) TODO
   #= source := ElementSource.addElementSourceConnect(source, (lhsCref, rhsCref));
   =#
   @assign equalityEq = EQUATION_CREF_EQUALITY(lhsCref, rhsCref, source)

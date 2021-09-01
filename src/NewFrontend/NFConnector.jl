@@ -69,8 +69,8 @@ function isExpandable(conn::Connector)::Bool
 end
 
 function isDeleted(conn::Connector)::Bool
-  local isDeleted::Bool = isDeleted(conn.name)
-  return isDeleted
+  local isDel::Bool = isDeleted(conn.name)
+  return isDel
 end
 
 function setOutside(conn::Connector)::Connector
@@ -218,10 +218,10 @@ function splitImpl2(
   local cty::ConnectorType.TYPE
 
   for comp in comps
-    @assign c = component(comp)
-    @assign ty = getType(c)
-    @assign cty = P_Component.connectorType(c)
-    if !ConnectorType.isPotentiallyPresent(cty)
+    c = component(comp)
+    ty = getType(c)
+    cty = connectorType(c)
+    if ! isPotentiallyPresent(cty)
       @assign cref = append(
         fromNode(comp, ty),
         name,
@@ -234,7 +234,7 @@ end
 
 function splitImpl(
   name::ComponentRef,
-  ty::M_Type,
+  ty::NFType,
   face::FaceType,
   source::DAE.ElementSource,
   cty::ConnectorType.TYPE,
@@ -248,7 +248,7 @@ function splitImpl(
     local ct::ComplexType
     local tree::ClassTree
     @match ty begin
-      TYPE_COMPLEX(complexTy = ct && ComplexType.CONNECTOR(__)) => begin
+      TYPE_COMPLEX(complexTy = ct && COMPLEX_CONNECTOR(__)) => begin
         @assign conns =
           splitImpl2(name, face, source, ct.potentials, scalarize, conns, dims)
         @assign conns = splitImpl2(name, face, source, ct.flows, scalarize, conns, dims)

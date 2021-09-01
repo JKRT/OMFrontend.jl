@@ -1142,7 +1142,7 @@ end
 
 function fromNode(
   node::InstNode,
-  ty::M_Type,
+  ty::NFType,
   subs::List{<:Subscript} = nil,
   origin::OriginType = Origin.CREF,
 )::ComponentRef

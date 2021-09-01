@@ -55,11 +55,11 @@ function generateEquations(sets::Array{<:List{<:Connector}})::List{Equation}
   @assign flowThreshold = REAL_EXPRESSION(1e-7) #=Should be like this.. I think - John. Fix flag memory issue=#
   for set in sets
     @assign cty = getSetType(set)
-    if ConnectorType.isPotential(cty)
+    if isPotential(cty)
       @assign set_eql = potfunc(set)
-    elseif ConnectorType.isFlow(cty)
+    elseif isFlow(cty)
       @assign set_eql = generateFlowEquations(set)
-    elseif ConnectorType.isStream(cty)
+    elseif isStream(cty)
       @assign set_eql = generateStreamEquations(set, flowThreshold)
     else
       Error.addInternalError(
@@ -209,10 +209,8 @@ end
 
 function getSetType(set::List{<:Connector})::ConnectorType.TYPE
   local cty::ConnectorType.TYPE
-
-  #=  All connectors in a set should have the same type, so pick the first.
-  =#
-  @match _cons(Connector.CONNECTOR(cty = cty), _) = set
+  #=  All connectors in a set should have the same type, so pick the first.=#
+  @match _cons(CONNECTOR(cty = cty), _) = set
   return cty
 end
 
@@ -226,7 +224,7 @@ function generatePotentialEquations(elements::List{<:Connector})::List{Equation}
   local c1::Connector
 
   @assign c1 = listHead(elements)
-  if Connector.variability(c1) > Variability.PARAMETER
+  if variability(c1) > Variability.PARAMETER
     @assign equations = list(
       makeEqualityEquation(c1.name, c1.source, c2.name, c2.source)
       for c2 in listRest(elements)
@@ -382,29 +380,26 @@ end
 
 function generateFlowEquations(elements::List{<:Connector})::List{Equation}
   local equations::List{Equation}
-
   local c::Connector
   local c_rest::List{Connector}
   local src::DAE.ElementSource
   local sum::Expression
-
   @match _cons(c, c_rest) = elements
-  @assign src = c.source
+  src = c.source
   if listEmpty(c_rest)
-    @assign sum = fromCref(c.name)
+    sum = fromCref(c.name)
   else
-    @assign sum = makeFlowExp(c)
+    sum = makeFlowExp(c)
     for e in c_rest
-      @assign sum = BINARY_EXPRESSION(
+      sum = BINARY_EXPRESSION(
         sum,
         makeAdd(TYPE_REAL()),
         makeFlowExp(e),
       )
-      @assign src = ElementSource.mergeSources(src, e.source)
+      src = DAE.emptyElementSource #ElementSource.mergeSources(src, e.source) TODO
     end
   end
-  @assign equations =
-    list(EQUATION_EQUALITY(sum, REAL_EXPRESSION(0.0), c.ty, src))
+  equations = list(EQUATION_EQUALITY(sum, REAL_EXPRESSION(0.0), c.ty, src))
   return equations
 end
 

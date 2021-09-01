@@ -82,10 +82,7 @@ function merge(
 end
 
 function isPotential(cty::Int)::Bool
-  local isPotential::Bool
-
-  @assign isPotential = intBitAnd(cty, POTENTIAL) > 0
-  return isPotential
+  return intBitAnd(cty, ConnectorType.POTENTIAL) > 0
 end
 
 function setPotential(cty::Int)::Int

@@ -1849,7 +1849,8 @@ end
 
 """ #= @author: adrpo
  This function will set the external flag that signals
- that a model has stream connectors =#"""
+ that a model has stream connectors =#
+"""
 function setHasStreamConnectorsHandler(streamPrefix::Bool)
    _ = begin
     @match streamPrefix begin

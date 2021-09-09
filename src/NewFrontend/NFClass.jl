@@ -81,10 +81,10 @@ const DEFAULT_PREFIXES =
 function toFlatString(cls::Class, clsNode::InstNode)::String
   local str::String
   local s
-  @assign s = IOStream.create(getInstanceName(), IOStream.IOStreamType.LIST())
+  @assign s = IOStream_M.create(getInstanceName(), IOStream_M.IOStreamType.LIST())
   @assign s = toFlatStream(cls, clsNode, s)
-  @assign str = IOStream.string(s)
-  IOStream.delete(s)
+  @assign str = IOStream_M.string(s)
+  IOStream_M.delete(s)
   return str
 end
 
@@ -98,41 +98,41 @@ function toFlatStream(
   @assign s = begin
     @match cls begin
       INSTANCED_CLASS(__) => begin
-        @assign s = IOStream.append(s, toString(cls.restriction))
-        @assign s = IOStream.append(s, " '")
-        @assign s = IOStream.append(s, name)
-        @assign s = IOStream.append(s, "'\\n")
+        @assign s = IOStream_M.append(s, toString(cls.restriction))
+        @assign s = IOStream_M.append(s, " '")
+        @assign s = IOStream_M.append(s, name)
+        @assign s = IOStream_M.append(s, "'\\n")
         for comp in getComponents(cls.elements)
-          @assign s = IOStream.append(s, "  ")
-          @assign s = IOStream.append(s, toFlatString(comp))
-          @assign s = IOStream.append(s, ";\\n")
+          @assign s = IOStream_M.append(s, "  ")
+          @assign s = IOStream_M.append(s, toFlatString(comp))
+          @assign s = IOStream_M.append(s, ";\\n")
         end
-        @assign s = IOStream.append(s, "end '")
-        @assign s = IOStream.append(s, name)
-        @assign s = IOStream.append(s, "'")
+        @assign s = IOStream_M.append(s, "end '")
+        @assign s = IOStream_M.append(s, name)
+        @assign s = IOStream_M.append(s, "'")
         s
       end
 
       INSTANCED_BUILTIN(__) => begin
-        @assign s = IOStream.append(s, "INSTANCED_BUILTIN(")
-        @assign s = IOStream.append(s, name)
-        @assign s = IOStream.append(s, ")")
+        @assign s = IOStream_M.append(s, "INSTANCED_BUILTIN(")
+        @assign s = IOStream_M.append(s, name)
+        @assign s = IOStream_M.append(s, ")")
         s
       end
 
       TYPED_DERIVED(__) => begin
-        @assign s = IOStream.append(s, toString(cls.restriction))
-        @assign s = IOStream.append(s, " '")
-        @assign s = IOStream.append(s, name)
-        @assign s = IOStream.append(s, "' = '")
+        @assign s = IOStream_M.append(s, toString(cls.restriction))
+        @assign s = IOStream_M.append(s, " '")
+        @assign s = IOStream_M.append(s, name)
+        @assign s = IOStream_M.append(s, "' = '")
         @assign s =
-          IOStream.append(s, AbsynUtil.pathString(scopePath(cls.baseClass)))
-        @assign s = IOStream.append(s, "'")
+          IOStream_M.append(s, AbsynUtil.pathString(scopePath(cls.baseClass)))
+        @assign s = IOStream_M.append(s, "'")
         s
       end
 
       _ => begin
-        IOStream.append(s, "UNKNOWN_CLASS(" + name + ")")
+        IOStream_M.append(s, "UNKNOWN_CLASS(" + name + ")")
       end
     end
   end
@@ -597,12 +597,11 @@ function isIdentical(cls1::Class, cls2::Class)::Bool
         end
 
         (INSTANCED_BUILTIN(__), INSTANCED_BUILTIN(__)) => begin
-          if !Type.isEqual(cls1.ty, cls2.ty)
-            return
+          if !isEqual(cls1.ty, cls2.ty)
+            return false
           end
           true
         end
-
         _ => begin
           true
         end
@@ -617,22 +616,22 @@ function mergeModifier(modifier::Modifier, cls::Class)::Class
   @assign () = begin
     @match cls begin
       PARTIAL_CLASS(__) => begin
-        @assign cls.modifier = P_Modifier.merge(modifier, cls.modifier)
+        @assign cls.modifier = merge(modifier, cls.modifier)
         ()
       end
 
       EXPANDED_CLASS(__) => begin
-        @assign cls.modifier = P_Modifier.merge(modifier, cls.modifier)
+        @assign cls.modifier = merge(modifier, cls.modifier)
         ()
       end
 
       EXPANDED_DERIVED(__) => begin
-        @assign cls.modifier = P_Modifier.merge(modifier, cls.modifier)
+        @assign cls.modifier = merge(modifier, cls.modifier)
         ()
       end
 
       PARTIAL_BUILTIN(__) => begin
-        @assign cls.modifier = P_Modifier.merge(modifier, cls.modifier)
+        @assign cls.modifier = merge(modifier, cls.modifier)
         ()
       end
 

@@ -60,11 +60,26 @@ function instantiateSCodeToDAE(elementToInstantiate::String, inProgram::SCode.Pr
   Main.Global.initialize()
   # make sure we have all the flags loaded!
 #  Main.Flags.new(Flags.emptyFlags)
-  @debug "Parsing buildin stuff"
   local builtinSCode = NFModelicaBuiltinCache["NFModelicaBuiltin"]
   local program = listAppend(builtinSCode, inProgram)
   local path = Main.AbsynUtil.stringPath(elementToInstantiate)
   Main.instClassInProgram(path, program)
+end
+
+"""
+  Instantiates and translates to the flat model representation
+  The element to instantiate should be provided in the following format:
+  <component>.<component_1>.<component_2>...
+"""
+function instantiateSCodeToFM(elementToInstantiate::String, inProgram::SCode.Program)
+  # initialize globals
+  Main.Global.initialize()
+  # make sure we have all the flags loaded!
+#  Main.Flags.new(Flags.emptyFlags)
+  local builtinSCode = NFModelicaBuiltinCache["NFModelicaBuiltin"]
+  local program = listAppend(builtinSCode, inProgram)
+  local path = Main.AbsynUtil.stringPath(elementToInstantiate)
+  Main.instClassInProgramFM(path, program)
 end
 
 function testSpin()
@@ -97,6 +112,15 @@ function exportDAERepresentationToFile(fileName::String, contents::String)
   close(fdesc)
 end
 
+"""
+  ```toString(model::FlatModel)```
+    Converts the flat model representation to a Julia String, the extra \\n are replaced with \n
+"""
+function toString(model::Main.FlatModel)
+  local res = Main.toString(model)
+  local res = replace(res, "\\n" => "\n")
+  return res
+end
 
 function exportSCodeRepresentationToFile(fileName::String, contents::List{SCode.CLASS})
   local fdesc = open(fileName, "w")

@@ -98,10 +98,15 @@ function printBuffer(bufferID::Integer, whereToPrint::Integer) #= stdout:1, stde
   return @error "TODO: Defined in the runtime"
 end
 
+"""
+New implementation
+@author johti17
+"""
 function appendReversedList(inStringLst::List{<:String})::String
-  local outString::String
-
-  @error "TODO: Defined in the runtime"
+  local outString::String = ""
+  for str in listReverse(inStringLst)
+    outString *= str
+  end
   return outString
 end
 

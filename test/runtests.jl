@@ -6,14 +6,17 @@ Current Status:
 Works when including the file in the terminal. Does not seem to work when run via tests.
 
 =#
+#using Revise For include based work
 import OMFrontend
 import Absyn
 import SCode
 import DAE
 
-using Test
 using MetaModelica
+using Test
 
+
+#= Utility functions =#
 function flatten(modelName::String, modelFile::String)
   p = OMFrontend.parseFile(modelFile)
   scodeProgram = OMFrontend.translateToSCode(p)
@@ -25,111 +28,29 @@ function parseAndLowerToScode(modelName::String, modelFile::String)
   scodeProgram = OMFrontend.translateToSCode(p)
 end
 
-
-@testset "Frontend tests. Check if we can transform the abstract tree to SCode and that we are able to flatten without exceptions" begin
-
-@testset "Absyn -> SCode test" begin
-  @test try
-    parseAndLowerToScode("HelloWorld", "./Models/HelloWorld.mo")
-    true
-  catch e
-    throw(e)
-    false
-  end
-  @test try
-    parseAndLowerToScode("LotkaVolterra", "./Models/LotkaVolterra.mo")
-    true
-  catch e
-    throw(e)
-    false
-  end
-  @test try
-    parseAndLowerToScode("Robertsson", "./Models/Robertsson.mo")
-    true
-  catch e
-    throw(e)
-    false
-  end
-  @test try
-    parseAndLowerToScode("SimpleCircuit", "./Models/SimpleCircuit.mo")
-    true
-  catch e
-    throw(e)
-    false
-  end
-  @test try
-    parseAndLowerToScode("SimpleMechanicalSystem", "./Models/SimpleMechanicalSystem.mo")
-    true
-  catch e
-    throw(e)
-    false
-  end
-  @test try
-    parseAndLowerToScode("Influenza", "./Models/Influenza.mo")
-    true
-  catch e
-    throw(e)
-    false
-  end
+"""
+Flattens to flat Modelica. 
+Note that, the full path specification of the file is expected.
+"""
+function flattenFM(model, file)
+  local sp = OMFrontend.parseFile(file)
+  local scode = OMFrontend.translateToSCode(sp)
+  local res = OMFrontend.instantiateSCodeToFM(model, scode)
+  return res
 end
 
-@testset "SCode -> DAE test" begin
-  @test try
-    flatten("HelloWorld", "./Models/HelloWorld.mo")
-    true
-  catch e
-    throw(e)
-    false
-  end
+#= Actualy tests =#
 
-  @test try
-    flatten("LotkaVolterra", "./Models/LotkaVolterra.mo")
-    true
-  catch e
-    throw(e)
-    false
-  end
-
-  @test try
-    flatten("Robertsson", "./Models/Robertsson.mo")
-    true
-  catch e
-    throw(e)
-    false
-  end
-
-  @test try
-    flatten("SimpleCircuit", "./Models/SimpleCircuit.mo")
-    true
-  catch e
-    throw(e)
-    false
-  end
-
-  @test try
-    flatten("SimpleMechanicalSystem", "./Models/SimpleMechanicalSystem.mo")
-    true
-  catch e
-    throw(e)
-    false
-  end
-
-  @test try
-    flatten("Influenza", "./Models/Influenza.mo")
-    true
-  catch e
-    throw(e)
-    false
+@testset "Frontend sanitiy tests. Check if we can transform the abstract tree to SCode and that we are able to flatten without exceptions" begin
+  @testset "Absyn -> SCode test" begin
+    include("scodeSanityTest.jl")
   end
   
-  @test try
-    flatten("Casc6", "./Models/Casc6.mo")
-    true
-  catch e
-    throw(e)
-    false
+  @testset "SCode -> DAE Sanity test" begin
+    include("daeTests.jl")
   end
-
 end
 
+@testset "Frontend Validation test. Check that the result corresponds to existing models in the original frontend " begin
+  include("frontendResultTest.jl")
 end

@@ -52,15 +52,15 @@ function generateEquations(sets::Array{<:List{<:Connector}})::List{Equation}
   =#
   @assign potfunc = generatePotentialEquations
   #@assign flowThreshold = REAL_EXPRESSION(Flags.getConfigReal(Flags.FLOW_THRESHOLD))
-  @assign flowThreshold = REAL_EXPRESSION(1e-7) #=Should be like this.. I think - John. Fix flag memory issue=#
+  @assign flowThreshold = REAL_EXPRESSION(1e-7) #=TODO Should be like this.. I think - John. Fix flag memory issue=#
   for set in sets
-    @assign cty = getSetType(set)
+    cty = getSetType(set)
     if isPotential(cty)
-      @assign set_eql = potfunc(set)
+      set_eql = potfunc(set)
     elseif isFlow(cty)
-      @assign set_eql = generateFlowEquations(set)
+      set_eql = generateFlowEquations(set)
     elseif isStream(cty)
-      @assign set_eql = generateStreamEquations(set, flowThreshold)
+      set_eql = generateStreamEquations(set, flowThreshold)
     else
       Error.addInternalError(
         getInstanceName() +
@@ -72,7 +72,7 @@ function generateEquations(sets::Array{<:List{<:Connector}})::List{Equation}
       )
       fail()
     end
-    @assign equations = listAppend(set_eql, equations)
+    equations = listAppend(set_eql, equations)
   end
   return equations
 end

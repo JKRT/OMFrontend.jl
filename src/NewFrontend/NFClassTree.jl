@@ -568,7 +568,7 @@ function flattenLookupTree(
   tree::LookupTree.Tree,
   offsets::Array{<:Int},
 )::LookupTree.Tree
-  @assign tree = LookupTree.map(tree, (offsets) -> flattenLookupTree2(offsets = offsets))
+  @assign tree = LookupTree.map(tree, (key, entry) -> flattenLookupTree2(key, entry, offsets))
   return tree
 end
 
@@ -729,15 +729,16 @@ function appendComponentsToInstTree(
   return tree
 end
 
-""" #= This function replaces all duplicate elements with the element that is
-       kept, such that lookup in the extends nodes will find the correct node. =#"""
+"""  
+  This function replaces all duplicate elements with the element that is
+  kept, such that lookup in the extends nodes will find the correct node. 
+"""
 function replaceDuplicates(tree::ClassTree)::ClassTree
-
-  @assign () = begin
+  () = begin
     @match tree begin
       CLASS_TREE_INSTANTIATED_TREE(__) where {(!DuplicateTree.isEmpty(tree.duplicates))} => begin
         @assign tree.duplicates =
-          DuplicateTree.map(tree.duplicates, (tree) -> replaceDuplicates2(tree = tree))
+          DuplicateTree.map(tree.duplicates, (name, entry) -> replaceDuplicates2(name, entry, tree))
         ()
       end
 
@@ -755,7 +756,7 @@ function mapRedeclareChains(tree::ClassTree, func::FuncT)
       CLASS_TREE_INSTANTIATED_TREE(__) where {(!DuplicateTree.isEmpty(tree.duplicates))} => begin
         DuplicateTree.map(
           tree.duplicates,
-          (func, tree) -> mapRedeclareChain(func = func, tree = tree),
+          (name, entry) -> mapRedeclareChain(name, entry, func, tree),
         )
         ()
       end
@@ -1737,7 +1738,7 @@ function addInheritedElementConflict(
   local dups::DuplicateTree.Tree
   local opt_dup_entry::Option{DuplicateTree.Entry}
   local dup_entry::DuplicateTree.Entry
-  local new_id::Int = LookupTree.Entry.index(newEntry)
+  local new_id::Int = LookupTree.index(newEntry)
   local old_id::Int = LookupTree.index(oldEntry)
   local ty::DuplicateTree.EntryType
 

@@ -16,6 +16,18 @@ function toString(conn::Connection)::String
   return str
 end
 
+function Base.string(conn::Connection)::String
+  local str::String
+  @assign str =
+    "connect(" +
+    #=Connector.=#toString(conn.lhs) +
+    ", " +
+    #=Connector.=#toString(conn.rhs) +
+    ")"
+  return str
+end
+
+
 @Uniontype NFConnection begin
   @Record CONNECTION begin
     #=  TODO: This should be Connector, but the import above doesn't work due to some compiler bug.=#
@@ -40,6 +52,7 @@ function split(connection::CONNECTION)::List
   local conns = nil
   for cl in connectionLstLeft
     cr = listHead(connectionLstRight)
+    connectionLstRight = listRest(connectionLstRight)
     # Connections involving deleted conditional connectors are filtered out
     # when collecting the connections, but if the connectors themselves
     # contain connectors that have been deleted we need to remove them here.

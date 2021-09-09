@@ -36,14 +36,14 @@ function split(
 )::List{Connector}
   local connl::List{Connector}
 
-  @assign connl = splitImpl(conn.name, conn.ty, conn.face, conn.source, conn.cty, scalarize)
+  connl = splitImpl(conn.name, conn.ty, conn.face, conn.source, conn.cty, scalarize)
   return connl
 end
 
 """ #= Splits a connector into its primitive components. Scalarize everything! =#"""
 function split(conn::CONNECTOR)::List{Connector}
   local connl::List{Connector}
-  @assign connl = splitImpl(conn.name, conn.ty, conn.face, conn.source, conn.cty, ScalarizeSetting.ALL)
+  @assign connl = splitImpl(conn.name, conn.ty, conn.face, conn.source, conn.cty, ScalarizeSetting.NONE)
   return connl
 end
 
@@ -53,7 +53,13 @@ function hash(conn::Connector, mod::Int)::Int
   return hash
 end
 
-function toString(conn::Connector)::String
+function toString(conn::CONNECTOR)::String
+  local str::String = toString(conn.name)
+  return str
+end
+
+
+function Base.string(conn::CONNECTOR)::String
   local str::String = toString(conn.name)
   return str
 end
@@ -222,11 +228,11 @@ function splitImpl2(
     ty = getType(c)
     cty = connectorType(c)
     if ! isPotentiallyPresent(cty)
-      @assign cref = append(
+      cref = append(
         fromNode(comp, ty),
         name,
       )
-      @assign conns = splitImpl(cref, ty, face, source, cty, scalarize, conns, dims)
+      conns = splitImpl(cref, ty, face, source, cty, scalarize, conns, dims)
     end
   end
   return conns
@@ -242,17 +248,15 @@ function splitImpl(
   conns::List{<:Connector} = nil,
   dims::List{<:Dimension} = nil,
 )::List{Connector} #= accumulated dimensions if splitArrays = false =#
-
-  @assign conns = begin
+  conns = begin
     local ety::M_Type
     local ct::ComplexType
     local tree::ClassTree
     @match ty begin
       TYPE_COMPLEX(complexTy = ct && COMPLEX_CONNECTOR(__)) => begin
-        @assign conns =
-          splitImpl2(name, face, source, ct.potentials, scalarize, conns, dims)
-        @assign conns = splitImpl2(name, face, source, ct.flows, scalarize, conns, dims)
-        @assign conns = splitImpl2(name, face, source, ct.streams, scalarize, conns, dims)
+        conns = splitImpl2(name, face, source, ct.potentials, scalarize, conns, dims)
+        conns = splitImpl2(name, face, source, ct.flows, scalarize, conns, dims)
+        conns = splitImpl2(name, face, source, ct.streams, scalarize, conns, dims)
         conns
       end
 
@@ -261,8 +265,8 @@ function splitImpl(
       end
 
       TYPE_COMPLEX(__) => begin
-        @assign tree = classTree(getClass(ty.cls))
-        @assign conns = splitImpl2(
+        tree = classTree(getClass(ty.cls))
+        conns = splitImpl2(
           name,
           face,
           source,

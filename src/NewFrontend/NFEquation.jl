@@ -127,11 +127,11 @@ function toFlatStreamList(
     if first
       @assign first = false
     elseif prev_multi_line || multi_line
-      @assign s = IOStream.append(s, "\\n")
+      @assign s = IOStream_M.append(s, "\\n")
     end
     @assign prev_multi_line = multi_line
     @assign s = toFlatStream(eq, indent, s)
-    @assign s = IOStream.append(s, ";\\n")
+    @assign s = IOStream_M.append(s, ";\\n")
   end
   #=  Improve human parsability by separating statements that spans multiple
   =#
@@ -141,115 +141,115 @@ function toFlatStreamList(
 end
 
 function toFlatStream(eq::Equation, indent::String, s)
-  @assign s = IOStream.append(s, indent)
+  @assign s = IOStream_M.append(s, indent)
   @assign s = begin
     @match eq begin
       EQUATION_EQUALITY(__) => begin
-        @assign s = IOStream.append(s, toFlatString(eq.lhs))
-        @assign s = IOStream.append(s, " = ")
-        @assign s = IOStream.append(s, toFlatString(eq.rhs))
+        @assign s = IOStream_M.append(s, toFlatString(eq.lhs))
+        @assign s = IOStream_M.append(s, " = ")
+        @assign s = IOStream_M.append(s, toFlatString(eq.rhs))
         s
       end
 
       CREF_EQUALITY(__) => begin
-        @assign s = IOStream.append(s, toFlatString(eq.lhs))
-        @assign s = IOStream.append(s, " = ")
-        @assign s = IOStream.append(s, toFlatString(eq.rhs))
+        @assign s = IOStream_M.append(s, toFlatString(eq.lhs))
+        @assign s = IOStream_M.append(s, " = ")
+        @assign s = IOStream_M.append(s, toFlatString(eq.rhs))
         s
       end
 
       ARRAY_EQUALITY(__) => begin
-        @assign s = IOStream.append(s, toFlatString(eq.lhs))
-        @assign s = IOStream.append(s, " = ")
-        @assign s = IOStream.append(s, toFlatString(eq.rhs))
+        @assign s = IOStream_M.append(s, toFlatString(eq.lhs))
+        @assign s = IOStream_M.append(s, " = ")
+        @assign s = IOStream_M.append(s, toFlatString(eq.rhs))
         s
       end
 
       CONNECT(__) => begin
-        @assign s = IOStream.append(s, "connect(")
-        @assign s = IOStream.append(s, toFlatString(eq.lhs))
-        @assign s = IOStream.append(s, " = ")
-        @assign s = IOStream.append(s, toFlatString(eq.rhs))
-        @assign s = IOStream.append(s, ")")
+        @assign s = IOStream_M.append(s, "connect(")
+        @assign s = IOStream_M.append(s, toFlatString(eq.lhs))
+        @assign s = IOStream_M.append(s, " = ")
+        @assign s = IOStream_M.append(s, toFlatString(eq.rhs))
+        @assign s = IOStream_M.append(s, ")")
         s
       end
 
       FOR(__) => begin
-        @assign s = IOStream.append(s, "for ")
-        @assign s = IOStream.append(s, name(eq.iterator))
+        @assign s = IOStream_M.append(s, "for ")
+        @assign s = IOStream_M.append(s, name(eq.iterator))
         if isSome(eq.range)
-          @assign s = IOStream.append(s, " in ")
-          @assign s = IOStream.append(
+          @assign s = IOStream_M.append(s, " in ")
+          @assign s = IOStream_M.append(
             s,
             toFlatString(Util.getOption(eq.range)),
           )
         end
-        @assign s = IOStream.append(s, " loop\\n")
+        @assign s = IOStream_M.append(s, " loop\\n")
         @assign s = toFlatStreamList(eq.body, indent + "  ", s)
-        @assign s = IOStream.append(s, indent)
-        @assign s = IOStream.append(s, "end for")
+        @assign s = IOStream_M.append(s, indent)
+        @assign s = IOStream_M.append(s, "end for")
         s
       end
 
       IF(__) => begin
-        @assign s = IOStream.append(s, "if ")
+        @assign s = IOStream_M.append(s, "if ")
         @assign s = toFlatStream(listHead(eq.branches), indent, s)
         for b in listRest(eq.branches)
-          @assign s = IOStream.append(s, indent)
-          @assign s = IOStream.append(s, "elseif ")
+          @assign s = IOStream_M.append(s, indent)
+          @assign s = IOStream_M.append(s, "elseif ")
           @assign s = toFlatStream(b, indent, s)
         end
-        @assign s = IOStream.append(s, indent)
-        @assign s = IOStream.append(s, "end if")
+        @assign s = IOStream_M.append(s, indent)
+        @assign s = IOStream_M.append(s, "end if")
         s
       end
 
       WHEN(__) => begin
-        @assign s = IOStream.append(s, "when ")
+        @assign s = IOStream_M.append(s, "when ")
         @assign s = toFlatStream(listHead(eq.branches), indent, s)
         for b in listRest(eq.branches)
-          @assign s = IOStream.append(s, indent)
-          @assign s = IOStream.append(s, "elsewhen ")
+          @assign s = IOStream_M.append(s, indent)
+          @assign s = IOStream_M.append(s, "elsewhen ")
           @assign s = toFlatStream(b, indent, s)
         end
-        @assign s = IOStream.append(s, indent)
-        @assign s = IOStream.append(s, "end when")
+        @assign s = IOStream_M.append(s, indent)
+        @assign s = IOStream_M.append(s, "end when")
         s
       end
 
       ASSERT(__) => begin
-        @assign s = IOStream.append(s, "assert(")
-        @assign s = IOStream.append(s, toFlatString(eq.condition))
-        @assign s = IOStream.append(s, ", ")
-        @assign s = IOStream.append(s, toFlatString(eq.message))
-        @assign s = IOStream.append(s, ", ")
-        @assign s = IOStream.append(s, toFlatString(eq.level))
-        @assign s = IOStream.append(s, ")")
+        @assign s = IOStream_M.append(s, "assert(")
+        @assign s = IOStream_M.append(s, toFlatString(eq.condition))
+        @assign s = IOStream_M.append(s, ", ")
+        @assign s = IOStream_M.append(s, toFlatString(eq.message))
+        @assign s = IOStream_M.append(s, ", ")
+        @assign s = IOStream_M.append(s, toFlatString(eq.level))
+        @assign s = IOStream_M.append(s, ")")
         s
       end
 
       TERMINATE(__) => begin
-        @assign s = IOStream.append(s, "terminate(")
-        @assign s = IOStream.append(s, toFlatString(eq.message))
-        @assign s = IOStream.append(s, ")")
+        @assign s = IOStream_M.append(s, "terminate(")
+        @assign s = IOStream_M.append(s, toFlatString(eq.message))
+        @assign s = IOStream_M.append(s, ")")
         s
       end
 
       REINIT(__) => begin
-        @assign s = IOStream.append(s, "reinit(")
-        @assign s = IOStream.append(s, toFlatString(eq.cref))
-        @assign s = IOStream.append(s, ", ")
-        @assign s = IOStream.append(s, toFlatString(eq.reinitExp))
-        @assign s = IOStream.append(s, ")")
+        @assign s = IOStream_M.append(s, "reinit(")
+        @assign s = IOStream_M.append(s, toFlatString(eq.cref))
+        @assign s = IOStream_M.append(s, ", ")
+        @assign s = IOStream_M.append(s, toFlatString(eq.reinitExp))
+        @assign s = IOStream_M.append(s, ")")
         s
       end
 
       NORETCALL(__) => begin
-        IOStream.append(s, toFlatString(eq.exp))
+        IOStream_M.append(s, toFlatString(eq.exp))
       end
 
       _ => begin
-        IOStream.append(s, "#UNKNOWN EQUATION#")
+        IOStream_M.append(s, "#UNKNOWN EQUATION#")
       end
     end
   end
@@ -271,11 +271,11 @@ function toStreamList(
     if first
       @assign first = false
     elseif prev_multi_line || multi_line
-      @assign s = IOStream.append(s, "\\n")
+      @assign s = IOStream_M.append(s, "\\n")
     end
     @assign prev_multi_line = multi_line
     @assign s = toStream(eq, indent, s)
-    @assign s = IOStream.append(s, ";\\n")
+    @assign s = IOStream_M.append(s, ";\\n")
   end
   #=  Improve human parsability by separating statements that spans multiple
   =#
@@ -286,115 +286,115 @@ end
 
 function toStream(eq::Equation, indent::String, s)
 
-  @assign s = IOStream.append(s, indent)
+  @assign s = IOStream_M.append(s, indent)
   @assign s = begin
     @match eq begin
       EQUATION_EQUALITY(__) => begin
-        @assign s = IOStream.append(s, toString(eq.lhs))
-        @assign s = IOStream.append(s, " = ")
-        @assign s = IOStream.append(s, toString(eq.rhs))
+        @assign s = IOStream_M.append(s, toString(eq.lhs))
+        @assign s = IOStream_M.append(s, " = ")
+        @assign s = IOStream_M.append(s, toString(eq.rhs))
         s
       end
 
-      CREF_EQUALITY(__) => begin
-        @assign s = IOStream.append(s, toString(eq.lhs))
-        @assign s = IOStream.append(s, " = ")
-        @assign s = IOStream.append(s, toString(eq.rhs))
+      EQUATION_CREF_EQUALITY(__) => begin
+        @assign s = IOStream_M.append(s, toString(eq.lhs))
+        @assign s = IOStream_M.append(s, " = ")
+        @assign s = IOStream_M.append(s, toString(eq.rhs))
         s
       end
 
-      ARRAY_EQUALITY(__) => begin
-        @assign s = IOStream.append(s, toString(eq.lhs))
-        @assign s = IOStream.append(s, " = ")
-        @assign s = IOStream.append(s, toString(eq.rhs))
+      EQUATION_ARRAY_EQUALITY(__) => begin
+        @assign s = IOStream_M.append(s, toString(eq.lhs))
+        @assign s = IOStream_M.append(s, " = ")
+        @assign s = IOStream_M.append(s, toString(eq.rhs))
         s
       end
 
-      CONNECT(__) => begin
-        @assign s = IOStream.append(s, "connect(")
-        @assign s = IOStream.append(s, toString(eq.lhs))
-        @assign s = IOStream.append(s, " = ")
-        @assign s = IOStream.append(s, toString(eq.rhs))
-        @assign s = IOStream.append(s, ")")
+      EQUATION_CONNECT(__) => begin
+        @assign s = IOStream_M.append(s, "connect(")
+        @assign s = IOStream_M.append(s, toString(eq.lhs))
+        @assign s = IOStream_M.append(s, " = ")
+        @assign s = IOStream_M.append(s, toString(eq.rhs))
+        @assign s = IOStream_M.append(s, ")")
         s
       end
 
-      FOR(__) => begin
-        @assign s = IOStream.append(s, "for ")
-        @assign s = IOStream.append(s, name(eq.iterator))
+      EQUATION_FOR(__) => begin
+        @assign s = IOStream_M.append(s, "for ")
+        @assign s = IOStream_M.append(s, name(eq.iterator))
         if isSome(eq.range)
-          @assign s = IOStream.append(s, " in ")
-          @assign s = IOStream.append(
+          @assign s = IOStream_M.append(s, " in ")
+          @assign s = IOStream_M.append(
             s,
             toString(Util.getOption(eq.range)),
           )
         end
-        @assign s = IOStream.append(s, " loop\\n")
+        @assign s = IOStream_M.append(s, " loop\\n")
         @assign s = toStreamList(eq.body, indent + "  ", s)
-        @assign s = IOStream.append(s, indent)
-        @assign s = IOStream.append(s, "end for")
+        @assign s = IOStream_M.append(s, indent)
+        @assign s = IOStream_M.append(s, "end for")
         s
       end
 
-      IF(__) => begin
-        @assign s = IOStream.append(s, "if ")
+      EQUATION_IF(__) => begin
+        @assign s = IOStream_M.append(s, "if ")
         @assign s = toStream(listHead(eq.branches), indent, s)
         for b in listRest(eq.branches)
-          @assign s = IOStream.append(s, indent)
-          @assign s = IOStream.append(s, "elseif ")
+          @assign s = IOStream_M.append(s, indent)
+          @assign s = IOStream_M.append(s, "elseif ")
           @assign s = toStream(b, indent, s)
         end
-        @assign s = IOStream.append(s, indent)
-        @assign s = IOStream.append(s, "end if")
+        @assign s = IOStream_M.append(s, indent)
+        @assign s = IOStream_M.append(s, "end if")
         s
       end
 
-      WHEN(__) => begin
-        @assign s = IOStream.append(s, "when ")
+      EQUATION_WHEN(__) => begin
+        @assign s = IOStream_M.append(s, "when ")
         @assign s = toStream(listHead(eq.branches), indent, s)
         for b in listRest(eq.branches)
-          @assign s = IOStream.append(s, indent)
-          @assign s = IOStream.append(s, "elsewhen ")
+          @assign s = IOStream_M.append(s, indent)
+          @assign s = IOStream_M.append(s, "elsewhen ")
           @assign s = toStream(b, indent, s)
         end
-        @assign s = IOStream.append(s, indent)
-        @assign s = IOStream.append(s, "end when")
+        @assign s = IOStream_M.append(s, indent)
+        @assign s = IOStream_M.append(s, "end when")
         s
       end
 
-      ASSERT(__) => begin
-        @assign s = IOStream.append(s, "assert(")
-        @assign s = IOStream.append(s, toString(eq.condition))
-        @assign s = IOStream.append(s, ", ")
-        @assign s = IOStream.append(s, toString(eq.message))
-        @assign s = IOStream.append(s, ", ")
-        @assign s = IOStream.append(s, toString(eq.level))
-        @assign s = IOStream.append(s, ")")
+      EQUATION_ASSERT(__) => begin
+        @assign s = IOStream_M.append(s, "assert(")
+        @assign s = IOStream_M.append(s, toString(eq.condition))
+        @assign s = IOStream_M.append(s, ", ")
+        @assign s = IOStream_M.append(s, toString(eq.message))
+        @assign s = IOStream_M.append(s, ", ")
+        @assign s = IOStream_M.append(s, toString(eq.level))
+        @assign s = IOStream_M.append(s, ")")
         s
       end
 
-      TERMINATE(__) => begin
-        @assign s = IOStream.append(s, "terminate(")
-        @assign s = IOStream.append(s, toString(eq.message))
-        @assign s = IOStream.append(s, ")")
+      EQUATION_TERMINATE(__) => begin
+        @assign s = IOStream_M.append(s, "terminate(")
+        @assign s = IOStream_M.append(s, toString(eq.message))
+        @assign s = IOStream_M.append(s, ")")
         s
       end
 
-      REINIT(__) => begin
-        @assign s = IOStream.append(s, "reinit(")
-        @assign s = IOStream.append(s, toString(eq.cref))
-        @assign s = IOStream.append(s, ", ")
-        @assign s = IOStream.append(s, toString(eq.reinitExp))
-        @assign s = IOStream.append(s, ")")
+      EQUATION_REINIT(__) => begin
+        @assign s = IOStream_M.append(s, "reinit(")
+        @assign s = IOStream_M.append(s, toString(eq.cref))
+        @assign s = IOStream_M.append(s, ", ")
+        @assign s = IOStream_M.append(s, toString(eq.reinitExp))
+        @assign s = IOStream_M.append(s, ")")
         s
       end
 
-      NORETCALL(__) => begin
-        IOStream.append(s, toString(eq.exp))
+      EQUATION_NORETCALL(__) => begin
+        IOStream_M.append(s, toString(eq.exp))
       end
 
       _ => begin
-        IOStream.append(s, "#UNKNOWN EQUATION#")
+        IOStream_M.append(s, "#UNKNOWN EQUATION#")
       end
     end
   end
@@ -406,10 +406,10 @@ function toStringList(eql::List{<:Equation}, indent::String = "")::String
 
   local s
 
-  @assign s = IOStream.create(getInstanceName(), IOStream.IOStreamType.LIST())
+  @assign s = IOStream_M.create(getInstanceName(), IOStream_M.IOStream_MType.LIST())
   @assign s = toStreamList(eql, indent, s)
-  @assign str = IOStream.string(s)
-  IOStream.delete(s)
+  @assign str = IOStream_M.string(s)
+  IOStream_M.delete(s)
   return str
 end
 
@@ -418,10 +418,10 @@ function toString(eq::Equation, indent::String = "")::String
 
   local s
 
-  @assign s = IOStream.create(getInstanceName(), IOStream.IOStreamType.LIST())
+  @assign s = IOStream_M.create(getInstanceName(), IOStream_M.IOStream_MType.LIST())
   @assign s = toStream(eq, indent, s)
-  @assign str = IOStream.string(s)
-  IOStream.delete(s)
+  @assign str = IOStream_M.string(s)
+  IOStream_M.delete(s)
   return str
 end
 
@@ -969,8 +969,8 @@ function toFlatStream(
     @match branch begin
       EQUATION_BRANCH(__) => begin
         @assign s =
-          IOStream.append(s, toFlatString(branch.condition))
-        @assign s = IOStream.append(s, " then\\n")
+          IOStream_M.append(s, toFlatString(branch.condition))
+        @assign s = IOStream_M.append(s, " then\\n")
         @assign s = toFlatStreamList(branch.body, indent + "  ", s)
         s
       end
@@ -987,8 +987,8 @@ function toStream(branch::Equation_Branch, indent::String, s)
   @assign s = begin
     @match branch begin
       EQUATION_BRANCH(__) => begin
-        s = IOStream.append(s, toString(branch.condition))
-        s = IOStream.append(s, " then\\n")
+        s = IOStream_M.append(s, toString(branch.condition))
+        s = IOStream_M.append(s, " then\\n")
         s = toStreamList(branch.body, indent + "  ", s)
         s
       end

@@ -11,6 +11,8 @@ Connection = NFConnection
 Connector = NFConnector
 ComplexType = NFComplexType
 
+import ..IOStream_M
+
 module FunctionTreeImpl
   using MetaModelica
   using ExportAll
@@ -1527,9 +1529,9 @@ function resolveConnections(flatModel::FlatModel, name::String)::FlatModel
   @assign conns = addBroken(broken, conns)
   #=  build the sets, check the broken connects =#
   csets = ConnectionSets.fromConnections(conns)
-  csets_array = ConnectionSets.extractSets(csets)
+  (csets_array, _) = ConnectionSets.extractSets(csets)
   #=  generate the equations =#
-  @assign conn_eql = generateEquations(csets_array)
+  conn_eql = generateEquations(csets_array) #=In NFConnectEquations=#
   #=  append the equalityConstraint call equations for the broken connects =#
   if System.getHasOverconstrainedConnectors()
     @assign conn_eql = listAppend(conn_eql, ListUtil.flatten(ListUtil.map(broken, Util.tuple33)))
@@ -1549,7 +1551,7 @@ end
 
 function evaluateConnectionOperators(
   flatModel::FlatModel,
-  sets#=::ConnectionSets.Sets=#,
+  sets::ConnectionSets.Sets,
   setsArray::Array{<:List{<:Connector}},
   ctable::CardinalityTable.Table,
 )::FlatModel

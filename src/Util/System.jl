@@ -524,7 +524,7 @@
         end
 
         #= TODO temporary structure introduced by Adrian=#
-        const global GLOBAL_MEMORY = Vector{Any}(missing, 1024)
+  global GLOBAL_MEMORY = Vector{Any}(missing, 1024)
         #= I put it as a constant for now! - John =#
         """ #= @author: adrpo
          sets the external flag that signals the

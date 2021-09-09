@@ -514,13 +514,11 @@ function isLess(cref1::ComponentRef, cref2::ComponentRef)::Bool
 end
 
 function isEqual(cref1::ComponentRef, cref2::ComponentRef)::Bool
-  local isEqual::Bool
-
+  local isEqualB::Bool = false
   if referenceEq(cref1, cref2)
-    @assign isEqual = true
-    return isEqual
+    return true
   end
-  @assign isEqual = begin
+  isEqualB = begin
     @match (cref1, cref2) begin
       (COMPONENT_REF_CREF(__), COMPONENT_REF_CREF(__)) => begin
         name(cref1.node) == name(cref2.node) &&
@@ -535,13 +533,12 @@ function isEqual(cref1::ComponentRef, cref2::ComponentRef)::Bool
       (COMPONENT_REF_WILD(__), COMPONENT_REF_WILD(__)) => begin
         true
       end
-
       _ => begin
         false
       end
     end
   end
-  return isEqual
+  return isEqualB
 end
 
 function compare(cref1::ComponentRef, cref2::ComponentRef)::Int

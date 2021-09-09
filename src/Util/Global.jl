@@ -2,6 +2,7 @@ module Global
 
 using MetaModelica
 using ExportAll
+import ..System
 
 #= /*
 * This file is part of OpenModelica.
@@ -103,6 +104,7 @@ function initialize()
   setGlobalRoot(currentInstVar, NONE())
   setGlobalRoot(interactiveCache, NONE())
   setGlobalRoot(instNFInstCacheIndex, nil)
+#  System.GLOBAL_MEMORY = Vector{Any}(missing, 1024) TODO added by ne ti be reset by me
   return setGlobalRoot(instNFNodeCacheIndex, nil)
 end
 

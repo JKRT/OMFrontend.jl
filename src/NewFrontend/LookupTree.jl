@@ -16,15 +16,15 @@ using ExportAll
   end
 end
 
-Key = String
-Value = Entry
+const Key = String
+const Value = Entry
 
 #= Modelica extend clause =#
-valueStr = Function
-ConflictFunc = Function
-EachFunc = Function
-FoldFunc = Function
-MapFunc = Function
+const valueStr = Function
+const ConflictFunc = Function
+const EachFunc = Function
+const FoldFunc = Function
+const MapFunc = Function
 #=  TODO: We should have an Any type =#
 #= The binary tree data structure. =#
 @Uniontype Tree begin

@@ -398,7 +398,7 @@ end
 function toString(call::Call)::String
   local str::String
 
-  local name::String
+  local nameStr::String
   local arg_str::String
   local c::String
   local argexp::Expression
@@ -407,7 +407,7 @@ function toString(call::Call)::String
   @assign str = begin
     @match call begin
       UNTYPED_CALL(__) => begin
-        @assign name = toString(call.ref)
+nameStr = toString(call.ref)
         @assign arg_str = stringDelimitList(
           list(toString(arg) for arg in call.arguments),
           ", ",
@@ -416,7 +416,7 @@ function toString(call::Call)::String
       end
 
       ARG_TYPED_CALL(__) => begin
-        @assign name = toString(call.ref)
+nameStr = toString(call.ref)
         @assign arg_str = stringDelimitList(
           list(
             toString(Util.tuple31(arg)) for arg in call.arguments
@@ -440,7 +440,7 @@ function toString(call::Call)::String
       end
 
       UNTYPED_ARRAY_CONSTRUCTOR(__) => begin
-        @assign name = AbsynUtil.pathString(P_Function.name(NFBuiltinFuncs.ARRAY_FUNC))
+nameStr = AbsynUtil.pathString(P_Function.name(NFBuiltinFuncs.ARRAY_FUNC))
         @assign arg_str = toString(call.exp)
         @assign c = stringDelimitList(
           list(
@@ -456,7 +456,7 @@ function toString(call::Call)::String
       end
 
       UNTYPED_REDUCTION(__) => begin
-        @assign name = toString(call.ref)
+nameStr = toString(call.ref)
         @assign arg_str = toString(call.exp)
         @assign c = stringDelimitList(
           list(
@@ -471,16 +471,16 @@ function toString(call::Call)::String
       end
 
       TYPED_CALL(__) => begin
-        @assign name = AbsynUtil.pathString(P_Function.name(call.fn))
-        @assign arg_str = stringDelimitList(
+        nameStr = AbsynUtil.pathString(name(call.fn))
+        arg_str = stringDelimitList(
           list(toString(arg) for arg in call.arguments),
           ", ",
         )
-        name + "(" + arg_str + ")"
+        nameStr + "(" + arg_str + ")"
       end
 
       TYPED_ARRAY_CONSTRUCTOR(__) => begin
-        @assign name = AbsynUtil.pathString(P_Function.name(NFBuiltinFuncs.ARRAY_FUNC))
+nameStr = AbsynUtil.pathString(P_Function.name(NFBuiltinFuncs.ARRAY_FUNC))
         @assign arg_str = toString(call.exp)
         @assign c = stringDelimitList(
           list(
@@ -496,7 +496,7 @@ function toString(call::Call)::String
       end
 
       TYPED_REDUCTION(__) => begin
-        @assign name = AbsynUtil.pathString(P_Function.name(call.fn))
+nameStr = AbsynUtil.pathString(P_Function.name(call.fn))
         @assign arg_str = toString(call.exp)
         @assign c = stringDelimitList(
           list(

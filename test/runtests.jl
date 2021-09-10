@@ -52,5 +52,5 @@ end
 end
 
 @testset "Frontend Validation test. Check that the result corresponds to existing models in the original frontend " begin
-  include("frontendResultTest.jl")
+    include("frontendResultTest.jl")
 end

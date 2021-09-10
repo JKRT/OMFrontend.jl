@@ -15,8 +15,14 @@ equation
 end Connect5;
 "
 
+const Tank = "class Tank\n  parameter Real area = 1.0;\n  Real inlet.pressure;\n  flow Real inlet.volumeFlowRate;\n  Real outlet.pressure;\n  flow Real outlet.volumeFlowRate;\n  Real level(start = 2.0);\nequation\n  inlet.volumeFlowRate = 0.0;\n  outlet.volumeFlowRate = 0.0;\n  inlet.volumeFlowRate = 1.0;\n  inlet.pressure = 1.0;\n  area * der(level) = inlet.volumeFlowRate + outlet.volumeFlowRate;\n  outlet.pressure = inlet.pressure;\n  outlet.volumeFlowRate = 2.0;\nend Tank;\n"
+
 const HeatTank = "class HeatTank\n  parameter Real area = 1.0;\n  Real inlet.pressure;\n  flow Real inlet.volumeFlowRate;\n  Real inlet.temp;\n  Real outlet.pressure;\n  flow Real outlet.volumeFlowRate;\n  Real outlet.temp;\n  Real level(start = 2.0);\n  Real temp;\nequation\n  inlet.volumeFlowRate = 0.0;\n  outlet.volumeFlowRate = 0.0;\n  inlet.temp = 25.0;\n  area * level * der(temp) = inlet.volumeFlowRate * inlet.temp + outlet.volumeFlowRate * outlet.temp;\n  outlet.temp = temp;\n  inlet.volumeFlowRate = 1.0;\n  inlet.pressure = 1.0;\n  area * der(level) = inlet.volumeFlowRate + outlet.volumeFlowRate;\n  outlet.pressure = inlet.pressure;\n  outlet.volumeFlowRate = 2.0;\nend HeatTank;\n"
 
 const HeatTankExpanded="class HeatTankExpanded\n  parameter Real Area = 1.0;\n  Real inlet.pressure;\n  flow Real inlet.volumeFlowRate;\n  Real inlet.temp;\n  Real outlet.pressure;\n  flow Real outlet.volumeFlowRate;\n  Real outlet.temp;\n  Real level(start = 2.0);\n  Real temp;\nequation\n  inlet.volumeFlowRate = 0.0;\n  outlet.volumeFlowRate = 0.0;\n  inlet.volumeFlowRate = 1.0;\n  inlet.pressure = 1.0;\n  inlet.temp = 25.0;\n  Area * der(level) = inlet.volumeFlowRate + outlet.volumeFlowRate;\n  outlet.pressure = inlet.pressure;\n  Area * level * der(temp) = inlet.volumeFlowRate * inlet.temp + outlet.volumeFlowRate * outlet.temp;\n  outlet.temp = temp;\n  outlet.volumeFlowRate = 2.0;\nend HeatTankExpanded;\n"
+
+#Tests that multiple inheritance is handled correctly with regards to connect.
+const MultipleInheritanceConnect="class MultipleInheritanceConnect\n  Real e.port.p;\n  flow Real e.port.f;\n  Real e.d.port.p;\n  flow Real e.d.port.f;\nequation\n  e.port.p = e.d.port.p;\n  e.port.f = 0.0;\n  e.d.port.f - e.port.f = 0.0;\n  e.d.port.f = e.d.port.p;\nend MultipleInheritanceConnect;\n"
+
 end
 

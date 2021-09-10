@@ -961,6 +961,13 @@ function instPackage(node::InstNode) ::InstNode
   node
 end
 
+"""
+  @author: johti17@liu.se
+"""
+function modifyExtends(extendsNode::InstNode; scope::InstNode)
+  modifyExtends(extendsNode, scope)
+end
+
 function modifyExtends(extendsNode::InstNode, scope::InstNode) ::InstNode
   local elem::SCode.Element
   local ext_mod::Modifier
@@ -969,15 +976,19 @@ function modifyExtends(extendsNode::InstNode, scope::InstNode) ::InstNode
   local cls::Class
   local cls_tree::ClassTree
 
-  @assign cls = getClass(extendsNode)
-  @assign cls_tree = classTree(cls)
+  cls = getClass(extendsNode)
+  cls_tree = classTree(cls)
   #=  Create a modifier from the extends.
   =#
   @match BASE_CLASS(definition = elem) = nodeType(extendsNode)
-  @assign ext_mod = fromElement(elem, nil, scope)
-  @assign ext_mod = merge(getModifier(extendsNode), ext_mod)
+  ext_mod = fromElement(elem, nil, scope)
+  ext_mod = merge(getModifier(extendsNode), ext_mod)
   if ! isBuiltin(cls)
-    mapExtends(cls_tree, (extendsNode) -> modifyExtends(scope = extendsNode))
+    #= Added by johti17 to mimic function inheritance =#
+    local func = function modifyExtends2(x; scope = extendsNode) 
+      modifyExtends(x, scope)
+    end
+    mapExtends(cls_tree, (x) -> func(x, scope = extendsNode))
     @assign () = begin
       @match elem begin
         SCode.EXTENDS(__)  => begin
@@ -988,8 +999,8 @@ function modifyExtends(extendsNode::InstNode, scope::InstNode) ::InstNode
           #=  (probably an inherited element) is an error.
           =#
           if ! referenceEq(definition(extendsNode), definition(ext_node))
-            Error.addMultiSourceMessage(Error.FOUND_OTHER_BASECLASS, list(AbsynUtil.pathString(elem.baseClassPath)), list(InstNode_info(extendsNode), InstNode_info(ext_node)))
-            fail()
+            # Error.addMultiSourceMessage(Error.FOUND_OTHER_BASECLASS, list(AbsynUtil.pathString(elem.baseClassPath)), list(InstNode_info(extendsNode), InstNode_info(ext_node)))
+            fail("Found another base class")
           end
           ()
         end
@@ -1039,7 +1050,7 @@ function instExtends(node::InstNode, attributes::Attributes, useBinding::Bool,
         end
         noMod = MODIFIER_NOMOD()
         x = (nodeX) ->
-          instExtends(node, attributes, useBinding, vis, instLevel)
+          instExtends(nodeX, attributes, useBinding, vis, instLevel)
         mapExtends(cls_tree, x)
         y = (nodeX) ->
           instComponent(nodeX, attributes, noMod , useBinding, instLevel, NONE())

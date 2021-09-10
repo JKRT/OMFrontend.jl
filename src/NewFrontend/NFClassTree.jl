@@ -429,12 +429,14 @@ function foldExtends(tree::ClassTree, func::FuncT, arg::ArgT) where {ArgT}
   return arg
 end
 
-""" #= Applies a function to each extends node in the class tree, and updates
-       the extends array with the returned nodes. =#"""
+"""  
+  Applies a function to each extends node in the class tree, and updates
+  the extends array with the returned nodes. 
+"""
 function mapExtends(tree::ClassTree, func::FuncT)
   local exts::Array{InstNode} = getExtends(tree)
   for i = 1:arrayLength(exts)
-    res = arrayGetNoBoundsChecking(exts, i)
+    local res = arrayGetNoBoundsChecking(exts, i)
     arrayUpdateNoBoundsChecking(exts, i, func(res))
   end
   return

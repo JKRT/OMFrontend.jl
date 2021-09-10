@@ -666,7 +666,8 @@ function toString(node::InstNode) ::String
         toString(node.name, P_Pointer.access(node.component))
       end
       CLASS_NODE(__)  => begin
-        SCodeDump.unparseElementStr(node.definition)
+        #SCodeDump.unparseElementStr(node.definition)
+        "CLASS_NODE: " * node.name
       end
       _  => begin
         name(node)

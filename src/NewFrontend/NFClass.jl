@@ -592,7 +592,7 @@ function isIdentical(cls1::Class, cls2::Class)::Bool
     @assign identical = begin
       @match (cls1, cls2) begin
         (EXPANDED_CLASS(__), EXPANDED_CLASS(__)) => begin
-          P_Prefixes.isEqual(cls1.prefixes, cls2.prefixes) &&
+          isEqual(cls1.prefixes, cls2.prefixes) &&
           isIdentical(cls1.elements, cls2.elements)
         end
 

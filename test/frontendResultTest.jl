@@ -9,10 +9,14 @@ heatTankExpanded = (ConnectTests.HeatTankExpanded, "HeatTankExpanded", "./Connec
 multipleinheritanceconnect = (ConnectTests.MultipleInheritanceConnect
                               , "MultipleInheritanceConnect"
                               , "./Connectors/MutipleInheritanceConnect.mo")
+resistorCircuit0 = (ConnectTests.ResistorCircuit0, "ElectricalComponentTest.ResistorCircuit0", "./Connectors/EletricalComponentTest.mo")
+resistorCircuit1 = (ConnectTests.ResistorCircuit1, "ElectricalComponentTest.ResistorCircuit1", "./Connectors/EletricalComponentTest.mo")
+simpleCircuit = (ConnectTests.SimpleCircuit, "ElectricalComponentTest.SimpleCircuit", "./Connectors/EletricalComponentTest.mo")
+
 #= Add new tests here=#
 
 @testset "Connector test. Testing the handling of connectors" begin
-  tst = [ctst1, ctst5, tank, heattank, heatTankExpanded, multipleinheritanceconnect]
+  tst = [ctst1, ctst5, tank, heattank, heatTankExpanded, multipleinheritanceconnect, resistorCircuit0, resistorCircuit1, simpleCircuit]
   for mf in tst
     try
       res = flattenFM(mf[2], mf[3])

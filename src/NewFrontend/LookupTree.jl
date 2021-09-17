@@ -16,8 +16,8 @@ using ExportAll
   end
 end
 
-const Key = String
-const Value = Entry
+Key = String
+Value = Entry
 
 #= Modelica extend clause =#
 const valueStr = Function

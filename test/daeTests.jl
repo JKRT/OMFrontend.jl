@@ -1,56 +1,17 @@
 #= Quick sanity test for DAE. Does the Frontend compile?=#
-@test try
-    flatten("HelloWorld", "./Models/HelloWorld.mo")
+function testPassIfNoException(str1::String, str2::String)
+  @test try
+    flatten(str1, str2)
     true
   catch e
-    throw(e)
     false
   end
+end
 
-  @test try
-    flatten("LotkaVolterra", "./Models/LotkaVolterra.mo")
-    true
-  catch e
-    throw(e)
-    false
-  end
-
-  @test try
-    flatten("Robertsson", "./Models/Robertsson.mo")
-    true
-  catch e
-    throw(e)
-    false
-  end
-
-  @test try
-    flatten("SimpleCircuit", "./Models/SimpleCircuit.mo")
-    true
-  catch e
-    throw(e)
-    false
-  end
-
-  @test try
-    flatten("SimpleMechanicalSystem", "./Models/SimpleMechanicalSystem.mo")
-    true
-  catch e
-    throw(e)
-    false
-  end
-
-  @test try
-    flatten("Influenza", "./Models/Influenza.mo")
-    true
-  catch e
-    throw(e)
-    false
-  end
-  
-  @test try
-    flatten("Casc6", "./Models/Casc6.mo")
-    true
-  catch e
-    throw(e)
-    false
-  end
+testPassIfNoException("HelloWorld", "./Models/HelloWorld.mo")
+testPassIfNoException("LotkaVolterra", "./Models/LotkaVolterra.mo")
+testPassIfNoException("Robertsson", "./Models/Robertsson.mo")
+testPassIfNoException("SimpleCircuit", "./Models/SimpleCircuit.mo")
+testPassIfNoException("SimpleMechanicalSystem", "./Models/SimpleMechanicalSystem.mo")
+testPassIfNoException("Influenza", "./Models/Influenza.mo")
+testPassIfNoException("Casc6", "./Models/Casc6.mo")

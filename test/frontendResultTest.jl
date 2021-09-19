@@ -19,12 +19,14 @@ simpleCircuit = (ConnectTests.SimpleCircuit, "ElectricalComponentTest.SimpleCirc
   tst = [ctst1, ctst5, tank, heattank, heatTankExpanded, multipleinheritanceconnect, resistorCircuit0, resistorCircuit1, simpleCircuit]
   for mf in tst
     try
+      #= Get the flat model =#
       res = flattenFM(mf[2], mf[3])
-      #= Convert the result to a string =#
+      #= Convert the flat model to a string =#
       res = OMFrontend.toString(first(res))
       @test res == mf[1]
     catch e
-      @warn "An exception was thrown: $(e)"
+      @test true == false
+      @warn "An exception was thrown: $(e)"      
     end
   end
 end

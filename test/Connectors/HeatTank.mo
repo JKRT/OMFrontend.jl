@@ -3,7 +3,6 @@ connector Stream   //Connector class
   flow Real volumeFlowRate;
 end Stream;
 
-
 model Tank
   parameter Real area = 1;
   replaceable connector TankStream = Stream;    // Class parameterization
@@ -12,13 +11,10 @@ model Tank
 equation
   inlet.volumeFlowRate = 1;
   inlet.pressure = 1;
-
   // Mass balance
   area * der(level) = inlet.volumeFlowRate + outlet.volumeFlowRate;
-
   outlet.pressure = inlet.pressure;
   outlet.volumeFlowRate = 2;
-
 end Tank;
 
 connector HeatStream
@@ -31,14 +27,10 @@ model HeatTank
   Real level(start=2);
   Real temp;
 equation
-
   inlet.temp = 25;
-
   // Energy balance for temperature effects
   area*level*der(temp) =
        inlet.volumeFlowRate*inlet.temp +
          outlet.volumeFlowRate*outlet.temp;
-
   outlet.temp = temp;
-
 end HeatTank;

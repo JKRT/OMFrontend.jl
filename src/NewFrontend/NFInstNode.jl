@@ -1199,7 +1199,7 @@ function scopePath(node::InstNode; includeRoot::Bool = false #= Whether to inclu
         begin
           @match it begin
             BASE_CLASS(__)  => begin
-              scopePath(it.parent, includeRoot)
+              scopePath(it.parent; includeRoot = includeRoot)
             end
 
             _  => begin

@@ -293,7 +293,7 @@ function splitImpl(
             @assign conns = splitImpl(c, ety, face, source, cty, scalarize, conns, dims)
           end
         else
-          if !Type.isEmptyArray(ty)
+          if !isEmptyArray(ty)
             @assign conns = splitImpl(
               name,
               ety,

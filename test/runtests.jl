@@ -7,6 +7,8 @@ Works when including the file in the terminal. Does not seem to work when run vi
 
 =#
 #using Revise For include based work
+#using Revise
+#= Remove before commit =#
 import OMFrontend
 import Absyn
 import SCode
@@ -14,7 +16,6 @@ import DAE
 
 using MetaModelica
 using Test
-
 
 #= Utility functions =#
 function flatten(modelName::String, modelFile::String)
@@ -29,8 +30,8 @@ function parseAndLowerToScode(modelName::String, modelFile::String)
 end
 
 """
-Flattens to flat Modelica. 
-Note that, the full path specification of the file is expected.
+  Flattens to flat Modelica. 
+  Note that, the full path specification of the file is expected.
 """
 function flattenFM(model, file)
   local sp = OMFrontend.parseFile(file)

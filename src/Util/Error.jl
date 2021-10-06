@@ -5013,27 +5013,26 @@ function addInternalError(message::String, info::SourceInfo)
     addSourceMessage(INTERNAL_ERROR, list(message), info)
   end
 end
+==#
 
-""" #= Prints out a message and terminates the execution. =#"""
+""" Prints out a message and terminates the execution. """
 function terminateError(message::String, info::SourceInfo)
-  ErrorExt.addSourceMessage(
-    0,
-    ErrorTypes.TRANSLATION(),
-    ErrorTypes.INTERNAL(),
-    info.lineNumberStart,
-    info.columnNumberStart,
-    info.lineNumberEnd,
-    info.columnNumberEnd,
-    info.isReadOnly,
-    info.fileName,
-    "%s",
-    list(message),
-  )
+  # ErrorExt.addSourceMessage(
+  #   0,
+  #   ErrorTypes.TRANSLATION(),
+  #   ErrorTypes.INTERNAL(),
+  #   info.lineNumberStart,
+  #   info.columnNumberStart,
+  #   info.lineNumberEnd,
+  #   info.columnNumberEnd,
+  #   info.isReadOnly,
+  #   info.fileName,
+  #   "%s",
+  #   list(message),
+  # )
   print(ErrorExt.printMessagesStr())
   return System.exit(-1)
 end
-
-==#
 
 @exportAll()
 end

@@ -4587,7 +4587,7 @@ function toFlatString(exp::Expression) ::String
       end
 
       STRING_EXPRESSION(__)  => begin
-        "\\" + exp.value + "\\"
+        "\"" + exp.value + "\""
       end
 
       BOOLEAN_EXPRESSION(__)  => begin
@@ -4739,7 +4739,7 @@ function toString(exp::Expression) ::String
       end
 
       STRING_EXPRESSION(__)  => begin
-        "\\" + exp.value + "\\"
+        "\"" + exp.value + "\""
       end
 
       BOOLEAN_EXPRESSION(__)  => begin

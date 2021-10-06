@@ -36,7 +36,7 @@ using ExportAll
 import ..Error.ErrorTypes
 
 function registerModelicaFormatError()
-  return @error "TODO: Defined in the runtime"
+  return @warn "TODO: Defined in the runtime"
 end
 
 function addSourceMessage(
@@ -52,34 +52,33 @@ function addSourceMessage(
   msg::String,
   tokens::List{<:String},
 )
-  return @error "TODO: Defined in the runtime"
+  return @warn "TODO: Defined in the runtime"
 end
 
 function printMessagesStr(warningsAsErrors::Bool = false)::String
-  local outString::String
-
-  @error "TODO: Defined in the runtime"
+  local outString::String = "Placeholder error string"
+  @warn "TODO: printMessagesStr not defined in the runtime"
   return outString
 end
 
 function getNumMessages()::Integer
   local num::Integer
 
-  @error "TODO: Defined in the runtime"
+  @warn "TODO: Defined in the runtime"
   return num
 end
 
 function getNumErrorMessages()::Integer
   local num::Integer
 
-  @error "TODO: Defined in the runtime"
+  @warn "TODO: Defined in the runtime"
   return num
 end
 
 function getNumWarningMessages()::Integer
   local num::Integer
 
-  @error "TODO: Defined in the runtime"
+  @warn "TODO: Defined in the runtime"
   return num
 end
 
@@ -87,7 +86,7 @@ end
 function getMessages()::List{ErrorTypes.TotalMessage}
   local res::List{ErrorTypes.TotalMessage}
 
-  @error "TODO: Defined in the runtime"
+  @warn "TODO: Defined in the runtime"
   return res
 end
 
@@ -95,36 +94,36 @@ end
 function getCheckpointMessages()::List{ErrorTypes.TotalMessage}
   local res::List{ErrorTypes.TotalMessage}
 
-  @error "TODO: Defined in the runtime"
+  @warn "TODO: Defined in the runtime"
   return res
 end
 
 function clearMessages()
-  return @error "TODO: Defined in the runtime"
+  return @warn "TODO: Defined in the runtime"
 end
 
 """ #= Used to rollback/delete checkpoints without considering the identifier. Used to reset the error messages after a stack overflow exception. =#"""
 function getNumCheckpoints()::Integer
   local n::Integer
 
-  @error "TODO: Defined in the runtime"
+  @warn "TODO: Defined in the runtime"
   return n
 end
 
 """ #= Used to rollback/delete checkpoints without considering the identifier. Used to reset the error messages after a stack overflow exception. =#"""
 function rollbackNumCheckpoints(n::Integer)
-  return @error "TODO: Defined in the runtime"
+  return @warn "TODO: Defined in the runtime"
 end
 
 """ #= Used to rollback/delete checkpoints without considering the identifier. Used to reset the error messages after a stack overflow exception. =#"""
 function deleteNumCheckpoints(n::Integer)
-  return @error "TODO: Defined in the runtime"
+  return @warn "TODO: Defined in the runtime"
 end
 
 """ #= sets a checkpoint for the error messages, so error messages can be rolled back (i.e. deleted) up to this point
 A unique identifier for this checkpoint must be provided. It is checked when doing rollback or deletion =#"""
 function setCheckpoint(id::String) #= uniqe identifier for the checkpoint (up to the programmer to guarantee uniqueness) =#
-  return @error "TODO: Defined in the runtime"
+  return @warn "TODO: Defined in the runtime"
 end
 
 """ #= deletes the checkpoint at the top of the stack without
@@ -132,13 +131,13 @@ removing the error messages issued since that checkpoint.
 If the checkpoint id doesn't match, the application exits with -1.
  =#"""
 function delCheckpoint(id::String) #= unique identifier =#
-  return @error "TODO: Defined in the runtime"
+  return @warn "TODO: Defined in the runtime"
 end
 
 function printErrorsNoWarning()::String
   local outString::String
 
-  @error "TODO: Defined in the runtime"
+  @warn "TODO: Defined in the runtime"
   return outString
 end
 
@@ -146,7 +145,7 @@ end
 deleting all error messages added since that point in time. A unique identifier for the checkpoint must be provided
 The application will exit with return code -1 if this identifier does not match. =#"""
 function rollBack(id::String) #= unique identifier =#
-  return @error "TODO: Defined in the runtime"
+  return @warn "TODO: Defined in the runtime"
 end
 
 """ #= rolls back error messages until the latest checkpoint,
@@ -155,18 +154,18 @@ The application will exit with return code -1 if this identifier does not match.
 function popCheckPoint(id::String)::List{Integer} #= unique identifier =#
   local handles::List{Integer} #= opaque pointers; you MUST pass them back or memory is leaked =#
 
-  @error "TODO: Defined in the runtime"
+  @warn "TODO: Defined in the runtime"
   return handles #= opaque pointers; you MUST pass them back or memory is leaked =#
 end
 
 """ #= Pushes stored pointers back to the error stack. =#"""
 function pushMessages(handles::List{<:Integer}) #= opaque pointers from popCheckPoint =#
-  return @error "TODO: Defined in the runtime"
+  return @warn "TODO: Defined in the runtime"
 end
 
 """ #= Pushes stored pointers back to the error stack. =#"""
 function freeMessages(handles::List{<:Integer}) #= opaque pointers from popCheckPoint =#
-  return @error "TODO: Defined in the runtime"
+  return @warn "TODO: Defined in the runtime"
 end
 
 """ #= @author: adrpo
@@ -176,21 +175,21 @@ end
 function isTopCheckpoint(id::String)::Bool #= unique identifier =#
   local isThere::Bool #= tells us if the checkpoint exists (true) or doesn't (false) =#
 
-  @error "TODO: Defined in the runtime"
+  @warn "TODO: Defined in the runtime"
   return isThere #= tells us if the checkpoint exists (true) or doesn't (false) =#
 end
 
 function setShowErrorMessages(inShow::Bool)
-  return @error "TODO: Defined in the runtime"
+  return @warn "TODO: Defined in the runtime"
 end
 
 function moveMessagesToParentThread()
-  return @error "TODO: Defined in the runtime"
+  return @warn "TODO: Defined in the runtime"
 end
 
 """ #= Makes assert() and other runtime assertions print to the error buffer =#"""
 function initAssertionFunctions()
-  return @error "TODO: Defined in the runtime"
+  return @warn "TODO: Defined in the runtime"
 end
 
 @exportAll()

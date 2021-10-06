@@ -3541,10 +3541,10 @@ function matchComplexTypes(
 
       (
         INSTANCED_CLASS(
-          ty = TYPE_COMPLEX(complexTy = cty1 && ComplexType.CONNECTOR(__)),
+          ty = TYPE_COMPLEX(complexTy = cty1 && COMPLEX_CONNECTOR(__)),
         ),
         INSTANCED_CLASS(
-          ty = TYPE_COMPLEX(complexTy = cty2 && ComplexType.CONNECTOR(__)),
+          ty = TYPE_COMPLEX(complexTy = cty2 && COMPLEX_CONNECTOR(__)),
         ),
         _,
       ) => begin
@@ -3621,7 +3621,7 @@ function matchComponentList(
         return matchKind
       end
       @assign (_, _, matchKind) =
-        matchTypes(getType(c1), getType(c2), dummy, allowUnknown)
+        matchTypes(getType(c1), getType(c2), dummy; allowUnknown = allowUnknown)
       if matchKind == MatchKind.NOT_COMPATIBLE
         return matchKind
       end
@@ -3851,18 +3851,18 @@ function matchDimensions(
   local compatibleDim::Dimension
 
   if isEqual(dim1, dim2)
-    @assign compatibleDim = dim1
-    @assign compatible = true
+    compatibleDim = dim1
+    compatible = true
   else
-    if !P_Dimension.Dimension.isKnown(dim1)
-      @assign compatibleDim = dim2
-      @assign compatible = true
-    elseif !P_Dimension.Dimension.isKnown(dim2)
-      @assign compatibleDim = dim1
-      @assign compatible = true
+    if !isKnown(dim1)
+      compatibleDim = dim2
+      compatible = true
+    elseif !isKnown(dim2)
+      compatibleDim = dim1
+      compatible = true
     else
-      @assign compatibleDim = dim1
-      @assign compatible = false
+      compatibleDim = dim1
+      compatible = false
     end
   end
   return (compatibleDim, compatible)

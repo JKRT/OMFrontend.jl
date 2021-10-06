@@ -1002,7 +1002,7 @@ function expandCref4(
       end
 
       SUBSCRIPT_EXPANDED_SLICE(indices = slice) <| rest => begin
-        @assign expl = List(
+        expl = list(
           expandCref4(rest, _cons(idx, comb), accum, restSubs, cref, crefType)
           for idx in slice
         )
@@ -1085,27 +1085,24 @@ end
 function expandCref(crefExp::Expression)::Tuple{Expression, Bool}
   local expanded::Bool
   local arrayExp::Expression
-
   local subs::List{List{Subscript}}
-
-  @assign (arrayExp, expanded) = begin
+  (arrayExp, expanded) = begin
     @match crefExp begin
-      CREF_EXPRESSION(cref = CREF(__)) => begin
-        if Type.hasZeroDimension(crefExp.ty)
-          @assign arrayExp = makeEmptyArray(crefExp.ty)
-          @assign expanded = true
-        elseif Type.hasKnownSize(crefExp.ty)
-          @assign subs = expandCref2(crefExp.cref)
-          @assign arrayExp =
+      CREF_EXPRESSION(cref = COMPONENT_REF_CREF(__)) => begin
+        if hasZeroDimension(crefExp.ty)
+          arrayExp = makeEmptyArray(crefExp.ty)
+          expanded = true
+        elseif hasKnownSize(crefExp.ty)
+          subs = expandCref2(crefExp.cref)
+          arrayExp =
             expandCref3(subs, crefExp.cref, arrayElementType(crefExp.ty))
-          @assign expanded = true
+          expanded = true
         else
-          @assign arrayExp = crefExp
-          @assign expanded = false
+          arrayExp = crefExp
+          expanded = false
         end
         (arrayExp, expanded)
       end
-
       _ => begin
         (crefExp, false)
       end

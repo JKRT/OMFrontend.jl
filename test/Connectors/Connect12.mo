@@ -18,7 +18,7 @@ connector RealOutput = output RealSignal;
 connector RealInput2 = input RealSignal(redeclare type SignalType = Real[2]);
 connector RealOutput2 = output RealSignal(redeclare type SignalType = Real[2]);
 
-model test
+model Connect12
   RealInput x;
   RealOutput x2;
   RealInput2 v={1.,2.4};
@@ -30,7 +30,7 @@ equation
       x-y=0;
    connect(x,x2);
    connect(v,v2);
-end test;
+end Connect12;
 
 // Result:
 // class test

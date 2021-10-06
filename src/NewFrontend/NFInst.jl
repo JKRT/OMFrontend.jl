@@ -18,10 +18,14 @@ function instClassInProgram(classPath::Absyn.Path, program::SCode.Program)::Tupl
   =#
   #=  and scalarization if -d=-nfScalarize is on
   =#
-  # if ! Flags.isSet(Flags.NF_SCALARIZE)
-  #   FlagsUtil.set(Flags.NF_EXPAND_OPERATIONS, false)
-  #   FlagsUtil.set(Flags.NF_EXPAND_FUNC_ARGS, false)
-  # end
+
+  #= Set scalazrize by default. =#
+  FlagsUtil.set(Flags.NF_SCALARIZE, true)
+  #= Should be changed using something better later =#
+  if ! Flags.isSet(Flags.NF_SCALARIZE)
+    FlagsUtil.set(Flags.NF_EXPAND_OPERATIONS, false)
+    FlagsUtil.set(Flags.NF_EXPAND_FUNC_ARGS, false)
+  end
 
   #=  make sure we don't expand anything
   =#
@@ -514,21 +518,22 @@ function checkReplaceableBaseClass(baseClasses::List{<:InstNode}, basePath::Absy
     @assign i = i + 1
     if SCodeUtil.isElementReplaceable(definition(base))
       if listLength(baseClasses) > 1
-        @assign rest = baseClasses
-        @assign name = ""
+        rest = baseClasses
+        name = ""
         for j in 1:i - 1
-          @assign name = "." + name(listHead(rest)) + name
-          @assign rest = listRest(rest)
+          name = "." + name(listHead(rest)) + name
+          rest = listRest(rest)
         end
-        @assign name = "<" + name(listHead(rest)) + ">" + name
-        @assign rest = listRest(rest)
+        name = "<" + name(listHead(rest)) + ">" + name
+        rest = listRest(rest)
         for n in rest
-          @assign name = name(n) + "." + name
+          name = name(n) + "." + name
         end
       else
-        @assign name = AbsynUtil.pathString(basePath)
+        name = AbsynUtil.pathString(basePath)
       end
-      Error.addMultiSourceMessage(Error.REPLACEABLE_BASE_CLASS, list(name(base), name), list(InstNode_info(base), info))
+      #TODO      Error.addMultiSourceMessage(Error.REPLACEABLE_BASE_CLASS, list(name(base), name), list(InstNode_info(base), info))
+      @error "Error: Class  $name in base replaceable..." 
       fail()
     end
   end
@@ -694,17 +699,16 @@ function instDerivedAttributes(scodeAttr::SCode.Attributes) ::Attributes
   local cty::ConnectorType.TYPE
   local var::VariabilityType
   local dir::DirectionType
-
-  @assign attributes = begin
+  attributes = begin
     @match scodeAttr begin
       SCode.ATTR(connectorType = SCode.POTENTIAL(__), variability = SCode.VAR(__), direction = Absyn.BIDIR(__))  => begin
         DEFAULT_ATTR
       end
       _  => begin
-        cty = ConnectorType.fromSCode(scodeAttr.connectorType)
+        cty = fromSCode(scodeAttr.connectorType)
         var = variabilityFromSCode(scodeAttr.variability)
         dir = directionFromSCode(scodeAttr.direction)
-        Attributes.ATTRIBUTES(cty, Parallelism.NON_PARALLEL, var, dir, InnerOuter.NOT_INNER_OUTER, false, false, Replaceable.NOT_REPLACEABLE())
+        ATTRIBUTES(cty, Parallelism.NON_PARALLEL, var, dir, InnerOuter.NOT_INNER_OUTER, false, false, NOT_REPLACEABLE())
       end
     end
   end
@@ -1493,7 +1497,8 @@ function updateComponentConnectorType(attributes::Attributes, restriction::Restr
       @assign attributes.connectorType = cty
     end
   elseif isFlowOrStream(cty) && ! isRedeclared
-    Error.addStrictMessage(Error.CONNECTOR_PREFIX_OUTSIDE_CONNECTOR, list(toString(cty)), Copmonent_info(component))
+    #Error.addStrictMessage(Error.CONNECTOR_PREFIX_OUTSIDE_CONNECTOR, list(toString(cty)), Copmonent_info(component)) TODO
+    @warn "CONNECTOR_PREFIX_OUTSIDE_CONNECTOR: list(toString(cty))"
     @assign attributes.connectorType = unsetFlowStream(cty)
   end
   attributes

@@ -102,12 +102,12 @@ end
 
 function isFlowOrStream(cty::Int)::Bool
   local isFlowOrStream::Bool
-  @assign isFlowOrStream = intBitAnd(cty, ConnectorType.FLOW_STREAM_MASK) > 0
+  isFlowOrStream = intBitAnd(cty, ConnectorType.FLOW_STREAM_MASK) > 0
   return isFlowOrStream
 end
 
 function unsetFlowStream(cty::Int)::Int
-  @assign cty = intBitAnd(cty, intBitNot(FLOW_STREAM_MASK))
+  cty = intBitAnd(cty, intBitNot(ConnectorType.FLOW_STREAM_MASK))
   return cty
 end
 

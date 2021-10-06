@@ -261,7 +261,7 @@ function isDeletedComponent(condition::Binding, prefix::ComponentRef)::Bool
   if isBound(condition)
     @assign cond = condition
     @assign exp = getTypedExp(cond)
-    @assign exp = Ceval.evalExp(exp, Ceval.P_EvalTarget.CONDITION(Binding_getInfo(cond)))
+    @assign exp = Ceval.evalExp(exp, Ceval.CONDITION(Binding_getInfo(cond)))
     @assign exp = stripBindingInfo(exp)
     if arrayAllEqual(exp)
       @assign exp = arrayFirstScalar(exp)
@@ -691,9 +691,9 @@ function flattenArray(
     )
   else
     @match _cons(dim, rest_dims) = dimensions
-    @assign range_iter = P_RangeIterator.RangeIterator.fromDim(dim)
-    while P_RangeIterator.RangeIterator.hasNext(range_iter)
-      @assign (range_iter, sub_exp) = P_RangeIterator.RangeIterator.next(range_iter)
+    @assign range_iter = fromDim(dim)
+    while hasNext(range_iter)
+      @assign (range_iter, sub_exp) = next(range_iter)
       @assign (vars, sections) = flattenArray(
         cls,
         rest_dims,

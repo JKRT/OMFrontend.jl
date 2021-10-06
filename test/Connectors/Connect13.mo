@@ -15,12 +15,12 @@ model test
   dq_0 p,n;
 equation
 end test;
-model test2
+model Connect13
   test t1,t2;
 equation
 connect(t1.n,t2.p);
 connect(t2.n,t1.p);
-end test2;
+end Connect13;
 // Result:
 // class test2
 //   Real t1.p.u_dq0[1];

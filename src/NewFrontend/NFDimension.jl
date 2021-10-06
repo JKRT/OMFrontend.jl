@@ -92,11 +92,11 @@ function variability(dim::Dimension)::VariabilityType
 
   @assign var = begin
     @match dim begin
-      INTEGER_EXPRESSION(__) => begin
+      DIMENSION_INTEGER(__) => begin
         dim.var
       end
 
-      BOOLEAN(__) => begin
+      DIMENSION_BOOLEAN(__) => begin
         Variability.CONSTANT
       end
 
@@ -108,7 +108,7 @@ function variability(dim::Dimension)::VariabilityType
         dim.var
       end
 
-      UNKNOWN(__) => begin
+      DIMENSION_UNKNOWN(__) => begin
         Variability.CONTINUOUS
       end
     end
@@ -123,11 +123,11 @@ function sizeExp(dim::Dimension)::Expression
   @assign sizeExp = begin
     local ty::M_Type
     @match dim begin
-      INTEGER_EXPRESSION(__) => begin
+      DIMENSION_INTEGER(__) => begin
         INTEGER_EXPRESSION(dim.size)
       end
 
-      BOOLEAN(__) => begin
+      DIMENSION_BOOLEAN(__) => begin
         INTEGER_EXPRESSION(2)
       end
 
@@ -150,11 +150,11 @@ function endExp(dim::Dimension, cref::ComponentRef, index::Int)::Expression
   @assign sizeExp = begin
     local ty::M_Type
     @match dim begin
-      INTEGER_EXPRESSION(__) => begin
+      DIMENSION_INTEGER(__) => begin
         INTEGER_EXPRESSION(dim.size)
       end
 
-      BOOLEAN(__) => begin
+      DIMENSION_BOOLEAN(__) => begin
         BOOLEAN_EXPRESSION(true)
       end
 
@@ -166,7 +166,7 @@ function endExp(dim::Dimension, cref::ComponentRef, index::Int)::Expression
         dim.exp
       end
 
-      UNKNOWN(__) => begin
+      DIMENSION_UNKNOWN(__) => begin
         SIZE_EXPRESSION(
           CREF_EXPRESSION(
             TYPE_UNKNOWN(),
@@ -191,11 +191,11 @@ function toString(dim::Dimension)::String
   @assign str = begin
     local ty::M_Type
     @match dim begin
-      INTEGER_EXPRESSION(__) => begin
+      DIMENSION_INTEGER(__) => begin
         String(dim.size)
       end
 
-      BOOLEAN(__) => begin
+      DIMENSION_BOOLEAN(__) => begin
         "Boolean"
       end
 
@@ -207,7 +207,7 @@ function toString(dim::Dimension)::String
         toString(dim.exp)
       end
 
-      UNKNOWN(__) => begin
+      DIMENSION_UNKNOWN(__) => begin
         ":"
       end
 
@@ -300,13 +300,12 @@ end
 
 function isKnown(dim::Dimension, allowExp::Bool = false)::Bool
   local known::Bool
-
   @assign known = begin
     @match dim begin
-      INTEGER_EXPRESSION(__) => begin
+      DIMENSION_INTEGER(__) => begin
         true
       end
-      BOOLEAN(__) => begin
+      DIMENSION_BOOLEAN(__) => begin
         true
       end
       DIMENSION_ENUM(__) => begin
@@ -363,31 +362,25 @@ end
 
 function isEqual(dim1::Dimension, dim2::Dimension)::Bool
   local isEq::Bool
-
-  @assign isEq = begin
+  isEq = begin
     @match (dim1, dim2) begin
-      (UNKNOWN(__), _) => begin
+      (DIMENSION_UNKNOWN(__), _) => begin
         true
       end
-
-      (_, UNKNOWN(__)) => begin
+      (_, DIMENSION_UNKNOWN(__)) => begin
         true
       end
-
       (DIMENSION_EXP(__), DIMENSION_EXP(__)) => begin
         isEqual(dim1.exp, dim2.exp)
       end
-
       (DIMENSION_EXP(__), _) => begin
         true
       end
-
       (_, DIMENSION_EXP(__)) => begin
         true
       end
-
       _ => begin
-        P_Dimension.Dimension.size(dim1) == P_Dimension.Dimension.size(dim2)
+        size(dim1) == size(dim2)
       end
     end
   end

@@ -2085,7 +2085,7 @@ function typeSubscript(
         (e, ty, variabilityVar) = typeExp(e, origin, info)
         if isArray(ty)
           outSubscript = SUBSCRIPT_SLICE(e)
-          ty = Type.unliftArray(ty)
+          ty = unliftArray(ty)
           if flagSet(origin, ORIGIN_EQUATION)
             markStructuralParamsExp(e)
           end
@@ -3317,18 +3317,20 @@ function checkConnector(connExp::Expression, info::SourceInfo)
         cref = cr && COMPONENT_REF_CREF(origin = Origin.CREF),
       ) => begin
         if !isConnector(cr.node)
-          Error.addSourceMessageAndFail(
-            Error.INVALID_CONNECTOR_TYPE,
-            list(toString(cr)),
-            info,
-          )
+          @error "Invalid connector type" list(toString(cr)) info
+          # Error.addSourceMessageAndFail(
+          #   Error.INVALID_CONNECTOR_TYPE,
+          #   list(toString(cr)),
+          #   info,
+          # )
         end
         if !checkConnectorForm(cr)
-          Error.addSourceMessageAndFail(
-            Error.INVALID_CONNECTOR_FORM,
-            list(toString(cr)),
-            info,
-          )
+          @error "Invalid connector form:" toString(cr)
+          # Error.addSourceMessageAndFail(
+          #   Error.INVALID_CONNECTOR_FORM,
+          #   list(toString(cr)),
+          #   info,
+          # )
         end
         if subscriptsVariability(cr) > Variability.PARAMETER
           @assign subs = subscriptsAllFlat(cr)
@@ -3362,10 +3364,10 @@ function checkConnector(connExp::Expression, info::SourceInfo)
 end
 
 """ #= Helper function for checkConnector. Checks that a connector cref uses the
-   correct form, i.e. either c1.c2...cn or m.c. =#"""
+     correct form, i.e. either c1.c2...cn or m.c. =#"""
 function checkConnectorForm(cref::ComponentRef, isConnectorBool::Bool = true)::Bool
   local valid::Bool
-  @assign valid = begin
+  valid = begin
     @match cref begin
       COMPONENT_REF_CREF(origin = Origin.CREF) => begin
         if isConnectorBool

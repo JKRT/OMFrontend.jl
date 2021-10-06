@@ -34,8 +34,8 @@ function fold(iterator::RangeIterator, func::FuncT, arg::ArgT) where {ArgT}
   return arg
 end
 
-function map(iterator::RangeIterator, func::FuncT) where {T}
-  local lst::List{T} = nil
+function map(iterator::RangeIterator, func::FuncT)
+  local lst::List = nil
 
   local iter::RangeIterator = iterator
   local exp::Expression
@@ -159,18 +159,18 @@ function fromDim(dim::Dimension)::RangeIterator
     local ty::M_Type
     local expl::List{Expression}
     @match dim begin
-      P_Dimension.Dimension.INTEGER_EXPRESSION(__) => begin
+      DIMENSION_INTEGER(__) => begin
         RANGEITERATOR_INT_RANGE(1, dim.size)
       end
 
-      P_Dimension.Dimension.BOOLEAN(__) => begin
+      DIMENSION_BOOLEAN(__) => begin
         ARRAY_RANGE(list(
           BOOLEAN_EXPRESSION(false),
           BOOLEAN_EXPRESSION(true),
         ))
       end
 
-      P_Dimension.Dimension.ENUM(enumType = ty && TYPE_ENUMERATION(__)) => begin
+       DIMENSION_ENUM(enumType = ty && TYPE_ENUMERATION(__)) => begin
         ARRAY_RANGE(makeEnumLiterals(ty))
       end
 

@@ -39,7 +39,7 @@ function toExp(subscript::Subscript)::Expression
 
   @assign exp = begin
     @match subscript begin
-      UNTYPED(__) => begin
+      SUBSCRIPT_UNTYPED(__) => begin
         subscript.exp
       end
 
@@ -80,7 +80,7 @@ function fromExp(exp::Expression)::Subscript
   return subscript
 end
 
-function isValidIndexType(ty::M_Type)::Bool
+function isValidIndexType(ty::NFType)::Bool
   local b::Bool = isInteger(ty) || isBoolean(ty) || isEnumeration(ty)
   return b
 end
@@ -229,7 +229,7 @@ function variability(subscript::Subscript)::VariabilityType
 
   @assign var = begin
     @match subscript begin
-      UNTYPED(__) => begin
+      SUBSCRIPT_UNTYPED(__) => begin
         variability(subscript.exp)
       end
 
@@ -237,11 +237,11 @@ function variability(subscript::Subscript)::VariabilityType
         variability(subscript.index)
       end
 
-      SLICE(__) => begin
+      SUBSCRIPT_SLICE(__) => begin
         variability(subscript.slice)
       end
 
-      WHOLE(__) => begin
+      SUBSCRIPT_WHOLE(__) => begin
         Variability.CONSTANT
       end
     end
@@ -254,24 +254,22 @@ function expandList(
   dimensions::List{<:Dimension},
 )::List{Subscript}
   local outSubscripts::List{Subscript} = nil
-
   local dim::Dimension
   local rest_dims::List{Dimension} = dimensions
   local sub::Subscript
-
   for s in subscripts
     @match _cons(dim, rest_dims) = rest_dims
-    @assign sub = expand(s, dim)
-    @assign outSubscripts = _cons(sub, outSubscripts)
+    (sub, _) = expand(s, dim)
+    outSubscripts = _cons(sub, outSubscripts)
   end
   for d in rest_dims
-    @assign sub = EXPANDED_SLICE(P_RangeIterator.RangeIterator.map(
-      P_RangeIterator.RangeIterator.fromDim(d),
+    sub = SUBSCRIPT_EXPANDED_SLICE(map(
+      fromDim(d),
       makeIndex,
     ))
-    @assign outSubscripts = _cons(sub, outSubscripts)
+    outSubscripts = _cons(sub, outSubscripts)
   end
-  @assign outSubscripts = listReverse(outSubscripts)
+  outSubscripts = listReverse(outSubscripts)
   return outSubscripts
 end
 
@@ -279,23 +277,22 @@ function expandSlice(subscript::Subscript)::Tuple{Subscript, Bool}
   local expanded::Bool
   local outSubscript::Subscript
 
-  @assign (outSubscript, expanded) = begin
+  (outSubscript, expanded) = begin
     local exp::Expression
     @match subscript begin
-      SLICE(__) => begin
-        @assign exp = P_ExpandExp.ExpandExp.expand(subscript.slice)
+      SUBSCRIPT_SLICE(__) => begin
+        (exp, _) = expand(subscript.slice)
         if isArray(exp)
-          @assign outSubscript = EXPANDED_SLICE(List(
+          outSubscript = SUBSCRIPT_EXPANDED_SLICE(list(
             SUBSCRIPT_INDEX(e) for e in arrayElements(exp)
           ))
-          @assign expanded = true
+          expanded = true
         else
-          @assign outSubscript = subscript
-          @assign expanded = false
+          outSubscript = subscript
+          expanded = false
         end
         (outSubscript, expanded)
       end
-
       _ => begin
         (subscript, false)
       end
@@ -308,27 +305,25 @@ function expand(subscript::Subscript, dimension::Dimension)::Tuple{Subscript, Bo
   local expanded::Bool
   local outSubscript::Subscript
 
-  @assign (outSubscript, expanded) = begin
+  (outSubscript, expanded) = begin
     local exp::Expression
     local iter::RangeIterator
     @match subscript begin
-      SLICE(__) => begin
+      SUBSCRIPT_SLICE(__) => begin
         expandSlice(subscript)
       end
-
-      WHOLE(__) => begin
-        @assign iter = P_RangeIterator.RangeIterator.fromDim(dimension)
-        if P_RangeIterator.RangeIterator.isValid(iter)
-          @assign outSubscript =
+      SUBSCRIPT_WHOLE(__) => begin
+        iter = fromDim(dimension)
+        if isValid(iter)
+          outSubscript =
             EXPANDED_SLICE(P_RangeIterator.RangeIterator.map(iter, makeIndex))
-          @assign expanded = true
+          #=expanded ==# true
         else
-          @assign outSubscript = subscript
-          @assign expanded = false
+          outSubscript = subscript
+          #=expanded ==# false
         end
         (outSubscript, expanded)
       end
-
       _ => begin
         (subscript, true)
       end
@@ -403,18 +398,15 @@ end
 """ #= Returns a dimension representing the size of the given subscript. =#"""
 function toDimension(subscript::Subscript)::Dimension
   local dimension::Dimension
-
-  @assign dimension = begin
+  dimension = begin
     @match subscript begin
       SUBSCRIPT_INDEX(__) => begin
-        P_Dimension.Dimension.fromInteger(1)
+        fromInteger(1)
       end
-
-      SLICE(__) => begin
+      SUBSCRIPT_SLICE(__) => begin
         listHead(arrayDims(typeOf(subscript.slice)))
       end
-
-      WHOLE(__) => begin
+      SUBSCRIPT_WHOLE(__) => begin
         DIMENSION_UNKNOWN()
       end
     end
@@ -442,20 +434,17 @@ end
 
 function eval(
   subscript::Subscript,
-  target::EvalTarget = P_EvalTarget.IGNORE_ERRORS(),
+  target::EvalTarget = EVALTARGET_IGNORE_ERRORS(),
 )::Subscript
   local outSubscript::Subscript
-
-  @assign outSubscript = begin
+  outSubscript = begin
     @match subscript begin
       SUBSCRIPT_INDEX(__) => begin
-        SUBSCRIPT_INDEX(Ceval.evalExp(subscript.index, target))
+        SUBSCRIPT_INDEX(evalExp(subscript.index, target))
       end
-
-      SLICE(__) => begin
-        SLICE(Ceval.evalExp(subscript.slice, target))
+      SUBSCRIPT_SLICE(__) => begin
+        SUBSCRIPT_SLICE(evalExp(subscript.slice, target))
       end
-
       _ => begin
         subscript
       end
@@ -480,7 +469,7 @@ function toFlatString(subscript::Subscript)::String
         Dump.printSubscriptStr(subscript.subscript)
       end
 
-      UNTYPED(__) => begin
+      SUBSCRIPT_UNTYPED(__) => begin
         toFlatString(subscript.exp)
       end
 
@@ -520,11 +509,11 @@ function toString(subscript::Subscript)::String
 
   @assign string = begin
     @match subscript begin
-      RAW_SUBSCRIPT(__) => begin
+      SUBSCRIPT_RAW_SUBSCRIPT(__) => begin
         Dump.printSubscriptStr(subscript.subscript)
       end
 
-      UNTYPED(__) => begin
+      SUBSCRIPT_UNTYPED(__) => begin
         toString(subscript.exp)
       end
 
@@ -795,7 +784,7 @@ end
 function applyExp(subscript::Subscript, func::ApplyFunc)
   return @assign () = begin
     @match subscript begin
-      UNTYPED(__) => begin
+      SUBSCRIPT_UNTYPED(__) => begin
         apply(subscript.exp, func)
         ()
       end
@@ -841,7 +830,7 @@ function containsExpShallow(
 
   @assign res = begin
     @match subscript begin
-      UNTYPED(__) => begin
+      SUBSCRIPT_UNTYPED(__) => begin
         func(subscript.exp)
       end
 
@@ -882,7 +871,7 @@ function containsExp(subscript::Subscript, func::ContainsPred)::Bool
 
   @assign res = begin
     @match subscript begin
-      UNTYPED(__) => begin
+      SUBSCRIPT_UNTYPED(__) => begin
         contains(subscript.exp, func)
       end
 
@@ -940,8 +929,8 @@ function compare(subscript1::Subscript, subscript2::Subscript)::Int
   @assign comp = begin
     local e::Expression
     @match subscript1 begin
-      UNTYPED(__) => begin
-        @match UNTYPED(exp = e) = subscript2
+      SUBSCRIPT_UNTYPED(__) => begin
+        @match SUBSCRIPT_UNTYPED(exp = e) = subscript2
         compare(subscript1.exp, e)
       end
 
@@ -964,36 +953,34 @@ function compare(subscript1::Subscript, subscript2::Subscript)::Int
 end
 
 function isEqualList(subscripts1::List{<:Subscript}, subscripts2::List{<:Subscript})::Bool
-  local isEqual::Bool
-
+  local eq::Bool
   local s2::Subscript
   local rest::List{Subscript} = subscripts2
-
   for s1 in subscripts1
     if listEmpty(rest)
-      @assign isEqual = false
-      return isEqual
+      @assign eq = false
+      return eq
     end
     @match _cons(s2, rest) = rest
     if !isEqual(s1, s2)
-      @assign isEqual = false
-      return isEqual
+      @assign eq = false
+      return eq
     end
   end
-  @assign isEqual = listEmpty(rest)
-  return isEqual
+  @assign eq = listEmpty(rest)
+  return eq
 end
 
 function isEqual(subscript1::Subscript, subscript2::Subscript)::Bool
-  local isEqual::Bool
+  local eq::Bool
 
-  @assign isEqual = begin
+  @assign eq = begin
     @match (subscript1, subscript2) begin
-      (RAW_SUBSCRIPT(__), RAW_SUBSCRIPT(__)) => begin
+      (SUBSCRIPT_RAW_SUBSCRIPT(__), SUBSCRIPT_RAW_SUBSCRIPT(__)) => begin
         AbsynUtil.subscriptEqual(subscript1.subscript, subscript2.subscript)
       end
 
-      (UNTYPED(__), UNTYPED(__)) => begin
+      (SUBSCRIPT_UNTYPED(__), SUBSCRIPT_UNTYPED(__)) => begin
         isEqual(subscript1.exp, subscript2.exp)
       end
 
@@ -1014,7 +1001,7 @@ function isEqual(subscript1::Subscript, subscript2::Subscript)::Bool
       end
     end
   end
-  return isEqual
+  return eq
 end
 
 function isScalarLiteral(sub::Subscript)::Bool

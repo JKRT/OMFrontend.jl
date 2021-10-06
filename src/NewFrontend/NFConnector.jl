@@ -36,16 +36,30 @@ function split(
 )::List{Connector}
   local connl::List{Connector}
 
-  @assign connl = splitImpl(conn.name, conn.ty, conn.face, conn.source, conn.cty, scalarize)
+  connl = splitImpl(conn.name, conn.ty, conn.face, conn.source, conn.cty, scalarize)
   return connl
 end
+
+""" #= Splits a connector into its primitive components. Scalarize everything! =#"""
+function split(conn::CONNECTOR)::List{Connector}
+  local connl::List{Connector}
+  @assign connl = splitImpl(conn.name, conn.ty, conn.face, conn.source, conn.cty, ScalarizeSetting.NONE)
+  return connl
+end
+
 
 function hash(conn::Connector, mod::Int)::Int
   local hash::Int = hash(conn.name, mod)
   return hash
 end
 
-function toString(conn::Connector)::String
+function toString(conn::CONNECTOR)::String
+  local str::String = toString(conn.name)
+  return str
+end
+
+
+function Base.string(conn::CONNECTOR)::String
   local str::String = toString(conn.name)
   return str
 end
@@ -61,8 +75,8 @@ function isExpandable(conn::Connector)::Bool
 end
 
 function isDeleted(conn::Connector)::Bool
-  local isDeleted::Bool = isDeleted(conn.name)
-  return isDeleted
+  local isDel::Bool = isDeleted(conn.name)
+  return isDel
 end
 
 function setOutside(conn::Connector)::Connector
@@ -210,15 +224,15 @@ function splitImpl2(
   local cty::ConnectorType.TYPE
 
   for comp in comps
-    @assign c = component(comp)
-    @assign ty = getType(c)
-    @assign cty = P_Component.connectorType(c)
-    if !ConnectorType.isPotentiallyPresent(cty)
-      @assign cref = append(
+    c = component(comp)
+    ty = getType(c)
+    cty = connectorType(c)
+    if ! isPotentiallyPresent(cty)
+      cref = append(
         fromNode(comp, ty),
         name,
       )
-      @assign conns = splitImpl(cref, ty, face, source, cty, scalarize, conns, dims)
+      conns = splitImpl(cref, ty, face, source, cty, scalarize, conns, dims)
     end
   end
   return conns
@@ -226,7 +240,7 @@ end
 
 function splitImpl(
   name::ComponentRef,
-  ty::M_Type,
+  ty::NFType,
   face::FaceType,
   source::DAE.ElementSource,
   cty::ConnectorType.TYPE,
@@ -234,17 +248,15 @@ function splitImpl(
   conns::List{<:Connector} = nil,
   dims::List{<:Dimension} = nil,
 )::List{Connector} #= accumulated dimensions if splitArrays = false =#
-
-  @assign conns = begin
+  conns = begin
     local ety::M_Type
     local ct::ComplexType
     local tree::ClassTree
     @match ty begin
-      TYPE_COMPLEX(complexTy = ct && ComplexType.CONNECTOR(__)) => begin
-        @assign conns =
-          splitImpl2(name, face, source, ct.potentials, scalarize, conns, dims)
-        @assign conns = splitImpl2(name, face, source, ct.flows, scalarize, conns, dims)
-        @assign conns = splitImpl2(name, face, source, ct.streams, scalarize, conns, dims)
+      TYPE_COMPLEX(complexTy = ct && COMPLEX_CONNECTOR(__)) => begin
+        conns = splitImpl2(name, face, source, ct.potentials, scalarize, conns, dims)
+        conns = splitImpl2(name, face, source, ct.flows, scalarize, conns, dims)
+        conns = splitImpl2(name, face, source, ct.streams, scalarize, conns, dims)
         conns
       end
 
@@ -253,8 +265,8 @@ function splitImpl(
       end
 
       TYPE_COMPLEX(__) => begin
-        @assign tree = classTree(getClass(ty.cls))
-        @assign conns = splitImpl2(
+        tree = classTree(getClass(ty.cls))
+        conns = splitImpl2(
           name,
           face,
           source,
@@ -281,7 +293,7 @@ function splitImpl(
             @assign conns = splitImpl(c, ety, face, source, cty, scalarize, conns, dims)
           end
         else
-          if !Type.isEmptyArray(ty)
+          if !isEmptyArray(ty)
             @assign conns = splitImpl(
               name,
               ety,

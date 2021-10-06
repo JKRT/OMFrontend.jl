@@ -968,10 +968,10 @@ function evalRangeExp(rangeExp::Expression)::Expression
       end
     end
   end
-  @assign exp = makeArray(
-    TYPE_ARRAY(ty, list(P_Dimension.Dimension.fromInteger(listLength(expl)))),
+  exp = makeArray(
+    TYPE_ARRAY(ty, list(fromInteger(listLength(expl)))),
     expl,
-    literal = true,
+    #=literal = =#true,
   )
   return exp
 end

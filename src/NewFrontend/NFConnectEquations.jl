@@ -1,12 +1,3 @@
-module NFConnectEquations
-
-using MetaModelica
-using ExportAll
-#= Forward declarations for uniontypes until Julia adds support for mutual recursion =#
-
-potFunc = Function
-
-FuncType = Function
 
 #= /*
 * This file is part of OpenModelica.
@@ -39,61 +30,12 @@ FuncType = Function
 *
 */ =#
 
-import ..P_NFConnector= P_NFConnector
-Connector = NFConnector
-import DAE
-import ..NFConnectionSets.ConnectionSets
-ConnectionSets = NFConnectionSets.ConnectionSets
-import ..P_NFEquation
-P_Equation = P_NFEquation
-Equation = P_NFEquation.NFEquation
-import ..NFCardinalityTable
-CardinalityTable = NFCardinalityTable
+import ..ConnectionSets
 
-import ..ComponentReference
-import ..P_NFComponentRef
-P_ComponentRef = P_NFComponentRef
-ComponentRef = P_NFComponentRef.NFComponentRef
-import ..Config
-import ..ElementSource
-import ..P_NFExpression
-P_Expression = P_NFExpression
-Expression = P_NFExpression.NFExpression
-import ..Face
-Face = Face
-import ListUtil
-import ..NFPrefixes.ConnectorType
-import ..NFPrefixes.Variability
-import ..P_NFOperator
-P_Operator = P_NFOperator
-Operator = P_NFOperator.NFOperator
-import ..P_NFType
-P_M_Type = P_NFType
-M_Type = NFType
-import ..NFCall.P_Call
-import ..NFBuiltinFuncs
-import ..NFInstNode.P_InstNode
-import ..NFClass.P_Class
-import ..NFBinding.P_Binding
-import ..NFFunction.P_Function
-import ..Global
-import ..NFBuiltinCall= NFBuiltinCall
-import ..NFComplexType
-ComplexType = NFComplexType
-import ..P_NFExpandExp
-P_ExpandExp = P_NFExpandExp
-ExpandExp = P_NFExpandExp.NFExpandExp
-import ..NFPrefixes
-P_Prefixes = NFPrefixes
-Prefixes = NFPrefixes.Prefixes
-import ..NFComponent.P_Component
-import ..NFCeval
-Ceval = NFCeval
-import ..MetaModelica.Dangerous.listReverseInPlace
-import ..NFSimplifyExp
-SimplifyExp = NFSimplifyExp
-const EQ_ASSERT_STR =
-  STRING_EXPRESSION("Connected constants/parameters must be equal")::Expression
+const potFunc = Function
+FuncType = Function
+
+const EQ_ASSERT_STR = STRING_EXPRESSION("Connected constants/parameters must be equal")
 
 function generateEquations(sets::Array{<:List{<:Connector}})::List{Equation}
   local equations::List{Equation} = nil
@@ -109,16 +51,16 @@ function generateEquations(sets::Array{<:List{<:Connector}})::List{Equation}
   #=   generatePotentialEquationsOrdered else generatePotentialEquations;
   =#
   @assign potfunc = generatePotentialEquations
-  @assign flowThreshold =
-    REAL_EXPRESSION(Flags.getConfigReal(Flags.FLOW_THRESHOLD))
+  #@assign flowThreshold = REAL_EXPRESSION(Flags.getConfigReal(Flags.FLOW_THRESHOLD))
+  @assign flowThreshold = REAL_EXPRESSION(1e-7) #=TODO Should be like this.. I think - John. Fix flag memory issue=#
   for set in sets
-    @assign cty = getSetType(set)
-    if ConnectorType.isPotential(cty)
-      @assign set_eql = potfunc(set)
-    elseif ConnectorType.isFlow(cty)
-      @assign set_eql = generateFlowEquations(set)
-    elseif ConnectorType.isStream(cty)
-      @assign set_eql = generateStreamEquations(set, flowThreshold)
+    cty = getSetType(set)
+    if isPotential(cty)
+      set_eql = potfunc(set)
+    elseif isFlow(cty)
+      set_eql = generateFlowEquations(set)
+    elseif isStream(cty)
+      set_eql = generateStreamEquations(set, flowThreshold)
     else
       Error.addInternalError(
         getInstanceName() +
@@ -130,11 +72,11 @@ function generateEquations(sets::Array{<:List{<:Connector}})::List{Equation}
       )
       fail()
     end
-    @assign equations = listAppend(set_eql, equations)
+    equations = listAppend(set_eql, equations)
   end
   return equations
 end
-
+const CardinalityTable = NFCardinalityTable
 function evaluateOperators(
   exp::Expression,
   sets::ConnectionSets.Sets,
@@ -267,10 +209,8 @@ end
 
 function getSetType(set::List{<:Connector})::ConnectorType.TYPE
   local cty::ConnectorType.TYPE
-
-  #=  All connectors in a set should have the same type, so pick the first.
-  =#
-  @match _cons(Connector.CONNECTOR(cty = cty), _) = set
+  #=  All connectors in a set should have the same type, so pick the first.=#
+  @match _cons(CONNECTOR(cty = cty), _) = set
   return cty
 end
 
@@ -284,7 +224,7 @@ function generatePotentialEquations(elements::List{<:Connector})::List{Equation}
   local c1::Connector
 
   @assign c1 = listHead(elements)
-  if Connector.variability(c1) > Variability.PARAMETER
+  if variability(c1) > Variability.PARAMETER
     @assign equations = list(
       makeEqualityEquation(c1.name, c1.source, c2.name, c2.source)
       for c2 in listRest(elements)
@@ -383,7 +323,7 @@ function makeEqualityEquation(
 
   local source::DAE.ElementSource
 
-  @assign source = ElementSource.mergeSources(lhsSource, rhsSource)
+  @assign source = DAE.emptyElementSource #ElementSource.mergeSources(lhsSource, rhsSource) TODO
   #= source := ElementSource.addElementSourceConnect(source, (lhsCref, rhsCref));
   =#
   @assign equalityEq = EQUATION_CREF_EQUALITY(lhsCref, rhsCref, source)
@@ -438,72 +378,28 @@ function makeEqualityAssert(
   return equalityAssert
 end
 
-#= protected function shouldFlipPotentialEquation
-=#
-#=   \"If the flag +orderConnections=false is used, then we should keep the order of
-=#
-#=    the connector elements as they occur in the connection (if possible). In that
-=#
-#=    case we check if the cref of the first argument to the first connection
-=#
-#=    stored in the element source is a prefix of the connector element cref. If
-=#
-#=    it isn't, indicate that we should flip the generated equation.\"
-=#
-#=   input DAE.ComponentRef lhsCref;
-=#
-#=   input DAE.ElementSource lhsSource;
-=#
-#=   output Boolean shouldFlip;
-=#
-#= algorithm
-=#
-#=   shouldFlip := match lhsSource
-=#
-#=     local
-=#
-#=       DAE.ComponentRef lhs;
-=#
-#=
-=#
-#=     case DAE.SOURCE(connectEquationOptLst = (lhs, _) :: _)
-=#
-#=       then not ComponentReference.crefPrefixOf(lhs, lhsCref);
-=#
-#=
-=#
-#=     else false;
-=#
-#=   end match;
-=#
-#= end shouldFlipPotentialEquation;
-=#
-
 function generateFlowEquations(elements::List{<:Connector})::List{Equation}
   local equations::List{Equation}
-
   local c::Connector
   local c_rest::List{Connector}
   local src::DAE.ElementSource
   local sum::Expression
-
   @match _cons(c, c_rest) = elements
-  @assign src = c.source
+  src = c.source
   if listEmpty(c_rest)
-    @assign sum = fromCref(c.name)
+    sum = fromCref(c.name)
   else
-    @assign sum = makeFlowExp(c)
+    sum = makeFlowExp(c)
     for e in c_rest
-      @assign sum = BINARY_EXPRESSION(
+      sum = BINARY_EXPRESSION(
         sum,
         makeAdd(TYPE_REAL()),
         makeFlowExp(e),
       )
-      @assign src = ElementSource.mergeSources(src, e.source)
+      src = DAE.emptyElementSource #ElementSource.mergeSources(src, e.source) TODO
     end
   end
-  @assign equations =
-    list(EQUATION_EQUALITY(sum, REAL_EXPRESSION(0.0), c.ty, src))
+  equations = list(EQUATION_EQUALITY(sum, REAL_EXPRESSION(0.0), c.ty, src))
   return equations
 end
 
@@ -1338,7 +1234,4 @@ function associatedFlowCref(streamCref::ComponentRef)::ComponentRef
   #=  Otherwise, remove the first part of the cref and try again.
   =#
   return flowCref
-end
-
-@exportAll()
 end

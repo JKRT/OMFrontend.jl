@@ -67,11 +67,11 @@ function translateAbsyn2SCode(inProgram::Absyn.Program)::SCode.Program
       _ => begin
         #            InstHashTable.init()
         @match Absyn.PROGRAM(classes = inClasses) = inProgram
-        #                      System.setHasInnerOuterDefinitions(false)
-        #                      System.setHasExpandableConnectors(false)
-        #                      System.setHasOverconstrainedConnectors(false)
-        #System.setHasStreamConnectors(false)
-         sp = list(translateClass(c) for c in inClasses)
+        System.setHasInnerOuterDefinitions(false)
+        System.setHasExpandableConnectors(false)
+        System.setHasOverconstrainedConnectors(false)
+        System.setHasStreamConnectors(false)
+        @assign sp = list(translateClass(c) for c in inClasses)
         sp
       end
     end
@@ -1849,7 +1849,8 @@ end
 
 """ #= @author: adrpo
  This function will set the external flag that signals
- that a model has stream connectors =#"""
+ that a model has stream connectors =#
+"""
 function setHasStreamConnectorsHandler(streamPrefix::Bool)
    _ = begin
     @match streamPrefix begin

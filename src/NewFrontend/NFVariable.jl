@@ -73,20 +73,20 @@ function toStream(
   var::Variable,
   indent::String = "",
   printBindingType::Bool = false,
-  s = Nothin,
+  s = Nothing,
 )
   local first::Bool
   local b::Binding
-  @assign s = append(s, indent)
+  s = IOStream_M.append(s, indent)
   if var.visibility == Visibility.PROTECTED
-    @assign s = append(s, "protected ")
+    s = IOStream_M.append(s, "protected ")
   end
-  @assign s = append(s, P_Component.P_Attributes.toString(var.attributes, var.ty))
-  @assign s = append(s, Type.toString(var.ty))
-  @assign s = append(s, " ")
-  @assign s = append(s, toString(var.name))
+  s = IOStream_M.append(s, toString(var.attributes, var.ty))
+  s = IOStream_M.append(s, toString(var.ty))
+  s = IOStream_M.append(s, " ")
+  s = IOStream_M.append(s, toString(var.name))
   if !listEmpty(var.typeAttributes)
-    @assign s = append(s, "(")
+    @assign s = IOStream_M.append(s, "(")
     @assign first = true
     for a in var.typeAttributes
       if first
@@ -98,20 +98,20 @@ function toStream(
       if isEach(b)
         @assign s = append(s, "each ")
       end
-      @assign s = append(s, Util.tuple21(a))
-      @assign s = append(s, " = ")
-      @assign s = append(s, toString(b))
+      @assign s = IOStream_M.append(s, Util.tuple21(a))
+      @assign s = IOStream_M.append(s, " = ")
+      @assign s = IOStream_M.append(s, toString(b))
     end
-    @assign s = append(s, ")")
+    @assign s = IOStream_M.append(s, ")")
   end
   if isBound(var.binding)
-    @assign s = append(s, " = ")
+    @assign s = IOStream_M.append(s, " = ")
     if printBindingType
-      @assign s = append(s, "(")
-      @assign s = append(s, Type.toString(getType(var.binding)))
-      @assign s = append(s, ") ")
+      @assign s = IOStream_M.append(s, "(")
+      @assign s = IOStream_M.append(s, Type.toString(getType(var.binding)))
+      @assign s = IOStream_M.append(s, ") ")
     end
-    @assign s = append(s, toString(var.binding))
+    @assign s = IOStream_M.append(s, toString(var.binding))
   end
   return s
 end
@@ -144,7 +144,7 @@ end
 
 function isPresent(variable::Variable)::Bool
   local present::Bool =
-    !ConnectorType.isPotentiallyPresent(variable.attributes.connectorType)
+    !isPotentiallyPresent(variable.attributes.connectorType)
   return present
 end
 

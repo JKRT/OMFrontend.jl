@@ -2,6 +2,7 @@ module Global
 
 using MetaModelica
 using ExportAll
+import ..System
 
 #= /*
 * This file is part of OpenModelica.

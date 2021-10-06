@@ -6,7 +6,7 @@ module ConnectorType
 
 import ..Main.NFType
 
-TYPE = Int
+const TYPE = Int
 
 using MetaModelica
 using ExportAll
@@ -27,14 +27,12 @@ const PREFIX_MASK = intBitOr(POTENTIAL, FLOW_STREAM_MASK)::Int
 const CONNECTOR_MASK = intBitOr(CONNECTOR, intBitOr(EXPANDABLE, POTENTIALLY_PRESENT))::Int
 #=  An element in an expandable connector. =#
 const UNDECLARED_MASK = intBitOr(VIRTUAL, POTENTIALLY_PRESENT)::Int
-
 @exportAll()
 end
 
-
 function fromSCode(scodeCty::SCode.ConnectorType)::Int
   local cty::Int
-  @assign cty = begin
+  cty = begin
     @match scodeCty begin
       SCode.POTENTIAL(__) => begin
         0
@@ -43,7 +41,8 @@ function fromSCode(scodeCty::SCode.ConnectorType)::Int
         ConnectorType.FLOW
       end
       SCode.STREAM(__) => begin
-        STREAM
+        throw("WRONG!")
+        ConnectorType.STREAM
       end
     end
   end
@@ -53,13 +52,13 @@ end
 function toDAE(cty::Int)::DAE.ConnectorType
   local dcty::DAE.ConnectorType
   if intBitAnd(cty, ConnectorType.POTENTIAL) > 0
-    @assign dcty = DAE.POTENTIAL()
+    dcty = DAE.POTENTIAL()
   elseif intBitAnd(cty, ConnectorType.FLOW) > 0
-    @assign dcty = DAE.FLOW()
+    dcty = DAE.FLOW()
   elseif intBitAnd(cty, ConnectorType.STREAM) > 0
-    @assign dcty = DAE..STREAM(NONE())
+    dcty = DAE.STREAM(NONE())
   else
-    @assign dcty = DAE.NON_CONNECTOR()
+    dcty = DAE.NON_CONNECTOR()
   end
   return dcty
 end
@@ -71,52 +70,44 @@ function merge(
   isClass::Bool = false,
 )::Int
   local cty::Int
-
-  #=  If both the outer and the inner has flow or stream, give an error.
-  =#
-  if intBitAnd(outerCty, ConnectorType.FLOW_STREAM_MASK) > 0 && intBitAnd(innerCty, ConnectorType.FLOW_STREAM_MASK) > 0
+  #=  If both the outer and the inner has flow or stream, give an error.=#
+  if (intBitAnd(outerCty, ConnectorType.FLOW_STREAM_MASK) > 0) && (intBitAnd(innerCty, ConnectorType.FLOW_STREAM_MASK) > 0)
     printPrefixError(toString(outerCty), toString(innerCty), node)
   end
-  @assign cty = intBitOr(outerCty, innerCty)
+  cty = intBitOr(outerCty, innerCty)
   return cty
 end
 
 function isPotential(cty::Int)::Bool
-  local isPotential::Bool
-
-  @assign isPotential = intBitAnd(cty, POTENTIAL) > 0
-  return isPotential
+  b = intBitAnd(cty, ConnectorType.POTENTIAL) > 0
+  return b
 end
 
 function setPotential(cty::Int)::Int
-
-  @assign cty = intBitOr(cty, ConnectorType.POTENTIAL)
+  cty = intBitOr(cty, ConnectorType.POTENTIAL)
   return cty
 end
 
 function isFlow(cty::Int)::Bool
-  local isFlow::Bool
-  @assign isFlow = intBitAnd(cty, ConnectorType.FLOW) > 0
-  return isFlow
+  local b::Bool
+  b = intBitAnd(cty, ConnectorType.FLOW) > 0
+  return b
 end
 
 function isStream(cty::Int)::Bool
-  local isStream::Bool
-
-  @assign isStream = intBitAnd(cty, ConnectorType.STREAM) > 0
-  return isStream
+  local b::Bool
+  b = intBitAnd(cty, ConnectorType.STREAM) > 0
+  return b
 end
 
 function isFlowOrStream(cty::Int)::Bool
   local isFlowOrStream::Bool
-
-  @assign isFlowOrStream = intBitAnd(cty, ConnectorType.FLOW_STREAM_MASK) > 0
+  isFlowOrStream = intBitAnd(cty, ConnectorType.FLOW_STREAM_MASK) > 0
   return isFlowOrStream
 end
 
 function unsetFlowStream(cty::Int)::Int
-
-  @assign cty = intBitAnd(cty, intBitNot(FLOW_STREAM_MASK))
+  cty = intBitAnd(cty, intBitNot(ConnectorType.FLOW_STREAM_MASK))
   return cty
 end
 
@@ -129,7 +120,7 @@ function isConnector(cty::Int)::Bool
 end
 
 function setConnector(cty::Int)::Int
-  @assign cty = intBitOr(cty, ConnectorType.CONNECTOR)
+  cty = intBitOr(cty, ConnectorType.CONNECTOR)
   return cty
 end
 
@@ -143,7 +134,7 @@ end
 
 function isExpandable(cty::Int)::Bool
   local isExpandable::Bool
-  @assign isExpandable = intBitAnd(cty, EXPANDABLE) > 0
+  @assign isExpandable = intBitAnd(cty, ConnectorType.EXPANDABLE) > 0
   return isExpandable
 end
 
@@ -157,7 +148,7 @@ end
 function isUndeclared(cty::Int)::Bool
   local isExpandableElement::Bool
 
-  @assign isExpandableElement = intBitAnd(cty, UNDECLARED_MASK) > 0
+  @assign isExpandableElement = intBitAnd(cty, ConnectorType.UNDECLARED_MASK) > 0
   return isExpandableElement
 end
 
@@ -169,29 +160,28 @@ function isVirtual(cty::Int)::Bool
 end
 
 function isPotentiallyPresent(cty::Int)::Bool
-  local isPotentiallyPresent::Bool
-
-  @assign isPotentiallyPresent = intBitAnd(cty, POTENTIALLY_PRESENT) > 0
-  return isPotentiallyPresent
+  local b::Bool
+  b = intBitAnd(cty, ConnectorType.POTENTIALLY_PRESENT) > 0
+  return b
 end
 
 function setPresent(cty::Int)::Int
-
-  @assign cty = intBitAnd(cty, intBitNot(POTENTIALLY_PRESENT))
+  @assign cty = intBitAnd(cty, intBitNot(ConnectorType.POTENTIALLY_PRESENT))
   return cty
 end
 
 function toString(cty::Int)::String
   local str::String
-
-  if intBitAnd(cty, FLOW) > 0
-    @assign str = "flow"
-  elseif intBitAnd(cty, STREAM) > 0
-    @assign str = "stream"
-  elseif intBitAnd(cty, EXPANDABLE) > 0
-    @assign str = "expandable"
+  if intBitAnd(cty, ConnectorType.FLOW) > 0
+    @assign str = "flow string(cty)"
+  elseif intBitAnd(cty, ConnectorType.STREAM) > 0
+    @assign str = "stream string(cty)"
+  elseif intBitAnd(cty, ConnectorType.EXPANDABLE) > 0
+    @assign str = "expandable string(cty)"
+  elseif intBitAnd(cty, ConnectorType.POTENTIAL) > 0
+    @assign str = "potential string(cty)"
   else
-    @assign str = ""
+    str = "Unspecified"
   end
   return str
 end
@@ -199,9 +189,9 @@ end
 function unparse(cty::Int)::String
   local str::String
 
-  if intBitAnd(cty, FLOW) > 0
+  if intBitAnd(cty, ConnectorType.FLOW) > 0
     @assign str = "flow "
-  elseif intBitAnd(cty, STREAM) > 0
+  elseif intBitAnd(cty, ConnectorType.STREAM) > 0
     @assign str = "stream "
   else
     @assign str = ""
@@ -211,29 +201,28 @@ end
 
 function toDebugString(cty::Int)::String
   local str::String
-
   local strl::List{String} = nil
-
-  if intBitAnd(cty, POTENTIAL) > 0
-    @assign strl = _cons("potential", strl)
+  suffix = "(Number:$cty)"
+  if intBitAnd(cty, ConnectorType.POTENTIAL) > 0
+    @assign strl = _cons("potential $suffix", strl)
   end
-  if intBitAnd(cty, FLOW) > 0
-    @assign strl = _cons("flow", strl)
+  if intBitAnd(cty, ConnectorType.FLOW) > 0
+    @assign strl = _cons("flow $suffix", strl)
   end
-  if intBitAnd(cty, STREAM) > 0
-    @assign strl = _cons("stream", strl)
+  if intBitAnd(cty, ConnectorType.STREAM) > 0
+    @assign strl = _cons("stream $suffix", strl)
   end
-  if intBitAnd(cty, POTENTIALLY_PRESENT) > 0
-    @assign strl = _cons("potentially present", strl)
+  if intBitAnd(cty, ConnectorType.POTENTIALLY_PRESENT) > 0
+    @assign strl = _cons("potentially present $suffix", strl)
   end
-  if intBitAnd(cty, VIRTUAL) > 0
-    @assign strl = _cons("virtual", strl)
+  if intBitAnd(cty, ConnectorType.VIRTUAL) > 0
+    @assign strl = _cons("virtual $suffix", strl)
   end
-  if intBitAnd(cty, CONNECTOR) > 0
-    @assign strl = _cons("connector", strl)
+  if intBitAnd(cty, ConnectorType.CONNECTOR) > 0
+    @assign strl = _cons("connector $suffix", strl)
   end
-  if intBitAnd(cty, EXPANDABLE) > 0
-    @assign strl = _cons("expandable", strl)
+  if intBitAnd(cty, ConnectorType.EXPANDABLE) > 0
+    @assign strl = _cons("expandable $suffix", strl)
   end
   @assign str = stringDelimitList(strl, " ")
   return str
@@ -550,9 +539,8 @@ function variabilityString(var)::String
   return str
 end
 
-function unparseVariability(var, ty::Int)::String
+function unparseVariability(var::VariabilityType, ty::NFType)::String
   local str::String
-
   @assign str = begin
     @match var begin
       Variability.CONSTANT => begin
@@ -908,13 +896,11 @@ end
 
 function unparseReplaceable(repl::Replaceable)::String
   local str::String
-
-  @assign str = begin
+  str = begin
     @match repl begin
-      Replaceable.REPLACEABLE(__) => begin
+      REPLACEABLE(__) => begin
         "replaceable "
       end
-
       _ => begin
         ""
       end

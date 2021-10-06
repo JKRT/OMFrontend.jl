@@ -1,12 +1,3 @@
-module IOStream
-
-using MetaModelica
-using ExportAll
-#= Forward declarations for uniontypes until Julia adds support for mutual recursion =#
-
-@UniontypeDecl IOStreamType
-@UniontypeDecl IOStreamData
-@UniontypeDecl IOStream
 
 #= /*
 * This file is part of OpenModelica.
@@ -38,61 +29,58 @@ using ExportAll
 * See the full OSMC Public License conditions for more details.
 *
 */ =#
+module IOStream_M
+
+using MetaModelica
+using ExportAll
+#= Forward declarations for uniontypes until Julia adds support for mutual recursion =#
+
+@UniontypeDecl IOStreamType
+@UniontypeDecl IOStreamData
+
 
 #= TODO! change these to X_TYPE =#
 @Uniontype IOStreamType begin
   @Record FILE begin
-
     name::String
   end
-
   @Record LIST begin
-
   end
-
   @Record BUFFER begin
-
   end
 end
 
 @Uniontype IOStreamData begin
   @Record FILE_DATA begin
-
     data::Integer
   end
-
   @Record LIST_DATA begin
-
     data::List{String}
   end
-
   @Record BUFFER_DATA begin
-
     data::Integer
   end
 end
 
-@Uniontype IOStream begin
-  @Record IOSTREAM begin
-
-    name::String
-    ty::IOStreamType
-    data::IOStreamData
-  end
+struct IOSTREAM
+  name::String
+  ty::IOStreamType
+  data::IOStreamData
 end
+
 
 const stdInput = 0::Integer
 const stdOutput = 1::Integer
 const stdError = 2::Integer
 const emptyStreamOfTypeList =
-  IOSTREAM("emptyStreamOfTypeList", LIST(), LIST_DATA(nil))::IOStream
+  IOSTREAM("emptyStreamOfTypeList", LIST(), LIST_DATA(nil))::IOSTREAM
 
-import Main.IOStreamExt
+import ..IOStreamExt
 
 import ListUtil
 
-function create(streamName::String, streamType::IOStreamType)::IOStream
-  local outStream::IOStream
+function create(streamName::String, streamType::IOStreamType)::IOSTREAM
+  local outStream::IOSTREAM
 
   @assign outStream = begin
     local fileName::String
@@ -117,16 +105,16 @@ function create(streamName::String, streamType::IOStreamType)::IOStream
   return outStream
 end
 
-function append(inStream::IOStream, inString::String)::IOStream
-  local outStream::IOStream
+function append(inStream::IOSTREAM, inString::String)::IOSTREAM
+  local outStream::IOSTREAM
 
   @assign outStream = begin
     local listData::List{String}
     local fileID::Integer
     local bufferID::Integer
-    local fStream::IOStream
-    local lStream::IOStream
-    local bStream::IOStream
+    local fStream::IOSTREAM
+    local lStream::IOSTREAM
+    local bStream::IOSTREAM
     local streamName::String
     local streamType::IOStreamType
     @match (inStream, inString) begin
@@ -148,29 +136,26 @@ function append(inStream::IOStream, inString::String)::IOStream
   return outStream
 end
 
-function appendList(inStream::IOStream, inStringList::List{<:String})::IOStream
-  local outStream::IOStream
-
+function appendList(inStream::IOSTREAM, inStringList::List{<:String})::IOSTREAM
+  local outStream::IOSTREAM
   @assign outStream = ListUtil.foldr(inStringList, append, inStream)
   return outStream
 end
 
-function close(inStream::IOStream)::IOStream
-  local outStream::IOStream
-
+function close(inStream::IOSTREAM)::IOSTREAM
+  local outStream::IOSTREAM
   @assign outStream = begin
     local listData::List{String}
     local fileID::Integer
     local bufferID::Integer
-    local fStream::IOStream
-    local lStream::IOStream
-    local bStream::IOStream
+    local fStream::IOSTREAM
+    local lStream::IOSTREAM
+    local bStream::IOSTREAM
     @matchcontinue inStream begin
       fStream && IOSTREAM(data = FILE_DATA(fileID)) => begin
         IOStreamExt.closeFile(fileID)
         fStream
       end
-
       _ => begin
         inStream
       end
@@ -181,14 +166,14 @@ function close(inStream::IOStream)::IOStream
   return outStream
 end
 
-function delete(inStream::IOStream)
+function delete(inStream::IOSTREAM)
   return @assign _ = begin
     local listData::List{String}
     local fileID::Integer
     local bufferID::Integer
-    local fStream::IOStream
-    local lStream::IOStream
-    local bStream::IOStream
+    local fStream::IOSTREAM
+    local lStream::IOSTREAM
+    local bStream::IOSTREAM
     @match inStream begin
       IOSTREAM(data = FILE_DATA(fileID)) => begin
         IOStreamExt.deleteFile(fileID)
@@ -207,16 +192,15 @@ function delete(inStream::IOStream)
   end
 end
 
-function clear(inStream::IOStream)::IOStream
-  local outStream::IOStream
-
+function clear(inStream::IOSTREAM)::IOSTREAM
+  local outStream::IOSTREAM
   @assign outStream = begin
     local listData::List{String}
     local fileID::Integer
     local bufferID::Integer
-    local fStream::IOStream
-    local lStream::IOStream
-    local bStream::IOStream
+    local fStream::IOSTREAM
+    local lStream::IOSTREAM
+    local bStream::IOSTREAM
     local name::String
     local data::IOStreamData
     local ty::IOStreamType
@@ -225,11 +209,9 @@ function clear(inStream::IOStream)::IOStream
         IOStreamExt.clearFile(fileID)
         fStream
       end
-
       IOSTREAM(name, ty, _) => begin
         IOSTREAM(name, ty, LIST_DATA(nil))
       end
-
       bStream && IOSTREAM(data = BUFFER_DATA(bufferID)) => begin
         IOStreamExt.clearBuffer(bufferID)
         bStream
@@ -239,28 +221,25 @@ function clear(inStream::IOStream)::IOStream
   return outStream
 end
 
-function string(inStream::IOStream)::String
+function string(inStream::IOSTREAM)::String
   local string::String
-
   @assign string = begin
     local listData::List{String}
     local fileID::Integer
     local bufferID::Integer
-    local fStream::IOStream
-    local lStream::IOStream
-    local bStream::IOStream
+    local fStream::IOSTREAM
+    local lStream::IOSTREAM
+    local bStream::IOSTREAM
     local str::String
     @match inStream begin
       IOSTREAM(data = FILE_DATA(fileID)) => begin
         @assign str = IOStreamExt.readFile(fileID)
         str
       end
-
       IOSTREAM(data = LIST_DATA(listData)) => begin
         @assign str = IOStreamExt.appendReversedList(listData)
         str
       end
-
       IOSTREAM(data = BUFFER_DATA(bufferID)) => begin
         @assign str = IOStreamExt.readBuffer(bufferID)
         str
@@ -270,29 +249,28 @@ function string(inStream::IOStream)::String
   return string
 end
 
-""" #= @author: adrpo
+"""  @author: adrpo
   This function will print a string depending on the second argument
   to the standard output (1) or standard error (2).
-  Use IOStream.stdOutput, IOStream.stdError constants =#"""
-function print(inStream::IOStream, whereToPrint::Integer)
+  Use IOStream.stdOutput, IOStream.stdError constants
+"""
+function print(inStream::IOSTREAM, whereToPrint::Integer)
   return @assign _ = begin
     local listData::List{String}
     local fileID::Integer
     local bufferID::Integer
-    local fStream::IOStream
-    local lStream::IOStream
-    local bStream::IOStream
+    local fStream::IOSTREAM
+    local lStream::IOSTREAM
+    local bStream::IOSTREAM
     @match (inStream, whereToPrint) begin
       (IOSTREAM(data = FILE_DATA(fileID)), _) => begin
         IOStreamExt.printFile(fileID, whereToPrint)
         ()
       end
-
       (IOSTREAM(data = BUFFER_DATA(bufferID)), _) => begin
         IOStreamExt.printBuffer(bufferID, whereToPrint)
         ()
       end
-
       (IOSTREAM(data = LIST_DATA(listData)), _) => begin
         IOStreamExt.printReversedList(listData, whereToPrint)
         ()
@@ -303,9 +281,9 @@ end
 
 #= /*
 TODO! Global Streams to be implemented later
-IOStream.remember(IOStream, id);
-IOStream = IOStream.aquire(id);
-IOStream.forget(IOStream, id);
+  IOStream.remember(IOStream, id);
+  IOStream = IOStream.aquire(id);
+  IOStream.forget(IOStream, id);
 */ =#
 
 @exportAll()

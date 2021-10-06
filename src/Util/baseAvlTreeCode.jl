@@ -21,6 +21,11 @@ MapFunc = Function
   end
 end
 
+keyCompare = (inKey1::Key, inKey2::Key) -> begin
+  res = inKey1 == inKey2
+  return res
+end
+
 """ #= Return an empty tree =#"""
 function new()::Tree
   local outTree::Tree = EMPTY()
@@ -51,7 +56,7 @@ function hasKey(inTree::Tree, inKey::Key)::Bool
       end
     end
   end
-  @assign key_comp = keyCompare(inKey, key)
+  key_comp = keyCompare(inKey, key)
   @assign comp = begin
     @match (key_comp, inTree) begin
       (0, _) => begin
@@ -716,7 +721,7 @@ end
    each node, constructing a new tree with the resulting nodes. =#"""
 function map(inTree::Tree, inFunc::MapFunc)::Tree
   local outTree::Tree = inTree
-  @assign outTree = begin
+  outTree = begin
     local key::Key
     local value::Value
     local new_value::Value

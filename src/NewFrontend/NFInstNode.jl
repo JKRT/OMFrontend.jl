@@ -666,7 +666,8 @@ function toString(node::InstNode) ::String
         toString(node.name, P_Pointer.access(node.component))
       end
       CLASS_NODE(__)  => begin
-        SCodeDump.unparseElementStr(node.definition)
+        #SCodeDump.unparseElementStr(node.definition)
+        "CLASS_NODE: " * node.name
       end
       _  => begin
         name(node)
@@ -1198,7 +1199,7 @@ function scopePath(node::InstNode; includeRoot::Bool = false #= Whether to inclu
         begin
           @match it begin
             BASE_CLASS(__)  => begin
-              scopePath(it.parent, includeRoot)
+              scopePath(it.parent; includeRoot = includeRoot)
             end
 
             _  => begin

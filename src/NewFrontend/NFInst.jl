@@ -18,16 +18,20 @@ function instClassInProgram(classPath::Absyn.Path, program::SCode.Program)::Tupl
   =#
   #=  and scalarization if -d=-nfScalarize is on
   =#
-  # if ! Flags.isSet(Flags.NF_SCALARIZE)
-  #   FlagsUtil.set(Flags.NF_EXPAND_OPERATIONS, false)
-  #   FlagsUtil.set(Flags.NF_EXPAND_FUNC_ARGS, false)
-  # end
+
+  #= Set scalazrize by default. =#
+  FlagsUtil.set(Flags.NF_SCALARIZE, true)
+  #= Should be changed using something better later =#
+  if ! Flags.isSet(Flags.NF_SCALARIZE)
+    FlagsUtil.set(Flags.NF_EXPAND_OPERATIONS, false)
+    FlagsUtil.set(Flags.NF_EXPAND_FUNC_ARGS, false)
+  end
 
   #=  make sure we don't expand anything
   =#
-  #System.setUsesCardinality(false)
-  #System.setHasOverconstrainedConnectors(false)
-  #System.setHasStreamConnectors(false)
+  System.setUsesCardinality(false)
+  System.setHasOverconstrainedConnectors(false)
+  System.setHasStreamConnectors(false)
   #=  Create a root node from the given top-level classes.
   =#
   top = makeTopNode(program)
@@ -71,7 +75,7 @@ function instClassInProgram(classPath::Absyn.Path, program::SCode.Program)::Tupl
   @assign flat_model = evaluate(flat_model)
   @debug "FLATTENING DONE: flat_model"
   #= Do unit checking =#
-  #  @assign flat_model = UnitCheck.checkUnits(flat_model) TODO
+  #TODO  @assign flat_model = UnitCheck.checkUnits(flat_model)
   #=  Apply simplifications to the model.=#
   @assign flat_model = simplifyFlatModel(flat_model)
   #=  Collect a tree of all functions that are still used in the flat model.=#
@@ -98,7 +102,7 @@ function instClassInProgram(classPath::Absyn.Path, program::SCode.Program)::Tupl
   @debug "VERIFYING MODEL: "
   verify(flat_model)
   #                   if Flags.isSet(Flags.NF_DUMP_FLAT)
-  #                     print("FlatModel:\\n" + toString(flat_model) + "\\n")
+  # print("FlatModel:\\n" + toString(flat_model) + "\\n")
   #                  end
   #=  Convert the flat model to a DAE.=#
   @debug "CONVERT TO THE DAE REPRESENTATION"
@@ -106,6 +110,109 @@ function instClassInProgram(classPath::Absyn.Path, program::SCode.Program)::Tupl
   return (dae, daeFuncs)
 end
 
+"""
+Similar to instClassInProgram but returns the flat model instead of the DAE.
+Author:johti17
+"""
+function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tuple
+  local daeFuncs::DAE.FunctionTree
+  local dae::DAE.DAE_LIST
+  local top::InstNode
+  local cls::InstNode
+  local inst_cls::InstNode
+  local name::String
+  local flat_model::FlatModel
+  local funcs::FunctionTree
+
+  #=  gather here all the flags to disable expansion
+  =#
+  #=  and scalarization if -d=-nfScalarize is on
+  =#
+  # if ! Flags.isSet(Flags.NF_SCALARIZE)
+  #   FlagsUtil.set(Flags.NF_EXPAND_OPERATIONS, false)
+  #   FlagsUtil.set(Flags.NF_EXPAND_FUNC_ARGS, false)
+  # end
+
+  #=  make sure we don't expand anything
+  =#
+  System.setUsesCardinality(false)
+  System.setHasOverconstrainedConnectors(false)
+  System.setHasStreamConnectors(false)
+  #=  Create a root node from the given top-level classes.
+  =#
+  top = makeTopNode(program)
+  name = AbsynUtil.pathString(classPath)
+  #=  Look up the class to instantiate and mark it as the root class.
+  =#
+  cls = lookupClassName(classPath, top, AbsynUtil.dummyInfo, false)
+  cls = setNodeType(ROOT_CLASS(EMPTY_NODE()), cls)
+  #=  Initialize the storage for automatically generated inner elements. =#
+  top = setInnerOuterCache(top, C_TOP_SCOPE(NodeTree.new(), cls))
+  #=  Instantiate the class. =#
+  @debug "FIRST INST CALL!"
+  inst_cls = instantiateN1(cls, EMPTY_NODE())
+  @debug "AFTER INST CALL"
+  insertGeneratedInners(inst_cls, top)
+  #execStat("NFInst.instantiate(" + name + ")")
+  @debug "INSTANTIATION STEP 1 DONE!"
+  #=  Instantiate expressions (i.e. anything that can contains crefs, like
+  =#
+  #=  bindings, dimensions, etc). This is done as a separate step after
+  =#
+  #=  instantiation to make sure that lookup is able to find the correct nodes.
+  =#
+  instExpressions(inst_cls)
+  #                   execStat("NFInst.instExpressions(" + name + ")")
+  @debug "Inst expressions done"
+  #=  Mark structural parameters.
+  =#
+  updateImplicitVariability(inst_cls, false #== Flags.isSet(Flags.EVAL_PARAM) ==#)
+  #execStat("NFInst.updateImplicitVariability")
+  #=  Type the class.
+  =#
+  @debug "TYPECLASS(inst_cls, name)"
+  typeClass(inst_cls, name)
+  @debug "AFTER type class"
+  #=  Flatten the model and evaluate constants in it.
+  =#
+  @debug "START FLATTENING!"
+  @assign flat_model = flatten(inst_cls, name)
+  @debug "CONSTANT EVALUATION"
+  @assign flat_model = evaluate(flat_model)
+  @debug "FLATTENING DONE: flat_model"
+  #= Do unit checking =#
+  #TODO  @assign flat_model = UnitCheck.checkUnits(flat_model)
+  #=  Apply simplifications to the model.=#
+  @assign flat_model = simplifyFlatModel(flat_model)
+  #=  Collect a tree of all functions that are still used in the flat model.=#
+  @debug "COLLECT FUNCTIONS"
+  @assign funcs = collectFunctions(flat_model, name)
+  @debug "COLLECTED FUNCTIONS!"
+  #=  Collect package constants that couldn't be substituted with their values =#
+  #=  (e.g. because they where used with non-constant subscripts), and add them to the model. =#
+  @debug "COLLECT CONSTANTS"
+  @assign flat_model = collectConstants(flat_model, funcs)
+  @debug "COLLECTED CONSTANTS"
+  # if Flags.getConfigBool(Flags.FLAT_MODELICA)
+  @debug "PRINTING FLAT MODELICA"
+  #printFlatString(flat_model, FunctionTreeImpl.listValues(funcs))
+  # end
+  #= Scalarize array components in the flat model.=#
+  @debug "Not skipping NF_SCALARIZE"
+  #                  if Flags.isSet(Flags.NF_SCALARIZE)
+  # @assign flat_model = scalarize(flat_model, name)
+  #                  else
+  # @assign flat_model.variables = ListUtil.filterOnFalse(flat_model.variables, isEmptyArray)
+  #                   end
+  #=  Remove empty arrays from variables =#
+  @debug "VERIFYING MODEL: "
+  verify(flat_model)
+  #                   if Flags.isSet(Flags.NF_DUMP_FLAT)
+  # print("FlatModel:\\n" + toString(flat_model) + "\\n")
+  #                  end
+  #=  Convert the flat model to a DAE.=#
+  return (flat_model, funcs)
+end
 
 function instantiateN1(node::InstNode, parentNode::InstNode)::InstNode
   @debug "Instantiating!!!! in Inst"
@@ -114,7 +221,6 @@ function instantiateN1(node::InstNode, parentNode::InstNode)::InstNode
   @assign (node, _) = instClass(node, MODIFIER_NOMOD(), DEFAULT_ATTR, true, 0, parentNode)
   return node
 end
-
 
 function expand(node::InstNode) ::InstNode
   @assign node = partialInstClass(node)
@@ -412,21 +518,22 @@ function checkReplaceableBaseClass(baseClasses::List{<:InstNode}, basePath::Absy
     @assign i = i + 1
     if SCodeUtil.isElementReplaceable(definition(base))
       if listLength(baseClasses) > 1
-        @assign rest = baseClasses
-        @assign name = ""
+        rest = baseClasses
+        name = ""
         for j in 1:i - 1
-          @assign name = "." + name(listHead(rest)) + name
-          @assign rest = listRest(rest)
+          name = "." + name(listHead(rest)) + name
+          rest = listRest(rest)
         end
-        @assign name = "<" + name(listHead(rest)) + ">" + name
-        @assign rest = listRest(rest)
+        name = "<" + name(listHead(rest)) + ">" + name
+        rest = listRest(rest)
         for n in rest
-          @assign name = name(n) + "." + name
+          name = name(n) + "." + name
         end
       else
-        @assign name = AbsynUtil.pathString(basePath)
+        name = AbsynUtil.pathString(basePath)
       end
-      Error.addMultiSourceMessage(Error.REPLACEABLE_BASE_CLASS, list(name(base), name), list(InstNode_info(base), info))
+      #TODO      Error.addMultiSourceMessage(Error.REPLACEABLE_BASE_CLASS, list(name(base), name), list(InstNode_info(base), info))
+      @error "Error: Class  $name in base replaceable..." 
       fail()
     end
   end
@@ -592,18 +699,16 @@ function instDerivedAttributes(scodeAttr::SCode.Attributes) ::Attributes
   local cty::ConnectorType.TYPE
   local var::VariabilityType
   local dir::DirectionType
-
-  @assign attributes = begin
+  attributes = begin
     @match scodeAttr begin
       SCode.ATTR(connectorType = SCode.POTENTIAL(__), variability = SCode.VAR(__), direction = Absyn.BIDIR(__))  => begin
         DEFAULT_ATTR
       end
-
       _  => begin
-        @assign cty = ConnectorType.fromSCode(scodeAttr.connectorType)
-        @assign var = variabilityFromSCode(scodeAttr.variability)
-        @assign dir = directionFromSCode(scodeAttr.direction)
-        Attributes.ATTRIBUTES(cty, Parallelism.NON_PARALLEL, var, dir, InnerOuter.NOT_INNER_OUTER, false, false, Replaceable.NOT_REPLACEABLE())
+        cty = fromSCode(scodeAttr.connectorType)
+        var = variabilityFromSCode(scodeAttr.variability)
+        dir = directionFromSCode(scodeAttr.direction)
+        ATTRIBUTES(cty, Parallelism.NON_PARALLEL, var, dir, InnerOuter.NOT_INNER_OUTER, false, false, NOT_REPLACEABLE())
       end
     end
   end
@@ -690,8 +795,7 @@ function instClassDef(cls::Class, outerMod::Modifier, attributes::Attributes, us
                                                     useBinding,
                                                     ExtendsVisibility.PUBLIC,
                                                     instLevel + 1))
-        # #=  Instantiate local components. =#
-        @debug "Here we are"
+        #=  Instantiate local components. =#
         instCp = (node) -> instComponent(
           node,
           attributes,
@@ -702,7 +806,7 @@ function instClassDef(cls::Class, outerMod::Modifier, attributes::Attributes, us
         )
         applyLocalComponents(cls_tree, instCp)
         #=  Remove duplicate elements. =#
-        @assign cls_tree = replaceDuplicates(cls_tree)
+        cls_tree = replaceDuplicates(cls_tree)
         checkDuplicates(cls_tree)
         updateClass(setClassTree(cls_tree, inst_cls), node)
         ()
@@ -787,8 +891,6 @@ end
 
 """ #= Sets the class instance of a component node. =#"""
 function updateComponentType(component::InstNode, cls::InstNode) ::InstNode
-
-
   if isComponent(component)
     @assign component = componentApply(component, setClassInstance, cls)
   end
@@ -847,7 +949,6 @@ function instPackage(node::InstNode) ::InstNode
         =#
         setPackageCache(node, C_PACKAGE(node))
         #=  Instantiate the node.=#
-        @info "Our Node $(node.name)"
         inst = instantiateN1(node, EMPTY_NODE()) #=Wrong function call was generated here...=#
         #=  Cache the instantiated node and instantiate expressions in it too.
         =#
@@ -864,6 +965,13 @@ function instPackage(node::InstNode) ::InstNode
   node
 end
 
+"""
+  @author: johti17@liu.se
+"""
+function modifyExtends(extendsNode::InstNode; scope::InstNode)
+  modifyExtends(extendsNode, scope)
+end
+
 function modifyExtends(extendsNode::InstNode, scope::InstNode) ::InstNode
   local elem::SCode.Element
   local ext_mod::Modifier
@@ -872,15 +980,19 @@ function modifyExtends(extendsNode::InstNode, scope::InstNode) ::InstNode
   local cls::Class
   local cls_tree::ClassTree
 
-  @assign cls = getClass(extendsNode)
-  @assign cls_tree = classTree(cls)
+  cls = getClass(extendsNode)
+  cls_tree = classTree(cls)
   #=  Create a modifier from the extends.
   =#
   @match BASE_CLASS(definition = elem) = nodeType(extendsNode)
-  @assign ext_mod = fromElement(elem, nil, scope)
-  @assign ext_mod = merge(getModifier(extendsNode), ext_mod)
+  ext_mod = fromElement(elem, nil, scope)
+  ext_mod = merge(getModifier(extendsNode), ext_mod)
   if ! isBuiltin(cls)
-    mapExtends(cls_tree, (extendsNode) -> modifyExtends(scope = extendsNode))
+    #= Added by johti17 to mimic function inheritance =#
+    local func = function modifyExtends2(x; scope = extendsNode) 
+      modifyExtends(x, scope)
+    end
+    mapExtends(cls_tree, (x) -> func(x, scope = extendsNode))
     @assign () = begin
       @match elem begin
         SCode.EXTENDS(__)  => begin
@@ -891,8 +1003,8 @@ function modifyExtends(extendsNode::InstNode, scope::InstNode) ::InstNode
           #=  (probably an inherited element) is an error.
           =#
           if ! referenceEq(definition(extendsNode), definition(ext_node))
-            Error.addMultiSourceMessage(Error.FOUND_OTHER_BASECLASS, list(AbsynUtil.pathString(elem.baseClassPath)), list(InstNode_info(extendsNode), InstNode_info(ext_node)))
-            fail()
+            # Error.addMultiSourceMessage(Error.FOUND_OTHER_BASECLASS, list(AbsynUtil.pathString(elem.baseClassPath)), list(InstNode_info(extendsNode), InstNode_info(ext_node)))
+            fail("Found another base class")
           end
           ()
         end
@@ -942,7 +1054,7 @@ function instExtends(node::InstNode, attributes::Attributes, useBinding::Bool,
         end
         noMod = MODIFIER_NOMOD()
         x = (nodeX) ->
-          instExtends(node, attributes, useBinding, vis, instLevel)
+          instExtends(nodeX, attributes, useBinding, vis, instLevel)
         mapExtends(cls_tree, x)
         y = (nodeX) ->
           instComponent(nodeX, attributes, noMod , useBinding, instLevel, NONE())
@@ -1047,8 +1159,8 @@ function redeclareClasses(tree::ClassTree) ::ClassTree
           @assign cls = getClass(resolveOuter(cls_node))
           @assign mod = getModifier(cls)
           if isRedeclare(mod)
-            @match REDECLARE(element = redecl_node, mod = mod) = mod
-            @assign cls_node = redeclareClass(redecl_node, cls_node, mod)
+            @match MODIFIER_REDECLARE(element = redecl_node, mod = mod) = mod
+            cls_node = redeclareClass(redecl_node, cls_node, mod)
             P_Pointer.update(cls_ptr, cls_node)
           end
         end
@@ -1385,7 +1497,8 @@ function updateComponentConnectorType(attributes::Attributes, restriction::Restr
       @assign attributes.connectorType = cty
     end
   elseif isFlowOrStream(cty) && ! isRedeclared
-    Error.addStrictMessage(Error.CONNECTOR_PREFIX_OUTSIDE_CONNECTOR, list(toString(cty)), Copmonent_info(component))
+    #Error.addStrictMessage(Error.CONNECTOR_PREFIX_OUTSIDE_CONNECTOR, list(toString(cty)), Copmonent_info(component)) TODO
+    @warn "CONNECTOR_PREFIX_OUTSIDE_CONNECTOR: list(toString(cty))"
     @assign attributes.connectorType = unsetFlowStream(cty)
   end
   attributes
@@ -1693,30 +1806,30 @@ function mergeRedeclaredClassPrefixes(origPrefs::Prefixes, redeclPrefs::Prefixes
   local rio::Absyn.InnerOuter
   local repl::SCode.Replaceable
 
-  if referenceEq(origPrefs, NFClass.DEFAULT_PREFIXES)
+  if referenceEq(origPrefs, DEFAULT_PREFIXES)
     @assign prefs = redeclPrefs
   else
     @match PREFIXES(innerOuter = io) = origPrefs
     @match PREFIXES(enc, par, fin, rio, repl) = redeclPrefs
     @assign io = begin
       @match (io, rio) begin
-        (Absyn.InnerOuter.NOT_INNER_OUTER(__), _)  => begin
+        (Absyn.NOT_INNER_OUTER(__), _)  => begin
           rio
         end
 
-        (_, Absyn.InnerOuter.NOT_INNER_OUTER(__))  => begin
+        (_, Absyn.NOT_INNER_OUTER(__))  => begin
           io
         end
 
-        (Absyn.InnerOuter.INNER(__), Absyn.InnerOuter.INNER(__))  => begin
+        (Absyn.INNER(__), Absyn.InnerOuter.INNER(__))  => begin
           io
         end
 
-        (Absyn.InnerOuter.OUTER(__), Absyn.InnerOuter.OUTER(__))  => begin
+        (Absyn.OUTER(__), Absyn.InnerOuter.OUTER(__))  => begin
           io
         end
 
-        (Absyn.InnerOuter.INNER_OUTER(__), Absyn.InnerOuter.INNER_OUTER(__))  => begin
+        (Absyn.INNER_OUTER(__), Absyn.InnerOuter.INNER_OUTER(__))  => begin
           io
         end
 

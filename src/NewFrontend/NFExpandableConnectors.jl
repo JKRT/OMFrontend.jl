@@ -34,7 +34,7 @@ function elaborate(
     ListUtil.mapFold(undeclared_conns, addUndeclaredConnectorToSets, csets)
   #=  Extract the sets of connected connectors.
   =#
-  @assign csets_array = ConnectionSets.extractSets(csets)
+  csets_array = ConnectionSets.extractSets(csets)
   #= for set in csets_array loop
   =#
   #=   print(\"Expandable connection set:\\n\");
@@ -121,11 +121,11 @@ function sortConnections(
   local is_expandable2::Bool
 
   for conn in conns
-    @match P_Connection.Connection.CONNECTION(lhs = c1, rhs = c2) = conn
-    @assign is_undeclared1 = ConnectorType.isUndeclared(c1.cty)
-    @assign is_undeclared2 = ConnectorType.isUndeclared(c2.cty)
-    @assign is_expandable1 = ConnectorType.isExpandable(c1.cty)
-    @assign is_expandable2 = ConnectorType.isExpandable(c2.cty)
+    @match CONNECTION(lhs = c1, rhs = c2) = conn
+    is_undeclared1 = isUndeclared(c1.cty)
+    is_undeclared2 = isUndeclared(c2.cty)
+    is_expandable1 = isExpandable(c1.cty)
+    is_expandable2 = isExpandable(c2.cty)
     if is_expandable1 || is_expandable2
       if is_expandable1 && is_expandable2
         @assign expandableConnections = _cons(conn, expandableConnections)
@@ -361,7 +361,7 @@ function elaborateExpandableSet(
   set::List{<:Connector},
   vars::List{<:Variable},
 )::List{Variable}
-
+  throw("Not implemented/checked")
   local exp_set::ExpandableSet.HashSet
   local exp_conns::List{Connector} = nil
   local exp_set_lst::List{Connector}

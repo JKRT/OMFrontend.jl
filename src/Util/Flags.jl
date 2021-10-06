@@ -149,6 +149,7 @@ const PARMODELICA = 3::Integer
 const OPTIMICA = 4::Integer
 
 const PDEMODELICA = 5::Integer
+
 const collapseArrayExpressionsText =
   Gettext.gettext("Simplifies {x[1],x[2],x[3]} → x for arrays of whole variable references (simplifies code generation).")::Gettext.TranslatableContent
 #=  DEBUG FLAGS
@@ -557,937 +558,877 @@ const DUMP_ENCAPSULATECONDITIONS =
     false,
     Gettext.gettext("Dumps the results of the preOptModule encapsulateWhenConditions."),
   )::DebugFlag
-const ON_RELAXATION =
-  DEBUG_FLAG(
-    60,
-    "onRelaxation",
-    false,
-    Gettext.gettext("Perform O(n) relaxation.\\nDeprecated flag: Use --postOptModules+=relaxSystem instead."),
-  )::DebugFlag
 const SHORT_OUTPUT =
   DEBUG_FLAG(
-    61,
+    60,
     "shortOutput",
     false,
     Gettext.gettext("Enables short output of the simulate() command. Useful for tools like OMNotebook."),
   )::DebugFlag
 const COUNT_OPERATIONS =
-  DEBUG_FLAG(62, "countOperations", false, Gettext.gettext("Count operations."))::DebugFlag
+  DEBUG_FLAG(61, "countOperations", false, Gettext.gettext("Count operations."))::DebugFlag
 const CGRAPH =
   DEBUG_FLAG(
-    63,
+    62,
     "cgraph",
     false,
     Gettext.gettext("Prints out connection graph information."),
   )::DebugFlag
 const UPDMOD =
   DEBUG_FLAG(
-    64,
+    63,
     "updmod",
     false,
     Gettext.gettext("Prints information about modification updates."),
   )::DebugFlag
 const STATIC =
   DEBUG_FLAG(
-    65,
+    64,
     "static",
     false,
     Gettext.gettext("Enables extra debug output from the static elaboration."),
   )::DebugFlag
 const TPL_PERF_TIMES =
   DEBUG_FLAG(
-    66,
+    65,
     "tplPerfTimes",
     false,
     Gettext.gettext("Enables output of template performance data for rendering text to file."),
   )::DebugFlag
 const CHECK_SIMPLIFY =
   DEBUG_FLAG(
-    67,
+    66,
     "checkSimplify",
     false,
     Gettext.gettext("Enables checks for expression simplification and prints a notification whenever an undesirable transformation has been performed."),
   )::DebugFlag
 const SCODE_INST =
   DEBUG_FLAG(
-    68,
+    67,
     "newInst",
     false,
     Gettext.gettext("Enables experimental new instantiation phase."),
   )::DebugFlag
 const WRITE_TO_BUFFER =
   DEBUG_FLAG(
-    69,
+    68,
     "writeToBuffer",
     false,
     Gettext.gettext("Enables writing simulation results to buffer."),
   )::DebugFlag
 const DUMP_BACKENDDAE_INFO =
   DEBUG_FLAG(
-    70,
+    69,
     "backenddaeinfo",
     false,
     Gettext.gettext("Enables dumping of back-end information about system (Number of equations before back-end,...)."),
   )::DebugFlag
 const GEN_DEBUG_SYMBOLS =
   DEBUG_FLAG(
-    71,
+    70,
     "gendebugsymbols",
     false,
     Gettext.gettext("Generate code with debugging symbols."),
   )::DebugFlag
 const DUMP_STATESELECTION_INFO =
   DEBUG_FLAG(
-    72,
+    71,
     "stateselection",
     false,
     Gettext.gettext("Enables dumping of selected states. Extends -d=backenddaeinfo."),
   )::DebugFlag
 const DUMP_EQNINORDER =
   DEBUG_FLAG(
-    73,
+    72,
     "dumpeqninorder",
     false,
     Gettext.gettext("Enables dumping of the equations in the order they are calculated."),
   )::DebugFlag
 const SEMILINEAR =
   DEBUG_FLAG(
-    74,
+    73,
     "semiLinear",
     false,
     Gettext.gettext("Enables dumping of the optimization information when optimizing calls to semiLinear."),
   )::DebugFlag
 const UNCERTAINTIES =
   DEBUG_FLAG(
-    75,
+    74,
     "uncertainties",
     false,
     Gettext.gettext("Enables dumping of status when calling modelEquationsUC."),
   )::DebugFlag
 const SHOW_START_ORIGIN =
   DEBUG_FLAG(
-    76,
+    75,
     "showStartOrigin",
     false,
     Gettext.gettext("Enables dumping of the DAE startOrigin attribute of the variables."),
   )::DebugFlag
 const DUMP_SIMCODE =
   DEBUG_FLAG(
-    77,
+    76,
     "dumpSimCode",
     false,
     Gettext.gettext("Dumps the simCode model used for code generation."),
   )::DebugFlag
 const DUMP_INITIAL_SYSTEM =
   DEBUG_FLAG(
-    78,
+    77,
     "dumpinitialsystem",
     false,
     Gettext.gettext("Dumps the initial equation system."),
   )::DebugFlag
 const GRAPH_INST =
   DEBUG_FLAG(
-    79,
+    78,
     "graphInst",
     false,
     Gettext.gettext("Do graph based instantiation."),
   )::DebugFlag
 const GRAPH_INST_RUN_DEP =
   DEBUG_FLAG(
-    80,
+    79,
     "graphInstRunDep",
     false,
     Gettext.gettext("Run scode dependency analysis. Use with -d=graphInst"),
   )::DebugFlag
 const GRAPH_INST_GEN_GRAPH =
   DEBUG_FLAG(
-    81,
+    80,
     "graphInstGenGraph",
     false,
     Gettext.gettext("Dumps a graph of the program. Use with -d=graphInst"),
   )::DebugFlag
 const GRAPH_INST_SHOW_GRAPH =
   DEBUG_FLAG(
-    82,
+    81,
     "graphInstShowGraph",
     false,
     Gettext.gettext("Display a graph of the program interactively. Use with -d=graphInst"),
   )::DebugFlag
 const DUMP_CONST_REPL =
   DEBUG_FLAG(
-    83,
+    82,
     "dumpConstrepl",
     false,
     Gettext.gettext("Dump the found replacements for constants."),
   )::DebugFlag
 const SHOW_EQUATION_SOURCE =
   DEBUG_FLAG(
-    84,
+    83,
     "showEquationSource",
     false,
     Gettext.gettext("Display the element source information in the dumped DAE for easier debugging."),
   )::DebugFlag
 const LS_ANALYTIC_JACOBIAN =
   DEBUG_FLAG(
-    85,
+    84,
     "LSanalyticJacobian",
     false,
     Gettext.gettext("Enables analytical jacobian for linear strong components. Defaults to false"),
   )::DebugFlag
 const NLS_ANALYTIC_JACOBIAN =
   DEBUG_FLAG(
-    86,
+    85,
     "NLSanalyticJacobian",
     true,
     Gettext.gettext("Enables analytical jacobian for non-linear strong components without user-defined function calls, for that see forceNLSanalyticJacobian"),
   )::DebugFlag
 const INLINE_SOLVER =
   DEBUG_FLAG(
-    87,
+    86,
     "inlineSolver",
     false,
     Gettext.gettext("Generates code for inline solver."),
   )::DebugFlag
 const HPCOM =
   DEBUG_FLAG(
-    88,
+    87,
     "hpcom",
     false,
     Gettext.gettext("Enables parallel calculation based on task-graphs."),
   )::DebugFlag
 const INITIALIZATION =
   DEBUG_FLAG(
-    89,
+    88,
     "initialization",
     false,
     Gettext.gettext("Shows additional information from the initialization process."),
   )::DebugFlag
 const INLINE_FUNCTIONS =
   DEBUG_FLAG(
-    90,
+    89,
     "inlineFunctions",
     true,
     Gettext.gettext("Controls if function inlining should be performed."),
   )::DebugFlag
 const DUMP_SCC_GRAPHML =
   DEBUG_FLAG(
-    91,
+    90,
     "dumpSCCGraphML",
     false,
     Gettext.gettext("Dumps graphml files with the strongly connected components."),
   )::DebugFlag
 const TEARING_DUMPVERBOSE =
   DEBUG_FLAG(
-    92,
+    91,
     "tearingdumpV",
     false,
     Gettext.gettext("Dumps verbose tearing information."),
   )::DebugFlag
 const DISABLE_SINGLE_FLOW_EQ =
   DEBUG_FLAG(
-    93,
+    92,
     "disableSingleFlowEq",
     false,
     Gettext.gettext("Disables the generation of single flow equations."),
   )::DebugFlag
 const DUMP_DISCRETEVARS_INFO =
   DEBUG_FLAG(
-    94,
+    93,
     "discreteinfo",
     false,
     Gettext.gettext("Enables dumping of discrete variables. Extends -d=backenddaeinfo."),
   )::DebugFlag
 const ADDITIONAL_GRAPHVIZ_DUMP =
   DEBUG_FLAG(
-    95,
+    94,
     "graphvizDump",
     false,
     Gettext.gettext("Activates additional graphviz dumps (as .dot files). It can be used in addition to one of the following flags: {dumpdaelow|dumpinitialsystems|dumpindxdae}."),
   )::DebugFlag
 const INFO_XML_OPERATIONS =
   DEBUG_FLAG(
-    96,
+    95,
     "infoXmlOperations",
     false,
     Gettext.gettext("Enables output of the operations in the _info.xml file when translating models."),
   )::DebugFlag
 const HPCOM_DUMP =
   DEBUG_FLAG(
-    97,
+    96,
     "hpcomDump",
     false,
     Gettext.gettext("Dumps additional information on the parallel execution with hpcom."),
   )::DebugFlag
 const RESOLVE_LOOPS_DUMP =
   DEBUG_FLAG(
-    98,
+    97,
     "resolveLoopsDump",
     false,
     Gettext.gettext("Debug Output for ResolveLoops Module."),
   )::DebugFlag
 const DISABLE_WINDOWS_PATH_CHECK_WARNING =
   DEBUG_FLAG(
-    99,
+    98,
     "disableWindowsPathCheckWarning",
     false,
     Gettext.gettext("Disables warnings on Windows if OPENMODELICAHOME/MinGW is missing."),
   )::DebugFlag
 const DISABLE_RECORD_CONSTRUCTOR_OUTPUT =
   DEBUG_FLAG(
-    100,
+    99,
     "disableRecordConstructorOutput",
     false,
     Gettext.gettext("Disables output of record constructors in the flat code."),
   )::DebugFlag
-const DUMP_TRANSFORMED_MODELICA_MODEL =
-  DEBUG_FLAG(
-    101,
-    "dumpTransformedModelica",
-    false,
-    Gettext.gettext("Dumps the back-end DAE to a Modelica-like model after all symbolic transformations are applied."),
-  )::DebugFlag
-const EVALUATE_CONST_FUNCTIONS =
-  DEBUG_FLAG(
-    102,
-    "evalConstFuncs",
-    true,
-    Gettext.gettext("Evaluates functions complete and partially and checks for constant output.\\nDeprecated flag: Use --preOptModules+=evalFunc instead."),
-  )::DebugFlag
+
 const IMPL_ODE =
   DEBUG_FLAG(
-    103,
+    100,
     "implOde",
     false,
     Gettext.gettext("activates implicit codegen"),
   )::DebugFlag
 const EVAL_FUNC_DUMP =
   DEBUG_FLAG(
-    104,
+    101,
     "evalFuncDump",
     false,
     Gettext.gettext("dumps debug information about the function evaluation"),
   )::DebugFlag
 const PRINT_STRUCTURAL =
   DEBUG_FLAG(
-    105,
+    102,
     "printStructuralParameters",
     false,
     Gettext.gettext("Prints the structural parameters identified by the front-end"),
   )::DebugFlag
 const ITERATION_VARS =
   DEBUG_FLAG(
-    106,
+    103,
     "iterationVars",
     false,
     Gettext.gettext("Shows a list of all iteration variables."),
   )::DebugFlag
 const ALLOW_RECORD_TOO_MANY_FIELDS =
   DEBUG_FLAG(
-    107,
+    104,
     "acceptTooManyFields",
     false,
     Gettext.gettext("Accepts passing records with more fields than expected to a function. This is not allowed, but is used in Fluid.Dissipation. See https://trac.modelica.org/Modelica/ticket/1245 for details."),
   )::DebugFlag
 const HPCOM_MEMORY_OPT =
   DEBUG_FLAG(
-    108,
+    105,
     "hpcomMemoryOpt",
     false,
     Gettext.gettext("Optimize the memory structure regarding the selected scheduler"),
   )::DebugFlag
 const DUMP_SYNCHRONOUS =
   DEBUG_FLAG(
-    109,
+    106,
     "dumpSynchronous",
     false,
     Gettext.gettext("Dumps information of the clock partitioning."),
   )::DebugFlag
 const STRIP_PREFIX =
   DEBUG_FLAG(
-    110,
+    107,
     "stripPrefix",
     true,
     Gettext.gettext("Strips the environment prefix from path/crefs. Defaults to true."),
   )::DebugFlag
 const DO_SCODE_DEP =
   DEBUG_FLAG(
-    111,
+    108,
     "scodeDep",
     true,
     Gettext.gettext("Does scode dependency analysis prior to instantiation. Defaults to true."),
   )::DebugFlag
 const SHOW_INST_CACHE_INFO =
   DEBUG_FLAG(
-    112,
+    109,
     "showInstCacheInfo",
     false,
     Gettext.gettext("Prints information about instantiation cache hits and additions. Defaults to false."),
   )::DebugFlag
 const DUMP_UNIT =
   DEBUG_FLAG(
-    113,
+    110,
     "dumpUnits",
     false,
     Gettext.gettext("Dumps all the calculated units."),
   )::DebugFlag
 const DUMP_EQ_UNIT =
   DEBUG_FLAG(
-    114,
+    111,
     "dumpEqInUC",
     false,
     Gettext.gettext("Dumps all equations handled by the unit checker."),
   )::DebugFlag
 const DUMP_EQ_UNIT_STRUCT =
   DEBUG_FLAG(
-    115,
+    112,
     "dumpEqUCStruct",
     false,
     Gettext.gettext("Dumps all the equations handled by the unit checker as tree-structure."),
   )::DebugFlag
 const SHOW_DAE_GENERATION =
   DEBUG_FLAG(
-    116,
+    113,
     "showDaeGeneration",
     false,
     Gettext.gettext("Show the dae variable declarations as they happen."),
   )::DebugFlag
 const RESHUFFLE_POST =
   DEBUG_FLAG(
-    117,
+    114,
     "reshufflePost",
     false,
     Gettext.gettext("Reshuffles the systems of equations."),
   )::DebugFlag
 const SHOW_EXPANDABLE_INFO =
   DEBUG_FLAG(
-    118,
+    115,
     "showExpandableInfo",
     false,
     Gettext.gettext("Show information about expandable connector handling."),
   )::DebugFlag
 const DUMP_HOMOTOPY =
   DEBUG_FLAG(
-    119,
+    116,
     "dumpHomotopy",
     false,
     Gettext.gettext("Dumps the results of the postOptModule optimizeHomotopyCalls."),
   )::DebugFlag
 const OMC_RELOCATABLE_FUNCTIONS =
   DEBUG_FLAG(
-    120,
+    117,
     "relocatableFunctions",
     false,
     Gettext.gettext("Generates relocatable code: all functions become function pointers and can be replaced at run-time."),
   )::DebugFlag
 const GRAPHML =
   DEBUG_FLAG(
-    121,
+    118,
     "graphml",
     false,
     Gettext.gettext("Dumps .graphml files for the bipartite graph after Index Reduction and a task graph for the SCCs. Can be displayed with yEd. "),
   )::DebugFlag
 const USEMPI =
   DEBUG_FLAG(
-    122,
+    119,
     "useMPI",
     false,
     Gettext.gettext("Add MPI init and finalize to main method (CPPruntime). "),
   )::DebugFlag
 const DUMP_CSE =
   DEBUG_FLAG(
-    123,
+    120,
     "dumpCSE",
     false,
     Gettext.gettext("Additional output for CSE module."),
   )::DebugFlag
 const DUMP_CSE_VERBOSE =
   DEBUG_FLAG(
-    124,
+    121,
     "dumpCSE_verbose",
     false,
     Gettext.gettext("Additional output for CSE module."),
   )::DebugFlag
-const ADD_DER_ALIASES =
-  DEBUG_FLAG(
-    125,
-    "addDerAliases",
-    false,
-    Gettext.gettext("Adds for every der-call an alias equation e.g. dx = der(x). It's a work-a-round flag,\n                which helps in some cases to simulate the models e.g.\n                Modelica.Fluid.Examples.HeatExchanger.HeatExchangerSimulation.\n                Deprecated flag: Use --preOptModules+=introduceDerAlias instead."),
-  )::DebugFlag
-const DISABLE_COMSUBEXP =
-  DEBUG_FLAG(
-    126,
-    "disableComSubExp",
-    false,
-    Gettext.gettext("Deactivates module 'comSubExp'\\nDeprecated flag: Use --preOptModules-=comSubExp instead."),
-  )::DebugFlag
 const NO_START_CALC =
   DEBUG_FLAG(
-    127,
+    122,
     "disableStartCalc",
     false,
     Gettext.gettext("Deactivates the pre-calculation of start values during compile-time."),
   )::DebugFlag
-const NO_PARTITIONING =
-  DEBUG_FLAG(
-    128,
-    "disablePartitioning",
-    false,
-    Gettext.gettext("Deactivates partitioning of entire equation system.\\nDeprecated flag: Use --preOptModules-=clockPartitioning instead."),
-  )::DebugFlag
+
 const CONSTJAC =
   DEBUG_FLAG(
-    129,
+    123,
     "constjac",
     false,
     Gettext.gettext("solves linear systems with constant Jacobian and variable b-Vector symbolically"),
   )::DebugFlag
-const REDUCE_DYN_OPT =
-  DEBUG_FLAG(
-    130,
-    "reduceDynOpt",
-    false,
-    Gettext.gettext("remove eqs which not need for the calculations of cost and constraints\\nDeprecated flag: Use --postOptModules+=reduceDynamicOptimization instead."),
-  )::DebugFlag
+
 const VISUAL_XML =
   DEBUG_FLAG(
-    131,
+    124,
     "visxml",
     false,
     Gettext.gettext("Outputs a xml-file that contains information for visualization."),
   )::DebugFlag
 const ADD_SCALED_VARS =
   DEBUG_FLAG(
-    132,
+    125,
     "addScaledVars",
     false,
     Gettext.gettext("Adds an alias equation var_nrom = var/nominal where var is state\\nDeprecated flag: Use --postOptModules+=addScaledVars_states instead."),
   )::DebugFlag
-const ADD_SCALED_VARS_INPUT =
-  DEBUG_FLAG(
-    133,
-    "addScaledVarsInput",
-    false,
-    Gettext.gettext("Adds an alias equation var_nrom = var/nominal where var is input\\nDeprecated flag: Use --postOptModules+=addScaledVars_inputs instead."),
-  )::DebugFlag
 const VECTORIZE =
   DEBUG_FLAG(
-    134,
+    125,
     "vectorize",
     false,
     Gettext.gettext("Activates vectorization in the backend."),
   )::DebugFlag
 const CHECK_EXT_LIBS =
   DEBUG_FLAG(
-    135,
+    126,
     "buildExternalLibs",
     true,
     Gettext.gettext("Use the autotools project in the Resources folder of the library to build missing external libraries."),
   )::DebugFlag
 const RUNTIME_STATIC_LINKING =
   DEBUG_FLAG(
-    136,
+    127,
     "runtimeStaticLinking",
     false,
     Gettext.gettext("Use the static simulation runtime libraries (C++ simulation runtime)."),
   )::DebugFlag
 const SORT_EQNS_AND_VARS =
   DEBUG_FLAG(
-    137,
+    128,
     "dumpSortEqnsAndVars",
     false,
     Gettext.gettext("Dumps debug output for the modules sortEqnsVars."),
   )::DebugFlag
 const DUMP_SIMPLIFY_LOOPS =
   DEBUG_FLAG(
-    138,
+    129,
     "dumpSimplifyLoops",
     false,
     Gettext.gettext("Dump between steps of simplifyLoops"),
   )::DebugFlag
 const DUMP_RTEARING =
   DEBUG_FLAG(
-    139,
+    130,
     "dumpRecursiveTearing",
     false,
     Gettext.gettext("Dump between steps of recursiveTearing"),
   )::DebugFlag
-const DIS_SIMP_FUN =
-  DEBUG_FLAG(
-    140,
-    "disableSimplifyComplexFunction",
-    false,
-    Gettext.gettext("disable simplifyComplexFunction\\nDeprecated flag: Use --postOptModules-=simplifyComplexFunction/--initOptModules-=simplifyComplexFunction instead."),
-  )::DebugFlag
 const DIS_SYMJAC_FMI20 =
   DEBUG_FLAG(
-    141,
+    131,
     "disableDirectionalDerivatives",
     true,
     Gettext.gettext("For FMI 2.0 only dependecy analysis will be perform."),
   )::DebugFlag
 const EVAL_OUTPUT_ONLY =
   DEBUG_FLAG(
-    142,
+    132,
     "evalOutputOnly",
     false,
     Gettext.gettext("Generates equations to calculate outputs only."),
   )::DebugFlag
 const HARDCODED_START_VALUES =
   DEBUG_FLAG(
-    143,
+    133,
     "hardcodedStartValues",
     false,
     Gettext.gettext("Embed the start values of variables and parameters into the c++ code and do not read it from xml file."),
   )::DebugFlag
 const DUMP_FUNCTIONS =
   DEBUG_FLAG(
-    144,
+    134,
     "dumpFunctions",
     false,
     Gettext.gettext("Add functions to backend dumps."),
   )::DebugFlag
 const DEBUG_DIFFERENTIATION =
   DEBUG_FLAG(
-    145,
+    135,
     "debugDifferentiation",
     false,
     Gettext.gettext("Dumps debug output for the differentiation process."),
   )::DebugFlag
 const DEBUG_DIFFERENTIATION_VERBOSE =
   DEBUG_FLAG(
-    146,
+    136,
     "debugDifferentiationVerbose",
     false,
     Gettext.gettext("Dumps verbose debug output for the differentiation process."),
   )::DebugFlag
 const FMU_EXPERIMENTAL =
   DEBUG_FLAG(
-    147,
+    137,
     "fmuExperimental",
     false,
     Gettext.gettext("Include an extra function in the FMU fmi2GetSpecificDerivatives."),
   )::DebugFlag
 const DUMP_DGESV =
   DEBUG_FLAG(
-    148,
+    138,
     "dumpdgesv",
     false,
     Gettext.gettext("Enables dumping of the information whether DGESV is used to solve linear systems."),
   )::DebugFlag
 const MULTIRATE_PARTITION =
   DEBUG_FLAG(
-    149,
+    139,
     "multirate",
     false,
     Gettext.gettext("The solver can switch partitions in the system."),
   )::DebugFlag
 const DUMP_EXCLUDED_EXP =
   DEBUG_FLAG(
-    150,
+    140,
     "dumpExcludedSymJacExps",
     false,
     Gettext.gettext("This flags dumps all expression that are excluded from differentiation of a symbolic Jacobian."),
   )::DebugFlag
 const DEBUG_ALGLOOP_JACOBIAN =
   DEBUG_FLAG(
-    151,
+    141,
     "debugAlgebraicLoopsJacobian",
     false,
     Gettext.gettext("Dumps debug output while creating symbolic jacobians for non-linear systems."),
   )::DebugFlag
 const DISABLE_JACSCC =
   DEBUG_FLAG(
-    152,
+    142,
     "disableJacsforSCC",
     false,
     Gettext.gettext("Disables calculation of jacobians to detect if a SCC is linear or non-linear. By disabling all SCC will handled like non-linear."),
   )::DebugFlag
 const FORCE_NLS_ANALYTIC_JACOBIAN =
   DEBUG_FLAG(
-    153,
+    143,
     "forceNLSanalyticJacobian",
     false,
     Gettext.gettext("Forces calculation analytical jacobian also for non-linear strong components with user-defined functions."),
   )::DebugFlag
 const DUMP_LOOPS =
-  DEBUG_FLAG(154, "dumpLoops", false, Gettext.gettext("Dumps loop equation."))::DebugFlag
+  DEBUG_FLAG(144, "dumpLoops", false, Gettext.gettext("Dumps loop equation."))::DebugFlag
 const DUMP_LOOPS_VERBOSE =
   DEBUG_FLAG(
-    155,
+    145,
     "dumpLoopsVerbose",
     false,
     Gettext.gettext("Dumps loop equation and enhanced adjacency matrix."),
   )::DebugFlag
 const SKIP_INPUT_OUTPUT_SYNTACTIC_SUGAR =
   DEBUG_FLAG(
-    156,
+    146,
     "skipInputOutputSyntacticSugar",
     false,
     Gettext.gettext("Used when bootstrapping to preserve the input output parsing of the code output by the list command."),
   )::DebugFlag
 const OMC_RECORD_ALLOC_WORDS =
   DEBUG_FLAG(
-    157,
+    147,
     "metaModelicaRecordAllocWords",
     false,
     Gettext.gettext("Instrument the source code to record memory allocations (requires run-time and generated files compiled with -DOMC_RECORD_ALLOC_WORDS)."),
   )::DebugFlag
 const TOTAL_TEARING_DUMP =
   DEBUG_FLAG(
-    158,
+    148,
     "totaltearingdump",
     false,
     Gettext.gettext("Dumps total tearing information."),
   )::DebugFlag
 const TOTAL_TEARING_DUMPVERBOSE =
   DEBUG_FLAG(
-    159,
+    149,
     "totaltearingdumpV",
     false,
     Gettext.gettext("Dumps verbose total tearing information."),
   )::DebugFlag
 const PARALLEL_CODEGEN =
   DEBUG_FLAG(
-    160,
+    150,
     "parallelCodegen",
     true,
     Gettext.gettext("Enables code generation in parallel (disable this if compiling a model causes you to run out of RAM)."),
   )::DebugFlag
 const SERIALIZED_SIZE =
   DEBUG_FLAG(
-    161,
+    151,
     "reportSerializedSize",
     false,
     Gettext.gettext("Reports serialized sizes of various data structures used in the compiler."),
   )::DebugFlag
 const BACKEND_KEEP_ENV_GRAPH =
   DEBUG_FLAG(
-    162,
+    152,
     "backendKeepEnv",
     true,
     Gettext.gettext("When enabled, the environment is kept when entering the backend, which enables CevalFunction (function interpretation) to work. This module not essential for the backend to function in most cases, but can improve simulation performance by evaluating functions. The drawback to keeping the environment graph in memory is that it is huge (~80% of the total memory in use when returning the frontend DAE)."),
   )::DebugFlag
 const DUMPBACKENDINLINE =
   DEBUG_FLAG(
-    163,
+    153,
     "dumpBackendInline",
     false,
     Gettext.gettext("Dumps debug output while inline function."),
   )::DebugFlag
 const DUMPBACKENDINLINE_VERBOSE =
   DEBUG_FLAG(
-    164,
+    154,
     "dumpBackendInlineVerbose",
     false,
     Gettext.gettext("Dumps debug output while inline function."),
   )::DebugFlag
 const BLT_MATRIX_DUMP =
   DEBUG_FLAG(
-    165,
+    155,
     "bltmatrixdump",
     false,
     Gettext.gettext("Dumps the blt matrix in html file. IE seems to be very good in displaying large matrices."),
   )::DebugFlag
 const LIST_REVERSE_WRONG_ORDER =
   DEBUG_FLAG(
-    166,
+    156,
     "listAppendWrongOrder",
     true,
     Gettext.gettext("Print notifications about bad usage of listAppend."),
   )::DebugFlag
 const PARTITION_INITIALIZATION =
   DEBUG_FLAG(
-    167,
+    157,
     "partitionInitialization",
     true,
     Gettext.gettext("This flag controls if partitioning is applied to the initialization system."),
   )::DebugFlag
 const EVAL_PARAM_DUMP =
   DEBUG_FLAG(
-    168,
+    158,
     "evalParameterDump",
     false,
     Gettext.gettext("Dumps information for evaluating parameters."),
   )::DebugFlag
 const NF_UNITCHECK =
   DEBUG_FLAG(
-    169,
+    159,
     "frontEndUnitCheck",
     false,
     Gettext.gettext("Checks the consistency of units in equation."),
   )::DebugFlag
 const DISABLE_COLORING =
   DEBUG_FLAG(
-    170,
+    160,
     "disableColoring",
     false,
     Gettext.gettext("Disables coloring algorithm while spasity detection."),
   )::DebugFlag
 const MERGE_ALGORITHM_SECTIONS =
   DEBUG_FLAG(
-    171,
+    161,
     "mergeAlgSections",
     false,
     Gettext.gettext("Disables coloring algorithm while sparsity detection."),
   )::DebugFlag
 const WARN_NO_NOMINAL =
   DEBUG_FLAG(
-    172,
+    162,
     "warnNoNominal",
     false,
     Gettext.gettext("Prints the iteration variables in the initialization and simulation DAE, which do not have a nominal value."),
   )::DebugFlag
 const REDUCE_DAE =
   DEBUG_FLAG(
-    173,
+    163,
     "backendReduceDAE",
     false,
     Gettext.gettext("Prints all Reduce DAE debug information."),
   )::DebugFlag
 const IGNORE_CYCLES =
   DEBUG_FLAG(
-    174,
+    164,
     "ignoreCycles",
     false,
     Gettext.gettext("Ignores cycles between constant/parameter components."),
   )::DebugFlag
 const ALIAS_CONFLICTS =
   DEBUG_FLAG(
-    175,
+    165,
     "aliasConflicts",
     false,
     Gettext.gettext("Dumps alias sets with different start or nominal values."),
   )::DebugFlag
 const SUSAN_MATCHCONTINUE_DEBUG =
   DEBUG_FLAG(
-    176,
+    166,
     "susanDebug",
     false,
     Gettext.gettext("Makes Susan generate code using try/else to better debug which function broke the expected match semantics."),
   )::DebugFlag
 const OLD_FE_UNITCHECK =
   DEBUG_FLAG(
-    177,
+    167,
     "oldFrontEndUnitCheck",
     false,
     Gettext.gettext("Checks the consistency of units in equation (for the old front-end)."),
   )::DebugFlag
 const EXEC_STAT_EXTRA_GC =
   DEBUG_FLAG(
-    178,
+    168,
     "execstatGCcollect",
     false,
     Gettext.gettext("When running execstat, also perform an extra full garbage collection."),
   )::DebugFlag
 const DEBUG_DAEMODE =
   DEBUG_FLAG(
-    179,
+    169,
     "debugDAEmode",
     false,
     Gettext.gettext("Dump debug output for the DAEmode."),
   )::DebugFlag
 const NF_SCALARIZE =
   DEBUG_FLAG(
-    180,
+    170,
     "nfScalarize",
     true,
     Gettext.gettext("Run scalarization in NF, default true."),
   )::DebugFlag
 const NF_EVAL_CONST_ARG_FUNCS =
   DEBUG_FLAG(
-    181,
+    171,
     "nfEvalConstArgFuncs",
     true,
     Gettext.gettext("Evaluate all functions with constant arguments in the new frontend."),
   )::DebugFlag
 const NF_EXPAND_OPERATIONS =
   DEBUG_FLAG(
-    182,
+    172,
     "nfExpandOperations",
     true,
     Gettext.gettext("Expand all unary/binary operations to scalar expressions in the new frontend."),
   )::DebugFlag
 const NF_API =
   DEBUG_FLAG(
-    183,
+    173,
     "nfAPI",
     false,
     Gettext.gettext("Enables experimental new instantiation use in the OMC API."),
   )::DebugFlag
 const NF_API_DYNAMIC_SELECT =
   DEBUG_FLAG(
-    184,
+    174,
     "nfAPIDynamicSelect",
     false,
     Gettext.gettext("Show DynamicSelect(static, dynamic) in annotations. Default to false and will select the first (static) expression"),
   )::DebugFlag
 const NF_API_NOISE =
   DEBUG_FLAG(
-    185,
+    175,
     "nfAPINoise",
     false,
     Gettext.gettext("Enables error display for the experimental new instantiation use in the OMC API."),
   )::DebugFlag
 const FMI20_DEPENDENCIES =
   DEBUG_FLAG(
-    186,
+    176,
     "disableFMIDependency",
     false,
     Gettext.gettext("Disables the dependency analysis and generation for FMI 2.0."),
   )::DebugFlag
 const WARNING_MINMAX_ATTRIBUTES =
   DEBUG_FLAG(
-    187,
+    177,
     "warnMinMax",
     true,
     Gettext.gettext("Makes a warning assert from min/max variable attributes instead of error."),
   )::DebugFlag
 const NF_EXPAND_FUNC_ARGS =
   DEBUG_FLAG(
-    188,
+    178,
     "nfExpandFuncArgs",
     false,
     Gettext.gettext("Expand all function arguments in the new frontend."),
   )::DebugFlag
 const DUMP_JL =
   DEBUG_FLAG(
-    189,
+    179,
     "dumpJL",
     false,
     Gettext.gettext("Dumps the absyn representation of a program as a Julia representation"),
   )::DebugFlag
 const DUMP_ASSC =
   DEBUG_FLAG(
-    190,
+    180,
     "dumpASSC",
     false,
     Gettext.gettext("Dumps the conversion process of analytical to structural singularities."),
   )::DebugFlag
 const SPLIT_CONSTANT_PARTS_SYMJAC =
   DEBUG_FLAG(
-    191,
+    181,
     "symJacConstantSplit",
     false,
     Gettext.gettext("Generates all symbolic Jacobians with splitted constant parts."),
   )::DebugFlag
 const NF_DUMP_FLAT =
   DEBUG_FLAG(
-    192,
+    182,
     "nfDumpFlat",
     false,
     Gettext.gettext("Dumps the flat model structure before generating the DAE."),
   )::DebugFlag
 const DUMP_FORCE_FMI_ATTRIBUTES =
   DEBUG_FLAG(
-    193,
+    183,
     "force-fmi-attributes",
     false,
     Gettext.gettext("Force to export all fmi attributes to the modelDescription.xml, including those which have default values"),
   )::DebugFlag
 const DUMP_FORCE_FMI_INTERNAL_VARIABLES =
   DEBUG_FLAG(
-    194,
+    184,
     "force-fmi-internal-variables",
     false,
     Gettext.gettext("Force to export all internal variables (eg: CSE) to the modelDescription.xml"),
@@ -2391,19 +2332,10 @@ const TEARING_HEURISTIC =
     ))),
     Gettext.gettext("Sets the tearing heuristic to use for Cellier-tearing."),
   )::ConfigFlag
-const DISABLE_LINEAR_TEARING =
-  CONFIG_FLAG(
-    46,
-    "disableLinearTearing",
-    NONE(),
-    EXTERNAL(),
-    BOOL_FLAG(false),
-    NONE(),
-    Gettext.gettext("Disables the tearing of linear systems. That might improve the performance of large linear systems(N>1000) in combination with a sparse solver (e.g. umfpack) at runtime (usage with: -ls umfpack).\\nDeprecated flag: Use --maxSizeLinearTearing=0 instead."),
-  )::ConfigFlag
+
 const SCALARIZE_MINMAX =
   CONFIG_FLAG(
-    47,
+    46,
     "scalarizeMinMax",
     NONE(),
     EXTERNAL(),
@@ -2413,7 +2345,7 @@ const SCALARIZE_MINMAX =
   )::ConfigFlag
 const STRICT =
   CONFIG_FLAG(
-    48,
+    47,
     "strict",
     NONE(),
     EXTERNAL(),
@@ -2423,7 +2355,7 @@ const STRICT =
   )::ConfigFlag
 const SCALARIZE_BINDINGS =
   CONFIG_FLAG(
-    49,
+    48,
     "scalarizeBindings",
     NONE(),
     EXTERNAL(),
@@ -2433,7 +2365,7 @@ const SCALARIZE_BINDINGS =
   )::ConfigFlag
 const CORBA_OBJECT_REFERENCE_FILE_PATH =
   CONFIG_FLAG(
-    50,
+    49,
     "corbaObjectReferenceFilePath",
     NONE(),
     EXTERNAL(),
@@ -2443,7 +2375,7 @@ const CORBA_OBJECT_REFERENCE_FILE_PATH =
   )::ConfigFlag
 const HPCOM_SCHEDULER =
   CONFIG_FLAG(
-    51,
+    50,
     "hpcomScheduler",
     NONE(),
     EXTERNAL(),
@@ -2453,7 +2385,7 @@ const HPCOM_SCHEDULER =
   )::ConfigFlag
 const HPCOM_CODE =
   CONFIG_FLAG(
-    52,
+    51,
     "hpcomCode",
     NONE(),
     EXTERNAL(),
@@ -2463,7 +2395,7 @@ const HPCOM_CODE =
   )::ConfigFlag
 const REWRITE_RULES_FILE =
   CONFIG_FLAG(
-    53,
+    52,
     "rewriteRulesFile",
     NONE(),
     EXTERNAL(),
@@ -2473,7 +2405,7 @@ const REWRITE_RULES_FILE =
   )::ConfigFlag
 const REPLACE_HOMOTOPY =
   CONFIG_FLAG(
-    54,
+    53,
     "replaceHomotopy",
     NONE(),
     EXTERNAL(),
@@ -2490,7 +2422,7 @@ const REPLACE_HOMOTOPY =
   )::ConfigFlag
 const GENERATE_SYMBOLIC_JACOBIAN =
   CONFIG_FLAG(
-    55,
+    54,
     "generateSymbolicJacobian",
     NONE(),
     EXTERNAL(),
@@ -2500,7 +2432,7 @@ const GENERATE_SYMBOLIC_JACOBIAN =
   )::ConfigFlag
 const GENERATE_SYMBOLIC_LINEARIZATION =
   CONFIG_FLAG(
-    56,
+    55,
     "generateSymbolicLinearization",
     NONE(),
     EXTERNAL(),
@@ -2510,7 +2442,7 @@ const GENERATE_SYMBOLIC_LINEARIZATION =
   )::ConfigFlag
 const INT_ENUM_CONVERSION =
   CONFIG_FLAG(
-    57,
+    56,
     "intEnumConversion",
     NONE(),
     EXTERNAL(),
@@ -2520,7 +2452,7 @@ const INT_ENUM_CONVERSION =
   )::ConfigFlag
 const PROFILING_LEVEL =
   CONFIG_FLAG(
-    58,
+    57,
     "profiling",
     NONE(),
     EXTERNAL(),
@@ -2552,7 +2484,7 @@ const PROFILING_LEVEL =
   )::ConfigFlag
 const RESHUFFLE =
   CONFIG_FLAG(
-    59,
+    58,
     "reshuffle",
     NONE(),
     EXTERNAL(),
@@ -2562,7 +2494,7 @@ const RESHUFFLE =
   )::ConfigFlag
 const GENERATE_DYN_OPTIMIZATION_PROBLEM =
   CONFIG_FLAG(
-    60,
+    59,
     "gDynOpt",
     NONE(),
     EXTERNAL(),
@@ -2570,39 +2502,10 @@ const GENERATE_DYN_OPTIMIZATION_PROBLEM =
     NONE(),
     Gettext.gettext("Generate dynamic optimization problem based on annotation approach."),
   )::ConfigFlag
-const CSE_CALL =
-  CONFIG_FLAG(
-    61,
-    "cseCall",
-    NONE(),
-    INTERNAL(),
-    BOOL_FLAG(false),
-    NONE(),
-    Gettext.gettext("Deprecated flag: Use --postOptModules+=wrapFunctionCalls instead."),
-  )::ConfigFlag
-const CSE_BINARY =
-  CONFIG_FLAG(
-    62,
-    "cseBinary",
-    NONE(),
-    INTERNAL(),
-    BOOL_FLAG(false),
-    NONE(),
-    Gettext.gettext("Deprecated flag: Use --postOptModules+=cseBinary instead."),
-  )::ConfigFlag
-const CSE_EACHCALL =
-  CONFIG_FLAG(
-    63,
-    "cseEachCall",
-    NONE(),
-    INTERNAL(),
-    BOOL_FLAG(false),
-    NONE(),
-    Gettext.gettext("Deprecated flag: Use --postOptModules+=wrapFunctionCalls instead."),
-  )::ConfigFlag
+
 const MAX_SIZE_FOR_SOLVE_LINIEAR_SYSTEM =
   CONFIG_FLAG(
-    64,
+    60,
     "maxSizeSolveLinearSystem",
     NONE(),
     EXTERNAL(),
@@ -2612,7 +2515,7 @@ const MAX_SIZE_FOR_SOLVE_LINIEAR_SYSTEM =
   )::ConfigFlag
 const CPP_FLAGS =
   CONFIG_FLAG(
-    65,
+    61,
     "cppFlags",
     NONE(),
     EXTERNAL(),
@@ -2622,7 +2525,7 @@ const CPP_FLAGS =
   )::ConfigFlag
 const REMOVE_SIMPLE_EQUATIONS =
   CONFIG_FLAG(
-    66,
+    62,
     "removeSimpleEquations",
     NONE(),
     EXTERNAL(),
@@ -2651,7 +2554,7 @@ const REMOVE_SIMPLE_EQUATIONS =
   )::ConfigFlag
 const DYNAMIC_TEARING =
   CONFIG_FLAG(
-    67,
+    63,
     "dynamicTearing",
     NONE(),
     EXTERNAL(),
@@ -2666,7 +2569,7 @@ const DYNAMIC_TEARING =
   )::ConfigFlag
 const SYM_SOLVER =
   CONFIG_FLAG(
-    68,
+    64,
     "symSolver",
     NONE(),
     EXTERNAL(),
@@ -2674,19 +2577,9 @@ const SYM_SOLVER =
     SOME(STRING_OPTION(list("none", "impEuler", "expEuler"))),
     Gettext.gettext("Activates symbolic implicit solver (original system is not changed)."),
   )::ConfigFlag
-const ADD_TIME_AS_STATE =
-  CONFIG_FLAG(
-    69,
-    "addTimeAsState",
-    NONE(),
-    INTERNAL(),
-    BOOL_FLAG(false),
-    NONE(),
-    Gettext.gettext("Experimental feature: this replaces each occurrence of variable time with a new introduced state time with equation der(time) = 1.0\\nDeprecated flag: Use --postOptModules+=addTimeAsState instead."),
-  )::ConfigFlag
 const LOOP2CON =
   CONFIG_FLAG(
-    70,
+    65,
     "loop2con",
     NONE(),
     EXTERNAL(),
@@ -2701,7 +2594,7 @@ const LOOP2CON =
   )::ConfigFlag
 const FORCE_TEARING =
   CONFIG_FLAG(
-    71,
+    66,
     "forceTearing",
     NONE(),
     EXTERNAL(),
@@ -2711,7 +2604,7 @@ const FORCE_TEARING =
   )::ConfigFlag
 const SIMPLIFY_LOOPS =
   CONFIG_FLAG(
-    72,
+    67,
     "simplifyLoops",
     NONE(),
     EXTERNAL(),
@@ -2728,7 +2621,7 @@ const SIMPLIFY_LOOPS =
   )::ConfigFlag
 const RTEARING =
   CONFIG_FLAG(
-    73,
+    68,
     "recursiveTearing",
     NONE(),
     EXTERNAL(),
@@ -2742,7 +2635,7 @@ const RTEARING =
   )::ConfigFlag
 const FLOW_THRESHOLD =
   CONFIG_FLAG(
-    74,
+    69,
     "flowThreshold",
     NONE(),
     EXTERNAL(),
@@ -2752,7 +2645,7 @@ const FLOW_THRESHOLD =
   )::ConfigFlag
 const MATRIX_FORMAT =
   CONFIG_FLAG(
-    75,
+    70,
     "matrixFormat",
     NONE(),
     EXTERNAL(),
@@ -2762,7 +2655,7 @@ const MATRIX_FORMAT =
   )::ConfigFlag
 const PARTLINTORN =
   CONFIG_FLAG(
-    76,
+    71,
     "partlintorn",
     NONE(),
     EXTERNAL(),
@@ -2772,7 +2665,7 @@ const PARTLINTORN =
   )::ConfigFlag
 const INIT_OPT_MODULES =
   CONFIG_FLAG(
-    77,
+    72,
     "initOptModules",
     NONE(),
     EXTERNAL(),
@@ -2843,7 +2736,7 @@ const INIT_OPT_MODULES =
   )::ConfigFlag
 const MAX_MIXED_DETERMINED_INDEX =
   CONFIG_FLAG(
-    78,
+    73,
     "maxMixedDeterminedIndex",
     NONE(),
     EXTERNAL(),
@@ -2853,7 +2746,7 @@ const MAX_MIXED_DETERMINED_INDEX =
   )::ConfigFlag
 const USE_LOCAL_DIRECTION =
   CONFIG_FLAG(
-    79,
+    74,
     "useLocalDirection",
     NONE(),
     EXTERNAL(),
@@ -2863,7 +2756,7 @@ const USE_LOCAL_DIRECTION =
   )::ConfigFlag
 const DEFAULT_OPT_MODULES_ORDERING =
   CONFIG_FLAG(
-    80,
+    75,
     "defaultOptModulesOrdering",
     NONE(),
     EXTERNAL(),
@@ -2873,7 +2766,7 @@ const DEFAULT_OPT_MODULES_ORDERING =
   )::ConfigFlag
 const PRE_OPT_MODULES_ADD =
   CONFIG_FLAG(
-    81,
+    76,
     "preOptModules+",
     NONE(),
     EXTERNAL(),
@@ -2883,7 +2776,7 @@ const PRE_OPT_MODULES_ADD =
   )::ConfigFlag
 const PRE_OPT_MODULES_SUB =
   CONFIG_FLAG(
-    82,
+    77,
     "preOptModules-",
     NONE(),
     EXTERNAL(),
@@ -2893,7 +2786,7 @@ const PRE_OPT_MODULES_SUB =
   )::ConfigFlag
 const POST_OPT_MODULES_ADD =
   CONFIG_FLAG(
-    83,
+    78,
     "postOptModules+",
     NONE(),
     EXTERNAL(),
@@ -2903,7 +2796,7 @@ const POST_OPT_MODULES_ADD =
   )::ConfigFlag
 const POST_OPT_MODULES_SUB =
   CONFIG_FLAG(
-    84,
+    79,
     "postOptModules-",
     NONE(),
     EXTERNAL(),
@@ -2913,7 +2806,7 @@ const POST_OPT_MODULES_SUB =
   )::ConfigFlag
 const INIT_OPT_MODULES_ADD =
   CONFIG_FLAG(
-    85,
+    80,
     "initOptModules+",
     NONE(),
     EXTERNAL(),
@@ -2923,7 +2816,7 @@ const INIT_OPT_MODULES_ADD =
   )::ConfigFlag
 const INIT_OPT_MODULES_SUB =
   CONFIG_FLAG(
-    86,
+    81,
     "initOptModules-",
     NONE(),
     EXTERNAL(),
@@ -2933,7 +2826,7 @@ const INIT_OPT_MODULES_SUB =
   )::ConfigFlag
 const PERMISSIVE =
   CONFIG_FLAG(
-    87,
+    82,
     "permissive",
     NONE(),
     INTERNAL(),
@@ -2943,7 +2836,7 @@ const PERMISSIVE =
   )::ConfigFlag
 const HETS =
   CONFIG_FLAG(
-    88,
+    83,
     "hets",
     NONE(),
     INTERNAL(),
@@ -2956,7 +2849,7 @@ const HETS =
   )::ConfigFlag
 const DEFAULT_CLOCK_PERIOD =
   CONFIG_FLAG(
-    89,
+    84,
     "defaultClockPeriod",
     NONE(),
     INTERNAL(),
@@ -2966,7 +2859,7 @@ const DEFAULT_CLOCK_PERIOD =
   )::ConfigFlag
 const INST_CACHE_SIZE =
   CONFIG_FLAG(
-    90,
+    85,
     "instCacheSize",
     NONE(),
     EXTERNAL(),
@@ -2976,7 +2869,7 @@ const INST_CACHE_SIZE =
   )::ConfigFlag
 const MAX_SIZE_LINEAR_TEARING =
   CONFIG_FLAG(
-    91,
+    86,
     "maxSizeLinearTearing",
     NONE(),
     EXTERNAL(),
@@ -2986,7 +2879,7 @@ const MAX_SIZE_LINEAR_TEARING =
   )::ConfigFlag
 const MAX_SIZE_NONLINEAR_TEARING =
   CONFIG_FLAG(
-    92,
+    87,
     "maxSizeNonlinearTearing",
     NONE(),
     EXTERNAL(),
@@ -2996,7 +2889,7 @@ const MAX_SIZE_NONLINEAR_TEARING =
   )::ConfigFlag
 const NO_TEARING_FOR_COMPONENT =
   CONFIG_FLAG(
-    93,
+    88,
     "noTearingForComponent",
     NONE(),
     EXTERNAL(),
@@ -3006,7 +2899,7 @@ const NO_TEARING_FOR_COMPONENT =
   )::ConfigFlag
 const CT_STATE_MACHINES =
   CONFIG_FLAG(
-    94,
+    89,
     "ctStateMachines",
     NONE(),
     INTERNAL(),
@@ -3016,7 +2909,7 @@ const CT_STATE_MACHINES =
   )::ConfigFlag
 const DAE_MODE =
   CONFIG_FLAG(
-    95,
+    90,
     "daeMode",
     NONE(),
     EXTERNAL(),
@@ -3026,7 +2919,7 @@ const DAE_MODE =
   )::ConfigFlag
 const INLINE_METHOD =
   CONFIG_FLAG(
-    96,
+    91,
     "inlineMethod",
     NONE(),
     EXTERNAL(),
@@ -3040,7 +2933,7 @@ const INLINE_METHOD =
   )::ConfigFlag
 const SET_TEARING_VARS =
   CONFIG_FLAG(
-    97,
+    92,
     "setTearingVars",
     NONE(),
     EXTERNAL(),
@@ -3050,7 +2943,7 @@ const SET_TEARING_VARS =
   )::ConfigFlag
 const SET_RESIDUAL_EQNS =
   CONFIG_FLAG(
-    98,
+    93,
     "setResidualEqns",
     NONE(),
     EXTERNAL(),
@@ -3060,7 +2953,7 @@ const SET_RESIDUAL_EQNS =
   )::ConfigFlag
 const IGNORE_COMMAND_LINE_OPTIONS_ANNOTATION =
   CONFIG_FLAG(
-    99,
+    94,
     "ignoreCommandLineOptionsAnnotation",
     NONE(),
     EXTERNAL(),
@@ -3070,7 +2963,7 @@ const IGNORE_COMMAND_LINE_OPTIONS_ANNOTATION =
   )::ConfigFlag
 const CALCULATE_SENSITIVITIES =
   CONFIG_FLAG(
-    100,
+    95,
     "calculateSensitivities",
     NONE(),
     EXTERNAL(),
@@ -3080,7 +2973,7 @@ const CALCULATE_SENSITIVITIES =
   )::ConfigFlag
 const ALARM =
   CONFIG_FLAG(
-    101,
+    96,
     "alarm",
     SOME("r"),
     EXTERNAL(),
@@ -3090,7 +2983,7 @@ const ALARM =
   )::ConfigFlag
 const TOTAL_TEARING =
   CONFIG_FLAG(
-    102,
+    97,
     "totalTearing",
     NONE(),
     EXTERNAL(),
@@ -3100,7 +2993,7 @@ const TOTAL_TEARING =
   )::ConfigFlag
 const IGNORE_SIMULATION_FLAGS_ANNOTATION =
   CONFIG_FLAG(
-    103,
+    98,
     "ignoreSimulationFlagsAnnotation",
     NONE(),
     EXTERNAL(),
@@ -3110,7 +3003,7 @@ const IGNORE_SIMULATION_FLAGS_ANNOTATION =
   )::ConfigFlag
 const DYNAMIC_TEARING_FOR_INITIALIZATION =
   CONFIG_FLAG(
-    104,
+    99,
     "dynamicTearingForInitialization",
     NONE(),
     EXTERNAL(),
@@ -3120,7 +3013,7 @@ const DYNAMIC_TEARING_FOR_INITIALIZATION =
   )::ConfigFlag
 const PREFER_TVARS_WITH_START_VALUE =
   CONFIG_FLAG(
-    105,
+    100,
     "preferTVarsWithStartValue",
     NONE(),
     EXTERNAL(),
@@ -3130,7 +3023,7 @@ const PREFER_TVARS_WITH_START_VALUE =
   )::ConfigFlag
 const EQUATIONS_PER_FILE =
   CONFIG_FLAG(
-    106,
+    101,
     "equationsPerFile",
     NONE(),
     EXTERNAL(),
@@ -3140,7 +3033,7 @@ const EQUATIONS_PER_FILE =
   )::ConfigFlag
 const EVALUATE_FINAL_PARAMS =
   CONFIG_FLAG(
-    107,
+    102,
     "evaluateFinalParameters",
     NONE(),
     EXTERNAL(),
@@ -3150,7 +3043,7 @@ const EVALUATE_FINAL_PARAMS =
   )::ConfigFlag
 const EVALUATE_PROTECTED_PARAMS =
   CONFIG_FLAG(
-    108,
+    103,
     "evaluateProtectedParameters",
     NONE(),
     EXTERNAL(),
@@ -3160,7 +3053,7 @@ const EVALUATE_PROTECTED_PARAMS =
   )::ConfigFlag
 const REPLACE_EVALUATED_PARAMS =
   CONFIG_FLAG(
-    109,
+    104,
     "replaceEvaluatedParameters",
     NONE(),
     EXTERNAL(),
@@ -3170,7 +3063,7 @@ const REPLACE_EVALUATED_PARAMS =
   )::ConfigFlag
 const CONDENSE_ARRAYS =
   CONFIG_FLAG(
-    110,
+    105,
     "condenseArrays",
     NONE(),
     EXTERNAL(),
@@ -3180,7 +3073,7 @@ const CONDENSE_ARRAYS =
   )::ConfigFlag
 const WFC_ADVANCED =
   CONFIG_FLAG(
-    111,
+    106,
     "wfcAdvanced",
     NONE(),
     EXTERNAL(),
@@ -3190,7 +3083,7 @@ const WFC_ADVANCED =
   )::ConfigFlag
 const GRAPHICS_EXP_MODE =
   CONFIG_FLAG(
-    112,
+    107,
     "graphicsExpMode",
     NONE(),
     INTERNAL(),
@@ -3200,7 +3093,7 @@ const GRAPHICS_EXP_MODE =
   )::ConfigFlag
 const TEARING_STRICTNESS =
   CONFIG_FLAG(
-    113,
+    108,
     "tearingStrictness",
     NONE(),
     EXTERNAL(),
@@ -3223,7 +3116,7 @@ const TEARING_STRICTNESS =
   )::ConfigFlag
 const INTERACTIVE =
   CONFIG_FLAG(
-    114,
+    109,
     "interactive",
     NONE(),
     EXTERNAL(),
@@ -3244,7 +3137,7 @@ const INTERACTIVE =
   )::ConfigFlag
 const ZEROMQ_FILE_SUFFIX =
   CONFIG_FLAG(
-    115,
+    110,
     "zeroMQFileSuffix",
     SOME("z"),
     EXTERNAL(),
@@ -3254,7 +3147,7 @@ const ZEROMQ_FILE_SUFFIX =
   )::ConfigFlag
 const HOMOTOPY_APPROACH =
   CONFIG_FLAG(
-    116,
+    111,
     "homotopyApproach",
     NONE(),
     EXTERNAL(),
@@ -3281,7 +3174,7 @@ const HOMOTOPY_APPROACH =
   )::ConfigFlag
 const IGNORE_REPLACEABLE =
   CONFIG_FLAG(
-    117,
+    112,
     "ignoreReplaceable",
     NONE(),
     EXTERNAL(),
@@ -3291,7 +3184,7 @@ const IGNORE_REPLACEABLE =
   )::ConfigFlag
 const LABELED_REDUCTION =
   CONFIG_FLAG(
-    118,
+    113,
     "labeledReduction",
     NONE(),
     INTERNAL(),
@@ -3301,7 +3194,7 @@ const LABELED_REDUCTION =
   )::ConfigFlag
 const DISABLE_EXTRA_LABELING =
   CONFIG_FLAG(
-    119,
+    114,
     "disableExtraLabeling",
     NONE(),
     INTERNAL(),
@@ -3311,7 +3204,7 @@ const DISABLE_EXTRA_LABELING =
   )::ConfigFlag
 const LOAD_MSL_MODEL =
   CONFIG_FLAG(
-    120,
+    115,
     "loadMSLModel",
     NONE(),
     INTERNAL(),
@@ -3321,7 +3214,7 @@ const LOAD_MSL_MODEL =
   )::ConfigFlag
 const Load_PACKAGE_FILE =
   CONFIG_FLAG(
-    121,
+    116,
     "loadPackageFile",
     NONE(),
     INTERNAL(),
@@ -3331,7 +3224,7 @@ const Load_PACKAGE_FILE =
   )::ConfigFlag
 const BUILDING_FMU =
   CONFIG_FLAG(
-    122,
+    117,
     "",
     NONE(),
     INTERNAL(),
@@ -3341,7 +3234,7 @@ const BUILDING_FMU =
   )::ConfigFlag
 const BUILDING_MODEL =
   CONFIG_FLAG(
-    123,
+    118,
     "",
     NONE(),
     INTERNAL(),
@@ -3351,7 +3244,7 @@ const BUILDING_MODEL =
   )::ConfigFlag
 const POST_OPT_MODULES_DAE =
   CONFIG_FLAG(
-    124,
+    119,
     "postOptModulesDAE",
     NONE(),
     EXTERNAL(),
@@ -3375,7 +3268,7 @@ const POST_OPT_MODULES_DAE =
 =#
 const EVAL_LOOP_LIMIT =
   CONFIG_FLAG(
-    125,
+    120,
     "evalLoopLimit",
     NONE(),
     EXTERNAL(),
@@ -3385,7 +3278,7 @@ const EVAL_LOOP_LIMIT =
   )::ConfigFlag
 const EVAL_RECURSION_LIMIT =
   CONFIG_FLAG(
-    126,
+    121,
     "evalRecursionLimit",
     NONE(),
     EXTERNAL(),
@@ -3395,7 +3288,7 @@ const EVAL_RECURSION_LIMIT =
   )::ConfigFlag
 const SINGLE_INSTANCE_AGLSOLVER =
   CONFIG_FLAG(
-    127,
+    122,
     "singleInstanceAglSolver",
     NONE(),
     EXTERNAL(),
@@ -3405,7 +3298,7 @@ const SINGLE_INSTANCE_AGLSOLVER =
   )::ConfigFlag
 const SHOW_STRUCTURAL_ANNOTATIONS =
   CONFIG_FLAG(
-    128,
+    123,
     "showStructuralAnnotations",
     NONE(),
     EXTERNAL(),
@@ -3415,7 +3308,7 @@ const SHOW_STRUCTURAL_ANNOTATIONS =
   )::ConfigFlag
 const INITIAL_STATE_SELECTION =
   CONFIG_FLAG(
-    129,
+    124,
     "initialStateSelection",
     NONE(),
     EXTERNAL(),
@@ -3425,7 +3318,7 @@ const INITIAL_STATE_SELECTION =
   )::ConfigFlag
 const LINEARIZATION_DUMP_LANGUAGE =
   CONFIG_FLAG(
-    130,
+    125,
     "linearizationDumpLanguage",
     NONE(),
     EXTERNAL(),
@@ -3435,7 +3328,7 @@ const LINEARIZATION_DUMP_LANGUAGE =
   )::ConfigFlag
 const NO_ASSC =
   CONFIG_FLAG(
-    131,
+    126,
     "noASSC",
     NONE(),
     EXTERNAL(),
@@ -3445,7 +3338,7 @@ const NO_ASSC =
   )::ConfigFlag
 const FULL_ASSC =
   CONFIG_FLAG(
-    132,
+    127,
     "fullASSC",
     NONE(),
     EXTERNAL(),
@@ -3455,7 +3348,7 @@ const FULL_ASSC =
   )::ConfigFlag
 const USE_ZEROMQ_IN_SIM =
   CONFIG_FLAG(
-    133,
+    128,
     "useZeroMQInSim",
     NONE(),
     EXTERNAL(),
@@ -3465,7 +3358,7 @@ const USE_ZEROMQ_IN_SIM =
   )::ConfigFlag
 const ZEROMQ_PUB_PORT =
   CONFIG_FLAG(
-    134,
+    129,
     "zeroMQPubPort",
     NONE(),
     EXTERNAL(),
@@ -3475,7 +3368,7 @@ const ZEROMQ_PUB_PORT =
   )::ConfigFlag
 const ZEROMQ_SUB_PORT =
   CONFIG_FLAG(
-    135,
+    130,
     "zeroMQSubPort",
     NONE(),
     EXTERNAL(),
@@ -3485,7 +3378,7 @@ const ZEROMQ_SUB_PORT =
   )::ConfigFlag
 const ZEROMQ_JOB_ID =
   CONFIG_FLAG(
-    136,
+    131,
     "zeroMQJOBID",
     NONE(),
     EXTERNAL(),
@@ -3495,7 +3388,7 @@ const ZEROMQ_JOB_ID =
   )::ConfigFlag
 const ZEROMQ_SERVER_ID =
   CONFIG_FLAG(
-    137,
+    132,
     "zeroMQServerID",
     NONE(),
     EXTERNAL(),
@@ -3505,7 +3398,7 @@ const ZEROMQ_SERVER_ID =
   )::ConfigFlag
 const ZEROMQ_CLIENT_ID =
   CONFIG_FLAG(
-    138,
+    133,
     "zeroMQClientID",
     NONE(),
     EXTERNAL(),
@@ -3515,7 +3408,7 @@ const ZEROMQ_CLIENT_ID =
   )::ConfigFlag
 const FMI_VERSION =
   CONFIG_FLAG(
-    139,
+    134,
     "",
     NONE(),
     INTERNAL(),
@@ -3525,7 +3418,7 @@ const FMI_VERSION =
   )::ConfigFlag
 const FLAT_MODELICA =
   CONFIG_FLAG(
-    140,
+    135,
     "flatModelica",
     SOME("f"),
     EXTERNAL(),

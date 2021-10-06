@@ -14,7 +14,7 @@ Expression = NFExpression
     innerOuter::Int
     isFinal::Bool
     isRedeclare::Bool
-    isReplaceable
+    isReplaceable::Replaceable
   end
 end
 
@@ -75,7 +75,7 @@ const DEFAULT_ATTR =
     InnerOuter.NOT_INNER_OUTER,
     false,
     false,
-    NOT_REPLACEABLE,
+    NOT_REPLACEABLE(),
   )
 const INPUT_ATTR =
   ATTRIBUTES(
@@ -86,7 +86,7 @@ const INPUT_ATTR =
     InnerOuter.NOT_INNER_OUTER,
     false,
     false,
-    NOT_REPLACEABLE,
+    NOT_REPLACEABLE(),
   )
 const OUTPUT_ATTR =
   ATTRIBUTES(
@@ -97,7 +97,7 @@ const OUTPUT_ATTR =
     InnerOuter.NOT_INNER_OUTER,
     false,
     false,
-    NOT_REPLACEABLE,
+    NOT_REPLACEABLE(),
   )
 const CONSTANT_ATTR =
   ATTRIBUTES(
@@ -108,7 +108,7 @@ const CONSTANT_ATTR =
     InnerOuter.NOT_INNER_OUTER,
     false,
     false,
-    NOT_REPLACEABLE,
+    NOT_REPLACEABLE(),
   )
 const IMPL_DISCRETE_ATTR =
   ATTRIBUTES(
@@ -119,7 +119,7 @@ const IMPL_DISCRETE_ATTR =
     InnerOuter.NOT_INNER_OUTER,
     false,
     false,
-    NOT_REPLACEABLE,
+    NOT_REPLACEABLE(),
   )
 
 #= Forward declarations for uniontypes until Julia adds support for mutual recursion =#
@@ -1193,8 +1193,7 @@ end
 
 function toString(attr::Attributes, ty::M_Type)::String
   local str::String
-
-  @assign str =
+  str =
     (
       if attr.isRedeclare
         "redeclare "
@@ -1209,12 +1208,12 @@ function toString(attr::Attributes, ty::M_Type)::String
         ""
       end
     ) +
-    P_Prefixes.unparseInnerOuter(attr.innerOuter) +
-    P_Prefixes.unparseReplaceable(attr.isReplaceable) +
-    P_Prefixes.unparseParallelism(attr.parallelism) +
-    ConnectorType.unparse(attr.connectorType) +
-    P_Prefixes.unparseVariability(attr.variability, ty) +
-    P_Prefixes.unparseDirection(attr.direction)
+      unparseInnerOuter(attr.innerOuter) +
+      unparseReplaceable(attr.isReplaceable) +
+      unparseParallelism(attr.parallelism) +
+      unparse(attr.connectorType) +
+      unparseVariability(attr.variability, ty) +
+      unparseDirection(attr.direction)
   return str
 end
 

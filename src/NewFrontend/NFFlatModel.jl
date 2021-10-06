@@ -1,3 +1,4 @@
+import ..IOStream_M
 @Uniontype NFFlatModel begin
   @Record FLAT_MODEL begin
     name::String
@@ -131,9 +132,7 @@ function collectSubscriptedFlatType(
 end
 
 function collectComponentFlatTypes(component::InstNode, types::TypeTree)::TypeTree
-
   local comp::Component
-
   @assign comp = component(component)
   @assign types = collectFlatType(getType(comp), types)
   @assign types = collectBindingFlatTypes(getBinding(comp), types)
@@ -141,9 +140,7 @@ function collectComponentFlatTypes(component::InstNode, types::TypeTree)::TypeTr
 end
 
 function collectFunctionFlatTypes(fn::M_Function, types::TypeTree)::TypeTree
-
   local body::List{Statement}
-
   @assign types = foldComponents(
     classTree(getClass(fn.node)),
     collectComponentFlatTypes,
@@ -155,7 +152,6 @@ function collectFunctionFlatTypes(fn::M_Function, types::TypeTree)::TypeTree
 end
 
 function collectExpFlatTypes_traverse(exp::Expression, types::TypeTree)::TypeTree
-
   @assign types = begin
     @match exp begin
       SUBSCRIPTED_EXP_EXPRESSION(__) => begin
@@ -181,14 +177,12 @@ function collectStmtBranchFlatTypes(
   branch::Tuple{<:Expression, List{<:Statement}},
   types::TypeTree,
 )::TypeTree
-
   @assign types = collectExpFlatTypes(Util.tuple21(branch), types)
   @assign types = ListUtil.fold(Util.tuple22(branch), collectStatementFlatTypes, types)
   return types
 end
 
 function collectStatementFlatTypes(stmt::Statement, types::TypeTree)::TypeTree
-
   @assign () = begin
     @match stmt begin
       ALG_ASSIGNMENT(__) => begin
@@ -197,7 +191,6 @@ function collectStatementFlatTypes(stmt::Statement, types::TypeTree)::TypeTree
         @assign types = collectFlatType(stmt.ty, types)
         ()
       end
-
       ALG_FOR(__) => begin
         @assign types = ListUtil.fold(stmt.body, collectStatementFlatTypes, types)
         @assign types = collectExpFlatTypes(Util.getOption(stmt.range), types)
@@ -404,41 +397,41 @@ function toFlatStream(
   for fn in functions
     if !P_Function.isDefaultRecordConstructor(fn)
       @assign s = P_Function.toFlatStream(fn, s)
-      @assign s = IOStream.append(s, ";\\n\\n")
+      @assign s = IOStream_M.append(s, ";\\n\\n")
     end
   end
   for ty in TypeTree.listValues(collectFlatTypes(flat_model, functions))
     @assign s = Type.toFlatDeclarationStream(ty, s)
-    @assign s = IOStream.append(s, ";\\n\\n")
+    @assign s = IOStream_M.append(s, ";\\n\\n")
   end
-  @assign s = IOStream.append(s, "class '" + flat_model.name + "'\\n")
+  @assign s = IOStream_M.append(s, "class '" + flat_model.name + "'\\n")
   for v in flat_model.variables
     @assign s = P_Variable.Variable.toFlatStream(v, "  ", printBindingTypes, s)
-    @assign s = IOStream.append(s, ";\\n")
+    @assign s = IOStream_M.append(s, ";\\n")
   end
   if !listEmpty(flat_model.initialEquations)
-    @assign s = IOStream.append(s, "initial equation\\n")
+    @assign s = IOStream_M.append(s, "initial equation\\n")
     @assign s = Equation.toFlatStreamList(flat_model.initialEquations, "  ", s)
   end
   if !listEmpty(flat_model.equations)
-    @assign s = IOStream.append(s, "equation\\n")
+    @assign s = IOStream_M.append(s, "equation\\n")
     @assign s = Equation.toFlatStreamList(flat_model.equations, "  ", s)
   end
   for alg in flat_model.initialAlgorithms
     if !listEmpty(alg.statements)
-      @assign s = IOStream.append(s, "initial algorithm\\n")
+      @assign s = IOStream_M.append(s, "initial algorithm\\n")
       @assign s = ALG_toFlatStreamList(alg.statements, "  ", s)
     end
   end
   for alg in flat_model.algorithms
     if !listEmpty(alg.statements)
-      @assign s = IOStream.append(s, "algorithm\\n")
+      @assign s = IOStream_M.append(s, "algorithm\\n")
       @assign s = ALG_toFlatStreamList(alg.statements, "  ", s)
     end
   end
-  @assign s = IOStream.append(s, "end '" + flat_model.name + "';\\n")
-  @assign str = IOStream.string(s)
-  IOStream.delete(s)
+  @assign s = IOStream_M.append(s, "end '" + flat_model.name + "';\\n")
+  @assign str = IOStream_M.string(s)
+  IOStream_M.delete(s)
   return (s, str)
 end
 
@@ -447,10 +440,10 @@ function printFlatString(
   functions::List{<:M_Function},
   printBindingTypes::Bool = false,
 )
-  local s::IOStream.IOStream
-  @assign s = IOStream.create(getInstanceName(), IOStream.IOStreamType.LIST())
+  local s
+  @assign s = IOStream_M.create(getInstanceName(), IOStream.IOStreamType.LIST())
   @assign s = toFlatStream(flatModel, functions, printBindingTypes, s)
-  return IOStream.print(s, IOStream.stdOutput)
+  return IOStream_M.print(s, IOStream_M.stdOutput)
 end
 
 function toFlatString(
@@ -462,40 +455,40 @@ function toFlatString(
   local s::IOStream.IOStream
   @assign s = IOStream.create(getInstanceName(), IOStream.IOStreamType.LIST())
   @assign s = toFlatStream(flatModel, functions, printBindingTypes, s)
-  @assign str = IOStream.string(s)
+  @assign str = IOStream_M.string(s)
   return str
 end
 
 function toString(flatModel::FlatModel, printBindingTypes::Bool = false)::String
   local str::String
-  local s::IOStream.IOStream
-  @assign s = IOStream.create(getInstanceName(), IOStream.IOStreamType.LIST())
-  @assign s = IOStream.append(s, "class " + flatModel.name + "\\n")
+  local s::IOStream_M.IOSTREAM
+  s = IOStream_M.create(getInstanceName(), IOStream_M.LIST())
+  s = IOStream_M.append(s, "class " + flatModel.name + "\\n")
   for v in flatModel.variables
-    @assign s = P_Variable.Variable.toStream(v, "  ", printBindingTypes, s)
-    @assign s = IOStream.append(s, ";\\n")
+    s = toStream(v, "  ", printBindingTypes, s)
+    s = IOStream_M.append(s, ";\\n")
   end
   if !listEmpty(flatModel.initialEquations)
-    @assign s = IOStream.append(s, "initial equation\\n")
-    @assign s = Equation.toStreamList(flatModel.initialEquations, "  ", s)
+    s = IOStream_M.append(s, "initial equation\\n")
+    s = Equation.toStreamList(flatModel.initialEquations, "  ", s)
   end
   if !listEmpty(flatModel.equations)
-    @assign s = IOStream.append(s, "equation\\n")
-    @assign s = Equation.toStreamList(flatModel.equations, "  ", s)
+    s = IOStream_M.append(s, "equation\\n")
+    s = toStreamList(flatModel.equations, "  ", s)
   end
   for alg in flatModel.initialAlgorithms
     if !listEmpty(alg.statements)
-      @assign s = IOStream.append(s, "initial algorithm\\n")
-      @assign s = ALG_toStreamList(alg.statements, "  ", s)
+      s = IOStream_M.append(s, "initial algorithm\\n")
+      s = ALG_toStreamList(alg.statements, "  ", s)
     end
   end
   for alg in flatModel.algorithms
     if !listEmpty(alg.statements)
-      @assign s = IOStream.append(s, "algorithm\\n")
-      @assign s = ALG_toStreamList(alg.statements, "  ", s)
+      s = IOStream_M.append(s, "algorithm\\n")
+      s = ALG_toStreamList(alg.statements, "  ", s)
     end
   end
-  @assign s = IOStream.append(s, "end " + flatModel.name + ";\\n")
-  @assign str = IOStream.string(s)
+  s = IOStream_M.append(s, "end " + flatModel.name + ";\\n")
+  str = IOStream_M.string(s)
   return str
 end

@@ -348,7 +348,7 @@ function subscript(ty::M_Type, subs::List{<:Subscript})::M_Type
         end
 
         SUBSCRIPT_SLICE(__) => begin
-          _cons(SUBSCRIPT_toDimension(sub), subbed_dims)
+          _cons(toDimension(sub), subbed_dims)
         end
 
         SUBSCRIPT_WHOLE(__) => begin
@@ -357,9 +357,9 @@ function subscript(ty::M_Type, subs::List{<:Subscript})::M_Type
       end
     end
   end
-  @assign ty = arrayElementType(ty)
+  ty = arrayElementType(ty)
   if !(listEmpty(subbed_dims) && listEmpty(dims))
-    @assign ty = ARRAY(ty, listAppend(listReverse(subbed_dims), dims))
+    ty = TYPE_ARRAY(ty, listAppend(listReverse(subbed_dims), dims))
   end
   return ty
 end
@@ -612,7 +612,7 @@ function toString(ty::M_Type)::String
         toString(ty.elementType) +
         "[" +
         stringDelimitList(
-          ListUtil.map(ty.dimensions, P_Dimension.Dimension.toString),
+          ListUtil.map(ty.dimensions, toString),
           ", ",
         ) +
         "]"
@@ -737,7 +737,7 @@ function hasZeroDimension(ty::M_Type)::Bool
   @assign hasZero = begin
     @match ty begin
       TYPE_ARRAY(__) => begin
-        ListUtil.exist(ty.dimensions, P_Dimension.Dimension.isZero)
+        ListUtil.exist(ty.dimensions, isZero)
       end
       _ => begin
         false
@@ -748,27 +748,26 @@ function hasZeroDimension(ty::M_Type)::Bool
 end
 
 function hasKnownSize(ty::M_Type)::Bool
-  local isKnown::Bool
+  local known::Bool
 
-  @assign isKnown = begin
+  @assign known = begin
     @match ty begin
-      ARRAY(__) => begin
+      TYPE_ARRAY(__) => begin
+        allowExp = false
         ListUtil.all(
           ty.dimensions,
-          (x) -> P_Dimension.Dimension.isKnown(allowExp = false),
+          (x) -> isKnown(x, allowExp),
         )
       end
-
       TYPE_FUNCTION(__) => begin
         hasKnownSize(returnType(ty.fn))
       end
-
       _ => begin
         true
       end
     end
   end
-  return isKnown
+  return known
 end
 
 function dimensionDiff(ty1::M_Type, ty2::M_Type)::Int

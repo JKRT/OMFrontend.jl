@@ -423,20 +423,18 @@ function Modifier_info(modifier::Modifier)::SourceInfo
 end
 
 function name(modifier::Modifier)::String
-  local name::String
-
-  @assign name = begin
+  local nameStr::String
+  nameStr = begin
     @match modifier begin
       MODIFIER_MODIFIER(__) => begin
         modifier.name
       end
-
       MODIFIER_REDECLARE(__) => begin
         name(modifier.element)
       end
     end
   end
-  return name
+  return nameStr
 end
 
 function lookupModifier(modName::String, modifier::Modifier)::Modifier
@@ -653,7 +651,7 @@ function create(
       SCode.REDECL(element = elem) => begin
         node = new(elem, scope)
         if isClass(node)
-          Inst.partialInstClass(node)
+          partialInstClass(node)
         end
         MODIFIER_REDECLARE(mod.finalPrefix, mod.eachPrefix, node, MODIFIER_NOMOD())
       end

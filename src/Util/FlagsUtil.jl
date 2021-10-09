@@ -155,7 +155,6 @@ function checkDebugFlags()
 
   for flag in allDebugFlags
     index = index + 1
-    @info "Flag index:" flag.index
     if flag.index != index
       err_str = "Invalid flag '" + flag.name + "' with index " + String(flag.index) + " (expected " + String(index) + ") in Flags.allDebugFlags. Make sure that all flags are present and ordered correctly!"
       #Error.terminateError(err_str, sourceInfo())

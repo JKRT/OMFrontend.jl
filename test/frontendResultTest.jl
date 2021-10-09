@@ -1,7 +1,9 @@
+
 #=
 Frontend verification tests. 
 Author: johti17@liu.se
 =#
+
 include("connect.jl")
 import ..ConnectTests
 
@@ -69,9 +71,6 @@ function runConnectTests(tests)
         @error "An exception was thrown: $(e) for test: $(mf[2])"
         throw(e)
       end
-    end
-  end
-end
 
 runConnectTests(connectTsts)
 runConnectTests(tst)

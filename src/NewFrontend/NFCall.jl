@@ -879,27 +879,27 @@ function matchTypedNormalCall(call::Call, origin::ORIGIN_Type, info::SourceInfo)
   =#
   #=  see https:trac.openmodelica.org/OpenModelica/ticket/5133
   =#
-  @assign var = if isImpure(func) || isOMImpure(func)
+  var = if isImpure(func) || isOMImpure(func)
     Variability.PARAMETER
   else
     Variability.CONSTANT
   end
   for a in typed_args
-    @assign (arg_exp, _, arg_var) = a
-    @assign args = _cons(arg_exp, args)
-    @assign var = variabilityMax(var, arg_var)
+    (arg_exp, _, arg_var) = a
+    args = _cons(arg_exp, args)
+    var = variabilityMax(var, arg_var)
   end
-  @assign args = listReverseInPlace(args)
-  @assign ty = returnType(func)
+  args = listReverseInPlace(args)
+  ty = returnType(func)
   #=  Hack to fix return type of some builtin functions.
   =#
   if isPolymorphic(ty)
-    @assign ty = getSpecialReturnType(func, args)
+    ty = getSpecialReturnType(func, args)
   end
-  if var == Variability.PARAMETER && P_Function.isExternal(func)
-    @assign var = Variability.NON_STRUCTURAL_PARAMETER
+  if var == Variability.PARAMETER && isExternal(func)
+    var = Variability.NON_STRUCTURAL_PARAMETER
   elseif isDiscrete(ty) && var == Variability.CONTINUOUS
-    @assign var = Variability.IMPLICITLY_DISCRETE
+    var = Variability.IMPLICITLY_DISCRETE
   end
   #=  Mark external functions with parameter expressions as non-structural,
   =#

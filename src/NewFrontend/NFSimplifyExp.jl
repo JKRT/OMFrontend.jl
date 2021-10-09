@@ -629,12 +629,11 @@ end
 
 function simplifyUnaryOp(exp::Expression, op::Operator)::Expression
   local outExp::Expression
-
   if isLiteral(exp)
-    @assign outExp = Ceval.evalUnaryOp(exp, op)
-    @assign outExp = stripBindingInfo(outExp)
+    outExp = evalUnaryOp(exp, op)
+    outExp = stripBindingInfo(outExp)
   else
-    @assign outExp = UNARY_EXPRESSION(op, exp)
+    outExp = UNARY_EXPRESSION(op, exp)
   end
   return outExp
 end

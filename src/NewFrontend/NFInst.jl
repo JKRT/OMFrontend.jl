@@ -210,7 +210,6 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
   #                   if Flags.isSet(Flags.NF_DUMP_FLAT)
   # print("FlatModel:\\n" + toString(flat_model) + "\\n")
   #                  end
-  #=  Convert the flat model to a DAE.=#
   return (flat_model, funcs)
 end
 

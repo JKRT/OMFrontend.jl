@@ -1,5 +1,5 @@
 [![Github Action CI](https://github.com/JKRT/OMFrontend.jl/workflows/CI/badge.svg)](https://github.com/JKRT/OMFrontend.jl/actions)
-# OMFrontend.jl
+# OMFrontend.jl [![License: OSMC-PL](https://img.shields.io/badge/license-OSMC--PL-lightgrey.svg)](OSMC-License.txt)
 Experimental implementation of NF. That is a Modelica frontend in Julia
 
 ## Notes regarding the first public release 

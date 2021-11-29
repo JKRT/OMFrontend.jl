@@ -22,7 +22,9 @@ const NFModelicaBuiltinCache = Dict()
 """
 function __init__()
   if ! haskey(NFModelicaBuiltinCache, "NFModelicaBuiltin")
-    path = realpath(realpath(Base.find_package("OMFrontend") * "./../../"))
+    #= Locate the external libraries =#
+    packagePath = realpath(Base.find_package("OMFrontend") * "../../..")
+    path = realpath(packagePath)
     path *= "/lib/NFModelicaBuiltin.mo"
     #= The external C stuff can be a bit flaky.. =#
     GC.enable(false) 
@@ -43,9 +45,9 @@ function translateToSCode(inProgram::Absyn.Program)::SCode.Program
   return Main.AbsynToSCode.translateAbsyn2SCode(inProgram)
 end
 
-"
+"""
   Instantiates a SCode program.
-"
+"""
 function instSCode(inProgram::SCode.Program)
 end
 

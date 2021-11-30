@@ -23,12 +23,12 @@ const NFModelicaBuiltinCache = Dict()
 function __init__()
   if ! haskey(NFModelicaBuiltinCache, "NFModelicaBuiltin")
     #= Locate the external libraries =#
-    packagePath = realpath(Base.find_package("OMFrontend") * "../../..")
-    path = realpath(packagePath)
-    path *= "/lib/NFModelicaBuiltin.mo"
+    packagePath = dirname(realpath(Base.find_package("OMFrontend")))
+    packagePath *= "/.."
+    pathToLib = packagePath * "/lib/NFModelicaBuiltin.mo"
     #= The external C stuff can be a bit flaky.. =#
     GC.enable(false) 
-    p = parseFile(path, 2 #== MetaModelica ==#)
+    p = parseFile(pathToLib, 2 #== MetaModelica ==#)
     @debug "SCode translation"
     s = OMFrontend.translateToSCode(p)
     NFModelicaBuiltinCache["NFModelicaBuiltin"] = s

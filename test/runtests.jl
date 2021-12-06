@@ -7,7 +7,7 @@ Works when including the file in the terminal. Does not seem to work when run vi
 
 =#
 #using Revise For include based work
-#using Revise
+using Revise
 #= Remove before commit =#
 import OMFrontend
 import Absyn
@@ -40,20 +40,17 @@ function flattenFM(model, file)
   return res
 end
 
-#= Actualy tests =#
-  @testset "Frontend sanitiy tests. Check if we can transform the abstract tree to SCode and that we are able to flatten without exceptions" begin
-    @testset "Absyn -> SCode test" begin
-      include("scodeSanityTest.jl")
+@testset "Frontend sanitiy tests. Check if we can transform the abstract tree to SCode and that we are able to flatten without exceptions" begin
+  @testset "Absyn -> SCode test" begin
+    include("scodeSanityTest.jl")
     end
-    
-    @testset "SCode -> DAE Sanity test" begin
-      include("daeTests.jl")
-    end
+  @testset "SCode -> DAE Sanity test" begin
+    include("daeTests.jl")
   end
-if Sys.iswindows()
-  @testset "Frontend Validation test. Check that the result corresponds to existing models in the original frontend " begin
-    include("frontendResultTest.jl")
-  end
-else
-  @info "Due to issues with the parser only windows is supported at the moment"
 end
+
+#= Check that we get the correct flat Modelica=#
+@testset "Frontend Validation test. Check that the result corresponds to existing models in the original frontend " begin
+  include("frontendResultTest.jl")
+end
+

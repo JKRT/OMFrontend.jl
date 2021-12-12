@@ -1,9 +1,8 @@
 #=
-Author: John Tinnerholm johti17@liu.se
+  Author: John Tinnerholm johti17@liu.se
 =#
 #using Revise For include based work
 #using Revise
-#= Remove before commit =#
 import OMFrontend
 import Absyn
 import SCode

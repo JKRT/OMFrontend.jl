@@ -16,11 +16,13 @@ jobs:
         include:
           - os: windows-latest
             arch: 'x64'
-            version: '1.6'
+            version: '1.7'
           - os: ubuntu-latest
             arch: 'x64'
-            version: '1.6'
-
+            version: '1.7'
+          - os: macos-latest
+            arch: 'x64'
+            version: '1.7'
     steps:
 
       - name: Checkout repository
@@ -51,7 +53,7 @@ jobs:
       - name: Test
         uses: julia-actions/julia-runtest@v1
 
-#      - uses: julia-actions/julia-processcoverage@v1 No process coverage for now...
+      - uses: julia-actions/julia-processcoverage@v1
 
       - name: Coverage report
         uses: codecov/codecov-action@v1

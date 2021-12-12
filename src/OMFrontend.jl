@@ -5,7 +5,7 @@ module OMFrontend
 
 import Absyn
 import SCode
-import OpenModelicaParser
+import OMParser
 using MetaModelica
 
 include("main.jl")
@@ -38,7 +38,7 @@ function __init__()
 end
 
 function parseFile(file::String, acceptedGram::Int64 = 1)::Absyn.Program
-  return OpenModelicaParser.parseFile(file, acceptedGram)
+  return OMParser.parseFile(file, acceptedGram)
 end
 
 function translateToSCode(inProgram::Absyn.Program)::SCode.Program

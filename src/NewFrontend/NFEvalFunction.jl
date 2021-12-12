@@ -191,7 +191,7 @@ function evaluateExternal(fn::M_Function, args::List{<:Expression})::Expression
     ann = ann,
   ) = getSections(getClass(fn.node))
   if lang == "builtin"
-    @assign result = Ceval.evalfn, args, EVALTARGET_IGNORE_ERRORS())
+    @assign result = Ceval.evalfn( args, EVALTARGET_IGNORE_ERRORS())
   elseif isKnownExternalFunc(name, ann)
     @assign result = evaluateKnownExternal(name, args)
   else
@@ -217,8 +217,7 @@ function evaluateExternal(fn::M_Function, args::List{<:Expression})::Expression
   =#
   #=        evaluateExternal2. This requires handling of outputRef though.
   =#
-  #=  External functions that we would need to generate code for and execute.
-  =#
+  #=  External functions that we would need to generate code for and execute. =#
   return result
 end
 

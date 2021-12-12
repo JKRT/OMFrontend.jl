@@ -1,13 +1,8 @@
 #=
-  Author: John Tinnerholm johti17@liu.se
-
-Current Status:
-
-Works when including the file in the terminal. Does not seem to work when run via tests.
-
+Author: John Tinnerholm johti17@liu.se
 =#
 #using Revise For include based work
-using Revise
+#using Revise
 #= Remove before commit =#
 import OMFrontend
 import Absyn

@@ -53,7 +53,7 @@ jobs:
       - name: Test
         uses: julia-actions/julia-runtest@v1
 
-#      - uses: julia-actions/julia-processcoverage@v1 No process coverage for now...
+      - uses: julia-actions/julia-processcoverage@v1
 
       - name: Coverage report
         uses: codecov/codecov-action@v1

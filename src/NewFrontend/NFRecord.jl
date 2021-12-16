@@ -1,10 +1,3 @@
-FuncT = Function
-Dimension = NFDimension
-Expression = NFExpression
-Subscript = NFSubscript
-ComplexType = NFComplexType
-ComponentRef = NFComponentRef
-
 @UniontypeDecl Field
 function name(field::Field)::String
   local name::String

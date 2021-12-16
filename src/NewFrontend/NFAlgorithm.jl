@@ -1,11 +1,3 @@
-FoldFunc = Function
-FoldFunc = Function
-MapFunc = Function
-MapFunc = Function
-ApplyFn = Function
-@UniontypeDecl NFAlgorithm
-Algorithm = NFAlgorithm
-
 @Uniontype NFAlgorithm begin
   @Record ALGORITHM begin
     statements::List{Statement}

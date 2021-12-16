@@ -29,7 +29,6 @@
 *
 */ =#
 FuncT = Function
-FuncT = Function
 ReductionFn = Function
 Expression = NFExpression
 Operator = NFOperator

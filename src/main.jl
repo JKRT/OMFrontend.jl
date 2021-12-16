@@ -16,19 +16,27 @@ import DAE
 import ListUtil
 import ArrayUtil
 include("./Util/Pointer.jl")
+include("./Util/System.jl")
+include("./Util/Corba.jl")
+include("./Util/Gettext.jl")
+include("./Util/Error.jl")
+include("./Util/ErrorExt.jl")
 import .P_Pointer
 Pointer = P_Pointer.Pointer
 include("./Util/Mutable.jl")
 include("./Util/BaseAvlSet.jl")
 include("./Util/BaseAvlTree.jl")
 include("./Util/BaseHashTable.jl")
-include("./Util/Gettext.jl")
 include("./Util/Global.jl")
+@info "Hello!"
+include("./Util/Settings.jl")
+include("./Util/Print.jl")
+@info "Hello!"
+include("./Util/Util.jl")
+include("./Util/StringUtil.jl")
 include("./Util/Flags.jl")
 include("./Util/FlagsUtil.jl")
-include("./Util/Print.jl")
-include("./Util/System.jl")
-include("./Util/Util.jl")
+@info "Hello!"
 include("./Util/IOStreamExt.jl")
 include("./Util/IOStream.jl")
 include("./AbsynUtil.jl")
@@ -36,9 +44,6 @@ include("./SCodeUtil.jl")
 include("./AbsynToSCode.jl")
 #=Utility for frontend=#
 include("./FrontendUtil/Prefix.jl")
-
-include("./Util/Error.jl")
-include("./Util/ErrorExt.jl")
 
 
 #= Disable type inference for this module =#
@@ -50,30 +55,38 @@ else
     throw("@compiler_options is not available.\n 
            This package only works for a version of Julia with @compiler_options")
 end
-#=New Frontend=#
+#= Include interfaces and aliases New Frontend=#
 include("./FrontendInterfaces/NFInterfaces.jl")
+include("./FrontendInterfaces/NFAlias.jl")
+#= Other modules =#
 include("./NewFrontend/NFType.jl")
 include("./NewFrontend/NFComplexType.jl")
 include("./NewFrontend/NFPrefixes.jl")
 include("./NewFrontend/NFComponent.jl")
 include("./NewFrontend/NFInstNode.jl")
+@info "Test!"
 include("./NewFrontend/NFSections.jl")
 include("./NewFrontend/NFRecord.jl")
+@info "Test!"
 include("./NewFrontend/NFOperatorOverloading.jl")
 include("./NewFrontend/NFCeval.jl")
+@info "Test!"
 include("./NewFrontend/NFEquation.jl")
 include("./NewFrontend/NFTyping.jl")
 include("./NewFrontend/NFInst.jl")
 include("./NewFrontend/NFAlgorithm.jl")
 include("./NewFrontend/NFStatement.jl")
+@info "Test!"
 include("./NewFrontend/NFBinding.jl")
 include("./NewFrontend/NFVariable.jl")
 include("./NewFrontend/NFFlatModel.jl")
 include("./NewFrontend/NFExpression.jl")
+@info "Test!"
 include("./NewFrontend/NFConnector.jl")
 include("./NewFrontend/NFConnections.jl")
 include("./NewFrontend/NFConnection.jl")
 include("./NewFrontend/NFConnectionSets.jl")
+@info "Test!"
 include("./NewFrontend/NFCardinalityTable.jl")
 include("./NewFrontend/NFConnectEquations.jl")
 import .NFCardinalityTable

@@ -1,12 +1,3 @@
-FuncT = Function
-
-M_Type = NFType
-ComponentRef = NFComponentRef
-ComplexType = NFComplexType
-Subscript = NFSubscript
-Dimension = NFDimension
-
-
 FunctionType = (() -> begin #= Enumeration =#
   FUNCTIONAL_PARAMETER = 1  #= Function parameter of function type. =#
   FUNCTION_REFERENCE = 2  #= Function name used to reference a function. =#
@@ -665,11 +656,10 @@ function toString(ty::M_Type)::String
   return str
 end
 
-function nthEnumLiteral(ty::M_Type, index::Int)::String
+#=TODO: Modified by me. Should have a string =#
+function nthEnumLiteralAsString(ty::M_Type, index::Int)::String
   local literal::String
-
   local literals::List{String}
-
   @match ENUMERATION(literals = literals) = ty
   @assign literal = listGet(literals, index)
   return literal

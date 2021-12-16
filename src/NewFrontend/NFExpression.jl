@@ -1,13 +1,3 @@
-EvalFunc = Function
-FuncT = Function
-ContainsPred = Function
-MapFunc = Function
-ApplyFunc = Function
-FoldFunc = Function
-MapFunc = Function
-
-@UniontypeDecl NFExpression
-Expression = NFExpression
 @Uniontype ClockKind begin
   @Record SOLVER_CLOCK begin
     c::Expression

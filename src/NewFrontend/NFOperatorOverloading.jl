@@ -29,8 +29,6 @@
 *
 */ =#
 import Absyn
-import ..AbsynUtil
-import ..SCodeUtil
 M_Type = NFType
 ComponentRef = NFComponentRef
 Expression = NFExpression

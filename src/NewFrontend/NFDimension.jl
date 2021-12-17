@@ -24,11 +24,7 @@
   end
 end
 
-FoldFunc = Function
-FoldFunc = Function
-MapFunc = Function
-
-using Absyn: Exp, Path, Subscript
+using Absyn: Exp, Path #, Subscript
 
 function foldExpList(dims::List{Dimension}, func::FoldFunc, arg::ArgT) where {ArgT}
   for dim in dims

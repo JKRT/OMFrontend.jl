@@ -1,17 +1,17 @@
-EquationFn = Function
-AlgorithmFn = Function
-FoldFn = Function
-MapFn = Function
-EquationFn = Function
-AlgorithmFn = Function
-EquationFn = Function
-AlgorithmFn = Function
+const EquationFn = Function
+const AlgorithmFn = Function
+const FoldFn = Function
+const MapFn = Function
+const EquationFn = Function
+const AlgorithmFn = Function
+const EquationFn = Function
+const AlgorithmFn = Function
 
 @UniontypeDecl NFSections
 #=Necessary redefinitions=#
-Sections = NFSections
-Equation = NFEquation
-Algorithm = NFAlgorithm
+const Sections = NFSections
+const Equation = NFEquation
+const Algorithm = NFAlgorithm
 
 @Uniontype NFSections begin
   @Record SECTIONS_EMPTY begin

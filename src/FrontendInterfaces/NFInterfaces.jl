@@ -33,6 +33,7 @@
 @UniontypeDecl NFExpandExp
 @UniontypeDecl NFExpression
 @UniontypeDecl NFExpressionIterator
+@UniontypeDecl NFFlatModel
 @UniontypeDecl NFFunctionDerivative
 @UniontypeDecl NFImport
 @UniontypeDecl NFOCConnectionGraph
@@ -52,5 +53,4 @@
 @UniontypeDecl TypingError
 @UniontypeDecl Unit
 @UniontypeDecl VariableConversionSettings
-using ExportAll
 @exportAll()

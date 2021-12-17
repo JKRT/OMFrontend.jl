@@ -16,19 +16,24 @@ import DAE
 import ListUtil
 import ArrayUtil
 include("./Util/Pointer.jl")
+include("./Util/System.jl")
+include("./Util/Corba.jl")
+include("./Util/Gettext.jl")
+include("./Util/Error.jl")
+include("./Util/ErrorExt.jl")
 import .P_Pointer
 Pointer = P_Pointer.Pointer
 include("./Util/Mutable.jl")
 include("./Util/BaseAvlSet.jl")
 include("./Util/BaseAvlTree.jl")
 include("./Util/BaseHashTable.jl")
-include("./Util/Gettext.jl")
 include("./Util/Global.jl")
+include("./Util/Settings.jl")
+include("./Util/Print.jl")
+include("./Util/Util.jl")
+include("./Util/StringUtil.jl")
 include("./Util/Flags.jl")
 include("./Util/FlagsUtil.jl")
-include("./Util/Print.jl")
-include("./Util/System.jl")
-include("./Util/Util.jl")
 include("./Util/IOStreamExt.jl")
 include("./Util/IOStream.jl")
 include("./AbsynUtil.jl")
@@ -36,9 +41,6 @@ include("./SCodeUtil.jl")
 include("./AbsynToSCode.jl")
 #=Utility for frontend=#
 include("./FrontendUtil/Prefix.jl")
-
-include("./Util/Error.jl")
-include("./Util/ErrorExt.jl")
 
 
 #= Disable type inference for this module =#
@@ -50,8 +52,10 @@ else
     throw("@compiler_options is not available.\n 
            This package only works for a version of Julia with @compiler_options")
 end
-#=New Frontend=#
+#= Include interfaces and aliases New Frontend=#
 include("./FrontendInterfaces/NFInterfaces.jl")
+include("./FrontendInterfaces/NFAlias.jl")
+#= Other modules =#
 include("./NewFrontend/NFType.jl")
 include("./NewFrontend/NFComplexType.jl")
 include("./NewFrontend/NFPrefixes.jl")
@@ -73,34 +77,57 @@ include("./NewFrontend/NFExpression.jl")
 include("./NewFrontend/NFConnector.jl")
 include("./NewFrontend/NFConnections.jl")
 include("./NewFrontend/NFConnection.jl")
+
 include("./NewFrontend/NFConnectionSets.jl")
+
 include("./NewFrontend/NFCardinalityTable.jl")
+
 include("./NewFrontend/NFConnectEquations.jl")
 import .NFCardinalityTable
 include("./NewFrontend/NFFunctionDerivative.jl")
+
 include("./NewFrontend/NFFunction.jl")
+
 include("./NewFrontend/NFSubscript.jl")
+
 include("./NewFrontend/NFFlatten.jl")
+
 include("./NewFrontend/NFConvertDAE.jl")
+
 include("./NewFrontend/NFRestriction.jl")
+
 include("./NewFrontend/NFClass.jl")
+
 include("./NewFrontend/NFImport.jl")
+
 include("./NewFrontend/NFModifier.jl")
+
 include("./NewFrontend/NFClassTree.jl")
+
 include("./NewFrontend/NFLookup.jl")
+
 include("./NewFrontend/NFLookupState.jl")
+
 include("./NewFrontend/NFComponentRef.jl")
 @exportAll
 include("./NewFrontend/NFBuiltin.jl")
-import ..NFBuiltin
+#import ..NFBuiltin
 include("./NewFrontend/BindingExpression.jl")
+
 include("./NewFrontend/NFDimension.jl")
+
 include("./NewFrontend/NFBuiltinCall.jl")
+
 include("./NewFrontend/NFCall.jl")
+
 include("./NewFrontend/NFOperator.jl")
+
 include("./NewFrontend/NFTypeCheck.jl")
+
 include("./NewFrontend/NFExpandableConnectors.jl")
+
 include("./NewFrontend/NFEvalConstants.jl")
+
 include("./NewFrontend/NFExpandExp.jl")
 
 #= TODO: NOT IN USE=#

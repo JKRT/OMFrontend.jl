@@ -10,7 +10,7 @@ include("../Util/baseAvlTreeCode.jl")
 
 import ..LookupTree
 import ..InstNode
-EntryType = (() -> begin #= Enumeration =#
+const EntryType = (() -> begin #= Enumeration =#
   DUPLICATE = 1
   REDECLARE = 2
   ENTRY = 3

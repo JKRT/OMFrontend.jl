@@ -4,10 +4,10 @@ using MetaModelica
 using ExportAll
 #= Forward declarations for uniontypes until Julia adds support for mutual recursion =#
 
-FuncHashKey = Function
-FuncKeyEqual = Function
-FuncKeyStr = Function
-FuncValueStr = Function
+const FuncHashKey = Function
+const FuncKeyEqual = Function
+const FuncKeyStr = Function
+const FuncValueStr = Function
 
 #= /*
 * This file is part of OpenModelica.
@@ -52,13 +52,13 @@ import ..BaseHashTable
 
 import ..NFUnit
 
-Key = NFUnit.Unit
+const Key = NFUnit.Unit
 
-Value = String
+const Value = String
 
-HashTableCrefFunctionsType = Tuple
+const HashTableCrefFunctionsType = Tuple
 
-HashTable = Tuple
+const HashTable = Tuple
 
 """ #= 
   Returns an empty HashTable.

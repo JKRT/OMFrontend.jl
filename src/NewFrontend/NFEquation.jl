@@ -1,15 +1,4 @@
-PredFn = Function
-PredFn = Function
-FoldFunc = Function
-FoldFunc = Function
-MapExpFn = Function
-MapFn = Function
-ApplyFn = Function
-@UniontypeDecl NFEquation
 @UniontypeDecl Equation_Branch
-ComponentRef = NFComponentRef
-import ..Util
-Equation = NFEquation
 
 @Uniontype NFEquation begin
   @Record EQUATION_NORETCALL begin

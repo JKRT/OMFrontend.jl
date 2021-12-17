@@ -15,13 +15,13 @@ import ..Main. Functionargs
 using MetaModelica
 using ExportAll
 #= Forward declarations for uniontypes until Julia adds support for mutual recursion =#
-FuncHash = Function
-FuncEq = Function
-FuncKeyStr = Function
-FuncValueStr = Function
-Key = String
-Value = Functionargs
-Cache = Tuple
+const FuncHash = Function
+const FuncEq = Function
+const FuncKeyStr = Function
+const FuncValueStr = Function
+const Key = String
+const Value = Functionargs
+const Cache = Tuple
 function dummyPrint(args::Functionargs)::String
   local res::String = ""
   return res

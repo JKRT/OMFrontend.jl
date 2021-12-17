@@ -1375,84 +1375,80 @@ function instComponent(node::InstNode, attributes::Attributes , innerMod::Modifi
   end
 end
 
-function instComponentDef(component::SCode.Element, outerMod::Modifier, innerMod::Modifier, attributes::Attributes, useBinding::Bool, node::InstNode, parentNode::InstNode, instLevel::Int, originalAttr::Option{<:Attributes} = NONE(), isRedeclared::Bool = false)
-  @assign () = begin
-    local info::SourceInfo
-    local decl_mod::Modifier
-    local mod::Modifier
-    local cc_mod::Modifier
-    local dims::List{Dimension}
-    local ty_dims::List{Dimension}
-    local bindingVar::Binding
-    local condition::Binding
-    local attr::Attributes
-    local ty_attr::Attributes
-    local inst_comp::Component
-    local ty_node::InstNode
-    local ty::Class
-    local in_function::Bool
-    local parent_res::Restriction
-    local res::Restriction
-    @match component begin
-      SCode.COMPONENT(info = info)  => begin
-        @assign decl_mod = fromElement(component, nil, parentNode)
-        @assign cc_mod = instConstrainingMod(component, parentNode)
-        @assign mod = merge(decl_mod, cc_mod)
-        @assign mod = merge(mod, innerMod)
-        @assign mod = merge(outerMod, mod)
-        @assign mod = addParent(node, mod)
-        str = toString(mod, true)
-        @debug "Merged mod: $str / $useBinding"
-        checkOuterComponentMod(mod, component, node)
-        @assign dims = list(DIMENSION_RAW_DIM(d) for d in component.attributes.arrayDims)
-        bindingVar = if useBinding
-          binding(mod)
-        else
-          EMPTY_BINDING
-        end
-        @assign condition = fromAbsyn(component.condition, false, list(node), parentNode, info)
-        #=  Instantiate the component's attributes, and merge them with the
-        =#
-        #=  attributes of the component's parent (e.g. constant SomeComplexClass c).
-        =#
-        @debug "Instantiating components attributes"
-        @assign parent_res = restriction(getClass(parentNode))
-        @assign attr = instComponentAttributes(component.attributes, component.prefixes)
-        @assign attr = checkDeclaredComponentAttributes(attr, parent_res, node)
-        @assign attr = mergeComponentAttributes(attributes, attr, node, parent_res)
-        if isSome(originalAttr)
-          @assign attr = mergeRedeclaredComponentAttributes(Util.getOption(originalAttr), attr, node)
-        end
-        if ! attr.isFinal && isFinal(mod)
-          @assign attr.isFinal = true
-        end
-        #=  Create the untyped component and update the node with it. We need the
-        =#
-        #=  untyped component in instClass to make sure everything is scoped
-        =#
-        #=  correctly during lookup, but the class node the component should have
-        =#
-        #=  is created by instClass. To break the circle we leave the class node
-        =#
-        #=  empty here, and let instClass set it for us instead.
-        =#
-        @assign inst_comp = UNTYPED_COMPONENT(EMPTY_NODE(), listArray(dims), bindingVar, condition, attr, SOME(component.comment), false, info)
-        updateComponent!(inst_comp, node)
-        #=  Instantiate the type of the component.
-        =#
-        @assign (ty_node, ty_attr) = instTypeSpec(component.typeSpec, mod, attr, useBinding && ! isBound(bindingVar), parentNode, node, info, instLevel)
-        @assign ty = getClass(ty_node)
-        #=  Update the component's variability based on its type (e.g. Integer is discrete).
-        =#
-        @assign ty_attr = updateComponentVariability(ty_attr, ty, ty_node)
-        #=  Update the component's connector type now that we have its type.
-        =#
-        @assign res = restriction(getClass(ty_node))
-        @assign ty_attr = updateComponentConnectorType(ty_attr, res, isRedeclared, node)
-        if ! referenceEq(attr, ty_attr)
-          componentApply(node, setAttributes, ty_attr)
-        end
-        ()
+function instComponentDef(component::SCode.Element, outerMod::Modifier, innerMod::Modifier, attributes::Attributes, useBinding::Bool,
+                          node::InstNode, parentNode::InstNode, instLevel::Int, originalAttr::Option{<:Attributes} = NONE(), isRedeclared::Bool = false)
+  local info::SourceInfo
+  local decl_mod::Modifier
+  local mod::Modifier
+  local cc_mod::Modifier
+  local dims::List
+  local ty_dims::List
+  local bindingVar::Binding
+  local condition::Binding
+  local attr::Attributes
+  local ty_attr::Attributes
+  local inst_comp::Component
+  local ty_node::InstNode
+  local ty::Class
+  local in_function::Bool
+  local parent_res::Restriction
+  local res::Restriction
+  @match component begin
+    SCode.COMPONENT(info = info)  => begin
+      decl_mod = fromElement(component, nil, parentNode)
+      cc_mod = instConstrainingMod(component, parentNode)
+      mod = merge(decl_mod, cc_mod)
+      mod = merge(mod, innerMod)
+      mod = merge(outerMod, mod)
+      mod = addParent(node, mod)
+      str = toString(mod, true)
+      checkOuterComponentMod(mod, component, node)
+      dims = list(DIMENSION_RAW_DIM(d) for d in component.attributes.arrayDims)
+      bindingVar = if useBinding
+        binding(mod)
+      else
+        EMPTY_BINDING
+      end
+      condition = fromAbsyn(component.condition, false, list(node), parentNode, info)
+      #=  Instantiate the component's attributes, and merge them with the
+      =#
+      #=  attributes of the component's parent (e.g. constant SomeComplexClass c).
+      =#
+      parent_res = restriction(getClass(parentNode))
+      attr = instComponentAttributes(component.attributes, component.prefixes)
+      attr = checkDeclaredComponentAttributes(attr, parent_res, node)
+      attr = mergeComponentAttributes(attributes, attr, node, parent_res)
+      if isSome(originalAttr)
+        attr = mergeRedeclaredComponentAttributes(Util.getOption(originalAttr), attr, node)
+      end
+      if ! attr.isFinal && isFinal(mod)
+        attr.isFinal = true
+      end
+      #=  Create the untyped component and update the node with it. We need the
+      =#
+      #=  untyped component in instClass to make sure everything is scoped
+      =#
+      #=  correctly during lookup, but the class node the component should have
+      =#
+      #=  is created by instClass. To break the circle we leave the class node
+      =#
+      #=  empty here, and let instClass set it for us instead.
+      =#
+      inst_comp = UNTYPED_COMPONENT(EMPTY_NODE(), listArray(dims), bindingVar, condition, attr, SOME(component.comment), false, info)
+      updateComponent!(inst_comp, node)
+      #=  Instantiate the type of the component.
+      =#
+      (ty_node, ty_attr) = instTypeSpec(component.typeSpec, mod, attr, useBinding && ! isBound(bindingVar), parentNode, node, info, instLevel)
+      ty = getClass(ty_node)
+      #=  Update the component's variability based on its type (e.g. Integer is discrete).
+      =#
+      ty_attr = updateComponentVariability(ty_attr, ty, ty_node)
+      #=  Update the component's connector type now that we have its type.
+      =#
+      res = restriction(getClass(ty_node))
+      ty_attr = updateComponentConnectorType(ty_attr, res, isRedeclared, node)
+      if ! referenceEq(attr, ty_attr)
+        componentApply(node, setAttributes, ty_attr)
       end
     end
   end
@@ -2177,48 +2173,46 @@ function instComponentExpressions(componentArg::InstNode)
   local node::InstNode = resolveOuter(componentArg)
   local c::Component = component(node)
   local dims::Array{Dimension}
+  @match c begin
+    UNTYPED_COMPONENT(dimensions = dims, instantiated = false)  => begin
+      @assign c.binding = instBinding(c.binding)
+      @assign c.condition = instBinding(c.condition)
+      instExpressions(c.classInst, node)
+      for i in 1:arrayLength(dims)
+        @inbounds dims[i] = instDimension(dims[i], parent(node), c.info)
+      end
+      #=  This is to avoid instantiating the same component multiple times,
+      =#
+      #=  which can otherwise happen with duplicate components at this stage.
+      =#
+      @assign c.instantiated = true
+      updateComponent!(c, node)
+      ()
+    end
 
-  @assign () = begin
-    @match c begin
-      UNTYPED_COMPONENT(dimensions = dims, instantiated = false)  => begin
-        @assign c.binding = instBinding(c.binding)
-        @assign c.condition = instBinding(c.condition)
-        instExpressions(c.classInst, node)
-        for i in 1:arrayLength(dims)
-          @assign dims[i] = instDimension(dims[i], parent(node), c.info)
-        end
-        #=  This is to avoid instantiating the same component multiple times,
-        =#
-        #=  which can otherwise happen with duplicate components at this stage.
-        =#
-        @assign c.instantiated = true
-        updateComponent!(c, node)
-        ()
-      end
+    UNTYPED_COMPONENT(__)  => begin
+      ()
+    end
 
-      UNTYPED_COMPONENT(__)  => begin
-        ()
-      end
+    ENUM_LITERAL_COMPONENT(__)  => begin
+      ()
+    end
 
-      ENUM_LITERAL_COMPONENT(__)  => begin
-        ()
-      end
+    TYPE_ATTRIBUTE(modifier = MODIFIER_NOMOD(__))  => begin
+      ()
+    end
 
-      TYPE_ATTRIBUTE(modifier = MODIFIER_NOMOD(__))  => begin
-        ()
-      end
-
-      TYPE_ATTRIBUTE(__)  => begin
-        @assign c.modifier = instBuiltinAttribute(c.modifier, componentArg)
-        updateComponent!(c, node)
-        ()
-      end
-      _  => begin
-        Error.assertion(false, getInstanceName() + " got invalid component", sourceInfo())
-        fail()
-      end
+    TYPE_ATTRIBUTE(__)  => begin
+      @assign c.modifier = instBuiltinAttribute(c.modifier, componentArg)
+      updateComponent!(c, node)
+      ()
+    end
+    _  => begin
+      Error.assertion(false, getInstanceName() + " got invalid component", sourceInfo())
+      fail()
     end
   end
+  return ()
 end
 
 function instBinding(bindingVar::Binding)::Binding

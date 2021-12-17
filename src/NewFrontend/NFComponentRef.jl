@@ -1,7 +1,4 @@
-FuncT = Function
 @UniontypeDecl NFComponentReff
-
-ComponentRef = NFComponentRef
 Origin = (() -> begin #= Enumeration =#
   CREF = 1  #= From an Absyn cref. =#
   SCOPE = 2  #= From prefixing the cref with its scope. =#

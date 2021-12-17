@@ -30,10 +30,9 @@
 *
 */ =#
 
-import ..ConnectionSets
+#import ..ConnectionSets
 
 const potFunc = Function
-FuncType = Function
 
 const EQ_ASSERT_STR = STRING_EXPRESSION("Connected constants/parameters must be equal")
 

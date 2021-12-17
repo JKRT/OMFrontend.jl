@@ -380,29 +380,25 @@ function applyComponents(tree::ClassTree, func::FuncT)
   end
 end
 
-function applyLocalComponents(tree::ClassTree, func::FuncT)
-  return @assign () = begin
-    @match tree begin
-      CLASS_TREE_INSTANTIATED_TREE(__) => begin
-        for i in tree.localComponents
-          func(P_Pointer.access(arrayGetNoBoundsChecking(tree.components, i)))
-        end
-        ()
-      end
-      CLASS_TREE_PARTIAL_TREE(__) => begin
-        for c in tree.components
-          func(c)
-        end
-        ()
-      end
-      CLASS_TREE_EXPANDED_TREE(__) => begin
-        for c in tree.components
-          func(c)
-        end
-        ()
-      end
-    end
+function applyLocalComponents(tree::CLASS_TREE_INSTANTIATED_TREE, func::FuncT)
+  for i in tree.localComponents
+    func(P_Pointer.access(arrayGetNoBoundsChecking(tree.components, i)))
   end
+  ()
+end
+
+function applyLocalComponents(tree::CLASS_TREE_PARTIAL_TREE, func::FuncT)
+  for c in tree.components
+    func(c)
+  end
+  ()
+end
+
+function applyLocalComponents(tree::CLASS_TREE_EXPANDED_TREE, func::FuncT)
+  for c in tree.components
+    func(c)
+  end
+  ()
 end
 
 """ #= Applies a mutating function to each extends node in the class tree.

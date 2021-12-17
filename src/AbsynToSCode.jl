@@ -40,7 +40,7 @@ import ListUtil
 
 import ..AbsynUtil
 import ..SCodeUtil
-import ..Main.Util
+import ..Util
 import ..System
 
 const ASSERTION_LEVEL_ERROR =

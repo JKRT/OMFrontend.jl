@@ -64,83 +64,83 @@ end
   end
 end
 
-ORIGIN_Type = Int
-M_Type = Int
+const ORIGIN_Type = Int
+const M_Type_Int = Int
 #=  Flag values:
 =#
 const ORIGIN_CLASS = 0
 #=  In class.
 =#
-const ORIGIN_FUNCTION = intBitLShift(1, 0)::M_Type
+const ORIGIN_FUNCTION = intBitLShift(1, 0)::M_Type_Int
 #=  In function.
 =#
-const ORIGIN_ALGORITHM = intBitLShift(1, 1)::M_Type
+const ORIGIN_ALGORITHM = intBitLShift(1, 1)::M_Type_Int
 #=  In algorithm section.
 =#
-const ORIGIN_EQUATION = intBitLShift(1, 2)::M_Type
+const ORIGIN_EQUATION = intBitLShift(1, 2)::M_Type_Int
 #=  In equation section.
 =#
-const ORIGIN_INITIAL = intBitLShift(1, 3)::M_Type
+const ORIGIN_INITIAL = intBitLShift(1, 3)::M_Type_Int
 #=  In initial section.
 =#
-const ORIGIN_LHS = intBitLShift(1, 4)::M_Type
+const ORIGIN_LHS = intBitLShift(1, 4)::M_Type_Int
 #=  On left hand side of equality/assignment.
 =#
-const ORIGIN_RHS = intBitLShift(1, 5)::M_Type
+const ORIGIN_RHS = intBitLShift(1, 5)::M_Type_Int
 #=  On right hand side of equality/assignment.
 =#
-const ORIGIN_WHEN = intBitLShift(1, 6)::M_Type
+const ORIGIN_WHEN = intBitLShift(1, 6)::M_Type_Int
 #=  In when equation/statement.
 =#
-const ORIGIN_CLOCKED = intBitLShift(1, 7)::M_Type
+const ORIGIN_CLOCKED = intBitLShift(1, 7)::M_Type_Int
 #=  Part of a clocked when equation.
 =#
-const ORIGIN_FOR = intBitLShift(1, 8)::M_Type
+const ORIGIN_FOR = intBitLShift(1, 8)::M_Type_Int
 #=  In a for loop.
 =#
-const ORIGIN_IF = intBitLShift(1, 9)::M_Type
+const ORIGIN_IF = intBitLShift(1, 9)::M_Type_Int
 #=  In an if equation/statement.
 =#
-const ORIGIN_WHILE = intBitLShift(1, 10)::M_Type
+const ORIGIN_WHILE = intBitLShift(1, 10)::M_Type_Int
 #=  In a while loop.
 =#
-const ORIGIN_NONEXPANDABLE = intBitLShift(1, 11)::M_Type
+const ORIGIN_NONEXPANDABLE = intBitLShift(1, 11)::M_Type_Int
 #=  In non-parameter if/for.
 =#
-const ORIGIN_ITERATION_RANGE = intBitLShift(1, 12)::M_Type
+const ORIGIN_ITERATION_RANGE = intBitLShift(1, 12)::M_Type_Int
 #=  In range used for iteration.
 =#
-const ORIGIN_DIMENSION = intBitLShift(1, 13)::M_Type
+const ORIGIN_DIMENSION = intBitLShift(1, 13)::M_Type_Int
 #=  In dimension.
 =#
-const ORIGIN_BINDING = intBitLShift(1, 14)::M_Type
+const ORIGIN_BINDING = intBitLShift(1, 14)::M_Type_Int
 #=  In binding.
 =#
-const ORIGIN_CONDITION = intBitLShift(1, 15)::M_Type
+const ORIGIN_CONDITION = intBitLShift(1, 15)::M_Type_Int
 #=  In conditional expression.
 =#
-const ORIGIN_SUBSCRIPT = intBitLShift(1, 16)::M_Type
+const ORIGIN_SUBSCRIPT = intBitLShift(1, 16)::M_Type_Int
 #=  In subscript.
 =#
-const ORIGIN_SUBEXPRESSION = intBitLShift(1, 17)::M_Type
+const ORIGIN_SUBEXPRESSION = intBitLShift(1, 17)::M_Type_Int
 #=  Part of a larger expression.
 =#
-const ORIGIN_CONNECT = intBitLShift(1, 18)::M_Type
+const ORIGIN_CONNECT = intBitLShift(1, 18)::M_Type_Int
 #=  Part of connect argument.
 =#
-const ORIGIN_NOEVENT = intBitLShift(1, 19)::M_Type
+const ORIGIN_NOEVENT = intBitLShift(1, 19)::M_Type_Int
 #=  Part of noEvent argument.
 =#
-const ORIGIN_ASSERT = intBitLShift(1, 20)::M_Type
+const ORIGIN_ASSERT = intBitLShift(1, 20)::M_Type_Int
 
 
-const ORIGIN_EQ_SUBEXPRESSION = intBitOr(ORIGIN_EQUATION, ORIGIN_SUBEXPRESSION)::M_Type
-const ORIGIN_VALIDNAME_SCOPE = intBitOr(ORIGIN_ITERATION_RANGE, ORIGIN_DIMENSION)::M_Type
-const ORIGIN_DISCRETE_SCOPE = intBitOr(ORIGIN_WHEN, intBitOr(ORIGIN_INITIAL, ORIGIN_FUNCTION))::M_Type
+const ORIGIN_EQ_SUBEXPRESSION = intBitOr(ORIGIN_EQUATION, ORIGIN_SUBEXPRESSION)::M_Type_Int
+const ORIGIN_VALIDNAME_SCOPE = intBitOr(ORIGIN_ITERATION_RANGE, ORIGIN_DIMENSION)::M_Type_Int
+const ORIGIN_DISCRETE_SCOPE = intBitOr(ORIGIN_WHEN, intBitOr(ORIGIN_INITIAL, ORIGIN_FUNCTION))::M_Type_Int
 
 """ #= Returns true if the given origin indicates the expression is alone on
      either side of an equality/assignment. =#"""
-function isSingleExpression(origin::M_Type)::Bool
+function isSingleExpression(origin::M_Type_Int)::Bool
   local isSingle::Bool = origin < ITERATION_RANGE - 1
   return isSingle
 end
@@ -151,13 +151,13 @@ function setFlag(origin, flag)::Int
   return newOrigin
 end
 
-function flagSet(origin::M_Type, flag::M_Type)::Bool
+function flagSet(origin::M_Type_Int, flag::M_Type_Int)::Bool
   local set::Bool
   @assign set = intBitAnd(origin, flag) > 0
   return set
 end
 
-function flagNotSet(origin::M_Type, flag::M_Type)::Bool
+function flagNotSet(origin::M_Type_Int, flag::M_Type_Int)::Bool
   local notSet::Bool
   @assign notSet = intBitAnd(origin, flag) == 0
   return notSet
@@ -568,7 +568,7 @@ function typeIterator(
   structural::Bool
 )::Tuple{Expression, NFType, VariabilityType} #= If the iteration range must be a parameter expression or not. =#
   local var::VariabilityType
-  local ty::M_Type
+  local ty::NFType
   local outRange::Expression
 
   local c::Component = component(iterator)
@@ -648,7 +648,7 @@ function typeDimension(
     local var::VariabilityType
     local dim::Dimension
     local b::Binding
-    local ty::M_Type
+    local ty::NFType
     local ty_err::TypingError
     local parent_dims::Int
     local dim_index::Int
@@ -1207,7 +1207,7 @@ end
 function typeBinding(binding::Binding, origin::ORIGIN_Type)::Binding
   @assign binding = begin
     local exp::Expression
-    local ty::M_Type
+    local ty::NFType
     local var::VariabilityType
     local info::SourceInfo
     local each_ty::EachTypeType
@@ -1267,7 +1267,7 @@ end
 function typeComponentCondition(condition::Binding, origin::ORIGIN_Type)::Binding
   @assign condition = begin
     local exp::Expression
-    local ty::M_Type
+    local ty::NFType
     local var::VariabilityType
     local info::SourceInfo
     local mk::MatchKindType
@@ -1405,9 +1405,9 @@ function typeExp2(
     local var1::VariabilityType
     local var2::VariabilityType
     local var3::VariabilityType
-    local ty1::M_Type
-    local ty2::M_Type
-    local ty3::M_Type
+    local ty1::NFType
+    local ty2::NFType
+    local ty3::NFType
     local op::Operator
     local cref::ComponentRef
     local next_origin::ORIGIN_Type
@@ -1590,14 +1590,14 @@ function typeExpl(
   @nospecialize(expl::List{<:Expression}),
   @nospecialize(origin::ORIGIN_Type),
   @nospecialize(info::SourceInfo),
-)::Tuple{List{Expression}, List{M_Type}, List{Variability}}
+)::Tuple{List{Expression}, List{NFType}, List{Variability}}
   local varl::List{Variability} = nil
-  local tyl::List{M_Type} = nil
+  local tyl::List{NFType} = nil
   local explTyped::List{Expression} = nil
 
   local exp::Expression
   local var::VariabilityType
-  local ty::M_Type
+  local ty::NFType
 
   for e in listReverse(expl)
     @assign (exp, ty, var) = typeExp(e, origin, info)
@@ -1612,15 +1612,15 @@ function typeBindingExp(
   @nospecialize(exp::Expression),
   @nospecialize(origin::ORIGIN_Type),
   info::SourceInfo,
-)::Tuple{Expression, M_Type, VariabilityType}
+)::Tuple{Expression, NFType, VariabilityType}
   local variability::VariabilityType
-  local ty::M_Type
+  local ty::NFType
   local outExp::Expression
 
   local e::Expression
   local parents::List{InstNode}
   local is_each::Bool
-  local exp_ty::M_Type
+  local exp_ty::NFType
   local parent_dims::Int
 
   @match BINDING_EXP(e, _, _, parents, is_each) = exp
@@ -1660,7 +1660,7 @@ function typeExpDim(
   local typedExp::Option{Expression} = NONE()
   local dim::Dimension
 
-  local ty::M_Type
+  local ty::NFType
   local e::Expression
 
   @assign ty = typeOf(exp)
@@ -1774,7 +1774,7 @@ function typeCrefDim(
   local dim_total::Int = 0
   local node::InstNode
   local c::Component
-  local ty::M_Type
+  local ty::NFType
 
   #=  TODO: If the cref has subscripts it becomes trickier to correctly calculate
   =#
@@ -1869,7 +1869,7 @@ end
 """ #= Returns the requested dimension from the given type, along with a TypingError
    indicating whether the index was valid or not. =#"""
 function nthDimensionBoundsChecked(
-  ty::M_Type,
+  ty::NFType,
   dimIndex::Int,
   offset::Int = 0,
 )::Tuple{Dimension, TypingError} #= The number of dimensions to skip due to subscripts. =#
@@ -2143,19 +2143,19 @@ function typeArray(
   elements::List{<:Expression},
   origin::ORIGIN_Type,
   info::SourceInfo,
-)::Tuple{Expression, M_Type, VariabilityType}
+)::Tuple{Expression, NFType, VariabilityType}
   local variability::VariabilityType = Variability.CONSTANT
-  local arrayType::M_Type = TYPE_UNKNOWN()
+  local arrayType::NFType = TYPE_UNKNOWN()
   local arrayExp::Expression
 
   local exp::Expression
   local expl::List{Expression} = nil
   local expl2::List{Expression} = nil
   local var::VariabilityType
-  local ty1::M_Type = TYPE_UNKNOWN()
-  local ty2::M_Type
-  local ty3::M_Type
-  local tys::List{M_Type} = nil
+  local ty1::NFType = TYPE_UNKNOWN()
+  local ty2::NFType
+  local ty3::NFType
+  local tys::List{NFType} = nil
   local mk::MatchKindType
   local n::Int = 1
   local next_origin::ORIGIN_Type
@@ -2214,18 +2214,18 @@ function typeMatrix(
   elements::List{<:List{<:Expression}},
   origin::ORIGIN_Type,
   info::SourceInfo,
-)::Tuple{Expression, M_Type, Variability}
+)::Tuple{Expression, NFType, Variability}
   local variability::VariabilityType = Variability.CONSTANT
-  local arrayType::M_Type = TYPE_UNKNOWN()
+  local arrayType::NFType = TYPE_UNKNOWN()
   local arrayExp::Expression
 
   local exp::Expression
   local expl::List{Expression} = nil
   local res::List{Expression} = nil
   local var::VariabilityType
-  local ty::M_Type = TYPE_UNKNOWN()
-  local tys::List{M_Type} = nil
-  local resTys::List{M_Type} = nil
+  local ty::NFType = TYPE_UNKNOWN()
+  local tys::List{NFType} = nil
+  local resTys::List{NFType} = nil
   local n::Int = 2
   local next_origin::ORIGIN_Type = setFlag(origin, ORIGIN_SUBEXPRESSION)
 
@@ -2260,21 +2260,21 @@ function typeMatrixComma(
   elements::List{<:Expression},
   origin::ORIGIN_Type,
   info::SourceInfo,
-)::Tuple{Expression, M_Type, Variability}
+)::Tuple{Expression, NFType, Variability}
   local variability::VariabilityType = Variability.CONSTANT
-  local arrayType::M_Type
+  local arrayType::NFType
   local arrayExp::Expression
 
   local exp::Expression
   local expl::List{Expression} = nil
   local res::List{Expression} = nil
   local var::VariabilityType
-  local ty::M_Type = TYPE_UNKNOWN()
-  local ty1::M_Type
-  local ty2::M_Type
-  local ty3::M_Type
-  local tys::List{M_Type} = nil
-  local tys2::List{M_Type}
+  local ty::NFType = TYPE_UNKNOWN()
+  local ty1::NFType
+  local ty2::NFType
+  local ty3::NFType
+  local tys::List{NFType} = nil
+  local tys2::List{NFType}
   local n::Int = 2
   local pos::Int
   local mk::MatchKindType
@@ -2344,18 +2344,18 @@ function typeRange(
   rangeExp::Expression,
   origin::ORIGIN_Type,
   info::SourceInfo,
-)::Tuple{Expression, M_Type, VariabilityType}
+)::Tuple{Expression, NFType, VariabilityType}
   local variability::VariabilityType
-  local rangeType::M_Type
+  local rangeType::NFType
 
   local start_exp::Expression
   local step_exp::Expression
   local stop_exp::Expression
-  local start_ty::M_Type
-  local step_ty::M_Type
-  local stop_ty::M_Type
+  local start_ty::NFType
+  local step_ty::NFType
+  local stop_ty::NFType
   local ostep_exp::Option{Expression}
-  local ostep_ty::Option{M_Type}
+  local ostep_ty::Option{NFType}
   local start_var::VariabilityType
   local step_var::VariabilityType
   local stop_var::VariabilityType
@@ -2417,13 +2417,13 @@ function typeTuple(
   elements::List{<:Expression},
   origin::ORIGIN_Type,
   info::SourceInfo,
-)::Tuple{Expression, M_Type, Variability}
+)::Tuple{Expression, NFType, Variability}
   local variability::VariabilityType
-  local tupleType::M_Type
+  local tupleType::NFType
   local tupleExp::Expression
 
   local expl::List{Expression}
-  local tyl::List{M_Type}
+  local tyl::List{NFType}
   local valr::List{Variability}
   local next_origin::ORIGIN_Type
 
@@ -2457,9 +2457,9 @@ end
 
 function printRangeTypeError(
   exp1::Expression,
-  ty1::M_Type,
+  ty1::NFType,
   exp2::Expression,
-  ty2::M_Type,
+  ty2::NFType,
   info::SourceInfo,
 )
   Error.addSourceMessage(
@@ -2483,14 +2483,14 @@ function typeSize(
   origin::ORIGIN_Type,
   info::SourceInfo,
   evaluate::Bool = true,
-)::Tuple{Expression, M_Type, Variability}
+)::Tuple{Expression, NFType, Variability}
   local variability::VariabilityType
-  local sizeType::M_Type
+  local sizeType::NFType
 
   local exp::Expression
   local index::Expression
-  local exp_ty::M_Type
-  local index_ty::M_Type
+  local exp_ty::NFType
+  local index_ty::NFType
   local ty_match::MatchKindType
   local iindex::Int
   local dim_size::Int
@@ -2617,7 +2617,7 @@ function evaluateEnd(
   local outExp::Expression
 
   @assign outExp = begin
-    local ty::M_Type
+    local ty::NFType
     local cr::ComponentRef
     @match exp begin
       END_EXPRESSION(__) => begin
@@ -2654,9 +2654,9 @@ function typeIfExpression(
   ifExp::Expression,
   origin::ORIGIN_Type,
   info::SourceInfo,
-)::Tuple{Expression, M_Type, VariabilityType}
+)::Tuple{Expression, NFType, VariabilityType}
   local var::VariabilityType
-  local ty::M_Type
+  local ty::NFType
 
   local cond::Expression
   local tb::Expression
@@ -2664,9 +2664,9 @@ function typeIfExpression(
   local tb2::Expression
   local fb2::Expression
   local next_origin::ORIGIN_Type
-  local cond_ty::M_Type
-  local tb_ty::M_Type
-  local fb_ty::M_Type
+  local cond_ty::NFType
+  local tb_ty::NFType
+  local fb_ty::NFType
   local cond_var::VariabilityType
   local tb_var::VariabilityType
   local fb_var::VariabilityType
@@ -2947,7 +2947,7 @@ end
 function typeExternalArg(arg::Expression, info::SourceInfo, node::InstNode)::Expression
   local outArg::Expression
 
-  local ty::M_Type
+  local ty::NFType
   local var::VariabilityType
   local index::Expression
 
@@ -3014,7 +3014,7 @@ function makeDefaultExternalCall(extDecl::Sections, fnNode::InstNode)::Sections
     local single_output::Bool
     local comps::Array{InstNode}
     local comp::Component
-    local ty::M_Type
+    local ty::NFType
     local node::InstNode
     local exp::Expression
     @match extDecl begin
@@ -3117,9 +3117,9 @@ function typeEquation(eq::Equation, origin::ORIGIN_Type)::Equation
     local e1::Expression
     local e2::Expression
     local e3::Expression
-    local ty::M_Type
-    local ty1::M_Type
-    local ty2::M_Type
+    local ty::NFType
+    local ty1::NFType
+    local ty2::NFType
     local eqs1::List{Equation}
     local body::List{Equation}
     local tybrs::List{Equation}
@@ -3239,8 +3239,8 @@ function typeConnect(
 
   local lhs::Expression
   local rhs::Expression
-  local lhs_ty::M_Type
-  local rhs_ty::M_Type
+  local lhs_ty::NFType
+  local rhs_ty::NFType
   local lhs_var::VariabilityType
   local rhs_var::VariabilityType
   local mk::MatchKindType
@@ -3299,8 +3299,8 @@ function typeConnector(
   connExp::Expression,
   origin::ORIGIN_Type,
   info::SourceInfo,
-)::Tuple{Expression, M_Type}
-  local ty::M_Type
+)::Tuple{Expression, NFType}
+  local ty::NFType
 
   @assign (connExp, ty, _) = typeExp(connExp, origin, info)
   checkConnector(connExp, info)
@@ -3430,9 +3430,9 @@ function typeStatement(st::Statement, origin::ORIGIN_Type)::Statement
     local e1::Expression
     local e2::Expression
     local e3::Expression
-    local ty1::M_Type
-    local ty2::M_Type
-    local ty3::M_Type
+    local ty1::NFType
+    local ty2::NFType
+    local ty3::NFType
     local sts1::List{Statement}
     local body::List{Statement}
     local tybrs::List{Tuple{Expression, List{Statement}}}
@@ -3621,9 +3621,9 @@ function typeEqualityEquation(
   local info::SourceInfo = sourceInfo()
   local e1::Expression
   local e2::Expression
-  local ty1::M_Type
-  local ty2::M_Type
-  local ty::M_Type
+  local ty1::NFType
+  local ty2::NFType
+  local ty::NFType
   local mk::MatchKindType
 
   if flagSet(origin, ORIGIN_WHEN) &&
@@ -3664,12 +3664,12 @@ function typeCondition(
   errorMsg;
   allowVector::Bool = false,
   allowClock::Bool = false,
-)::Tuple{Expression, M_Type, VariabilityType}
+)::Tuple{Expression, NFType, VariabilityType}
   local variability::VariabilityType
-  local ty::M_Type
+  local ty::NFType
 
   local info::SourceInfo
-  local ety::M_Type
+  local ety::NFType
 
   info = sourceInfo() #DAE.emptyElementSource #TODO: DAE.ElementSource_getInfo(source)
   (condition, ty, variability) =
@@ -3820,7 +3820,7 @@ function typeWhenEquation(
   local accum_branches::List{<:Equation_Branch} = nil
   local cond::Expression
   local body::List{Equation}
-  local ty::M_Type
+  local ty::NFType
   local var::VariabilityType
 
   for branch in branches
@@ -3858,7 +3858,7 @@ end
 
 function typeOperatorArg(
   arg::Expression,
-  expectedType::M_Type,
+  expectedType::NFType,
   origin::ORIGIN_Type,
   operatorName::String,
   argName::String,
@@ -3866,7 +3866,7 @@ function typeOperatorArg(
   info::SourceInfo,
 )::Expression
 
-  local ty::M_Type
+  local ty::NFType
   local mk::MatchKindType
 
   @assign (arg, ty, _) = typeExp(arg, origin, info)

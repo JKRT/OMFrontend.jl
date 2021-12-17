@@ -1,4 +1,3 @@
-import ..IOStream_M
 @Uniontype NFFlatModel begin
   @Record FLAT_MODEL begin
     name::String
@@ -11,8 +10,6 @@ import ..IOStream_M
   end
 end
 
-const FlatModel = NFFlatModel
-
 module TypeTreeImpl
 using MetaModelica
 using ExportAll
@@ -22,9 +19,9 @@ import ..Absyn.Path
 import ..Type
 import ..Main.M_Type
 using ..BaseAvlTree #= Modelica extend clause =#
-Key = Absyn.Path
-Value = M_Type
-addConflictDefault = addConflictKeep
+  const Key = Absyn.Path
+  const Value = M_Type
+  const addConflictDefault = addConflictKeep
 @exportAll()
 end
 

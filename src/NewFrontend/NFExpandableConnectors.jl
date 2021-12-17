@@ -76,8 +76,8 @@ using ExportAll
 
 import ..Main.NFConnector
 
-Value = Int
-Key = NFConnector
+const Value = Int
+const Key = NFConnector
 const Connector = NFConnector
 
 #= Modelica extend clause =#

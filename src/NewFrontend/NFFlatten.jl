@@ -1,25 +1,10 @@
-Equation = NFEquation
-Statement = NFStatement
-FlatModel = NFFlatModel
-Algorithm = NFAlgorithm
-CardinalityTable = NFCardinalityTable
-ComponentRef = NFComponentRef
-Dimension = NFDimension
-ExpressionIterator = NFExpressionIterator
-Expression = NFExpression
-Connection = NFConnection
-Connector = NFConnector
-ComplexType = NFComplexType
-
-import ..IOStream_M
-
 module FunctionTreeImpl
   using MetaModelica
   using ExportAll
   import ..Absyn
   import ..Main.M_Function
-  Key = Absyn.Path
-  Value = M_Function
+  const Key = Absyn.Path
+  const Value = M_Function
   include("../Util/baseAvlTreeCode.jl")
   addConflictDefault = addConflictKeep
 end #= FunctionTreeImpl =#

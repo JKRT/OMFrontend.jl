@@ -4,10 +4,10 @@ using MetaModelica
 using ExportAll
 #= Forward declarations for uniontypes until Julia adds support for mutual recursion =#
 
-FuncHashCref = Function
-FuncCrefEqual = Function
-FuncCrefStr = Function
-FuncExpStr = Function
+const FuncHashCref = Function
+const FuncCrefEqual = Function
+const FuncCrefStr = Function
+const FuncExpStr = Function
 
 #= /*
 * This file is part of OpenModelica.
@@ -53,13 +53,13 @@ import ..P_NFComponentRef
 P_ComponentRef = P_NFComponentRef
 ComponentRef = P_NFComponentRef.NFComponentRef
 
-Key = ComponentRef
+const Key = ComponentRef
 
-Value = Int
+const Value = Int
 
-HashTableCrefFunctionsType = Tuple
+const HashTableCrefFunctionsType = Tuple
 
-HashTable = Tuple
+const HashTable = Tuple
 
 """ #=
   Returns an empty HashTable.

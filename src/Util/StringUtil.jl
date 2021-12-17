@@ -34,7 +34,7 @@ using ExportAll
 *
 */ =#
 
-import Main.System
+import ..System
 
 using MetaModelica.Dangerous: listReverseInPlace, stringGetNoBoundsChecking
 

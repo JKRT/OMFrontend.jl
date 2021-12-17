@@ -1,5 +1,3 @@
-@UniontypeDecl NFVariable
-ComponentRef = NFComponentRef
 @Uniontype NFVariable begin
   @Record VARIABLE begin
     name::ComponentRef

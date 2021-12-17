@@ -13,9 +13,9 @@ using Test
 
 #= Utility functions =#
 function flatten(modelName::String, modelFile::String)
-  p = OMFrontend.parseFile(modelFile)
-  scodeProgram = OMFrontend.translateToSCode(p)
-  (dae, cache) = OMFrontend.instantiateSCodeToDAE(modelName, scodeProgram)
+  @time p = OMFrontend.parseFile(modelFile)
+  @time scodeProgram = OMFrontend.translateToSCode(p)
+  @time (dae, cache) = OMFrontend.instantiateSCodeToDAE(modelName, scodeProgram)
 end
 
 function parseAndLowerToScode(modelName::String, modelFile::String)

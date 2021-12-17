@@ -37,6 +37,7 @@ multipleinheritanceconnect = (ConnectTests.MultipleInheritanceConnect
 resistorCircuit0 = (ConnectTests.ResistorCircuit0, "ElectricalComponentTest.ResistorCircuit0", "./Connectors/EletricalComponentTest.mo")
 resistorCircuit1 = (ConnectTests.ResistorCircuit1, "ElectricalComponentTest.ResistorCircuit1", "./Connectors/EletricalComponentTest.mo")
 simpleCircuit = (ConnectTests.SimpleCircuit, "ElectricalComponentTest.SimpleCircuit", "./Connectors/EletricalComponentTest.mo")
+include("equationTests.jl")
 #= Basic connect tests=#
 connectTsts = [ctst1,
                ctst2,
@@ -58,6 +59,8 @@ incorrectTsts = [ctst3, ctst10, ctst11]
 #= Add new tests here=#
 tst = [tank, heattank, heatTankExpanded, multipleinheritanceconnect, resistorCircuit0, resistorCircuit1, simpleCircuit]
 
+equationTests = [circle]
+
 function runConnectTests(tests)
   @testset "Connector test. Testing the handling of connectors" begin
     for mf in tests
@@ -74,8 +77,10 @@ function runConnectTests(tests)
     end
   end
 end
+
 runConnectTests(connectTsts)
 runConnectTests(tst)
+runConnectTests(equationTests)
 
 
 #= End Connector tests =#

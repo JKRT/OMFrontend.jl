@@ -38,7 +38,7 @@ using ExportAll
 import Pkg
 
 #=The directory path. Can be modified=#
-INSTALLATION_DIRECTORY_PATH = realpath(realpath(string(Base.find_package("OMCompiler")) * "./../.."))
+INSTALLATION_DIRECTORY_PATH = realpath(realpath(string(Base.find_package("OMFrontend")) * "./../.."))
 
 #= Returns the version number of this release =#
 function getVersionNr() ::String 

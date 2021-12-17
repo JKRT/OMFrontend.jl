@@ -89,4 +89,4 @@ EachType = (() -> begin #= Enumeration =#
   REPEAT = 3
   () -> (NOT_EACH; EACH; REPEAT)
 end)()
-EachTypeType = Int
+const EachTypeType = Int

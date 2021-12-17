@@ -1,8 +1,5 @@
 @UniontypeDecl VariableConversionSettings
-import ..ComponentReference
-import ..Flags
-import ..Util
-import ..DAE
+
 
 function convert(
   flatModel::FlatModel,

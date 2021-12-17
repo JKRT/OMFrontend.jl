@@ -28,15 +28,12 @@ include("./Util/BaseAvlSet.jl")
 include("./Util/BaseAvlTree.jl")
 include("./Util/BaseHashTable.jl")
 include("./Util/Global.jl")
-@info "Hello!"
 include("./Util/Settings.jl")
 include("./Util/Print.jl")
-@info "Hello!"
 include("./Util/Util.jl")
 include("./Util/StringUtil.jl")
 include("./Util/Flags.jl")
 include("./Util/FlagsUtil.jl")
-@info "Hello!"
 include("./Util/IOStreamExt.jl")
 include("./Util/IOStream.jl")
 include("./AbsynUtil.jl")
@@ -64,56 +61,73 @@ include("./NewFrontend/NFComplexType.jl")
 include("./NewFrontend/NFPrefixes.jl")
 include("./NewFrontend/NFComponent.jl")
 include("./NewFrontend/NFInstNode.jl")
-@info "Test!"
 include("./NewFrontend/NFSections.jl")
 include("./NewFrontend/NFRecord.jl")
-@info "Test!"
 include("./NewFrontend/NFOperatorOverloading.jl")
 include("./NewFrontend/NFCeval.jl")
-@info "Test!"
 include("./NewFrontend/NFEquation.jl")
 include("./NewFrontend/NFTyping.jl")
 include("./NewFrontend/NFInst.jl")
 include("./NewFrontend/NFAlgorithm.jl")
 include("./NewFrontend/NFStatement.jl")
-@info "Test!"
 include("./NewFrontend/NFBinding.jl")
 include("./NewFrontend/NFVariable.jl")
 include("./NewFrontend/NFFlatModel.jl")
 include("./NewFrontend/NFExpression.jl")
-@info "Test!"
 include("./NewFrontend/NFConnector.jl")
 include("./NewFrontend/NFConnections.jl")
 include("./NewFrontend/NFConnection.jl")
+
 include("./NewFrontend/NFConnectionSets.jl")
-@info "Test!"
+
 include("./NewFrontend/NFCardinalityTable.jl")
+
 include("./NewFrontend/NFConnectEquations.jl")
 import .NFCardinalityTable
 include("./NewFrontend/NFFunctionDerivative.jl")
+
 include("./NewFrontend/NFFunction.jl")
+
 include("./NewFrontend/NFSubscript.jl")
+
 include("./NewFrontend/NFFlatten.jl")
+
 include("./NewFrontend/NFConvertDAE.jl")
+
 include("./NewFrontend/NFRestriction.jl")
+
 include("./NewFrontend/NFClass.jl")
+
 include("./NewFrontend/NFImport.jl")
+
 include("./NewFrontend/NFModifier.jl")
+
 include("./NewFrontend/NFClassTree.jl")
+
 include("./NewFrontend/NFLookup.jl")
+
 include("./NewFrontend/NFLookupState.jl")
+
 include("./NewFrontend/NFComponentRef.jl")
 @exportAll
 include("./NewFrontend/NFBuiltin.jl")
-import ..NFBuiltin
+#import ..NFBuiltin
 include("./NewFrontend/BindingExpression.jl")
+
 include("./NewFrontend/NFDimension.jl")
+
 include("./NewFrontend/NFBuiltinCall.jl")
+
 include("./NewFrontend/NFCall.jl")
+
 include("./NewFrontend/NFOperator.jl")
+
 include("./NewFrontend/NFTypeCheck.jl")
+
 include("./NewFrontend/NFExpandableConnectors.jl")
+
 include("./NewFrontend/NFEvalConstants.jl")
+
 include("./NewFrontend/NFExpandExp.jl")
 
 #= TODO: NOT IN USE=#

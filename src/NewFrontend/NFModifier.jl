@@ -6,8 +6,8 @@ using MetaModelica
 using ExportAll
 using ..Main
 
-Key = String
-Value = Modifier
+const Key = String
+const Value = Modifier
 #= Modelica extend clause =#
 include("../Util/baseAvlTreeCode.jl")
 

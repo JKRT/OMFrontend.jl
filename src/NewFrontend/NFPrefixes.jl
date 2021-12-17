@@ -1,6 +1,5 @@
-
 @UniontypeDecl Replaceable
-M_Type = NFType
+
 
 module ConnectorType
 

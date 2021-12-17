@@ -19,8 +19,8 @@ ConditionType = Int
   end
 end
 
-import ..SCodeUtil
-import ..SCodeDump
+#import ..SCodeUtil
+#import ..SCodeDump
 
 function conditionToDAE(
   cond::Tuple{<:Int, ConditionType},

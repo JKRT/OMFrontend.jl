@@ -35,6 +35,7 @@ const Subscript = NFSubscript
 const Type = NFType 
 const Variable = NFVariable
 const VerifyModel = NFVerifyModel
+const FlatModel = NFFlatModel
 
 #= Type defined by the compiler =#
 const M_Type = NFType

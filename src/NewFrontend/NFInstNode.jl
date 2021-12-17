@@ -121,8 +121,8 @@ import ..Main.InstNode
 
 using MetaModelica
 using ExportAll
-Key = String
-Value = InstNode
+const Key = String
+const Value = InstNode
 include("../Util/baseAvlTreeCode.jl")
 
 keyCompare = (inKey1::String, inKey2::String) -> begin

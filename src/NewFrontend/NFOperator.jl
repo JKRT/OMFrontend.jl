@@ -1,6 +1,6 @@
 
 @UniontypeDecl NFOperator
-M_Type = NFType
+
 Op = (
   () -> begin #= Enumeration =#
     ADD = 1

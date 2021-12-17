@@ -6,15 +6,13 @@ import ..Main.Expression
 
 #= Modelica extend clause =#
 const Key = String
-const   Value = Expression
+const Value = Expression
 
 include("../Util/baseAvlTreeCode.jl")
 
 end #=ParameterTreeImpl=#
 
 const ParameterTree = ParameterTreeImpl.Tree
-
-import ..ErrorExt
 
 @Uniontype Call begin
   @Record TYPED_REDUCTION begin

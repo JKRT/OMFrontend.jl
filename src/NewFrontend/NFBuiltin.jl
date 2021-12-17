@@ -109,13 +109,13 @@ import ..Main.TYPE_POLYMORPHIC
 import ..Main.CLASS_TREE_EMPTY_TREE
 import ..Main.MODIFIER_NOMOD
 import ..Main.RESTRICTION_TYPE
-import ..Main.EMPTY_NODE_CACHE
+#import ..Main.EMPTY_NODE_CACHE
 import ..Main.EMPTY_NODE
 import ..Main.BUILTIN_CLASS
 import ..Main.PARTIAL_BUILTIN
 import ..Main.CLASS_NODE
 import ..Main.RESTRICTION_TYPE
-import ..Main.EMPTY_NODE_CACHE
+
 #= Types =#
 import ..Main.TYPE_STRING
 import ..Main.TYPE_ATTRIBUTE
@@ -129,7 +129,7 @@ import ..InstNode
 
 import ..Main.NORMAL_COMP
 import ..Main.COMPONENT_NODE
-import ..Main.STATESELECT_TYPE
+#import ..Main.STATESELECT_TYPE
 
 import ..DuplicateTree
 

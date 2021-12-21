@@ -6,6 +6,9 @@
     initialEquations::List{Equation}
     algorithms::List{Algorithm}
     initialAlgorithms::List{Algorithm}
+    #= VSS Modelica extension =#
+    structuralSubmodels::List{FlatModel}
+    #= End VSS Modelica extension =#
     comment::Option{SCode.Comment}
   end
 end

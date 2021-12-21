@@ -112,8 +112,11 @@ function lookupFunctionName(cref::Absyn.ComponentRef, scope::InstNode #= The sco
   local state::LookupState
   local nodeVar::InstNode
   try
+    @info "VSS: Before lookup cref"
     @assign (foundCref, foundScope, state) = lookupCref(cref, scope)
+    @info "VSS: after lookupCref"
     @assign nodeVar = node(foundCref)
+    @info "VSS: Assigning nodeVar"
     @match false = isName(nodeVar)
   catch e
     @error "Function lookup error for function $cref. With exception $e"
@@ -512,27 +515,38 @@ function lookupSimpleBuiltinCref(name::String, subs::List{<:Absyn.Subscript})
   local cref::ComponentRef
   local node::InstNode
   @debug "Looking up $name in lookupSimpleBuiltinCref"
-  @assign (node, cref, state) = begin
+  (node, cref, state) = begin
     @match name begin
       "time"  => begin
         (NFBuiltin.TIME, NFBuiltin.TIME_CREF, LOOKUP_STATE_PREDEF_COMP())
       end
 
       "Boolean"  => begin
-        (NFBuiltin.BOOLEAN_NODE, NFBuiltin.BOOLEAN_CREF, PREDEF_CLASS())
+        (NFBuiltin.BOOLEAN_NODE, NFBuiltin.BOOLEAN_CREF, LOOKUP_STATE_PREDEF_CLASS())
       end
 
       "Integer"  => begin
-        (NFBuiltinFuncs.INTEGER_NODE, NFBuiltinFuncs.INTEGER_CREF, FUNC())
+        (NFBuiltinFuncs.INTEGER_NODE, NFBuiltinFuncs.INTEGER_CREF, LOOKUP_STATE_FUNC())
       end
 
       "String"  => begin
-        (NFBuiltinFuncs.STRING_NODE, NFBuiltinFuncs.STRING_CREF, FUNC())
+        (NFBuiltinFuncs.STRING_NODE, NFBuiltinFuncs.STRING_CREF, LOOKUP_STATE_FUNC())
       end
 
       "Clock" where (Config.synchronousFeaturesAllowed())  => begin
-        (NFBuiltinFuncs.CLOCK_NODE, NFBuiltinFuncs.CLOCK_CREF, FUNC())
+        (NFBuiltinFuncs.CLOCK_NODE, NFBuiltinFuncs.CLOCK_CREF, LOOKUP_STATE_FUNC())
       end
+
+      "initialStructuralState" => begin
+        @info "VSS: found initialStructuralState"
+        try
+          (NFBuiltin.INITIAL_STRUCTURAL_STATE, NFBuiltinFuncs.INITIAL_STRUCTURAL_STATE_CREF, LOOKUP_STATE_FUNC())
+        catch e
+          @info "Whoopsie"
+          @error e
+        end
+        (NFBuiltin.INITIAL_STRUCTURAL_STATE, NFBuiltinFuncs.INITIAL_STRUCTURAL_STATE_CREF, LOOKUP_STATE_FUNC())
+      end      
     end
   end
   if ! listEmpty(subs)
@@ -549,8 +563,11 @@ function lookupSimpleCref(name::String, subs::List{<:Absyn.Subscript}, scope::In
   local node::InstNode
   local is_import::Bool
   try
-    @assign (node, cref, state) = lookupSimpleBuiltinCref(name, subs)
-    @assign foundScope = topScope(foundScope)
+    @info "VSS: Looking up a simple cref"
+    (node, cref, state) = lookupSimpleBuiltinCref(name, subs)
+    @info "VSS:Found bultin"
+    foundScope = topScope(foundScope)
+    @info "VSS:Done with scope"
   catch e
     @debug "Searching for scope in lookupSimplecref.. with $(typeof(scope))"
 #    @error "Another DBG error message: $(e)"

@@ -2338,7 +2338,7 @@ function translateEquation(
 
       Absyn.EQ_NORETCALL(__) => begin
         SCode.EQ_NORETCALL(
-          Absyn.CALL(inEquation.functionName, inEquation.functionArgs),
+          Absyn.CALL(inEquation.functionName, inEquation.functionArgs, nil),
           inComment,
           inInfo,
         )

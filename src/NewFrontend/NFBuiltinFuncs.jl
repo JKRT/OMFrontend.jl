@@ -641,6 +641,7 @@ const ARRAY_FUNC =
     P_Pointer.createImmutable(FunctionStatus.BUILTIN),
     P_Pointer.createImmutable(0),
   )::M_Function
+
 const FILL_FUNC =
   M_FUNCTION(
     Absyn.IDENT("fill"),
@@ -655,6 +656,23 @@ const FILL_FUNC =
     P_Pointer.createImmutable(FunctionStatus.BUILTIN),
     P_Pointer.createImmutable(0),
   )::M_Function
+
+const INITIAL_STRUCTURAL_STATE_FUNC =
+  M_FUNCTION(
+    Absyn.IDENT("initialStructuralState"),
+    EMPTY_NODE(),
+    nil,
+    nil,
+    nil,
+    nil,
+    TYPE_UNKNOWN(),
+    DAE.FUNCTION_ATTRIBUTES_BUILTIN,
+    nil,
+    P_Pointer.createImmutable(FunctionStatus.BUILTIN),
+    P_Pointer.createImmutable(0),
+  )::M_Function
+
+
 const SMOOTH =
   M_FUNCTION(
     Absyn.IDENT("smooth"),
@@ -853,9 +871,30 @@ const CLOCK_NODE =
     EMPTY_NODE(),
     BUILTIN_CLASS(),
   )::InstNode
+
 const CLOCK_CREF =
   COMPONENT_REF_CREF(
     CLOCK_NODE,
+    nil,
+    TYPE_INTEGER(),
+    Origin.CREF,
+    COMPONENT_REF_EMPTY(),
+  )::ComponentRef
+
+const INITIAL_STRUCTURAL_STATE_DUMMY_NODE =
+  CLASS_NODE(
+    "initialStructuralState",
+    DUMMY_ELEMENT,
+    Visibility.PUBLIC,
+    P_Pointer.createImmutable(NOT_INSTANTIATED()),
+    EMPTY_NODE_CACHE,
+    EMPTY_NODE(),
+    NORMAL_CLASS(),
+  )::InstNode
+
+const INITIAL_STRUCTURAL_STATE_CREF =
+  COMPONENT_REF_CREF(
+    INITIAL_STRUCTURAL_STATE_DUMMY_NODE,
     nil,
     TYPE_INTEGER(),
     Origin.CREF,

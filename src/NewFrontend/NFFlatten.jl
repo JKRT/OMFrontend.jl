@@ -39,11 +39,11 @@ function flatten(classInst::InstNode, name::String)::FlatModel
         ieql = listReverseInPlace(sections.initialEquations)
         alg = listReverseInPlace(sections.algorithms)
         ialg = listReverseInPlace(sections.initialAlgorithms)
-        FLAT_MODEL(name, vars, eql, ieql, alg, ialg, cmt)
+        FLAT_MODEL(name, vars, eql, ieql, alg, ialg, nil, cmt)
       end
 
       _ => begin
-        FLAT_MODEL(name, vars, nil, nil, nil, nil, cmt)
+        FLAT_MODEL(name, vars, nil, nil, nil, nil, nil, cmt)
       end
     end
   end

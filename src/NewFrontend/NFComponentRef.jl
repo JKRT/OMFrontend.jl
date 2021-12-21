@@ -1,5 +1,5 @@
 @UniontypeDecl NFComponentReff
-Origin = (() -> begin #= Enumeration =#
+const Origin = (() -> begin #= Enumeration =#
   CREF = 1  #= From an Absyn cref. =#
   SCOPE = 2  #= From prefixing the cref with its scope. =#
   ITERATOR = 3  #= From an iterator. =#

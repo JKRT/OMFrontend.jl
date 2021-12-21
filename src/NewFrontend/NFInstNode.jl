@@ -30,11 +30,6 @@
 */ =#
 
 @UniontypeDecl InstNodeType
-
-
-Expression=NFExpression
-Restriction=NFRestriction
-FuncType = Function
 @UniontypeDecl InstNode
 
 @Uniontype InstNodeType begin
@@ -1595,7 +1590,6 @@ function setParent(parent::InstNode, node::InstNode) ::InstNode
       end
     end
   end
-  @debug "parent scope after $(node.parent.name)"
   node
 end
 

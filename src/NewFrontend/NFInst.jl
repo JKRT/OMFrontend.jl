@@ -694,7 +694,6 @@ end
 
 function instDerivedAttributes(scodeAttr::SCode.Attributes) ::Attributes
   local attributes::Attributes
-
   local cty::ConnectorType.TYPE
   local var::VariabilityType
   local dir::DirectionType
@@ -864,28 +863,28 @@ function instClassDef(cls::Class, outerMod::Modifier, attributes::Attributes, us
         ()
       end
 
-INSTANCED_CLASS(__)  => begin
-  #=  If a class has an instance of a encapsulating class, then the encapsulating
-  =#
-  #=  class will have been fully instantiated to allow lookup in it. This is a
-  =#
-  #=  rather uncommon case hopefully, so in that case just reinstantiate the class.
-  =#
-  @assign node = replaceClass(NOT_INSTANTIATED(), node)
-  @assign node = setNodeType(NORMAL_CLASS(), node)
-  @assign node = expand(node)
-  @assign node = instClass(node, outerMod, attributes, useBinding, instLevel, parent)
-  updateComponentType(parent, node)
-  ()
-end
+      INSTANCED_CLASS(__)  => begin
+        #=  If a class has an instance of a encapsulating class, then the encapsulating
+        =#
+        #=  class will have been fully instantiated to allow lookup in it. This is a
+        =#
+        #=  rather uncommon case hopefully, so in that case just reinstantiate the class.
+        =#
+        @assign node = replaceClass(NOT_INSTANTIATED(), node)
+        @assign node = setNodeType(NORMAL_CLASS(), node)
+        @assign node = expand(node)
+        @assign node = instClass(node, outerMod, attributes, useBinding, instLevel, parent)
+        updateComponentType(parent, node)
+        ()
+      end
 
-_  => begin
-  Error.assertion(false, getInstanceName() + " got unknown class.", sourceInfo())
-  ()
-end
-end
-end
-(attributes, node)
+      _  => begin
+        Error.assertion(false, getInstanceName() + " got unknown class.", sourceInfo())
+        ()
+      end
+    end
+  end
+  (attributes, node)
 end
 
 """ #= Sets the class instance of a component node. =#"""
@@ -927,11 +926,12 @@ function instExternalObjectStructors(ty::M_Type, parent::InstNode)
   end
 end
 
-""" #= This function instantiates a package given a package node. If the package has
-       already been instantiated, then the cached instance from the node is
-       returned. Otherwise the node is fully instantiated, the instance is added to
-       the node's cache, and the instantiated node is returned. 
-=#"""
+"""
+  This function instantiates a package given a package node. If the package has
+  already been instantiated, then the cached instance from the node is
+  returned. Otherwise the node is fully instantiated, the instance is added to
+  the node's cache, and the instantiated node is returned. 
+"""
 function instPackage(node::InstNode) ::InstNode
   local cache::CachedData
   local inst::InstNode
@@ -964,14 +964,7 @@ function instPackage(node::InstNode) ::InstNode
   node
 end
 
-"""
-  @author: johti17@liu.se
-"""
-function modifyExtends(extendsNode::InstNode; scope::InstNode)
-  modifyExtends(extendsNode, scope)
-end
-
-function modifyExtends(extendsNode::InstNode, scope::InstNode) ::InstNode
+function modifyExtends(extendsNode::InstNode, scope::InstNode)
   local elem::SCode.Element
   local ext_mod::Modifier
   local ext_node::InstNode

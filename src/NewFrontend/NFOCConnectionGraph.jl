@@ -109,7 +109,7 @@
 
         const EMPTY = GRAPH(true, nil, nil, nil, nil, nil) #= Initial connection graph with no edges in it. =#::NFOCConnectionGraph
         const NOUPDATE_EMPTY = GRAPH(false, nil, nil, nil, nil, nil) #= Initial connection graph with updateGraph set to false. =#::NFOCConnectionGraph
-          ConnectionsOperator = #= Enumeration =# (() -> begin
+          const ConnectionsOperator = #= Enumeration =# (() -> begin
           BRANCH  = 1
           ROOT  = 2
           POTENTIAL_ROOT  = 3

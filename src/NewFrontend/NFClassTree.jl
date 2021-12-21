@@ -943,7 +943,6 @@ function instantiate(
           end
           arrayUpdateNoBoundsChecking(clss, cls_idx, P_Pointer.create(c))
           @assign cls_idx = cls_idx + 1
-          @debug "We have some clss: $clss"
         end
         for ext in exts
           @assign () = begin

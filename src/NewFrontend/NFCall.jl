@@ -405,16 +405,16 @@ function toString(call::Call)::String
   @assign str = begin
     @match call begin
       UNTYPED_CALL(__) => begin
-nameStr = toString(call.ref)
+        nameStr = toString(call.ref)
         @assign arg_str = stringDelimitList(
           list(toString(arg) for arg in call.arguments),
           ", ",
         )
-        name + "(" + arg_str + ")"
+        nameStr * "(" * arg_str * ")"
       end
 
       ARG_TYPED_CALL(__) => begin
-nameStr = toString(call.ref)
+        nameStr = toString(call.ref)
         @assign arg_str = stringDelimitList(
           list(
             toString(Util.tuple31(arg)) for arg in call.arguments
@@ -428,13 +428,13 @@ nameStr = toString(call.ref)
             ", "
           end
           @assign arg_str =
-            arg_str +
-            c +
+            arg_str *
+            c *
             Util.tuple41(arg) +
-            " = " +
+            " = " *
             toString(Util.tuple42(arg))
         end
-        name + "(" + arg_str + ")"
+        name * "(" * arg_str * ")"
       end
 
       UNTYPED_ARRAY_CONSTRUCTOR(__) => begin
@@ -922,9 +922,7 @@ function matchTypedNormalCall(call::Call, origin::ORIGIN_Type, info::SourceInfo)
 end
 
 function typeMatchNormalCall(call::Call, origin::ORIGIN_Type, info::SourceInfo)::Call
-
   local argtycall::Call
-
   @assign argtycall = typeNormalCall(call, origin, info)
   @assign call = matchTypedNormalCall(argtycall, origin, info)
   return call

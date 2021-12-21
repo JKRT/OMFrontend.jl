@@ -585,6 +585,11 @@ function isSubscriptableBuiltin(fn::M_Function)::Bool
   return scalarBuiltin
 end
 
+"""
+  This function checks if a function is a special builtin function
+  and needs to be handled in a different way.
+  Examples of such functions is der
+"""
 function isSpecialBuiltin(fn::M_Function)::Bool
   local special::Bool
   local path::Absyn.Path
@@ -744,7 +749,8 @@ function isSpecialBuiltin(fn::M_Function)::Bool
           "sample" => begin
             true
           end
-
+          "initialStructuralState" => true
+          "structuralTransistion" => true
           _ => begin
             false
           end

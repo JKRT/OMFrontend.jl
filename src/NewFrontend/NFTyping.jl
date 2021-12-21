@@ -1146,11 +1146,12 @@ function typeComponentBinding2(
       end
 
       _ => begin
-        Error.assertion(
-          false,
-          getInstanceName() + " got invalid node " + name(node),
-          sourceInfo(),
-        )
+        #        Error.assertion( TODO
+        #          false,
+        #          getInstanceName() + " got invalid node " + name(node),
+        #          sourceInfo(),
+        #        )
+        @error getInstanceName() * "got invalid node" * name(node)
         fail()
       end
     end
@@ -3217,8 +3218,9 @@ function typeEquation(eq::Equation, origin::ORIGIN_Type)::Equation
       end
 
       EQUATION_NORETCALL(__) => begin
-        @assign e1 = typeExp(eq.exp, origin, DAE.emptyElementSource)
-        NORETCALL(e1, eq.source)
+        info = sourceInfo() #Added by me -John
+        (e1 ,_ ,_) = typeExp(eq.exp, origin, info) #eq.source #=DAE.emptyElementSource=#)
+        EQUATION_NORETCALL(e1, eq.source)
       end
 
       _ => begin

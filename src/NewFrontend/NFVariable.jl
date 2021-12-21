@@ -90,7 +90,7 @@ function toStream(
       if first
         @assign first = false
       else
-        @assign s = append(s, ", ")
+        @assign s = IOStream_M.append(s, ", ")
       end
       @assign b = Util.tuple22(a)
       if isEach(b)

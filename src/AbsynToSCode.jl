@@ -514,12 +514,12 @@ function translateAttributes(
     local sp::SCode.Parallelism
     local sv::SCode.Variability
     @match (inEA, extraArrayDim) begin
-      (Absyn.ATTR(f, s, p, v, dir, fi, adim), extraADim) => begin
+      (Absyn.ATTR(f, s, p, v, dir, fi, adim, mo), extraADim) => begin
          ct = translateConnectorType(f, s)
          sv = translateVariability(v)
          sp = translateParallelism(p)
          adim = listAppend(extraADim, adim)
-        SCode.ATTR(adim, ct, sp, sv, dir, fi)
+        SCode.ATTR(adim, ct, sp, sv, dir, mode)
       end
     end
   end

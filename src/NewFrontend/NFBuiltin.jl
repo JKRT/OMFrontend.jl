@@ -782,25 +782,6 @@ const TIME =
     NORMAL_COMP(),
   )::InstNode
 
-
-const INITIAL_STRUCTURAL_STATE =
-  COMPONENT_NODE(
-    "initialStructuralState",
-    Visibility.PUBLIC,
-    P_Pointer.createImmutable(TYPED_COMPONENT(
-      REAL_NODE,
-      TYPE_REAL(),
-      EMPTY_BINDING,
-      EMPTY_BINDING,
-      INPUT_ATTR,
-      NONE(),
-      NONE(),
-      AbsynUtil.dummyInfo,
-    )),
-    EMPTY_NODE(),
-    NORMAL_COMP(),
-  )::InstNode
-
 const TIME_CREF =
   COMPONENT_REF_CREF(
     TIME,

@@ -579,6 +579,16 @@ function initialState "Define inital state of a state machine"
 </html>"));
 end initialState;
 
+function initialStructuralState "Define the initial state of a continious state machine"
+  external "builtin"
+  annotation(__OpenModelica_builtin=true, Documentation(info="Modelica Extension"));
+end initialStructuralState;
+
+function structuralTransistion "Define the initial state of a continious state machine"
+  external "builtin"
+  annotation(__OpenModelica_builtin=true, Documentation(info="Modelica Extension"));
+end structuralTransistion;
+
 function activeState "Return true if instance of a state machine is active, otherwise false"
   external "builtin";
   annotation(__OpenModelica_builtin=true, Documentation(info="<html>

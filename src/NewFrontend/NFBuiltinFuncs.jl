@@ -881,25 +881,5 @@ const CLOCK_CREF =
     COMPONENT_REF_EMPTY(),
   )::ComponentRef
 
-const INITIAL_STRUCTURAL_STATE_DUMMY_NODE =
-  CLASS_NODE(
-    "initialStructuralState",
-    DUMMY_ELEMENT,
-    Visibility.PUBLIC,
-    P_Pointer.createImmutable(NOT_INSTANTIATED()),
-    EMPTY_NODE_CACHE,
-    EMPTY_NODE(),
-    NORMAL_CLASS(),
-  )::InstNode
-
-const INITIAL_STRUCTURAL_STATE_CREF =
-  COMPONENT_REF_CREF(
-    INITIAL_STRUCTURAL_STATE_DUMMY_NODE,
-    nil,
-    TYPE_INTEGER(),
-    Origin.CREF,
-    COMPONENT_REF_EMPTY(),
-  )::ComponentRef
-
 @exportAll()
 end

@@ -522,13 +522,11 @@ end
 
 function getAttributes(cls::Class)::Attributes
   local attr::Attributes
-
-  @assign attr = begin
+  attr = begin
     @match cls begin
       EXPANDED_DERIVED(__) => begin
         cls.attributes
       end
-
       _ => begin
         NFComponent.DEFAULT_ATTR
       end

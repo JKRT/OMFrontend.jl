@@ -1389,19 +1389,19 @@ function setDefinition(definition::SCode.Element, node::InstNode) ::InstNode
   node
 end
 
-function definition(node::InstNode) ::SCode.Element
-  local definition::SCode.Element
-  @assign definition = begin
+function definition(node::InstNode)::SCode.Element
+  local def::SCode.Element
+  def = begin
     @match node begin
       CLASS_NODE(__)  => begin
         node.definition
       end
       COMPONENT_NODE(__)  => begin
-        P_Component.definition(P_Pointer.access(node.component))
-      end
+        definition(P_Pointer.access(node.component))
+      end      
     end
   end
-  definition
+  def
 end
 
 function setNodeType(nodeType::InstNodeType, node::InstNode) ::InstNode

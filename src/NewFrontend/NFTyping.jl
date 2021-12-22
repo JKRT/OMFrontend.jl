@@ -28,17 +28,7 @@
 * See the full OSMC Public License conditions for more details.
 *
 */ =#
-Dimension = NFDimension
-Equation = NFEquation
-Expression = NFExpression
-Statement = NFStatement
-Operator = NFOperator
-Connector = NFConnector
-Connection = NFConnection
-ComponentRef = NFComponentRef
-Subscript = NFSubscript
-ComplexType = NFComplexType
-Restriction = NFRestriction
+
 
 @UniontypeDecl TypingError
 function isError(error::TypingError)::Bool

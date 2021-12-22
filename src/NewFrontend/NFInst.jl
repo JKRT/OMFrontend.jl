@@ -1571,9 +1571,12 @@ end
                  end
                end
 
+"""
+  This function instantiates component attributes.
+  It uses ´DEFAULT_ATTR´ or some special modifier depending on the component prefix.
+"""
 function instComponentAttributes(compAttr::SCode.Attributes, compPrefs)::Attributes
   local attributes::Attributes
-
   local cty
   local par::ParallelismType
   local var::VariabilityType
@@ -1582,22 +1585,35 @@ function instComponentAttributes(compAttr::SCode.Attributes, compPrefs)::Attribu
   local fin::Bool
   local redecl::Bool
   local repl
-
- @assign attributes = begin
+  attributes = begin
     @match (compAttr, compPrefs) begin
-      (SCode.ATTR(connectorType = SCode.POTENTIAL(__), parallelism = SCode.NON_PARALLEL(__), variability = SCode.VAR(__), direction = Absyn.BIDIR(__)), SCode.PREFIXES(redeclarePrefix = SCode.NOT_REDECLARE(__), finalPrefix = SCode.NOT_FINAL(__), innerOuter = Absyn.NOT_INNER_OUTER(__), replaceablePrefix = SCode.NOT_REPLACEABLE(__)))  => begin
+      #= Check if we want to use the default attributes=#
+      (SCode.ATTR(connectorType = SCode.POTENTIAL(__),
+                  parallelism = SCode.NON_PARALLEL(__),
+                  variability = SCode.VAR(__),
+                  direction = Absyn.BIDIR(__),
+                  isField = false,
+                  mode = false),
+       SCode.PREFIXES(redeclarePrefix = SCode.NOT_REDECLARE(__),
+                      finalPrefix = SCode.NOT_FINAL(__),
+                      innerOuter = Absyn.NOT_INNER_OUTER(__),
+                      replaceablePrefix = SCode.NOT_REPLACEABLE(__))
+       ) => begin        
+        @debug "Structural mode value: " structuralMode                        
         DEFAULT_ATTR
       end
       _  => begin
-        @assign cty = fromSCode(compAttr.connectorType)
-        @assign par = parallelismFromSCode(compAttr.parallelism)
-        @assign var = variabilityFromSCode(compAttr.variability)
-        @assign dir = directionFromSCode(compAttr.direction)
-        @assign io = innerOuterFromSCode(compPrefs.innerOuter)
-        @assign fin = SCodeUtil.finalBool(compPrefs.finalPrefix)
-        @assign redecl = SCodeUtil.redeclareBool(compPrefs.redeclarePrefix)
-        @assign repl = NOT_REPLACEABLE()
-        ATTRIBUTES(cty, par, var, dir, io, fin, redecl, repl)
+        cty = fromSCode(compAttr.connectorType)
+        par = parallelismFromSCode(compAttr.parallelism)
+        var = variabilityFromSCode(compAttr.variability)
+        dir = directionFromSCode(compAttr.direction)
+        io = innerOuterFromSCode(compPrefs.innerOuter)
+        fin = SCodeUtil.finalBool(compPrefs.finalPrefix)
+        redecl = SCodeUtil.redeclareBool(compPrefs.redeclarePrefix)
+        repl = NOT_REPLACEABLE()
+        structuralMode = compAttr.mode
+        @debug "Structural mode value: " structuralMode
+        ATTRIBUTES(cty, par, var, dir, io, fin, redecl, repl, structuralMode)
       end
     end
   end
@@ -1619,7 +1635,9 @@ function mergeComponentAttributes(outerAttr::Attributes, innerAttr::Attributes, 
     attr = innerAttr
   elseif referenceEq(innerAttr, DEFAULT_ATTR)
     cty = merge(outerAttr.connectorType, innerAttr.connectorType, node)
-    attr = ATTRIBUTES(cty, outerAttr.parallelism, outerAttr.variability, outerAttr.direction, innerAttr.innerOuter, outerAttr.isFinal, innerAttr.isRedeclare, innerAttr.isReplaceable)
+    attr = ATTRIBUTES(cty, outerAttr.parallelism,
+                      outerAttr.variability, outerAttr.direction, innerAttr.innerOuter, outerAttr.isFinal,
+                      innerAttr.isRedeclare, innerAttr.isReplaceable, innerAttr.isStructuralMode #=TODO: VSS Unsure if this should propagate like this=#)
   else
     cty = merge(outerAttr.connectorType, innerAttr.connectorType, node)
     par = mergeParallelism(outerAttr.parallelism, innerAttr.parallelism, node)
@@ -1632,14 +1650,12 @@ function mergeComponentAttributes(outerAttr::Attributes, innerAttr::Attributes, 
     fin = outerAttr.isFinal || innerAttr.isFinal
     redecl = innerAttr.isRedeclare
     repl = innerAttr.isReplaceable
-    attr = ATTRIBUTES(cty, par, var, dir, innerAttr.innerOuter, fin, redecl, repl)
+    attr = ATTRIBUTES(cty, par, var, dir, innerAttr.innerOuter, fin, redecl, repl,innerAttr.isStructuralMode #= TODO: VSS Unsure if this should propagate like this=#)
   end
   attr
 end
 
 function checkDeclaredComponentAttributes(attr::Attributes, parentRestriction::Restriction, component::InstNode) ::Attributes
-
-
   @assign () = begin
     @match parentRestriction begin
      RESTRICTION_CONNECTOR(__)  => begin
@@ -1715,11 +1731,11 @@ function mergeDerivedAttributes(outerAttr::Attributes, innerAttr::Attributes, no
     attr = innerAttr
   else
     #= The present error is here =#
-    @match ATTRIBUTES(cty, par, var, dir, io, fin, redecl, repl) = outerAttr
+    @match ATTRIBUTES(cty, par, var, dir, io, fin, redecl, repl, mo) = outerAttr
     cty = merge(cty, innerAttr.connectorType, node, true)
     var = variabilityMin(var, innerAttr.variability)
     dir = mergeDirection(dir, innerAttr.direction, node, #= allowSame = true=# true)
-    attr = ATTRIBUTES(cty, par, var, dir, io, fin, redecl, repl)
+    attr = ATTRIBUTES(cty, par, var, dir, io, fin, redecl, repl, mo)
   end
   attr
 end

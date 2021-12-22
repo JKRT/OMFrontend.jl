@@ -464,6 +464,10 @@ function toString(flatModel::FlatModel, printBindingTypes::Bool = false)::String
   local s::IOStream_M.IOSTREAM
   s = IOStream_M.create(getInstanceName(), IOStream_M.LIST())
   s = IOStream_M.append(s, "class " + flatModel.name + "\\n")
+  for structuralMode in flatModel.structuralSubmodels
+    structuralModelString = toString(structuralMode, printBindingTypes)
+    s = IOStream_M.append(s, "structuralmode " * structuralModelString)
+  end
   for v in flatModel.variables
     s = toStream(v, "  ", printBindingTypes, s)
     s = IOStream_M.append(s, ";\\n")

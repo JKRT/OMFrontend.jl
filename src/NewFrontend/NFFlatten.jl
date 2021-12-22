@@ -20,28 +20,30 @@ function flatten(classInst::InstNode, name::String)::FlatModel
   local ieql::List{Equation}
   local alg::List{Algorithm}
   local ialg::List{Algorithm}
+  local structuralSubmodels::List{FLAT_MODEL} = nil
   local cmt::Option{SCode.Comment}
-  @assign sections = SECTIONS_EMPTY()
-  @assign cmt = SCodeUtil.getElementComment(definition(classInst))
-  @assign (vars, sections) = flattenClass(
+  sections = SECTIONS_EMPTY()
+  @debug "CALLING TOP LEVEL FLATTEN"
+  cmt = SCodeUtil.getElementComment(definition(classInst))
+  (vars, sections, structuralSubmodels) = flattenClass(
     getClass(classInst),
     COMPONENT_REF_EMPTY(),
     Visibility.PUBLIC,
     NONE(),
     nil,
     sections,
+    structuralSubmodels,
   )
-  @assign vars = listReverseInPlace(vars)
-  @assign flatModel = begin
+  vars = listReverseInPlace(vars)
+  flatModel = begin
     @match sections begin
       SECTIONS(__) => begin
         eql = listReverseInPlace(sections.equations)
         ieql = listReverseInPlace(sections.initialEquations)
         alg = listReverseInPlace(sections.algorithms)
         ialg = listReverseInPlace(sections.initialAlgorithms)
-        FLAT_MODEL(name, vars, eql, ieql, alg, ialg, nil, cmt)
+        FLAT_MODEL(name, vars, eql, ieql, alg, ialg, structuralSubmodels, cmt)
       end
-
       _ => begin
         FLAT_MODEL(name, vars, nil, nil, nil, nil, nil, cmt)
       end
@@ -54,13 +56,12 @@ end
 
 function collectFunctions(flatModel::FlatModel, name::String)::FunctionTree
   local funcs::FunctionTree
-  @assign funcs = FunctionTreeImpl.new()
-  @assign funcs = ListUtil.fold(flatModel.variables, collectComponentFuncs, funcs)
-  @assign funcs = ListUtil.fold(flatModel.equations, collectEquationFuncs, funcs)
-  @assign funcs = ListUtil.fold(flatModel.initialEquations, collectEquationFuncs, funcs)
-  @assign funcs = ListUtil.fold(flatModel.algorithms, collectAlgorithmFuncs, funcs)
-  @assign funcs = ListUtil.fold(flatModel.initialAlgorithms, collectAlgorithmFuncs, funcs)
-#  execStat(getInstanceName() + "(" + name + ")")
+  funcs = FunctionTreeImpl.new()
+  funcs = ListUtil.fold(flatModel.variables, collectComponentFuncs, funcs)
+  funcs = ListUtil.fold(flatModel.equations, collectEquationFuncs, funcs)
+  funcs = ListUtil.fold(flatModel.initialEquations, collectEquationFuncs, funcs)
+  funcs = ListUtil.fold(flatModel.algorithms, collectAlgorithmFuncs, funcs)
+  funcs = ListUtil.fold(flatModel.initialAlgorithms, collectAlgorithmFuncs, funcs)
   return funcs
 end
 
@@ -71,23 +72,23 @@ function flattenClass(
   binding::Option{<:Binding},
   vars::List{<:Variable},
   sections::Sections,
-)::Tuple{List{Variable}, Sections}
-
+  #= Extension. Models that are a structural part of a flat model and should not be merged.=#
+  structuralSubModels::List{FLAT_MODEL},
+  #= End extension =#
+  )
+  @debug "CALLING flattenClass"
   local comps::Array{InstNode}
   local bindings::List{Binding}
   local b::Binding
-
-  #=  print(\">\" + stringAppendList(List.fill(\"  \", ComponentRef.depth(prefix)-1)) + ComponentRef.toString(prefix) + \"\\n\");
-  =#
-  @assign () = begin
+  () = begin
     @match cls begin
       INSTANCED_CLASS(elements = CLASS_TREE_FLAT_TREE(components = comps)) =>
         begin
           if isSome(binding)
             @match SOME(b) = binding
             if isBound(b)
-              @assign b = flattenBinding(b, rest(prefix))
-              @assign bindings = getRecordBindings(b, comps)
+              b = flattenBinding(b, rest(prefix))
+              bindings = getRecordBindings(b, comps)
               Error.assertion(
                 listLength(bindings) == arrayLength(comps),
                 getInstanceName() +
@@ -96,7 +97,7 @@ function flattenClass(
                 sourceInfo(),
               )
               for c in comps
-                @assign (vars, sections) = flattenComponent(
+                (vars, sections) = flattenComponent(
                   c,
                   prefix,
                   visibility,
@@ -104,18 +105,20 @@ function flattenClass(
                   vars,
                   sections,
                 )
-                @assign bindings = listRest(bindings)
+                bindings = listRest(bindings)
               end
             else
               for c in comps
-                @assign (vars, sections) =
-                  flattenComponent(c, prefix, visibility, binding, vars, sections)
+                (vars, sections, structuralSubModels) =
+                  flattenComponent(c, prefix, visibility, binding,
+                                   vars, sections, structuralSubModels)
               end
             end
           else
             for c in comps
-              @assign (vars, sections) =
-                flattenComponent(c, prefix, visibility, NONE(), vars, sections)
+              (vars, sections, structuralSubModels) =
+                flattenComponent(c, prefix, visibility, NONE(),
+                                 vars, sections, structuralSubModels)
             end
           end
           @assign sections = flattenSections(cls.sections, prefix, sections)
@@ -130,6 +133,7 @@ function flattenClass(
           binding,
           vars,
           sections,
+          structuralSubModels
         )
         ()
       end
@@ -151,9 +155,7 @@ function flattenClass(
       end
     end
   end
-  #=  print(\"<\" + stringAppendList(List.fill(\"  \", ComponentRef.depth(prefix)-1)) + ComponentRef.toString(prefix) + \"\\n\");
-  =#
-  return (vars, sections)
+  return (vars, sections, structuralSubModels)
 end
 
 function flattenComponent(
@@ -163,39 +165,50 @@ function flattenComponent(
   outerBinding::Option{<:Binding},
   vars::List{<:Variable},
   sections::Sections,
-)::Tuple{List{Variable}, Sections}
-
+  #= Passed from the top level class. =#
+  structuralSubModels::List{FLAT_MODEL}
+)
+  @debug "FLATTEN COMPONENT: " * toString(inComponent)
   local comp_node::InstNode
   local c::Component
   local ty::M_Type
   local condition::Binding
   local cls::Class
   local vis::VisibilityType
-
-  #=  Remove components that are only outer.
-  =#
+  #=  Remove components that are only outer. =#
   if isOnlyOuter(inComponent)
     return (vars, sections)
   end
-  @assign comp_node = resolveOuter(inComponent)
-  @assign c = component(comp_node)
-  @assign () = begin
-    @match c begin
-      TYPED_COMPONENT(condition = condition, ty = ty) => begin
-        #=  Delete the component if it has a condition that's false.
-        =#
-        if isDeletedComponent(condition, prefix)
-          deleteComponent(inComponent)
-          return
-        end
-        @assign cls = getClass(c.classInst)
-        @assign vis = if isProtected(inComponent)
-          Visibility.PROTECTED
+  comp_node = resolveOuter(inComponent)
+  c = component(comp_node)
+  @match c begin
+    TYPED_COMPONENT(condition = condition, ty = ty) => begin
+      #=  Delete the component if it has a condition that's false. =#
+      if isDeletedComponent(condition, prefix)
+        deleteComponent(inComponent)
+        return
+      end
+      cls = getClass(c.classInst)
+      vis = if isProtected(inComponent)
+        Visibility.PROTECTED
+      else
+        visibility
+      end
+      if isComplexComponent(ty)
+        #= A complex component such as a model or a class =#
+        if c.attributes.isStructuralMode == true
+          @debug "FLATTEN A COMPLEX STRUCTURAL COMPONENT"
+          #=
+          Since this component is structural we do not flatten it.
+          Instead we create a new FlatModel and add it to the list.
+          If this component in turn has structural subcomponents these are added
+          to the list of FlatModels for this component recursivly. 
+          =#
+          structuralSubModels =
+            flatten(comp_node, name(comp_node)) <| structuralSubModels
         else
-          visibility
-        end
-        if isComplexComponent(ty)
-          @assign (vars, sections) = flattenComplexComponent(
+          @debug "FLATTEN A COMPLEX COMPONENT WITH ATTRIBUTES: " c.attributes
+          (vars, sections) = flattenComplexComponent(
             comp_node,
             c,
             cls,
@@ -206,35 +219,31 @@ function flattenComponent(
             vars,
             sections,
           )
-        else
-          @assign (vars, sections) = flattenSimpleComponent(
-            comp_node,
-            c,
-            vis,
-            outerBinding,
-            getTypeAttributes(cls),
-            prefix,
-            vars,
-            sections,
-          )
         end
-        ()
+      else
+        (vars, sections) = flattenSimpleComponent(
+          comp_node,
+          c,
+          vis,
+          outerBinding,
+          getTypeAttributes(cls),
+          prefix,
+          vars,
+          sections,
+        )
       end
-
-      DELETED_COMPONENT(__) => begin
-        ()
-      end
-
-      _ => begin
-        #Error.assertion(false, getInstanceName() + " got unknown component", sourceInfo())
-        @error "Got unknown component!"
-        fail()
-      end
+      ()
     end
-  end
-  #=  print(\"<-\" + stringAppendList(List.fill(\"  \", ComponentRef.depth(prefix))) + ComponentRef.toString(prefix) + \".\" + InstNode.name(component) + \"\\n\");
-  =#
-  return (vars, sections)
+    DELETED_COMPONENT(__) => begin
+      ()
+    end
+    _ => begin
+      #Error.assertion(false, getInstanceName() + " got unknown component", sourceInfo())
+      @error "Got unknown component!"
+      fail()
+    end
+    end
+  return (vars, sections, structuralSubModels)
 end
 
 function isDeletedComponent(condition::Binding, prefix::ComponentRef)::Bool
@@ -508,7 +517,7 @@ function flattenComplexComponent(
   vars::List{<:Variable},
   sections::Sections,
 )::Tuple{List{Variable}, Sections}
-
+  @debug "FLATTEN COMPLEX COMPONENT: " * toString(node)
   local dims::List{Dimension}
   local name::ComponentRef
   local binding::Binding
@@ -518,9 +527,9 @@ function flattenComplexComponent(
   local bindings::List{Expression}
   local comp_var::VariabilityType
   local binding_var::VariabilityType
-
-  @assign dims = arrayDims(ty)
-  @assign binding = if isSome(outerBinding)
+  local structuralSubModels::List{FLAT_MODEL}
+  dims = arrayDims(ty)
+  binding = if isSome(outerBinding)
     Util.getOption(outerBinding)
   else
     getBinding(comp)
@@ -528,45 +537,41 @@ function flattenComplexComponent(
   #=  Create an equation if there's a binding on a complex component.
   =#
   if isExplicitlyBound(binding)
-    @assign binding = flattenBinding(binding, prefix)
-    @assign binding_exp = getTypedExp(binding)
-    @assign binding_var = variability(binding)
-    @assign comp_var = variability(comp)
+    binding = flattenBinding(binding, prefix)
+    binding_exp = getTypedExp(binding)
+    binding_var = variability(binding)
+    comp_var = variability(comp)
     if comp_var <= Variability.STRUCTURAL_PARAMETER ||
        binding_var <= Variability.STRUCTURAL_PARAMETER
-      @assign binding_exp =
+      binding_exp =
         stripBindingInfo(Ceval.evalExp(binding_exp))
     elseif binding_var == Variability.PARAMETER && isFinal(comp)
-      try
-        @assign binding_exp =
+        binding_exp =
           stripBindingInfo(Ceval.evalExp(binding_exp))
-      catch e
-        @error  "e"
-      end
     else
-      @assign binding_exp = simplify(binding_exp)
+      binding_exp = simplify(binding_exp)
     end
-    @assign binding_exp = splitRecordCref(binding_exp)
+    binding_exp = splitRecordCref(binding_exp)
     if !isRecordOrRecordArray(binding_exp)
-      @assign name = prefixCref(node, ty, nil, prefix)
-      @assign eq = EQUATION_EQUALITY(
+      name = prefixCref(node, ty, nil, prefix)
+      eq = EQUATION_EQUALITY(
         CREF_EXPRESSION(ty, name),
         binding_exp,
         ty,
         ElementSource_createElementSource(info(node)),
       )
-      @assign sections = P_Sections.Sections.prependEquation(
+      sections = P_Sections.Sections.prependEquation(
         eq,
         sections,
         isInitial = comp_var <= Variability.PARAMETER,
       )
-      @assign opt_binding = SOME(EMPTY_BINDING)
+      opt_binding = SOME(EMPTY_BINDING)
     else
-      @assign binding = setTypedExp(binding_exp, binding)
-      @assign opt_binding = SOME(binding)
+      binding = setTypedExp(binding_exp, binding)
+      opt_binding = SOME(binding)
     end
   else
-    @assign opt_binding = NONE()
+    opt_binding = NONE()
   end
   #=  TODO: This will probably not work so well if the binding is an array that
   =#
@@ -576,15 +581,15 @@ function flattenComplexComponent(
   =#
   #=        rest on as usual.
   =#
-  @assign name = prefixScope(node, ty, nil, prefix)
+  name = prefixScope(node, ty, nil, prefix)
   #=  Flatten the class directly if the component is a scalar, otherwise scalarize it.
   =#
   if listEmpty(dims)
-    @assign (vars, sections) =
-      flattenClass(cls, name, visibility, opt_binding, vars, sections)
+    (vars, sections) =
+      flattenClass(cls, name, visibility, opt_binding, vars, sections, nil)
   else
-    @assign (vars, sections) =
-      flattenArray(cls, dims, name, visibility, opt_binding, vars, sections)
+    (vars, sections) =
+      flattenArray(cls, dims, name, visibility, opt_binding, vars, sections, nil)
   end
   return (vars, sections)
 end
@@ -1894,20 +1899,18 @@ RECORD_EXPRESSION(__) => begin
   return funcs
 end
 
-function flattenFunction(@nospecialize(func::M_Function), @nospecialize(funcs::FunctionTree))::FunctionTree
-
+function flattenFunction(func::M_Function, funcs::FunctionTree)::FunctionTree
   local fn::M_Function = func
-
   if !isCollected(fn)
-    @assign fn = EvalConstants.evaluateFunction(fn)
+    fn = EvalConstants.evaluateFunction(fn)
     SimplifyModel.simplifyFunction(fn)
     P_Function.collect(fn)
     if !isPartial(fn.node)
-      @assign funcs = FunctionTree.add(funcs, P_Function.name(fn), fn)
-      @assign funcs = collectClassFunctions(fn.node, funcs)
+      funcs = FunctionTree.add(funcs, P_Function.name(fn), fn)
+      funcs = collectClassFunctions(fn.node, funcs)
       for fn_der in fn.derivatives
         for der_fn in getCachedFuncs(fn_der.derivativeFn)
-          @assign funcs = flattenFunction(der_fn, funcs)
+          funcs = flattenFunction(der_fn, funcs)
         end
       end
     end

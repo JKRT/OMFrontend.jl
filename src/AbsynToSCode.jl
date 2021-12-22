@@ -1,8 +1,3 @@
-module AbsynToSCode
-
-using MetaModelica
-using ExportAll
-
 #= /*
 * This file is part of OpenModelica.
 *
@@ -33,6 +28,11 @@ using ExportAll
 * See the full OSMC Public License conditions for more details.
 *
 */ =#
+
+module AbsynToSCode
+
+using MetaModelica
+using ExportAll
 
 import Absyn
 import SCode
@@ -493,14 +493,14 @@ function containsExternalFuncDecl(inClass::Absyn.Class)::Bool
   return outBoolean
 end
 
-""" #= @author: adrpo
- translates from Absyn.ElementAttributes to SCode.Attributes =#"""
+""" @author: adrpo
+    translates from Absyn.ElementAttributes to SCode.Attributes
+"""
 function translateAttributes(
   inEA::Absyn.ElementAttributes,
   extraArrayDim::List{<:Absyn.Subscript},
-)::SCode.Attributes
+  )::SCode.Attributes
   local outA::SCode.Attributes
-
    outA = begin
     local f::Bool
     local s::Bool
@@ -512,14 +512,15 @@ function translateAttributes(
     local fi::Absyn.IsField
     local ct::SCode.ConnectorType
     local sp::SCode.Parallelism
-    local sv::SCode.Variability
+     local sv::SCode.Variability
     @match (inEA, extraArrayDim) begin
       (Absyn.ATTR(f, s, p, v, dir, fi, adim, mo), extraADim) => begin
-         ct = translateConnectorType(f, s)
-         sv = translateVariability(v)
-         sp = translateParallelism(p)
-         adim = listAppend(extraADim, adim)
-        SCode.ATTR(adim, ct, sp, sv, dir, mode)
+        ct = translateConnectorType(f, s)
+        sv = translateVariability(v)
+        sp = translateParallelism(p)
+        adim = listAppend(extraADim, adim)
+        @debug "Value of mode in translate Attributes" mo
+        SCode.ATTR(adim, ct, sp, sv, dir, fi, mo)
       end
     end
   end
@@ -544,14 +545,11 @@ function translateConnectorType(inFlow::Bool, inStream::Bool)::SCode.ConnectorTy
       end
 
       (true, true) => begin
+        #=  Both flow and stream is not allowed by the grammar, so this shouldn't be  possible. =#
         fail()
       end
     end
   end
-  #=  Both flow and stream is not allowed by the grammar, so this shouldn't be
-  =#
-  #=  possible.
-  =#
   return outType
 end
 
@@ -1444,8 +1442,10 @@ function translateDefineunitParam2(
   return weightOpt
 end
 
-""" #= This function turns an Absyn.ElementSpec to a list of SCode.Element.
-  The boolean arguments say if the element is final and protected, respectively. =#"""
+"""
+    This function turns an Absyn.ElementSpec to a list of SCode.Element.
+    The boolean arguments say if the element is final and protected, respectively.
+"""
 function translateElementspec(
   cc::Option{<:Absyn.ConstrainClass},
   finalPrefix::Bool,
@@ -1458,56 +1458,57 @@ function translateElementspec(
   local outElementLst::List{SCode.Element}
 
    outElementLst = begin
+    local absann::Absyn.Annotation
+    local ad::List{SCode.Subscript}
+    local ann::Option{SCode.Annotation}
+    local args::List{Absyn.ElementArg}
+    local attr::Absyn.ElementAttributes
+    local cl::Absyn.Class
+    local cls::SCode.Element
+    local cmt::SCode.Comment
+    local comment::Option{Absyn.Comment}
+    local cond::Option{Absyn.Exp}
+    local ct::SCode.ConnectorType
+    local d::List{SCode.Subscript}
+    local de::Absyn.ClassDef
     local de_1::SCode.ClassDef
-    local re_1::SCode.Restriction
-    local rp::Bool
-    local pa::Bool
-    local fi::Bool
+    local di::Absyn.Direction
     local e::Bool
-    local repl_1::Bool
+    local fi::Bool
     local fl::Bool
-    local st::Bool
+    local i::SourceInfo
+    local imp::Absyn.Import
+    local info::SourceInfo
+    local isf::Absyn.IsField
+    local m::Option{Absyn.Modification}
+    local mod::SCode.Mod
+    local md::Bool
+    local n::String
+    local pa::Bool
+    local parallelism::Absyn.Parallelism
+    local path::Absyn.Path
+    local prefixes::SCode.Prefixes
+    local prl1::SCode.Parallelism
+    local re::Absyn.Restriction
+    local re_1::SCode.Restriction
     local redecl::Bool
     local repl::Option{Absyn.RedeclareKeywords}
-    local cl::Absyn.Class
-    local n::String
-    local re::Absyn.Restriction
-    local de::Absyn.ClassDef
-    local mod::SCode.Mod
-    local args::List{Absyn.ElementArg}
-    local xs_1::List{SCode.Element}
-    local prl1::SCode.Parallelism
-    local var1::SCode.Variability
-    local tot_dim::List{SCode.Subscript}
-    local ad::List{SCode.Subscript}
-    local d::List{SCode.Subscript}
-    local attr::Absyn.ElementAttributes
-    local di::Absyn.Direction
-    local isf::Absyn.IsField
-    local t::Absyn.TypeSpec
-    local m::Option{Absyn.Modification}
-    local comment::Option{Absyn.Comment}
-    local cmt::SCode.Comment
-    local xs::List{Absyn.ComponentItem}
-    local imp::Absyn.Import
-    local cond::Option{Absyn.Exp}
-    local path::Absyn.Path
-    local absann::Absyn.Annotation
-    local ann::Option{SCode.Annotation}
-    local variability::Absyn.Variability
-    local parallelism::Absyn.Parallelism
-    local i::SourceInfo
-    local info::SourceInfo
-    local cls::SCode.Element
-    local sRed::SCode.Redeclare
-    local sFin::SCode.Final
-    local sRep::SCode.Replaceable
+    local repl_1::Bool
+    local rp::Bool
     local sEnc::SCode.Encapsulated
+    local sFin::SCode.Final
     local sPar::SCode.Partial
-    local vis::SCode.Visibility
-    local ct::SCode.ConnectorType
-    local prefixes::SCode.Prefixes
+    local sRed::SCode.Redeclare
+    local sRep::SCode.Replaceable
     local scc::Option{SCode.ConstrainClass}
+    local st::Bool
+    local t::Absyn.TypeSpec
+    local tot_dim::List{SCode.Subscript}
+    local var1::SCode.Variability
+    local variability::Absyn.Variability
+    local vis::SCode.Visibility
+    local xs::List{Absyn.ComponentItem}
+    local xs_1::List{SCode.Element}
     @match (cc, finalPrefix, io, inRedeclareKeywords, inVisibility, inElementSpec4, inInfo) begin
       (
         _,
@@ -1654,6 +1655,7 @@ function translateElementspec(
             direction = di,
             isField = isf,
             arrayDim = ad,
+            isMode = md
           ),
           typeSpec = t,
         ),
@@ -1726,7 +1728,7 @@ function translateElementspec(
                   SCode.COMPONENT(
                     n,
                     prefixes,
-                    SCode.ATTR(tot_dim, ct, prl1, var1, di, isf),
+                    SCode.ATTR(tot_dim, ct, prl1, var1, di, isf, md),
                     t,
                     mod,
                     cmt,
@@ -1753,8 +1755,6 @@ function translateElementspec(
       end
     end
   end
-  #=  fprintln(Flags.TRANSLATE, \"translating import: \" + Dump.unparseImportStr(imp));
-  =#
   return outElementLst
 end
 
@@ -2565,6 +2565,7 @@ function makeTypeVarElement(str::String, info::SourceInfo)::SCode.Element
       SCode.VAR(),
       Absyn.BIDIR(),
       Absyn.NONFIELD(),
+      false
     ),
   )
    elt = SCode.CLASS(

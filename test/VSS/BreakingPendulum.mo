@@ -45,10 +45,10 @@ Real x;
 Real y;
 Real vx;
 Real vy;
-Pendulum pendulum;
-BouncingBall bouncingBall;
+structuralmode Pendulum pendulum;
+structuralmode BouncingBall bouncingBall;
 /* Required? */
 equation
   initialStructuralState(pendulum);
-//  structuralTransistion(/* From */ pendulum, /* To */bouncingBall, time - 5 <= 0 /*Condition*/);
+  structuralTransistion(/* From */ pendulum, /* To */bouncingBall, time - 5 <= 0 /*Condition*/);
 end BreakingPendulum;

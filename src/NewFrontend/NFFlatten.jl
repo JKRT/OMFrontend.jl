@@ -678,6 +678,7 @@ function flattenArray(
       subscriptBindingOpt(subs, binding),
       vars,
       sections,
+      nil,
     )
   else
     @match _cons(dim, rest_dims) = dimensions

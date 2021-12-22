@@ -706,7 +706,7 @@ function instDerivedAttributes(scodeAttr::SCode.Attributes) ::Attributes
         cty = fromSCode(scodeAttr.connectorType)
         var = variabilityFromSCode(scodeAttr.variability)
         dir = directionFromSCode(scodeAttr.direction)
-        ATTRIBUTES(cty, Parallelism.NON_PARALLEL, var, dir, InnerOuter.NOT_INNER_OUTER, false, false, NOT_REPLACEABLE())
+        ATTRIBUTES(cty, Parallelism.NON_PARALLEL, var, dir, InnerOuter.NOT_INNER_OUTER, false, false, NOT_REPLACEABLE(), false #= Should not in a derived class. =#)
       end
     end
   end

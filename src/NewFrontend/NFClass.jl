@@ -988,5 +988,3 @@ function isEqual(prefs1::Prefixes, prefs2::Prefixes)::Bool
   local isEqual::Bool = valueEq(prefs1, prefs2)
   return isEqual
 end
-
-@exportAll

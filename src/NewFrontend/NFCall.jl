@@ -204,7 +204,7 @@ function isVectorizeable(call::Call)::Bool
   return isVect
 end
 
-function toDAE(@nospecialize(call::Call))::DAE.Exp
+function toDAE(@nospecialize(call::Call))
   local daeCall::DAE.Exp
   @assign daeCall = begin
     local fold_id::String

@@ -1,8 +1,8 @@
 
-"
-  Main modul.
-  This model provides the entry to the translated code and associated tweaks and quirks. 
-"
+"""
+  Main module.
+  This module provides the entry to the translated code and associated tweaks and quirks. 
+"""
 module Main
 #= We also use it at the top level =#
 
@@ -44,14 +44,14 @@ include("./FrontendUtil/Prefix.jl")
 
 
 #= Disable type inference for this module =#
-if isdefined(Base, :Experimental) && isdefined(Base.Experimental, Symbol("@compiler_options"))
-    # @info "Setting compiler options.."
-    # @info "Base.Experimental.@compiler_options compile=all optimize=3 infer=false"
-    # Base.Experimental.@compiler_options compile=min optimize=3 infer=false
-else
-    throw("@compiler_options is not available.\n 
-           This package only works for a version of Julia with @compiler_options")
-end
+# if isdefined(Base, :Experimental) && isdefined(Base.Experimental, Symbol("@compiler_options"))
+#     # @info "Setting compiler options.."
+#     # @info "Base.Experimental.@compiler_options compile=all optimize=3 infer=false"
+#   Base.Experimental.@compiler_options compile=min optimize=3 infer=false
+# else
+#     throw("@compiler_options is not available.\n 
+#            This package only works for a version of Julia with @compiler_options")
+# end
 #= Include interfaces and aliases New Frontend=#
 include("./FrontendInterfaces/NFInterfaces.jl")
 include("./FrontendInterfaces/NFAlias.jl")

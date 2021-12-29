@@ -1320,7 +1320,7 @@ function componentApply(node::InstNode, func::FuncType, arg::ArgT)  where {ArgT}
   node
 end
 
-function classApply(@nospecialize(node::InstNode), @nospecialize(func::FuncType), arg::ArgT)  where {ArgT}
+function classApply(node::InstNode, func::FuncType, arg::ArgT)  where {ArgT}
   @assign () = begin
     @match node begin
       CLASS_NODE(__)  => begin
@@ -1332,7 +1332,7 @@ function classApply(@nospecialize(node::InstNode), @nospecialize(func::FuncType)
   node
 end
 
-function getType(@nospecialize(node::InstNode))::NFType
+function getType(node::InstNode)::NFType
   local ty::M_Type
   @assign ty = begin
     @match node begin

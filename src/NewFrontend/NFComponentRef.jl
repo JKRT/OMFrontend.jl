@@ -592,12 +592,13 @@ function foldSubscripts(cref::ComponentRef, func::FuncT, arg::ArgT) where {ArgT}
   return arg
 end
 
-""" #= Copies subscripts from one cref to another, overwriting any subscripts on
-     the destination cref. =#"""
+"""  Copies subscripts from one cref to another, overwriting any subscripts on
+     the destination cref.
+"""
 function transferSubscripts(srcCref::ComponentRef, dstCref::ComponentRef)::ComponentRef
   local cref::ComponentRef
 
-  @assign cref = begin
+  cref = begin
     @match (srcCref, dstCref) begin
       (COMPONENT_REF_EMPTY(__), _) => begin
         dstCref
@@ -1129,7 +1130,7 @@ function prefixCref(
   ty::M_Type,
   subs::List{<:Subscript},
   restCref::ComponentRef,
-)::ComponentRef
+  )::ComponentRef
   local cref::ComponentRef = COMPONENT_REF_CREF(node, subs, ty, Origin.CREF, restCref)
   return cref
 end

@@ -12,7 +12,7 @@ FunctionTree = FunctionTreeImpl.Tree
 const NFFunctionTree = FunctionTreeImpl
 
 import .FunctionTree
-function flatten(classInst::InstNode, name::String)::FlatModel
+function flatten(classInst::InstNode, name::String; prefix = COMPONENT_REF_EMPTY())::FlatModel
   local flatModel::FlatModel
   local sections::Sections
   local vars::List{Variable}
@@ -27,7 +27,7 @@ function flatten(classInst::InstNode, name::String)::FlatModel
   cmt = SCodeUtil.getElementComment(definition(classInst))
   (vars, sections, structuralSubmodels) = flattenClass(
     getClass(classInst),
-    COMPONENT_REF_EMPTY(),
+    prefix,
     Visibility.PUBLIC,
     NONE(),
     nil,
@@ -50,7 +50,7 @@ function flatten(classInst::InstNode, name::String)::FlatModel
     end
   end
 #  execStat(getInstanceName() + "(" + name + ")")
-  @assign flatModel = resolveConnections(flatModel, name)
+  flatModel = resolveConnections(flatModel, name)
   return flatModel
 end
 
@@ -121,7 +121,7 @@ function flattenClass(
                                  vars, sections, structuralSubModels)
             end
           end
-          @assign sections = flattenSections(cls.sections, prefix, sections)
+          sections = flattenSections(cls.sections, prefix, sections)
           ()
         end
 
@@ -199,13 +199,15 @@ function flattenComponent(
         if c.attributes.isStructuralMode == true
           @debug "FLATTEN A COMPLEX STRUCTURAL COMPONENT"
           #=
-          Since this component is structural we do not flatten it.
-          Instead we create a new FlatModel and add it to the list.
-          If this component in turn has structural subcomponents these are added
-          to the list of FlatModels for this component recursivly. 
+            Since this component is structural we do not flatten it.
+            Instead we create a new FlatModel and add it to the list.
+            If this component in turn has structural subcomponents these are added
+            to the list of FlatModels for this component using recursion. 
           =#
+          local prefixOfComponent = fromNode(comp_node, ty)
           structuralSubModels =
-            flatten(comp_node, name(comp_node)) <| structuralSubModels
+            flatten(comp_node #= TODO: Or do we need some instantation specific stuff=#,
+                    name(comp_node), prefix = prefixOfComponent) <| structuralSubModels
         else
           @debug "FLATTEN A COMPLEX COMPONENT WITH ATTRIBUTES: " c.attributes
           (vars, sections) = flattenComplexComponent(
@@ -414,15 +416,15 @@ function flattenSimpleComponent(
   #     @assign binding = EMPTY_BINDING
   #   end
   # end
-  @assign name = prefixScope(comp_node, ty, nil, prefix)
-  @assign ty_attrs = list(flattenTypeAttribute(m, name) for m in typeAttrs)
+  name = prefixScope(comp_node, ty, nil, prefix)
+  ty_attrs = list(flattenTypeAttribute(m, name) for m in typeAttrs)
   #=  Set fixed = true for parameters that are part of a record instance whose
   =#
   #=  binding couldn't be split and was moved to an initial equation.
   =#
   if unfix
-    @assign ty_attrs = ListUtil.removeOnTrue("fixed", isTypeAttributeNamed, ty_attrs)
-    @assign ty_attrs = _cons(
+    ty_attrs = ListUtil.removeOnTrue("fixed", isTypeAttributeNamed, ty_attrs)
+    ty_attrs = _cons(
       (
         "fixed",
         FLAT_BINDING(
@@ -433,7 +435,7 @@ function flattenSimpleComponent(
       ty_attrs,
     )
   end
-  @assign vars = _cons(
+  vars = _cons(
     VARIABLE(
       name,
       ty,
@@ -1064,7 +1066,7 @@ function flattenExp(exp::Expression, prefix::ComponentRef)::Expression
 end
 
 function flattenExp_traverse(exp::Expression, prefix::ComponentRef)::Expression
-  @assign exp = begin
+  exp = begin
     @match exp begin
       CREF_EXPRESSION(__) => begin
         @assign exp.cref = transferSubscripts(prefix, exp.cref)

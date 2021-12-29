@@ -444,7 +444,7 @@ function makeRecordType(constructor::InstNode)::ComplexType
   return recordTy
 end
 
-function typeComponent(inComponent::InstNode, origin::ORIGIN_Type)::NFType
+function typeComponent(@nospecialize(inComponent::InstNode), origin::ORIGIN_Type)::NFType
   local ty::NFType
   local node::InstNode = resolveOuter(inComponent)
   local c::Component = component(node)
@@ -1003,7 +1003,7 @@ function typeComponentBinding(
 end
 
 function typeComponentBinding2(
-  inComponent::InstNode,
+  @nospecialize(inComponent::InstNode),
   origin::ORIGIN_Type,
   typeChildren::Bool,
 )

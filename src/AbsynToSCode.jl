@@ -1157,7 +1157,7 @@ function translateClassdefAlgorithmItem(inAlgorithm::Absyn.AlgorithmItem)::SCode
         =#
         #=  assert(condition, message, level = arg)
         =#
-         e1 = Absyn.CALL(alg.functionCall, alg.functionArgs)
+         e1 = Absyn.CALL(alg.functionCall, alg.functionArgs, nil)
         SCode.ALG_NORETCALL(e1, comment, info)
       end
 

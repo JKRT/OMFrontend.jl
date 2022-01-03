@@ -1231,12 +1231,12 @@ function fromEnumeration(
     ),
   )
   for l in literals
-    @assign name = l.literal
-    @assign i = i + 1
-    @assign comp =
-      fromComponent(name, P_Component.newEnum(enumType, name, i), enumClass)
+    name = l.literal
+    i = i + 1
+    comp =
+      fromComponent(name, newEnum(enumType, name, i), enumClass)
     arrayUpdateNoBoundsChecking(comps, i + attr_count, comp)
-    @assign ltree = LookupTree.add(
+    ltree = LookupTree.add(
       ltree,
       name,
       LookupTree.COMPONENT(i + attr_count),
@@ -1358,12 +1358,12 @@ function fromSCode(
           ()
         end
 
-        SCode.IMPORT(imp = Absyn.P_Import.Import.UNQUAL_IMPORT(__), info = info) => begin
+        SCode.IMPORT(imp = Absyn.UNQUAL_IMPORT(__), info = info) => begin
           #=  An unqualified import clause. We need to know which names are
           =#
           #=  imported by the clause, so it needs to be instantiated.
           =#
-          @assign imps = P_Import.Import.instUnqualified(e.imp, parent, info, imps)
+          imps = instUnqualified(e.imp, parent, info, imps)
           ()
         end
 
@@ -1379,7 +1379,7 @@ function fromSCode(
           #=  enclosing scopes.
           =#
           @assign imps =
-            _cons(P_Import.Import.UNRESOLVED_IMPORT(e.imp, parent, e.info), imps)
+            _cons(UNRESOLVED_IMPORT(e.imp, parent, e.info), imps)
           ()
         end
       end
@@ -2282,7 +2282,7 @@ function addImport(
 
   @assign tree = LookupTree.add(
     tree,
-    P_Import.Import.name(imp),
+    name(imp),
     LookupTree.IMPORT(index),
     (imports) -> addImportConflict(imports = imports),
   )

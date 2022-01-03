@@ -1006,10 +1006,9 @@ function containsNode(cref::ComponentRef, node::InstNode)::Bool
 end
 
 function node(cref::ComponentRef)::InstNode
-  local node::InstNode
-
-  @match COMPONENT_REF_CREF(node = node) = cref
-  return node
+  local nodeVar::InstNode
+  @match COMPONENT_REF_CREF(node = nodeVar) = cref
+  return nodeVar
 end
 
 function isIterator(cref::ComponentRef)::Bool

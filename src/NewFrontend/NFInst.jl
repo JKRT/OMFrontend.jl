@@ -2627,7 +2627,7 @@ function instExternalDecl(@nospecialize(extDecl::SCode.ExternalDecl), @nospecial
         checkExternalDeclLanguage(lang, info)
         @assign args = list(instExp(arg, scope, info) for arg in extDecl.args)
         if isSome(extDecl.output_)
-          @assign ret_cref = Lookup.lookupLocalComponent(Util.getOption(extDecl.output_), scope, info)
+          (ret_cref, _) = lookupLocalComponent(Util.getOption(extDecl.output_), scope, info)
         else
           @assign ret_cref = COMPONENT_REF_EMPTY()
         end

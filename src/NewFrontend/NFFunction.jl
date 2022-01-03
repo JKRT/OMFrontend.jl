@@ -2108,8 +2108,8 @@ function instFunction(
   local fn_node::InstNode
   local fn_ref::ComponentRef
   local cache::CachedData
-  @assign fn_ref = lookupFunction(functionName, scope, info)
-  @assign (fn_ref, fn_node, specialBuiltin) = instFunctionRef(fn_ref, info)
+  fn_ref = lookupFunction(functionName, scope, info)
+  (fn_ref, fn_node, specialBuiltin) = instFunctionRef(fn_ref, info)
   return (fn_ref, fn_node, specialBuiltin)
 end
 
@@ -2124,16 +2124,16 @@ function lookupFunction(
   local functionPath::Absyn.Path
   local prefix::ComponentRef
   local is_class::Bool
-  @assign functionPath = AbsynUtil.crefToPath(functionName)
+  functionPath = AbsynUtil.crefToPath(functionName)
   #=  Make sure the name is a path.
   =#
-  @assign (functionRef, found_scope) = lookupFunctionName(functionName, scope, info)
+  (functionRef, found_scope) = lookupFunctionName(functionName, scope, info)
   #=  If we found a function class we include the root in the prefix, but if we
   =#
   #=  instead found a component (i.e. a functional parameter) we don't.
   =#
-  @assign is_class = isClass(node(functionRef))
-  @assign prefix = fromNodeList(scopeList(
+  is_class = isClass(node(functionRef))
+  prefix = fromNodeList(scopeList(
     found_scope,
     includeRoot = is_class,
   ))

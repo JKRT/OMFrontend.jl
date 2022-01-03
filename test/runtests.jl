@@ -47,6 +47,12 @@ end
 @testset "Frontend Validation test. Check that the result corresponds to existing models in the original frontend " begin
   include("frontendResultTest.jl")
 end
+
+#= Test some of the MSL=#
+@testset "Simple MSL test" begin
+  include("mslTests.jl")
+end
+
 #= OMFrontend.jl extensions for variable structured systems =#
 @testset "Basic VSS models" begin
   include("./VSS/testVSS.jl")

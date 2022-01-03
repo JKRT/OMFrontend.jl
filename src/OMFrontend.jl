@@ -18,6 +18,11 @@ This cache is initialized when the module is loaded.
 const NFModelicaBuiltinCache = Dict()
 
 """
+This cache contains various instantiated libraries for later use.
+"""
+const LIBRARY_CACHE = Dict()
+
+"""
   This function loads builtin Modelica libraries.
 """
 function __init__()
@@ -84,25 +89,21 @@ function instantiateSCodeToFM(elementToInstantiate::String, inProgram::SCode.Pro
   Main.instClassInProgramFM(path, program)
 end
 
-function testSpin()
-    p = parseFile("./src\\example.mo")
-    scodeProgram = translateToSCode(p)
-    @debug "Translation to SCode"
-    @debug "SCode -> DAE"
-    (dae, cache) = instantiateSCodeToDAE("HelloWorld", scodeProgram)
-    @debug "After DAE Translation"
-  return dae
-end
-
-function testSpinDAEExport()
-  p = parseFile("example.mo")
-  scodeProgram = translateToSCode(p)
-  @debug "Translation to SCode"
-  @debug "SCode -> DAE"
-  (dae, cache) = instantiateSCodeToDAE("HelloWorld", scodeProgram)
-  @debug "Exporting to file"
-  exportDAERepresentationToFile("testDAE.jl", "$dae")
-  @debug "DAE Exported"
+"""
+  @author: johti17
+  Loads the Modelica Standard Library (MSL).
+  Adds the Modelica standard library to the library cache.
+"""
+function loadMSL()
+  Main.Global.initialize()
+  #= Find the MSL =#
+  local packagePath = dirname(realpath(Base.find_package("OMFrontend")))
+  local packagePath *= "/.."
+  local pathToLib = packagePath * "/lib/Modelica/msl.mo"
+  local p = parseFile(pathToLib)
+  #= Translate it to SCode =#
+  local scodeMSL = OMFrontend.translateToSCode(p)
+  LIBRARY_CACHE["MSL"] = scodeMSL  
 end
 
 """

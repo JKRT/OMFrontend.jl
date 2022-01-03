@@ -2897,7 +2897,8 @@ function typeFunctionSections(classNode::InstNode, origin::ORIGIN_Type)
               @assign info = InstNode_info(classNode)
               @assign sections.args =
                 list(typeExternalArg(arg, info, classNode) for arg in sections.args)
-              @assign sections.outputRef = typeCref(sections.outputRef, origin, info)
+              (res,_,_) = typeCref(sections.outputRef, origin, info)
+              @assign sections.outputRef = res
               sections
             end
 

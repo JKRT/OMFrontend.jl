@@ -300,7 +300,7 @@ function isDeletedComponent(condition::Binding, prefix::ComponentRef)::Bool
   return isDeleted
 end
 
-""" #= Recursively marks components as deleted. =#"""
+""" Recursively marks components as deleted. """
 function deleteComponent(compNode::InstNode)
   local comp::Component
 

@@ -41,7 +41,7 @@ Note: In this case the flat Modelica code is almost indentical to the original m
 
 ### Representation
 This particular model uses the FlatModelica datastructure. 
-An alternative is to use the DAE datastructure defined by (DAE.jl)[https://github.com/JKRT/DAEjl]
+An alternative is to use the DAE datastructure defined by [DAE.jl](https://github.com/JKRT/DAE.jl)
 
 ### Other API functions
 There is also an API defined for using libraries, however, as of this writing the documentations for these procedures

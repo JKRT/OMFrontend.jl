@@ -100,7 +100,6 @@ function lookupLocalComponent(cref::Absyn.ComponentRef, scope::InstNode #= The s
   local foundScope::InstNode #= The scope the cref was found in. =#
   local foundCref::ComponentRef
   local state::LookupState
-  local node::InstNode
   @assign (foundCref, foundScope, state) = lookupLocalCref(cref, scope, info)
   assertComponent(state, node(foundCref), cref, info)
   (foundCref, foundScope #= The scope the cref was found in. =#)
@@ -112,13 +111,13 @@ function lookupFunctionName(cref::Absyn.ComponentRef, scope::InstNode #= The sco
   local state::LookupState
   local nodeVar::InstNode
   try
-    @assign (foundCref, foundScope, state) = lookupCref(cref, scope)
-    @assign nodeVar = node(foundCref)
+    (foundCref, foundScope, state) = lookupCref(cref, scope)
+    nodeVar = node(foundCref)
     @match false = isName(nodeVar)
   catch e
-    @error "Function lookup error for function $cref. With exception $e"
+    @error "Function lookup error for function $cref. With exception:" e
   end
-  @assign (foundCref, state) = fixExternalObjectCall(nodeVar, foundCref, state)
+  (foundCref, state) = fixExternalObjectCall(nodeVar, foundCref, state)
   assertFunction(state, nodeVar, cref, info)
   (foundCref, foundScope)
 end
@@ -152,7 +151,7 @@ end
    if ! isClass(state)
      return (cref, state)
    end
-   Inst.expand(node)
+   expand(node)
    @assign cls = getClass(node)
    @assign () = begin
      @match cls begin
@@ -191,26 +190,27 @@ function lookupCrefWithError(cref::Absyn.ComponentRef, scope::InstNode, info::So
   (foundCref, foundScope, state)
 end
 
-""" #= This function will look up an Absyn.ComponentRef in the given scope, and
+""" This function will look up an Absyn.ComponentRef in the given scope, and
                    construct a ComponentRef from the found nodes. The scope where the first part
-                   of the cref was found will also be returned. =#"""
+                   of the cref was found will also be returned.
+"""
 function lookupCref(cref::Absyn.ComponentRef, scope::InstNode #= The scope to look in. =#)
   local state::LookupState
   local foundScope::InstNode #= The scope where the first part of the cref was found. =#
   local foundCref::ComponentRef
 
-  local node::InstNode
+  local nodeVar::InstNode
 
   @assign (foundCref, foundScope, state) = begin
     @match cref begin
       Absyn.CREF_IDENT(__)  => begin
-        @assign (_, foundCref, foundScope, state) = lookupSimpleCref(cref.name, cref.subscripts, scope)
+        (_, foundCref, foundScope, state) = lookupSimpleCref(cref.name, cref.subscripts, scope)
         (foundCref, foundScope, state)
       end
 
       Absyn.CREF_QUAL(__)  => begin
-        @assign (node, foundCref, foundScope, state) = lookupSimpleCref(cref.name, cref.subscripts, scope)
-        @assign (foundCref, foundScope, state) = lookupCrefInNode(cref.componentRef, node, foundCref, foundScope, state)
+        (nodeVar, foundCref, foundScope, state) = lookupSimpleCref(cref.name, cref.subscripts, scope)
+        (foundCref, foundScope, state) = lookupCrefInNode(cref.componentRef, nodeVar, foundCref, foundScope, state)
         (foundCref, foundScope, state)
       end
 
@@ -507,31 +507,27 @@ function lookupSimpleBuiltinName(name::String)
   builtin
 end
 
-function lookupSimpleBuiltinCref(name::String, subs::List{<:Absyn.Subscript})
+function lookupSimpleBuiltinCref(name::String, subs::List{T}) where {T}
   local state::LookupState
   local cref::ComponentRef
   local node::InstNode
   @debug "Looking up $name in lookupSimpleBuiltinCref"
-  @assign (node, cref, state) = begin
+  (node, cref, state) = begin
     @match name begin
       "time"  => begin
         (NFBuiltin.TIME, NFBuiltin.TIME_CREF, LOOKUP_STATE_PREDEF_COMP())
       end
-
       "Boolean"  => begin
-        (NFBuiltin.BOOLEAN_NODE, NFBuiltin.BOOLEAN_CREF, PREDEF_CLASS())
+        (NFBuiltin.BOOLEAN_NODE, NFBuiltin.BOOLEAN_CREF, LOOKUP_STATE_PREDEF_CLASS())
       end
-
       "Integer"  => begin
-        (NFBuiltinFuncs.INTEGER_NODE, NFBuiltinFuncs.INTEGER_CREF, FUNC())
+        (NFBuiltinFuncs.INTEGER_NODE, NFBuiltinFuncs.INTEGER_CREF, LOOKUP_STATE_FUNC())
       end
-
       "String"  => begin
-        (NFBuiltinFuncs.STRING_NODE, NFBuiltinFuncs.STRING_CREF, FUNC())
+        (NFBuiltinFuncs.STRING_NODE, NFBuiltinFuncs.STRING_CREF, LOOKUP_STATE_FUNC())
       end
-
       "Clock" where (Config.synchronousFeaturesAllowed())  => begin
-        (NFBuiltinFuncs.CLOCK_NODE, NFBuiltinFuncs.CLOCK_CREF, FUNC())
+        (NFBuiltinFuncs.CLOCK_NODE, NFBuiltinFuncs.CLOCK_CREF, LOOKUP_STATE_FUNC())
       end
     end
   end
@@ -549,8 +545,8 @@ function lookupSimpleCref(name::String, subs::List{<:Absyn.Subscript}, scope::In
   local node::InstNode
   local is_import::Bool
   try
-    @assign (node, cref, state) = lookupSimpleBuiltinCref(name, subs)
-    @assign foundScope = topScope(foundScope)
+    (node, cref, state) = lookupSimpleBuiltinCref(name, subs)
+    foundScope = topScope(foundScope)
   catch e
     @debug "Searching for scope in lookupSimplecref.. with $(typeof(scope))"
 #    @error "Another DBG error message: $(e)"
@@ -668,7 +664,7 @@ function lookupCrefInNode(cref::Absyn.ComponentRef #=modification-040321=#, node
   @assign scope = begin
     @match node begin
       CLASS_NODE(__)  => begin
-        Inst.instPackage(node)
+        instPackage(node)
       end
       _  => begin
         node

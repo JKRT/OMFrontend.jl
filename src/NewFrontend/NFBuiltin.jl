@@ -781,6 +781,7 @@ const TIME =
     EMPTY_NODE(),
     NORMAL_COMP(),
   )::InstNode
+
 const TIME_CREF =
   COMPONENT_REF_CREF(
     TIME,

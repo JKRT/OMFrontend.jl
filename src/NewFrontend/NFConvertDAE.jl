@@ -780,7 +780,7 @@ function convertEquation(eq::Equation, elements::List{<:DAE.Element})::List{DAE.
 
       EQUATION_NORETCALL(__) => begin
         _cons(
-          DAE.Element.NORETCALL(toDAE(eq.exp), eq.source),
+          DAE.NORETCALL(toDAE(eq.exp), eq.source),
           elements,
         )
       end

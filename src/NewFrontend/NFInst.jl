@@ -694,7 +694,6 @@ end
 
 function instDerivedAttributes(scodeAttr::SCode.Attributes) ::Attributes
   local attributes::Attributes
-
   local cty::ConnectorType.TYPE
   local var::VariabilityType
   local dir::DirectionType
@@ -707,7 +706,7 @@ function instDerivedAttributes(scodeAttr::SCode.Attributes) ::Attributes
         cty = fromSCode(scodeAttr.connectorType)
         var = variabilityFromSCode(scodeAttr.variability)
         dir = directionFromSCode(scodeAttr.direction)
-        ATTRIBUTES(cty, Parallelism.NON_PARALLEL, var, dir, InnerOuter.NOT_INNER_OUTER, false, false, NOT_REPLACEABLE())
+        ATTRIBUTES(cty, Parallelism.NON_PARALLEL, var, dir, InnerOuter.NOT_INNER_OUTER, false, false, NOT_REPLACEABLE(), false #= Should not in a derived class. =#)
       end
     end
   end
@@ -864,28 +863,28 @@ function instClassDef(cls::Class, outerMod::Modifier, attributes::Attributes, us
         ()
       end
 
-INSTANCED_CLASS(__)  => begin
-  #=  If a class has an instance of a encapsulating class, then the encapsulating
-  =#
-  #=  class will have been fully instantiated to allow lookup in it. This is a
-  =#
-  #=  rather uncommon case hopefully, so in that case just reinstantiate the class.
-  =#
-  @assign node = replaceClass(NOT_INSTANTIATED(), node)
-  @assign node = setNodeType(NORMAL_CLASS(), node)
-  @assign node = expand(node)
-  @assign node = instClass(node, outerMod, attributes, useBinding, instLevel, parent)
-  updateComponentType(parent, node)
-  ()
-end
+      INSTANCED_CLASS(__)  => begin
+        #=  If a class has an instance of a encapsulating class, then the encapsulating
+        =#
+        #=  class will have been fully instantiated to allow lookup in it. This is a
+        =#
+        #=  rather uncommon case hopefully, so in that case just reinstantiate the class.
+        =#
+        @assign node = replaceClass(NOT_INSTANTIATED(), node)
+        @assign node = setNodeType(NORMAL_CLASS(), node)
+        @assign node = expand(node)
+        @assign node = instClass(node, outerMod, attributes, useBinding, instLevel, parent)
+        updateComponentType(parent, node)
+        ()
+      end
 
-_  => begin
-  Error.assertion(false, getInstanceName() + " got unknown class.", sourceInfo())
-  ()
-end
-end
-end
-(attributes, node)
+      _  => begin
+        Error.assertion(false, getInstanceName() + " got unknown class.", sourceInfo())
+        ()
+      end
+    end
+  end
+  (attributes, node)
 end
 
 """ #= Sets the class instance of a component node. =#"""
@@ -927,11 +926,12 @@ function instExternalObjectStructors(ty::M_Type, parent::InstNode)
   end
 end
 
-""" #= This function instantiates a package given a package node. If the package has
-       already been instantiated, then the cached instance from the node is
-       returned. Otherwise the node is fully instantiated, the instance is added to
-       the node's cache, and the instantiated node is returned. 
-=#"""
+"""
+  This function instantiates a package given a package node. If the package has
+  already been instantiated, then the cached instance from the node is
+  returned. Otherwise the node is fully instantiated, the instance is added to
+  the node's cache, and the instantiated node is returned. 
+"""
 function instPackage(node::InstNode) ::InstNode
   local cache::CachedData
   local inst::InstNode
@@ -964,14 +964,7 @@ function instPackage(node::InstNode) ::InstNode
   node
 end
 
-"""
-  @author: johti17@liu.se
-"""
-function modifyExtends(extendsNode::InstNode; scope::InstNode)
-  modifyExtends(extendsNode, scope)
-end
-
-function modifyExtends(extendsNode::InstNode, scope::InstNode) ::InstNode
+function modifyExtends(extendsNode::InstNode, scope::InstNode)
   local elem::SCode.Element
   local ext_mod::Modifier
   local ext_node::InstNode
@@ -1578,9 +1571,12 @@ end
                  end
                end
 
+"""
+  This function instantiates component attributes.
+  It uses ´DEFAULT_ATTR´ or some special modifier depending on the component prefix.
+"""
 function instComponentAttributes(compAttr::SCode.Attributes, compPrefs)::Attributes
   local attributes::Attributes
-
   local cty
   local par::ParallelismType
   local var::VariabilityType
@@ -1589,22 +1585,35 @@ function instComponentAttributes(compAttr::SCode.Attributes, compPrefs)::Attribu
   local fin::Bool
   local redecl::Bool
   local repl
-
- @assign attributes = begin
+  attributes = begin
     @match (compAttr, compPrefs) begin
-      (SCode.ATTR(connectorType = SCode.POTENTIAL(__), parallelism = SCode.NON_PARALLEL(__), variability = SCode.VAR(__), direction = Absyn.BIDIR(__)), SCode.PREFIXES(redeclarePrefix = SCode.NOT_REDECLARE(__), finalPrefix = SCode.NOT_FINAL(__), innerOuter = Absyn.NOT_INNER_OUTER(__), replaceablePrefix = SCode.NOT_REPLACEABLE(__)))  => begin
+      #= Check if we want to use the default attributes=#
+      (SCode.ATTR(connectorType = SCode.POTENTIAL(__),
+                  parallelism = SCode.NON_PARALLEL(__),
+                  variability = SCode.VAR(__),
+                  direction = Absyn.BIDIR(__),
+                  isField = false,
+                  mode = false),
+       SCode.PREFIXES(redeclarePrefix = SCode.NOT_REDECLARE(__),
+                      finalPrefix = SCode.NOT_FINAL(__),
+                      innerOuter = Absyn.NOT_INNER_OUTER(__),
+                      replaceablePrefix = SCode.NOT_REPLACEABLE(__))
+       ) => begin        
+        @debug "Structural mode value: " structuralMode                        
         DEFAULT_ATTR
       end
       _  => begin
-        @assign cty = fromSCode(compAttr.connectorType)
-        @assign par = parallelismFromSCode(compAttr.parallelism)
-        @assign var = variabilityFromSCode(compAttr.variability)
-        @assign dir = directionFromSCode(compAttr.direction)
-        @assign io = innerOuterFromSCode(compPrefs.innerOuter)
-        @assign fin = SCodeUtil.finalBool(compPrefs.finalPrefix)
-        @assign redecl = SCodeUtil.redeclareBool(compPrefs.redeclarePrefix)
-        @assign repl = NOT_REPLACEABLE()
-        ATTRIBUTES(cty, par, var, dir, io, fin, redecl, repl)
+        cty = fromSCode(compAttr.connectorType)
+        par = parallelismFromSCode(compAttr.parallelism)
+        var = variabilityFromSCode(compAttr.variability)
+        dir = directionFromSCode(compAttr.direction)
+        io = innerOuterFromSCode(compPrefs.innerOuter)
+        fin = SCodeUtil.finalBool(compPrefs.finalPrefix)
+        redecl = SCodeUtil.redeclareBool(compPrefs.redeclarePrefix)
+        repl = NOT_REPLACEABLE()
+        structuralMode = compAttr.mode
+        @debug "Structural mode value: " structuralMode
+        ATTRIBUTES(cty, par, var, dir, io, fin, redecl, repl, structuralMode)
       end
     end
   end
@@ -1626,7 +1635,9 @@ function mergeComponentAttributes(outerAttr::Attributes, innerAttr::Attributes, 
     attr = innerAttr
   elseif referenceEq(innerAttr, DEFAULT_ATTR)
     cty = merge(outerAttr.connectorType, innerAttr.connectorType, node)
-    attr = ATTRIBUTES(cty, outerAttr.parallelism, outerAttr.variability, outerAttr.direction, innerAttr.innerOuter, outerAttr.isFinal, innerAttr.isRedeclare, innerAttr.isReplaceable)
+    attr = ATTRIBUTES(cty, outerAttr.parallelism,
+                      outerAttr.variability, outerAttr.direction, innerAttr.innerOuter, outerAttr.isFinal,
+                      innerAttr.isRedeclare, innerAttr.isReplaceable, innerAttr.isStructuralMode #=TODO: VSS Unsure if this should propagate like this=#)
   else
     cty = merge(outerAttr.connectorType, innerAttr.connectorType, node)
     par = mergeParallelism(outerAttr.parallelism, innerAttr.parallelism, node)
@@ -1639,14 +1650,12 @@ function mergeComponentAttributes(outerAttr::Attributes, innerAttr::Attributes, 
     fin = outerAttr.isFinal || innerAttr.isFinal
     redecl = innerAttr.isRedeclare
     repl = innerAttr.isReplaceable
-    attr = ATTRIBUTES(cty, par, var, dir, innerAttr.innerOuter, fin, redecl, repl)
+    attr = ATTRIBUTES(cty, par, var, dir, innerAttr.innerOuter, fin, redecl, repl,innerAttr.isStructuralMode #= TODO: VSS Unsure if this should propagate like this=#)
   end
   attr
 end
 
 function checkDeclaredComponentAttributes(attr::Attributes, parentRestriction::Restriction, component::InstNode) ::Attributes
-
-
   @assign () = begin
     @match parentRestriction begin
      RESTRICTION_CONNECTOR(__)  => begin
@@ -1722,11 +1731,11 @@ function mergeDerivedAttributes(outerAttr::Attributes, innerAttr::Attributes, no
     attr = innerAttr
   else
     #= The present error is here =#
-    @match ATTRIBUTES(cty, par, var, dir, io, fin, redecl, repl) = outerAttr
+    @match ATTRIBUTES(cty, par, var, dir, io, fin, redecl, repl, mo) = outerAttr
     cty = merge(cty, innerAttr.connectorType, node, true)
     var = variabilityMin(var, innerAttr.variability)
     dir = mergeDirection(dir, innerAttr.direction, node, #= allowSame = true=# true)
-    attr = ATTRIBUTES(cty, par, var, dir, io, fin, redecl, repl)
+    attr = ATTRIBUTES(cty, par, var, dir, io, fin, redecl, repl, mo)
   end
   attr
 end
@@ -2618,7 +2627,7 @@ function instExternalDecl(@nospecialize(extDecl::SCode.ExternalDecl), @nospecial
         checkExternalDeclLanguage(lang, info)
         @assign args = list(instExp(arg, scope, info) for arg in extDecl.args)
         if isSome(extDecl.output_)
-          @assign ret_cref = Lookup.lookupLocalComponent(Util.getOption(extDecl.output_), scope, info)
+          (ret_cref, _) = lookupLocalComponent(Util.getOption(extDecl.output_), scope, info)
         else
           @assign ret_cref = COMPONENT_REF_EMPTY()
         end

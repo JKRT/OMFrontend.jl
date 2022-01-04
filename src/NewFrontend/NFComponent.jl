@@ -1,13 +1,9 @@
-Restriction = NFRestriction
 using MetaModelica
 using ExportAll
-Dimension = NFDimension
-M_Type = NFType
-Expression = NFExpression
 
 @Uniontype Attributes begin
   @Record ATTRIBUTES begin
-    connectorType::Int #=ConnectorType.M_Type=#
+    connectorType::Int
     parallelism::Int
     variability::Int
     direction::Int
@@ -15,6 +11,7 @@ Expression = NFExpression
     isFinal::Bool
     isRedeclare::Bool
     isReplaceable::Replaceable
+    isStructuralMode::Bool
   end
 end
 
@@ -43,7 +40,7 @@ end
     ty::M_Type
     binding::Binding
     condition::Binding
-    attributes
+    attributes::ATTRIBUTES
     ann::Option{Modifier} #= the annotation from SCode.Comment as a modifier =#
     comment::Option{SCode.Comment}
     info::SourceInfo
@@ -54,7 +51,7 @@ end
     dimensions::Array{Dimension}
     binding::Binding
     condition::Binding
-    attributes
+    attributes::ATTRIBUTES
     comment::Option{SCode.Comment}
     instantiated::Bool
     info::SourceInfo
@@ -76,6 +73,7 @@ const DEFAULT_ATTR =
     false,
     false,
     NOT_REPLACEABLE(),
+    false,
   )
 const INPUT_ATTR =
   ATTRIBUTES(
@@ -87,6 +85,7 @@ const INPUT_ATTR =
     false,
     false,
     NOT_REPLACEABLE(),
+    false,
   )
 const OUTPUT_ATTR =
   ATTRIBUTES(
@@ -98,6 +97,7 @@ const OUTPUT_ATTR =
     false,
     false,
     NOT_REPLACEABLE(),
+    false,
   )
 const CONSTANT_ATTR =
   ATTRIBUTES(
@@ -109,6 +109,7 @@ const CONSTANT_ATTR =
     false,
     false,
     NOT_REPLACEABLE(),
+    false,
   )
 const IMPL_DISCRETE_ATTR =
   ATTRIBUTES(
@@ -120,6 +121,7 @@ const IMPL_DISCRETE_ATTR =
     false,
     false,
     NOT_REPLACEABLE(),
+    false,
   )
 
 #= Forward declarations for uniontypes until Julia adds support for mutual recursion =#
@@ -1155,10 +1157,13 @@ function isDefinition(component::Component)::Bool
 end
 
 function definition(component::Component)::SCode.Element
-  local definition::SCode.Element
-
-  @match COMPONENT_DEF(definition = definition) = component
-  return definition
+  local def::SCode.Element
+  def = @match component begin
+    COMPONENT_DEF(def, mod) => component.definition
+    TYPED_COMPONENT(__) => definition(component.classInst)
+    _ => throw("Unsuported component: $(typeof(component)) in definition(component::Component)")
+  end
+  return def
 end
 
 function newEnum(enumType::M_Type, literalName::String, literalIndex::Int)::Component

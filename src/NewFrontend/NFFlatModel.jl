@@ -6,6 +6,9 @@
     initialEquations::List{Equation}
     algorithms::List{Algorithm}
     initialAlgorithms::List{Algorithm}
+    #= VSS Modelica extension =#
+    structuralSubmodels::List{FlatModel}
+    #= End VSS Modelica extension =#
     comment::Option{SCode.Comment}
   end
 end
@@ -262,7 +265,7 @@ end
 
 function collectEquationFlatTypes(eq::Equation, types::TypeTree)::TypeTree
 
-  @assign () = begin
+  () = begin
     @match eq begin
       Equation.EQUALITY(__) => begin
         @assign types = collectExpFlatTypes(eq.lhs, types)
@@ -461,6 +464,10 @@ function toString(flatModel::FlatModel, printBindingTypes::Bool = false)::String
   local s::IOStream_M.IOSTREAM
   s = IOStream_M.create(getInstanceName(), IOStream_M.LIST())
   s = IOStream_M.append(s, "class " + flatModel.name + "\\n")
+  for structuralMode in flatModel.structuralSubmodels
+    structuralModelString = toString(structuralMode, printBindingTypes)
+    s = IOStream_M.append(s, "structuralmode " * structuralModelString)
+  end
   for v in flatModel.variables
     s = toStream(v, "  ", printBindingTypes, s)
     s = IOStream_M.append(s, ";\\n")

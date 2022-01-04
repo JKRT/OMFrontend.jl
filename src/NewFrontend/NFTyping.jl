@@ -28,17 +28,7 @@
 * See the full OSMC Public License conditions for more details.
 *
 */ =#
-Dimension = NFDimension
-Equation = NFEquation
-Expression = NFExpression
-Statement = NFStatement
-Operator = NFOperator
-Connector = NFConnector
-Connection = NFConnection
-ComponentRef = NFComponentRef
-Subscript = NFSubscript
-ComplexType = NFComplexType
-Restriction = NFRestriction
+
 
 @UniontypeDecl TypingError
 function isError(error::TypingError)::Bool
@@ -454,7 +444,7 @@ function makeRecordType(constructor::InstNode)::ComplexType
   return recordTy
 end
 
-function typeComponent(inComponent::InstNode, origin::ORIGIN_Type)::NFType
+function typeComponent(@nospecialize(inComponent::InstNode), origin::ORIGIN_Type)::NFType
   local ty::NFType
   local node::InstNode = resolveOuter(inComponent)
   local c::Component = component(node)
@@ -1013,7 +1003,7 @@ function typeComponentBinding(
 end
 
 function typeComponentBinding2(
-  inComponent::InstNode,
+  @nospecialize(inComponent::InstNode),
   origin::ORIGIN_Type,
   typeChildren::Bool,
 )
@@ -1146,11 +1136,12 @@ function typeComponentBinding2(
       end
 
       _ => begin
-        Error.assertion(
-          false,
-          getInstanceName() + " got invalid node " + name(node),
-          sourceInfo(),
-        )
+        #        Error.assertion( TODO
+        #          false,
+        #          getInstanceName() + " got invalid node " + name(node),
+        #          sourceInfo(),
+        #        )
+        @error getInstanceName() * "got invalid node" * name(node)
         fail()
       end
     end
@@ -2906,7 +2897,8 @@ function typeFunctionSections(classNode::InstNode, origin::ORIGIN_Type)
               @assign info = InstNode_info(classNode)
               @assign sections.args =
                 list(typeExternalArg(arg, info, classNode) for arg in sections.args)
-              @assign sections.outputRef = typeCref(sections.outputRef, origin, info)
+              (res,_,_) = typeCref(sections.outputRef, origin, info)
+              @assign sections.outputRef = res
               sections
             end
 
@@ -3217,8 +3209,9 @@ function typeEquation(eq::Equation, origin::ORIGIN_Type)::Equation
       end
 
       EQUATION_NORETCALL(__) => begin
-        @assign e1 = typeExp(eq.exp, origin, DAE.emptyElementSource)
-        NORETCALL(e1, eq.source)
+        info = sourceInfo() #Added by me -John
+        (e1 ,_ ,_) = typeExp(eq.exp, origin, info) #eq.source #=DAE.emptyElementSource=#)
+        EQUATION_NORETCALL(e1, eq.source)
       end
 
       _ => begin

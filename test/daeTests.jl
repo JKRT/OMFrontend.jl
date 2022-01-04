@@ -4,6 +4,8 @@ function testPassIfNoException(str1::String, str2::String)
     flatten(str1, str2)
     true
   catch e
+    @error "Failed to flatten model: $(str1) in file $(str2):" e
+    throw(e)
     false
   end
 end

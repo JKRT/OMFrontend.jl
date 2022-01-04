@@ -1,4 +1,5 @@
 module LookupTree
+
 using MetaModelica
 using ExportAll
 
@@ -16,8 +17,8 @@ using ExportAll
   end
 end
 
-Key = String
-Value = Entry
+const Key = String
+const Value = Entry
 
 #= Modelica extend clause =#
 const valueStr = Function
@@ -91,22 +92,20 @@ function hasKey(inTree::Tree, inKey::Key)::Bool
 end
 
 
-""" #= Converts the tree to a flat list of keys (in order). =#"""
-function listKeys(inTree::Tree, lst::List{<:Key} = nil)::List{Key}
-
-  @assign lst = begin
+"""
+  Converts the tree to a flat list of keys (in order).
+"""
+function listKeys(inTree::Tree, lst::List{T} = nil) where {T}
+  lst = begin
     @match inTree begin
       LEAF(__) => begin
         _cons(inTree.key, lst)
       end
-
       NODE(__) => begin
         lst = listKeys(inTree.right, lst)
         lst = _cons(inTree.key, lst)
         lst = listKeys(inTree.left, lst)
-        lst
       end
-
       _ => begin
         lst
       end
@@ -115,14 +114,13 @@ function listKeys(inTree::Tree, lst::List{<:Key} = nil)::List{Key}
   return lst
 end
 
-function referenceEqOrEmpty(t1::Tree, t2::Tree)::Bool
+function referenceEqOrEmpty(t1::Tree, t2::Tree)
   local b::Bool
   @assign b = begin
     @match (t1, t2) begin
       (EMPTY(__), EMPTY(__)) => begin
         true
       end
-
       _ => begin
         referenceEq(t1, t2)
       end
@@ -294,6 +292,7 @@ function addConflictFail(newValue::Value, oldValue::Value, key::Key)::Value
   fail()
   return value
 end
+
 addConflictDefault = addConflictFail
 
 """ #= Conflict resolving function for add which replaces the old value with the new. =#"""
@@ -341,12 +340,6 @@ function add(
             @assign tree.value = value
           end
         end
-        #=  Replace left branch.
-        =#
-        #=  Replace right branch.
-        =#
-        #=  Use the given function to resolve the conflict.
-        =#
         if key_comp == 0
           tree
         else
@@ -621,7 +614,7 @@ function map(inTree::Tree, inFunc::MapFunc)::Tree
     local new_branch::Tree
     @match outTree begin
       NODE(key = key, value = value) => begin
-        @assign new_branch = map(outTree.left, inFunc)
+        new_branch = map(outTree.left, inFunc)
         if !referenceEq(new_branch, outTree.left)
           @assign outTree.left = new_branch
         end
@@ -683,24 +676,21 @@ function fold_2(
   foldArg1::FT1,
   foldArg2::FT2,
 ) where {FT1, FT2}
+  @match tree begin
+    NODE(__) => begin
+      (foldArg1, foldArg2) = fold_2(tree.left, foldFunc, foldArg1, foldArg2)
+      (foldArg1, foldArg2) = foldFunc(tree.key, tree.value, foldArg1, foldArg2)
+      (foldArg1, foldArg2) = fold_2(tree.right, foldFunc, foldArg1, foldArg2)
+      ()
+    end
 
-  @assign () = begin
-    @match tree begin
-      NODE(__) => begin
-        @assign (foldArg1, foldArg2) = fold_2(tree.left, foldFunc, foldArg1, foldArg2)
-        @assign (foldArg1, foldArg2) = foldFunc(tree.key, tree.value, foldArg1, foldArg2)
-        @assign (foldArg1, foldArg2) = fold_2(tree.right, foldFunc, foldArg1, foldArg2)
-        ()
-      end
+    LEAF(__) => begin
+      @assign (foldArg1, foldArg2) = foldFunc(tree.key, tree.value, foldArg1, foldArg2)
+      ()
+    end
 
-      LEAF(__) => begin
-        @assign (foldArg1, foldArg2) = foldFunc(tree.key, tree.value, foldArg1, foldArg2)
-        ()
-      end
-
-      _ => begin
-        ()
-      end
+    _ => begin
+      ()
     end
   end
   return (foldArg1, foldArg2)

@@ -1,20 +1,20 @@
 
 function needSpecialHandling(call::Call) ::Bool
   local special::Bool
-
-  @assign () = begin
+  @debug "Calling needSpecialHandling with: " * toString(call)
+  () = begin
     @match call begin
       UNTYPED_CALL(__)  => begin
         @match C_FUNCTION(specialBuiltin = special) = getFuncCache(classScope(node(call.ref)))
         ()
       end
-
       _  => begin
         Error.assertion(false, getInstanceName() + " got unknown call: " + P_Call.toString(call), sourceInfo())
         fail()
       end
     end
   end
+  @debug "Is it special: " special
   special
 end
 
@@ -185,6 +185,15 @@ function typeSpecial(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{
       "DynamicSelect"  => begin
         typeDynamicSelectCall("DynamicSelect", call, next_origin, info)
       end
+      "initialStructuralState" => begin
+        @debug "VSS: calling some type crap"
+        typeInitialStructuralStateCall(call, next_origin, info)
+      end
+
+      "structuralTransistion" => begin
+        @debug "VSS: Typing a structuralTransistion"
+        typeStructuralTransistion(call, next_origin, info)
+      end
 
       _  => begin
         #= /*
@@ -198,7 +207,8 @@ function typeSpecial(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{
         case \"ticksInState\" guard Config.synchronousFeaturesAllowed() then typeTicksInStateCall(call, next_origin, info);
         case \"timeInState\" guard Config.synchronousFeaturesAllowed() then typeTimeInStateCall(call, next_origin, info);
         */ =#
-        Error.assertion(false, getInstanceName() + " got unhandled builtin function: " + P_Call.toString(call), sourceInfo())
+        #        Error.assertion(false, getInstanceName() + " got unhandled builtin function: " + P_Call.toString(call), sourceInfo())
+        @error getInstanceName() * " got unhandled builtin function: " * toString(call)
         fail()
       end
     end
@@ -1232,6 +1242,63 @@ function typeBranchCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tup
   (callExp, ty, var)
 end
 
+"""
+Author: johti17
+Extension. Types an initialStructuralState call.
+"""
+function typeInitialStructuralStateCall(call::Call, origin::ORIGIN_Type, info::SourceInfo)
+  local variabilityType::VariabilityType = Variability.PARAMETER
+  @debug "Typing..."
+  @match UNTYPED_CALL(fn_ref, args, namedArgs) = call
+  if listLength(args) != 1
+    @error "More then one state passed to initialStructuralState" #=TODO add source info..=#
+    throw("Error typing!")
+  end
+  @debug "Type the head of the list. A model is used as a parameter"
+  @match CREF_EXPRESSION(ty, argCref) = listHead(args)
+
+  local arg = CREF_EXPRESSION(TYPE_ANY() #= Reference to the model=#,
+                        argCref#=Should be complex but use any for now=#)
+  local retType = TYPE_NORETCALL()
+  local fn = listHead(typeRefCache(fn_ref))
+  local callExp = CALL_EXPRESSION(makeTypedCall(fn, list(arg), variabilityType, retType))
+  return (callExp, retType, Variability.PARAMETER#=TODO should change this..=#)
+end
+
+"""
+Author: johti17
+Extension: Types a structural transistion.
+A structural transistion have three arguments
+1. Our current state. That is the model from which we make the transistion.
+2. Our next state. That is the model we transistion to.
+3. A condition. That is the when event at which the transistion occurs.
+"""
+function typeStructuralTransistion(call::Call, origin::ORIGIN_Type, info::SourceInfo)
+  @debug "Typing... typeStructuralTransistion"
+  @match UNTYPED_CALL(fn_ref, args, namedArgs) = call
+  local variabilityType::VariabilityType = Variability.PARAMETER
+  if listLength(args) != 3
+    #=TODO add source info..=#
+    @error "To few arguments to initialStructuralState. Three arguments are expected." 
+    throw("Syntax error: To few arguments to initialStructuralState")
+  end
+  @match CREF_EXPRESSION(_, argCref1) = listGet(args, 1)
+  @match CREF_EXPRESSION(_, argCref2) = listGet(args, 2)
+  local arg1 = CREF_EXPRESSION(TYPE_ANY() #= Reference to the model=#,
+                               argCref1 #=Should be complex but use any for now=#)
+  local arg2 = CREF_EXPRESSION(TYPE_ANY() #= Reference to the model=#,
+                               argCref2 #=Should be complex but use any for now=#)
+  #= The last expression here is a condition=#
+  local (arg3, _, _) = typeExp(listGet(args, 3), origin, info)
+  @debug "Done typing the arguments"
+  local retType = TYPE_NORETCALL()
+  local fn = listHead(typeRefCache(fn_ref))
+  @debug "Before constructing the call expression"
+  local callExp = CALL_EXPRESSION(makeTypedCall(fn, list(arg1, arg2, arg3), variabilityType, retType))
+  @debug "Done typing the call expression"
+  return (callExp, retType, Variability.PARAMETER#=TODO should change this..=#)
+end
+
 function typeIsRootCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
   local var::VariabilityType = Variability.PARAMETER
   local ty::M_Type
@@ -1759,7 +1826,7 @@ function typeActualInStreamCall(name::String, call::Call, origin::ORIGIN_Type, i
   @assign arg = P_ExpandExp.ExpandExp.expand(arg)
   @match list(fn) = typeRefCache(fn_ref)
   @assign callExp = typeActualInStreamCall2(name, fn, arg, var, info)
-  (callExp, ty, variability)
+  (callExp, ty, Variability.CONTINUOUS)
 end
 
 function typeActualInStreamCall2(name::String, fn::M_Function, arg::Expression, var::VariabilityType, info::SourceInfo) ::Expression

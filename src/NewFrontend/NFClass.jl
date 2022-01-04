@@ -522,13 +522,11 @@ end
 
 function getAttributes(cls::Class)::Attributes
   local attr::Attributes
-
-  @assign attr = begin
+  attr = begin
     @match cls begin
       EXPANDED_DERIVED(__) => begin
         cls.attributes
       end
-
       _ => begin
         NFComponent.DEFAULT_ATTR
       end
@@ -990,5 +988,3 @@ function isEqual(prefs1::Prefixes, prefs2::Prefixes)::Bool
   local isEqual::Bool = valueEq(prefs1, prefs2)
   return isEqual
 end
-
-@exportAll

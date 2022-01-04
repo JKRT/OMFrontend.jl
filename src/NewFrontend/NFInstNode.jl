@@ -30,11 +30,6 @@
 */ =#
 
 @UniontypeDecl InstNodeType
-
-
-Expression=NFExpression
-Restriction=NFRestriction
-FuncType = Function
 @UniontypeDecl InstNode
 
 @Uniontype InstNodeType begin
@@ -1325,7 +1320,7 @@ function componentApply(node::InstNode, func::FuncType, arg::ArgT)  where {ArgT}
   node
 end
 
-function classApply(@nospecialize(node::InstNode), @nospecialize(func::FuncType), arg::ArgT)  where {ArgT}
+function classApply(node::InstNode, func::FuncType, arg::ArgT)  where {ArgT}
   @assign () = begin
     @match node begin
       CLASS_NODE(__)  => begin
@@ -1337,7 +1332,7 @@ function classApply(@nospecialize(node::InstNode), @nospecialize(func::FuncType)
   node
 end
 
-function getType(@nospecialize(node::InstNode))::NFType
+function getType(node::InstNode)::NFType
   local ty::M_Type
   @assign ty = begin
     @match node begin
@@ -1394,19 +1389,19 @@ function setDefinition(definition::SCode.Element, node::InstNode) ::InstNode
   node
 end
 
-function definition(node::InstNode) ::SCode.Element
-  local definition::SCode.Element
-  @assign definition = begin
+function definition(node::InstNode)::SCode.Element
+  local def::SCode.Element
+  def = begin
     @match node begin
       CLASS_NODE(__)  => begin
         node.definition
       end
       COMPONENT_NODE(__)  => begin
-        P_Component.definition(P_Pointer.access(node.component))
-      end
+        definition(P_Pointer.access(node.component))
+      end      
     end
   end
-  definition
+  def
 end
 
 function setNodeType(nodeType::InstNodeType, node::InstNode) ::InstNode
@@ -1595,7 +1590,6 @@ function setParent(parent::InstNode, node::InstNode) ::InstNode
       end
     end
   end
-  @debug "parent scope after $(node.parent.name)"
   node
 end
 

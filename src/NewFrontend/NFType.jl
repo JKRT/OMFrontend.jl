@@ -5,8 +5,6 @@ FunctionType = (() -> begin #= Enumeration =#
   () -> (FUNCTIONAL_PARAMETER; FUNCTION_REFERENCE; FUNCTIONAL_VARIABLE)  #= A variable that contains a function reference. =#
 end)()
 
-M_Type=NFType
-
 @UniontypeDecl NFType
 @Uniontype NFType begin
   @Record SUBSCRIPTED_TYPE begin

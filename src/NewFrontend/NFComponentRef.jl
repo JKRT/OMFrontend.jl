@@ -1,5 +1,5 @@
 @UniontypeDecl NFComponentReff
-Origin = (() -> begin #= Enumeration =#
+const Origin = (() -> begin #= Enumeration =#
   CREF = 1  #= From an Absyn cref. =#
   SCOPE = 2  #= From prefixing the cref with its scope. =#
   ITERATOR = 3  #= From an iterator. =#
@@ -592,12 +592,13 @@ function foldSubscripts(cref::ComponentRef, func::FuncT, arg::ArgT) where {ArgT}
   return arg
 end
 
-""" #= Copies subscripts from one cref to another, overwriting any subscripts on
-     the destination cref. =#"""
+"""  Copies subscripts from one cref to another, overwriting any subscripts on
+     the destination cref.
+"""
 function transferSubscripts(srcCref::ComponentRef, dstCref::ComponentRef)::ComponentRef
   local cref::ComponentRef
 
-  @assign cref = begin
+  cref = begin
     @match (srcCref, dstCref) begin
       (COMPONENT_REF_EMPTY(__), _) => begin
         dstCref
@@ -1005,10 +1006,9 @@ function containsNode(cref::ComponentRef, node::InstNode)::Bool
 end
 
 function node(cref::ComponentRef)::InstNode
-  local node::InstNode
-
-  @match COMPONENT_REF_CREF(node = node) = cref
-  return node
+  local nodeVar::InstNode
+  @match COMPONENT_REF_CREF(node = nodeVar) = cref
+  return nodeVar
 end
 
 function isIterator(cref::ComponentRef)::Bool
@@ -1129,7 +1129,7 @@ function prefixCref(
   ty::M_Type,
   subs::List{<:Subscript},
   restCref::ComponentRef,
-)::ComponentRef
+  )::ComponentRef
   local cref::ComponentRef = COMPONENT_REF_CREF(node, subs, ty, Origin.CREF, restCref)
   return cref
 end

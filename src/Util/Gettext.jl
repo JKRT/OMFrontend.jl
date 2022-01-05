@@ -52,7 +52,7 @@ function translateContent(msg::TranslatableContent) ::String
   str = begin
     @match msg begin
       gettext(str)  => begin
-        str = System.gettext(str)
+#        str = System.gettext(str) TODO: Ignore translation for now
         str
       end
       notrans(str)  => begin

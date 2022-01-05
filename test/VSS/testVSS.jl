@@ -6,6 +6,7 @@
   res = flattenFM("BreakingPendulum", "./VSS/BreakingPendulum.mo")
   @test typeof(res[1]) == OMFrontend.Main.FLAT_MODEL
 end
+
 #= Try recompilation =#
 @testset "Structural recompilation" begin
   res = flattenFM("ArrayGrow", "./VSS/ArrayGrow.mo")

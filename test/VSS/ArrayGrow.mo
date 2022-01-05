@@ -14,6 +14,6 @@ equation
       the name of this function is the subject of change.
       What is changed depends on the argument passed to this function.
     */
-    recompilation(N, 20);
+    //recompilation(N, 20);
   end when;
 end ArrayGrow;

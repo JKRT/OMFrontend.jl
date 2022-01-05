@@ -543,7 +543,7 @@ function variabilityList(expl::List{<:Expression}, var::VariabilityType = Variab
   var
 end
 
-function variability(exp::Expression) ::VariabilityType
+function variability(@nospecialize(exp::Expression))::VariabilityType
   local var::VariabilityType
   @assign var = begin
     @match exp begin
@@ -1935,11 +1935,9 @@ function mapFoldCallIteratorsShallow(iters::List{Tuple{InstNode, Expression}}, f
   (outIters, arg)
 end
 
-function mapFoldCallShallow(call::Call, func::MapFunc, foldArg::ArgT)  where {ArgT}
-
+function mapFoldCallShallow(@nospecialize(call::Call), func::MapFunc, foldArg::ArgT)  where {ArgT}
   local outCall::Call
-
-  @assign outCall = begin
+  outCall = begin
     local args::List{Expression}
     local nargs::List{P_Function.NamedArg}
     local targs::List{P_Function.TypedArg}
@@ -1992,8 +1990,8 @@ function mapFoldCallShallow(call::Call, func::MapFunc, foldArg::ArgT)  where {Ar
       end
 
       TYPED_ARRAY_CONSTRUCTOR(__)  => begin
-        @assign (e, foldArg) = func(call.exp, foldArg)
-        @assign iters = mapFoldCallIteratorsShallow(call.iters, func, foldArg)
+        (e, foldArg) = func(call.exp, foldArg)
+        (iters,_) = mapFoldCallIteratorsShallow(call.iters, func, foldArg)
         TYPED_ARRAY_CONSTRUCTOR(call.ty, call.var, e, iters)
       end
 
@@ -2823,7 +2821,7 @@ function applyCall(call::Call, func::ApplyFunc)
   end
 end
 
-function apply(exp::Expression, func::ApplyFunc)
+function apply(@nospecialize(exp::Expression), func::ApplyFunc)
   @assign () = begin
     local e::Expression
     local e1::Expression
@@ -3022,8 +3020,6 @@ function foldCref(cref::ComponentRef, func::FoldFunc, arg::ArgT)  where {ArgT}
 end
 
 function foldCall(call::Call, func::FoldFunc, foldArg::ArgT)  where {ArgT}
-
-
   @assign () = begin
     local e::Expression
     @match call begin
@@ -3091,9 +3087,8 @@ function foldCall(call::Call, func::FoldFunc, foldArg::ArgT)  where {ArgT}
   foldArg
 end
 
-function fold(exp::Expression, func::FoldFunc, arg::ArgT)  where {ArgT}
+function fold(@nospecialize(exp::Expression), func::FoldFunc, arg::ArgT)  where {ArgT}
   local result::ArgT
-
   @assign result = begin
     local e::Expression
     local e1::Expression
@@ -3421,7 +3416,7 @@ function mapShallowOpt(exp::Option{<:Expression}, func::MapFunc) ::Option{Expres
   outExp
 end
 
-function mapShallow(exp::Expression, func::MapFunc) ::Expression
+function mapShallow(@nospecialize(exp::Expression), func::MapFunc) ::Expression
   local outExp::Expression
 
   @assign outExp = begin

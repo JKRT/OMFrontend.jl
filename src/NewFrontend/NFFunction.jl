@@ -1738,9 +1738,10 @@ end
 
 function candidateFuncListString(fns::List{<:M_Function})::String
   local s::String =
-    stringDelimitList(list(P_Function.signatureString(fn, true) for fn in fns), "\\n  ")
+    stringDelimitList(list(signatureString(fn, true) for fn in fns), "\\n  ")
   return s
 end
+
 
 """ #= Constructs a signature string for a function, e.g. Real func(Real x, Real y) =#"""
 function signatureString(fn::M_Function, printTypes::Bool = true)::String
@@ -1795,16 +1796,16 @@ function signatureString(fn::M_Function, printTypes::Bool = true)::String
   =#
   #=  Add the type if the parameter has been typed.
   =#
-  @assign input_str = stringDelimitList(listReverse(inputs_strl), ", ")
-  @assign output_str = if printTypes && isTyped(fn)
-    " => " + Type.toString(fn.returnType)
+  input_str = stringDelimitList(listReverse(inputs_strl), ", ")
+  output_str = if printTypes && isTyped(fn)
+    " => " + toString(fn.returnType)
   else
     ""
   end
-  @assign fn_name = nameConsiderBuiltin(fn)
+  fn_name = nameConsiderBuiltin(fn)
   #=  if isSome(display_name) then Util.getOption(display_name) else fn.path;
   =#
-  @assign str = AbsynUtil.pathString(fn_name) + "(" + input_str + ")" + output_str
+  str = AbsynUtil.pathString(fn_name) + "(" + input_str + ")" + output_str
   return str
 end
 

@@ -6,6 +6,8 @@ Author: johti17@liu.se
 
 include("connect.jl")
 import ..ConnectTests
+#= Include tests for equations =#
+include("equationTests.jl")
 
 #= The set of basic connect tests=#
 ctst1 = (ConnectTests.Connect1, "Connect1", "./Connectors/Connect1.mo")
@@ -37,7 +39,6 @@ multipleinheritanceconnect = (ConnectTests.MultipleInheritanceConnect
 resistorCircuit0 = (ConnectTests.ResistorCircuit0, "ElectricalComponentTest.ResistorCircuit0", "./Connectors/EletricalComponentTest.mo")
 resistorCircuit1 = (ConnectTests.ResistorCircuit1, "ElectricalComponentTest.ResistorCircuit1", "./Connectors/EletricalComponentTest.mo")
 simpleCircuit = (ConnectTests.SimpleCircuit, "ElectricalComponentTest.SimpleCircuit", "./Connectors/EletricalComponentTest.mo")
-include("equationTests.jl")
 #= Basic connect tests=#
 connectTsts = [ctst1,
                ctst2,
@@ -59,7 +60,7 @@ incorrectTsts = [ctst3, ctst10, ctst11]
 #= Add new tests here=#
 tst = [tank, heattank, heatTankExpanded, multipleinheritanceconnect, resistorCircuit0, resistorCircuit1, simpleCircuit]
 
-equationTests = [circle]
+equationTests = [circle, arrayfancy]
 
 function runConnectTests(tests)
   @testset "Connector test. Testing the handling of connectors" begin

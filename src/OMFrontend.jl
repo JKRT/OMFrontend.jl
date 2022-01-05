@@ -95,15 +95,17 @@ end
   Adds the Modelica standard library to the library cache.
 """
 function loadMSL()
-  Main.Global.initialize()
-  #= Find the MSL =#
-  local packagePath = dirname(realpath(Base.find_package("OMFrontend")))
-  local packagePath *= "/.."
-  local pathToLib = packagePath * "/lib/Modelica/msl.mo"
-  local p = parseFile(pathToLib)
-  #= Translate it to SCode =#
-  local scodeMSL = OMFrontend.translateToSCode(p)
-  LIBRARY_CACHE["MSL"] = scodeMSL  
+  if ! haskey(LIBRARY_CACHE, "MSL")
+    Main.Global.initialize()
+    #= Find the MSL =#
+    local packagePath = dirname(realpath(Base.find_package("OMFrontend")))
+    local packagePath *= "/.."
+    local pathToLib = packagePath * "/lib/Modelica/msl.mo"
+    local p = parseFile(pathToLib)
+    #= Translate it to SCode =#
+    local scodeMSL = OMFrontend.translateToSCode(p)
+    LIBRARY_CACHE["MSL"] = scodeMSL
+  end
 end
 
 """

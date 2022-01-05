@@ -1,7 +1,6 @@
-
 function initLoadMSL()
   @info "Loading the MSL"
-  OMFrontend.loadMSL()
+  @time OMFrontend.loadMSL()
   @info "Loaded MSL successfully"
 end
 

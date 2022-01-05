@@ -61,11 +61,10 @@ function printMessagesStr(warningsAsErrors::Bool = false)::String
   return outString
 end
 
-function getNumMessages()::Integer
-  local num::Integer
-
+function getNumMessages()
+  local num = 0
   @warn "TODO: Defined in the runtime"
-  return num
+  return 0
 end
 
 function getNumErrorMessages()::Integer

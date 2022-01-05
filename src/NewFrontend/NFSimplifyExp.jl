@@ -340,7 +340,6 @@ end
 
 function simplifyArrayConstructor(call::Call)::Expression
   local outExp::Expression
-
   local ty::M_Type
   local var::VariabilityType
   local exp::Expression
@@ -350,22 +349,21 @@ function simplifyArrayConstructor(call::Call)::Expression
   local dim::Dimension
   local dim_size::Int
   local expanded::Bool
-
   @match TYPED_ARRAY_CONSTRUCTOR(ty, var, exp, iters) = call
-  @assign iters = list((Util.tuple21(i), simplify(Util.tuple22(i))) for i in iters)
-  @assign outExp = begin
+  iters = list((Util.tuple21(i), simplify(Util.tuple22(i))) for i in iters)
+  outExp = begin
     @matchcontinue iters begin
       (iter, e) <| nil() => begin
-        @match TYPE_ARRAY(dimensions = list(dim)) = typeOf(e)
-        @assign dim_size = P_Dimension.Dimension.size(dim)
+        @match TYPE_ARRAY(dimensions = dim <| nil) = typeOf(e)
+        dim_size = size(dim)
         if dim_size == 0
-          @assign outExp = makeEmptyArray(ty)
+          outExp = makeEmptyArray(ty)
         elseif dim_size == 1
           @match (ARRAY_EXPRESSION(elements = list(e)), _) =
             expand(e)
-          @assign exp = replaceIterator(exp, iter, e)
-          @assign exp = makeArray(ty, list(exp))
-          @assign outExp = simplify(exp)
+          exp = replaceIterator(exp, iter, e)
+          exp = makeArray(ty, list(exp))
+          outExp = simplify(exp)
         else
           fail()
         end

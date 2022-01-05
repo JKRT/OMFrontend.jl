@@ -45,7 +45,7 @@ const MapFunc = Function
 end
 
 """ #= Gets a value from the tree given a key. =#"""
-function hasKey(inTree::Tree, inKey::Key)::Bool
+function hasKey(inTree::Tree, @nospecialize(inKey::Key))::Bool
   local comp::Bool = false
 
   local key::Key

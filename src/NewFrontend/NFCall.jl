@@ -278,7 +278,7 @@ function typedString(call::Call)::String
         @assign arg_str = stringDelimitList(
           list(
             "/*" +
-            Type.toString(Util.tuple32(arg)) +
+            toString(Util.tuple32(arg)) +
             "*/ " +
             toString(Util.tuple31(arg))
             for arg in call.arguments
@@ -296,7 +296,7 @@ function typedString(call::Call)::String
             c +
             Util.tuple41(arg) +
             " = /*" +
-            Type.toString(Util.tuple43(arg)) +
+            toString(Util.tuple43(arg)) +
             "*/ " +
             toString(Util.tuple42(arg))
         end
@@ -477,19 +477,18 @@ nameStr = toString(call.ref)
       end
 
       TYPED_ARRAY_CONSTRUCTOR(__) => begin
-nameStr = AbsynUtil.pathString(P_Function.name(NFBuiltinFuncs.ARRAY_FUNC))
-        @assign arg_str = toString(call.exp)
-        @assign c = stringDelimitList(
+        nameStr = AbsynUtil.pathString(name(NFBuiltinFuncs.ARRAY_FUNC))
+        arg_str = toString(call.exp)
+        c = stringDelimitList(
           list(
-            name(Util.tuple21(iter)) +
-            " in " +
+            name(Util.tuple21(iter)) *
+            " in " *
             toString(Util.tuple22(iter))
             for iter in call.iters
           ),
           ", ",
         )
-        "{" + arg_str
-        +" for " + c + "}"
+        "{" * arg_str * " for " * c * "}"
       end
 
       TYPED_REDUCTION(__) => begin
@@ -1452,13 +1451,14 @@ function checkMatchingFunctions(call::Call, info::SourceInfo)::MatchedFunction
         list(typedString(call), P_Function.candidateFuncListString(allfuncs)),
         info,
       )
-    elseif numerr == Error.getNumErrorMessages()
-      ErrorExt.rollBack("NFCall:checkMatchingFunctions")
-      Error.addSourceMessage(
-        Error.NO_MATCHING_FUNCTION_FOUND_NFINST,
-        list(typedString(call), P_Function.candidateFuncListString(allfuncs)),
-        info,
-      )
+    elseif numerr == 0 #Error.getNumErrorMessages() TODO
+      #ErrorExt.rollBack("NFCall:checkMatchingFunctions")
+      # Error.addSourceMessage(
+      #   Error.NO_MATCHING_FUNCTION_FOUND_NFINST,
+      #   list(typedString(call), P_Function.candidateFuncListString(allfuncs)),
+      #   info,
+      # )
+      @error "No matching function found for $(typedString(call)). Candidates where" candidateFuncListString(allfuncs)
     else
       ErrorExt.delCheckpoint("NFCall:checkMatchingFunctions")
     end
@@ -1754,7 +1754,7 @@ function typeArrayConstructor(
   call::Call,
   origin::ORIGIN_Type,
   info::SourceInfo,
-)::Tuple{Call, NFType, Variability}
+)::Tuple{Call, NFType, VariabilityType}
   local variability::VariabilityType
   local ty::NFType
 

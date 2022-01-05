@@ -250,11 +250,9 @@ function toStreamList(
   indent::String,
   s,
 )
-
   local prev_multi_line::Bool = false
   local multi_line::Bool
   local first::Bool = true
-
   for eq in eql
     @assign multi_line = isMultiLine(eq)
     if first
@@ -266,10 +264,10 @@ function toStreamList(
     @assign s = toStream(eq, indent, s)
     @assign s = IOStream_M.append(s, ";\\n")
   end
-  #=  Improve human parsability by separating statements that spans multiple
-  =#
-  #=  lines (like if-equations) with newlines.
-  =#
+  return s
+end
+
+function toStreamList(eql::Nil, indent::String, s)
   return s
 end
 

@@ -1,5 +1,5 @@
 model Casc6
-  parameter Integer N = 3200 "Order of the system";
+  parameter Integer N = 6 "Order of the system";
   final parameter Real tau = T/N "Individual time constant";
   parameter Real T = 1 "System delay";
   Real x[N] (each start = 0, each fixed = true);

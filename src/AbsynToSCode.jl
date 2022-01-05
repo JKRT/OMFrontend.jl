@@ -86,7 +86,7 @@ function translateClass(inClass::Absyn.Class)::SCode.Element
 end
 
 """ #= This functions converts an Absyn.Class to a SCode.Class. =#"""
-function translateClass2(inClass::Absyn.Class, inNumMessages::Integer)::SCode.Element
+function translateClass2(inClass::Absyn.Class, inNumMessages::Int)::SCode.Element
   local outClass::SCode.Element
    outClass = begin
     local d_1::SCode.ClassDef
@@ -293,7 +293,7 @@ function translateRestriction(
    outRestriction = begin
     local d::Absyn.Class
     local name::Absyn.Path
-    local index::Integer
+    local index::Int
     local singleton::Bool
     local isImpure::Bool
     local moved::Bool
@@ -2101,7 +2101,7 @@ function getInfoAnnotationOrDefault2(
    info = begin
     local rest::List{SCode.SubMod}
     local fileName::String
-    local line::Integer
+    local line::Int
     @match (lst, default) begin
       (nil(), _) => begin
         default

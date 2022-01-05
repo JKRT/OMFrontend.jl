@@ -1,10 +1,13 @@
 import Absyn
 import SCode
 import DAE
+
+const SCODE_CACHE = Dict{Absyn.Ident, SCode.CLASS}()
+
 """ 
   Instantiates a class given by its fully qualified path, with the result being a DAE.
 """
-function instClassInProgram(classPath::Absyn.Path, program::SCode.Program)::Tuple{DAE.DAE_LIST, DAE.FunctionTree}
+function instClassInProgram(classPath::Absyn.Path, program::SCode.Program)
   local daeFuncs::DAE.FunctionTree
   local dae::DAE.DAE_LIST
   local top::InstNode
@@ -13,12 +16,10 @@ function instClassInProgram(classPath::Absyn.Path, program::SCode.Program)::Tupl
   local name::String
   local flat_model::FlatModel
   local funcs::FunctionTree
-
   #=  gather here all the flags to disable expansion
   =#
   #=  and scalarization if -d=-nfScalarize is on
   =#
-
   #= Set scalazrize by default. =#
   FlagsUtil.set(Flags.NF_SCALARIZE, true)
   #= Should be changed using something better later =#
@@ -123,7 +124,9 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
   local name::String
   local flat_model::FlatModel
   local funcs::FunctionTree
-
+  #= Add the program currently being translated into the SCode cache. =#
+  local currentProgram = listHead(program)
+  global SCODE_CACHE[currentProgram.name] = currentProgram
   #=  gather here all the flags to disable expansion
   =#
   #=  and scalarization if -d=-nfScalarize is on

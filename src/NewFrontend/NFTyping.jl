@@ -242,7 +242,7 @@ function typeComponents(@nospecialize(cls::InstNode), origin::ORIGIN_Type)
   end
 end
 
-function typeStructor(node::InstNode)
+function typeStructor(@nospecialize node::InstNode)
   local cache::CachedData
   local fnl::List{M_Function}
 
@@ -372,7 +372,7 @@ function typeClassType(
   return ty
 end
 
-function makeConnectorType(ctree::ClassTree, isExpandable::Bool)::ComplexType
+function makeConnectorType(@nospecialize(ctree::ClassTree), isExpandable::Bool)::ComplexType
   local connectorTy::ComplexType
 
   local pots::List{InstNode} = nil
@@ -536,18 +536,8 @@ function checkConnectorType(node::InstNode)::Bool
   return isConnector
 end
 
-function typeIterator(
-  iterator::InstNode,
-  range::Expression,
-  origin::ORIGIN_Type,
-  structural::Bool
-)::Tuple{Expression, NFType, VariabilityType} #= If the iteration range must be a parameter expression or not. =#
-  typeIterator(
-    iterator::InstNode,
-    range::Expression,
-    origin::ORIGIN_Type,
-    structural::Bool
-  )
+function typeIterator(iterator::InstNode, range::Expression, origin::ORIGIN_Type, structural::Bool)
+  typeIterator(iterator, range, origin; structural = structural)
 end
 
 
@@ -1527,10 +1517,10 @@ function typeBinaryExpression(
   @nospecialize(exp::Expression),
   @nospecialize(origin::ORIGIN_Type),
   @nospecialize(info::SourceInfo),)::Tuple{Expression, NFType, VariabilityType}
-  @assign next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
-  @assign (e1, ty1, var1) = typeExp(exp.exp1, next_origin, info)
-  @assign (e2, ty2, var2) = typeExp(exp.exp2, next_origin, info)
-  @assign (exp, ty) = checkBinaryOperation(
+  next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
+  (e1, ty1, var1) = typeExp(exp.exp1, next_origin, info)
+  (e2, ty2, var2) = typeExp(exp.exp2, next_origin, info)
+  (exp, ty) = checkBinaryOperation(
     e1,
     ty1,
     var1,
@@ -1615,18 +1605,18 @@ function typeBindingExp(
   local parent_dims::Int
 
   @match BINDING_EXP(e, _, _, parents, is_each) = exp
-  @assign (e, exp_ty, variability) = typeExp(e, origin, info)
-  @assign parent_dims = 0
+  (e, exp_ty, variability) = typeExp(e, origin, info)
+  parent_dims = 0
   if !is_each
     for p in listRest(parents)
-      @assign parent_dims = parent_dims + dimensionCount(getType(p))
+      parent_dims = parent_dims + dimensionCount(getType(p))
     end
   end
   if parent_dims == 0
-    @assign ty = exp_ty
+    ty = exp_ty
   else
-    if Type.dimensionCount(exp_ty) >= parent_dims
-      @assign ty = Type.unliftArrayN(parent_dims, exp_ty)
+    if dimensionCount(exp_ty) >= parent_dims
+      ty = unliftArrayN(parent_dims, exp_ty)
     end
   end
   #=  If the binding has too few dimensions we can't unlift it, but matchBinding
@@ -3289,7 +3279,7 @@ function typeConnect(
 end
 
 function typeConnector(
-  connExp::Expression,
+  @nospecialize(connExp::Expression),
   origin::ORIGIN_Type,
   info::SourceInfo,
 )::Tuple{Expression, NFType}

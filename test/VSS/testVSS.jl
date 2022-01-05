@@ -1,4 +1,14 @@
-@test typeof(OMFrontend.parseFile("./VSS/BreakingPendulum.mo")) == Absyn.PROGRAM
-@test typeof(OMFrontend.parseFile("./VSS/SimpleSingleMode.mo")) == Absyn.PROGRAM
-res = flattenFM("SimpleSingleMode", "./VSS/SimpleSingleMode.mo")
-res = flattenFM("BreakingPendulum", "./VSS/BreakingPendulum.mo")
+@testset "Structural transistions" begin
+  @test typeof(OMFrontend.parseFile("./VSS/BreakingPendulum.mo")) == Absyn.PROGRAM
+  @test typeof(OMFrontend.parseFile("./VSS/SimpleSingleMode.mo")) == Absyn.PROGRAM
+  res = flattenFM("SimpleSingleMode", "./VSS/SimpleSingleMode.mo")
+  @test typeof(res[1]) == OMFrontend.Main.FLAT_MODEL
+  res = flattenFM("BreakingPendulum", "./VSS/BreakingPendulum.mo")
+  @test typeof(res[1]) == OMFrontend.Main.FLAT_MODEL
+end
+
+#= Try recompilation =#
+@testset "Structural recompilation" begin
+  res = flattenFM("ArrayGrow", "./VSS/ArrayGrow.mo")
+  @test typeof(res[1]) == OMFrontend.Main.FLAT_MODEL
+end

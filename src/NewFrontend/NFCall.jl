@@ -438,19 +438,18 @@ function toString(call::Call)::String
       end
 
       UNTYPED_ARRAY_CONSTRUCTOR(__) => begin
-nameStr = AbsynUtil.pathString(P_Function.name(NFBuiltinFuncs.ARRAY_FUNC))
-        @assign arg_str = toString(call.exp)
-        @assign c = stringDelimitList(
+        nameStr = AbsynUtil.pathString(name(NFBuiltinFuncs.ARRAY_FUNC))
+        arg_str = toString(call.exp)
+        c = stringDelimitList(
           list(
-            name(Util.tuple21(iter)) +
-            " in " +
+            name(Util.tuple21(iter)) *
+            " in " *
             toString(Util.tuple22(iter))
             for iter in call.iters
           ),
           ", ",
         )
-        "{" + arg_str
-        +" for " + c + "}"
+        "{" * arg_str * " for " * c * "}"
       end
 
       UNTYPED_REDUCTION(__) => begin
@@ -1721,7 +1720,7 @@ function typeReduction(
         @assign iters = listReverseInPlace(iters)
         #=  ExpOrigin.FOR is used here as a marker that this expression may contain iterators.
         =#
-        @assign next_origin = intBitOr(next_origin, ExpOrigin.FOR)
+        @assign next_origin = intBitOr(next_origin, ORIGIN_FOR)
         @assign (arg, ty, exp_var) = typeExp(call.exp, next_origin, info)
         @assign variability = Variability.variabilityMax(variability, exp_var)
         @match list(fn) = typeRefCache(call.ref)
@@ -1773,31 +1772,30 @@ function typeArrayConstructor(
   @assign (call, ty, variability) = begin
     @match call begin
       UNTYPED_ARRAY_CONSTRUCTOR(__) => begin
-        @assign variability = Variability.CONSTANT
-        #=  The size of the expression must be known unless we're in a function.
-        =#
-        @assign is_structural = ExpOrigin.flagNotSet(origin, ORIGIN_FUNCTION)
+        variability = Variability.CONSTANT
+        #=  The size of the expression must be known unless we're in a function. =#
+        @assign is_structural = flagNotSet(origin, ORIGIN_FUNCTION)
         @assign next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
         for i in call.iters
-          @assign (iter, range) = i
-          @assign (range, iter_ty, iter_var) =
+          (iter, range) = i
+          (range, iter_ty, iter_var) =
             typeIterator(iter, range, next_origin, is_structural)
           if is_structural
-            @assign range = Ceval.evalExp(range, Ceval.P_EvalTarget.RANGE(info))
-            @assign iter_ty = typeOf(range)
+            range = evalExp(range, EVALTARGET_RANGE(info))
+            iter_ty = typeOf(range)
           end
-          @assign dims = listAppend(arrayDims(iter_ty), dims)
-          @assign variability = Variability.variabilityMax(variability, iter_var)
-          @assign iters = _cons((iter, range), iters)
+          dims = listAppend(arrayDims(iter_ty), dims)
+          variability = variabilityMax(variability, iter_var)
+          iters = _cons((iter, range), iters)
         end
-        @assign iters = listReverseInPlace(iters)
+        iters = listReverseInPlace(iters)
         #=  ExpOrigin.FOR is used here as a marker that this expression may contain iterators.
         =#
-        @assign next_origin = intBitOr(next_origin, ExpOrigin.FOR)
-        @assign (arg, ty, exp_var) = typeExp(call.exp, next_origin, info)
-        @assign variability = Variability.variabilityMax(variability, exp_var)
-        @assign ty = liftArrayLeftList(ty, dims)
-        @assign variability = Variability.variabilityMax(variability, exp_var)
+        next_origin = intBitOr(next_origin, ORIGIN_FOR)
+        (arg, ty, exp_var) = typeExp(call.exp, next_origin, info)
+        variability = variabilityMax(variability, exp_var)
+        ty = liftArrayLeftList(ty, dims)
+        variability = variabilityMax(variability, exp_var)
         (TYPED_ARRAY_CONSTRUCTOR(ty, variability, arg, iters), ty, variability)
       end
 
@@ -1821,16 +1819,14 @@ function instIterators(
 )::Tuple{InstNode, List{Tuple{InstNode, Expression}}}
   local outIters::List{Tuple{InstNode, Expression}} = nil
   local outScope::InstNode = scope
-
   local range::Expression
   local iter::InstNode
-
   for i in inIters
-    @assign range = Inst.instExp(Util.getOption(i.range), outScope, info)
-    @assign (outScope, iter) = Inst.addIteratorToScope(i.name, outScope, info)
-    @assign outIters = _cons((iter, range), outIters)
+    range = instExp(Util.getOption(i.range), outScope, info)
+    (outScope, iter) = addIteratorToScope(i.name, outScope, info)
+    outIters = _cons((iter, range), outIters)
   end
-  @assign outIters = listReverse(outIters)
+  outIters = listReverse(outIters)
   return (outScope, outIters)
 end
 
@@ -1841,13 +1837,12 @@ function instIteratorCallArgs(
 )::Tuple{Expression, List{Tuple{InstNode, Expression}}}
   local iters::List{Tuple{InstNode, Expression}}
   local exp::Expression
-
   @assign _ = begin
     local for_scope::InstNode
     @match args begin
       Absyn.FOR_ITER_FARG(__) => begin
-        @assign (for_scope, iters) = instIterators(args.iterators, scope, info)
-        @assign exp = Inst.instExp(args.exp, for_scope, info)
+        (for_scope, iters) = instIterators(args.iterators, scope, info)
+        exp = instExp(args.exp, for_scope, info)
         ()
       end
     end
@@ -1856,7 +1851,7 @@ function instIteratorCallArgs(
 end
 
 function instIteratorCall(
-  functionName::Absyn.Path,
+  functionName::Absyn.ComponentRef,
   functionArgs::Absyn.FunctionArgs,
   scope::InstNode,
   info::SourceInfo,
@@ -1869,11 +1864,10 @@ function instIteratorCall(
   local is_array::Bool
   #=  The parser turns {exp for i in ...} into $array(exp for i in ...), but we
   =#
-  #=  change it to just array here so we can handle array constructors uniformly.
-  =#
+  #=  change it to just array here so we can handle array constructors uniformly.=#
   @assign fn_name = begin
     @match functionName begin
-      Absyn.CREF_IDENT("array") => begin
+      Absyn.CREF_IDENT("\$array") => begin
         Absyn.CREF_IDENT("array", nil)
       end
       _ => begin
@@ -1881,12 +1875,12 @@ function instIteratorCall(
       end
     end
   end
-  @assign (exp, iters) = instIteratorCallArgs(functionArgs, scope, info)
+  (exp, iters) = instIteratorCallArgs(functionArgs, scope, info)
   if AbsynUtil.crefFirstIdent(fn_name) == "array"
-    @assign callExp = CALL_EXPRESSION(UNTYPED_ARRAY_CONSTRUCTOR(exp, iters))
+    callExp = CALL_EXPRESSION(UNTYPED_ARRAY_CONSTRUCTOR(exp, iters))
   else
-    @assign fn_ref = P_Function.instFunction(fn_name, scope, info)
-    @assign callExp = CALL_EXPRESSION(UNTYPED_REDUCTION(fn_ref, exp, iters))
+    fn_ref = instFunction(fn_name, scope, info)
+    callExp = CALL_EXPRESSION(UNTYPED_REDUCTION(fn_ref, exp, iters))
   end
   return callExp
 end

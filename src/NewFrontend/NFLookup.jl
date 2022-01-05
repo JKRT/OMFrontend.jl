@@ -110,13 +110,13 @@ function lookupFunctionName(cref::Absyn.ComponentRef, scope::InstNode #= The sco
   local foundCref::ComponentRef
   local state::LookupState
   local nodeVar::InstNode
-  try
+#  try
     (foundCref, foundScope, state) = lookupCref(cref, scope)
     nodeVar = node(foundCref)
     @match false = isName(nodeVar)
-  catch e
-    @error "Function lookup error for function $cref. With exception:" e
-  end
+#  catch e
+#    @error "Function lookup error for function $(cref). With exception:" e
+#  end
   (foundCref, state) = fixExternalObjectCall(nodeVar, foundCref, state)
   assertFunction(state, nodeVar, cref, info)
   (foundCref, foundScope)

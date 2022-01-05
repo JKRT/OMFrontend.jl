@@ -84,7 +84,7 @@ function instantiateSCodeToFM(elementToInstantiate::String, inProgram::SCode.Pro
   # make sure we have all the flags loaded!
 #  Main.Flags.new(Flags.emptyFlags)
   local builtinSCode = NFModelicaBuiltinCache["NFModelicaBuiltin"]
-  local program = listAppend(builtinSCode, inProgram)
+  local program = listReverse(listAppend(builtinSCode, inProgram))
   local path = Main.AbsynUtil.stringPath(elementToInstantiate)
   Main.instClassInProgramFM(path, program)
 end

@@ -536,18 +536,8 @@ function checkConnectorType(node::InstNode)::Bool
   return isConnector
 end
 
-function typeIterator(
-  iterator::InstNode,
-  range::Expression,
-  origin::ORIGIN_Type,
-  structural::Bool
-)::Tuple{Expression, NFType, VariabilityType} #= If the iteration range must be a parameter expression or not. =#
-  typeIterator(
-    iterator::InstNode,
-    range::Expression,
-    origin::ORIGIN_Type,
-    structural::Bool
-  )
+function typeIterator(iterator::InstNode, range::Expression, origin::ORIGIN_Type, structural::Bool)
+  typeIterator(iterator, range, origin; structural = structural)
 end
 
 

@@ -1,16 +1,16 @@
-@Uniontype NFFlatModel begin
-  @Record FLAT_MODEL begin
-    name::String
-    variables::List{Variable}
-    equations::List{Equation}
-    initialEquations::List{Equation}
-    algorithms::List{Algorithm}
-    initialAlgorithms::List{Algorithm}
-    #= VSS Modelica extension =#
-    structuralSubmodels::List{FlatModel}
-    #= End VSS Modelica extension =#
-    comment::Option{SCode.Comment}
-  end
+struct FLAT_MODEL <: FlatModel
+  name::String
+  variables::List{Variable}
+  equations::List{Equation}
+  initialEquations::List{Equation}
+  algorithms::List{Algorithm}
+  initialAlgorithms::List{Algorithm}
+  #= VSS Modelica extension =#
+  structuralSubmodels::List{FlatModel}
+  #= If a model uses self reference this is true =#
+  scodeProgram::Option{SCode.CLASS}
+  #= End VSS Modelica extension =#
+  comment::Option{SCode.Comment}
 end
 
 module TypeTreeImpl

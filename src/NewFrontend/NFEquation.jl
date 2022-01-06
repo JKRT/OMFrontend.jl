@@ -734,10 +734,19 @@ function mapExp(eq::Equation, func::MapExpFn)::Equation
   return eq
 end
 
-function mapExpList(eql::List{<:Equation}, func::MapExpFn)::List{Equation}
-
-  @assign eql = list(mapExp(eq, func) for eq in eql)
+"""
+  mapExpList with atleast one element
+"""
+function mapExpList(eql::Cons{Equation}, func::MapExpFn)
+  eql = list(mapExp(eq, func) for eq in eql)
   return eql
+end
+
+"""
+  An empty list results in nil
+"""
+function mapExpList(eql::Nil, func::MapExpFn)
+  return nil
 end
 
 function map(eq::Equation, func::MapFn)::Equation

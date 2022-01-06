@@ -1639,10 +1639,12 @@ function typeBindingExp(
   return (outExp, ty, variability)
 end
 
-""" #= Returns the requested dimension of the given expression, while doing as
+""" 
+   Returns the requested dimension of the given expression, while doing as
    little typing as possible. This function returns TypingError.OUT_OF_BOUNDS if
    the given index doesn't refer to a valid dimension, in which case the
-   returned dimension is undefined. =#"""
+   returned dimension is undefined. 
+"""
 function typeExpDim(
   @nospecialize(exp::Expression),
   dimIndex::Int,

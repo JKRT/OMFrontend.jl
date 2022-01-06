@@ -199,11 +199,12 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
   # end
   #= Scalarize array components in the flat model.=#
   @debug "Not skipping NF_SCALARIZE"
-  #                  if Flags.isSet(Flags.NF_SCALARIZE)
-  # @assign flat_model = scalarize(flat_model, name)
-  #                  else
-  # @assign flat_model.variables = ListUtil.filterOnFalse(flat_model.variables, isEmptyArray)
-  #                   end
+  #@info "Hello"
+  if Flags.isSet(Flags.NF_SCALARIZE)
+    @assign flat_model = scalarize(flat_model, name)
+  else
+    @assign flat_model.variables = ListUtil.filterOnFalse(flat_model.variables, isEmptyArray)
+  end
   #=  Remove empty arrays from variables =#
   @debug "VERIFYING MODEL: "
   verify(flat_model)

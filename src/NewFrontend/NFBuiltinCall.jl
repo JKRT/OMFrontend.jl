@@ -195,6 +195,11 @@ function typeSpecial(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{
         typeStructuralTransistion(call, next_origin, info)
       end
 
+      "recompilation" => begin
+        @debug "VSS: Typing typeStructuralTransistion"
+        typeRecompilationCall(call, next_origin, info)
+      end
+
       _  => begin
         #= /*
         case \"hold\" guard Config.synchronousFeaturesAllowed() then typeHoldCall(call, next_origin, info);
@@ -218,13 +223,11 @@ end
 
 function makeSizeExp(posArgs::List{<:Expression}, namedArgs::List{<:NamedArg}, info::SourceInfo) ::Expression
   local callExp::Expression
-
   local argc::Int = listLength(posArgs)
   local arg1::Expression
   local arg2::Expression
-
   assertNoNamedParams("size", namedArgs, info)
-  @assign callExp = begin
+  callExp = begin
     @match posArgs begin
       arg1 <|  nil()  => begin
         SIZE_EXPRESSION(arg1, NONE())
@@ -232,8 +235,7 @@ function makeSizeExp(posArgs::List{<:Expression}, namedArgs::List{<:NamedArg}, i
 
       arg1 <| arg2 <|  nil()  => begin
         SIZE_EXPRESSION(arg1, SOME(arg2))
-      end
-
+      end      
       _  => begin
         Error.addSourceMessage(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list("size" + ListUtil.toString(posArgs, toString, "", "(", ", ", ")", true), "size(Any[:, ...]) => Integer[:]\\n  size(Any[:, ...], Integer) => Integer"), info)
         fail()
@@ -1266,6 +1268,39 @@ function typeInitialStructuralStateCall(call::Call, origin::ORIGIN_Type, info::S
 end
 
 """
+Author:johti17
+Extension: 
+  Type a recompilation call. 
+  Depending on what we do we create different calls.
+  A call to recompilation means that a model should refer to itself to allow reflection.
+"""
+function typeRecompilationCall(@nospecialize(call::Call), origin::ORIGIN_Type, info::SourceInfo)
+  local variabilityType::VariabilityType = Variability.PARAMETER
+  @match UNTYPED_CALL(fn_ref, args, namedArgs) = call
+  if listLength(args) != 2
+    throw("Error typing! expected two arguments to recompilation")
+  end
+  #= 
+    We know we are going to change a parameter of the model we currently are operating on.
+    Prepare the SCode for this model so that we can use it later.  
+  =#
+  @match CREF_EXPRESSION(_, argCref1) = listGet(args, 1)
+  #= 
+    Change the variability of argCref1 
+    to avoid further simplifications in the frontend.
+    We do this by creating a new component reference that is not pointing to a node.
+  =#
+  local newCref = COMPONENT_REF_STRING(name(argCref1.node), argCref1.restCref) 
+  local retType = TYPE_NORETCALL()
+  local arg1 = CREF_EXPRESSION(TYPE_ANY() #= Reference to the parameter we are changing=#,
+                               newCref #= Should be complex but use any for now=#)
+  (arg2, _, _) = typeExp(listGet(args, 2), origin, info)
+  fn = listHead(typeRefCache(fn_ref))
+  callExp = CALL_EXPRESSION(makeTypedCall(fn, list(arg1, arg2), variabilityType, retType))
+  return (callExp, retType, variabilityType)
+end
+
+"""
 Author: johti17
 Extension: Types a structural transistion.
 A structural transistion have three arguments
@@ -1274,7 +1309,6 @@ A structural transistion have three arguments
 3. A condition. That is the when event at which the transistion occurs.
 """
 function typeStructuralTransistion(call::Call, origin::ORIGIN_Type, info::SourceInfo)
-  @debug "Typing... typeStructuralTransistion"
   @match UNTYPED_CALL(fn_ref, args, namedArgs) = call
   local variabilityType::VariabilityType = Variability.PARAMETER
   if listLength(args) != 3
@@ -1290,12 +1324,9 @@ function typeStructuralTransistion(call::Call, origin::ORIGIN_Type, info::Source
                                argCref2 #=Should be complex but use any for now=#)
   #= The last expression here is a condition=#
   local (arg3, _, _) = typeExp(listGet(args, 3), origin, info)
-  @debug "Done typing the arguments"
   local retType = TYPE_NORETCALL()
   local fn = listHead(typeRefCache(fn_ref))
-  @debug "Before constructing the call expression"
   local callExp = CALL_EXPRESSION(makeTypedCall(fn, list(arg1, arg2, arg3), variabilityType, retType))
-  @debug "Done typing the call expression"
   return (callExp, retType, Variability.PARAMETER#=TODO should change this..=#)
 end
 

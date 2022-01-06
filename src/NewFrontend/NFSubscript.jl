@@ -353,8 +353,7 @@ function scalarizeList(
     end
   end
   for d in rest_dims
-    @assign subs =
-      P_RangeIterator.RangeIterator.map(P_RangeIterator.RangeIterator.fromDim(d), makeIndex)
+    subs = map(fromDim(d), makeIndex)
     if listEmpty(subs)
       @assign outSubscripts = nil
       return outSubscripts

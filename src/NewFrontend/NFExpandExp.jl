@@ -1,10 +1,7 @@
 using MetaModelica
 using ExportAll
 #= Forward declarations for uniontypes until Julia adds support for mutual recursion =#
-MakeFn = Function
-#@UniontypeDecl NFExpandExp
-#@Uniontype NFExpandExp begin
-#end
+const MakeFn = Function
 
 function expandGeneric2(
   subs::List{<:List{<:Subscript}},
@@ -166,17 +163,14 @@ end
 
 function expandBinaryPowMatrix2(matrix::Expression, n::Int)::Expression
   local exp::Expression
-
   @assign exp = begin
     @match n begin
       1 => begin
         matrix
       end
-
       2 => begin
         makeBinaryMatrixProduct(matrix, matrix)
       end
-
       _ where {(intMod(n, 2) == 0)} => begin
         #=  A^1 = A
         =#
@@ -691,7 +685,6 @@ function expandArrayConstructor2(
   iterators::List{<:Pointer{<:Expression}},
 )::Expression
   local result::Expression
-
   local range::Expression
   local ranges_rest::List{Expression}
   local expl::List{Expression} = nil
@@ -700,21 +693,20 @@ function expandArrayConstructor2(
   local range_iter::ExpressionIterator
   local value::Expression
   local el_ty::M_Type
-
   if listEmpty(ranges)
-    @assign result = expand(simplify(exp))
+    (result,_) = expand(simplify(exp))
   else
     @match _cons(range, ranges_rest) = ranges
     @match _cons(iter, iters_rest) = iterators
-    @assign range_iter = P_ExpressionIterator.ExpressionIterator.fromExp(range)
-    @assign el_ty = Type.unliftArray(ty)
-    while P_ExpressionIterator.ExpressionIterator.hasNext(range_iter)
-      @assign (range_iter, value) = P_ExpressionIterator.ExpressionIterator.next(range_iter)
+    range_iter = fromExpToExpressionIterator(range)
+    el_ty = unliftArray(ty)
+    while hasNext(range_iter)
+      (range_iter, value) = next(range_iter)
       P_Pointer.update(iter, value)
-      @assign expl =
+      expl =
         _cons(expandArrayConstructor2(exp, el_ty, ranges_rest, iters_rest), expl)
     end
-    @assign result = makeArray(ty, listReverseInPlace(expl))
+    result = makeArray(ty, listReverseInPlace(expl))
   end
   #=  Normally it wouldn't be the expansion's task to simplify expressions,
   =#
@@ -916,9 +908,9 @@ end
 function expandCall(call::Call, exp::Expression)::Tuple{Expression, Bool}
   local expanded::Bool
   local outExp::Expression
-  @assign (outExp, expanded) = begin
+  (outExp, expanded) = begin
     @matchcontinue call begin
-      TYPED_CALL(__) where isBuiltin(call.fn) && !isImpure(call.fn) => begin
+      TYPED_CALL(__) where (isBuiltin(call.fn) && isNotImpure(call.fn))  => begin
         expandcall.fn, call.arguments, call
       end
       TYPED_ARRAY_CONSTRUCTOR(__) => begin
@@ -935,16 +927,14 @@ end
 function expandRange(exp::Expression)::Tuple{Expression, Bool}
   local expanded::Bool
   local outExp::Expression
-
   local range_iter::RangeIterator
   local ty::M_Type
-
   @match RANGE_EXPRESSION(ty = ty) = exp
-  @assign expanded = Type.hasKnownSize(ty)
+  expanded = hasKnownSize(ty)
   if expanded
-    @assign outExp = Ceval.evalExp(exp)
+    outExp = evalExp(exp)
   else
-    @assign outExp = exp
+    outExp = exp
   end
   return (outExp, expanded)
 end
@@ -1138,7 +1128,7 @@ function expandList(
   return (outExpl, expanded)
 end
 
-function expand(exp::Expression)::Tuple{Expression, Bool}
+function expand(@nospecialize(exp::Expression))::Tuple{Expression, Bool}
   local expanded::Bool
 
   @assign (exp, expanded) = begin

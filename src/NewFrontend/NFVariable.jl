@@ -120,10 +120,9 @@ function toString(
   printBindingType::Bool = false,
 )::String
   local str::String
-  local s
-  @assign s = create(getInstanceName(), ype.LIST())
-  @assign s = toStream(var, indent, printBindingType, s)
-  @assign str = string(s)
+  local s  = IOStream_M.create(getInstanceName(), IOStream_M.LIST())
+  s = toStream(var, indent, printBindingType, s)
+  str = IOStream_M.string(s)
   return str
 end
 

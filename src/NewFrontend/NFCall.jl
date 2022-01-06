@@ -168,26 +168,22 @@ function retype(call::Call)::Call
   return call
 end
 
-function isVectorizeable(call::Call)::Bool
-  local isVect::Bool
-  @assign isVect = begin
+function isVectorizeable(@nospecialize(call::Call))::Bool
+  isVect = begin
     local name::String
     @match call begin
-      TYPED_CALL(fn = P_Function.FUNCTION(path = Absyn.IDENT(name = name))) => begin
+      TYPED_CALL(fn = M_FUNCTION(path = Absyn.IDENT(name = name))) => begin
         begin
-          @match name begin
+          @match name begin #TODO add other special functions here.
             "der" => begin
               false
             end
-
             "pre" => begin
               false
             end
-
             "previous" => begin
               false
             end
-
             _ => begin
               true
             end
@@ -664,6 +660,10 @@ function isImpure(call::Call)::Bool
     end
   end
   return isImpure
+end
+
+function isNotImpure(@nospecialize(call::Call))::Bool
+  return !(isImpure(call))
 end
 
 function isExternal(call::Call)::Bool

@@ -1,4 +1,4 @@
-#= /*
+#=
 * This file is part of OpenModelica.
 *
 * Copyright (c) 1998-2014, Open Source Modelica Consortium (OSMC),
@@ -27,7 +27,7 @@
 *
 * See the full OSMC Public License conditions for more details.
 *
-*/ =#
+=#
 
 const VariabilityType = Int
 

@@ -59,6 +59,11 @@ include("./NewFrontend/NFOperatorOverloading.jl")
 include("./NewFrontend/NFCeval.jl")
 include("./NewFrontend/NFEquation.jl")
 include("./NewFrontend/NFTyping.jl")
+
+include("./NewFrontend/NFScalarize.jl")
+
+include("./NewFrontend/NFExpressionIterator.jl")
+
 include("./NewFrontend/NFInst.jl")
 include("./NewFrontend/NFAlgorithm.jl")
 include("./NewFrontend/NFStatement.jl")

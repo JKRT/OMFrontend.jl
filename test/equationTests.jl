@@ -13,7 +13,16 @@ end Circle;
 
 arrayfancyReference="class ArrayFancy
   parameter Integer N = 10;
-  Real[10] x(start = {i for i in 1:10});
+  Real x[1](start = 1.0);
+  Real x[2](start = 2.0);
+  Real x[3](start = 3.0);
+  Real x[4](start = 4.0);
+  Real x[5](start = 5.0);
+  Real x[6](start = 6.0);
+  Real x[7](start = 7.0);
+  Real x[8](start = 8.0);
+  Real x[9](start = 9.0);
+  Real x[10](start = 10.0);
 equation
   x = {der(x[i]) for i in 1:10};
 end ArrayFancy;

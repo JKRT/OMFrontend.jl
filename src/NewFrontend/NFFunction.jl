@@ -749,8 +749,10 @@ function isSpecialBuiltin(fn::M_Function)::Bool
           "sample" => begin
             true
           end
+          #= Extensions  =#
           "initialStructuralState" => true
           "structuralTransistion" => true
+          "recompilation" => true
           _ => begin
             false
           end

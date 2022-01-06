@@ -1,9 +1,4 @@
-module NFScalarize
-
-using MetaModelica
-using ExportAll
-
-#= /*
+#=
 * This file is part of OpenModelica.
 *
 * Copyright (c) 1998-CurrentYear, Linköping University,
@@ -32,79 +27,30 @@ using ExportAll
 *
 * See the full OSMC Public License conditions for more details.
 *
-*/ =#
-import ..NFFlatModel
-FlatModel = NFFlatModel
-import ..NFFlatten.FunctionTree
-
-import ..ExecStat.execStat
-import ..P_NFComponentRef
-P_ComponentRef = P_NFComponentRef
-ComponentRef = P_NFComponentRef.NFComponentRef
-import ..P_NFType
-P_M_Type = P_NFType
-M_Type = NFType
-import ..P_NFExpression
-P_Expression = P_NFExpression
-Expression = P_NFExpression.NFExpression
-import ..NFBinding.P_Binding
-import ..P_NFEquation
-P_Equation = P_NFEquation
-Equation = P_NFEquation.NFEquation
-import ..P_NFExpressionIterator
-P_ExpressionIterator = P_NFExpressionIterator
-ExpressionIterator = P_NFExpressionIterator.NFExpressionIterator
-import ..P_NFDimension
-P_Dimension = P_NFDimension
-Dimension = P_NFDimension.NFDimension
-import ..MetaModelica.Dangerous.listReverseInPlace
-import ..MetaModelica.Dangerous.arrayCreateNoInit
-import ..P_NFVariable
-P_Variable = P_NFVariable
-Variable = P_NFVariable.NFVariable
-import ..NFComponent.P_Component
-import ..NFPrefixes.Visibility
-import ..NFPrefixes.Variability
-import ListUtil
-import ..ElementSource
-import DAE
-import ..P_NFStatement
-P_Statement = P_NFStatement
-Statement = P_NFStatement.NFStatement
-import ..P_NFAlgorithm
-P_Algorithm = P_NFAlgorithm
-Algorithm = P_NFAlgorithm.NFAlgorithm
-import ..P_NFExpandExp
-P_ExpandExp = P_NFExpandExp
-ExpandExp = P_NFExpandExp.NFExpandExp
+=#
 
 function scalarize(flatModel::FlatModel, name::String)::FlatModel
-
   local vars::List{Variable} = nil
   local eql::List{Equation} = nil
   local ieql::List{Equation} = nil
   local alg::List{Algorithm} = nil
   local ialg::List{Algorithm} = nil
-
   for c in flatModel.variables
-    @assign vars = scalarizeVariable(c, vars)
+    vars = scalarizeVariable(c, vars)
   end
   @assign flatModel.variables = listReverseInPlace(vars)
-  @assign flatModel.equations =
-    mapExpList(flatModel.equations, expandComplexCref)
+  @assign flatModel.equations = mapExpList(flatModel.equations, expandComplexCref)
   @assign flatModel.equations = scalarizeEquations(flatModel.equations)
-  @assign flatModel.initialEquations =
-    mapExpList(flatModel.initialEquations, expandComplexCref)
+  @assign flatModel.initialEquations = mapExpList(flatModel.initialEquations, expandComplexCref)
   @assign flatModel.initialEquations = scalarizeEquations(flatModel.initialEquations)
   @assign flatModel.algorithms = list(scalarizeAlgorithm(a) for a in flatModel.algorithms)
   @assign flatModel.initialAlgorithms =
     list(scalarizeAlgorithm(a) for a in flatModel.initialAlgorithms)
-  execStat(getInstanceName() + "(" + name + ")")
+  #execStat(getInstanceName() + "(" + name + ")")
   return flatModel
 end
 
-function scalarizeVariable(var::Variable, vars::List{<:Variable})::List{Variable}
-
+function scalarizeVariable(var::Variable, vars::List{<:Variable})
   local name::ComponentRef
   local binding::Binding
   local ty::M_Type
@@ -120,7 +66,6 @@ function scalarizeVariable(var::Variable, vars::List{<:Variable})::List{Variable
   local ty_attr_names::List{String}
   local ty_attr_iters::Vector{ExpressionIterator}
   local bind_var::VariabilityType
-
   if isArray(var.ty)
     try
       @match VARIABLE(
@@ -133,24 +78,24 @@ function scalarizeVariable(var::Variable, vars::List{<:Variable})::List{Variable
         cmt,
         info,
       ) = var
-      @assign crefs = scalarize(name)
+      crefs = scalarize(name)
       if listEmpty(crefs)
         return vars
       end
-      @assign ty = arrayElementType(ty)
-      @assign (ty_attr_names, ty_attr_iters) = scalarizeTypeAttributes(ty_attr)
+      ty = arrayElementType(ty)
+      (ty_attr_names, ty_attr_iters) = scalarizeTypeAttributes(ty_attr)
       if isBound(binding)
-        @assign binding_iter =
+        binding_iter =
           P_ExpressionIterator.ExpressionIterator.fromExp(expandComplexCref(getTypedExp(
             binding,
           )))
-        @assign bind_var = variability(binding)
+        bind_var = variability(binding)
         for cr in crefs
-          @assign (binding_iter, exp) =
+          (binding_iter, exp) =
             P_ExpressionIterator.ExpressionIterator.next(binding_iter)
-          @assign binding = FLAT_BINDING(exp, bind_var)
-          @assign ty_attr = nextTypeAttributes(ty_attr_names, ty_attr_iters)
-          @assign vars = _cons(
+          binding = FLAT_BINDING(exp, bind_var)
+          ty_attr = nextTypeAttributes(ty_attr_names, ty_attr_iters)
+          vars = _cons(
             VARIABLE(cr, ty, binding, vis, attr, ty_attr, cmt, info),
             vars,
           )
@@ -164,14 +109,17 @@ function scalarizeVariable(var::Variable, vars::List{<:Variable})::List{Variable
           )
         end
       end
-    catch
-      Error.assertion(
-        false,
-        getInstanceName() +
-        " failed on " +
-        P_Variable.Variable.toString(var, printBindingType = true),
-        var.info,
-      )
+    catch e
+      # Error.assertion(
+      #   false,
+      #   getInstanceName() +
+      #   " failed on " +
+      #   toString(var, printBindingType = true),
+      #   var.info,
+      #)
+      errorStr = toString(var, "", false)
+      @error "scalarization failed on the following component: " * errorStr e
+      throw(e)
     end
   else
     @assign var.binding = mapExp(var.binding, expandComplexCref_traverser)
@@ -185,21 +133,18 @@ function scalarizeTypeAttributes(
 )::Tuple{List{String}, Array{ExpressionIterator}}
   local iters::Vector{ExpressionIterator}
   local names::List{String} = nil
-
   local len::Int
   local i::Int
   local name::String
   local binding::Binding
-
-  @assign len = listLength(attrs)
-  @assign iters =
-    arrayCreateNoInit(len, P_ExpressionIterator.ExpressionIterator.NONE_ITERATOR())
-  @assign i = len
+  len = listLength(attrs)
+  iters = arrayCreateNoInit(len, EXPRESSION_NONE_ITERATOR())
+  i = len
   for attr in attrs
-    @assign (name, binding) = attr
-    @assign names = _cons(name, names)
-    arrayUpdate(iters, i, P_ExpressionIterator.ExpressionIterator.fromBinding(binding))
-    @assign i = i - 1
+    (name, binding) = attr
+    names = _cons(name, names)
+    arrayUpdate(iters, i, fromBinding(binding))
+    i = i - 1
   end
   return (names, iters)
 end
@@ -209,29 +154,25 @@ function nextTypeAttributes(
   iters::Vector{<:ExpressionIterator},
 )::List{Tuple{String, Binding}}
   local attrs::List{Tuple{String, Binding}} = nil
-
   local i::Int = 1
   local iter::ExpressionIterator
   local exp::Expression
-
   for name in names
-    @assign (iter, exp) = P_ExpressionIterator.ExpressionIterator.next(iters[i])
+    (iter, exp) = next(iters[i])
     arrayUpdate(iters, i, iter)
-    @assign i = i + 1
-    @assign attrs = _cons((name, FLAT_BINDING(exp, Variability.PARAMETER)), attrs)
+    i = i + 1
+    attrs = _cons((name, FLAT_BINDING(exp, Variability.PARAMETER)), attrs)
   end
   return attrs
 end
 
-function expandComplexCref(exp::Expression)::Expression
-
-  @assign exp = map(exp, expandComplexCref_traverser)
+function expandComplexCref(exp::Expression)
+  exp = map(exp, expandComplexCref_traverser)
   return exp
 end
 
-function expandComplexCref_traverser(exp::Expression)::Expression
-
-  @assign () = begin
+function expandComplexCref_traverser(exp::Expression)
+  () = begin
     @match exp begin
       CREF_EXPRESSION(ty = TYPE_ARRAY(__)) => begin
         #=  Expand crefs where any of the prefix nodes are arrays. For example if
@@ -243,7 +184,7 @@ function expandComplexCref_traverser(exp::Expression)::Expression
         #=        necessary.
         =#
         if isComplexArray(exp.cref)
-          @assign exp = P_ExpandExp.ExpandExp.expand(exp)
+          exp = expand(exp)
         end
         ()
       end
@@ -256,19 +197,17 @@ function expandComplexCref_traverser(exp::Expression)::Expression
   return exp
 end
 
-function scalarizeEquations(eql::List{<:Equation})::List{Equation}
+function scalarizeEquations(eql::List{<:Equation})
   local equations::List{Equation} = nil
-
   for eq in eql
-    @assign equations = scalarizeEquation(eq, equations)
+    equations = scalarizeEquation(eq, equations)
   end
-  @assign equations = listReverseInPlace(equations)
+  equations = listReverseInPlace(equations)
   return equations
 end
 
-function scalarizeEquation(eq::Equation, equations::List{<:Equation})::List{Equation}
-
-  @assign equations = begin
+function scalarizeEquation(eq::Equation, equations::List{<:Equation})
+  equations = begin
     local lhs_iter::ExpressionIterator
     local rhs_iter::ExpressionIterator
     local lhs::Expression
@@ -286,12 +225,12 @@ function scalarizeEquation(eq::Equation, equations::List{<:Equation})::List{Equa
       ) where {(isArray(ty))} => begin
         if hasArrayCall(lhs) ||
            hasArrayCall(rhs)
-          @assign equations =
+          equations =
             _cons(EQUATION_ARRAY_EQUALITY(lhs, rhs, ty, src), equations)
         else
-          @assign lhs_iter = P_ExpressionIterator.ExpressionIterator.fromExp(lhs)
-          @assign rhs_iter = P_ExpressionIterator.ExpressionIterator.fromExp(rhs)
-          @assign ty = arrayElementType(ty)
+          lhs_iter = P_ExpressionIterator.ExpressionIterator.fromExp(lhs)
+          rhs_iter = P_ExpressionIterator.ExpressionIterator.fromExp(rhs)
+          ty = arrayElementType(ty)
           while P_ExpressionIterator.ExpressionIterator.hasNext(lhs_iter)
             if !P_ExpressionIterator.ExpressionIterator.hasNext(rhs_iter)
               Error.addInternalError(
@@ -301,11 +240,11 @@ function scalarizeEquation(eq::Equation, equations::List{<:Equation})::List{Equa
                 ElementSource_getInfo(src),
               )
             end
-            @assign (lhs_iter, lhs) =
+            (lhs_iter, lhs) =
               P_ExpressionIterator.ExpressionIterator.next(lhs_iter)
-            @assign (rhs_iter, rhs) =
+            (rhs_iter, rhs) =
               P_ExpressionIterator.ExpressionIterator.next(rhs_iter)
-            @assign equations =
+            equations =
               _cons(EQUATION_EQUALITY(lhs, rhs, ty, src), equations)
           end
         end
@@ -341,17 +280,15 @@ function scalarizeIfEquation(
   source::DAE.ElementSource,
   equations::List{<:Equation},
 )::List{Equation}
-
   local bl::List{P_Equation.Equation} = nil
   local cond::Expression
   local body::List{Equation}
   local var::VariabilityType
-
   for b in branches
     @match EQUATION_BRANCH(cond, var, body) = b
-    @assign body = scalarizeEquations(body)
+    body = scalarizeEquations(body)
     if !listEmpty(body)
-      @assign bl = _cons(P_Equation.Equation.makeBranch(cond, body, var), bl)
+      bl = _cons(P_Equation.Equation.makeBranch(cond, body, var), bl)
     end
   end
   #=  Remove branches with no equations after scalarization.
@@ -361,55 +298,50 @@ function scalarizeIfEquation(
   #=  have any branches left.
   =#
   if !listEmpty(bl)
-    @assign equations =
+    equations =
       _cons(EQUATION_IF(listReverseInPlace(bl), source), equations)
   end
   return equations
 end
 
 function scalarizeWhenEquation(
-  branches::List{<:Equation},
+  branches::List{<:Equation_Branch},
   source::DAE.ElementSource,
   equations::List{<:Equation},
 )::List{Equation}
-
-  local bl::List{P_Equation.Equation} = nil
+  local bl::List{Equation_Branch} = nil
   local cond::Expression
   local body::List{Equation}
   local var::VariabilityType
-
   for b in branches
     @match EQUATION_BRANCH(cond, var, body) = b
-    @assign body = scalarizeEquations(body)
+    body = scalarizeEquations(body)
     if isArray(typeOf(cond))
-      @assign cond = P_ExpandExp.ExpandExp.expand(cond)
+      cond = expand(cond)
     end
-    @assign bl = _cons(P_Equation.Equation.makeBranch(cond, body, var), bl)
+    bl = _cons(makeBranch(cond, body, var), bl)
   end
-  @assign equations =
+  equations =
     _cons(EQUATION_WHEN(listReverseInPlace(bl), source), equations)
   return equations
 end
 
 function scalarizeAlgorithm(alg::Algorithm)::Algorithm
-
   @assign alg.statements = scalarizeStatements(alg.statements)
   return alg
 end
 
 function scalarizeStatements(stmts::List{<:Statement})::List{Statement}
   local statements::List{Statement} = nil
-
   for s in stmts
-    @assign statements = scalarizeStatement(s, statements)
+    statements = scalarizeStatement(s, statements)
   end
-  @assign statements = listReverseInPlace(statements)
+  statements = listReverseInPlace(statements)
   return statements
 end
 
 function scalarizeStatement(stmt::Statement, statements::List{<:Statement})::List{Statement}
-
-  @assign statements = begin
+  statements = begin
     @match stmt begin
       P_Statement.Statement.FOR(__) => begin
         _cons(
@@ -422,15 +354,12 @@ function scalarizeStatement(stmt::Statement, statements::List{<:Statement})::Lis
           statements,
         )
       end
-
       P_Statement.Statement.IF(__) => begin
         scalarizeIfStatement(stmt.branches, stmt.source, statements)
       end
-
       P_Statement.Statement.WHEN(__) => begin
         scalarizeWhenStatement(stmt.branches, stmt.source, statements)
       end
-
       P_Statement.Statement.WHILE(__) => begin
         _cons(
           P_Statement.Statement.WHILE(
@@ -441,7 +370,6 @@ function scalarizeStatement(stmt::Statement, statements::List{<:Statement})::Lis
           statements,
         )
       end
-
       _ => begin
         _cons(stmt, statements)
       end
@@ -455,16 +383,14 @@ function scalarizeIfStatement(
   source::DAE.ElementSource,
   statements::List{<:Statement},
 )::List{Statement}
-
   local bl::List{Tuple{Expression, List{Statement}}} = nil
   local cond::Expression
   local body::List{Statement}
-
   for b in branches
-    @assign (cond, body) = b
-    @assign body = scalarizeStatements(body)
+    (cond, body) = b
+    body = scalarizeStatements(body)
     if !listEmpty(body)
-      @assign bl = _cons((cond, body), bl)
+      bl = _cons((cond, body), bl)
     end
   end
   #=  Remove branches with no statements after scalarization.
@@ -474,7 +400,7 @@ function scalarizeIfStatement(
   #=  have any branches left.
   =#
   if !listEmpty(bl)
-    @assign statements =
+    statements =
       _cons(P_Statement.Statement.IF(listReverseInPlace(bl), source), statements)
   end
   return statements
@@ -485,23 +411,18 @@ function scalarizeWhenStatement(
   source::DAE.ElementSource,
   statements::List{<:Statement},
 )::List{Statement}
-
   local bl::List{Tuple{Expression, List{Statement}}} = nil
   local cond::Expression
   local body::List{Statement}
-
   for b in branches
-    @assign (cond, body) = b
-    @assign body = scalarizeStatements(body)
+    (cond, body) = b
+    body = scalarizeStatements(body)
     if isArray(typeOf(cond))
-      @assign cond = P_ExpandExp.ExpandExp.expand(cond)
+      cond = P_ExpandExp.ExpandExp.expand(cond)
     end
-    @assign bl = _cons((cond, body), bl)
+    bl = _cons((cond, body), bl)
   end
-  @assign statements =
+  statements =
     _cons(P_Statement.Statement.WHEN(listReverseInPlace(bl), source), statements)
   return statements
-end
-
-@exportAll()
 end

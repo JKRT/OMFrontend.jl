@@ -4,8 +4,10 @@
   This module provides the entry to the translated code and associated tweaks and quirks. 
 """
 module Main
-#= We also use it at the top level =#
+#= Import the parser for precompilation=#
+import OMParser
 
+#= We also use it at the top level =#
 using MetaModelica
 using ExportAll
 
@@ -41,21 +43,11 @@ include("./SCodeUtil.jl")
 include("./AbsynToSCode.jl")
 #=Utility for frontend=#
 include("./FrontendUtil/Prefix.jl")
-
-
-#= Disable type inference for this module =#
-if isdefined(Base, :Experimental) && isdefined(Base.Experimental, Symbol("@compiler_options"))
-  # @info "Setting compiler options.."
-  # @info "Base.Experimental.@compiler_options compile=all optimize=3 infer=false"
-  @eval Base.Experimental.@compiler_options compile=min optimize=3 infer=false
-else
-  throw("@compiler_options is not available.\n
-         This package only works for a version of Julia with @compiler_options")
-end
 #= Include interfaces and aliases New Frontend=#
 include("./FrontendInterfaces/NFInterfaces.jl")
 include("./FrontendInterfaces/NFAlias.jl")
 #= Other modules =#
+include("./NewFrontend/NFExpression.jl")
 include("./NewFrontend/NFType.jl")
 include("./NewFrontend/NFComplexType.jl")
 include("./NewFrontend/NFPrefixes.jl")
@@ -73,7 +65,6 @@ include("./NewFrontend/NFStatement.jl")
 include("./NewFrontend/NFBinding.jl")
 include("./NewFrontend/NFVariable.jl")
 include("./NewFrontend/NFFlatModel.jl")
-include("./NewFrontend/NFExpression.jl")
 include("./NewFrontend/NFConnector.jl")
 include("./NewFrontend/NFConnections.jl")
 include("./NewFrontend/NFConnection.jl")
@@ -144,4 +135,51 @@ include("./NewFrontend/NFInline.jl")
 #=  Builtin functions =#
 include("./NewFrontend/NFBuiltinFuncs.jl")
 include("./NewFrontend/NFRangeIterator.jl")
+
+if ccall(:jl_generating_output, Cint, ()) == 1
+  begin
+    #= Disable type inference for this module during precompilation =#
+    # if isdefined(Base, :Experimental) && isdefined(Base.Experimental, Symbol("@compiler_options"))
+    #   # @info "Setting compiler options.."
+    #   # @info "Base.Experimental.@compiler_options compile=all optimize=3 infer=false"
+    #   @eval Base.Experimental.@compiler_options compile=min optimize=3 infer=false
+    # else
+    #   throw("@compiler_options is not available.\n
+    #        This package only works for a version of Julia with @compiler_options")
+    # end
+    
+    #= Make sure that we load the bultin scode=#
+    packagePath = dirname(realpath(Base.find_package("OMFrontend")))
+    packagePath *= "/.."
+    pathToLib = packagePath * "/lib/NFModelicaBuiltin.mo"
+    #= The external C stuff can be a bit flaky.. =#
+    GC.enable(false) 
+    p = OMParser.parseFile(pathToLib, 2 #== MetaModelica ==#)
+    builtinSCode = AbsynToSCode.translateAbsyn2SCode(p)
+    GC.enable(true)
+    #= End preamble =#
+    #=
+    Instantiate the HelloWorld module
+    This will precompile a significant part of the frontend.
+    =#    
+    packagePath = dirname(realpath(Base.find_package("OMFrontend")))
+    packagePath *= "/.."
+    pathToTest = packagePath * "/test/Models/HelloWorld.mo"
+    p = OMParser.parseFile(pathToTest, 1)
+    s = AbsynToSCode.translateAbsyn2SCode(p)
+    @info "Compiling core modules. This might take awhile.."
+    Main.Global.initialize()
+    # make sure we have all the flags loaded!
+    #  Main.Flags.new(Flags.emptyFlags)
+    program = listAppend(builtinSCode, s)
+    path = AbsynUtil.stringPath("HelloWorld")
+    @info "Timings concerning compiling core modules for instantiation"
+    @time res1 = instClassInProgram(path, program)
+    @time res1 = instClassInProgram(path, program)    
+    @time res2 = instClassInProgramFM(path, program)
+    @time res2 = instClassInProgramFM(path, program)
+    @info "Core compiler modules are successfully precompiled!"
+    @info "Compiler modules are successfully precompiled!"    
+  end
+end
 end

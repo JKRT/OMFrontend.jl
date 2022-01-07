@@ -154,12 +154,12 @@ function flagNotSet(origin::M_Type_Int, flag::M_Type_Int)::Bool
 end
 
 function typeClass(@nospecialize(cls::InstNode), name::String)
-  typeClassType(cls, EMPTY_BINDING, ORIGIN_CLASS, cls)
-  typeComponents(cls, ORIGIN_CLASS)
+  typeClassType(Base.inferencebarrier(cls), EMPTY_BINDING, ORIGIN_CLASS, cls)
+  typeComponents(Base.inferencebarrier(cls), ORIGIN_CLASS)
 #  execStat("NFtypeComponents(" + name + ")")
-  typeBindings(cls, cls, ORIGIN_CLASS)
+  typeBindings(Base.inferencebarrier(cls), Base.inferencebarrier(cls), ORIGIN_CLASS)
 #  execStat("NFTyping.typeBindings(" + name + ")")
-  typeClassSections(cls, ORIGIN_CLASS)
+  typeClassSections(Base.inferencebarrier(cls), ORIGIN_CLASS)
   #execStat("NFTyping.typeClassSections(" + name + ")")
   return
 end
@@ -242,7 +242,7 @@ function typeComponents(@nospecialize(cls::InstNode), origin::ORIGIN_Type)
   end
 end
 
-function typeStructor(@nospecialize node::InstNode)
+function typeStructor(node::InstNode)
   local cache::CachedData
   local fnl::List{M_Function}
 
@@ -372,7 +372,7 @@ function typeClassType(
   return ty
 end
 
-function makeConnectorType(@nospecialize(ctree::ClassTree), isExpandable::Bool)::ComplexType
+function makeConnectorType(ctree::ClassTree, isExpandable::Bool)::ComplexType
   local connectorTy::ComplexType
 
   local pots::List{InstNode} = nil
@@ -536,16 +536,12 @@ function checkConnectorType(node::InstNode)::Bool
   return isConnector
 end
 
-function typeIterator(iterator::InstNode, range::Expression, origin::ORIGIN_Type, structural::Bool)
-  typeIterator(iterator, range, origin; structural = structural)
-end
-
 
 function typeIterator(
   iterator::InstNode,
-  range::Expression,
+  range::RANGE_EXPRESSION,
   origin::ORIGIN_Type;
-  structural::Bool
+  structural::Bool = false
 )::Tuple{Expression, NFType, VariabilityType} #= If the iteration range must be a parameter expression or not. =#
   local var::VariabilityType
   local ty::NFType
@@ -1299,7 +1295,7 @@ function typeTypeAttribute(
   local name::String
   local binding::Binding
   local mod_parent::InstNode
-  @assign attribute = begin
+  return begin
     @match attribute begin
       MODIFIER_MODIFIER(__) where {(!ModTable.isEmpty(attribute.subModifiers))} => begin
         #=  Modifier with submodifier, e.g. Real x(start(y = 1)), is an error.
@@ -1359,27 +1355,28 @@ function typeTypeAttribute(
       end
     end
   end
-  return attribute
 end
 
 function typeExp(
-  exp::Expression,
-  origin::ORIGIN_Type,
-  info::SourceInfo
-)::Tuple{Expression, NFType, VariabilityType}
-  typeExp2(exp, origin, info)
+  @nospecialize(exp::Expression),
+  @nospecialize(origin::ORIGIN_Type),
+  @nospecialize(info::SourceInfo)
+  )::Tuple{Expression, NFType, VariabilityType}
+  #= Stop excessive type inference =#
+  return typeExp2(Base.inferencebarrier(exp), Base.inferencebarrier(origin), Base.inferencebarrier(info))
 end
 
-""" #= Types an untyped expression, returning the typed expression itself along with
-   its type and variability. =#"""
+"""Types an untyped expression, returning the typed expression itself along with
+   its type and variability.
+"""
 function typeExp2(
-  exp::Expression,
-  origin::ORIGIN_Type,
-  info::SourceInfo
+  @nospecialize(exp::Expression),
+  @nospecialize(origin::ORIGIN_Type),
+  @nospecialize(info::SourceInfo)
 )::Tuple{Expression, NFType, VariabilityType}
   local variability::VariabilityType
   local ty::NFType
-  @assign (exp, ty, variability) = begin
+  (exp, ty, variability) = begin
     local e1::Expression
     local e2::Expression
     local e3::Expression
@@ -1504,7 +1501,8 @@ function typeExp2(
       end
     end
   end
-  #=  Expressions inside when-clauses and initial sections are discrete.
+  #=
+    Expressions inside when-clauses and initial sections are discrete.
   =#
   if flagSet(origin, ORIGIN_DISCRETE_SCOPE) &&
      variability == Variability.CONTINUOUS
@@ -1514,9 +1512,9 @@ function typeExp2(
 end
 
 function typeBinaryExpression(
-  @nospecialize(exp::Expression),
-  @nospecialize(origin::ORIGIN_Type),
-  @nospecialize(info::SourceInfo),)::Tuple{Expression, NFType, VariabilityType}
+  exp::BINARY_EXPRESSION,
+  origin::ORIGIN_Type,
+  info::SourceInfo,)::Tuple{Expression, NFType, VariabilityType}
   next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
   (e1, ty1, var1) = typeExp(exp.exp1, next_origin, info)
   (e2, ty2, var2) = typeExp(exp.exp2, next_origin, info)
@@ -1590,14 +1588,13 @@ function typeExpl(
 end
 
 function typeBindingExp(
-  @nospecialize(exp::Expression),
-  @nospecialize(origin::ORIGIN_Type),
+  exp::BINDING_EXP,
+  origin::ORIGIN_Type,
   info::SourceInfo,
 )::Tuple{Expression, NFType, VariabilityType}
   local variability::VariabilityType
   local ty::NFType
   local outExp::Expression
-
   local e::Expression
   local parents::List{InstNode}
   local is_each::Bool
@@ -1623,7 +1620,7 @@ function typeBindingExp(
   =#
   #=  can report the error better so we silently ignore it here.
   =#
-  @assign outExp = BINDING_EXP(e, exp_ty, ty, parents, is_each)
+  outExp = BINDING_EXP(e, exp_ty, ty, parents, is_each)
   return (outExp, ty, variability)
 end
 
@@ -3279,7 +3276,7 @@ function typeConnect(
 end
 
 function typeConnector(
-  @nospecialize(connExp::Expression),
+  connExp::Expression,
   origin::ORIGIN_Type,
   info::SourceInfo,
 )::Tuple{Expression, NFType}

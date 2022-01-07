@@ -173,7 +173,6 @@ function getPackageCache(in_caches::Array{<:CachedData}) ::CachedData
 end
 
 function setFuncCache(in_caches::Array{<:CachedData}, in_cache::CachedData)
-  #@debug "Setting func cache  with $in_caches and $in_cache"
   arrayUpdate(in_caches, 1, in_cache)
 end
 

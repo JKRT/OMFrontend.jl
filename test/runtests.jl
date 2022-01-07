@@ -43,7 +43,7 @@ end
   end
 end
 
-#= Check that we get the correct flat Modelica=#
+# #= Check that we get the correct flat Modelica=#
 @testset "Frontend Validation test. Check that the result corresponds to existing models in the original frontend " begin
   include("frontendResultTest.jl")
 end

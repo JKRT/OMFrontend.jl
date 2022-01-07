@@ -1704,8 +1704,7 @@ function typeReduction(
   local fold_id::String
   local res_id::String
   local fold_tuple::Tuple{Option{Expression}, String, String}
-
-  @assign (call, ty, variability) = begin
+  return (call, ty, variability) = begin
     @match call begin
       UNTYPED_REDUCTION(__) => begin
         @assign variability = Variability.CONSTANT
@@ -1736,7 +1735,6 @@ function typeReduction(
           variability,
         )
       end
-
       _ => begin
         Error.assertion(
           false,
@@ -1747,7 +1745,6 @@ function typeReduction(
       end
     end
   end
-  return (call, ty, variability)
 end
 
 function typeArrayConstructor(
@@ -1757,7 +1754,6 @@ function typeArrayConstructor(
 )::Tuple{Call, NFType, VariabilityType}
   local variability::VariabilityType
   local ty::NFType
-
   local arg::Expression
   local range::Expression
   local iter_ty::NFType
@@ -1769,17 +1765,17 @@ function typeArrayConstructor(
   local next_origin::ORIGIN_Type
   local is_structural::Bool
 
-  @assign (call, ty, variability) = begin
+  (call, ty, variability) = begin
     @match call begin
       UNTYPED_ARRAY_CONSTRUCTOR(__) => begin
         variability = Variability.CONSTANT
         #=  The size of the expression must be known unless we're in a function. =#
-        @assign is_structural = flagNotSet(origin, ORIGIN_FUNCTION)
-        @assign next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
+        is_structural = flagNotSet(origin, ORIGIN_FUNCTION)
+        next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
         for i in call.iters
           (iter, range) = i
           (range, iter_ty, iter_var) =
-            typeIterator(iter, range, next_origin, is_structural)
+            typeIterator(iter, range, next_origin, structural = is_structural)
           if is_structural
             range = evalExp(range, EVALTARGET_RANGE(info))
             iter_ty = typeOf(range)

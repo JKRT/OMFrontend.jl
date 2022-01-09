@@ -4,13 +4,17 @@
 #using Revise For include based work
 #using Revise
 
-import OMFrontend
+import Pkg
+
+Pkg.resolve()
+
 import Absyn
 import SCode
 import DAE
-
 using MetaModelica
 using Test
+import OMFrontend
+
 
 #= Utility functions =#
 function flatten(modelName::String, modelFile::String)

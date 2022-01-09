@@ -69,7 +69,7 @@ end
 function instOperatorFunctions(node::InstNode, info::SourceInfo)::InstNode
 
   local tree::ClassTree
-  local mclss::Array{InstNode}
+  local mclss::Vector{InstNode}
   local path::Absyn.Path
   local allfuncs::List{M_Function} = nil
   local funcs::List{M_Function}

@@ -102,7 +102,7 @@ end
     definition::SCode.Element
     visibility
     cls::Pointer
-    caches::Array{CachedData}
+    caches::Vector{CachedData}
     parentScope::InstNode
     nodeType::InstNodeType
   end
@@ -147,42 +147,42 @@ end
 
 const NUMBER_OF_CACHES = 3::Int
 
-function setInnerOuterCache(in_caches::Array{<:CachedData}, in_cache::CachedData) ::Array{CachedData}
-  local out_caches::Array{CachedData} = arrayUpdate(in_caches, 3, in_cache)
+function setInnerOuterCache(in_caches::Vector{<:CachedData}, in_cache::CachedData) ::Vector{CachedData}
+  local out_caches::Vector{CachedData} = arrayUpdate(in_caches, 3, in_cache)
   out_caches
 end
 
-function getInnerOuterCache(in_caches::Array{<:CachedData}) ::CachedData
+function getInnerOuterCache(in_caches::Vector{<:CachedData}) ::CachedData
   local out_cache::CachedData = arrayGet(in_caches, 3)
   out_cache
 end
 
-function clearPackageCache(in_caches::Array{<:CachedData}) ::Array{CachedData}
-  local out_caches::Array{CachedData} = arrayUpdate(in_caches, 2, C_NO_CACHE())
+function clearPackageCache(in_caches::Vector{<:CachedData}) ::Vector{CachedData}
+  local out_caches::Vector{CachedData} = arrayUpdate(in_caches, 2, C_NO_CACHE())
   out_caches
 end
 
-function setPackageCache(in_caches::Array{<:CachedData}, in_cache::CachedData) ::Array{CachedData}
-  local out_caches::Array{CachedData} = arrayUpdate(in_caches, 2, in_cache)
+function setPackageCache(in_caches::Vector{<:CachedData}, in_cache::CachedData) ::Vector{CachedData}
+  local out_caches::Vector{CachedData} = arrayUpdate(in_caches, 2, in_cache)
   out_caches
 end
 
-function getPackageCache(in_caches::Array{<:CachedData}) ::CachedData
+function getPackageCache(in_caches::Vector{<:CachedData}) ::CachedData
   local out_cache::CachedData = arrayGet(in_caches, 2)
   out_cache
 end
 
-function setFuncCache(in_caches::Array{<:CachedData}, in_cache::CachedData)
+function setFuncCache(in_caches::Vector{<:CachedData}, in_cache::CachedData)
   arrayUpdate(in_caches, 1, in_cache)
 end
 
-function getFuncCache(in_caches::Array{<:CachedData}) ::CachedData
+function getFuncCache(in_caches::Vector{<:CachedData}) ::CachedData
 #  @debug in_caches
   local out_cache::CachedData = arrayGet(in_caches, 1)
   out_cache
 end
 
-function addFunc(fn::M_Function, specialBuiltin::Bool, caches::Array{<:CachedData})
+function addFunc(fn::M_Function, specialBuiltin::Bool, caches::Vector{<:CachedData})
   local func_cache::CachedData
   @assign func_cache = getFuncCache(caches)
   @assign func_cache = begin
@@ -206,7 +206,7 @@ function addFunc(fn::M_Function, specialBuiltin::Bool, caches::Array{<:CachedDat
   setFuncCache(caches, func_cache)
 end
 
-function initFunc(caches::Array{<:CachedData})
+function initFunc(caches::Vector{<:CachedData})
   local func_cache::CachedData
   @assign func_cache = getFuncCache(caches)
   @assign func_cache = begin
@@ -222,8 +222,8 @@ function initFunc(caches::Array{<:CachedData})
   setFuncCache(caches, func_cache)
 end
 
-function empty()::Array{CachedData}
-  local cache::Array{CachedData} = arrayCreate(NUMBER_OF_CACHES, C_NO_CACHE())
+function empty()::Vector{CachedData}
+  local cache::Vector{CachedData} = arrayCreate(NUMBER_OF_CACHES, C_NO_CACHE())
   cache
 end
 

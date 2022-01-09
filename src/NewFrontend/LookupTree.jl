@@ -28,7 +28,7 @@ const MapFunc = Function
 
 abstract type Tree end
 
-mutable struct NODE <: Tree
+mutable struct NODE <:Tree
   key::Key #= The key of the node. =#
   value::Value
   height::Int #= Height of tree, used for balancing =#

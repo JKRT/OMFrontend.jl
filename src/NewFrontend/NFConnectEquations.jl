@@ -36,7 +36,7 @@ const potFunc = Function
 
 const EQ_ASSERT_STR = STRING_EXPRESSION("Connected constants/parameters must be equal")
 
-function generateEquations(sets::Array{<:List{<:Connector}})::List{Equation}
+function generateEquations(sets::Vector{<:List{<:Connector}})::List{Equation}
   local equations::List{Equation} = nil
 
   local set_eql::List{Equation}
@@ -79,7 +79,7 @@ const CardinalityTable = NFCardinalityTable
 function evaluateOperators(
   exp::Expression,
   sets::ConnectionSets.Sets,
-  setsArray::Array{<:List{<:Connector}},
+  setsArray::Vector{<:List{<:Connector}},
   ctable::CardinalityTable.Table,
 )::Expression
   local evalExp::Expression
@@ -788,7 +788,7 @@ end
 function evaluateOperatorReductionExp(
   exp::Expression,
   sets::ConnectionSets.Sets,
-  setsArray::Array{<:List{<:Connector}},
+  setsArray::Vector{<:List{<:Connector}},
   ctable::CardinalityTable.Table,
 )::Expression
   local evalExp::Expression
@@ -837,7 +837,7 @@ end
 function evaluateOperatorArrayConstructorExp(
   exp::Expression,
   sets::ConnectionSets.Sets,
-  setsArray::Array{<:List{<:Connector}},
+  setsArray::Vector{<:List{<:Connector}},
   ctable::CardinalityTable.Table,
 )::Expression
   local evalExp::Expression
@@ -861,7 +861,7 @@ end
 function evaluateInStream(
   cref::ComponentRef,
   sets::ConnectionSets.Sets,
-  setsArray::Array{<:List{<:Connector}},
+  setsArray::Vector{<:List{<:Connector}},
   ctable::CardinalityTable.Table,
 )::Expression
   local exp::Expression
@@ -900,7 +900,7 @@ function generateInStreamExp(
   streamCref::ComponentRef,
   streams::List{<:Connector},
   sets::ConnectionSets.Sets,
-  setsArray::Array{<:List{<:Connector}},
+  setsArray::Vector{<:List{<:Connector}},
   ctable::CardinalityTable.Table,
   flowThreshold::AbstractFloat,
 )::Expression
@@ -1011,7 +1011,7 @@ end
 function evaluateActualStream(
   streamCref::ComponentRef,
   sets::ConnectionSets.Sets,
-  setsArray::Array{<:List{<:Connector}},
+  setsArray::Vector{<:List{<:Connector}},
   ctable::CardinalityTable.Table,
   mulCref::Option{<:ComponentRef} = NONE(),
 )::Expression
@@ -1064,7 +1064,7 @@ function evaluateActualStreamMul(
   actualStreamArg::Expression,
   op::Operator,
   sets::ConnectionSets.Sets,
-  setsArray::Array{<:List{<:Connector}},
+  setsArray::Vector{<:List{<:Connector}},
   ctable::CardinalityTable.Table,
 )::Expression
   local outExp::Expression

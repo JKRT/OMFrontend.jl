@@ -2,8 +2,6 @@ import Absyn
 import SCode
 import DAE
 
-const SCODE_CACHE = Dict{Absyn.Ident, SCode.CLASS}()
-
 """ 
   Instantiates a class given by its fully qualified path, with the result being a DAE.
 """
@@ -126,7 +124,6 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
   local funcs::FunctionTree
   #= Add the program currently being translated into the SCode cache. =#
   local currentProgram = listHead(program)
-  global SCODE_CACHE[currentProgram.name] = currentProgram
   #=  gather here all the flags to disable expansion
   =#
   #=  and scalarization if -d=-nfScalarize is on
@@ -1502,7 +1499,7 @@ function redeclareComponent(redeclareNode::InstNode, originalNode::InstNode, out
   local bindingVar::Binding
   local condition::Binding
   local attr::Attributes
-  local dims::Array{Dimension}
+  local dims::Vector{Dimension}
   local cmt::Option{SCode.Comment}
   local rdcl_node::InstNode
   local rdcl_type::InstNodeType
@@ -1869,7 +1866,7 @@ function isDiscreteClass(clsNode::InstNode) ::Bool
   local discrete::Bool
   local base_node::InstNode
   local cls::Class
-  local exts::Array{InstNode}
+  local exts::Vector{InstNode}
   base_node = lastBaseClass(clsNode)
   cls = getClass(base_node)
   discrete = begin
@@ -1977,14 +1974,14 @@ function instDimension(dimension::Dimension, scope::InstNode, info::SourceInfo) 
   dimension
 end
 
-function instExpressions(node::InstNode, scope::InstNode = node, sections::Sections = SECTIONS_EMPTY())::Sections
+function instExpressions(@nospecialize(node::InstNode), @nospecialize(scope::InstNode = node), @nospecialize(sections::Sections = SECTIONS_EMPTY()))::Sections
   local cls::Class = getClass(node)
   local inst_cls::Class
-  local local_comps::Array{InstNode}
-  local exts::Array{InstNode}
+  local local_comps::Vector{InstNode}
+  local exts::Vector{InstNode}
   local cls_tree::ClassTree
   local res::Restriction
-  local dims::Array{Dimension}
+  local dims::Vector{Dimension}
   local dim_scope::InstNode
   local info::SourceInfo
   local ty::NFType
@@ -1997,7 +1994,7 @@ function instExpressions(node::InstNode, scope::InstNode = node, sections::Secti
         =#
         exts = getExtends(cls_tree)
         for ext in exts
-          instExpressions(ext, ext, sections)
+          Base.inferencebarrier(instExpressions(ext, ext, sections))
         end
         #=  A type must extend a basic type.
         =#
@@ -2019,7 +2016,7 @@ function instExpressions(node::InstNode, scope::InstNode = node, sections::Secti
         #=  Instantiate expressions in the extends nodes.
         =#
         for ext in getExtends(cls_tree)
-          @assign sections = instExpressions(ext, ext, sections)
+          @assign sections = Base.inferencebarrier(instExpressions(ext, ext, sections))
         end
         #=  Instantiate expressions in the local components.
         =#
@@ -2039,7 +2036,7 @@ function instExpressions(node::InstNode, scope::InstNode = node, sections::Secti
       end
 
       EXPANDED_DERIVED(dims = dims)  => begin
-        @assign sections = instExpressions(cls.baseClass, scope, sections)
+        @assign sections = Base.inferencebarrier(instExpressions(cls.baseClass, scope, sections))
         @assign dim_scope = parent(node)
         @assign info = InstNode_info(node)
         for i in 1:arrayLength(dims)
@@ -2184,7 +2181,7 @@ end
 function instComponentExpressions(componentArg::InstNode)
   local node::InstNode = resolveOuter(componentArg)
   local c::Component = component(node)
-  local dims::Array{Dimension}
+  local dims::Vector{Dimension}
   @match c begin
     UNTYPED_COMPONENT(dimensions = dims, instantiated = false)  => begin
       @assign c.binding = instBinding(c.binding)
@@ -2676,9 +2673,8 @@ function checkExternalDeclLanguage(language::String, info::SourceInfo)
 end
 
 function instEquations(scodeEql::List{<:SCode.Equation}, scope::InstNode, origin::ORIGIN_Type)::List{Equation}
-  local instEql::List{Equation}
-  @assign instEql = list(instEquation(eq, scope, origin) for eq in scodeEql)
-  instEql
+  instEql = list(instEquation(eq, scope, origin) for eq in scodeEql)::List{<:Equation}
+  return instEql
 end
 
 function instEquation(scodeEq::SCode.Equation, scope::InstNode, origin::ORIGIN_Type) ::Equation
@@ -2689,13 +2685,12 @@ function instEquation(scodeEq::SCode.Equation, scope::InstNode, origin::ORIGIN_T
   instEq
 end
 
-function instEEquations(scodeEql::List{<:SCode.EEquation}, scope::InstNode, origin::ORIGIN_Type) ::List{Equation}
-  local instEql::List{Equation}
-  @assign instEql = list(instEEquation(eq, scope, origin) for eq in scodeEql)
-  instEql
+function instEEquations(scodeEql::List{SCode.EEquation}, scope::InstNode, origin::ORIGIN_Type) ::List{Equation}
+  instEql = list(instEEquation(eq, scope, origin) for eq in scodeEql)::List{<:Equation}
+  return instEql
 end
 
-function instEEquation(scodeEq::SCode.EEquation, scope::InstNode, origin::ORIGIN_Type) ::Equation
+function instEEquation(@nospecialize(scodeEq::SCode.EEquation), @nospecialize(scope::InstNode), origin::ORIGIN_Type) ::Equation
   local instEq::Equation
   @assign instEq = begin
     local exp1::Expression

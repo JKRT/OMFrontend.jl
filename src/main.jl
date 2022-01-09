@@ -4,13 +4,13 @@
   This module provides the entry to the translated code and associated tweaks and quirks. 
 """
 module Main
+
 #= Import the parser for precompilation=#
 import OMParser
 
 #= We also use it at the top level =#
 using MetaModelica
 using ExportAll
-
 
 import Absyn
 import SCode
@@ -137,17 +137,8 @@ include("./NewFrontend/NFBuiltinFuncs.jl")
 include("./NewFrontend/NFRangeIterator.jl")
 
 if ccall(:jl_generating_output, Cint, ()) == 1
-  begin
-    #= Disable type inference for this module during precompilation =#
-    # if isdefined(Base, :Experimental) && isdefined(Base.Experimental, Symbol("@compiler_options"))
-    #   # @info "Setting compiler options.."
-    #   # @info "Base.Experimental.@compiler_options compile=all optimize=3 infer=false"
-    #   @eval Base.Experimental.@compiler_options compile=min optimize=3 infer=false
-    # else
-    #   throw("@compiler_options is not available.\n
-    #        This package only works for a version of Julia with @compiler_options")
-    # end
-    
+  begin    
+    #= Disable type inference for this module during precompilation =#    
     #= Make sure that we load the bultin scode=#
     packagePath = dirname(realpath(Base.find_package("OMFrontend")))
     packagePath *= "/.."
@@ -175,9 +166,6 @@ if ccall(:jl_generating_output, Cint, ()) == 1
     path = AbsynUtil.stringPath("HelloWorld")
     @info "Timings concerning compiling core modules for instantiation"
     @time res1 = instClassInProgram(path, program)
-    @time res1 = instClassInProgram(path, program)    
-    @time res2 = instClassInProgramFM(path, program)
-    @time res2 = instClassInProgramFM(path, program)
     @info "Core compiler modules are successfully precompiled!"
     @info "Compiler modules are successfully precompiled!"    
   end

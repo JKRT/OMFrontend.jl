@@ -118,7 +118,7 @@ function scalarizeVariable(var::Variable, vars::List{<:Variable})::List{Variable
   local exp::Expression
   local v::Variable
   local ty_attr_names::List{String}
-  local ty_attr_iters::Array{ExpressionIterator}
+  local ty_attr_iters::Vector{ExpressionIterator}
   local bind_var::VariabilityType
 
   if isArray(var.ty)
@@ -183,7 +183,7 @@ end
 function scalarizeTypeAttributes(
   attrs::List{<:Tuple{<:String, Binding}},
 )::Tuple{List{String}, Array{ExpressionIterator}}
-  local iters::Array{ExpressionIterator}
+  local iters::Vector{ExpressionIterator}
   local names::List{String} = nil
 
   local len::Int
@@ -206,7 +206,7 @@ end
 
 function nextTypeAttributes(
   names::List{<:String},
-  iters::Array{<:ExpressionIterator},
+  iters::Vector{<:ExpressionIterator},
 )::List{Tuple{String, Binding}}
   local attrs::List{Tuple{String, Binding}} = nil
 

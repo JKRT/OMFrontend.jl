@@ -1,5 +1,7 @@
 module Flags
 
+Base.Experimental.@compiler_options(optimize=0, compile=min, infer=no)
+
 using MetaModelica
 using ExportAll
 #= Forward declarations for uniontypes until Julia adds support for mutual recursion =#

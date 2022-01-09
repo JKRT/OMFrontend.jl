@@ -36,7 +36,7 @@ end
   @Record EXPANDED_DERIVED begin
     baseClass::InstNode
     modifier::Modifier
-    dims::Array{Dimension}
+    dims::Vector{Dimension}
     prefixes::Prefixes
     attributes::Attributes
     restriction::Restriction
@@ -144,7 +144,7 @@ function makeRecordExp(clsNode::InstNode)::Expression
   local cls::Class
   local ty::M_Type
   local ty_node::InstNode
-  local fields::Array{InstNode}
+  local fields::Vector{InstNode}
   local args::List{Expression}
   @assign cls = getClass(clsNode)
   @match (@match TYPE_COMPLEX(complexTy = COMPLEX_RECORD(ty_node)) = ty) =
@@ -503,7 +503,7 @@ end
 function getTypeAttributes(cls::Class)::List{Modifier}
   local attributes::List{Modifier} = nil
 
-  local comps::Array{InstNode}
+  local comps::Vector{InstNode}
   local mod::Modifier
 
   try

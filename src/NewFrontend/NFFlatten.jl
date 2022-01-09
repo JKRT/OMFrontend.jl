@@ -77,7 +77,7 @@ function flattenClass(
   #= End extension =#
   )
   @debug "CALLING flattenClass"
-  local comps::Array{InstNode}
+  local comps::Vector{InstNode}
   local bindings::List{Binding}
   local b::Binding
   () = begin
@@ -316,7 +316,7 @@ end
 
 function deleteClassComponents(clsNode::InstNode)
   local cls::Class = getClass(clsNode)
-  local comps::Array{InstNode}
+  local comps::Vector{InstNode}
 
   return @assign () = begin
     @match cls begin
@@ -469,7 +469,7 @@ function isTypeAttributeNamed(name::String, attr::Tuple{<:String, Binding})::Boo
   return isNamed
 end
 
-function getRecordBindings(binding::Binding, comps::Array{<:InstNode})::List{Binding}
+function getRecordBindings(binding::Binding, comps::Vector{<:InstNode})::List{Binding}
   local recordBindings::List{Binding} = nil
 
   local binding_exp::Expression
@@ -1500,7 +1500,7 @@ function resolveConnections(flatModel::FlatModel, name::String)::FlatModel
   local conns::Connections
   local conn_eql::List{Equation}
   local csets::ConnectionSets.Sets
-  local csets_array::Array{List{Connector}}
+  local csets_array::Vector{List{Connector}}
   local ctable::CardinalityTable.Table
   local broken::BrokenEdges = nil
   #=  get the connections from the model
@@ -1545,7 +1545,7 @@ end
 function evaluateConnectionOperators(
   flatModel::FlatModel,
   sets::ConnectionSets.Sets,
-  setsArray::Array{<:List{<:Connector}},
+  setsArray::Vector{<:List{<:Connector}},
   ctable::CardinalityTable.Table,
 )::FlatModel
 
@@ -1562,7 +1562,7 @@ end
 function evaluateBindingConnOp(
   var::Variable,
   sets#=::ConnectionSets.Sets=#,
-  setsArray::Array{<:List{<:Connector}},
+  setsArray::Vector{<:List{<:Connector}},
   ctable::CardinalityTable.Table,
 )::Variable
 
@@ -1594,7 +1594,7 @@ end
 function evaluateEquationsConnOp(
   equations::List{<:Equation},
   sets#=::ConnectionSets.Sets=#,
-  setsArray::Array{<:List{<:Connector}},
+  setsArray::Vector{<:List{<:Connector}},
   ctable::CardinalityTable.Table,
 )::List{Equation}
 

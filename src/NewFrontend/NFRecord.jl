@@ -116,8 +116,8 @@ function collectRecordParams(
   local locals::List{InstNode} = nil
   local inputs::List{InstNode} = nil
   local comp::InstNode
-  local comps::Array{InstNode}
-  local pcomps::Array{Pointer{InstNode}}
+  local comps::Vector{InstNode}
+  local pcomps::Vector{Pointer{InstNode}}
   local tree::ClassTree
   @assign tree = classTree(getClass(recNode))
   @assign () = begin

@@ -683,7 +683,7 @@ function makeComponentBinding(
   local binding::Binding
 
   local tree::ClassTree
-  local comps::Array{InstNode}
+  local comps::Vector{InstNode}
   local fields::List{Expression}
   local ty::M_Type
   local exp_ty::M_Type
@@ -792,7 +792,7 @@ function makeRecordBindingExp(
   local exp::Expression
 
   local tree::ClassTree
-  local comps::Array{InstNode}
+  local comps::Vector{InstNode}
   local args::List{Expression}
   local fields::List{Record.P_Field}
   local ty::M_Type
@@ -3973,7 +3973,7 @@ end
 function evalBuiltinSymmetric(arg::Expression)::Expression
   local result::Expression
 
-  local mat::Array{Array{Expression}}
+  local mat::Vector{Array{Expression}}
   local n::Int
   local row_ty::M_Type
   local expl::List{Expression}

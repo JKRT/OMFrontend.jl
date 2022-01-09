@@ -403,7 +403,7 @@ function buildRecordBinding(recordNode::InstNode, repl::ReplTree.Tree)::Expressi
 
   local cls_node::InstNode = classScope(recordNode)
   local cls::Class = getClass(cls_node)
-  local comps::Array{InstNode}
+  local comps::Vector{InstNode}
   local bindings::List{Expression}
   local exp::Expression
   local local_repl::ReplTree.Tree
@@ -936,7 +936,7 @@ function assignRecord(lhs::Expression, rhs::Expression)::Expression
     local e::Expression
     local val::Expression
     local cls_tree::ClassTree
-    local comps::Array{InstNode}
+    local comps::Vector{InstNode}
     local binding_exp::Option{Expression}
     local ty::M_Type
     @match rhs begin

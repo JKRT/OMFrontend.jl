@@ -227,28 +227,23 @@ function toDebugString(cty::Int)::String
   return str
 end
 
-Parallelism = (() -> begin #= Enumeration =#
-  NON_PARALLEL = 1
-  GLOBAL = 2
-  LOCAL = 3
-  () -> (NON_PARALLEL; GLOBAL; LOCAL)
-               end)()
+module Parallelism
+  const NON_PARALLEL = 1
+  const GLOBAL = 2
+  const LOCAL = 3
+end
+
 const ParallelismType = Int
 
-Variability = (
-  () -> begin #= Enumeration =#
-    CONSTANT = 1
-    STRUCTURAL_PARAMETER = 2
-    PARAMETER = 3
-    NON_STRUCTURAL_PARAMETER = 4
-    DISCRETE = 5
-    IMPLICITLY_DISCRETE = 6
-    CONTINUOUS = 7
-    () -> (
-      CONSTANT; STRUCTURAL_PARAMETER; PARAMETER; NON_STRUCTURAL_PARAMETER; DISCRETE; IMPLICITLY_DISCRETE; CONTINUOUS
-    )
-  end
-)()
+module Variability
+const CONSTANT = 1
+const STRUCTURAL_PARAMETER = 2
+const PARAMETER = 3
+const NON_STRUCTURAL_PARAMETER = 4
+const DISCRETE = 5
+const IMPLICITLY_DISCRETE = 6
+const CONTINUOUS = 7
+end
 
 const VariabilityType = Int
 

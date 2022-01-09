@@ -3,13 +3,18 @@
 =#
 #using Revise For include based work
 #using Revise
-import OMFrontend
+
+import Pkg
+
+Pkg.resolve()
+
 import Absyn
 import SCode
 import DAE
-
 using MetaModelica
 using Test
+import OMFrontend
+
 
 #= Utility functions =#
 function flatten(modelName::String, modelFile::String)
@@ -43,7 +48,7 @@ end
   end
 end
 
-#= Check that we get the correct flat Modelica=#
+# #= Check that we get the correct flat Modelica=#
 @testset "Frontend Validation test. Check that the result corresponds to existing models in the original frontend " begin
   include("frontendResultTest.jl")
 end

@@ -277,7 +277,7 @@ function splitRecordCref(exp::Expression) ::Expression
   @assign outExp = P_ExpandExp.ExpandExp.expand(exp)
   @assign outExp = begin
     local cls::InstNode
-    local comps::Array{InstNode}
+    local comps::Vector{InstNode}
     local cr::ComponentRef
     local field_cr::ComponentRef
     local ty::M_Type

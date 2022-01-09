@@ -170,7 +170,6 @@ end
 
 function isVectorizeable(call::Call)::Bool
   local isVect::Bool
-
   @assign isVect = begin
     local name::String
     @match call begin
@@ -807,7 +806,6 @@ function variability(call::Call)::VariabilityType
 end
 
 function setType(call::Call, ty::NFType)::Call
-
   @assign call = begin
     @match call begin
       TYPED_CALL(__) => begin
@@ -831,7 +829,6 @@ end
 
 function typeOf(call::Call)::NFType
   local ty::NFType
-
   @assign ty = begin
     @match call begin
       TYPED_CALL(__) => begin
@@ -984,39 +981,54 @@ function typeNormalCall(call::Call, origin::ORIGIN_Type, info::SourceInfo)::Call
   return call
 end
 
+
 function typeCall(
   @nospecialize(callExp::Expression),
   @nospecialize(origin::ORIGIN_Type),
   @nospecialize(info::SourceInfo),
-)::Tuple{Expression, NFType, VariabilityType}
+  )::Tuple{CALL_EXPRESSION, NFType, VariabilityType}
+  arg1 = callExp::Expression
+  arg2 = origin::ORIGIN_Type
+  arg3 = info
+  typeCall2(
+    Base.inferencebarrier(arg1),
+    Base.inferencebarrier(arg2),
+    Base.inferencebarrier(arg3),
+  )
+end
+
+function typeCall2(
+  @nospecialize(callExp::Expression),
+  @nospecialize(origin::ORIGIN_Type),
+  @nospecialize(info::SourceInfo),
+  )::Tuple
+  @nospecialize
   local var::VariabilityType
   local ty::NFType
   local outExp::Expression
-
   local call::Call
   local ty_call::Call
   local args::List{Expression}
   local cref::ComponentRef
-
   @match CALL_EXPRESSION(call = call) = callExp
-  @assign outExp = begin
+  outExp = begin
     @match call begin
       UNTYPED_CALL(ref = cref) => begin
         if needSpecialHandling(call)
-          @assign (outExp, ty, var) = typeSpecial(call, origin, info)
+          (outExp, ty, var) = typeSpecial(call, origin, info)
         else
-          @assign ty_call = typeMatchNormalCall(call, origin, info)
-          @assign ty = typeOf(ty_call)
-          @assign var = variability(ty_call)
+          ty_call = typeMatchNormalCall(call, origin, info)
+          ty = typeOf(ty_call)
+          var = variability(ty_call)
           if isRecordConstructor(ty_call)
-            @assign outExp = toRecordExpression(ty_call, ty)
+            outExp = toRecordExpression(ty_call, ty)
           else
             if hasUnboxArgs(typedFunction(ty_call))
-              @assign outExp = CALL_EXPRESSION(unboxArgs(ty_call))
+              outExp = CALL_EXPRESSION(unboxArgs(ty_call))
             else
-              @assign outExp = CALL_EXPRESSION(ty_call)
+              outExp = CALL_EXPRESSION(ty_call)
             end
-            @assign outExp = inlineCallExp(outExp)
+            outExp = inlineCallExp(outExp)
           end
         end
         outExp
@@ -1704,8 +1716,7 @@ function typeReduction(
   local fold_id::String
   local res_id::String
   local fold_tuple::Tuple{Option{Expression}, String, String}
-
-  @assign (call, ty, variability) = begin
+  return (call, ty, variability) = begin
     @match call begin
       UNTYPED_REDUCTION(__) => begin
         @assign variability = Variability.CONSTANT
@@ -1736,7 +1747,6 @@ function typeReduction(
           variability,
         )
       end
-
       _ => begin
         Error.assertion(
           false,
@@ -1747,17 +1757,15 @@ function typeReduction(
       end
     end
   end
-  return (call, ty, variability)
 end
 
 function typeArrayConstructor(
-  call::Call,
-  origin::ORIGIN_Type,
-  info::SourceInfo,
+  @nospecialize(call::Call),
+  @nospecialize(origin::ORIGIN_Type),
+  @nospecialize(info::SourceInfo),
 )::Tuple{Call, NFType, VariabilityType}
   local variability::VariabilityType
   local ty::NFType
-
   local arg::Expression
   local range::Expression
   local iter_ty::NFType
@@ -1769,17 +1777,17 @@ function typeArrayConstructor(
   local next_origin::ORIGIN_Type
   local is_structural::Bool
 
-  @assign (call, ty, variability) = begin
+  (call, ty, variability) = begin
     @match call begin
       UNTYPED_ARRAY_CONSTRUCTOR(__) => begin
         variability = Variability.CONSTANT
         #=  The size of the expression must be known unless we're in a function. =#
-        @assign is_structural = flagNotSet(origin, ORIGIN_FUNCTION)
-        @assign next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
+        is_structural = flagNotSet(origin, ORIGIN_FUNCTION)
+        next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
         for i in call.iters
           (iter, range) = i
           (range, iter_ty, iter_var) =
-            typeIterator(iter, range, next_origin, is_structural)
+            Base.inferencebarrier(typeIterator(iter, range, next_origin, is_structural)::Tuple{Expression, NFType, VariabilityType})
           if is_structural
             range = evalExp(range, EVALTARGET_RANGE(info))
             iter_ty = typeOf(range)
@@ -1925,10 +1933,10 @@ function instArgs(
 end
 
 function instNormalCall(
-  functionName::Absyn.ComponentRef,
-  functionArgs::Absyn.FunctionArgs,
-  scope::InstNode,
-  info::SourceInfo,
+  @nospecialize(functionName::Absyn.ComponentRef),
+  @nospecialize(functionArgs::Absyn.FunctionArgs),
+  @nospecialize(scope::InstNode),
+  @nospecialize(info::SourceInfo),
 )
   local callExp::Expression
 

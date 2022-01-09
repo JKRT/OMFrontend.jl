@@ -31,6 +31,7 @@
 
 module FlagsUtil 
 
+Base.Experimental.@compiler_options(optimize=0, compile=min, infer=no)
 
 using MetaModelica
 #= ExportAll is not good practice but it makes it so that we do not have to write export after each function :( =#
@@ -95,11 +96,12 @@ function createDebugFlags() ::Array{Bool}
   debugFlags
 end
 
-#= Loads the flags with getGlobalRoot. Creates a new flags structure if it
-hasn't been created yet. =#
-function loadFlags(initialize::Bool = true) ::Flags.Flag 
+"""
+Loads the flags with getGlobalRoot. Creates a new flags structure if it
+hasn't been created yet.
+"""
+function loadFlags(initialize::Bool = true)::Flags.FLAGS
   local flags::Flags.Flag
-
   try
     flags = Flags.getFlags()
   catch

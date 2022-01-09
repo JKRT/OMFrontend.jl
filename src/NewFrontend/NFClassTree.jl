@@ -7,37 +7,37 @@ include("DuplicateTree.jl")
   end
   @Record CLASS_TREE_FLAT_TREE begin
     tree::LookupTree.Tree
-    classes::Array{InstNode}
-    components::Array{InstNode}
-    imports::Array{Import}
+    classes::Vector{InstNode}
+    components::Vector{InstNode}
+    imports::Vector{Import}
     duplicates::DuplicateTree.Tree
   end
 
   @Record CLASS_TREE_INSTANTIATED_TREE begin
     tree::LookupTree.Tree
-    classes::Array{Pointer{InstNode}}
-    components::Array{Pointer{InstNode}}
+    classes::Vector{Pointer{InstNode}}
+    components::Vector{Pointer{InstNode}}
     localComponents::List{Int}
-    exts::Array{InstNode}
-    imports::Array{Import}
+    exts::Vector{InstNode}
+    imports::Vector{Import}
     duplicates::DuplicateTree.Tree
   end
 
   @Record CLASS_TREE_EXPANDED_TREE begin
     tree::LookupTree.Tree
-    classes::Array{InstNode}
-    components::Array{InstNode}
-    exts::Array{InstNode}
-    imports::Array{Import}
+    classes::Vector{InstNode}
+    components::Vector{InstNode}
+    exts::Vector{InstNode}
+    imports::Vector{Import}
     duplicates::DuplicateTree.Tree
   end
 
   @Record CLASS_TREE_PARTIAL_TREE begin
     tree::LookupTree.Tree
-    classes::Array{InstNode}
-    components::Array{InstNode}
-    exts::Array{InstNode}
-    imports::Array{Import}
+    classes::Vector{InstNode}
+    components::Vector{InstNode}
+    exts::Vector{InstNode}
+    imports::Vector{Import}
     duplicates::DuplicateTree.Tree
   end
 end
@@ -80,8 +80,8 @@ function isEmptyTree(tree::ClassTree)::Bool
   return isEmpty
 end
 
-function getComponents(tree::ClassTree)::Array{InstNode}
-  local comps::Array{InstNode}
+function getComponents(tree::ClassTree)::Vector{InstNode}
+  local comps::Vector{InstNode}
 
   @assign comps = begin
     @match tree begin
@@ -101,8 +101,8 @@ function getComponents(tree::ClassTree)::Array{InstNode}
   return comps
 end
 
-function getExtends(tree::ClassTree)::Array{InstNode}
-  local exts::Array{InstNode}
+function getExtends(tree::ClassTree)::Vector{InstNode}
+  local exts::Vector{InstNode}
   @assign exts = begin
     @match tree begin
       CLASS_TREE_PARTIAL_TREE(__) => begin
@@ -121,8 +121,8 @@ function getExtends(tree::ClassTree)::Array{InstNode}
   return exts
 end
 
-function getClasses(tree::ClassTree)::Array{InstNode}
-  local clss::Array{InstNode}
+function getClasses(tree::ClassTree)::Vector{InstNode}
+  local clss::Vector{InstNode}
   @assign clss = begin
     @match tree begin
       CLASS_TREE_PARTIAL_TREE(__) => begin
@@ -142,7 +142,7 @@ end
 function enumerateComponents2(
   name::String,
   entry::LookupTree.Entry,
-  comps::Array{<:InstNode},
+  comps::Vector{<:InstNode},
   components::List{<:InstNode},
 )::List{InstNode}
 
@@ -165,7 +165,7 @@ function enumerateComponents(tree::ClassTree)::List{InstNode}
   local components::List{InstNode}
 
   local ltree::LookupTree.Tree
-  local comps::Array{InstNode}
+  local comps::Vector{InstNode}
 
   @match CLASS_TREE_FLAT_TREE(tree = ltree, components = comps) = tree
   components = LookupTree.fold(ltree, (name, entry, components) -> enumerateComponents2(name, entry, comps, components), nil)
@@ -405,7 +405,7 @@ end
        A given argument is also folded and returned. =#"""
 function mapFoldExtends(tree::ClassTree, func::FuncT, arg::ArgT) where {ArgT}
 
-  local exts::Array{InstNode} = getExtends(tree)
+  local exts::Vector{InstNode} = getExtends(tree)
   local ext::InstNode
 
   for i = 1:arrayLength(exts)
@@ -417,7 +417,7 @@ end
 
 function foldExtends(tree::ClassTree, func::FuncT, arg::ArgT) where {ArgT}
 
-  local exts::Array{InstNode} = getExtends(tree)
+  local exts::Vector{InstNode} = getExtends(tree)
 
   for ext in exts
     @assign arg = func(ext, arg)
@@ -430,7 +430,7 @@ end
   the extends array with the returned nodes. 
 """
 function mapExtends(tree::ClassTree, func::FuncT)
-  local exts::Array{InstNode} = getExtends(tree)
+  local exts::Vector{InstNode} = getExtends(tree)
   for i = 1:arrayLength(exts)
     local res = arrayGetNoBoundsChecking(exts, i)
     arrayUpdateNoBoundsChecking(exts, i, func(res))
@@ -439,7 +439,7 @@ function mapExtends(tree::ClassTree, func::FuncT)
 end
 
 function applyExtends(tree::ClassTree, func::FuncT)
-  local exts::Array{InstNode} = getExtends(tree)
+  local exts::Vector{InstNode} = getExtends(tree)
 
   return for ext in exts
     func(ext)
@@ -448,7 +448,7 @@ end
 
 function foldClasses(tree::ClassTree, func::FuncT, arg::ArgT) where {ArgT}
 
-  local clss::Array{InstNode} = getClasses(tree)
+  local clss::Vector{InstNode} = getClasses(tree)
 
   for cls in clss
     @assign arg = func(cls, arg)
@@ -457,7 +457,7 @@ function foldClasses(tree::ClassTree, func::FuncT, arg::ArgT) where {ArgT}
 end
 
 function mapClasses(tree::ClassTree, func::FuncT)
-  local clss::Array{InstNode} = getClasses(tree)
+  local clss::Vector{InstNode} = getClasses(tree)
 
   return for i = 1:arrayLength(clss)
     arrayUpdateNoBoundsChecking(clss, i, func(arrayGetNoBoundsChecking(clss, i)))
@@ -528,17 +528,15 @@ function lookupElement(name::String, tree::ClassTree)::Tuple{InstNode, Bool}
   @debug "Looking up element $name in class tree!"
   @debug "Fetching from tree. Soon to report entry"
   str = LookupTree.printTreeStr(lookupTree(tree))
-  @debug str
-  @assign entry = LookupTree.get(lookupTree(tree), name)
-  @debug "Our entry is $entry"
-  @assign (element, isImport) = resolveEntry(entry, tree)
+  entry = LookupTree.get(lookupTree(tree), name)
+  (element, isImport) = resolveEntry(entry, tree)
   return (element, isImport)
 end
 
 function flattenLookupTree2(
   key::LookupTree.Key,
   entry::LookupTree.Entry,
-  offsets::Array{<:Int},
+  offsets::Vector{<:Int},
 )::LookupTree.Entry
   local outEntry::LookupTree.Entry
 
@@ -564,7 +562,7 @@ end
        component array. =#"""
 function flattenLookupTree(
   tree::LookupTree.Tree,
-  offsets::Array{<:Int},
+  offsets::Vector{<:Int},
 )::LookupTree.Tree
   @assign tree = LookupTree.map(tree, (key, entry) -> flattenLookupTree2(key, entry, offsets))
   return tree
@@ -579,8 +577,8 @@ end
 function createFlatOffsets(
   elementCount::Int,
   duplicates::List{<:Int},
-)::Array{Int}
-  local offsets::Array{Int}
+)::Vector{Int}
+  local offsets::Vector{Int}
 
   local offset::Int = 0
   local dup::Int
@@ -605,9 +603,9 @@ function createFlatOffsets(
 end
 
 function flattenElementsWithOffset(
-  elements::Array{<:Pointer{<:InstNode}},
-  flatElements::Array{<:InstNode},
-  offsets::Array{<:Int},
+  elements::Vector{<:Pointer{<:InstNode}},
+  flatElements::Vector{<:InstNode},
+  offsets::Vector{<:Int},
 )
   local offset::Int
 
@@ -626,8 +624,8 @@ end
 """ #= Copies elements from one array to another while removing the Mutable
        container for each element. =#"""
 function flattenElements(
-  elements::Array,
-  flatElements::Array{<:InstNode},
+  elements::Vector,
+  flatElements::Vector{<:InstNode},
 )
   return for i = 1:arrayLength(elements)
     arrayUpdateNoBoundsChecking(
@@ -644,9 +642,9 @@ end
 function flatten(tree::ClassTree)::ClassTree
 
   @assign tree = begin
-    local clss::Array{InstNode}
-    local comps::Array{InstNode}
-    local comp_offsets::Array{Int}
+    local clss::Vector{InstNode}
+    local comps::Vector{InstNode}
+    local comp_offsets::Vector{Int}
     local clsc::Int
     local compc::Int
     local dup_comp::List{Int}
@@ -769,7 +767,7 @@ function clone(tree::ClassTree)::ClassTree
   local outTree::ClassTree
 
   @assign outTree = begin
-    local clss::Array{InstNode}
+    local clss::Vector{InstNode}
     @match tree begin
       CLASS_TREE_EXPANDED_TREE(__) => begin
         @assign clss = arrayCopy(tree.classes)
@@ -797,7 +795,7 @@ function fromRecordConstructor(fields::List{<:InstNode}, out::InstNode)::ClassTr
 
   local ltree::LookupTree.Tree = LookupTree.new()
   local i::Int = 1
-  local comps::Array{InstNode}
+  local comps::Vector{InstNode}
 
   @assign comps = arrayCreateNoInit(listLength(fields) + 1, EMPTY_NODE())
   for ci in fields
@@ -834,13 +832,13 @@ function instantiate(
   local tree::ClassTree
   local ext_tree::ClassTree
   local ltree::LookupTree.Tree
-  local exts::Array{InstNode}
-  local old_clss::Array{InstNode}
-  local old_comps::Array{InstNode}
-  local imps::Array{Import}
-  local clss::Array{Pointer{InstNode}}
-  local comps::Array{Pointer{InstNode}}
-  local ext_clss::Array{Pointer{InstNode}}
+  local exts::Vector{InstNode}
+  local old_clss::Vector{InstNode}
+  local old_comps::Vector{InstNode}
+  local imps::Vector{Import}
+  local clss::Vector{Pointer{InstNode}}
+  local comps::Vector{Pointer{InstNode}}
+  local ext_clss::Vector{Pointer{InstNode}}
   local local_comps::List{Int} = nil
   local cls_idx::Int = 1
   local comp_idx::Int = 1
@@ -1066,10 +1064,10 @@ end
 function expand(tree::ClassTree)::ClassTree
   local ltree::LookupTree.Tree
   local lentry::LookupTree.Entry
-  local exts::Array{InstNode}
-  local clss::Array{InstNode}
-  local comps::Array{InstNode}
-  local imps::Array{Import}
+  local exts::Vector{InstNode}
+  local clss::Vector{InstNode}
+  local comps::Vector{InstNode}
+  local imps::Vector{Import}
   local ext_idxs::List{Tuple{Int, Int}} = nil
   local ccount::Int
   local cls_idx::Int
@@ -1137,11 +1135,11 @@ end
        class or component nodes will result in undefined behaviour. =#"""
 function addElementsToFlatTree(elements::List{<:InstNode}, tree::ClassTree)::ClassTree
   local ltree::LookupTree.Tree
-  local cls_arr::Array{InstNode}
-  local comp_arr::Array{InstNode}
+  local cls_arr::Vector{InstNode}
+  local comp_arr::Vector{InstNode}
   local cls_lst::List{InstNode} = nil
   local comp_lst::List{InstNode} = nil
-  local imports::Array{Import}
+  local imports::Vector{Import}
   local duplicates::DuplicateTree.Tree
   local cls_idx::Int
   local comp_idx::Int
@@ -1175,7 +1173,7 @@ function fromEnumeration(
 )::ClassTree #= The InstNode of the enumeration type =#
   local tree::ClassTree
 
-  local comps::Array{InstNode}
+  local comps::Vector{InstNode}
   local attr_count::Int = 5
   local i::Int = 0
   local comp::InstNode
@@ -1266,15 +1264,15 @@ function fromSCode(
   local compc::Int
   local extc::Int
   local i::Int
-  local clss::Array{InstNode}
-  local comps::Array{InstNode}
-  local exts::Array{InstNode}
+  local clss::Vector{InstNode}
+  local comps::Vector{InstNode}
+  local exts::Vector{InstNode}
   local cls_idx::Int = 0
   local ext_idx::Int = 0
   local comp_idx::Int = 0
   local dups::DuplicateTree.Tree
   local imps::List{Import} = nil
-  local imps_arr::Array{Import}
+  local imps_arr::Vector{Import}
   local info::SourceInfo
 
   @assign ltree = LookupTree.new()
@@ -1957,9 +1955,9 @@ function countInheritedElements(
   componentCount::Int = 0,
 )::Tuple{Int, Int}
 
-  local clss::Array{InstNode}
-  local comps::Array{InstNode}
-  local exts::Array{InstNode}
+  local clss::Vector{InstNode}
+  local comps::Vector{InstNode}
+  local exts::Vector{InstNode}
 
   @assign () = begin
     @match classTree(getClass(extendsNode)) begin
@@ -2028,7 +2026,7 @@ end
 function resolveImport(index::Int, tree::ClassTree)::InstNode
   local element::InstNode
 
-  local imports::Array{Import}
+  local imports::Vector{Import}
   local imp::Import
   local changed::Bool
 
@@ -2123,7 +2121,7 @@ end
 function resolveEntryPtr(entry::LookupTree.Entry, tree::ClassTree)::Pointer{InstNode}
   local element::Pointer{InstNode}
 
-  local elems::Array{Pointer{InstNode}}
+  local elems::Vector{Pointer{InstNode}}
 
   @assign element = begin
     @match entry begin
@@ -2208,7 +2206,7 @@ function addImportConflict(
   newEntry::LookupTree.Entry,
   oldEntry::LookupTree.Entry,
   name::String,
-  imports::Array{<:Import},
+  imports::Vector{<:Import},
 )::LookupTree.Entry
   local entry::LookupTree.Entry
 
@@ -2277,7 +2275,7 @@ function addImport(
   imp::Import,
   index::Int,
   tree::LookupTree.Tree,
-  imports::Array{<:Import},
+  imports::Vector{<:Import},
 )::LookupTree.Tree
 
   @assign tree = LookupTree.add(
@@ -2313,8 +2311,8 @@ function findLocalConflictElement(entry::LookupTree.Entry, classTree::ClassTree)
   local node::InstNode
 
   @assign node = begin
-    local comps::Array{InstNode}
-    local exts::Array{InstNode}
+    local comps::Vector{InstNode}
+    local exts::Vector{InstNode}
     local i::Int
     #=  For classes we can just use the normal resolveClass function.
     =#
@@ -2469,11 +2467,11 @@ end
 
 function instExtendsComps(
   extNode::InstNode,
-  comps::Array{<:Pointer{<:InstNode}},
+  comps::Vector{<:Pointer{<:InstNode}},
   index::Int,
 )::Int #= The first free index in comps =#
-  local ext_comps_ptrs::Array{Pointer{InstNode}}
-  local ext_comps::Array{InstNode}
+  local ext_comps_ptrs::Vector{Pointer{InstNode}}
+  local ext_comps::Vector{InstNode}
   local comp_count::Int
   local ext_comp::InstNode
   @assign () = begin

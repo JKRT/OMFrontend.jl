@@ -150,7 +150,7 @@ import ..Main.TYPED_COMPONENT
 import ..Main.EMPTY_BINDING
 import ..Main.INPUT_ATTR
 
-const EMPTY_NODE_CACHE = listArrayLiteral(list(C_FUNCTION(nil, true, true)))::Array
+const EMPTY_NODE_CACHE = listArrayLiteral(list(C_FUNCTION(nil, true, true)))::Vector
 #=  InstNodes for the builtin types. These have empty class trees to prevent
 =#
 #=  access to the attributes via dot notation (which is not needed for

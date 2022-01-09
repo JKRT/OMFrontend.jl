@@ -5,20 +5,22 @@ FoldFunc = Function
 MapFunc = Function
 #=  TODO: We should have an Any type =#
 #= The binary tree data structure. =#
-@Uniontype Tree begin
-  @Record NODE begin
-    key::Key #= The key of the node. =#
-    value::Value
-    height::Integer #= Height of tree, used for balancing =#
-    left::Tree #= Left subtree. =#
-    right::Tree #= Right subtree. =#
-  end
-  @Record LEAF begin
-    key::Key #= The key of the node. =#
-    value::Value
-  end
-  @Record EMPTY begin
-  end
+abstract type Tree end
+
+mutable struct NODE <: Tree
+  key::Key #= The key of the node. =#
+  value::Value
+  height::Int #= Height of tree, used for balancing =#
+  left::Tree #= Left subtree. =#
+  right::Tree #= Right subtree. =#
+end
+
+mutable struct LEAF <: Tree
+  key::Key #= The key of the node. =#
+  value::Value
+end
+
+struct EMPTY <: Tree
 end
 
 keyCompare = (inKey1::Key, inKey2::Key) -> begin
@@ -49,9 +51,7 @@ function hasKey(inTree::Tree, inKey::Key)::Bool
       LEAF(__) => begin
         inTree.key
       end
-
       EMPTY(__) => begin
-        return
         fail()
       end
     end

@@ -135,7 +135,7 @@ function isSingleExpression(origin::M_Type_Int)::Bool
   return isSingle
 end
 
-function setFlag(origin, flag)::Int
+function setFlag(origin::Int, flag::Int)::Int
   local newOrigin
   @assign newOrigin = intBitOr(origin, flag)
   return newOrigin
@@ -153,13 +153,13 @@ function flagNotSet(origin::M_Type_Int, flag::M_Type_Int)::Bool
   return notSet
 end
 
-function typeClass(@nospecialize(cls::InstNode), name::String)
-  typeClassType(cls, EMPTY_BINDING, ORIGIN_CLASS, cls)
-  typeComponents(cls, ORIGIN_CLASS)
+function typeClass(@nospecialize(cls::InstNode), @nospecialize(name::String))
+  typeClassType(Base.inferencebarrier(cls), EMPTY_BINDING, ORIGIN_CLASS, cls)
+  typeComponents(Base.inferencebarrier(cls), ORIGIN_CLASS)
 #  execStat("NFtypeComponents(" + name + ")")
-  typeBindings(cls, cls, ORIGIN_CLASS)
+  typeBindings(Base.inferencebarrier(cls), Base.inferencebarrier(cls), ORIGIN_CLASS)
 #  execStat("NFTyping.typeBindings(" + name + ")")
-  typeClassSections(cls, ORIGIN_CLASS)
+  typeClassSections(Base.inferencebarrier(cls), ORIGIN_CLASS)
   #execStat("NFTyping.typeClassSections(" + name + ")")
   return
 end
@@ -242,7 +242,7 @@ function typeComponents(@nospecialize(cls::InstNode), origin::ORIGIN_Type)
   end
 end
 
-function typeStructor(@nospecialize node::InstNode)
+function typeStructor(node::InstNode)
   local cache::CachedData
   local fnl::List{M_Function}
 
@@ -372,7 +372,7 @@ function typeClassType(
   return ty
 end
 
-function makeConnectorType(@nospecialize(ctree::ClassTree), isExpandable::Bool)::ComplexType
+function makeConnectorType(ctree::ClassTree, isExpandable::Bool)::ComplexType
   local connectorTy::ComplexType
 
   local pots::List{InstNode} = nil
@@ -536,75 +536,62 @@ function checkConnectorType(node::InstNode)::Bool
   return isConnector
 end
 
-function typeIterator(iterator::InstNode, range::Expression, origin::ORIGIN_Type, structural::Bool)
-  typeIterator(iterator, range, origin; structural = structural)
+function typeIterator(
+  @nospecialize(iterator::InstNode),
+  @nospecialize(range::RANGE_EXPRESSION),
+  @nospecialize(origin::ORIGIN_Type),
+  structural::Bool = false
+  )::Tuple{Expression, NFType, VariabilityType}
+  #=  If the iteration range is structural, it must be a parameter expression. =#
+  typeIterator2(
+    Base.inferencebarrier(iterator)::InstNode,
+    Base.inferencebarrier(range)::RANGE_EXPRESSION,
+    Base.inferencebarrier(origin)::ORIGIN_Type,
+    component(iterator),
+    structural::Bool
+  )
 end
 
-
-function typeIterator(
-  iterator::InstNode,
-  range::Expression,
-  origin::ORIGIN_Type;
-  structural::Bool
-)::Tuple{Expression, NFType, VariabilityType} #= If the iteration range must be a parameter expression or not. =#
-  local var::VariabilityType
-  local ty::NFType
-  local outRange::Expression
-
-  local c::Component = component(iterator)
-  local exp::Expression
-  local info::SourceInfo
-
-  @assign (outRange, ty, var) = begin
-    @match c begin
-      ITERATOR_COMPONENT(info = info) => begin
-        @assign (exp, ty, var) =
-          typeExp(range, setFlag(origin, ORIGIN_ITERATION_RANGE), info)
-        #=  If the iteration range is structural, it must be a parameter expression.
-        =#
-        if structural && var > Variability.PARAMETER
-          Error.addSourceMessageAndFail(
-            Error.NON_PARAMETER_ITERATOR_RANGE,
-            list(toString(exp)),
-            info,
-          )
-        end
-        #=  The iteration range must be a vector expression.
-        =#
-        if !isVector(ty)
-          Error.addSourceMessageAndFail(
-            Error.FOR_EXPRESSION_ERROR,
-            list(toString(exp), Type.toString(ty)),
-            info,
-          )
-        end
-        #=  The type of the iterator is the element type of the range expression.
-        =#
-        @assign c = ITERATOR_COMPONENT(arrayElementType(ty), var, info)
-        updateComponent!(c, iterator)
-        (exp, ty, var)
-      end
-
-      _ => begin
-        Error.assertion(
-          false,
-          getInstanceName() + " got non-iterator " + name(iterator),
-          sourceInfo(),
-        )
-        fail()
-      end
-    end
+function typeIterator2(
+  @nospecialize(iterator::Any),
+  @nospecialize(range::RANGE_EXPRESSION),
+  @nospecialize(origin::ORIGIN_Type),
+  @nospecialize(c::ITERATOR_COMPONENT),
+  structural,
+  )::Tuple{Expression, NFType, VariabilityType}
+  @nospecialize
+  local info::SourceInfo = AbsynUtil.dummyInfo
+  (exp, ty, var) =
+    typeRange(Base.inferencebarrier(range), setFlag(origin, ORIGIN_ITERATION_RANGE), info)
+  if structural && var > Variability.PARAMETER
+    Error.addSourceMessageAndFail(
+      Error.NON_PARAMETER_ITERATOR_RANGE,
+      list(toString(exp)),
+      info,
+    )
   end
+  #=  The iteration range must be a vector expression. =#
+  if !isVector(ty)
+    Error.addSourceMessageAndFail(
+        Error.FOR_EXPRESSION_ERROR,
+      list(toString(exp), Type.toString(ty)),
+      info,
+    )
+  end
+  #=  The type of the iterator is the element type of the range expression.=#
+  c = ITERATOR_COMPONENT(arrayElementType(ty), var, info)
+  updateComponent!(c, iterator)
+  (outRange, ty, var) = (exp, ty, var)
   return (outRange, ty, var)
 end
 
 function typeDimensions(
-  dimensions::Array{<:Dimension},
+  dimensions::Vector{<:Dimension},
   component::InstNode,
   binding::Binding,
   origin::ORIGIN_Type,
   info::SourceInfo,
-)::Array{Dimension}
+)::Vector{Dimension}
 
   for i = 1:arrayLength(dimensions)
     typeDimension(dimensions, i, component, binding, origin, info)
@@ -613,7 +600,25 @@ function typeDimensions(
 end
 
 function typeDimension(
-  dimensions::Array{<:Dimension},
+  dimensions::Vector{Dimension},
+  index::Int,
+  component::InstNode,
+  binding::Binding,
+  origin::ORIGIN_Type,
+  info::SourceInfo,
+  )::Dimension
+  typeDimension2(
+    dimensions::Vector{Dimension},
+    index::Int,
+    component::InstNode,
+    binding::Binding,
+    origin::ORIGIN_Type,
+    info::SourceInfo,
+  )
+end
+
+function typeDimension2(
+  dimensions::Vector{Dimension},
   index::Int,
   component::InstNode,
   binding::Binding,
@@ -1299,7 +1304,7 @@ function typeTypeAttribute(
   local name::String
   local binding::Binding
   local mod_parent::InstNode
-  @assign attribute = begin
+  return begin
     @match attribute begin
       MODIFIER_MODIFIER(__) where {(!ModTable.isEmpty(attribute.subModifiers))} => begin
         #=  Modifier with submodifier, e.g. Real x(start(y = 1)), is an error.
@@ -1359,27 +1364,31 @@ function typeTypeAttribute(
       end
     end
   end
-  return attribute
 end
 
+"""
+   Types an untyped expression, returning the typed expression itself along with
+   its type and variability.
+"""
 function typeExp(
-  exp::Expression,
-  origin::ORIGIN_Type,
-  info::SourceInfo
-)::Tuple{Expression, NFType, VariabilityType}
-  typeExp2(exp, origin, info)
+  @nospecialize(exp::Expression),
+  @nospecialize(origin::ORIGIN_Type),
+  @nospecialize(info::SourceInfo)
+  )::Tuple
+  #= Stop excessive type inference =#
+  return typeExp2(exp, origin, info)
 end
 
-""" #= Types an untyped expression, returning the typed expression itself along with
-   its type and variability. =#"""
 function typeExp2(
-  exp::Expression,
-  origin::ORIGIN_Type,
-  info::SourceInfo
-)::Tuple{Expression, NFType, VariabilityType}
+  @nospecialize(exp::Expression),
+  @nospecialize(origin::ORIGIN_Type),
+  @nospecialize(info::SourceInfo)
+  )::Tuple{Expression, NFType, VariabilityType}
+  #= The methods called below should not be specialized =#
+  @nospecialize
   local variability::VariabilityType
   local ty::NFType
-  @assign (exp, ty, variability) = begin
+  (exp, ty, variability) = begin
     local e1::Expression
     local e2::Expression
     local e3::Expression
@@ -1432,30 +1441,7 @@ function typeExp2(
       end
 
       RELATION_EXPRESSION(__) => begin
-         @assign next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
-         @assign (e1, ty1, var1) = typeExp(exp.exp1, next_origin, info)
-         @assign (e2, ty2, var2) = typeExp(exp.exp2, next_origin, info)
-         @assign (exp, ty) = checkRelationOperation(
-           e1,
-           ty1,
-           var1,
-           exp.operator,
-           e2,
-           ty2,
-           var2,
-           origin,
-           info,
-         )
-         @assign variability = variabilityMax(var1, var2)
-        #=  A relation involving continuous expressions which is not inside
-        #   =#
-        #   #=  noEvent is a discrete expression.
-        #   =#
-        if flagNotSet(origin, ORIGIN_NOEVENT) &&
-          variability == Variability.CONTINUOUS
-          @assign variability = Variability.DISCRETE
-        end
-        (exp, ty, variability)
+        typeRelationExpression(exp, origin, info)
       end
 
       IF_EXPRESSION(__) => begin
@@ -1463,7 +1449,7 @@ function typeExp2(
       end
 
       CALL_EXPRESSION(__) => begin
-        (e1, ty, var1) = typeCall(exp, origin, info)
+        (e1, ty, var1) = typeCall(exp, origin, info)::Tuple{CALL_EXPRESSION, NFType, VariabilityType}
         #=  If the call has multiple outputs and isn't alone on either side of an
         =#
         #=  equation/algorithm, select the first output.
@@ -1504,7 +1490,8 @@ function typeExp2(
       end
     end
   end
-  #=  Expressions inside when-clauses and initial sections are discrete.
+  #=
+    Expressions inside when-clauses and initial sections are discrete.
   =#
   if flagSet(origin, ORIGIN_DISCRETE_SCOPE) &&
      variability == Variability.CONTINUOUS
@@ -1513,10 +1500,36 @@ function typeExp2(
   return (exp, ty, variability)
 end
 
+function typeRelationExpression(exp::RELATION_EXPRESSION, origin::ORIGIN_Type, info::SourceInfo)
+  next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
+  (e1, ty1, var1) = typeExp(exp.exp1, next_origin, info)
+  (e2, ty2, var2) = typeExp(exp.exp2, next_origin, info)
+  (exp, ty) = checkRelationOperation(
+    e1,
+    ty1,
+    var1,
+    exp.operator,
+    e2,
+    ty2,
+    var2,
+    origin,
+    info,
+  )
+  variability = variabilityMax(var1, var2)
+  #=  A relation involving continuous expressions which is not inside
+  #   =#
+  #   #=  noEvent is a discrete expression.
+  #   =#
+  if flagNotSet(origin, ORIGIN_NOEVENT) && variability == Variability.CONTINUOUS
+    variability = Variability.DISCRETE
+  end
+  (exp, ty, variability)
+end
+
 function typeBinaryExpression(
-  @nospecialize(exp::Expression),
-  @nospecialize(origin::ORIGIN_Type),
-  @nospecialize(info::SourceInfo),)::Tuple{Expression, NFType, VariabilityType}
+  exp::BINARY_EXPRESSION,
+  origin::ORIGIN_Type,
+  info::SourceInfo,)::Tuple{Expression, NFType, VariabilityType}
   next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
   (e1, ty1, var1) = typeExp(exp.exp1, next_origin, info)
   (e2, ty2, var2) = typeExp(exp.exp2, next_origin, info)
@@ -1590,14 +1603,13 @@ function typeExpl(
 end
 
 function typeBindingExp(
-  @nospecialize(exp::Expression),
-  @nospecialize(origin::ORIGIN_Type),
+  exp::BINDING_EXP,
+  origin::ORIGIN_Type,
   info::SourceInfo,
 )::Tuple{Expression, NFType, VariabilityType}
   local variability::VariabilityType
   local ty::NFType
   local outExp::Expression
-
   local e::Expression
   local parents::List{InstNode}
   local is_each::Bool
@@ -1623,7 +1635,7 @@ function typeBindingExp(
   =#
   #=  can report the error better so we silently ignore it here.
   =#
-  @assign outExp = BINDING_EXP(e, exp_ty, ty, parents, is_each)
+  outExp = BINDING_EXP(e, exp_ty, ty, parents, is_each)
   return (outExp, ty, variability)
 end
 
@@ -1685,9 +1697,9 @@ function typeExpDim(
   return (dim, typedExp, error)
 end
 
-""" #= Returns the requested dimension of an array dimension. This function is meant
+""" Returns the requested dimension of an array dimension. This function is meant
    to be used on an untyped array, for a typed array it's better to just use
-   e.g.  nthDimensionBoundsChecked on its type. =#"""
+   e.g.  nthDimensionBoundsChecked on its type. """
 function typeArrayDim(
   arrayExp::Expression,
   dimIndex::Int,
@@ -2321,14 +2333,27 @@ function typeMatrixComma(
   return (arrayExp, arrayType, variability)
 end
 
+
 function typeRange(
-  rangeExp::Expression,
-  origin::ORIGIN_Type,
-  info::SourceInfo,
-)::Tuple{Expression, NFType, VariabilityType}
+  @nospecialize(rangeExp::RANGE_EXPRESSION),
+  @nospecialize(origin::ORIGIN_Type),
+  @nospecialize(info::SourceInfo),
+  )::Tuple{RANGE_EXPRESSION, NFType, VariabilityType}
+  typeRange2(
+    Base.inferencebarrier(rangeExp)::Expression,
+    Base.inferencebarrier(origin)::ORIGIN_Type,
+    Base.inferencebarrier(info)::SourceInfo,
+  )::Tuple{RANGE_EXPRESSION, NFType, VariabilityType}
+end
+
+function typeRange2(
+  @nospecialize(rangeExp::Expression),
+  @nospecialize(origin::ORIGIN_Type),
+  @nospecialize(info::SourceInfo),
+)::Tuple{RANGE_EXPRESSION, NFType, VariabilityType}
+  @nospecialize
   local variability::VariabilityType
   local rangeType::NFType
-
   local start_exp::Expression
   local step_exp::Expression
   local stop_exp::Expression
@@ -2759,7 +2784,7 @@ end
 function typeClassSections(classNode::InstNode, originArg::ORIGIN_Type)
   local cls::Class
   local typed_cls::Class
-  local components::Array{InstNode}
+  local components::Vector{InstNode}
   local sections::Sections
   local info::SourceInfo
   local initial_origin::Int
@@ -2994,7 +3019,7 @@ function makeDefaultExternalCall(extDecl::Sections, fnNode::InstNode)::Sections
     local output_ref::ComponentRef
     local fn::M_Function
     local single_output::Bool
-    local comps::Array{InstNode}
+    local comps::Vector{InstNode}
     local comp::Component
     local ty::NFType
     local node::InstNode
@@ -3093,7 +3118,11 @@ function typeComponentSections(c::InstNode, origin::ORIGIN_Type)
   end
 end
 
-function typeEquation(eq::Equation, origin::ORIGIN_Type)::Equation
+function typeEquation(@nospecialize(eq::Equation), @nospecialize(origin::ORIGIN_Type))::Equation
+  typeEquation2(eq::Equation, origin::ORIGIN_Type)::Equation
+end
+
+function typeEquation2(eq::Equation, origin::ORIGIN_Type)::Equation
   @assign eq = begin
     local cond::Expression
     local e1::Expression
@@ -3124,7 +3153,7 @@ function typeEquation(eq::Equation, origin::ORIGIN_Type)::Equation
         info = sourceInfo() #DAE.emptyElementSource -John
         if isSome(eq.range)
           @match SOME(e1) = eq.range
-          (e1, _, _) = typeIterator(eq.iterator, e1, origin; structural = true)
+          (e1, _, _) = typeIterator(eq.iterator, e1, origin, true)
         else
           Error.assertion(
             false,
@@ -3279,7 +3308,7 @@ function typeConnect(
 end
 
 function typeConnector(
-  @nospecialize(connExp::Expression),
+  connExp::Expression,
   origin::ORIGIN_Type,
   info::SourceInfo,
 )::Tuple{Expression, NFType}

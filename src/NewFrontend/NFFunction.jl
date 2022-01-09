@@ -358,7 +358,7 @@ function mapExp(
 
   local cls::Class
   local ctree::ClassTree
-  local comps::Array{InstNode}
+  local comps::Vector{InstNode}
   local sections::Sections
   local comp::Component
   local binding::Binding
@@ -1319,7 +1319,7 @@ function matchArgs(
   return (args, funcMatchKind)
 end
 
-function lookupSlotInArray(slotName::String, slots::Array{<:Slot})::Option{Slot}
+function lookupSlotInArray(slotName::String, slots::Vector{<:Slot})::Option{Slot}
   local outSlot::Option{Slot}
 
   local slot::Slot
@@ -1335,7 +1335,7 @@ end
 
 function evaluateSlotExp_traverser(
   exp::Expression,
-  slots::Array{<:Slot},
+  slots::Vector{<:Slot},
   info::SourceInfo,
 )::Expression
   local outExp::Expression
@@ -1367,7 +1367,7 @@ end
 
 function evaluateSlotExp(
   exp::Expression,
-  slots::Array{<:Slot},
+  slots::Vector{<:Slot},
   info::SourceInfo,
 )::Expression
   local outExp::Expression
@@ -1379,7 +1379,7 @@ function evaluateSlotExp(
   return outExp
 end
 
-function fillDefaultSlot2(slot::Slot, slots::Array{<:Slot}, info::SourceInfo)::TypedArg
+function fillDefaultSlot2(slot::Slot, slots::Vector{<:Slot}, info::SourceInfo)::TypedArg
   local outArg::TypedArg
 
   @assign outArg = begin
@@ -1419,7 +1419,7 @@ function fillDefaultSlot2(slot::Slot, slots::Array{<:Slot}, info::SourceInfo)::T
   return outArg
 end
 
-function fillDefaultSlot(slot::Slot, slots::Array{<:Slot}, info::SourceInfo)::TypedArg
+function fillDefaultSlot(slot::Slot, slots::Vector{<:Slot}, info::SourceInfo)::TypedArg
   local outArg::TypedArg
 
   @assign outArg = begin
@@ -1448,7 +1448,7 @@ function fillDefaultSlot(slot::Slot, slots::Array{<:Slot}, info::SourceInfo)::Ty
 end
 
 """ #= Collects the arguments from the given slots. =#"""
-function collectArgs(slots::Array{<:Slot}, info::SourceInfo)::Tuple{List{TypedArg}, Bool}
+function collectArgs(slots::Vector{<:Slot}, info::SourceInfo)::Tuple{List{TypedArg}, Bool}
   local matching::Bool = true
   local args::List{TypedArg} = nil
 
@@ -1489,7 +1489,7 @@ end
      argument expression. =#"""
 function fillNamedArg(
   inArg::TypedNamedArg,
-  slots::Array{<:Slot},
+  slots::Vector{<:Slot},
   fn::M_Function,
   info::SourceInfo,
 )::Tuple{Array{Slot}, Bool} #= For error reporting =#
@@ -1569,7 +1569,7 @@ function fillArgs(
   local slots::List{Slot}
   local remaining_slots::List{Slot}
   local filled_named_args::List{TypedArg}
-  local slots_arr::Array{Slot}
+  local slots_arr::Vector{Slot}
   local pos_arg_count::Int
   local slot_count::Int
   local index::Int = 1
@@ -2310,7 +2310,7 @@ function makeAttributes(
   local attr::DAE.FunctionAttributes
 
   local def::SCode.Element
-  local params::Array{InstNode}
+  local params::Vector{InstNode}
   local res::SCode.Restriction
   local fres::SCode.FunctionRestriction
   local is_partial::Bool
@@ -2610,7 +2610,7 @@ function collectParams(
 )::Tuple{List{InstNode}, List{InstNode}, List{InstNode}}
 
   local cls::Class
-  local comps::Array{InstNode}
+  local comps::Vector{InstNode}
   local n::InstNode
 
   # Error.assertion(

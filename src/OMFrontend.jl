@@ -8,7 +8,6 @@ import SCode
 import OMParser
 using MetaModelica
 
-include("main.jl")
 
 #= Cache for NFModelicaBuiltin. We only use the result once! =#
 """
@@ -23,24 +22,30 @@ This cache contains various instantiated libraries for later use.
 const LIBRARY_CACHE = Dict()
 
 """
-  This function loads builtin Modelica libraries.
+  This function "precompiles" some of the runtime Modelica libraries.
+  While it results in some latency when importing OMFrontend, subsequent
+  use of OMFrontend to parse and work with Modelica files is faster.
+TODO:
+Improving the speed of precompilation would improve the feel of this package
+by a lot.
 """
 function __init__()
-  if ! haskey(NFModelicaBuiltinCache, "NFModelicaBuiltin")
-    #= Locate the external libraries =#
-    packagePath = dirname(realpath(Base.find_package("OMFrontend")))
-    packagePath *= "/.."
-    pathToLib = packagePath * "/lib/NFModelicaBuiltin.mo"
-    #= The external C stuff can be a bit flaky.. =#
-    GC.enable(false) 
-    p = parseFile(pathToLib, 2 #== MetaModelica ==#)
-    @debug "SCode translation"
-    s = OMFrontend.translateToSCode(p)
-    NFModelicaBuiltinCache["NFModelicaBuiltin"] = s
-    #=Enable GC again.=#
-    GC.enable(true)
-  end
+  packagePath = dirname(realpath(Base.find_package("OMFrontend")))
+  packagePath *= "/.."
+  pathToTest = packagePath * "/test/Models/HelloWorld.mo"
+  p = OMParser.parseFile(pathToTest, 1)
+  s = Main.AbsynToSCode.translateAbsyn2SCode(p)
+  Main.Global.initialize()
+  # make sure we have all the flags loaded!
+  #  Main.Flags.new(Flags.emptyFlags)
+  builtinSCode = NFModelicaBuiltinCache["NFModelicaBuiltin"]
+  program = listAppend(builtinSCode, s)
+  path = Main.AbsynUtil.stringPath("HelloWorld")
+  res1 = Main.instClassInProgram(path, program)
+  return nothing
 end
+
+include("main.jl")
 
 function parseFile(file::String, acceptedGram::Int64 = 1)::Absyn.Program
   return OMParser.parseFile(file, acceptedGram)
@@ -132,6 +137,31 @@ function exportSCodeRepresentationToFile(fileName::String, contents::List{SCode.
   local processedContents = replace(string(contents), "," => ",\n")
   write(fdesc, processedContents)
   close(fdesc)
+end
+#=
+  This is done during precompilation of the package
+  to cache precompile versions of many methods.
+=#
+if ccall(:jl_generating_output, Cint, ()) == 1
+  let
+    #= Step one. Load the built in library =#
+    @info "Precompiling builtin libraries..."
+    if ! haskey(NFModelicaBuiltinCache, "NFModelicaBuiltin")
+      #= Locate the external libraries =#
+      packagePath = dirname(realpath(Base.find_package("OMFrontend")))
+      packagePath *= "/.."
+      pathToLib = packagePath * "/lib/NFModelicaBuiltin.mo"
+      #= The external C stuff can be a bit flaky.. =#
+      GC.enable(false) 
+      p = parseFile(pathToLib, 2 #== MetaModelica ==#)
+      s = translateToSCode(p)
+      NFModelicaBuiltinCache["NFModelicaBuiltin"] = s
+      #=Enable GC again.=#
+      GC.enable(true)
+    end
+    @info "Builtin libraries successfully precompiled!"
+    @info "Initial compiler module interfaces are compiled!"
+  end
 end
 
 end # module

@@ -48,7 +48,7 @@ end
 
   @Record UNTYPED_COMPONENT begin
     classInst::InstNode
-    dimensions::Array{Dimension}
+    dimensions::Vector{Dimension}
     binding::Binding
     condition::Binding
     attributes::ATTRIBUTES
@@ -745,7 +745,7 @@ function hasBinding(component::Component, parent::InstNode = EMPTY_NODE())::Bool
   local b::Bool
 
   local cls::Class
-  local children::Array{InstNode}
+  local children::Vector{InstNode}
 
   if isBound(getBinding(component))
     @assign b = true

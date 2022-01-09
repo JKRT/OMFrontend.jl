@@ -36,8 +36,8 @@ using ExportAll
 #= Forward declarations for uniontypes until Julia adds support for mutual recursion =#
 using ..BaseAvlSet #= Modelica extend clause =#
 
-Key = Integer
-Value = Integer
+const Key = Integer
+const Value = Integer
 
 include("./baseAvlTreeCode.jl")
 

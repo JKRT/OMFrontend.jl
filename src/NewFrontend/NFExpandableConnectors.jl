@@ -8,7 +8,7 @@ function elaborate(
   local conns::List{Connection}
   local vars::List{Variable}
   local csets::ConnectionSets.Sets
-  local csets_array::Array{List{Connector}}
+  local csets_array::Vector{List{Connector}}
 
   #=  Sort the connections based on whether they involve expandable connectors,
   =#

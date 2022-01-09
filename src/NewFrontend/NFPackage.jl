@@ -122,7 +122,7 @@ function collectFuncConstants(
 )::Constants
 
   local cls::Class
-  local comps::Array{InstNode}
+  local comps::Vector{InstNode}
   local sections::Sections
 
   @assign cls = getClass(func.node)
@@ -233,7 +233,7 @@ end
 function replaceFuncConstants(name::Absyn.Path, func::M_Function)::M_Function
 
   local cls::Class
-  local comps::Array{InstNode}
+  local comps::Vector{InstNode}
   local sections::Sections
   local comp::Component
   local binding::Binding

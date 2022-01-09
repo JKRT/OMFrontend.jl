@@ -166,7 +166,7 @@ const EMPTY_NODE_CACHE =
     C_NO_CACHE(),
     C_NO_CACHE(),
     C_NO_CACHE(),
-  ))::Array
+  ))::Vector
 const INTEGER_DUMMY_NODE =
   CLASS_NODE(
     "Integer",

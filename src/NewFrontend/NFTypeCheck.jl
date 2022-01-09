@@ -1139,8 +1139,8 @@ function implicitConstructAndMatch2(
   scope::InstNode,
   fn::M_Function,
   reverseArgs::Bool,
-  matchedFns::List{<:Tuple{<:M_Function, List{<:Expression}, Variability}},
-)::Tuple{List{Tuple{M_Function, List{Expression}, Variability}}, Bool}
+  matchedFns::List{<:Tuple{<:M_Function, List{<:Expression}, VariabilityType}},
+)::Tuple{List{Tuple{M_Function, List{Expression}, VariabilityType}}, Bool}
   local matched::Bool
 
   local fn_ref::ComponentRef
@@ -2263,8 +2263,8 @@ function matchComplexTypes(
   local cls2::Class
   local anode::InstNode
   local enode::InstNode
-  local comps1::Array{InstNode}
-  local comps2::Array{InstNode}
+  local comps1::Vector{InstNode}
+  local comps2::Vector{InstNode}
   local path::Absyn.Path
   local ty::NFType
   local cty1::ComplexType

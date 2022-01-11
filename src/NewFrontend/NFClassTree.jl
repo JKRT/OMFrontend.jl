@@ -527,7 +527,7 @@ function lookupElement(name::String, tree::ClassTree)::Tuple{InstNode, Bool}
   local entry::LookupTree.Entry
   @debug "Looking up element $name in class tree!"
   @debug "Fetching from tree. Soon to report entry"
-  str = LookupTree.printTreeStr(lookupTree(tree))
+  # str = LookupTree.printTreeStr(lookupTree(tree))
   entry = LookupTree.get(lookupTree(tree), name)
   (element, isImport) = resolveEntry(entry, tree)
   return (element, isImport)
@@ -1455,7 +1455,7 @@ function linkInnerOuter(outerNode::InstNode, scope::InstNode)::InstNode
 
   local inner_node::InstNode
 
-  @assign inner_node = Lookup.lookupInner(outerNode, scope)
+  @assign inner_node = lookupInner(outerNode, scope)
   #=  Make sure we found a node of the same kind.
   =#
   if valueConstructor(outerNode) != valueConstructor(inner_node)
@@ -2051,7 +2051,7 @@ function resolveImport(index::Int, tree::ClassTree)::InstNode
   end
   #=  Imports are resolved on demand, i.e. here.
   =#
-  @assign (element, changed, imp) = P_Import.Import.resolve(imports[index])
+  @assign (element, changed, imp) = resolve(imports[index])
   #=  Save the import if it wasn't already resolved.
   =#
   if changed
@@ -2223,29 +2223,29 @@ function addImportConflict(
         =#
         @assign entry = begin
           @match (imp1, imp2) begin
-            (P_Import.Import.UNRESOLVED_IMPORT(__), P_Import.Import.UNRESOLVED_IMPORT(__)) => begin
+            (Import.UNRESOLVED_IMPORT(__), Import.UNRESOLVED_IMPORT(__)) => begin
               #=  Two qualified imports of the same name gives an error.
               =#
               arrayUpdate(
                 imports,
                 oldEntry.index,
-                P_Import.Import.CONFLICTING_IMPORT(imp1, imp2),
+                Import.CONFLICTING_IMPORT(imp1, imp2),
               )
               oldEntry
             end
 
-            (P_Import.Import.RESOLVED_IMPORT(__), P_Import.Import.RESOLVED_IMPORT(__)) => begin
+            (Import.RESOLVED_IMPORT(__), Import.RESOLVED_IMPORT(__)) => begin
               #=  A name imported from several unqualified imports gives an error.
               =#
               arrayUpdate(
                 imports,
                 oldEntry.index,
-                P_Import.Import.CONFLICTING_IMPORT(imp1, imp2),
+                Import.CONFLICTING_IMPORT(imp1, imp2),
               )
               oldEntry
             end
 
-            (P_Import.Import.UNRESOLVED_IMPORT(__), _) => begin
+            (Import.UNRESOLVED_IMPORT(__), _) => begin
               newEntry
             end
 
@@ -2284,6 +2284,7 @@ function addImport(
     LookupTree.IMPORT(index),
     (imports) -> addImportConflict(imports = imports),
   )
+  
   return tree
 end
 

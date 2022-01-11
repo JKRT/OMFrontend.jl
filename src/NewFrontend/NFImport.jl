@@ -49,7 +49,7 @@ function instUnqualified(
   local elements::List{InstNode}
 
   @match Absyn.Import.UNQUAL_IMPORT(path = path) = imp
-  @assign node = Lookup.lookupImport(path, scope, info)
+  @assign node = lookupImport(path, scope, info)
   @assign node = Inst.instPackage(node)
   @assign tree = classTree(getClass(node))
   @assign () = begin
@@ -84,11 +84,11 @@ function instQualified(
   @assign node = begin
     @match imp begin
       Absyn.NAMED_IMPORT(__) => begin
-        Lookup.lookupImport(imp.path, scope, info)
+        lookupImport(imp.path, scope, info)
       end
 
       Absyn.QUAL_IMPORT(__) => begin
-        Lookup.lookupImport(imp.path, scope, info)
+        lookupImport(imp.path, scope, info)
       end
     end
   end

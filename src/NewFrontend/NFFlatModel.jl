@@ -496,3 +496,28 @@ function toString(flatModel::FlatModel, printBindingTypes::Bool = false)::String
   str = IOStream_M.string(s)
   return str
 end
+
+"""
+  This functions goes through the different equations and check for a recompilation directive.
+  If such a directive is found it returns true.
+"""
+function check_recompilation(@nospecialize(equations::List{Equation}))::Bool
+  local recompilationDirectiveExists = false
+  for eq in equations
+    @match eq begin
+      EQUATION_NORETCALL(__) => begin
+        @match eq.exp begin
+          CALL_EXPRESSION(TYPED_CALL(fn, ty, var, arguments, attributes)) => begin
+            if "recompilation" == AbsynUtil.pathString(name(fn))
+              recompilationDirectiveExists = true
+            else
+              break
+            end
+          end
+        end
+      end
+      _ => continue
+    end
+  end
+  return recompilationDirectiveExists
+end

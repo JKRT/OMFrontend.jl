@@ -203,9 +203,15 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
   if Flags.isSet(Flags.NF_SCALARIZE)
     @assign flat_model = scalarize(flat_model, name)
   else
+    #=  Remove empty arrays from variables =#
     @assign flat_model.variables = ListUtil.filterOnFalse(flat_model.variables, isEmptyArray)
   end
-  #=  Remove empty arrays from variables =#
+  #= Check if we are to performance recompilation. If true adds the SCode program to the flat model. =#
+  local recompilationEnabled = check_recompilation(flat_model.equations)
+  if recompilationEnabled
+    @assign flat_model.scodeProgram = listHead(program)
+  end
+  
   @debug "VERIFYING MODEL: "
   verify(flat_model)
   #                   if Flags.isSet(Flags.NF_DUMP_FLAT)

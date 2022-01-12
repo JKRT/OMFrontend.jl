@@ -966,7 +966,7 @@ function fromEnumeration(
     tree,
     MODIFIER_NOMOD(),
     prefixes,
-    ENUMERATION(),
+    RESTRICTION_ENUMERATION(),
   )
   return cls
 end

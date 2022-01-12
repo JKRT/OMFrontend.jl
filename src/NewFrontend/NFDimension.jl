@@ -188,7 +188,7 @@ function toString(dim::Dimension)::String
     local ty::M_Type
     @match dim begin
       DIMENSION_INTEGER(__) => begin
-        String(dim.size)
+        string(dim.size)
       end
 
       DIMENSION_BOOLEAN(__) => begin

@@ -307,6 +307,7 @@ function add(
   conflictFunc::ConflictFunc = addConflictDefault,
 )::Tree
   local tree = inTree::Tree
+
    tree = begin
     local key::Key
     local value::Value
@@ -325,7 +326,7 @@ function add(
         elseif key_comp == 1
           tree.right = add(tree.right, inKey, inValue, conflictFunc)
         else
-           value = conflictFunc(inValue, tree.value, key)
+          value = conflictFunc(inValue, tree.value, key)
           if !referenceEq(tree.value, value)
             tree.value = value
           end
@@ -344,15 +345,15 @@ function add(
            outTree = NODE(tree.key, tree.value, 2, EMPTY(), LEAF(inKey, inValue))
         else
            value = conflictFunc(inValue, tree.value, key)
-          if !referenceEq(tree.value, value)
+           if !referenceEq(tree.value, value)
              tree.value = value
-          end
+           end
            outTree = tree
         end
         if key_comp == 0
-          outTree
+           outTree
         else
-          balance(outTree)
+           balance(outTree)
         end
       end
     end
@@ -794,6 +795,9 @@ function printNodeStr(inNode::Tree)::String
   local outString::String
   outString = begin
     @match inNode begin
+      EMPTY(__) => begin
+        "EMPTY()"
+      end
       NODE(__) => begin
         keyStr(inNode.key)
       end

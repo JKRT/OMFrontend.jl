@@ -1423,7 +1423,7 @@ function instComponentDef(component::SCode.Element, outerMod::Modifier, innerMod
         attr = mergeRedeclaredComponentAttributes(Util.getOption(originalAttr), attr, node)
       end
       if ! attr.isFinal && isFinal(mod)
-        attr.isFinal = true
+        @assign attr.isFinal = true
       end
       #=  Create the untyped component and update the node with it. We need the
       =#

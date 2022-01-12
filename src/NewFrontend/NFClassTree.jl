@@ -527,7 +527,6 @@ function lookupElement(name::String, tree::ClassTree)::Tuple{InstNode, Bool}
   local entry::LookupTree.Entry
   @debug "Looking up element $name in class tree!"
   @debug "Fetching from tree. Soon to report entry"
-  str = LookupTree.printTreeStr(lookupTree(tree))
   entry = LookupTree.get(lookupTree(tree), name)
   (element, isImport) = resolveEntry(entry, tree)
   return (element, isImport)
@@ -1172,17 +1171,14 @@ function fromEnumeration(
   enumClass::InstNode,
 )::ClassTree #= The InstNode of the enumeration type =#
   local tree::ClassTree
-
   local comps::Vector{InstNode}
   local attr_count::Int = 5
   local i::Int = 0
   local comp::InstNode
   local ltree::LookupTree.Tree
   local name::String
-
-  @assign comps =
-    arrayCreateNoInit(listLength(literals) + attr_count, EMPTY_NODE())
-  @assign ltree = NFBuiltin.ENUM_LOOKUP_TREE
+  comps = arrayCreateNoInit(listLength(literals) + attr_count, EMPTY_NODE())
+  ltree = NFBuiltin.GET_ENUM_LOOKUP_TREE()
   arrayUpdateNoBoundsChecking(
     comps,
     1,
@@ -1228,24 +1224,26 @@ function fromEnumeration(
       enumClass,
     ),
   )
+#  @info "Before"
+#  @info LookupTree.printTreeStr(ltree)
   for l in literals
-    name = l.literal
+    nameStr = l.literal
     i = i + 1
     comp =
-      fromComponent(name, newEnum(enumType, name, i), enumClass)
+      fromComponent(nameStr, newEnum(enumType, nameStr, i), enumClass)
     arrayUpdateNoBoundsChecking(comps, i + attr_count, comp)
     ltree = LookupTree.add(
       ltree,
-      name,
+      nameStr,
       LookupTree.COMPONENT(i + attr_count),
-      (comp) -> addEnumConflict(literal = comp),
+      (x, y, z) -> addEnumConflict(x, y, z, comp),
     )
   end
   #=  Make a new component node for the literal and add it to the lookup tree.
   =#
   #=  Enumerations can't contain extends, so we can go directly to a flat tree here.
   =#
-  @assign tree =
+  tree =
     CLASS_TREE_FLAT_TREE(ltree, listArray(nil), comps, listArray(nil), DuplicateTree.EMPTY())
   return tree
 end
@@ -1455,7 +1453,7 @@ function linkInnerOuter(outerNode::InstNode, scope::InstNode)::InstNode
 
   local inner_node::InstNode
 
-  @assign inner_node = Lookup.lookupInner(outerNode, scope)
+  @assign inner_node = lookupInner(outerNode, scope)
   #=  Make sure we found a node of the same kind.
   =#
   if valueConstructor(outerNode) != valueConstructor(inner_node)
@@ -2051,7 +2049,7 @@ function resolveImport(index::Int, tree::ClassTree)::InstNode
   end
   #=  Imports are resolved on demand, i.e. here.
   =#
-  @assign (element, changed, imp) = P_Import.Import.resolve(imports[index])
+  @assign (element, changed, imp) = resolve(imports[index])
   #=  Save the import if it wasn't already resolved.
   =#
   if changed
@@ -2223,29 +2221,29 @@ function addImportConflict(
         =#
         @assign entry = begin
           @match (imp1, imp2) begin
-            (P_Import.Import.UNRESOLVED_IMPORT(__), P_Import.Import.UNRESOLVED_IMPORT(__)) => begin
+            (Import.UNRESOLVED_IMPORT(__), Import.UNRESOLVED_IMPORT(__)) => begin
               #=  Two qualified imports of the same name gives an error.
               =#
               arrayUpdate(
                 imports,
                 oldEntry.index,
-                P_Import.Import.CONFLICTING_IMPORT(imp1, imp2),
+                Import.CONFLICTING_IMPORT(imp1, imp2),
               )
               oldEntry
             end
 
-            (P_Import.Import.RESOLVED_IMPORT(__), P_Import.Import.RESOLVED_IMPORT(__)) => begin
+            (Import.RESOLVED_IMPORT(__), Import.RESOLVED_IMPORT(__)) => begin
               #=  A name imported from several unqualified imports gives an error.
               =#
               arrayUpdate(
                 imports,
                 oldEntry.index,
-                P_Import.Import.CONFLICTING_IMPORT(imp1, imp2),
+                Import.CONFLICTING_IMPORT(imp1, imp2),
               )
               oldEntry
             end
 
-            (P_Import.Import.UNRESOLVED_IMPORT(__), _) => begin
+            (Import.UNRESOLVED_IMPORT(__), _) => begin
               newEntry
             end
 
@@ -2284,6 +2282,7 @@ function addImport(
     LookupTree.IMPORT(index),
     (imports) -> addImportConflict(imports = imports),
   )
+  
   return tree
 end
 
@@ -2291,16 +2290,16 @@ end
 function addEnumConflict(
   newEntry::LookupTree.Entry,
   oldEntry::LookupTree.Entry,
-  name::String,
+  nameStr::String,
   literal::InstNode,
 )::LookupTree.Entry
   local entry::LookupTree.Entry
-
-  Error.addSourceMessage(
-    Error.DOUBLE_DECLARATION_OF_ELEMENTS,
-    list(name(literal)),
-    info(literal),
-  )
+  @error "An element with name $(name(literal)) is already declared in this scope" newEntry oldEntry nameStr
+  # Error.addSourceMessage(
+  #   Error.DOUBLE_DECLARATION_OF_ELEMENTS,
+  #   lis t(name(literal)),
+  #   info(literal),
+  # )
   fail()
   return entry
 end

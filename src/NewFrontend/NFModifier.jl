@@ -385,20 +385,18 @@ function binding(modifier::Modifier)::Binding
 end
 
 function hasBinding(modifier::Modifier)::Bool
-  local hasBinding::Bool
-
-  @assign hasBinding = begin
+  local b::Bool
+  b = begin
     @match modifier begin
       MODIFIER_MODIFIER(__) => begin
         isBound(modifier.binding)
       end
-
       _ => begin
         false
       end
     end
   end
-  return hasBinding
+  return b
 end
 
 function Modifier_info(modifier::Modifier)::SourceInfo

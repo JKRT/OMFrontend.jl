@@ -2151,7 +2151,7 @@ function lookupFunctionSimple(functionName::String, scope::InstNode)::ComponentR
   local functionPath::Absyn.Path
   local prefix::ComponentRef
   @assign (functionRef, found_scope) =
-    Lookup.lookupFunctionNameSilent(Absyn.CREF_IDENT(functionName, nil), scope)
+    lookupFunctionNameSilent(Absyn.CREF_IDENT(functionName, nil), scope)
   @assign prefix =
     fromNodeList(scopeList(found_scope))
   @assign functionRef = append(functionRef, prefix)

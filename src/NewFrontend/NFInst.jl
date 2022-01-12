@@ -207,9 +207,10 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
     @assign flat_model.variables = ListUtil.filterOnFalse(flat_model.variables, isEmptyArray)
   end
   #= Check if we are to performance recompilation. If true adds the SCode program to the flat model. =#
-  local recompilationEnabled = check_recompilation(flat_model.equations)
+  local recompilationEnabled = recompilationDirectiveExists(flat_model.equations)
   if recompilationEnabled
-    @assign flat_model.scodeProgram = listHead(program)
+    @debug "We have the SCodeProgram"
+    @assign flat_model.scodeProgram = SOME(listHead(program))
   end
   
   @debug "VERIFYING MODEL: "

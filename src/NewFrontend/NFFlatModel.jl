@@ -498,26 +498,38 @@ function toString(flatModel::FlatModel, printBindingTypes::Bool = false)::String
 end
 
 """
-  This functions goes through the different equations and check for a recompilation directive.
-  If such a directive is found it returns true.
+  This functions checks for the recompilation directive among all the equations 
 """
-function check_recompilation(@nospecialize(equations::List{Equation}))::Bool
+function recompilationDirectiveExists(@nospecialize(eqs::List{Equation}))::Bool
+  local hasRecompilationDirective = containsList(eqs, containsRecompilation)
+  return hasRecompilationDirective
+end
+
+"""
+  This function returns true if a EQUATION_NORETCALL is a recompilation directive. 
+"""
+function containsRecompilation(@nospecialize(eq::Equation))::Bool
   local recompilationDirectiveExists = false
-  for eq in equations
-    @match eq begin
-      EQUATION_NORETCALL(__) => begin
-        @match eq.exp begin
-          CALL_EXPRESSION(TYPED_CALL(fn, ty, var, arguments, attributes)) => begin
-            if "recompilation" == AbsynUtil.pathString(name(fn))
-              recompilationDirectiveExists = true
-            else
-              break
-            end
+  @match eq begin
+    EQUATION_NORETCALL(__) => begin
+      @debug "We have a call expression: " * toString(eq.exp) * " of type: $(typeof(eq.exp))" 
+      @match eq.exp begin
+        CALL_EXPRESSION(call = TYPED_CALL(fn, ty, var, arguments, attributes)) => begin
+          @debug "Matched!" name(fn)
+          local nameAsStr = AbsynUtil.pathString(name(fn))
+          @debug nameAsStr
+          if "recompilation" == nameAsStr
+            @debug "matched on recompilation"
+            recompilationDirectiveExists = true
           end
         end
       end
-      _ => continue
+    end
+    _ => begin
+      recompilationDirectiveExists = false
     end
   end
+  @debug "Returning:" recompilationDirectiveExists
   return recompilationDirectiveExists
 end
+

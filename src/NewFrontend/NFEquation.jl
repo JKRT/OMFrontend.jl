@@ -431,14 +431,13 @@ end
 
 function containsList(eql::List{<:Equation}, func::PredFn)::Bool
   local res::Bool
-
   for eq in eql
     if contains(eq, func)
-      @assign res = true
+      res = true
       return res
     end
   end
-  @assign res = false
+  res = false
   return res
 end
 
@@ -460,7 +459,7 @@ function contains(eq::Equation, func::PredFn)::Bool
               EQUATION_BRANCH(__) => begin
                 if containsList(b.body, func)
                   @assign res = true
-                  return
+                  return res
                 end
                 ()
               end
@@ -480,7 +479,7 @@ function contains(eq::Equation, func::PredFn)::Bool
               EQUATION_BRANCH(__) => begin
                 if containsList(b.body, func)
                   @assign res = true
-                  return
+                  return res
                 end
                 ()
               end

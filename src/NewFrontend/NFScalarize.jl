@@ -317,7 +317,7 @@ function scalarizeWhenEquation(
     @match EQUATION_BRANCH(cond, var, body) = b
     body = scalarizeEquations(body)
     if isArray(typeOf(cond))
-      cond = expand(cond)
+      (cond, _) = expand(cond)
     end
     bl = _cons(makeBranch(cond, body, var), bl)
   end

@@ -1170,7 +1170,7 @@ function newEnum(enumType::M_Type, literalName::String, literalIndex::Int)::Comp
   local component::Component
 
   @assign component =
-    ENUM_LITERAL(ENUM_LITERAL(enumType, literalName, literalIndex))
+  ENUM_LITERAL_COMPONENT(ENUM_LITERAL_EXPRESSION(enumType, literalName, literalIndex))
   return component
 end
 

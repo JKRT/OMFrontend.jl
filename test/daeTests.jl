@@ -17,5 +17,6 @@ testPassIfNoException("SimpleCircuit", "./Models/SimpleCircuit.mo")
 testPassIfNoException("SimpleMechanicalSystem", "./Models/SimpleMechanicalSystem.mo")
 testPassIfNoException("Influenza", "./Models/Influenza.mo")
 testPassIfNoException("Casc6", "./Models/Casc6.mo")
-testPassIfNoException("MWE.A", "./Models/MWE.mo")
+testPassIfNoException("TestImport.A", "./Models/TestImport.mo")
+testPassIfNoException("TestEnum", "./Models/TestEnum.mo")
 

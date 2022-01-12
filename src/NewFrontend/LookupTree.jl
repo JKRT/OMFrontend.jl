@@ -326,7 +326,7 @@ function add(
         elseif key_comp == 1
           tree.right = add(tree.right, inKey, inValue, conflictFunc)
         else
-           value = conflictFunc(inValue, tree.value, key)
+          value = conflictFunc(inValue, tree.value, key)
           if !referenceEq(tree.value, value)
             tree.value = value
           end

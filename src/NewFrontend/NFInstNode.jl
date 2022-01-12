@@ -228,18 +228,18 @@ function empty()::Vector{CachedData}
 end
 
 function hasBinding(node::InstNode) ::Bool
-  local hasBinding::Bool
-  @assign hasBinding = begin
+  local hb::Bool
+  hb = begin
     @match node begin
       COMPONENT_NODE(__)  => begin
-          hasBinding(P_Pointer.access(node.component)) || hasBinding(derivedParent(node))
+        hasBinding(P_Pointer.access(node.component)) || hasBinding(derivedParent(node))
       end
       _  => begin
         false
       end
     end
   end
-  hasBinding
+  hb
 end
 
 function isModel(node::InstNode) ::Bool

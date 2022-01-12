@@ -279,28 +279,29 @@ function makeCatExp(n::Int, args::List{<:Expression}, tys::List{<:M_Type}, varia
   local ty1::M_Type
   local ty2::M_Type
   local resTyToMatch::M_Type
-  local mk::TypeCheck.MatchKind
+  local mk::MatchKindType
   local maxn::Int
   local pos::Int
   local sumDim::Dimension
 
-  Error.assertion(listLength(args) == listLength(tys) && listLength(args) >= 1, getInstanceName() + " got wrong input sizes", sourceInfo())
+  @assert listLength(args) == listLength(tys) && listLength(args) >= 1
+  #Error.assertion(, getInstanceName() + " got wrong input sizes", sourceInfo())
   #=  First: Get the number of dimensions and the element type
   =#
   for arg in args
     @match _cons(ty, tys2) = tys2
     @assign dimsLst = _cons(arrayDims(ty), dimsLst)
-    if Type.isEqual(resTy, TYPE_UNKNOWN())
+    if isEqual(resTy, TYPE_UNKNOWN())
       @assign resTy = arrayElementType(ty)
     else
-      @assign (_, _, ty1, mk) = TypeCheck.matchExpressions(INTEGER_EXPRESSION(0), arrayElementType(ty), INTEGER_EXPRESSION(0), resTy)
-      if TypeCheck.isCompatibleMatch(mk)
+      @assign (_, _, ty1, mk) = matchExpressions(INTEGER_EXPRESSION(0), arrayElementType(ty), INTEGER_EXPRESSION(0), resTy)
+      if isCompatibleMatch(mk)
         @assign resTy = ty1
       end
     end
   end
-  @assign maxn = max(listLength(d) for d in dimsLst)
-  if maxn != min(listLength(d) for d in dimsLst)
+  @assign maxn = max( [listLength(d) for d in dimsLst]...)
+  if maxn != min( [listLength(d) for d in dimsLst]... )
     Error.addSourceMessageAndFail(Error.NF_DIFFERENT_NUM_DIM_IN_ARGUMENTS, list(stringDelimitList(list(String(listLength(d)) for d in dimsLst), ", "), "cat"), info)
   end
   if n < 1 || n > maxn
@@ -317,7 +318,7 @@ function makeCatExp(n::Int, args::List{<:Expression}, tys::List{<:M_Type}, varia
     @assign pos = pos - 1
     @assign ty2 = setArrayElementType(ty, resTy)
     @assign (arg2, ty1, mk) = matchTypes(ty, ty2, arg, allowUnknown = true)
-    if TypeCheck.isIncompatibleMatch(mk)
+    if isIncompatibleMatch(mk)
       Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list(String(pos), "cat", "arg", toString(arg), Type.toString(ty), Type.toString(ty2)), info)
     end
     @assign args2 = _cons(arg2, args2)
@@ -331,11 +332,11 @@ function makeCatExp(n::Int, args::List{<:Expression}, tys::List{<:M_Type}, varia
   @assign tys2 = tys3
   for arg in args2
     @match _cons(ty, tys2) = tys2
-    if Type.isEqual(resTy, TYPE_UNKNOWN())
+    if isEqual(resTy, TYPE_UNKNOWN())
       @assign resTy = ty
     else
-      @assign (_, _, ty1, mk) = TypeCheck.matchExpressions(INTEGER_EXPRESSION(0), ty, INTEGER_EXPRESSION(0), resTy)
-      if TypeCheck.isCompatibleMatch(mk)
+      @assign (_, _, ty1, mk) = matchExpressions(INTEGER_EXPRESSION(0), ty, INTEGER_EXPRESSION(0), resTy)
+      if isCompatibleMatch(mk)
         @assign resTy = ty1
       end
     end
@@ -347,9 +348,9 @@ function makeCatExp(n::Int, args::List{<:Expression}, tys::List{<:M_Type}, varia
   @assign dims = arrayDims(resTy)
   @assign resTyToMatch = TYPE_ARRAY(arrayElementType(resTy), ListUtil.set(dims, n, DIMENSION_UNKNOWN()))
   @assign dims = list(listGet(lst, n) for lst in dimsLst)
-  @assign sumDim = P_Dimension.Dimension.fromInteger(0)
+  @assign sumDim = fromInteger(0)
   for d in dims
-    @assign sumDim = P_Dimension.Dimension.add(sumDim, d)
+    @assign sumDim = add(sumDim, d)
   end
   #=  Create the concatenated dimension
   =#
@@ -362,7 +363,7 @@ function makeCatExp(n::Int, args::List{<:Expression}, tys::List{<:M_Type}, varia
     @match _cons(ty, tys2) = tys2
     @assign pos = pos - 1
     @assign (arg2, ty1, mk) = matchTypes(ty, resTyToMatch, arg, allowUnknown = true)
-    if TypeCheck.isIncompatibleMatch(mk)
+    if isIncompatibleMatch(mk)
       Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list(String(pos), "cat", "arg", toString(arg), Type.toString(ty), Type.toString(resTyToMatch)), info)
     end
     @assign res = _cons(arg2, res)
@@ -371,7 +372,7 @@ function makeCatExp(n::Int, args::List{<:Expression}, tys::List{<:M_Type}, varia
   #=  We have all except dimension n having equal sizes; with matching types
   =#
   @assign ty = resTy
-  @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(NFBuiltinFuncs.CAT, _cons(INTEGER_EXPRESSION(n), res), variability, resTy))
+  @assign callExp = CALL_EXPRESSION(makeTypedCall(NFBuiltinFuncs.CAT, _cons(INTEGER_EXPRESSION(n), res), variability, resTy))
   (callExp, ty)
 end
 
@@ -787,7 +788,7 @@ function typeProductCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tu
   (callExp, ty, variability)
 end
 
-function typeSmoothCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
+function typeSmoothCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
   local variability::VariabilityType
   local ty::M_Type
   local callExp::Expression
@@ -808,7 +809,7 @@ function typeSmoothCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tup
   if listLength(args) != 2
     Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), "smooth(Integer, Any) => Any"), info)
   end
-  @match list(arg1, arg2) = args
+  @match arg1 <| arg2 <| nil = args
   @assign (arg1, ty1, var) = typeExp(arg1, origin, info)
   @assign (arg2, ty2, variability) = typeExp(arg2, origin, info)
   #=  First argument must be Integer.
@@ -1650,7 +1651,7 @@ function checkConnectionsArgument(arg::Expression, ty::M_Type, fnRef::ComponentR
   end
 end
 
-function typeNoEventCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
+function typeNoEventCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
   local variability::VariabilityType
   local ty::M_Type
   local callExp::Expression
@@ -1668,10 +1669,10 @@ function typeNoEventCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tu
   if listLength(args) != 1
     Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), "noEvent(Any) => Any"), info)
   end
-  @match list(arg) = args
+  @match arg <| nil = args
   @assign (arg, ty, variability) = typeExp(arg, setFlag(origin, ORIGIN_NOEVENT), info)
-  @match list(fn) = typeRefCache(fn_ref)
-  @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(fn, list(arg), variability, ty))
+  @match fn <| nil = typeRefCache(fn_ref)
+  @assign callExp = CALL_EXPRESSION(makeTypedCall(fn, list(arg), variability, ty))
   (callExp, ty, variability)
 end
 

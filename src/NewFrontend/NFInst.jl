@@ -786,7 +786,7 @@ function instClassDef(cls::Class, outerMod::Modifier, attributes::Attributes, us
         applyModifier(mod, cls_tree, name(node))
         #=  Apply element redeclares.
         =#
-        mapRedeclareChains(cls_tree, (instLevel) -> redeclareElements(instLevel = instLevel))
+        mapRedeclareChains(cls_tree, (treeArg) -> redeclareElements(treeArg, instLevel))
         #=  Redeclare classes with redeclare modifiers. Redeclared components could
         =#
         #=  also be handled here, but since each component is only instantiated once
@@ -3017,7 +3017,7 @@ function isStructuralComponent(component::Component, compAttrs::Attributes, comp
         Error.addSourceMessage(Error.UNBOUND_PARAMETER_EVALUATE_TRUE, list(name(compNode)), info(compNode))
       end
       @assign isStructural = false
-    elseif isBindingNotFixed(compBinding, requireFinal = false)
+    elseif isBindingNotFixed(compBinding, #= requireFinal = =# false)
       @assign isStructural = false
     else
       @assign isStructural = true

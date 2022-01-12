@@ -1449,7 +1449,7 @@ function checkMatchingFunctions(call::Call, info::SourceInfo)::MatchedFunction
         @assign allfuncs = getCachedFuncs(fn_node)
         if listLength(allfuncs) > 1
           @assign allfuncs =
-            list(fn for fn in allfuncs if !P_Function.isDefaultRecordConstructor(fn))
+            list(fn for fn in allfuncs if !isDefaultRecordConstructor(fn))
         end
         matchFunctions(allfuncs, call.arguments, call.named_args, info)
       end

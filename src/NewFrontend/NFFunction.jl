@@ -1253,17 +1253,18 @@ function matchArgs(
     @match _cons(input_node, inputs) = inputs
     @assign comp = component(input_node)
     if arg_var > variability(comp)
-      Error.addSourceMessage(
-        Error.FUNCTION_SLOT_VARIABILITY,
-        list(
-          name(input_node),
-          toString(arg_exp),
-          AbsynUtil.pathString(P_Function.name(func)),
-          P_Prefixes.variabilityString(arg_var),
-          P_Prefixes.variabilityString(variability(comp)),
-        ),
-        info,
-      )
+      # Error.addSourceMessage(
+      #   Error.FUNCTION_SLOT_VARIABILITY,
+      #   list(
+      #     name(input_node),
+      #     toString(arg_exp),
+      #     AbsynUtil.pathString(P_Function.name(func)),
+      #     P_Prefixes.variabilityString(arg_var),
+      #     P_Prefixes.variabilityString(variability(comp)),
+      #   ),
+      #   info,
+      # )
+      @error "FUNCTION_SLOT_VARIABILITY"
       @assign funcMatchKind = NO_MATCH
       return (args, funcMatchKind)
     end

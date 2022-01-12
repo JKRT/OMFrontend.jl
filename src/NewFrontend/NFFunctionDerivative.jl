@@ -137,17 +137,17 @@ function addLowerOrderDerivative2(fn::M_Function, lowerDerNode::InstNode)::M_Fun
 end
 
 function addLowerOrderDerivative(fnNode::InstNode, lowerDerNode::InstNode)
-  return P_Function.mapCachedFuncs(
+  return mapCachedFuncs(
     fnNode,
-    (lowerDerNode) -> addLowerOrderDerivative2(lowerDerNode = lowerDerNode),
+    (fn) -> addLowerOrderDerivative2(fn, lowerDerNode),
   )
 end
 
-function getInputIndex(name::String, fn::M_Function, info::SourceInfo)::Int
+function getInputIndex(nameArg::String, fn::M_Function, info::SourceInfo)::Int
   local index::Int = 1
 
   for i in fn.inputs
-    if name(i) == name
+    if name(i) == nameArg
       return index
     end
     @assign index = index + 1
@@ -168,7 +168,7 @@ function getDerivativeAttributes(
   info::SourceInfo,
 )::Tuple{Expression, List{Tuple{Int, ConditionType}}}
   local conditions::List{Tuple{Int, ConditionType}} = nil
-  local order::Expression = EMPTY(TYPE_UNKNOWN())
+  local order::Expression = EMPTY_EXPRESSION(TYPE_UNKNOWN())
 
   local id::String
   local mod::SCode.Mod
@@ -177,10 +177,10 @@ function getDerivativeAttributes(
   local index::Int
 
   for attr in attrs
-    @match SCode.SubMod.NAMEMOD(id, mod) = attr
+    @match SCode.NAMEMOD(id, mod) = attr
     @assign () = begin
       @match (id, mod) begin
-        ("order", SCode.Mod.MOD(binding = SOME(aexp))) => begin
+        ("order", SCode.MOD(binding = SOME(aexp))) => begin
           if !isEmpty(order)
             Error.addSourceMessage(
               Error.DUPLICATE_MODIFICATIONS,
@@ -194,7 +194,7 @@ function getDerivativeAttributes(
 
         (
           "noDerivative",
-          SCode.Mod.MOD(
+          SCode.MOD(
             binding = SOME(Absyn.CREF(componentRef = Absyn.CREF_IDENT(name = id))),
           ),
         ) => begin
@@ -205,7 +205,7 @@ function getDerivativeAttributes(
 
         (
           "zeroDerivative",
-          SCode.Mod.MOD(
+          SCode.MOD(
             binding = SOME(Absyn.CREF(componentRef = Absyn.CREF_IDENT(name = id))),
           ),
         ) => begin
@@ -247,19 +247,19 @@ function instDerivativeMod(
 
   @assign fnDers = begin
     local attrs::List{SCode.SubMod}
-    local acref::Absyn.P_ComponentRef.ComponentRef
+    local acref::Absyn.ComponentRef
     local der_node::InstNode
     local order::Expression
-    local conds::List{Tuple{Int, Condition}}
+    local conds::List{Tuple{Int, ConditionType}}
     @match mod begin
-      SCode.Mod.MOD(subModLst = attrs, binding = SOME(Absyn.CREF(acref))) => begin
-        @assign (_, der_node) = P_Function.instFunction(acref, scope, mod.info)
+      SCode.MOD(subModLst = attrs, binding = SOME(Absyn.CREF(acref))) => begin
+        @assign (_, der_node) = instFunction(acref, scope, mod.info)
         addLowerOrderDerivative(der_node, fnNode)
-        @assign (order, conds) = getDerivativeAttributes(attrs, fn, fnNode, mod.info)
+        (order, conds) = getDerivativeAttributes(attrs, fn, fnNode, mod.info)
         _cons(FUNCTION_DER(der_node, fnNode, order, conds, nil), fnDers)
       end
 
-      SCode.Mod.MOD(__) => begin
+      SCode.MOD(__) => begin
         #=  Give a warning if the derivative annotation doesn't specify a function name.
         =#
         Error.addStrictMessage(

@@ -654,6 +654,34 @@ const ENUM_LOOKUP_TREE =
     ),
   )::LookupTree.Tree
 
+function GET_ENUM_LOOKUP_TREE()
+    LookupTree.NODE(
+    "min",
+     LookupTree.COMPONENT(2),
+     3,
+    LookupTree.NODE(
+      "max",
+       LookupTree.COMPONENT(3),
+       2,
+      LookupTree.LEAF(
+        "fixed",
+         LookupTree.COMPONENT(5),
+      ),
+       LookupTree.EMPTY(),
+    ),
+      LookupTree.NODE(
+      "quantity",
+       LookupTree.COMPONENT(1),
+       2,
+      LookupTree.EMPTY(),
+       LookupTree.LEAF(
+        "start",
+         LookupTree.COMPONENT(4),
+      ),
+    ),
+  )::LookupTree.Tree
+end
+
 const ENUM_NODE =
   CLASS_NODE(
     "enumeration",

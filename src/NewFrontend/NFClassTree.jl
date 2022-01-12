@@ -527,7 +527,6 @@ function lookupElement(name::String, tree::ClassTree)::Tuple{InstNode, Bool}
   local entry::LookupTree.Entry
   @debug "Looking up element $name in class tree!"
   @debug "Fetching from tree. Soon to report entry"
-  # str = LookupTree.printTreeStr(lookupTree(tree))
   entry = LookupTree.get(lookupTree(tree), name)
   (element, isImport) = resolveEntry(entry, tree)
   return (element, isImport)
@@ -1172,17 +1171,14 @@ function fromEnumeration(
   enumClass::InstNode,
 )::ClassTree #= The InstNode of the enumeration type =#
   local tree::ClassTree
-
   local comps::Vector{InstNode}
   local attr_count::Int = 5
   local i::Int = 0
   local comp::InstNode
   local ltree::LookupTree.Tree
   local name::String
-
-  @assign comps =
-    arrayCreateNoInit(listLength(literals) + attr_count, EMPTY_NODE())
-  @assign ltree = NFBuiltin.ENUM_LOOKUP_TREE
+  comps = arrayCreateNoInit(listLength(literals) + attr_count, EMPTY_NODE())
+  ltree = NFBuiltin.GET_ENUM_LOOKUP_TREE()
   arrayUpdateNoBoundsChecking(
     comps,
     1,
@@ -1228,24 +1224,26 @@ function fromEnumeration(
       enumClass,
     ),
   )
+#  @info "Before"
+#  @info LookupTree.printTreeStr(ltree)
   for l in literals
-    name = l.literal
+    nameStr = l.literal
     i = i + 1
     comp =
-      fromComponent(name, newEnum(enumType, name, i), enumClass)
+      fromComponent(nameStr, newEnum(enumType, nameStr, i), enumClass)
     arrayUpdateNoBoundsChecking(comps, i + attr_count, comp)
     ltree = LookupTree.add(
       ltree,
-      name,
+      nameStr,
       LookupTree.COMPONENT(i + attr_count),
-      (comp) -> addEnumConflict(literal = comp),
+      (x, y, z) -> addEnumConflict(x, y, z, comp),
     )
   end
   #=  Make a new component node for the literal and add it to the lookup tree.
   =#
   #=  Enumerations can't contain extends, so we can go directly to a flat tree here.
   =#
-  @assign tree =
+  tree =
     CLASS_TREE_FLAT_TREE(ltree, listArray(nil), comps, listArray(nil), DuplicateTree.EMPTY())
   return tree
 end
@@ -2292,16 +2290,16 @@ end
 function addEnumConflict(
   newEntry::LookupTree.Entry,
   oldEntry::LookupTree.Entry,
-  name::String,
+  nameStr::String,
   literal::InstNode,
 )::LookupTree.Entry
   local entry::LookupTree.Entry
-
-  Error.addSourceMessage(
-    Error.DOUBLE_DECLARATION_OF_ELEMENTS,
-    list(name(literal)),
-    info(literal),
-  )
+  @error "An element with name $(name(literal)) is already declared in this scope" newEntry oldEntry nameStr
+  # Error.addSourceMessage(
+  #   Error.DOUBLE_DECLARATION_OF_ELEMENTS,
+  #   lis t(name(literal)),
+  #   info(literal),
+  # )
   fail()
   return entry
 end

@@ -786,7 +786,7 @@ function typeDimension2(
               )
               #=  If the deduced dimension is unknown, evaluate the binding and try again.
               =#
-              if P_Dimension.Dimension.isUnknown(dim) && !P_TypingError.isError(ty_err)
+              if isUnknown(dim) && isError(ty_err)
                 @assign exp = if isSome(oexp)
                   Util.getOption(oexp)
                 else
@@ -811,7 +811,7 @@ function typeDimension2(
               @assign (dim, ty_err) = nthDimensionBoundsChecked(b.bindingType, dim_index)
               #=  If the deduced dimension is unknown, evaluate the binding and try again.
               =#
-              if P_Dimension.Dimension.isUnknown(dim) && !P_TypingError.isError(ty_err)
+              if isUnknown(dim) && !isError(ty_err)
                 @assign exp = Ceval.evalExp(
                   b.bindingExp,
                   DIMENSION(component, index, b.bindingExp, info),
@@ -827,7 +827,7 @@ function typeDimension2(
         end
         @assign () = begin
           @match ty_err begin
-            P_TypingError.OUT_OF_BOUNDS(__) => begin
+            OUT_OF_BOUNDS(__) => begin
               Error.addSourceMessage(
                 Error.DIMENSION_DEDUCTION_FROM_BINDING_FAILURE,
                 list(String(index), name(component), toString(b)),
@@ -1714,7 +1714,7 @@ function typeArrayDim(
   if dimIndex < 1
     @assign dim = DIMENSION_UNKNOWN()
     @assign error =
-      P_TypingError.OUT_OF_BOUNDS(dimensionCount(arrayExp))
+      OUT_OF_BOUNDS(dimensionCount(arrayExp))
   else
     @assign (dim, error) = typeArrayDim2(arrayExp, dimIndex)
   end
@@ -1732,7 +1732,7 @@ function typeArrayDim2(
   @assign (dim, error) = begin
     @match (arrayExp, dimIndex) begin
       (ARRAY_EXPRESSION(__), 1) => begin
-        (fromExpList(arrayExp.elements), P_TypingError.NO_ERROR())
+        (fromExpList(arrayExp.elements), NO_ERROR())
       end
 
       (ARRAY_EXPRESSION(__), _) => begin
@@ -1745,7 +1745,7 @@ function typeArrayDim2(
         #=  expression can be empty, so just traverse into the first element.
         =#
         @assign dim = DIMENSION_UNKNOWN()
-        @assign error = P_TypingError.OUT_OF_BOUNDS(dimCount)
+        @assign error = OUT_OF_BOUNDS(dimCount)
         (dim, error)
       end
     end
@@ -1759,7 +1759,7 @@ function typeCrefDim(
   origin::ORIGIN_Type,
   info::SourceInfo,
 )::Tuple{Dimension, TypingError}
-  local error::TypingError = P_TypingError.NO_ERROR()
+  local error::TypingError = NO_ERROR()
   local dim::Dimension
 
   local crl::List{ComponentRef}
@@ -1857,7 +1857,7 @@ function typeCrefDim(
     end
   end
   @assign dim = DIMENSION_UNKNOWN()
-  @assign error = P_TypingError.OUT_OF_BOUNDS(dim_total)
+  @assign error = OUT_OF_BOUNDS(dim_total)
   return (dim, error)
 end
 
@@ -1876,10 +1876,10 @@ function nthDimensionBoundsChecked(
 
   if index < 1 || index > dim_size
     @assign dim = DIMENSION_UNKNOWNy()
-    @assign error = P_TypingError.OUT_OF_BOUNDS(dim_size - offset)
+    @assign error = OUT_OF_BOUNDS(dim_size - offset)
   else
-    @assign dim = Type.nthDimension(ty, index)
-    @assign error = P_TypingError.NO_ERROR()
+    @assign dim = nthDimension(ty, index)
+    @assign error = NO_ERROR()
   end
   return (dim, error)
 end
@@ -2536,8 +2536,8 @@ function typeSize(
           @match INTEGER_EXPRESSION(iindex) = index
           @assign (dim, oexp, ty_err) = typeExpDim(exp, iindex, next_origin, info)
           checkSizeTypingError(ty_err, exp, iindex, info)
-          if P_Dimension.Dimension.isKnown(dim) && evaluate
-            @assign exp = P_Dimension.Dimension.sizeExp(dim)
+          if isKnown(dim) && evaluate
+            @assign exp = sizeExp(dim)
           else
             if isSome(oexp)
               @match SOME(exp) = oexp
@@ -2547,7 +2547,7 @@ function typeSize(
             @assign exp = SIZE_EXPRESSION(exp, SOME(index))
           end
           if flagNotSet(origin, ORIGIN_FUNCTION) ||
-             P_Dimension.Dimension.isKnown(dim)
+             isKnown(dim)
             @assign variability = Variability.CONSTANT
           else
             @assign variability = Variability.DISCRETE

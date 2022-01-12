@@ -283,7 +283,7 @@ function isUnknown(dim::Dimension)::Bool
 
   @assign isUnk = begin
     @match dim begin
-      UNKNOWN(__) => begin
+      DIMENSION_UNKNOWN(__) => begin
         true
       end
       _ => begin
@@ -328,11 +328,11 @@ function isEqualKnown(dim1::Dimension, dim2::Dimension)::Bool
 
   @assign isEqual = begin
     @match (dim1, dim2) begin
-      (UNKNOWN(__), _) => begin
+      (DIMENSION_UNKNOWN(__), _) => begin
         false
       end
 
-      (_, UNKNOWN(__)) => begin
+      (_, DIMENSION_UNKNOWN(__)) => begin
         false
       end
 
@@ -349,7 +349,7 @@ function isEqualKnown(dim1::Dimension, dim2::Dimension)::Bool
       end
 
       _ => begin
-        P_Dimension.Dimension.size(dim1) == P_Dimension.Dimension.size(dim2)
+        size(dim1) == size(dim2)
       end
     end
   end

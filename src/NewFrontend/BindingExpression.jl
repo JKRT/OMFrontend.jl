@@ -177,7 +177,7 @@ end
                          else
                            @assign dimCount = 0
                            for parent in listRest(exp.parents)
-                             @assign dimCount = dimCount + Type.dimensionCount(getType(parent))
+                             @assign dimCount = dimCount + dimensionCount(getType(parent))
                            end
                          end
                          dimCount

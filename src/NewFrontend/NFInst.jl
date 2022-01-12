@@ -3028,7 +3028,7 @@ function isStructuralComponent(component::Component, compAttrs::Attributes, comp
   isStructural
 end
 
-function isBindingNotFixed(binding::Binding, requireFinal::Bool, maxDepth::Int = 4) ::Bool
+function isBindingNotFixed(binding::Binding; requireFinal::Bool, maxDepth::Int = 4) ::Bool
   local isNotFixed::Bool
 
   if maxDepth == 0

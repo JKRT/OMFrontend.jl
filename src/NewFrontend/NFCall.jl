@@ -1900,7 +1900,7 @@ function instNamedArg(absynArg::Absyn.NamedArg, scope::InstNode, info::SourceInf
   local exp::Absyn.Exp
 
   @match Absyn.NAMEDARG(argName = name, argValue = exp) = absynArg
-  @assign arg = (name, Inst.instExp(exp, scope, info))
+  @assign arg = (name, instExp(exp, scope, info))
   return arg
 end
 

@@ -92,11 +92,11 @@ function instClassInProgram(classPath::Absyn.Path, program::SCode.Program)
   # end
   #= Scalarize array components in the flat model.=#
   @debug "Not skipping NF_SCALARIZE"
-  #                  if Flags.isSet(Flags.NF_SCALARIZE)
-  # @assign flat_model = scalarize(flat_model, name)
-  #                  else
-  # @assign flat_model.variables = ListUtil.filterOnFalse(flat_model.variables, isEmptyArray)
-  #                   end
+  if Flags.isSet(Flags.NF_SCALARIZE)
+    @assign flat_model = scalarize(flat_model, name)
+  else
+    @assign flat_model.variables = ListUtil.filterOnFalse(flat_model.variables, isEmptyArray)
+  end
   #=  Remove empty arrays from variables =#
   @debug "VERIFYING MODEL: "
   verify(flat_model)
@@ -193,19 +193,25 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
   @debug "COLLECT CONSTANTS"
   @assign flat_model = collectConstants(flat_model, funcs)
   @debug "COLLECTED CONSTANTS"
-  # if Flags.getConfigBool(Flags.FLAT_MODELICA)
-  @debug "PRINTING FLAT MODELICA"
-  #printFlatString(flat_model, FunctionTreeImpl.listValues(funcs))
-  # end
+  if Flags.getConfigBool(Flags.FLAT_MODELICA)
+    @debug "PRINTING FLAT MODELICA"
+    printFlatString(flat_model, FunctionTreeImpl.listValues(funcs))
+  end
   #= Scalarize array components in the flat model.=#
   @debug "Not skipping NF_SCALARIZE"
   #@info "Hello"
   if Flags.isSet(Flags.NF_SCALARIZE)
     @assign flat_model = scalarize(flat_model, name)
   else
+    #=  Remove empty arrays from variables =#
     @assign flat_model.variables = ListUtil.filterOnFalse(flat_model.variables, isEmptyArray)
   end
-  #=  Remove empty arrays from variables =#
+  #= Check if we are to performance recompilation. If true adds the SCode program to the flat model. =#
+  local recompilationEnabled = check_recompilation(flat_model.equations)
+  if recompilationEnabled
+    @assign flat_model.scodeProgram = listHead(program)
+  end
+  
   @debug "VERIFYING MODEL: "
   verify(flat_model)
   #                   if Flags.isSet(Flags.NF_DUMP_FLAT)

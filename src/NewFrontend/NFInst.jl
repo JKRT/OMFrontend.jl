@@ -128,13 +128,13 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
   =#
   #=  and scalarization if -d=-nfScalarize is on
   =#
-  # if ! Flags.isSet(Flags.NF_SCALARIZE)
-  #   FlagsUtil.set(Flags.NF_EXPAND_OPERATIONS, false)
-  #   FlagsUtil.set(Flags.NF_EXPAND_FUNC_ARGS, false)
-  # end
-
-  #=  make sure we don't expand anything
-  =#
+  #= Set scalazrize by default. =#
+  FlagsUtil.set(Flags.NF_SCALARIZE, true)
+  if ! Flags.isSet(Flags.NF_SCALARIZE)
+    FlagsUtil.set(Flags.NF_EXPAND_OPERATIONS, false)
+    FlagsUtil.set(Flags.NF_EXPAND_FUNC_ARGS, false)
+  end
+  #=  make sure we don't expand anything=#
   System.setUsesCardinality(false)
   System.setHasOverconstrainedConnectors(false)
   System.setHasStreamConnectors(false)

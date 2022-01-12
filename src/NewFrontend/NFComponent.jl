@@ -982,7 +982,7 @@ function getType(component::Component)::M_Type
         getType(component.classInst)
       end
 
-      ITERATOR(__) => begin
+      ITERATOR_COMPONENT(__) => begin
         component.ty
       end
 

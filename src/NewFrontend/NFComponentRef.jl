@@ -470,6 +470,9 @@ function toDAE(cref::ComponentRef)::DAE.ComponentRef
       COMPONENT_REF_WILD(__) => begin
         DAE.WILD()
       end
+      COMPONENT_REF_STRING(__) => begin
+        DAE.CREF_IDENT(cref.name, DAE.T_UNKNOWN(), nil)
+      end
     end
   end
   return dcref

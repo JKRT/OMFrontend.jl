@@ -218,7 +218,7 @@ function toDAE(@nospecialize(call::Call))
         @assign res_id = Util.getTempVariableIndex()
         DAE.REDUCTION(
           DAE.REDUCTIONINFO(
-            P_Function.name(NFBuiltinFuncs.ARRAY_FUNC),
+            name(NFBuiltinFuncs.ARRAY_FUNC),
             Absyn.COMBINE(),
             toDAE(call.ty),
             NONE(),

@@ -164,4 +164,18 @@ if ccall(:jl_generating_output, Cint, ()) == 1
   end
 end
 
+function initLoadMSL()
+  @info "Loading the MSL"
+  @time loadMSL()
+  @info "Loaded MSL successfully"
+end
+
+function flattenModelInMSL(modelName::String)
+  if !haskey(LIBRARY_CACHE, "MSL")
+    initLoadMSL()
+  end
+  local libraryAsScoded = LIBRARY_CACHE["MSL"]
+  (FM, cache) = instantiateSCodeToFM(modelName, libraryAsScoded)
+end
+
 end # module

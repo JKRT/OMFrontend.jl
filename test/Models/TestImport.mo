@@ -7,11 +7,11 @@ end SIunits;
 
 end Modelica;
 
-package MWE
+package TestImport
   import SI = Modelica.SIunits;
 
   model A
      SI.Time t = time;
   end A;
 
-end MWE;
+end TestImport;

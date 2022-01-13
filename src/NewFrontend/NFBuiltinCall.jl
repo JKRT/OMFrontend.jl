@@ -195,6 +195,11 @@ function typeSpecial(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{
         typeStructuralTransistion(call, next_origin, info)
       end
 
+      "recompilation" => begin
+        @debug "VSS: Typing typeStructuralTransistion"
+        typeRecompilationCall(call, next_origin, info)
+      end
+
       _  => begin
         #= /*
         case \"hold\" guard Config.synchronousFeaturesAllowed() then typeHoldCall(call, next_origin, info);
@@ -218,13 +223,11 @@ end
 
 function makeSizeExp(posArgs::List{<:Expression}, namedArgs::List{<:NamedArg}, info::SourceInfo) ::Expression
   local callExp::Expression
-
   local argc::Int = listLength(posArgs)
   local arg1::Expression
   local arg2::Expression
-
   assertNoNamedParams("size", namedArgs, info)
-  @assign callExp = begin
+  callExp = begin
     @match posArgs begin
       arg1 <|  nil()  => begin
         SIZE_EXPRESSION(arg1, NONE())
@@ -232,8 +235,7 @@ function makeSizeExp(posArgs::List{<:Expression}, namedArgs::List{<:NamedArg}, i
 
       arg1 <| arg2 <|  nil()  => begin
         SIZE_EXPRESSION(arg1, SOME(arg2))
-      end
-
+      end      
       _  => begin
         Error.addSourceMessage(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list("size" + ListUtil.toString(posArgs, toString, "", "(", ", ", ")", true), "size(Any[:, ...]) => Integer[:]\\n  size(Any[:, ...], Integer) => Integer"), info)
         fail()
@@ -277,28 +279,29 @@ function makeCatExp(n::Int, args::List{<:Expression}, tys::List{<:M_Type}, varia
   local ty1::M_Type
   local ty2::M_Type
   local resTyToMatch::M_Type
-  local mk::TypeCheck.MatchKind
+  local mk::MatchKindType
   local maxn::Int
   local pos::Int
   local sumDim::Dimension
 
-  Error.assertion(listLength(args) == listLength(tys) && listLength(args) >= 1, getInstanceName() + " got wrong input sizes", sourceInfo())
+  @assert listLength(args) == listLength(tys) && listLength(args) >= 1
+  #Error.assertion(, getInstanceName() + " got wrong input sizes", sourceInfo())
   #=  First: Get the number of dimensions and the element type
   =#
   for arg in args
     @match _cons(ty, tys2) = tys2
     @assign dimsLst = _cons(arrayDims(ty), dimsLst)
-    if Type.isEqual(resTy, TYPE_UNKNOWN())
+    if isEqual(resTy, TYPE_UNKNOWN())
       @assign resTy = arrayElementType(ty)
     else
-      @assign (_, _, ty1, mk) = TypeCheck.matchExpressions(INTEGER_EXPRESSION(0), arrayElementType(ty), INTEGER_EXPRESSION(0), resTy)
-      if TypeCheck.isCompatibleMatch(mk)
+      @assign (_, _, ty1, mk) = matchExpressions(INTEGER_EXPRESSION(0), arrayElementType(ty), INTEGER_EXPRESSION(0), resTy)
+      if isCompatibleMatch(mk)
         @assign resTy = ty1
       end
     end
   end
-  @assign maxn = max(listLength(d) for d in dimsLst)
-  if maxn != min(listLength(d) for d in dimsLst)
+  @assign maxn = max( [listLength(d) for d in dimsLst]...)
+  if maxn != min( [listLength(d) for d in dimsLst]... )
     Error.addSourceMessageAndFail(Error.NF_DIFFERENT_NUM_DIM_IN_ARGUMENTS, list(stringDelimitList(list(String(listLength(d)) for d in dimsLst), ", "), "cat"), info)
   end
   if n < 1 || n > maxn
@@ -315,7 +318,7 @@ function makeCatExp(n::Int, args::List{<:Expression}, tys::List{<:M_Type}, varia
     @assign pos = pos - 1
     @assign ty2 = setArrayElementType(ty, resTy)
     @assign (arg2, ty1, mk) = matchTypes(ty, ty2, arg, allowUnknown = true)
-    if TypeCheck.isIncompatibleMatch(mk)
+    if isIncompatibleMatch(mk)
       Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list(String(pos), "cat", "arg", toString(arg), Type.toString(ty), Type.toString(ty2)), info)
     end
     @assign args2 = _cons(arg2, args2)
@@ -329,11 +332,11 @@ function makeCatExp(n::Int, args::List{<:Expression}, tys::List{<:M_Type}, varia
   @assign tys2 = tys3
   for arg in args2
     @match _cons(ty, tys2) = tys2
-    if Type.isEqual(resTy, TYPE_UNKNOWN())
+    if isEqual(resTy, TYPE_UNKNOWN())
       @assign resTy = ty
     else
-      @assign (_, _, ty1, mk) = TypeCheck.matchExpressions(INTEGER_EXPRESSION(0), ty, INTEGER_EXPRESSION(0), resTy)
-      if TypeCheck.isCompatibleMatch(mk)
+      @assign (_, _, ty1, mk) = matchExpressions(INTEGER_EXPRESSION(0), ty, INTEGER_EXPRESSION(0), resTy)
+      if isCompatibleMatch(mk)
         @assign resTy = ty1
       end
     end
@@ -345,9 +348,9 @@ function makeCatExp(n::Int, args::List{<:Expression}, tys::List{<:M_Type}, varia
   @assign dims = arrayDims(resTy)
   @assign resTyToMatch = TYPE_ARRAY(arrayElementType(resTy), ListUtil.set(dims, n, DIMENSION_UNKNOWN()))
   @assign dims = list(listGet(lst, n) for lst in dimsLst)
-  @assign sumDim = P_Dimension.Dimension.fromInteger(0)
+  @assign sumDim = fromInteger(0)
   for d in dims
-    @assign sumDim = P_Dimension.Dimension.add(sumDim, d)
+    @assign sumDim = add(sumDim, d)
   end
   #=  Create the concatenated dimension
   =#
@@ -360,7 +363,7 @@ function makeCatExp(n::Int, args::List{<:Expression}, tys::List{<:M_Type}, varia
     @match _cons(ty, tys2) = tys2
     @assign pos = pos - 1
     @assign (arg2, ty1, mk) = matchTypes(ty, resTyToMatch, arg, allowUnknown = true)
-    if TypeCheck.isIncompatibleMatch(mk)
+    if isIncompatibleMatch(mk)
       Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list(String(pos), "cat", "arg", toString(arg), Type.toString(ty), Type.toString(resTyToMatch)), info)
     end
     @assign res = _cons(arg2, res)
@@ -369,7 +372,7 @@ function makeCatExp(n::Int, args::List{<:Expression}, tys::List{<:M_Type}, varia
   #=  We have all except dimension n having equal sizes; with matching types
   =#
   @assign ty = resTy
-  @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(NFBuiltinFuncs.CAT, _cons(INTEGER_EXPRESSION(n), res), variability, resTy))
+  @assign callExp = CALL_EXPRESSION(makeTypedCall(NFBuiltinFuncs.CAT, _cons(INTEGER_EXPRESSION(n), res), variability, resTy))
   (callExp, ty)
 end
 
@@ -466,24 +469,24 @@ function typeOverloadedStringCall(overloadedType::M_Type, args::List{<:TypedArg}
   (callExp, outType, var)
 end
 
-""" #= Types a function call that can be typed normally, but which always has
-               discrete variability regardless of the variability of the arguments. =#"""
-                 function typeDiscreteCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
-                   local var::VariabilityType = Variability.DISCRETE
-                   local ty::M_Type
-                   local callExp::Expression
-
-                   local argtycall::Call
-                   local fn::M_Function
-                   local args::List{TypedArg}
-                   local start::TypedArg
-                   local interval::TypedArg
-
-                   @assign argtycall = P_Call.typeMatchNormalCall(call, origin, info)
-                   @assign ty = typeOf(argtycall)
-                   @assign callExp = CALL_EXPRESSION(unboxArgs(argtycall))
-                   (callExp, ty, var)
-                 end
+""" 
+  Types a function call that can be typed normally, but which always has
+  discrete variability regardless of the variability of the arguments. 
+"""
+function typeDiscreteCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
+  local var::VariabilityType = Variability.DISCRETE
+  local ty::M_Type
+  local callExp::Expression
+  local argtycall::Call
+  local fn::M_Function
+  local args::List{TypedArg}
+  local start::TypedArg
+  local interval::TypedArg
+  @assign argtycall = typeMatchNormalCall(call, origin, info)
+  @assign ty = typeOf(argtycall)
+  @assign callExp = CALL_EXPRESSION(unboxArgs(argtycall))
+  (callExp, ty, var)
+end
 
 function typeNdimsCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
   local variability::VariabilityType = Variability.PARAMETER
@@ -668,7 +671,7 @@ function typeEdgeCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple
   (callExp, ty, variability)
 end
 
-function typeMinMaxCall(name::String, call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
+function typeMinMaxCall(name::String, call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
   local var::VariabilityType
   local ty::M_Type
   local callExp::Expression
@@ -785,7 +788,7 @@ function typeProductCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tu
   (callExp, ty, variability)
 end
 
-function typeSmoothCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
+function typeSmoothCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
   local variability::VariabilityType
   local ty::M_Type
   local callExp::Expression
@@ -799,14 +802,14 @@ function typeSmoothCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tup
   local ty2::M_Type
   local var::VariabilityType
   local fn::M_Function
-  local mk::TypeCheck.MatchKind
+  local mk::MatchKindType
 
   @match UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
   assertNoNamedParams("smooth", named_args, info)
   if listLength(args) != 2
     Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), "smooth(Integer, Any) => Any"), info)
   end
-  @match list(arg1, arg2) = args
+  @match arg1 <| arg2 <| nil = args
   @assign (arg1, ty1, var) = typeExp(arg1, origin, info)
   @assign (arg2, ty2, variability) = typeExp(arg2, origin, info)
   #=  First argument must be Integer.
@@ -825,12 +828,12 @@ function typeSmoothCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tup
   =#
   #=  TODO: Also handle records here.
   =#
-  @assign (arg2, ty, mk) = matchTypes(ty2, setArrayElementType(ty2, TYPE_REAL()), arg2, true)
-  if ! TypeCheck.isValidArgumentMatch(mk)
+  (arg2, ty, mk) = matchTypes(ty2, setArrayElementType(ty2, TYPE_REAL()), arg2; allowUnknown = true)
+  if ! isValidArgumentMatch(mk)
     Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list("2", toString(fn_ref), "", toString(arg2), Type.toString(ty2), "Real\\n  Real[:, ...]\\n  Real record\\n  Real record[:, ...]"), info)
   end
-  @match list(fn) = typeRefCache(fn_ref)
-  @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(fn, list(arg1, arg2), var, ty))
+  @match fn <| nil = typeRefCache(fn_ref)
+  @assign callExp = CALL_EXPRESSION(makeTypedCall(fn, list(arg1, arg2), var, ty))
   (callExp, ty, variability)
 end
 
@@ -1266,6 +1269,39 @@ function typeInitialStructuralStateCall(call::Call, origin::ORIGIN_Type, info::S
 end
 
 """
+Author:johti17
+Extension: 
+  Type a recompilation call. 
+  Depending on what we do we create different calls.
+  A call to recompilation means that a model should refer to itself to allow reflection.
+"""
+function typeRecompilationCall(@nospecialize(call::Call), origin::ORIGIN_Type, info::SourceInfo)
+  local variabilityType::VariabilityType = Variability.PARAMETER
+  @match UNTYPED_CALL(fn_ref, args, namedArgs) = call
+  if listLength(args) != 2
+    throw("Error typing! expected two arguments to recompilation")
+  end
+  #= 
+    We know we are going to change a parameter of the model we currently are operating on.
+    Prepare the SCode for this model so that we can use it later.  
+  =#
+  @match CREF_EXPRESSION(_, argCref1) = listGet(args, 1)
+  #= 
+    Change the variability of argCref1 
+    to avoid further simplifications in the frontend.
+    We do this by creating a new component reference that is not pointing to a node.
+  =#
+  local newCref = COMPONENT_REF_STRING(name(argCref1.node), argCref1.restCref) 
+  local retType = TYPE_NORETCALL()
+  local arg1 = CREF_EXPRESSION(TYPE_ANY() #= Reference to the parameter we are changing=#,
+                               newCref #= Should be complex but use any for now=#)
+  (arg2, _, _) = typeExp(listGet(args, 2), origin, info)
+  fn = listHead(typeRefCache(fn_ref))
+  callExp = CALL_EXPRESSION(makeTypedCall(fn, list(arg1, arg2), variabilityType, retType))
+  return (callExp, retType, variabilityType)
+end
+
+"""
 Author: johti17
 Extension: Types a structural transistion.
 A structural transistion have three arguments
@@ -1274,7 +1310,6 @@ A structural transistion have three arguments
 3. A condition. That is the when event at which the transistion occurs.
 """
 function typeStructuralTransistion(call::Call, origin::ORIGIN_Type, info::SourceInfo)
-  @debug "Typing... typeStructuralTransistion"
   @match UNTYPED_CALL(fn_ref, args, namedArgs) = call
   local variabilityType::VariabilityType = Variability.PARAMETER
   if listLength(args) != 3
@@ -1290,12 +1325,9 @@ function typeStructuralTransistion(call::Call, origin::ORIGIN_Type, info::Source
                                argCref2 #=Should be complex but use any for now=#)
   #= The last expression here is a condition=#
   local (arg3, _, _) = typeExp(listGet(args, 3), origin, info)
-  @debug "Done typing the arguments"
   local retType = TYPE_NORETCALL()
   local fn = listHead(typeRefCache(fn_ref))
-  @debug "Before constructing the call expression"
   local callExp = CALL_EXPRESSION(makeTypedCall(fn, list(arg1, arg2, arg3), variabilityType, retType))
-  @debug "Done typing the call expression"
   return (callExp, retType, Variability.PARAMETER#=TODO should change this..=#)
 end
 
@@ -1619,7 +1651,7 @@ function checkConnectionsArgument(arg::Expression, ty::M_Type, fnRef::ComponentR
   end
 end
 
-function typeNoEventCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
+function typeNoEventCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
   local variability::VariabilityType
   local ty::M_Type
   local callExp::Expression
@@ -1637,10 +1669,10 @@ function typeNoEventCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tu
   if listLength(args) != 1
     Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), "noEvent(Any) => Any"), info)
   end
-  @match list(arg) = args
+  @match arg <| nil = args
   @assign (arg, ty, variability) = typeExp(arg, setFlag(origin, ORIGIN_NOEVENT), info)
-  @match list(fn) = typeRefCache(fn_ref)
-  @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(fn, list(arg), variability, ty))
+  @match fn <| nil = typeRefCache(fn_ref)
+  @assign callExp = CALL_EXPRESSION(makeTypedCall(fn, list(arg), variability, ty))
   (callExp, ty, variability)
 end
 

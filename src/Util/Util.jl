@@ -1,5 +1,8 @@
 module Util
 
+import ..Global
+import ..System
+
 using MetaModelica
 using ExportAll
 #= Forward declarations for uniontypes until Julia adds support for mutual recursion =#

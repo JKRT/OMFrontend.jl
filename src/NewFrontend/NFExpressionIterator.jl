@@ -1,38 +1,62 @@
-module P_NFExpressionIterator
-
-using MetaModelica
-using ExportAll
-#= Forward declarations for uniontypes until Julia adds support for mutual recursion =#
-
-@UniontypeDecl NFExpressionIterator
-
-import ..P_NFExpandExp
-P_ExpandExp = P_NFExpandExp
-ExpandExp = P_NFExpandExp.NFExpandExp
-import ..NFInstNode.P_InstNode
-import ..P_NFComponentRef
-P_ComponentRef = P_NFComponentRef
-ComponentRef = P_NFComponentRef.NFComponentRef
-import ..P_NFExpressionIterator
-P_ExpressionIterator = P_NFExpressionIterator
-ExpressionIterator = P_NFExpressionIterator.NFExpressionIterator
-import ..NFBinding.P_Binding
-import ..P_NFExpression
-P_Expression = P_NFExpression
-Expression = P_NFExpression.NFExpression
+#=
+* This file is part of OpenModelica.
+*
+* Copyright (c) 1998-CurrentYear, Linköping University,
+* Department of Computer and Information Science,
+* SE-58183 Linköping, Sweden.
+*
+* All rights reserved.
+*
+* THIS PROGRAM IS PROVIDED UNDER THE TERMS OF GPL VERSION 3
+* AND THIS OSMC PUBLIC LICENSE (OSMC-PL).
+* ANY USE, REPRODUCTION OR DISTRIBUTION OF THIS PROGRAM CONSTITUTES RECIPIENT'S
+* ACCEPTANCE OF THE OSMC PUBLIC LICENSE.
+*
+* The OpenModelica software and the Open Source Modelica
+* Consortium (OSMC) Public License (OSMC-PL) are obtained
+* from Linköping University, either from the above address,
+* from the URLs: http:www.ida.liu.se/projects/OpenModelica or
+* http:www.openmodelica.org, and in the OpenModelica distribution.
+* GNU version 3 is obtained from: http:www.gnu.org/copyleft/gpl.html.
+*
+* This program is distributed WITHOUT ANY WARRANTY; without
+* even the implied warranty of  MERCHANTABILITY or FITNESS
+* FOR A PARTICULAR PURPOSE, EXCEPT AS EXPRESSLY SET FORTH
+* IN THE BY RECIPIENT SELECTED SUBSIDIARY LICENSE CONDITIONS
+* OF OSMC-PL.
+*
+* See the full OSMC Public License conditions for more details.
+*
+=#
+@Uniontype NFExpressionIterator begin
+  @Record EXPRESSION_REPEAT_ITERATOR begin
+    current::List{Expression}
+    all::List{Expression}
+  end
+  @Record EXPRESSION_NONE_ITERATOR begin
+  end
+  @Record EXPRESSION_EACH_ITERATOR begin
+    exp::Expression
+  end
+  @Record EXPRESSION_SCALAR_ITERATOR begin
+    exp::Expression
+  end
+  @Record EXPRESSION_ARRAY_ITERATOR begin
+    array::List{Expression}
+    slice::List{Expression}
+  end
+end
 
 function toList(iterator::ExpressionIterator)::List{Expression}
   local expl::List{Expression} = nil
-
   local iter::ExpressionIterator
   local exp::Expression
-
-  @assign iter = iterator
+  iter = iterator
   while hasNext(iter)
-    @assign (iter, exp) = next(iter)
-    @assign expl = _cons(exp, expl)
+    (iter, exp) = next(iter)
+    expl = _cons(exp, expl)
   end
-  @assign expl = listReverse(expl)
+  expl = listReverse(expl)
   return expl
 end
 
@@ -40,46 +64,43 @@ function nextOpt(
   iterator::ExpressionIterator,
 )::Tuple{ExpressionIterator, Option{Expression}}
   local nextExp::Option{Expression}
-
   local exp::Expression
-
   if hasNext(iterator)
-    @assign (iterator, exp) = next(iterator)
-    @assign nextExp = SOME(exp)
+    (iterator, exp) = next(iterator)
+    nextExp = SOME(exp)
   else
-    @assign nextExp = NONE()
+    nextExp = NONE()
   end
   return (iterator, nextExp)
 end
 
 function next(iterator::ExpressionIterator)::Tuple{ExpressionIterator, Expression}
   local nextExp::Expression
-
-  @assign (iterator, nextExp) = begin
+  (iterator, nextExp) = begin
     local rest::List{Expression}
     local arr::List{Expression}
     local next::Expression
     @match iterator begin
-      ARRAY_ITERATOR(__) => begin
+      EXPRESSION_ARRAY_ITERATOR(__) => begin
         @match _cons(next, rest) = iterator.slice
         if listEmpty(rest)
-          @assign (arr, rest) = nextArraySlice(iterator.array)
-          @assign iterator = ARRAY_ITERATOR(arr, rest)
+          (arr, rest) = nextArraySlice(iterator.array)
+          iterator = EXPRESSION_ARRAY_ITERATOR(arr, rest)
         else
           @assign iterator.slice = rest
         end
         (iterator, next)
       end
 
-      SCALAR_ITERATOR(__) => begin
+      EXPRESSION_SCALAR_ITERATOR(__) => begin
         (NONE_ITERATOR(), iterator.exp)
       end
 
-      EACH_ITERATOR(__) => begin
+      EXPRESSION_EACH_ITERATOR(__) => begin
         (iterator, iterator.exp)
       end
 
-      REPEAT_ITERATOR(rest, arr) => begin
+      EXPRESSION_REPEAT_ITERATOR(rest, arr) => begin
         if !listEmpty(rest)
           @match _cons(next, rest) = rest
         else
@@ -97,23 +118,23 @@ function hasNext(iterator::ExpressionIterator)::Bool
 
   @assign hasNext = begin
     @match iterator begin
-      ARRAY_ITERATOR(__) => begin
+      EXPRESSION_ARRAY_ITERATOR(__) => begin
         !listEmpty(iterator.slice)
       end
 
-      SCALAR_ITERATOR(__) => begin
+      EXPRESSION_SCALAR_ITERATOR(__) => begin
         true
       end
 
-      EACH_ITERATOR(__) => begin
+      EXPRESSION_EACH_ITERATOR(__) => begin
         true
       end
 
-      NONE_ITERATOR(__) => begin
+      EXPRESSION_NONE_ITERATOR(__) => begin
         false
       end
 
-      REPEAT_ITERATOR(__) => begin
+      EXPRESSION_REPEAT_ITERATOR(__) => begin
         true
       end
     end
@@ -127,25 +148,25 @@ function fromBinding(binding::Binding)::ExpressionIterator
   @assign iterator = begin
     local expl::List{Expression}
     @match binding begin
-      TYPED_BINDING(eachType = NFBinding.EachType.REPEAT) => begin
+      TYPED_BINDING(eachType = EachType.REPEAT) => begin
         @assign expl = arrayScalarElements(binding.bindingExp)
         if listLength(expl) == 1
-          EACH_ITERATOR(listHead(expl))
+          EXPRESSION_EACH_ITERATOR(listHead(expl))
         else
-          REPEAT_ITERATOR(expl, expl)
+          EXPRESSION_REPEAT_ITERATOR(expl, expl)
         end
       end
 
-      TYPED_BINDING(eachType = NFBinding.EachType.EACH) => begin
-        EACH_ITERATOR(binding.bindingExp)
+      TYPED_BINDING(eachType = EachType.EACH) => begin
+        EXPRESSION_EACH_ITERATOR(binding.bindingExp)
       end
 
       TYPED_BINDING(__) => begin
-        fromExp(binding.bindingExp)
+        fromExpToExpressionIterator(binding.bindingExp)
       end
 
       FLAT_BINDING(__) => begin
-        EACH_ITERATOR(binding.bindingExp)
+        EXPRESSION_EACH_ITERATOR(binding.bindingExp)
       end
     end
   end
@@ -154,25 +175,22 @@ end
 
 function fromExpOpt(optExp::Option{<:Expression})::ExpressionIterator
   local iterator::ExpressionIterator
-
   @assign iterator = begin
     local exp::Expression
     @match optExp begin
       SOME(exp) => begin
-        fromExp(exp)
+        fromExpToExpressionIterator(exp)
       end
-
       _ => begin
-        NONE_ITERATOR()
+        EXPRESSION_NONE_ITERATOR()
       end
     end
   end
   return iterator
 end
 
-function fromExp(exp::Expression)::ExpressionIterator
+function fromExpToExpressionIterator(exp::Expression)::ExpressionIterator
   local iterator::ExpressionIterator
-
   @assign iterator = begin
     local arr::List{Expression}
     local slice::List{Expression}
@@ -180,8 +198,7 @@ function fromExp(exp::Expression)::ExpressionIterator
     local expanded::Bool
     @match exp begin
       ARRAY_EXPRESSION(__) => begin
-        @match (ARRAY_EXPRESSION(elements = arr), expanded) =
-          P_ExpandExp.ExpandExp.expand(exp)
+        @match (ARRAY_EXPRESSION(elements = arr), expanded) = expand(exp)
         if !expanded
           Error.assertion(
             false,
@@ -193,7 +210,7 @@ function fromExp(exp::Expression)::ExpressionIterator
           )
         end
         @assign (arr, slice) = nextArraySlice(arr)
-        ARRAY_ITERATOR(arr, slice)
+        EXPRESSION_ARRAY_ITERATOR(arr, slice)
       end
 
       CREF_EXPRESSION(__) => begin
@@ -201,11 +218,11 @@ function fromExp(exp::Expression)::ExpressionIterator
         @assign iterator = begin
           @match e begin
             ARRAY_EXPRESSION(__) => begin
-              fromExp(e)
+              fromExpToExpressionIterator(e)
             end
 
             _ => begin
-              SCALAR_ITERATOR(e)
+              EXPRESSION_SCALAR_ITERATOR(e)
             end
           end
         end
@@ -213,11 +230,11 @@ function fromExp(exp::Expression)::ExpressionIterator
       end
 
       _ => begin
-        @assign e = P_ExpandExp.ExpandExp.expand(exp)
+        (e,_) = expand(exp)
         if referenceEq(e, exp)
-          SCALAR_ITERATOR(exp)
+          EXPRESSION_SCALAR_ITERATOR(exp)
         else
-          fromExp(e)
+          fromExpToExpressionIterator(e)
         end
       end
     end
@@ -229,10 +246,8 @@ function nextArraySlice(
   Array::List{<:Expression},
 )::Tuple{List{Expression}, List{Expression}}
   local slice::List{Expression}
-
   local e::Expression
   local arr::List{Expression}
-
   if listEmpty(Array)
     @assign slice = nil
   else
@@ -257,35 +272,4 @@ function nextArraySlice(
     end
   end
   return (Array, slice)
-end
-
-@Uniontype NFExpressionIterator begin
-  @Record REPEAT_ITERATOR begin
-
-    current::List{Expression}
-    all::List{Expression}
-  end
-
-  @Record NONE_ITERATOR begin
-
-  end
-
-  @Record EACH_ITERATOR begin
-
-    exp::Expression
-  end
-
-  @Record SCALAR_ITERATOR begin
-
-    exp::Expression
-  end
-
-  @Record ARRAY_ITERATOR begin
-
-    Array::List{Expression}
-    slice::List{Expression}
-  end
-end
-
-@exportAll()
 end

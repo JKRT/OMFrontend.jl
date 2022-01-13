@@ -227,7 +227,7 @@ function empty()::Vector{CachedData}
   cache
 end
 
-function hasBinding(node::InstNode) ::Bool
+function hasBinding(@nospecialize(node::InstNode)) ::Bool
   local hb::Bool
   hb = begin
     @match node begin

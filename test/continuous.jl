@@ -9,8 +9,8 @@
     #@test typeof(flattenModelInMSL("Modelica.Blocks.Continuous.LimPID")[1]) == OMFrontend.Main.FLAT_MODEL
     #@test typeof(flattenModelInMSL("Modelica.Blocks.Continuous.TransferFunction")[1]) == OMFrontend.Main.FLAT_MODEL
     #@test typeof(flattenModelInMSL("Modelica.Blocks.Continuous.StateSpace")[1]) == OMFrontend.Main.FLAT_MODEL
-    #@test typeof(flattenModelInMSL("Modelica.Blocks.Continuous.Der")[1]) == OMFrontend.Main.FLAT_MODEL
+    @test typeof(flattenModelInMSL("Modelica.Blocks.Continuous.Der")[1]) == OMFrontend.Main.FLAT_MODEL
     #@test typeof(flattenModelInMSL("Modelica.Blocks.Continuous.LowpassButterworth")[1]) == OMFrontend.Main.FLAT_MODEL
-    # @test typeof(flattenModelInMSL("Modelica.Blocks.Continuous.CriticalDamping")[1]) == OMFrontend.Main.FLAT_MODEL
+    #@test typeof(flattenModelInMSL("Modelica.Blocks.Continuous.CriticalDamping")[1]) == OMFrontend.Main.FLAT_MODEL
     #@test typeof(flattenModelInMSL("Modelica.Blocks.Continuous.Filter")[1]) == OMFrontend.Main.FLAT_MODEL
   end

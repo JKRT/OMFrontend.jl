@@ -626,7 +626,6 @@ end
 """ #= returns a tick that can be reset. TODO: remove me when bootstrapped (default argument index=0) =#"""
 function tmpTickIndex(index::Integer) ::Integer
   local tickNo::Integer
-
   @error "TODO: Defined in the runtime"
   tickNo
 end

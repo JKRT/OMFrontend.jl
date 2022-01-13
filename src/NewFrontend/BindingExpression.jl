@@ -485,10 +485,9 @@ function isEmpty(exp::Expression) ::Bool
 
   @assign empty = begin
     @match exp begin
-      EMPTY(__)  => begin
+      EMPTY_EXPRESSION(__)  => begin
         true
       end
-
       _  => begin
         false
       end
@@ -746,7 +745,7 @@ function promote(e::Expression, ty::M_Type, n::Int) ::Tuple{Expression, M_Type}
 
   #=  Construct the dimensions that needs to be added.
   =#
-  @assign dims = list(P_Dimension.Dimension.fromInteger(1) for i in Type.dimensionCount(ty):n - 1)
+  @assign dims = list(fromInteger(1) for i in dimensionCount(ty):n - 1)
   if ! listEmpty(dims)
     @assign dims = listAppend(arrayDims(ty), dims)
     @assign is_array = isArray(ty)
@@ -1839,7 +1838,7 @@ function contains(exp::Expression, func::ContainsPred) ::Bool
       LBINARY_EXPRESSION(__)  => begin
         contains(exp.exp1, func) || contains(exp.exp2, func)
       end
-      LUNARY(__)  => begin
+      LUNARY_EXPRESSION(__)  => begin
         contains(exp.exp, func)
       end
       RELATION_EXPRESSION(__)  => begin

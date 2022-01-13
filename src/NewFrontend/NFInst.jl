@@ -92,11 +92,11 @@ function instClassInProgram(classPath::Absyn.Path, program::SCode.Program)
   # end
   #= Scalarize array components in the flat model.=#
   @debug "Not skipping NF_SCALARIZE"
-  #                  if Flags.isSet(Flags.NF_SCALARIZE)
-  # @assign flat_model = scalarize(flat_model, name)
-  #                  else
-  # @assign flat_model.variables = ListUtil.filterOnFalse(flat_model.variables, isEmptyArray)
-  #                   end
+  if Flags.isSet(Flags.NF_SCALARIZE)
+    @assign flat_model = scalarize(flat_model, name)
+  else
+    @assign flat_model.variables = ListUtil.filterOnFalse(flat_model.variables, isEmptyArray)
+  end
   #=  Remove empty arrays from variables =#
   @debug "VERIFYING MODEL: "
   verify(flat_model)
@@ -128,13 +128,13 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
   =#
   #=  and scalarization if -d=-nfScalarize is on
   =#
-  # if ! Flags.isSet(Flags.NF_SCALARIZE)
-  #   FlagsUtil.set(Flags.NF_EXPAND_OPERATIONS, false)
-  #   FlagsUtil.set(Flags.NF_EXPAND_FUNC_ARGS, false)
-  # end
-
-  #=  make sure we don't expand anything
-  =#
+  #= Set scalazrize by default. =#
+  FlagsUtil.set(Flags.NF_SCALARIZE, true)
+  if ! Flags.isSet(Flags.NF_SCALARIZE)
+    FlagsUtil.set(Flags.NF_EXPAND_OPERATIONS, false)
+    FlagsUtil.set(Flags.NF_EXPAND_FUNC_ARGS, false)
+  end
+  #=  make sure we don't expand anything=#
   System.setUsesCardinality(false)
   System.setHasOverconstrainedConnectors(false)
   System.setHasStreamConnectors(false)
@@ -193,18 +193,26 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
   @debug "COLLECT CONSTANTS"
   @assign flat_model = collectConstants(flat_model, funcs)
   @debug "COLLECTED CONSTANTS"
-  # if Flags.getConfigBool(Flags.FLAT_MODELICA)
-  @debug "PRINTING FLAT MODELICA"
-  #printFlatString(flat_model, FunctionTreeImpl.listValues(funcs))
-  # end
+  if Flags.getConfigBool(Flags.FLAT_MODELICA)
+    @debug "PRINTING FLAT MODELICA"
+    printFlatString(flat_model, FunctionTreeImpl.listValues(funcs))
+  end
   #= Scalarize array components in the flat model.=#
   @debug "Not skipping NF_SCALARIZE"
-  #                  if Flags.isSet(Flags.NF_SCALARIZE)
-  # @assign flat_model = scalarize(flat_model, name)
-  #                  else
-  # @assign flat_model.variables = ListUtil.filterOnFalse(flat_model.variables, isEmptyArray)
-  #                   end
-  #=  Remove empty arrays from variables =#
+  #@info "Hello"
+  if Flags.isSet(Flags.NF_SCALARIZE)
+    @assign flat_model = scalarize(flat_model, name)
+  else
+    #=  Remove empty arrays from variables =#
+    @assign flat_model.variables = ListUtil.filterOnFalse(flat_model.variables, isEmptyArray)
+  end
+  #= Check if we are to performance recompilation. If true adds the SCode program to the flat model. =#
+  local recompilationEnabled = recompilationDirectiveExists(flat_model.equations)
+  if recompilationEnabled
+    @debug "We have the SCodeProgram"
+    @assign flat_model.scodeProgram = SOME(listHead(program))
+  end
+  
   @debug "VERIFYING MODEL: "
   verify(flat_model)
   #                   if Flags.isSet(Flags.NF_DUMP_FLAT)
@@ -778,7 +786,7 @@ function instClassDef(cls::Class, outerMod::Modifier, attributes::Attributes, us
         applyModifier(mod, cls_tree, name(node))
         #=  Apply element redeclares.
         =#
-        mapRedeclareChains(cls_tree, (instLevel) -> redeclareElements(instLevel = instLevel))
+        mapRedeclareChains(cls_tree, (treeArg) -> redeclareElements(treeArg, instLevel))
         #=  Redeclare classes with redeclare modifiers. Redeclared components could
         =#
         #=  also be handled here, but since each component is only instantiated once
@@ -3009,7 +3017,7 @@ function isStructuralComponent(component::Component, compAttrs::Attributes, comp
         Error.addSourceMessage(Error.UNBOUND_PARAMETER_EVALUATE_TRUE, list(name(compNode)), info(compNode))
       end
       @assign isStructural = false
-    elseif isBindingNotFixed(compBinding, requireFinal = false)
+    elseif isBindingNotFixed(compBinding, #= requireFinal = =# false)
       @assign isStructural = false
     else
       @assign isStructural = true

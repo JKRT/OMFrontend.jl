@@ -470,7 +470,7 @@ function simplifyIfEqBranches(
           #=  stored in it.
           =#
           if !isFalse(cond)
-            P_Equation.Equation.triggerErrors(branch)
+            triggerErrors(branch)
           end
           accum
         end

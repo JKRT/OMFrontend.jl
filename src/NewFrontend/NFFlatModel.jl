@@ -1,16 +1,16 @@
-@Uniontype NFFlatModel begin
-  @Record FLAT_MODEL begin
-    name::String
-    variables::List{Variable}
-    equations::List{Equation}
-    initialEquations::List{Equation}
-    algorithms::List{Algorithm}
-    initialAlgorithms::List{Algorithm}
-    #= VSS Modelica extension =#
-    structuralSubmodels::List{FlatModel}
-    #= End VSS Modelica extension =#
-    comment::Option{SCode.Comment}
-  end
+struct FLAT_MODEL <: FlatModel
+  name::String
+  variables::List{Variable}
+  equations::List{Equation}
+  initialEquations::List{Equation}
+  algorithms::List{Algorithm}
+  initialAlgorithms::List{Algorithm}
+  #= VSS Modelica extension =#
+  structuralSubmodels::List{FlatModel}
+  #= If a model uses self reference this is true =#
+  scodeProgram::Option{SCode.CLASS}
+  #= End VSS Modelica extension =#
+  comment::Option{SCode.Comment}
 end
 
 module TypeTreeImpl
@@ -496,3 +496,40 @@ function toString(flatModel::FlatModel, printBindingTypes::Bool = false)::String
   str = IOStream_M.string(s)
   return str
 end
+
+"""
+  This functions checks for the recompilation directive among all the equations 
+"""
+function recompilationDirectiveExists(@nospecialize(eqs::List{Equation}))::Bool
+  local hasRecompilationDirective = containsList(eqs, containsRecompilation)
+  return hasRecompilationDirective
+end
+
+"""
+  This function returns true if a EQUATION_NORETCALL is a recompilation directive. 
+"""
+function containsRecompilation(@nospecialize(eq::Equation))::Bool
+  local recompilationDirectiveExists = false
+  @match eq begin
+    EQUATION_NORETCALL(__) => begin
+      @debug "We have a call expression: " * toString(eq.exp) * " of type: $(typeof(eq.exp))" 
+      @match eq.exp begin
+        CALL_EXPRESSION(call = TYPED_CALL(fn, ty, var, arguments, attributes)) => begin
+          @debug "Matched!" name(fn)
+          local nameAsStr = AbsynUtil.pathString(name(fn))
+          @debug nameAsStr
+          if "recompilation" == nameAsStr
+            @debug "matched on recompilation"
+            recompilationDirectiveExists = true
+          end
+        end
+      end
+    end
+    _ => begin
+      recompilationDirectiveExists = false
+    end
+  end
+  @debug "Returning:" recompilationDirectiveExists
+  return recompilationDirectiveExists
+end
+

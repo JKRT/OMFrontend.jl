@@ -135,8 +135,13 @@ end Connect15;
 const Connect16 = ""
 const Connect17 = "class Connect17
   parameter Integer p = 3;
-  input Real[3] x;
-  output Real[4] y;
+  input Real x[1];
+  input Real x[2];
+  input Real x[3];
+  output Real y[1];
+  output Real y[2];
+  output Real y[3];
+  output Real y[4];
 equation
   x[1] = y[2];
   y[3] = x[2];

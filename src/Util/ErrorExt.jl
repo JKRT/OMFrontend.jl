@@ -52,7 +52,7 @@ function addSourceMessage(
   msg::String,
   tokens::List{<:String},
 )
-  return @warn "TODO: Defined in the runtime"
+  @warn "TODO: Defined in the runtime"
 end
 
 function printMessagesStr(warningsAsErrors::Bool = false)::String
@@ -122,7 +122,7 @@ end
 """ #= sets a checkpoint for the error messages, so error messages can be rolled back (i.e. deleted) up to this point
 A unique identifier for this checkpoint must be provided. It is checked when doing rollback or deletion =#"""
 function setCheckpoint(id::String) #= uniqe identifier for the checkpoint (up to the programmer to guarantee uniqueness) =#
-  return @warn "TODO: Defined in the runtime"
+  return @warn "TODO: setCheckpoint is not defined in the runtime"
 end
 
 """ #= deletes the checkpoint at the top of the stack without

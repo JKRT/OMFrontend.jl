@@ -168,26 +168,22 @@ function retype(call::Call)::Call
   return call
 end
 
-function isVectorizeable(call::Call)::Bool
-  local isVect::Bool
-  @assign isVect = begin
+function isVectorizeable(@nospecialize(call::Call))::Bool
+  isVect = begin
     local name::String
     @match call begin
-      TYPED_CALL(fn = P_Function.FUNCTION(path = Absyn.IDENT(name = name))) => begin
+      TYPED_CALL(fn = M_FUNCTION(path = Absyn.IDENT(name = name))) => begin
         begin
-          @match name begin
+          @match name begin #TODO add other special functions here.
             "der" => begin
               false
             end
-
             "pre" => begin
               false
             end
-
             "previous" => begin
               false
             end
-
             _ => begin
               true
             end
@@ -222,7 +218,7 @@ function toDAE(@nospecialize(call::Call))
         @assign res_id = Util.getTempVariableIndex()
         DAE.REDUCTION(
           DAE.REDUCTIONINFO(
-            P_Function.name(NFBuiltinFuncs.ARRAY_FUNC),
+            name(NFBuiltinFuncs.ARRAY_FUNC),
             Absyn.COMBINE(),
             toDAE(call.ty),
             NONE(),
@@ -664,6 +660,10 @@ function isImpure(call::Call)::Bool
     end
   end
   return isImpure
+end
+
+function isNotImpure(@nospecialize(call::Call))::Bool
+  return !(isImpure(call))
 end
 
 function isExternal(call::Call)::Bool
@@ -1449,7 +1449,7 @@ function checkMatchingFunctions(call::Call, info::SourceInfo)::MatchedFunction
         @assign allfuncs = getCachedFuncs(fn_node)
         if listLength(allfuncs) > 1
           @assign allfuncs =
-            list(fn for fn in allfuncs if !P_Function.isDefaultRecordConstructor(fn))
+            list(fn for fn in allfuncs if !isDefaultRecordConstructor(fn))
         end
         matchFunctions(allfuncs, call.arguments, call.named_args, info)
       end

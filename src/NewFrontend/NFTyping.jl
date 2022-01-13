@@ -1283,7 +1283,7 @@ function typeComponentCondition(condition::Binding, origin::ORIGIN_Type)::Bindin
           exp,
           ty,
           var,
-          NFBinding.EachType.NOT_EACH,
+          EachType.NOT_EACH,
           false,
           false,
           info,
@@ -1639,10 +1639,12 @@ function typeBindingExp(
   return (outExp, ty, variability)
 end
 
-""" #= Returns the requested dimension of the given expression, while doing as
+""" 
+   Returns the requested dimension of the given expression, while doing as
    little typing as possible. This function returns TypingError.OUT_OF_BOUNDS if
    the given index doesn't refer to a valid dimension, in which case the
-   returned dimension is undefined. =#"""
+   returned dimension is undefined. 
+"""
 function typeExpDim(
   @nospecialize(exp::Expression),
   dimIndex::Int,
@@ -1657,7 +1659,7 @@ function typeExpDim(
   local e::Expression
 
   @assign ty = typeOf(exp)
-  if Type.isKnown(ty)
+  if isKnown(ty)
     @assign (dim, error) = nthDimensionBoundsChecked(ty, dimIndex)
     @assign typedExp = SOME(exp)
   else
@@ -2207,7 +2209,7 @@ function typeMatrix(
   elements::List{<:List{<:Expression}},
   origin::ORIGIN_Type,
   info::SourceInfo,
-)::Tuple{Expression, NFType, Variability}
+)::Tuple{Expression, NFType, VariabilityType}
   local variability::VariabilityType = Variability.CONSTANT
   local arrayType::NFType = TYPE_UNKNOWN()
   local arrayExp::Expression
@@ -2253,7 +2255,7 @@ function typeMatrixComma(
   elements::List{<:Expression},
   origin::ORIGIN_Type,
   info::SourceInfo,
-)::Tuple{Expression, NFType, Variability}
+)::Tuple{Expression, NFType, VariabilityType}
   local variability::VariabilityType = Variability.CONSTANT
   local arrayType::NFType
   local arrayExp::Expression
@@ -2271,17 +2273,17 @@ function typeMatrixComma(
   local n::Int = 2
   local pos::Int
   local mk::MatchKindType
-
-  Error.assertion(
-    !listEmpty(elements),
-    getInstanceName() + " expected non-empty arguments",
-    sourceInfo(),
-  )
+  # Error.assertion(
+  #   !listEmpty(elements),
+  #   getInstanceName() + " expected non-empty arguments",
+  #   sourceInfo(),
+  # )
+  @assert !listEmpty(elements)
   if listLength(elements) > 1
     for e in elements
       @assign (exp, ty1, var) = typeExp(e, origin, info)
       @assign expl = _cons(exp, expl)
-      if Type.isEqual(ty, TYPE_UNKNOWN())
+      if isEqual(ty, TYPE_UNKNOWN())
         @assign ty = ty1
       else
         @assign (_, _, ty2, mk) = matchExpressions(
@@ -2296,7 +2298,7 @@ function typeMatrixComma(
       end
       @assign tys = _cons(ty1, tys)
       @assign variability = variabilityMax(variability, var)
-      @assign n = max(n, Type.dimensionCount(ty))
+      @assign n = max(n, dimensionCount(ty))
     end
     @assign tys2 = nil
     @assign res = nil
@@ -2304,7 +2306,7 @@ function typeMatrixComma(
     for e in expl
       @match _cons(ty1, tys) = tys
       @assign pos = pos - 1
-      if Type.dimensionCount(ty1) != n
+      if dimensionCount(ty1) != n
         @assign (e, ty1) = promote(e, ty1, n)
       end
       @assign ty2 = setArrayElementType(ty1, ty)

@@ -272,9 +272,9 @@ function scalarize(cref::ComponentRef)::List{ComponentRef}
     local subs::List{List{Subscript}}
     @match cref begin
       COMPONENT_REF_CREF(ty = TYPE_ARRAY(__)) => begin
-        @assign dims = arrayDims(cref.ty)
-        @assign subs = scalarizeList(cref.subscripts, dims)
-        @assign subs = ListUtil.combination(subs)
+        dims = arrayDims(cref.ty)
+        subs = scalarizeList(cref.subscripts, dims)
+        subs = ListUtil.combination(subs)
         list(setSubscripts(s, cref) for s in subs)
       end
 
@@ -469,6 +469,9 @@ function toDAE(cref::ComponentRef)::DAE.ComponentRef
 
       COMPONENT_REF_WILD(__) => begin
         DAE.WILD()
+      end
+      COMPONENT_REF_STRING(__) => begin
+        DAE.CREF_IDENT(cref.name, DAE.T_UNKNOWN(), nil)
       end
     end
   end
@@ -832,7 +835,7 @@ function subscriptsVariability(
   return var
 end
 
-""" #= Returns the variability of the component node the cref refers to. =#"""
+""" Returns the variability of the component node the cref refers to. """
 function nodeVariability(cref::ComponentRef)::VariabilityType
   local var::VariabilityType
   @assign var = begin

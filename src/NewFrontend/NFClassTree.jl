@@ -790,7 +790,7 @@ function clone(tree::ClassTree)::ClassTree
 end
 
 function fromRecordConstructor(fields::List{<:InstNode}, out::InstNode)::ClassTree
-  local tree::ClassTree = EMPTY_CLASS_TREE
+  local tree::ClassTree = deepcopy(EMPTY_CLASS_TREE)
 
   local ltree::LookupTree.Tree = LookupTree.new()
   local i::Int = 1

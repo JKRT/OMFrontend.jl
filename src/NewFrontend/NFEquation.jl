@@ -402,12 +402,10 @@ end
 
 function toString(eq::Equation, indent::String = "")::String
   local str::String
-
   local s
-
-  @assign s = IOStream_M.create(getInstanceName(), IOStream_M.IOStream_MType.LIST())
-  @assign s = toStream(eq, indent, s)
-  @assign str = IOStream_M.string(s)
+  s = IOStream_M.create(getInstanceName(), IOStream_M.LIST())
+  s = toStream(eq, indent, s)
+  str = IOStream_M.string(s)
   IOStream_M.delete(s)
   return str
 end
@@ -431,14 +429,13 @@ end
 
 function containsList(eql::List{<:Equation}, func::PredFn)::Bool
   local res::Bool
-
   for eq in eql
     if contains(eq, func)
-      @assign res = true
+      res = true
       return res
     end
   end
-  @assign res = false
+  res = false
   return res
 end
 
@@ -460,7 +457,7 @@ function contains(eq::Equation, func::PredFn)::Bool
               EQUATION_BRANCH(__) => begin
                 if containsList(b.body, func)
                   @assign res = true
-                  return
+                  return res
                 end
                 ()
               end
@@ -480,7 +477,7 @@ function contains(eq::Equation, func::PredFn)::Bool
               EQUATION_BRANCH(__) => begin
                 if containsList(b.body, func)
                   @assign res = true
-                  return
+                  return res
                 end
                 ()
               end
@@ -734,10 +731,19 @@ function mapExp(eq::Equation, func::MapExpFn)::Equation
   return eq
 end
 
-function mapExpList(eql::List{<:Equation}, func::MapExpFn)::List{Equation}
-
-  @assign eql = list(mapExp(eq, func) for eq in eql)
+"""
+  mapExpList with atleast one element
+"""
+function mapExpList(eql::Cons{Equation}, func::MapExpFn)
+  eql = list(mapExp(eq, func) for eq in eql)
   return eql
+end
+
+"""
+  An empty list results in nil
+"""
+function mapExpList(eql::Nil, func::MapExpFn)
+  return nil
 end
 
 function map(eq::Equation, func::MapFn)::Equation
@@ -935,11 +941,11 @@ end
 function triggerErrors(branch::Equation_Branch)
   return @assign () = begin
     @match branch begin
-      INVALID_BRANCH(__) => begin
-        Error.addTotalMessages(branch.errors)
+      EQUATION_INVALID_BRANCH(__) => begin
+        #Error.addTotalMessages(branch.errors) TODO
+        @error "Invalid branch detected"
         fail()
       end
-
       _ => begin
         ()
       end

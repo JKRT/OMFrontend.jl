@@ -742,7 +742,7 @@ function convertEquation(eq::Equation, elements::List{<:DAE.Element})::List{DAE.
         @assign e1 = toDAE(eq.lhs)
         @assign e2 = toDAE(eq.rhs)
         @assign dims = list(toDAE(d) for d in arrayDims(eq.ty))
-        _cons(DAE.Element.ARRAY_EQUATION(dims, e1, e2, eq.source), elements)
+        _cons(DAE.ARRAY_EQUATION(dims, e1, e2, eq.source), elements)
       end
 
       EQUATION_FOR(__) => begin

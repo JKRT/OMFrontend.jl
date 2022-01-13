@@ -42,10 +42,10 @@ function flatten(classInst::InstNode, name::String; prefix = COMPONENT_REF_EMPTY
         ieql = listReverseInPlace(sections.initialEquations)
         alg = listReverseInPlace(sections.algorithms)
         ialg = listReverseInPlace(sections.initialAlgorithms)
-        FLAT_MODEL(name, vars, eql, ieql, alg, ialg, structuralSubmodels, cmt)
+        FLAT_MODEL(name, vars, eql, ieql, alg, ialg, structuralSubmodels, NONE(), cmt)
       end
       _ => begin
-        FLAT_MODEL(name, vars, nil, nil, nil, nil, nil, cmt)
+        FLAT_MODEL(name, vars, nil, nil, nil, nil, nil, NONE(), cmt)
       end
     end
   end
@@ -186,7 +186,7 @@ function flattenComponent(
       #=  Delete the component if it has a condition that's false. =#
       if isDeletedComponent(condition, prefix)
         deleteComponent(inComponent)
-        return
+        return (vars, sections, structuralSubModels)
       end
       cls = getClass(c.classInst)
       vis = if isProtected(inComponent)
@@ -223,6 +223,7 @@ function flattenComponent(
           )
         end
       else
+        @debug "Flatten a simple component"
         (vars, sections) = flattenSimpleComponent(
           comp_node,
           c,
@@ -237,6 +238,7 @@ function flattenComponent(
       ()
     end
     DELETED_COMPONENT(__) => begin
+      @debug "Component deleted"
       ()
     end
     _ => begin
@@ -244,7 +246,7 @@ function flattenComponent(
       @error "Got unknown component!"
       fail()
     end
-    end
+  end
   return (vars, sections, structuralSubModels)
 end
 
@@ -255,10 +257,10 @@ function isDeletedComponent(condition::Binding, prefix::ComponentRef)::Bool
   local cond::Binding
 
   if isBound(condition)
-    @assign cond = condition
-    @assign exp = getTypedExp(cond)
-    @assign exp = Ceval.evalExp(exp, Ceval.CONDITION(Binding_getInfo(cond)))
-    @assign exp = stripBindingInfo(exp)
+    cond = condition
+    exp = getTypedExp(cond)
+    exp = evalExp(exp, EVALTARGET_CONDITION(Binding_getInfo(cond)))
+    exp = stripBindingInfo(exp)
     if arrayAllEqual(exp)
       @assign exp = arrayFirstScalar(exp)
     end
@@ -310,8 +312,8 @@ function deleteComponent(compNode::InstNode)
     return
   end
   @assign comp = component(compNode)
-  updateComponent!(P_Component.DELETED_COMPONENT(comp), compNode)
-  return deleteClassComponents(P_Component.classInstance(comp))
+  updateComponent!(DELETED_COMPONENT(comp), compNode)
+  return deleteClassComponents(classInstance(comp))
 end
 
 function deleteClassComponents(clsNode::InstNode)

@@ -6,8 +6,6 @@ using ExportAll
 
 prefixToStr = Function
 
-prefixToStr = Function
-
 #= /*
 * This file is part of OpenModelica.
 *
@@ -4588,6 +4586,8 @@ function addMessage(
 )
 end
 
+==#
+
 """ #=
   Adds a message given ID, tokens and source file info.
   The rest of the info is looked up in the message table. =#"""
@@ -4597,6 +4597,7 @@ function addSourceMessage(
   inInfo::SourceInfo,
 )
   #push!(SOURCE_MESSAGES, [inErrorMsg, inMessageTokens, inInfo])
+  @show inErrorMsg
 end
 
 function addSourceMessageAsError(
@@ -4622,6 +4623,8 @@ function addSourceMessageAndFail(
   addSourceMessage(inErrorMsg, inMessageTokens, inInfo)
   return fail()
 end
+
+#==
 
 """ #= Adds an error message given the message, token and a list of file info. The
    the last file info in the list is used for the message itself, the rest of the
@@ -4923,7 +4926,9 @@ function infoStr(info::SourceInfo)::String
     end
   end
   return str
-end
+end 
+
+==#
 
 """ #=
   Used to make compiler-internal assertions. These messages are not meant
@@ -4943,6 +4948,7 @@ function assertion(b::Bool, message::String, info::SourceInfo)
   end
 end
 
+#==
 """ #=
   Used to make assertions. These messages are meant to be shown to a user when
   the condition is true. If the Error-level of the message is Error, this function

@@ -76,7 +76,7 @@
          P_NFConnector
          Connector=NFConnector
         import ..ElementSource
-        import ..NFTyping.ExpOrigin
+        # import ..NFTyping.ExpOrigin
         import ..NFTyping; Typing=NFTyping
         import ..NFPrefixes.Variability
         import ..Error
@@ -161,7 +161,7 @@
               local origin::ORIGIN_Type
               local name::String
 
-              @assign origin = intBitOr(ExpOrigin.EQUATION, ExpOrigin.CONNECT)
+              @assign origin = intBitOr(ORIGIN_EQUATION, ORIGIN_CONNECT)
                #=  go over all equations, connect, Connection.branch
                =#
               for conn in conns.connections

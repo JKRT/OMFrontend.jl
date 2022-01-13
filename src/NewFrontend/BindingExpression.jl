@@ -1406,7 +1406,7 @@ end
 function containsIterator(exp::Expression, origin::ORIGIN_Type) ::Bool
   local iter::Bool
 
-  if flagSet(origin, ExpOrigin.FOR)
+  if flagSet(origin, ORIGIN_FOR)
     @assign iter = contains(exp, isIterator)
   else
     @assign iter = false

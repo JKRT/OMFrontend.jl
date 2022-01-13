@@ -1584,8 +1584,8 @@ function typeExpl(
   @nospecialize(expl::List{<:Expression}),
   @nospecialize(origin::ORIGIN_Type),
   @nospecialize(info::SourceInfo),
-)::Tuple{List{Expression}, List{NFType}, List{Variability}}
-  local varl::List{Variability} = nil
+)::Tuple{List{Expression}, List{NFType}, List{VariabilityType}}
+  local varl::List{VariabilityType} = nil
   local tyl::List{NFType} = nil
   local explTyped::List{Expression} = nil
 
@@ -2425,14 +2425,14 @@ function typeTuple(
   elements::List{<:Expression},
   origin::ORIGIN_Type,
   info::SourceInfo,
-)::Tuple{Expression, NFType, Variability}
+)::Tuple{Expression, NFType, VariabilityType}
   local variability::VariabilityType
   local tupleType::NFType
   local tupleExp::Expression
 
   local expl::List{Expression}
   local tyl::List{NFType}
-  local valr::List{Variability}
+  local valr::List{VariabilityType}
   local next_origin::ORIGIN_Type
 
   #=  Tuples are only allowed on the lhs side of an equality/assignment,
@@ -2491,7 +2491,7 @@ function typeSize(
   origin::ORIGIN_Type,
   info::SourceInfo,
   evaluate::Bool = true,
-)::Tuple{Expression, NFType, Variability}
+)::Tuple{Expression, NFType, VariabilityType}
   local variability::VariabilityType
   local sizeType::NFType
 

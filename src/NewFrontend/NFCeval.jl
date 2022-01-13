@@ -1699,7 +1699,7 @@ function evalLogicBinaryOp(
   if max_prop_count >= 0
     @assign exp = bindingExpMap2(
       LBINARY_EXPRESSION(exp1, op, exp2),
-      (target) -> evalLogicBinaryExp(target = target),
+      (binaryExpArg) -> evalLogicBinaryExp(binaryExpArg, target),
       max_prop_count,
       max_prop_exp,
     )

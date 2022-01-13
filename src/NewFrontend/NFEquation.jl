@@ -402,12 +402,10 @@ end
 
 function toString(eq::Equation, indent::String = "")::String
   local str::String
-
   local s
-
-  @assign s = IOStream_M.create(getInstanceName(), IOStream_M.IOStream_MType.LIST())
-  @assign s = toStream(eq, indent, s)
-  @assign str = IOStream_M.string(s)
+  s = IOStream_M.create(getInstanceName(), IOStream_M.LIST())
+  s = toStream(eq, indent, s)
+  str = IOStream_M.string(s)
   IOStream_M.delete(s)
   return str
 end
@@ -943,11 +941,11 @@ end
 function triggerErrors(branch::Equation_Branch)
   return @assign () = begin
     @match branch begin
-      INVALID_BRANCH(__) => begin
-        Error.addTotalMessages(branch.errors)
+      EQUATION_INVALID_BRANCH(__) => begin
+        #Error.addTotalMessages(branch.errors) TODO
+        @error "Invalid branch detected"
         fail()
       end
-
       _ => begin
         ()
       end

@@ -4477,7 +4477,7 @@ const DUPLICATE_VARIABLE_ERROR =
   )::ErrorTypes.Message
 
 
-#==
+
 const dummyInfo = SOURCEINFO("", false, 0, 0, 0, 0, 0.0)::SourceInfo
 
 function clearCurrentComponent()
@@ -4576,6 +4576,8 @@ function getCurrentComponent() where {T}
   return (str, sline, scol, eline, ecol, read_only, filename)
 end
 
+global SOURCE_MESSAGES = []
+
 """ #= Implementation of Relations
   function: addMessage
   Adds a message given ID and tokens. The rest of the info
@@ -4594,6 +4596,7 @@ function addSourceMessage(
   inMessageTokens::ErrorTypes.MessageTokens,
   inInfo::SourceInfo,
 )
+  #push!(SOURCE_MESSAGES, [inErrorMsg, inMessageTokens, inInfo])
 end
 
 function addSourceMessageAsError(
@@ -5013,7 +5016,7 @@ function addInternalError(message::String, info::SourceInfo)
     addSourceMessage(INTERNAL_ERROR, list(message), info)
   end
 end
-==#
+
 
 """ Prints out a message and terminates the execution. """
 function terminateError(message::String, info::SourceInfo)

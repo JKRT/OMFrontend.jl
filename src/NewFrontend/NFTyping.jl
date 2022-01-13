@@ -1374,7 +1374,7 @@ function typeExp(
   @nospecialize(exp::Expression),
   @nospecialize(origin::ORIGIN_Type),
   @nospecialize(info::SourceInfo)
-  )::Tuple
+)::Tuple{Expression, NFType, VariabilityType}
   #= Stop excessive type inference =#
   return typeExp2(exp, origin, info)
 end
@@ -2491,7 +2491,7 @@ function typeSize(
   origin::ORIGIN_Type,
   info::SourceInfo,
   evaluate::Bool = true,
-)::Tuple{Expression, NFType, Variability}
+)::Tuple{Expression, NFType, VariabilityType}
   local variability::VariabilityType
   local sizeType::NFType
 
@@ -2754,14 +2754,12 @@ function evaluateCondition(
   info::SourceInfo,
 )::Bool
   local condBool::Bool
-
   local cond_exp::Expression
-
-  @assign cond_exp = Ceval.evalExp(condExp, Ceval.P_EvalTarget.GENERIC(info))
+  cond_exp = evalExp(condExp, EVALTARGET_GENERIC(info))
   if arrayAllEqual(cond_exp)
-    @assign cond_exp = arrayFirstScalar(cond_exp)
+    cond_exp = arrayFirstScalar(cond_exp)
   end
-  @assign condBool = begin
+  condBool = begin
     @match cond_exp begin
       BOOLEAN_EXPRESSION(__) => begin
         cond_exp.value
@@ -2878,7 +2876,7 @@ function typeFunctionSections(classNode::InstNode, origin::ORIGIN_Type)
   local sections::Sections
   local info::SourceInfo
   local alg::Algorithm
-  @assign cls = getClass(classNode)
+  cls = getClass(classNode)
   begin
     @match cls begin
       INSTANCED_CLASS(sections = sections) => begin
@@ -3125,7 +3123,7 @@ function typeEquation(@nospecialize(eq::Equation), @nospecialize(origin::ORIGIN_
 end
 
 function typeEquation2(eq::Equation, origin::ORIGIN_Type)::Equation
-  @assign eq = begin
+  eq = begin
     local cond::Expression
     local e1::Expression
     local e2::Expression
@@ -3178,7 +3176,7 @@ function typeEquation2(eq::Equation, origin::ORIGIN_Type)::Equation
       end
 
       EQUATION_ASSERT(__) => begin
-        info = DAE.emptyElementSource
+        info =  sourceInfo() #DAE.emptyElementSource -John
         next_origin = setFlag(origin, ORIGIN_ASSERT)
         (e1, _, _) = typeOperatorArg(
           eq.condition,
@@ -3189,7 +3187,7 @@ function typeEquation2(eq::Equation, origin::ORIGIN_Type)::Equation
           1,
           info,
         )
-        @assign e2 = typeOperatorArg(
+        (e2, _, _) = typeOperatorArg(
           eq.message,
           TYPE_STRING(),
           next_origin,
@@ -3198,7 +3196,7 @@ function typeEquation2(eq::Equation, origin::ORIGIN_Type)::Equation
           2,
           info,
         )
-        @assign e3 = typeOperatorArg(
+        (e3, _, _) = typeOperatorArg(
           eq.level,
           ASSERTIONLEVEL_TYPE,
           next_origin,
@@ -3207,7 +3205,7 @@ function typeEquation2(eq::Equation, origin::ORIGIN_Type)::Equation
           3,
           info,
         )
-        ASSERT(e1, e2, e3, eq.source)
+        EQUATION_ASSERT(e1, e2, e3, eq.source)
       end
 
       EQUATION_TERMINATE(__) => begin
@@ -3639,9 +3637,8 @@ function typeEqualityEquation(
   local ty2::NFType
   local ty::NFType
   local mk::MatchKindType
-
   if flagSet(origin, ORIGIN_WHEN) &&
-     flagNotSet(origin, ORIGIN_CLOCKED)
+    flagNotSet(origin, ORIGIN_CLOCKED)
     if checkLhsInWhen(lhsExp)
       fold(lhsExp, markStructuralParamsSubs, 0)
     else
@@ -3653,9 +3650,9 @@ function typeEqualityEquation(
       fail()
     end
   end
-  @assign (e1, ty1) = typeExp(lhsExp, setFlag(origin, ORIGIN_LHS), info)
-  @assign (e2, ty2) = typeExp(rhsExp, setFlag(origin, ORIGIN_RHS), info)
-  @assign (e1, e2, ty, mk) = matchExpressions(e1, ty1, e2, ty2)
+  (e1, ty1, _) = typeExp(lhsExp, setFlag(origin, ORIGIN_LHS), info)
+  (e2, ty2, _) = typeExp(rhsExp, setFlag(origin, ORIGIN_RHS), info)
+  (e1, e2, ty, mk) = matchExpressions(e1, ty1, e2, ty2)
   if isIncompatibleMatch(mk)
     Error.addSourceMessage(
       Error.EQUATION_TYPE_MISMATCH_ERROR,
@@ -3712,7 +3709,6 @@ function typeIfEquation(
   source::DAE.ElementSource,
 )::Equation
   local ifEq::Equation
-
   local cond::Expression
   local eql::List{Equation}
   local accum_var::VariabilityType = Variability.CONSTANT
@@ -3721,9 +3717,7 @@ function typeIfEquation(
   local bl2::List{Equation_Branch} = nil
   local next_origin::ORIGIN_Type = setFlag(origin, ORIGIN_IF)
   local cond_origin::ORIGIN_Type = setFlag(next_origin, ORIGIN_CONDITION)
-
-  #=  Type the conditions of all the branches.
-  =#
+  #=  Type the conditions of all the branches.=#
   for b in branches
     @match EQUATION_BRANCH(cond, _, eql) = b
     @assign (cond, _, var) =
@@ -3742,24 +3736,20 @@ function typeIfEquation(
     @match EQUATION_BRANCH(cond, var, eql) = b
     ErrorExt.setCheckpoint(getInstanceName())
     try
-      @assign eql = list(typeEquation(e, next_origin) for e in eql)
-      @assign bl2 = _cons(makeBranch(cond, eql, var), bl2)
-    catch
-      @assign bl2 = _cons(
-        INVALID_BRANCH(
+      eql = list(typeEquation(e, next_origin) for e in eql)
+      bl2 = _cons(makeBranch(cond, eql, var), bl2)
+    catch e
+      @assign bl2 =
+        _cons(EQUATION_INVALID_BRANCH(
           makeBranch(cond, eql, var),
-          ErrorExt.getCheckpointMessages(),
-        ),
-        bl2,
-      )
+          nil, #ErrorExt.getCheckpointMessages(), TODO)
+        ), bl2)
     end
     ErrorExt.delCheckpoint(getInstanceName())
   end
-  #=  Do branch selection anyway if -d=-nfScalarize is set, otherwise turning of
-  =#
-  #=  scalarization breaks currently.
-  =#
-  if false !Flags.isSet(Flags.NF_SCALARIZE)
+  #=  Do branch selection anyway if -d=-nfScalarize is set, otherwise turning of =#
+  #=  scalarization breaks currently. =#
+  if !Flags.isSet(Flags.NF_SCALARIZE)
     @assign bl = bl2
     @assign bl2 = nil
     for b in bl
@@ -3798,7 +3788,7 @@ function isNonConstantIfCondition(@nospecialize(exp::Expression))::Bool
         isIterator(exp.cref)
       end
 
-      CALL_EXPRESSION(call = P_Call.TYPED_CALL(fn = fn)) => begin
+      CALL_EXPRESSION(call = TYPED_CALL(fn = fn)) => begin
         begin
           @match AbsynUtil.pathFirstIdent(fn.path) begin
             "Connections" => begin
@@ -3810,7 +3800,7 @@ function isNonConstantIfCondition(@nospecialize(exp::Expression))::Bool
             end
 
             _ => begin
-              P_Call.isImpure(exp.call)
+              isImpure(exp.call)
             end
           end
         end
@@ -3879,10 +3869,8 @@ function typeOperatorArg(
   argIndex::Int,
   info::SourceInfo,
 )::Expression
-
   local ty::NFType
   local mk::MatchKindType
-
   @assign (arg, ty, _) = typeExp(arg, origin, info)
   @assign (arg, _, mk) = matchTypes(ty, expectedType, arg)
   if isIncompatibleMatch(mk)

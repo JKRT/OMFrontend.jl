@@ -469,24 +469,24 @@ function typeOverloadedStringCall(overloadedType::M_Type, args::List{<:TypedArg}
   (callExp, outType, var)
 end
 
-""" #= Types a function call that can be typed normally, but which always has
-               discrete variability regardless of the variability of the arguments. =#"""
-                 function typeDiscreteCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
-                   local var::VariabilityType = Variability.DISCRETE
-                   local ty::M_Type
-                   local callExp::Expression
-
-                   local argtycall::Call
-                   local fn::M_Function
-                   local args::List{TypedArg}
-                   local start::TypedArg
-                   local interval::TypedArg
-
-                   @assign argtycall = P_Call.typeMatchNormalCall(call, origin, info)
-                   @assign ty = typeOf(argtycall)
-                   @assign callExp = CALL_EXPRESSION(unboxArgs(argtycall))
-                   (callExp, ty, var)
-                 end
+""" 
+  Types a function call that can be typed normally, but which always has
+  discrete variability regardless of the variability of the arguments. 
+"""
+function typeDiscreteCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
+  local var::VariabilityType = Variability.DISCRETE
+  local ty::M_Type
+  local callExp::Expression
+  local argtycall::Call
+  local fn::M_Function
+  local args::List{TypedArg}
+  local start::TypedArg
+  local interval::TypedArg
+  @assign argtycall = typeMatchNormalCall(call, origin, info)
+  @assign ty = typeOf(argtycall)
+  @assign callExp = CALL_EXPRESSION(unboxArgs(argtycall))
+  (callExp, ty, var)
+end
 
 function typeNdimsCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
   local variability::VariabilityType = Variability.PARAMETER
@@ -671,7 +671,7 @@ function typeEdgeCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple
   (callExp, ty, variability)
 end
 
-function typeMinMaxCall(name::String, call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
+function typeMinMaxCall(name::String, call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
   local var::VariabilityType
   local ty::M_Type
   local callExp::Expression
@@ -802,7 +802,7 @@ function typeSmoothCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tup
   local ty2::M_Type
   local var::VariabilityType
   local fn::M_Function
-  local mk::TypeCheck.MatchKind
+  local mk::MatchKindType
 
   @match UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
   assertNoNamedParams("smooth", named_args, info)
@@ -828,12 +828,12 @@ function typeSmoothCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tup
   =#
   #=  TODO: Also handle records here.
   =#
-  @assign (arg2, ty, mk) = matchTypes(ty2, setArrayElementType(ty2, TYPE_REAL()), arg2, true)
-  if ! TypeCheck.isValidArgumentMatch(mk)
+  (arg2, ty, mk) = matchTypes(ty2, setArrayElementType(ty2, TYPE_REAL()), arg2; allowUnknown = true)
+  if ! isValidArgumentMatch(mk)
     Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list("2", toString(fn_ref), "", toString(arg2), Type.toString(ty2), "Real\\n  Real[:, ...]\\n  Real record\\n  Real record[:, ...]"), info)
   end
-  @match list(fn) = typeRefCache(fn_ref)
-  @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(fn, list(arg1, arg2), var, ty))
+  @match fn <| nil = typeRefCache(fn_ref)
+  @assign callExp = CALL_EXPRESSION(makeTypedCall(fn, list(arg1, arg2), var, ty))
   (callExp, ty, variability)
 end
 

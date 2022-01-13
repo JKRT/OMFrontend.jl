@@ -1838,7 +1838,7 @@ function contains(exp::Expression, func::ContainsPred) ::Bool
       LBINARY_EXPRESSION(__)  => begin
         contains(exp.exp1, func) || contains(exp.exp2, func)
       end
-      LUNARY(__)  => begin
+      LUNARY_EXPRESSION(__)  => begin
         contains(exp.exp, func)
       end
       RELATION_EXPRESSION(__)  => begin

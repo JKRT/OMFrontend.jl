@@ -1174,32 +1174,30 @@ function matchArgVectorized(
   vectArg::Expression,
   vectDims::List{<:Dimension},
   info::SourceInfo,
-)::Tuple{Expression, M_Type, Expression, List{Dimension}, TypeCheck.MatchKind}
-  local matchKind::TypeCheck.MatchKind
-
+)::Tuple{Expression, M_Type, Expression, List{Dimension}, MatchKindType}
+  local matchKind::MatchKindType
   local arg_dims::List{Dimension}
   local input_dims::List{Dimension}
   local vect_dims::List{Dimension}
   local rest_dims::List{Dimension}
   local rest_ty::M_Type
-  local mk::TypeCheck.MatchKind
+  local mk::MatchKindType
   local vect_dims_count::Int
-
-  @assign arg_dims = arrayDims(argTy)
-  @assign input_dims = arrayDims(inputTy)
-  @assign vect_dims_count = listLength(arg_dims) - listLength(input_dims)
+  arg_dims = arrayDims(argTy)
+  input_dims = arrayDims(inputTy)
+  vect_dims_count = listLength(arg_dims) - listLength(input_dims)
   #=  Only try to vectorize if the argument has more dimensions than the input parameter.
   =#
   if vect_dims_count < 1
-    @assign matchKind = MatchKind.NOT_COMPATIBLE
+    matchKind = MatchKind.NOT_COMPATIBLE
     return (argExp, argTy, vectArg, vectDims, matchKind)
   end
-  @assign (vect_dims, rest_dims) = ListUtil.split(arg_dims, vect_dims_count)
+  (vect_dims, rest_dims) = ListUtil.split(arg_dims, vect_dims_count)
   #=  Make sure the vectorization dimensions are consistent.
   =#
   if listEmpty(vectDims)
-    @assign vectDims = fillUnknownVectorizedDims(vect_dims, argExp)
-    @assign vectArg = argExp
+    vectDims = fillUnknownVectorizedDims(vect_dims, argExp)
+    vectArg = argExp
   elseif !ListUtil.isEqualOnTrue(vectDims, vect_dims, isEqual)
     Error.addSourceMessage(
       Error.VECTORIZE_CALL_DIM_MISMATCH,
@@ -1264,7 +1262,8 @@ function matchArgs(
       #   ),
       #   info,
       # )
-      @error "FUNCTION_SLOT_VARIABILITY"
+      @error "Function argument \"$(toString(arg_exp))\" in call to $(AbsynUtil.pathString(name(func))) has variability 
+              $(variabilityString(arg_var)) which is not a $(variabilityString(variability(comp)))"
       @assign funcMatchKind = NO_MATCH
       return (args, funcMatchKind)
     end
@@ -1279,18 +1278,24 @@ function matchArgs(
       @assign matched = isValidArgumentMatch(mk)
     end
     if !matched
-      Error.addSourceMessage(
-        Error.ARG_TYPE_MISMATCH,
-        list(
-          intString(arg_idx),
-          AbsynUtil.pathString(func.path),
-          name(input_node),
-          toString(arg_exp),
-          Type.toString(arg_ty),
-          Type.toString(input_ty),
-        ),
-        info,
-      )
+      # Error.addSourceMessage(
+      #   Error.ARG_TYPE_MISMATCH,
+      #   list(
+      #     intString(arg_idx),
+      #     AbsynUtil.pathString(func.path),
+      #     name(input_node),
+      #     toString(arg_exp),
+      #     toString(arg_ty),
+      #     toString(input_ty),
+      #   ),
+      #   info,
+      # )
+      local msg = AbsynUtil.pathString(func.path)
+      local expectedType = toString(input_ty)
+      local actualType = toString(arg_ty)
+      local msgPart1 = "Arg type mismatch for $msg for $(name(input_node)) with exp: $(toString(arg_exp))"
+      local msgPart2 = "\nExpected type: $expectedType, argument type $actualType"
+      @error msgPart1 * msgPart2
       @assign funcMatchKind = NO_MATCH
       return (args, funcMatchKind)
     end

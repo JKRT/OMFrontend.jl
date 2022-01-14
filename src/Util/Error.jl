@@ -4586,8 +4586,6 @@ function addMessage(
 )
 end
 
-==#
-
 """ #=
   Adds a message given ID, tokens and source file info.
   The rest of the info is looked up in the message table. =#"""
@@ -4948,7 +4946,6 @@ function assertion(b::Bool, message::String, info::SourceInfo)
   end
 end
 
-#==
 """ #=
   Used to make assertions. These messages are meant to be shown to a user when
   the condition is true. If the Error-level of the message is Error, this function

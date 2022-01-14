@@ -1078,10 +1078,10 @@ function makeOperatorRecordZero(recordNode::InstNode) ::Expression
   local fn::P_Function.P_Function
 
   @assign op_node = lookupElement("'0'", getClass(recordNode))
-  P_Function.instFunctionNode(op_node)
+  instFunctionNode(op_node)
   @match list(fn) = P_Function.P_Function.typeNodeCache(op_node)
   @assign zeroExp = CALL_EXPRESSION(makeTypedCall(fn, nil, Variability.CONSTANT))
-  @assign zeroExp = Ceval.evalExp(zeroExp)
+  @assign zeroExp = evalExp(zeroExp)
   zeroExp
 end
 

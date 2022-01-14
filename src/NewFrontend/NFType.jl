@@ -164,7 +164,7 @@ function enumSize(ty::M_Type)::Int
 
   local literals::List{String}
 
-  @match ENUMERATION(literals = literals) = ty
+  @match TYPE_ENUMERATION(literals = literals) = ty
   @assign size = listLength(literals)
   return size
 end
@@ -172,7 +172,7 @@ end
 function enumName(ty::M_Type)::Absyn.Path
   local name::Absyn.Path
 
-  @match ENUMERATION(typePath = name) = ty
+  @match TYPE_ENUMERATION(typePath = name) = ty
   return name
 end
 
@@ -180,8 +180,8 @@ function setRecordFields(fields::List{<:Field}, recordType::M_Type)::M_Type
   @assign recordType = begin
     local rec_node::InstNode
     @match recordType begin
-      COMPLEX(complexTy = COMPLEX_RECORD(constructor = rec_node)) => begin
-        COMPLEX(recordType.cls, COMPLEX_RECORD(rec_node, fields))
+      TYPE_COMPLEX(complexTy = COMPLEX_RECORD(constructor = rec_node)) => begin
+        TYPE_COMPLEX(recordType.cls, COMPLEX_RECORD(rec_node, fields))
       end
 
       _ => begin
@@ -197,7 +197,7 @@ function recordFields(recordType::M_Type)::List{Field}
 
   @assign fields = begin
     @match recordType begin
-      COMPLEX(complexTy = COMPLEX_RECORD(fields = fields)) => begin
+      TYPE_COMPLEX(complexTy = COMPLEX_RECORD(fields = fields)) => begin
         fields
       end
 
@@ -214,7 +214,7 @@ function lookupRecordFieldType(name::String, recordType::M_Type)::M_Type
 
   @assign fieldType = begin
     @match recordType begin
-      COMPLEX(__) => begin
+      TYPE_COMPLEX(__) => begin
         getType(lookupElement(name, getClass(recordType.cls)))
       end
 
@@ -280,11 +280,11 @@ function isEqual(ty1::M_Type, ty2::M_Type)::Bool
     local names1::List{String}
     local names2::List{String}
     @match (ty1, ty2) begin
-      (ENUMERATION(__), ENUMERATION(__)) => begin
+      (TYPE_ENUMERATION(__), TYPE_ENUMERATION(__)) => begin
         ListUtil.isEqualOnTrue(ty1.literals, ty2.literals, stringEq)
       end
 
-      (ARRAY(__), ARRAY(__)) => begin
+      (TYPE_ARRAY(__), TYPE_ARRAY(__)) => begin
         isEqual(ty1.elementType, ty2.elementType) && ListUtil.isEqualOnTrue(
           ty1.dimensions,
           ty2.dimensions,
@@ -292,20 +292,20 @@ function isEqual(ty1::M_Type, ty2::M_Type)::Bool
         )
       end
 
-      (TUPLE(names = SOME(names1)), TUPLE(names = SOME(names2))) => begin
+      (TYPE_TUPLE(names = SOME(names1)), TYPE_TUPLE(names = SOME(names2))) => begin
         ListUtil.isEqualOnTrue(names1, names2, stringEq) &&
         ListUtil.isEqualOnTrue(ty1.types, ty2.types, isEqual)
       end
 
-      (TUPLE(names = NONE()), TUPLE(names = NONE())) => begin
+      (TYPE_TUPLE(names = NONE()), TYPE_TUPLE(names = NONE())) => begin
         ListUtil.isEqualOnTrue(ty1.types, ty2.types, isEqual)
       end
 
-      (TUPLE(__), TUPLE(__)) => begin
+      (TYPE_TUPLE(__), TYPE_TUPLE(__)) => begin
         false
       end
 
-      (COMPLEX(__), COMPLEX(__)) => begin
+      (TYPE_COMPLEX(__), TYPE_COMPLEX(__)) => begin
         isSame(ty1.cls, ty2.cls)
       end
 
@@ -658,7 +658,7 @@ end
 function nthEnumLiteralAsString(ty::M_Type, index::Int)::String
   local literal::String
   local literals::List{String}
-  @match ENUMERATION(literals = literals) = ty
+  @match TYPE_ENUMERATION(literals = literals) = ty
   @assign literal = listGet(literals, index)
   return literal
 end
@@ -667,11 +667,11 @@ function foldDims(ty::M_Type, func::FuncT, arg::ArgT) where {ArgT}
 
   @assign arg = begin
     @match ty begin
-      ARRAY(__) => begin
+      TYPE_ARRAY(__) => begin
         ListUtil.fold(ty.dimensions, func, arg)
       end
 
-      TUPLE(__) => begin
+      TYPE_TUPLE(__) => begin
         ListUtil.fold(ty.types, (func) -> foldDims(func = func), arg)
       end
 
@@ -789,7 +789,7 @@ function nthDimension(ty::M_Type, index::Int)::Dimension
 
   @assign dim = begin
     @match ty begin
-      ARRAY(__) => begin
+      TYPE_ARRAY(__) => begin
         listGet(ty.dimensions, index)
       end
 
@@ -815,12 +815,12 @@ function copyDims(srcType::M_Type, dstType::M_Type)::M_Type
   else
     @assign ty = begin
       @match dstType begin
-        ARRAY(__) => begin
-          ARRAY(dstType.elementType, arrayDims(srcType))
+        TYPE_ARRAY(__) => begin
+        TYPE_ARRAY(dstType.elementType, arrayDims(srcType))
         end
 
         _ => begin
-          ARRAY(dstType, arrayDims(srcType))
+        TYPE_ARRAY(dstType, arrayDims(srcType))
         end
       end
     end
@@ -908,7 +908,7 @@ function nthTupleType(ty::M_Type, n::Int)::M_Type
 
   @assign outTy = begin
     @match ty begin
-      TUPLE(__) => begin
+      TYPE_TUPLE(__) => begin
         listGet(ty.types, n)
       end
 
@@ -929,7 +929,7 @@ function firstTupleType(ty::M_Type)::M_Type
 
   @assign outTy = begin
     @match ty begin
-      TUPLE(__) => begin
+      TYPE_TUPLE(__) => begin
         listHead(ty.types)
       end
 
@@ -1018,27 +1018,27 @@ function isScalarBuiltin(ty::M_Type)::Bool
         true
       end
 
-      REAL(__) => begin
+      TYPE_REAL(__) => begin
         true
       end
 
-      STRING(__) => begin
+      TYPE_STRING(__) => begin
         true
       end
 
-      BOOLEAN(__) => begin
+      TYPE_BOOLEAN(__) => begin
         true
       end
 
-      CLOCK(__) => begin
+      TYPE_CLOCK(__) => begin
         true
       end
 
-      ENUMERATION(__) => begin
+      TYPE_ENUMERATION(__) => begin
         true
       end
 
-      ENUMERATION_ANY(__) => begin
+      TYPE_ENUMERATION_ANY(__) => begin
         true
       end
 
@@ -1100,19 +1100,19 @@ function isBasic(ty::M_Type)::Bool
         true
       end
 
-      BOOLEAN(__) => begin
+      TYPE_BOOLEAN(__) => begin
         true
       end
 
-      STRING(__) => begin
+      TYPE_STRING(__) => begin
         true
       end
 
-      ENUMERATION(__) => begin
+      TYPE_ENUMERATION(__) => begin
         true
       end
 
-      CLOCK(__) => begin
+      TYPE_CLOCK(__) => begin
         true
       end
 
@@ -1232,11 +1232,11 @@ function isEnumeration(ty::M_Type)::Bool
 
   @assign isEnum = begin
     @match ty begin
-      ENUMERATION(__) => begin
+      TYPE_ENUMERATION(__) => begin
         true
       end
 
-      ENUMERATION_ANY(__) => begin
+      TYPE_ENUMERATION_ANY(__) => begin
         true
       end
 
@@ -1391,7 +1391,7 @@ function isString(ty::M_Type)::Bool
 
   @assign isString = begin
     @match ty begin
-      STRING(__) => begin
+      TYPE_STRING(__) => begin
         true
       end
 

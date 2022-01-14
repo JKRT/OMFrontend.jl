@@ -574,7 +574,7 @@ function typeIterator2(
   if !isVector(ty)
     Error.addSourceMessageAndFail(
         Error.FOR_EXPRESSION_ERROR,
-      list(toString(exp), Type.toString(ty)),
+      list(toString(exp), toString(ty)),
       info,
     )
   end
@@ -1266,7 +1266,7 @@ function typeComponentCondition(condition::Binding, origin::ORIGIN_Type)::Bindin
         if isIncompatibleMatch(mk)
           Error.addSourceMessage(
             Error.IF_CONDITION_TYPE_ERROR,
-            list(toString(exp), Type.toString(ty)),
+            list(toString(exp), toString(ty)),
             info,
           )
           fail()
@@ -1321,7 +1321,7 @@ function typeTypeAttribute(
           Util.tuple21(listHead(ModTable.toList(attribute.subModifiers)))
         Error.addSourceMessage(
           Error.MISSING_MODIFIED_ELEMENT,
-          list(name, Type.toString(ty)),
+          list(name, toString(ty)),
           attribute.info,
         )
         fail()
@@ -1412,7 +1412,7 @@ function typeExp2(
         if flagNotSet(origin, ORIGIN_VALID_TYPENAME_SCOPE)
           Error.addSourceMessage(
             Error.INVALID_TYPENAME_USE,
-            list(Type.typenameString(arrayElementType(exp.ty))),
+            list(typenameString(arrayElementType(exp.ty))),
             info,
           )
           fail()
@@ -1797,7 +1797,7 @@ function typeCrefDim(
   for cr in crl
     @assign () = begin
       @match cr begin
-        CREF(
+        COMPONENT_REF_CREF(
           node = COMPONENT_NODE(__),
           subscripts = subs,
         ) => begin
@@ -1809,7 +1809,7 @@ function typeCrefDim(
           =#
           #=  than it already is we make sure that the component is typed in that case.
           =#
-          if hasDimensions(getClass(P_Component.classInstance(c)))
+          if hasDimensions(getClass(classInstance(c)))
             typeComponent(node, origin)
             @assign c = component(node)
           end
@@ -1832,9 +1832,9 @@ function typeCrefDim(
               end
 
               TYPED_COMPONENT(__) => begin
-                @assign dim_count = Type.dimensionCount(c.ty)
+                @assign dim_count = dimensionCount(c.ty)
                 if index <= dim_count && index > 0
-                  @assign dim = Type.nthDimension(c.ty, index)
+                  @assign dim = nthDimension(c.ty, index)
                   return
                 end
                 dim_count
@@ -1871,7 +1871,7 @@ function nthDimensionBoundsChecked(
   local error::TypingError
   local dim::Dimension
 
-  local dim_size::Int = Type.dimensionCount(ty)
+  local dim_size::Int = dimensionCount(ty)
   local index::Int = dimIndex + offset
 
   if index < 1 || index > dim_size
@@ -1980,8 +1980,8 @@ function typeCref2(
       COMPONENT_REF_CREF(
         node = CLASS_NODE(__),
       ) where {(firstPart && isFunction(cref.node))} => begin
-        @match _cons(fn, _) = P_Function.typeNodeCache(cref.node)
-        @assign cref.ty = Type.FUNCTION(fn, FunctionType.FUNCTION_REFERENCE)
+        @match _cons(fn, _) = typeNodeCache(cref.node)
+        @assign cref.ty = TYPE_FUNCTION(fn, FunctionType.FUNCTION_REFERENCE)
         @assign cref.restCref = typeCref2(cref.restCref, origin, info, false)
         (cref, Variability.CONTINUOUS)
       end
@@ -2096,7 +2096,7 @@ function typeSubscript(
 
       SUBSCRIPT_SLICE(slice = e) => begin
         (
-          Type.unliftArray(typeOf(e)),
+          unliftArray(typeOf(e)),
           variability(e)
         )
       end
@@ -2124,8 +2124,8 @@ function typeSubscript(
       Error.SUBSCRIPT_TYPE_MISMATCH,
       list(
         toString(subscript),
-        Type.toString(ty),
-        Type.toString(ety),
+        toString(ty),
+        toString(ety),
       ),
       info,
     )
@@ -2188,8 +2188,8 @@ function typeArray(
           list(
             String(n),
             toString(exp),
-            Type.toString(ty2),
-            Type.toString(ty1),
+            toString(ty2),
+            toString(ty1),
           ),
           info,
         )
@@ -2230,7 +2230,7 @@ function typeMatrix(
       @assign variability = variabilityMax(var, variability)
       @assign expl = _cons(exp, expl)
       @assign tys = _cons(ty, tys)
-      @assign n = max(n, Type.dimensionCount(ty))
+      @assign n = max(n, dimensionCount(ty))
     end
     for e in expl
       @match _cons(ty, tys) = tys
@@ -2243,7 +2243,7 @@ function typeMatrix(
   else
     @assign (arrayExp, arrayType, variability) =
       typeMatrixComma(listHead(elements), next_origin, info)
-    if Type.dimensionCount(arrayType) < 2
+    if dimensionCount(arrayType) < 2
       @assign (arrayExp, arrayType) =
         promote(arrayExp, arrayType, n)
     end
@@ -2319,8 +2319,8 @@ function typeMatrixComma(
             "matrix constructor ",
             "arg",
             toString(e),
-            Type.toString(ty1),
-            Type.toString(ty2),
+            toString(ty1),
+            toString(ty2),
           ),
           info,
         )
@@ -2474,9 +2474,9 @@ function printRangeTypeError(
     Error.RANGE_TYPE_MISMATCH,
     list(
       toString(exp1),
-      Type.toString(ty1),
+      toString(ty1),
       toString(exp2),
-      Type.toString(ty2),
+      toString(ty2),
     ),
     info,
   )
@@ -2523,7 +2523,7 @@ function typeSize(
               "size ",
               "dim",
               toString(index),
-              Type.toString(index_ty),
+              toString(index_ty),
               "Integer",
             ),
             info,
@@ -2532,7 +2532,7 @@ function typeSize(
         end
         if variability <= Variability.STRUCTURAL_PARAMETER &&
            !containsIterator(index, origin)
-          @assign index = Ceval.evalExp(index, Ceval.P_EvalTarget.IGNORE_ERRORS())
+          @assign index = evalExp(index, EVALTARGET_IGNORE_ERRORS())
           @match INTEGER_EXPRESSION(iindex) = index
           @assign (dim, oexp, ty_err) = typeExpDim(exp, iindex, next_origin, info)
           checkSizeTypingError(ty_err, exp, iindex, info)
@@ -2569,7 +2569,7 @@ function typeSize(
 
       SIZE_EXPRESSION(__) => begin
         @assign (exp, exp_ty, _) = typeExp(sizeExp.exp, next_origin, info)
-        @assign sizeType = Type.sizeType(exp_ty)
+        @assign sizeType = sizeType(exp_ty)
         (SIZE_EXPRESSION(exp, NONE()), sizeType, Variability.PARAMETER)
       end
     end
@@ -2690,7 +2690,7 @@ function typeIfExpression(
   if isIncompatibleMatch(ty_match)
     Error.addSourceMessage(
       Error.IF_CONDITION_TYPE_ERROR,
-      list(toString(cond), Type.toString(cond_ty)),
+      list(toString(cond), toString(cond_ty)),
       info,
     )
     fail()
@@ -2719,9 +2719,9 @@ function typeIfExpression(
           list(
             "",
             toString(tb),
-            Type.toString(tb_ty),
+            toString(tb_ty),
             toString(fb),
-            Type.toString(fb_ty),
+            toString(fb_ty),
           ),
           info,
         )
@@ -2991,7 +2991,7 @@ function typeExternalArg(arg::Expression, info::SourceInfo, node::InstNode)::Exp
               =#
               #=  The only other kind of expression that's allowed is scalar constants.
               =#
-              if Type.isScalarBuiltin(ty) && var == Variability.CONSTANT
+              if isScalarBuiltin(ty) && var == Variability.CONSTANT
                 @assign outArg = Ceval.evalExp(outArg, Ceval.P_EvalTarget.GENERIC(info))
               else
                 Error.addSourceMessage(
@@ -3070,14 +3070,14 @@ function makeDefaultExternalCall(extDecl::Sections, fnNode::InstNode)::Sections
           @assign args = nil
           for c in comps
             @assign comp = component(c)
-            if !single_output || P_Component.direction(comp) != Direction.OUTPUT
-              @assign ty = P_Component.getType(comp)
+            if !single_output || direction(comp) != Direction.OUTPUT
+              @assign ty = getType(comp)
               @assign exp = CREF_EXPRESSION(
                 ty,
                 fromNode(c, ty),
               )
               @assign args = _cons(exp, args)
-              for i = 1:Type.dimensionCount(ty)
+              for i = 1:dimensionCount(ty)
                 @assign args = _cons(
                   SIZE_EXPRESSION(
                     exp,
@@ -3471,8 +3471,8 @@ function typeStatement(st::Statement, origin::ORIGIN_Type)::Statement
             list(
               toString(e1),
               toString(e2),
-              Type.toString(ty1),
-              Type.toString(ty2),
+              toString(ty1),
+              toString(ty2),
             ),
             info,
           )
@@ -3661,7 +3661,7 @@ function typeEqualityEquation(
       Error.EQUATION_TYPE_MISMATCH_ERROR,
       list(
         toString(e1) + " = " + toString(e2),
-        Type.toString(ty1) + " = " + Type.toString(ty2),
+        toString(ty1) + " = " + toString(ty2),
       ),
       info,
     )
@@ -3696,7 +3696,7 @@ function typeCondition(
   if !(isBoolean(ety) || allowClock && isClock(ety))
     # Error.addSourceMessage(
     #   errorMsg,
-    #   list(toString(condition), Type.toString(ty)),
+    #   list(toString(condition), toString(ty)),
     #   info,
     # )
     @error "Error in  condition with the type $(ty)"
@@ -3893,8 +3893,8 @@ function typeOperatorArg(
         operatorName,
         argName,
         toString(arg),
-        Type.toString(ty),
-        Type.toString(expectedType),
+        toString(ty),
+        toString(expectedType),
       ),
       info,
     )

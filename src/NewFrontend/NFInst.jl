@@ -3017,7 +3017,7 @@ function isStructuralComponent(component::Component, compAttrs::Attributes, comp
         Error.addSourceMessage(Error.UNBOUND_PARAMETER_EVALUATE_TRUE, list(name(compNode)), info(compNode))
       end
       @assign isStructural = false
-    elseif isBindingNotFixed(compBinding, #= requireFinal = =# false)
+    elseif isBindingNotFixed(compBinding, requireFinal = false)
       @assign isStructural = false
     else
       @assign isStructural = true

@@ -135,8 +135,7 @@ function getElementNamedFromElts(
   inElementLst::List{<:SCode.Element},
 )::SCode.Element
   local outElement::SCode.Element
-
-  @assign outElement = begin
+  outElement = begin
     local elt::SCode.Element
     local comp::SCode.Element
     local cdef::SCode.Element
@@ -144,7 +143,8 @@ function getElementNamedFromElts(
     local id1::String
     local xs::List{SCode.Element}
     @matchcontinue (inIdent, inElementLst) begin
-      (id2, comp && SCode.COMPONENT(name = id1) <| _) => begin
+      (id2, comp <| xs) => begin
+        @match SCode.COMPONENT(name = id1) = comp
         @match true = stringEq(id1, id2)
         comp
       end
@@ -166,19 +166,18 @@ function getElementNamedFromElts(
         elt
       end
 
-      (id2, cdef && SCode.CLASS(name = id1) <| _) => begin
+      (id2, cdef && SCode.CLASS(name = id1) <| xs) => begin
         @match true = stringEq(id1, id2)
         cdef
       end
 
-      (id2, _ <| xs) => begin
+      (id2, h <| xs) => begin
         @assign elt = getElementNamedFromElts(id2, xs)
         elt
       end
     end
   end
-  #=  Try next.
-  =#
+  #=  Try next. =#
   return outElement
 end
 
@@ -1860,8 +1859,7 @@ end
 function getClassComponents(cl::SCode.Element)::Tuple{List{SCode.Element}, List{String}}
   local compNames::List{String}
   local compElts::List{SCode.Element}
-
-  @assign (compElts, compNames) = begin
+  (compElts, compNames) = begin
     local elts::List{SCode.Element}
     local comps::List{SCode.Element}
     local names::List{String}

@@ -1835,7 +1835,7 @@ function typeCrefDim(
                 @assign dim_count = dimensionCount(c.ty)
                 if index <= dim_count && index > 0
                   @assign dim = nthDimension(c.ty, index)
-                  return
+                  return (dim, error)
                 end
                 dim_count
               end

@@ -1264,11 +1264,12 @@ function typeComponentCondition(condition::Binding, origin::ORIGIN_Type)::Bindin
           typeExp(exp, setFlag(origin, ORIGIN_CONDITION), info)
         @assign (exp, _, mk) = matchTypes(ty, TYPE_BOOLEAN(), exp)
         if isIncompatibleMatch(mk)
-          Error.addSourceMessage(
-            Error.IF_CONDITION_TYPE_ERROR,
-            list(toString(exp), Type.toString(ty)),
-            info,
-          )
+          # Error.addSourceMessage(
+          #   Error.IF_CONDITION_TYPE_ERROR,
+          #   list(toString(exp), Type.toString(ty)),
+          #   info,
+          # )
+          @error "If condition error expected $(toString(exp)) had $(toString(ty))"
           fail()
         end
         if var > Variability.PARAMETER

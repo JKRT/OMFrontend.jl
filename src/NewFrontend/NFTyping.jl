@@ -3179,7 +3179,7 @@ function typeEquation2(eq::Equation, origin::ORIGIN_Type)::Equation
       end
 
       EQUATION_ASSERT(__) => begin
-        info = DAE.emptyElementSource
+        info = sourceInfo() #TODO: DAE.emptyElementSource
         next_origin = setFlag(origin, ORIGIN_ASSERT)
         (e1, _, _) = typeOperatorArg(
           eq.condition,
@@ -3208,7 +3208,7 @@ function typeEquation2(eq::Equation, origin::ORIGIN_Type)::Equation
           3,
           info,
         )
-        ASSERT(e1, e2, e3, eq.source)
+        EQUATION_ASSERT(e1, e2, e3, eq.source)
       end
 
       EQUATION_TERMINATE(__) => begin
@@ -3872,18 +3872,16 @@ function typeWhenEquation(
 end
 
 function typeOperatorArg(
-  arg::Expression,
-  expectedType::NFType,
-  origin::ORIGIN_Type,
+  @nospecialize(arg::Expression),
+  @nospecialize(expectedType::NFType),
+  @nospecialize(origin::ORIGIN_Type),
   operatorName::String,
   argName::String,
   argIndex::Int,
   info::SourceInfo,
-)::Expression
-
+)
   local ty::NFType
   local mk::MatchKindType
-
   @assign (arg, ty, _) = typeExp(arg, origin, info)
   @assign (arg, _, mk) = matchTypes(ty, expectedType, arg)
   if isIncompatibleMatch(mk)

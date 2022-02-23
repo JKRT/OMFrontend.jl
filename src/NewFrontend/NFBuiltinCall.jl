@@ -1746,7 +1746,7 @@ function typeClockCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tupl
   (callExp, outType, var)
 end
 
-function typeSampleCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
+function typeSampleCall(call::Call, origin::ORIGIN_Type, info::SourceInfo)::Tuple{Expression, M_Type, VariabilityType}
   local var::VariabilityType
   local outType::M_Type
   local callExp::Expression
@@ -1769,7 +1769,7 @@ function typeSampleCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tup
   local clockedSample::M_Function
   local recopnode::InstNode
 
-  @match ARG_TYPED_CALL(fn_ref, args, namedArgs) = P_Call.typeNormalCall(call, origin, info)
+  @match ARG_TYPED_CALL(fn_ref, args, namedArgs) = typeNormalCall(call, origin, info)
   @assign recopnode = node(fn_ref)
   @assign fn_ref = instFunctionRef(fn_ref, InstNode_info(recopnode))
   @match list(normalSample, clockedSample) = typeRefCache(fn_ref)

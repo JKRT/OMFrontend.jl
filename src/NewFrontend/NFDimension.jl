@@ -283,7 +283,7 @@ function isUnknown(dim::Dimension)::Bool
 
   @assign isUnk = begin
     @match dim begin
-      UNKNOWN(__) => begin
+      DIMENSION_UNKNOWN(__) => begin
         true
       end
       _ => begin
@@ -407,12 +407,12 @@ function add(a::Dimension, b::Dimension)::Dimension
   local c::Dimension
   @assign c = begin
     @match (a, b) begin
-      (UNKNOWN(__), _) => begin
-        UNKNOWN()
+      (DIMENSION_UNKNOWN(__), _) => begin
+        DIMENSION_UNKNOWN()
       end
 
-      (_, UNKNOWN(__)) => begin
-        UNKNOWN()
+      (_, DIMENSION_UNKNOWN(__)) => begin
+        DIMENSION_UNKNOWN()
       end
 
       (INTEGER_EXPRESSION(__), INTEGER_EXPRESSION(__)) => begin
@@ -453,7 +453,7 @@ function add(a::Dimension, b::Dimension)::Dimension
       end
 
       _ => begin
-        UNKNOWN()
+        DIMENSION_UNKNOWN()
       end
     end
   end

@@ -789,7 +789,7 @@ function nthDimension(ty::M_Type, index::Int)::Dimension
 
   @assign dim = begin
     @match ty begin
-      ARRAY(__) => begin
+      TYPE_ARRAY(__) => begin
         listGet(ty.dimensions, index)
       end
 

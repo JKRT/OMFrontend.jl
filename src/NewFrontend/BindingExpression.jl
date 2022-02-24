@@ -1405,11 +1405,10 @@ end
 
 function containsIterator(exp::Expression, origin::ORIGIN_Type) ::Bool
   local iter::Bool
-
-  if flagSet(origin, ExpOrigin.FOR)
-    @assign iter = contains(exp, isIterator)
+  if flagSet(origin, ORIGIN_FOR)
+    iter = contains(exp, isIterator)
   else
-    @assign iter = false
+    iter = false
   end
   iter
 end
@@ -4003,38 +4002,38 @@ function map(exp::Expression, func::MapFunc) ::Expression
         end
       end
 
-BOX_EXPRESSION(__)  => begin
-  @assign e1 = map(exp.exp, func)
-  if referenceEq(exp.exp, e1)
-    exp
-  else
-    BOX_EXPRESSION(e1)
+      BOX_EXPRESSION(__)  => begin
+        @assign e1 = map(exp.exp, func)
+        if referenceEq(exp.exp, e1)
+          exp
+        else
+          BOX_EXPRESSION(e1)
+        end
+      end
+
+      MUTABLE_EXPRESSION(__)  => begin
+        P_Pointer.update(exp.exp, map(P_Pointer.access(exp.exp), func))
+        exp
+      end
+
+      PARTIAL_FUNCTION_APPLICATION_EXPRESSION(__)  => begin
+        @assign exp.args = list(map(e, func) for e in exp.args)
+        exp
+      end
+
+      BINDING_EXP(__)  => begin
+        @assign e1 = map(exp.exp, func)
+        if referenceEq(exp.exp, e1)
+          exp
+        else
+          BINDING_EXP(e1, exp.expType, exp.bindingType, exp.parents, exp.isEach)
+        end
+      end
+      _  => begin
+        exp
+      end
+    end
   end
-end
-
-MUTABLE_EXPRESSION(__)  => begin
-  P_Pointer.update(exp.exp, map(P_Pointer.access(exp.exp), func))
-  exp
-end
-
-PARTIAL_FUNCTION_APPLICATION_EXPRESSION(__)  => begin
-  @assign exp.args = list(map(e, func) for e in exp.args)
-  exp
-end
-
-BINDING_EXP(__)  => begin
-  @assign e1 = map(exp.exp, func)
-  if referenceEq(exp.exp, e1)
-    exp
-  else
-    BINDING_EXP(e1, exp.expType, exp.bindingType, exp.parents, exp.isEach)
-  end
-end
-_  => begin
-  exp
-end
-end
-end
   outExp = func(outExp)
   outExp
 end

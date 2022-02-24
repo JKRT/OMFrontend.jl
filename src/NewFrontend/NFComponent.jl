@@ -334,8 +334,9 @@ function toString(name::String, component::Component)::String
   @assign str = begin
     local def::SCode.Element
     @match component begin
-      COMPONENT_DEF(definition = def && SCode.Element.COMPONENT(__)) => begin
-        SCodeDump.unparseElementStr(def)
+      COMPONENT_DEF(definition = def && SCode.COMPONENT(__)) => begin
+        #TODO: SCodeDump.unparseElementStr(def)
+        "TODO: SCodeDump.unparseElementStr(def)"
       end
 
       UNTYPED_COMPONENT(__) => begin

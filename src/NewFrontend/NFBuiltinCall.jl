@@ -383,7 +383,7 @@ function assertNoNamedParams(fnName::String, namedArgs::List{<:NamedArg}, info::
   end
 end
 
-function typeStringCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
+function typeStringCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
   local var::VariabilityType
   local outType::M_Type
   local callExp::Expression
@@ -392,8 +392,7 @@ function typeStringCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tup
   local args::List{TypedArg}
   local named_args::List{TypedNamedArg}
   local ty_call::Call
-
-  @match (@match ARG_TYPED_CALL(_, args, named_args) = ty_call) = P_Call.typeNormalCall(call, origin, info)
+  ty_call = @match ARG_TYPED_CALL(_, args, named_args) = typeNormalCall(call, origin, info)
   @match _cons((_, arg_ty, _), _) = args
   @assign arg_ty = arrayElementType(arg_ty)
   if isComplex(arg_ty)
@@ -404,16 +403,16 @@ function typeStringCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tup
   (callExp, outType, var)
 end
 
-function typeBuiltinStringCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
+function typeBuiltinStringCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
   local var::VariabilityType
   local ty::M_Type
   local callExp::Expression
 
   local ty_call::Call
 
-  @assign ty_call = P_Call.matchTypedNormalCall(call, origin, info)
+  @assign ty_call = matchTypedNormalCall(call, origin, info)
   @assign ty = typeOf(ty_call)
-  @assign var = P_Call.variability(ty_call)
+  @assign var = variability(ty_call)
   @assign callExp = CALL_EXPRESSION(ty_call)
   (callExp, ty, var)
 end
@@ -1770,18 +1769,18 @@ function typeSampleCall(call::Call, origin::ORIGIN_Type, info::SourceInfo)::Tupl
   local recopnode::InstNode
 
   @match ARG_TYPED_CALL(fn_ref, args, namedArgs) = typeNormalCall(call, origin, info)
-  @assign recopnode = node(fn_ref)
-  @assign fn_ref = instFunctionRef(fn_ref, InstNode_info(recopnode))
-  @match list(normalSample, clockedSample) = typeRefCache(fn_ref)
-  @assign (callExp, outType, var) = begin
+  recopnode = node(fn_ref)
+  (fn_ref, _, _) = instFunctionRef(fn_ref, InstNode_info(recopnode))
+  @match normalSample <| clockedSample <| _ = typeRefCache(fn_ref)
+  (callExp, outType, var) = begin
     @match (args, namedArgs) begin
       ((e, t, v) <| (e1, TYPE_INTEGER(__), v1) <|  nil(),  nil())  => begin
         #=  sample(start, Real interval) - the usual stuff
         =#
         if valueEq(t, TYPE_INTEGER())
-          @assign e = CAST_EXPRESSION(TYPE_REAL(), e)
+          e = CAST_EXPRESSION(TYPE_REAL(), e)
         end
-        @assign ty_call = P_Call.makeTypedCall(normalSample, list(e, CAST_EXPRESSION(TYPE_REAL(), e1)), Variability.PARAMETER, TYPE_BOOLEAN())
+        ty_call = P_Call.makeTypedCall(normalSample, list(e, CAST_EXPRESSION(TYPE_REAL(), e1)), Variability.PARAMETER, TYPE_BOOLEAN())
         (CALL_EXPRESSION(ty_call), TYPE_BOOLEAN(), Variability.PARAMETER)
       end
 
@@ -1791,7 +1790,7 @@ function typeSampleCall(call::Call, origin::ORIGIN_Type, info::SourceInfo)::Tupl
         if valueEq(t, TYPE_INTEGER())
           @assign e = CAST_EXPRESSION(TYPE_REAL(), e)
         end
-        @assign ty_call = P_Call.makeTypedCall(normalSample, list(e, e1), Variability.PARAMETER, TYPE_BOOLEAN())
+        ty_call = makeTypedCall(normalSample, list(e, e1), Variability.PARAMETER, TYPE_BOOLEAN())
         (CALL_EXPRESSION(ty_call), TYPE_BOOLEAN(), Variability.PARAMETER)
       end
 

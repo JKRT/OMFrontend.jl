@@ -24,3 +24,9 @@ end #= End Analog =#
   @test typeof(flattenModelInMSL("$(prefix).ConstantVoltage")[1]) == OMFrontend.Main.FLAT_MODEL
   #Broken @test typeof(flattenModelInMSL("$(prefix).StepVoltage")[1]) == OMFrontend.Main.FLAT_MODEL
 end
+
+@testset "Analog.Examples" begin
+  prefix = "Modelica.Electrical.Analog.Examples"
+  @test_skip typeof(flattenModelInMSL("$(prefix).CauerLowPassAnalog")[1]) == OMFrontend.Main.FLAT_MODEL
+  @test typeof(flattenModelInMSL("$(prefix).ChuaCircuit")[1]) == OMFrontend.Main.FLAT_MODEL
+end

@@ -4639,7 +4639,7 @@ function toFlatString(exp::Expression) ::String
                                            end) + ")"
       end
 
-      END(__)  => begin
+      END_EXPRESSION(__)  => begin
         "end"
       end
 
@@ -5903,292 +5903,292 @@ end
 """ #= Checks whether two expressions are equal, and returns 0 if they are.
                If the first expression is 'less' than the second it returns an integer
                less than 0, otherwise an integer greater than 0. =#"""
-                 function compare(exp1::Expression, exp2::Expression) ::Int
-                   local comp::Int
+function compare(exp1::Expression, exp2::Expression) ::Int
+  local comp::Int
 
-                   #=  Check if the expressions are the same object.
-                   =#
-                   if referenceEq(exp1, exp2)
-                     @assign comp = 0
-                     return comp
-                   end
-                   #=  Return false if the expressions are of different kinds.
-                   =#
-                   @assign comp = Util.intCompare(valueConstructor(exp1), valueConstructor(exp2))
-                   if comp != 0
-                     return comp
-                   end
-                   @assign comp = begin
-                     local i::Int
-                     local r::AbstractFloat
-                     local s::String
-                     local b::Bool
-                     local cr::ComponentRef
-                     local ty::M_Type
-                     local expl::List{Expression}
-                     local e1::Expression
-                     local e2::Expression
-                     local e3::Expression
-                     local oe::Option{Expression}
-                     local p::Path
-                     local op::Operator
-                     local c::Call
-                     local subs::List{Subscript}
-                     local clk1::ClockKind
-                     local clk2::ClockKind
-                     local me::Pointer{Expression}
-                     @match exp1 begin
-                       INTEGER_EXPRESSION(__)  => begin
-                         @match INTEGER_EXPRESSION(value = i) = exp2
-                         Util.intCompare(exp1.value, i)
-                       end
-
-                       REAL_EXPRESSION(__)  => begin
-                         @match REAL_EXPRESSION(value = r) = exp2
-                         Util.realCompare(exp1.value, r)
-                       end
-
-                       STRING_EXPRESSION(__)  => begin
-                         @match STRING_EXPRESSION(value = s) = exp2
-                         Util.stringCompare(exp1.value, s)
-                       end
-
-                       BOOLEAN_EXPRESSION(__)  => begin
-                         @match BOOLEAN_EXPRESSION(value = b) = exp2
-                         Util.boolCompare(exp1.value, b)
-                       end
-
-                       ENUM_LITERAL_EXPRESSION(__)  => begin
-                         @match ENUM_LITERAL_EXPRESSION(ty = ty, index = i) = exp2
-                         @assign comp = AbsynUtil.pathCompare(Type.enumName(exp1.ty), Type.enumName(ty))
-                         if comp == 0
-                           @assign comp = Util.intCompare(exp1.index, i)
-                         end
-                         comp
-                       end
-
-                       CREF_EXPRESSION(__)  => begin
-                         @match CREF_EXPRESSION(cref = cr) = exp2
-                         compare(exp1.cref, cr)
-                       end
-
-                       TYPENAME_EXPRESSION(__)  => begin
-                         @match TYPENAME_EXPRESSION(ty = ty) = exp2
-                         valueCompare(exp1.ty, ty)
-                       end
-
-                       ARRAY_EXPRESSION(__)  => begin
-                         @match ARRAY_EXPRESSION(ty = ty, elements = expl) = exp2
-                         @assign comp = valueCompare(ty, exp1.ty)
-                         if comp == 0
-                           compareList(exp1.elements, expl)
-                         else
-                           comp
-                         end
-                       end
-
-                       RANGE_EXPRESSION(__)  => begin
-                         @match RANGE_EXPRESSION(start = e1, step = oe, stop = e2) = exp2
-                         @assign comp = compare(exp1.start, e1)
-                         if comp == 0
-                           @assign comp = compare(exp1.stop, e2)
-                           if comp == 0
-                             @assign comp = compareOpt(exp1.step, oe)
-                           end
-                         end
-                         comp
-                       end
-
-                       TUPLE_EXPRESSION(__)  => begin
-                         @match TUPLE_EXPRESSION(elements = expl) = exp2
-                         compareList(exp1.elements, expl)
-                       end
-
-                       RECORD_EXPRESSION(__)  => begin
-                         @match RECORD_EXPRESSION(path = p, elements = expl) = exp2
-                         @assign comp = AbsynUtil.pathCompare(exp1.path, p)
-                         if comp == 0
-                           compareList(exp1.elements, expl)
-                         else
-                           comp
-                         end
-                       end
-
-                       CALL_EXPRESSION(__)  => begin
-                         @match CALL_EXPRESSION(call = c) = exp2
-                         compare(exp1.call, c)
-                       end
-
-                       SIZE_EXPRESSION(__)  => begin
-                         @match SIZE_EXPRESSION(exp = e1, dimIndex = oe) = exp2
-                         @assign comp = compareOpt(exp1.dimIndex, oe)
-                         if comp == 0
-                           compare(exp1.exp, e1)
-                         else
-                           comp
-                         end
-                       end
-
-                       END(__)  => begin
-                         0
-                       end
-
-                       BINARY_EXPRESSION(__)  => begin
-                         @match BINARY_EXPRESSION(exp1 = e1, operator = op, exp2 = e2) = exp2
-                         @assign comp = compare(exp1.operator, op)
-                         if comp == 0
-                           @assign comp = compare(exp1.exp1, e1)
-                           if comp == 0
-                             @assign comp = compare(exp1.exp2, e2)
-                           end
-                         end
-                         comp
-                       end
-
-                       UNARY_EXPRESSION(__)  => begin
-                         @match UNARY_EXPRESSION(operator = op, exp = e1) = exp2
-                         @assign comp = compare(exp1.operator, op)
-                         if comp == 0
-                           compare(exp1.exp, e1)
-                         else
-                           comp
-                         end
-                       end
-
-                       LBINARY_EXPRESSION(__)  => begin
-                         @match LBINARY_EXPRESSION(exp1 = e1, operator = op, exp2 = e2) = exp2
-                         @assign comp = compare(exp1.operator, op)
-                         if comp == 0
-                           @assign comp = compare(exp1.exp1, e1)
-                           if comp == 0
-                             @assign comp = compare(exp1.exp2, e2)
-                           end
-                         end
-                         comp
-                       end
-
-LUNARY_EXPRESSION(__)  => begin
-  @match LUNARY_EXPRESSION(operator = op, exp = e1) = exp2
-  @assign comp = compare(exp1.operator, op)
-  if comp == 0
-    compare(exp1.exp, e1)
-  else
-    comp
+  #=  Check if the expressions are the same object.
+  =#
+  if referenceEq(exp1, exp2)
+    @assign comp = 0
+    return comp
   end
-end
-
-RELATION_EXPRESSION(__)  => begin
-  @match RELATION_EXPRESSION(exp1 = e1, operator = op, exp2 = e2) = exp2
-  @assign comp = compare(exp1.operator, op)
-  if comp == 0
-    @assign comp = compare(exp1.exp1, e1)
-    if comp == 0
-      @assign comp = compare(exp1.exp2, e2)
-    end
+  #=  Return false if the expressions are of different kinds.
+  =#
+  @assign comp = Util.intCompare(valueConstructor(exp1), valueConstructor(exp2))
+  if comp != 0
+    return comp
   end
-  comp
-end
-
-IF_EXPRESSION(__)  => begin
-  @match IF_EXPRESSION(condition = e1, trueBranch = e2, falseBranch = e3) = exp2
-  @assign comp = compare(exp1.condition, e1)
-  if comp == 0
-    @assign comp = compare(exp1.trueBranch, e2)
-    if comp == 0
-      @assign comp = compare(exp1.falseBranch, e3)
-    end
-  end
-  comp
-end
-
-UNBOX_EXPRESSION(__)  => begin
-  @match UNBOX_EXPRESSION(exp = e1) = exp2
-  compare(exp1.exp, e1)
-end
-
-CAST_EXPRESSION(__)  => begin
-  @assign e1 = begin
-    @match exp2 begin
-      CAST_EXPRESSION(exp = e1)  => begin
-        e1
+  @assign comp = begin
+    local i::Int
+    local r::AbstractFloat
+    local s::String
+    local b::Bool
+    local cr::ComponentRef
+    local ty::M_Type
+    local expl::List{Expression}
+    local e1::Expression
+    local e2::Expression
+    local e3::Expression
+    local oe::Option{Expression}
+    local p::Path
+    local op::Operator
+    local c::Call
+    local subs::List{Subscript}
+    local clk1::ClockKind
+    local clk2::ClockKind
+    local me::Pointer{Expression}
+    @match exp1 begin
+      INTEGER_EXPRESSION(__)  => begin
+        @match INTEGER_EXPRESSION(value = i) = exp2
+        Util.intCompare(exp1.value, i)
       end
 
-      e1  => begin
-        e1
+      REAL_EXPRESSION(__)  => begin
+        @match REAL_EXPRESSION(value = r) = exp2
+        Util.realCompare(exp1.value, r)
+      end
+
+      STRING_EXPRESSION(__)  => begin
+        @match STRING_EXPRESSION(value = s) = exp2
+        Util.stringCompare(exp1.value, s)
+      end
+
+      BOOLEAN_EXPRESSION(__)  => begin
+        @match BOOLEAN_EXPRESSION(value = b) = exp2
+        Util.boolCompare(exp1.value, b)
+      end
+
+      ENUM_LITERAL_EXPRESSION(__)  => begin
+        @match ENUM_LITERAL_EXPRESSION(ty = ty, index = i) = exp2
+        @assign comp = AbsynUtil.pathCompare(Type.enumName(exp1.ty), Type.enumName(ty))
+        if comp == 0
+          @assign comp = Util.intCompare(exp1.index, i)
+        end
+        comp
+      end
+
+      CREF_EXPRESSION(__)  => begin
+        @match CREF_EXPRESSION(cref = cr) = exp2
+        compare(exp1.cref, cr)
+      end
+
+      TYPENAME_EXPRESSION(__)  => begin
+        @match TYPENAME_EXPRESSION(ty = ty) = exp2
+        valueCompare(exp1.ty, ty)
+      end
+
+      ARRAY_EXPRESSION(__)  => begin
+        @match ARRAY_EXPRESSION(ty = ty, elements = expl) = exp2
+        @assign comp = valueCompare(ty, exp1.ty)
+        if comp == 0
+          compareList(exp1.elements, expl)
+        else
+          comp
+        end
+      end
+
+      RANGE_EXPRESSION(__)  => begin
+        @match RANGE_EXPRESSION(start = e1, step = oe, stop = e2) = exp2
+        @assign comp = compare(exp1.start, e1)
+        if comp == 0
+          @assign comp = compare(exp1.stop, e2)
+          if comp == 0
+            @assign comp = compareOpt(exp1.step, oe)
+          end
+        end
+        comp
+      end
+
+      TUPLE_EXPRESSION(__)  => begin
+        @match TUPLE_EXPRESSION(elements = expl) = exp2
+        compareList(exp1.elements, expl)
+      end
+
+      RECORD_EXPRESSION(__)  => begin
+        @match RECORD_EXPRESSION(path = p, elements = expl) = exp2
+        @assign comp = AbsynUtil.pathCompare(exp1.path, p)
+        if comp == 0
+          compareList(exp1.elements, expl)
+        else
+          comp
+        end
+      end
+
+      CALL_EXPRESSION(__)  => begin
+        @match CALL_EXPRESSION(call = c) = exp2
+        compare(exp1.call, c)
+      end
+
+      SIZE_EXPRESSION(__)  => begin
+        @match SIZE_EXPRESSION(exp = e1, dimIndex = oe) = exp2
+        @assign comp = compareOpt(exp1.dimIndex, oe)
+        if comp == 0
+          compare(exp1.exp, e1)
+        else
+          comp
+        end
+      end
+
+      END_EXPRESSION(__)  => begin
+        0
+      end
+
+      BINARY_EXPRESSION(__)  => begin
+        @match BINARY_EXPRESSION(exp1 = e1, operator = op, exp2 = e2) = exp2
+        @assign comp = compare(exp1.operator, op)
+        if comp == 0
+          @assign comp = compare(exp1.exp1, e1)
+          if comp == 0
+            @assign comp = compare(exp1.exp2, e2)
+          end
+        end
+        comp
+      end
+
+      UNARY_EXPRESSION(__)  => begin
+        @match UNARY_EXPRESSION(operator = op, exp = e1) = exp2
+        @assign comp = compare(exp1.operator, op)
+        if comp == 0
+          compare(exp1.exp, e1)
+        else
+          comp
+        end
+      end
+
+      LBINARY_EXPRESSION(__)  => begin
+        @match LBINARY_EXPRESSION(exp1 = e1, operator = op, exp2 = e2) = exp2
+        @assign comp = compare(exp1.operator, op)
+        if comp == 0
+          @assign comp = compare(exp1.exp1, e1)
+          if comp == 0
+            @assign comp = compare(exp1.exp2, e2)
+          end
+        end
+        comp
+      end
+
+      LUNARY_EXPRESSION(__)  => begin
+        @match LUNARY_EXPRESSION(operator = op, exp = e1) = exp2
+        @assign comp = compare(exp1.operator, op)
+        if comp == 0
+          compare(exp1.exp, e1)
+        else
+          comp
+        end
+      end
+
+      RELATION_EXPRESSION(__)  => begin
+        @match RELATION_EXPRESSION(exp1 = e1, operator = op, exp2 = e2) = exp2
+        @assign comp = compare(exp1.operator, op)
+        if comp == 0
+          @assign comp = compare(exp1.exp1, e1)
+          if comp == 0
+            @assign comp = compare(exp1.exp2, e2)
+          end
+        end
+        comp
+      end
+
+      IF_EXPRESSION(__)  => begin
+        @match IF_EXPRESSION(condition = e1, trueBranch = e2, falseBranch = e3) = exp2
+        @assign comp = compare(exp1.condition, e1)
+        if comp == 0
+          @assign comp = compare(exp1.trueBranch, e2)
+          if comp == 0
+            @assign comp = compare(exp1.falseBranch, e3)
+          end
+        end
+        comp
+      end
+
+      UNBOX_EXPRESSION(__)  => begin
+        @match UNBOX_EXPRESSION(exp = e1) = exp2
+        compare(exp1.exp, e1)
+      end
+
+      CAST_EXPRESSION(__)  => begin
+        @assign e1 = begin
+          @match exp2 begin
+            CAST_EXPRESSION(exp = e1)  => begin
+              e1
+            end
+
+            e1  => begin
+              e1
+            end
+          end
+        end
+        compare(exp1.exp, e1)
+      end
+
+      SUBSCRIPTED_EXP_EXPRESSION(__)  => begin
+        @match SUBSCRIPTED_EXP_EXPRESSION(exp = e1, subscripts = subs) = exp2
+        @assign comp = compare(exp1.exp, e1)
+        if comp == 0
+          @assign comp = compareList(exp1.subscripts, subs)
+        end
+        comp
+      end
+
+      TUPLE_ELEMENT_EXPRESSION(__)  => begin
+        @match TUPLE_ELEMENT_EXPRESSION(tupleExp = e1, index = i) = exp2
+        @assign comp = Util.intCompare(exp1.index, i)
+        if comp == 0
+          @assign comp = compare(exp1.tupleExp, e1)
+        end
+        comp
+      end
+
+      RECORD_ELEMENT_EXPRESSION(__)  => begin
+        @match RECORD_ELEMENT_EXPRESSION(recordExp = e1, index = i) = exp2
+        @assign comp = Util.intCompare(exp1.index, i)
+        if comp == 0
+          @assign comp = compare(exp1.recordExp, e1)
+        end
+        comp
+      end
+
+      BOX_EXPRESSION(__)  => begin
+        @match BOX_EXPRESSION(exp = e2) = exp2
+        compare(exp1.exp, e2)
+      end
+
+      MUTABLE_EXPRESSION(__)  => begin
+        @match MUTABLE_EXPRESSION(exp = me) = exp2
+        compare(P_Pointer.access(exp1.exp), P_Pointer.access(me))
+      end
+
+      EMPTY(__)  => begin
+        @match EMPTY(ty = ty) = exp2
+        valueCompare(exp1.ty, ty)
+      end
+
+      CLKCONST_EXPRESSION(clk1)  => begin
+        @match CLKCONST_EXPRESSION(clk2) = exp2
+        P_ClockKind.compare(clk1, clk2)
+      end
+
+      PARTIAL_FUNCTION_APPLICATION_EXPRESSION(__)  => begin
+        @match PARTIAL_FUNCTION_APPLICATION_EXPRESSION(fn = cr, args = expl) = exp2
+        @assign comp = compare(exp1.fn, cr)
+        if comp == 0
+          @assign comp = compareList(exp1.args, expl)
+        end
+        comp
+      end
+
+      BINDING_EXP(__)  => begin
+        @match BINDING_EXP(exp = e2) = exp2
+        compare(exp1.exp, e2)
+      end
+      
+      _  => begin
+        Error.assertion(false, getInstanceName() + " got unknown expression.", sourceInfo())
+        fail()
       end
     end
   end
-  compare(exp1.exp, e1)
-end
-
-SUBSCRIPTED_EXP_EXPRESSION(__)  => begin
-  @match SUBSCRIPTED_EXP_EXPRESSION(exp = e1, subscripts = subs) = exp2
-  @assign comp = compare(exp1.exp, e1)
-  if comp == 0
-    @assign comp = compareList(exp1.subscripts, subs)
-  end
   comp
-end
-
-TUPLE_ELEMENT_EXPRESSION(__)  => begin
-  @match TUPLE_ELEMENT_EXPRESSION(tupleExp = e1, index = i) = exp2
-  @assign comp = Util.intCompare(exp1.index, i)
-  if comp == 0
-    @assign comp = compare(exp1.tupleExp, e1)
-  end
-  comp
-end
-
-RECORD_ELEMENT_EXPRESSION(__)  => begin
-  @match RECORD_ELEMENT_EXPRESSION(recordExp = e1, index = i) = exp2
-  @assign comp = Util.intCompare(exp1.index, i)
-  if comp == 0
-    @assign comp = compare(exp1.recordExp, e1)
-  end
-  comp
-end
-
-BOX_EXPRESSION(__)  => begin
-  @match BOX_EXPRESSION(exp = e2) = exp2
-  compare(exp1.exp, e2)
-end
-
-MUTABLE_EXPRESSION(__)  => begin
-  @match MUTABLE_EXPRESSION(exp = me) = exp2
-  compare(P_Pointer.access(exp1.exp), P_Pointer.access(me))
-end
-
-EMPTY(__)  => begin
-  @match EMPTY(ty = ty) = exp2
-  valueCompare(exp1.ty, ty)
-end
-
-CLKCONST_EXPRESSION(clk1)  => begin
-  @match CLKCONST_EXPRESSION(clk2) = exp2
-  P_ClockKind.compare(clk1, clk2)
-end
-
-PARTIAL_FUNCTION_APPLICATION_EXPRESSION(__)  => begin
-  @match PARTIAL_FUNCTION_APPLICATION_EXPRESSION(fn = cr, args = expl) = exp2
-  @assign comp = compare(exp1.fn, cr)
-  if comp == 0
-    @assign comp = compareList(exp1.args, expl)
-  end
-  comp
-end
-
-BINDING_EXP(__)  => begin
-  @match BINDING_EXP(exp = e2) = exp2
-  compare(exp1.exp, e2)
-end
-
-_  => begin
-  Error.assertion(false, getInstanceName() + " got unknown expression.", sourceInfo())
-  fail()
-end
-end
-end
-comp
 end
 
 """ #= Returns true if the two expressions are equal, otherwise false. =#"""

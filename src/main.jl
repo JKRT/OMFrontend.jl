@@ -24,7 +24,7 @@ include("./Util/Gettext.jl")
 include("./Util/Error.jl")
 include("./Util/ErrorExt.jl")
 import .P_Pointer
-Pointer = P_Pointer.Pointer
+const Pointer = P_Pointer.Pointer
 include("./Util/Mutable.jl")
 include("./Util/BaseAvlSet.jl")
 include("./Util/BaseAvlTree.jl")
@@ -112,9 +112,9 @@ include("./NewFrontend/BindingExpression.jl")
 
 include("./NewFrontend/NFDimension.jl")
 
-include("./NewFrontend/NFBuiltinCall.jl")
-
 include("./NewFrontend/NFCall.jl")
+
+include("./NewFrontend/NFBuiltinCall.jl")
 
 include("./NewFrontend/NFOperator.jl")
 

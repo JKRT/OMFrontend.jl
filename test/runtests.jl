@@ -34,8 +34,8 @@ end
 function flattenFM(model, file)
   local sp = OMFrontend.parseFile(file)
   local scode = OMFrontend.translateToSCode(sp)
-  local res = OMFrontend.instantiateSCodeToFM(model, scode)
-  return res
+  local (x,y,z) = OMFrontend.instantiateSCodeToFM(model, scode)
+  return (x, y)
 end
 
 @testset "Frontend sanitiy tests. Check if we can transform the abstract tree to SCode and that we are able to flatten without exceptions" begin

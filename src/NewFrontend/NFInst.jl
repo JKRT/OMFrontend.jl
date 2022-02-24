@@ -14,103 +14,15 @@ function instClassInProgram(classPath::Absyn.Path, program::SCode.Program)
   local name::String
   local flat_model::FlatModel
   local funcs::FunctionTree
-  #=  gather here all the flags to disable expansion
-  =#
-  #=  and scalarization if -d=-nfScalarize is on
-  =#
-  #= Set scalazrize by default. =#
-  FlagsUtil.set(Flags.NF_SCALARIZE, true)
-  #= Should be changed using something better later =#
-  if ! Flags.isSet(Flags.NF_SCALARIZE)
-    FlagsUtil.set(Flags.NF_EXPAND_OPERATIONS, false)
-    FlagsUtil.set(Flags.NF_EXPAND_FUNC_ARGS, false)
-  end
-
-  #=  make sure we don't expand anything
-  =#
-  System.setUsesCardinality(false)
-  System.setHasOverconstrainedConnectors(false)
-  System.setHasStreamConnectors(false)
-  #=  Create a root node from the given top-level classes.
-  =#
-  top = makeTopNode(program)
   name = AbsynUtil.pathString(classPath)
-  #=  Look up the class to instantiate and mark it as the root class.
-  =#
-  cls = lookupClassName(classPath, top, AbsynUtil.dummyInfo, false)
-  cls = setNodeType(ROOT_CLASS(EMPTY_NODE()), cls)
-  #=  Initialize the storage for automatically generated inner elements. =#
-  top = setInnerOuterCache(top, C_TOP_SCOPE(NodeTree.new(), cls))
-  #=  Instantiate the class. =#
-  @debug "FIRST INST CALL!"
-  inst_cls = instantiateN1(cls, EMPTY_NODE())
-  @debug "AFTER INST CALL"
-  insertGeneratedInners(inst_cls, top)
-  #execStat("NFInst.instantiate(" + name + ")")
-  @debug "INSTANTIATION STEP 1 DONE!"
-  #=  Instantiate expressions (i.e. anything that can contains crefs, like
-  =#
-  #=  bindings, dimensions, etc). This is done as a separate step after
-  =#
-  #=  instantiation to make sure that lookup is able to find the correct nodes.
-  =#
-  instExpressions(inst_cls)
-  #                   execStat("NFInst.instExpressions(" + name + ")")
-  @debug "Inst expressions done"
-  #=  Mark structural parameters.
-  =#
-  updateImplicitVariability(inst_cls, false #== Flags.isSet(Flags.EVAL_PARAM) ==#)
-  #execStat("NFInst.updateImplicitVariability")
-  #=  Type the class.
-  =#
-  @debug "TYPECLASS(inst_cls, name)"
-  typeClass(inst_cls, name)
-  @debug "AFTER type class"
-  #=  Flatten the model and evaluate constants in it.
-  =#
-  @debug "START FLATTENING!"
-  @assign flat_model = flatten(inst_cls, name)
-  @debug "CONSTANT EVALUATION"
-  @assign flat_model = evaluate(flat_model)
-  @debug "FLATTENING DONE: flat_model"
-  #= Do unit checking =#
-  #TODO  @assign flat_model = UnitCheck.checkUnits(flat_model)
-  #=  Apply simplifications to the model.=#
-  @assign flat_model = simplifyFlatModel(flat_model)
-  #=  Collect a tree of all functions that are still used in the flat model.=#
-  @debug "COLLECT FUNCTIONS"
-  @assign funcs = collectFunctions(flat_model, name)
-  @debug "COLLECTED FUNCTIONS!"
-  #=  Collect package constants that couldn't be substituted with their values =#
-  #=  (e.g. because they where used with non-constant subscripts), and add them to the model. =#
-  @debug "COLLECT CONSTANTS"
-  @assign flat_model = collectConstants(flat_model, funcs)
-  @debug "COLLECTED CONSTANTS"
-  # if Flags.getConfigBool(Flags.FLAT_MODELICA)
-  @debug "PRINTING FLAT MODELICA"
-  #printFlatString(flat_model, FunctionTreeImpl.listValues(funcs))
-  # end
-  #= Scalarize array components in the flat model.=#
-  @debug "Not skipping NF_SCALARIZE"
-  if Flags.isSet(Flags.NF_SCALARIZE)
-    @assign flat_model = scalarize(flat_model, name)
-  else
-    @assign flat_model.variables = ListUtil.filterOnFalse(flat_model.variables, isEmptyArray)
-  end
-  #=  Remove empty arrays from variables =#
-  @debug "VERIFYING MODEL: "
-  verify(flat_model)
-  #                   if Flags.isSet(Flags.NF_DUMP_FLAT)
-  # print("FlatModel:\\n" + toString(flat_model) + "\\n")
-  #                  end
-  #=  Convert the flat model to a DAE.=#
-  @debug "CONVERT TO THE DAE REPRESENTATION"
+  (flat_model, funcs, inst_cls) = instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)
   (dae, daeFuncs) = convert(flat_model, funcs, name, InstNode_info(inst_cls))
   return (dae, daeFuncs)
 end
 
 """
 Similar to instClassInProgram but returns the flat model instead of the DAE.
+This function is used as a helper function by instClassInProgram.
 Author:johti17
 """
 function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tuple
@@ -161,7 +73,7 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
   =#
   #=  instantiation to make sure that lookup is able to find the correct nodes.
   =#
-  instExpressions(inst_cls)
+  Base.inferencebarrier(instExpressions(inst_cls))
   #                   execStat("NFInst.instExpressions(" + name + ")")
   @debug "Inst expressions done"
   #=  Mark structural parameters.
@@ -171,37 +83,36 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
   #=  Type the class.
   =#
   @debug "TYPECLASS(inst_cls, name)"
-  typeClass(inst_cls, name)
+  Base.inferencebarrier(typeClass(inst_cls, name))
   @debug "AFTER type class"
   #=  Flatten the model and evaluate constants in it.
   =#
   @debug "START FLATTENING!"
-  @assign flat_model = flatten(inst_cls, name)
+  flat_model = flatten(inst_cls, name)
   @debug "CONSTANT EVALUATION"
-  @assign flat_model = evaluate(flat_model)
+  flat_model = evaluate(flat_model)
   @debug "FLATTENING DONE: flat_model"
   #= Do unit checking =#
   #TODO  @assign flat_model = UnitCheck.checkUnits(flat_model)
   #=  Apply simplifications to the model.=#
-  @assign flat_model = simplifyFlatModel(flat_model)
+  flat_model = simplifyFlatModel(flat_model)
   #=  Collect a tree of all functions that are still used in the flat model.=#
   @debug "COLLECT FUNCTIONS"
-  @assign funcs = collectFunctions(flat_model, name)
+  funcs = collectFunctions(flat_model, name)
   @debug "COLLECTED FUNCTIONS!"
   #=  Collect package constants that couldn't be substituted with their values =#
   #=  (e.g. because they where used with non-constant subscripts), and add them to the model. =#
   @debug "COLLECT CONSTANTS"
   @assign flat_model = collectConstants(flat_model, funcs)
   @debug "COLLECTED CONSTANTS"
-  if Flags.getConfigBool(Flags.FLAT_MODELICA)
-    @debug "PRINTING FLAT MODELICA"
+  if Flags.getConfigBool(Flags.FLAT_MODELICA)    
     printFlatString(flat_model, FunctionTreeImpl.listValues(funcs))
   end
   #= Scalarize array components in the flat model.=#
   @debug "Not skipping NF_SCALARIZE"
   #@info "Hello"
   if Flags.isSet(Flags.NF_SCALARIZE)
-    @assign flat_model = scalarize(flat_model, name)
+    flat_model = scalarize(flat_model, name)
   else
     #=  Remove empty arrays from variables =#
     @assign flat_model.variables = ListUtil.filterOnFalse(flat_model.variables, isEmptyArray)
@@ -218,7 +129,7 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
   #                   if Flags.isSet(Flags.NF_DUMP_FLAT)
   # print("FlatModel:\\n" + toString(flat_model) + "\\n")
   #                  end
-  return (flat_model, funcs)
+  return (flat_model, funcs, inst_cls)
 end
 
 function instantiateN1(node::InstNode, parentNode::InstNode)::InstNode
@@ -2477,7 +2388,7 @@ function instCrefFunction(cref::ComponentRef, info::SourceInfo) ::Expression
   crefExp
 end
 
-function instCrefTypename(@nospecialize(cref::ComponentRef), @nospecialize(node::InstNode), info::SourceInfo)x::Expression
+function instCrefTypename(@nospecialize(cref::ComponentRef), @nospecialize(node::InstNode), info::SourceInfo)::Expression
   local crefExp::Expression
   local ty::NFType
   checkUnsubscriptableCref(cref, info)

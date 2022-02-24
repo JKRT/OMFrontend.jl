@@ -1347,17 +1347,16 @@ function evaluateSlotExp_traverser(
   info::SourceInfo,
 )::Expression
   local outExp::Expression
-
-  @assign outExp = begin
+  outExp = begin
     local cref::ComponentRef
     local slot::Option{Slot}
     @match exp begin
       CREF_EXPRESSION(
-        cref = cref && CREF(
+        cref = cref && COMPONENT_REF_CREF(
           restCref = EMPTY(__),
         ),
       ) => begin
-        @assign slot = lookupSlotInArray(firstName(cref), slots)
+        slot = lookupSlotInArray(firstName(cref), slots)
         if isSome(slot)
           Util.tuple31(fillDefaultSlot(Util.getOption(slot), slots, info))
         else
@@ -1379,10 +1378,9 @@ function evaluateSlotExp(
   info::SourceInfo,
 )::Expression
   local outExp::Expression
-
-  @assign outExp = map(
+  outExp = map(
     exp,
-    (slots, info) -> evaluateSlotExp_traverser(slots = slots, info = info),
+    (x) -> evaluateSlotExp_traverser(x, slots, info)
   )
   return outExp
 end
@@ -1601,7 +1599,7 @@ function fillArgs(
   @assign slots_arr = listArray(slots)
   for arg in args
     @assign slot = slots_arr[index]
-    if !P_Slot.positional(slot)
+    if !positional(slot)
       @assign matching = false
       return (args, matching)
     end

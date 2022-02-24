@@ -17,7 +17,6 @@ equation
   end when;
 end BouncingBall;
 
-
 model Pendulum
   parameter Real x0 = 10;
   parameter Real y0 = 10;

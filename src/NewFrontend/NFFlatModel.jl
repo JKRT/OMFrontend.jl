@@ -7,7 +7,6 @@ struct FLAT_MODEL <: FlatModel
   initialAlgorithms::List{Algorithm}
   #= VSS Modelica extension =#
   structuralSubmodels::List{FlatModel}
-  #= If a model uses self reference this is true =#
   scodeProgram::Option{SCode.CLASS}
   #= End VSS Modelica extension =#
   comment::Option{SCode.Comment}

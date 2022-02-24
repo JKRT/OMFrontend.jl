@@ -2021,18 +2021,15 @@ function matchTypes(
 )::Tuple{Expression, NFType, MatchKindType}
   local matchKind::MatchKindType
   local compatibleType::NFType
-
-  #=  Return true if the references are the same.
-  =#
+  #=  Return true if the references are the same. =#
   if referenceEq(actualType, expectedType)
     @assign compatibleType = actualType
     @assign matchKind = MatchKind.EXACT
     return (expression, compatibleType, matchKind)
   end
-  #=  Check if the types are different kinds of types.
-  =#
+  #=  Check if the types are different kinds of types. =#
   if valueConstructor(actualType) != valueConstructor(expectedType)
-    @assign (expression, compatibleType, matchKind) =
+    (expression, compatibleType, matchKind) =
       matchTypes_cast(actualType, expectedType, expression, allowUnknown)
     return (expression, compatibleType, matchKind)
   end
@@ -2120,7 +2117,8 @@ function matchTypes(
       end
 
       _ => begin
-        Error.assertion(false, getInstanceName() + " got unknown type.", sourceInfo())
+        #Error.assertion(false, getInstanceName() + " got unknown type.", sourceInfo())
+        @error "Got unknown type"
         fail()
       end
     end

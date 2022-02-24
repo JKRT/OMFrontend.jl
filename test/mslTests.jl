@@ -42,5 +42,9 @@ end
     include("rotational.jl")
     @info "Testing Mechanics.Translational"
     include("translational.jl")
-  end #= End Mechanics=#  
+  end #= End Mechanics=#
+  @testset "Electrics" begin
+    @info "Testing Modelica.Electrical.Analog"
+    include("analog.jl")
+  end
 end

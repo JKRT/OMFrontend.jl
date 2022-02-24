@@ -2337,12 +2337,12 @@ function evalCall(call::Call, target::EvalTarget)::Expression
   @assign exp = begin
     local args::List{Expression}
     @match c begin
-      P_Call.TYPED_CALL(__) => begin
+      TYPED_CALL(__) => begin
         @assign c.arguments = list(evalExp_impl(arg, target) for arg in c.arguments)
         if isBuiltin(c.fn)
           bindingExpMap(
             CALL_EXPRESSION(c),
-            (target) -> evalxp(target = target),
+            (x) -> evalxp(x, target),
           )
         else
           bindingExpMap(
@@ -2369,12 +2369,13 @@ function evalCall(call::Call, target::EvalTarget)::Expression
   return exp
 end
 
+#Note was originally called evalBuiltinCallExp, but the translator seems to have butchered the name for this function..
 function evalxp(callExp::Expression, target::EvalTarget)::Expression
   local result::Expression
   local fn::M_Function
   local args::List{Expression}
   @match CALL_EXPRESSION(call = TYPED_CALL(fn = fn, arguments = args)) = callExp
-  @assign result = evalfn(args, target)
+  result = eval(fn, args, target)
   return result
 end
 

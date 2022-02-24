@@ -2207,7 +2207,7 @@ end
 
 """ #= The array concatenation operator =#"""
 function typeMatrix(
-  elements::List{<:List{<:Expression}},
+  @nospecialize(elements::List{<:List{<:Expression}}),
   origin::ORIGIN_Type,
   info::SourceInfo,
 )::Tuple{Expression, NFType, VariabilityType}
@@ -2244,7 +2244,7 @@ function typeMatrix(
   else
     @assign (arrayExp, arrayType, variability) =
       typeMatrixComma(listHead(elements), next_origin, info)
-    if Type.dimensionCount(arrayType) < 2
+    if dimensionCount(arrayType) < 2
       @assign (arrayExp, arrayType) =
         promote(arrayExp, arrayType, n)
     end
@@ -3179,36 +3179,7 @@ function typeEquation2(eq::Equation, origin::ORIGIN_Type)::Equation
       end
 
       EQUATION_ASSERT(__) => begin
-        info = DAE.emptyElementSource
-        next_origin = setFlag(origin, ORIGIN_ASSERT)
-        (e1, _, _) = typeOperatorArg(
-          eq.condition,
-          TYPE_BOOLEAN(),
-          setFlag(next_origin, ORIGIN_CONDITION),
-          "assert",
-          "condition",
-          1,
-          info,
-        )
-        @assign e2 = typeOperatorArg(
-          eq.message,
-          TYPE_STRING(),
-          next_origin,
-          "assert",
-          "message",
-          2,
-          info,
-        )
-        @assign e3 = typeOperatorArg(
-          eq.level,
-          ASSERTIONLEVEL_TYPE,
-          next_origin,
-          "assert",
-          "level",
-          3,
-          info,
-        )
-        ASSERT(e1, e2, e3, eq.source)
+        typeEquationAssert(eq, origin)
       end
 
       EQUATION_TERMINATE(__) => begin
@@ -3242,6 +3213,39 @@ function typeEquation2(eq::Equation, origin::ORIGIN_Type)::Equation
     end
   end
   return eq
+end
+
+function typeEquationAssert(eq::EQUATION_ASSERT, origin::ORIGIN_Type)
+  info = sourceInfo() #TODO: DAE.emptyElementSource
+  next_origin = setFlag(origin, ORIGIN_ASSERT)
+  e1 = typeOperatorArg(
+    eq.condition,
+    TYPE_BOOLEAN(),
+    setFlag(next_origin, ORIGIN_CONDITION),
+    "assert",
+    "condition",
+    1,
+    info,
+  )
+  e2 = typeOperatorArg(
+    eq.message,
+    TYPE_STRING(),
+    next_origin,
+    "assert",
+    "message",
+    2,
+    info,
+  )
+  e3 = typeOperatorArg(
+    eq.level,
+    NFBuiltin.ASSERTIONLEVEL_TYPE,
+    next_origin,
+    "assert",
+    "level",
+    3,
+    info,
+  )
+  return EQUATION_ASSERT(e1, e2, e3, eq.source)
 end
 
 function typeConnect(
@@ -3682,8 +3686,8 @@ function typeCondition(
 )::Tuple{Expression, NFType, VariabilityType}
   local variability::VariabilityType
   local ty::NFType
-
   local info::SourceInfo
+
   local ety::NFType
 
   info = sourceInfo() #DAE.emptyElementSource #TODO: DAE.ElementSource_getInfo(source)
@@ -3872,18 +3876,16 @@ function typeWhenEquation(
 end
 
 function typeOperatorArg(
-  arg::Expression,
-  expectedType::NFType,
-  origin::ORIGIN_Type,
+  @nospecialize(arg::Expression),
+  @nospecialize(expectedType::NFType),
+  @nospecialize(origin::ORIGIN_Type),
   operatorName::String,
   argName::String,
   argIndex::Int,
   info::SourceInfo,
-)::Expression
-
+)
   local ty::NFType
   local mk::MatchKindType
-
   @assign (arg, ty, _) = typeExp(arg, origin, info)
   @assign (arg, _, mk) = matchTypes(ty, expectedType, arg)
   if isIncompatibleMatch(mk)

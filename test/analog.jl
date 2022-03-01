@@ -22,6 +22,7 @@ end #= End Analog =#
   prefix = "Modelica.Electrical.Analog.Sources"
   @test typeof(flattenModelInMSL("$(prefix).SignalVoltage")[1]) == OMFrontend.Main.FLAT_MODEL
   @test typeof(flattenModelInMSL("$(prefix).ConstantVoltage")[1]) == OMFrontend.Main.FLAT_MODEL
+  @test typeof(flattenModelInMSL("$(prefix).SineVoltage")[1]) == OMFrontend.Main.FLAT_MODEL
   #Broken @test typeof(flattenModelInMSL("$(prefix).StepVoltage")[1]) == OMFrontend.Main.FLAT_MODEL
 end
 

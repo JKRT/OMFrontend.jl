@@ -1,7 +1,7 @@
 
 module P_Pointer
 
-Pointer = Ref
+const Pointer = Ref
 using MetaModelica
 using ExportAll
 

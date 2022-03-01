@@ -28,6 +28,7 @@ end
 @testset "Modelica Blocks" begin
   @info "Testing Modelica.Blocks.Continuous"
   include("continuous.jl")
+  include("sources.jl")
   @testset "Discrete" begin
     #@test typeof(flattenModelInMSL("Modelica.Blocks.Discrete.Sampler")[1]) == OMFrontend.Main.FLAT_MODEL
   end

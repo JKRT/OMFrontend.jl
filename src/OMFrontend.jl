@@ -71,7 +71,7 @@ function instantiateSCodeToDAE(elementToInstantiate::String, inProgram::SCode.Pr
   # initialize globals
   Main.Global.initialize()
   # make sure we have all the flags loaded!
-#  Main.Flags.new(Flags.emptyFlags)
+  #Main.Flags.new(Flags.emptyFlags)
   local builtinSCode = NFModelicaBuiltinCache["NFModelicaBuiltin"]
   local program = listAppend(builtinSCode, inProgram)
   local path = Main.AbsynUtil.stringPath(elementToInstantiate)
@@ -170,12 +170,32 @@ function initLoadMSL()
   @info "Loaded MSL successfully"
 end
 
+"""
+  This function loads the MSL s.t it can be used for models.
+"""
 function flattenModelInMSL(modelName::String)
   if !haskey(LIBRARY_CACHE, "MSL")
     initLoadMSL()
   end
   local libraryAsScoded = LIBRARY_CACHE["MSL"]
   (FM, cache) = instantiateSCodeToFM(modelName, libraryAsScoded)
+end
+
+"""
+  This function flattens a model with the MSL.
+"""
+function flattenModelWithMSL(modelName::String, fileName::String)
+  if !haskey(LIBRARY_CACHE, "MSL")
+    initLoadMSL()
+  end
+  local lib = LIBRARY_CACHE["MSL"]
+  local absynProgram = parseFile(fileName)
+  local sCodeProgram = translateToSCode(absynProgram)
+  builtin = NFModelicaBuiltinCache["NFModelicaBuiltin"]
+  program = listReverse(listAppend(builtin, sCodeProgram))
+  program = listReverse(listAppend(lib, sCodeProgram))
+  @info length(program)
+  (FM, cache) = instantiateSCodeToFM(modelName, program)
 end
 
 end # module

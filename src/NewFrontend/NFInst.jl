@@ -90,7 +90,7 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
   @debug "START FLATTENING!"
   flat_model = flatten(inst_cls, name)
   @debug "CONSTANT EVALUATION"
-  flat_model = evaluate(flat_model)
+  #TODO:Temporary removed flat_model = evaluate(flat_model)
   @debug "FLATTENING DONE: flat_model"
   #= Do unit checking =#
   #TODO  @assign flat_model = UnitCheck.checkUnits(flat_model)

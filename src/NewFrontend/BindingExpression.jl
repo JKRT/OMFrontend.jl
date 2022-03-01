@@ -5225,7 +5225,7 @@ function applySubscriptArray(subscript::Subscript, exp::Expression, restSubscrip
   local el_count::Int
   local literal::Bool
 
-  @assign sub = expandSlice(subscript)
+  (sub, _) = expandSlice(subscript)
   @assign outExp = begin
     @match sub begin
       SUBSCRIPT_INDEX(__)  => begin

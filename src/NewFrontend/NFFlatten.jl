@@ -1048,10 +1048,13 @@ function flattenBindingExp2(
     @assign binding_level = binding_level + dimensionCount(getType(parent))
   end
   if binding_level > 0
-    @assign subs =
-      listAppend(listReverse(s) for s in subscriptsAll(pre))
-    @assign binding_level = min(binding_level, listLength(subs))
-    @assign subs = ListUtil.firstN_reverse(subs, binding_level)
+    #subs = listAppend(listReverse(s) for s in subscriptsAll(pre)) modifed as per below
+    local subsT = list(listReverse(s) for s in subscriptsAll(pre))
+    subs = list(Base.collect(Iterators.flatten(subsT))...)
+    #= End of modification=#
+    binding_level = min(binding_level, listLength(subs))
+    #subs = ListUtil.firstN_reverse(subs, binding_level)
+    subs = ListUtil.firstN(subs, binding_level)
     @assign outExp = applySubscripts(subs, exp)
   end
   #=  TODO: Optimize this, making a list of all subscripts in the prefix when

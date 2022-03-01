@@ -1272,8 +1272,8 @@ function instComponent(node::InstNode, attributes::Attributes , innerMod::Modifi
 
   if isRedeclare(outer_mod)
     checkOuterComponentMod(outer_mod, def, comp_node)
-    instComponentDef(def, MODIFIER_NOMOD(), MODIFIER_NOMOD(), DEFAULT_ATTR, useBinding, comp_node, parentNode, instLevel, originalAttr, isRedeclared = true)
-    @match REDECLARE(element = rdcl_node, mod = outer_mod) = outer_mod
+    instComponentDef(def, MODIFIER_NOMOD(), MODIFIER_NOMOD(), DEFAULT_ATTR, useBinding, comp_node, parentNode, instLevel, originalAttr; isRedeclared = true)
+    @match MODIFIER_REDECLARE(element = rdcl_node, mod = outer_mod) = outer_mod
     @assign cc_smod = SCodeUtil.getConstrainingMod(def)
     if ! SCodeUtil.isEmptyMod(cc_smod)
       @assign name = name(node)
@@ -1287,8 +1287,15 @@ function instComponent(node::InstNode, attributes::Attributes , innerMod::Modifi
   end
 end
 
-function instComponentDef(component::SCode.Element, outerMod::Modifier, innerMod::Modifier, attributes::Attributes, useBinding::Bool,
-                          node::InstNode, parentNode::InstNode, instLevel::Int, originalAttr::Option{<:Attributes} = NONE(), isRedeclared::Bool = false)
+function instComponentDef(component::SCode.Element,
+                          outerMod::Modifier,
+                          innerMod::Modifier,
+                          attributes::Attributes,
+                          useBinding::Bool,
+                          node::InstNode, parentNode::InstNode,
+                          instLevel::Int,
+                          originalAttr::Option{<:Attributes} = NONE();
+                          isRedeclared::Bool = false)
   local info::SourceInfo
   local decl_mod::Modifier
   local mod::Modifier

@@ -194,7 +194,6 @@ function flattenModelWithMSL(modelName::String, fileName::String)
   builtin = NFModelicaBuiltinCache["NFModelicaBuiltin"]
   program = listReverse(listAppend(builtin, sCodeProgram))
   program = listReverse(listAppend(lib, sCodeProgram))
-  @info length(program)
   (FM, cache) = instantiateSCodeToFM(modelName, program)
 end
 

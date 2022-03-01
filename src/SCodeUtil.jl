@@ -6906,8 +6906,8 @@ function getConstrainingMod(element::SCode.Element)::SCode.Mod
       end
 
       SCode.COMPONENT(
-        prefixes = SCode.Prefixes.PREFIXES(
-          replaceablePrefix = SCode.Replaceable.REPLACEABLE(
+        prefixes = SCode.PREFIXES(
+          replaceablePrefix = SCode.REPLACEABLE(
             cc = SOME(SCode.CONSTRAINCLASS(modifier = mod)),
           ),
         ),

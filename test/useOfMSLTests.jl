@@ -10,7 +10,7 @@
     end
   end
   @test true == begin
-    res = OMFrontend.flattenModelWithMSL("EletricalTest.SimpleCircuit", "./MSL_Use/SimpleCircuitMSL.mo")
+    res = OMFrontend.flattenModelWithMSL("ElectricalTest.SimpleCircuit", "./MSL_Use/SimpleCircuitMSL.mo")
     res = OMFrontend.toString(first(res))
     println(res)
     true

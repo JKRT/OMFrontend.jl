@@ -448,7 +448,7 @@ function setModifier(mod::Modifier, node::InstNode) ::InstNode
       end
 
       COMPONENT_NODE(__)  => begin
-        Pointer.update(node.component, P_Component.mergeModifier(mod, P_Pointer.access(node.component)))
+        P_Pointer.update(node.component, mergeModifier(mod, P_Pointer.access(node.component)))
         ()
       end
 
@@ -493,7 +493,7 @@ function getModifier(node::InstNode) ::Modifier
       end
 
       COMPONENT_NODE(__)  => begin
-        P_Component.getModifier(P_Pointer.access(node.component))
+        getModifier(P_Pointer.access(node.component))
       end
 
       _  => begin

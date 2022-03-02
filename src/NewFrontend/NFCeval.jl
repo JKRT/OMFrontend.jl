@@ -3039,12 +3039,11 @@ function evalBuiltinFill2(fillValue::Expression, dims::List{<:Expression})::Expr
   local arr_ty::M_Type = typeOf(result)
 
   for d in listReverse(dims)
-    @assign () = begin
+    dim_size = begin
       @match d begin
         INTEGER_EXPRESSION(value = dim_size) => begin
-          ()
+          dim_size
         end
-
         _ => begin
           printWrongArgsError(getInstanceName(), list(d), sourceInfo())
           fail()
@@ -3052,7 +3051,7 @@ function evalBuiltinFill2(fillValue::Expression, dims::List{<:Expression})::Expr
       end
     end
     @assign arr = list(result for e = 1:dim_size)
-    @assign arr_ty = liftArrayLeft(arr_ty, P_Dimension.Dimension.fromInteger(dim_size))
+    @assign arr_ty = liftArrayLeft(arr_ty, fromInteger(dim_size))
     @assign result = makeArray(
       arr_ty,
       arr,

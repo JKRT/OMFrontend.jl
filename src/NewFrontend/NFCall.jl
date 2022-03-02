@@ -986,7 +986,7 @@ function typeCall(
   @nospecialize(callExp::Expression),
   @nospecialize(origin::ORIGIN_Type),
   @nospecialize(info::SourceInfo),
-  )::Tuple{CALL_EXPRESSION, NFType, VariabilityType}
+  )::Tuple{Expression, NFType, VariabilityType}
   arg1 = callExp::Expression
   arg2 = origin::ORIGIN_Type
   arg3 = info

@@ -1450,7 +1450,7 @@ function typeExp2(
       end
 
       CALL_EXPRESSION(__) => begin
-        (e1, ty, var1) = typeCall(exp, origin, info)::Tuple{CALL_EXPRESSION, NFType, VariabilityType}
+        (e1, ty, var1) = typeCall(exp, origin, info)::Tuple{Expression, NFType, VariabilityType}
         #=  If the call has multiple outputs and isn't alone on either side of an
         =#
         #=  equation/algorithm, select the first output.

@@ -473,7 +473,7 @@ function toString(flatModel::FlatModel, printBindingTypes::Bool = false)::String
   end
   if !listEmpty(flatModel.initialEquations)
     s = IOStream_M.append(s, "initial equation\\n")
-    s = Equation.toStreamList(flatModel.initialEquations, "  ", s)
+    s = toStreamList(flatModel.initialEquations, "  ", s)
   end
   if !listEmpty(flatModel.equations)
     s = IOStream_M.append(s, "equation\\n")

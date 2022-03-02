@@ -836,7 +836,7 @@ function typeSmoothCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tup
   (callExp, ty, variability)
 end
 
-function typeFillCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
+function typeFillCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
   local variability::VariabilityType
   local ty::M_Type
   local callExp::Expression
@@ -861,7 +861,7 @@ function typeFillCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple
   (callExp, ty, variability)
 end
 
-function typeFillCall2(fnRef::ComponentRef, fillType::M_Type, fillArg::Expression, dimensionArgs::List{<:Expression}, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
+function typeFillCall2(fnRef::ComponentRef, fillType::M_Type, fillArg::Expression, dimensionArgs::List{<:Expression}, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
   local variability::VariabilityType = Variability.CONSTANT
   local ty::M_Type
   local callExp::Expression
@@ -882,7 +882,7 @@ function typeFillCall2(fnRef::ComponentRef, fillType::M_Type, fillArg::Expressio
   for arg in dimensionArgs
     @assign (arg, arg_ty, arg_var) = typeExp(arg, origin, info)
     if arg_var <= Variability.STRUCTURAL_PARAMETER && ! flagSet(origin, ORIGIN_FUNCTION) && ! containsIterator(arg, origin)
-      @assign arg = Ceval.evalExp(arg)
+      @assign arg = evalExp(arg)
       @assign arg_ty = typeOf(arg)
     else
       @assign evaluated = false
@@ -898,12 +898,12 @@ function typeFillCall2(fnRef::ComponentRef, fillType::M_Type, fillArg::Expressio
   =#
   @assign ty_args = listReverseInPlace(ty_args)
   @assign dims = listReverseInPlace(dims)
-  @match list(fn) = typeRefCache(fnRef)
+  @match fn <| T = typeRefCache(fnRef)
   @assign ty = liftArrayLeftList(fillType, dims)
   if evaluated
-    @assign callExp = Ceval.evalBuiltinFill(ty_args)
+    @assign callExp = evalBuiltinFill(ty_args)
   else
-    @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(NFBuiltinFuncs.FILL_FUNC, ty_args, variability, ty))
+    @assign callExp = CALL_EXPRESSION(makeTypedCall(NFBuiltinFuncs.FILL_FUNC, ty_args, variability, ty))
   end
   (callExp, ty, variability)
 end

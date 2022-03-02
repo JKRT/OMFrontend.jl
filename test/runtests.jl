@@ -52,9 +52,13 @@ end
   include("frontendResultTest.jl")
 end
 
-# #= Test some of the MSL=#
-@testset "Simple MSL test" begin
+#= Test some of the MSL=#
+@testset "MSL test" begin
   include("mslTests.jl")
+end
+
+@testset "Test the use of the MSL" begin
+  include("useOfMSLTests.jl")
 end
 
 #= OMFrontend.jl extensions for variable structured systems =#

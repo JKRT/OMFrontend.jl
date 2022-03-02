@@ -761,7 +761,7 @@ function convertEquation(eq::Equation, elements::List{<:DAE.Element})::List{DAE.
         @assign e1 = toDAE(eq.condition)
         @assign e2 = toDAE(eq.message)
         @assign e3 = toDAE(eq.level)
-        _cons(DAE.Element.ASSERT(e1, e2, e3, eq.source), elements)
+        _cons(DAE.ASSERT(e1, e2, e3, eq.source), elements)
       end
 
       EQUATION_TERMINATE(__) => begin

@@ -90,7 +90,7 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
   @debug "START FLATTENING!"
   flat_model = flatten(inst_cls, name)
   @debug "CONSTANT EVALUATION"
-  flat_model = evaluate(flat_model)
+  #TODO:Temporary removed flat_model = evaluate(flat_model)
   @debug "FLATTENING DONE: flat_model"
   #= Do unit checking =#
   #TODO  @assign flat_model = UnitCheck.checkUnits(flat_model)
@@ -1254,7 +1254,7 @@ function instComponent(node::InstNode, attributes::Attributes , innerMod::Modifi
   local outer_mod::Modifier
   local cc_mod::Modifier = innerMod
   local cc_smod::SCode.Mod
-  local name::String
+  local nameStr::String
   local parentNode::InstNode
 
   @assign comp_node = resolveOuter(node)
@@ -1272,12 +1272,12 @@ function instComponent(node::InstNode, attributes::Attributes , innerMod::Modifi
 
   if isRedeclare(outer_mod)
     checkOuterComponentMod(outer_mod, def, comp_node)
-    instComponentDef(def, MODIFIER_NOMOD(), MODIFIER_NOMOD(), DEFAULT_ATTR, useBinding, comp_node, parentNode, instLevel, originalAttr, isRedeclared = true)
-    @match REDECLARE(element = rdcl_node, mod = outer_mod) = outer_mod
-    @assign cc_smod = SCodeUtil.getConstrainingMod(def)
+    instComponentDef(def, MODIFIER_NOMOD(), MODIFIER_NOMOD(), DEFAULT_ATTR, useBinding, comp_node, parentNode, instLevel, originalAttr; isRedeclared = true)
+    @match MODIFIER_REDECLARE(element = rdcl_node, mod = outer_mod) = outer_mod
+    cc_smod = SCodeUtil.getConstrainingMod(def)
     if ! SCodeUtil.isEmptyMod(cc_smod)
-      @assign name = name(node)
-      @assign cc_mod = create(cc_smod, name, cope.COMPONENT(name), nil, parentNode)
+      nameStr = name(node)
+      cc_mod = create(cc_smod, nameStr, SCOPE_COMPONENT(nameStr), nil, parentNode)
     end
     @assign outer_mod = merge(getModifier(rdcl_node), outer_mod)
     setModifier(outer_mod, rdcl_node)
@@ -1287,8 +1287,15 @@ function instComponent(node::InstNode, attributes::Attributes , innerMod::Modifi
   end
 end
 
-function instComponentDef(component::SCode.Element, outerMod::Modifier, innerMod::Modifier, attributes::Attributes, useBinding::Bool,
-                          node::InstNode, parentNode::InstNode, instLevel::Int, originalAttr::Option{<:Attributes} = NONE(), isRedeclared::Bool = false)
+function instComponentDef(component::SCode.Element,
+                          outerMod::Modifier,
+                          innerMod::Modifier,
+                          attributes::Attributes,
+                          useBinding::Bool,
+                          node::InstNode, parentNode::InstNode,
+                          instLevel::Int,
+                          originalAttr::Option{<:Attributes} = NONE();
+                          isRedeclared::Bool = false)
   local info::SourceInfo
   local decl_mod::Modifier
   local mod::Modifier
@@ -1375,7 +1382,7 @@ function instConstrainingMod(element::SCode.Element, parent::InstNode) ::Modifie
         create(smod, element.name, cope.CLASS(element.name), nil, parent)
       end
       SCode.COMPONENT(prefixes = SCode.PREFIXES(replaceablePrefix = SCode.REPLACEABLE(cc = SOME(SCode.CONSTRAINCLASS(modifier = smod)))))  => begin
-        create(smod, element.name, cope.COMPONENT(element.name), nil, parent)
+        create(smod, element.name, SCOPE_COMPONENT(element.name), nil, parent)
       end
       _  => begin
         MODIFIER_NOMOD()
@@ -1483,12 +1490,12 @@ end
 
 """ #= Prints an error message and fails if it gets an outer component and a
              non-empty modifier. =#"""
-               function checkOuterComponentMod(mod::Modifier, component::SCode.Element, node::InstNode)
-                 if ! isEmpty(mod) && AbsynUtil.isOnlyOuter(SCodeUtil.prefixesInnerOuter(SCodeUtil.elementPrefixes(component)))
-                   Error.addSourceMessage(Error.OUTER_ELEMENT_MOD, list(toString(mod, printName = false), name(node)), InstNode_info(node))
-                   fail()
-                 end
-               end
+function checkOuterComponentMod(mod::Modifier, component::SCode.Element, node::InstNode)
+  if ! isEmpty(mod) && AbsynUtil.isOnlyOuter(SCodeUtil.prefixesInnerOuter(SCodeUtil.elementPrefixes(component)))
+    Error.addSourceMessage(Error.OUTER_ELEMENT_MOD, list(toString(mod, printName = false), name(node)), InstNode_info(node))
+    fail()
+  end
+end
 
 """
   This function instantiates component attributes.

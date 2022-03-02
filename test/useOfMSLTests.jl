@@ -16,7 +16,7 @@
     true
   end
   @test true == begin
-    res = OMFrontend.flattenModelWithMSL("TransmissionLineModelica", "./MSL_Use/TransmissionLine.mo")
+    res = OMFrontend.flattenModelWithMSL("TransmissionLine", "./MSL_Use/TransmissionLine.mo")
     res = OMFrontend.toString(first(res))
     println(res)
     true

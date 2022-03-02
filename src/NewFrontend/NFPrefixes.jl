@@ -847,7 +847,7 @@ function visibilityToDAE(vis)::DAE.VarVisibility
   local dvis::DAE.VarVisibility = if vis == Visibility.PUBLIC
     DAE.PUBLIC()
   else
-    DAE.VarVisibility.PROTECTED()
+    DAE.PROTECTED()
   end
   return dvis
 end

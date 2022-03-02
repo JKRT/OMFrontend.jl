@@ -1,3 +1,4 @@
+/* Transmission line model from the Scaleable testsuite by Francesco Casella politecnico milano*/
 model TransmissionLine "Modular model of an electrical transmission line"
   import Modelica.SIunits;
   import Modelica.Electrical.Analog;

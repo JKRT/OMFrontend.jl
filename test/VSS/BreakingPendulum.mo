@@ -49,5 +49,5 @@ structuralmode BouncingBall bouncingBall;
 /* Required? */
 equation
   initialStructuralState(pendulum);
-  structuralTransistion(/* From */ pendulum, /* To */bouncingBall, time - 5 <= 0 /*Condition*/);
+  structuralTransition(/* From */ pendulum, /* To */bouncingBall, time - 5 <= 0 /*Condition*/);
 end BreakingPendulum;

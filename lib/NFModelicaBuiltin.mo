@@ -584,10 +584,10 @@ function initialStructuralState "Define the initial state of a continious state 
   annotation(__OpenModelica_builtin=true, Documentation(info="Modelica Extension"));
 end initialStructuralState;
 
-function structuralTransistion "Define a structural transistion in a continious state machine."
+function structuralTransition "Define a structural transition in a continious state machine."
   external "builtin"
   annotation(__OpenModelica_builtin=true, Documentation(info="Modelica Extension"));
-end structuralTransistion;
+end structuralTransition;
 
 function recompilation "Defines a recompilation, the change depends on the parameters."
  external "builtin"

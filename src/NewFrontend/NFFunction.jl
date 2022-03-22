@@ -751,7 +751,7 @@ function isSpecialBuiltin(fn::M_Function)::Bool
           end
           #= Extensions  =#
           "initialStructuralState" => true
-          "structuralTransistion" => true
+          "structuralTransition" => true
           "recompilation" => true
           _ => begin
             false
@@ -760,68 +760,6 @@ function isSpecialBuiltin(fn::M_Function)::Bool
       end
     end
   end
-  #=  Can have variable number of arguments.
-  =#
-  #=  Function should not be used in function context.
-  =#
-  #=  argument should be a cref?
-  =#
-  #=  Function should not be used in function context.
-  =#
-  #=  can have variable number of arguments
-  =#
-  #=  Always discrete.
-  =#
-  #=  Arguments can be scalar, vector, matrix, 3d array .... basically anything
-  =#
-  #=  We need to make sure size(Arg,i) = 1 for 2 < i <= ndims(Arg).
-  =#
-  #=  return type should always be Matrix.
-  =#
-  #=  Needs to check that arguments are basic types or enums
-  =#
-  #=  We need to check array inputs as well
-  =#
-  #=  Needs to check that arguments are basic types or enums
-  =#
-  #=  We need to check array inputs as well
-  =#
-  #=  Argument can have any number of dimensions.
-  =#
-  #=  Can take any expression as argument.
-  =#
-  #=  can have variable number of arguments
-  =#
-  #=  Function should not be used in function context.
-  =#
-  #=  argument should be a cref?
-  =#
-  #=  needs unboxing and return type fix.
-  =#
-  #=  We need to make sure size(Arg,i) = 1 for 0 <= i <= ndims(Arg).
-  =#
-  #=  return type should always be scalar.
-  =#
-  #=  First argument can have any number of dimensions.
-  =#
-  #=  Needs to check that second argument is real or array of real or record of reals.
-  =#
-  #=  needs unboxing and return type fix.
-  =#
-  #=  unbox args and set return type.
-  =#
-  #=  Always discrete.
-  =#
-  #=  unbox args and set return type (swap the first two dims).
-  =#
-  #=  We need to construct output diminsion size from the size of elements in the array
-  =#
-  #=  return type should always be vector.
-  =#
-  #=  can have variable number of arguments
-  =#
-  #=  sample - overloaded for sync features
-  =#
   return special
 end
 

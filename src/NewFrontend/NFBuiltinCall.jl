@@ -186,17 +186,14 @@ function typeSpecial(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{
         typeDynamicSelectCall("DynamicSelect", call, next_origin, info)
       end
       "initialStructuralState" => begin
-        @debug "VSS: calling some type crap"
         typeInitialStructuralStateCall(call, next_origin, info)
       end
 
-      "structuralTransistion" => begin
-        @debug "VSS: Typing a structuralTransistion"
-        typeStructuralTransistion(call, next_origin, info)
+      "structuralTransition" => begin
+        typeStructuralTransition(call, next_origin, info)
       end
 
       "recompilation" => begin
-        @debug "VSS: Typing typeStructuralTransistion"
         typeRecompilationCall(call, next_origin, info)
       end
 
@@ -1308,7 +1305,7 @@ A structural transistion have three arguments
 2. Our next state. That is the model we transistion to.
 3. A condition. That is the when event at which the transistion occurs.
 """
-function typeStructuralTransistion(call::Call, origin::ORIGIN_Type, info::SourceInfo)
+function typeStructuralTransition(call::Call, origin::ORIGIN_Type, info::SourceInfo)
   @match UNTYPED_CALL(fn_ref, args, namedArgs) = call
   local variabilityType::VariabilityType = Variability.PARAMETER
   if listLength(args) != 3

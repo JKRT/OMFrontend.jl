@@ -122,7 +122,7 @@ end
 """ #= sets a checkpoint for the error messages, so error messages can be rolled back (i.e. deleted) up to this point
 A unique identifier for this checkpoint must be provided. It is checked when doing rollback or deletion =#"""
 function setCheckpoint(id::String) #= uniqe identifier for the checkpoint (up to the programmer to guarantee uniqueness) =#
-  return @warn "TODO: setCheckpoint is not defined in the runtime"
+  return @debug "TODO: setCheckpoint is not defined in the runtime"
 end
 
 """ #= deletes the checkpoint at the top of the stack without
@@ -144,7 +144,7 @@ end
 deleting all error messages added since that point in time. A unique identifier for the checkpoint must be provided
 The application will exit with return code -1 if this identifier does not match. =#"""
 function rollBack(id::String) #= unique identifier =#
-  return @warn "TODO: Defined in the runtime"
+  return @debug "TODO: Defined in the runtime"
 end
 
 """ #= rolls back error messages until the latest checkpoint,

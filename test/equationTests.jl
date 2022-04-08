@@ -28,5 +28,21 @@ equation
 end ArrayFancy;
 "
 
-circle = (circleReference, "Circle", "./Equations/Circle.mo")
+ifEquationDerReference = "class IfEquationDer
+  parameter Real u = 4.0;
+  parameter Real uMax = 10.0;
+  parameter Real uMin = 2.0;
+  Real y;
+equation
+  if uMax < time then
+    der(y) = uMax;
+  elseif uMin < time then
+    der(y) = uMin;
+  elseif true then
+    der(y) = u;
+  end if;
+end IfEquationDer;
+"
 arrayfancy = (arrayfancyReference, "ArrayFancy", "./Equations/ArrayFancy.mo")
+circle = (circleReference, "Circle", "./Equations/Circle.mo")
+ifEquationDer = (ifEquationDerReference, "IfEquationDer", "./Equations/IfEquationDer.mo")

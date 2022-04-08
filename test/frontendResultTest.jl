@@ -59,8 +59,7 @@ connectTsts = [ctst1,
 incorrectTsts = [ctst3, ctst10, ctst11]
 #= Add new tests here=#
 tst = [tank, heattank, heatTankExpanded, multipleinheritanceconnect, resistorCircuit0, resistorCircuit1, simpleCircuit]
-
-equationTests = [circle, arrayfancy]
+equationTests = [circle, arrayfancy, ifEquationDer]
 
 function runConnectTests(tests)
   @testset "Connector test. Testing the handling of connectors" begin

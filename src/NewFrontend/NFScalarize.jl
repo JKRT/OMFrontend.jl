@@ -276,11 +276,11 @@ function scalarizeEquation(eq::Equation, equations::List{<:Equation})
 end
 
 function scalarizeIfEquation(
-  branches::List{<:Equation},
+  branches::List{<:Equation_Branch},
   source::DAE.ElementSource,
   equations::List{<:Equation},
 )::List{Equation}
-  local bl::List{P_Equation.Equation} = nil
+  local bl::List{Equation_Branch} = nil
   local cond::Expression
   local body::List{Equation}
   local var::VariabilityType
@@ -288,7 +288,7 @@ function scalarizeIfEquation(
     @match EQUATION_BRANCH(cond, var, body) = b
     body = scalarizeEquations(body)
     if !listEmpty(body)
-      bl = _cons(P_Equation.Equation.makeBranch(cond, body, var), bl)
+      bl = _cons(makeBranch(cond, body, var), bl)
     end
   end
   #=  Remove branches with no equations after scalarization.

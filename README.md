@@ -5,9 +5,7 @@ Experimental implementation of NF. That is a Modelica frontend in Julia.
 For the entire suite of software components that make up this compiler see [OpenModelica.jl](https://github.com/JKRT/OM.jl)
 
 ## Notes regarding the first public release 
-This should be considered an alpha. This means that changes may happen quickly.
-We are also planning to release the backend OMBackend.jl sometime around Christmas. 
-
+This should be considered an alpha. This means that changes may happen quickly, and that they might be breaking.
 
 ## Example use 
 

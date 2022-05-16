@@ -3,10 +3,11 @@
 "
 module OMFrontend
 
+using MetaModelica
+
 import Absyn
 import SCode
 import OMParser
-using MetaModelica
 
 
 #= Cache for NFModelicaBuiltin. We only use the result once! =#

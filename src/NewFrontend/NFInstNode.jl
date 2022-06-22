@@ -243,8 +243,8 @@ function hasBinding(@nospecialize(node::InstNode)) ::Bool
 end
 
 function isModel(node::InstNode) ::Bool
-  local isModel::Bool
-  @assign isModel = begin
+  local r::Bool
+  r = begin
     @match node begin
       CLASS_NODE(__)  => begin
         isModel(restriction(P_Pointer.access(node.cls)))
@@ -257,7 +257,7 @@ function isModel(node::InstNode) ::Bool
       end
     end
   end
-  isModel
+  r
 end
 
 function isRecord(@nospecialize(node::InstNode)) ::Bool

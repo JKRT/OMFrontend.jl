@@ -102,7 +102,7 @@ function isModel(res::Restriction)::Bool
   local isModel::Bool
   @assign isModel = begin
     @match res begin
-      RESTRICITON_MODEL(__) => begin
+      RESTRICTION_MODEL(__) => begin
         true
       end
 

@@ -948,9 +948,8 @@ function typeFunctionSignature(fn::M_Function)::M_Function
 end
 
 function typeFunction(fn::M_Function)::M_Function
-
-  @assign fn = typeFunctionSignature(fn)
-  @assign fn = typeFunctionBody(fn)
+  fn = typeFunctionSignature(fn)
+  fn = typeFunctionBody(fn)
   return fn
 end
 

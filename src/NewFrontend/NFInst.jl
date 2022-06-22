@@ -1635,8 +1635,8 @@ function assertNotInnerOuter(io, node::InstNode, restriction)
 end
 
 function assertNotFlowStream(cty::ConnectorType.TYPE, node::InstNode, restriction)
-  if ConnectorType.isFlowOrStream(cty)
-    invalidComponentPrefixError(ConnectorType.toString(cty), node, restriction)
+  if isFlowOrStream(cty)
+    invalidComponentPrefixError(toString(cty), node, restriction)
     fail()
   end
 end
@@ -1925,7 +1925,7 @@ function instExpressions(@nospecialize(node::InstNode), @nospecialize(scope::Ins
         #=  A type must extend a basic type.
         =#
         if arrayLength(exts) == 1
-          @assign ty = TYPE_COMPLEX(node, ComplexType.EXTENDS_TYPE(exts[1]))
+          @assign ty = TYPE_COMPLEX(node, COMPLEX_EXTENDS_TYPE(exts[1]))
         elseif SCodeUtil.hasBooleanNamedAnnotationInClass(definition(node), "__OpenModelica_builtinType")
           @assign ty = TYPE_COMPLEX(node, ComplexType.CLASS())
         else
@@ -2054,9 +2054,8 @@ end
 
 function instRecordConstructor(node::InstNode)
   local cache::CachedData
-
-  @assign cache = getFuncCache(node)
-  @assign () = begin
+  cache = getFuncCache(node)
+  () = begin
     @match cache begin
       C_FUNCTION(__)  => begin
         ()
@@ -2064,7 +2063,7 @@ function instRecordConstructor(node::InstNode)
       _  => begin
         cacheInitFunc(node)
         if SCodeUtil.isOperatorRecord(definition(node))
-          OperatorOverloading.instConstructor(scopePath(node, includeRoot = true), node, InstNode_info(node))
+          instConstructor(scopePath(node, includeRoot = true), node, InstNode_info(node))
         else
           Record.instDefaultConstructor(scopePath(node, includeRoot = true), node, InstNode_info(node))
         end
@@ -2143,7 +2142,8 @@ function instComponentExpressions(componentArg::InstNode)
       ()
     end
     _  => begin
-      Error.assertion(false, getInstanceName() + " got invalid component", sourceInfo())
+      @error "Relaxed instantation for: " + name(componentArg)
+      #Error.assertion(false, getInstanceName() + " got invalid component", sourceInfo())
       fail()
     end
   end

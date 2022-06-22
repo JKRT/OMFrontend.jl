@@ -245,25 +245,21 @@ end
 function typeStructor(node::InstNode)
   local cache::CachedData
   local fnl::List{M_Function}
-
-  @assign cache = getFuncCache(node)
-  return @assign () = begin
-    @match cache begin
-      C_FUNCTION(funcs = fnl, typed = false) => begin
-        @assign fnl = list(P_Function.typeFunction(fn) for fn in fnl)
-        @assign fnl = list(
-          patchOperatorRecordConstructorBinding(fn) for fn in fnl
-        )
-        setFuncCache(
-          node,
-          C_FUNCTION(fnl, true, cache.specialBuiltin),
-        )
-        ()
-      end
-
-      _ => begin
-        ()
-      end
+  cache = getFuncCache(node)
+  @match cache begin
+    C_FUNCTION(funcs = fnl, typed = false) => begin
+      fnl = list(typeFunction(fn) for fn in fnl)
+      fnl = list(
+        patchOperatorRecordConstructorBinding(fn) for fn in fnl
+          )
+      setFuncCache(
+        node,
+        C_FUNCTION(fnl, true, cache.specialBuiltin),
+      )
+      return ()
+    end
+    _ => begin
+      return ()
     end
   end
 end
@@ -418,19 +414,16 @@ end
 
 function makeRecordType(constructor::InstNode)::ComplexType
   local recordTy::ComplexType
-
   local cache::CachedData
   local fn::M_Function
-  local fields::List{Record.P_Field}
-
-  @assign cache = getFuncCache(constructor)
-  @assign recordTy = begin
+  local fields::List{Field}
+  cache = getFuncCache(constructor)
+  recordTy = begin
     @match cache begin
       C_FUNCTION(funcs = fn <| _) => begin
-        @assign fields = Record.collectRecordFields(fn.node)
+        fields = collectRecordFields(fn.node)
         COMPLEX_RECORD(constructor, fields)
       end
-
       _ => begin
         Error.assertion(
           false,
@@ -448,53 +441,37 @@ function typeComponent(@nospecialize(inComponent::InstNode), origin::ORIGIN_Type
   local ty::NFType
   local node::InstNode = resolveOuter(inComponent)
   local c::Component = component(node)
-
   @assign ty = begin
     @match c begin
+      #=  An untyped component, type it. =#
       UNTYPED_COMPONENT(__) => begin
-        #=  An untyped component, type it.
-        =#
-        #=  Type the component's dimensions.
-        =#
+        #=  Type the component's dimensions. =#
         typeDimensions(c.dimensions, node, c.binding, origin, c.info)
-        #=  Construct the type of the component and update the node with it.
-        =#
+        #=  Construct the type of the component and update the node with it. =#
         @assign ty = typeClassType(c.classInst, c.binding, origin, inComponent)
         @assign ty = liftArrayLeftList(ty, arrayList(c.dimensions))
         updateComponent!(setType(ty, c), node)
-        #=  Check that flow/stream variables are Real.
-        =#
+        #=  Check that flow/stream variables are Real. =#
         checkComponentStreamAttribute(c.attributes.connectorType, ty, inComponent)
-        #=  Type the component's children.
-        =#
+        #=  Type the component's children. =#
         typeComponents(c.classInst, origin)
         ty
       end
-      TYPED_COMPONENT(__) => begin
-        c.ty
-      end
-
-      ITERATOR_COMPONENT(__) => begin
-        c.ty
-      end
-
-      ENUM_LITERAL_COMPONENT(literal = ENUM_LITERAL_EXPRESSION(ty = ty)) =>
-        begin
-          ty
-        end
-
+      #=  A component that has already been typed, skip it. =#
+      TYPED_COMPONENT(__) => c.ty
+      ITERATOR_COMPONENT(__) => c.ty
+      ENUM_LITERAL_COMPONENT(literal = ENUM_LITERAL_EXPRESSION(ty = ty)) => ty
       _ => begin
-        #=  A component that has already been typed, skip it.
-        =#
-        #=  Any other type of component shouldn't show up here.
-        =#
-        Error.assertion(
-          false,
-          getInstanceName() +
-          " got noninstantiated component " +
-          name(component),
-          sourceInfo(),
-        )
+        #=  Any other type of component shouldn't show up here.=#
+        @error "got noninstantiated component: " + toString(name(inComponent) ,c) +
+          " from the following node:" + toString(inComponent)
+        # Error.assertion(
+        #   false,
+        #   getInstanceName() +
+        #   " got noninstantiated component " +
+        #   name(component),
+        #   sourceInfo(),
+        # )
         fail()
       end
     end

@@ -336,7 +336,7 @@ function toString(name::String, component::Component)::String
     @match component begin
       COMPONENT_DEF(definition = def && SCode.COMPONENT(__)) => begin
         #TODO: SCodeDump.unparseElementStr(def)
-        "TODO: SCodeDump.unparseElementStr(def)"
+        string(def)
       end
 
       UNTYPED_COMPONENT(__) => begin
@@ -606,16 +606,16 @@ function setVariability(variability, component::Component)::Component
 end
 
 function variability(component::Component)
-  local variability
-  @assign variability = begin
+  local v
+  v = begin
     @match component begin
-      TYPED_COMPONENT(attributes = ATTRIBUTES(variability = variability)) =>
+      TYPED_COMPONENT(attributes = ATTRIBUTES(variability = v)) =>
         begin
-          variability
+          v
         end
 
-      UNTYPED_COMPONENT(attributes = ATTRIBUTES(variability = variability)) => begin
-        variability
+      UNTYPED_COMPONENT(attributes = ATTRIBUTES(variability = v)) => begin
+        v
       end
 
       ITERATOR_COMPONENT(__) => begin
@@ -627,11 +627,11 @@ function variability(component::Component)
       end
 
       _ => begin
-        CONTINIUOUS
+        Variability.CONTINUOUS
       end
     end
   end
-  return variability
+  return v
 end
 
 function parallelism(component::Component)::Parallelism
@@ -693,19 +693,16 @@ end
 
 function direction(component::Component)
   local direction::DirectionType
-
-  @assign direction = begin
+  direction = begin
     @match component begin
-      TYPED_COMPONENT(attributes = P_Attributes.ATTRIBUTES(direction = direction)) =>
+      TYPED_COMPONENT(attributes = ATTRIBUTES(direction = direction)) =>
         begin
           direction
         end
-
-      UNTYPED_COMPONENT(attributes = P_Attributes.ATTRIBUTES(direction = direction)) =>
+      UNTYPED_COMPONENT(attributes = ATTRIBUTES(direction = direction)) =>
         begin
           direction
         end
-
       _ => begin
         Direction.NONE
       end

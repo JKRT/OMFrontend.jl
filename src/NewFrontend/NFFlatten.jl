@@ -1220,8 +1220,8 @@ function flattenIfEquation(
   =#
   #=  connects, since we must select a branch in that case.
   =#
-  @assign target = if has_connect
-    GENERIC(info(eq))
+  target = if has_connect
+    EVALTARGET_GENERIC(Equation_info(eq))
   else
     EVALTARGET_IGNORE_ERRORS()
   end

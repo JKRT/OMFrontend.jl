@@ -62,7 +62,7 @@ function instConstructor(path::Absyn.Path, recordNode::InstNode, info::SourceInf
   =#
   #= ctor_node := Function.instFunction2(ctor_path, ctor_node, info);
   =#
-  @assign recordNode = Record.instDefaultConstructor(path, recordNode, info)
+  recordNode = instDefaultConstructor(path, recordNode, info)
   return recordNode
 end
 

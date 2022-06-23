@@ -1737,7 +1737,7 @@ function typeCrefDim(
   origin::ORIGIN_Type,
   info::SourceInfo,
 )::Tuple{Dimension, TypingError}
-  local error::TypingError = P_TypingError.NO_ERROR()
+  local error::TypingError = NO_ERROR
   local dim::Dimension
 
   local crl::List{ComponentRef}
@@ -2512,7 +2512,7 @@ function typeSize(
         end
         if variability <= Variability.STRUCTURAL_PARAMETER &&
            !containsIterator(index, origin)
-          @assign index = Ceval.evalExp(index, Ceval.P_EvalTarget.IGNORE_ERRORS())
+          index = evalExp(index, EVALTARGET_IGNORE_ERRORS())
           @match INTEGER_EXPRESSION(iindex) = index
           @assign (dim, oexp, ty_err) = typeExpDim(exp, iindex, next_origin, info)
           checkSizeTypingError(ty_err, exp, iindex, info)

@@ -146,20 +146,19 @@ function checkOverloadedBinaryOperator(
   local ety1::M_Type
   local ety2::M_Type
 
-  @assign op_str = symbol(stripEW(op), "'")
-  @assign ety1 = arrayElementType(type1)
-  @assign ety2 = arrayElementType(type2)
-  @assign candidates = OperatorOverloading.lookupOperatorFunctionsInType(op_str, ety1)
+  op_str = symbol(stripEW(op), "'")
+  ety1 = arrayElementType(type1)
+  ety2 = arrayElementType(type2)
+  candidates = lookupOperatorFunctionsInType(op_str, ety1)
   #=  Only collect operators from both types if they're not the same type.
   =#
-  if !Type.isEqual(ety1, ety2)
-    @assign candidates = listAppend(
-      OperatorOverloading.lookupOperatorFunctionsInType(op_str, ety2),
+  if !isEqual(ety1, ety2)
+    candidates = listAppend(
+      lookupOperatorFunctionsInType(op_str, ety2),
       candidates,
     )
   end
-  #=  Give up if no operator functions could be found.
-  =#
+  #=  Give up if no operator functions could be found. =#
   if listEmpty(candidates)
     printUnresolvableTypeError(
       BINARY_EXPRESSION(exp1, op, exp2),
@@ -1845,8 +1844,7 @@ function checkRelationOperation(
       end
 
       TYPE_REAL(__) => begin
-        #=  Print a warning for == or <> with Real operands in a model.
-        =#
+        #=  Print a warning for == or <> with Real operands in a model. =#
         @assign o = operator.op
         if flagNotSet(origin, ORIGIN_FUNCTION) &&
            (o == Op.EQUAL || o == Op.NEQUAL)
@@ -1893,16 +1891,16 @@ function printUnresolvableTypeError(
 )
   local exp_str::String
   local ty_str::String
-
   if printError
-    @assign exp_str = toString(exp)
-    @assign ty_str = ListUtil.toString(types, Type.toString, "", "", ", ", "", false)
-    Error.addSourceMessage(
-      Error.UNRESOLVABLE_TYPE,
-      list(exp_str, ty_str, "<NO_COMPONENT>"),
-      info,
-    )
+    exp_str = toString(exp)
+    ty_str = ListUtil.toString(types, toString, "", "", ", ", "", false)
+    # Error.addSourceMessage(
+    #   Error.UNRESOLVABLE_TYPE,
+    #   list(exp_str, ty_str, "<NO_COMPONENT>"),
+    #   info,
+    # )
   end
+  @error "Unresolvable type for: " * exp_str * "\n Type was: " * ty_str
   return fail()
 end
 

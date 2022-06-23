@@ -409,7 +409,7 @@ function foldExp(stmt::Statement, func::FoldFunc, arg::ArgT) where {ArgT}
 
   @assign () = begin
     @match stmt begin
-      P_Statement.Statement.ASSIGNMENT(__) => begin
+      ALG_ASSIGNMENT(__) => begin
         @assign arg = func(stmt.lhs, arg)
         @assign arg = func(stmt.rhs, arg)
         ()

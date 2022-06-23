@@ -197,7 +197,7 @@ function recordFields(recordType::M_Type)::List{Field}
 
   @assign fields = begin
     @match recordType begin
-      COMPLEX(complexTy = COMPLEX_RECORD(fields = fields)) => begin
+      TYPE_COMPLEX(complexTy = COMPLEX_RECORD(fields = fields)) => begin
         fields
       end
 
@@ -280,11 +280,11 @@ function isEqual(ty1::M_Type, ty2::M_Type)::Bool
     local names1::List{String}
     local names2::List{String}
     @match (ty1, ty2) begin
-      (ENUMERATION(__), ENUMERATION(__)) => begin
+      (TYPE_ENUMERATION(__), TYPE_ENUMERATION(__)) => begin
         ListUtil.isEqualOnTrue(ty1.literals, ty2.literals, stringEq)
       end
 
-      (ARRAY(__), ARRAY(__)) => begin
+      (TYPE_ARRAY(__), TYPE_ARRAY(__)) => begin
         isEqual(ty1.elementType, ty2.elementType) && ListUtil.isEqualOnTrue(
           ty1.dimensions,
           ty2.dimensions,
@@ -292,20 +292,20 @@ function isEqual(ty1::M_Type, ty2::M_Type)::Bool
         )
       end
 
-      (TUPLE(names = SOME(names1)), TUPLE(names = SOME(names2))) => begin
+      (TYPE_TUPLE(names = SOME(names1)), TYPE_TUPLE(names = SOME(names2))) => begin
         ListUtil.isEqualOnTrue(names1, names2, stringEq) &&
         ListUtil.isEqualOnTrue(ty1.types, ty2.types, isEqual)
       end
 
-      (TUPLE(names = NONE()), TUPLE(names = NONE())) => begin
+      (TYPE_TUPLE(names = NONE()), TYPE_TUPLE(names = NONE())) => begin
         ListUtil.isEqualOnTrue(ty1.types, ty2.types, isEqual)
       end
 
-      (TUPLE(__), TUPLE(__)) => begin
+      (TYPE_TUPLE(__), TYPE_TUPLE(__)) => begin
         false
       end
 
-      (COMPLEX(__), COMPLEX(__)) => begin
+      (TYPE_COMPLEX(__), TYPE_COMPLEX(__)) => begin
         isSame(ty1.cls, ty2.cls)
       end
 

@@ -273,11 +273,11 @@ function evaluateStatement(stmt::Statement, constVariability::VariabilityType)::
     local e3::Expression
     local ty::M_Type
     @match stmt begin
-      P_Statement.Statement.ASSIGNMENT(__) => begin
+      ALG_ASSIGNMENT(__) => begin
         @assign ty = mapDims(stmt.ty, evaluateDimension)
         @assign e1 = evaluateExp(stmt.lhs, constVariability)
         @assign e2 = evaluateExp(stmt.rhs, constVariability)
-        P_Statement.Statement.ASSIGNMENT(e1, e2, ty, stmt.source)
+        ALG_ASSIGNMENT(e1, e2, ty, stmt.source)
       end
 
       P_Statement.Statement.FOR(__) => begin

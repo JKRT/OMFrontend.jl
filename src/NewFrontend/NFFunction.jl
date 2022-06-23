@@ -1953,8 +1953,8 @@ function instFunction2(
       end
 
       SCode.CLASS(restriction = SCode.R_OPERATOR(__), classDef = cdef && SCode.PARTS(__)) => begin
-        @assign fnNode = instFunction3(fnNode)
-        @assign fnNode = OperatorOverloading.instOperatorFunctions(fnNode, info)
+        fnNode = instFunction3(fnNode)
+        fnNode = instOperatorFunctions(fnNode, info)
         (fnNode, false)
       end
 
@@ -1998,8 +1998,8 @@ function instFunctionNode(node::InstNode)::InstNode
         ()
       end
       _ => begin
-        @assign node =
-          instFunction2(scopePath(node), node, info(node))
+        (node, _) =
+          instFunction2(scopePath(node), node, InstNode_info(node))#info(node))
         ()
       end
     end

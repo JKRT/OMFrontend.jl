@@ -511,7 +511,7 @@ function toRecordExpression(call::Call, ty::NFType)::Expression
   @assign exp = begin
     @match call begin
       TYPED_CALL(__) => begin
-        EvalFunction.evaluateRecordConstructor(call.fn, ty, call.arguments, evaluate = false)
+        evaluateRecordConstructor(call.fn, ty, call.arguments; evaluate = false)
       end
 
       _ => begin

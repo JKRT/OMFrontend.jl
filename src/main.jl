@@ -112,6 +112,8 @@ include("./NewFrontend/BindingExpression.jl")
 
 include("./NewFrontend/NFDimension.jl")
 
+include("./NewFrontend/NFEvalFunction.jl")
+
 include("./NewFrontend/NFCall.jl")
 
 include("./NewFrontend/NFBuiltinCall.jl")

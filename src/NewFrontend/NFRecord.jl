@@ -3,10 +3,10 @@ function name(field::Field)::String
   local name::String
   @assign name = begin
     @match field begin
-      INPUT(__) => begin
+      FIELD_INPUT(__) => begin
         field.name
       end
-      LOCAL(__) => begin
+      FIELD_LOCAL(__) => begin
         field.name
       end
     end
@@ -18,7 +18,7 @@ function isInput(field::Field)::Bool
   local isInput::Bool
   @assign isInput = begin
     @match field begin
-      INPUT(__) => begin
+      FIELD_INPUT(__) => begin
         true
       end
       _ => begin

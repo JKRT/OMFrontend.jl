@@ -228,7 +228,7 @@ function simplifyStatement(stmt::Statement, statements::List{<:Statement})::List
     local dim::Dimension
     local body::List{Statement}
     @match stmt begin
-      P_Statement.Statement.ASSIGNMENT(__) => begin
+      ALG_ASSIGNMENT(__) => begin
         simplifyAssignment(stmt, statements)
       end
 
@@ -300,7 +300,7 @@ function simplifyAssignment(stmt::Statement, statements::List{<:Statement})::Lis
   local ty::M_Type
   local src::DAE.ElementSource
 
-  @match P_Statement.Statement.ASSIGNMENT(lhs = lhs, rhs = rhs, ty = ty, source = src) =
+  @match ALG_ASSIGNMENT(lhs = lhs, rhs = rhs, ty = ty, source = src) =
     stmt
   @assign ty = mapDims(ty, simplifyDimension)
   if Type.isEmptyArray(ty)
@@ -324,7 +324,7 @@ function simplifyAssignment(stmt::Statement, statements::List{<:Statement})::Lis
       end
 
       _ => begin
-        _cons(P_Statement.Statement.ASSIGNMENT(lhs, rhs, ty, src), statements)
+        _cons(ALG_ASSIGNMENT(lhs, rhs, ty, src), statements)
       end
     end
   end

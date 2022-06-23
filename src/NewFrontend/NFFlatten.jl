@@ -1803,7 +1803,7 @@ end
 function collectStatementFuncs(stmt::Statement, funcs::FunctionTree)::FunctionTree
   @assign () = begin
     @match stmt begin
-      P_Statement.Statement.ASSIGNMENT(__) => begin
+      ALG_ASSIGNMENT(__) => begin
         @assign funcs = collectExpFuncs(stmt.lhs, funcs)
         @assign funcs = collectExpFuncs(stmt.rhs, funcs)
         @assign funcs = collectTypeFuncs(stmt.ty, funcs)

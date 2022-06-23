@@ -2461,15 +2461,17 @@ function printRangeTypeError(
   return fail()
 end
 
-""" #= Types a size expression. If evaluate is true the size expression is also
+"""
+   Types a size expression. If evaluate is true the size expression is also
    evaluated if the dimension is known and the index is a parameter expression,
-   otherwise a typed size expression is returned. =#"""
+   otherwise a typed size expression is returned.
+"""
 function typeSize(
   sizeExp::Expression,
   origin::ORIGIN_Type,
   info::SourceInfo,
   evaluate::Bool = true,
-)::Tuple{Expression, NFType, Variability}
+)::Tuple{Expression, NFType, VariabilityType}
   local variability::VariabilityType
   local sizeType::NFType
 
@@ -3438,15 +3440,16 @@ function typeStatement(st::Statement, origin::ORIGIN_Type)::Statement
     local cond_origin::ORIGIN_Type
     local info::SourceInfo
     @match st begin
-      P_Statement.Statement.ASSIGNMENT(__) => begin
-        @assign info = DAE.ElementSource_getInfo(st.source)
-        @assign (e1, ty1) =
+      ALG_ASSIGNMENT(__) => begin
+        info = AbsynUtil.dummyInfo#DAE.ElementSource_getInfo(st.source)
+        (e1, ty1) =
           typeExp(st.lhs, setFlag(origin, ORIGIN_LHS), info)
-        @assign (e2, ty2) =
+        (e2, ty2) =
           typeExp(st.rhs, setFlag(origin, ORIGIN_RHS), info)
-        #=  TODO: Should probably only be allowUnknown = true if in a function.
+        #=
+          TODO: Should probably only be allowUnknown = true if in a function.
         =#
-        @assign (e2, ty3, mk) = matchTypes(ty2, ty1, e2, allowUnknown = true)
+        (e2, ty3, mk) = matchTypes(ty2, ty1, e2, allowUnknown = true)
         if isIncompatibleMatch(mk)
           Error.addSourceMessage(
             Error.ASSIGN_TYPE_MISMATCH_ERROR,
@@ -3460,7 +3463,7 @@ function typeStatement(st::Statement, origin::ORIGIN_Type)::Statement
           )
           fail()
         end
-        P_Statement.Statement.ASSIGNMENT(e1, e2, ty3, st.source)
+        ALG_ASSIGNMENT(e1, e2, ty3, st.source)
       end
 
       P_Statement.Statement.FOR(__) => begin

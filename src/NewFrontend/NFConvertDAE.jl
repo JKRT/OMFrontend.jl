@@ -1019,7 +1019,7 @@ function convertStatement(stmt::Statement)::DAE.P_Statement.Statement
     local ty::DAE.Type
     local body::List{DAE.P_Statement.Statement}
     @match stmt begin
-      P_Statement.Statement.ASSIGNMENT(__) => begin
+      ALG_ASSIGNMENT(__) => begin
         convertAssignment(stmt)
       end
 
@@ -1095,7 +1095,7 @@ function convertAssignment(stmt::Statement)::DAE.P_Statement.Statement
   local drhs::DAE.Exp
   local expl::List{Expression}
 
-  @match P_Statement.Statement.ASSIGNMENT(lhs, rhs, ty, src) = stmt
+  @match ALG_ASSIGNMENT(lhs, rhs, ty, src) = stmt
   if Type.isTuple(ty)
     @match TUPLE_EXPRESSION(elements = expl) = lhs
     @assign daeStmt = begin

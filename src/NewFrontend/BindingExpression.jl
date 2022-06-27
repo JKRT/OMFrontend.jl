@@ -632,7 +632,7 @@ function variability(@nospecialize(exp::Expression))::VariabilityType
         variabilityMax(variability(exp.exp1), variability(exp.exp2))
       end
 
-      LUNARY(__)  => begin
+      LUNARY_EXPRESSION(__)  => begin
         variability(exp.exp)
       end
 

@@ -3512,11 +3512,11 @@ function typeStatement(st::Statement, origin::ORIGIN_Type)::Statement
         ALG_ASSIGNMENT(e1, e2, ty3, st.source)
       end
 
-      P_Statement.Statement.FOR(__) => begin
-        @assign info = DAE.ElementSource_getInfo(st.source)
+      ALG_FOR(__) => begin
+        info = AbsynUtil.dummyInfo #DAE.ElementSource_getInfo(st.source)
         if isSome(st.range)
           @match SOME(e1) = st.range
-          @assign e1 = typeIterator(st.iterator, e1, origin, structural = false)
+          (e1, _, _) = typeIterator(st.iterator, e1, origin, false)
         else
           Error.assertion(
             false,
@@ -3527,7 +3527,7 @@ function typeStatement(st::Statement, origin::ORIGIN_Type)::Statement
         end
         @assign next_origin = setFlag(origin, ORIGIN_FOR)
         @assign body = typeStatements(st.body, next_origin)
-        P_Statement.Statement.FOR(st.iterator, SOME(e1), body, st.source)
+        ALG_FOR(st.iterator, SOME(e1), body, st.source)
       end
 
       P_Statement.Statement.IF(__) => begin
@@ -3643,9 +3643,9 @@ function typeStatement(st::Statement, origin::ORIGIN_Type)::Statement
         P_Statement.Statement.WHILE(e1, sts1, st.source)
       end
 
-      P_Statement.Statement.FAILURE(__) => begin
-        @assign sts1 = list(typeStatement(bst, origin) for bst in st.body)
-        P_Statement.Statement.FAILURE(sts1, st.source)
+      ALG_FAILURE(__) => begin
+        sts1 = list(typeStatement(bst, origin) for bst in st.body)
+        ALG_FAILURE(sts1, st.source)
       end
 
       _ => begin

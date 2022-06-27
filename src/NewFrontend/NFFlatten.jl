@@ -1910,11 +1910,11 @@ end
 function flattenFunction(func::M_Function, funcs::FunctionTree)::FunctionTree
   local fn::M_Function = func
   if !isCollected(fn)
-    fn = EvalConstants.evaluateFunction(fn)
-    SimplifyModel.simplifyFunction(fn)
-    P_Function.collect(fn)
+    fn = evaluateFunction(fn)
+    simplifyFunction(fn)
+    collect(fn)
     if !isPartial(fn.node)
-      funcs = FunctionTree.add(funcs, P_Function.name(fn), fn)
+      funcs = FunctionTreeImpl.add(funcs, name(fn), fn)
       funcs = collectClassFunctions(fn.node, funcs)
       for fn_der in fn.derivatives
         for der_fn in getCachedFuncs(fn_der.derivativeFn)
@@ -1951,7 +1951,7 @@ function collectClassFunctions(clsNode::InstNode, funcs::FunctionTree)::Function
         end
         @assign () = begin
           @match sections begin
-            P_Sections.Sections.SECTIONS(__) => begin
+            SECTIONS(__) => begin
               @assign funcs =
                 ListUtil.fold(sections.algorithms, collectAlgorithmFuncs, funcs)
               ()

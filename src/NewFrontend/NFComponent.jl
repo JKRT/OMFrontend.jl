@@ -826,21 +826,17 @@ end
 
 function getBinding(component::Component)::Binding
   local b::Binding
-
   @assign b = begin
     @match component begin
       UNTYPED_COMPONENT(__) => begin
         component.binding
       end
-
       TYPED_COMPONENT(__) => begin
         component.binding
       end
-
       TYPE_ATTRIBUTE(__) => begin
-        P_Modifier.binding(component.modifier)
+        binding(component.modifier)
       end
-
       _ => begin
         EMPTY_BINDING
       end

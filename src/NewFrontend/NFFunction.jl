@@ -108,13 +108,11 @@ end
 
 function isExact(mk::FunctionMatchKind)::Bool
   local b::Bool
-
   @assign b = begin
     @match mk begin
-      EXACT(__) => begin
+      EXACT_MATCH_KIND(__) => begin
         true
       end
-
       _ => begin
         false
       end
@@ -324,7 +322,7 @@ function mapExpParameter(node::InstNode, mapFn::MapFunc)
   end
   @assign () = begin
     @match comp begin
-      TYPED_COMPONENTy(__) => begin
+      TYPED_COMPONENT(__) => begin
         @assign ty =
           mapDims(comp.ty, (mapFn) -> mapExp(func = mapFn))
         if !referenceEq(ty, comp.ty)
@@ -334,7 +332,7 @@ function mapExpParameter(node::InstNode, mapFn::MapFunc)
         @assign cls = getClass(comp.classInst)
         applyComponents(
           classTree(cls),
-          (mapFn) -> mapExpParameter(mapFn = mapFn),
+          (nodeArg) -> mapExpParameter(nodeArg, mapFn),
         )
         ()
       end
@@ -367,12 +365,12 @@ function mapExp(
   @assign cls = getClass(fn.node)
   if mapParameters
     @assign ctree = classTree(cls)
-    applyComponents(ctree, (mapFn) -> mapExpParameter(mapFn = mapFn))
+    applyComponents(ctree, (nodeArg) -> mapExpParameter(nodeArg, mapFn))
     @assign fn.returnType = makeReturnType(fn)
   end
   if mapBody
-    @assign sections = P_Sections.Sections.mapExp(getSections(cls), mapFn)
-    @assign cls = cls.setSections(sections, cls)
+    sections = mapExp(getSections(cls), mapFn)
+    cls = setSections(sections, cls)
     updateClass(cls, fn.node)
   end
   return fn
@@ -1790,8 +1788,8 @@ end
 function collect(fn::M_Function)
   #=  The pointer might be immutable, check before assigning to it.
   =#
-  return if Pointer.access(fn.status) != FunctionStatus.BUILTIN
-    Pointer.update(fn.status, FunctionStatus.COLLECTED)
+  return if P_Pointer.access(fn.status) != FunctionStatus.BUILTIN
+    P_Pointer.update(fn.status, FunctionStatus.COLLECTED)
   end
 end
 
@@ -1816,7 +1814,7 @@ function isCollected(fn::M_Function)::Bool
 end
 
 function markSimplified(fn::M_Function)
-  return if Pointer.access(fn.status) != FunctionStatus.BUILTIN
+  return if P_Pointer.access(fn.status) != FunctionStatus.BUILTIN
     P_Pointer.update(fn.status, FunctionStatus.SIMPLIFIED)
   end
 end
@@ -1825,7 +1823,7 @@ function isSimplified(fn::M_Function)::Bool
   local simplified::Bool
 
   @assign simplified = begin
-    @match Pointer.access(fn.status) begin
+    @match P_Pointer.access(fn.status) begin
       FunctionStatus.BUILTIN => begin
         true
       end
@@ -1843,24 +1841,22 @@ function isSimplified(fn::M_Function)::Bool
 end
 
 function markEvaluated(fn::M_Function)
-  return if Pointer.access(fn.status) != FunctionStatus.BUILTIN
+  return if P_Pointer.access(fn.status) != FunctionStatus.BUILTIN
     P_Pointer.update(fn.status, FunctionStatus.EVALUATED)
   end
 end
 
 function isEvaluated(fn::M_Function)::Bool
   local evaluated::Bool
-
-  @assign evaluated = begin
-    @match Pointer.access(fn.status) begin
+  local status = P_Pointer.access(fn.status)
+  evaluated = begin
+    @match status begin
       FunctionStatus.BUILTIN => begin
         true
       end
-
       FunctionStatus.EVALUATED => begin
         true
       end
-
       _ => begin
         false
       end

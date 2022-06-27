@@ -353,7 +353,7 @@ function evaluateFunction(func::M_Function)::M_Function
   if !isEvaluated(func)
     markEvaluated(func)
     @assign func =
-      mapExp(func, (x) -> evaluateFuncExp(x, fnNode = func.node))
+      mapExp(func, (x) -> evaluateFuncExp(x, func.node))
     for fn_der in func.derivatives
       for der_fn in getCachedFuncs(fn_der.derivativeFn)
         evaluateFunction(der_fn)
@@ -365,7 +365,7 @@ end
 
 function evaluateFuncExp(exp::Expression, fnNode::InstNode)::Expression
   local outExp::Expression
-  @assign outExp = evaluateFuncExpTraverser(exp, fnNode, false)
+  (outExp, _) = evaluateFuncExpTraverser(exp, fnNode, false)
   return outExp
 end
 
@@ -381,7 +381,7 @@ function evaluateFuncExpTraverser(
 
   @assign (e, outChanged) = mapFoldShallow(
     exp,
-    (fnNode) -> evaluateFuncExpTraverser(fnNode = fnNode),
+    (nodeArg, boolArg) -> evaluateFuncExpTraverser(nodeArg, fnNode, boolArg #=TODO: is this right -john=#),
     false,
   )
   @assign outExp = begin

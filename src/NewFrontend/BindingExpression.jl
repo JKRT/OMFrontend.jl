@@ -2105,7 +2105,7 @@ end
 
 function mapFoldShallow(exp::Expression, func::MapFunc, arg::ArgT)  where {ArgT}
   local outExp::Expression
-  @assign outExp = begin
+  outExp = begin
     local e1::Expression
     local e2::Expression
     local e3::Expression
@@ -3085,8 +3085,8 @@ function foldCall(call::Call, func::FoldFunc, foldArg::ArgT)  where {ArgT}
   foldArg
 end
 
-function fold(@nospecialize(exp::Expression), func::FoldFunc, arg::ArgT)  where {ArgT}
-  local result::ArgT
+function fold(@nospecialize(exp::Expression), func::FoldFunc, arg)
+  local result
   @assign result = begin
     local e::Expression
     local e1::Expression
@@ -3251,11 +3251,10 @@ function foldOpt(exp::Option{Expression}, func::FoldFunc, arg::ArgT)  where {Arg
   result
 end
 
-function foldList(expl::List{Expression}, func::FoldFunc, arg::ArgT)  where {ArgT}
-  local result::ArgT = arg
-
+function foldList(expl::List{Expression}, func::FoldFunc, arg)
+  local result = arg
   for e in expl
-    @assign result = fold(e, func, result)
+    result = fold(e, func, result)
   end
   result
 end

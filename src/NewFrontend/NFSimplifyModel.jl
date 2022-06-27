@@ -534,16 +534,16 @@ function simplifyFunction(func::M_Function)
   local fn_body::Algorithm
   local sections::Sections
 
-  return if !P_Function.isSimplified(func)
-    P_Function.markSimplified(func)
-    P_Function.mapExp(func, simplify, mapBody = false)
+  return if !isSimplified(func)
+    markSimplified(func)
+    mapExp(func, simplify, false)
     @assign cls = getClass(func.node)
     @assign () = begin
       @match cls begin
         INSTANCED_CLASS(sections = sections) => begin
           @assign () = begin
             @match sections begin
-              P_Sections.Sections.SECTIONS(algorithms = fn_body <| nil()) => begin
+              SECTIONS(algorithms = fn_body <| nil()) => begin
                 @assign fn_body.statements = simplifyStatements(fn_body.statements)
                 @assign sections.algorithms = list(fn_body)
                 @assign cls.sections = sections

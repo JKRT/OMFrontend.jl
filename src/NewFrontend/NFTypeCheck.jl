@@ -317,9 +317,9 @@ function matchOverloadedBinaryOperator(
     end
   elseif listLength(exactMatches) == 1
     @match _cons(matchedFunc, _) = exactMatches
-    @assign fn = matchedFunc.func
-    @assign outType = returnType(fn)
-    @assign outExp = CALL_EXPRESSION(P_Call.makeTypedCall(
+    fn = matchedFunc.func
+    outType = returnType(fn)
+    outExp = CALL_EXPRESSION(makeTypedCall(
       matchedFunc.func,
       list(Util.tuple31(a) for a in matchedFunc.args),
       variabilityMax(var1, var2),

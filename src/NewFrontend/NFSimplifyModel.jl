@@ -210,17 +210,16 @@ end
 
 function simplifyStatements(stmts::List{<:Statement})::List{Statement}
   local outStmts::List{Statement} = nil
-
   for s in stmts
-    @assign outStmts = simplifyStatement(s, outStmts)
+    outStmts = simplifyStatement(s, outStmts)
   end
-  @assign outStmts = listReverseInPlace(outStmts)
+  outStmts = listReverseInPlace(outStmts)
   return outStmts
 end
 
 function simplifyStatement(stmt::Statement, statements::List{<:Statement})::List{Statement}
 
-  @assign statements = begin
+  statements = begin
     local e::Expression
     local lhs::Expression
     local rhs::Expression
@@ -232,7 +231,7 @@ function simplifyStatement(stmt::Statement, statements::List{<:Statement})::List
         simplifyAssignment(stmt, statements)
       end
 
-      P_Statement.Statement.FOR(range = SOME(e)) => begin
+      ALG_FOR(range = SOME(e)) => begin
         @assign ty = typeOf(e)
         @assign dim = Type.nthDimension(ty, 1)
         #= if Dimension.isOne(dim) then
@@ -303,7 +302,7 @@ function simplifyAssignment(stmt::Statement, statements::List{<:Statement})::Lis
   @match ALG_ASSIGNMENT(lhs = lhs, rhs = rhs, ty = ty, source = src) =
     stmt
   @assign ty = mapDims(ty, simplifyDimension)
-  if Type.isEmptyArray(ty)
+  if isEmptyArray(ty)
     return statements
   end
   @assign lhs = simplify(lhs)

@@ -1521,7 +1521,7 @@ function resolveConnections(flatModel::FlatModel, name::String)::FlatModel
   #=  - return the broken connects + the equations =#
 
   if System.getHasOverconstrainedConnectors()
-    @assign (flatModel, broken) = NFOCConnectionGraph.handleOverconstrainedConnections(flatModel, conns, name)
+    @assign (flatModel, broken) = handleOverconstrainedConnections(flatModel, conns, name)
   end
   #=  add the broken connections  =#
   @assign conns = addBroken(broken, conns)

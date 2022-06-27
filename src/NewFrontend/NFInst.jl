@@ -1927,7 +1927,7 @@ function instExpressions(@nospecialize(node::InstNode), @nospecialize(scope::Ins
         if arrayLength(exts) == 1
           @assign ty = TYPE_COMPLEX(node, COMPLEX_EXTENDS_TYPE(exts[1]))
         elseif SCodeUtil.hasBooleanNamedAnnotationInClass(definition(node), "__OpenModelica_builtinType")
-          @assign ty = TYPE_COMPLEX(node, ComplexType.CLASS())
+          @assign ty = TYPE_COMPLEX(node, COMPLEX_CLASS())
         else
           Error.addSourceMessage(Error.MISSING_TYPE_BASETYPE, list(name(node)), infoInstNode_info(node))
           fail()
@@ -3024,7 +3024,7 @@ function isExpressionNotFixed(exp::Expression; requireFinal::Bool = false, maxDe
       end
 
       CALL_EXPRESSION(__)  => begin
-        if P_Call.isImpure(exp.call) || P_Call.isExternal(exp.call)
+        if isImpure(exp.call) || isExternal(exp.call)
           @assign isNotFixed = true
         else
           @assign isNotFixed = containsShallow(exp, (requireFinal, maxDepth) -> isExpressionNotFixed(requireFinal = requireFinal, maxDepth = maxDepth))

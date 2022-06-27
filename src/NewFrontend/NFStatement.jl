@@ -484,9 +484,9 @@ function mapExp(stmt::Statement, func::MapFunc)::Statement
     local e2::Expression
     local e3::Expression
     @match stmt begin
-      ASSIGNMENT(__) => begin
-        @assign e1 = func(stmt.lhs)
-        @assign e2 = func(stmt.rhs)
+      ALG_ASSIGNMENT(__) => begin
+        e1 = func(stmt.lhs)
+        e2 = func(stmt.rhs)
         if referenceEq(e1, stmt.lhs) && referenceEq(e2, stmt.rhs)
           stmt
         else

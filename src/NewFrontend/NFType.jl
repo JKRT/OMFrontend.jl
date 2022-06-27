@@ -1196,20 +1196,19 @@ function isExpandableConnector(ty::M_Type)::Bool
 end
 
 function isConnector(ty::M_Type)::Bool
-  local isConnector::Bool
+  local isaC::Bool
 
-  @assign isConnector = begin
+  @assign isaC = begin
     @match ty begin
-      TYPE_COMPLEX(complexTy = ComplexType.CONNECTOR(__)) => begin
+      TYPE_COMPLEX(complexTy = COMPLEX_CONNECTOR(__)) => begin
         true
       end
-
       _ => begin
         false
       end
     end
   end
-  return isConnector
+  return isaC
 end
 
 function isComplex(ty::M_Type)::Bool

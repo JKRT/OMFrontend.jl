@@ -84,7 +84,7 @@ end
 """
 function emptyHashTableSized(size::Int)::HashTable
   local hashTable::HashTable
-  isEq = (cref1, cref2) -> Main.isEqual(cref1::ComponentRef, cref2::ComponentRef)
+  isEq = (cref1, cref2) -> isEqual(cref1::ComponentRef, cref2::ComponentRef)
   h = (cref, mod) -> hash(cref::ComponentRef, mod::Int)
   ts = (cref) -> Main.toString(cref::ComponentRef)
   hashTable = BaseHashTable.emptyHashTableWork(

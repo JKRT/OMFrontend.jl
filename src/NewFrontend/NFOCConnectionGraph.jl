@@ -131,8 +131,10 @@ function handleOverconstrainedConnections(flatModel::FlatModel, conns::Connectio
     lhs_crefs = getOverconstrainedCrefs(c1)
     rhs_crefs = getOverconstrainedCrefs(c2)
     if ! listEmpty(lhs_crefs)
-      @assign eqlBroken = generateEqualityConstraintEquation(c1.name, c1.ty, c2.name, c2.ty, origin, c1.source)
-      @assign graph = ListUtil.threadFold(lhs_crefs, rhs_crefs, (eqlBroken, print_trace) -> addConnection(brokenEquations = eqlBroken, printTrace = print_trace), graph)
+      eqlBroken = generateEqualityConstraintEquation(c1.name, c1.ty, c2.name, c2.ty, origin, c1.source)
+      graph = ListUtil.threadFold(lhs_crefs, rhs_crefs,
+                                  (x, y, z) -> addConnection(x, y, eqlBroken, print_trace, z),
+                                  graph)
     end
   end
   for eq in flatModel.equations
@@ -265,15 +267,14 @@ function generateEqualityConstraintEquation(clhs::ComponentRef, lhs_ty::M_Type, 
             ty2 = getComponentType(rhsArr)
             fcref_rhs = lookupFunctionSimple("equalityConstraint", classScope(node(lhs)))
             (fcref_rhs, fn_node_rhs, _) = instFunctionRef(fcref_rhs, AbsynUtil.dummyInfo)
-            println("Hello!")
             expRHS = CALL_EXPRESSION(UNTYPED_CALL(fcref_rhs, list(CREF_EXPRESSION(ty1, lhsArr), CREF_EXPRESSION(ty2, rhsArr)), nil, fn_node_rhs))
             (expRHS, ty, var) = typeExp(expRHS, origin, AbsynUtil.dummyInfo #=ElementSource_getInfo(source)=#)
-            @assign fcref_lhs = lookupFunctionSimple("fill", topScope(node(clhs)))
-            @assign (fcref_lhs, fn_node_lhs, _) = instFunctionRef(fcref_lhs, ElementSource_getInfo(source))
-            @assign expLHS = CALL_EXPRESSION(UNTYPED_CALL(fcref_lhs, _cons(REAL_EXPRESSION(0.0), ListUtil.map(arrayDims(ty), P_Dimension.Dimension.sizeExp)), nil, fn_node_lhs))
-            @assign (expLHS, ty, var) = typeExp(expLHS, origin, ElementSource_getInfo(source))
-            @assign replaceEq = EQUATION_EQUALITY(expRHS, expLHS, ty, source)
-            @assign eqsEqualityConstraint = list(replaceEq)
+            fcref_lhs = lookupFunctionSimple("fill", topScope(node(clhs)))
+            (fcref_lhs, fn_node_lhs, _) = instFunctionRef(fcref_lhs, AbsynUtil.dummyInfo #= ElementSource_getInfo(source)=#)
+            expLHS = CALL_EXPRESSION(UNTYPED_CALL(fcref_lhs, _cons(REAL_EXPRESSION(0.0), ListUtil.map(arrayDims(ty), sizeExp)), nil, fn_node_lhs))
+            (expLHS, ty, var) = typeExp(expLHS, origin, AbsynUtil.dummyInfo#=ElementSource_getInfo(source)=#)
+            replaceEq = EQUATION_EQUALITY(expRHS, expLHS, ty, source)
+            eqsEqualityConstraint = list(replaceEq)
             return eqsEqualityConstraint
           end
         end
@@ -715,15 +716,15 @@ function ord(inEl1::PotentialRoot, inEl2::PotentialRoot) ::Bool
   local outBoolean::Bool
 
   @assign outBoolean = begin
-    local r1::AbstractFloat
-    local r2::AbstractFloat
+    local r1::Float
+    local r2::Float
     local c1::ComponentRef
     local c2::ComponentRef
     local s1::String
     local s2::String
     @matchcontinue (inEl1, inEl2) begin
       ((c1, r1), (c2, r2))  => begin
-        @match true = realEq(r1, r2)
+        @match true = realEq(Float64(r1), Float64(r2))
         @assign s1 = toString(c1)
         @assign s2 = toString(c2)
         @match 1 = stringCompare(s1, s2)

@@ -230,9 +230,8 @@ function lookupRecordFieldType(name::String, recordType::M_Type)::M_Type
 end
 
 function isDiscrete(ty::M_Type)::Bool
-  local isDiscrete::Bool
-
-  @assign isDiscrete = begin
+  local b::Bool
+  b = begin
     @match ty begin
       TYPE_INTEGER(__) => begin
         true
@@ -262,7 +261,7 @@ function isDiscrete(ty::M_Type)::Bool
       end
     end
   end
-  return isDiscrete
+  return b
 end
 
 function isEqual(ty1::M_Type, ty2::M_Type)::Bool

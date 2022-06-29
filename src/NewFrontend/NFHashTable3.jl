@@ -773,10 +773,10 @@ end
 """
 function emptyHashTableSized(size::Int)::HashTable  
   local hashTable::HashTable
-  isEq = (cref1, cref2) -> Main.isEqual(cref1, cref2)
-  ts = (cref) -> Main.toString(cref)
+  isEq = (cref1, cref2) -> isEqual(cref1, cref2)
+  ts = (cref) -> toString(cref)
   h = (cref, mod) -> hashhash(cref, mod)
-  lts = (cref) -> Main.listToString(cref::List{<:ComponentRef})
+  lts = (cref) -> listToString(cref::List{<:ComponentRef})
   hashTable = BaseHashTable.emptyHashTableWork(
     size,
     (

@@ -90,7 +90,7 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
   @debug "START FLATTENING!"
   flat_model = flatten(inst_cls, name)
   @debug "CONSTANT EVALUATION"
-  #TODO:Temporary removed flat_model = evaluate(flat_model)
+  #TODO:Temporary removed (Due to VSS handling) flat_model = evaluate(flat_model)
   @debug "FLATTENING DONE: flat_model"
   #= Do unit checking =#
   #TODO  @assign flat_model = UnitCheck.checkUnits(flat_model)
@@ -122,8 +122,9 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
   if recompilationEnabled
     @debug "We have the SCodeProgram"
     @assign flat_model.scodeProgram = SOME(listHead(program))
-  end
-  
+  else
+    flat_model = collectConstants(flat_model, funcs)
+  end  
   @debug "VERIFYING MODEL: "
   verify(flat_model)
   #                   if Flags.isSet(Flags.NF_DUMP_FLAT)
@@ -632,7 +633,7 @@ function instDerivedAttributes(scodeAttr::SCode.Attributes) ::Attributes
   attributes
 end
 
-function instClass(node::InstNode, modifier::Modifier, attributes::Attributes = DEFAULT_ATTR, useBinding::Bool = false, instLevel::Int = 0, parent = EMPTY_NODE) ::Tuple{InstNode, Attributes}
+function instClass(node::InstNode, modifier::Modifier, attributes::Attributes = DEFAULT_ATTR, useBinding::Bool = false, instLevel::Int = 0, parent = EMPTY_NODE()) ::Tuple{InstNode, Attributes}
   local cls::Class
   local outer_mod::Modifier
   @debug "INST CLASS CALLED. CALLING GETCLASS ON NODE."
@@ -789,11 +790,11 @@ function instClassDef(cls::Class, outerMod::Modifier, attributes::Attributes, us
         =#
         #=  rather uncommon case hopefully, so in that case just reinstantiate the class.
         =#
-        @assign node = replaceClass(NOT_INSTANTIATED(), node)
-        @assign node = setNodeType(NORMAL_CLASS(), node)
-        @assign node = expand(node)
-        @assign node = instClass(node, outerMod, attributes, useBinding, instLevel, parent)
-        updateComponentType(parent, node)
+        node = replaceClass(NOT_INSTANTIATED(), node)
+        node = setNodeType(NORMAL_CLASS(), node)
+        node = expand(node)
+        (node, _) = instClass(node, outerMod, attributes, useBinding, instLevel, parentArg)
+        updateComponentType(parentArg, node)
         ()
       end
 
@@ -1635,8 +1636,8 @@ function assertNotInnerOuter(io, node::InstNode, restriction)
 end
 
 function assertNotFlowStream(cty::ConnectorType.TYPE, node::InstNode, restriction)
-  if ConnectorType.isFlowOrStream(cty)
-    invalidComponentPrefixError(ConnectorType.toString(cty), node, restriction)
+  if isFlowOrStream(cty)
+    invalidComponentPrefixError(toString(cty), node, restriction)
     fail()
   end
 end
@@ -1925,9 +1926,9 @@ function instExpressions(@nospecialize(node::InstNode), @nospecialize(scope::Ins
         #=  A type must extend a basic type.
         =#
         if arrayLength(exts) == 1
-          @assign ty = TYPE_COMPLEX(node, ComplexType.EXTENDS_TYPE(exts[1]))
+          @assign ty = TYPE_COMPLEX(node, COMPLEX_EXTENDS_TYPE(exts[1]))
         elseif SCodeUtil.hasBooleanNamedAnnotationInClass(definition(node), "__OpenModelica_builtinType")
-          @assign ty = TYPE_COMPLEX(node, ComplexType.CLASS())
+          @assign ty = TYPE_COMPLEX(node, COMPLEX_CLASS())
         else
           Error.addSourceMessage(Error.MISSING_TYPE_BASETYPE, list(name(node)), infoInstNode_info(node))
           fail()
@@ -2054,9 +2055,8 @@ end
 
 function instRecordConstructor(node::InstNode)
   local cache::CachedData
-
-  @assign cache = getFuncCache(node)
-  @assign () = begin
+  cache = getFuncCache(node)
+  () = begin
     @match cache begin
       C_FUNCTION(__)  => begin
         ()
@@ -2064,7 +2064,7 @@ function instRecordConstructor(node::InstNode)
       _  => begin
         cacheInitFunc(node)
         if SCodeUtil.isOperatorRecord(definition(node))
-          OperatorOverloading.instConstructor(scopePath(node, includeRoot = true), node, InstNode_info(node))
+          instConstructor(scopePath(node, includeRoot = true), node, InstNode_info(node))
         else
           Record.instDefaultConstructor(scopePath(node, includeRoot = true), node, InstNode_info(node))
         end
@@ -2143,7 +2143,8 @@ function instComponentExpressions(componentArg::InstNode)
       ()
     end
     _  => begin
-      Error.assertion(false, getInstanceName() + " got invalid component", sourceInfo())
+      @error "Relaxed instantation for: " + name(componentArg)
+      #Error.assertion(false, getInstanceName() + " got invalid component", sourceInfo())
       fail()
     end
   end
@@ -3024,7 +3025,7 @@ function isExpressionNotFixed(exp::Expression; requireFinal::Bool = false, maxDe
       end
 
       CALL_EXPRESSION(__)  => begin
-        if P_Call.isImpure(exp.call) || P_Call.isExternal(exp.call)
+        if isImpure(exp.call) || isExternal(exp.call)
           @assign isNotFixed = true
         else
           @assign isNotFixed = containsShallow(exp, (requireFinal, maxDepth) -> isExpressionNotFixed(requireFinal = requireFinal, maxDepth = maxDepth))

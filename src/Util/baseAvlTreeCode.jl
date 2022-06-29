@@ -515,14 +515,11 @@ function get(tree::Tree, key::Key)::Value
   local k::Key
   @assign k = begin
     @match tree begin
-      NODE(__) => begin
-        tree.key
-      end
-      LEAF(__) => begin
-        tree.key
-      end
+      NODE(__) =>  tree.key
+      LEAF(__) => tree.key
     end
   end
+  println("Stepping")
   @assign value = begin
     @match (keyCompare(key, k), tree) begin
       (0, LEAF(__)) => begin

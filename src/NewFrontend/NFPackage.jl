@@ -140,7 +140,7 @@ function collectFuncConstants(
         end
         @assign () = begin
           @match sections begin
-            P_Sections.Sections.SECTIONS(__) => begin
+            SECTIONS(__) => begin
               @assign constants = foldExpList(
                 sections.algorithms,
                 collectExpConstants,

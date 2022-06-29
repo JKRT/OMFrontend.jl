@@ -108,13 +108,11 @@ end
 
 function isExact(mk::FunctionMatchKind)::Bool
   local b::Bool
-
   @assign b = begin
     @match mk begin
-      EXACT(__) => begin
+      EXACT_MATCH_KIND(__) => begin
         true
       end
-
       _ => begin
         false
       end
@@ -324,9 +322,9 @@ function mapExpParameter(node::InstNode, mapFn::MapFunc)
   end
   @assign () = begin
     @match comp begin
-      TYPED_COMPONENTy(__) => begin
+      TYPED_COMPONENT(__) => begin
         @assign ty =
-          mapDims(comp.ty, (mapFn) -> mapExp(func = mapFn))
+          mapDims(comp.ty, (x) -> mapExp(x, mapFn))
         if !referenceEq(ty, comp.ty)
           @assign comp.ty = ty
           @assign dirty = true
@@ -334,7 +332,7 @@ function mapExpParameter(node::InstNode, mapFn::MapFunc)
         @assign cls = getClass(comp.classInst)
         applyComponents(
           classTree(cls),
-          (mapFn) -> mapExpParameter(mapFn = mapFn),
+          (nodeArg) -> mapExpParameter(nodeArg, mapFn),
         )
         ()
       end
@@ -367,12 +365,12 @@ function mapExp(
   @assign cls = getClass(fn.node)
   if mapParameters
     @assign ctree = classTree(cls)
-    applyComponents(ctree, (mapFn) -> mapExpParameter(mapFn = mapFn))
+    applyComponents(ctree, (nodeArg) -> mapExpParameter(nodeArg, mapFn))
     @assign fn.returnType = makeReturnType(fn)
   end
   if mapBody
-    @assign sections = P_Sections.Sections.mapExp(getSections(cls), mapFn)
-    @assign cls = cls.setSections(sections, cls)
+    sections = mapExp(getSections(cls), mapFn)
+    cls = setSections(sections, cls)
     updateClass(cls, fn.node)
   end
   return fn
@@ -948,9 +946,8 @@ function typeFunctionSignature(fn::M_Function)::M_Function
 end
 
 function typeFunction(fn::M_Function)::M_Function
-
-  @assign fn = typeFunctionSignature(fn)
-  @assign fn = typeFunctionBody(fn)
+  fn = typeFunctionSignature(fn)
+  fn = typeFunctionBody(fn)
   return fn
 end
 
@@ -1791,8 +1788,8 @@ end
 function collect(fn::M_Function)
   #=  The pointer might be immutable, check before assigning to it.
   =#
-  return if Pointer.access(fn.status) != FunctionStatus.BUILTIN
-    Pointer.update(fn.status, FunctionStatus.COLLECTED)
+  return if P_Pointer.access(fn.status) != FunctionStatus.BUILTIN
+    P_Pointer.update(fn.status, FunctionStatus.COLLECTED)
   end
 end
 
@@ -1817,7 +1814,7 @@ function isCollected(fn::M_Function)::Bool
 end
 
 function markSimplified(fn::M_Function)
-  return if Pointer.access(fn.status) != FunctionStatus.BUILTIN
+  return if P_Pointer.access(fn.status) != FunctionStatus.BUILTIN
     P_Pointer.update(fn.status, FunctionStatus.SIMPLIFIED)
   end
 end
@@ -1826,7 +1823,7 @@ function isSimplified(fn::M_Function)::Bool
   local simplified::Bool
 
   @assign simplified = begin
-    @match Pointer.access(fn.status) begin
+    @match P_Pointer.access(fn.status) begin
       FunctionStatus.BUILTIN => begin
         true
       end
@@ -1844,24 +1841,22 @@ function isSimplified(fn::M_Function)::Bool
 end
 
 function markEvaluated(fn::M_Function)
-  return if Pointer.access(fn.status) != FunctionStatus.BUILTIN
+  return if P_Pointer.access(fn.status) != FunctionStatus.BUILTIN
     P_Pointer.update(fn.status, FunctionStatus.EVALUATED)
   end
 end
 
 function isEvaluated(fn::M_Function)::Bool
   local evaluated::Bool
-
-  @assign evaluated = begin
-    @match Pointer.access(fn.status) begin
+  local status = P_Pointer.access(fn.status)
+  evaluated = begin
+    @match status begin
       FunctionStatus.BUILTIN => begin
         true
       end
-
       FunctionStatus.EVALUATED => begin
         true
       end
-
       _ => begin
         false
       end
@@ -1954,8 +1949,8 @@ function instFunction2(
       end
 
       SCode.CLASS(restriction = SCode.R_OPERATOR(__), classDef = cdef && SCode.PARTS(__)) => begin
-        @assign fnNode = instFunction3(fnNode)
-        @assign fnNode = OperatorOverloading.instOperatorFunctions(fnNode, info)
+        fnNode = instFunction3(fnNode)
+        fnNode = instOperatorFunctions(fnNode, info)
         (fnNode, false)
       end
 
@@ -1999,8 +1994,8 @@ function instFunctionNode(node::InstNode)::InstNode
         ()
       end
       _ => begin
-        @assign node =
-          instFunction2(scopePath(node), node, info(node))
+        (node, _) =
+          instFunction2(scopePath(node), node, InstNode_info(node))#info(node))
         ()
       end
     end
@@ -2014,14 +2009,12 @@ function instFunctionRef(
 )::Tuple{ComponentRef, InstNode, Bool}
   local specialBuiltin::Bool
   local fn_node::InstNode
-
   local cache::CachedData
   local parent::InstNode
-
-  @assign fn_node = classScope(node(fn_ref))
-  @assign cache = getFuncCache(fn_node)
+  fn_node = classScope(node(fn_ref))
+  cache = getFuncCache(fn_node)
   #=  Check if a cached instantiation of this function already exists. =#
-  @assign (fn_node, specialBuiltin) = begin
+  (fn_node, specialBuiltin) = begin
     @match cache begin
       C_FUNCTION(__) => begin
         (fn_node, cache.specialBuiltin)
@@ -2035,7 +2028,7 @@ function instFunctionRef(
             node(rest(fn_ref))
           end
         if !isComponent(parent)
-          @assign parent = EMPTY_NODE()
+          parent = EMPTY_NODE()
         end
         instFunction2(toPath(fn_ref), fn_node, info, parent)
       end

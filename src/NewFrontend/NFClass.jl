@@ -818,9 +818,9 @@ function classTree(cls::Class)::ClassTree
 end
 
 function isBuiltin(cls::Class)::Bool
-  local isBuiltin::Bool
+  local b::Bool
 
-  @assign isBuiltin = begin
+  @assign b = begin
     @match cls begin
       PARTIAL_BUILTIN(__) => begin
         true
@@ -843,7 +843,7 @@ function isBuiltin(cls::Class)::Bool
       end
     end
   end
-  return isBuiltin
+  return b
 end
 
 function lookupAttributeValue(name::String, cls::Class)::Option{Expression}
@@ -940,12 +940,12 @@ function makeRecordConstructor(fields::List{<:InstNode}, out::InstNode)::Class
 
   local tree::ClassTree
 
-  @assign tree = fromRecordConstructor(fields, out)
-  @assign cls = INSTANCED_CLASS(
+  tree = fromRecordConstructor(fields, out)
+  cls = INSTANCED_CLASS(
     TYPE_UNKNOWN(),
     tree,
     SECTIONS_EMPTY(),
-    RECORD_CONSTRUCTOR(),
+    RESTRICTION_RECORD_CONSTRUCTOR(),
   )
   return cls
 end

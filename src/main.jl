@@ -58,6 +58,7 @@ include("./NewFrontend/NFRecord.jl")
 include("./NewFrontend/NFOperatorOverloading.jl")
 include("./NewFrontend/NFCeval.jl")
 include("./NewFrontend/NFEquation.jl")
+include("./NewFrontend/NFDimension.jl")
 include("./NewFrontend/NFTyping.jl")
 
 include("./NewFrontend/NFScalarize.jl")
@@ -106,11 +107,18 @@ include("./NewFrontend/NFLookupState.jl")
 
 include("./NewFrontend/NFComponentRef.jl")
 @exportAll
+#= For over constrained connectors =#
+include("./NewFrontend/NFHashTable.jl")
+include("./NewFrontend/NFHashTable3.jl")
+include("./NewFrontend/NFHashTableCG.jl")
+include("./NewFrontend/NFOCConnectionGraph.jl")
+#= End =#
+@exportAll
 include("./NewFrontend/NFBuiltin.jl")
 #import ..NFBuiltin
 include("./NewFrontend/BindingExpression.jl")
 
-include("./NewFrontend/NFDimension.jl")
+include("./NewFrontend/NFEvalFunction.jl")
 
 include("./NewFrontend/NFCall.jl")
 

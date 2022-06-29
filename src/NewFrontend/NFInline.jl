@@ -196,7 +196,7 @@ function getOutputExp(stmt::Statement, outputNode::InstNode, call::Call)::Expres
     local cr_node::InstNode
     local rest_cr::ComponentRef
     @match stmt begin
-      P_Statement.Statement.ASSIGNMENT(
+      ALG_ASSIGNMENT(
         lhs = CREF_EXPRESSION(
           cref = CREF(
             node = cr_node,

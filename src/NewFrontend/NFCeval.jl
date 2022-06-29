@@ -211,7 +211,7 @@ function evalExp_impl(exp::Expression, target::EvalTarget)::Expression
         exp
       end
 
-RECORD_EXPRESSION(__) => begin
+      RECORD_EXPRESSION(__) => begin
         @assign exp.elements = list(evalExp_impl(e, target) for e in exp.elements)
         exp
       end

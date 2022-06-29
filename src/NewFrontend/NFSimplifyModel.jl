@@ -210,17 +210,16 @@ end
 
 function simplifyStatements(stmts::List{<:Statement})::List{Statement}
   local outStmts::List{Statement} = nil
-
   for s in stmts
-    @assign outStmts = simplifyStatement(s, outStmts)
+    outStmts = simplifyStatement(s, outStmts)
   end
-  @assign outStmts = listReverseInPlace(outStmts)
+  outStmts = listReverseInPlace(outStmts)
   return outStmts
 end
 
 function simplifyStatement(stmt::Statement, statements::List{<:Statement})::List{Statement}
 
-  @assign statements = begin
+  statements = begin
     local e::Expression
     local lhs::Expression
     local rhs::Expression
@@ -228,11 +227,11 @@ function simplifyStatement(stmt::Statement, statements::List{<:Statement})::List
     local dim::Dimension
     local body::List{Statement}
     @match stmt begin
-      P_Statement.Statement.ASSIGNMENT(__) => begin
+      ALG_ASSIGNMENT(__) => begin
         simplifyAssignment(stmt, statements)
       end
 
-      P_Statement.Statement.FOR(range = SOME(e)) => begin
+      ALG_FOR(range = SOME(e)) => begin
         @assign ty = typeOf(e)
         @assign dim = Type.nthDimension(ty, 1)
         #= if Dimension.isOne(dim) then
@@ -300,10 +299,10 @@ function simplifyAssignment(stmt::Statement, statements::List{<:Statement})::Lis
   local ty::M_Type
   local src::DAE.ElementSource
 
-  @match P_Statement.Statement.ASSIGNMENT(lhs = lhs, rhs = rhs, ty = ty, source = src) =
+  @match ALG_ASSIGNMENT(lhs = lhs, rhs = rhs, ty = ty, source = src) =
     stmt
   @assign ty = mapDims(ty, simplifyDimension)
-  if Type.isEmptyArray(ty)
+  if isEmptyArray(ty)
     return statements
   end
   @assign lhs = simplify(lhs)
@@ -324,7 +323,7 @@ function simplifyAssignment(stmt::Statement, statements::List{<:Statement})::Lis
       end
 
       _ => begin
-        _cons(P_Statement.Statement.ASSIGNMENT(lhs, rhs, ty, src), statements)
+        _cons(ALG_ASSIGNMENT(lhs, rhs, ty, src), statements)
       end
     end
   end
@@ -534,16 +533,16 @@ function simplifyFunction(func::M_Function)
   local fn_body::Algorithm
   local sections::Sections
 
-  return if !P_Function.isSimplified(func)
-    P_Function.markSimplified(func)
-    P_Function.mapExp(func, simplify, mapBody = false)
+  return if !isSimplified(func)
+    markSimplified(func)
+    mapExp(func, simplify, false)
     @assign cls = getClass(func.node)
     @assign () = begin
       @match cls begin
         INSTANCED_CLASS(sections = sections) => begin
           @assign () = begin
             @match sections begin
-              P_Sections.Sections.SECTIONS(algorithms = fn_body <| nil()) => begin
+              SECTIONS(algorithms = fn_body <| nil()) => begin
                 @assign fn_body.statements = simplifyStatements(fn_body.statements)
                 @assign sections.algorithms = list(fn_body)
                 @assign cls.sections = sections

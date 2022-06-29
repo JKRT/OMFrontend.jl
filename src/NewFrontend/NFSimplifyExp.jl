@@ -391,19 +391,19 @@ function simplifySize(sizeExp::Expression)::Expression
     local dims::List{Dimension}
     @match sizeExp begin
       SIZE_EXPRESSION(exp, SOME(index)) => begin
-        @assign index = simplify(index)
+        index = simplify(index)
         if isLiteral(index)
-          @assign dim = listGet(
+          dim = listGet(
             arrayDims(typeOf(exp)),
             toInteger(index),
           )
-          if P_Dimension.Dimension.isKnown(dim)
-            @assign exp = INTEGER_EXPRESSION(P_Dimension.Dimension.size(dim))
+          if isKnown(dim)
+            exp = INTEGER_EXPRESSION(P_Dimension.Dimension.size(dim))
           else
-            @assign exp = SIZE_EXPRESSION(exp, SOME(index))
+            exp = SIZE_EXPRESSION(exp, SOME(index))
           end
         else
-          @assign exp = SIZE_EXPRESSION(exp, SOME(index))
+          exp = SIZE_EXPRESSION(exp, SOME(index))
         end
         exp
       end

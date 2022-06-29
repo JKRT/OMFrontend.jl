@@ -1,8 +1,8 @@
 
 @UniontypeDecl NFConnections
 
-BrokenEdges = List
-BrokenEdge = Tuple
+const BrokenEdges = List
+const BrokenEdge = Tuple
 
 @Uniontype NFConnections begin
   @Record CONNECTIONS begin
@@ -12,7 +12,7 @@ BrokenEdge = Tuple
   end
 end
 
-Connections = NFConnections
+const Connections = NFConnections
 
 function makeConnectors(
   cref::ComponentRef,

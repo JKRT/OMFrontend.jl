@@ -1835,12 +1835,23 @@ function applyTuple31(inTuple::Tuple{T1, T2, T3}, func::FuncT) where {T1, T2, T3
   return outTuple
 end
 
-""" #= Returns -1, 0, or 1 depending on whether the memory address of ref1 is less,
-   equal, or greater than the address of ref2. =#"""
+function unsafe_pointer_from_objref(@nospecialize(x))
+  ccall(:jl_value_ptr, Ptr{Cvoid}, (Any,), x)
+end
+
+"""
+   Returns -1, 0, or 1 depending on whether the memory address of ref1 is less,
+   equal, or greater than the address of ref2.
+"""
 function referenceCompare(ref1::T1, ref2::T2) where {T1, T2}
   local result::Integer
-
-  @error "TODO: Defined in the runtime"
+  result = if ref1 === ref2
+    0
+  else
+    t1 = UInt64(unsafe_pointer_from_objref(ref1))
+    t2 = UInt64(unsafe_pointer_from_objref(ref2))
+    result = Int((t1 < t2) ? -1 : (t1 > t2))
+  end
   return result
 end
 

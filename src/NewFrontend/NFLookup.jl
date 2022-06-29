@@ -127,12 +127,12 @@ function lookupFunctionNameSilent(cref::Absyn.ComponentRef, scope::InstNode #= T
   local foundCref::ComponentRef
 
   local state::LookupState
-  local node::InstNode
+  local nodeVar::InstNode
 
-  @assign (foundCref, foundScope, state) = lookupCref(cref, scope)
-  @assign node = node(foundCref)
-  @assign (foundCref, state) = fixExternalObjectCall(node, foundCref, state)
-  @match true = isFunction(state, node)
+  (foundCref, foundScope, state) = lookupCref(cref, scope)
+  nodeVar = node(foundCref)
+  (foundCref, state) = fixExternalObjectCall(nodeVar, foundCref, state)
+  @match true = isFunction(state, nodeVar)
   (foundCref, foundScope)
 end
 

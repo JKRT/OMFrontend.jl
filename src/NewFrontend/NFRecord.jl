@@ -3,10 +3,10 @@ function name(field::Field)::String
   local name::String
   @assign name = begin
     @match field begin
-      INPUT(__) => begin
+      FIELD_INPUT(__) => begin
         field.name
       end
-      LOCAL(__) => begin
+      FIELD_LOCAL(__) => begin
         field.name
       end
     end
@@ -18,7 +18,7 @@ function isInput(field::Field)::Bool
   local isInput::Bool
   @assign isInput = begin
     @match field begin
-      INPUT(__) => begin
+      FIELD_INPUT(__) => begin
         true
       end
       _ => begin
@@ -30,10 +30,10 @@ function isInput(field::Field)::Bool
 end
 
 @Uniontype Field begin
-  @Record LOCAL begin
+  @Record FIELD_LOCAL begin
     name::String
   end
-  @Record INPUT begin
+  @Record FIELD_INPUT begin
     name::String
   end
 end
@@ -47,34 +47,36 @@ function instDefaultConstructor(
   local locals::List{InstNode}
   local all_params::List{InstNode}
   local attr::DAE.FunctionAttributes
-  local status::Pointer{FunctionStatus}
+  local status::Pointer{Signed} #= TODO: An issue if int is used.=#
   local ctor_node::InstNode
   local out_rec::InstNode
   local out_comp::Component
   local ctor_cls::Class
   local ty_node::InstNode
   try
-    @assign ctor_node = lookupLocalSimpleName(
+    (ctor_node, _) = lookupLocalSimpleName(
       name(node),
       classScope(parent(node)),
     )
     @match true = referenceEq(definition(node), definition(ctor_node))
-  catch
-    @assign ctor_node = replaceClass(NOT_INSTANTIATED(), node)
+  catch e
+    ctor_node = replaceClass(NOT_INSTANTIATED(), node)
   end
-  @assign ctor_node = Inst.instantiate(ctor_node)
-  Inst.instExpressions(ctor_node)
-  #=  Collect the record fields.
-  =#
-  @assign (inputs, locals, all_params) = collectRecordParams(ctor_node)
-  #=  Create the output record element, using the instance created above as both parent and type.
-  =#
+  #= Backported from the original code. =#
+  setNodeType(ROOT_CLASS(parent(node)), ctor_node)
+  #= End=#
+  ctor_node = instantiateN1(ctor_node, parent(ctor_node))
+  instExpressions(ctor_node)
+#  @info "Record fields"
+  #=  Collect the record fields.=#
+  (inputs, locals, all_params) = collectRecordParams(ctor_node)
+  #=  Create the output record element, using the instance created above as both parent and type. =#
   @assign out_comp = UNTYPED_COMPONENT(
     ctor_node,
     listArray(nil),
     EMPTY_BINDING,
     EMPTY_BINDING,
-    NFComponent.OUTPUT_ATTR,
+    OUTPUT_ATTR,
     NONE(),
     false,
     AbsynUtil.dummyInfo,
@@ -85,13 +87,13 @@ function instDefaultConstructor(
   =#
   @assign ctor_cls = makeRecordConstructor(all_params, out_rec)
   @assign ctor_node = replaceClass(ctor_cls, ctor_node)
-  #=  Create the constructor function and add it to the function cache.
-  =#
+  classApply(ctor_node, setType, TYPE_COMPLEX(ctor_node, COMPLEX_CLASS()))
+  #=  Create the constructor function and add it to the function cache. =#
   @assign attr = DAE.FUNCTION_ATTRIBUTES_DEFAULT
   @assign status = P_Pointer.create(FunctionStatus.INITIAL)
   cacheAddFunc(
     node,
-    P_Function.FUNCTION(
+    M_FUNCTION(
       path,
       ctor_node,
       inputs,
@@ -124,17 +126,17 @@ function collectRecordParams(
     @match tree begin
       CLASS_TREE_FLAT_TREE(components = comps) => begin
         for i = arrayLength(comps):(-1):1
-          @assign comp = comps[i]
-          @assign (inputs, locals) = collectRecordParam(comp, inputs, locals)
-          @assign allParams = _cons(comp, allParams)
+          comp = comps[i]
+          (inputs, locals) = collectRecordParam(comp, inputs, locals)
+          allParams = _cons(comp, allParams)
         end
         ()
       end
-      INSTANTIATED_TREE(components = pcomps) => begin
+      CLASS_TREE_INSTANTIATED_TREE(components = pcomps) => begin
         for i = arrayLength(pcomps):(-1):1
-          @assign comp = P_Pointer.access(pcomps[i])
-          @assign (inputs, locals) = collectRecordParam(comp, inputs, locals)
-          @assign allParams = _cons(comp, allParams)
+          comp = P_Pointer.access(pcomps[i])
+          (inputs, locals) = collectRecordParam(comp, inputs, locals)
+          allParams = _cons(comp, allParams)
         end
         ()
       end
@@ -153,21 +155,21 @@ function collectRecordParams(
 end
 
 function collectRecordParam(
-  component::InstNode,
+  componentArg::InstNode,
   inputs::List{<:InstNode},
   locals::List{<:InstNode},
 )::Tuple{List{InstNode}, List{InstNode}}
   local comp::Component
-  local comp_node::InstNode = resolveInner(component)
+  local comp_node::InstNode = resolveInner(componentArg)
   if isProtected(comp_node)
-    @assign locals = _cons(comp_node, locals)
+    locals = _cons(comp_node, locals)
     return (inputs, locals)
   end
-  @assign comp = component(comp_node)
-  if P_Component.isConst(comp) && P_Component.hasBinding(comp)
-    @assign locals = _cons(comp_node, locals)
+  comp = component(comp_node)
+  if isConst(comp) && hasBinding(comp)
+    locals = _cons(comp_node, locals)
   else
-    @assign inputs = _cons(comp_node, inputs)
+    inputs = _cons(comp_node, inputs)
   end
   return (inputs, locals)
 end
@@ -181,17 +183,17 @@ function collectRecordFields(recNode::InstNode)::List{Field}
   return fields
 end
 
-function collectRecordField(component::InstNode, fields::List{<:Field})::List{Field}
-  local comp_node::InstNode = resolveInner(component)
+function collectRecordField(componentArg::InstNode, fields::List{<:Field})::List{Field}
+  local comp_node::InstNode = resolveInner(componentArg)
   local comp::Component
   if isProtected(comp_node)
-    @assign fields = _cons(P_Field.LOCAL(name(comp_node)), fields)
+    fields = _cons(FIELD_LOCAL(name(comp_node)), fields)
   else
-    @assign comp = component(comp_node)
-    if P_Component.isConst(comp) && P_Component.hasBinding(comp)
-      @assign fields = _cons(P_Field.LOCAL(name(comp_node)), fields)
-    elseif !P_Component.isOutput(comp)
-      @assign fields = _cons(P_Field.INPUT(name(comp_node)), fields)
+    comp = component(comp_node)
+    if isConst(comp) && hasBinding(comp)
+      fields = _cons(FIELD_LOCAL(name(comp_node)), fields)
+    elseif !isOutput(comp)
+      fields = _cons(FIELD_INPUT(name(comp_node)), fields)
     end
   end
   return fields

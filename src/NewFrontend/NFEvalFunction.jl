@@ -1,7 +1,3 @@
-module NFEvalFunction
-
-using MetaModelica
-using ExportAll
 
 #= /*
 * This file is part of OpenModelica.
@@ -33,67 +29,37 @@ using ExportAll
 * See the full OSMC Public License conditions for more details.
 *
 */ =#
-import ..P_NFExpression
-P_Expression = P_NFExpression
-Expression = P_NFExpression.NFExpression
-import ..NFClass.P_Class
-import ..NFFunction.P_Function
-import ..NFInstNode.P_InstNode
-import ..P_NFSections
-P_Sections = P_NFSections
-Sections = P_NFSections.NFSections
-import ..P_NFStatement
-P_Statement = P_NFStatement
-Statement = P_NFStatement.NFStatement
-import ..P_NFComponentRef
-P_ComponentRef = P_NFComponentRef
-ComponentRef = P_NFComponentRef.NFComponentRef
-import ..NFBinding.P_Binding
-import ..NFComponent.P_Component
-import ..P_NFType
-P_M_Type = P_NFType
-M_Type = NFType
-import ..P_NFDimension
-P_Dimension = P_NFDimension
-Dimension = P_NFDimension.NFDimension
-import ..NFClassTree.ree
-import ..P_NFSubscript
-P_Subscript = P_NFSubscript
-Subscript = P_NFSubscript.NFSubscript
-import ..NFRecord
-Record = NFRecord
 
-import ..NFCeval
-Ceval = NFCeval
-using MetaModelica.Dangerous
-import ..P_NFRangeIterator
-P_RangeIterator = P_NFRangeIterator
-RangeIterator = P_NFRangeIterator.NFRangeIterator
-import ..ElementSource
-import ..Flags
-import ..ModelicaExternalC
-import ..System
-import ..NFTyping.ExpOrigin
-import ..SCode
-import ..SCodeUtil
-import ..NFPrefixes.Variability
-import ..NFEvalFunctionExt
-EvalFunctionExt = NFEvalFunctionExt
-import ..P_EvalTarget
+using MetaModelica
+using ExportAll
+
 
 module ReplTree
 
 using MetaModelica
 using ExportAll
 
-import ..BaseAvlTree
-import ..P_NFExpression
-P_Expression = P_NFExpression
-Expression = P_NFExpression.NFExpression
-import ..NFInstNode.P_InstNode
-using BaseAvlTree #= Modelica extend clause =#
-Key = InstNode
-Value = Expression
+import ..Main.NFExpression
+import ..Main.InstNode
+import ..Main.refCompare
+
+const Expression = NFExpression
+const Key = InstNode
+const Value = Expression
+
+include("../Util/baseAvlTreeCode.jl")
+
+# function keyStr(inKey)
+#   name(inKey)
+# end
+
+# function valueStr(inValue)
+#   toString(inValue);
+# end
+
+# function keyCompare(inKey1::InstNode, inKey2::InstNode)
+#   refCompare(inKey1, inKey2)
+# end
 
 @exportAll()
 end
@@ -236,53 +202,52 @@ end
 function evaluateRecordConstructor(
   fn::M_Function,
   ty::M_Type,
-  args::List{<:Expression},
+  args::List{<:Expression};
   evaluate::Bool = true,
 )::Expression
   local result::Expression
-
   local repl::ReplTree.Tree
   local arg::Expression
   local repl_exp::Expression
-  local fields::List{Record.P_Field}
+  local fields::List{Field}
   local rest_args::List{Expression} = args
   local expl::List{Expression} = nil
   local inputs::List{InstNode} = fn.inputs
   local locals::List{InstNode} = fn.locals
   local node::InstNode
 
-  @assign repl = ReplTree.new()
-  @assign fields = Type.recordFields(ty)
-  #=  Add the inputs and local variables to the replacement tree with their
-  =#
-  #=  respective bindings.
-  =#
+  repl = ReplTree.new()
+  fields = recordFields(ty)
+  #=  Add the inputs and local variables to the replacement tree with their =#
+  #=  respective bindings. =#
   for i in inputs
     @match _cons(arg, rest_args) = rest_args
-    @assign repl = ReplTree.add(repl, i, arg)
+    repl = ReplTree.add(repl, i, arg)
   end
   for l in locals
-    @assign repl = ReplTree.add(repl, l, getBindingExp(l, repl))
+    repl = ReplTree.add(repl, l, getBindingExp(l, repl))
   end
-  #=  Apply the replacements to all the variables.
-  =#
-  @assign repl = ReplTree.map(repl, (repl) -> applyBindingReplacement(repl = repl))
+  #=  Apply the replacements to all the variables. =#
+  @assign repl = ReplTree.map(repl, (nodeArg, expArg) -> applyBindingReplacement(nodeArg, expArg, repl))
   #=  Fetch the new binding expressions for all the variables, both inputs and
   =#
   #=  locals.
   =#
   for f in fields
-    if Record.P_Field.isInput(f)
-      @match _cons(node, inputs) = inputs
+    println("Looping")
+    if isInput(f)
+      @match node <| inputs = inputs
     else
-      @match _cons(node, locals) = locals
+      @match node <| locals = locals
     end
-    @assign expl = _cons(ReplTree.get(repl, node), expl)
+    println("After match")
+    e = ReplTree.get(repl, node)
+    expl = _cons(e, expl)    
   end
   #=  Create a new record expression from the list of arguments.
   =#
-  @assign result =
-    makeRecord(P_Function.name(fn), ty, listReverseInPlace(expl))
+  result =
+    makeRecord(name(fn), ty, listReverseInPlace(expl))
   #=  Constant evaluate the expression if requested.
   =#
   if evaluate
@@ -316,7 +281,7 @@ function createReplacements(fn::M_Function, args::List{<:Expression})::ReplTree.
   =#
   #=  building the tree to make sure all the replacements are available.
   =#
-  @assign repl = ReplTree.map(repl, (repl) -> applyBindingReplacement(repl = repl))
+  @assign repl = ReplTree.map(repl, (nodeArg, expArg) -> applyBindingReplacement(nodeArg, expArg, repl))
   return repl
 end
 
@@ -476,9 +441,8 @@ function applyBindingReplacement(
   repl::ReplTree.Tree,
 )::Expression
   local outExp::Expression
-
-  @assign outExp =
-    map(exp, (repl) -> applyReplacements2(repl = repl))
+  outExp =
+    map(exp, (expArg) -> applyReplacements2(repl, expArg))
   return outExp
 end
 
@@ -517,7 +481,7 @@ function applyReplacementCref(
   local cref_parts::List{ComponentRef}
   local repl_exp::Option{Expression}
   local parent::InstNode
-  local node::InstNode
+  local nodeVar::InstNode
 
   #=  Explode the cref into a list of parts in reverse order.
   =#
@@ -543,10 +507,10 @@ function applyReplacementCref(
     if !listEmpty(cref_parts)
       try
         for cr in cref_parts
-          @assign node = node(cr)
+          @assign nodeVar = node(cr)
           @assign outExp = makeImmutable(outExp)
           @assign outExp =
-            recordElement(name(node), outExp)
+            recordElement(name(nodeVar), outExp)
           @assign outExp = applySubscripts(
             getSubscripts(cr),
             outExp,
@@ -575,8 +539,7 @@ function applyReplacementCref(
 end
 
 function optimizeBody(body::List{<:Statement})::List{Statement}
-
-  @assign body = list(P_Statement.Statement.map(s, optimizeStatement) for s in body)
+  body = list(map(s, optimizeStatement) for s in body)
   return body
 end
 
@@ -599,9 +562,9 @@ function optimizeStatement(stmt::Statement)::Statement
         @assign stmt.body = list(
           P_Statement.Statement.mapExp(
             s,
-            (stmt.iterator, iter_exp) -> replaceIterator(
-              iterator = stmt.iterator,
-              iteratorValue = iter_exp,
+            (iteratorArg, iter_expArg) -> replaceIterator(
+              iterator = iteratorArg,
+              iteratorValue = iter_expArg,
             ),
           ) for s in stmt.body
         )
@@ -687,7 +650,7 @@ function evaluateStatement(stmt::Statement)::FlowControl
   =#
   @assign ctrl = begin
     @match stmt begin
-      P_Statement.Statement.ASSIGNMENT(__) => begin
+      ALG_ASSIGNMENT(__) => begin
         evaluateAssignment(stmt.lhs, stmt.rhs, stmt.source)
       end
 
@@ -1600,7 +1563,4 @@ function evaluateExternal3(name::String, args::List{<:Expression})
       end
     end
   end
-end
-
-@exportAll()
 end

@@ -273,11 +273,11 @@ function evaluateStatement(stmt::Statement, constVariability::VariabilityType)::
     local e3::Expression
     local ty::M_Type
     @match stmt begin
-      P_Statement.Statement.ASSIGNMENT(__) => begin
+      ALG_ASSIGNMENT(__) => begin
         @assign ty = mapDims(stmt.ty, evaluateDimension)
         @assign e1 = evaluateExp(stmt.lhs, constVariability)
         @assign e2 = evaluateExp(stmt.rhs, constVariability)
-        P_Statement.Statement.ASSIGNMENT(e1, e2, ty, stmt.source)
+        ALG_ASSIGNMENT(e1, e2, ty, stmt.source)
       end
 
       P_Statement.Statement.FOR(__) => begin
@@ -353,7 +353,7 @@ function evaluateFunction(func::M_Function)::M_Function
   if !isEvaluated(func)
     markEvaluated(func)
     @assign func =
-      mapExp(func, (x) -> evaluateFuncExp(x, fnNode = func.node))
+      mapExp(func, (x) -> evaluateFuncExp(x, func.node))
     for fn_der in func.derivatives
       for der_fn in getCachedFuncs(fn_der.derivativeFn)
         evaluateFunction(der_fn)
@@ -365,7 +365,7 @@ end
 
 function evaluateFuncExp(exp::Expression, fnNode::InstNode)::Expression
   local outExp::Expression
-  @assign outExp = evaluateFuncExpTraverser(exp, fnNode, false)
+  (outExp, _) = evaluateFuncExpTraverser(exp, fnNode, false)
   return outExp
 end
 
@@ -381,7 +381,7 @@ function evaluateFuncExpTraverser(
 
   @assign (e, outChanged) = mapFoldShallow(
     exp,
-    (fnNode) -> evaluateFuncExpTraverser(fnNode = fnNode),
+    (nodeArg, boolArg) -> evaluateFuncExpTraverser(nodeArg, fnNode, boolArg #=TODO: is this right -john=#),
     false,
   )
   @assign outExp = begin

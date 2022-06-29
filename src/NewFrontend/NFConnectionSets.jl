@@ -19,6 +19,9 @@ import ..Main.split
 import ..Main.toString
 import ..Main.toDebugString
 import ..Main.isEqual
+import ..Main.name
+import ..Main.isPrefix
+
 const Connector = NFConnector
 const Connections = NFConnections
 const Entry = Connector

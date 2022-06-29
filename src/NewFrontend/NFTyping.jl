@@ -245,25 +245,21 @@ end
 function typeStructor(node::InstNode)
   local cache::CachedData
   local fnl::List{M_Function}
-
-  @assign cache = getFuncCache(node)
-  return @assign () = begin
-    @match cache begin
-      C_FUNCTION(funcs = fnl, typed = false) => begin
-        @assign fnl = list(P_Function.typeFunction(fn) for fn in fnl)
-        @assign fnl = list(
-          patchOperatorRecordConstructorBinding(fn) for fn in fnl
-        )
-        setFuncCache(
-          node,
-          C_FUNCTION(fnl, true, cache.specialBuiltin),
-        )
-        ()
-      end
-
-      _ => begin
-        ()
-      end
+  cache = getFuncCache(node)
+  @match cache begin
+    C_FUNCTION(funcs = fnl, typed = false) => begin
+      fnl = list(typeFunction(fn) for fn in fnl)
+      fnl = list(
+        patchOperatorRecordConstructorBinding(fn) for fn in fnl
+          )
+      setFuncCache(
+        node,
+        C_FUNCTION(fnl, true, cache.specialBuiltin),
+      )
+      return ()
+    end
+    _ => begin
+      return ()
     end
   end
 end
@@ -418,19 +414,16 @@ end
 
 function makeRecordType(constructor::InstNode)::ComplexType
   local recordTy::ComplexType
-
   local cache::CachedData
   local fn::M_Function
-  local fields::List{Record.P_Field}
-
-  @assign cache = getFuncCache(constructor)
-  @assign recordTy = begin
+  local fields::List{Field}
+  cache = getFuncCache(constructor)
+  recordTy = begin
     @match cache begin
       C_FUNCTION(funcs = fn <| _) => begin
-        @assign fields = Record.collectRecordFields(fn.node)
+        fields = collectRecordFields(fn.node)
         COMPLEX_RECORD(constructor, fields)
       end
-
       _ => begin
         Error.assertion(
           false,
@@ -448,53 +441,37 @@ function typeComponent(@nospecialize(inComponent::InstNode), origin::ORIGIN_Type
   local ty::NFType
   local node::InstNode = resolveOuter(inComponent)
   local c::Component = component(node)
-
   @assign ty = begin
     @match c begin
+      #=  An untyped component, type it. =#
       UNTYPED_COMPONENT(__) => begin
-        #=  An untyped component, type it.
-        =#
-        #=  Type the component's dimensions.
-        =#
+        #=  Type the component's dimensions. =#
         typeDimensions(c.dimensions, node, c.binding, origin, c.info)
-        #=  Construct the type of the component and update the node with it.
-        =#
+        #=  Construct the type of the component and update the node with it. =#
         @assign ty = typeClassType(c.classInst, c.binding, origin, inComponent)
         @assign ty = liftArrayLeftList(ty, arrayList(c.dimensions))
         updateComponent!(setType(ty, c), node)
-        #=  Check that flow/stream variables are Real.
-        =#
+        #=  Check that flow/stream variables are Real. =#
         checkComponentStreamAttribute(c.attributes.connectorType, ty, inComponent)
-        #=  Type the component's children.
-        =#
+        #=  Type the component's children. =#
         typeComponents(c.classInst, origin)
         ty
       end
-      TYPED_COMPONENT(__) => begin
-        c.ty
-      end
-
-      ITERATOR_COMPONENT(__) => begin
-        c.ty
-      end
-
-      ENUM_LITERAL_COMPONENT(literal = ENUM_LITERAL_EXPRESSION(ty = ty)) =>
-        begin
-          ty
-        end
-
+      #=  A component that has already been typed, skip it. =#
+      TYPED_COMPONENT(__) => c.ty
+      ITERATOR_COMPONENT(__) => c.ty
+      ENUM_LITERAL_COMPONENT(literal = ENUM_LITERAL_EXPRESSION(ty = ty)) => ty
       _ => begin
-        #=  A component that has already been typed, skip it.
-        =#
-        #=  Any other type of component shouldn't show up here.
-        =#
-        Error.assertion(
-          false,
-          getInstanceName() +
-          " got noninstantiated component " +
-          name(component),
-          sourceInfo(),
-        )
+        #=  Any other type of component shouldn't show up here.=#
+        @error "got noninstantiated component: " + toString(name(inComponent) ,c) +
+          " from the following node:" + toString(inComponent)
+        # Error.assertion(
+        #   false,
+        #   getInstanceName() +
+        #   " got noninstantiated component " +
+        #   name(component),
+        #   sourceInfo(),
+        # )
         fail()
       end
     end
@@ -607,14 +584,14 @@ function typeDimension(
   origin::ORIGIN_Type,
   info::SourceInfo,
   )::Dimension
-  typeDimension2(
+  Base.inferencebarrier(typeDimension2(
     dimensions::Vector{Dimension},
     index::Int,
     component::InstNode,
     binding::Binding,
     origin::ORIGIN_Type,
     info::SourceInfo,
-  )
+  ))
 end
 
 function typeDimension2(
@@ -679,60 +656,16 @@ function typeDimension2(
       end
 
       DIMENSION_UNTYPED(__) => begin
-        #=  If the dimension is not typed, type it.
-        =#
-        arrayUpdate(
-          dimensions,
-          index,
-          DIMENSION_UNTYPED(dimension.dimension, true),
-        )
-        @assign (exp, ty, var) = typeExp(
-          dimension.dimension,
-          setFlag(origin, ORIGIN_DIMENSION),
-          info,
-        )
-        checkDimensionType(exp, ty, info)
-        if flagNotSet(origin, ORIGIN_FUNCTION)
-          if var <= Variability.PARAMETER
-            @assign exp = evalExp(
-              exp,
-              EVALTARGET_DIMENSION(component, index, exp, info),
-            )
-          else
-            Error.addSourceMessage(
-              Error.DIMENSION_NOT_KNOWN,
-              list(toString(exp)),
-              info,
-            )
-            fail()
-          end
-        else
-          if var <= Variability.STRUCTURAL_PARAMETER
-            @assign exp = evalExp(
-              exp,
-              EVALTARGET_DIMENSION(component, index, exp, info),
-            )
-          end
-        end
-        if !arrayAllEqual(exp)
-          Error.addSourceMessage(
-            Error.RAGGED_DIMENSION,
-            list(toString(exp)),
-            info,
-          )
-          fail()
-        end
-        @assign dim = fromExp(
-          arrayFirstScalar(exp),
-          var,
-        )
-        arrayUpdate(dimensions, index, dim)
+        dim = typeDimensionUntyped(dimensions,
+                             dimension,
+                             index,
+                             component,
+                             origin,
+                             info)
         dim
       end
 
-      DIMENSION_UNKNOWN(
-        __,
-      ) where {(flagSet(origin, ORIGIN_FUNCTION))} => begin
+      DIMENSION_UNKNOWN(__) where {(flagSet(origin, ORIGIN_FUNCTION))} => begin
         dimension
       end
 
@@ -905,6 +838,92 @@ function verifyDimension(dimension::Dimension, component::InstNode, info::Source
     end
   end
 end
+
+
+function typeDimensionUntyped(@nospecialize(dimensions::Vector{Dimension}),
+                              @nospecialize(dimension::DIMENSION_UNTYPED),
+                              @nospecialize(index::Int),
+                              @nospecialize(component::InstNode),
+                              @nospecialize(origin::ORIGIN_Type),
+                              @nospecialize(info::SourceInfo))
+  #=  If the dimension is not typed, type it. =#
+  arrayUpdate(
+    dimensions,
+    index,
+    DIMENSION_UNTYPED(dimension.dimension, true),
+  )
+  #=
+  Calling typeExp directly here leads to an infitite loop in the Julia compiler
+  The code below was added to avoid that.
+  =#
+  local exp
+  local ty
+  local var
+  local flag = setFlag(origin, ORIGIN_DIMENSION)
+  local dim = dimension.dimension
+  
+  (exp, ty, var) = @match dim begin
+    CREF_EXPRESSION(__) => begin typeCrefExp(
+      dim.cref,
+      Base.inferencebarrier(flag),
+      Base.inferencebarrier(info))
+    end
+    INTEGER_EXPRESSION(__) || REAL_EXPRESSION(__) || BOOLEAN_EXPRESSION(__) => begin
+      (dim, TYPE_INTEGER(), Variability.CONSTANT)
+    end
+    BINARY_EXPRESSION(__) => begin
+      typeBinaryExpression(dim, flag, info)
+    end
+    UNARY_EXPRESSION(__) => begin
+      typeUnaryExpression(dim, flag, info)
+    end
+    SIZE_EXPRESSION(__) => begin
+      typeSize(dim, flag, info)
+    end
+    _ => begin
+      @error "Unknown dimension type"
+      fail()
+    end
+  end
+  checkDimensionType(exp, ty, info)
+  if flagNotSet(origin, ORIGIN_FUNCTION)
+    if var <= Variability.PARAMETER
+      exp = evalExp(
+        exp,
+        EVALTARGET_DIMENSION(component, index, exp, info),
+      )
+    else
+      Error.addSourceMessage(
+        Error.DIMENSION_NOT_KNOWN,
+        list(toString(exp)),
+        info,
+      )
+      fail()
+    end
+  else
+    if var <= Variability.STRUCTURAL_PARAMETER
+      exp = evalExp(
+        exp,
+        EVALTARGET_DIMENSION(component, index, exp, info),
+      )
+    end
+  end
+  if !arrayAllEqual(exp)
+    Error.addSourceMessage(
+      Error.RAGGED_DIMENSION,
+      list(toString(exp)),
+      info,
+    )
+    fail()
+  end
+  dim = fromExp(
+    arrayFirstScalar(exp),
+    var,
+  )
+  arrayUpdate(dimensions, index, dim)
+  return dim
+end
+
 
 """ #= Tries to fetch the binding for a given record field by using the binding of
    the record instance. =#"""
@@ -1377,7 +1396,7 @@ function typeExp(
   @nospecialize(info::SourceInfo)
   )::Tuple
   #= Stop excessive type inference =#
-  return typeExp2(exp, origin, info)
+  return Base.inferencebarrier(typeExp2(exp, origin, info))
 end
 
 function typeExp2(
@@ -1486,7 +1505,7 @@ function typeExp2(
       BINDING_EXP(__) => typeBindingExp(exp, origin, info)
 
       _ => begin
-        @debug "Attempted to type"
+        @error "Attempted to type"
         fail()
       end
     end
@@ -1759,10 +1778,21 @@ function typeCrefDim(
   dimIndex::Int,
   origin::ORIGIN_Type,
   info::SourceInfo,
-)::Tuple{Dimension, TypingError}
-  local error::TypingError = P_TypingError.NO_ERROR()
-  local dim::Dimension
+  )
+  Base.inferencebarrier(typeCrefDim2(
+    cref::ComponentRef,
+    dimIndex::Int,
+    origin::ORIGIN_Type,
+    info::SourceInfo,
+  ))
+end
 
+function typeCrefDim2(@nospecialize(cref::ComponentRef),
+                      @nospecialize(dimIndex::Int),
+                      @nospecialize(origin::ORIGIN_Type),
+                      @nospecialize(info::SourceInfo))::Tuple{Dimension, TypingError}
+  local error::TypingError = NO_ERROR()
+  local dim::Dimension  
   local crl::List{ComponentRef}
   local subs::List{Subscript}
   local index::Int
@@ -1771,16 +1801,13 @@ function typeCrefDim(
   local node::InstNode
   local c::Component
   local ty::NFType
-
   #=  TODO: If the cref has subscripts it becomes trickier to correctly calculate
-  =#
-  #=        the dimension. For now we take the easy way out and just type the
-  =#
-  #=        whole cref, but doing so might introduce unnecessary cycles.
+      the dimension. For now we take the easy way out and just type the
+      whole cref, but doing so might introduce unnecessary cycles.
   =#
   if hasSubscripts(cref)
-    @assign (_, ty) = typeCref(cref, origin, info)
-    @assign (dim, error) = nthDimensionBoundsChecked(ty, dimIndex)
+    (_, ty) = typeCref(cref, origin, info)
+    (dim, error) = nthDimensionBoundsChecked(ty, dimIndex)
     return (dim, error)
   end
   #=  Loop through the cref in reverse, reducing the index by the number of
@@ -1796,47 +1823,46 @@ function typeCrefDim(
   @assign crl = toListReverse(cref)
   @assign index = dimIndex
   for cr in crl
-    @assign () = begin
       @match cr begin
-        CREF(
+        COMPONENT_REF_CREF(
           node = COMPONENT_NODE(__),
           subscripts = subs,
         ) => begin
-          @assign node = resolveOuter(cr.node)
-          @assign c = component(node)
+          node = resolveOuter(cr.node)
+          c = component(node)
           #=  If the component is untyped it might have an array type whose dimensions
           =#
           #=  we need to take into consideration. To avoid making this more complicated
           =#
           #=  than it already is we make sure that the component is typed in that case.
           =#
-          if hasDimensions(getClass(P_Component.classInstance(c)))
-            typeComponent(node, origin)
-            @assign c = component(node)
+          if hasDimensions(getClass(classInstance(c)))
+            Base.inferencebarrier(typeComponent(node, origin))
+            c = component(node)
           end
-          @assign dim_count = begin
+          dim_count = begin
             @match c begin
               UNTYPED_COMPONENT(__) => begin
                 @assign dim_count = arrayLength(c.dimensions)
                 if index <= dim_count && index > 0
-                  @assign dim = typeDimension(
+                  dim = Base.inferencebarrier(typeDimension(
                     c.dimensions,
                     index,
                     node,
                     c.binding,
                     origin,
                     c.info,
-                  )
-                  return
+                  ))
+                  return (dim, error)
                 end
                 dim_count
               end
 
               TYPED_COMPONENT(__) => begin
-                @assign dim_count = Type.dimensionCount(c.ty)
+                dim_count = dimensionCount(c.ty)
                 if index <= dim_count && index > 0
-                  @assign dim = Type.nthDimension(c.ty, index)
-                  return
+                  dim = nthDimension(c.ty, index)
+                  return (dim, error)
                 end
                 dim_count
               end
@@ -1846,19 +1872,15 @@ function typeCrefDim(
               end
             end
           end
-          @assign index = index - dim_count
-          @assign dim_total = dim_total + dim_count
-          ()
+          index = index - dim_count
+          dim_total = dim_total + dim_count
         end
-
         _ => begin
-          ()
         end
       end
-    end
   end
-  @assign dim = DIMENSION_UNKNOWN()
-  @assign error = P_TypingError.OUT_OF_BOUNDS(dim_total)
+  dim = DIMENSION_UNKNOWN()
+  error = OUT_OF_BOUNDS(dim_total)
   return (dim, error)
 end
 
@@ -1917,9 +1939,9 @@ function typeCref(
     Error.addSourceMessage(Error.EXP_INVALID_IN_FUNCTION, list("time"), info)
     fail()
   end
-  @assign (cref, subsVariability) = typeCref2(cref, origin, info)
-  @assign ty = getSubscriptedType(cref)
-  @assign nodeVariabilityType = nodeVariability(cref)
+  (cref, subsVariability) = Base.inferencebarrier(typeCref2(cref, origin, info))
+  ty = getSubscriptedType(cref)
+  nodeVariabilityType = nodeVariability(cref)
   return (cref, ty, nodeVariabilityType, subsVariability)
 end
 
@@ -1967,7 +1989,7 @@ function typeCref2(
           else
             ORIGIN_CLASS
           end
-        node_ty = typeComponent(cref.node, node_origin)
+        node_ty = Base.inferencebarrier(typeComponent(cref.node, node_origin))
         (subs, subs_var) =
           typeSubscripts(cref.subscripts, node_ty, cref, origin, info)
          (rest_cr, rest_var) = typeCref2(cref.restCref, origin, info, false)
@@ -2484,15 +2506,17 @@ function printRangeTypeError(
   return fail()
 end
 
-""" #= Types a size expression. If evaluate is true the size expression is also
+"""
+   Types a size expression. If evaluate is true the size expression is also
    evaluated if the dimension is known and the index is a parameter expression,
-   otherwise a typed size expression is returned. =#"""
+   otherwise a typed size expression is returned.
+"""
 function typeSize(
   sizeExp::Expression,
   origin::ORIGIN_Type,
   info::SourceInfo,
   evaluate::Bool = true,
-)::Tuple{Expression, NFType, Variability}
+)::Tuple{Expression, NFType, VariabilityType}
   local variability::VariabilityType
   local sizeType::NFType
 
@@ -2524,7 +2548,7 @@ function typeSize(
               "size ",
               "dim",
               toString(index),
-              Type.toString(index_ty),
+              toString(index_ty),
               "Integer",
             ),
             info,
@@ -2533,22 +2557,22 @@ function typeSize(
         end
         if variability <= Variability.STRUCTURAL_PARAMETER &&
            !containsIterator(index, origin)
-          @assign index = Ceval.evalExp(index, Ceval.P_EvalTarget.IGNORE_ERRORS())
+          index = evalExp(index, EVALTARGET_IGNORE_ERRORS())
           @match INTEGER_EXPRESSION(iindex) = index
           @assign (dim, oexp, ty_err) = typeExpDim(exp, iindex, next_origin, info)
           checkSizeTypingError(ty_err, exp, iindex, info)
-          if P_Dimension.Dimension.isKnown(dim) && evaluate
-            @assign exp = P_Dimension.Dimension.sizeExp(dim)
+          if isKnown(dim) && evaluate
+            exp = sizeExp(dim)
           else
             if isSome(oexp)
               @match SOME(exp) = oexp
             else
-              @assign exp = typeExp(exp, next_origin, info)
+              (exp, _, _) = typeExp(exp, next_origin, info)
             end
             @assign exp = SIZE_EXPRESSION(exp, SOME(index))
           end
           if flagNotSet(origin, ORIGIN_FUNCTION) ||
-             P_Dimension.Dimension.isKnown(dim)
+            isKnown(dim)
             @assign variability = Variability.CONSTANT
           else
             @assign variability = Variability.DISCRETE
@@ -3461,15 +3485,16 @@ function typeStatement(st::Statement, origin::ORIGIN_Type)::Statement
     local cond_origin::ORIGIN_Type
     local info::SourceInfo
     @match st begin
-      P_Statement.Statement.ASSIGNMENT(__) => begin
-        @assign info = DAE.ElementSource_getInfo(st.source)
-        @assign (e1, ty1) =
+      ALG_ASSIGNMENT(__) => begin
+        info = AbsynUtil.dummyInfo#DAE.ElementSource_getInfo(st.source)
+        (e1, ty1) =
           typeExp(st.lhs, setFlag(origin, ORIGIN_LHS), info)
-        @assign (e2, ty2) =
+        (e2, ty2) =
           typeExp(st.rhs, setFlag(origin, ORIGIN_RHS), info)
-        #=  TODO: Should probably only be allowUnknown = true if in a function.
+        #=
+          TODO: Should probably only be allowUnknown = true if in a function.
         =#
-        @assign (e2, ty3, mk) = matchTypes(ty2, ty1, e2, allowUnknown = true)
+        (e2, ty3, mk) = matchTypes(ty2, ty1, e2, allowUnknown = true)
         if isIncompatibleMatch(mk)
           Error.addSourceMessage(
             Error.ASSIGN_TYPE_MISMATCH_ERROR,
@@ -3483,14 +3508,14 @@ function typeStatement(st::Statement, origin::ORIGIN_Type)::Statement
           )
           fail()
         end
-        P_Statement.Statement.ASSIGNMENT(e1, e2, ty3, st.source)
+        ALG_ASSIGNMENT(e1, e2, ty3, st.source)
       end
 
-      P_Statement.Statement.FOR(__) => begin
-        @assign info = DAE.ElementSource_getInfo(st.source)
+      ALG_FOR(__) => begin
+        info = AbsynUtil.dummyInfo #DAE.ElementSource_getInfo(st.source)
         if isSome(st.range)
           @match SOME(e1) = st.range
-          @assign e1 = typeIterator(st.iterator, e1, origin, structural = false)
+          (e1, _, _) = typeIterator(st.iterator, e1, origin, false)
         else
           Error.assertion(
             false,
@@ -3501,7 +3526,7 @@ function typeStatement(st::Statement, origin::ORIGIN_Type)::Statement
         end
         @assign next_origin = setFlag(origin, ORIGIN_FOR)
         @assign body = typeStatements(st.body, next_origin)
-        P_Statement.Statement.FOR(st.iterator, SOME(e1), body, st.source)
+        ALG_FOR(st.iterator, SOME(e1), body, st.source)
       end
 
       P_Statement.Statement.IF(__) => begin
@@ -3617,9 +3642,9 @@ function typeStatement(st::Statement, origin::ORIGIN_Type)::Statement
         P_Statement.Statement.WHILE(e1, sts1, st.source)
       end
 
-      P_Statement.Statement.FAILURE(__) => begin
-        @assign sts1 = list(typeStatement(bst, origin) for bst in st.body)
-        P_Statement.Statement.FAILURE(sts1, st.source)
+      ALG_FAILURE(__) => begin
+        sts1 = list(typeStatement(bst, origin) for bst in st.body)
+        ALG_FAILURE(sts1, st.source)
       end
 
       _ => begin

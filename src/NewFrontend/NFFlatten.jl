@@ -1220,8 +1220,8 @@ function flattenIfEquation(
   =#
   #=  connects, since we must select a branch in that case.
   =#
-  @assign target = if has_connect
-    GENERIC(info(eq))
+  target = if has_connect
+    EVALTARGET_GENERIC(Equation_info(eq))
   else
     EVALTARGET_IGNORE_ERRORS()
   end
@@ -1521,7 +1521,7 @@ function resolveConnections(flatModel::FlatModel, name::String)::FlatModel
   #=  - return the broken connects + the equations =#
 
   if System.getHasOverconstrainedConnectors()
-    @assign (flatModel, broken) = NFOCConnectionGraph.handleOverconstrainedConnections(flatModel, conns, name)
+    @assign (flatModel, broken) = handleOverconstrainedConnections(flatModel, conns, name)
   end
   #=  add the broken connections  =#
   @assign conns = addBroken(broken, conns)
@@ -1803,7 +1803,7 @@ end
 function collectStatementFuncs(stmt::Statement, funcs::FunctionTree)::FunctionTree
   @assign () = begin
     @match stmt begin
-      P_Statement.Statement.ASSIGNMENT(__) => begin
+      ALG_ASSIGNMENT(__) => begin
         @assign funcs = collectExpFuncs(stmt.lhs, funcs)
         @assign funcs = collectExpFuncs(stmt.rhs, funcs)
         @assign funcs = collectTypeFuncs(stmt.ty, funcs)
@@ -1910,11 +1910,11 @@ end
 function flattenFunction(func::M_Function, funcs::FunctionTree)::FunctionTree
   local fn::M_Function = func
   if !isCollected(fn)
-    fn = EvalConstants.evaluateFunction(fn)
-    SimplifyModel.simplifyFunction(fn)
-    P_Function.collect(fn)
+    fn = evaluateFunction(fn)
+    simplifyFunction(fn)
+    collect(fn)
     if !isPartial(fn.node)
-      funcs = FunctionTree.add(funcs, P_Function.name(fn), fn)
+      funcs = FunctionTreeImpl.add(funcs, name(fn), fn)
       funcs = collectClassFunctions(fn.node, funcs)
       for fn_der in fn.derivatives
         for der_fn in getCachedFuncs(fn_der.derivativeFn)
@@ -1951,7 +1951,7 @@ function collectClassFunctions(clsNode::InstNode, funcs::FunctionTree)::Function
         end
         @assign () = begin
           @match sections begin
-            P_Sections.Sections.SECTIONS(__) => begin
+            SECTIONS(__) => begin
               @assign funcs =
                 ListUtil.fold(sections.algorithms, collectAlgorithmFuncs, funcs)
               ()

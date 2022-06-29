@@ -243,8 +243,8 @@ function hasBinding(@nospecialize(node::InstNode)) ::Bool
 end
 
 function isModel(node::InstNode) ::Bool
-  local isModel::Bool
-  @assign isModel = begin
+  local r::Bool
+  r = begin
     @match node begin
       CLASS_NODE(__)  => begin
         isModel(restriction(P_Pointer.access(node.cls)))
@@ -257,7 +257,7 @@ function isModel(node::InstNode) ::Bool
       end
     end
   end
-  isModel
+  r
 end
 
 function isRecord(@nospecialize(node::InstNode)) ::Bool
@@ -378,11 +378,10 @@ function toFullDAEType(clsNode::InstNode) ::DAE.Type
             DAE_TYPE(__)  => begin
               cls.ty
             end
-
             _  => begin
-              @assign state = toDAE(restriction(cls), scopePath(clsNode, includeRoot = true))
-              @assign vars = ConvertDAE.makeTypeVars(clsNode)
-              @assign outType = DAE.Type.T_COMPLEX(state, vars, NONE())
+              state = toDAE(restriction(cls), scopePath(clsNode, includeRoot = true))
+              vars = makeTypeVars(clsNode)
+              outType = DAE.Type.T_COMPLEX(state, vars, NONE())
               Pointer.update(clsNode.cls, DAE_TYPE(outType))
               outType
             end

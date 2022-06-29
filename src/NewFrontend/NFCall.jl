@@ -511,7 +511,7 @@ function toRecordExpression(call::Call, ty::NFType)::Expression
   @assign exp = begin
     @match call begin
       TYPED_CALL(__) => begin
-        EvalFunction.evaluateRecordConstructor(call.fn, ty, call.arguments, evaluate = false)
+        evaluateRecordConstructor(call.fn, ty, call.arguments; evaluate = false)
       end
 
       _ => begin
@@ -642,9 +642,8 @@ function isRecordConstructor(call::Call)::Bool
 end
 
 function isImpure(call::Call)::Bool
-  local isImpure::Bool
-
-  @assign isImpure = begin
+  local impure::Bool
+  impure = begin
     @match call begin
       UNTYPED_CALL(__) => begin
         isImpure(listHead(P_Function.getRefCache(call.ref)))
@@ -659,7 +658,7 @@ function isImpure(call::Call)::Bool
       end
     end
   end
-  return isImpure
+  return impure
 end
 
 function isNotImpure(@nospecialize(call::Call))::Bool

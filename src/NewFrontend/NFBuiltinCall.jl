@@ -1210,7 +1210,7 @@ function typeCardinalityCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) 
   (callExp, ty, var)
 end
 
-function typeBranchCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
+function typeBranchCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
   local var::VariabilityType = Variability.PARAMETER
   local ty::M_Type
   local callExp::Expression
@@ -1225,19 +1225,19 @@ function typeBranchCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tup
   @match UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
   assertNoNamedParams("Connections.branch", named_args, info)
   if listLength(args) != 2
-    Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), toString(fn_ref) + "(Connector, Connector)"), info)
+    Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(toString(call), toString(fn_ref) + "(Connector, Connector)"), info)
   end
   if flagSet(origin, ORIGIN_FUNCTION)
     Error.addSourceMessageAndFail(Error.EXP_INVALID_IN_FUNCTION, list(toString(fn_ref)), info)
   end
-  @match list(arg1, arg2) = args
-  @assign (arg1, ty) = typeExp(arg1, origin, info)
+  @match arg1 <| arg2 <| nil = args
+  (arg1, ty) = typeExp(arg1, origin, info)
   checkConnectionsArgument(arg1, ty, fn_ref, 1, info)
-  @assign (arg2, ty) = typeExp(arg2, origin, info)
+  (arg2, ty) = typeExp(arg2, origin, info)
   checkConnectionsArgument(arg2, ty, fn_ref, 2, info)
-  @match list(fn) = typeRefCache(fn_ref)
-  @assign ty = TYPE_NORETCALL()
-  @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(fn, list(arg1, arg2), var, ty))
+  fn = listHead(typeRefCache(fn_ref))
+  ty = TYPE_NORETCALL()
+  callExp = CALL_EXPRESSION(makeTypedCall(fn, list(arg1, arg2), var, ty))
   (callExp, ty, var)
 end
 
@@ -1327,7 +1327,7 @@ function typeStructuralTransition(call::Call, origin::ORIGIN_Type, info::SourceI
   return (callExp, retType, Variability.PARAMETER#=TODO should change this..=#)
 end
 
-function typeIsRootCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
+function typeIsRootCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
   local var::VariabilityType = Variability.PARAMETER
   local ty::M_Type
   local callExp::Expression
@@ -1348,13 +1348,13 @@ function typeIsRootCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tup
   end
   @assign (arg, ty) = typeExp(listHead(args), origin, info)
   checkConnectionsArgument(arg, ty, fn_ref, 1, info)
-  @match list(fn) = typeRefCache(fn_ref)
-  @assign ty = TYPE_BOOLEAN()
-  @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(fn, list(arg), var, ty))
+  fn = listHead(typeRefCache(fn_ref))
+  ty = TYPE_BOOLEAN()
+  callExp = CALL_EXPRESSION(makeTypedCall(fn, list(arg), var, ty))
   (callExp, ty, var)
 end
 
-function typePotentialRootCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
+function typePotentialRootCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
   local var::VariabilityType = Variability.PARAMETER
   local ty::M_Type
   local callExp::Expression
@@ -1396,9 +1396,9 @@ function typePotentialRootCall(call::Call, origin::ORIGIN_Type, info::SourceInfo
   else
     @assign arg2 = INTEGER_EXPRESSION(0)
   end
-  @match list(fn) = typeRefCache(fn_ref)
+  fn = listHead(typeRefCache(fn_ref))
   @assign ty = TYPE_NORETCALL()
-  @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(fn, list(arg1, arg2), var, ty))
+  callExp = CALL_EXPRESSION(makeTypedCall(fn, list(arg1, arg2), var, ty))
   (callExp, ty, var)
 end
 
@@ -1572,17 +1572,20 @@ end
                   (callExp, ty, var)
                 end
 
+"""
+  This function checks the arguments to connectors
+"""
 function checkConnectionsArgument(arg::Expression, ty::M_Type, fnRef::ComponentRef, argIndex::Int, info::SourceInfo)
   @assign () = begin
     local ty2::M_Type
     local node::InstNode
     local valid_cref::Bool
-    local isConnector::Bool
+    local isConnectorBool::Bool
     @match arg begin
       CREF_EXPRESSION(__)  => begin
-        @assign (valid_cref, isConnector) = begin
+        @assign (valid_cref, isConnectorBool) = begin
           @match arg.cref begin
-            CREF(node = node, origin = P_NFComponentRef.Origin.CREF, restCref = CREF(ty = ty2, origin = P_NFComponentRef.Origin.CREF))  => begin
+            COMPONENT_REF_CREF(node = node, origin = Origin.CREF, restCref = COMPONENT_REF_CREF(ty = ty2, origin = Origin.CREF))  => begin
               #=  check form A.R
               =#
               @assign ty2 = begin
@@ -1596,10 +1599,10 @@ function checkConnectionsArgument(arg::Expression, ty::M_Type, fnRef::ComponentR
                   end
                 end
               end
-              (isOverdetermined(getClass(node)), Type.isConnector(ty2))
+              (isOverdetermined(getClass(node)), isConnector(ty2))
             end
 
-            CREF(node = node, ty = ty2)  => begin
+            COMPONENT_REF_CREF(node = node, ty = ty2)  => begin
               #=  adrpo #5821, allow for R only instead of A.R and issue a warning
               =#
               @assign ty2 = begin
@@ -1613,7 +1616,7 @@ function checkConnectionsArgument(arg::Expression, ty::M_Type, fnRef::ComponentR
                   end
                 end
               end
-              (isOverdetermined(getClass(node)), Type.isConnector(ty2))
+              (isOverdetermined(getClass(node)), isConnector(ty2))
             end
 
             _  => begin
@@ -1621,7 +1624,7 @@ function checkConnectionsArgument(arg::Expression, ty::M_Type, fnRef::ComponentR
             end
           end
         end
-        if ! (valid_cref && isConnector)
+        if ! (valid_cref && isConnectorBool)
           if valid_cref
             Error.addSourceMessage(if argIndex == 1
                                    Error.W_INVALID_ARGUMENT_TYPE_BRANCH_FIRST

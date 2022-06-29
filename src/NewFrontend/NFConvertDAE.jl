@@ -1019,7 +1019,7 @@ function convertStatement(stmt::Statement)::DAE.P_Statement.Statement
     local ty::DAE.Type
     local body::List{DAE.P_Statement.Statement}
     @match stmt begin
-      P_Statement.Statement.ASSIGNMENT(__) => begin
+      ALG_ASSIGNMENT(__) => begin
         convertAssignment(stmt)
       end
 
@@ -1095,7 +1095,7 @@ function convertAssignment(stmt::Statement)::DAE.P_Statement.Statement
   local drhs::DAE.Exp
   local expl::List{Expression}
 
-  @match P_Statement.Statement.ASSIGNMENT(lhs, rhs, ty, src) = stmt
+  @match ALG_ASSIGNMENT(lhs, rhs, ty, src) = stmt
   if Type.isTuple(ty)
     @match TUPLE_EXPRESSION(elements = expl) = lhs
     @assign daeStmt = begin
@@ -1477,8 +1477,9 @@ function makeTypeVars(complexCls::InstNode)::List{DAE.Var}
   local typeVars::List{DAE.Var}
   local comp::Component
   local type_var::DAE.Var
-  @assign typeVars = begin
-    @match (@match getClass(complexCls) = cls) begin
+  typeVars = begin
+    cls = getClass(complexCls)
+    @match cls begin
       INSTANCED_CLASS(restriction = RESTRICTION_RECORD(__)) => begin
         list(makeTypeRecordVar(c) for c in getComponents(cls.elements))
       end
@@ -1515,7 +1516,7 @@ function makeTypeVar(component::InstNode)::DAE.Var
   return typeVar
 end
 
-function makeTypeRecordVar(component::InstNode)::DAE.Var
+function makeTypeRecordVar(componentArg::InstNode)::DAE.Var
   local typeVar::DAE.Var
   local comp::Component
   local attr::Attributes
@@ -1523,20 +1524,20 @@ function makeTypeRecordVar(component::InstNode)::DAE.Var
   local binding::Binding
   local bind_from_outside::Bool
   local ty::M_Type
-  @assign comp = component(component)
-  @assign attr = P_Component.getAttributes(comp)
-  if P_Component.isConst(comp) && P_Component.hasBinding(comp)
-    @assign vis = Visibility.PROTECTED
+  comp = component(componentArg)
+  attr = getAttributes(comp)
+  if isConst(comp) && hasBinding(comp)
+    vis = Visibility.PROTECTED
   else
-    @assign vis = visibility(component)
+    vis = visibility(componentArg)
   end
-  @assign binding = getBinding(comp)
-  @assign binding = mapExp(binding, stripScopePrefixExp)
-  @assign bind_from_outside = parentCount(binding) > 1
-  @assign ty = getType(comp)
-  @assign ty = mapDims(ty, stripScopePrefixFromDim)
-  @assign typeVar = DAE.TYPES_VAR(
-    name(component),
+  binding = getBinding(comp)
+  binding = mapExp(binding, stripScopePrefixExp)
+  bind_from_outside = parentCount(binding) > 1
+  ty = getType(comp)
+  ty = mapDims(ty, stripScopePrefixFromDim)
+  typeVar = DAE.TYPES_VAR(
+    name(componentArg),
     toDAE(attr, vis),
     toDAE(ty),
     toDAE(binding),

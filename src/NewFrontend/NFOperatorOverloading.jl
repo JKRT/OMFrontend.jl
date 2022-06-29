@@ -62,7 +62,7 @@ function instConstructor(path::Absyn.Path, recordNode::InstNode, info::SourceInf
   =#
   #= ctor_node := Function.instFunction2(ctor_path, ctor_node, info);
   =#
-  @assign recordNode = Record.instDefaultConstructor(path, recordNode, info)
+  recordNode = instDefaultConstructor(path, recordNode, info)
   return recordNode
 end
 
@@ -129,11 +129,11 @@ function lookupOperatorFunctionsInType(operatorName::String, ty::M_Type)::List{M
         try
           @assign fn_ref = lookupFunctionSimple(operatorName, node)
           @assign is_defined = true
-        catch
+        catch e
           @assign is_defined = false
         end
         if is_defined
-          @assign fn_ref = instFunctionRef(fn_ref, info(node))
+          (fn_ref, _, _) = instFunctionRef(fn_ref, InstNode_info(node))
           @assign functions = typeRefCache(fn_ref)
         else
           @assign functions = nil

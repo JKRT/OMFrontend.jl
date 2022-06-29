@@ -1,18 +1,7 @@
-module BaseHashTable
-
-using MetaModelica
-using ExportAll
-#= Forward declarations for uniontypes until Julia adds support for mutual recursion =#
-
-FuncHash = Function
-FuncEq = Function
-FuncKeyString = Function
-FuncValString = Function
-
 #= /*
 * This file is part of OpenModelica.
 *
-* Copyright (c) 1998-2014, Open Source Modelica Consortium (OSMC),
+* Copyright (c) 1998-CurrentYear, Open Source Modelica Consortium (OSMC),
 * c/o Linköpings universitet, Department of Computer and Information Science,
 * SE-58183 Linköping, Sweden.
 *
@@ -39,6 +28,17 @@ FuncValString = Function
 * See the full OSMC Public License conditions for more details.
 *
 */ =#
+module BaseHashTable
+
+using MetaModelica
+using ExportAll
+#= Forward declarations for uniontypes until Julia adds support for mutual recursion =#
+
+FuncHash = Function
+FuncEq = Function
+FuncKeyString = Function
+FuncValString = Function
+
 #=  Below is the instance specific code. For each hashtable the user must define:
 =#
 #=  Key      - The key used to uniquely define elements in a hashtable
@@ -156,22 +156,24 @@ function add(entry::HashEntry, hashTable::HashTable)::HashTable
   local val::Value
   local indices::HashNode
 
-  @assign (key, _) = entry
-  @match (hashvec, varr, bsize, (@match (hashFunc, keyEqual, _, _) = fntpl)) = hashTable
-  @assign hash_idx = hashFunc(key, bsize) + 1
-  @assign indices = hashvec[hash_idx]
+  (key, _) = entry
+  #@match (hashFunc, keyEqual, _, _) = fntpl
+  @match (hashvec, varr, bsize, (hashFunc, keyEqual, _, _)) = hashTable
+  fntpl = hashTable[4]
+  hash_idx = hashFunc(key, bsize) + 1
+  indices = hashvec[hash_idx]
   for i in indices
-    @assign (key2, _) = i
+    (key2, _) = i
     if keyEqual(key, key2)
-      @assign (_, arr_idx) = i
+      (_, arr_idx) = i
       valueArraySet(varr, arr_idx, entry)
-      @assign outHashTable = hashTable
+      outHashTable = hashTable
       return outHashTable
     end
   end
-  @assign (varr, new_pos) = valueArrayAdd(varr, entry)
+  (varr, new_pos) = valueArrayAdd(varr, entry)
   arrayUpdate(hashvec, hash_idx, _cons((key, new_pos), indices))
-  @assign outHashTable = (hashvec, varr, bsize, fntpl)
+  outHashTable = (hashvec, varr, bsize, fntpl)
   return outHashTable
 end
 
@@ -549,7 +551,7 @@ function valueArrayAdd(valueArray::ValueArray, entry::HashEntry)::Tuple{ValueArr
     local rexpandsize::AbstractFloat
     @matchcontinue (valueArray, entry) begin
       ((n, size, arr), _) => begin
-        if !n < size
+        if ! (n < size)
           fail() #= Have space to add array elt. =#
         end #= Have space to add array elt. =#
         @assign n = n + 1

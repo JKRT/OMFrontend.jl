@@ -2009,14 +2009,12 @@ function instFunctionRef(
 )::Tuple{ComponentRef, InstNode, Bool}
   local specialBuiltin::Bool
   local fn_node::InstNode
-
   local cache::CachedData
   local parent::InstNode
-
-  @assign fn_node = classScope(node(fn_ref))
-  @assign cache = getFuncCache(fn_node)
+  fn_node = classScope(node(fn_ref))
+  cache = getFuncCache(fn_node)
   #=  Check if a cached instantiation of this function already exists. =#
-  @assign (fn_node, specialBuiltin) = begin
+  (fn_node, specialBuiltin) = begin
     @match cache begin
       C_FUNCTION(__) => begin
         (fn_node, cache.specialBuiltin)
@@ -2030,7 +2028,7 @@ function instFunctionRef(
             node(rest(fn_ref))
           end
         if !isComponent(parent)
-          @assign parent = EMPTY_NODE()
+          parent = EMPTY_NODE()
         end
         instFunction2(toPath(fn_ref), fn_node, info, parent)
       end

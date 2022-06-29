@@ -142,11 +142,12 @@ function verifyWhenEquation(
   if ListUtil.hasOneElement(branches)
     return
   end
-  @match _cons(P_Equation.Equation.BRANCH(body = body), rest_branches) = branches
+  @match EQUATION_BRANCH(body = body) <| rest_branches = branches
   @assign crefs1 = whenEquationBranchCrefs(body)
+  #=TODO: Should the return be here or is it a translation error =#
   return for branch in rest_branches
-    @match P_Equation.Equation.BRANCH(body = body) = branch
-    @assign crefs2 = whenEquationBranchCrefs(body)
+    @match EQUATION_BRANCH(body = body) = branch
+    crefs2 = whenEquationBranchCrefs(body)
     checkCrefSetEquality(
       crefs1,
       crefs2,

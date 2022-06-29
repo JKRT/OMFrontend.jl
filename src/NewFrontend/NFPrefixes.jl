@@ -299,6 +299,23 @@ function parallelismFromSCode(scodePar::SCode.Parallelism)::ParallelismType
   return par
 end
 
+function parallelismToSCode(par)
+  local spar
+  spar = begin
+    @match par begin
+      Parallelism.GLOBAL => begin
+        SCODE.PARGLOBAL()
+      end
+      Parallelism.LOCAL => begin
+        SCODE.PARLOCAL()
+      end
+      Parallelism.NON_PARALLEL => begin
+        SCode.NON_PARALLEL()
+      end
+    end
+  end
+  return spar
+end
 
 function parallelismToDAE(par)::DAE.VarParallelism
   local dpar::DAE.VarParallelism
@@ -854,9 +871,9 @@ end
 
 function visibilityToSCode(vis)::SCode.Visibility
   local scodeVis::SCode.Visibility = if vis == Visibility.PUBLIC
-    SCode.Visibility.PUBLIC()
+    SCode.PUBLIC()
   else
-    SCode.Visibility.PROTECTED()
+    SCode.PROTECTED()
   end
   return scodeVis
 end

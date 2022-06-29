@@ -6699,8 +6699,8 @@ function makeDAEBinding(exp::Expression, var::VariabilityType)::DAE.P_Binding
   return binding
 end
 
-function toDAE(binding::Binding)::DAE.P_Binding
-  local outBinding::DAE.P_Binding
+function toDAE(binding::Binding)::DAE.Binding
+  local outBinding::DAE.Binding
 
   @assign outBinding = begin
     @match binding begin

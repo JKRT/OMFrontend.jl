@@ -1,4 +1,3 @@
-
 #= /*
 * This file is part of OpenModelica.
 *
@@ -33,60 +32,20 @@
 
 using MetaModelica
 using ExportAll
-#= Forward declarations for uniontypes until Julia adds support for mutual recursion =#
-  
-@UniontypeDecl NFOCConnectionGraph
 
-
-import ..NFFlatModel; FlatModel=NFFlatModel
-import ..P_NFComponentRef
-P_ComponentRef=P_NFComponentRef
-ComponentRef=P_NFComponentRef.NFComponentRef
-import ..P_NFEquation
-P_Equation=P_NFEquation
-Equation=P_NFEquation.NFEquation
-import ..P_NFConnections
-FlatEdge = P_NFConnections.BrokenEdge  #= a tuple with two crefs and equation(s) for calling the equalityConstraint function call =#
-FlatEdges = P_NFConnections.BrokenEdges  #= a lit of broken edges =#
-
-import Absyn
-import ..NFBuiltin
-import ..NFCall.P_Call
-import ..NFClass.P_Class
-import ..P_NFDimension
-P_Dimension=P_NFDimension
-Dimension=P_NFDimension.NFDimension
-import ..NFFunction.P_Function
-import ..NFHashTable
-import ..NFHashTable3
 import ..NFHashTableCG
-import ..NFInstNode.P_InstNode
-import ..P_NFOperator
-P_Operator=P_NFOperator
-Operator=P_NFOperator.NFOperator
-import ..P_NFOperator.Op
-import DAE.Connect
-import ..P_NFExpression
-P_Expression=P_NFExpression
-Expression=P_NFExpression.NFExpression
-import ..P_NFType
-P_M_Type=P_NFType
-M_Type=NFType
-import ..MetaModelica.Dangerous.listReverseInPlace
-import ..P_NFConnector
-P_NFConnector
+import ..NFComponentRef
+import ..ComponentRef
+import ..NFHashTable3
+import ..NFHashTable
+
+#=
+A tuple with two crefs and equation(s) for calling the equalityConstraint function call =#
+const FlatEdge = BrokenEdge
+ #= a list of broken edges =#
+const FlatEdges = BrokenEdges
 Connector=NFConnector
-import ..ElementSource
-import ..NFTyping.ExpOrigin
-import ..NFTyping; Typing=NFTyping
-import ..NFPrefixes.Variability
-import ..Error
-import ..P_NFConnections
-P_Connections=P_NFConnections
-Connections=P_NFConnections.NFConnections
-import ..P_NFConnection
-P_Connection=P_NFConnection
-Connection=P_NFConnection.NFConnection
+
 Edge = Tuple  #= an edge is a tuple with two component references =#
 Edges = List  #= A list of edges =#
 DefiniteRoot = ComponentRef  #= root defined with Connection.root =#
@@ -95,10 +54,12 @@ UniqueRoots = List  #= roots defined with Connection.uniqueRoot =#
 PotentialRoot = Tuple  #= potential root defined with Connections.potentialRoot =#
 PotentialRoots = List  #= potential roots defined with Connections.potentialRoot =#
 
-#= Input structure for connection breaking algorithm. It is collected during instantiation phase. =#
+#=
+Input structure for connection breaking algorithm.
+It is collected during instantiation phase.
+=#
 @Uniontype NFOCConnectionGraph begin
-  @Record GRAPH begin
-
+  @Record OCC_GRAPH begin
     updateGraph::Bool
     definiteRoots #= Roots defined with Connection.root =#::DefiniteRoots
     potentialRoots #= Roots defined with Connection.potentialRoot =#::PotentialRoots
@@ -108,8 +69,8 @@ PotentialRoots = List  #= potential roots defined with Connections.potentialRoot
   end
 end
 
-const EMPTY = GRAPH(true, nil, nil, nil, nil, nil) #= Initial connection graph with no edges in it. =#::NFOCConnectionGraph
-const NOUPDATE_EMPTY = GRAPH(false, nil, nil, nil, nil, nil) #= Initial connection graph with updateGraph set to false. =#::NFOCConnectionGraph
+const EMPTY = OCC_GRAPH(true, nil, nil, nil, nil, nil) #= Initial connection graph with no edges in it. =#::NFOCConnectionGraph
+const NOUPDATE_EMPTY = OCC_GRAPH(false, nil, nil, nil, nil, nil) #= Initial connection graph with updateGraph set to false. =#::NFOCConnectionGraph
 const ConnectionsOperator = #= Enumeration =# (() -> begin
   BRANCH  = 1
                                                  ROOT  = 2
@@ -121,6 +82,7 @@ const ConnectionsOperator = #= Enumeration =# (() -> begin
                                                  NOT_OPERATOR  = 8
                                                  ()->(BRANCH ;ROOT ;POTENTIAL_ROOT ;IS_ROOT ;ROOTED ;UNIQUE_ROOT ;UNIQUE_ROOT_INDICES ;NOT_OPERATOR )
                                                end)()
+const ConnectionsOperatorType = Int
 
 """ #= @author: adrpo
            goes over all equations from the FlatModel and:
@@ -139,49 +101,48 @@ function handleOverconstrainedConnections(flatModel::FlatModel, conns::Connectio
   local outBroken::FlatEdges
 
 
-  local lhs::ComponentRef
-  local rhs::ComponentRef
-  local cref::ComponentRef
-  local source::DAE.ElementSource
-  local graph::NFOCConnectionGraph = EMPTY
-  local eql::List{Equation} = nil
-  local eqlBroken::List{Equation}
-  local ieql::List{Equation}
   local broken::FlatEdges
-  local connected::FlatEdges
-  local call::Call
-  local lst::List{Expression}
-  local priority::Int
-  local root::Expression
-  local msg::Expression
   local c1::Connector
   local c2::Connector
+  local call::Call
+  local connected::FlatEdges
+  local cref::ComponentRef
+  local eql::List{Equation} = nil
+  local eqlBroken::List{Equation}
+  local graph::NFOCConnectionGraph = EMPTY
+  local ieql::List{Equation}
+  local lhs::ComponentRef
   local lhs_crefs::List{ComponentRef}
-  local rhs_crefs::List{ComponentRef}
-  local print_trace::Bool = Flags.isSet(Flags.CGRAPH)
+  local lst::List{Expression}
+  local msg::Expression
+  local nameStr::String
   local origin::ORIGIN_Type
-  local name::String
+  local print_trace::Bool = Flags.isSet(Flags.CGRAPH)
+  local priority::Int
+  local rhs::ComponentRef
+  local rhs_crefs::List{ComponentRef}
+  local root::Expression
+  local source::DAE.ElementSource
 
-  @assign origin = intBitOr(ExpOrigin.EQUATION, ExpOrigin.CONNECT)
-  #=  go over all equations, connect, Connection.branch
-  =#
+  @assign origin = intBitOr(ORIGIN_EQUATION, ORIGIN_CONNECT)
+  #=  Go over all equations, connect, Connection.branch =#
   for conn in conns.connections
-    @match P_Connection.Connection.CONNECTION(lhs = c1, rhs = c2) = conn
-    @assign lhs_crefs = getOverconstrainedCrefs(c1)
-    @assign rhs_crefs = getOverconstrainedCrefs(c2)
+    @match CONNECTION(lhs = c1, rhs = c2) = conn
+    lhs_crefs = getOverconstrainedCrefs(c1)
+    rhs_crefs = getOverconstrainedCrefs(c2)
     if ! listEmpty(lhs_crefs)
       @assign eqlBroken = generateEqualityConstraintEquation(c1.name, c1.ty, c2.name, c2.ty, origin, c1.source)
       @assign graph = ListUtil.threadFold(lhs_crefs, rhs_crefs, (eqlBroken, print_trace) -> addConnection(brokenEquations = eqlBroken, printTrace = print_trace), graph)
     end
   end
   for eq in flatModel.equations
-    @assign eql = begin
+    eql = begin
       @match eq begin
-        EQUATION_NORETCALL(exp = CALL_EXPRESSION(call && P_Call.TYPED_CALL(arguments = lst)), source = source)  => begin
+        EQUATION_NORETCALL(exp = CALL_EXPRESSION(call && TYPED_CALL(arguments = lst)), source = source)  => begin
           begin
-            @match identifyConnectionsOperator(P_Function.name(call.fn)) begin
+            @match identifyConnectionsOperator(name(call.fn)) begin
               ConnectionsOperator.ROOT  => begin
-                @match list(CREF_EXPRESSION(cref = cref)) = lst
+                @match CREF_EXPRESSION(cref = cref) <| nil = lst
                 @assign graph = addDefiniteRoot(cref, print_trace, graph)
                 eql
               end
@@ -217,8 +178,8 @@ function handleOverconstrainedConnections(flatModel::FlatModel, conns::Connectio
               end
 
               ConnectionsOperator.BRANCH  => begin
-                @match list(CREF_EXPRESSION(cref = lhs), CREF_EXPRESSION(cref = rhs)) = lst
-                @assign graph = addBranch(lhs, rhs, print_trace, graph)
+                @match CREF_EXPRESSION(cref = lhs) <| CREF_EXPRESSION(cref = rhs) <| nil = lst
+                graph = addBranch(lhs, rhs, print_trace, graph)
                 eql
               end
 
@@ -250,62 +211,63 @@ end
 function generateEqualityConstraintEquation(clhs::ComponentRef, lhs_ty::M_Type, crhs::ComponentRef, rhs_ty::M_Type, origin::ORIGIN_Type, source::DAE.ElementSource) ::List{Equation}
   local eqsEqualityConstraint::List{Equation} = nil
 
-  local lhs::ComponentRef
-  local rhs::ComponentRef
-  local cref::ComponentRef
-  local fcref_rhs::ComponentRef
-  local fcref_lhs::ComponentRef
-  local lhsArr::ComponentRef
-  local rhsArr::ComponentRef
-  local eql::List{Equation} = nil
-  local lst::List{Expression}
-  local ty::M_Type
-  local ty1::M_Type
-  local ty2::M_Type
-  local priority::Int
-  local root::Expression
-  local msg::Expression
   local c1::Connector
   local c2::Connector
   local cc1::Connector
   local cc2::Connector
   local cl1::List{Connector}
   local cl2::List{Connector}
-  local lhsl::List{Connector}
-  local rhsl::List{Connector}
-  local replaceEq::Equation
+  local cref::ComponentRef
+  local eql::List{Equation} = nil
   local expLHS::Expression
   local expRHS::Expression
+  local fcref_lhs::ComponentRef
+  local fcref_rhs::ComponentRef
   local fn_node_lhs::InstNode
   local fn_node_rhs::InstNode
+  local lhs::ComponentRef
+  local lhsArr::ComponentRef
+  local lhsl::List{Connector}
+  local lst::List{Expression}
+  local msg::Expression
+  local priority::Int
+  local replaceEq::Equation
+  local rhs::ComponentRef
+  local rhsArr::ComponentRef
+  local rhsl::List{Connector}
+  local root::Expression
+  local ty1::M_Type
+  local ty2::M_Type
+  local ty::M_Type
   local var::VariabilityType
 
   if ! System.getHasOverconstrainedConnectors()
     return eqsEqualityConstraint
   end
   if ! (isDeleted(clhs) || isDeleted(crhs))
-    @assign cl1 = P_NFConnections.makeConnectors(clhs, lhs_ty, source)
-    @assign cl2 = P_NFConnections.makeConnectors(crhs, rhs_ty, source)
+    cl1 = makeConnectors(clhs, lhs_ty, source)
+    cl2 = makeConnectors(crhs, rhs_ty, source)
     for c1 in cl1
       @match _cons(c2, cl2) = cl2
-      @assign lhsl = Connector.split(c1)
-      @assign rhsl = Connector.split(c2)
+      lhsl = split(c1)
+      rhsl = split(c2)
       for cc1 in lhsl
         @match _cons(cc2, rhsl) = rhsl
-        if ! (Connector.isDeleted(cc1) || Connector.isDeleted(cc2))
-          @assign lhs = Connector.name(cc1)
-          @assign rhs = Connector.name(cc2)
+        if ! (isDeleted(cc1) || isDeleted(cc2))
+          lhs = name(cc1)
+          rhs = name(cc2)
           if isOverconstrainedCref(lhs) && isOverconstrainedCref(rhs)
-            @assign lhs = getOverconstrainedCref(lhs)
-            @assign rhs = getOverconstrainedCref(rhs)
-            @assign lhsArr = stripSubscripts(lhs)
-            @assign rhsArr = stripSubscripts(rhs)
-            @assign ty1 = getComponentType(lhsArr)
-            @assign ty2 = getComponentType(rhsArr)
-            @assign fcref_rhs = lookupFunctionSimple("equalityConstraint", classScope(node(lhs)))
-            @assign (fcref_rhs, fn_node_rhs, _) = instFunctionRef(fcref_rhs, ElementSource_getInfo(source))
-            @assign expRHS = CALL_EXPRESSION(UNTYPED_CALL(fcref_rhs, list(CREF_EXPRESSION(ty1, lhsArr), CREF_EXPRESSION(ty2, rhsArr)), nil, fn_node_rhs))
-            @assign (expRHS, ty, var) = typeExp(expRHS, origin, ElementSource_getInfo(source))
+            lhs = getOverconstrainedCref(lhs)
+            rhs = getOverconstrainedCref(rhs)
+            lhsArr = Base.first(stripSubscripts(lhs))
+            rhsArr = Base.first(stripSubscripts(rhs))
+            ty1 = getComponentType(lhsArr)
+            ty2 = getComponentType(rhsArr)
+            fcref_rhs = lookupFunctionSimple("equalityConstraint", classScope(node(lhs)))
+            (fcref_rhs, fn_node_rhs, _) = instFunctionRef(fcref_rhs, AbsynUtil.dummyInfo)
+            println("Hello!")
+            expRHS = CALL_EXPRESSION(UNTYPED_CALL(fcref_rhs, list(CREF_EXPRESSION(ty1, lhsArr), CREF_EXPRESSION(ty2, rhsArr)), nil, fn_node_rhs))
+            (expRHS, ty, var) = typeExp(expRHS, origin, AbsynUtil.dummyInfo #=ElementSource_getInfo(source)=#)
             @assign fcref_lhs = lookupFunctionSimple("fill", topScope(node(clhs)))
             @assign (fcref_lhs, fn_node_lhs, _) = instFunctionRef(fcref_lhs, ElementSource_getInfo(source))
             @assign expLHS = CALL_EXPRESSION(UNTYPED_CALL(fcref_lhs, _cons(REAL_EXPRESSION(0.0), ListUtil.map(arrayDims(ty), P_Dimension.Dimension.sizeExp)), nil, fn_node_lhs))
@@ -323,27 +285,23 @@ end
 
 function getOverconstrainedCrefs(conn::Connector) ::List{ComponentRef}
   local crefs::List{ComponentRef}
-
   local conns::List{Connector}
-
-  @assign conns = Connector.split(conn, scalarize = ScalarizeSetting.PREFIX)
-  @assign crefs = list(getOverconstrainedCref(c.name) for c in conns if ! Connector.isDeleted(c) && isOverconstrainedCref(c.name))
-  @assign crefs = ListUtil.uniqueOnTrue(crefs, isEqual)
+  conns = split(conn, ScalarizeSetting.PREFIX)
+  crefs = list(getOverconstrainedCref(c.name) for c in conns if (!(isDeleted(c)) && isOverconstrainedCref(c.name)))
+  
+  crefs = ListUtil.uniqueOnTrue(crefs, isEqual)
   crefs
 end
 
 function isOverconstrainedCref(cref::ComponentRef) ::Bool
   local b::Bool = false
-
   local node::InstNode
   local rest::ComponentRef
-
-  @assign b = begin
+  b = begin
     @match cref begin
-      CREF(node = node, origin = P_NFComponentRef.Origin.CREF, restCref = rest)  => begin
+      COMPONENT_REF_CREF(node = node, origin = Origin.CREF, restCref = rest)  => begin
         isOverdetermined(getClass(node)) || isOverconstrainedCref(rest)
       end
-
       _  => begin
         false
       end
@@ -352,15 +310,13 @@ function isOverconstrainedCref(cref::ComponentRef) ::Bool
   b
 end
 
-function getOverconstrainedCref(cref::ComponentRef) ::ComponentRef
+function getOverconstrainedCref(cref::ComponentRef)::ComponentRef
   local c::ComponentRef
-
   local node::InstNode
   local rest::ComponentRef
-
-  @assign c = begin
+  c = begin
     @match cref begin
-      CREF(node = node, origin = P_NFComponentRef.Origin.CREF, restCref = rest)  => begin
+      COMPONENT_REF_CREF(node = node, origin = Origin.CREF, restCref = rest)  => begin
         if isOverdetermined(getClass(node))
           cref
         else
@@ -433,7 +389,7 @@ function addDefiniteRoot(root::ComponentRef, printTrace::Bool, graph::NFOCConnec
 end
 
 """ #= Adds a new potential root to NFOCConnectionGraph =#"""
-function addPotentialRoot(root::ComponentRef, priority::AbstractFloat, printTrace::Bool, graph::NFOCConnectionGraph) ::NFOCConnectionGraph
+function addPotentialRoot(root::ComponentRef, priority::Int, printTrace::Bool, graph::NFOCConnectionGraph) ::NFOCConnectionGraph
 
 
   if printTrace
@@ -883,11 +839,11 @@ function findResultGraph(inGraph::NFOCConnectionGraph, modelNameQualified::Strin
     #=  deal with empty connection graph
     =#
     @matchcontinue (inGraph, modelNameQualified) begin
-      (GRAPH(definiteRoots =  nil(), potentialRoots =  nil(), uniqueRoots =  nil(), branches =  nil(), connections =  nil()), _)  => begin
+      (OCC_GRAPH(definiteRoots =  nil(), potentialRoots =  nil(), uniqueRoots =  nil(), branches =  nil(), connections =  nil()), _)  => begin
         (nil, nil, nil)
       end
 
-      (GRAPH(definiteRoots = definiteRoots, potentialRoots = potentialRoots, uniqueRoots = uniqueRoots, branches = branches, connections = connections), _)  => begin
+      (OCC_GRAPH(definiteRoots = definiteRoots, potentialRoots = potentialRoots, uniqueRoots = uniqueRoots, branches = branches, connections = connections), _)  => begin
         @assign connections = listReverse(connections)
         @assign table = resultGraphWithRoots(definiteRoots)
         @assign table = addBranchesToTable(table, branches)
@@ -1141,15 +1097,17 @@ function addConnectionRooted(cref1::ComponentRef, cref2::ComponentRef, itable::N
   otable
 end
 
-""" #= evaluation of Connections.rooted, Connections.isRoot, Connections.uniqueRootIndices
-           - replaces all [Connections.]rooted calls by true or false depending on wheter branche frame_a or frame_b is closer to root
-           - return true or false for Connections.isRoot operator if is a root or not
-           - return an array of indices for Connections.uniqueRootIndices, see Modelica_StateGraph2
-             See Modelica_StateGraph2:
-              https:github.com/modelica/Modelica_StateGraph2 and
-              https:trac.modelica.org/Modelica/ticket/984 and
-              http:www.ep.liu.se/ecp/043/041/ecp09430108.pdf
-             for a specification of this operator =#"""
+"""
+evaluation of Connections.rooted, Connections.isRoot, Connections.uniqueRootIndices
+  - replaces all [Connections.]rooted calls by true or false depending on wheter branche frame_a or frame_b is closer to root
+  - return true or false for Connections.isRoot operator if is a root or not
+  - return an array of indices for Connections.uniqueRootIndices, see Modelica_StateGraph2
+See Modelica_StateGraph2:
+  https:github.com/modelica/Modelica_StateGraph2 and
+  https:trac.modelica.org/Modelica/ticket/984 and
+  http:www.ep.liu.se/ecp/043/041/ecp09430108.pdf
+  for a specification of this operator
+"""
 function evalConnectionsOperators(inRoots::List{<:ComponentRef}, graph::NFOCConnectionGraph, inEquations::List{<:Equation}) ::List{Equation}
   local outEquations::List{Equation}
 
@@ -1162,41 +1120,27 @@ function evalConnectionsOperators(inRoots::List{<:ComponentRef}, graph::NFOCConn
       (_, _,  nil())  => begin
         nil
       end
-
       _  => begin
-        @assign table = NFHashTable3.emptyHashTable()
-        @assign branches = getBranches(graph)
-        @assign table = ListUtil.fold(branches, addBranches, table)
-        @assign connections = getConnections(graph)
-        @assign table = ListUtil.fold(connections, addConnectionsRooted, table)
-        @assign rooted = setRootDistance(inRoots, table, 0, nil, NFHashTable.emptyHashTable())
-        @assign outEquations = list(P_Equation.Equation.mapExp(eq, (rooted, inRoots, graph, Equation_info(eq)) -> evaluateOperators(rooted = rooted, roots = inRoots, graph = graph, info = Equation_info(eq))) for eq in inEquations)
-        outEquations
+        table = NFHashTable3.emptyHashTable()
+        branches = getBranches(graph)
+        table = ListUtil.fold(branches, addBranches, table)
+        connections = getConnections(graph)
+        table = ListUtil.fold(connections, addConnectionsRooted, table)
+        rooted = setRootDistance(inRoots, table, 0, nil, NFHashTable.emptyHashTable())
+        tmp = []
+        for eq in inEquations
+          info = Equation_info(eq)
+          push!(tmp, mapExp(eq, (x) -> evaluateOperators(x, rooted, inRoots, graph, info)))
+        end
+        outEquations = list(tmp...)
       end
     end
   end
-  #=  built table
-  =#
-  #=  add branches to table
-  =#
-  #=  add connections to table
-  =#
-  #=  get distance to root
-  =#
-  #=   print(\"Roots: \" + stringDelimitList(List.map(inRoots,ComponentRef.toString),\"\\n\") + \"\\n\");
-  =#
-  #=   BaseHashTable.dumpHashTable(table);
-  =#
-  #=   BaseHashTable.dumpHashTable(rooted);
-  =#
   outEquations
 end
 
 function evaluateOperators(exp::Expression, rooted::NFHashTable.HashTable, roots::List{<:ComponentRef}, graph::NFOCConnectionGraph, info::SourceInfo) ::Expression
-
-
-  @assign exp = map(exp, (rooted, roots, graph, info) -> evalConnectionsOperatorsHelper(rooted = rooted, roots = roots, graph = graph, info = info))
-  exp
+  map(exp, (x) -> evalConnectionsOperatorsHelper(x, rooted, roots, graph, info))
 end
 
 """ #= Helper function for evaluation of Connections.rooted, Connections.isRoot, Connections.uniqueRootIndices =#"""
@@ -1216,9 +1160,9 @@ function evalConnectionsOperatorsHelper(exp::Expression, rooted::NFHashTable.Has
     local call::Call
     local str::String
     @match exp begin
-      CALL_EXPRESSION(call = call && P_Call.TYPED_CALL(__))  => begin
+      CALL_EXPRESSION(call = call && TYPED_CALL(__))  => begin
         begin
-          @match identifyConnectionsOperator(P_Function.name(call.fn)) begin
+          @match identifyConnectionsOperator(name(call.fn)) begin
             ConnectionsOperator.ROOTED  => begin
               #=  handle rooted - with zero size array or the normal call
               =#
@@ -1465,7 +1409,7 @@ function printNFOCConnectionGraph(inGraph::NFOCConnectionGraph)
     local connections::FlatEdges
     local branches::Edges
     @match inGraph begin
-      GRAPH(connections = connections, branches = branches)  => begin
+      OCC_GRAPH(connections = connections, branches = branches)  => begin
         print("Connections:\\n")
         printFlatEdges(connections)
         print("Branches:\\n")
@@ -1483,7 +1427,7 @@ function getDefiniteRoots(inGraph::NFOCConnectionGraph) ::DefiniteRoots
   @assign outResult = begin
     local result::DefiniteRoots
     @match inGraph begin
-      GRAPH(definiteRoots = result)  => begin
+      OCC_GRAPH(definiteRoots = result)  => begin
         result
       end
     end
@@ -1498,7 +1442,7 @@ function getUniqueRoots(inGraph::NFOCConnectionGraph) ::UniqueRoots
   @assign outResult = begin
     local result::UniqueRoots
     @match inGraph begin
-      GRAPH(uniqueRoots = result)  => begin
+      OCC_GRAPH(uniqueRoots = result)  => begin
         result
       end
     end
@@ -1513,7 +1457,7 @@ function getPotentialRoots(inGraph::NFOCConnectionGraph) ::PotentialRoots
   @assign outResult = begin
     local result::PotentialRoots
     @match inGraph begin
-      GRAPH(potentialRoots = result)  => begin
+      OCC_GRAPH(potentialRoots = result)  => begin
         result
       end
     end
@@ -1528,7 +1472,7 @@ function getBranches(inGraph::NFOCConnectionGraph) ::Edges
   @assign outResult = begin
     local result::Edges
     @match inGraph begin
-      GRAPH(branches = result)  => begin
+      OCC_GRAPH(branches = result)  => begin
         result
       end
     end
@@ -1543,7 +1487,7 @@ function getConnections(inGraph::NFOCConnectionGraph) ::FlatEdges
   @assign outResult = begin
     local result::FlatEdges
     @match inGraph begin
-      GRAPH(connections = result)  => begin
+      OCC_GRAPH(connections = result)  => begin
         result
       end
     end
@@ -1577,11 +1521,11 @@ function merge(inGraph1::NFOCConnectionGraph, inGraph2::NFOCConnectionGraph) ::N
     #=  left is empty, return right
     =#
     @matchcontinue (inGraph1, inGraph2) begin
-      (_, GRAPH(definiteRoots =  nil(), potentialRoots =  nil(), uniqueRoots =  nil(), branches =  nil(), connections =  nil()))  => begin
+      (_, OCC_GRAPH(definiteRoots =  nil(), potentialRoots =  nil(), uniqueRoots =  nil(), branches =  nil(), connections =  nil()))  => begin
         inGraph1
       end
 
-      (GRAPH(definiteRoots =  nil(), potentialRoots =  nil(), uniqueRoots =  nil(), branches =  nil(), connections =  nil()), _)  => begin
+      (OCC_GRAPH(definiteRoots =  nil(), potentialRoots =  nil(), uniqueRoots =  nil(), branches =  nil(), connections =  nil()), _)  => begin
         inGraph2
       end
 
@@ -1590,7 +1534,7 @@ function merge(inGraph1::NFOCConnectionGraph, inGraph2::NFOCConnectionGraph) ::N
         inGraph1
       end
 
-      (GRAPH(updateGraph = updateGraph1, definiteRoots = definiteRoots1, potentialRoots = potentialRoots1, uniqueRoots = uniqueRoots1, branches = branches1, connections = connections1), GRAPH(updateGraph = updateGraph2, definiteRoots = definiteRoots2, potentialRoots = potentialRoots2, uniqueRoots = uniqueRoots2, branches = branches2, connections = connections2))  => begin
+      (OCC_GRAPH(updateGraph = updateGraph1, definiteRoots = definiteRoots1, potentialRoots = potentialRoots1, uniqueRoots = uniqueRoots1, branches = branches1, connections = connections1), OCC_GRAPH(updateGraph = updateGraph2, definiteRoots = definiteRoots2, potentialRoots = potentialRoots2, uniqueRoots = uniqueRoots2, branches = branches2, connections = connections2))  => begin
         if Flags.isSet(Flags.CGRAPH)
           Debug.trace("- NFOCConnectionGraph.merge()\\n")
         end
@@ -1988,8 +1932,8 @@ function addBrokenEqualityConstraintEquations(inEquations::List{<:Equation}, inB
   outEquations
 end
 
-function identifyConnectionsOperator(functionName::Absyn.Path) ::ConnectionsOperator
-  local call::ConnectionsOperator
+function identifyConnectionsOperator(functionName::Absyn.Path) ::ConnectionsOperatorType
+  local call::ConnectionsOperatorType
 
   @assign call = begin
     local name::String

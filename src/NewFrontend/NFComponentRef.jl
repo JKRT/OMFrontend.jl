@@ -414,10 +414,8 @@ function toString_impl(cref::ComponentRef, strl::List{<:String})::List{String}
   return strl
 end
 
-function toString(cref::ComponentRef)::String
-  local str::String
-
-  @assign str = stringDelimitList(toString_impl(cref, nil), ".")
+function toString(cref::ComponentRef)
+  str = stringDelimitList(toString_impl(cref, nil), ".")
   return str
 end
 

@@ -632,7 +632,7 @@ function instDerivedAttributes(scodeAttr::SCode.Attributes) ::Attributes
   attributes
 end
 
-function instClass(node::InstNode, modifier::Modifier, attributes::Attributes = DEFAULT_ATTR, useBinding::Bool = false, instLevel::Int = 0, parent = EMPTY_NODE) ::Tuple{InstNode, Attributes}
+function instClass(node::InstNode, modifier::Modifier, attributes::Attributes = DEFAULT_ATTR, useBinding::Bool = false, instLevel::Int = 0, parent = EMPTY_NODE()) ::Tuple{InstNode, Attributes}
   local cls::Class
   local outer_mod::Modifier
   @debug "INST CLASS CALLED. CALLING GETCLASS ON NODE."
@@ -789,11 +789,11 @@ function instClassDef(cls::Class, outerMod::Modifier, attributes::Attributes, us
         =#
         #=  rather uncommon case hopefully, so in that case just reinstantiate the class.
         =#
-        @assign node = replaceClass(NOT_INSTANTIATED(), node)
-        @assign node = setNodeType(NORMAL_CLASS(), node)
-        @assign node = expand(node)
-        @assign node = instClass(node, outerMod, attributes, useBinding, instLevel, parent)
-        updateComponentType(parent, node)
+        node = replaceClass(NOT_INSTANTIATED(), node)
+        node = setNodeType(NORMAL_CLASS(), node)
+        node = expand(node)
+        (node, _) = instClass(node, outerMod, attributes, useBinding, instLevel, parentArg)
+        updateComponentType(parentArg, node)
         ()
       end
 

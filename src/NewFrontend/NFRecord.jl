@@ -67,7 +67,7 @@ function instDefaultConstructor(
   #= End=#
   ctor_node = instantiateN1(ctor_node, parent(ctor_node))
   instExpressions(ctor_node)
-  @info "Record fields"
+#  @info "Record fields"
   #=  Collect the record fields.=#
   (inputs, locals, all_params) = collectRecordParams(ctor_node)
   #=  Create the output record element, using the instance created above as both parent and type. =#

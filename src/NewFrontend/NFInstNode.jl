@@ -378,11 +378,10 @@ function toFullDAEType(clsNode::InstNode) ::DAE.Type
             DAE_TYPE(__)  => begin
               cls.ty
             end
-
             _  => begin
-              @assign state = toDAE(restriction(cls), scopePath(clsNode, includeRoot = true))
-              @assign vars = ConvertDAE.makeTypeVars(clsNode)
-              @assign outType = DAE.Type.T_COMPLEX(state, vars, NONE())
+              state = toDAE(restriction(cls), scopePath(clsNode, includeRoot = true))
+              vars = makeTypeVars(clsNode)
+              outType = DAE.Type.T_COMPLEX(state, vars, NONE())
               Pointer.update(clsNode.cls, DAE_TYPE(outType))
               outType
             end

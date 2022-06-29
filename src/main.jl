@@ -107,6 +107,13 @@ include("./NewFrontend/NFLookupState.jl")
 
 include("./NewFrontend/NFComponentRef.jl")
 @exportAll
+#= For over constrained connectors =#
+include("./NewFrontend/NFHashTable.jl")
+include("./NewFrontend/NFHashTable3.jl")
+include("./NewFrontend/NFHashTableCG.jl")
+include("./NewFrontend/NFOCConnectionGraph.jl")
+#= End =#
+@exportAll
 include("./NewFrontend/NFBuiltin.jl")
 #import ..NFBuiltin
 include("./NewFrontend/BindingExpression.jl")

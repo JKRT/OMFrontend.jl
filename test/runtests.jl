@@ -38,30 +38,39 @@ function flattenFM(model, file)
   return (x, y)
 end
 
-@testset "Frontend sanitiy tests. Check if we can transform the abstract tree to SCode and that we are able to flatten without exceptions" begin
-  @testset "Absyn -> SCode test" begin
-    include("scodeSanityTest.jl")
+@testset "OMFrontend tests" begin
+  @testset "Frontend sanitiy tests. Check if we can transform the abstract tree to SCode and that we are able to flatten without exceptions" begin
+    @testset "Absyn -> SCode test" begin
+      include("scodeSanityTest.jl")
     end
-  @testset "SCode -> DAE Sanity test" begin
-    include("daeTests.jl")
+    @testset "SCode -> DAE Sanity test" begin
+      include("daeTests.jl")
+    end
   end
-end
 
-# #= Check that we get the correct flat Modelica=#
-@testset "Frontend Validation test. Check that the result corresponds to existing models in the original frontend " begin
-  include("frontendResultTest.jl")
-end
+  # #= Check that we get the correct flat Modelica=#
+  @testset "Frontend Validation test. Check that the result corresponds to existing models in the original frontend " begin
+    include("frontendResultTest.jl")
+  end
 
-#= Test some of the MSL=#
-@testset "MSL test" begin
-  include("mslTests.jl")
-end
+  #=
+  Test components in the MSL
+  If you are a user of this package please submit more tests here.
+  =#
+  @testset "MSL test" begin
+    include("mslTests.jl")
+  end
 
-@testset "Test the use of the MSL" begin
-  include("useOfMSLTests.jl")
-end
+  @testset "Test the use of the MSL" begin
+    include("useOfMSLTests.jl")
+  end
 
-#= OMFrontend.jl extensions for variable structured systems =#
-@testset "Basic VSS models" begin
-  include("./VSS/testVSS.jl")
+  @testset "Testing OCC connectors" begin
+    include("dynamicOverconstrainedConnectorTests.jl")
+  end
+
+  #= OMFrontend.jl extensions for variable structured systems =#
+  @testset "Basic VSS models" begin
+    include("./VSS/testVSS.jl")
+  end
 end

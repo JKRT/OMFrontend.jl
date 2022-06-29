@@ -90,7 +90,7 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
   @debug "START FLATTENING!"
   flat_model = flatten(inst_cls, name)
   @debug "CONSTANT EVALUATION"
-  #TODO:Temporary removed flat_model = evaluate(flat_model)
+  #TODO:Temporary removed (Due to VSS handling) flat_model = evaluate(flat_model)
   @debug "FLATTENING DONE: flat_model"
   #= Do unit checking =#
   #TODO  @assign flat_model = UnitCheck.checkUnits(flat_model)
@@ -122,8 +122,9 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
   if recompilationEnabled
     @debug "We have the SCodeProgram"
     @assign flat_model.scodeProgram = SOME(listHead(program))
-  end
-  
+  else
+    flat_model = collectConstants(flat_model, funcs)
+  end  
   @debug "VERIFYING MODEL: "
   verify(flat_model)
   #                   if Flags.isSet(Flags.NF_DUMP_FLAT)

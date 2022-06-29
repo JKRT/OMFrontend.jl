@@ -324,7 +324,7 @@ function mapExpParameter(node::InstNode, mapFn::MapFunc)
     @match comp begin
       TYPED_COMPONENT(__) => begin
         @assign ty =
-          mapDims(comp.ty, (mapFn) -> mapExp(func = mapFn))
+          mapDims(comp.ty, (x) -> mapExp(x, mapFn))
         if !referenceEq(ty, comp.ty)
           @assign comp.ty = ty
           @assign dirty = true

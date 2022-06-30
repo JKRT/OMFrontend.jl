@@ -90,7 +90,16 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
   @debug "START FLATTENING!"
   flat_model = flatten(inst_cls, name)
   @debug "CONSTANT EVALUATION"
-  #TODO:Temporary removed (Due to VSS handling) flat_model = evaluate(flat_model)
+
+    #= Check if we are to performance recompilation. If true adds the SCode program to the flat model. =#
+  local recompilationEnabled = recompilationDirectiveExists(flat_model.equations)
+  if recompilationEnabled
+    @debug "We have the SCodeProgram"
+    @assign flat_model.scodeProgram = SOME(listHead(program))
+  else
+    flat_model = flat_model = evaluate(flat_model)
+  end 
+  
   @debug "FLATTENING DONE: flat_model"
   #= Do unit checking =#
   #TODO  @assign flat_model = UnitCheck.checkUnits(flat_model)
@@ -116,15 +125,7 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
   else
     #=  Remove empty arrays from variables =#
     @assign flat_model.variables = ListUtil.filterOnFalse(flat_model.variables, isEmptyArray)
-  end
-  #= Check if we are to performance recompilation. If true adds the SCode program to the flat model. =#
-  local recompilationEnabled = recompilationDirectiveExists(flat_model.equations)
-  if recompilationEnabled
-    @debug "We have the SCodeProgram"
-    @assign flat_model.scodeProgram = SOME(listHead(program))
-  else
-    flat_model = collectConstants(flat_model, funcs)
-  end  
+  end 
   @debug "VERIFYING MODEL: "
   verify(flat_model)
   #                   if Flags.isSet(Flags.NF_DUMP_FLAT)

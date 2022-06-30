@@ -154,12 +154,15 @@ function simplifyEquation(eq::Equation, equations::List{<:Equation})
 end
 
 function simplifyEqualityEquation(eq::Equation, equations::List{<:Equation})::List{Equation}
-
   local lhs::Expression
   local rhs::Expression
   local ty::M_Type
   local src::DAE.ElementSource
-
+  if typeof(eq.rhs) == ARRAY_EXPRESSION
+    if isEmptyArray(eq.rhs)
+      return equations
+    end
+  end
   @match EQUATION_EQUALITY(lhs = lhs, rhs = rhs, ty = ty, source = src) = eq
   @assign ty = mapDims(ty, simplifyDimension)
   if isEmptyArray(ty)

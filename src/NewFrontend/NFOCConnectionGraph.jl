@@ -380,8 +380,6 @@ end
 
 """ #= Adds a new definite root to NFOCConnectionGraph =#"""
 function addDefiniteRoot(root::ComponentRef, printTrace::Bool, graph::NFOCConnectionGraph) ::NFOCConnectionGraph
-
-
   if printTrace
     print("- NFOCConnectionGraph.addDefiniteRoot(" + toString(root) + ")\\n")
   end
@@ -391,8 +389,6 @@ end
 
 """ #= Adds a new potential root to NFOCConnectionGraph =#"""
 function addPotentialRoot(root::ComponentRef, priority::Int, printTrace::Bool, graph::NFOCConnectionGraph) ::NFOCConnectionGraph
-
-
   if printTrace
     print("- NFOCConnectionGraph.addPotentialRoot(" + toString(root) + ", " + realString(priority) + ")" + "\\n")
   end
@@ -447,29 +443,6 @@ function addConnection(ref1::ComponentRef, ref2::ComponentRef, brokenEquations::
   @assign graph.connections = _cons((ref1, ref2, brokenEquations), graph.connections)
   graph
 end
-
-#=  *************************************
-=#
-#=  ********* protected section *********
-=#
-#=  *************************************
-=#
-
-import ..BaseHashTable
-
-import ..Debug
-
-import ..Flags
-
-import ListUtil
-
-import ..Util
-
-import ..System
-
-import ..IOStream
-
-import ..Settings
 
 """ #= Returns the canonical element of the component where input element belongs to.
            See explanation at the top of file. =#"""
@@ -1565,7 +1538,7 @@ function graphVizEdge(inEdge::Edge) ::String
     local strEdge::String
     @match inEdge begin
       (c1, c2)  => begin
-        @assign strEdge = "\\" + toString(c1) + "\\ -- \\" + toString(c2) + "\\" + " [color = blue, dir = \\none\\, fontcolor=blue, label = \\branch\\];\\n\\t"
+        strEdge = "\"" + toString(c1) + "\" -- \"" + toString(c2) + "\"" + " [color = blue, dir = \"none\", fontcolor=blue, label = \"branch\"];\n\t"
         strEdge
       end
     end
@@ -1575,7 +1548,6 @@ end
 
 function graphVizFlatEdge(inFlatEdge::FlatEdge, inBrokenFlatEdges::FlatEdges) ::String
   local out::String
-
   @assign out = begin
     local c1::ComponentRef
     local c2::ComponentRef
@@ -1603,7 +1575,7 @@ function graphVizFlatEdge(inFlatEdge::FlatEdge, inBrokenFlatEdges::FlatEdges) ::
           "green"
         end
         @assign style = if isBroken
-          "\\bold, dashed\\"
+          "\"bold, dashed\""
         else
           "solid"
         end
@@ -1620,7 +1592,7 @@ function graphVizFlatEdge(inFlatEdge::FlatEdge, inBrokenFlatEdges::FlatEdges) ::
         end
         @assign sc1 = toString(c1)
         @assign sc2 = toString(c2)
-        @assign strFlatEdge = stringAppendList(list("\\", sc1, "\\ -- \\", sc2, "\\ [", "dir = \\none\\, ", "style = ", style, ", ", "decorate = ", decorate, ", ", "color = ", color, ", ", labelFontSize, "fontcolor = ", fontColor, ", ", "label = \\", label, "\\", "];\\n\\t"))
+        @assign strFlatEdge = stringAppendList(list("\"", sc1, "\" -- \"", sc2, "\" [", "dir = \"none\", ", "style = ", style, ", ", "decorate = ", decorate, ", ", "color = ", color, ", ", labelFontSize, "fontcolor = ", fontColor, ", ", "label = \"", label, "\"", "];\n\t"))
         strFlatEdge
       end
     end
@@ -1629,27 +1601,25 @@ function graphVizFlatEdge(inFlatEdge::FlatEdge, inBrokenFlatEdges::FlatEdges) ::
 end
 
 function FlatEdgeIsEqual(inEdge1::FlatEdge, inEdge2::FlatEdge) ::Bool
-  local isEqual::Bool
-
-  @assign isEqual = isEqual(Util.tuple31(inEdge1), Util.tuple31(inEdge2)) && isEqual(Util.tuple32(inEdge1), Util.tuple32(inEdge2))
-  isEqual
+  local isEq::Bool
+  isEq = isEqual(Util.tuple31(inEdge1), Util.tuple31(inEdge2)) && isEqual(Util.tuple32(inEdge1), Util.tuple32(inEdge2))
+  isEq
 end
 
 function graphVizDefiniteRoot(inDefiniteRoot::DefiniteRoot, inFinalRoots::DefiniteRoots) ::String
   local out::String
-
-  @assign out = begin
+  out = begin
     local c::ComponentRef
     local strDefiniteRoot::String
     local isSelectedRoot::Bool
     @match (inDefiniteRoot, inFinalRoots) begin
       (c, _)  => begin
-        @assign isSelectedRoot = ListUtil.isMemberOnTrue(c, inFinalRoots, isEqual)
-        @assign strDefiniteRoot = "\\" + toString(c) + "\\" + " [fillcolor = red, rank = \\source\\, label = " + "\\" + toString(c) + "\\, " + (if isSelectedRoot
-                                                                                                                                                  "shape=polygon, sides=8, distortion=\\0.265084\\, orientation=26, skew=\\0.403659\\"
-                                                                                                                                                else
-                                                                                                                                                  "shape=box"
-                                                                                                                                                end) + "];\\n\\t"
+        isSelectedRoot = ListUtil.isMemberOnTrue(c, inFinalRoots, isEqual)
+        strDefiniteRoot = "\"" + toString(c) + "\"" + " [fillcolor = red, rank = \"source\", label = " + "\"" + toString(c) + "\", " + (if isSelectedRoot
+             "shape=polygon, sides=8, distortion=\"0.265084\", orientation=26, skew=\"0.403659\""
+           else
+             "shape=box"
+           end) + "];\n\t"
         strDefiniteRoot
       end
     end
@@ -1667,12 +1637,12 @@ function graphVizPotentialRoot(inPotentialRoot::PotentialRoot, inFinalRoots::Def
     local isSelectedRoot::Bool
     @match (inPotentialRoot, inFinalRoots) begin
       ((c, priority), _)  => begin
-        @assign isSelectedRoot = ListUtil.isMemberOnTrue(c, inFinalRoots, isEqual)
-        @assign strPotentialRoot = "\\" + toString(c) + "\\" + " [fillcolor = orangered, rank = \\min\\ label = " + "\\" + toString(c) + "\\\\n" + realString(priority) + "\\, " + (if isSelectedRoot
-                                                                                                                                                                                      "shape=ploygon, sides=7, distortion=\\0.265084\\, orientation=26, skew=\\0.403659\\"
-                                                                                                                                                                                    else
-                                                                                                                                                                                      "shape=box"
-                                                                                                                                                                                    end) + "];\\n\\t"
+        isSelectedRoot = ListUtil.isMemberOnTrue(c, inFinalRoots, isEqual)
+        strPotentialRoot = "\"" + toString(c) + "\"" + " [fillcolor = orangered, rank = \"min\" label = " + "\"" + toString(c) + "\\n" + realString(Float64(priority)) + "\", " + (if isSelectedRoot
+             "shape=ploygon, sides=7, distortion=\"0.265084\", orientation=26, skew=\"0.403659\""
+           else
+             "shape=box"
+           end) + "];\n\t"
         strPotentialRoot
       end
     end
@@ -1680,9 +1650,18 @@ function graphVizPotentialRoot(inPotentialRoot::PotentialRoot, inFinalRoots::Def
   out
 end
 
-""" #= @author: adrpo
-            Generate a graphviz file out of the connection graph =#"""
-function generateGraphViz(modelNameQualified::String, definiteRoots::DefiniteRoots, potentialRoots::PotentialRoots, uniqueRoots::UniqueRoots, branches::Edges, connections::FlatEdges, finalRoots::DefiniteRoots, broken::FlatEdges) ::String
+"""
+@author: adrpo
+ Generate a graphviz file out of the connection graph
+"""
+function generateGraphViz(modelNameQualified::String,
+                          definiteRoots::DefiniteRoots,
+                          potentialRoots::PotentialRoots,
+                          uniqueRoots::UniqueRoots,
+                          branches::Edges,
+                          connections::FlatEdges,
+                          finalRoots::DefiniteRoots,
+                          broken::FlatEdges)::String
   local brokenConnectsViaGraphViz::String
 
   @assign brokenConnectsViaGraphViz = begin
@@ -1707,85 +1686,56 @@ function generateGraphViz(modelNameQualified::String, definiteRoots::DefiniteRoo
     =#
     @matchcontinue (modelNameQualified, definiteRoots, potentialRoots, uniqueRoots, branches, connections, finalRoots, broken) begin
       (_, _, _, _, _, _, _, _)  => begin
-        @match false = boolOr(Flags.isSet(Flags.CGRAPH_GRAPHVIZ_FILE), Flags.isSet(Flags.CGRAPH_GRAPHVIZ_SHOW))
+        @match false = boolOr(Flags.isSet(Flags.CGRAPH_GRAPHVIZ_FILE), Flags.isSet(Flags.CGRAPH_GRAPHVIZ_SHOW)) #lets do it like this for now...
         ""
       end
 
       (_, _, _, _, _, _, _, _)  => begin
-        @assign tStart = clock()
-        @assign i = "\\t"
-        @assign fileName = stringAppend(modelNameQualified, ".gv")
-        @assign graphVizStream = IOStream.create(fileName, IOStream.LIST())
-        @assign nrDR = intString(listLength(definiteRoots))
-        @assign nrPR = intString(listLength(potentialRoots))
-        @assign nrUR = intString(listLength(uniqueRoots))
-        @assign nrBR = intString(listLength(branches))
-        @assign nrCO = intString(listLength(connections))
-        @assign nrFR = intString(listLength(finalRoots))
-        @assign nrBC = intString(listLength(broken))
-        @assign infoNode = list("// Generated by OpenModelica. \\n", "// Overconstrained connection graph for model: \\n//    ", modelNameQualified, "\\n", "// \\n", "// Summary: \\n", "//   Roots:              ", nrDR, "\\n", "//   Potential Roots:    ", nrPR, "\\n", "//   Unique Roots:       ", nrUR, "\\n", "//   Branches:           ", nrBR, "\\n", "//   Connections:        ", nrCO, "\\n", "//   Final Roots:        ", nrFR, "\\n", "//   Broken Connections: ", nrBC, "\\n")
-        @assign infoNodeStr = stringAppendList(infoNode)
-        @assign infoNodeStr = System.stringReplace(infoNodeStr, "\\n", "\\\\l")
-        @assign infoNodeStr = System.stringReplace(infoNodeStr, "\\t", " ")
-        @assign infoNodeStr = System.stringReplace(infoNodeStr, "/", "")
-        @assign graphVizStream = IOStream.appendList(graphVizStream, infoNode)
-        @assign graphVizStream = IOStream.appendList(graphVizStream, list("\\n\\n"))
-        @assign graphVizStream = IOStream.appendList(graphVizStream, list("graph \\", modelNameQualified, "\\\\n{\\n\\n"))
-        @assign graphVizStream = IOStream.appendList(graphVizStream, list(i, "overlap=false;\\n"))
-        @assign graphVizStream = IOStream.appendList(graphVizStream, list(i, "layout=dot;\\n\\n"))
-        @assign graphVizStream = IOStream.appendList(graphVizStream, list(i, "node [", "fillcolor = \\lightsteelblue1\\, ", "shape = box, ", "style = \\bold, filled\\, ", "rank = \\max\\", "]\\n\\n"))
-        @assign graphVizStream = IOStream.appendList(graphVizStream, list(i, "edge [", "color = \\black\\, ", "style = bold", "]\\n\\n"))
-        @assign graphVizStream = IOStream.appendList(graphVizStream, list(i, "graph [fontsize=20, fontname = \\Courier Bold\\ label= \\\\\\n\\\\n", infoNodeStr, "\\, size=\\6,6\\];\\n", i))
-        @assign graphVizStream = IOStream.appendList(graphVizStream, list("\\n", i, "// Definite Roots (Connections.root)", "\\n", i))
-        @assign graphVizStream = IOStream.appendList(graphVizStream, ListUtil.map1(definiteRoots, graphVizDefiniteRoot, finalRoots))
-        @assign graphVizStream = IOStream.appendList(graphVizStream, list("\\n", i, "// Potential Roots (Connections.potentialRoot)", "\\n", i))
-        @assign graphVizStream = IOStream.appendList(graphVizStream, ListUtil.map1(potentialRoots, graphVizPotentialRoot, finalRoots))
-        @assign graphVizStream = IOStream.appendList(graphVizStream, list("\\n", i, "// Branches (Connections.branch)", "\\n", i))
-        @assign graphVizStream = IOStream.appendList(graphVizStream, ListUtil.map(branches, graphVizEdge))
-        @assign graphVizStream = IOStream.appendList(graphVizStream, list("\\n", i, "// Connections (connect)", "\\n", i))
-        @assign graphVizStream = IOStream.appendList(graphVizStream, ListUtil.map1(connections, graphVizFlatEdge, broken))
-        @assign graphVizStream = IOStream.appendList(graphVizStream, list("\\n}\\n"))
-        @assign tEnd = clock()
-        @assign t = tEnd - tStart
-        @assign timeStr = realString(t)
-        @assign graphVizStream = IOStream.appendList(graphVizStream, list("\\n\\n\\n// graph generation took: ", timeStr, " seconds\\n"))
-        System.writeFile(fileName, IOStream.string(graphVizStream))
-        print("GraphViz with connection graph for model: " + modelNameQualified + " was writen to file: " + fileName + "\\n")
+        #        @assign tStart = clock()
+        timedStats = @timed begin
+          i = "\t"
+          fileName = stringAppend(modelNameQualified, ".gv")
+          graphVizStream = IOStream_M.create(fileName, IOStream_M.LIST())
+          nrDR = intString(listLength(definiteRoots))
+          nrPR = intString(listLength(potentialRoots))
+          nrUR = intString(listLength(uniqueRoots))
+          nrBR = intString(listLength(branches))
+          nrCO = intString(listLength(connections))
+          nrFR = intString(listLength(finalRoots))
+          nrBC = intString(listLength(broken))
+          infoNode = list("// Generated by OpenModelica.jl. \n", "// Overconstrained connection graph for model: \n//    ", modelNameQualified, "\n", "// \n", "// Summary: \n", "//   Roots:              ", nrDR, "\n", "//   Potential Roots:    ", nrPR, "\n", "//   Unique Roots:       ", nrUR, "\n", "//   Branches:           ", nrBR, "\n", "//   Connections:        ", nrCO, "\n", "//   Final Roots:        ", nrFR, "\n", "//   Broken Connections: ", nrBC, "\n")
+          infoNodeStr = stringAppendList(infoNode)
+          infoNodeStr = System.stringReplace(infoNodeStr, "\n", "\\l")
+          infoNodeStr = System.stringReplace(infoNodeStr, "\t", " ")
+          infoNodeStr = System.stringReplace(infoNodeStr, "/", "")
+          graphVizStream = IOStream_M.appendList(graphVizStream, infoNode)
+          graphVizStream = IOStream_M.appendList(graphVizStream, list("\n\n"))
+          graphVizStream = IOStream_M.appendList(graphVizStream, list("graph \"", modelNameQualified, "\"\n{\n\n"))
+          graphVizStream = IOStream_M.appendList(graphVizStream, list(i, "overlap=false;\n"))
+          graphVizStream = IOStream_M.appendList(graphVizStream, list(i, "layout=dot;\n\n"))
+          graphVizStream = IOStream_M.appendList(graphVizStream, list(i, "node [", "fillcolor = \"lightsteelblue1\", ", "shape = box, ", "style = \"bold, filled\", ", "rank = \"max\"", "]\n\n"))
+          graphVizStream = IOStream_M.appendList(graphVizStream, list(i, "edge [", "color = \"black\", ", "style = bold", "]\n\n"))
+          graphVizStream = IOStream_M.appendList(graphVizStream, list(i, "graph [fontsize=20, fontname = \"Courier Bold\" label= \"\\n\\n", infoNodeStr, "\", size=\"6,6\"];\n", i))
+          graphVizStream = IOStream_M.appendList(graphVizStream, list("\n", i, "// Definite Roots (Connections.root)", "\n", i))
+          graphVizStream = IOStream_M.appendList(graphVizStream, ListUtil.map1(definiteRoots, graphVizDefiniteRoot, finalRoots))
+          graphVizStream = IOStream_M.appendList(graphVizStream, list("\n", i, "// Potential Roots (Connections.potentialRoot)", "\n", i))
+          graphVizStream = IOStream_M.appendList(graphVizStream, ListUtil.map1(potentialRoots, graphVizPotentialRoot, finalRoots))
+          graphVizStream = IOStream_M.appendList(graphVizStream, list("\n", i, "// Branches (Connections.branch)", "\n", i))
+          graphVizStream = IOStream_M.appendList(graphVizStream, ListUtil.map(branches, graphVizEdge))
+          graphVizStream = IOStream_M.appendList(graphVizStream, list("\n", i, "// Connections (connect)", "\n", i))
+          graphVizStream = IOStream_M.appendList(graphVizStream, ListUtil.map1(connections, graphVizFlatEdge, broken))
+          graphVizStream = IOStream_M.appendList(graphVizStream, list("\n}\n"))
+        end
+        t = timedStats[2]
+        timeStr = realString(t)
+        graphVizStream = IOStream_M.appendList(graphVizStream, list("\n\n\n// graph generation took: ", timeStr, " seconds\n"))
+        System.writeFile(fileName, IOStream_M.string(graphVizStream))
+        print("GraphViz with connection graph for model: " + modelNameQualified + " was writen to file: " + fileName + "\n")
         @assign brokenConnects = showGraphViz(fileName, modelNameQualified)
         brokenConnects
       end
     end
   end
-  #=  create a stream
-  =#
-  #=  replace \\n with \\\\l (left align), replace \\t with \" \"
-  =#
-  #=  replace / with \"\"
-  =#
-  #=  output header
-  =#
-  #=  output command to be used
-  =#
-  #=  output graphviz header
-  =#
-  #=  output global settings
-  =#
-  #=  output settings for nodes
-  =#
-  #=  output settings for edges
-  =#
-  #=  output summary node
-  =#
-  #=  output definite roots
-  =#
-  #=  output potential roots
-  =#
-  #=  output branches
-  =#
-  #=  output connections
-  =#
-  #=  output graphviz footer
-  =#
   brokenConnectsViaGraphViz
 end
 

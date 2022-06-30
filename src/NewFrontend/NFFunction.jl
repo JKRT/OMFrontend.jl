@@ -1197,20 +1197,21 @@ function matchArgs(
       #   ),
       #   info,
       # )
-      @error "Function argument \"$(toString(arg_exp))\" in call to $(AbsynUtil.pathString(name(func))) has variability 
-              $(variabilityString(arg_var)) which is not a $(variabilityString(variability(comp)))"
+      #@error "Function argument \"$(toString(arg_exp))\" in call to $(AbsynUtil.pathString(name(func))) has variability 
+      #        $(variabilityString(arg_var)) which is not a $(variabilityString(variability(comp)))"
+      #Errors should not be printed yet.
       @assign funcMatchKind = NO_MATCH
       return (args, funcMatchKind)
     end
     input_ty = getType(comp)
-    @assign (arg_exp, ty, mk) =
+    (arg_exp, ty, mk) =
       matchTypes(arg_ty, input_ty, arg_exp, allowUnknown = true)
-    @assign matched = isValidArgumentMatch(mk)
+    matched = isValidArgumentMatch(mk)
     if !matched && vectorize
-      @assign (arg_exp, ty, vect_arg, vect_dims, mk) =
+      (arg_exp, ty, vect_arg, vect_dims, mk) =
         matchArgVectorized(arg_exp, arg_ty, input_ty, vect_arg, vect_dims, info)
-      @assign vectorized_args = _cons(arg_idx, vectorized_args)
-      @assign matched = isValidArgumentMatch(mk)
+      vectorized_args = _cons(arg_idx, vectorized_args)
+      matched = isValidArgumentMatch(mk)
     end
     if !matched
       # Error.addSourceMessage(
@@ -1229,8 +1230,9 @@ function matchArgs(
       local expectedType = toString(input_ty)
       local actualType = toString(arg_ty)
       local msgPart1 = "Arg type mismatch for $msg for $(name(input_node)) with exp: $(toString(arg_exp))"
-      local msgPart2 = "\nExpected type: $expectedType, argument type $actualType"
-      @error msgPart1 * msgPart2
+      local msgPart2 = "\nExpected type: $expectedType. Argument type was: $actualType"
+      #@error msgPart1 * msgPart2 it should not be an error yet. These should be printed in the end.
+      # Fix the error reporting module.
       @assign funcMatchKind = NO_MATCH
       return (args, funcMatchKind)
     end

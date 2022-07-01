@@ -1,3 +1,7 @@
+#= Include reference models =#
+include("./dynamicOverconstrainedConnectors.jl")
+import ..OCC_ReferenceModels
+
 #=
   This test set tests some basic functionality of OCC components
 =#
@@ -22,6 +26,19 @@ end
   @test_pass_if_not_throws("DynamicOverconstrainedConnectors.System2", "./Models/DynamicOverconstrainedConnectors.mo")
   @test_pass_if_not_throws("DynamicOverconstrainedConnectors.System3", "./Models/DynamicOverconstrainedConnectors.mo")
   @test_pass_if_not_throws("DynamicOverconstrainedConnectors.System4", "./Models/DynamicOverconstrainedConnectors.mo")
+end
+
+#= Regression test. Tests the generated code against reference models =#
+@testset "Test if the flat Modelica model is equal to the reference models" begin
+  local modelFile = "./Models/DynamicOverconstrainedConnectors.mo"
+  @test OCC_ReferenceModels.ACPort == OMFrontend.toString(OMFrontend.flattenModelWithMSL("DynamicOverconstrainedConnectors.ACPort", modelFile)[1]);
+  @test OCC_ReferenceModels.Load == OMFrontend.toString(OMFrontend.flattenModelWithMSL("DynamicOverconstrainedConnectors.Load", modelFile)[1]);
+  @test OCC_ReferenceModels.Generator == OMFrontend.toString(OMFrontend.flattenModelWithMSL("DynamicOverconstrainedConnectors.Generator", modelFile)[1]);
+  @test OCC_ReferenceModels.TransmissionLine == OMFrontend.toString(OMFrontend.flattenModelWithMSL("DynamicOverconstrainedConnectors.TransmissionLine", modelFile)[1]);
+  @test OCC_ReferenceModels.System1 == OMFrontend.toString(OMFrontend.flattenModelWithMSL("DynamicOverconstrainedConnectors.System1", modelFile)[1]);
+  @test OCC_ReferenceModels.System2 == OMFrontend.toString(OMFrontend.flattenModelWithMSL("DynamicOverconstrainedConnectors.System2", modelFile)[1]);
+  @test OCC_ReferenceModels.System3 == OMFrontend.toString(OMFrontend.flattenModelWithMSL("DynamicOverconstrainedConnectors.System3", modelFile)[1]);
+  @test OCC_ReferenceModels.System4 == OMFrontend.toString(OMFrontend.flattenModelWithMSL("DynamicOverconstrainedConnectors.System4", modelFile)[1]);
 end
 
 #= Check the resulting flat code. =#

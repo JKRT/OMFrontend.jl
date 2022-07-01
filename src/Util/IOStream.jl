@@ -136,9 +136,9 @@ function append(inStream::IOSTREAM, inString::String)::IOSTREAM
   return outStream
 end
 
-function appendList(inStream::IOSTREAM, inStringList::List{<:String})::IOSTREAM
+function appendList(inStream::IOSTREAM, inStringList::List)::IOSTREAM
   local outStream::IOSTREAM
-  @assign outStream = ListUtil.foldr(inStringList, append, inStream)
+  outStream = ListUtil.foldr(inStringList, append, inStream)
   return outStream
 end
 

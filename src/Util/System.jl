@@ -126,17 +126,14 @@ function strncmp(inString1::String, inString2::String, len::Integer) ::Integer
 end
 
 function stringReplace(str::String, source::String, target::String) ::String
-  local res::String
-
-  @error "TODO: Defined in the runtime"
-  res
+  return replace(str, source=>target)
 end
 
-""" #= Replaces unknown characters with _ =#"""
+""" Replaces unknown characters with _ """
 function makeC89Identifier(str::String) ::String
   local res::String
 
-  @error "TODO: Defined in the runtime"
+  @error "TODO: internal function makeC89Identifier not defined in the runtime"
   res
 end
 
@@ -255,9 +252,9 @@ function freeLibrary(inLibHandle::Integer, inPrintDebug::Bool)
   @error "TODO: Defined in the runtime"
 end
 
-""" #= This function will write to the file given by first argument the given string =#"""
+""" This function will write to the file given by first argument the given string """
 function writeFile(fileNameToWrite::String #= a filename where to write the data =#, stringToBeWritten::String #= the data =#)
-  @error "TODO: Defined in the runtime"
+  write(fileNameToWrite, stringToBeWritten)
 end
 
 function appendFile(file::String, data::String)

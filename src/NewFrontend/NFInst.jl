@@ -2067,7 +2067,7 @@ function instRecordConstructor(node::InstNode)
         if SCodeUtil.isOperatorRecord(definition(node))
           instConstructor(scopePath(node, includeRoot = true), node, InstNode_info(node))
         else
-          Record.instDefaultConstructor(scopePath(node, includeRoot = true), node, InstNode_info(node))
+          instDefaultConstructor(scopePath(node, includeRoot = true), node, InstNode_info(node))
         end
         ()
       end

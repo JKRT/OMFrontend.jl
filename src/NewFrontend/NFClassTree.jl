@@ -2275,12 +2275,11 @@ function addImport(
   tree::LookupTree.Tree,
   imports::Vector{<:Import},
 )::LookupTree.Tree
-
-  @assign tree = LookupTree.add(
+  tree = LookupTree.add(
     tree,
     name(imp),
     LookupTree.IMPORT(index),
-    (imports) -> addImportConflict(imports = imports),
+    (x, y, z) -> addImportConflict(x, y, z, imports),
   )
   
   return tree
@@ -2389,13 +2388,15 @@ function addLocalElementConflict(
         =#
         #=  Otherwise we have two local elements with the same name, which is an error.
         =#
-        @assign n1 = findLocalConflictElement(newEntry, classTree)
-        @assign n2 = findLocalConflictElement(oldEntry, classTree)
-        Error.addMultiSourceMessage(
-          Error.DOUBLE_DECLARATION_OF_ELEMENTS,
-          list(name),
-          list(info(n2), info(n1)),
-        )
+        n1 = findLocalConflictElement(newEntry, classTree)
+        n2 = findLocalConflictElement(oldEntry, classTree)
+        #Error.addMultiSourceMessage(
+        #   Error.DOUBLE_DECLARATION_OF_ELEMENTS,
+        #   list(name),
+        #   list(info(n2), info(n1)),
+        # )
+        arr = [InstNode_info(n2), InstNode_info(n1)]
+        @error "An element with name $(name) is already declared in this scope" * " " * string(arr[1]) * " " * string(arr[2])
         fail()
       end
     end
@@ -2409,11 +2410,11 @@ function addLocalElement(
   classTree::ClassTree,
   tree::LookupTree.Tree,
 )::LookupTree.Tree
-  @assign tree = LookupTree.add(
+  tree = LookupTree.add(
     tree,
     name,
     entry,
-    (classTree) -> addLocalElementConflict(classTree = classTree),
+    (newEntryA, oldEntryA, nameA) -> addLocalElementConflict(newEntryA, oldEntryA, nameA, classTree),
   )
   return tree
 end

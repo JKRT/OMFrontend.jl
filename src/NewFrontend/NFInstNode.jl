@@ -1361,11 +1361,11 @@ function InstNode_info(node::InstNode) ::SourceInfo
       end
 
       COMPONENT_NODE(__)  => begin
-        info(P_Pointer.access(node.component))
+        Component_info(P_Pointer.access(node.component))
       end
 
       COMPONENT_NODE(__)  => begin
-        info(node.parent)
+        InstNode_info(node.parent)
       end
       _  => begin
         AbsynUtil.dummyInfo

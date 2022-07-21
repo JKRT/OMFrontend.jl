@@ -42,15 +42,15 @@ function flatten(classInst::InstNode, name::String; prefix = COMPONENT_REF_EMPTY
         ieql = listReverseInPlace(sections.initialEquations)
         alg = listReverseInPlace(sections.algorithms)
         ialg = listReverseInPlace(sections.initialAlgorithms)
-        FLAT_MODEL(name, vars, eql, ieql, alg, ialg, structuralSubmodels, NONE(), cmt)
+        FLAT_MODEL(name, vars, eql, ieql, alg, ialg, structuralSubmodels, NONE(), NONE(), cmt)
       end
       _ => begin
-        FLAT_MODEL(name, vars, nil, nil, nil, nil, nil, NONE(), cmt)
+        FLAT_MODEL(name, vars, nil, nil, nil, nil, nil, NONE(), NONE(), cmt)
       end
     end
   end
 #  execStat(getInstanceName() + "(" + name + ")")
-  flatModel = resolveConnections(flatModel, name)
+#  flatModel = resolveConnections(flatModel, name)
   return flatModel
 end
 
@@ -1500,7 +1500,7 @@ function addElementSourceArrayPrefix(
   return source
 end
 
-""" #= Generates the connect equations and adds them to the equation list =#"""
+""" Generates the connect equations and adds them to the equation list """
 function resolveConnections(flatModel::FlatModel, name::String)::FlatModel
   local conns::Connections
   local conn_eql::List{Equation}
@@ -1508,23 +1508,20 @@ function resolveConnections(flatModel::FlatModel, name::String)::FlatModel
   local csets_array::Vector{List{Connector}}
   local ctable::CardinalityTable.Table
   local broken::BrokenEdges = nil
-  #=  get the connections from the model
-  =#
-  @assign (flatModel, conns) = collect(flatModel)
-  #=  Elaborate expandable connectors.
-  =#
-  @assign (flatModel, conns) = elaborate(flatModel, conns)
+  #=  get the connections from the model =#
+  (flatModel, conns) = collect(flatModel)
+  #=  Elaborate expandable connectors.=#
+  (flatModel, conns) = elaborate(flatModel, conns)
   #=  handle overconstrained connections =#
   #=  - build the graph =#
   #=  - evaluate the Connections.* operators =#
   #=  - generate the equations to replace the broken connects =#
   #=  - return the broken connects + the equations =#
-
   if System.getHasOverconstrainedConnectors()
-    @assign (flatModel, broken) = handleOverconstrainedConnections(flatModel, conns, name)
+    (flatModel, broken) = handleOverconstrainedConnections(flatModel, conns, name)
   end
   #=  add the broken connections  =#
-  @assign conns = addBroken(broken, conns)
+  conns = addBroken(broken, conns)
   #=  build the sets, check the broken connects =#
   csets = ConnectionSets.fromConnections(conns)
   (csets_array, _) = ConnectionSets.extractSets(csets)
@@ -1532,16 +1529,16 @@ function resolveConnections(flatModel::FlatModel, name::String)::FlatModel
   conn_eql = generateEquations(csets_array) #=In NFConnectEquations=#
   #=  append the equalityConstraint call equations for the broken connects =#
   if System.getHasOverconstrainedConnectors()
-    @assign conn_eql = listAppend(conn_eql, ListUtil.flatten(ListUtil.map(broken, Util.tuple33)))
+    conn_eql = listAppend(conn_eql, ListUtil.flatten(ListUtil.map(broken, Util.tuple33)))
   end
   #=  add the equations to the flat model
   =#
   @assign flatModel.equations = listAppend(conn_eql, flatModel.equations)
   @assign flatModel.variables = list(v for v in flatModel.variables if isPresent(v))
-  @assign ctable = CardinalityTable.fromConnections(conns)
+  ctable = CardinalityTable.fromConnections(conns)
   #=  Evaluate any connection operators if they're used. =#
   if System.getHasStreamConnectors() || System.getUsesCardinality()
-    @assign flatModel = evaluateConnectionOperators(flatModel, csets, csets_array, ctable)
+    flatModel = evaluateConnectionOperators(flatModel, csets, csets_array, ctable)
   end
 #  execStat(getInstanceName() + "(" + name + ")")
   return flatModel

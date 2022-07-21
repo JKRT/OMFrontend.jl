@@ -61,12 +61,9 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
   #=  Initialize the storage for automatically generated inner elements. =#
   top = setInnerOuterCache(top, C_TOP_SCOPE(NodeTree.new(), cls))
   #=  Instantiate the class. =#
-  @debug "FIRST INST CALL!"
   inst_cls = instantiateN1(cls, EMPTY_NODE())
-  @debug "AFTER INST CALL"
   insertGeneratedInners(inst_cls, top)
   #execStat("NFInst.instantiate(" + name + ")")
-  @debug "INSTANTIATION STEP 1 DONE!"
   #=  Instantiate expressions (i.e. anything that can contains crefs, like
   =#
   #=  bindings, dimensions, etc). This is done as a separate step after
@@ -75,58 +72,93 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
   =#
   Base.inferencebarrier(instExpressions(inst_cls))
   #                   execStat("NFInst.instExpressions(" + name + ")")
-  @debug "Inst expressions done"
   #=  Mark structural parameters.
   =#
   updateImplicitVariability(inst_cls, false #== Flags.isSet(Flags.EVAL_PARAM) ==#)
   #execStat("NFInst.updateImplicitVariability")
   #=  Type the class.
   =#
-  @debug "TYPECLASS(inst_cls, name)"
   Base.inferencebarrier(typeClass(inst_cls, name))
-  @debug "AFTER type class"
   #=  Flatten the model and evaluate constants in it.
   =#
-  @debug "START FLATTENING!"
   flat_model = flatten(inst_cls, name)
-  @debug "CONSTANT EVALUATION"
-
-    #= Check if we are to performance recompilation. If true adds the SCode program to the flat model. =#
+  #=
+    Check if we are to performance recompilation. If true adds the SCode program to the flat model.
+    Also check if we have a Connections.branch statement in an if-equation
+  =#
   local recompilationEnabled = recompilationDirectiveExists(flat_model.equations)
-  if recompilationEnabled
-    @debug "We have the SCodeProgram"
+  local doccs = collectDOCCS(flat_model.equations)
+  for docc in doccs
+    println(toString(docc))
+  end
+  local modelWithDOCC  = ! isempty(doccs)
+  if recompilationEnabled || modelWithDOCC
     @assign flat_model.scodeProgram = SOME(listHead(program))
+    #=
+    1. Evaluate the initial state of the special if-equation (by looking at the condition)
+    Either the equation starts with the relevant equation in the model,
+    or the equations are added during the simulation.
+
+    It should also be noted that, the equations are to be removed in some conditions.
+    
+    
+    =#
+
+    #= Remove the conditionals themselves from the flat model =#
+    local eqs = flat_model.equations
+    for eq in doccs
+      eqs = ListUtil.deleteMemberF(eqs, eq)
+    end
+    @info length(flat_model.equations)
+    @info length(eqs)
+    #=
+      Check if the existing equations
+      in the flat model should be extended depending on the condition variable.
+    =#
+    for eq in doccs
+      @assert eq isa EQUATION_IF
+      for br in eq.branches
+        @assert br isa EQUATION_BRANCH
+        tst = evaluateExp(br.condition, Variability.DISCRETE)
+        tst = Variable_fromCref(toCref(tst))
+        @info toString(tst)
+        tst2 = evaluateEquations(flat_model.initialEquations, Variability.CONSTANT)
+        @info "foo"
+        for eq in tst2
+          println(toString(eq))
+        end
+      end
+    end
+    flat_model = resolveConnections(flat_model, name)
+    #=
+    Remove the doccs equations from the set of equations in the flat model
+    =#
+    fail()
+    #println("\n************* AFTER RESOLVE *************\n")
+    #println(replace(toString(flat_model), "\\n" => "\n"))
   else
-    flat_model = flat_model = evaluate(flat_model)
-  end 
-  
-  @debug "FLATTENING DONE: flat_model"
+    flat_model = resolveConnections(flat_model, name)
+    flat_model = evaluate(flat_model)
+  end
   #= Do unit checking =#
   #TODO  @assign flat_model = UnitCheck.checkUnits(flat_model)
   #=  Apply simplifications to the model.=#
   flat_model = simplifyFlatModel(flat_model)
   #=  Collect a tree of all functions that are still used in the flat model.=#
-  @debug "COLLECT FUNCTIONS"
   funcs = collectFunctions(flat_model, name)
-  @debug "COLLECTED FUNCTIONS!"
   #=  Collect package constants that couldn't be substituted with their values =#
   #=  (e.g. because they where used with non-constant subscripts), and add them to the model. =#
-  @debug "COLLECT CONSTANTS"
-  @assign flat_model = collectConstants(flat_model, funcs)
-  @debug "COLLECTED CONSTANTS"
+  flat_model = collectConstants(flat_model, funcs)
   if Flags.getConfigBool(Flags.FLAT_MODELICA)    
     printFlatString(flat_model, FunctionTreeImpl.listValues(funcs))
   end
-  #= Scalarize array components in the flat model.=#
-  @debug "Not skipping NF_SCALARIZE"
-  #@info "Hello"
+  #= Scalarize array components in the flat model.=#  
   if Flags.isSet(Flags.NF_SCALARIZE)
     flat_model = scalarize(flat_model, name)
   else
     #=  Remove empty arrays from variables =#
     @assign flat_model.variables = ListUtil.filterOnFalse(flat_model.variables, isEmptyArray)
   end 
-  @debug "VERIFYING MODEL: "
   verify(flat_model)
   #                   if Flags.isSet(Flags.NF_DUMP_FLAT)
   # print("FlatModel:\\n" + toString(flat_model) + "\\n")

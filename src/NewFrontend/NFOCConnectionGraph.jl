@@ -150,17 +150,10 @@ function handleOverconstrainedConnections(flatModel::FlatModel, conns::Connectio
               end
 
               ConnectionsOperator.POTENTIAL_ROOT  => begin
-                @assign graph = begin
-                  @match lst begin
-                    CREF_EXPRESSION(cref = cref) <|  nil()  => begin
-                      addPotentialRoot(cref, 0, print_trace, graph)
-                    end
-
-                    CREF_EXPRESSION(cref = cref) <| INTEGER_EXPRESSION(priority) <|  nil()  => begin
-                      addPotentialRoot(cref, priority, print_trace, graph)
-                    end
-                  end
-                end
+                @match arg1 <| arg2 <| nil = lst
+                @match CREF_EXPRESSION(cref = cref) = arg1
+                @match INTEGER_EXPRESSION(value = priority) = evalExp(arg2)
+                graph = addPotentialRoot(cref, priority, print_trace, graph)
                 eql
               end
 

@@ -172,22 +172,22 @@ end
 
 function Variable_fromCref(cref::ComponentRef)::Variable
   local variable::Variable
-  local node::InstNode
+  local nodeVar::InstNode
   local comp::Component
   local ty::M_Type
   local binding::Binding
   local vis::VisibilityType
   local attr::Attributes
   local cmt::Option{SCode.Comment}
-  local info::SourceInfo
-  @assign node = node(cref)
-  @assign comp = component(node)
-  @assign ty = getSubscriptedType(cref)
-  @assign binding = getBinding(comp)
-  @assign vis = visibility(node)
-  @assign attr = getAttributes(comp)
-  @assign cmt = P_Component.comment(comp)
-  @assign info = info(node)
-  @assign variable = VARIABLE(cref, ty, binding, vis, attr, nil, cmt, info)
+  local infoVar::SourceInfo
+  nodeVar = node(cref)
+  comp = component(nodeVar)
+  ty = getSubscriptedType(cref)
+  binding = getBinding(comp)
+  vis = visibility(nodeVar)
+  attr = getAttributes(comp)
+  cmt = comment(comp)
+  infoVar = InstNode_info(nodeVar)
+  variable = VARIABLE(cref, ty, binding, vis, attr, nil, cmt, infoVar)
   return variable
 end

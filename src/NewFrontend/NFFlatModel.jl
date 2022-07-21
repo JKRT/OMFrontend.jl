@@ -8,6 +8,8 @@ struct FLAT_MODEL <: FlatModel
   #= VSS Modelica extension =#
   structuralSubmodels::List{FlatModel}
   scodeProgram::Option{SCode.CLASS}
+  #= Dynamically Overconstrained connectors =#
+  DOCC_stmts::Option{List{Equation}}
   #= End VSS Modelica extension =#
   comment::Option{SCode.Comment}
 end
@@ -497,38 +499,72 @@ function toString(flatModel::FlatModel, printBindingTypes::Bool = false)::String
 end
 
 """
-  This functions checks for the recompilation directive among all the equations 
+  This functions checks for a recompilation directive among all the equations.
+  This function will also return true if the model contains another change that might
+  lead to recompilation.
 """
 function recompilationDirectiveExists(@nospecialize(eqs::List{Equation}))::Bool
-  local hasRecompilationDirective = containsList(eqs, containsRecompilation)
+  local hasRecompilationDirective = containsList(eqs, (eq) -> containsCallNamed(eq, "recompilation"))
   return hasRecompilationDirective
+end
+
+
+"""
+  Returns true if the list of equations contains a branch directive.
+"""
+function branchDirectiveExists(@nospecialize(eqs::List{Equation}))::Bool
+  local hasRecompilationDirective = containsList(eqs, (eq) -> containsCallNamed(eq, "Connections.branch"))
+  return hasRecompilationDirective
+end
+
+"""
+  Collect all DOCCS Equations.
+"""
+function collectDOCCS(@nospecialize(eqs::List{Equation}))
+  Base.collect(Iterators.flatten([containsDOCC(eq) for eq in eqs]))
 end
 
 """
   This function returns true if a EQUATION_NORETCALL is a recompilation directive. 
 """
-function containsRecompilation(@nospecialize(eq::Equation))::Bool
-  local recompilationDirectiveExists = false
+function containsCallNamed(@nospecialize(eq::Equation), funcName::String)::Bool
+  local functionExistWithName = false
   @match eq begin
     EQUATION_NORETCALL(__) => begin
-      @debug "We have a call expression: " * toString(eq.exp) * " of type: $(typeof(eq.exp))" 
       @match eq.exp begin
         CALL_EXPRESSION(call = TYPED_CALL(fn, ty, var, arguments, attributes)) => begin
-          @debug "Matched!" name(fn)
           local nameAsStr = AbsynUtil.pathString(name(fn))
-          @debug nameAsStr
-          if "recompilation" == nameAsStr
-            @debug "matched on recompilation"
-            recompilationDirectiveExists = true
+          if funcName == nameAsStr
+            functionExistWithName = true
           end
         end
       end
     end
     _ => begin
-      recompilationDirectiveExists = false
+      functionExistWithName = false
     end
   end
-  @debug "Returning:" recompilationDirectiveExists
-  return recompilationDirectiveExists
+  return functionExistWithName
 end
 
+
+"""
+  Check if the model contains a Dynamically Overconstrained Connector (DOCC).
+  The function returns true if that is the case.
+  It also returns a list with all if-equations containing DOCC.
+"""
+function containsDOCC(@nospecialize(eq::Equation))::Vector{Equation}
+  local doccs = Equation[]
+  @match eq begin
+    EQUATION_IF(__) => begin
+      for branch in eq.branches
+        @assert branch isa EQUATION_BRANCH 
+        if branchDirectiveExists(branch.body)
+          push!(doccs, eq)
+        end
+      end
+    end
+    _ => Equation[]
+  end
+  return doccs
+end

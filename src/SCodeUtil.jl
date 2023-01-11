@@ -5403,8 +5403,10 @@ function getClassDef(inClass::SCode.Element)::SCode.ClassDef
   return outCdef
 end
 
-""" #= @author:
- returns true if equations contains reinit =#"""
+"""
+ @author: adrpo
+ returns true if equations contains reinit
+"""
 function equationsContainReinit(inEqs::List{<:SCode.EEquation})::Bool
   local hasReinit::Bool
 
@@ -5420,8 +5422,69 @@ function equationsContainReinit(inEqs::List{<:SCode.EEquation})::Bool
   return hasReinit
 end
 
-""" #= @author:
- returns true if equation contains reinit =#"""
+"""
+@author: johti17
+Returns true if the equations contains an Connections.branch call.
+"""
+function equationsContainConnectorsBranch(inEqs::List{<:SCode.EEquation})::Bool
+  local hasReinit::Bool
+  @assign hasReinit = begin
+    local b::Bool
+    @match inEqs begin
+      _ => begin
+        @assign b = ListUtil.applyAndFold(inEqs, boolOr, equationContainConnectorsBranch, false)
+        b
+      end
+    end
+  end
+  return hasReinit
+end
+
+
+"""
+  Returns true if the equation contains a Connectors.branch statement
+"""
+function equationContainConnectorsBranch(inEq::SCode.EEquation)::Bool
+  local hasBranch::Bool
+  @assign hasBranch = begin
+    local b::Bool
+    local eqs::List{SCode.EEquation}
+    local eqs_lst::List{List{SCode.EEquation}}
+    local tpl_el::List{Tuple{Absyn.Exp, List{SCode.EEquation}}}
+    @match inEq begin
+      SCode.EQ_NORETCALL(Absyn.CALL(
+        Absyn.CREF_QUAL("Connections", Nil{Any}(),
+                        Absyn.CREF_IDENT("branch", Nil{Any}())), _, _), _, _) => true
+      SCode.EQ_WHEN(eEquationLst = eqs, elseBranches = tpl_el) => begin
+        b = equationsContainConnectorsBranch(eqs)
+        eqs_lst = ListUtil.map(tpl_el, Util.tuple22)
+        b = ListUtil.applyAndFold(eqs_lst, boolOr, equationsContainConnectorsBranch, b)
+        b
+      end
+
+      SCode.EQ_IF(thenBranch = eqs_lst, elseBranch = eqs) => begin
+        b = equationsContainConnectorsBranch(eqs)
+        b = ListUtil.applyAndFold(eqs_lst, boolOr, equationsContainConnectorsBranch, b)
+        b
+      end
+
+      SCode.EQ_FOR(eEquationLst = eqs) => begin
+        b = equationsContainConnectorsBranch(eqs)
+        b
+      end
+
+      _ => begin
+        false
+      end
+    end
+  end
+  return hasBranch
+end
+
+"""
+@author: adrpo
+ returns true if equation contains reinit
+"""
 function equationContainReinit(inEq::SCode.EEquation)::Bool
   local hasReinit::Bool
 

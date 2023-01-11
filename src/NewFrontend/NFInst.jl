@@ -94,49 +94,78 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
   local modelWithDOCC  = ! isempty(doccs)
   if recompilationEnabled || modelWithDOCC
     @assign flat_model.scodeProgram = SOME(listHead(program))
-    #=
-    1. Evaluate the initial state of the special if-equation (by looking at the condition)
-    Either the equation starts with the relevant equation in the model,
-    or the equations are added during the simulation.
-
-    It should also be noted that, the equations are to be removed in some conditions.
-    
-    
-    =#
-
-    #= Remove the conditionals themselves from the flat model =#
-    local eqs = flat_model.equations
-    for eq in doccs
-      eqs = ListUtil.deleteMemberF(eqs, eq)
-    end
-    @info length(flat_model.equations)
-    @info length(eqs)
-    #=
-      Check if the existing equations
-      in the flat model should be extended depending on the condition variable.
-    =#
-    for eq in doccs
-      @assert eq isa EQUATION_IF
-      for br in eq.branches
-        @assert br isa EQUATION_BRANCH
-        tst = evaluateExp(br.condition, Variability.DISCRETE)
-        tst = Variable_fromCref(toCref(tst))
-        @info toString(tst)
-        tst2 = evaluateEquations(flat_model.initialEquations, Variability.CONSTANT)
-        @info "foo"
-        for eq in tst2
-          println(toString(eq))
-        end
+    if modelWithDOCC
+      #=
+      1. Evaluate the initial state of the special if-equation (by looking at the condition)
+      Either the equation starts with the relevant equation in the model,
+      or the equations are added during the simulation.
+      (It should also be noted that, the equations are to be removed in some conditions)
+     
+      =#
+      #= Remove the conditionals themselves from the flat model =#
+      local equationsWithoutDOCC = flat_model.equations
+      for eq in doccs
+        equationsWithoutDOCC = ListUtil.deleteMemberF(equationsWithoutDOCC, eq)
       end
+      @debug length(flat_model.equations)
+      @debug length(equationsWithoutDOCC)
+      #=
+      Check if the existing equations in the flat model should be extended.
+      =#
+      initialEqMapping = evalInitialEqMapping(flat_model.initialEquations)
+      for eq in doccs
+        @assert eq isa EQUATION_IF
+        for br in eq.branches
+          @assert br isa EQUATION_BRANCH
+          tst = evaluateExp(br.condition, Variability.DISCRETE)
+          tst = Variable_fromCref(toCref(tst))
+          local varAsStr = toString(tst.name)
+          if in(varAsStr, keys(initialEqMapping))
+            expr = initialEqMapping[varAsStr]
+            #=
+              Evaluate the expression. It should be a boolean
+              Depending on the value we do two things.
+              Either we remove equations from the starting model
+              or we add them to the model.
+            =#
+            @match BOOLEAN_EXPRESSION(active) = expr
+            @assign flat_model.equations = if active
+              #=
+              Equations for this if equation active at the start.
+              mark as active on both branches. Index is assumed to match with each equation.
+              =#
+              push!(flat_model.active_DOCC_Equations, true)
+              listAppend(equationsWithoutDOCC, br.body)
+            else #= Otherwise these equations are active at some later stage =#
+              push!(flat_model.active_DOCC_Equations, false)
+              equationsWithoutDOCC
+            end
+          end
+          @debug "Length of the flat model" length(flat_model.equations)
+          @debug "Length of the flat model without docc" length(equationsWithoutDOCC)
+        end
+        #=
+          Add the special equations to the flat model
+        =#
+        @assign flat_model.DOCC_equations = arrayList(doccs)
+        #= Contains the equations of the system before the virtual connection graph is calculated  =#
+        @assign flat_model.unresolvedConnectEquations = equationsWithoutDOCC
+      end
+      #res = replace(toString(flat_model), "\\n" => "\n")
+      #println(res)
+      #=
+      Remove the doccs equations from the set of equations in the flat model
+      (If they are to be removed)
+      =#
     end
+    #= Resolve the connections of the current system. =#
     flat_model = resolveConnections(flat_model, name)
-    #=
-    Remove the doccs equations from the set of equations in the flat model
-    =#
-    fail()
+    flat_model = if ! (recompilationEnabled)
+      evaluate(flat_model)
+    end
     #println("\n************* AFTER RESOLVE *************\n")
     #println(replace(toString(flat_model), "\\n" => "\n"))
-  else
+  else     #= Regular system without simulaton time reconfigurations =#
     flat_model = resolveConnections(flat_model, name)
     flat_model = evaluate(flat_model)
   end

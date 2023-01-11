@@ -415,7 +415,7 @@ function toString_impl(cref::ComponentRef, strl::List{<:String})::List{String}
 end
 
 function toString(cref::ComponentRef)
-  str = stringDelimitList(toString_impl(cref, nil), ".")
+  str = stringDelimitList(toString_impl(cref, nil), "_")
   return str
 end
 

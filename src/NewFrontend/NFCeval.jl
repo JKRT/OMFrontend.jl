@@ -4775,3 +4775,23 @@ function printWrongArgsError(evalFunc::String, args::List{<:Expression}, info::S
     info,
   )
 end
+
+"""
+  @author:johti17
+  input: The set of initial equations
+  output: A mapping between the component references of the variables and the values of the initial equations
+(Where the lhs of the equation system is a variable)
+"""
+function evalInitialEqMapping(ieq::List{Equation})
+  local mapping::Dict = Dict()
+  for eq in ieq
+    var = Variable_fromCref(toCref(eq.lhs))
+    push!(mapping, toString(var.name) => eq.rhs)
+  end
+  # for kv in mapping
+  #   print(kv[1])
+  #   print("=>")
+  #   println(toString(kv[2]))
+  # end
+  return mapping
+end

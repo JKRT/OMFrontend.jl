@@ -75,6 +75,7 @@ function generateEquations(sets::Vector{<:List{<:Connector}})::List{Equation}
   end
   return equations
 end
+
 const CardinalityTable = NFCardinalityTable
 function evaluateOperators(
   exp::Expression,
@@ -1171,7 +1172,7 @@ function evaluateFlowDirection(flowCref::ComponentRef)::Int
   return direction
 end
 
-""" #= Creates a smooth(order, arg) call. =#"""
+""" Creates a smooth(order, arg) call. """
 function makeSmoothCall(arg::Expression, order::Int)::Expression
   local callExp::Expression
 
@@ -1183,7 +1184,7 @@ function makeSmoothCall(arg::Expression, order::Int)::Expression
   return callExp
 end
 
-""" #= This function removes the given cref from a connection set. =#"""
+""" This function removes the given cref from a connection set. """
 function removeStreamSetElement(
   cref::ComponentRef,
   elements::List{<:Connector},
@@ -1193,8 +1194,10 @@ function removeStreamSetElement(
   return elements
 end
 
-""" #= Helper function to removeStreamSetElement. Checks if the cref in a stream set
-  element matches the given cref. =#"""
+"""
+  Helper function to removeStreamSetElement. Checks if the cref in a stream set
+  element matches the given cref.
+"""
 function compareCrefStreamSet(cref::ComponentRef, element::Connector)::Bool
   local matches::Bool
 

@@ -157,7 +157,7 @@ function toFlatStream(eq::Equation, indent::String, s)
       CONNECT(__) => begin
         @assign s = IOStream_M.append(s, "connect(")
         @assign s = IOStream_M.append(s, toFlatString(eq.lhs))
-        @assign s = IOStream_M.append(s, " = ")
+        @assign s = IOStream_M.append(s, " , ")
         @assign s = IOStream_M.append(s, toFlatString(eq.rhs))
         @assign s = IOStream_M.append(s, ")")
         s
@@ -300,7 +300,7 @@ function toStream(eq::Equation, indent::String, s)
       EQUATION_CONNECT(__) => begin
         @assign s = IOStream_M.append(s, "connect(")
         @assign s = IOStream_M.append(s, toString(eq.lhs))
-        @assign s = IOStream_M.append(s, " = ")
+        @assign s = IOStream_M.append(s, " , ")
         @assign s = IOStream_M.append(s, toString(eq.rhs))
         @assign s = IOStream_M.append(s, ")")
         s

@@ -42,10 +42,10 @@ function flatten(classInst::InstNode, name::String; prefix = COMPONENT_REF_EMPTY
         ieql = listReverseInPlace(sections.initialEquations)
         alg = listReverseInPlace(sections.algorithms)
         ialg = listReverseInPlace(sections.initialAlgorithms)
-        FLAT_MODEL(name, vars, eql, ieql, alg, ialg, structuralSubmodels, NONE(), NONE(), cmt)
+        FLAT_MODEL(name, vars, eql, ieql, alg, ialg, structuralSubmodels, NONE(), nil, nil, Bool[], cmt)
       end
       _ => begin
-        FLAT_MODEL(name, vars, nil, nil, nil, nil, nil, NONE(), NONE(), cmt)
+        FLAT_MODEL(name, vars, nil, nil, nil, nil, nil, NONE(), nil, nil, Bool[], cmt)
       end
     end
   end
@@ -1518,7 +1518,7 @@ function resolveConnections(flatModel::FlatModel, name::String)::FlatModel
   #=  - generate the equations to replace the broken connects =#
   #=  - return the broken connects + the equations =#
   if System.getHasOverconstrainedConnectors()
-    (flatModel, broken) = handleOverconstrainedConnections(flatModel, conns, name)
+    (flatModel, broken, _) = handleOverconstrainedConnections(flatModel, conns, name)
   end
   #=  add the broken connections  =#
   conns = addBroken(broken, conns)
@@ -1530,9 +1530,9 @@ function resolveConnections(flatModel::FlatModel, name::String)::FlatModel
   #=  append the equalityConstraint call equations for the broken connects =#
   if System.getHasOverconstrainedConnectors()
     conn_eql = listAppend(conn_eql, ListUtil.flatten(ListUtil.map(broken, Util.tuple33)))
+    println("The dynamic overconstrained connector set:")
   end
-  #=  add the equations to the flat model
-  =#
+  #=  add the equations to the flat model=#
   @assign flatModel.equations = listAppend(conn_eql, flatModel.equations)
   @assign flatModel.variables = list(v for v in flatModel.variables if isPresent(v))
   ctable = CardinalityTable.fromConnections(conns)

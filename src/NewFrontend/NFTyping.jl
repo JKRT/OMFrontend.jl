@@ -271,14 +271,12 @@ function typeClassType(
   @nospecialize(instanceNode::InstNode),
 )::NFType
   local ty::NFType
-
   local cls::Class
   local ty_cls::Class
   local node::InstNode
   local ty_node::InstNode
   local fn::M_Function
   local is_expandable::Bool
-
   @assign cls = getClass(clsNode)
   @assign ty = begin
     @match cls begin

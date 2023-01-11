@@ -129,7 +129,7 @@ function whenEquationBranchCrefs(eql::List{<:Equation})::List{ComponentRef}
   return crefs
 end
 
-""" #= Checks that each branch in a when-equation has the same set of crefs on the lhs. =#"""
+""" Checks that each branch in a when-equation has the same set of crefs on the lhs. """
 function verifyWhenEquation(
   branches::List{<:Equation_Branch},
   source::DAE.ElementSource,

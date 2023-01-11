@@ -9,7 +9,10 @@ struct FLAT_MODEL <: FlatModel
   structuralSubmodels::List{FlatModel}
   scodeProgram::Option{SCode.CLASS}
   #= Dynamically Overconstrained connectors =#
-  DOCC_stmts::Option{List{Equation}}
+  DOCC_equations::List{Equation}
+  #= Contains the set of unresolved connect equations =#
+  unresolvedConnectEquations::List{Equation}
+  active_DOCC_Equations::Vector{Bool}
   #= End VSS Modelica extension =#
   comment::Option{SCode.Comment}
 end
@@ -29,7 +32,7 @@ using ..BaseAvlTree #= Modelica extend clause =#
 @exportAll()
 end
 
-TypeTree = TypeTreeImpl.Tree
+const TypeTree = TypeTreeImpl.Tree
 
 function reconstructRecordInstance(
   recordName::ComponentRef,
@@ -463,8 +466,9 @@ end
 function toString(flatModel::FlatModel, printBindingTypes::Bool = false)::String
   local str::String
   local s::IOStream_M.IOSTREAM
+  local modelName = replace(flatModel.name, "." => "_")
   s = IOStream_M.create(getInstanceName(), IOStream_M.LIST())
-  s = IOStream_M.append(s, "class " + flatModel.name + "\\n")
+  s = IOStream_M.append(s, "class " + modelName + "\\n")
   for structuralMode in flatModel.structuralSubmodels
     structuralModelString = toString(structuralMode, printBindingTypes)
     s = IOStream_M.append(s, "structuralmode " * structuralModelString)
@@ -493,7 +497,14 @@ function toString(flatModel::FlatModel, printBindingTypes::Bool = false)::String
       s = ALG_toStreamList(alg.statements, "  ", s)
     end
   end
-  s = IOStream_M.append(s, "end " + flatModel.name + ";\\n")
+  if !(flatModel.DOCC_equations isa Nil)
+    doccs = flatModel.DOCC_equations
+    for eq in doccs
+      s = IOStream_M.append(s, "//dynamic overconstraint connector equation\\n")
+      s = IOStream_M.append(s, toString(eq) * ";\\n")
+    end
+  end
+  s = IOStream_M.append(s, "end " + modelName + ";\\n")
   str = IOStream_M.string(s)
   return str
 end
@@ -513,8 +524,8 @@ end
   Returns true if the list of equations contains a branch directive.
 """
 function branchDirectiveExists(@nospecialize(eqs::List{Equation}))::Bool
-  local hasRecompilationDirective = containsList(eqs, (eq) -> containsCallNamed(eq, "Connections.branch"))
-  return hasRecompilationDirective
+  local hasBranchDirective = containsList(eqs, (eq) -> containsCallNamed(eq, "Connections.branch"))
+  return hasBranchDirective
 end
 
 """
@@ -525,7 +536,7 @@ function collectDOCCS(@nospecialize(eqs::List{Equation}))
 end
 
 """
-  This function returns true if a EQUATION_NORETCALL is a recompilation directive. 
+  This function returns true if a EQUATION_NORETCALL is a func name.
 """
 function containsCallNamed(@nospecialize(eq::Equation), funcName::String)::Bool
   local functionExistWithName = false
@@ -558,7 +569,7 @@ function containsDOCC(@nospecialize(eq::Equation))::Vector{Equation}
   @match eq begin
     EQUATION_IF(__) => begin
       for branch in eq.branches
-        @assert branch isa EQUATION_BRANCH 
+        @assert branch isa EQUATION_BRANCH
         if branchDirectiveExists(branch.body)
           push!(doccs, eq)
         end

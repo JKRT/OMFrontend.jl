@@ -61,8 +61,6 @@
   end
 end
 
-
-
 @Uniontype InstNode begin
   @Record EMPTY_NODE begin
   end
@@ -1638,31 +1636,33 @@ function classScope(node::InstNode) ::InstNode
   scope
 end
 
-""" #= Returns the parent scope of a node. In the case of a class this is simply
-       the enclosing class. In the case of a component it is the enclosing class of
-       the component's type. =#"""
-         function parentScope(node::InstNode)::InstNode
-           local scope::InstNode
-           @assign scope = begin
-             @match node begin
-               CLASS_NODE(nodeType = DERIVED_CLASS(__))  => begin
-                 parentScope(lastBaseClass(node))
-               end
-               CLASS_NODE(__)  => begin
-                 node.parentScope
-               end
+"""
+  Returns the parent scope of a node. In the case of a class this is simply
+  the enclosing class. In the case of a component it is the enclosing class of
+  the component's type.
+"""
+function parentScope(node::InstNode)::InstNode
+  local scope::InstNode
+  @assign scope = begin
+    @match node begin
+      CLASS_NODE(nodeType = DERIVED_CLASS(__))  => begin
+        parentScope(lastBaseClass(node))
+      end
+      CLASS_NODE(__)  => begin
+        node.parentScope
+      end
 
-               COMPONENT_NODE(__)  => begin
-                 parentScope(classInstance(P_Pointer.access(node.component)))
-               end
+      COMPONENT_NODE(__)  => begin
+        parentScope(classInstance(P_Pointer.access(node.component)))
+      end
 
-               IMPLICIT_SCOPE(__)  => begin
-                 node.parentScope
-               end
-             end
-           end
-           scope
-         end
+      IMPLICIT_SCOPE(__)  => begin
+        node.parentScope
+      end
+    end
+  end
+  scope
+end
 
 function rootTypeParent(nodeType::InstNodeType, node::InstNode) ::InstNode
   local parentVar::InstNode

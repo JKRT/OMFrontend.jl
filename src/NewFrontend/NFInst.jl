@@ -2,7 +2,7 @@ import Absyn
 import SCode
 import DAE
 
-""" 
+"""
   Instantiates a class given by its fully qualified path, with the result being a DAE.
 """
 function instClassInProgram(classPath::Absyn.Path, program::SCode.Program)
@@ -100,7 +100,7 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
       Either the equation starts with the relevant equation in the model,
       or the equations are added during the simulation.
       (It should also be noted that, the equations are to be removed in some conditions)
-     
+
       =#
       #= Remove the conditionals themselves from the flat model =#
       local equationsWithoutDOCC = flat_model.equations
@@ -160,7 +160,7 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
     end
     #= Resolve the connections of the current system. =#
     flat_model = resolveConnections(flat_model, name)
-    flat_model = if ! (recompilationEnabled)
+    flat_model = if ! recompilationEnabled
       evaluate(flat_model)
     end
     #println("\n************* AFTER RESOLVE *************\n")
@@ -178,16 +178,16 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
   #=  Collect package constants that couldn't be substituted with their values =#
   #=  (e.g. because they where used with non-constant subscripts), and add them to the model. =#
   flat_model = collectConstants(flat_model, funcs)
-  if Flags.getConfigBool(Flags.FLAT_MODELICA)    
+  if Flags.getConfigBool(Flags.FLAT_MODELICA)
     printFlatString(flat_model, FunctionTreeImpl.listValues(funcs))
   end
-  #= Scalarize array components in the flat model.=#  
+  #= Scalarize array components in the flat model.=#
   if Flags.isSet(Flags.NF_SCALARIZE)
     flat_model = scalarize(flat_model, name)
   else
     #=  Remove empty arrays from variables =#
     @assign flat_model.variables = ListUtil.filterOnFalse(flat_model.variables, isEmptyArray)
-  end 
+  end
   verify(flat_model)
   #                   if Flags.isSet(Flags.NF_DUMP_FLAT)
   # print("FlatModel:\\n" + toString(flat_model) + "\\n")
@@ -439,7 +439,7 @@ function expandExtends(ext::InstNode, builtinExt::InstNode = EMPTY_NODE()) ::Tup
         base_nodes = lookupBaseClassName(base_path, scope, info) #Modification by me:)
         base_node = listHead(base_nodes)
         checkExtendsLoop(base_node, base_path, info)
-        checkReplaceableBaseClass(base_nodes, base_path, info)
+        #checkReplaceableBaseClass(base_nodes, base_path, info)
         base_node = expand(base_node)
         ext = setNodeType(BASE_CLASS(scope, def), base_node)
         #=  If the extended class is a builtin class, like Real or any type derived
@@ -514,7 +514,7 @@ function checkReplaceableBaseClass(baseClasses::List{<:InstNode}, basePath::Absy
         name = AbsynUtil.pathString(basePath)
       end
       #TODO      Error.addMultiSourceMessage(Error.REPLACEABLE_BASE_CLASS, list(name(base), name), list(InstNode_info(base), info))
-      @error "Error: Class  $name in base replaceable..." 
+      @error "Error: Class  $name in base replaceable..."
       fail()
     end
   end
@@ -912,7 +912,7 @@ end
   This function instantiates a package given a package node. If the package has
   already been instantiated, then the cached instance from the node is
   returned. Otherwise the node is fully instantiated, the instance is added to
-  the node's cache, and the instantiated node is returned. 
+  the node's cache, and the instantiated node is returned.
 """
 function instPackage(node::InstNode) ::InstNode
   local cache::CachedData
@@ -963,7 +963,7 @@ function modifyExtends(extendsNode::InstNode, scope::InstNode)
   ext_mod = merge(getModifier(extendsNode), ext_mod)
   if ! isBuiltin(cls)
     #= Added by johti17 to mimic function inheritance =#
-    local func = function modifyExtends2(x; scope = extendsNode) 
+    local func = function modifyExtends2(x; scope = extendsNode)
       modifyExtends(x, scope)
     end
     mapExtends(cls_tree, (x) -> func(x, scope = extendsNode))
@@ -1587,8 +1587,8 @@ function instComponentAttributes(compAttr::SCode.Attributes, compPrefs)::Attribu
                       finalPrefix = SCode.NOT_FINAL(__),
                       innerOuter = Absyn.NOT_INNER_OUTER(__),
                       replaceablePrefix = SCode.NOT_REPLACEABLE(__))
-       ) => begin        
-        @debug "Structural mode value: " structuralMode                        
+       ) => begin
+        @debug "Structural mode value: " structuralMode
         DEFAULT_ATTR
       end
       _  => begin
@@ -2720,7 +2720,7 @@ function instEEquation(@nospecialize(scodeEq::SCode.EEquation), @nospecialize(sc
         @assign eql = instEEquations(scodeEq.eEquationLst, for_scope, next_origin)
         EQUATION_FOR(iter, oexp, eql, makeSource(scodeEq.comment, info))
       end
-      
+
       SCode.EQ_IF(info = info)  => begin
         #=  Instantiate the conditions.=#
         @assign expl = list(instExp(c, scope, info) for c in scodeEq.condition)

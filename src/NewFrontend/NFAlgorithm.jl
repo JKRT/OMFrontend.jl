@@ -20,7 +20,7 @@ end
 
 function foldExp(alg::Algorithm, func::FoldFunc, arg::ArgT) where {ArgT}
   for s in alg.statements
-    @assign arg = P_Statement.Statement.foldExp(s, func, arg)
+    arg = foldExp(s, func, arg)
   end
   return arg
 end

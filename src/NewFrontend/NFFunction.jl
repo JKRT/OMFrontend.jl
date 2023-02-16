@@ -1,6 +1,6 @@
-NamedArg = Tuple
-TypedArg = Tuple
-TypedNamedArg = Tuple
+const NamedArg = Tuple
+const TypedArg = Tuple
+const TypedNamedArg = Tuple
 
 SlotType = (() -> begin #= Enumeration =#
   POSITIONAL = 1  #= Only accepts positional arguments. =#
@@ -1197,7 +1197,7 @@ function matchArgs(
       #   ),
       #   info,
       # )
-      #@error "Function argument \"$(toString(arg_exp))\" in call to $(AbsynUtil.pathString(name(func))) has variability 
+      #@error "Function argument \"$(toString(arg_exp))\" in call to $(AbsynUtil.pathString(name(func))) has variability
       #        $(variabilityString(arg_var)) which is not a $(variabilityString(variability(comp)))"
       #Errors should not be printed yet.
       @assign funcMatchKind = NO_MATCH

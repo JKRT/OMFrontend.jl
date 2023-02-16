@@ -133,6 +133,15 @@ function toString(model::Main.FlatModel)
   return res
 end
 
+"""
+  Overload the Julia to string function
+"""
+function string(model::Main.FlatModel)
+  local res = Main.toString(model)
+  res = replace(res, "\\n" => "\n")
+  return res
+end
+
 function exportSCodeRepresentationToFile(fileName::String, contents::List{SCode.CLASS})
   local fdesc = open(fileName, "w")
   local processedContents = replace(string(contents), "," => ",\n")
@@ -153,7 +162,7 @@ if ccall(:jl_generating_output, Cint, ()) == 1
       packagePath *= "/.."
       pathToLib = packagePath * "/lib/NFModelicaBuiltin.mo"
       #= The external C stuff can be a bit flaky.. =#
-      GC.enable(false) 
+      GC.enable(false)
       p = parseFile(pathToLib, 2 #== MetaModelica ==#)
       s = translateToSCode(p)
       NFModelicaBuiltinCache["NFModelicaBuiltin"] = s

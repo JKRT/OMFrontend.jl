@@ -137,9 +137,7 @@ end
   Overload the Julia to string function
 """
 function string(model::Main.FlatModel)
-  local res = Main.toString(model)
-  res = replace(res, "\\n" => "\n")
-  return res
+  return toString(model::Main.FlatModel)
 end
 
 function exportSCodeRepresentationToFile(fileName::String, contents::List{SCode.CLASS})

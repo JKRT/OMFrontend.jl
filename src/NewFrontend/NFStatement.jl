@@ -96,26 +96,20 @@ function toFlatStreamList(
   indent::String,
   s,
 )
-
   local prev_multi_line::Bool = false
   local multi_line::Bool
   local first::Bool = true
-
   for stmt in stmtl
-    @assign multi_line = isMultiLine(stmt)
+    multi_line = isMultiLine(stmt)
     if first
-      @assign first = false
+      first = false
     elseif prev_multi_line || multi_line
-      @assign s = IOStream.append(s, "\\n")
+      s = IOStream.append(s, "\\n")
     end
-    @assign prev_multi_line = multi_line
-    @assign s = toFlatStream(stmt, indent, s)
-    @assign s = IOStream.append(s, ";\\n")
+    prev_multi_line = multi_line
+    s = toFlatStream(stmt, indent, s)
+    s = IOStream_M.append(s, ";\\n")
   end
-  #=  Improve human parsability by separating statements that spans multiple
-  =#
-  #=  lines (like if-statements) with newlines.
-  =#
   return s
 end
 
@@ -125,113 +119,113 @@ function toFlatStream(
   s,
 )
   local str::String
-  @assign s = IOStream.append(s, indent)
+  @assign s = IOStream_M.append(s, indent)
   @assign s = begin
     @match stmt begin
       ALG_ASSIGNMENT(__) => begin
-        @assign s = IOStream.append(s, toFlatString(stmt.lhs))
-        @assign s = IOStream.append(s, " := ")
-        @assign s = IOStream.append(s, toFlatString(stmt.rhs))
+        @assign s = IOStream_M.append(s, toFlatString(stmt.lhs))
+        @assign s = IOStream_M.append(s, " := ")
+        @assign s = IOStream_M.append(s, toFlatString(stmt.rhs))
         s
       end
 
       ALG_FUNCTION_ARRAY_INIT(__) => begin
-        @assign s = IOStream.append(s, "array init")
-        @assign s = IOStream.append(s, stmt.name)
+        @assign s = IOStream_M.append(s, "array init")
+        @assign s = IOStream_M.append(s, stmt.name)
         s
       end
 
       ALG_FOR(__) => begin
-        @assign s = IOStream.append(s, "for ")
-        @assign s = IOStream.append(s, name(stmt.iterator))
+        @assign s = IOStream_M.append(s, "for ")
+        @assign s = IOStream_M.append(s, name(stmt.iterator))
         if isSome(stmt.range)
-          @assign s = IOStream.append(s, " in ")
-          @assign s = IOStream.append(
+          @assign s = IOStream_M.append(s, " in ")
+          @assign s = IOStream_M.append(
             s,
             toFlatString(Util.getOption(stmt.range)),
           )
         end
-        @assign s = IOStream.append(s, " loop\\n")
+        @assign s = IOStream_M.append(s, " loop\\n")
         @assign s = toFlatStreamList(stmt.body, indent + "  ", s)
-        @assign s = IOStream.append(s, indent)
-        @assign s = IOStream.append(s, "end for")
+        @assign s = IOStream_M.append(s, indent)
+        @assign s = IOStream_M.append(s, "end for")
         s
       end
 
       ALG_IF(__) => begin
         @assign str = "if "
         for b in stmt.branches
-          @assign s = IOStream.append(s, str)
+          @assign s = IOStream_M.append(s, str)
           @assign s =
-            IOStream.append(s, toFlatString(Util.tuple21(b)))
-          @assign s = IOStream.append(s, " then\\n")
+            IOStream_M.append(s, toFlatString(Util.tuple21(b)))
+          @assign s = IOStream_M.append(s, " then\\n")
           @assign s = toFlatStreamList(Util.tuple22(b), indent + "  ", s)
-          @assign s = IOStream.append(s, indent)
+          @assign s = IOStream_M.append(s, indent)
           @assign str = "elseif "
         end
-        @assign s = IOStream.append(s, "end if")
+        @assign s = IOStream_M.append(s, "end if")
         s
       end
 
       ALG_WHEN(__) => begin
         @assign str = "when "
         for b in stmt.branches
-          @assign s = IOStream.append(s, str)
+          @assign s = IOStream_M.append(s, str)
           @assign s =
-            IOStream.append(s, toFlatString(Util.tuple21(b)))
-          @assign s = IOStream.append(s, " then\\n")
+            IOStream_M.append(s, toFlatString(Util.tuple21(b)))
+          @assign s = IOStream_M.append(s, " then\\n")
           @assign s = toFlatStreamList(Util.tuple22(b), indent + "  ", s)
-          @assign s = IOStream.append(s, indent)
+          @assign s = IOStream_M.append(s, indent)
           @assign str = "elsewhen "
         end
-        @assign s = IOStream.append(s, "end when")
+        @assign s = IOStream_M.append(s, "end when")
         s
       end
 
       ALG_ASSERT(__) => begin
-        @assign s = IOStream.append(s, "assert(")
+        @assign s = IOStream_M.append(s, "assert(")
         @assign s =
-          IOStream.append(s, toFlatString(stmt.condition))
-        @assign s = IOStream.append(s, ", ")
-        @assign s = IOStream.append(s, toFlatString(stmt.message))
-        @assign s = IOStream.append(s, ", ")
-        @assign s = IOStream.append(s, toFlatString(stmt.level))
-        @assign s = IOStream.append(s, ")")
+          IOStream_M.append(s, toFlatString(stmt.condition))
+        @assign s = IOStream_M.append(s, ", ")
+        @assign s = IOStream_M.append(s, toFlatString(stmt.message))
+        @assign s = IOStream_M.append(s, ", ")
+        @assign s = IOStream_M.append(s, toFlatString(stmt.level))
+        @assign s = IOStream_M.append(s, ")")
         s
       end
 
       ALG_TERMINATE(__) => begin
-        @assign s = IOStream.append(s, "terminate(")
-        @assign s = IOStream.append(s, toFlatString(stmt.message))
-        @assign s = IOStream.append(s, ")")
+        @assign s = IOStream_M.append(s, "terminate(")
+        @assign s = IOStream_M.append(s, toFlatString(stmt.message))
+        @assign s = IOStream_M.append(s, ")")
         s
       end
 
       ALG_NORETCALL(__) => begin
-        IOStream.append(s, toFlatString(stmt.exp))
+        IOStream_M.append(s, toFlatString(stmt.exp))
       end
 
       ALG_WHILE(__) => begin
-        @assign s = IOStream.append(s, "while ")
+        @assign s = IOStream_M.append(s, "while ")
         @assign s =
-          IOStream.append(s, toFlatString(stmt.condition))
-        @assign s = IOStream.append(s, " then\\n")
+          IOStream_M.append(s, toFlatString(stmt.condition))
+        @assign s = IOStream_M.append(s, " then\\n")
         @assign s = toFlatStreamList(stmt.body, indent + "  ", s)
-        @assign s = IOStream.append(s, indent)
-        @assign s = IOStream.append(s, "end while")
+        @assign s = IOStream_M.append(s, indent)
+        @assign s = IOStream_M.append(s, "end while")
         s
       end
 
       ALG_RETURN(__) => begin
-        IOStream.append(s, "return")
+        IOStream_M.append(s, "return")
       end
 
       ALG_RETURN(__) => begin
-        IOStream.append(s, "break")
+        IOStream_M.append(s, "break")
       end
 
       _ => begin
-        IOStream.append(s, "#UNKNOWN STATEMENT#")
+        IOStream_M.append(s, "#UNKNOWN STATEMENT#")
       end
     end
   end
@@ -270,13 +264,13 @@ function toStream(stmt::Statement, indent::String, s)
 
   local str::String
 
-  @assign s = IOStream.append(s, indent)
+  @assign s = IOStream_M.append(s, indent)
   @assign s = begin
     @match stmt begin
-      ASSIGNMENT(__) => begin
-        @assign s = IOStream.append(s, toString(stmt.lhs))
-        @assign s = IOStream.append(s, " := ")
-        @assign s = IOStream.append(s, toString(stmt.rhs))
+      ALG_ASSIGNMENT(__) => begin
+        s = IOStream_M.append(s, toString(stmt.lhs))
+        s = IOStream_M.append(s, " := ")
+        s = IOStream_M.append(s, toString(stmt.rhs))
         s
       end
 
@@ -395,13 +389,11 @@ end
 
 function toString(stmt::Statement, indent::String = "")::String
   local str::String
-
   local s
-
-  @assign s = IOStream.create(getInstanceName(), IOStream.IOStreamType.LIST())
-  @assign s = toStream(stmt, indent, s)
-  @assign str = IOStream.string(s)
-  IOStream.delete(s)
+  s = IOStream_M.create(getInstanceName(), IOStream_M.LIST())
+  s = toStream(stmt, indent, s)
+  str = IOStream_M.string(s)
+  IOStream_M.delete(s)
   return str
 end
 
@@ -490,17 +482,17 @@ function mapExp(stmt::Statement, func::MapFunc)::Statement
         if referenceEq(e1, stmt.lhs) && referenceEq(e2, stmt.rhs)
           stmt
         else
-          ASSIGNMENT(e1, e2, stmt.ty, stmt.source)
+          ALG_ASSIGNMENT(e1, e2, stmt.ty, stmt.source)
         end
       end
 
-      FOR(__) => begin
+      ALG_FOR(__) => begin
         @assign stmt.body = mapExpList(stmt.body, func)
         @assign stmt.range = Util.applyOption(stmt.range, func)
         stmt
       end
 
-      IF(__) => begin
+      ALG_IF(__) => begin
         @assign stmt.branches = List(
           (func(Util.tuple21(b)), mapExpList(Util.tuple22(b), func)) for b in stmt.branches
         )
@@ -667,7 +659,6 @@ function makeIf(
   src::DAE.ElementSource,
 )::Statement
   local stmt::Statement
-
   @assign stmt = IF(branches, src)
   return stmt
 end

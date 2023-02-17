@@ -28,8 +28,6 @@
 * See the full OSMC Public License conditions for more details.
 *
 */ =#
-
-
 function inlineCallExp(callExp::Expression)::Expression
   local result::Expression
   @assign result = begin
@@ -64,6 +62,36 @@ function inlineCallExp(callExp::Expression)::Expression
   return result
 end
 
+
+"""
+  Inline function for nonbuiltin callexps
+  @author johti17
+"""
+function inlineSimpleCall(callExp::Expression)::Expression
+  local result::Expression
+  local call::Call
+  local shouldInline = @match callExp begin
+    CALL_EXPRESSION(c && TYPED_CALL(fn, ty, var, arguments, attributes)) => begin
+      call = c
+      shouldInline = true && !attributes.builtin
+      #= We might want to inline more things, so check arguments anyway =#
+      if !shouldInline
+        local newArgs = list(map(arg, inlineSimpleCall) for arg in arguments)
+        @assign call.arguments = newArgs
+        return CALL_EXPRESSION(call)
+      end
+      shouldInline
+    end
+    _ => false
+  end
+  result = if shouldInline
+    inlineCall(call)
+  else
+    callExp
+  end
+  return result
+end
+
 function inlineCall(call::Call)::Expression
   local exp::Expression
   @assign exp = begin
@@ -77,40 +105,32 @@ function inlineCall(call::Call)::Expression
     local stmt::Statement
     @match call begin
       TYPED_CALL(
-        fn = fn && FUNCTION(inputs = inputs, outputs = outputs, locals = locals),
+        fn = fn && M_FUNCTION(inputs = inputs, outputs = outputs, locals = locals),
         arguments = args,
       ) => begin
-        @assign body = getBody(fn)
-        #=  This function can so far only handle functions with exactly one
-        =#
-        #=  statement and output and no local variables.
-        =#
-        if listLength(body) != 1 || listLength(outputs) != 1 || listLength(locals) > 0
-          @assign exp = CALL_EXPRESSION(call)
-          return
+        body = getBody(fn)
+        #=  This function can so far only handle functions with at most one =#
+        #=  statement and output and no local variables. =#
+        if listLength(body) > 1 || listLength(outputs) != 1 || listLength(locals) > 0
+          exp = CALL_EXPRESSION(call)
+          return exp
         end
         Error.assertion(
           listLength(inputs) == listLength(args),
           getInstanceName() +
           " got wrong number of arguments for " +
-          AbsynUtil.pathString(P_Function.name(fn)),
+          AbsynUtil.pathString(name(fn)),
           sourceInfo(),
         )
-        @assign stmt = listHead(body)
+        stmt = listHead(body)
         #=  TODO: Instead of repeating this for each input we should probably
-        =#
-        #=        just build a lookup tree or hash table and go through the
-        =#
-        #=        statement once.
+                  just build a lookup tree or hash table and go through the
+                statement once.
         =#
         for i in inputs
           @match _cons(arg, args) = args
-          @assign stmt = P_Statement.Statement.mapExp(
-            stmt,
-            () -> map(
-              func = (i, arg) -> replaceCrefNode(node = i, value = arg),
-            ),
-          )#= AbsyntoJulia.dumpPattern: UNHANDLED Abyn.Exp  =#
+          stmt = mapExp(stmt,
+                        (exp) -> map(exp, (exp) -> replaceCrefNode(exp, i, arg)))
         end
         getOutputExp(stmt, listHead(outputs), call)
       end
@@ -134,7 +154,7 @@ function replaceCrefNode(exp::Expression, node::InstNode, value::Expression)::Ex
   @assign exp = begin
     @match exp begin
       CREF_EXPRESSION(
-        cref = CREF(
+        cref = COMPONENT_REF_CREF(
           node = cr_node,
           subscripts = subs,
           restCref = rest_cr,
@@ -191,14 +211,13 @@ end
 
 function getOutputExp(stmt::Statement, outputNode::InstNode, call::Call)::Expression
   local exp::Expression
-
   @assign exp = begin
     local cr_node::InstNode
     local rest_cr::ComponentRef
     @match stmt begin
       ALG_ASSIGNMENT(
         lhs = CREF_EXPRESSION(
-          cref = CREF(
+          cref = COMPONENT_REF_CREF(
             node = cr_node,
             subscripts = nil(),
             restCref = rest_cr,
@@ -210,7 +229,6 @@ function getOutputExp(stmt::Statement, outputNode::InstNode, call::Call)::Expres
       )} => begin
         stmt.rhs
       end
-
       _ => begin
         CALL_EXPRESSION(call)
       end

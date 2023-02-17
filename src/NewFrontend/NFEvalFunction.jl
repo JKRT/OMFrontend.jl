@@ -1,4 +1,3 @@
-
 #= /*
 * This file is part of OpenModelica.
 *
@@ -234,15 +233,13 @@ function evaluateRecordConstructor(
   #=  locals.
   =#
   for f in fields
-    println("Looping")
     if isInput(f)
       @match node <| inputs = inputs
     else
       @match node <| locals = locals
     end
-    println("After match")
     e = ReplTree.get(repl, node)
-    expl = _cons(e, expl)    
+    expl = _cons(e, expl)
   end
   #=  Create a new record expression from the list of arguments.
   =#

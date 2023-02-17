@@ -338,29 +338,25 @@ function listToString(crs::List{<:ComponentRef})::String
 end
 
 function toFlatString_impl(cref::ComponentRef, strl::List{<:String})::List{String}
-
-  @assign strl = begin
+  strl = begin
     local str::String
     @match cref begin
       COMPONENT_REF_CREF(__) => begin
-        @assign str =
+        str =
           name(cref.node) +
           toFlatStringList(cref.subscripts)
-        if Type.isRecord(cref.ty) && !listEmpty(strl)
-          @assign strl = _cons("'" + listHead(strl), listRest(strl))
-          @assign str = str + "'"
+        if isRecord(cref.ty) && !listEmpty(strl)
+          strl = _cons("'" + listHead(strl), listRest(strl))
+          str = str + "'"
         end
         toFlatString_impl(cref.restCref, _cons(str, strl))
       end
-
       COMPONENT_REF_WILD(__) => begin
         _cons("_", strl)
       end
-
       COMPONENT_REF_STRING(__) => begin
         toFlatString_impl(cref.restCref, _cons(cref.name, strl))
       end
-
       _ => begin
         strl
       end

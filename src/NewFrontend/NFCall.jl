@@ -317,8 +317,7 @@ end
 
 function toFlatString(call::Call)::String
   local str::String
-
-  local name::String
+  local nameVar::String
   local arg_str::String
   local c::String
   local argexp::Expression
@@ -327,15 +326,15 @@ function toFlatString(call::Call)::String
   @assign str = begin
     @match call begin
       TYPED_CALL(__) => begin
-        @assign name = AbsynUtil.pathString(P_Function.name(call.fn))
+        nameVar = AbsynUtil.pathString(name(call.fn))
         @assign arg_str = stringDelimitList(
           list(toFlatString(arg) for arg in call.arguments),
           ", ",
         )
         if isBuiltin(call.fn)
-          stringAppendList(list(name, "(", arg_str, ")"))
+          stringAppendList(list(nameVar, "(", arg_str, ")"))
         else
-          stringAppendList(list("'", name, "'(", arg_str, ")"))
+          stringAppendList(list("'", nameVar, "'(", arg_str, ")"))
         end
       end
 
@@ -343,7 +342,7 @@ function toFlatString(call::Call)::String
         if isVectorized(call)
           @assign str = toFlatString(devectorizeCall(call))
         else
-          @assign name = AbsynUtil.pathString(P_Function.name(NFBuiltinFuncs.ARRAY_FUNC))
+          @assign nameVar = AbsynUtil.pathString(P_Function.name(NFBuiltinFuncs.ARRAY_FUNC))
           @assign arg_str = toFlatString(call.exp)
           @assign c = stringDelimitList(
             list(
@@ -366,7 +365,7 @@ function toFlatString(call::Call)::String
       end
 
       TYPED_REDUCTION(__) => begin
-        @assign name = AbsynUtil.pathString(P_Function.name(call.fn))
+        @assign nameVar = AbsynUtil.pathString(P_Function.name(call.fn))
         @assign arg_str = toFlatString(call.exp)
         @assign c = stringDelimitList(
           list(
@@ -378,9 +377,9 @@ function toFlatString(call::Call)::String
           ", ",
         )
         if isBuiltin(call.fn)
-          stringAppendList(list(name, "(", arg_str, " for ", c, ")"))
+          stringAppendList(list(nameVar, "(", arg_str, " for ", c, ")"))
         else
-          stringAppendList(list("'", name, "'(", arg_str, " for ", c, ")"))
+          stringAppendList(list("'", nameVar, "'(", arg_str, " for ", c, ")"))
         end
       end
     end

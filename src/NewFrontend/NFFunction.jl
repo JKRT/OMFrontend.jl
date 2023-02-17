@@ -1579,13 +1579,11 @@ end
 
 function toFlatString(fn::M_Function)::String
   local str::String
-
   local s
-
-  @assign s = IOStream.create(getInstanceName(), IOStream.IOStreamType.LIST())
-  @assign s = toFlatStream(fn, s)
-  @assign str = IOStream.string(s)
-  IOStream.delete(s)
+  s = IOStream_M.create(getInstanceName(), IOStream_M.LIST())
+  s = toFlatStream(fn, s)
+  str = IOStream_M.string(s)
+  IOStream_M.delete(s)
   return str
 end
 
@@ -1595,38 +1593,38 @@ function toFlatStream(fn::M_Function, s)
   local fn_body::List{Statement}
 
   if isDefaultRecordConstructor(fn)
-    @assign s = IOStream.append(s, toFlatString(fn.node))
+    @assign s = IOStream_M.append(s, toFlatString(fn.node))
   else
     @assign fn_name = AbsynUtil.pathString(fn.path)
-    @assign s = IOStream.append(s, "function '")
-    @assign s = IOStream.append(s, fn_name)
-    @assign s = IOStream.append(s, "'\\n")
+    @assign s = IOStream_M.append(s, "function '")
+    @assign s = IOStream_M.append(s, fn_name)
+    @assign s = IOStream_M.append(s, "'\\n")
     for i in fn.inputs
-      @assign s = IOStream.append(s, "  ")
-      @assign s = IOStream.append(s, toFlatString(i))
-      @assign s = IOStream.append(s, ";\\n")
+      @assign s = IOStream_M.append(s, "  ")
+      @assign s = IOStream_M.append(s, toFlatString(i))
+      @assign s = IOStream_M.append(s, ";\\n")
     end
     for o in fn.outputs
-      @assign s = IOStream.append(s, "  ")
-      @assign s = IOStream.append(s, toFlatString(o))
-      @assign s = IOStream.append(s, ";\\n")
+      @assign s = IOStream_M.append(s, "  ")
+      @assign s = IOStream_M.append(s, toFlatString(o))
+      @assign s = IOStream_M.append(s, ";\\n")
     end
     if !listEmpty(fn.locals)
-      @assign s = IOStream.append(s, "protected\\n")
+      @assign s = IOStream_M.append(s, "protected\\n")
       for l in fn.locals
-        @assign s = IOStream.append(s, "  ")
-        @assign s = IOStream.append(s, toFlatString(l))
-        @assign s = IOStream.append(s, ";\\n")
+        @assign s = IOStream_M.append(s, "  ")
+        @assign s = IOStream_M.append(s, toFlatString(l))
+        @assign s = IOStream_M.append(s, ";\\n")
       end
     end
     @assign fn_body = getBody(fn)
     if !listEmpty(fn_body)
-      @assign s = IOStream.append(s, "algorithm\\n")
-      @assign s = P_Statement.Statement.toFlatStreamList(fn_body, "  ", s)
+      @assign s = IOStream_M.append(s, "algorithm\\n")
+      @assign s = toFlatStreamList(fn_body, "  ", s)
     end
-    @assign s = IOStream.append(s, "end '")
-    @assign s = IOStream.append(s, fn_name)
-    @assign s = IOStream.append(s, "'")
+    @assign s = IOStream_M.append(s, "end '")
+    @assign s = IOStream_M.append(s, fn_name)
+    @assign s = IOStream_M.append(s, "'")
   end
   return s
 end
@@ -2277,8 +2275,7 @@ function makeAttributes(
     local out_params::List{String}
     local inline_ty::DAE.InlineType
     local builtin::DAE.FunctionBuiltin
-    #=  External function.
-    =#
+    #=  External function. =#
     @matchcontinue fres begin
       SCode.FR_EXTERNAL_FUNCTION(is_impure) => begin
         @assign in_params = list(name(i) for i in inputs)
@@ -2658,14 +2655,12 @@ end
 
 function getBody2(node::InstNode)::List{Statement}
   local body::List{Statement}
-
   local cls::Class = getClass(node)
   local fn_body::Algorithm
-
-  @assign body = begin
+  body = begin
     @match cls begin
       INSTANCED_CLASS(
-        sections = SECTIONS_SECTIONS(algorithms = fn_body <| nil()),
+        sections = SECTIONS(algorithms = fn_body <| nil()),
       ) => begin
         fn_body.statements
       end
@@ -2673,7 +2668,7 @@ function getBody2(node::InstNode)::List{Statement}
         nil
       end
       INSTANCED_CLASS(
-        sections = SECTIONS_SECTIONS(algorithms = _ <| _),
+        sections = SECTIONS(algorithms = _ <| _),
       ) => begin
         Error.assertion(
           false,

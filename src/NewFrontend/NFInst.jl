@@ -172,6 +172,7 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
   #= Do unit checking =#
   #TODO  @assign flat_model = UnitCheck.checkUnits(flat_model)
   #=  Apply simplifications to the model.=#
+  flat_model = inlineSimpleCalls(flat_model)
   flat_model = simplifyFlatModel(flat_model)
   #=  Collect a tree of all functions that are still used in the flat model.=#
   funcs = collectFunctions(flat_model, name)
@@ -179,7 +180,7 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
   #=  (e.g. because they where used with non-constant subscripts), and add them to the model. =#
   flat_model = collectConstants(flat_model, funcs)
   if Flags.getConfigBool(Flags.FLAT_MODELICA)
-    printFlatString(flat_model, FunctionTreeImpl.listValues(funcs))
+    printFlatString(flat_model, FunctionTreeImpl.listValues(buncs))
   end
   #= Scalarize array components in the flat model.=#
   if Flags.isSet(Flags.NF_SCALARIZE)
@@ -195,11 +196,22 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
   return (flat_model, funcs, inst_cls)
 end
 
+"""
+  Inlines uncomplicated functions.
+  Currently it inlines all functions.
+  Throws an error if a function is not complex enough.
+"""
+function inlineSimpleCalls(fm::FlatModel)
+  local inlinedEqs = mapExpList(fm.equations, inlineSimpleCall)
+  @assign fm.equations = inlinedEqs
+  return fm
+end
+
 function instantiateN1(node::InstNode, parentNode::InstNode)::InstNode
   @debug "Instantiating!!!! in Inst"
-  @assign node = expand(node)
+  node = expand(node)
   @debug "After expansion in inst. Instantiating in class-tree "
-  @assign (node, _) = instClass(node, MODIFIER_NOMOD(), DEFAULT_ATTR, true, 0, parentNode)
+  (node, _) = instClass(node, MODIFIER_NOMOD(), DEFAULT_ATTR, true, 0, parentNode)
   return node
 end
 

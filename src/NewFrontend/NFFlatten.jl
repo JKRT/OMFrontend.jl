@@ -12,6 +12,7 @@ FunctionTree = FunctionTreeImpl.Tree
 const NFFunctionTree = FunctionTreeImpl
 
 import .FunctionTree
+
 function flatten(classInst::InstNode, name::String; prefix = COMPONENT_REF_EMPTY())::FlatModel
   local flatModel::FlatModel
   local sections::Sections
@@ -202,7 +203,7 @@ function flattenComponent(
             Since this component is structural we do not flatten it.
             Instead we create a new FlatModel and add it to the list.
             If this component in turn has structural subcomponents these are added
-            to the list of FlatModels for this component using recursion. 
+            to the list of FlatModels for this component using recursion.
           =#
           local prefixOfComponent = fromNode(comp_node, ty)
           structuralSubModels =
@@ -1614,7 +1615,6 @@ function evaluateEquationsConnOp(
 end
 
 function collectComponentFuncs(var::Variable, funcs::FunctionTree)::FunctionTree
-
   @assign () = begin
     @match var begin
       VARIABLE(__) => begin
@@ -1683,10 +1683,8 @@ function collectTypeFuncs(ty::NFType, funcs::FunctionTree)::FunctionTree
 end
 
 function collectStructor(node::InstNode, funcs::FunctionTree)::FunctionTree
-
   local cache::CachedData
   local fn::List{M_Function}
-
   @assign cache = getFuncCache(node)
   @assign () = begin
     @match cache begin
@@ -1858,7 +1856,6 @@ function collectStmtBranchFuncs(
   branch::Tuple{<:Expression, List{<:Statement}},
   funcs::FunctionTree,
 )::FunctionTree
-
   @assign funcs = collectExpFuncs(Util.tuple21(branch), funcs)
   @assign funcs = ListUtil.fold(Util.tuple22(branch), collectStatementFuncs, funcs)
   return funcs
@@ -1870,32 +1867,27 @@ function collectExpFuncs(exp::Expression, funcs::FunctionTree)::FunctionTree
 end
 
 function collectExpFuncs_traverse(exp::Expression, funcs::FunctionTree)::FunctionTree
-
   @assign () = begin
     local fn::M_Function
     @match exp begin
       CALL_EXPRESSION(__) => begin
-        @assign funcs = flattenFunction(typedFunction(exp.call), funcs)
+        funcs = flattenFunction(typedFunction(exp.call), funcs)
         ()
       end
-
       CREF_EXPRESSION(__) => begin
-        @assign funcs = collectTypeFuncs(exp.ty, funcs)
+        funcs = collectTypeFuncs(exp.ty, funcs)
         ()
       end
-
-RECORD_EXPRESSION(__) => begin
-        @assign funcs = collectTypeFuncs(exp.ty, funcs)
+      RECORD_EXPRESSION(__) => begin
+        funcs = collectTypeFuncs(exp.ty, funcs)
         ()
       end
-
       PARTIAL_FUNCTION_APPLICATION_EXPRESSION(__) => begin
         for f in P_Function.getRefCache(exp.fn)
-          @assign funcs = flattenFunction(f, funcs)
+          funcs = flattenFunction(f, funcs)
         end
         ()
       end
-
       _ => begin
         ()
       end
@@ -1924,13 +1916,11 @@ function flattenFunction(func::M_Function, funcs::FunctionTree)::FunctionTree
 end
 
 function collectClassFunctions(clsNode::InstNode, funcs::FunctionTree)::FunctionTree
-
   local cls::Class
   local cls_tree::ClassTree
   local sections::Sections
   local comp::Component
   local binding::Binding
-
   @assign cls = getClass(clsNode)
   @assign () = begin
     @match cls begin

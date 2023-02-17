@@ -312,8 +312,8 @@ function toFlatString(name::String, component::Component)::String
     local def::SCode.Element
     @match component begin
       TYPED_COMPONENT(__) => begin
-        P_Attributes.toFlatString(component.attributes, component.ty) +
-        Type.toFlatString(component.ty) +
+        toFlatString(component.attributes, component.ty) +
+          toFlatString(component.ty) +
         " '" +
         name +
         "'" +
@@ -1183,10 +1183,7 @@ using ExportAll
 
 function toFlatString(attr::Attributes, ty::M_Type)::String
   local str::String
-
-  @assign str =
-    P_Prefixes.unparseVariability(attr.variability, ty) +
-    P_Prefixes.unparseDirection(attr.direction)
+  str = unparseVariability(attr.variability, ty) + unparseDirection(attr.direction)
   return str
 end
 

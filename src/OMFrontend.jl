@@ -136,8 +136,20 @@ end
 """
   Overload the Julia to string function
 """
-function string(model::Main.FlatModel)
+function Base.string(model::Main.FlatModel)
   return toString(model::Main.FlatModel)
+end
+
+"""
+  Converts a function tree to a string
+"""
+function Base.string(ft::Main.FunctionTreeImpl.LEAF)
+  fLst = OMFrontend.Main.FunctionTreeImpl.toList(ft)
+  local buffer = IOBuffer()
+  for (_, v) in fLst
+    println(buffer, OMFrontend.Main.toFlatString(v))
+  end
+  return replace(String(take!(buffer)), "\\n" => "\n")
 end
 
 function exportSCodeRepresentationToFile(fileName::String, contents::List{SCode.CLASS})

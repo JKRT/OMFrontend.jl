@@ -612,8 +612,7 @@ function toList(
   inTree::Tree,
   lst::List{<:Tuple{<:Key, Value}} = nil,
 )::List{Tuple{Key, Value}}
-
-  @assign lst = begin
+  lst = begin
     local key::Key
     local value::Value
     @match inTree begin
@@ -623,11 +622,9 @@ function toList(
         @assign lst = toList(inTree.left, lst)
         lst
       end
-
       LEAF(key = key, value = value) => begin
         _cons((key, value), lst)
       end
-
       _ => begin
         lst
       end
@@ -772,7 +769,7 @@ function fold(inTree::Tree, inFunc::FoldFunc, inStartValue::FT) where {FT}
       LEAF(key = key, value = value) => begin
         outResult = inFunc(key, value, outResult)
         outResult
-      end 
+      end
       _ => begin
         outResult
       end
@@ -892,7 +889,6 @@ end
 
 function setTreeLeftRight(orig::Tree; left::Tree = EMPTY(), right::Tree = EMPTY())::Tree
   local res::Tree
-
   @assign res = begin
     @match (orig, left, right) begin
       (NODE(__), EMPTY(__), EMPTY(__)) => begin

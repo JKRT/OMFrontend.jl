@@ -1295,7 +1295,7 @@ function convertFunction(func::M_Function)::DAE.Function
         @assign elems = convertFunctionParams(func.locals, elems)
         @assign def = begin
           @match sections begin
-            SECTIONS_SECTIONS(__) => begin
+            SECTIONS(__) => begin
               #=  A function with an algorithm section. =#
               @assign elems = convertAlgorithms(sections.algorithms, elems)
               DAE.FunctionDefinition.FUNCTION_DEF(listReverse(elems))

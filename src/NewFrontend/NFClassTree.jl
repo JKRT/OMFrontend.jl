@@ -1,4 +1,3 @@
-
 include("LookupTree.jl")
 include("DuplicateTree.jl")
 
@@ -425,9 +424,9 @@ function foldExtends(tree::ClassTree, func::FuncT, arg::ArgT) where {ArgT}
   return arg
 end
 
-"""  
+"""
   Applies a function to each extends node in the class tree, and updates
-  the extends array with the returned nodes. 
+  the extends array with the returned nodes.
 """
 function mapExtends(tree::ClassTree, func::FuncT)
   local exts::Vector{InstNode} = getExtends(tree)
@@ -724,9 +723,9 @@ function appendComponentsToInstTree(
   return tree
 end
 
-"""  
+"""
   This function replaces all duplicate elements with the element that is
-  kept, such that lookup in the extends nodes will find the correct node. 
+  kept, such that lookup in the extends nodes will find the correct node.
 """
 function replaceDuplicates(tree::ClassTree)::ClassTree
   () = begin
@@ -2282,7 +2281,7 @@ function addImport(
     LookupTree.IMPORT(index),
     (imports) -> addImportConflict(imports = imports),
   )
-  
+
   return tree
 end
 

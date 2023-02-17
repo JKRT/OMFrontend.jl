@@ -300,7 +300,6 @@ function getComments(node::InstNode, accumCmts::List{<:SCode.Comment} = nil) ::L
       CLASS_NODE(definition = SCode.CLASS(cmt = cmt))  => begin
         _cons(cmt, getDerivedComments(P_Pointer.access(node.cls), accumCmts))
       end
-
       _  => begin
         accumCmts
       end
@@ -636,7 +635,7 @@ function toFlatString(node::InstNode) ::String
   @assign name = begin
     @match node begin
       COMPONENT_NODE(__)  => begin
-        P_Component.toFlatString(node.name, P_Pointer.access(node.component))
+        toFlatString(node.name, P_Pointer.access(node.component))
       end
       CLASS_NODE(__)  => begin
         toFlatString(P_Pointer.access(node.cls), node)
@@ -1394,7 +1393,7 @@ function definition(node::InstNode)::SCode.Element
       end
       COMPONENT_NODE(__)  => begin
         definition(P_Pointer.access(node.component))
-      end      
+      end
     end
   end
   def

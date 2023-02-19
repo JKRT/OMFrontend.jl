@@ -162,6 +162,8 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
     flat_model = resolveConnections(flat_model, name)
     flat_model = if ! recompilationEnabled
       evaluate(flat_model)
+    else
+      flat_model
     end
     #println("\n************* AFTER RESOLVE *************\n")
     #println(replace(toString(flat_model), "\\n" => "\n"))
@@ -2843,27 +2845,28 @@ function addIteratorToScope(name::String, scope::InstNode, info::SourceInfo, ite
   @assign scope = addIterator(iterator, scope)
   (scope, iterator)
 end
-""" #= Gives a warning if the given iterator name is already used in an outer
-             implicit scope. =#"""
-               function checkIteratorShadowing(name::String, scope::InstNode, info::SourceInfo)
-                 @assign () = begin
-                   @match scope begin
-                     IMPLICIT_SCOPE(__)  => begin
-                       for iter in scope.locals
-                         if name(iter) == name
-                           Error.addMultiSourceMessage(Error.SHADOWED_ITERATOR, list(name), list(info(iter), info))
-                           return
-                         end
-                       end
-                       ()
-                     end
-
-                     _  => begin
-                       ()
-                     end
-                   end
-                 end
-               end
+"""
+  Gives a warning if the given iterator name is already used in an outer
+  implicit scope.
+"""
+function checkIteratorShadowing(nameArg::String, scope::InstNode, infoArg::SourceInfo)
+  () = begin
+    @match scope begin
+      IMPLICIT_SCOPE(__)  => begin
+        for iter in scope.locals
+          if name(iter) == nameArg
+            Error.addMultiSourceMessage(Error.SHADOWED_ITERATOR, list(nameArg), list(info(iter), infoArg))
+            return
+          end
+        end
+        ()
+      end
+      _  => begin
+        ()
+      end
+    end
+  end
+end
 
 " #= Inner elements can be generated automatically during instantiation if they're
                    missing, and are stored in the cache of the top scope since that's easily

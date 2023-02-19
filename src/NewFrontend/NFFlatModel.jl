@@ -531,8 +531,12 @@ end
 """
   Collect all DOCCS Equations.
 """
-function collectDOCCS(@nospecialize(eqs::List{Equation}))
+function collectDOCCS(@nospecialize(eqs::Cons{Equation}))
   Base.collect(Iterators.flatten([containsDOCC(eq) for eq in eqs]))
+end
+
+function collectDOCCS(@nospecialize(eqs::Nil))
+  return Equation[]
 end
 
 """
@@ -561,8 +565,7 @@ end
 
 """
   Check if the model contains a Dynamically Overconstrained Connector (DOCC).
-  The function returns true if that is the case.
-  It also returns a list with all if-equations containing DOCC.
+  returns a list with all if-equations containing DOCC.
 """
 function containsDOCC(@nospecialize(eq::Equation))::Vector{Equation}
   local doccs = Equation[]

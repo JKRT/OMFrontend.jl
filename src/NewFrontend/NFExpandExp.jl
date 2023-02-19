@@ -308,34 +308,25 @@ end
 
 function makeScalarProduct(exp1::Expression, exp2::Expression)::Expression
   local exp::Expression
-
   local expl1::List{Expression}
   local expl2::List{Expression}
   local ty::M_Type
   local elem_ty::M_Type
   local mul_op::Operator
   local add_op::Operator
-
   @match ARRAY_EXPRESSION(ty, expl1) = exp1
   @match ARRAY_EXPRESSION(_, expl2) = exp2
-  @assign elem_ty = Type.unliftArray(ty)
+  elem_ty = unliftArray(ty)
+  #=  Scalar product of two empty arrays. The result is defined in the spec =#
+  #=  by sum, so we return 0 since that's the default value of sum. =#
   if listEmpty(expl1)
-    @assign exp = makeZero(elem_ty)
+    exp = makeZero(elem_ty)
   else
-    @assign mul_op = makeMul(elem_ty)
-    @assign add_op = makeAdd(elem_ty)
-    @assign expl1 =
-      List(@do_threaded_for simplifyBinaryOp(e1, mul_op, e2) (e1, e2) (
-        expl1,
-        expl2,
-      ))
-    @assign exp =
-      ListUtil.reduce(expl1, (add_op) -> simplifyBinaryOp(op = add_op))
+    mul_op = makeMul(elem_ty)
+    add_op = makeAdd(elem_ty)
+    expl1 = list(@do_threaded_for(simplifyBinaryOp(e1, mul_op, e2), (e1, e2), (expl1, expl2)))
+    exp = ListUtil.reduce(expl1, (x, y) -> simplifyBinaryOp(x, add_op, y))
   end
-  #=  Scalar product of two empty arrays. The result is defined in the spec
-  =#
-  #=  by sum, so we return 0 since that's the default value of sum.
-  =#
   return exp
 end
 
@@ -374,7 +365,7 @@ function expandBinaryMatrixVector(exp::Expression)::Tuple{Expression, Bool}
   @match BINARY_EXPRESSION(exp1 = exp1, exp2 = exp2) = exp
   @assign (exp1, expanded) = expand(exp1)
   if expanded
-    @match ARRAY_EXPRESSION(TYPE_ARRAY(ty, list(n, _)), expl) = exp1
+    @match ARRAY_EXPRESSION(TYPE_ARRAY(ty, _cons(n, T)), expl) = exp1
     @assign ty = TYPE_ARRAY(ty, list(n))
     if listEmpty(expl)
       @assign outExp = makeZero(ty)
@@ -775,7 +766,7 @@ function expandBuiltinGeneric2(
       end
 
       _ => begin
-        CALL_EXPRESSION(P_Call.TYPED_CALL(fn, ty, var, list(exp), attr))
+        CALL_EXPRESSION(TYPED_CALL(fn, ty, var, list(exp), attr))
       end
     end
   end
@@ -785,19 +776,17 @@ end
 function expandBuiltinGeneric(call::Call)::Tuple{Expression, Bool}
   local expanded::Bool = true
   local outExp::Expression
-
   local fn::M_Function
   local ty::M_Type
   local var::VariabilityType
-  local attr::NFCall.P_CallAttributes
+  local attr::CALL_ATTR
   local arg::Expression
   local args::List{Expression}
   local expl::List{Expression}
-
-  @match P_Call.TYPED_CALL(fn, ty, var, list(arg), attr) = call
-  @assign ty = arrayElementType(ty)
+  @match TYPED_CALL(fn, ty, var, _cons(arg, T), attr) = call
+  ty = arrayElementType(ty)
   @match (arg, true) = expand(arg)
-  @assign outExp = expandBuiltinGeneric2(arg, fn, ty, var, attr)
+  outExp = expandBuiltinGeneric2(arg, fn, ty, var, attr)
   return (outExp, expanded)
 end
 
@@ -911,7 +900,7 @@ function expandCall(call::Call, exp::Expression)::Tuple{Expression, Bool}
   (outExp, expanded) = begin
     @matchcontinue call begin
       TYPED_CALL(__) where (isBuiltin(call.fn) && isNotImpure(call.fn))  => begin
-        expandcall.fn, call.arguments, call
+         expand(call.fn, call.arguments, call)
       end
       TYPED_ARRAY_CONSTRUCTOR(__) => begin
         expandArrayConstructor(call.exp, call.ty, call.iters)
@@ -1197,4 +1186,3 @@ function expand(@nospecialize(exp::Expression))::Tuple{Expression, Bool}
   end
   return (exp, expanded)
 end
-

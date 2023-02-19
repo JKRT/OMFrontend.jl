@@ -85,14 +85,10 @@ function scalarizeVariable(var::Variable, vars::List{<:Variable})
       ty = arrayElementType(ty)
       (ty_attr_names, ty_attr_iters) = scalarizeTypeAttributes(ty_attr)
       if isBound(binding)
-        binding_iter =
-          P_ExpressionIterator.ExpressionIterator.fromExp(expandComplexCref(getTypedExp(
-            binding,
-          )))
+        binding_iter = fromExpToExpressionIterator(expandComplexCref(getTypedExp(binding,)))
         bind_var = variability(binding)
         for cr in crefs
-          (binding_iter, exp) =
-            P_ExpressionIterator.ExpressionIterator.next(binding_iter)
+          (binding_iter, exp) = next(binding_iter)
           binding = FLAT_BINDING(exp, bind_var)
           ty_attr = nextTypeAttributes(ty_attr_names, ty_attr_iters)
           vars = _cons(
@@ -228,11 +224,11 @@ function scalarizeEquation(eq::Equation, equations::List{<:Equation})
           equations =
             _cons(EQUATION_ARRAY_EQUALITY(lhs, rhs, ty, src), equations)
         else
-          lhs_iter = P_ExpressionIterator.ExpressionIterator.fromExp(lhs)
-          rhs_iter = P_ExpressionIterator.ExpressionIterator.fromExp(rhs)
+          lhs_iter = fromExpToExpressionIterator(lhs)
+          rhs_iter = fromExpToExpressionIterator(rhs)
           ty = arrayElementType(ty)
-          while P_ExpressionIterator.ExpressionIterator.hasNext(lhs_iter)
-            if !P_ExpressionIterator.ExpressionIterator.hasNext(rhs_iter)
+          while hasNext(lhs_iter)
+            if !hasNext(rhs_iter)
               Error.addInternalError(
                 getInstanceName() +
                 " could not expand rhs " +
@@ -240,10 +236,8 @@ function scalarizeEquation(eq::Equation, equations::List{<:Equation})
                 ElementSource_getInfo(src),
               )
             end
-            (lhs_iter, lhs) =
-              P_ExpressionIterator.ExpressionIterator.next(lhs_iter)
-            (rhs_iter, rhs) =
-              P_ExpressionIterator.ExpressionIterator.next(rhs_iter)
+            (lhs_iter, lhs) = next(lhs_iter)
+            (rhs_iter, rhs) = next(rhs_iter)
             equations =
               _cons(EQUATION_EQUALITY(lhs, rhs, ty, src), equations)
           end

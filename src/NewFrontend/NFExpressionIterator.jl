@@ -214,7 +214,7 @@ function fromExpToExpressionIterator(exp::Expression)::ExpressionIterator
       end
 
       CREF_EXPRESSION(__) => begin
-        @assign e = P_ExpandExp.ExpandExp.expandCref(exp)
+        (e, _) = expandCref(exp)
         @assign iterator = begin
           @match e begin
             ARRAY_EXPRESSION(__) => begin

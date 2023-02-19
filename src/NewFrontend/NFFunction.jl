@@ -550,8 +550,12 @@ function isOMImpure(fn::M_Function)::Bool
 end
 
 function isImpure(fn::M_Function)::Bool
-  local isImpure::Bool = fn.attributes.isImpure
-  return isImpure
+  local impure::Bool = fn.attributes.isImpure
+  return impure
+end
+
+function isNotImpure(fn::M_Function)::Bool
+  return !isImpure(fn)
 end
 
 function isSubscriptableBuiltin(fn::M_Function)::Bool

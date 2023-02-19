@@ -21,7 +21,8 @@
     @test typeof(flattenModelInMSL("$(prefix).IdealRollingWheel")[1]) == OMFrontend.Main.FLAT_MODEL
   end
   @testset "Examples" begin
-    prefix = "Modelica.Mechanics.Rotational.Components.Examples"
-    #@test typeof(flattenModelInMSL("$(prefix).First")[1]) == OMFrontend.Main.FLAT_MODEL        
-  end  
+    prefix = "Modelica.Mechanics.Rotational.Examples"
+    @test typeof(flattenModelInMSL("$(prefix).First")[1]) == OMFrontend.Main.FLAT_MODEL
+    @test typeof(flattenModelInMSL("$(prefix).FirstGrounded")[1]) == OMFrontend.Main.FLAT_MODEL
+  end
 end #= End Rotational=#

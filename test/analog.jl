@@ -6,9 +6,10 @@
   @test typeof(flattenModelInMSL("$(prefix).Conductor")[1]) == OMFrontend.Main.FLAT_MODEL
   @test typeof(flattenModelInMSL("$(prefix).Capacitor")[1]) == OMFrontend.Main.FLAT_MODEL
   @test typeof(flattenModelInMSL("$(prefix).Inductor")[1]) == OMFrontend.Main.FLAT_MODEL
-  @test typeof(flattenModelInMSL("$(prefix).SaturatingInductor")[1]) == OMFrontend.Main.FLAT_MODEL  #Note that this generates a lot of error messages but does not fail to translate...
+  #Note that this generates a lot of error messages but does not fail to translate...
+  @test typeof(flattenModelInMSL("$(prefix).SaturatingInductor")[1]) == OMFrontend.Main.FLAT_MODEL
   @test typeof(flattenModelInMSL("$(prefix).Transformer")[1]) == OMFrontend.Main.FLAT_MODEL
-  #@test typeof(flattenModelInMSL("$(prefix).M_Transformer")[1]) == OMFrontend.Main.FLAT_MODEL
+  @test typeof(flattenModelInMSL("$(prefix).M_Transformer")[1]) == OMFrontend.Main.FLAT_MODEL
   @test typeof(flattenModelInMSL("$(prefix).Gyrator")[1]) == OMFrontend.Main.FLAT_MODEL
   @test typeof(flattenModelInMSL("$(prefix).EMF")[1]) == OMFrontend.Main.FLAT_MODEL
   @test typeof(flattenModelInMSL("$(prefix).TranslationalEMF")[1]) == OMFrontend.Main.FLAT_MODEL
@@ -16,6 +17,11 @@
   @test typeof(flattenModelInMSL("$(prefix).VCC")[1]) == OMFrontend.Main.FLAT_MODEL
   @test typeof(flattenModelInMSL("$(prefix).CCV")[1]) == OMFrontend.Main.FLAT_MODEL
   @test typeof(flattenModelInMSL("$(prefix).CCC")[1]) == OMFrontend.Main.FLAT_MODEL
+  @test typeof(flattenModelInMSL("$(prefix).OpAmp")[1]) == OMFrontend.Main.FLAT_MODEL
+  @test_skip typeof(flattenModelInMSL("$(prefix).OpAmpDetailed")[1]) == OMFrontend.Main.FLAT_MODEL
+  @test typeof(flattenModelInMSL("$(prefix).VariableResistor")[1]) == OMFrontend.Main.FLAT_MODEL
+  @test typeof(flattenModelInMSL("$(prefix).VariableConductor")[1]) == OMFrontend.Main.FLAT_MODEL
+  @test_skip typeof(flattenModelInMSL("$(prefix).VariableCapacitor")[1]) == OMFrontend.Main.FLAT_MODEL
 end #= End Analog =#
 #= Testing some sources in Analog.Sources=#
 @testset "Analog.Sources" begin

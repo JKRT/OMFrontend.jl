@@ -588,8 +588,7 @@ function toString(ty::M_Type)::String
       end
 
       TYPE_ENUMERATION(__) => begin
-        "enumeration " + AbsynUtil.pathString(ty.typePath)
-        +"(" + stringDelimitList(ty.literals, ", ") + ")"
+        "enumeration " + AbsynUtil.pathString(ty.typePath) + "(" + stringDelimitList(ty.literals, ", ") + ")"
       end
 
       TYPE_ENUMERATION_ANY(__) => begin

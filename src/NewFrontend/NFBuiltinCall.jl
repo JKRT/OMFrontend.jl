@@ -1,4 +1,3 @@
-
 function needSpecialHandling(call::Call) ::Bool
   local special::Bool
   @debug "Calling needSpecialHandling with: " * toString(call)
@@ -232,7 +231,7 @@ function makeSizeExp(posArgs::List{<:Expression}, namedArgs::List{<:NamedArg}, i
 
       arg1 <| arg2 <|  nil()  => begin
         SIZE_EXPRESSION(arg1, SOME(arg2))
-      end      
+      end
       _  => begin
         Error.addSourceMessage(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list("size" + ListUtil.toString(posArgs, toString, "", "(", ", ", ")", true), "size(Any[:, ...]) => Integer[:]\\n  size(Any[:, ...], Integer) => Integer"), info)
         fail()
@@ -343,7 +342,7 @@ function makeCatExp(n::Int, args::List{<:Expression}, tys::List{<:M_Type}, varia
   #=  with the concatenated dimension set to unknown.
   =#
   @assign dims = arrayDims(resTy)
-  @assign resTyToMatch = TYPE_ARRAY(arrayElementType(resTy), ListUtil.set(dims, n, DIMENSION_UNKNOWN()))
+  resTyToMatch = TYPE_ARRAY(arrayElementType(resTy), ListUtil.set(dims, n, DIMENSION_UNKNOWN()))
   @assign dims = list(listGet(lst, n) for lst in dimsLst)
   @assign sumDim = fromInteger(0)
   for d in dims
@@ -465,9 +464,9 @@ function typeOverloadedStringCall(overloadedType::M_Type, args::List{<:TypedArg}
   (callExp, outType, var)
 end
 
-""" 
+"""
   Types a function call that can be typed normally, but which always has
-  discrete variability regardless of the variability of the arguments. 
+  discrete variability regardless of the variability of the arguments.
 """
 function typeDiscreteCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
   local var::VariabilityType = Variability.DISCRETE
@@ -709,13 +708,13 @@ function typeMinMaxCall(name::String, call::Call, origin::ORIGIN_Type, info::Sou
       arg1 <| arg2 <|  nil()  => begin
         @assign (arg1, ty1, var1) = typeExp(arg1, origin, info)
         @assign (arg2, ty2, var2) = typeExp(arg2, origin, info)
-        if ! Type.isBasic(ty1)
+        if ! isBasic(ty1)
           Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list("1", name, "", toString(arg1), Type.toString(ty1), "Any"), info)
         end
-        if ! Type.isBasic(ty2)
+        if ! isBasic(ty2)
           Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list("2", name, "", toString(arg2), Type.toString(ty2), "Any"), info)
         end
-        @assign (arg1, arg2, ty, mk) = TypeCheck.matchExpressions(arg1, ty1, arg2, ty2)
+        @assign (arg1, arg2, ty, mk) = matchExpressions(arg1, ty1, arg2, ty2)
         if ! TypeCheck.isValidArgumentMatch(mk)
           Error.addSourceMessage(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), name + "(Any[:, ...]) => Any\\n" + name + "(Any, Any) => Any"), info)
         end
@@ -1266,8 +1265,8 @@ end
 
 """
 Author:johti17
-Extension: 
-  Type a recompilation call. 
+Extension:
+  Type a recompilation call.
   Depending on what we do we create different calls.
   A call to recompilation means that a model should refer to itself to allow reflection.
 """
@@ -1277,17 +1276,17 @@ function typeRecompilationCall(@nospecialize(call::Call), origin::ORIGIN_Type, i
   if listLength(args) != 2
     throw("Error typing! expected two arguments to recompilation")
   end
-  #= 
+  #=
     We know we are going to change a parameter of the model we currently are operating on.
-    Prepare the SCode for this model so that we can use it later.  
+    Prepare the SCode for this model so that we can use it later.
   =#
   @match CREF_EXPRESSION(_, argCref1) = listGet(args, 1)
-  #= 
-    Change the variability of argCref1 
+  #=
+    Change the variability of argCref1
     to avoid further simplifications in the frontend.
     We do this by creating a new component reference that is not pointing to a node.
   =#
-  local newCref = COMPONENT_REF_STRING(name(argCref1.node), argCref1.restCref) 
+  local newCref = COMPONENT_REF_STRING(name(argCref1.node), argCref1.restCref)
   local retType = TYPE_NORETCALL()
   local arg1 = CREF_EXPRESSION(TYPE_ANY() #= Reference to the parameter we are changing=#,
                                newCref #= Should be complex but use any for now=#)
@@ -1310,7 +1309,7 @@ function typeStructuralTransition(call::Call, origin::ORIGIN_Type, info::SourceI
   local variabilityType::VariabilityType = Variability.PARAMETER
   if listLength(args) != 3
     #=TODO add source info..=#
-    @error "To few arguments to initialStructuralState. Three arguments are expected." 
+    @error "To few arguments to initialStructuralState. Three arguments are expected."
     throw("Syntax error: To few arguments to initialStructuralState")
   end
   @match CREF_EXPRESSION(_, argCref1) = listGet(args, 1)

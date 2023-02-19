@@ -3300,12 +3300,11 @@ end
 
 function mapCallShallow(call::Call, func::MapFunc) ::Call
   local outCall::Call
-
-  @assign outCall = begin
+  outCall = begin
     local args::List{Expression}
-    local nargs::List{P_Function.NamedArg}
-    local targs::List{P_Function.TypedArg}
-    local tnargs::List{P_Function.TypedNamedArg}
+    local nargs::List{NamedArg}
+    local targs::List{TypedArg}
+    local tnargs::List{TypedNamedArg}
     local s::String
     local e::Expression
     local t::M_Type

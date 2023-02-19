@@ -123,9 +123,10 @@ function inlineCall(call::Call)::Expression
           sourceInfo(),
         )
         stmt = listHead(body)
-        #=  TODO: Instead of repeating this for each input we should probably
-                  just build a lookup tree or hash table and go through the
-                statement once.
+        #=
+        TODO: Instead of repeating this for each input we should probably
+          just build a lookup tree or hash table and go through the
+          statement once.
         =#
         for i in inputs
           @match _cons(arg, args) = args
@@ -144,13 +145,11 @@ function inlineCall(call::Call)::Expression
 end
 
 function replaceCrefNode(exp::Expression, node::InstNode, value::Expression)::Expression
-
   local cr_node::InstNode
   local rest_cr::ComponentRef
   local subs::List{Subscript}
   local ty::M_Type
   local repl_ty::M_Type
-
   @assign exp = begin
     @match exp begin
       CREF_EXPRESSION(
@@ -189,12 +188,11 @@ function replaceCrefNode(exp::Expression, node::InstNode, value::Expression)::Ex
 end
 
 function replaceDimExp(dim::Dimension, node::InstNode, value::Expression)::Dimension
-
-  @assign dim = begin
+  dim = begin
     local exp::Expression
     @match dim begin
       DIMENSION_EXP(__) => begin
-        @assign exp = map(
+        exp = map(
           dim.exp,
           (node, value) -> replaceCrefNode(node = node, value = value),
         )
@@ -211,7 +209,7 @@ end
 
 function getOutputExp(stmt::Statement, outputNode::InstNode, call::Call)::Expression
   local exp::Expression
-  @assign exp = begin
+  exp = begin
     local cr_node::InstNode
     local rest_cr::ComponentRef
     @match stmt begin

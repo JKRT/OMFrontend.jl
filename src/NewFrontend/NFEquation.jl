@@ -740,6 +740,15 @@ function mapExpList(eql::Cons{Equation}, func::MapExpFn)
 end
 
 """
+  Map a list of equations with a least one element
+"""
+function mapList(eql::Cons{Equation}, func::Function)
+  eql = list(map(eq, func) for eq in eql)
+  return eql
+end
+
+
+"""
   An empty list results in nil
 """
 function mapExpList(eql::Nil, func::MapExpFn)
@@ -747,7 +756,6 @@ function mapExpList(eql::Nil, func::MapExpFn)
 end
 
 function map(eq::Equation, func::MapFn)::Equation
-
   @assign () = begin
     @match eq begin
       EQUATION_FOR(__) => begin
@@ -992,4 +1000,3 @@ function toStream(branch::Equation_Branch, indent::String, s)
   end
   return s
 end
-

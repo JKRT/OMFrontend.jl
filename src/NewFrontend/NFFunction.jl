@@ -209,7 +209,6 @@ FoldFunc = Function
 MapFunc = Function
 MapFunc = Function
 MapFn = Function
-@UniontypeDecl M_Function
 @Uniontype M_Function begin
   @Record M_FUNCTION begin
     path::Absyn.Path
@@ -1774,7 +1773,6 @@ function nameConsiderBuiltin(fn::M_Function)::Absyn.Path
 end
 
 function setName(name::Absyn.Path, fn::M_Function)::M_Function
-
   @assign fn.path = name
   return fn
 end

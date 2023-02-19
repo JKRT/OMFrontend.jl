@@ -6180,7 +6180,7 @@ function compare(exp1::Expression, exp2::Expression) ::Int
         @match BINDING_EXP(exp = e2) = exp2
         compare(exp1.exp, e2)
       end
-      
+
       _  => begin
         Error.assertion(false, getInstanceName() + " got unknown expression.", sourceInfo())
         fail()
@@ -6242,39 +6242,29 @@ function isAllTrue(exp::Expression) ::Bool
   isTrue
 end
 
-function isTrue(exp::Expression) ::Bool
-  local isTrue::Bool
-
-  @assign isTrue = begin
+function isTrue(exp::Expression)::Bool
     @match exp begin
       BOOLEAN_EXPRESSION(true)  => begin
         true
       end
-
       _  => begin
         false
       end
     end
-  end
-  isTrue
 end
 
-function isCall(exp::Expression) ::Bool
-  local isCall::Bool
-  @assign isCall = begin
-    @match exp begin
-      CALL_EXPRESSION(__)  => begin
-        true
-      end
-      _  => begin
-        false
-      end
+function isCall(exp::Expression)::Bool
+  @match exp begin
+    CALL_EXPRESSION(__)  => begin
+      true
+    end
+    _  => begin
+      false
     end
   end
-  isCall
 end
 
-function isWildCref(exp::Expression) ::Bool
+function isWildCref(exp::Expression)::Bool
   local wild::Bool
 
   @assign wild = begin

@@ -96,25 +96,6 @@ function instantiateSCodeToFM(elementToInstantiate::String, inProgram::SCode.Pro
 end
 
 """
-  @author: johti17
-  Loads the Modelica Standard Library (MSL).
-  Adds the Modelica standard library to the library cache.
-"""
-function loadMSL()
-  if ! haskey(LIBRARY_CACHE, "MSL")
-    Main.Global.initialize()
-    #= Find the MSL =#
-    local packagePath = dirname(realpath(Base.find_package("OMFrontend")))
-    local packagePath *= "/.."
-    local pathToLib = packagePath * "/lib/Modelica/msl.mo"
-    local p = parseFile(pathToLib)
-    #= Translate it to SCode =#
-    local scodeMSL = OMFrontend.translateToSCode(p)
-    LIBRARY_CACHE["MSL"] = scodeMSL
-  end
-end
-
-"""
   Prints the DAE representation to a file
 """
 function exportDAERepresentationToFile(fileName::String, contents::String)
@@ -184,37 +165,48 @@ if ccall(:jl_generating_output, Cint, ()) == 1
   end
 end
 
-function initLoadMSL()
+function initLoadMSL(;MSL_Version = "MSL_3_2_3")
   @info "Loading the MSL"
-  @time loadMSL()
+  @time loadMSL(MSL_Version = MSL_Version)
   @info "Loaded MSL successfully"
-end
-
-"""
-  This function loads the MSL s.t it can be used for models.
-"""
-function flattenModelInMSL(modelName::String)
-  if !haskey(LIBRARY_CACHE, "MSL")
-    initLoadMSL()
-  end
-  local libraryAsScoded = LIBRARY_CACHE["MSL"]
-  (FM, cache) = instantiateSCodeToFM(modelName, libraryAsScoded)
 end
 
 """
   This function flattens a model with the MSL.
 """
-function flattenModelWithMSL(modelName::String, fileName::String)
-  if !haskey(LIBRARY_CACHE, "MSL")
-    initLoadMSL()
+function flattenModelWithMSL(modelName::String, fileName::String; MSL_Version = "MSL_3_2_3")
+  if !haskey(LIBRARY_CACHE, MSL_Version)
+    initLoadMSL(MSL_Version = MSL_Version)
   end
-  local lib = LIBRARY_CACHE["MSL"]
+  local lib = LIBRARY_CACHE[MSL_Version]
   local absynProgram = parseFile(fileName)
   local sCodeProgram = translateToSCode(absynProgram)
+  #= Add builtin function to the program (model) and instantiate it =#
   builtin = NFModelicaBuiltinCache["NFModelicaBuiltin"]
   program = listReverse(listAppend(builtin, sCodeProgram))
   program = listReverse(listAppend(lib, sCodeProgram))
   (FM, cache) = instantiateSCodeToFM(modelName, program)
+end
+
+
+"""
+  @author: johti17
+  Loads the Modelica Standard Library (MSL).
+  Adds the Modelica standard library to the library cache.
+Currently 3_2_3 is the default version.
+"""
+function loadMSL(; MSL_Version)
+  if ! haskey(LIBRARY_CACHE, MSL_Version)
+    Main.Global.initialize()
+    #= Find the MSL =#
+    local packagePath = dirname(realpath(Base.find_package("OMFrontend")))
+    local packagePath *= "/.."
+    local pathToLib = packagePath * string("/lib/Modelica/", MSL_Version, ".mo")
+    local p = parseFile(pathToLib)
+    #= Translate it to SCode =#
+    local scodeMSL = OMFrontend.translateToSCode(p)
+    LIBRARY_CACHE["MSL_3_2_3"] = scodeMSL
+  end
 end
 
 end # module

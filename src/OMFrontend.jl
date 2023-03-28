@@ -166,9 +166,9 @@ if ccall(:jl_generating_output, Cint, ()) == 1
 end
 
 function initLoadMSL(;MSL_Version = "MSL_3_2_3")
-  @info "Loading the MSL"
+  @info "Loading MSL: $(MSL_Version)"
   @time loadMSL(MSL_Version = MSL_Version)
-  @info "Loaded MSL successfully"
+  @info "Loaded MSL:$(MSL_Version) successfully"
 end
 
 """

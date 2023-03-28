@@ -1,8 +1,6 @@
 #=
   Author: John Tinnerholm johti17@liu.se
 =#
-
-
 import Pkg
 
 Pkg.resolve()
@@ -28,7 +26,7 @@ function parseAndLowerToScode(modelName::String, modelFile::String)
 end
 
 """
-  Flattens to flat Modelica. 
+  Flattens to flat Modelica.
   Note that, the full path specification of the file is expected.
 """
 function flattenFM(model, file)

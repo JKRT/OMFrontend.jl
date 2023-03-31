@@ -1460,19 +1460,19 @@ function flattenAlgorithms(
   local outAlgorithms::List{Algorithm} = nil
 
   for alg in algorithms
-    @assign alg.statements = P_Statement.Statement.mapExpList(
+    @assign alg.statements = mapExpList(
       alg.statements,
-      (prefix) -> flattenExp(prefix = prefix),
+      (x) -> flattenExp(x, prefix),
     )
+    #=
+    CheckModel relies on the ElementSource to know whether a certain algorithm comes from
+    an array component, otherwise is will miscount the number of equations.
+    =#
     if hasSubscripts(prefix)
       @assign alg.source = addElementSourceArrayPrefix(alg.source, prefix)
     end
     @assign outAlgorithms = _cons(alg, outAlgorithms)
   end
-  #=  CheckModel relies on the ElementSource to know whether a certain algorithm comes from
-  =#
-  #=  an array component, otherwise is will miscount the number of equations.
-  =#
   return outAlgorithms
 end
 
@@ -1799,48 +1799,48 @@ function collectStatementFuncs(stmt::Statement, funcs::FunctionTree)::FunctionTr
   @assign () = begin
     @match stmt begin
       ALG_ASSIGNMENT(__) => begin
-        @assign funcs = collectExpFuncs(stmt.lhs, funcs)
-        @assign funcs = collectExpFuncs(stmt.rhs, funcs)
-        @assign funcs = collectTypeFuncs(stmt.ty, funcs)
+        funcs = collectExpFuncs(stmt.lhs, funcs)
+        funcs = collectExpFuncs(stmt.rhs, funcs)
+        funcs = collectTypeFuncs(stmt.ty, funcs)
         ()
       end
 
-      P_Statement.Statement.FOR(__) => begin
-        @assign funcs = ListUtil.fold(stmt.body, collectStatementFuncs, funcs)
-        @assign funcs = collectExpFuncs(Util.getOption(stmt.range), funcs)
+      ALG_FOR(__) => begin
+        funcs = ListUtil.fold(stmt.body, collectStatementFuncs, funcs)
+        funcs = collectExpFuncs(Util.getOption(stmt.range), funcs)
         ()
       end
 
-      P_Statement.Statement.IF(__) => begin
-        @assign funcs = ListUtil.fold(stmt.branches, collectStmtBranchFuncs, funcs)
+      ALG_IF(__) => begin
+        funcs = ListUtil.fold(stmt.branches, collectStmtBranchFuncs, funcs)
         ()
       end
 
-      P_Statement.Statement.WHEN(__) => begin
-        @assign funcs = ListUtil.fold(stmt.branches, collectStmtBranchFuncs, funcs)
+      ALG_WHEN(__) => begin
+        funcs = ListUtil.fold(stmt.branches, collectStmtBranchFuncs, funcs)
         ()
       end
 
-      P_Statement.Statement.ASSERT(__) => begin
-        @assign funcs = collectExpFuncs(stmt.condition, funcs)
-        @assign funcs = collectExpFuncs(stmt.message, funcs)
-        @assign funcs = collectExpFuncs(stmt.level, funcs)
+      ALG_ASSERT(__) => begin
+        funcs = collectExpFuncs(stmt.condition, funcs)
+        funcs = collectExpFuncs(stmt.message, funcs)
+        funcs = collectExpFuncs(stmt.level, funcs)
         ()
       end
 
-      P_Statement.Statement.TERMINATE(__) => begin
-        @assign funcs = collectExpFuncs(stmt.message, funcs)
+      ALG_TERMINATE(__) => begin
+        funcs = collectExpFuncs(stmt.message, funcs)
         ()
       end
 
-      P_Statement.Statement.NORETCALL(__) => begin
-        @assign funcs = collectExpFuncs(stmt.exp, funcs)
+      ALG_NORETCALL(__) => begin
+        funcs = collectExpFuncs(stmt.exp, funcs)
         ()
       end
 
-      P_Statement.Statement.WHILE(__) => begin
-        @assign funcs = collectExpFuncs(stmt.condition, funcs)
-        @assign funcs = ListUtil.fold(stmt.body, collectStatementFuncs, funcs)
+      ALG_WHILE(__) => begin
+        funcs = collectExpFuncs(stmt.condition, funcs)
+        funcs = ListUtil.fold(stmt.body, collectStatementFuncs, funcs)
         ()
       end
 

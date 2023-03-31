@@ -527,9 +527,9 @@ function inlineBuiltin(fn::M_Function)::DAE.InlineType
 end
 
 function isExternal(fn::M_Function)::Bool
-  local isExternal::Bool =
+  local isExt::Bool =
     !isEmpty(fn.node) && isExternalFunction(getClass(fn.node))
-  return isExternal
+  return isExt
 end
 
 function setFunctionPointer(isPointer::Bool, fn::M_Function)::M_Function
@@ -920,7 +920,7 @@ function typeFunctionBody(fn::M_Function)::M_Function
   #=  Type any derivatives of the function.
   =#
   for fn_der in fn.derivatives
-    P_FunctionDerivative.FunctionDerivative.typeDerivative(fn_der)
+    typeDerivative(fn_der)
   end
   return fn
 end
@@ -2683,7 +2683,8 @@ function getBody2(node::InstNode)::List{Statement}
         getBody2(cls.baseClass)
       end
       _ => begin
-        Error.assertion(false, getInstanceName() + " got unknown function", sourceInfo())
+        #Error.assertion(false, getInstanceName() + " got unknown function", sourceInfo())
+        @error "Got unknown function for " * toString(node) * " $(isExternalFunction(getClass(node)))"
         fail()
       end
     end

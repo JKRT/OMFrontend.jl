@@ -627,17 +627,15 @@ function applyOption1(
   inOption::Option{TI},
   inFunc::FuncType,
   inArg::ArgT,
-) where {TI, TO, ArgT}
-  local outOption::Option{TO}
-
-  @assign outOption = begin
+) where {TI, ArgT}
+  local outOption::Option
+  outOption = begin
     local ival::TI
-    local oval::TO
+    local oval
     @match inOption begin
       SOME(ival) => begin
         SOME(inFunc(ival, inArg))
       end
-
       _ => begin
         NONE()
       end

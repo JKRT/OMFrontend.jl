@@ -102,7 +102,7 @@ function typeCast(callExp::CALL_EXPRESSION, ty::NFType)::Expression
       TYPED_CALL(__) where {(isBuiltin(call.fn))} => begin
         @assign cast_ty = setArrayElementType(call.ty, ty)
         begin
-          @match AbsynUtil.pathFirstIdent(P_Function.name(call.fn)) begin
+          @match AbsynUtil.pathFirstIdent(name(call.fn)) begin
             "fill" => begin
               #=  For 'fill' we can type cast the first argument rather than the
               =#
@@ -115,12 +115,9 @@ function typeCast(callExp::CALL_EXPRESSION, ty::NFType)::Expression
               @assign call.ty = cast_ty
               CALL_EXPRESSION(call)
             end
-
+            #=  For diagonal we can type cast the argument rather than the =#
             "diagonal" => begin
-              #=  For diagonal we can type cast the argument rather than the
-              =#
-              #=  matrix that diagonal constructs.
-              =#
+              #=  matrix that diagonal constructs.=#
               @assign call.arguments =
                 list(typeCast(listHead(call.arguments), ty))
               @assign call.ty = cast_ty
@@ -665,9 +662,8 @@ function isNotImpure(@nospecialize(call::Call))::Bool
 end
 
 function isExternal(call::Call)::Bool
-  local isExternal::Bool
-
-  @assign isExternal = begin
+  local isExt::Bool
+  isExt = begin
     @match call begin
       UNTYPED_CALL(__) => begin
         isExternalFunction(getClass(node(call.ref)))
@@ -678,8 +674,7 @@ function isExternal(call::Call)::Bool
       end
 
       TYPED_CALL(__) => begin
-        #isExternal(call.fn) TODO
-        true
+        isExternal(call.fn) #Changed from just returning true johti17 2023-03-26
       end
 
       _ => begin
@@ -687,7 +682,7 @@ function isExternal(call::Call)::Bool
       end
     end
   end
-  return isExternal
+  return isExt
 end
 
 function compare(call1::Call, call2::Call)::Int

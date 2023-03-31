@@ -47,7 +47,7 @@ end
 """ #= Gets a value from the tree given a key. =#"""
 function hasKey(inTree::Tree, inKey::Key)::Bool
   local comp::Bool = false
-  
+
   local key::Key
   local key_comp::Int
   local tree::Tree
@@ -231,7 +231,7 @@ function printTreeStr2(inTree::Tree, isLeft::Bool, inIndent::String)::String
         )) +
         inIndent +
         (
-          if isLeft 
+          if isLeft
             " ┌"
           else
             " └"
@@ -513,7 +513,7 @@ function toList(
 end
 
 """ #= Constructs a list of all the values in the tree. =#"""
-function listValues(tree::Tree, lst::List{<:Value} = nil) where {T <: Value}
+function listValues(tree::Tree, lst::List{<:Value} = nil)
   lst = begin
     local value::Value
     @match tree begin
@@ -648,7 +648,7 @@ function fold(inTree::Tree, inFunc::FoldFunc, inStartValue::FT) where {FT}
       LEAF(key = key, value = value) => begin
         outResult = inFunc(key, value, outResult)
         outResult
-      end 
+      end
       _ => begin
         outResult
       end

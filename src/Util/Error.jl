@@ -4532,7 +4532,7 @@ function updateCurrentComponent(
 end
 
 """ #= Gets the current component as a string. =#"""
-function getCurrentComponent() where {T}
+function getCurrentComponent()
   local filename::String = ""
   local read_only::Bool = false
   local sline::Integer = 0

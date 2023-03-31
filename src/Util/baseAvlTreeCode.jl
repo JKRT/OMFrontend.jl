@@ -634,7 +634,7 @@ function toList(
 end
 
 """ #= Constructs a list of all the values in the tree. =#"""
-function listValues(tree::Tree, lst::List{<:Value} = nil) where {T <: Value}
+function listValues(tree::Tree, lst::List{T} = nil) where {T <: Value}
   @assign lst = begin
     local value::Value
     @match tree begin

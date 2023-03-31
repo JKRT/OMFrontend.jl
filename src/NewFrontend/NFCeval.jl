@@ -968,9 +968,8 @@ function evalRangeExp(rangeExp::Expression)::Expression
     end
   end
   exp = makeArray(
-    TYPE_ARRAY(ty, list(fromInteger(listLength(expl)))),
-    expl,
-    #=literal = =#true,
+    TYPE_ARRAY(ty, list(fromInteger(listLength(expl)))), expl
+    ;literal = true,
   )
   return exp
 end
@@ -2799,10 +2798,10 @@ function evalBuiltinCat(
   local dims::List{Int}
 
   @match INTEGER_EXPRESSION(n) = argN
-  @assign ty = typeOf(listHead(args))
-  @assign nd = Type.dimensionCount(ty)
+  ty = typeOf(listHead(args))
+  nd = dimensionCount(ty)
   if n > nd || n < 1
-    if P_EvalTarget.hasInfo(target)
+    if hasInfo(target)
       Error.addSourceMessage(
         Error.ARGUMENT_OUT_OF_RANGE,
         list(String(n), "cat", "1 <= x <= " + String(nd)),
@@ -2811,23 +2810,23 @@ function evalBuiltinCat(
     end
     fail()
   end
-  @assign es = list(e for e in args if !isEmptyArray(e))
-  @assign sz = listLength(es)
+  es = list(e for e in args if !isEmptyArray(e))
+  sz = listLength(es)
   if sz == 0
-    @assign result = listHead(args)
+    result = listHead(args)
   elseif sz == 1
-    @assign result = listHead(es)
+    result = listHead(es)
   else
-    @assign (es, dims) = ExpressionSimplify.evalCat(
+    (es, dims) = evalCat(
       n,
       es,
-      getArrayContents = arrayElements,
-      toString = toString,
+      arrayElements,
+      toString,
     )
-    @assign result = arrayFromList(
+    result = arrayFromList(
       es,
       typeOf(listHead(es)),
-      list(P_Dimension.Dimension.fromInteger(d) for d in dims),
+      list(fromInteger(d) for d in dims),
     )
   end
   return result
@@ -3050,12 +3049,12 @@ function evalBuiltinFill2(fillValue::Expression, dims::List{<:Expression})::Expr
         end
       end
     end
-    @assign arr = list(result for e = 1:dim_size)
-    @assign arr_ty = liftArrayLeft(arr_ty, fromInteger(dim_size))
-    @assign result = makeArray(
+    arr = list(result for e = 1:dim_size)
+    arr_ty = liftArrayLeft(arr_ty, fromInteger(dim_size))
+    result = makeArray(
       arr_ty,
-      arr,
-      isLiteral(fillValue),
+      arr;
+      literal = isLiteral(fillValue),
     )
   end
   return result
@@ -4795,3 +4794,146 @@ function evalInitialEqMapping(ieq::List{Equation})
   # end
   return mapping
 end
+
+"""
+  Custom reimplementation of evalCat
+@author johti17
+"""
+function evalCat(dim::Int, exps::List, getArrayContents::Function, toString::Function)
+  local arr::List
+  local arrs::List = nil
+  local dims::List{Int} = nil
+  local lastDims::List{Int} = nil
+  local firstDims::List{Int} = nil
+  local reverseDims::List{Int} = nil
+  local dimsLst::List{List{Int}} = nil;
+  local j::Int, k::Int, l::Int, thisDim::Int, lastDim::Int
+  local expArr::Vector
+  #= Outputs =#
+  local outExps::List = nil
+  local outDims::List{Int} = nil
+  @assert dim >= 1 "Invalid dimension for" * toString(exps)
+  @assert false == listEmpty(exps) "Empty dimension passed to evalCat"
+  if 1 == dim
+    #outExps = listAppend(getArrayContents(e) for e in listReverse(exps))#TODO investigate this
+    outExps = arrayList(Base.collect(Iterators.flatten(list(getArrayContents(e) for e in listReverse(exps)))))
+    outDims = list(listLength(outExps));
+    return (outExps, outDims)
+  end
+  for e in listReverse(exps)
+    (arr, dims) = evalCatGetFlatArray(e, dim, getArrayContents, toString)
+    arrs = arr <| arrs
+    dimsLst = dims <| dimsLst
+  end
+
+  for i in 1:(dim - 1)
+    j = minimum(listHead(d) for d in dimsLst);
+    if j != maximum(listHead(d) for d in dimsLst)
+      @error "Uneven dimension error for" * toString(exps)
+      fail()
+    end
+    firstDims = j <| firstDims
+    dimsLst = list(listRest(d) for d in dimsLst)
+  end
+    reverseDims = firstDims
+    firstDims = listReverse(firstDims)
+    lastDims = list(listHead(d) for d in dimsLst)
+    lastDim = sum(d for d in lastDims)
+    reverseDims = lastDim <| reverseDims
+  # Fill in the elements of the new array in the new order; this uses
+  # an array structure for random access
+  local arrSiz = lastDim*Base.reduce(*, list(d for d in firstDims))
+  arrInitVal = listHead(listHead(arrs))
+  expArr = arrayCreate(arrSiz, arrInitVal)
+  k = 1
+  for exps in arrs
+    thisDim = listHead(lastDims)
+    lastDims = listRest(lastDims)
+    l = 0
+    for e in exps
+      arrayUpdate(expArr, k+mod(l, thisDim)+(lastDim*div(l, thisDim)), e)
+      l = l+1
+    end
+    k = k + thisDim
+  end
+  # Convert the flat array structure to a tree array structure with the
+  # correct dimensions
+  outExps = arrayList(expArr)
+  outDims = listReverse(reverseDims)
+  return (outExps, outDims)
+end
+
+"""
+Custom reimplementation of evalCatGetFlatArray
+@author johti17
+"""
+function evalCatGetFlatArray(e, dim::Int, getArrayContents::Function, toString::Function)
+  local arr::List
+  local dims::List
+  local i::Int
+  #= output =#
+  local outDims = nil
+  local outExps = nil
+  if dim == 1
+    outExps = getArrayContents(e)
+    outDims = list(listLength(outExps))
+    return (outExps, outDims)
+  end
+  i = 0
+  for exp in listReverse(getArrayContents(e))
+    (arr, dims) = evalCatGetFlatArray(e, dim - 1, getArrayContents::Function, toString::Function)
+    if listEmpty(outDims)
+      outDims = dims
+    elseif !(valueEq(dims, outDims))
+      @error "Got unbalanced array from" * toString(e)
+    else
+      continue
+    end
+    outExps = listAppend(arr, outExps)
+    i += 1
+  end
+  outDims = i <| outDims
+  return(outExps, outDims)
+end
+
+
+#=
+protected function evalCatGetFlatArray<Exp>
+  input Exp e;
+  input Integer dim;
+  input GetArrayContents getArrayContents;
+  input ToString toString;
+  output list<Exp> outExps={};
+  output list<Integer> outDims={};
+  partial function GetArrayContents
+    input Exp e;
+    output list<Exp> es;
+  end GetArrayContents;
+  partial function ToString
+    input Exp e;
+    output String s;
+  end ToString;
+protected
+  list<Exp> arr;
+  list<Integer> dims;
+  Integer i;
+algorithm
+  if dim == 1 then
+    outExps := getArrayContents(e);
+    outDims := {listLength(outExps)};
+    return;
+  end if;
+  i := 0;
+  for exp in listReverse(getArrayContents(e)) loop
+    (arr, dims) := evalCatGetFlatArray(exp, dim-1, getArrayContents=getArrayContents, toString=toString);
+    if listEmpty(outDims) then
+      outDims := dims;
+    elseif not valueEq(dims, outDims) then
+      Error.assertion(false, getInstanceName() + ": Got unbalanced array from " + toString(e), sourceInfo());
+    end if;
+    outExps := listAppend(arr, outExps);
+    i := i+1;
+  end for;
+  outDims := i :: outDims;
+end evalCatGetFlatArray;
+=#

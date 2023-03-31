@@ -682,7 +682,7 @@ function typeMinMaxCall(name::String, call::Call, origin::ORIGIN_Type, info::Sou
   local ty2::M_Type
   local var1::VariabilityType
   local var2::VariabilityType
-  local mk::TypeCheck.MatchKind
+  local mk::Int #TypeCheck.MatchKind
 
   @match UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
   assertNoNamedParams(name, named_args, info)
@@ -714,8 +714,8 @@ function typeMinMaxCall(name::String, call::Call, origin::ORIGIN_Type, info::Sou
         if ! isBasic(ty2)
           Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list("2", name, "", toString(arg2), Type.toString(ty2), "Any"), info)
         end
-        @assign (arg1, arg2, ty, mk) = matchExpressions(arg1, ty1, arg2, ty2)
-        if ! TypeCheck.isValidArgumentMatch(mk)
+        (arg1, arg2, ty, mk) = matchExpressions(arg1, ty1, arg2, ty2)
+        if ! isValidArgumentMatch(mk)
           Error.addSourceMessage(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), name + "(Any[:, ...]) => Any\\n" + name + "(Any, Any) => Any"), info)
         end
         (list(arg1, arg2), ty, variabilityMax(var1, var2))
@@ -727,8 +727,8 @@ function typeMinMaxCall(name::String, call::Call, origin::ORIGIN_Type, info::Sou
       end
     end
   end
-  @assign fn = listHead(typeRefCache(fn_ref))
-  @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(fn, args, var, ty))
+  fn = listHead(typeRefCache(fn_ref))
+  callExp = CALL_EXPRESSION(makeTypedCall(fn, args, var, ty))
   (callExp, ty, var)
 end
 

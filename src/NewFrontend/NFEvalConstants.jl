@@ -1,4 +1,3 @@
-
 function evaluate(flatModel::FlatModel)::FlatModel
   local const_var::VariabilityType = Variability.STRUCTURAL_PARAMETER
   @assign flatModel.variables =
@@ -266,21 +265,20 @@ function evaluateStatements(
 end
 
 function evaluateStatement(stmt::Statement, constVariability::VariabilityType)::Statement
-
-  @assign stmt = begin
+  stmt = begin
     local e1::Expression
     local e2::Expression
     local e3::Expression
     local ty::M_Type
     @match stmt begin
       ALG_ASSIGNMENT(__) => begin
-        @assign ty = mapDims(stmt.ty, evaluateDimension)
-        @assign e1 = evaluateExp(stmt.lhs, constVariability)
-        @assign e2 = evaluateExp(stmt.rhs, constVariability)
+        ty = mapDims(stmt.ty, evaluateDimension)
+        e1 = evaluateExp(stmt.lhs, constVariability)
+        e2 = evaluateExp(stmt.rhs, constVariability)
         ALG_ASSIGNMENT(e1, e2, ty, stmt.source)
       end
 
-      P_Statement.Statement.FOR(__) => begin
+      ALG_FOR(__) => begin
         @assign stmt.range = Util.applyOption(
           stmt.range,
           (constVariability) -> evaluateExp(constVariability = constVariability),
@@ -289,41 +287,40 @@ function evaluateStatement(stmt::Statement, constVariability::VariabilityType)::
         stmt
       end
 
-      P_Statement.Statement.IF(__) => begin
+      ALG_IF(__) => begin
         @assign stmt.branches =
           list(evaluateStmtBranch(b, constVariability) for b in stmt.branches)
         stmt
       end
 
-      P_Statement.Statement.WHEN(__) => begin
+      ALG_WHEN(__) => begin
         @assign stmt.branches =
           list(evaluateStmtBranch(b, constVariability) for b in stmt.branches)
         stmt
       end
 
-      P_Statement.Statement.ASSERT(__) => begin
+      ALG_ASSERT(__) => begin
         @assign e1 = evaluateExp(stmt.condition, constVariability)
         @assign e2 = evaluateExp(stmt.message, constVariability)
         @assign e3 = evaluateExp(stmt.level, constVariability)
-        P_Statement.Statement.ASSERT(e1, e2, e3, stmt.source)
+        ALG_ASSERT(e1, e2, e3, stmt.source)
       end
 
-      P_Statement.Statement.TERMINATE(__) => begin
+      ALG_TERMINATE(__) => begin
         @assign stmt.message = evaluateExp(stmt.message, constVariability)
         stmt
       end
 
-      P_Statement.Statement.NORETCALL(__) => begin
+      ALG_NORETCALL(__) => begin
         @assign stmt.exp = evaluateExp(stmt.exp, constVariability)
         stmt
       end
 
-      P_Statement.Statement.WHILE(__) => begin
+      ALG_WHILE(__) => begin
         @assign stmt.condition = evaluateExp(stmt.condition, constVariability)
         @assign stmt.body = evaluateStatements(stmt.body, constVariability)
         stmt
       end
-
       _ => begin
         stmt
       end
@@ -340,7 +337,7 @@ function evaluateStmtBranch(
   local cond::Expression
   local body::List{Statement}
   @assign (cond, body) = branch
-  @assign cond = evaluateExp(cond, constVariability = Variability.STRUCTURAL_PARAMETER)
+  @assign cond = evaluateExp(cond, Variability.STRUCTURAL_PARAMETER)
   @assign body = evaluateStatements(body, constVariability)
   @assign outBranch = (cond, body)
   return outBranch
@@ -376,15 +373,13 @@ function evaluateFuncExpTraverser(
 )::Tuple{Expression, Bool}
   local outChanged::Bool
   local outExp::Expression
-
   local e::Expression
-
-  @assign (e, outChanged) = mapFoldShallow(
+  (e, outChanged) = mapFoldShallow(
     exp,
-    (nodeArg, boolArg) -> evaluateFuncExpTraverser(nodeArg, fnNode, boolArg #=TODO: is this right -john=#),
+    (x, boolArg) -> evaluateFuncExpTraverser(x, fnNode, boolArg),
     false,
   )
-  @assign outExp = begin
+  outExp = begin
     @match e begin
       CREF_EXPRESSION(__) => begin
         if !isLocalFunctionVariable(e.cref, fnNode)
@@ -404,8 +399,7 @@ function evaluateFuncExpTraverser(
         else
           @assign outExp = e
         end
-        #=  If the cref's subscripts changed, recalculate its type.
-        =#
+        #=  If the cref's subscripts changed, recalculate its type. =#
         outExp
       end
 
@@ -418,7 +412,7 @@ function evaluateFuncExpTraverser(
       end
     end
   end
-  @assign outChanged = changed || outChanged
+  outChanged = changed || outChanged
   return (outExp, outChanged)
 end
 

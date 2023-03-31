@@ -1070,14 +1070,13 @@ See Modelica_StateGraph2:
 """
 function evalConnectionsOperators(inRoots::List{<:ComponentRef}, graph::NFOCConnectionGraph, inEquations::List{<:Equation}) ::List{Equation}
   local outEquations::List{Equation}
-
-  @assign outEquations = begin
+  outEquations = begin
     local rooted::NFHashTable.HashTable
     local table::NFHashTable3.HashTable
     local branches::Edges
     local connections::FlatEdges
     local rootEqs = Equation[]
-    @matchcontinue (inRoots, graph, inEquations) begin
+    outEquations = @matchcontinue (inRoots, graph, inEquations) begin
       (_, _,  nil())  => begin
         nil
       end

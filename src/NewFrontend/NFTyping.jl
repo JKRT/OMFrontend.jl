@@ -717,15 +717,15 @@ function typeDimension2(
               )
               #=  If the deduced dimension is unknown, evaluate the binding and try again.
               =#
-              if P_Dimension.Dimension.isUnknown(dim) && !P_TypingError.isError(ty_err)
+              if isUnknown(dim) && !isError(ty_err)
                 @assign exp = if isSome(oexp)
                   Util.getOption(oexp)
                 else
                   b.bindingExp
                 end
-                @assign exp = Ceval.evalExp(
+                exp = evalExp(
                   exp,
-                  DIMENSION(component, index, exp, info),
+                  EVALTARGET_DIMENSION(component, index, exp, info),
                 )
                 @assign (dim, ty_err) = nthDimensionBoundsChecked(
                   typeOf(exp),
@@ -736,13 +736,12 @@ function typeDimension2(
             end
 
             TYPED_BINDING(__) => begin
-              #=  A typed binding, get the dimension from the binding's type.
-              =#
-              @assign dim_index = index + parent_dims
-              @assign (dim, ty_err) = nthDimensionBoundsChecked(b.bindingType, dim_index)
+              #=  A typed binding, get the dimension from the binding's type. =#
+              dim_index = index + parent_dims
+              (dim, ty_err) = nthDimensionBoundsChecked(b.bindingType, dim_index)
               #=  If the deduced dimension is unknown, evaluate the binding and try again.
               =#
-              if P_Dimension.Dimension.isUnknown(dim) && !P_TypingError.isError(ty_err)
+              if isUnknown(dim) && !(isError(ty_err))
                 @assign exp = Ceval.evalExp(
                   b.bindingExp,
                   DIMENSION(component, index, b.bindingExp, info),
@@ -756,9 +755,9 @@ function typeDimension2(
             end
           end
         end
-        @assign () = begin
+        () = begin
           @match ty_err begin
-            P_TypingError.OUT_OF_BOUNDS(__) => begin
+            OUT_OF_BOUNDS(__) => begin
               Error.addSourceMessage(
                 Error.DIMENSION_DEDUCTION_FROM_BINDING_FAILURE,
                 list(String(index), name(component), toString(b)),
@@ -859,7 +858,7 @@ function typeDimensionUntyped(@nospecialize(dimensions::Vector{Dimension}),
   local var
   local flag = setFlag(origin, ORIGIN_DIMENSION)
   local dim = dimension.dimension
-  
+
   (exp, ty, var) = @match dim begin
     CREF_EXPRESSION(__) => begin typeCrefExp(
       dim.cref,
@@ -1657,11 +1656,11 @@ function typeBindingExp(
   return (outExp, ty, variability)
 end
 
-""" 
+"""
    Returns the requested dimension of the given expression, while doing as
    little typing as possible. This function returns TypingError.OUT_OF_BOUNDS if
    the given index doesn't refer to a valid dimension, in which case the
-   returned dimension is undefined. 
+   returned dimension is undefined.
 """
 function typeExpDim(
   @nospecialize(exp::Expression),
@@ -1790,7 +1789,7 @@ function typeCrefDim2(@nospecialize(cref::ComponentRef),
                       @nospecialize(origin::ORIGIN_Type),
                       @nospecialize(info::SourceInfo))::Tuple{Dimension, TypingError}
   local error::TypingError = NO_ERROR()
-  local dim::Dimension  
+  local dim::Dimension
   local crl::List{ComponentRef}
   local subs::List{Subscript}
   local index::Int
@@ -1891,16 +1890,14 @@ function nthDimensionBoundsChecked(
 )::Tuple{Dimension, TypingError} #= The number of dimensions to skip due to subscripts. =#
   local error::TypingError
   local dim::Dimension
-
-  local dim_size::Int = Type.dimensionCount(ty)
+  local dim_size::Int = dimensionCount(ty)
   local index::Int = dimIndex + offset
-
   if index < 1 || index > dim_size
-    @assign dim = DIMENSION_UNKNOWNy()
-    @assign error = P_TypingError.OUT_OF_BOUNDS(dim_size - offset)
+    dim = DIMENSION_UNKNOWNy()
+    error = OUT_OF_BOUNDS(dim_size - offset)
   else
-    @assign dim = Type.nthDimension(ty, index)
-    @assign error = P_TypingError.NO_ERROR()
+    dim = nthDimension(ty, index)
+    error = NO_ERROR()
   end
   return (dim, error)
 end
@@ -2247,11 +2244,11 @@ function typeMatrix(
 
   if listLength(elements) > 1
     for el in elements
-      @assign (exp, ty, var) = typeMatrixComma(el, next_origin, info)
-      @assign variability = variabilityMax(var, variability)
-      @assign expl = _cons(exp, expl)
-      @assign tys = _cons(ty, tys)
-      @assign n = max(n, Type.dimensionCount(ty))
+      (exp, ty, var) = typeMatrixComma(el, next_origin, info)
+      variability = variabilityMax(var, variability)
+      expl = _cons(exp, expl)
+      tys = _cons(ty, tys)
+      n = max(n, dimensionCount(ty))
     end
     for e in expl
       @match _cons(ty, tys) = tys
@@ -2510,7 +2507,7 @@ end
    otherwise a typed size expression is returned.
 """
 function typeSize(
-  sizeExp::Expression,
+  sizeExpArg::Expression,
   origin::ORIGIN_Type,
   info::SourceInfo,
   evaluate::Bool = true,
@@ -2530,8 +2527,8 @@ function typeSize(
   local oexp::Option{Expression}
   local next_origin::ORIGIN_Type = setFlag(origin, ORIGIN_SUBEXPRESSION)
 
-  @assign (sizeExp, sizeType, variability) = begin
-    @match sizeExp begin
+  @assign (sizeExpArg, sizeType, variability) = begin
+    @match sizeExpArg begin
       SIZE_EXPRESSION(exp = exp, dimIndex = SOME(index)) => begin
         @assign (index, index_ty, variability) = typeExp(index, next_origin, info)
         #=  The second argument must be an Integer.
@@ -2576,7 +2573,7 @@ function typeSize(
             @assign variability = Variability.DISCRETE
           end
         else
-          @assign (exp, exp_ty) = typeExp(sizeExp.exp, next_origin, info)
+          @assign (exp, exp_ty) = typeExp(sizeExpArg.exp, next_origin, info)
           if !isArray(exp_ty)
             Error.addSourceMessage(
               Error.INVALID_ARGUMENT_TYPE_FIRST_ARRAY,
@@ -2591,13 +2588,13 @@ function typeSize(
       end
 
       SIZE_EXPRESSION(__) => begin
-        @assign (exp, exp_ty, _) = typeExp(sizeExp.exp, next_origin, info)
+        @assign (exp, exp_ty, _) = typeExp(sizeExpArg.exp, next_origin, info)
         @assign sizeType = Type.sizeType(exp_ty)
         (SIZE_EXPRESSION(exp, NONE()), sizeType, Variability.PARAMETER)
       end
     end
   end
-  return (sizeExp, sizeType, variability)
+  return (sizeExpArg, sizeType, variability)
 end
 
 function checkSizeTypingError(
@@ -2780,7 +2777,7 @@ function evaluateCondition(
 
   local cond_exp::Expression
 
-  @assign cond_exp = Ceval.evalExp(condExp, Ceval.P_EvalTarget.GENERIC(info))
+  cond_exp = evalExp(condExp, EVALTARGET_GENERIC(info))
   if arrayAllEqual(cond_exp)
     @assign cond_exp = arrayFirstScalar(cond_exp)
   end
@@ -2986,10 +2983,9 @@ function typeExternalArg(arg::Expression, info::SourceInfo, node::InstNode)::Exp
   @assign outArg = begin
     @match arg begin
       SIZE_EXPRESSION(dimIndex = SOME(_)) => begin
-        @assign outArg = typeSize(arg, ORIGIN_FUNCTION, info, evaluate = false)
+        (outArg, _, _ ) = typeSize(arg, ORIGIN_FUNCTION, info, #=evaluate = =# false)
         @match SIZE_EXPRESSION(dimIndex = SOME(index)) = outArg
-        #=  Size expression must have a constant dimension index.
-        =#
+        #=  Size expression must have a constant dimension index. =#
         if !isInteger(index)
           Error.addSourceMessage(
             Error.EXTERNAL_ARG_NONCONSTANT_SIZE_INDEX,
@@ -3454,19 +3450,17 @@ function checkLhsInWhen(@nospecialize(exp::Expression))::Bool
 end
 
 function typeAlgorithm(alg::Algorithm, origin::ORIGIN_Type)::Algorithm
-
   @assign alg.statements = list(typeStatement(s, origin) for s in alg.statements)
   return alg
 end
 
 function typeStatements(alg::List{<:Statement}, origin::ORIGIN_Type)::List{Statement}
-
-  @assign alg = list(typeStatement(stmt, origin) for stmt in alg)
+  alg = list(typeStatement(stmt, origin) for stmt in alg)
   return alg
 end
 
 function typeStatement(st::Statement, origin::ORIGIN_Type)::Statement
-  @assign st = begin
+  st = begin
     local cond::Expression
     local e1::Expression
     local e2::Expression
@@ -3522,53 +3516,53 @@ function typeStatement(st::Statement, origin::ORIGIN_Type)::Statement
           )
           fail()
         end
-        @assign next_origin = setFlag(origin, ORIGIN_FOR)
-        @assign body = typeStatements(st.body, next_origin)
+        next_origin = setFlag(origin, ORIGIN_FOR)
+        body = typeStatements(st.body, next_origin)
         ALG_FOR(st.iterator, SOME(e1), body, st.source)
       end
 
-      P_Statement.Statement.IF(__) => begin
+      ALG_IF(__) => begin
         @assign next_origin = setFlag(origin, ORIGIN_IF)
         @assign cond_origin = setFlag(next_origin, ORIGIN_CONDITION)
         @assign tybrs = list(
           begin
             @match br begin
               (cond, body) => begin
-                @assign e1 = typeCondition(
+                (e1,_,_) = typeCondition(
                   cond,
                   cond_origin,
                   st.source,
                   Error.IF_CONDITION_TYPE_ERROR,
                 )
-                @assign sts1 = list(typeStatement(bst, next_origin) for bst in body)
+                sts1 = list(typeStatement(bst, next_origin) for bst in body)
                 (e1, sts1)
               end
             end
           end for br in st.branches
         )
-        P_Statement.Statement.IF(tybrs, st.source)
+        ALG_IF(tybrs, st.source)
       end
 
-      P_Statement.Statement.WHEN(__) => begin
-        @assign next_origin = setFlag(origin, ORIGIN_WHEN)
-        @assign tybrs = list(
+      ALG_WHEN(__) => begin
+        next_origin = setFlag(origin, ORIGIN_WHEN)
+        tybrs = list(
           begin
             @match br begin
               (cond, body) => begin
-                @assign e1 = typeCondition(
+                (e1,_,_) = typeCondition(
                   cond,
                   origin,
                   st.source,
                   Error.WHEN_CONDITION_TYPE_ERROR,
                   allowVector = true,
                 )
-                @assign sts1 = list(typeStatement(bst, next_origin) for bst in body)
+                sts1 = list(typeStatement(bst, next_origin) for bst in body)
                 (e1, sts1)
               end
             end
           end for br in st.branches
         )
-        P_Statement.Statement.WHEN(tybrs, st.source)
+        ALG_WHEN(tybrs, st.source)
       end
 
       P_Statement.Statement.ASSERT(__) => begin
@@ -3818,15 +3812,13 @@ end
 
 function isNonConstantIfCondition(@nospecialize(exp::Expression))::Bool
   local isConstant::Bool
-
-  @assign isConstant = begin
+  isConstant = begin
     local fn::M_Function
     @match exp begin
       CREF_EXPRESSION(__) => begin
         isIterator(exp.cref)
       end
-
-      CALL_EXPRESSION(call = P_Call.TYPED_CALL(fn = fn)) => begin
+      CALL_EXPRESSION(call = TYPED_CALL(fn = fn)) => begin
         begin
           @match AbsynUtil.pathFirstIdent(fn.path) begin
             "Connections" => begin
@@ -3843,7 +3835,6 @@ function isNonConstantIfCondition(@nospecialize(exp::Expression))::Bool
           end
         end
       end
-
       _ => begin
         false
       end

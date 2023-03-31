@@ -555,7 +555,7 @@ function expandExternalObject(clsTree::ClassTree, node::InstNode) ::InstNode
   =#
   #=  possible to call the constructor or destructor explicitly.
   =#
-  @assign c = PARTIAL_BUILTIN(TYPE_COMPLEX(node, eo_ty), NFClassTree.EMPTY_FLAT, MODIFIER_NOMOD(), NFClass.DEFAULT_PREFIXES, RESTRICTION_EXTERNAL_OBJECT())
+  @assign c = PARTIAL_BUILTIN(TYPE_COMPLEX(node, eo_ty), EMPTY_FLAT_CLASS_TREE, MODIFIER_NOMOD(), DEFAULT_PREFIXES, RESTRICTION_EXTERNAL_OBJECT())
   @assign node = updateClass(c, node)
   node
 end
@@ -568,9 +568,9 @@ function checkBuiltinTypeExtends(builtinExtends::InstNode, tree::ClassTree, node
     @error "Extends invalid elements!"
     fail()
   end
-  #=  ***TODO***: Find the invalid element and use its info to make the error
-  =#
-  #=              message more accurate.
+  #=  ***TODO***:
+  Find the invalid element and use its info to make the error
+  message more accurate.
   =#
 end
 
@@ -585,7 +585,7 @@ end
 
                  @assign ty = begin
                    @match tree begin
-                     PARTIAL_TREE(__)  => begin
+                     CLASS_TREE_PARTIAL_TREE(__)  => begin
                        #=  An external object may not contain components.
                        =#
                        for comp in tree.components
@@ -901,7 +901,7 @@ function updateClassConnectorType(res::Restriction, attrs::Attributes) ::Attribu
 end
 
 """ #= Instantiates the constructor and destructor for an ExternalObject class. =#"""
-function instExternalObjectStructors(ty::M_Type, parent::InstNode)
+function instExternalObjectStructors(ty::M_Type, parentNode::InstNode)
   local constructor::InstNode
   local destructor::InstNode
   local par::InstNode
@@ -914,7 +914,7 @@ function instExternalObjectStructors(ty::M_Type, parent::InstNode)
   =#
   #=  inside the external object class before instantiating the structors.
   =#
-  @assign par = parent(parent(parent))
+  @assign par = parent(parent(parentNode))
   if ! (isClass(par) && isExternalObject(getClass(par)))
     @match TYPE_COMPLEX(complexTy = COMPLEX_EXTERNAL_OBJECT(constructor, destructor)) = ty
     instFunctionNode(constructor)
@@ -3089,12 +3089,12 @@ function isExpressionNotFixed(exp::Expression; requireFinal::Bool = false, maxDe
         else
           @assign isNotFixed = true
         end
-        isNotFixed || containsShallow(exp, (requireFinal, maxDepth) -> isExpressionNotFixed(requireFinal = requireFinal, maxDepth = maxDepth))
+        isNotFixed || containsShallow(exp, (x) -> isExpressionNotFixed(x; requireFinal = requireFinal, maxDepth = maxDepth))
       end
 
       SIZE_EXPRESSION(__)  => begin
         if isSome(exp.dimIndex)
-          @assign isNotFixed = isExpressionNotFixed(Util.getOption(exp.dimIndex), requireFinal, maxDepth)
+          @assign isNotFixed = isExpressionNotFixed(Util.getOption(exp.dimIndex), requireFinal = requireFinal, maxDepth = maxDepth)
         else
           @assign isNotFixed = false
         end
@@ -3105,7 +3105,7 @@ function isExpressionNotFixed(exp::Expression; requireFinal::Bool = false, maxDe
         if isImpure(exp.call) || isExternal(exp.call)
           @assign isNotFixed = true
         else
-          @assign isNotFixed = containsShallow(exp, (requireFinal, maxDepth) -> isExpressionNotFixed(requireFinal = requireFinal, maxDepth = maxDepth))
+          @assign isNotFixed = containsShallow(exp, (x) -> isExpressionNotFixed(x; requireFinal = requireFinal, maxDepth = maxDepth))
         end
         isNotFixed
       end

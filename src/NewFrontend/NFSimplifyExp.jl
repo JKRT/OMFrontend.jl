@@ -1,4 +1,3 @@
-
 function simplify(exp::Expression)::Expression
   @assign exp = begin
     @match exp begin
@@ -184,8 +183,8 @@ function simplifyCall(callExp::Expression)::Expression
             end
           else
             if Flags.isSet(Flags.NF_SCALARIZE)
-              @assign callExp =
-                simplifynameConsiderBuiltin(call.fn, args, call)
+              callExp =
+                simplify(nameConsiderBuiltin(call.fn), args, call)
             end
           end
         elseif Flags.isSet(Flags.NF_EVAL_CONST_ARG_FUNCS) &&
@@ -792,7 +791,7 @@ function simplifyRelation(relationExp::Expression)::Expression
   @assign se1 = simplify(e1)
   @assign se2 = simplify(e2)
   if isLiteral(se1) && isLiteral(se2)
-    @assign relationExp = Ceval.evalRelationOp(se1, op, se2)
+    @assign relationExp = evalRelationOp(se1, op, se2)
     @assign relationExp = stripBindingInfo(relationExp)
   elseif !(referenceEq(e1, se1) && referenceEq(e2, se2))
     @assign relationExp = RELATION_EXPRESSION(se1, op, se2)

@@ -94,7 +94,7 @@ end
 
 function inlineCall(call::Call)::Expression
   local exp::Expression
-  @assign exp = begin
+  exp = begin
     local fn::M_Function3
     local arg::Expression
     local args::List{Expression}
@@ -108,6 +108,11 @@ function inlineCall(call::Call)::Expression
         fn = fn && M_FUNCTION(inputs = inputs, outputs = outputs, locals = locals),
         arguments = args,
       ) => begin
+        #= External functions can't be inlined =#
+        if isExternal(call)
+          exp = CALL_EXPRESSION(call)
+          return exp
+        end
         body = getBody(fn)
         #=  This function can so far only handle functions with at most one =#
         #=  statement and output and no local variables. =#
@@ -122,6 +127,15 @@ function inlineCall(call::Call)::Expression
           AbsynUtil.pathString(name(fn)),
           sourceInfo(),
         )
+        #=
+        If we have no body there is nothing to inline.
+        This might occur for instance for complex operators that are registered as calls in the frontend
+        -johti17 2023-03-26
+        =#
+        if body === nil
+          exp = CALL_EXPRESSION(call)
+          return exp
+        end
         stmt = listHead(body)
         #=
         TODO: Instead of repeating this for each input we should probably

@@ -251,25 +251,25 @@ function simplifyStatement(stmt::Statement, statements::List{<:Statement})::List
         =#
         #= elseif not Dimension.isZero(dim) then
         =#
-        if !P_Dimension.Dimension.isZero(dim)
-          @assign stmt.range = SOME(simplify(e))
-          @assign stmt.body = simplifyStatements(stmt.body)
-          @assign statements = _cons(stmt, statements)
+        if !isZero(dim)
+          stmt.range = SOME(simplify(e))
+          stmt.body = simplifyStatements(stmt.body)
+          statements = _cons(stmt, statements)
         end
         statements
       end
 
-      P_Statement.Statement.IF(__) => begin
+      ALG_IF(__) => begin
         simplifyIfStmtBranches(
           stmt.branches,
           stmt.source,
-          P_Statement.Statement.makeIf,
+          makeIf,
           simplifyStatements,
           statements,
         )
       end
 
-      P_Statement.Statement.WHEN(__) => begin
+      ALG_WHEN(__) => begin
         @assign stmt.branches = list(
           (simplify(Util.tuple21(b)), simplifyStatements(Util.tuple22(b))) for b in stmt.branches
         )

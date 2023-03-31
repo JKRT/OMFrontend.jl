@@ -493,14 +493,14 @@ function mapExp(stmt::Statement, func::MapFunc)::Statement
       end
 
       ALG_IF(__) => begin
-        @assign stmt.branches = List(
+        @assign stmt.branches = list(
           (func(Util.tuple21(b)), mapExpList(Util.tuple22(b), func)) for b in stmt.branches
         )
         stmt
       end
 
-      WHEN(__) => begin
-        @assign stmt.branches = List(
+      ALG_WHEN(__) => begin
+        @assign stmt.branches = list(
           (func(Util.tuple21(b)), mapExpList(Util.tuple22(b), func)) for b in stmt.branches
         )
         stmt
@@ -550,8 +550,7 @@ function mapExp(stmt::Statement, func::MapFunc)::Statement
 end
 
 function mapExpList(stmtl::List{<:Statement}, func::MapFunc)::List{Statement}
-
-  @assign stmtl = list(mapExp(s, func) for s in stmtl)
+  stmtl = list(mapExp(s, func) for s in stmtl)
   return stmtl
 end
 
@@ -659,7 +658,7 @@ function makeIf(
   src::DAE.ElementSource,
 )::Statement
   local stmt::Statement
-  @assign stmt = IF(branches, src)
+  stmt = ALG_IF(branches, src)
   return stmt
 end
 
@@ -688,14 +687,14 @@ end
 function updateImplicitVariabilityStmt(stmt::Statement, inWhen::Bool)
   @assign () = begin
     @match stmt begin
-     ASSIGNMENT(__)  => begin
+     ALG_ASSIGNMENT(__)  => begin
         if inWhen
           markImplicitWhenExp(stmt.lhs)
         end
         ()
       end
 
-     FOR(__)  => begin
+     ALG_FOR(__)  => begin
         #=  'when' is not allowed in 'for', so we only need to keep going if
         =#
         #=  we're already in a 'when'.
@@ -705,7 +704,7 @@ function updateImplicitVariabilityStmt(stmt::Statement, inWhen::Bool)
         end
         ()
       end
-     IF(__)  => begin
+     ALG_IF(__)  => begin
         #=  'when' is not allowed in 'if', so we only need to keep going if
         =#
         #=  we're already in a 'when.
@@ -717,13 +716,13 @@ function updateImplicitVariabilityStmt(stmt::Statement, inWhen::Bool)
         end
         ()
       end
-      WHEN(__)  => begin
+      ALG_WHEN(__)  => begin
         for branch in stmt.branches
           updateImplicitVariabilityStmts(Util.tuple22(branch), true)
         end
         ()
       end
-     WHILE(__)  => begin
+     ALG_WHILE(__)  => begin
         if inWhen
           updateImplicitVariabilityStmts(stmt.body, true)
         end

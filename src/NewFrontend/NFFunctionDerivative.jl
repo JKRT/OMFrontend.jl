@@ -6,7 +6,7 @@ Condition = (() -> begin #= Enumeration =#
   NO_DERIVATIVE = 2
   () -> (ZERO_DERIVATIVE; NO_DERIVATIVE)
              end)()
-ConditionType = Int
+const ConditionType = Int
 
 
 @Uniontype NFFunctionDerivative begin
@@ -67,17 +67,17 @@ function toDAE(fnDer::FunctionDerivative)::DAE.FunctionDefinition
 end
 
 function typeDerivative(fnDer::FunctionDerivative)
-  local mk::MatchKind
+  local mk::MatchKindType
   local order::Expression
   local order_ty::M_Type
   local var::VariabilityType
-  local info::SourceInfo
+  local infoVar::SourceInfo
 
-  P_Function.typeNodeCache(fnDer.derivativeFn)
-  @assign info = info(fnDer.derivedFn)
-  @assign (order, order_ty, var) = typeExp(fnDer.order, ORIGIN_FUNCTION, info)
-  @assign (order, _, mk) = TypeCheck.matchTypes(order_ty, TYPE_INTEGER(), order)
-  if TypeCheck.isIncompatibleMatch(mk)
+  typeNodeCache(fnDer.derivativeFn)
+  infoVar = sourceInfo() #info(fnDer.derivedFn)
+  (order, order_ty, var) = typeExp(fnDer.order, ORIGIN_FUNCTION, infoVar)
+  (order, _, mk) = matchTypes(order_ty, TYPE_INTEGER(), order)
+  if isIncompatibleMatch(mk)
     Error.addSourceMessage(
       Error.VARIABLE_BINDING_TYPE_MISMATCH,
       list(
@@ -86,7 +86,7 @@ function typeDerivative(fnDer::FunctionDerivative)
         "Int",
         Type.toString(order_ty),
       ),
-      info,
+      infoVar,
     )
     fail()
   end
@@ -99,11 +99,12 @@ function typeDerivative(fnDer::FunctionDerivative)
         toString(order),
         P_Prefixes.variabilityString(var),
       ),
-      info,
+      infoVar,
     )
     fail()
   end
-  return @assign order = Ceval.evalExp(order, P_EvalTarget.GENERIC(info))
+  order = evalExp(order, EVALTARGET_GENERIC(infoVar))
+  return order
 end
 
 function instDerivatives(fnNode::InstNode, fn::M_Function)::List{FunctionDerivative}

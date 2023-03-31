@@ -175,9 +175,9 @@ end
                          if isKnown(exp.expType)
                            @assign dimCount = dimensionCount(exp.expType) - dimensionCount(exp.bindingType)
                          else
-                           @assign dimCount = 0
+                           dimCount = 0
                            for parent in listRest(exp.parents)
-                             @assign dimCount = dimCount + Type.dimensionCount(getType(parent))
+                             dimCount = dimCount + dimensionCount(getType(parent))
                            end
                          end
                          dimCount
@@ -895,16 +895,14 @@ function arrayElements(Array::Expression) ::List{Expression}
 end
 
 function negate(exp::Expression) ::Expression
-
-
-  @assign exp = begin
+  exp = begin
     @match exp begin
       INTEGER_EXPRESSION(__)  => begin
         INTEGER_EXPRESSION(-exp.value)
       end
 
       REAL_EXPRESSION(__)  => begin
-        REAL(-exp.value)
+        REAL_EXPRESSION(-exp.value)
       end
 
       CAST_EXPRESSION(__)  => begin
@@ -1503,8 +1501,7 @@ end
 
 function callContainsShallow(call::Call, func::ContainsPred) ::Bool
   local res::Bool
-
-  @assign res = begin
+  res = begin
     local e::Expression
     @match call begin
       UNTYPED_CALL(__)  => begin
@@ -1565,14 +1562,13 @@ end
 
 function listContainsShallow(expl::List{<:Expression}, func::ContainsPred) ::Bool
   local res::Bool
-
   for e in expl
     if func(e)
-      @assign res = true
+      res = true
       return res
     end
   end
-  @assign res = false
+  res = false
   res
 end
 
@@ -2289,7 +2285,7 @@ function mapFoldShallow(exp::Expression, func::MapFunc, arg::ArgT)  where {ArgT}
       end
 
       BINDING_EXP(__)  => begin
-        @assign (e1, arg) = func(exp.exp, arg)
+        (e1, arg) = func(exp.exp, arg)
         if referenceEq(exp.exp, e1)
           exp
         else
@@ -4933,20 +4929,20 @@ function arrayFromList_impl(inExps::List{<:Expression}, elemTy::M_Type, inDims::
 
   Error.assertion(! listEmpty(inDims), "Empty dimension list given in arrayFromList.", sourceInfo())
   @match _cons(ldim, restdims) = inDims
-  @assign dimsize = P_Dimension.Dimension.size(ldim)
-  @assign ty = liftArrayLeft(elemTy, ldim)
+  dimsize = size(ldim)
+  ty = liftArrayLeft(elemTy, ldim)
   if ListUtil.hasOneElement(inDims)
     Error.assertion(dimsize == listLength(inExps), "Length mismatch in arrayFromList.", sourceInfo())
-    @assign outExp = makeArray(ty, inExps)
+    outExp = makeArray(ty, inExps)
     return outExp
   end
-  @assign partexps = ListUtil.partition(inExps, dimsize)
-  @assign newlst = nil
+  partexps = ListUtil.partition(inExps, dimsize)
+  newlst = nil
   for arrexp in partexps
-    @assign newlst = _cons(makeArray(ty, arrexp), newlst)
+    newlst = _cons(makeArray(ty, arrexp), newlst)
   end
-  @assign newlst = listReverse(newlst)
-  @assign outExp = arrayFromList_impl(newlst, ty, restdims)
+  newlst = listReverse(newlst)
+  outExp = arrayFromList_impl(newlst, ty, restdims)
   outExp
 end
 
@@ -5441,7 +5437,7 @@ end
 function makeRealArray(values::List{<:AbstractFloat}) ::Expression
   local exp::Expression
 
-  @assign exp = makeArray(TYPE_ARRAY(TYPE_REAL(), list(P_Dimension.Dimension.fromInteger(listLength(values)))), list(REAL_EXPRESSION(v) for v in values), literal = true)
+  @assign exp = makeArray(TYPE_ARRAY(TYPE_REAL(), list(P_Dimension.Dimension.fromInteger(listLength(values)))), list(REAL_EXPRESSION(v) for v in values); literal = true)
   exp
 end
 
@@ -5449,7 +5445,8 @@ function makeIntegerArray(values::List{<:Int}) ::Expression
   local exp::Expression
 
     @assign exp = makeArray(TYPE_ARRAY(TYPE_INTEGER(),
-                                       list(fromInteger(listLength(values)))), list(INTEGER_EXPRESSION(v) for v in values), true)
+                                       list(fromInteger(listLength(values)))), list(INTEGER_EXPRESSION(v) for v in values)
+                            ; literal = true)
   exp
 end
 
@@ -5460,7 +5457,7 @@ function makeEmptyArray(ty::M_Type) ::Expression
   outExp
 end
 
-function makeArray(ty::NFType, expl::List{<:Expression}, literal::Bool = false)::Expression
+function makeArray(ty::NFType, expl::List{<:Expression}; literal::Bool = false)::Expression
   local outExp::Expression
   @assign outExp = ARRAY_EXPRESSION(ty, expl, literal)
   outExp

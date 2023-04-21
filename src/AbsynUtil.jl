@@ -8795,5 +8795,26 @@ function elementSpecIsComponents(es::ElementSpec)::Bool
   return isComponents
 end
 
+#= Custom IMPL John Apr 2023=#
+function printExpLst(expLst::List{Exp})
+  local buffer = IOBuffer()
+  local l = length(expLst)
+  for (i,exp) in enumerate(expLst)
+    write(buffer, printExp(exp))
+    if i != l
+      write(buffer, ",")
+    end
+  end
+  String(take!(buffer))
+end
+
+function printExp(str::STRING)
+  "\"$(str.value)\""
+end
+
+function printExp(arr::ARRAY)
+  "{" * printExpLst(arr.arrayExp) * "}"
+end
+
 @exportAll()
 end

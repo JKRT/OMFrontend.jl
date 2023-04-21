@@ -1,18 +1,3 @@
-module Flags
-
-Base.Experimental.@compiler_options(optimize=0, compile=min, infer=no)
-
-using MetaModelica
-using ExportAll
-#= Forward declarations for uniontypes until Julia adds support for mutual recursion =#
-
-@UniontypeDecl DebugFlag
-@UniontypeDecl ConfigFlag
-@UniontypeDecl FlagData
-@UniontypeDecl FlagVisibility
-@UniontypeDecl Flag
-@UniontypeDecl ValidOptions
-
 #= /*
 * This file is part of OpenModelica.
 *
@@ -43,6 +28,21 @@ using ExportAll
 * See the full OSMC Public License conditions for more details.
 *
 */ =#
+
+module Flags
+
+Base.Experimental.@compiler_options(optimize=0, compile=min, infer=no)
+
+using MetaModelica
+using ExportAll
+#= Forward declarations for uniontypes until Julia adds support for mutual recursion =#
+
+@UniontypeDecl DebugFlag
+@UniontypeDecl ConfigFlag
+@UniontypeDecl FlagData
+@UniontypeDecl FlagVisibility
+@UniontypeDecl Flag
+@UniontypeDecl ValidOptions
 
 import ..Gettext
 import ..Global
@@ -129,12 +129,10 @@ end
 #= Specifies valid options for a flag. =#
 @Uniontype ValidOptions begin
   @Record STRING_OPTION begin
-
     options::List{String}
   end
 
   @Record STRING_DESC_OPTION begin
-
     options::List{Tuple{String, Gettext.TranslatableContent}}
   end
 end
@@ -3429,10 +3427,11 @@ const FLAT_MODELICA =
     Gettext.gettext("Outputs experimental flat Modelica."),
   )::ConfigFlag
 
-""" #= Loads the flags with getGlobalRoot. Assumes flags have been loaded. =#"""
+"""
+  Loads the flags with getGlobalRoot. Assumes flags have been loaded.
+"""
 function getFlags(initialize::Bool = true)::Flag
-  local flags::Flag
-  flags = getGlobalRoot(Global.flagsIndex)
+  local flags::Flag = getGlobalRoot(Global.flagsIndex)
   return flags
 end
 
@@ -3443,9 +3442,9 @@ function isSet(inFlag::DebugFlag)::Bool
   local flags::Flag
   local index::Integer
   @match DEBUG_FLAG(index = index) = inFlag
-  @assign flags = getFlags()
+  flags = getFlags()
   @match FLAGS(debugFlags = debug_flags) = flags
-  @assign outValue = arrayGet(debug_flags, index)
+  outValue = arrayGet(debug_flags, index)
   return outValue
 end
 

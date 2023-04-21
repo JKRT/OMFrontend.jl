@@ -2789,14 +2789,12 @@ function evalBuiltinCat(
   target::EvalTarget,
 )::Expression
   local result::Expression
-
   local n::Int
   local nd::Int
   local sz::Int
   local ty::M_Type
   local es::List{Expression}
   local dims::List{Int}
-
   @match INTEGER_EXPRESSION(n) = argN
   ty = typeOf(listHead(args))
   nd = dimensionCount(ty)
@@ -4787,36 +4785,35 @@ function evalInitialEqMapping(ieq::List{Equation})
     var = Variable_fromCref(toCref(eq.lhs))
     push!(mapping, toString(var.name) => eq.rhs)
   end
-  # for kv in mapping
-  #   print(kv[1])
-  #   print("=>")
-  #   println(toString(kv[2]))
-  # end
   return mapping
 end
 
 """
   Custom reimplementation of evalCat
-@author johti17
+  @author johti17
 """
-function evalCat(dim::Int, exps::List, getArrayContents::Function, toString::Function)
-  local arr::List
-  local arrs::List = nil
+function evalCat(dim::Int, exps::List{Expression}, getArrayContents::Function, toString::Function)::Tuple{List{Expression}, List{Int}}
+  local arr::List{Expression}
+  local arrs::List{List{Expression}} = nil
   local dims::List{Int} = nil
   local lastDims::List{Int} = nil
   local firstDims::List{Int} = nil
   local reverseDims::List{Int} = nil
   local dimsLst::List{List{Int}} = nil;
   local j::Int, k::Int, l::Int, thisDim::Int, lastDim::Int
-  local expArr::Vector
+  local expArr::Vector = Expression[]
   #= Outputs =#
-  local outExps::List = nil
+  local outExps::List{Expression} = nil
   local outDims::List{Int} = nil
   @assert dim >= 1 "Invalid dimension for" * toString(exps)
-  @assert false == listEmpty(exps) "Empty dimension passed to evalCat"
+  @assert false == listEmpty(exps) "Internal error: Empty dimension passed to evalCat"
   if 1 == dim
     #outExps = listAppend(getArrayContents(e) for e in listReverse(exps))#TODO investigate this
-    outExps = arrayList(Base.collect(Iterators.flatten(list(getArrayContents(e) for e in listReverse(exps)))))
+    #outExps = arrayList(Base.collect(Iterators.flatten(getArrayContents(e) for e in listReverse(exps))))
+    for e in listReverse(exps)
+      arrConts = getArrayContents(e)
+      outExps = listHead(arrConts) <| outExps
+    end
     outDims = list(listLength(outExps));
     return (outExps, outDims)
   end
@@ -4825,7 +4822,6 @@ function evalCat(dim::Int, exps::List, getArrayContents::Function, toString::Fun
     arrs = arr <| arrs
     dimsLst = dims <| dimsLst
   end
-
   for i in 1:(dim - 1)
     j = minimum(listHead(d) for d in dimsLst);
     if j != maximum(listHead(d) for d in dimsLst)
@@ -4851,13 +4847,12 @@ function evalCat(dim::Int, exps::List, getArrayContents::Function, toString::Fun
     lastDims = listRest(lastDims)
     l = 0
     for e in exps
-      arrayUpdate(expArr, k+mod(l, thisDim)+(lastDim*div(l, thisDim)), e)
+      arrayUpdate(expArr, k+mod(l, thisDim)+(lastDim * div(l, thisDim)), e)
       l = l+1
     end
     k = k + thisDim
   end
-  # Convert the flat array structure to a tree array structure with the
-  # correct dimensions
+  #= Convert the flat array structure to a tree array structure with the correct dimension =#
   outExps = arrayList(expArr)
   outDims = listReverse(reverseDims)
   return (outExps, outDims)
@@ -4867,13 +4862,13 @@ end
 Custom reimplementation of evalCatGetFlatArray
 @author johti17
 """
-function evalCatGetFlatArray(e, dim::Int, getArrayContents::Function, toString::Function)
+function evalCatGetFlatArray(e::Expression, dim::Int, getArrayContents::Function, toString::Function)::Tuple{List{Expression}, List{Int}}
   local arr::List
   local dims::List
   local i::Int
   #= output =#
-  local outDims = nil
-  local outExps = nil
+  local outDims::List{Int} = nil
+  local outExps::List{Expression} = nil
   if dim == 1
     outExps = getArrayContents(e)
     outDims = list(listLength(outExps))
@@ -4881,7 +4876,7 @@ function evalCatGetFlatArray(e, dim::Int, getArrayContents::Function, toString::
   end
   i = 0
   for exp in listReverse(getArrayContents(e))
-    (arr, dims) = evalCatGetFlatArray(e, dim - 1, getArrayContents::Function, toString::Function)
+    (arr, dims) = evalCatGetFlatArray(exp, dim - 1, getArrayContents::Function, toString::Function)
     if listEmpty(outDims)
       outDims = dims
     elseif !(valueEq(dims, outDims))
@@ -4895,7 +4890,6 @@ function evalCatGetFlatArray(e, dim::Int, getArrayContents::Function, toString::
   outDims = i <| outDims
   return(outExps, outDims)
 end
-
 
 #=
 protected function evalCatGetFlatArray<Exp>

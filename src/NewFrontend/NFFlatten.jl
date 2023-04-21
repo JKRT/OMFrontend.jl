@@ -3,10 +3,29 @@ module FunctionTreeImpl
   using ExportAll
   import ..Absyn
   import ..Main.M_Function
+  import ..Main.toString
+  import ..Main.toFlatString
+  import ..Main.AbsynUtil
   const Key = Absyn.Path
   const Value = M_Function
   include("../Util/baseAvlTreeCode.jl")
   addConflictDefault = addConflictKeep
+  keyStr = (k) -> begin
+    return AbsynUtil.pathString(k)
+  end
+
+  valueStr = (vs) -> begin
+    return toFlatString(vs)
+  end
+
+#= John 2023-04-03:
+Default(Julia) string compare does not give the right result.
+MetaModelica string comp is used instead.
+=#
+  keyCompare = (inKey1::Key, inKey2::Key) -> begin
+    return stringCompare(keyStr(inKey1), keyStr(inKey2))
+  end
+
 end #= FunctionTreeImpl =#
 FunctionTree = FunctionTreeImpl.Tree
 const NFFunctionTree = FunctionTreeImpl
@@ -63,6 +82,7 @@ function collectFunctions(flatModel::FlatModel, name::String)::FunctionTree
   funcs = ListUtil.fold(flatModel.initialEquations, collectEquationFuncs, funcs)
   funcs = ListUtil.fold(flatModel.algorithms, collectAlgorithmFuncs, funcs)
   funcs = ListUtil.fold(flatModel.initialAlgorithms, collectAlgorithmFuncs, funcs)
+#  println(FunctionTreeImpl.printTreeStr(funcs)) to dump the tree
   return funcs
 end
 
@@ -1615,13 +1635,13 @@ function evaluateEquationsConnOp(
 end
 
 function collectComponentFuncs(var::Variable, funcs::FunctionTree)::FunctionTree
-  @assign () = begin
+  () = begin
     @match var begin
       VARIABLE(__) => begin
-        @assign funcs = collectTypeFuncs(var.ty, funcs)
-        @assign funcs = collectBindingFuncs(var.binding, funcs)
+        funcs = collectTypeFuncs(var.ty, funcs)
+        funcs = collectBindingFuncs(var.binding, funcs)
         for attr in var.typeAttributes
-          @assign funcs = collectBindingFuncs(Util.tuple22(attr), funcs)
+          funcs = collectBindingFuncs(Util.tuple22(attr), funcs)
         end
         ()
       end

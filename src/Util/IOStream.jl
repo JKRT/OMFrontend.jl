@@ -1,4 +1,3 @@
-
 #= /*
 * This file is part of OpenModelica.
 *
@@ -222,8 +221,7 @@ function clear(inStream::IOSTREAM)::IOSTREAM
 end
 
 function string(inStream::IOSTREAM)::String
-  local string::String
-  @assign string = begin
+  local string = begin
     local listData::List{String}
     local fileID::Integer
     local bufferID::Integer
@@ -233,15 +231,15 @@ function string(inStream::IOSTREAM)::String
     local str::String
     @match inStream begin
       IOSTREAM(data = FILE_DATA(fileID)) => begin
-        @assign str = IOStreamExt.readFile(fileID)
+        str = IOStreamExt.readFile(fileID)
         str
       end
       IOSTREAM(data = LIST_DATA(listData)) => begin
-        @assign str = IOStreamExt.appendReversedList(listData)
+        str = IOStreamExt.appendReversedList(listData)
         str
       end
       IOSTREAM(data = BUFFER_DATA(bufferID)) => begin
-        @assign str = IOStreamExt.readBuffer(bufferID)
+        str = IOStreamExt.readBuffer(bufferID)
         str
       end
     end

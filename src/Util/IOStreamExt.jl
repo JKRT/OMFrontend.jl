@@ -103,11 +103,14 @@ New implementation
 @author johti17
 """
 function appendReversedList(inStringLst::List{<:String})::String
+  local lstAsArr::Vector{String} = reverse(listArray(inStringLst))
+  local tmp::String = ""
   local outString::String = ""
-  for str in listReverse(inStringLst)
-    outString *= str
+  buffer = IOBuffer()
+  map(lstAsArr) do x
+    print(buffer, x)
   end
-  return outString
+  outSting = String(take!(buffer))
 end
 
 function printReversedList(inStringLst::List{<:String}, whereToPrint::Integer) #= stdout:1, stderr:2 =#

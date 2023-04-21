@@ -174,12 +174,12 @@ end
    a component in a top-level connector, otherwise returns Direction.NONE. =#"""
 function getComponentDirection(dir::DirectionType, cref::ComponentRef)::DirectionType
   local rest_cref::ComponentRef = rest(cref)
-  @assign dir = begin
+  dir = begin
     @match rest_cref begin
-      EMPTY(__) => begin
+      COMPONENT_REF_EMPTY(__) => begin
         dir
       end
-      CREF(__) => begin
+      COMPONENT_REF_CREF(__) => begin
         if isConnector(rest_cref.node)
           getComponentDirection(dir, rest_cref)
         else
@@ -1002,90 +1002,87 @@ function convertAlgorithm(alg::Algorithm, elements::List{<:DAE.Element})::List{D
   return elements
 end
 
-function convertStatements(statements::List{<:Statement})::List{DAE.P_Statement.Statement}
-  local elements::List{DAE.P_Statement.Statement}
-
-  @assign elements = list(convertStatement(s) for s in statements)
+function convertStatements(statements::List{<:Statement})::List{DAE.Statement}
+  local elements::List{DAE.Statement}
+  elements = list(convertStatement(s) for s in statements)
   return elements
 end
 
-function convertStatement(stmt::Statement)::DAE.P_Statement.Statement
-  local elem::DAE.P_Statement.Statement
-
+function convertStatement(stmt::Statement)::DAE.Statement
+  local elem::DAE.Statement
   @assign elem = begin
     local e1::DAE.Exp
     local e2::DAE.Exp
     local e3::DAE.Exp
     local ty::DAE.Type
-    local body::List{DAE.P_Statement.Statement}
+    local body::List{DAE.Statement}
     @match stmt begin
       ALG_ASSIGNMENT(__) => begin
         convertAssignment(stmt)
       end
 
-      P_Statement.Statement.FUNCTION_ARRAY_INIT(__) => begin
+      ALG_FUNCTION_ARRAY_INIT(__) => begin
         @assign ty = toDAE(stmt.ty)
-        DAE.P_Statement.Statement.STMT_ARRAY_INIT(stmt.name, ty, stmt.source)
+        DAE.STMT_ARRAY_INIT(stmt.name, ty, stmt.source)
       end
 
-      P_Statement.Statement.FOR(__) => begin
+      ALG_FOR(__) => begin
         convertForStatement(stmt)
       end
 
-      P_Statement.Statement.IF(__) => begin
+      ALG_IF(__) => begin
         convertIfStatement(stmt.branches, stmt.source)
       end
 
-      P_Statement.Statement.WHEN(__) => begin
+      ALG_WHEN(__) => begin
         convertWhenStatement(stmt.branches, stmt.source)
       end
 
-      P_Statement.Statement.ASSERT(__) => begin
-        @assign e1 = toDAE(stmt.condition)
-        @assign e2 = toDAE(stmt.message)
-        @assign e3 = toDAE(stmt.level)
-        DAE.P_Statement.Statement.STMT_ASSERT(e1, e2, e3, stmt.source)
+      ALG_ASSERT(__) => begin
+        e1 = toDAE(stmt.condition)
+        e2 = toDAE(stmt.message)
+        e3 = toDAE(stmt.level)
+        DAE.STMT_ASSERT(e1, e2, e3, stmt.source)
       end
 
-      P_Statement.Statement.TERMINATE(__) => begin
-        DAE.P_Statement.Statement.STMT_TERMINATE(
+      ALG_TERMINATE(__) => begin
+        DAE.STMT_TERMINATE(
           toDAE(stmt.message),
           stmt.source,
         )
       end
 
-      P_Statement.Statement.NORETCALL(__) => begin
-        DAE.P_Statement.Statement.STMT_NORETCALL(
+      ALG_NORETCALL(__) => begin
+        DAE.Statement.STMT_NORETCALL(
           toDAE(stmt.exp),
           stmt.source,
         )
       end
 
-      P_Statement.Statement.WHILE(__) => begin
-        @assign e1 = toDAE(stmt.condition)
-        @assign body = convertStatements(stmt.body)
-        DAE.P_Statement.Statement.STMT_WHILE(e1, body, stmt.source)
+      ALG_WHILE(__) => begin
+        e1 = toDAE(stmt.condition)
+        body = convertStatements(stmt.body)
+        DAE.STMT_WHILE(e1, body, stmt.source)
       end
 
-      P_Statement.Statement.RETURN(__) => begin
-        DAE.P_Statement.Statement.STMT_RETURN(stmt.source)
+      ALG_RETURN(__) => begin
+        DAE.STMT_RETURN(stmt.source)
       end
 
-      P_Statement.Statement.BREAK(__) => begin
-        DAE.P_Statement.Statement.STMT_BREAK(stmt.source)
+      ALG_BREAK(__) => begin
+        DAE.STMT_BREAK(stmt.source)
       end
 
-      P_Statement.Statement.FAILURE(__) => begin
-        DAE.P_Statement.Statement.STMT_FAILURE(convertStatements(stmt.body), stmt.source)
+      ALG_FAILURE(__) => begin
+        DAE.STMT_FAILURE(convertStatements(stmt.body), stmt.source)
       end
     end
   end
   return elem
 end
 
-function convertAssignment(stmt::Statement)::DAE.P_Statement.Statement
-  local daeStmt::DAE.P_Statement.Statement
-
+function convertAssignment(stmt::Statement)::DAE.Statement
+  local daeStmt::DAE.Statement
   local lhs::Expression
   local rhs::Expression
   local src::DAE.ElementSource
@@ -1094,14 +1091,13 @@ function convertAssignment(stmt::Statement)::DAE.P_Statement.Statement
   local dlhs::DAE.Exp
   local drhs::DAE.Exp
   local expl::List{Expression}
-
   @match ALG_ASSIGNMENT(lhs, rhs, ty, src) = stmt
-  if Type.isTuple(ty)
+  if isTuple(ty)
     @match TUPLE_EXPRESSION(elements = expl) = lhs
-    @assign daeStmt = begin
+    daeStmt = begin
       @match expl begin
         nil() => begin
-          DAE.P_Statement.Statement.STMT_NORETCALL(toDAE(rhs), src)
+          DAE.STMT_NORETCALL(toDAE(rhs), src)
         end
 
         lhs <| nil() => begin
@@ -1111,12 +1107,12 @@ function convertAssignment(stmt::Statement)::DAE.P_Statement.Statement
           =#
           @assign dty = toDAE(ty)
           @assign dlhs = toDAE(lhs)
-          @assign drhs = DAE.Exp.TSUB(toDAE(rhs), 1, dty)
+          @assign drhs = DAE.TSUB(toDAE(rhs), 1, dty)
           if isArray(ty)
             @assign daeStmt =
-              DAE.P_Statement.Statement.STMT_ASSIGN_ARR(dty, dlhs, drhs, src)
+              DAE.STMT_ASSIGN_ARR(dty, dlhs, drhs, src)
           else
-            @assign daeStmt = DAE.P_Statement.Statement.STMT_ASSIGN(dty, dlhs, drhs, src)
+            @assign daeStmt = DAE.STMT_ASSIGN(dty, dlhs, drhs, src)
           end
           daeStmt
         end
@@ -1124,7 +1120,7 @@ function convertAssignment(stmt::Statement)::DAE.P_Statement.Statement
         _ => begin
           @assign dty = toDAE(ty)
           @assign drhs = toDAE(rhs)
-          DAE.P_Statement.Statement.STMT_TUPLE_ASSIGN(
+          DAE.STMT_TUPLE_ASSIGN(
             dty,
             list(toDAE(e) for e in expl),
             drhs,
@@ -1134,13 +1130,13 @@ function convertAssignment(stmt::Statement)::DAE.P_Statement.Statement
       end
     end
   else
-    @assign dty = toDAE(ty)
-    @assign dlhs = toDAE(lhs)
-    @assign drhs = toDAE(rhs)
+    dty = toDAE(ty)
+    dlhs = toDAE(lhs)
+    drhs = toDAE(rhs)
     if isArray(ty)
-      @assign daeStmt = DAE.P_Statement.Statement.STMT_ASSIGN_ARR(dty, dlhs, drhs, src)
+      daeStmt = DAE.STMT_ASSIGN_ARR(dty, dlhs, drhs, src)
     else
-      @assign daeStmt = DAE.P_Statement.Statement.STMT_ASSIGN(dty, dlhs, drhs, src)
+      daeStmt = DAE.STMT_ASSIGN(dty, dlhs, drhs, src)
     end
   end
   return daeStmt
@@ -1179,31 +1175,28 @@ end
 function convertIfStatement(
   ifBranches::List{<:Tuple{<:Expression, List{<:Statement}}},
   source::DAE.ElementSource,
-)::DAE.P_Statement.Statement
-  local ifStatement::DAE.P_Statement.Statement
-
+)::DAE.Statement
+  local ifStatement::DAE.Statement
   local cond::Expression
   local dcond::DAE.Exp
   local stmts::List{Statement}
-  local dstmts::List{DAE.P_Statement.Statement}
+  local dstmts::List{DAE.Statement}
   local first::Bool = true
-  local else_stmt::DAE.Else = DAE.Else.NOELSE()
-
+  local else_stmt::DAE.Else = DAE.NOELSE()
   for b in listReverse(ifBranches)
-    @assign (cond, stmts) = b
-    @assign dcond = toDAE(cond)
-    @assign dstmts = convertStatements(stmts)
+    (cond, stmts) = b
+    dcond = toDAE(cond)
+    dstmts = convertStatements(stmts)
     if first && isTrue(cond)
-      @assign else_stmt = DAE.Else.ELSE(dstmts)
+      else_stmt = DAE.ELSE(dstmts)
     else
-      @assign else_stmt = DAE.Else.ELSEIF(dcond, dstmts, else_stmt)
+      else_stmt = DAE.ELSEIF(dcond, dstmts, else_stmt)
     end
-    @assign first = false
+    first = false
   end
-  #=  This should always be an ELSEIF due to branch selection in earlier phases.
-  =#
-  @match DAE.Else.ELSEIF(dcond, dstmts, else_stmt) = else_stmt
-  @assign ifStatement = DAE.P_Statement.Statement.STMT_IF(dcond, dstmts, else_stmt, source)
+  #=  This should always be an ELSEIF due to branch selection in earlier phases. =#
+  @match DAE.ELSEIF(dcond, dstmts, else_stmt) = else_stmt
+  ifStatement = DAE.STMT_IF(dcond, dstmts, else_stmt, source)
   return ifStatement
 end
 
@@ -1211,17 +1204,17 @@ function convertWhenStatement(
   whenBranches::List{<:Tuple{<:Expression, List{<:Statement}}},
   source::DAE.ElementSource,
 )::DAE.P_Statement.Statement
-  local whenStatement::DAE.P_Statement.Statement
+  local whenStatement::DAE.Statement
 
   local cond::DAE.Exp
-  local stmts::List{DAE.P_Statement.Statement}
-  local when_stmt::Option{DAE.P_Statement.Statement} = NONE()
+  local stmts::List{DAE.Statement}
+  local when_stmt::Option{DAE.Statement} = NONE()
 
   for b in listReverse(whenBranches)
     @assign cond = toDAE(Util.tuple21(b))
     @assign stmts = convertStatements(Util.tuple22(b))
     @assign when_stmt =
-      SOME(DAE.P_Statement.Statement.STMT_WHEN(cond, nil, false, stmts, when_stmt, source))
+      SOME(DAE.STMT_WHEN(cond, nil, false, stmts, when_stmt, source))
   end
   @match SOME(whenStatement) = when_stmt
   return whenStatement
@@ -1348,25 +1341,21 @@ function convertFunctionParam(node::InstNode)::DAE.Element
   local cref::ComponentRef
   local attr::Attributes
   local ty::M_Type
-  local binding::Option{DAE.Exp}
+  local bindingV::Option{DAE.Exp}
   local ty_attr::List{Tuple{String, Binding}}
-
-  @assign comp = component(node)
-  @assign element = begin
+  comp = component(node)
+  element = begin
     @match comp begin
       TYPED_COMPONENT(ty = ty, info = info, attributes = attr) => begin
-        @assign cref = fromNode(node, ty)
-        @assign binding = toDAEExp(comp.binding)
-        @assign cls = getClass(comp.classInst)
-        @assign ty_attr = list(
-          (P_Modifier.name(m), P_Modifier.binding(m))
-          for m in getTypeAttributes(cls)
-        )
-        @assign var_attr = convertVarAttributes(ty_attr, ty, attr)
+        cref = fromNode(node, ty)
+        bindingV = toDAEExp(comp.binding)
+        cls = getClass(comp.classInst)
+        ty_attr = list((name(m), binding(m)) for m in getTypeAttributes(cls))
+        var_attr = convertVarAttributes(ty_attr, ty, attr)
         makeDAEVar(
           cref,
           ty,
-          binding,
+          bindingV,
           attr,
           visibility(node),
           var_attr,

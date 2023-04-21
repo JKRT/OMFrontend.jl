@@ -248,26 +248,21 @@ function simplify(
   call::Call,
 )::Expression
   local exp::Expression
-
-  @assign exp = begin
+  exp = begin
     @match AbsynUtil.pathFirstIdent(name) begin
       "cat" => begin
-        @assign exp = P_ExpandExp.ExpandExp.expandBuiltinCat(args, call)
+        (exp, _) = expandBuiltinCat(args, call)
         exp
       end
-
       "sum" => begin
         simplifySumProduct(listHead(args), call, isSum = true)
       end
-
       "product" => begin
         simplifySumProduct(listHead(args), call, isSum = false)
       end
-
       "transpose" => begin
         simplifyTranspose(listHead(args), call)
       end
-
       _ => begin
         CALL_EXPRESSION(call)
       end

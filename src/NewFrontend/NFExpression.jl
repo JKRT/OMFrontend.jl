@@ -145,8 +145,7 @@ end
   end
 
   @Record MATRIX_EXPRESSION begin
-    #=  Does not have a type since we only keep this operator before type-checking
-    =#
+    #=  Does not have a type since we only keep this operator before type-checking =#
     elements::List{List{Expression}}
   end
 

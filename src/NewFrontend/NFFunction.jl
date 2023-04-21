@@ -1590,46 +1590,78 @@ function toFlatString(fn::M_Function)::String
   return str
 end
 
-function toFlatStream(fn::M_Function, s)
-
-  local fn_name::String
+function toFlatStream(fn::M_Function, s; overrideName::String)
   local fn_body::List{Statement}
-
   if isDefaultRecordConstructor(fn)
-    @assign s = IOStream_M.append(s, toFlatString(fn.node))
+    s = IOStream_M.append(s, toFlatString(fn.node))
   else
-    @assign fn_name = AbsynUtil.pathString(fn.path)
-    @assign s = IOStream_M.append(s, "function '")
-    @assign s = IOStream_M.append(s, fn_name)
-    @assign s = IOStream_M.append(s, "'\\n")
-    for i in fn.inputs
-      @assign s = IOStream_M.append(s, "  ")
-      @assign s = IOStream_M.append(s, toFlatString(i))
-      @assign s = IOStream_M.append(s, ";\\n")
-    end
-    for o in fn.outputs
-      @assign s = IOStream_M.append(s, "  ")
-      @assign s = IOStream_M.append(s, toFlatString(o))
-      @assign s = IOStream_M.append(s, ";\\n")
-    end
-    if !listEmpty(fn.locals)
-      @assign s = IOStream_M.append(s, "protected\\n")
-      for l in fn.locals
-        @assign s = IOStream_M.append(s, "  ")
-        @assign s = IOStream_M.append(s, toFlatString(l))
-        @assign s = IOStream_M.append(s, ";\\n")
-      end
-    end
-    @assign fn_body = getBody(fn)
-    if !listEmpty(fn_body)
-      @assign s = IOStream_M.append(s, "algorithm\\n")
-      @assign s = toFlatStreamList(fn_body, "  ", s)
-    end
-    @assign s = IOStream_M.append(s, "end '")
-    @assign s = IOStream_M.append(s, fn_name)
-    @assign s = IOStream_M.append(s, "'")
+    s = toFlatStreamHelper(fn::M_Function, s, overrideName)
   end
   return s
+end
+
+"""
+Returns a function as  a flat string.
+"""
+function toFlatStream(fn::M_Function, s)
+  local fn_name::String
+  if isDefaultRecordConstructor(fn)
+    s = IOStream_M.append(s, toFlatString(fn.node))
+  else
+    fn_name = AbsynUtil.pathString(fn.path)
+    s = toFlatStreamHelper(fn::M_Function, s, string("'", fn_name, "'"))
+  end
+  return s
+end
+
+function toFlatStreamHelper(fn::M_Function, s, fn_name)
+    s = IOStream_M.append(s, "function ")
+    s = IOStream_M.append(s, fn_name)
+    s = IOStream_M.append(s, "\\n")
+    for i in fn.inputs
+      s = IOStream_M.append(s, "  ")
+      s = IOStream_M.append(s, toFlatString(i))
+      s = IOStream_M.append(s, ";\\n")
+    end
+    for o in fn.outputs
+      s = IOStream_M.append(s, "  ")
+      s = IOStream_M.append(s, toFlatString(o))
+      s = IOStream_M.append(s, ";\\n")
+    end
+    if !listEmpty(fn.locals)
+      s = IOStream_M.append(s, "protected\\n")
+      for l in fn.locals
+        s = IOStream_M.append(s, "  ")
+        s = IOStream_M.append(s, toFlatString(l))
+        s = IOStream_M.append(s, ";\\n")
+      end
+    end
+  # #= Annotation handling =#
+        cmt = Util.getOptionOrDefault(SCodeUtil.getElementComment(definition(fn.node)), SCode.COMMENT(NONE(), NONE()));
+  s = toFlatStream(getSections(fn.node), fn.path, s)
+  local annMod = if isSome(cmt.annotation_)
+    @match SOME(SCode.ANNOTATION(annMod)) = cmt.annotation_;
+    annMod
+  else
+    annMod = SCode.NOMOD();
+  end
+  #Generate derivative/inverse annotations from the instantiated model. Paths have changed.
+  annMod = SCodeUtil.filterSubMods(annMod, (mod) -> SCodeUtil.removeGivenSubModNames(mod; namesToRemove=list("derivative", "inverse")))
+  # #= End of annotation handling=#
+    if isExternal(fn)
+      s = IOStream_M.append(s, "/* Externally defined function*/")
+#      s = IOStream_M.append(s, )
+      s = IOStream_M.append(s, "\nend ")
+      s = IOStream_M.append(s, fn_name)
+      return s
+    end
+  #   fn_body = getBody(fn)
+  #if !listEmpty(fn_body)
+  #s = IOStream_M.append(s, "algorithm\\n")
+  #s = toFlatStreamList(fn_body, "  ", s)
+  #end
+    s = IOStream_M.append(s, "\nend ")
+    s = IOStream_M.append(s, fn_name)
 end
 
 function paramTypeString(param::InstNode)::String
@@ -1637,8 +1669,9 @@ function paramTypeString(param::InstNode)::String
   return str
 end
 
-""" #= Constructs a string representing the type of the function, on the form
-     function_name<function>(input types) => output type =#"""
+"""  Constructs a string representing the type of the function, on the form
+     function_name<function>(input types) => output type
+"""
 function typeString(fn::M_Function)::String
   local str::String
 
@@ -1721,12 +1754,12 @@ function signatureString(fn::M_Function, printTypes::Bool = true)::String
         end
       end
     end
-    if printTypes && P_Component.isTyped(c)
-      @assign ty = getType(c)
-      @assign var_s = P_Prefixes.unparseVariability(variability(c), ty)
-      @assign input_str = var_s + Type.toString(ty) + " " + input_str
+    if printTypes && isTyped(c)
+      ty = getType(c)
+      var_s = unparseVariability(variability(c), ty)
+      input_str = var_s + toString(ty) + " " + input_str
     end
-    @assign inputs_strl = _cons(input_str, inputs_strl)
+    inputs_strl = _cons(input_str, inputs_strl)
   end
   #=  Add the default expression if it has any.
   =#

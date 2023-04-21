@@ -21,13 +21,11 @@ function instClassInProgram(classPath::Absyn.Path, program::SCode.Program)
 end
 
 """
-Similar to instClassInProgram but returns the flat model instead of the DAE.
-This function is used as a helper function by instClassInProgram.
-Author:johti17
+  Similar to instClassInProgram but returns the flat model instead of the DAE.
+  This function is used as a helper function by instClassInProgram.
+  Author:johti17
 """
 function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tuple
-  local daeFuncs::DAE.FunctionTree
-  local dae::DAE.DAE_LIST
   local top::InstNode
   local cls::InstNode
   local inst_cls::InstNode
@@ -40,8 +38,6 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
   =#
   #=  and scalarization if -d=-nfScalarize is on
   =#
-  #= Set scalazrize by default. =#
-  FlagsUtil.set(Flags.NF_SCALARIZE, true)
   if ! Flags.isSet(Flags.NF_SCALARIZE)
     FlagsUtil.set(Flags.NF_EXPAND_OPERATIONS, false)
     FlagsUtil.set(Flags.NF_EXPAND_FUNC_ARGS, false)
@@ -182,7 +178,7 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
   #=  (e.g. because they where used with non-constant subscripts), and add them to the model. =#
   flat_model = collectConstants(flat_model, funcs)
   if Flags.getConfigBool(Flags.FLAT_MODELICA)
-    printFlatString(flat_model, FunctionTreeImpl.listValues(buncs))
+    printFlatString(flat_model, FunctionTreeImpl.listValues(funcs))
   end
   #= Scalarize array components in the flat model.=#
   if Flags.isSet(Flags.NF_SCALARIZE)

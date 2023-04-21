@@ -332,8 +332,7 @@ end
 
 function listToString(crs::List{<:ComponentRef})::String
   local str::String
-
-  @assign str = "{" + stringDelimitList(ListUtil.map(crs, toString), ",") + "}"
+  str = "{" + stringDelimitList(ListUtil.map(crs, toString), ",") + "}"
   return str
 end
 
@@ -367,25 +366,27 @@ end
 
 function toFlatString(cref::ComponentRef)::String
   local str::String
-
   local cr::ComponentRef
   local subs::List{Subscript}
   local strl::List{String} = nil
-
-  @assign (cr, subs) = stripSubscripts(cref)
-  @assign strl = toFlatString_impl(cr, strl)
-  @assign str = stringAppendList(list(
+  (cr, subs) = stripSubscripts(cref)
+  strl = toFlatString_impl(cr, strl)
+  #= TODO: The moving of the quotes make it work for scalarized models. However, it fails for nonscalarized. =#
+  str = stringAppendList(list(
     "'",
     stringDelimitList(strl, "."),
     "'",
-    toFlatStringList(subs),
+    toFlatStringList(subs)
   ))
+  #Special case
+  if str  == "'time'"
+    return "time"
+  end
   return str
 end
 
 function toString_impl(cref::ComponentRef, strl::List{<:String})::List{String}
-
-  @assign strl = begin
+  strl = begin
     local str::String
     @match cref begin
       COMPONENT_REF_CREF(__) => begin
@@ -750,22 +751,20 @@ function hasSubscripts(cref::ComponentRef)::Bool
   return hs
 end
 
-function applySubscripts2(
-  subscripts::List{<:Subscript},
-  cref::ComponentRef,
-)::Tuple{List{Subscript}, ComponentRef}
-
-  @assign (subscripts, cref) = begin
+function applySubscripts2(subscripts::List{<:Subscript},
+                          cref::ComponentRef,
+                          )::Tuple{List{Subscript}, ComponentRef}
+  (subscripts, cref) = begin
     local rest_cref::ComponentRef
     local cref_subs::List{Subscript}
     @match cref begin
       COMPONENT_REF_CREF(subscripts = cref_subs) => begin
         @assign (subscripts, rest_cref) = applySubscripts2(subscripts, cref.restCref)
         if !listEmpty(subscripts)
-          @assign (cref_subs, subscripts) = mergeList(
+          (cref_subs, subscripts) = mergeList(
             subscripts,
             cref_subs,
-            Type.dimensionCount(cref.ty),
+            dimensionCount(cref.ty),
           )
         end
         (subscripts, COMPONENT_REF_CREF(cref.node, cref_subs, cref.ty, cref.origin, rest_cref))

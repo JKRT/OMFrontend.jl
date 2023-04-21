@@ -125,12 +125,14 @@ function setCheckpoint(id::String) #= uniqe identifier for the checkpoint (up to
   return @debug "TODO: setCheckpoint is not defined in the runtime"
 end
 
-""" #= deletes the checkpoint at the top of the stack without
+"""
+Deletes the checkpoint at the top of the stack without
 removing the error messages issued since that checkpoint.
 If the checkpoint id doesn't match, the application exits with -1.
- =#"""
+"""
 function delCheckpoint(id::String) #= unique identifier =#
-  return @warn "TODO: Defined in the runtime"
+  #=TODO: Re-add this at some point if possible. This is mostly used to get good error messages=#
+  #return @warn "TODO: Defined in the runtime"
 end
 
 function printErrorsNoWarning()::String

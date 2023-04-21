@@ -496,8 +496,7 @@ function toFlatString(ty::M_Type)::String
       end
 
       TYPE_ENUMERATION(__) => begin
-        "'" + AbsynUtil.pathString(ty.typePath)
-        +"'"
+        "'" * AbsynUtil.pathString(ty.typePath) * "'"
       end
 
       TYPE_ENUMERATION_ANY(__) => begin
@@ -508,7 +507,7 @@ function toFlatString(ty::M_Type)::String
         toString(ty.elementType) +
         "[" +
         stringDelimitList(
-          ListUtil.map(ty.dimensions, P_Dimension.Dimension.toString),
+          ListUtil.map(ty.dimensions, toString),
           ", ",
         ) +
         "]"
@@ -528,8 +527,7 @@ function toFlatString(ty::M_Type)::String
       end
 
       TYPE_COMPLEX(__) => begin
-        "'" + AbsynUtil.pathString(scopePath(ty.cls))
-        +"'"
+        "'" * AbsynUtil.pathString(scopePath(ty.cls)) * "'"
       end
 
       TYPE_FUNCTION(__) => begin
@@ -560,6 +558,70 @@ function toFlatString(ty::M_Type)::String
     end
   end
   return str
+end
+
+function toFlatDeclarationStream(ty::NFType, s::IOStream_M.IOSTREAM)
+  local index = 0
+  @match ty begin
+    TYPE_ENUMERATION(__) => begin
+      s = IOStream_M.append(s, "type '")
+      s = IOStream_M.append(s, AbsynUtil.pathString(ty.typePath))
+      s = IOStream_M.append(s, "' = enumeration(")
+      if ! listEmpty(ty.literals)
+        s = IOStream_M.append(s, listHead(ty.literals))
+        for l in listRest(ty.literals)
+          s = IOStream_M.append(s, ", ")
+          s = IOStream_M.append(s, l)
+        end
+      end
+      s = IOStream_M.append(s, ")")
+    end
+    TYPE_COMPLEX(_, COMPLEX_RECORD(__)) =>  begin
+      toFlatStream(ty.cls, s)
+    end
+    TYPE_COMPLEX(complexTy = COMPLEX_EXTERNAL_OBJECT(__)) =>  begin
+      path = scopePath(ty.cls);
+      name = Util.makeQuotedIdentifier(AbsynUtil.pathString(path))
+      s = IOStream_M.append(s, "class ")
+      s = IOStream_M.append(s, name)
+      s = IOStream_M.append(s, "\n  extends ExternalObject;\n\n")
+      local f = listHead(typeNodeCache(ty.complexTy.constructor))
+      s = toFlatStream(f, s, overrideName="constructor")
+      s = IOStream_M.append(s, ";\n\n")
+      f = listHead(typeNodeCache(ty.complexTy.destructor))
+      s = toFlatStream(f, s, overrideName="destructor")
+      s = IOStream_M.append(s, ";\n\nend ")
+      s = IOStream_M.append(s, name)
+    end
+    TYPE_SUBSCRIPTED(__) => begin
+      s = IOStream_M.append(s, "function '")
+      s = IOStream_M.append(s, ty.name)
+      s = IOStream_M.append(s, "'\n")
+      s = IOStream_M.append(s, "input ")
+      s = IOStream_M.append(s, toString(ty.ty))
+      s = IOStream_M.append(s, " exp;\n")
+      index = 1
+      for sub in ty.subs loop
+        s = IOStream_M.append(s, "input ")
+        s = IOStream_M.append(s, toString(sub))
+        s = IOStream_M.append(s, " s")
+        s = IOStream_M.append(s, String(index))
+        s = IOStream_M.append(s, ";\n")
+        index = index + 1
+      end
+      s = IOStream_M.append(s, "output ")
+      s = IOStream_M.append(s, toString(ty.subscriptedTy))
+      s = IOStream_M.append(s, " result = exp[")
+      s = IOStream_M.append(s,
+                          stringDelimitList(list("s" + String(i) for i in 1:listLength(ty.subs)), ","))
+      s = IOStream_M.append(s, "];\n")
+
+      s = IOStream_M.append(s, "end '")
+      s = IOStream_M.append(s, ty.name)
+      s = IOStream_M.append(s, "'")
+    end
+    _ => s
+  end
 end
 
 function toString(ty::M_Type)::String

@@ -831,15 +831,13 @@ end
 function expandBuiltinCat(args::List{<:Expression}, call::Call)::Tuple{Expression, Bool}
   local expanded::Bool
   local exp::Expression
-
   local expl::List{Expression} = nil
-
-  @assign (expl, expanded) = expandList(listRest(args))
+  (expl, expanded) = expandList(listRest(args))
   if expanded
-    @assign exp =
-      Ceval.evalBuiltinCat(listHead(args), expl, Ceval.EVALTARGET_IGNORE_ERRORS())
+    exp =
+      evalBuiltinCat(listHead(args), expl, EVALTARGET_IGNORE_ERRORS())
   else
-    @assign exp = expandGeneric(CALL_EXPRESSION(call))
+    exp = expandGeneric(CALL_EXPRESSION(call))
   end
   #=  This relies on the fact that Ceval.evalBuiltinCat doesn't actually do any
   =#

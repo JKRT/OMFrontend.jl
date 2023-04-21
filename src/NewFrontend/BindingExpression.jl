@@ -26,20 +26,22 @@ function mostPropagatedSubExp_traverser(exp::Expression, mostPropagated::Tuple{<
   mostPropagated
 end
 
-""" #= Returns the most propagated subexpression in either of the two given
-               expressions, as well as the number of dimensions it's been propagated
-               through. Returns the first expression and -1 as the number of dimensions
-               if neither expression contains any binding expressions. =#"""
-                 function mostPropagatedSubExpBinary(exp1::Expression, exp2::Expression) ::Tuple{Expression, Int}
-                   local maxPropCount::Int
-                   local maxPropExp::Expression
+"""
+Returns the most propagated subexpression in either of the two given
+expressions, as well as the number of dimensions it's been propagated
+through. Returns the first expression and -1 as the number of dimensions
+if neither expression contains any binding expressions.
+"""
+function mostPropagatedSubExpBinary(exp1::Expression, exp2::Expression) ::Tuple{Expression, Int}
+  local maxPropCount::Int
+  local maxPropExp::Expression
 
-                   #=  TODO: Optimize this, there's no need to check for bindings in e.g. literal arrays.
-                   =#
-                   @assign (maxPropCount, maxPropExp) = fold(exp1, mostPropagatedSubExp_traverser, (-1, exp1))
-                   @assign (maxPropCount, maxPropExp) = fold(exp2, mostPropagatedSubExp_traverser, (maxPropCount, maxPropExp))
-                   (maxPropExp, maxPropCount)
-                 end
+  #=  TODO: Optimize this, there's no need to check for bindings in e.g. literal arrays.
+  =#
+  @assign (maxPropCount, maxPropExp) = fold(exp1, mostPropagatedSubExp_traverser, (-1, exp1))
+  @assign (maxPropCount, maxPropExp) = fold(exp2, mostPropagatedSubExp_traverser, (maxPropCount, maxPropExp))
+  (maxPropExp, maxPropCount)
+end
 
 """ #= Returns the most propagated subexpression of the given expression, as well
                as the number of dimensions it's been propagated through. Returns the
@@ -882,16 +884,16 @@ end
 
 function arrayScalarElements(exp::Expression) ::List{Expression}
   local elements::List{Expression}
-
   @assign elements = listReverseInPlace(arrayScalarElements_impl(exp, nil))
   elements
 end
 
-function arrayElements(Array::Expression) ::List{Expression}
-  local elements::List{Expression}
+function arrayElementList(array::ARRAY_EXPRESSION)
+  return arrayList(array.elements)
+end
 
-  @match ARRAY_EXPRESSION(elements = elements) = Array
-  elements
+function arrayElements(array::ARRAY_EXPRESSION)
+  return array.elements
 end
 
 function negate(exp::Expression) ::Expression
@@ -3225,8 +3227,8 @@ function fold(@nospecialize(exp::Expression), func::FoldFunc, arg)
       end
     end
   end
-  @assign result = func(exp, result)
-  result
+  result = func(exp, result)
+  return result
 end
 
 function foldOpt(exp::Option{Expression}, func::FoldFunc, arg::ArgT)  where {ArgT}
@@ -4394,24 +4396,21 @@ function isNonAssociativeExp(exp::Expression) ::Bool
 end
 
 function isAssociativeExp(exp::Expression) ::Bool
-  local isAssociative::Bool
-
-  @assign isAssociative = begin
+  local isAssoc::Bool
+  isAssoc = begin
     @match exp begin
       BINARY_EXPRESSION(__)  => begin
         isAssociative(exp.operator)
       end
-
       LBINARY_EXPRESSION(__)  => begin
         true
       end
-
       _  => begin
         false
       end
     end
   end
-  isAssociative
+  isAssoc
 end
 
 function priority(exp::Expression, lhs::Bool) ::Int
@@ -4533,37 +4532,38 @@ end
 
 function toFlatSubscriptedString(exp::Expression, subs::List{<:Subscript}) ::String
   local str::String
-
   local exp_ty::M_Type
   local sub_tyl::List{M_Type}
   local dims::List{Dimension}
   local strl::List{String}
   local name::String
-
-  @assign exp_ty = typeOf(exp)
-  @assign dims = ListUtil.firstN(arrayDims(exp_ty), listLength(subs))
-  @assign sub_tyl = list(P_Dimension.Dimension.subscriptType(d) for d in dims)
-  @assign name = Type.subscriptedTypeName(exp_ty, sub_tyl)
-  @assign strl = list(")")
+  exp_ty = typeOf(exp)
+  dims = ListUtil.firstN(arrayDims(exp_ty), listLength(subs))
+  sub_tyl = list(P_Dimension.Dimension.subscriptType(d) for d in dims)
+  name = Type.subscriptedTypeName(exp_ty, sub_tyl)
+  strl = list(")")
   for s in subs
-    @assign strl = _cons(toFlatString(s), strl)
-    @assign strl = _cons(",", strl)
+    strl = _cons(toFlatString(s), strl)
+    strl = _cons(",", strl)
   end
-  @assign strl = _cons(toFlatString(exp), strl)
-  @assign strl = _cons("'(", strl)
-  @assign strl = _cons(name, strl)
-  @assign strl = _cons("'", strl)
-  @assign str = stringAppendList(strl)
+  strl = _cons(toFlatString(exp), strl)
+  strl = _cons("'(", strl)
+  strl = _cons(name, strl)
+  strl = _cons("'", strl)
+  str = stringAppendList(strl)
   str
+end
+
+
+function toFlatString(exp::BINDING_EXP)
+  toFlatString(exp.exp)
 end
 
 function toFlatString(exp::Expression) ::String
   local str::String
-
   local t::M_Type
   local clk::ClockKind
-
-  @assign str = begin
+  str = begin
     @match exp begin
       INTEGER_EXPRESSION(__)  => begin
         intString(exp.value)
@@ -4598,7 +4598,7 @@ function toFlatString(exp::Expression) ::String
       end
 
       ARRAY_EXPRESSION(__)  => begin
-        "{" + stringDelimitList(list(toFlatString(e) for e in exp.elements), ", ") + "}"
+        "{" +  stringDelimitList(list(toFlatString(e) for e in exp.elements), ", ") + "}"
       end
 
       MATRIX_EXPRESSION(__)  => begin
@@ -4696,11 +4696,6 @@ function toFlatString(exp::Expression) ::String
       PARTIAL_FUNCTION_APPLICATION_EXPRESSION(__)  => begin
         "function " + toFlatString(exp.fn) + "(" + stringDelimitList(List(@do_threaded_for n + " = " + toFlatString(a) (a, n) (exp.args, exp.argNames)), ", ") + ")"
       end
-
-      BINDING_EXP(__)  => begin
-        toFlatString(exp.exp)
-      end
-
       _  => begin
         anyString(exp)
       end
@@ -4750,7 +4745,7 @@ function toString(exp::Expression) ::String
       end
 
       ARRAY_EXPRESSION(__)  => begin
-        "{" + stringDelimitList(list(toString(e) for e in exp.elements), ", ") + "}"
+        "{" +  stringDelimitList(list(toString(e) for e in exp.elements), ", ") + "}"
       end
 
       MATRIX_EXPRESSION(__)  => begin

@@ -4783,8 +4783,7 @@ end
 """ #= Returns the number of messages with severity 'Error' in the message queue  =#"""
 function getNumErrorMessages()::Integer
   local num::Integer
-
-  @assign num = ErrorExt.getNumErrorMessages()
+  num = ErrorExt.getNumErrorMessages()
   return num
 end
 

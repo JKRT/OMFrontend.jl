@@ -1,6 +1,6 @@
-"
+"""
   An experimental Julia frontend for the Modelica language
-"
+"""
 module OMFrontend
 
 using MetaModelica
@@ -9,6 +9,11 @@ import Absyn
 import SCode
 import OMParser
 
+#=
+TODO:
+  Investigate why flags have to be loaded several times.
+  both in __init__() and in main.jl
+=#
 
 #= Cache for NFModelicaBuiltin. We only use the result once! =#
 """
@@ -38,7 +43,7 @@ function __init__()
   s = Main.AbsynToSCode.translateAbsyn2SCode(p)
   Main.Global.initialize()
   # make sure we have all the flags loaded!
-  #  Main.Flags.new(Flags.emptyFlags)
+  Main.FlagsUtil.loadFlags()
   builtinSCode = NFModelicaBuiltinCache["NFModelicaBuiltin"]
   program = listAppend(builtinSCode, s)
   path = Main.AbsynUtil.stringPath("HelloWorld")
@@ -84,15 +89,17 @@ end
   The element to instantiate should be provided in the following format:
   <component>.<component_1>.<component_2>...
 """
-function instantiateSCodeToFM(elementToInstantiate::String, inProgram::SCode.Program)
+function instantiateSCodeToFM(elementToInstantiate::String, inProgram::SCode.Program; scalarize = true)
   # initialize globals
   Main.Global.initialize()
   # make sure we have all the flags loaded!
-#  Main.Flags.new(Flags.emptyFlags)
+  #  Main.Flags.new(Flags.emptyFlags)
+  Main.FlagsUtil.set(Main.Flags.NF_SCALARIZE, scalarize)
   local builtinSCode = NFModelicaBuiltinCache["NFModelicaBuiltin"]
   local program = listReverse(listAppend(builtinSCode, inProgram))
   local path = Main.AbsynUtil.stringPath(elementToInstantiate)
-  Main.instClassInProgramFM(path, program)
+  (flat_model, funcs, inst_cls) = Main.instClassInProgramFM(path, program)
+  return (flat_model, funcs)
 end
 
 """
@@ -131,6 +138,27 @@ function Base.string(ft::Main.FunctionTreeImpl.LEAF)
     println(buffer, OMFrontend.Main.toFlatString(v))
   end
   return replace(String(take!(buffer)), "\\n" => "\n")
+end
+
+function toFlatModelica(fm, fLst; printBindingTypes = false)
+  return replace(Main.toFlatString(fm, fLst, printBindingTypes), "\\n" => "\n")
+end
+
+function writeFlatModelicaToFile(fm, fLst; printBindingtypes = false, fileName)
+  local fmStr = toFlatModelica(fm, fLst; printBindingTypes = printBindingtypes)
+  write(fileName, fmStr)
+  close(fileName)
+end
+
+"""
+  Converts the function cache represented as a tree where the path is the key into a list of functions
+"""
+function cacheToFunctionList(cache)
+  fLst = OMFrontend.Main.FunctionTreeImpl.toList(cache)
+  fv = map(fLst) do kv
+    last(kv)
+  end
+  arrayList(fv)
 end
 
 function exportSCodeRepresentationToFile(fileName::String, contents::List{SCode.CLASS})
@@ -205,7 +233,7 @@ function loadMSL(; MSL_Version)
     local p = parseFile(pathToLib)
     #= Translate it to SCode =#
     local scodeMSL = OMFrontend.translateToSCode(p)
-    LIBRARY_CACHE["MSL_3_2_3"] = scodeMSL
+    LIBRARY_CACHE[MSL_Version] = scodeMSL
   end
 end
 

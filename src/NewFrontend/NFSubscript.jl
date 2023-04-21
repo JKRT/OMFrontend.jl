@@ -125,7 +125,7 @@ function mergeList(
   local old_sub::Subscript
   local rest_old_subs::List{Subscript}
   local merged::Bool = true
-  
+
   #=  If there aren't any existing subscripts we just add as many subscripts
   =#
   #=  from the list of new subscripts as possible.
@@ -464,7 +464,7 @@ function toFlatString(subscript::Subscript)::String
 
   @assign string = begin
     @match subscript begin
-      RAW_SUBSCRIPT(__) => begin
+      SUBSCRIPT_RAW_SUBSCRIPT(__) => begin
         Dump.printSubscriptStr(subscript.subscript)
       end
 
@@ -476,15 +476,15 @@ function toFlatString(subscript::Subscript)::String
         toFlatString(subscript.index)
       end
 
-      SLICE(__) => begin
+      SUBSCRIPT_SLICE(__) => begin
         toFlatString(subscript.slice)
       end
 
-      EXPANDED_SLICE(__) => begin
+      SUBSCRIPT_EXPANDED_SLICE(__) => begin
         ListUtil.toString(subscript.indices, toString, "", "{", ", ", "}", false)
       end
 
-      WHOLE(__) => begin
+      SUBSCRIPT_WHOLE(__) => begin
         ":"
       end
     end
@@ -606,7 +606,7 @@ function mapFoldExpShallow(subscript::Subscript, func::MapFunc, arg::ArgT) where
         end
       end
       SUBSCRIPT_INDEX(__) => begin
-        (exp, arg) = func(subscript.index)
+        (exp, arg) = func(subscript.index, arg) #MetaModelica bug? Should be arg I think -John March 30 2023
         if referenceEq(subscript.index, exp)
           subscript
         else

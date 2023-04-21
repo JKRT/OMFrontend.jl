@@ -1,4 +1,3 @@
-
 @UniontypeDecl NFOperator
 
 Op = (
@@ -355,9 +354,9 @@ function isNonAssociative(op::Operator)::Bool
 end
 
 function isAssociative(op::Operator)::Bool
-  local isAssociative::Bool
+  local isAssoc::Bool
 
-  @assign isAssociative = begin
+  isAssoc = begin
     @match op.op begin
       Op.ADD => begin
         true
@@ -376,11 +375,10 @@ function isAssociative(op::Operator)::Bool
       end
     end
   end
-  #= case ADD_ARRAY_SCALAR() then true;
-  =#
+  #= case ADD_ARRAY_SCALAR() then true; =#
   #= case MUL_ARRAY_SCALAR() then true;
   =#
-  return isAssociative
+  return isAssoc
 end
 
 function priority(op::Operator, lhs::Bool)::Int

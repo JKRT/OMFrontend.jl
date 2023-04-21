@@ -240,6 +240,22 @@ function hasBinding(@nospecialize(node::InstNode)) ::Bool
   hb
 end
 
+"""
+  Given a node returns the section belonging to the class of the node.
+"""
+function getSections(node::InstNode)
+  local cls = getClass(node)
+  sections = @match cls begin
+    INSTANCED_CLASS() => cls.sections
+    TYPED_DERIVED() =>  getSections(cls.baseClass)
+    _ => begin
+      Error.assertion(false, getInstanceName() + " did not get an instanced class", sourceInfo());
+      fail()
+    end
+  end
+end
+
+
 function isModel(node::InstNode) ::Bool
   local r::Bool
   r = begin
@@ -359,7 +375,7 @@ function isBuiltin(node::InstNode) ::Bool
   isBuiltin
 end
 
-""" #= Returns the DAE type for a class, with the list of variables filled in. =#"""
+""" Returns the DAE type for a class, with the list of variables filled in. """
 function toFullDAEType(clsNode::InstNode) ::DAE.Type
   local outType::DAE.Type
 
@@ -378,8 +394,8 @@ function toFullDAEType(clsNode::InstNode) ::DAE.Type
             _  => begin
               state = toDAE(restriction(cls), scopePath(clsNode, includeRoot = true))
               vars = makeTypeVars(clsNode)
-              outType = DAE.Type.T_COMPLEX(state, vars, NONE())
-              Pointer.update(clsNode.cls, DAE_TYPE(outType))
+              outType = DAE.T_COMPLEX(state, vars, NONE())
+              P_Pointer.update(clsNode.cls, DAE_TYPE(outType))
               outType
             end
           end

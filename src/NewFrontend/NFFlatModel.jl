@@ -20,15 +20,36 @@ end
 module TypeTreeImpl
 using MetaModelica
 using ExportAll
-import Absyn
-import ..BaseAvlTree
 import ..Absyn.Path
-import ..Type
+import ..AbsynUtil
+import ..BaseAvlTree
 import ..Main.M_Type
-using ..BaseAvlTree #= Modelica extend clause =#
-  const Key = Absyn.Path
-  const Value = M_Type
-  const addConflictDefault = addConflictKeep
+import ..Type
+import Absyn
+import ..toString
+
+const Key = Absyn.Path
+const Value = M_Type
+
+include("../Util/baseAvlTreeCode.jl")
+
+function keyStr(k)
+  return AbsynUtil.pathString(k)
+end
+
+valueStr = (vs) -> begin
+  return toString(vs)
+end
+
+addConflictDefault = addConflictKeep
+#= John 2023-04-03:
+  Default(Julia) string compare does not give the right result.
+  MetaModelica string comp is used instead.
+=#
+keyCompare = (inKey1::Key, inKey2::Key) -> begin
+  return stringCompare(keyStr(inKey1), keyStr(inKey2))
+end
+
 @exportAll()
 end
 
@@ -97,16 +118,16 @@ function reconstructRecordInstances(variables::List{<:Variable})::List{Variable}
     @assign parent_cr = rest(var.name)
     if !isEmpty(parent_cr)
       @assign parent_ty = nodeType(parent_cr)
-      if Type.isRecord(parent_ty)
-        @assign field_count = listLength(Type.recordFields(parent_ty))
-        @assign (record_vars, rest_vars) = ListUtil.split(rest_vars, field_count - 1)
-        @assign record_vars = _cons(var, record_vars)
-        @assign var = reconstructRecordInstance(parent_cr, record_vars)
+      if isRecord(parent_ty)
+        field_count = listLength(Type.recordFields(parent_ty))
+        (record_vars, rest_vars) = ListUtil.split(rest_vars, field_count - 1)
+        record_vars = _cons(var, record_vars)
+        var = reconstructRecordInstance(parent_cr, record_vars)
       end
     end
-    @assign outVariables = _cons(var, outVariables)
+    outVariables = _cons(var, outVariables)
   end
-  @assign outVariables = listReverseInPlace(outVariables)
+  outVariables = listReverseInPlace(outVariables)
   return outVariables
 end
 
@@ -116,18 +137,16 @@ function collectSubscriptedFlatType(
   subscriptedTy::M_Type,
   types::TypeTree,
 )::TypeTree
-
   local exp_ty::M_Type
   local sub_tyl::List{M_Type}
   local dims::List{Dimension}
   local strl::List{String}
   local name::String
-
-  @assign exp_ty = typeOf(exp)
-  @assign dims = ListUtil.firstN(arrayDims(exp_ty), listLength(subs))
-  @assign sub_tyl = list(P_Dimension.Dimension.subscriptType(d) for d in dims)
-  @assign name = Type.subscriptedTypeName(exp_ty, sub_tyl)
-  @assign types = TypeTree.add(
+  exp_ty = typeOf(exp)
+  dims = ListUtil.firstN(arrayDims(exp_ty), listLength(subs))
+  sub_tyl = list(P_Dimension.Dimension.subscriptType(d) for d in dims)
+  name = Type.subscriptedTypeName(exp_ty, sub_tyl)
+  types = TypeTree.add(
     types,
     Absyn.IDENT(name),
     Type.SUBSCRIPTED(name, exp_ty, sub_tyl, subscriptedTy),
@@ -135,23 +154,28 @@ function collectSubscriptedFlatType(
   return types
 end
 
-function collectComponentFlatTypes(component::InstNode, types::TypeTree)::TypeTree
+function collectComponentFlatTypes(componentArg::InstNode, types::TypeTree)::TypeTree
   local comp::Component
-  @assign comp = component(component)
-  @assign types = collectFlatType(getType(comp), types)
-  @assign types = collectBindingFlatTypes(getBinding(comp), types)
+  comp = component(componentArg)
+  types = collectFlatType(getType(comp), types)
+  types = collectBindingFlatTypes(getBinding(comp), types)
   return types
 end
 
 function collectFunctionFlatTypes(fn::M_Function, types::TypeTree)::TypeTree
   local body::List{Statement}
-  @assign types = foldComponents(
+  types = foldComponents(
     classTree(getClass(fn.node)),
     collectComponentFlatTypes,
     types,
   )
-  @assign body = P_Function.getBody(fn)
-  @assign types = ListUtil.fold(body, collectStatementFlatTypes, types)
+  #= External functions does not have a function body. =#
+  body = if ! isExternal(fn)
+    getBody(fn)
+  else
+    nil
+  end
+  types = ListUtil.fold(body, collectStatementFlatTypes, types)
   return types
 end
 
@@ -252,11 +276,11 @@ function collectEqBranchFlatTypes(
   branch::Equation_Branch,
   types::TypeTree,
 )::TypeTree
-  @assign () = begin
+  () = begin
     @match branch begin
-      P_Equation.P_Branch.Equation.BRANCH(__) => begin
-        @assign types = collectExpFlatTypes(branch.condition, types)
-        @assign types = ListUtil.fold(branch.body, collectEquationFlatTypes, types)
+      EQUATION_BRANCH(__) => begin
+        types = collectExpFlatTypes(branch.condition, types)
+        types = ListUtil.fold(branch.body, collectEquationFlatTypes, types)
         ()
       end
       _ => begin
@@ -271,53 +295,53 @@ function collectEquationFlatTypes(eq::Equation, types::TypeTree)::TypeTree
 
   () = begin
     @match eq begin
-      Equation.EQUALITY(__) => begin
+      EQUATION_EQUALITY(__) => begin
         @assign types = collectExpFlatTypes(eq.lhs, types)
         @assign types = collectExpFlatTypes(eq.rhs, types)
         @assign types = collectFlatType(eq.ty, types)
         ()
       end
 
-      Equation.ARRAY_EQUALITY(__) => begin
+      EQUATION_ARRAY_EQUALITY(__) => begin
         @assign types = collectExpFlatTypes(eq.lhs, types)
         @assign types = collectExpFlatTypes(eq.rhs, types)
         @assign types = collectFlatType(eq.ty, types)
         ()
       end
 
-      Equation.FOR(__) => begin
+      EQUATION_FOR(__) => begin
         @assign types = ListUtil.fold(eq.body, collectEquationFlatTypes, types)
         ()
       end
 
-      Equation.IF(__) => begin
+      EQUATION_IF(__) => begin
         @assign types = ListUtil.fold(eq.branches, collectEqBranchFlatTypes, types)
         ()
       end
 
-      Equation.WHEN(__) => begin
+      EQUATION_WHEN(__) => begin
         @assign types = ListUtil.fold(eq.branches, collectEqBranchFlatTypes, types)
         ()
       end
 
-      Equation.ASSERT(__) => begin
+      EQUATION_ASSERT(__) => begin
         @assign types = collectExpFlatTypes(eq.condition, types)
         @assign types = collectExpFlatTypes(eq.message, types)
         @assign types = collectExpFlatTypes(eq.level, types)
         ()
       end
 
-      Equation.TERMINATE(__) => begin
+      EQUATION_TERMINATE(__) => begin
         @assign types = collectExpFlatTypes(eq.message, types)
         ()
       end
 
-      Equation.REINIT(__) => begin
+      EQUATION_REINIT(__) => begin
         @assign types = collectExpFlatTypes(eq.reinitExp, types)
         ()
       end
 
-      Equation.NORETCALL(__) => begin
+      EQUATION_NORETCALL(__) => begin
         @assign types = collectExpFlatTypes(eq.exp, types)
         ()
       end
@@ -339,25 +363,27 @@ function collectBindingFlatTypes(binding::Binding, types::TypeTree)::TypeTree
 end
 
 function collectFlatType(ty::M_Type, types::TypeTree)::TypeTree
-
-  @assign () = begin
+  () = begin
     @match ty begin
       TYPE_ENUMERATION(__) => begin
-        @assign types = TypeTree.add(types, ty.typePath, ty)
+        types = TypeTreeImpl.add(types, ty.typePath, ty)
         ()
       end
       TYPE_ARRAY(__) => begin
-        @assign types = P_Dimension.Dimension.foldExpList(
+        types = foldExpList(
           ty.dimensions,
           collectExpFlatTypes_traverse,
           types,
         )
-        @assign types = collectFlatType(ty.elementType, types)
+        types = collectFlatType(ty.elementType, types)
         ()
       end
       TYPE_COMPLEX(complexTy = COMPLEX_RECORD(__)) => begin
-        @assign types = TypeTree.add(types, scopePath(ty.cls), ty)
+        types = TypeTreeImpl.add(types, scopePath(ty.cls), ty)
         ()
+      end
+      TYPE_COMPLEX(complexTy = COMPLEX_EXTERNAL_OBJECT(__)) =>  begin
+        types = TypeTreeImpl.add(types, scopePath(ty.cls), ty)
       end
       _ => begin
         ()
@@ -368,73 +394,73 @@ function collectFlatType(ty::M_Type, types::TypeTree)::TypeTree
 end
 
 function collectVariableFlatTypes(var::Variable, types::TypeTree)::TypeTree
-  @assign types = collectFlatType(var.ty, types)
-  @assign types = collectBindingFlatTypes(var.binding, types)
+  types = collectFlatType(var.ty, types)
+  types = collectBindingFlatTypes(var.binding, types)
   for attr in var.typeAttributes
-    @assign types = collectBindingFlatTypes(Util.tuple22(attr), types)
+    types = collectBindingFlatTypes(Util.tuple22(attr), types)
   end
   return types
 end
 
 function collectFlatTypes(flatModel::FlatModel, functions::List{<:M_Function})::TypeTree
   local types::TypeTree
-  @assign types = TypeTree.new()
-  @assign types = ListUtil.fold(flatModel.variables, collectVariableFlatTypes, types)
-  @assign types = ListUtil.fold(flatModel.equations, collectEquationFlatTypes, types)
-  @assign types = ListUtil.fold(flatModel.initialEquations, collectEquationFlatTypes, types)
-  @assign types = ListUtil.fold(flatModel.algorithms, collectAlgorithmFlatTypes, types)
-  @assign types =
+  types = TypeTreeImpl.new()
+  types = ListUtil.fold(flatModel.variables, collectVariableFlatTypes, types)
+  types = ListUtil.fold(flatModel.equations, collectEquationFlatTypes, types)
+  types = ListUtil.fold(flatModel.initialEquations, collectEquationFlatTypes, types)
+  types = ListUtil.fold(flatModel.algorithms, collectAlgorithmFlatTypes, types)
+  types =
     ListUtil.fold(flatModel.initialAlgorithms, collectAlgorithmFlatTypes, types)
-  @assign types = ListUtil.fold(functions, collectFunctionFlatTypes, types)
+  types = ListUtil.fold(functions, collectFunctionFlatTypes, types)
+  println(TypeTreeImpl.printTreeStr(types))
   return types
 end
 
-function toFlatStream(
-  flatModel::FlatModel,
+function toFlatStream(flatModel::FlatModel,
   functions::List{<:M_Function},
   printBindingTypes::Bool = false,
   s = Nothing
-)::Tuple
+)
   local str::String
   local flat_model::FlatModel = flatModel
+  s = IOStream_M.append(s, "model '" + flat_model.name + "'\\n")
   @assign flat_model.variables = reconstructRecordInstances(flat_model.variables)
   for fn in functions
-    if !P_Function.isDefaultRecordConstructor(fn)
-      @assign s = P_Function.toFlatStream(fn, s)
-      @assign s = IOStream_M.append(s, ";\\n\\n")
+    if !isDefaultRecordConstructor(fn)
+      s = toFlatStream(fn, s)
+      s = IOStream_M.append(s, ";\\n\\n")
     end
   end
-  for ty in TypeTree.listValues(collectFlatTypes(flat_model, functions))
-    @assign s = Type.toFlatDeclarationStream(ty, s)
-    @assign s = IOStream_M.append(s, ";\\n\\n")
+  for ty in TypeTreeImpl.listValues(collectFlatTypes(flat_model, functions))
+    s = toFlatDeclarationStream(ty, s)
+    s = IOStream_M.append(s, ";\\n\\n")
   end
-  @assign s = IOStream_M.append(s, "class '" + flat_model.name + "'\\n")
   for v in flat_model.variables
-    @assign s = P_Variable.Variable.toFlatStream(v, "  ", printBindingTypes, s)
+    @assign s = toFlatStream(v, "  ", printBindingTypes, s)
     @assign s = IOStream_M.append(s, ";\\n")
   end
   if !listEmpty(flat_model.initialEquations)
-    @assign s = IOStream_M.append(s, "initial equation\\n")
-    @assign s = Equation.toFlatStreamList(flat_model.initialEquations, "  ", s)
+    s = IOStream_M.append(s, "initial equation\\n")
+    s = toFlatStreamList(flat_model.initialEquations, "  ", s)
   end
   if !listEmpty(flat_model.equations)
-    @assign s = IOStream_M.append(s, "equation\\n")
-    @assign s = Equation.toFlatStreamList(flat_model.equations, "  ", s)
+    s = IOStream_M.append(s, "equation\\n")
+    s = toFlatStreamList(flat_model.equations, "  ", s)
   end
   for alg in flat_model.initialAlgorithms
     if !listEmpty(alg.statements)
-      @assign s = IOStream_M.append(s, "initial algorithm\\n")
-      @assign s = ALG_toFlatStreamList(alg.statements, "  ", s)
+      s = IOStream_M.append(s, "initial algorithm\\n")
+      s = ALG_toFlatStreamList(alg.statements, "  ", s)
     end
   end
   for alg in flat_model.algorithms
     if !listEmpty(alg.statements)
-      @assign s = IOStream_M.append(s, "algorithm\\n")
-      @assign s = ALG_toFlatStreamList(alg.statements, "  ", s)
+      s = IOStream_M.append(s, "algorithm\\n")
+      s = toFlatStreamList(alg.statements, "  ", s)
     end
   end
-  @assign s = IOStream_M.append(s, "end '" + flat_model.name + "';\\n")
-  @assign str = IOStream_M.string(s)
+  s = IOStream_M.append(s, "end '" + flat_model.name + "';\\n")
+  str = IOStream_M.string(s)
   IOStream_M.delete(s)
   return (s, str)
 end
@@ -456,10 +482,10 @@ function toFlatString(
   printBindingTypes::Bool = false,
 )::String
   local str::String
-  local s::IOStream.IOStream
-  @assign s = IOStream.create(getInstanceName(), IOStream.IOStreamType.LIST())
-  @assign s = toFlatStream(flatModel, functions, printBindingTypes, s)
-  @assign str = IOStream_M.string(s)
+  local s::IOStream_M.IOSTREAM
+  s = IOStream_M.create(getInstanceName(), IOStream_M.LIST())
+  (s, str) = toFlatStream(flatModel, functions, printBindingTypes, s)
+  str = IOStream_M.string(s)
   return str
 end
 
@@ -488,13 +514,13 @@ function toString(flatModel::FlatModel, printBindingTypes::Bool = false)::String
   for alg in flatModel.initialAlgorithms
     if !listEmpty(alg.statements)
       s = IOStream_M.append(s, "initial algorithm\\n")
-      s = ALG_toStreamList(alg.statements, "  ", s)
+      s = toStreamList(alg.statements, "  ", s)
     end
   end
   for alg in flatModel.algorithms
     if !listEmpty(alg.statements)
       s = IOStream_M.append(s, "algorithm\\n")
-      s = ALG_toStreamList(alg.statements, "  ", s)
+      s = toStreamList(alg.statements, "  ", s)
     end
   end
   if !(flatModel.DOCC_equations isa Nil)

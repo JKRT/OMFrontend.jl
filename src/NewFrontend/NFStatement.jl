@@ -104,7 +104,7 @@ function toFlatStreamList(
     if first
       first = false
     elseif prev_multi_line || multi_line
-      s = IOStream.append(s, "\\n")
+      s = IOStream_M.append(s, "\\n")
     end
     prev_multi_line = multi_line
     s = toFlatStream(stmt, indent, s)
@@ -113,8 +113,7 @@ function toFlatStreamList(
   return s
 end
 
-function toFlatStream(
-  stmt::Statement,
+function toFlatStream(stmt::Statement,
   indent::String,
   s,
 )
@@ -251,7 +250,7 @@ function toStreamList(
     end
     @assign prev_multi_line = multi_line
     @assign s = toStream(stmt, indent, s)
-    @assign s = IOStream.append(s, ";\\n")
+    @assign s = IOStream_M.append(s, ";\\n")
   end
   #=  Improve human parsability by separating statements that spans multiple
   =#
@@ -274,56 +273,55 @@ function toStream(stmt::Statement, indent::String, s)
         s
       end
 
-      FUNCTION_ARRAY_INIT(__) => begin
-        @assign s = IOStream.append(s, "array init")
-        @assign s = IOStream.append(s, stmt.name)
+      ALG_FUNCTION_ARRAY_INIT(__) => begin
+        s = IOStream_M.append(s, "array init")
+        s = IOStream_M.append(s, stmt.name)
         s
       end
 
-      FOR(__) => begin
-        @assign s = IOStream.append(s, "for ")
-        @assign s = IOStream.append(s, name(stmt.iterator))
+      ALG_FOR(__) => begin
+        s = IOStream_M.append(s, "for ")
+        s = IOStream_M.append(s, name(stmt.iterator))
         if isSome(stmt.range)
-          @assign s = IOStream.append(s, " in ")
-          @assign s = IOStream.append(
+          s = IOStream_M.append(s, " in ")
+          s = IOStream_M.append(
             s,
             toString(Util.getOption(stmt.range)),
           )
         end
-        @assign s = IOStream.append(s, " loop\\n")
-        @assign s = toStreamList(stmt.body, indent + "  ", s)
-        @assign s = IOStream.append(s, indent)
-        @assign s = IOStream.append(s, "end for")
+        s = IOStream_M.append(s, " loop\\n")
+        s = toStreamList(stmt.body, indent + "  ", s)
+        s = IOStream_M.append(s, indent)
+        s = IOStream_M.append(s, "end for")
         s
       end
 
-      IF(__) => begin
-        @assign str = "if "
+      ALG_IF(__) => begin
+        str = "if "
         for b in stmt.branches
-          @assign s = IOStream.append(s, str)
-          @assign s =
-            IOStream.append(s, toString(Util.tuple21(b)))
-          @assign s = IOStream.append(s, " then\\n")
-          @assign s = toStreamList(Util.tuple22(b), indent + "  ", s)
-          @assign s = IOStream.append(s, indent)
-          @assign str = "elseif "
+          s = IOStream_M.append(s, str)
+          s =
+            IOStream_M.append(s, toString(Util.tuple21(b)))
+          s = IOStream_M.append(s, " then\\n")
+          s = toStreamList(Util.tuple22(b), indent + "  ", s)
+          s = IOStream_M.append(s, indent)
+          str = "elseif "
         end
-        @assign s = IOStream.append(s, "end if")
+        s = IOStream_M.append(s, "end if")
         s
       end
 
-      WHEN(__) => begin
-        @assign str = "when "
+      ALG_WHEN(__) => begin
+        str = "when "
         for b in stmt.branches
-          @assign s = IOStream.append(s, str)
-          @assign s =
-            IOStream.append(s, toString(Util.tuple21(b)))
-          @assign s = IOStream.append(s, " then\\n")
-          @assign s = toStreamList(Util.tuple22(b), indent + "  ", s)
-          @assign s = IOStream.append(s, indent)
-          @assign str = "elsewhen "
+          s = IOStream_M.append(s, str)
+          s = IOStream_M.append(s, toString(Util.tuple21(b)))
+          s = IOStream_M.append(s, " then\\n")
+          s = toStreamList(Util.tuple22(b), indent + "  ", s)
+          s = IOStream_M.append(s, indent)
+          str = "elsewhen "
         end
-        @assign s = IOStream.append(s, "end when")
+        s = IOStream_M.append(s, "end when")
         s
       end
 
@@ -377,9 +375,7 @@ end
 
 function toStringList(stmtl::List{<:Statement}, indent::String = "")::String
   local str::String
-
   local s
-
   @assign s = IOStream.create(getInstanceName(), IOStream.IOStreamType.LIST())
   @assign s = toStreamList(stmtl, indent, s)
   @assign str = IOStream.string(s)
@@ -402,55 +398,55 @@ function foldExp(stmt::Statement, func::FoldFunc, arg::ArgT) where {ArgT}
   @assign () = begin
     @match stmt begin
       ALG_ASSIGNMENT(__) => begin
-        @assign arg = func(stmt.lhs, arg)
-        @assign arg = func(stmt.rhs, arg)
+        arg = func(stmt.lhs, arg)
+        arg = func(stmt.rhs, arg)
         ()
       end
 
-      P_Statement.Statement.FOR(__) => begin
-        @assign arg = foldExpList(stmt.body, func, arg)
+      ALG_FOR(__) => begin
+        arg = foldExpList(stmt.body, func, arg)
         if isSome(stmt.range)
-          @assign arg = func(Util.getOption(stmt.range), arg)
+          arg = func(Util.getOption(stmt.range), arg)
         end
         ()
       end
 
-      P_Statement.Statement.IF(__) => begin
+      ALG_IF(__) => begin
         for b in stmt.branches
-          @assign arg = func(Util.tuple21(b), arg)
-          @assign arg = foldExpList(Util.tuple22(b), func, arg)
+          arg = func(Util.tuple21(b), arg)
+          arg = foldExpList(Util.tuple22(b), func, arg)
         end
         ()
       end
 
-      P_Statement.Statement.WHEN(__) => begin
+      ALG_WHEN(__) => begin
         for b in stmt.branches
-          @assign arg = func(Util.tuple21(b), arg)
-          @assign arg = foldExpList(Util.tuple22(b), func, arg)
+          arg = func(Util.tuple21(b), arg)
+          arg = foldExpList(Util.tuple22(b), func, arg)
         end
         ()
       end
 
-      P_Statement.Statement.ASSERT(__) => begin
-        @assign arg = func(stmt.condition, arg)
-        @assign arg = func(stmt.message, arg)
-        @assign arg = func(stmt.level, arg)
+      ALG_ASSERT(__) => begin
+        arg = func(stmt.condition, arg)
+        arg = func(stmt.message, arg)
+        arg = func(stmt.level, arg)
         ()
       end
 
-      P_Statement.Statement.TERMINATE(__) => begin
-        @assign arg = func(stmt.message, arg)
+      ALG_TERMINATE(__) => begin
+        arg = func(stmt.message, arg)
         ()
       end
 
-      P_Statement.Statement.NORETCALL(__) => begin
-        @assign arg = func(stmt.exp, arg)
+      ALG_NORETCALL(__) => begin
+        arg = func(stmt.exp, arg)
         ()
       end
 
-      P_Statement.Statement.WHILE(__) => begin
-        @assign arg = func(stmt.condition, arg)
-        @assign arg = foldExpList(stmt.body, func, arg)
+      ALG_WHILE(__) => begin
+        arg = func(stmt.condition, arg)
+        arg = foldExpList(stmt.body, func, arg)
         ()
       end
 
@@ -471,7 +467,7 @@ function foldExpList(stmt::List{Statement}, func::FoldFunc, arg::ArgT) where {Ar
 end
 MapFunc = Function
 function mapExp(stmt::Statement, func::MapFunc)::Statement
-  @assign stmt = begin
+  stmt = begin
     local e1::Expression
     local e2::Expression
     local e3::Expression

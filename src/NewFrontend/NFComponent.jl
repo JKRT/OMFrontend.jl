@@ -760,10 +760,8 @@ function hasBinding(component::Component, parent::InstNode = EMPTY_NODE())::Bool
     @assign b = false
     return b
   end
-  #=  Not record.
-  =#
-  #=  Check if any child of this component is missing a binding.
-  =#
+  #=  Not record. =#
+  #=  Check if any child of this component is missing a binding. =#
   @assign children = getComponents(classTree(cls))
   for c in children
     if isComponent(c) && !hasBinding(component(c))
@@ -906,21 +904,20 @@ end
 function isTyped(component::Component)::Bool
   local isTyped::Bool
 
-  @assign isTyped = begin
-    @match component begin
+  @assign isTyped = begin    @match component begin
       TYPED_COMPONENT(__) => begin
         true
       end
 
-      ITERATOR(ty = TYPE_UNKNOWN(__)) => begin
+      ITERATOR_COMPONENT(ty = TYPE_UNKNOWN(__)) => begin
         false
       end
 
-      ITERATOR(__) => begin
+      ITERATOR_COMPONENT(__) => begin
         true
       end
 
-      TYPE_ATTRIBUTE(__) => begin
+      TYPE_ATTRIBUTE_COMPONENT(__) => begin
         true
       end
 
@@ -1181,9 +1178,15 @@ using ExportAll
 
 @UniontypeDecl Attributes
 
-function toFlatString(attr::Attributes, ty::M_Type)::String
-  local str::String
-  str = unparseVariability(attr.variability, ty) + unparseDirection(attr.direction)
+function toFlatString(attr::Attributes, ty::M_Type; isTopLevel = true)::String
+  local str::String = ""
+  if attr.isFinal
+    str = str * "final "
+  end
+  str = str * unparseVariability(attr.variability, ty)
+  if isTopLevel
+    str = str * unparseDirection(attr.direction)
+  end
   return str
 end
 

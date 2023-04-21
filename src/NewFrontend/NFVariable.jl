@@ -12,8 +12,7 @@
 end
 const Variable = NFVariable
 
-function toFlatStream(
-  var::Variable,
+function toFlatStream(var::Variable,
   indent::String = "",
   printBindingType::Bool = false,
   s = Nothing,
@@ -22,47 +21,46 @@ function toFlatStream(
   local b::Binding
   local var_dims::Int
   local binding_dims::Int
-  @assign s = append(s, indent)
+  s = IOStream_M.append(s, indent)
   if var.visibility == Visibility.PROTECTED
-    @assign s = append(s, "protected ")
+    s = IOStream_M.append(s, "protected ")
   end
-  @assign s =
-    append(s, P_Component.P_Attributes.toFlatString(var.attributes, var.ty))
-  @assign s = append(s, Type.toFlatString(var.ty))
-  @assign s = append(s, " ")
-  @assign s = append(s, toFlatString(var.name))
+  s = IOStream_M.append(s, toFlatString(var.attributes, var.ty; isTopLevel = isSimple(var.name)))
+  s = IOStream_M.append(s, toFlatString(var.ty))
+  s = IOStream_M.append(s, " ")
+  s = IOStream_M.append(s, toFlatString(var.name))
   if !listEmpty(var.typeAttributes)
-    @assign s = append(s, "(")
-    @assign first = true
-    @assign var_dims = Type.dimensionCount(var.ty)
+    s = IOStream_M.append(s, "(")
+    first = true
+    var_dims = dimensionCount(var.ty)
     for a in var.typeAttributes
       if first
-        @assign first = false
+        first = false
       else
-        @assign s = append(s, ", ")
+        s = IOStream_M.append(s, ", ")
       end
-      @assign b = Util.tuple22(a)
-      @assign binding_dims =
-        Type.dimensionCount(typeOf(getBindingExp(getExp(
+      b = Util.tuple22(a)
+      binding_dims =
+        dimensionCount(typeOf(getBindingExp(getExp(
           b,
         ))))
       if var_dims > binding_dims
-        @assign s = append(s, "each ")
+        s = append(s, "each ")
       end
-      @assign s = append(s, Util.tuple21(a))
-      @assign s = append(s, " = ")
-      @assign s = append(s, toFlatString(b))
+      s = IOStream_M.append(s, Util.tuple21(a))
+      s = IOStream_M.append(s, " = ")
+      s = IOStream_M.append(s, toFlatString(b))
     end
-    @assign s = append(s, ")")
+    s = IOStream_M.append(s, ")")
   end
   if isBound(var.binding)
-    @assign s = append(s, " = ")
+    s = IOStream_M.append(s, " = ")
     if printBindingType
-      @assign s = append(s, "(")
-      @assign s = append(s, Type.toFlatString(getType(var.binding)))
-      @assign s = append(s, ") ")
+      s = IOStream_M.append(s, "(")
+      s = IOStream_M.append(s, toFlatString(getType(var.binding)))
+      s = IOStream_M.append(s, ") ")
     end
-    @assign s = append(s, toFlatString(var.binding))
+    s = IOStream_M.append(s, toFlatString(var.binding))
   end
   return s
 end

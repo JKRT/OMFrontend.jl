@@ -24,7 +24,7 @@ struct EMPTY <: Tree
 end
 
 keyCompare = (inKey1::Key, inKey2::Key) -> begin
-  res = inKey1 == inKey2
+  res = inKey1 == inKey2 #Should it default to ==== instead since types are in many cases immutable?
   return res
 end
 
@@ -37,12 +37,10 @@ end
 """ #= Gets a value from the tree given a key. =#"""
 function hasKey(inTree::Tree, inKey::Key)::Bool
   local comp::Bool = false
-
   local key::Key
   local key_comp::Integer
   local tree::Tree
-
-  @assign key = begin
+  key = begin
     @match inTree begin
       NODE(__) => begin
         inTree.key
@@ -57,7 +55,7 @@ function hasKey(inTree::Tree, inKey::Key)::Bool
     end
   end
   key_comp = keyCompare(inKey, key)
-  @assign comp = begin
+  comp = begin
     @match (key_comp, inTree) begin
       (0, _) => begin
         true
@@ -143,8 +141,10 @@ function listKeysReverse(inTree::Tree, lst::List{<:Key} = nil)::List{Key}
 end
 
 
-""" #= Prints the tree to a string using UTF-8 box-drawing characters to construct a
-   graphical view of the tree. =#"""
+"""
+  Prints the tree to a string using UTF-8 box-drawing characters to construct a
+  graphical view of the tree.
+"""
 function printTreeStr(inTree::Tree)::String
   local outString::String
   local left::Tree
@@ -338,26 +338,26 @@ function printTreeStr2(inTree::Tree, isLeft::Bool, inIndent::String)::String
   outString = begin
     @match inTree begin
       NODE(__) => begin
-        printTreeStr2(inTree.left, true, inIndent + (
+        printTreeStr2(inTree.left, true, inIndent * (
           if isLeft
             "     "
           else
             " │   "
           end
-        )) +
-        inIndent +
+        )) *
+        inIndent *
         (
           if isLeft
             " ┌"
           else
             " └"
           end
-        ) +
-        "────" +
-        printNodeStr(inTree) +
+        ) *
+        "────" *
+        printNodeStr(inTree) *
         "
-        " +
-        printTreeStr2(inTree.right, false, inIndent + (
+        " *
+        printTreeStr2(inTree.right, false, inIndent * (
           if isLeft
             " │   "
           else
@@ -377,17 +377,14 @@ end
 
 #===#
 function printNodeStr(inNode::Tree)::String
-  local outString::String
-  @assign outString = begin
+  outString = begin
     @match inNode begin
       NODE(__) => begin
-        "(" + keyStr(inNode.key)
-        +", " + valueStr(inNode.value) + ")"
+        "(" * keyStr(inNode.key) * ", " * valueStr(inNode.value) * ")"
       end
 
       LEAF(__) => begin
-        "(" + keyStr(inNode.key)
-        +", " + valueStr(inNode.value) + ")"
+        "(" * keyStr(inNode.key) * ", " * valueStr(inNode.value) * ")"
       end
     end
   end
@@ -398,9 +395,7 @@ end
 #= Default conflict resolving function for add. =#
  """ #= Conflict resolving function for add which fails on conflict. =#"""
 function addConflictFail(newValue::Value, oldValue::Value, key::Key)::Value
-  local value::Value
   fail()
-  return value
 end
 addConflictDefault = addConflictFail
 

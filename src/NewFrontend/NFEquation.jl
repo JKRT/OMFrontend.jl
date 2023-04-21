@@ -140,21 +140,21 @@ function toFlatStream(eq::Equation, indent::String, s)
         s
       end
 
-      CREF_EQUALITY(__) => begin
+      EQUATION_CREF_EQUALITY(__) => begin
         @assign s = IOStream_M.append(s, toFlatString(eq.lhs))
         @assign s = IOStream_M.append(s, " = ")
         @assign s = IOStream_M.append(s, toFlatString(eq.rhs))
         s
       end
 
-      ARRAY_EQUALITY(__) => begin
+      EQUATION_ARRAY_EQUALITY(__) => begin
         @assign s = IOStream_M.append(s, toFlatString(eq.lhs))
         @assign s = IOStream_M.append(s, " = ")
         @assign s = IOStream_M.append(s, toFlatString(eq.rhs))
         s
       end
 
-      CONNECT(__) => begin
+      EQUATION_CONNECT(__) => begin
         @assign s = IOStream_M.append(s, "connect(")
         @assign s = IOStream_M.append(s, toFlatString(eq.lhs))
         @assign s = IOStream_M.append(s, " , ")
@@ -163,7 +163,7 @@ function toFlatStream(eq::Equation, indent::String, s)
         s
       end
 
-      FOR(__) => begin
+      EQUATION_FOR(__) => begin
         @assign s = IOStream_M.append(s, "for ")
         @assign s = IOStream_M.append(s, name(eq.iterator))
         if isSome(eq.range)
@@ -180,7 +180,7 @@ function toFlatStream(eq::Equation, indent::String, s)
         s
       end
 
-      IF(__) => begin
+      EQUATION_IF(__) => begin
         @assign s = IOStream_M.append(s, "if ")
         @assign s = toFlatStream(listHead(eq.branches), indent, s)
         for b in listRest(eq.branches)
@@ -193,7 +193,7 @@ function toFlatStream(eq::Equation, indent::String, s)
         s
       end
 
-      WHEN(__) => begin
+      EQUATION_WHEN(__) => begin
         @assign s = IOStream_M.append(s, "when ")
         @assign s = toFlatStream(listHead(eq.branches), indent, s)
         for b in listRest(eq.branches)
@@ -780,10 +780,10 @@ function map(eq::Equation, func::MapFn)::Equation
         ()
       end
       EQUATION_WHEN(__) => begin
-        @assign eq.branches = List(
+        @assign eq.branches = list(
           begin
             @match b begin
-              BRANCH(__) => begin
+              EQUATION_BRANCH(__) => begin
                 @assign b.body = list(map(e, func) for e in b.body)
                 b
               end
@@ -961,21 +961,19 @@ function triggerErrors(branch::Equation_Branch)
   end
 end
 
-function toFlatStream(
-  branch::Equation_Branch,
+function toFlatStream(branch::Equation_Branch,
   indent::String,
-  s,
+  s::IOStream_M.IOSTREAM,
 )
-  @assign s = begin
+  s = begin
     @match branch begin
       EQUATION_BRANCH(__) => begin
-        @assign s =
+        s =
           IOStream_M.append(s, toFlatString(branch.condition))
-        @assign s = IOStream_M.append(s, " then\\n")
-        @assign s = toFlatStreamList(branch.body, indent + "  ", s)
+        s = IOStream_M.append(s, " then\\n")
+        s = toFlatStreamList(branch.body, indent + "  ", s)
         s
       end
-
       INVALID_BRANCH(__) => begin
         toFlatStream(branch.branch, indent, s)
       end

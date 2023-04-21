@@ -73,7 +73,8 @@ function inlineSimpleCall(callExp::Expression)::Expression
   local shouldInline = @match callExp begin
     CALL_EXPRESSION(c && TYPED_CALL(fn, ty, var, arguments, attributes)) => begin
       call = c
-      shouldInline = true && !attributes.builtin
+      shouldInline = true && !(attributes.builtin || isExternal(c))
+#      println("Inline = $(shouldInline) for: " * toString(c))
       #= We might want to inline more things, so check arguments anyway =#
       if !shouldInline
         local newArgs = list(map(arg, inlineSimpleCall) for arg in arguments)

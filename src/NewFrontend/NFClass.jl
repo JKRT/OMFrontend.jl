@@ -88,8 +88,7 @@ function toFlatString(cls::Class, clsNode::InstNode)::String
   return str
 end
 
-function toFlatStream(
-  cls::Class,
+function toFlatStream(cls::Class,
   clsNode::InstNode,
   s,
 )
@@ -900,17 +899,14 @@ end
 
 function getSections(cls::Class)::Sections
   local sections::Sections
-
-  @assign sections = begin
+  sections = begin
     @match cls begin
       INSTANCED_CLASS(__) => begin
         cls.sections
       end
-
       TYPED_DERIVED(__) => begin
         getSections(getClass(cls.baseClass))
       end
-
       _ => begin
         SECTIONS_EMPTY()
       end

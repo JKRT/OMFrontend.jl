@@ -1,19 +1,7 @@
-module SCodeUtil
-
-using MetaModelica
-using ExportAll
-#= Forward declarations for uniontypes until Julia adds support for mutual recursion =#
-
-FilterFunc = Function
-
-FoldFunc = Function
-
-TraverseFunc = Function
-
 #= /*
 * This file is part of OpenModelica.
 *
-* Copyright (c) 1998-2014, Open Source Modelica Consortium (OSMC),
+* Copyright (c) 1998-CurrentYear, Open Source Modelica Consortium (OSMC),
 * c/o Linköpings universitet, Department of Computer and Information Science,
 * SE-58183 Linköping, Sweden.
 *
@@ -40,6 +28,19 @@ TraverseFunc = Function
 * See the full OSMC Public License conditions for more details.
 *
 */ =#
+
+module SCodeUtil
+
+using MetaModelica
+using ExportAll
+#= Forward declarations for uniontypes until Julia adds support for mutual recursion =#
+
+FilterFunc = Function
+
+FoldFunc = Function
+
+TraverseFunc = Function
+
 import SCode
 import Absyn
 
@@ -47,7 +48,7 @@ import ..Main.AbsynUtil
 import ..Main.Util
 import ListUtil
 
-Argument = Any
+const Argument = Any
 const dummyInfo = SOURCEINFO("", false, 0, 0, 0, 0, 0.0)::SourceInfo
 
 """ #= Removes all submodifiers from the Mod. =#"""
@@ -99,6 +100,15 @@ function filterSubMods(mod::SCode.Mod, filter::FilterFunc)::SCode.Mod
   end
   return mod
 end
+
+function filterGivenSubModNames(submod::SCode.SubMod; namesToKeep::List{String})
+  listMember(submod.ident, namesToKeep)
+end
+
+function removeGivenSubModNames(submod::SCode.SubMod; namesToRemove::List{String})
+  !(listMember(submod.ident, namesToRemove))
+end
+
 
 """ #= Return the Element with the name given as first argument from the Class. =#"""
 function getElementNamed(inIdent::SCode.Ident, inClass::SCode.Element)::SCode.Element

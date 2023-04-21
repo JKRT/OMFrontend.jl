@@ -189,7 +189,7 @@ function getDerivativeAttributes(
               info,
             )
           end
-          @assign order = Inst.instExp(aexp, scope, info)
+          order = instExp(aexp, scope, info)
           ()
         end
 

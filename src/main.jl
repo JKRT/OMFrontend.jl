@@ -1,7 +1,6 @@
-
 """
   Main module.
-  This module provides the entry to the translated code and associated tweaks and quirks. 
+  This module provides the entry to the translated code and associated tweaks and quirks.
 """
 module Main
 
@@ -13,10 +12,11 @@ using MetaModelica
 using ExportAll
 
 import Absyn
-import SCode
+import ArrayUtil
 import DAE
 import ListUtil
-import ArrayUtil
+import SCode
+
 include("./Util/Pointer.jl")
 include("./Util/System.jl")
 include("./Util/Corba.jl")
@@ -40,6 +40,7 @@ include("./Util/IOStreamExt.jl")
 include("./Util/IOStream.jl")
 include("./AbsynUtil.jl")
 include("./SCodeUtil.jl")
+include("./SCodeDump.jl")
 include("./AbsynToSCode.jl")
 #=Utility for frontend=#
 include("./FrontendUtil/Prefix.jl")
@@ -150,14 +151,14 @@ include("./NewFrontend/NFBuiltinFuncs.jl")
 include("./NewFrontend/NFRangeIterator.jl")
 
 if ccall(:jl_generating_output, Cint, ()) == 1
-  begin    
-    #= Disable type inference for this module during precompilation =#    
+  begin
+    #= Disable type inference for this module during precompilation =#
     #= Make sure that we load the bultin scode=#
     packagePath = dirname(realpath(Base.find_package("OMFrontend")))
     packagePath *= "/.."
     pathToLib = packagePath * "/lib/NFModelicaBuiltin.mo"
     #= The external C stuff can be a bit flaky.. =#
-    GC.enable(false) 
+    GC.enable(false)
     p = OMParser.parseFile(pathToLib, 2 #== MetaModelica ==#)
     builtinSCode = AbsynToSCode.translateAbsyn2SCode(p)
     GC.enable(true)
@@ -165,7 +166,7 @@ if ccall(:jl_generating_output, Cint, ()) == 1
     #=
     Instantiate the HelloWorld module
     This will precompile a significant part of the frontend.
-    =#    
+    =#
     packagePath = dirname(realpath(Base.find_package("OMFrontend")))
     packagePath *= "/.."
     pathToTest = packagePath * "/test/Models/HelloWorld.mo"
@@ -174,13 +175,13 @@ if ccall(:jl_generating_output, Cint, ()) == 1
     @info "Compiling core modules. This might take awhile.."
     Main.Global.initialize()
     # make sure we have all the flags loaded!
-    #  Main.Flags.new(Flags.emptyFlags)
+    Main.FlagsUtil.loadFlags()
     program = listAppend(builtinSCode, s)
     path = AbsynUtil.stringPath("HelloWorld")
-    @info "Timings concerning compiling core modules for instantiation"
+    @info "Timings concerning compiling core modules for instantiation:"
     @time res1 = instClassInProgram(path, program)
     @info "Core compiler modules are successfully precompiled!"
-    @info "Compiler modules are successfully precompiled!"    
+    @info "Compiler modules are successfully precompiled!"
   end
 end
 end

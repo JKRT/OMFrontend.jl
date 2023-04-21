@@ -83,11 +83,11 @@ function evaluateExpTraverser(
   local cref::ComponentRef
   local ty::M_Type
   local var::VariabilityType
-  @assign outExp = begin
+  outExp = begin
     @match exp begin
       CREF_EXPRESSION(__) => begin
         @debug "Evaluate exp traverser"
-        (outExp, outChanged) = mapFoldShallow(exp, (x) -> evaluateExpTraverser(x, constVariability, changed), false)
+        (outExp, outChanged) = mapFoldShallow(exp, (x, boolArg) -> evaluateExpTraverser(x, constVariability, boolArg), false)
         cref = outExp.cref
         ty = outExp.ty
         #=  Evaluate constants and structural parameters.=#
@@ -349,8 +349,7 @@ function evaluateFunction(func::M_Function)::M_Function
   local sections::Sections
   if !isEvaluated(func)
     markEvaluated(func)
-    @assign func =
-      mapExp(func, (x) -> evaluateFuncExp(x, func.node))
+    func = mapExp(func, (x) -> evaluateFuncExp(x, func.node))
     for fn_der in func.derivatives
       for der_fn in getCachedFuncs(fn_der.derivativeFn)
         evaluateFunction(der_fn)
@@ -376,7 +375,7 @@ function evaluateFuncExpTraverser(
   local e::Expression
   (e, outChanged) = mapFoldShallow(
     exp,
-    (x, boolArg) -> evaluateFuncExpTraverser(x, fnNode, boolArg),
+    (x, y) -> evaluateFuncExpTraverser(x, fnNode, y),
     false,
   )
   outExp = begin
@@ -392,14 +391,14 @@ function evaluateFuncExpTraverser(
           @assign outExp = stripBindingInfo(outExp)
           @assign outChanged = true
         elseif outChanged
-          @assign outExp = CREF_EXPRESSION(
+          #=  If the cref's subscripts changed, recalculate its type. =#
+          outExp = CREF_EXPRESSION(
             getSubscriptedType(e.cref),
             e.cref,
           )
         else
           @assign outExp = e
         end
-        #=  If the cref's subscripts changed, recalculate its type. =#
         outExp
       end
 

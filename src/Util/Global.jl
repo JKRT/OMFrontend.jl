@@ -95,7 +95,7 @@ const classExtends_index = 25::Integer
 #=  ----------------------
 =#
 
-""" #= Called to initialize global roots (when needed) =#"""
+"""  Called to initialize global roots (when needed) """
 function initialize()
   setGlobalRoot(instOnlyForcedFunctions, NONE())
   setGlobalRoot(rewriteRulesIndex, NONE())

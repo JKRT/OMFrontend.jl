@@ -2222,7 +2222,7 @@ function typeArray(
   return (arrayExp, arrayType, variability)
 end
 
-""" #= The array concatenation operator =#"""
+
 function typeMatrix(
   @nospecialize(elements::List{<:List{<:Expression}}),
   origin::ORIGIN_Type,

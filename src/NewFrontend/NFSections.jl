@@ -279,6 +279,72 @@ function prependAlgorithm(
   return sections
 end
 
+
+function toFlatStream(sections, scopeName::Absyn.Path, s::IOStream_M.IOSTREAM)
+  local ann::SCode.Annotation;
+  local mod::SCode.Mod, modLib::SCode.Mod
+  local modInc::SCode.Mod, modLibDir::SCode.Mod, modIncDir::SCode.Mod
+  @match sections begin
+    SECTIONS() => begin
+      for alg in sections.algorithms
+        s = IOStream_M.append(s, "algorithm\n")
+        s = toFlatStreamList(alg.statements, "  ", s)
+      end
+      s
+    end
+    SECTIONS_EXTERNAL() => begin
+      s = IOStream_M.append(s, "external \"")
+      s = IOStream_M.append(s, sections.language)
+      s = IOStream_M.append(s, "\"")
+      if sections.explicit
+        if ! isEmpty(sections.outputRef)
+          s = IOStream_M.append(s, " ")
+          s = IOStream_M.append(s, toFlatString(sections.outputRef))
+          s = IOStream_M.append(s, " =")
+        end
+        s = IOStream_M.append(s, " ")
+        s = IOStream_M.append(s, sections.name)
+        s = IOStream_M.append(s, "(")
+        s = IOStream_M.append(s, stringDelimitList(list(toFlatString(e) for e in sections.args), ", "))
+        s = IOStream_M.append(s, ")")
+      end
+      if isSome(sections.ann)
+#        print("Hello!\n")
+        @match SOME(ann) = sections.ann
+        mod = ann.modification
+        modLib = SCodeUtil.filterSubMods(mod, (x) -> SCodeUtil.filterGivenSubModNames(x;namesToKeep=list("Library")))
+        modInc = SCodeUtil.filterSubMods(mod, (x) -> SCodeUtil.filterGivenSubModNames(x;namesToKeep=list("Include")))
+        if SCodeUtil.isEmptyMod(modLib)
+          modLibDir = SCode.NOMOD()
+        else
+          modLibDir = SCodeUtil.filterSubMods(mod, (x) -> SCodeUtil.filterGivenSubModNames(x;namesToKeep=list("LibraryDirectory")))
+          if SCodeUtil.isEmptyMod(modLibDir)
+            modLibDir = SCode.MOD(SCode.NOT_FINAL()
+                                  , SCode.NOT_EACH()
+            , list(SCode.NAMEMOD("LibraryDirectory"
+                                 , SCode.MOD(SCode.NOT_FINAL()
+                                             ,SCode.NOT_EACH()
+                                             ,nil
+                                             ,SOME(Absyn.STRING("modelica://" + AbsynUtil.pathFirstIdent(scopeName) + "/Resources/Library")), Error.dummyInfo))), NONE(), Error.dummyInfo)
+          end
+        end
+        if SCodeUtil.isEmptyMod(modInc)
+          modIncDir = SCode.NOMOD()
+        else
+          modIncDir = SCodeUtil.filterSubMods(mod, (x) -> SCodeUtil.filterGivenSubModNames(x;namesToKeep=list("IncludeDirectory")))
+          if SCodeUtil.isEmptyMod(modLibDir)
+            modLibDir = SCode.MOD(SCode.NOT_FINAL(), SCode.NOT_EACH(), list(SCode.NAMEMOD("IncludeDirectory", SCode.MOD(SCode.NOT_FINAL(), SCode.NOT_EACH(), list(), SOME(Absyn.STRING("modelica://" + AbsynUtil.pathFirstIdent(scopeName) + "/Resources/Include")), Error.dummyInfo))), NONE(), Error.dummyInfo)
+          end
+        end
+        @assign ann.modification = SCodeUtil.mergeSCodeMods(SCodeUtil.mergeSCodeMods(modLib, modLibDir), SCodeUtil.mergeSCodeMods(modInc, modIncDir))
+        s = IOStream_M.append(s, SCodeDump.printAnnotationStr(SCode.COMMENT(SOME(ann), NONE())))
+      end
+      s = IOStream_M.append(s, ";\n")
+    end
+    _ #=NOP=# => s
+  end #match
+end
+
 function prependEquation(
   eq::Equation,
   sections::Sections,

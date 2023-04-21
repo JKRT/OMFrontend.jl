@@ -761,6 +761,15 @@ function makeOptionOnTrue(inCondition::Bool, inValue::T) where {T}
   return outOption
 end
 
+"""
+  @author johti17
+"""
+function makeQuotedIdentifier(str::String)
+  local qi = Base.replace(str, "\\"=> "\\\\")
+  qi = Base.replace(qi, "'" => "\\'")
+  qi = string("'", qi, "'")
+end
+
 """ #= author: PA
   Returns string value or empty string from string option. =#"""
 function stringOption(inStringOption::Option{<:String})::String
@@ -781,10 +790,9 @@ function stringOption(inStringOption::Option{<:String})::String
   return outString
 end
 
-""" #= Returns an option value if SOME, otherwise fails =#"""
+""" Returns an option value if SOME, otherwise fails """
 function getOption(inOption::Option{T}) where {T}
   local outValue::T
-
   @match SOME(outValue) = inOption
   return outValue
 end

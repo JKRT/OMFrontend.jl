@@ -337,9 +337,9 @@ end
 function scalarizeStatement(stmt::Statement, statements::List{<:Statement})::List{Statement}
   statements = begin
     @match stmt begin
-      P_Statement.Statement.FOR(__) => begin
+      ALG_FOR(__) => begin
         _cons(
-          P_Statement.Statement.FOR(
+          ALG_FOR(
             stmt.iterator,
             stmt.range,
             scalarizeStatements(stmt.body),
@@ -348,15 +348,15 @@ function scalarizeStatement(stmt::Statement, statements::List{<:Statement})::Lis
           statements,
         )
       end
-      P_Statement.Statement.IF(__) => begin
+      ALG_IF(__) => begin
         scalarizeIfStatement(stmt.branches, stmt.source, statements)
       end
-      P_Statement.Statement.WHEN(__) => begin
+      ALG_WHEN(__) => begin
         scalarizeWhenStatement(stmt.branches, stmt.source, statements)
       end
-      P_Statement.Statement.WHILE(__) => begin
+      ALG_WHILE(__) => begin
         _cons(
-          P_Statement.Statement.WHILE(
+          ALG_WHILE(
             stmt.condition,
             scalarizeStatements(stmt.body),
             stmt.source,
@@ -395,7 +395,7 @@ function scalarizeIfStatement(
   =#
   if !listEmpty(bl)
     statements =
-      _cons(P_Statement.Statement.IF(listReverseInPlace(bl), source), statements)
+      _cons(ALG_IF(listReverseInPlace(bl), source), statements)
   end
   return statements
 end
@@ -412,11 +412,11 @@ function scalarizeWhenStatement(
     (cond, body) = b
     body = scalarizeStatements(body)
     if isArray(typeOf(cond))
-      cond = P_ExpandExp.ExpandExp.expand(cond)
+      cond = expand(cond)
     end
     bl = _cons((cond, body), bl)
   end
   statements =
-    _cons(P_Statement.Statement.WHEN(listReverseInPlace(bl), source), statements)
+    _cons(ALG_WHEN(listReverseInPlace(bl), source), statements)
   return statements
 end

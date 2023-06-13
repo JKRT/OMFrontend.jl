@@ -691,16 +691,16 @@ function typeMinMaxCall(name::String, call::Call, origin::ORIGIN_Type, info::Sou
       arg1 <|  nil()  => begin
         @assign (arg1, ty1, var) = typeExp(arg1, origin, info)
         @assign ty = arrayElementType(ty1)
-        if ! (isArray(ty1) && Type.isBasic(ty))
+        if ! (isArray(ty1) && isBasic(ty))
           Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list("1", name, "", toString(arg1), Type.toString(ty1), "Any[:, ...]"), info)
         end
         #=  If the argument is an array with a single element we can just
         =#
         #=  return that element instead of making a min/max call.
         =#
-        if Type.isSingleElementArray(ty1)
-          @assign callExp = applySubscript(first(listHead(arrayDims(ty1))), arg1)
-          return
+        if isSingleElementArray(ty1)
+          callExp = applySubscript(first(listHead(arrayDims(ty1))), arg1)
+          return (list(arg1), ty, var)
         end
         (list(arg1), ty, var)
       end
@@ -904,7 +904,7 @@ function typeFillCall2(fnRef::ComponentRef, fillType::M_Type, fillArg::Expressio
   (callExp, ty, variability)
 end
 
-function typeZerosOnesCall(name::String, call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
+function typeZerosOnesCall(name::String, call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
   local variability::VariabilityType
   local ty::M_Type
   local callExp::Expression

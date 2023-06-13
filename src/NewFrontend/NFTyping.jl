@@ -593,10 +593,10 @@ function typeDimension(
 end
 
 function typeDimension2(
-  dimensions::Vector{Dimension},
+  @nospecialize(dimensions::Vector{Dimension}),
   index::Int,
-  component::InstNode,
-  binding::Binding,
+  @nospecialize(component::InstNode),
+  @nospecialize(binding::Binding),
   origin::ORIGIN_Type,
   info::SourceInfo,
 )::Dimension
@@ -1008,7 +1008,7 @@ function typeBindings2(cls::InstNode,
 end
 
 function typeComponentBinding(
-  inComponent::InstNode,
+  @nospecialize(inComponent::InstNode),
   origin::ORIGIN_Type)
   typeComponentBinding2(inComponent, origin, true)
 end
@@ -1266,7 +1266,7 @@ function checkBindingEach(binding::Binding)
   end
 end
 
-function typeComponentCondition(condition::Binding, origin::ORIGIN_Type)::Binding
+function typeComponentCondition(@nospecialize(condition::Binding), origin::ORIGIN_Type)::Binding
   @assign condition = begin
     local exp::Expression
     local ty::NFType
@@ -1749,7 +1749,7 @@ function typeArrayDim2(
   @assign (dim, error) = begin
     @match (arrayExp, dimIndex) begin
       (ARRAY_EXPRESSION(__), 1) => begin
-        (fromExpList(arrayExp.elements), P_TypingError.NO_ERROR())
+        (fromExpList(arrayExp.elements), NO_ERROR())
       end
 
       (ARRAY_EXPRESSION(__), _) => begin
@@ -3565,19 +3565,19 @@ function typeStatement(st::Statement, origin::ORIGIN_Type)::Statement
         ALG_WHEN(tybrs, st.source)
       end
 
-      P_Statement.Statement.ASSERT(__) => begin
-        @assign info = DAE.ElementSource_getInfo(st.source)
-        @assign next_origin = setFlag(origin, ORIGIN_ASSERT)
-        @assign e1 = typeOperatorArg(
+      ALG_ASSERT(__) => begin
+        info = AbsynUtil.dummyInfo #DAE.ElementSource_getInfo(st.source)
+        next_origin = setFlag(origin, ORIGIN_ASSERT)
+        e1 = typeOperatorArg(
           st.condition,
-          TYPE_BOOLEAN,
+          TYPE_BOOLEAN(),
           setFlag(next_origin, ORIGIN_CONDITION),
           "assert",
           "condition",
           1,
           info,
         )
-        @assign e2 = typeOperatorArg(
+        e2 = typeOperatorArg(
           st.message,
           TYPE_STRING(),
           next_origin,
@@ -3586,19 +3586,19 @@ function typeStatement(st::Statement, origin::ORIGIN_Type)::Statement
           2,
           info,
         )
-        @assign e3 = typeOperatorArg(
+        e3 = typeOperatorArg(
           st.level,
-          ASSERTIONLEVEL_TYPE,
+          NFBuiltin.ASSERTIONLEVEL_TYPE,
           next_origin,
           "assert",
           "level",
           3,
           info,
         )
-        P_Statement.Statement.ASSERT(e1, e2, e3, st.source)
+        ALG_ASSERT(e1, e2, e3, st.source)
       end
 
-      P_Statement.Statement.TERMINATE(__) => begin
+      ALG_TERMINATE(__) => begin
         @assign info = DAE.ElementSource_getInfo(st.source)
         #=  terminate is not allowed in a function context.
         =#
@@ -3615,15 +3615,15 @@ function typeStatement(st::Statement, origin::ORIGIN_Type)::Statement
           1,
           info,
         )
-        P_Statement.Statement.TERMINATE(e1, st.source)
+        ALG_TERMINATE(e1, st.source)
       end
 
-      P_Statement.Statement.NORETCALL(__) => begin
-        @assign e1 = typeExp(st.exp, origin, DAE.ElementSource_getInfo(st.source))
-        P_Statement.Statement.NORETCALL(e1, st.source)
+      ALG_NORETCALL(__) => begin
+        (e1, _, _) = typeExp(st.exp, origin, AbsynUtil.dummyInfo)#DAE.ElementSource_getInfo(st.source))
+        ALG_NORETCALL(e1, st.source)
       end
 
-      P_Statement.Statement.WHILE(__) => begin
+      ALG_WHILE(__) => begin
         @assign e1 = typeCondition(
           st.condition,
           origin,
@@ -3631,7 +3631,7 @@ function typeStatement(st::Statement, origin::ORIGIN_Type)::Statement
           Error.WHILE_CONDITION_TYPE_ERROR,
         )
         @assign sts1 = list(typeStatement(bst, origin) for bst in st.body)
-        P_Statement.Statement.WHILE(e1, sts1, st.source)
+        ALG_WHILE(e1, sts1, st.source)
       end
 
       ALG_FAILURE(__) => begin

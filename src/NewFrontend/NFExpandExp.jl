@@ -10,25 +10,22 @@ function expandGeneric2(
   accum::List{<:Subscript} = nil,
 )::Expression
   local outExp::Expression
-
   local t::M_Type
   local sub::List{Subscript}
   local expl::List{Expression}
   local rest_subs::List{List{Subscript}}
-
-  @assign outExp = begin
+  outExp = begin
     @match subs begin
       sub <| rest_subs => begin
-        @assign t = Type.unliftArray(ty)
-        @assign expl =
+        t = unliftArray(ty)
+        expl =
           list(expandGeneric2(rest_subs, exp, t, _cons(s, accum)) for s in sub)
         makeArray(ty, expl)
       end
-
       nil() => begin
-        @assign outExp = exp
+        outExp = exp
         for s in listReverse(accum)
-          @assign outExp = applySubscript(s, outExp)
+          outExp = applySubscript(s, outExp)
         end
         outExp
       end
@@ -40,31 +37,29 @@ end
 function expandGeneric(exp::Expression)::Tuple{Expression, Bool}
   local expanded::Bool
   local outExp::Expression
-
   local ty::M_Type
   local dims::List{Dimension}
   local subs::List{List{Subscript}}
-
-  @assign ty = typeOf(exp)
+  ty = typeOf(exp)
   if isArray(ty)
-    @assign expanded = Type.hasKnownSize(ty)
+    expanded = hasKnownSize(ty)
     if expanded
-      @assign dims = arrayDims(ty)
-      @assign subs = List(
-        List(
+      dims = arrayDims(ty)
+      subs = list(
+        list(
           SUBSCRIPT_INDEX(e)
           for
           e in
-          P_RangeIterator.RangeIterator.toList(P_RangeIterator.RangeIterator.fromDim(d))
+            toList(fromDim(d))
         ) for d in dims
       )
-      @assign outExp = expandGeneric2(subs, exp, ty)
+      outExp = expandGeneric2(subs, exp, ty)
     else
-      @assign outExp = exp
+      outExp = exp
     end
   else
-    @assign outExp = exp
-    @assign expanded = true
+    outExp = exp
+    expanded = true
   end
   return (outExp, expanded)
 end
@@ -1006,14 +1001,13 @@ function expandCref4(
 end
 
 function expandCref3(
-  subs::List{<:List{<:Subscript}},
+  subs, #::List{<:List{<:Subscript}},
   cref::ComponentRef,
   crefType::M_Type,
-  accum::List{<:List{<:Subscript}} = nil,
+  accum = nil,#:List{<:List{<:Subscript}} = nil,
 )::Expression
   local arrayExp::Expression
-
-  @assign arrayExp = begin
+  arrayExp = begin
     @match subs begin
       nil() => begin
         CREF_EXPRESSION(
@@ -1032,14 +1026,11 @@ end
 
 function expandCref2(
   cref::ComponentRef,
-  subs::List{<:List{<:Subscript}} = nil,
-)::List{List{Subscript}}
-
+  subs = nil, #::List{List{Subscript}}
+  )::List{List{Subscript}}
   local cr_subs::List{Subscript} = nil
   local dims::List{Dimension}
-#  import ..P_NFComponentRef.Origin
-
-  @assign subs = begin
+  subs = begin
     @match cref begin
       COMPONENT_REF_CREF(origin = Origin.CREF) => begin
         @assign dims = arrayDims(cref.ty)
@@ -1050,7 +1041,6 @@ function expandCref2(
           expandCref2(cref.restCref, _cons(cr_subs, subs))
         end
       end
-
       _ => begin
         subs
       end

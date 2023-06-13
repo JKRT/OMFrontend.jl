@@ -42,6 +42,9 @@ end
     @info "Testing Mechanics.Translational"
     include("translational.jl")
   end #= End Mechanics=#
+  @testset "Modelica.Mechanics.MultiBody" begin
+    include("multibody.jl")
+  end
   @testset "Electrics" begin
     @info "Testing Modelica.Electrical.Analog"
     include("analog.jl")

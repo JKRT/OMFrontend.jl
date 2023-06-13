@@ -246,7 +246,7 @@ function toStreamList(
     if first
       @assign first = false
     elseif prev_multi_line || multi_line
-      @assign s = IOStream.append(s, "\\n")
+      @assign s = IOStream_M.append(s, "\\n")
     end
     @assign prev_multi_line = multi_line
     @assign s = toStream(stmt, indent, s)
@@ -325,35 +325,35 @@ function toStream(stmt::Statement, indent::String, s)
         s
       end
 
-      ASSERT(__) => begin
-        @assign s = IOStream.append(s, "assert(")
-        @assign s = IOStream.append(s, toString(stmt.condition))
-        @assign s = IOStream.append(s, ", ")
-        @assign s = IOStream.append(s, toString(stmt.message))
-        @assign s = IOStream.append(s, ", ")
-        @assign s = IOStream.append(s, toString(stmt.level))
-        @assign s = IOStream.append(s, ")")
+      ALG_ASSERT(__) => begin
+        s = IOStream_M.append(s, "assert(")
+        s = IOStream_M.append(s, toString(stmt.condition))
+        s = IOStream_M.append(s, ", ")
+        s = IOStream_M.append(s, toString(stmt.message))
+        s = IOStream_M.append(s, ", ")
+        s = IOStream_M.append(s, toString(stmt.level))
+        s = IOStream_M.append(s, ")")
         s
       end
 
-      TERMINATE(__) => begin
-        @assign s = IOStream.append(s, "terminate(")
-        @assign s = IOStream.append(s, toString(stmt.message))
-        @assign s = IOStream.append(s, ")")
+      ALG_TERMINATE(__) => begin
+        s = IOStream_M.append(s, "terminate(")
+        s = IOStream_M.append(s, toString(stmt.message))
+        s = IOStream_M.append(s, ")")
         s
       end
 
-      NORETCALL(__) => begin
-        IOStream.append(s, toString(stmt.exp))
+      ALG_NORETCALL(__) => begin
+        IOStream_M.append(s, toString(stmt.exp))
       end
 
       WHILE(__) => begin
-        @assign s = IOStream.append(s, "while ")
-        @assign s = IOStream.append(s, toString(stmt.condition))
-        @assign s = IOStream.append(s, " then\\n")
-        @assign s = toStreamList(stmt.body, indent + "  ", s)
-        @assign s = IOStream.append(s, indent)
-        @assign s = IOStream.append(s, "end while")
+        s = IOStream_Mappend(s, "while ")
+        s = IOStream_Mappend(s, toString(stmt.condition))
+        s = IOStream_Mappend(s, " then\\n")
+        s = toStreamList(stmt.body, indent + "  ", s)
+        s = IOStream_Mappend(s, indent)
+        s = IOStream_Mappend(s, "end while")
         s
       end
 
@@ -366,7 +366,7 @@ function toStream(stmt::Statement, indent::String, s)
       end
 
       _ => begin
-        IOStream.append(s, "#UNKNOWN STATEMENT#")
+        IOStream_M.append(s, "#UNKNOWN STATEMENT#")
       end
     end
   end
@@ -502,7 +502,7 @@ function mapExp(stmt::Statement, func::MapFunc)::Statement
         stmt
       end
 
-      ASSERT(__) => begin
+      ALG_ASSERT(__) => begin
         @assign e1 = func(stmt.condition)
         @assign e2 = func(stmt.message)
         @assign e3 = func(stmt.level)
@@ -511,30 +511,30 @@ function mapExp(stmt::Statement, func::MapFunc)::Statement
            referenceEq(e3, stmt.level)
           stmt
         else
-          ASSERT(e1, e2, e3, stmt.source)
+          ALG_ASSERT(e1, e2, e3, stmt.source)
         end
       end
 
-      TERMINATE(__) => begin
+      ALG_TERMINATE(__) => begin
         @assign e1 = func(stmt.message)
         if referenceEq(e1, stmt.message)
           stmt
         else
-          TERMINATE(e1, stmt.source)
+          ALG_TERMINATE(e1, stmt.source)
         end
       end
 
-      NORETCALL(__) => begin
+      ALG_NORETCALL(__) => begin
         @assign e1 = func(stmt.exp)
         if referenceEq(e1, stmt.exp)
           stmt
         else
-          NORETCALL(e1, stmt.source)
+          ALG_NORETCALL(e1, stmt.source)
         end
       end
 
-      WHILE(__) => begin
-        WHILE(func(stmt.condition), mapExpList(stmt.body, func), stmt.source)
+      ALG_WHILE(__) => begin
+        ALG_WHILE(func(stmt.condition), mapExpList(stmt.body, func), stmt.source)
       end
 
       _ => begin

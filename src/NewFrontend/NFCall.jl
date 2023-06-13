@@ -537,9 +537,9 @@ function arguments(call::Call)::List{Expression}
 end
 
 function functionName(call::Call)::Absyn.Path
-  local name::Absyn.Path
+  local nameV::Absyn.Path
 
-  @assign name = begin
+  nameV = begin
     @match call begin
       UNTYPED_CALL(__) => begin
         toPath(call.ref)
@@ -550,7 +550,7 @@ function functionName(call::Call)::Absyn.Path
       end
 
       TYPED_CALL(__) => begin
-        P_Function.name(call.fn)
+        name(call.fn)
       end
 
       UNTYPED_ARRAY_CONSTRUCTOR(__) => begin
@@ -566,11 +566,11 @@ function functionName(call::Call)::Absyn.Path
       end
 
       TYPED_REDUCTION(__) => begin
-        P_Function.name(call.fn)
+        name(call.fn)
       end
     end
   end
-  return name
+  return nameV
 end
 
 function typedFunction(call::Call)::M_Function

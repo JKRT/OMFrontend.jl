@@ -591,12 +591,12 @@ function subscriptEvaluatedBinding2(
           #=  Subscript the binding type if bindingSubs was given.
           =#
           if !listEmpty(bindingSubs)
-            @assign subs = bindingSubs
-            @assign bind_ty = Type.subscript(bind_ty, subs)
+            subs = bindingSubs
+            bind_ty = subscript(bind_ty, subs)
           end
-          @assign e =
+          e =
             subscriptEvaluatedBinding2(exp.exp, cr, evalSubscripts, accum_subs, subs)
-          @assign exp_ty = typeOf(e)
+          exp_ty = typeOf(e)
           BINDING_EXP(e, exp_ty, bind_ty, exp.parents, exp.isEach)
         end
 
@@ -608,10 +608,12 @@ function subscriptEvaluatedBinding2(
   return exp
 end
 
-""" #= Tries to evaluate the given component's start value. NONE() is returned if
-   the component isn't a fixed parameter or if it doesn't have a start value.
-   Otherwise the evaluated binding expression is returned if it could be
-   evaluated, or the function will fail if it couldn't be. =#"""
+"""
+Tries to evaluate the given component's start value. NONE() is returned if
+the component isn't a fixed parameter or if it doesn't have a start value.
+Otherwise the evaluated binding expression is returned if it could be
+evaluated, or the function will fail if it couldn't be.
+"""
 function evalComponentStartBinding(
   node::InstNode,
   comp::Component,
@@ -1401,17 +1403,15 @@ function evalBinaryArrayScalar(
   opFunc::FuncT,
 )::Expression
   local exp::Expression
-
-  @assign exp = begin
+  exp = begin
     @match arrayExp begin
       ARRAY_EXPRESSION(__) => begin
         ARRAY_EXPRESSION(
           arrayExp.ty,
           list(evalBinaryArrayScalar(e, scalarExp, opFunc) for e in arrayExp.elements),
-          literal = true,
+          true,
         )
       end
-
       _ => begin
         opFunc(arrayExp, scalarExp)
       end
@@ -2264,23 +2264,21 @@ function evalIfExp(ifExp::Expression, target::EvalTarget)::Expression
   ) = ifExp
   @assign result = IF_EXPRESSION(evalExp_impl(cond, target), btrue, bfalse)
   @assign result =
-    bindingExpMap(result, (target) -> evalIfExp2(target = target))
+    bindingExpMap(result, (x) -> evalIfExp2(x, target))
   return result
 end
 
 function evalIfExp2(ifExp::Expression, target::EvalTarget)::Expression
   local result::Expression
-
   local cond::Expression
   local btrue::Expression
   local bfalse::Expression
-
   @match IF_EXPRESSION(
     condition = cond,
     trueBranch = btrue,
     falseBranch = bfalse,
   ) = ifExp
-  @assign result = begin
+  result = begin
     @match cond begin
       BOOLEAN_EXPRESSION(__) => begin
         evalExp_impl(if cond.value
@@ -2289,7 +2287,6 @@ function evalIfExp2(ifExp::Expression, target::EvalTarget)::Expression
           bfalse
         end, target)
       end
-
       _ => begin
         Error.addInternalError(
           getInstanceName() +
@@ -3259,26 +3256,23 @@ end
 
 function evalBuiltinMax(args::List{<:Expression}, fn::M_Function)::Expression
   local result::Expression
-
   local e1::Expression
   local e2::Expression
   local expl::List{Expression}
   local ty::M_Type
-
-  @assign result = begin
+  result = begin
     @match args begin
       e1 <| e2 <| nil() => begin
         evalBuiltinMax2(e1, e2)
       end
-
-      e1 && ARRAY_EXPRESSION(ty = ty) <| nil() => begin
-        @assign result = fold(
+      e1 <| nil() && ARRAY_EXPRESSION(ty = ty) <| nil() => begin
+        result = fold(
           e1,
           evalBuiltinMax2,
-          EMPTY(ty),
+          EMPTY_EXPRESSION(ty),
         )
         if isEmpty(result)
-          @assign result = CALL_EXPRESSION(P_Call.makeTypedCall(
+          result = CALL_EXPRESSION(makeTypedCall(
             fn,
             list(makeEmptyArray(ty)),
             Variability.CONSTANT,
@@ -3287,7 +3281,6 @@ function evalBuiltinMax(args::List{<:Expression}, fn::M_Function)::Expression
         end
         result
       end
-
       _ => begin
         printWrongArgsError(getInstanceName(), args, sourceInfo())
         fail()
@@ -3341,7 +3334,7 @@ function evalBuiltinMax2(exp1::Expression, exp2::Expression)::Expression
         exp2
       end
 
-      (_, EMPTY(__)) => begin
+      (_, EMPTY_EXPRESSION(__)) => begin
         exp1
       end
 
@@ -3453,16 +3446,14 @@ end
 
 function evalBuiltinMod(args::List{<:Expression}, target::EvalTarget)::Expression
   local result::Expression
-
   local x::Expression
   local y::Expression
-
-  @match list(x, y) = args
-  @assign result = begin
+  @match x <| y <| nil = args
+  result = begin
     @match (x, y) begin
       (INTEGER_EXPRESSION(__), INTEGER_EXPRESSION(__)) => begin
         if y.value == 0
-          if P_EvalTarget.hasInfo(target)
+          if hasInfo(target)
             Error.addSourceMessage(
               Error.MODULO_BY_ZERO,
               list(String(x.value), String(y.value)),
@@ -3476,7 +3467,7 @@ function evalBuiltinMod(args::List{<:Expression}, target::EvalTarget)::Expressio
 
       (REAL_EXPRESSION(__), REAL_EXPRESSION(__)) => begin
         if y.value == 0.0
-          if P_EvalTarget.hasInfo(target)
+          if hasInfo(target)
             Error.addSourceMessage(
               Error.MODULO_BY_ZERO,
               list(String(x.value), String(y.value)),
@@ -4801,7 +4792,6 @@ function evalCat(dim::Int, exps::List{Expression}, getArrayContents::Function, t
   local reverseDims::List{Int} = nil
   local dimsLst::List{List{Int}} = nil;
   local j::Int, k::Int, l::Int, thisDim::Int, lastDim::Int
-  local expArr::Vector = Expression[]
   #= Outputs =#
   local outExps::List{Expression} = nil
   local outDims::List{Int} = nil
@@ -4840,7 +4830,7 @@ function evalCat(dim::Int, exps::List{Expression}, getArrayContents::Function, t
   # an array structure for random access
   local arrSiz = lastDim*Base.reduce(*, list(d for d in firstDims))
   arrInitVal = listHead(listHead(arrs))
-  expArr = arrayCreate(arrSiz, arrInitVal)
+  local expArr::Vector{Expression} = arrayCreate(arrSiz, arrInitVal)
   k = 1
   for exps in arrs
     thisDim = listHead(lastDims)

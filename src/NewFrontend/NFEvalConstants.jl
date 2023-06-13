@@ -250,7 +250,6 @@ function evaluateAlgorithms(
 end
 
 function evaluateAlgorithm(alg::Algorithm, constVariability::VariabilityType)::Algorithm
-
   @assign alg.statements = evaluateStatements(alg.statements, constVariability)
   return alg
 end
@@ -281,7 +280,7 @@ function evaluateStatement(stmt::Statement, constVariability::VariabilityType)::
       ALG_FOR(__) => begin
         @assign stmt.range = Util.applyOption(
           stmt.range,
-          (constVariability) -> evaluateExp(constVariability = constVariability),
+          (x) -> evaluateExp(x, constVariability),
         )
         @assign stmt.body = evaluateStatements(stmt.body, constVariability)
         stmt

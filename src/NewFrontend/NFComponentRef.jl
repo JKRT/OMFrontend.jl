@@ -680,12 +680,11 @@ function subscriptsAll(
   return subscripts
 end
 
-""" #= Sets the subscripts of each part of a cref to the corresponding list of subscripts. =#"""
+""" Sets the subscripts of each part of a cref to the corresponding list of subscripts. """
 function setSubscriptsList(
-  subscripts::List{<:List{<:Subscript}},
+  subscripts,#::List{<:List{<:Subscript}},
   cref::ComponentRef,
 )::ComponentRef
-
   @assign cref = begin
     local subs::List{Subscript}
     local rest_subs::List{List{Subscript}}

@@ -890,9 +890,31 @@ function containsExp(subscript::Subscript, func::ContainsPred)::Bool
   return res
 end
 
+
 function compareList(
-  subscripts1::List{<:Subscript},
-  subscripts2::List{<:Subscript},
+  subscripts1::Nil,
+  subscripts2::Nil
+  )::Int
+  return 0
+end
+
+function compareList(
+  subscripts1::Nil,
+  subscripts2::Cons{<:Subscript},
+  )::Int
+  return 1
+end
+
+function compareList(
+  subscripts1::Cons{<:Subscript},
+  subscripts2::Nil,
+  )::Int
+  return 1
+end
+
+function compareList(
+  subscripts1::Cons{<:Subscript},
+  subscripts2::Cons{<:Subscript},
 )::Int
   local comp::Int
 

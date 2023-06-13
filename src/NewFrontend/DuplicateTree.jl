@@ -15,7 +15,8 @@ const EntryType = (() -> begin #= Enumeration =#
   REDECLARE = 2
   ENTRY = 3
   () -> (DUPLICATE; REDECLARE; ENTRY)
-end)()
+                   end)()
+
 const EntryTypeTy = Int
 
 @Uniontype Entry begin
@@ -27,7 +28,7 @@ const EntryTypeTy = Int
   end
 end
 
-function newRedeclare(entry::LookupTree.Entry) :Entry
+function newRedeclare(entry::LookupTree.Entry)::Entry
   local redecl::Entry = DUPLICATE_TREE_ENTRY(entry, NONE(), nil, EntryType.REDECLARE)
   return redecl
 end

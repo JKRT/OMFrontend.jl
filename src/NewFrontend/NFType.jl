@@ -161,18 +161,15 @@ end
 
 function enumSize(ty::M_Type)::Int
   local size::Int
-
   local literals::List{String}
-
-  @match ENUMERATION(literals = literals) = ty
+  @match TYPE_ENUMERATION(literals = literals) = ty
   @assign size = listLength(literals)
   return size
 end
 
 function enumName(ty::M_Type)::Absyn.Path
   local name::Absyn.Path
-
-  @match ENUMERATION(typePath = name) = ty
+  @match TYPE_ENUMERATION(typePath = name) = ty
   return name
 end
 

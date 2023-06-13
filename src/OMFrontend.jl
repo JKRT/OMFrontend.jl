@@ -216,7 +216,6 @@ function flattenModelWithMSL(modelName::String, fileName::String; MSL_Version = 
   (FM, cache) = instantiateSCodeToFM(modelName, program)
 end
 
-
 """
   @author: johti17
   Loads the Modelica Standard Library (MSL).

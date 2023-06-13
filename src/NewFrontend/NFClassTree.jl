@@ -1697,8 +1697,10 @@ function offsetDuplicate(
   return offsetEntry
 end
 
-""" #= Offsets all values in the given entry so that they become valid for the
-       inheriting class. =#"""
+"""
+Offsets all values in the given entry so that they become valid for the
+inheriting class.
+"""
 function offsetDuplicates(
   name::String,
   entry::DuplicateTree.Entry,
@@ -1706,10 +1708,8 @@ function offsetDuplicates(
   componentOffset::Int,
 )::DuplicateTree.Entry
   local offsetEntry::DuplicateTree.Entry
-
   local parent::LookupTree.Entry
   local children::List{DuplicateTree.Entry}
-
   @assign parent = offsetDuplicate(entry.entry, classOffset, componentOffset)
   @assign children =
     list(offsetDuplicates(name, c, classOffset, componentOffset) for c in entry.children)
@@ -1717,7 +1717,7 @@ function offsetDuplicates(
   return offsetEntry
 end
 
-""" #= Conflict handler for addInheritedComponent. =#"""
+""" Conflict handler for addInheritedComponent. """
 function addInheritedElementConflict(
   newEntry::LookupTree.Entry,
   oldEntry::LookupTree.Entry,
@@ -1733,17 +1733,16 @@ function addInheritedElementConflict(
   local new_id::Int = LookupTree.index(newEntry)
   local old_id::Int = LookupTree.index(oldEntry)
   local ty::DuplicateTree.EntryType
-
-  #=  Overwrite the existing entry if it's an import. This happens when a
-  =#
-  #=  class both imports and inherits the same name.
+  #=
+      Overwrite the existing entry if it's an import. This happens when a
+      class both imports and inherits the same name.
   =#
   if LookupTree.isImport(oldEntry)
-    @assign entry = newEntry
+    entry = newEntry
     return entry
   end
-  @assign dups = P_Pointer.access(duplicates)
-  @assign opt_dup_entry = DuplicateTree.getOpt(dups, name)
+  dups = P_Pointer.access(duplicates)
+  opt_dup_entry = DuplicateTree.getOpt(dups, name)
   if isNone(opt_dup_entry)
     if new_id < old_id
       @assign entry = newEntry
@@ -1756,7 +1755,7 @@ function addInheritedElementConflict(
     P_Pointer.update(duplicates, dups)
   else
     @match SOME(dup_entry) = opt_dup_entry
-    @assign ty = dup_entry.ty
+    ty = dup_entry.ty
     if !DuplicateTree.idExistsInEntry(newEntry, dup_entry)
       if ty == DuplicateTree.EntryType.REDECLARE
         @assign entry = newEntry
@@ -1764,15 +1763,15 @@ function addInheritedElementConflict(
           _cons(DuplicateTree.newEntry(newEntry), dup_entry.children)
       else
         if new_id < old_id
-          @assign entry = newEntry
-          @assign dup_entry = DuplicateTree.Entry.ENTRY(
+          entry = newEntry
+          dup_entry = DuplicateTree.Entry.ENTRY(
             newEntry,
             NONE(),
             _cons(DuplicateTree.newEntry(oldEntry), dup_entry.children),
             dup_entry.ty,
           )
         else
-          @assign entry = oldEntry
+          entry = oldEntry
           @assign dup_entry.children =
             _cons(DuplicateTree.newEntry(newEntry), dup_entry.children)
         end
@@ -1781,22 +1780,22 @@ function addInheritedElementConflict(
       P_Pointer.update(duplicates, dups)
     elseif !DuplicateTree.idExistsInEntry(oldEntry, dup_entry)
       if ty == DuplicateTree.EntryType.REDECLARE || new_id < old_id
-        @assign entry = newEntry
+        entry = newEntry
         @assign dup_entry.children =
           _cons(DuplicateTree.newEntry(oldEntry), dup_entry.children)
       else
-        @assign entry = newEntry
-        @assign dup_entry = DuplicateTree.Entry.ENTRY(
+        entry = newEntry
+        dup_entry = DuplicateTree.Entry.ENTRY(
           newEntry,
           NONE(),
           _cons(DuplicateTree.newEntry(oldEntry), dup_entry.children),
           dup_entry.ty,
         )
       end
-      @assign dups = DuplicateTree.update(dups, name, dup_entry)
+      dups = DuplicateTree.update(dups, name, dup_entry)
       P_Pointer.update(duplicates, dups)
     else
-      @assign entry = if new_id < old_id
+      entry = if new_id < old_id
         newEntry
       else
         oldEntry

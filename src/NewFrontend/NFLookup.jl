@@ -136,12 +136,12 @@ function lookupFunctionNameSilent(cref::Absyn.ComponentRef, scope::InstNode #= T
   (foundCref, foundScope)
 end
 
-""" 
+"""
   Changes calls to external objects so that the constructor is called instead,
                  i.e. a call such as
                    'ExtObj eo = ExtObj(...)'
                  is changed to
-                   'ExtObj eo = ExtObj.constructor(...)' 
+                   'ExtObj eo = ExtObj.constructor(...)'
 """
  function fixExternalObjectCall(node::InstNode, cref::ComponentRef, state::LookupState)
    local cls::Class
@@ -268,22 +268,22 @@ end
 function lookupInner(outerNode::InstNode, scope::InstNode)
   local innerNode::InstNode
 
-  local name::String = name(outerNode)
+  local nameVar::String = name(outerNode)
   local cur_scope::InstNode = scope
   local prev_scope::InstNode = scope
 
   while ! isEmpty(cur_scope)
     try
-      @assign innerNode = resolveOuter(lookupElement(name, getClass(cur_scope)))
+      innerNode = resolveOuter(lookupElement(nameVar, getClass(cur_scope)))
       @match true = isInner(innerNode)
       return innerNode
     catch e
 #      @error "DBG error $e"
-      @assign prev_scope = cur_scope
-      @assign cur_scope = derivedParent(cur_scope)
+      prev_scope = cur_scope
+      cur_scope = derivedParent(cur_scope)
     end
   end
-  @assign innerNode = generateInner(outerNode, prev_scope)
+  innerNode = generateInner(outerNode, prev_scope)
   innerNode
 end
 
@@ -728,42 +728,46 @@ end
                          (node, cref, foundScope)
                        end
 
-""" #= Generates an inner element given an outer one, or returns the already
-                   generated inner element if one has already been generated. =#"""
-                     function generateInner(outerNode::InstNode, topScope::InstNode)
-                       local innerNode::InstNode
-                       local cache::CachedData
-                       local name::String
-                       local inner_node_opt::Option{InstNode}
-                       local inner_node::InstNode
-                       @assign cache = getInnerOuterCache(topScope)
-                       @assign () = begin
-                         @match cache begin
-                           P_CachedData.TOP_SCOPE(__)  => begin
-                             @assign name = name(outerNode)
-                             @assign inner_node_opt = NodeTree.getOpt(cache.addedInner, name)
-                             if isSome(inner_node_opt)
-                               @match SOME(innerNode) = inner_node_opt
-                             else
-                               @assign innerNode = makeInnerNode(outerNode)
-                               @assign innerNode = setParent(cache.rootClass, innerNode)
-                               @assign cache.addedInner = NodeTree.add(cache.addedInner, name, innerNode)
-                               setInnerOuterCache(topScope, cache)
-                             end
-                             ()
-                           end
+"""
+Generates an inner element given an outer one, or returns the already
+generated inner element if one has already been generated.
+"""
+function generateInner(outerNode::InstNode, topScope::InstNode)
+  local innerNode::InstNode
+  local cache::CachedData
+  local nameStr::String
+  local inner_node_opt::Option{InstNode}
+  local inner_node::InstNode
+  cache = getInnerOuterCache(topScope)
+  @assign () = begin
+    @match cache begin
+      C_TOP_SCOPE(__)  => begin
+        nameStr = name(outerNode)
+        inner_node_opt = NodeTree.getOpt(cache.addedInner, nameStr)
+        if isSome(inner_node_opt)
+          @match SOME(innerNode) = inner_node_opt
+        else
+          innerNode = makeInnerNode(outerNode)
+          innerNode = setParent(cache.rootClass, innerNode)
+          @assign cache.addedInner = NodeTree.add(cache.addedInner, nameStr, innerNode)
+          setInnerOuterCache(topScope, cache)
+        end
+        ()
+      end
+      _  => begin
+        # Error.assertion(false, getInstanceName() + " got top node with missing cache", sourceInfo())
+        @error " got top node with missing cache. Cache was:" * string(typeof(cache))
+        fail()
+      end
+    end
+  end
+  innerNode
+end
 
-                           _  => begin
-#                             Error.assertion(false, getInstanceName() + " got top node with missing cache", sourceInfo())
-                             fail()
-                           end
-                         end
-                       end
-                       innerNode
-                     end
-
-"Returns a copy of the given node where the element definition has been
-                   changed to have the inner prefix."
+"""
+Returns a copy of the given node where the element definition has been
+changed to have the inner prefix.
+"""
 function makeInnerNode(node::InstNode)
   @assign node = begin
     local def::SCode.Element
@@ -777,10 +781,10 @@ function makeInnerNode(node::InstNode)
         node
       end
       COMPONENT_NODE(__)  => begin
-        @assign comp = component(node)
-        @assign comp = begin
+        comp = component(node)
+        comp = begin
           @match comp begin
-            P_Component.COMPONENT_DEF(definition = def && SCode.COMPONENT(prefixes = prefs))  => begin
+            COMPONENT_DEF(definition = def && SCode.COMPONENT(prefixes = prefs))  => begin
               @assign prefs.innerOuter = Absyn.INNER()
               @assign def.prefixes = prefs
               @assign comp.definition = def

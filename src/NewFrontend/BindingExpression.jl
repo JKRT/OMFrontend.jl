@@ -250,21 +250,17 @@ function nthEnumLiteral(ty::M_Type, n::Int) ::Expression
 end
 
 function retype(exp::Expression) ::Expression
-
-
-  @assign () = begin
+  () = begin
     local dims::List{Dimension}
     @match exp begin
       RANGE_EXPRESSION(__)  => begin
-        @assign exp.ty = TypeCheck.getRangeType(exp.start, exp.step, exp.stop, typeOf(exp.start), AbsynUtil.dummyInfo)
+        @assign exp.ty = getRangeType(exp.start, exp.step, exp.stop, typeOf(exp.start), AbsynUtil.dummyInfo)
         ()
       end
-
       CALL_EXPRESSION(call = TYPED_ARRAY_CONSTRUCTOR(__))  => begin
         @assign exp.call = retype(exp.call)
         ()
       end
-
       _  => begin
         ()
       end
@@ -701,11 +697,9 @@ function promote2(exp::Expression, isArray::Bool, dims::Int, types::List{<:M_Typ
       (_,  nil())  => begin
         exp
       end
-
       (ARRAY_EXPRESSION(__), ty <| rest_ty)  => begin
         makeArray(ty, list(promote2(e, false, dims, rest_ty) for e in exp.elements))
       end
-
       (_, _) where (isArray)  => begin
         #=  An array, promote each element in the array.
         =#
@@ -713,7 +707,7 @@ function promote2(exp::Expression, isArray::Bool, dims::Int, types::List{<:M_Typ
         =#
         #=  Such an expression can't be promoted here, so we create a promote call instead.
         =#
-        @assign (outExp, expanded) = P_ExpandExp.ExpandExp.expand(exp)
+        (outExp, expanded) = expand(exp)
         if expanded
           @assign outExp = promote2(outExp, true, dims, types)
         else
@@ -2450,10 +2444,8 @@ function mapFoldOpt(exp::Option{Expression}, func::MapFunc, arg::ArgT)  where {A
   (outExp, arg)
 end
 
-function mapFold(exp::Expression, func::MapFunc, arg::ArgT)  where {ArgT}
-
+function mapFold(@nospecialize(exp::Expression), @nospecialize(func::MapFunc), @nospecialize(arg::ArgT))  where {ArgT}
   local outExp::Expression
-
   @assign outExp = begin
     local e1::Expression
     local e2::Expression
@@ -4559,7 +4551,7 @@ function toFlatString(exp::BINDING_EXP)
   toFlatString(exp.exp)
 end
 
-function toFlatString(exp::Expression) ::String
+function toFlatString(@nospecialize(exp::Expression)) ::String
   local str::String
   local t::M_Type
   local clk::ClockKind
@@ -5950,7 +5942,7 @@ function compare(exp1::Expression, exp2::Expression) ::Int
 
       ENUM_LITERAL_EXPRESSION(__)  => begin
         @match ENUM_LITERAL_EXPRESSION(ty = ty, index = i) = exp2
-        @assign comp = AbsynUtil.pathCompare(Type.enumName(exp1.ty), Type.enumName(ty))
+        @assign comp = AbsynUtil.pathCompare(enumName(exp1.ty), enumName(ty))
         if comp == 0
           @assign comp = Util.intCompare(exp1.index, i)
         end

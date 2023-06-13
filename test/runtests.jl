@@ -32,7 +32,7 @@ end
 function flattenFM(model, file)
   local sp = OMFrontend.parseFile(file)
   local scode = OMFrontend.translateToSCode(sp)
-  local (x,y,z) = OMFrontend.instantiateSCodeToFM(model, scode)
+  local (x, y) = OMFrontend.instantiateSCodeToFM(model, scode)
   return (x, y)
 end
 

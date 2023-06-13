@@ -235,8 +235,8 @@ function simplifyStatement(stmt::Statement, statements::List{<:Statement})::List
       end
 
       ALG_FOR(range = SOME(e)) => begin
-        @assign ty = typeOf(e)
-        @assign dim = Type.nthDimension(ty, 1)
+        ty = typeOf(e)
+        dim = nthDimension(ty, 1)
         #= if Dimension.isOne(dim) then
         =#
         #=   e := Expression.applySubscript(Subscript.INDEX(Expression.INTEGER_EXPRESSION(1)), e);
@@ -252,8 +252,8 @@ function simplifyStatement(stmt::Statement, statements::List{<:Statement})::List
         #= elseif not Dimension.isZero(dim) then
         =#
         if !isZero(dim)
-          stmt.range = SOME(simplify(e))
-          stmt.body = simplifyStatements(stmt.body)
+          @assign stmt.range = SOME(simplify(e))
+          @assign stmt.body = simplifyStatements(stmt.body)
           statements = _cons(stmt, statements)
         end
         statements
@@ -276,11 +276,11 @@ function simplifyStatement(stmt::Statement, statements::List{<:Statement})::List
         _cons(stmt, statements)
       end
 
-      P_Statement.Statement.NORETCALL(__) => begin
-        @assign e = simplify(stmt.exp)
+      ALG_NORETCALL(__) => begin
+        e = simplify(stmt.exp)
         if isCall(e)
           @assign stmt.exp = removeEmptyFunctionArguments(e)
-          @assign statements = _cons(stmt, statements)
+          statements = _cons(stmt, statements)
         end
         statements
       end

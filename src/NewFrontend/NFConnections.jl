@@ -1,4 +1,3 @@
-
 @UniontypeDecl NFConnections
 
 const BrokenEdges = List
@@ -85,7 +84,7 @@ function collect(flatModel::FlatModel)::Tuple{FlatModel, Connections}
         var.name,
         var.ty,
         Face.INSIDE,
-        #=ElementSource_createElementSource(P_Component.info(comp)),=#
+        #=ElementSource.createElementSource(P_Component.info(comp)),=#
         DAE.emptyElementSource
       )
       @assign conns = addFlow(c1, conns)

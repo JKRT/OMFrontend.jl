@@ -80,7 +80,7 @@ function isExactVectorized(mk::FunctionMatchKind)::Bool
 
   @assign b = begin
     @match mk begin
-      VECTORIZED(baseMatch = EXACT(__)) => begin
+      VECTORIZED_MATCH_KIND(baseMatch = EXACT(__)) => begin
         true
       end
       _ => begin
@@ -311,18 +311,17 @@ function mapExpParameter(node::InstNode, mapFn::MapFunc)
   local cls::Class
   local ty::M_Type
   local dirty::Bool = false
-
-  @assign comp = component(node)
-  @assign binding = getBinding(comp)
-  @assign binding2 = mapExp(binding, mapFn)
+  comp = component(node)
+  binding = getBinding(comp)
+  binding2 = mapExp(binding, mapFn)
   if !referenceEq(binding, binding2)
-    @assign comp = P_Component.setBinding(binding2, comp)
-    @assign dirty = true
+    comp = setBinding(binding2, comp)
+    dirty = true
   end
-  @assign () = begin
+  () = begin
     @match comp begin
       TYPED_COMPONENT(__) => begin
-        @assign ty =
+        ty =
           mapDims(comp.ty, (x) -> mapExp(x, mapFn))
         if !referenceEq(ty, comp.ty)
           @assign comp.ty = ty
@@ -490,7 +489,7 @@ function toDAE(fn::M_Function, def::DAE.FunctionDefinition)::DAE.P_Function
     impr,
     ity,
     unused_inputs,
-    ElementSource_createElementSource(info(fn.node)),
+    ElementSource.createElementSource(info(fn.node)),
     SCodeUtil.getElementComment(definition(fn.node)),
   )
   return daeFn
@@ -1080,28 +1079,28 @@ function matchFunction(
   return (out_args, matchKind)
 end
 
-""" #= Helper function to matchArgVectorized. Replaces unknown dimensions in the
-     list with size(argExp, dimension index), so that vectorized calls involving
-     unknown dimensions (e.g. in functions) can be handled correctly. =#"""
+"""
+Helper function to matchArgVectorized. Replaces unknown dimensions in the
+list with size(argExp, dimension index), so that vectorized calls involving
+unknown dimensions (e.g. in functions) can be handled correctly.
+"""
 function fillUnknownVectorizedDims(
   dims::List{<:Dimension},
   argExp::Expression,
 )::List{Dimension}
   local outDims::List{Dimension} = nil
-
   local i::Int = 1
-
   for dim in dims
-    if P_Dimension.Dimension.isUnknown(dim)
-      @assign dim = DIMENSION_EXP(
+    if isUnknown(dim)
+      dim = DIMENSION_EXP(
         SIZE_EXPRESSION(argExp, SOME(INTEGER_EXPRESSION(i))),
         Variability.CONTINUOUS,
       )
     end
-    @assign outDims = _cons(dim, outDims)
-    @assign i = i + 1
+    outDims = _cons(dim, outDims)
+    i = i + 1
   end
-  @assign outDims = listReverseInPlace(outDims)
+  outDims = listReverseInPlace(outDims)
   return outDims
 end
 
@@ -1261,7 +1260,7 @@ function matchArgs(
   =#
   if !listEmpty(vectorized_args)
     @assign funcMatchKind =
-      VECTORIZED(vect_dims, listReverse(vectorized_args), funcMatchKind)
+      VECTORIZED_MATCH_KIND(vect_dims, listReverse(vectorized_args), funcMatchKind)
   end
   @assign args = listReverse(checked_args)
   return (args, funcMatchKind)
@@ -1293,7 +1292,7 @@ function evaluateSlotExp_traverser(
     @match exp begin
       CREF_EXPRESSION(
         cref = cref && COMPONENT_REF_CREF(
-          restCref = EMPTY(__),
+          restCref = COMPONENT_REF_EMPTY(__),
         ),
       ) => begin
         slot = lookupSlotInArray(firstName(cref), slots)
@@ -1303,7 +1302,6 @@ function evaluateSlotExp_traverser(
           exp
         end
       end
-
       _ => begin
         exp
       end
@@ -1457,14 +1455,14 @@ function fillNamedArg(
     @assign s = slots[i]
     @assign (argName, argExp, ty, var) = inArg
     if s.name == argName
-      if !P_Slot.named(s)
-        @assign matching = false
+      if !named(s)
+        matching = false
       elseif isNone(s.arg)
         @assign s.arg = SOME((argExp, ty, var))
-        @assign slots[i] = s
+        slots[i] = s
       else
         Error.addSourceMessage(Error.FUNCTION_SLOT_ALREADY_FILLED, list(argName, ""), info)
-        @assign matching = false
+        matching = false
       end
       return (slots, matching)
     end
@@ -1603,7 +1601,7 @@ end
 """
 Returns a function as  a flat string.
 """
-function toFlatStream(fn::M_Function, s)
+function toFlatStream(fn::M_Function, s::IOStream_M.IOStreamData)
   local fn_name::String
   if isDefaultRecordConstructor(fn)
     s = IOStream_M.append(s, toFlatString(fn.node))

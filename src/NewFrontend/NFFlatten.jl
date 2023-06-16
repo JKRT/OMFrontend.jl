@@ -125,6 +125,7 @@ function flattenClass(
                   SOME(listHead(bindings)),
                   vars,
                   sections,
+                  structuralSubModels
                 )
                 bindings = listRest(bindings)
               end
@@ -198,7 +199,7 @@ function flattenComponent(
   local vis::VisibilityType
   #=  Remove components that are only outer. =#
   if isOnlyOuter(inComponent)
-    return (vars, sections)
+    return (vars, sections, structuralSubModels)
   end
   comp_node = resolveOuter(inComponent)
   c = component(comp_node)
@@ -433,7 +434,7 @@ function flattenSimpleComponent(
   #       CREF_EXPRESSION(ty, name),
   #       getTypedExp(binding),
   #       ty,
-  #       ElementSource_createElementSource(info),
+  #       ElementSource.createElementSource(info),
   #     )
   #     @assign sections = prependEquation(eq, sections)
   #     @assign binding = EMPTY_BINDING
@@ -569,10 +570,10 @@ function flattenComplexComponent(
     if comp_var <= Variability.STRUCTURAL_PARAMETER ||
        binding_var <= Variability.STRUCTURAL_PARAMETER
       binding_exp =
-        stripBindingInfo(Ceval.evalExp(binding_exp))
+        stripBindingInfo(evalExp(binding_exp))
     elseif binding_var == Variability.PARAMETER && isFinal(comp)
         binding_exp =
-          stripBindingInfo(Ceval.evalExp(binding_exp))
+          stripBindingInfo(evalExp(binding_exp))
     else
       binding_exp = simplify(binding_exp)
     end
@@ -583,12 +584,12 @@ function flattenComplexComponent(
         CREF_EXPRESSION(ty, name),
         binding_exp,
         ty,
-        ElementSource_createElementSource(info(node)),
+        ElementSource.createElementSource(InstNode_info(node)),
       )
-      sections = P_Sections.Sections.prependEquation(
+      sections = prependEquation(
         eq,
         sections,
-        isInitial = comp_var <= Variability.PARAMETER,
+        comp_var <= Variability.PARAMETER,
       )
       opt_binding = SOME(EMPTY_BINDING)
     else
@@ -610,11 +611,9 @@ function flattenComplexComponent(
   #=  Flatten the class directly if the component is a scalar, otherwise scalarize it.
   =#
   if listEmpty(dims)
-    (vars, sections) =
-      flattenClass(cls, name, visibility, opt_binding, vars, sections, nil)
+    (vars, sections) = flattenClass(cls, name, visibility, opt_binding, vars, sections, nil)
   else
-    (vars, sections) =
-      flattenArray(cls, dims, name, visibility, opt_binding, vars, sections, nil)
+    (vars, sections) = flattenArray(cls, dims, name, visibility, opt_binding, vars, sections, nil)
   end
   return (vars, sections)
 end
@@ -971,7 +970,7 @@ function flattenBinding(
       end
       TYPED_BINDING(__) => begin
         if binding.isFlattened
-          return
+          return binding
         end
         @assign binding.bindingExp =
           flattenBindingExp(binding.bindingExp, prefix, isTypeAttribute)
@@ -1047,22 +1046,20 @@ function flattenBindingExp2(
   parents::List{<:InstNode},
 )::Expression
   local outExp::Expression = exp
-
   local binding_level::Int = 0
   local subs::List{Subscript}
   local pre::ComponentRef = prefix
   local pre_node::InstNode
   local par::InstNode
-
-  @assign par = listHead(parents)
+  par = listHead(parents)
   if isComponent(par) && !isEmpty(pre)
-    @assign pre_node = node(pre)
+    pre_node = node(pre)
     while !refEqual(pre_node, par)
-      @assign pre = rest(pre)
+      pre = rest(pre)
       if isEmpty(pre)
         return outExp
       end
-      @assign pre_node = node(pre)
+      pre_node = node(pre)
     end
   end
   for parent in parents
@@ -1070,7 +1067,7 @@ function flattenBindingExp2(
   end
   if binding_level > 0
     #subs = listAppend(listReverse(s) for s in subscriptsAll(pre)) modifed as per below
-    local subsT = list(listReverse(s) for s in subscriptsAll(pre))
+    local subsT = list(listReverse(s) for s in subscriptsAll(pre) if !(s isa Nil) )
     subs = list(Base.collect(Iterators.flatten(subsT))...)
     #= End of modification=#
     binding_level = min(binding_level, listLength(subs))
@@ -1078,9 +1075,9 @@ function flattenBindingExp2(
     subs = ListUtil.firstN(subs, binding_level)
     @assign outExp = applySubscripts(subs, exp)
   end
-  #=  TODO: Optimize this, making a list of all subscripts in the prefix when
-  =#
-  #=        only a few are needed is unnecessary.
+  #=
+  TODO: Optimize this, making a list of all subscripts in the prefix when
+  only a few are needed is unnecessary.
   =#
   return outExp
 end
@@ -1551,7 +1548,6 @@ function resolveConnections(flatModel::FlatModel, name::String)::FlatModel
   #=  append the equalityConstraint call equations for the broken connects =#
   if System.getHasOverconstrainedConnectors()
     conn_eql = listAppend(conn_eql, ListUtil.flatten(ListUtil.map(broken, Util.tuple33)))
-    println("The dynamic overconstrained connector set:")
   end
   #=  add the equations to the flat model=#
   @assign flatModel.equations = listAppend(conn_eql, flatModel.equations)
@@ -1588,17 +1584,15 @@ function evaluateBindingConnOp(
   setsArray::Vector{<:List{<:Connector}},
   ctable::CardinalityTable.Table,
 )::Variable
-
   local binding::Binding
   local exp::Expression
   local eval_exp::Expression
-
-  @assign () = begin
+  () = begin
     @match var begin
       VARIABLE(
         binding = binding && TYPED_BINDING(bindingExp = exp),
       ) => begin
-        @assign eval_exp = ConnectEquations.evaluateOperators(exp, sets, setsArray, ctable)
+        eval_exp = evaluateOperators(exp, sets, setsArray, ctable)
         if !referenceEq(exp, eval_exp)
           @assign binding.bindingExp = eval_exp
           @assign var.binding = binding
@@ -1620,14 +1614,14 @@ function evaluateEquationsConnOp(
   setsArray::Vector{<:List{<:Connector}},
   ctable::CardinalityTable.Table,
 )::List{Equation}
-
-  @assign equations = List(
-    P_Equation.Equation.mapExp(
+  equations = list(
+    mapExp(
       eq,
-      (sets, setsArray, ctable) -> ConnectEquations.evaluateOperators(
-        sets = sets,
-        setsArray = setsArray,
-        ctable = ctable,
+      (expArg) -> evaluateOperators(
+        expArg,
+        sets,
+        setsArray,
+        ctable,
       ),
     ) for eq in equations
   )

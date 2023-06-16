@@ -150,7 +150,7 @@ function expandUnary(exp::Expression, op::Operator)::Tuple{Expression, Bool}
   if expanded
     @assign outExp = mapArrayElements(
       outExp,
-      (scalar_op) -> simplifyUnaryOp(op = scalar_op),
+      (expArg) -> simplifyUnaryOp(expArg, scalar_op),
     )
   end
   return (outExp, expanded)
@@ -423,25 +423,23 @@ function expandBinaryArrayScalar(
 )::Tuple{Expression, Bool}
   local expanded::Bool
   local outExp::Expression
-
   local exp1::Expression
   local exp2::Expression
   local expl::List{Expression}
   local op::Operator
-
   @match BINARY_EXPRESSION(exp1 = exp1, operator = op, exp2 = exp2) = exp
-  @assign (exp1, expanded) = expand(exp1)
+  (exp1, expanded) = expand(exp1)
   if expanded
-    @assign op = OPERATOR(
+    op = OPERATOR(
       arrayElementType(typeOf(op)),
       scalarOp,
     )
-    @assign outExp = mapArrayElements(
+    outExp = mapArrayElements(
       exp1,
-      (op, exp2) -> simplifyBinaryOp(op = op, exp2 = exp2),
+      (expArg) -> simplifyBinaryOp(expArg, op, exp2),
     )
   else
-    @assign outExp = exp
+    outExp = exp
   end
   return (outExp, expanded)
 end
@@ -473,25 +471,23 @@ function expandBinaryScalarArray(
 )::Tuple{Expression, Bool}
   local expanded::Bool
   local outExp::Expression
-
   local exp1::Expression
   local exp2::Expression
   local expl::List{Expression}
   local op::Operator
-
   @match BINARY_EXPRESSION(exp1 = exp1, operator = op, exp2 = exp2) = exp
-  @assign (exp2, expanded) = expand(exp2)
+  (exp2, expanded) = expand(exp2)
   if expanded
-    @assign op = OPERATOR(
+    op = OPERATOR(
       arrayElementType(typeOf(op)),
       scalarOp,
     )
-    @assign outExp = mapArrayElements(
+    outExp = mapArrayElements(
       exp2,
-      (op, exp1) -> simplifyBinaryOp(op = op, exp1 = exp1),
+      (arg) -> simplifyBinaryOp(exp1, op, arg),
     )
   else
-    @assign outExp = exp
+    outExp = exp
   end
   return (outExp, expanded)
 end
@@ -503,27 +499,25 @@ function expandBinaryElementWise2(
   func::MakeFn,
 )::Expression
   local exp::Expression
-
   local expl1::List{Expression}
   local expl2::List{Expression}
   local expl::List{Expression}
   local ty::M_Type
   local eop::Operator
-
-  @assign expl1 = arrayElements(exp1)
-  @assign expl2 = arrayElements(exp2)
-  @assign ty = typeOf(op)
-  @assign eop = setType(Type.unliftArray(ty), op)
-  if Type.dimensionCount(ty) > 1
-    @assign expl =
-      List(@do_threaded_for expandBinaryElementWise2(e1, eop, e2, func) (e1, e2) (
+  expl1 = arrayElements(exp1)
+  expl2 = arrayElements(exp2)
+  ty = typeOf(op)
+  eop = setType(unliftArray(ty), op)
+  if dimensionCount(ty) > 1
+    expl =
+      list(@do_threaded_for expandBinaryElementWise2(e1, eop, e2, func) (e1, e2) (
         expl1,
         expl2,
       ))
   else
-    @assign expl = List(@do_threaded_for func(e1, eop, e2) (e1, e2) (expl1, expl2))
+    expl = list(@do_threaded_for func(e1, eop, e2) (e1, e2) (expl1, expl2))
   end
-  @assign exp = makeArray(ty, expl)
+  exp = makeArray(ty, expl)
   return exp
 end
 
@@ -810,20 +804,22 @@ end
 function expandBuiltinPromote(args::List{<:Expression})::Tuple{Expression, Bool}
   local expanded::Bool
   local exp::Expression
-
   local n::Int
   local eexp::Expression
   local nexp::Expression
-
   @match _cons(eexp, _cons(nexp, nil)) = args
   @match INTEGER_EXPRESSION(value = n) = nexp
-  @assign (eexp, expanded) = expand(eexp)
-  @assign exp =
-    promote(eexp, typeOf(eexp), n)
+  (eexp, expanded) = expand(eexp)
+  (exp, _) = promote(eexp, typeOf(eexp), n)
   return (exp, expanded)
 end
 
 function expandBuiltinCat(args::List{<:Expression}, call::Call)::Tuple{Expression, Bool}
+#=
+  This relies on the fact that Ceval.evalBuiltinCat doesn't actually do any
+  actual constant evaluation, and works on non-constant arrays too as long
+  as they're expanded.
+=#
   local expanded::Bool
   local exp::Expression
   local expl::List{Expression} = nil
@@ -832,14 +828,8 @@ function expandBuiltinCat(args::List{<:Expression}, call::Call)::Tuple{Expressio
     exp =
       evalBuiltinCat(listHead(args), expl, EVALTARGET_IGNORE_ERRORS())
   else
-    exp = expandGeneric(CALL_EXPRESSION(call))
+    (exp, _) = expandGeneric(CALL_EXPRESSION(call))
   end
-  #=  This relies on the fact that Ceval.evalBuiltinCat doesn't actually do any
-  =#
-  #=  actual constant evaluation, and works on non-constant arrays too as long
-  =#
-  #=  as they're expanded.
-  =#
   return (exp, expanded)
 end
 

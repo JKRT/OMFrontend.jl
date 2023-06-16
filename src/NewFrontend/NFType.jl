@@ -862,22 +862,22 @@ function nthDimension(ty::M_Type, index::Int)::Dimension
   return dim
 end
 
-""" #= Copies array dimensions from one type to another, discarding the existing
-     dimensions of the destination type but keeping its element type. =#"""
+"""
+ Copies array dimensions from one type to another, discarding the existing
+ dimensions of the destination type but keeping its element type.
+"""
 function copyDims(srcType::M_Type, dstType::M_Type)::M_Type
   local ty::M_Type
-
   if listEmpty(arrayDims(srcType))
-    @assign ty = arrayElementType(dstType)
+    ty = arrayElementType(dstType)
   else
-    @assign ty = begin
+    ty = begin
       @match dstType begin
-        ARRAY(__) => begin
-          ARRAY(dstType.elementType, arrayDims(srcType))
+        TYPE_ARRAY(__) => begin
+          TYPE_ARRAY(dstType.elementType, arrayDims(srcType))
         end
-
         _ => begin
-          ARRAY(dstType, arrayDims(srcType))
+          TYPE_ARRAY(dstType, arrayDims(srcType))
         end
       end
     end
@@ -924,8 +924,10 @@ function elementType(ty::NFType)::NFType
   return elementTy
 end
 
-""" #= Sets the common type of the elements in an array, if the type is an array
-     type. Otherwise it just returns the given element type. =#"""
+"""
+Sets the common type of the elements in an array, if the type is an array
+type. Otherwise it just returns the given element type.
+"""
 function setArrayElementType(arrayTy::M_Type, elementTy::NFType)::NFType
   local ty::NFType
   @assign ty = begin
@@ -962,17 +964,14 @@ end
 
 function nthTupleType(ty::M_Type, n::Int)::M_Type
   local outTy::M_Type
-
-  @assign outTy = begin
+  outTy = begin
     @match ty begin
-      TUPLE(__) => begin
+      TYPE_TUPLE(__) => begin
         listGet(ty.types, n)
       end
-
       TYPE_ARRAY(__) => begin
         TYPE_ARRAY(nthTupleType(ty.elementType, n), ty.dimensions)
       end
-
       _ => begin
         ty
       end
@@ -983,17 +982,14 @@ end
 
 function firstTupleType(ty::M_Type)::M_Type
   local outTy::M_Type
-
-  @assign outTy = begin
+  outTy = begin
     @match ty begin
-      TUPLE(__) => begin
+      TYPE_TUPLE(__) => begin
         listHead(ty.types)
       end
-
       TYPE_ARRAY(__) => begin
         TYPE_ARRAY(firstTupleType(ty.elementType), ty.dimensions)
       end
-
       _ => begin
         ty
       end

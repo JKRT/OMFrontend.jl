@@ -1,4 +1,3 @@
-
 #= /*
 * This file is part of OpenModelica.
 *
@@ -30,28 +29,23 @@
 *
 */ =#
 
-#import ..ConnectionSets
-
 const potFunc = Function
-
 const EQ_ASSERT_STR = STRING_EXPRESSION("Connected constants/parameters must be equal")
 
 function generateEquations(sets::Vector{<:List{<:Connector}})::List{Equation}
   local equations::List{Equation} = nil
-
   local set_eql::List{Equation}
   local potfunc::potFunc
   local flowThreshold::Expression
   local cty::ConnectorType.TYPE
-
   setGlobalRoot(Global.isInStream, NONE())
   #= potfunc := if Config.orderConnections() then
   =#
   #=   generatePotentialEquationsOrdered else generatePotentialEquations;
   =#
-  @assign potfunc = generatePotentialEquations
+  potfunc = generatePotentialEquations
   #@assign flowThreshold = REAL_EXPRESSION(Flags.getConfigReal(Flags.FLOW_THRESHOLD))
-  @assign flowThreshold = REAL_EXPRESSION(1e-7) #=TODO Should be like this.. I think - John. Fix flag memory issue=#
+  flowThreshold = REAL_EXPRESSION(1e-7) #=TODO Should be like this.. I think - John. Fix flag memory issue=#
   for set in sets
     cty = getSetType(set)
     if isPotential(cty)
@@ -78,23 +72,22 @@ end
 
 const CardinalityTable = NFCardinalityTable
 function evaluateOperators(
-  exp::Expression,
-  sets::ConnectionSets.Sets,
+  @nospecialize(exp::Expression),
+  @nospecialize(sets::ConnectionSets.Sets),
   setsArray::Vector{<:List{<:Connector}},
   ctable::CardinalityTable.Table,
 )::Expression
   local evalExp::Expression
-
-  @assign evalExp = begin
+  evalExp = begin
     local call::Call
     local expanded::Bool
     @match exp begin
       CALL_EXPRESSION(call = call) => begin
         begin
           @match call begin
-            P_Call.TYPED_CALL(__) => begin
+            TYPED_CALL(__) => begin
               begin
-                @match P_Function.name(call.fn) begin
+                @match name(call.fn) begin
                   Absyn.IDENT("inStream") => begin
                     evaluateInStream(
                       toCref(listHead(call.arguments)),
@@ -120,10 +113,11 @@ function evaluateOperators(
                   _ => begin
                     mapShallow(
                       exp,
-                      (sets, setsArray, ctable) -> evaluateOperators(
-                        sets = sets,
-                        setsArray = setsArray,
-                        ctable = ctable,
+                      (expArg) -> evaluateOperators(
+                        expArg,
+                        sets,
+                        setsArray,
+                        ctable,
                       ),
                     )
                   end
@@ -131,14 +125,14 @@ function evaluateOperators(
               end
             end
 
-            P_Call.TYPED_REDUCTION(
+            TYPED_REDUCTION(
               __,
             ) where {(contains(call.exp, isStreamCall))} =>
               begin
                 evaluateOperatorReductionExp(exp, sets, setsArray, ctable)
               end
 
-            P_Call.TYPED_ARRAY_CONSTRUCTOR(
+            TYPED_ARRAY_CONSTRUCTOR(
               __,
             ) where {(contains(call.exp, isStreamCall))} =>
               begin
@@ -148,10 +142,11 @@ function evaluateOperators(
             _ => begin
               mapShallow(
                 exp,
-                (sets, setsArray, ctable) -> evaluateOperators(
-                  sets = sets,
-                  setsArray = setsArray,
-                  ctable = ctable,
+                (expArg) -> evaluateOperators(
+                  expArg,
+                  sets,
+                  setsArray,
+                  ctable,
                 ),
               )
             end
@@ -162,8 +157,8 @@ function evaluateOperators(
       BINARY_EXPRESSION(
         exp1 = CREF_EXPRESSION(__),
         operator = OPERATOR(op = Op.MUL),
-        exp2 = CALL_EXPRESSION(call = call && P_Call.TYPED_CALL(__)),
-      ) where {(AbsynUtil.isNamedPathIdent(P_Function.name(call.fn), "actualStream"))} =>
+        exp2 = CALL_EXPRESSION(call = call && TYPED_CALL(__)),
+      ) where {(AbsynUtil.isNamedPathIdent(name(call.fn), "actualStream"))} =>
         begin
           evaluateActualStreamMul(
             exp.exp1,
@@ -176,10 +171,10 @@ function evaluateOperators(
         end
 
       BINARY_EXPRESSION(
-        exp1 = CALL_EXPRESSION(call = call && P_Call.TYPED_CALL(__)),
+        exp1 = CALL_EXPRESSION(call = call && TYPED_CALL(__)),
         operator = OPERATOR(op = Op.MUL),
         exp2 = CREF_EXPRESSION(__),
-      ) where {(AbsynUtil.isNamedPathIdent(P_Function.name(call.fn), "actualStream"))} =>
+      ) where {(AbsynUtil.isNamedPathIdent(name(call.fn), "actualStream"))} =>
         begin
           evaluateActualStreamMul(
             exp.exp2,
@@ -190,20 +185,17 @@ function evaluateOperators(
             ctable,
           )
         end
-
       _ => begin
         mapShallow(
           exp,
-          (sets, setsArray, ctable) ->
-            evaluateOperators(sets = sets, setsArray = setsArray, ctable = ctable),
+          (expArg) ->
+            evaluateOperators(expArg, sets, setsArray, ctable),
         )
       end
     end
   end
-  #=  inStream/actualStream can't handle non-literal subscripts, so reductions and array
-  =#
-  #=  constructors containing such calls needs to be expanded to get rid of the iterators.
-  =#
+  #=  inStream/actualStream can't handle non-literal subscripts, so reductions and array =#
+  #=  constructors containing such calls needs to be expanded to get rid of the iterators.=#
   return evalExp
 end
 
@@ -756,28 +748,23 @@ end
 
 function isStreamCall(exp::Expression)::Bool
   local streamCall::Bool
-
-  @assign streamCall = begin
-    local name::String
+  streamCall = begin
     @match exp begin
       CALL_EXPRESSION(__) => begin
         begin
-          @match P_Function.name(P_Call.typedFunction(exp.call)) begin
+          @match name(typedFunction(exp.call)) begin
             Absyn.IDENT("inStream") => begin
               true
             end
-
             Absyn.IDENT("actualStream") => begin
               true
             end
-
             _ => begin
               false
             end
           end
         end
       end
-
       _ => begin
         false
       end

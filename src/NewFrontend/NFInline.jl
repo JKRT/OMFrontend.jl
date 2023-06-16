@@ -193,11 +193,11 @@ function replaceCrefNode(exp::Expression, node::InstNode, value::Expression)::Ex
   =#
   #=  Replace expressions in dimensions too.
   =#
-  @assign ty = typeOf(exp)
-  @assign repl_ty =
-    mapDims(ty, (node, value) -> replaceDimExp(node = node, value = value))
+  ty = typeOf(exp)
+  repl_ty =
+    mapDims(ty, (dimArg) -> replaceDimExp(dimArg, node, value))
   if !referenceEq(ty, repl_ty)
-    @assign exp = setType(repl_ty, exp)
+    exp = setType(repl_ty, exp)
   end
   return exp
 end
@@ -209,11 +209,10 @@ function replaceDimExp(dim::Dimension, node::InstNode, value::Expression)::Dimen
       DIMENSION_EXP(__) => begin
         exp = map(
           dim.exp,
-          (node, value) -> replaceCrefNode(node = node, value = value),
+          (x) -> replaceCrefNode(x, node, value),
         )
         fromExp(exp, dim.var)
       end
-
       _ => begin
         dim
       end

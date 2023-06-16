@@ -93,7 +93,7 @@ function next(iterator::ExpressionIterator)::Tuple{ExpressionIterator, Expressio
       end
 
       EXPRESSION_SCALAR_ITERATOR(__) => begin
-        (NONE_ITERATOR(), iterator.exp)
+        (EXPRESSION_NONE_ITERATOR(), iterator.exp)
       end
 
       EXPRESSION_EACH_ITERATOR(__) => begin
@@ -106,7 +106,7 @@ function next(iterator::ExpressionIterator)::Tuple{ExpressionIterator, Expressio
         else
           @match _cons(next, rest) = arr
         end
-        (REPEAT_ITERATOR(rest, arr), next)
+        (EXPRESSION_REPEAT_ITERATOR(rest, arr), next)
       end
     end
   end

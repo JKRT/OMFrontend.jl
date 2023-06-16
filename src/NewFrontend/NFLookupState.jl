@@ -384,7 +384,7 @@ function assertState(
   name::LookupStateName,
   info::SourceInfo,
 )
-  return @assign () = begin
+  return  () = begin
     local name_str::String
     local info2::SourceInfo
     #=  Found the expected kind of element.
@@ -430,7 +430,7 @@ function assertState(
         ()
       end
 
-      (LOOKUP_STATE_COMP_FUNC(__), FUNC(__)) => begin
+      (LOOKUP_STATE_COMP_FUNC(__), LOOKUP_STATE_FUNC(__)) => begin
         ()
       end
 

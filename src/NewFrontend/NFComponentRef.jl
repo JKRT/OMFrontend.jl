@@ -662,16 +662,14 @@ end
      Ex: a[1, 2].b[4].c[6, 3] => {{6,3}, {4}, {1,2}} =#"""
 function subscriptsAll(
   cref::ComponentRef,
-  accumSubs::List{<:List{<:Subscript}} = nil,
+  accumSubs::List#={<:List{<:Subscript}}=# = nil,
 )::List{List{Subscript}}
   local subscripts::List{List{Subscript}}
-
-  @assign subscripts = begin
+  subscripts = begin
     @match cref begin
       COMPONENT_REF_CREF(__) => begin
         subscriptsAll(cref.restCref, _cons(cref.subscripts, accumSubs))
       end
-
       _ => begin
         accumSubs
       end

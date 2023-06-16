@@ -24,17 +24,17 @@ struct EMPTY <: Tree
 end
 
 keyCompare = (inKey1::Key, inKey2::Key) -> begin
-  res = inKey1 == inKey2 #Should it default to ==== instead since types are in many cases immutable?
+  res = inKey1 == inKey2
   return res
 end
 
-""" #= Return an empty tree =#"""
+"""  Return an empty tree """
 function new()::Tree
   local outTree::Tree = EMPTY()
   return outTree
 end
 
-""" #= Gets a value from the tree given a key. =#"""
+"""  Gets a value from the tree given a key. """
 function hasKey(inTree::Tree, inKey::Key)::Bool
   local comp::Bool = false
   local key::Key
@@ -92,7 +92,7 @@ function isEmpty(tree::Tree)::Bool
   return isEmpty
 end
 
-""" #= Converts the tree to a flat list of keys (in order). =#"""
+"""  Converts the tree to a flat list of keys (in order). """
 function listKeys(inTree::Tree, lst::List{<:Key} = nil)::List{Key}
 
   @assign lst = begin
@@ -497,25 +497,26 @@ function addList(
   return tree
 end
 
-""" #= Alias for add that replaces the node in case of conflict. =#"""
+""" Alias for add that replaces the node in case of conflict. """
 function update(tree::Tree, key::Key, value::Value)::Tree
   local outTree::Tree = add(tree, key, value, addConflictReplace)
   return outTree
 end
 
-""" #= Fetches a value from the tree given a key, or fails if no value is associated
-   with the key. =#"""
+"""
+  Fetches a value from the tree given a key, or fails if no value is associated
+  with the key.
+"""
 function get(tree::Tree, key::Key)::Value
   local value::Value
   local k::Key
-  @assign k = begin
+  k = begin
     @match tree begin
       NODE(__) =>  tree.key
       LEAF(__) => tree.key
     end
   end
-  println("Stepping")
-  @assign value = begin
+  value = begin
     @match (keyCompare(key, k), tree) begin
       (0, LEAF(__)) => begin
         tree.value

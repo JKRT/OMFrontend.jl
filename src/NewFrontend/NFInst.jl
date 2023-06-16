@@ -60,11 +60,10 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
   inst_cls = instantiateN1(cls, EMPTY_NODE())
   insertGeneratedInners(inst_cls, top)
   #execStat("NFInst.instantiate(" + name + ")")
-  #=  Instantiate expressions (i.e. anything that can contains crefs, like
-  =#
-  #=  bindings, dimensions, etc). This is done as a separate step after
-  =#
-  #=  instantiation to make sure that lookup is able to find the correct nodes.
+  #=
+  Instantiate expressions (i.e. anything that can contains crefs, like
+  bindings, dimensions, etc). This is done as a separate step after
+  instantiation to make sure that lookup is able to find the correct nodes.
   =#
   Base.inferencebarrier(instExpressions(inst_cls))
   #                   execStat("NFInst.instExpressions(" + name + ")")
@@ -2138,7 +2137,7 @@ function instRecordConstructor(node::InstNode)
         if SCodeUtil.isOperatorRecord(definition(node))
           instConstructor(scopePath(node, includeRoot = true), node, InstNode_info(node))
         else
-          Record.instDefaultConstructor(scopePath(node, includeRoot = true), node, InstNode_info(node))
+          instDefaultConstructor(scopePath(node, includeRoot = true), node, InstNode_info(node))
         end
         ()
       end
@@ -2890,12 +2889,12 @@ function insertGeneratedInners(node::InstNode, topScope::InstNode)
   @assign inner_comps = nil
   for e in inner_nodes
     @assign (name, n) = e
-    Error.addSourceMessage(Error.MISSING_INNER_ADDED, list(typeName(n), name), info(n))
+    Error.addSourceMessage(Error.MISSING_INNER_ADDED, list(typeName(n), name), InstNode_info(n))
     if isComponent(n)
       instComponent(n, DEFAULT_ATTR, MODIFIER_NOMOD(), true, 0)
       try
         @match Absyn.STRING(str) = SCodeUtil.getElementNamedAnnotation(definition(classScope(n)), "missingInnerMessage")
-        Error.addSourceMessage(Error.MISSING_INNER_MESSAGE, list(System.unescapedString(str)), info(n))
+        Error.addSourceMessage(Error.MISSING_INNER_MESSAGE, list(System.unescapedString(str)), InstNode_info(n))
       catch
         @error "Error missing inners!"
         fail()

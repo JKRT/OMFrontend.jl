@@ -8,6 +8,12 @@ const Value = Entry
 #= Modelica extend clause =#
 include("../Util/baseAvlTreeCode.jl")
 
+#= Use proper string compare =#
+keyCompare = (inKey1::Key, inKey2::Key) -> begin
+  res = stringCompare(inKey1, inKey2)
+  return res
+end
+
 import ..LookupTree
 import ..InstNode
 const EntryType = (() -> begin #= Enumeration =#

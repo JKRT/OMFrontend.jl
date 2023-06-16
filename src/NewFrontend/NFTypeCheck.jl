@@ -1558,7 +1558,6 @@ function checkBinaryOperationEW(
 )::Tuple{Expression, NFType}
   local resultType::NFType
   local binaryExp::Expression
-
   local e1::Expression
   local e2::Expression
   local ty1::NFType
@@ -1568,15 +1567,14 @@ function checkBinaryOperationEW(
   local is_arr1::Bool
   local is_arr2::Bool
   local op::Operator
-
-  @assign is_arr1 = isArray(type1)
-  @assign is_arr2 = isArray(type2)
+  is_arr1 = isArray(type1)
+  is_arr2 = isArray(type2)
   if is_arr1 && is_arr2
-    @assign (e1, e2, resultType, mk) = matchExpressions(exp1, type1, exp2, type2, true)
+    (e1, e2, resultType, mk) = matchExpressions(exp1, type1, exp2, type2, true)
   else
-    @assign ty1 = arrayElementType(type1)
-    @assign ty2 = arrayElementType(type2)
-    @assign (e1, e2, resultType, mk) = matchExpressions(exp1, ty1, exp2, ty2, true)
+    ty1 = arrayElementType(type1)
+    ty2 = arrayElementType(type2)
+    (e1, e2, resultType, mk) = matchExpressions(exp1, ty1, exp2, ty2, true)
   end
   #=  The expressions must be type compatible if they are both arrays.
   =#
@@ -1604,21 +1602,21 @@ function checkBinaryOperationEW(
       end
     end
   end
-  @assign (resultType, op) = begin
+  (resultType, op) = begin
     @match (is_arr1, is_arr2) begin
       (true, false) => begin
         #=  array * scalar => Op.{elemOp}_ARRAY_SCALAR.
         =#
-        @assign resultType = Type.copyDims(type1, resultType)
-        @assign op = makeArrayScalar(resultType, elemOp)
+        resultType = copyDims(type1, resultType)
+        op = makeArrayScalar(resultType, elemOp)
         (resultType, op)
       end
 
       (false, true) => begin
         #=  scalar * array => Op.{elemOp}_SCALAR_ARRAY;
         =#
-        @assign resultType = Type.copyDims(type2, resultType)
-        @assign op = makeScalarArray(resultType, elemOp)
+        resultType = copyDims(type2, resultType)
+        op = makeScalarArray(resultType, elemOp)
         (resultType, op)
       end
 
@@ -2181,9 +2179,9 @@ function matchExpressions_cast(
         =#
         #=  not alone on the rhs of an equation is \"tuple subscripted\" by typeExp.
         =#
-        @assign exp2 = tupleElement(exp2, compatibleType, 1)
-        @assign (exp2, compatibleType, matchKind) =
-          matchTypes(compatibleType, type1, exp2, allowUnknown)
+        exp2 = tupleElement(exp2, compatibleType, 1)
+        (exp2, compatibleType, matchKind) =
+          matchTypes(compatibleType, type1, exp2, allowUnknown = allowUnknown)
         if isCompatibleMatch(matchKind)
           @assign matchKind = MatchKind.CAST
         end
@@ -3060,22 +3058,22 @@ function getRangeTypeReal(
             REAL_EXPRESSION(5e-15),
           )
         end
-        @assign dim_exp = CALL_EXPRESSION(P_Call.makeTypedCall(
+        dim_exp = CALL_EXPRESSION(makeTypedCall(
           NFBuiltinFuncs.FLOOR,
           list(dim_exp),
           var,
         ))
-        @assign dim_exp = CALL_EXPRESSION(P_Call.makeTypedCall(
+        dim_exp = CALL_EXPRESSION(makeTypedCall(
           NFBuiltinFuncs.INTEGER_REAL,
           list(dim_exp),
           var,
         ))
-        @assign dim_exp = BINARY_EXPRESSION(
+        dim_exp = BINARY_EXPRESSION(
           dim_exp,
           makeAdd(TYPE_INTEGER()),
           INTEGER_EXPRESSION(1),
         )
-        @assign dim_exp = SimplifyExp.simplify(dim_exp)
+        dim_exp = simplify(dim_exp)
         fromExp(dim_exp, var)
       end
     end
@@ -3085,7 +3083,6 @@ end
 
 function getRangeTypeBool(startExp::Expression, stopExp::Expression)::Dimension
   local dim::Dimension
-
   @assign dim = begin
     local sz::Int
     local dim_exp::Expression
@@ -3454,13 +3451,11 @@ end
 
 function checkSumComplexType(ty::NFType, exp::Expression, info::SourceInfo)::Bool
   local valid::Bool = true
-
   local cls_node::InstNode
   local op_node::InstNode
   local cls::Class
-
   @match TYPE_COMPLEX(cls = cls_node) = ty
-  @assign cls = getClass(cls_node)
+  cls = getClass(cls_node)
   for op in list("'+'", "'0'")
     if !hasOperator(op, cls)
       Error.addSourceMessage(

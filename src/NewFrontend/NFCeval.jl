@@ -168,7 +168,6 @@ function evalExp(
 end
 
 function evalExp_impl(exp::Expression, target::EvalTarget)::Expression
-
   @assign exp = begin
     local c::InstNode
     local binding::Binding
@@ -316,10 +315,12 @@ function evalExpOpt(
   return oexp
 end
 
-""" #= Evaluates the parts of an expression that are possible to evaluate. This
+"""
+   Evaluates the parts of an expression that are possible to evaluate. This
    means leaving parts of the expression that contains e.g. iterators or mutable
    expressions. This can be used to optimize an expression that is expected to
-   be evaluated many times, for example the expression in an array constructor. =#"""
+   be evaluated many times, for example the expression in an array constructor.
+"""
 function evalExpPartial(
   exp::Expression,
   target::EvalTarget = EVALTARGET_IGNORE_ERRORS(),
@@ -327,26 +328,24 @@ function evalExpPartial(
 )::Tuple{Expression, Bool}
   local outEvaluated::Bool #= True if the whole expression is evaluated, otherwise false. =#
   local outExp::Expression
-
   local e::Expression
   local e1::Expression
   local e2::Expression
   local eval1::Bool
   local eval2::Bool
-
-  @assign (e, outEvaluated) = mapFoldShallow(
+  (e, outEvaluated) = mapFoldShallow(
     exp,
-    (target) -> evalExpPartial(target = target),
+    (expArg, boolArg) -> evalExpPartial(expArg, target, boolArg),
     true,
   )
-  @assign outExp = begin
+  outExp = begin
     @match e begin
       CREF_EXPRESSION(__) => begin
         if isIterator(e.cref)
-          @assign outExp = e
-          @assign outEvaluated = false
+          outExp = e
+          outEvaluated = false
         else
-          @assign outExp = evalCref(e.cref, e, target, evalSubscripts = false)
+          outExp = evalCref(e.cref, e, target, evalSubscripts = false)
         end
         #=  Don't evaluate iterators.
         =#
@@ -576,9 +575,9 @@ function subscriptEvaluatedBinding2(
               @assign cr_node = node(cr)
             end
             if evalSubscripts
-              @assign subs = list(eval(s) for s in subs)
+              subs = list(eval(s) for s in subs)
             end
-            @assign accum_subs = listAppend(subs, accum_subs)
+            accum_subs = listAppend(subs, accum_subs)
           end
           #=  Remove binding parents until we find one referring to the first
           =#
@@ -1119,11 +1118,11 @@ function evalBinaryOp_dispatch(
       end
 
       Op.DIV_SCALAR_ARRAY => begin
-        evalBinaryScalarArray(exp1, exp2, (target) -> evalBinaryDiv(target = target))
+        evalBinaryScalarArray(exp1, exp2, (x, y) -> evalBinaryDiv(x, y, target))
       end
 
       Op.DIV_ARRAY_SCALAR => begin
-        evalBinaryArrayScalar(exp1, exp2, (target) -> evalBinaryDiv(target = target))
+        evalBinaryArrayScalar(exp1, exp2, (x, y) -> evalBinaryDiv(x, y, target))
       end
 
       Op.POW_SCALAR_ARRAY => begin
@@ -2327,10 +2326,8 @@ end
 
 function evalCall(call::Call, target::EvalTarget)::Expression
   local exp::Expression
-
   local c::Call = call
-
-  @assign exp = begin
+  exp = begin
     local args::List{Expression}
     @match c begin
       TYPED_CALL(__) => begin
@@ -2347,15 +2344,12 @@ function evalCall(call::Call, target::EvalTarget)::Expression
           )
         end
       end
-
-      P_Call.TYPED_ARRAY_CONSTRUCTOR(__) => begin
+      TYPED_ARRAY_CONSTRUCTOR(__) => begin
         evalArrayConstructor(c.exp, c.iters)
       end
-
-      P_Call.TYPED_REDUCTION(__) => begin
+      TYPED_REDUCTION(__) => begin
         evalReduction(c.fn, c.exp, c.iters)
       end
-
       _ => begin
         Error.addInternalError(getInstanceName() + " got untyped call", sourceInfo())
         fail()
@@ -2635,15 +2629,14 @@ function evalNormalCallExp(callExp::Expression)::Expression
 
   local fn::M_Function
   local args::List{Expression}
-
-  @match CALL_EXPRESSION(call = P_Call.TYPED_CALL(fn = fn, arguments = args)) =
+  @match CALL_EXPRESSION(call = TYPED_CALL(fn = fn, arguments = args)) =
     callExp
-  @assign result = evalNormalCall(fn, args)
+  result = evalNormalCall(fn, args)
   return result
 end
 
 function evalNormalCall(fn::M_Function, args::List{<:Expression})::Expression
-  local result::Expression = EvalFunction.evaluate(fn, args)
+  local result::Expression = evaluate(fn, args)
   return result
 end
 
@@ -3578,13 +3571,10 @@ end
 
 function evalBuiltinPromote(arg::Expression, argN::Expression)::Expression
   local result::Expression
-
   local n::Int
-
   if isInteger(argN)
     @match INTEGER_EXPRESSION(n) = argN
-    @assign result =
-      promote(arg, typeOf(arg), n)
+    (result, _) = promote(arg, typeOf(arg), n)
   else
     printWrongArgsError(getInstanceName(), list(arg, argN), sourceInfo())
     fail()
@@ -4040,7 +4030,6 @@ end
 
 function evalBuiltinTranspose(arg::Expression)::Expression
   local result::Expression
-
   local dim1::Dimension
   local dim2::Dimension
   local rest_dims::List{Dimension}
@@ -4048,23 +4037,21 @@ function evalBuiltinTranspose(arg::Expression)::Expression
   local arr::List{Expression}
   local arrl::List{List{Expression}}
   local literal::Bool
-
-  @assign result = begin
+  result = begin
     @match arg begin
       ARRAY_EXPRESSION(
         ty = TYPE_ARRAY(elementType = ty, dimensions = dim1 <| dim2 <| rest_dims),
         elements = arr,
         literal = literal,
       ) => begin
-        @assign arrl = list(arrayElements(e) for e in arr)
-        @assign arrl = ListUtil.transposeList(arrl)
-        @assign ty = liftArrayLeft(ty, dim1)
-        @assign arr =
-          list(makeArray(ty, expl, literal) for expl in arrl)
-        @assign ty = liftArrayLeft(ty, dim2)
-        makeArray(ty, arr, literal)
+        arrl = list(arrayElements(e) for e in arr)
+        arrl = ListUtil.transposeList(arrl)
+        ty = liftArrayLeft(ty, dim1)
+        arr =
+          list(makeArray(ty, expl, literal = literal) for expl in arrl)
+        ty = liftArrayLeft(ty, dim2)
+        makeArray(ty, arr, literal = literal)
       end
-
       _ => begin
         printWrongArgsError(getInstanceName(), list(arg), sourceInfo())
         fail()
@@ -4372,13 +4359,11 @@ function evalBuiltinDynamicSelect(
   target::EvalTarget,
 )::Expression
   local result::Expression
-
   local s::Expression
   local d::Expression
-
   @match list(s, d) = list(unbox(arg) for arg in args)
-  @assign s = evalExp(s, target)
-  @assign result = s
+  s = evalExp(s, target)
+  result = s
   return result
 end
 
@@ -4387,11 +4372,10 @@ function evalArrayConstructor(
   iterators::List{<:Tuple{<:InstNode, Expression}},
 )::Expression
   local result::Expression
-
-  @assign result = evalExpPartial(exp)
-  @assign result = bindingExpMap(
+  (result, ) = evalExpPartial(exp)
+  result = bindingExpMap(
     result,
-    (iterators) -> evalArrayConstructor2(iterators = iterators),
+    (expArg) -> evalArrayConstructor2(expArg, iterators),
   )
   return result
 end
@@ -4453,7 +4437,6 @@ function evalArrayConstructor3(
   types::List{<:M_Type},
 )::Expression
   local result::Expression
-
   local range::Expression
   local e::Expression
   local ranges_rest::List{Expression}
@@ -4464,21 +4447,20 @@ function evalArrayConstructor3(
   local value::Expression
   local ty::M_Type
   local rest_ty::List{M_Type}
-
   if listEmpty(ranges)
-    @assign result = evalExp_impl(exp, EVALTARGET_IGNORE_ERRORS())
+    result = evalExp_impl(exp, EVALTARGET_IGNORE_ERRORS())
   else
     @match _cons(range, ranges_rest) = ranges
     @match _cons(iter, iters_rest) = iterators
     @match _cons(ty, rest_ty) = types
-    @assign range_iter = P_ExpressionIterator.ExpressionIterator.fromExp(range)
-    while P_ExpressionIterator.ExpressionIterator.hasNext(range_iter)
-      @assign (range_iter, value) = P_ExpressionIterator.ExpressionIterator.next(range_iter)
+    range_iter = fromExpToExpressionIterator(range)
+    while hasNext(range_iter)
+      (range_iter, value) = next(range_iter)
       P_Pointer.update(iter, value)
-      @assign expl =
+      expl =
         _cons(evalArrayConstructor3(exp, ranges_rest, iters_rest, rest_ty), expl)
     end
-    @assign result =
+    result =
       makeArray(ty, listReverseInPlace(expl), literal = true)
   end
   return result
@@ -4589,7 +4571,6 @@ function evalSize(
   target::EvalTarget,
 )::Expression
   local outExp::Expression
-
   local index_exp::Expression
   local index::Int
   local ty_err::TypingError
@@ -4597,19 +4578,18 @@ function evalSize(
   local ty::M_Type
   local expl::List{Expression}
   local info::SourceInfo
-
-  @assign info = EvalTarget_getInfo(target)
+  info = EvalTarget_getInfo(target)
   if isSome(optIndex)
-    @assign index_exp = evalExp_impl(Util.getOption(optIndex), target)
-    @assign index = toInteger(index_exp)
-    @assign (dim, _, ty_err) = typeExpDim(exp, index, ORIGIN_CLASS, info)
+    index_exp = evalExp_impl(Util.getOption(optIndex), target)
+    index = toInteger(index_exp)
+    (dim, _, ty_err) = typeExpDim(exp, index, ORIGIN_CLASS, info)
     checkSizeTypingError(ty_err, exp, index, info)
-    @assign outExp = P_Dimension.Dimension.sizeExp(dim)
+    outExp = sizeExp(dim)
   else
-    @assign (outExp, ty) = typeExp(exp, ORIGIN_CLASS, info)
-    @assign expl = list(P_Dimension.Dimension.sizeExp(d) for d in arrayDims(ty))
-    @assign dim = P_Dimension.Dimension.fromInteger(listLength(expl), Variability.PARAMETER)
-    @assign outExp =
+    (outExp, ty) = typeExp(exp, ORIGIN_CLASS, info)
+    expl = list(sizeExp(d) for d in arrayDims(ty))
+    dim = fromInteger(listLength(expl), Variability.PARAMETER)
+    outExp =
       makeArray(TYPE_ARRAY(TYPE_INTEGER(), list(dim)), expl)
   end
   #=  Evaluate the index.
@@ -4647,24 +4627,22 @@ function evalSubscriptedExp(
     end
   end
   @assign subs = list(
-    mapShallowExp(s, (target) -> evalExp_impl(target = target))
+    mapShallowExp(s, (x) -> evalExp_impl(x, target))
     for s in subscripts
   )
-  @assign result = applySubscripts(subs, result)
+  result = applySubscripts(subs, result)
   return result
 end
 
 function evalRecordElement(exp::Expression, target::EvalTarget)::Expression
   local result::Expression
-
   local e::Expression
   local index::Int
-
   @match RECORD_ELEMENT(recordExp = e, index = index) = exp
-  @assign e = evalExp_impl(e, target)
+  e = evalExp_impl(e, target)
   try
-    @assign result =
-      bindingExpMap(e, (index) -> evalRecordElement2(index = index))
+    result =
+      bindingExpMap(e, (x) -> evalRecordElement2(x, index))
   catch
     Error.assertion(
       false,
@@ -4880,44 +4858,3 @@ function evalCatGetFlatArray(e::Expression, dim::Int, getArrayContents::Function
   outDims = i <| outDims
   return(outExps, outDims)
 end
-
-#=
-protected function evalCatGetFlatArray<Exp>
-  input Exp e;
-  input Integer dim;
-  input GetArrayContents getArrayContents;
-  input ToString toString;
-  output list<Exp> outExps={};
-  output list<Integer> outDims={};
-  partial function GetArrayContents
-    input Exp e;
-    output list<Exp> es;
-  end GetArrayContents;
-  partial function ToString
-    input Exp e;
-    output String s;
-  end ToString;
-protected
-  list<Exp> arr;
-  list<Integer> dims;
-  Integer i;
-algorithm
-  if dim == 1 then
-    outExps := getArrayContents(e);
-    outDims := {listLength(outExps)};
-    return;
-  end if;
-  i := 0;
-  for exp in listReverse(getArrayContents(e)) loop
-    (arr, dims) := evalCatGetFlatArray(exp, dim-1, getArrayContents=getArrayContents, toString=toString);
-    if listEmpty(outDims) then
-      outDims := dims;
-    elseif not valueEq(dims, outDims) then
-      Error.assertion(false, getInstanceName() + ": Got unbalanced array from " + toString(e), sourceInfo());
-    end if;
-    outExps := listAppend(arr, outExps);
-    i := i+1;
-  end for;
-  outDims := i :: outDims;
-end evalCatGetFlatArray;
-=#

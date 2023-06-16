@@ -8,6 +8,7 @@ using MetaModelica
 import Absyn
 import SCode
 import OMParser
+import PrecompileTools
 
 #=
 TODO:
@@ -53,20 +54,19 @@ end
 
 include("main.jl")
 
+"""
+Parse a file, returns the syntax tree.
+"""
 function parseFile(file::String, acceptedGram::Int64 = 1)::Absyn.Program
   return OMParser.parseFile(file, acceptedGram)
 end
 
+"""
+  Translate the Syntax tree to the SCode intermediate representation
+"""
 function translateToSCode(inProgram::Absyn.Program)::SCode.Program
   return Main.AbsynToSCode.translateAbsyn2SCode(inProgram)
 end
-
-"""
-  Instantiates a SCode program.
-"""
-function instSCode(inProgram::SCode.Program)
-end
-
 
 """
   Instantiates and translates to DAE.
@@ -161,12 +161,16 @@ function cacheToFunctionList(cache)
   arrayList(fv)
 end
 
+"""
+  Dumps the SCode representation of a Modelica model to a file.
+"""
 function exportSCodeRepresentationToFile(fileName::String, contents::List{SCode.CLASS})
   local fdesc = open(fileName, "w")
   local processedContents = replace(string(contents), "," => ",\n")
   write(fdesc, processedContents)
   close(fdesc)
 end
+
 #=
   This is done during precompilation of the package
   to cache precompile versions of many methods.
@@ -235,5 +239,24 @@ function loadMSL(; MSL_Version)
     LIBRARY_CACHE[MSL_Version] = scodeMSL
   end
 end
+
+#=
+  Custom pretty printing
+=#
+Base.show(io::IO, ::MIME"text/plain", fm::Main.FLAT_MODEL) = begin
+  print(io, "Flat Model:\n", string(fm))
+end
+
+Base.show(io::IO, ::MIME"text/plain", t::Tuple{Main.FLAT_MODEL, Main.FunctionTreeImpl.EMPTY}) = begin
+  print(io, "Flat Model:\n", string(first(t)))
+  print(io, "No Functions:\n")
+end
+
+Base.show(io::IO, ::MIME"text/plain", t::Tuple{Main.FLAT_MODEL, cache::Main.FunctionTreeImpl.LEAF}) = begin
+  print(io, "Flat Model:\n", string(first(t)))
+  print(io, "\nFunctions:\n", string(last(t)))
+end
+
+include("precompilation.jl")
 
 end # module

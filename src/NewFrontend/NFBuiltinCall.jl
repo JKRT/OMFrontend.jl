@@ -598,38 +598,35 @@ function typeDerCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{
   (callExp, ty, variability)
 end
 
-function typeDiagonalCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
+function typeDiagonalCall(call::Call, origin::ORIGIN_Type, info::SourceInfo)::Tuple{Expression, M_Type, VariabilityType}
   local variability::VariabilityType
   local ty::M_Type
   local callExp::Expression
-
   local fn_ref::ComponentRef
   local args::List{Expression}
   local named_args::List{NamedArg}
   local arg::Expression
   local dim::Dimension
   local fn::M_Function
-
   @match UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
   assertNoNamedParams("diagonal", named_args, info)
   if listLength(args) != 1
-    Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), "diagonal(Any[n]) => Any[n, n]"), info)
+    Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(toString(call), "diagonal(Any[n]) => Any[n, n]"), info)
   end
-  @assign (arg, ty, variability) = typeExp(listHead(args), origin, info)
-  @assign ty = begin
+  (arg, ty, variability) = typeExp(listHead(args), origin, info)
+  ty = begin
     @match ty begin
       TYPE_ARRAY(dimensions = dim <|  nil())  => begin
         TYPE_ARRAY(ty.elementType, list(dim, dim))
       end
-
       _  => begin
         Error.addSourceMessage(Error.ARG_TYPE_MISMATCH, list("1", toString(fn_ref), "", toString(arg), Type.toString(ty), "Any[:]"), info)
         fail()
       end
     end
   end
-  @match list(fn) = typeRefCache(fn_ref)
-  @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(fn, list(arg), variability, ty))
+  @match fn <| nil = typeRefCache(fn_ref)
+  callExp = CALL_EXPRESSION(makeTypedCall(fn, list(arg), variability, ty))
   (callExp, ty, variability)
 end
 
@@ -970,7 +967,7 @@ function typeScalarCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tup
   (callExp, ty, variability)
 end
 
-function typeVectorCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
+function typeVectorCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
   local variability::VariabilityType
   local ty::M_Type
   local callExp::Expression
@@ -981,40 +978,39 @@ function typeVectorCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tup
   local arg::Expression
   local var::VariabilityType
   local fn::M_Function
-  local vector_dim::Dimension = P_Dimension.Dimension.fromInteger(1)
+  local vector_dim::Dimension = fromInteger(1)
   local dim_found::Bool = false
 
   @match UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
   assertNoNamedParams("vector", named_args, info)
   if listLength(args) != 1
-    Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), "vector(Any) => Any[:]\\n  vector(Any[:, ...]) => Any[:]"), info)
+    Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(toString(call), "vector(Any) => Any[:]\\n  vector(Any[:, ...]) => Any[:]"), info)
   end
-  @assign (arg, ty, variability) = typeExp(listHead(args), origin, info)
+  (arg, ty, variability) = typeExp(listHead(args), origin, info)
   #=  vector requires that at most one dimension is > 1, and that dimension
   =#
   #=  determines the type of the vector call.
   =#
   for dim in arrayDims(ty)
-    if ! P_Dimension.Dimension.isKnown(dim) || P_Dimension.Dimension.size(dim) > 1
+    if ! isKnown(dim) || size(dim) > 1
       if dim_found
         Error.addSourceMessageAndFail(Error.NF_VECTOR_INVALID_DIMENSIONS, list(Type.toString(ty), P_Call.toString(call)), info)
       else
-        @assign vector_dim = dim
-        @assign dim_found = true
+        vector_dim = dim
+        dim_found = true
       end
     end
   end
-  @assign ty = TYPE_ARRAY(arrayElementType(ty), list(vector_dim))
-  @match list(fn) = typeRefCache(fn_ref)
-  @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(fn, list(arg), variability, ty))
+  ty = TYPE_ARRAY(arrayElementType(ty), list(vector_dim))
+  @match fn <| nil = typeRefCache(fn_ref)
+  callExp = CALL_EXPRESSION(makeTypedCall(fn, list(arg), variability, ty))
   (callExp, ty, variability)
 end
 
-function typeMatrixCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
+function typeMatrixCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
   local variability::VariabilityType
   local ty::M_Type
   local callExp::Expression
-
   local fn_ref::ComponentRef
   local args::List{Expression}
   local named_args::List{NamedArg}
@@ -1026,31 +1022,30 @@ function typeMatrixCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tup
   local dim2::Dimension
   local i::Int
   local ndims::Int
-
   @match UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
   assertNoNamedParams("matrix", named_args, info)
   if listLength(args) != 1
-    Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), "vector(Any) => Any[:]\\n  vector(Any[:, ...]) => Any[:]"), info)
+    Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(toString(call), "vector(Any) => Any[:]\\n  vector(Any[:, ...]) => Any[:]"), info)
   end
-  @assign (arg, ty, variability) = typeExp(listHead(args), origin, info)
-  @assign dims = arrayDims(ty)
-  @assign ndims = listLength(dims)
+  (arg, ty, variability) = typeExp(listHead(args), origin, info)
+  dims = arrayDims(ty)
+  ndims = listLength(dims)
   if ndims < 2
-    @assign (callExp, ty) = promote(arg, ty, 2)
+    (callExp, ty) = promote(arg, ty, 2)
   elseif ndims == 2
-    @assign callExp = arg
+    callExp = arg
   else
     @match _cons(dim1, _cons(dim2, dims)) = dims
-    @assign i = 3
+    i = 3
     for dim in dims
       if P_Dimension.Dimension.isKnown(dim) && P_Dimension.Dimension.size(dim) > 1
         Error.addSourceMessageAndFail(Error.INVALID_ARRAY_DIM_IN_CONVERSION_OP, list(String(i), "matrix", "1", P_Dimension.Dimension.toString(dim)), info)
       end
-      @assign i = i + 1
+      i = i + 1
     end
-    @assign ty = TYPE_ARRAY(arrayElementType(ty), list(dim1, dim2))
-    @match list(fn) = typeRefCache(fn_ref)
-    @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(fn, list(arg), variability, ty))
+    ty = TYPE_ARRAY(arrayElementType(ty), list(dim1, dim2))
+    @match fn <| nil = typeRefCache(fn_ref)
+    callExp = CALL_EXPRESSION(makeTypedCall(fn, list(arg), variability, ty))
   end
   #=  matrix(A) where A is a scalar or vector returns promote(A, 2).
   =#
@@ -1058,14 +1053,13 @@ function typeMatrixCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tup
   =#
   #=  matrix requires all but the first two dimensions to have size 1.
   =#
-  (callExp, ty, variability)
+  return (callExp, ty, variability)
 end
 
-function typeCatCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
+function typeCatCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
   local variability::VariabilityType
   local ty::M_Type
   local callExp::Expression
-
   local fn_ref::ComponentRef
   local args::List{Expression}
   local res::List{Expression}
@@ -1076,28 +1070,27 @@ function typeCatCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{
   local mk::TypeCheck.MatchKind
   local fn::M_Function
   local n::Int
-
   @match UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
   assertNoNamedParams("cat", named_args, info)
   if listLength(args) < 2
     Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), "cat(Integer, Any[:,:], ...) => Any[:]"), info)
   end
   @match _cons(arg, args) = args
-  @assign (arg, ty, variability) = typeExp(arg, origin, info)
-  @assign (arg, ty, mk) = matchTypes(ty, TYPE_INTEGER(), arg)
+  (arg, ty, variability) = typeExp(arg, origin, info)
+  (arg, ty, mk) = matchTypes(ty, TYPE_INTEGER(), arg)
   if variability > Variability.PARAMETER
-    Error.addSourceMessageAndFail(Error.NF_CAT_FIRST_ARG_EVAL, list(toString(arg), P_Prefixes.variabilityString(variability)), info)
+    Error.addSourceMessageAndFail(Error.NF_CAT_FIRST_ARG_EVAL, list(toString(arg), variabilityString(variability)), info)
   end
   @match INTEGER_EXPRESSION(n) = Ceval.evalExp(arg, Ceval.P_EvalTarget.GENERIC(info))
-  @assign res = nil
-  @assign tys = nil
+  res = nil
+  tys = nil
   for a in args
-    @assign (arg, ty, var) = typeExp(a, origin, info)
-    @assign variability = variabilityMax(var, variability)
-    @assign res = _cons(arg, res)
-    @assign tys = _cons(ty, tys)
+    (arg, ty, var) = typeExp(a, origin, info)
+    variability = variabilityMax(var, variability)
+    res = _cons(arg, res)
+    tys = _cons(ty, tys)
   end
-  @assign (callExp, ty) = makeCatExp(n, listReverse(res), listReverse(tys), variability, info)
+  (callExp, ty) = makeCatExp(n, listReverse(res), listReverse(tys), variability, info)
   (callExp, ty, variability)
 end
 
@@ -1126,7 +1119,7 @@ function typeSymmetricCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::
   (callExp, ty, variability)
 end
 
-function typeTransposeCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
+function typeTransposeCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
   local variability::VariabilityType
   local ty::M_Type
   local callExp::Expression
@@ -1145,8 +1138,8 @@ function typeTransposeCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::
   if listLength(args) != 1
     Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), "transpose(Any[n, m, ...]) => Any[m, n, ...]"), info)
   end
-  @assign (arg, ty, variability) = typeExp(listHead(args), origin, info)
-  @assign ty = begin
+  (arg, ty, variability) = typeExp(listHead(args), origin, info)
+  ty = begin
     @match ty begin
       TYPE_ARRAY(dimensions = dim1 <| dim2 <| rest_dims)  => begin
         TYPE_ARRAY(ty.elementType, _cons(dim2, _cons(dim1, rest_dims)))
@@ -1158,55 +1151,52 @@ function typeTransposeCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::
       end
     end
   end
-  @match list(fn) = typeRefCache(fn_ref)
-  @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(fn, list(arg), variability, ty))
+  @match fn <| nil = typeRefCache(fn_ref)
+  @assign callExp = CALL_EXPRESSION(makeTypedCall(fn, list(arg), variability, ty))
   (callExp, ty, variability)
 end
 
-function typeCardinalityCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
+function typeCardinalityCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
   local var::VariabilityType = Variability.PARAMETER
   local ty::M_Type
   local callExp::Expression
-
   local fn_ref::ComponentRef
   local args::List{Expression}
   local named_args::List{NamedArg}
   local arg::Expression
   local fn::M_Function
-  local node::InstNode
-
+  local nodeVar::InstNode
   #=  cardinality may only be used in a condition of an assert or
   =#
   #=  if-statement/equation (the specification says only if-statement,
   =#
   #=  but e.g. the MSL only uses them in if-equations and asserts).
   =#
-  if ! (flagSet(origin, ExpOrigin.CONDITION) && (flagSet(origin, ExpOrigin.IF) || flagSet(origin, ExpOrigin.ASSERT)))
+  if ! (flagSet(origin, ORIGIN_CONDITION) && (flagSet(origin, ORIGIN_IF) || flagSet(origin, ORIGIN_ASSERT)))
     Error.addSourceMessageAndFail(Error.INVALID_CARDINALITY_CONTEXT, nil, info)
   end
   @match UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
   assertNoNamedParams("cardinality", named_args, info)
   if listLength(args) != 1
-    Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), toString(fn_ref) + "(Connector) => Integer"), info)
+    Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(toString(call), toString(fn_ref) + "(Connector) => Integer"), info)
   end
   if flagSet(origin, ORIGIN_FUNCTION)
     Error.addSourceMessageAndFail(Error.EXP_INVALID_IN_FUNCTION, list(toString(fn_ref)), info)
   end
-  @assign (arg, ty) = typeExp(listHead(args), origin, info)
+  (arg, ty) = typeExp(listHead(args), origin, info)
   if ! isCref(arg)
     Error.addSourceMessageAndFail(Error.ARGUMENT_MUST_BE_VARIABLE, list("First", toString(fn_ref), "<REMOVE ME>"), info)
   end
-  @assign node = node(toCref(arg))
-  if ! (Type.isScalar(ty) && isComponent(node) && P_Component.isConnector(component(node)))
+  nodeVar = node(toCref(arg))
+  if ! (isScalar(ty) && isComponent(nodeVar) && isConnector(component(nodeVar)))
     Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list("1", toString(fn_ref), "", toString(arg), Type.toString(ty), "connector"), info)
   end
-  @match list(fn) = typeRefCache(fn_ref)
-  @assign ty = TYPE_INTEGER()
-  @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(fn, list(arg), var, ty))
-  #=  TODO: Check cardinality restrictions, 3.7.2.3.
-  =#
+  @match fn <| nil = typeRefCache(fn_ref)
+  ty = TYPE_INTEGER()
+  callExp = CALL_EXPRESSION(makeTypedCall(fn, list(arg), var, ty))
+  #=  TODO: Check cardinality restrictions, 3.7.2.3. =#
   System.setUsesCardinality(true)
-  (callExp, ty, var)
+  return (callExp, ty, var)
 end
 
 function typeBranchCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
@@ -1401,17 +1391,15 @@ function typePotentialRootCall(call::Call, origin::ORIGIN_Type, info::SourceInfo
   (callExp, ty, var)
 end
 
-function typeRootCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
+function typeRootCall(call::Call, origin::ORIGIN_Type, info::SourceInfo)::Tuple{Expression, M_Type, VariabilityType}
   local var::VariabilityType = Variability.PARAMETER
   local ty::M_Type
   local callExp::Expression
-
   local fn_ref::ComponentRef
   local args::List{Expression}
   local named_args::List{NamedArg}
   local arg::Expression
   local fn::M_Function
-
   @match UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
   assertNoNamedParams("Connections.root", named_args, info)
   if listLength(args) != 1
@@ -1420,42 +1408,40 @@ function typeRootCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple
   if flagSet(origin, ORIGIN_FUNCTION)
     Error.addSourceMessageAndFail(Error.EXP_INVALID_IN_FUNCTION, list(toString(fn_ref)), info)
   end
-  @assign (arg, ty) = typeExp(listHead(args), origin, info)
+  (arg, ty) = typeExp(listHead(args), origin, info)
   checkConnectionsArgument(arg, ty, fn_ref, 1, info)
-  @match list(fn) = typeRefCache(fn_ref)
-  @assign ty = TYPE_NORETCALL()
-  @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(fn, list(arg), var, ty))
-  (callExp, ty, var)
+  @match fn <| nil = typeRefCache(fn_ref)
+  ty = TYPE_NORETCALL()
+  callExp = CALL_EXPRESSION(makeTypedCall(fn, list(arg), var, ty))
+  return (callExp, ty, var)
 end
 
-function typeRootedCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
+function typeRootedCall(call::Call, origin::ORIGIN_Type, info::SourceInfo)::Tuple{Expression, M_Type, VariabilityType}
   local var::VariabilityType = Variability.PARAMETER
   local ty::M_Type
   local callExp::Expression
-
   local fn_ref::ComponentRef
   local args::List{Expression}
   local named_args::List{NamedArg}
   local arg::Expression
   local fn::M_Function
-
   @match UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
   assertNoNamedParams("Connections.rooted", named_args, info)
   if listLength(args) != 1
-    Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), toString(fn_ref) + "(Connector)"), info)
+    Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(toString(call), toString(fn_ref) + "(Connector)"), info)
   end
   if flagSet(origin, ORIGIN_FUNCTION)
     Error.addSourceMessageAndFail(Error.EXP_INVALID_IN_FUNCTION, list(toString(fn_ref)), info)
   end
-  @assign (arg, ty) = typeExp(listHead(args), origin, info)
+  (arg, ty) = typeExp(listHead(args), origin, info)
   checkConnectionsArgument(arg, ty, fn_ref, 1, info)
   if isSimple(fn_ref)
     Error.addSourceMessage(Error.DEPRECATED_API_CALL, list("rooted", "Connections.rooted"), info)
   end
-  @match list(fn) = typeRefCache(fn_ref)
-  @assign ty = TYPE_BOOLEAN()
-  @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(fn, list(arg), var, ty))
-  (callExp, ty, var)
+  @match fn <| nil = typeRefCache(fn_ref)
+  ty = TYPE_BOOLEAN()
+  callExp = CALL_EXPRESSION(makeTypedCall(fn, list(arg), var, ty))
+  return (callExp, ty, var)
 end
 
 """ #= see also typeUniqueRootIndicesCall =#"""

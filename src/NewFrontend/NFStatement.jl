@@ -551,35 +551,30 @@ function mapExpList(stmtl::List{<:Statement}, func::MapFunc)::List{Statement}
 end
 
 function map(stmt::Statement, func::MapFn)::Statement
-
   @assign () = begin
     @match stmt begin
-      FOR(__) => begin
+      ALG_FOR(__) => begin
         @assign stmt.body = list(map(s, func) for s in stmt.body)
         ()
       end
-
-      IF(__) => begin
+      ALG_IF(__) => begin
+        @assign stmt.branches = list(
+          (Util.tuple21(b), list(map(s, func) for s in Util.tuple22(b)))
+          for b in stmt.branches
+        )
+        ()
+      end
+      ALG_WHEN(__) => begin
         @assign stmt.branches = List(
           (Util.tuple21(b), list(map(s, func) for s in Util.tuple22(b)))
           for b in stmt.branches
         )
         ()
       end
-
-      WHEN(__) => begin
-        @assign stmt.branches = List(
-          (Util.tuple21(b), list(map(s, func) for s in Util.tuple22(b)))
-          for b in stmt.branches
-        )
-        ()
-      end
-
-      WHILE(__) => begin
+      ALG_WHILE(__) => begin
         @assign stmt.body = list(map(s, func) for s in stmt.body)
         ()
       end
-
       _ => begin
         ()
       end
@@ -731,6 +726,12 @@ function updateImplicitVariabilityStmt(stmt::Statement, inWhen::Bool)
   end
 end
 
+function replaceIteratorList(@nospecialize(stmtl::List{Statement}),
+                             @nospecialize(iterator::InstNode),
+                             @nospecialize(value::Expression))
+  return mapExpList(stmtl, (x)->replaceIterator(x, iterator, value))
+end
+
 function markStructuralParamsSubs(exp::Expression, dummy::Int) ::Int
   @assign () = begin
     @match exp begin
@@ -738,7 +739,6 @@ function markStructuralParamsSubs(exp::Expression, dummy::Int) ::Int
           foldSubscripts(exp.cref, markStructuralParamsSub, 0)
         ()
       end
-
       _  => begin
         ()
       end
@@ -746,8 +746,6 @@ function markStructuralParamsSubs(exp::Expression, dummy::Int) ::Int
   end
   dummy
 end
-
-
 
 function instStatement(scodeStmt::SCode.Statement, scope::InstNode, origin::ORIGIN_Type)::Statement
   local statement::Statement

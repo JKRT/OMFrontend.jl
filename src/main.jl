@@ -6,17 +6,18 @@ module Main
 
 #= Import the parser for precompilation=#
 import OMParser
-
 #= We also use it at the top level =#
 using MetaModelica
 using ExportAll
-
 import Absyn
 import ArrayUtil
 import DAE
 import ListUtil
 import SCode
+import PrecompileTools
+#= Top level functionality =#
 
+include("./Util/ElementSource.jl")
 include("./Util/Pointer.jl")
 include("./Util/System.jl")
 include("./Util/Corba.jl")
@@ -150,38 +151,4 @@ include("./NewFrontend/NFInline.jl")
 include("./NewFrontend/NFBuiltinFuncs.jl")
 include("./NewFrontend/NFRangeIterator.jl")
 
-if ccall(:jl_generating_output, Cint, ()) == 1
-  begin
-    #= Disable type inference for this module during precompilation =#
-    #= Make sure that we load the bultin scode=#
-    packagePath = dirname(realpath(Base.find_package("OMFrontend")))
-    packagePath *= "/.."
-    pathToLib = packagePath * "/lib/NFModelicaBuiltin.mo"
-    #= The external C stuff can be a bit flaky.. =#
-    GC.enable(false)
-    p = OMParser.parseFile(pathToLib, 2 #== MetaModelica ==#)
-    builtinSCode = AbsynToSCode.translateAbsyn2SCode(p)
-    GC.enable(true)
-    #= End preamble =#
-    #=
-    Instantiate the HelloWorld module
-    This will precompile a significant part of the frontend.
-    =#
-    packagePath = dirname(realpath(Base.find_package("OMFrontend")))
-    packagePath *= "/.."
-    pathToTest = packagePath * "/test/Models/HelloWorld.mo"
-    p = OMParser.parseFile(pathToTest, 1)
-    s = AbsynToSCode.translateAbsyn2SCode(p)
-    @info "Compiling core modules. This might take awhile.."
-    Main.Global.initialize()
-    # make sure we have all the flags loaded!
-    Main.FlagsUtil.loadFlags()
-    program = listAppend(builtinSCode, s)
-    path = AbsynUtil.stringPath("HelloWorld")
-    @info "Timings concerning compiling core modules for instantiation:"
-    @time res1 = instClassInProgram(path, program)
-    @info "Core compiler modules are successfully precompiled!"
-    @info "Compiler modules are successfully precompiled!"
-  end
-end
 end

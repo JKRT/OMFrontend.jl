@@ -13,12 +13,12 @@ function addBindingExpParent(parent::InstNode, exp::Expression) ::Expression
   exp
 end
 
-function mostPropagatedSubExp_traverser(exp::Expression, mostPropagated::Tuple{<:Int, Expression}) ::Tuple{Int, Expression}
+function mostPropagatedSubExp_traverser(exp::Expression, mostPropagated::Tuple{Int, Expression})::Tuple{Int, Expression}
   local max_prop::Int
   local exp_prop::Int
   if isBindingExp(exp)
-    @assign (max_prop, _) = mostPropagated
-    @assign exp_prop = propagatedDimCount(exp)
+    (max_prop, _) = mostPropagated
+    exp_prop = propagatedDimCount(exp)
     if exp_prop > max_prop
       @assign mostPropagated = (exp_prop, exp)
     end
@@ -43,33 +43,31 @@ function mostPropagatedSubExpBinary(exp1::Expression, exp2::Expression) ::Tuple{
   (maxPropExp, maxPropCount)
 end
 
-""" #= Returns the most propagated subexpression of the given expression, as well
-               as the number of dimensions it's been propagated through. Returns the
-               expression itself and -1 as the number of dimensions if it doesn't contain
-               any binding expressions. =#"""
-                 function mostPropagatedSubExp(exp::Expression) ::Tuple{Expression, Int}
-                   local maxPropCount::Int
-                   local maxPropExp::Expression
-
-                   #=  TODO: Optimize this, there's no need to check for bindings in e.g. literal arrays.
-                   =#
-                   @assign (maxPropCount, maxPropExp) = fold(exp, mostPropagatedSubExp_traverser, (-1, exp))
-                   (maxPropExp, maxPropCount)
-                 end
+"""
+Returns the most propagated subexpression of the given expression, as well
+as the number of dimensions it's been propagated through. Returns the
+expression itself and -1 as the number of dimensions if it doesn't contain
+any binding expressions.
+"""
+function mostPropagatedSubExp(exp::Expression)::Tuple{Expression, Int}
+  local maxPropCount::Int
+  local maxPropExp::Expression
+  #=  TODO: Optimize this, there's no need to check for bindings in e.g. literal arrays. =#
+  (maxPropCount, maxPropExp) = fold(exp, mostPropagatedSubExp_traverser, (-1, exp))
+  (maxPropExp, maxPropCount)
+end
 
 function bindingExpMap4(exp::Expression, subs::List{<:Subscript}) ::Expression
   local outExp::Expression
-
-  @assign outExp = begin
+  outExp = begin
     local prop_count::Int
     local prop_subs::List{Subscript}
     @match exp begin
       BINDING_EXP(__)  => begin
-        @assign prop_count = propagatedDimCount(exp)
-        @assign prop_subs = ListUtil.lastN(subs, prop_count)
+        prop_count = propagatedDimCount(exp)
+        prop_subs = ListUtil.lastN(subs, prop_count)
         applySubscripts(prop_subs, exp.exp)
       end
-
       _  => begin
         exp
       end
@@ -88,37 +86,33 @@ function bindingExpMap3(exp::Expression, evalFunc::EvalFunc, subs::List{<:Subscr
   result
 end
 
-function bindingExpMap2(exp::Expression, evalFunc::EvalFunc, mostPropagatedCount::Int, mostPropagatedExp::Expression) ::Expression
+function bindingExpMap2(exp::Expression, evalFunc::EvalFunc, mostPropagatedCount::Int, mostPropagatedExp::Expression)::Expression
   local result::Expression
-
   local exp_ty::M_Type
   local bind_ty::M_Type
   local dims::List{Dimension}
   local e::Expression
   local parents::List{InstNode}
   local is_each::Bool
-
   @match BINDING_EXP(exp = e, expType = exp_ty, parents = parents, isEach = is_each) = mostPropagatedExp
-  @assign dims = ListUtil.firstN(arrayDims(exp_ty), mostPropagatedCount)
+  dims = ListUtil.firstN(arrayDims(exp_ty), mostPropagatedCount)
   func = (x, y) -> bindingExpMap3(x, evalFunc, y)
-  @assign result = vectorize(exp, dims, func)
-  @assign (exp_ty, bind_ty) = bindingExpType(result, mostPropagatedCount)
-  @assign result = BINDING_EXP(result, exp_ty, bind_ty, parents, is_each)
+  result = vectorize(exp, dims, func)
+  (exp_ty, bind_ty) = bindingExpType(result, mostPropagatedCount)
+  result = BINDING_EXP(result, exp_ty, bind_ty, parents, is_each)
   result
 end
 
 """ #= Calls the given function on each element of a binding expression. =#"""
-function bindingExpMap(exp::Expression, evalFunc::EvalFunc) ::Expression
+function bindingExpMap(exp::Expression, evalFunc::EvalFunc)::Expression
   local result::Expression
-
   local max_prop_exp::Expression
   local max_prop_count::Int
-
-  @assign (max_prop_exp, max_prop_count) = mostPropagatedSubExp(exp)
+  (max_prop_exp, max_prop_count) = mostPropagatedSubExp(exp)
   if max_prop_count >= 0
-    @assign result = bindingExpMap2(exp, evalFunc, max_prop_count, max_prop_exp)
+    result = bindingExpMap2(exp, evalFunc, max_prop_count, max_prop_exp)
   else
-    @assign result = evalFunc(exp)
+    result = evalFunc(exp)
   end
   result
 end
@@ -271,9 +265,8 @@ end
 
 function splitRecordCref(exp::Expression) ::Expression
   local outExp::Expression
-
-  @assign outExp = P_ExpandExp.ExpandExp.expand(exp)
-  @assign outExp = begin
+  (outExp, _) = expand(exp)
+  outExp = begin
     local cls::InstNode
     local comps::Vector{InstNode}
     local cr::ComponentRef
@@ -282,12 +275,12 @@ function splitRecordCref(exp::Expression) ::Expression
     local fields::List{Expression}
     @match outExp begin
       CREF_EXPRESSION(ty = TYPE_COMPLEX(cls = cls), cref = cr)  => begin
-        @assign comps = getComponents(classTree(getClass(cls)))
-        @assign fields = nil
+        comps = getComponents(classTree(getClass(cls)))
+        fields = nil
         for i in arrayLength(comps):(-1):1
-          @assign ty = getType(comps[i])
-          @assign field_cr = prefixCref(comps[i], ty, nil, cr)
-          @assign fields = _cons(CREF_EXPRESSION(ty, field_cr), fields)
+          ty = getType(comps[i])
+          field_cr = prefixCref(comps[i], ty, nil, cr)
+          fields = _cons(CREF_EXPRESSION(ty, field_cr), fields)
         end
         makeRecord(scopePath(cls), outExp.ty, fields)
       end
@@ -296,7 +289,6 @@ function splitRecordCref(exp::Expression) ::Expression
         @assign outExp.elements = list(splitRecordCref(e) for e in outExp.elements)
         outExp
       end
-
       _  => begin
         exp
       end
@@ -351,8 +343,7 @@ end
                function on each element of the array. =#"""
                  function recordElement(elementName::String, recordExp::Expression) ::Expression
                    local outExp::Expression
-
-                   @assign outExp = begin
+                   outExp = begin
                      local node::InstNode
                      local cls::Class
                      local cls_tree::ClassTree
@@ -362,8 +353,8 @@ end
                      local cref::ComponentRef
                      @match recordExp begin
                        RECORD_EXPRESSION(ty = TYPE_COMPLEX(cls = node))  => begin
-                         @assign cls = getClass(node)
-                         @assign index = lookupComponentIndex(elementName, cls)
+                         cls = getClass(node)
+                         index = lookupComponentIndex(elementName, cls)
                          listGet(recordExp.elements, index)
                        end
 
@@ -376,17 +367,17 @@ end
                          CREF_EXPRESSION(ty, cref)
                        end
 
-                       ARRAY_EXPRESSION(elements =  nil(), ty = ARRAY_EXPRESSION_TYPE(elementType = TYPE_COMPLEX(cls = node)))  => begin
-                         @assign cls = getClass(node)
-                         @assign index = lookupComponentIndex(elementName, cls)
-                         @assign ty = getType(nthComponent(index, cls))
+                       ARRAY_EXPRESSION(elements =  nil(), ty = TYPE_ARRAY(elementType = TYPE_COMPLEX(cls = node)))  => begin
+                         cls = getClass(node)
+                         index = lookupComponentIndex(elementName, cls)
+                         ty = getType(nthComponent(index, cls))
                          makeArray(ty, nil)
                        end
 
                        ARRAY_EXPRESSION(ty = TYPE_ARRAY(elementType = TYPE_COMPLEX(cls = node)))  => begin
                          @assign index = lookupComponentIndex(elementName, getClass(node))
                          @assign expl = list(nthRecordElement(index, e) for e in recordExp.elements)
-                         @assign ty = liftArrayLeft(typeOf(listHead(expl)), P_Dimension.Dimension.fromInteger(listLength(expl)))
+                         @assign ty = liftArrayLeft(typeOf(listHead(expl)), fromInteger(listLength(expl)))
                          makeArray(ty, expl, recordExp.literal)
                        end
 
@@ -773,9 +764,9 @@ function makeIdentityMatrix(n::Int, elementType::M_Type) ::Expression
   local rows::List{Expression} = nil
   local row_ty::M_Type
 
-  @assign zero = makeZero(elementType)
-  @assign one = makeOne(elementType)
-  @assign row_ty = TYPE_ARRAY(elementType, list(P_Dimension.Dimension.fromInteger(n)))
+  zero = makeZero(elementType)
+  one = makeOne(elementType)
+  row_ty = TYPE_ARRAY(elementType, list(fromInteger(n)))
   for i in 1:n
     @assign row = nil
     for j in 2:i
@@ -787,7 +778,7 @@ function makeIdentityMatrix(n::Int, elementType::M_Type) ::Expression
     end
     @assign rows = _cons(makeArray(row_ty, row, literal = true), rows)
   end
-  @assign matrix = makeArray(liftArrayLeft(row_ty, P_Dimension.Dimension.fromInteger(n)), rows, literal = true)
+  @assign matrix = makeArray(liftArrayLeft(row_ty, fromInteger(n)), rows, literal = true)
   matrix
 end
 
@@ -803,24 +794,22 @@ function transposeArray(arrayExp::Expression) ::Expression
   local matrix::List{List{Expression}}
   local literal::Bool
 
-  @match ARRAY(TYPE_ARRAY(ty, _cons(dim1, _cons(dim2, rest_dims))), expl, literal) = arrayExp
+  @match ARRAY_EXPRESSION(TYPE_ARRAY(ty, _cons(dim1, _cons(dim2, rest_dims))), expl, literal) = arrayExp
   if ! listEmpty(expl)
-    @assign row_ty = TYPE_ARRAY(ty, _cons(dim1, rest_dims))
-    @assign matrix = list(arrayElements(e) for e in expl)
-    @assign matrix = ListUtil.transposeList(matrix)
-    @assign expl = list(makeArray(row_ty, row, literal) for row in matrix)
+    row_ty = TYPE_ARRAY(ty, _cons(dim1, rest_dims))
+    matrix = list(arrayElements(e) for e in expl)
+    matrix = ListUtil.transposeList(matrix)
+    expl = list(makeArray(row_ty, row, literal = literal) for row in matrix)
   end
-  @assign outExp = makeArray(TYPE_ARRAY(ty, _cons(dim2, _cons(dim1, rest_dims))), expl, literal)
+  outExp = makeArray(TYPE_ARRAY(ty, _cons(dim2, _cons(dim1, rest_dims))), expl, literal = literal)
   outExp
 end
 
 function hasArrayCall2(exp::Expression) ::Bool
   local hasArrayCall::Bool
-
   local call::Call
   local ty::M_Type
-
-  @assign hasArrayCall = begin
+  hasArrayCall = begin
     @match exp begin
       CALL_EXPRESSION(call = call)  => begin
         @assign ty = typeOf(call)
@@ -828,7 +817,7 @@ function hasArrayCall2(exp::Expression) ::Bool
       end
 
       TUPLE_ELEMENT_EXPRESSION(tupleExp = CALL_EXPRESSION(call = call))  => begin
-        @assign ty = Type.nthTupleType(typeOf(call), exp.index)
+        ty = nthTupleType(typeOf(call), exp.index)
         isArray(ty) && isVectorizeable(call)
       end
 
@@ -1008,7 +997,7 @@ function makeMinValue(ty::M_Type) ::Expression
       end
 
       TYPE_ARRAY(__)  => begin
-        makeArray(ty, ListUtil.fill(makeMaxValue(Type.unliftArray(ty)), P_Dimension.Dimension.size(listHead(ty.dimensions))), literal = true)
+        makeArray(ty, ListUtil.fill(makeMaxValue(Type.unliftArray(ty)), size(listHead(ty.dimensions))), literal = true)
       end
     end
   end
@@ -1037,7 +1026,7 @@ function makeMaxValue(ty::M_Type) ::Expression
       end
 
       TYPE_ARRAY(__)  => begin
-        ARRAY_EXPRESSION(ty, ListUtil.fill(makeMaxValue(Type.unliftArray(ty)), P_Dimension.Dimension.size(listHead(ty.dimensions))), literal = true)
+        ARRAY_EXPRESSION(ty, ListUtil.fill(makeMaxValue(Type.unliftArray(ty)), size(listHead(ty.dimensions))), literal = true)
       end
     end
   end
@@ -1058,7 +1047,7 @@ function makeOne(ty::M_Type) ::Expression
       end
 
       TYPE_ARRAY(__)  => begin
-        ARRAY_EXPRESSION(ty, ListUtil.fill(makeZero(Type.unliftArray(ty)), P_Dimension.Dimension.size(listHead(ty.dimensions))), literal = true)
+        ARRAY_EXPRESSION(ty, ListUtil.fill(makeZero(Type.unliftArray(ty)), size(listHead(ty.dimensions))), literal = true)
       end
     end
   end
@@ -1093,7 +1082,7 @@ function makeZero(ty::M_Type) ::Expression
       end
 
       TYPE_ARRAY(__)  => begin
-        ARRAY_EXPRESSION(ty, ListUtil.fill(makeZero(Type.unliftArray(ty)), P_Dimension.Dimension.size(listHead(ty.dimensions))), literal = true)
+        ARRAY_EXPRESSION(ty, ListUtil.fill(makeZero(Type.unliftArray(ty)), size(listHead(ty.dimensions))), literal = true)
       end
 
       TYPE_COMPLEX(__)  => begin
@@ -1116,7 +1105,7 @@ end
 
                      for dim in listReverse(dims)
                        @assign expl = nil
-                       for i in 1:P_Dimension.Dimension.size(dim)
+                       for i in 1:size(dim)
                          @assign expl = _cons(exp, expl)
                        end
                        @assign arrayType = liftArrayLeft(arrayType, dim)
@@ -1133,7 +1122,7 @@ end
 
                    local expl::List{Expression} = nil
 
-                   for i in 1:P_Dimension.Dimension.size(dim)
+                   for i in 1:size(dim)
                      @assign expl = _cons(exp, expl)
                    end
                    @assign arrayType = liftArrayLeft(arrayType, dim)
@@ -1143,37 +1132,32 @@ end
 
 """ #= Creates an array with the given type, filling it with the given scalar
                expression. =#"""
-                 function fillType(ty::M_Type, fillExp::Expression) ::Expression
-                   local exp::Expression = fillExp
-
-                   local dims::List{Dimension} = arrayDims(ty)
-                   local expl::List{Expression}
-                   local arr_ty::M_Type = arrayElementType(ty)
-
-                   for dim in listReverse(dims)
-                     @assign expl = nil
-                     for i in 1:P_Dimension.Dimension.size(dim)
-                       @assign expl = _cons(exp, expl)
-                     end
-                     @assign arr_ty = liftArrayLeft(arr_ty, dim)
-                     @assign exp = makeArray(arr_ty, expl, literal = isLiteral(exp))
-                   end
-                   exp
-                 end
+function fillType(ty::M_Type, fillExp::Expression) ::Expression
+  local exp::Expression = fillExp
+  local dims::List{Dimension} = arrayDims(ty)
+  local expl::List{Expression}
+  local arr_ty::M_Type = arrayElementType(ty)
+  for dim in listReverse(dims)
+    expl = nil
+    for i in 1:size(dim)
+      expl = _cons(exp, expl)
+    end
+    arr_ty = liftArrayLeft(arr_ty, dim)
+    exp = makeArray(arr_ty, expl, literal = isLiteral(exp))
+  end
+  exp
+end
 
 function isRecordOrRecordArray(exp::Expression) ::Bool
   local isRecord::Bool
-
-  @assign isRecord = begin
+  isRecord = begin
     @match exp begin
       RECORD_EXPRESSION(__)  => begin
         true
       end
-
       ARRAY_EXPRESSION(__)  => begin
         ListUtil.all(exp.elements, isRecordOrRecordArray)
       end
-
       _  => begin
         false
       end
@@ -2236,7 +2220,7 @@ function mapFoldShallow(exp::Expression, func::MapFunc, arg::ArgT)  where {ArgT}
       end
 
       UNBOX_EXPRESSION(__)  => begin
-        @assign (e1, arg) = func(exp.exp, arg)
+        (e1, arg) = func(exp.exp, arg)
         if referenceEq(exp.exp, e1)
           exp
         else
@@ -2245,13 +2229,13 @@ function mapFoldShallow(exp::Expression, func::MapFunc, arg::ArgT)  where {ArgT}
       end
 
       SUBSCRIPTED_EXP_EXPRESSION(__)  => begin
-        @assign (e1, arg) = func(exp.exp, arg)
-        @assign (subs, arg) = ListUtil.mapFold(exp.subscripts, (ss) -> mapFoldExpShallow(ss, func), arg)
+        (e1, arg) = func(exp.exp, arg)
+        (subs, arg) = ListUtil.mapFold(exp.subscripts, (ss, foldArg) -> mapFoldExpShallow(ss, func, foldArg), arg)
         SUBSCRIPTED_EXP_EXPRESSION(e1, subs, exp.ty)
       end
 
       TUPLE_ELEMENT_EXPRESSION(__)  => begin
-        @assign (e1, arg) = func(exp.tupleExp, arg)
+        (e1, arg) = func(exp.tupleExp, arg)
         if referenceEq(exp.tupleExp, e1)
           exp
         else
@@ -3007,15 +2991,15 @@ function foldCref(cref::ComponentRef, func::FoldFunc, arg::ArgT)  where {ArgT}
   arg
 end
 
-function foldCall(call::Call, func::FoldFunc, foldArg::ArgT)  where {ArgT}
-  @assign () = begin
+function foldCall(call::Call, func::FoldFunc, foldArg::ArgT) where {ArgT}
+  () = begin
     local e::Expression
     @match call begin
       UNTYPED_CALL(__)  => begin
-        @assign foldArg = foldList(call.arguments, func, foldArg)
+        foldArg = foldList(call.arguments, func, foldArg)
         for arg in call.named_args
-          @assign (_, e) = arg
-          @assign foldArg = fold(e, func, foldArg)
+          (_, e) = arg
+          foldArg = fold(e, func, foldArg)
         end
         ()
       end
@@ -3077,7 +3061,7 @@ end
 
 function fold(@nospecialize(exp::Expression), func::FoldFunc, arg)
   local result
-  @assign result = begin
+  result = begin
     local e::Expression
     local e1::Expression
     local e2::Expression
@@ -3186,8 +3170,8 @@ function fold(@nospecialize(exp::Expression), func::FoldFunc, arg)
       end
 
       SUBSCRIPTED_EXP_EXPRESSION(__)  => begin
-        @assign result = fold(exp.exp, func, arg)
-        ListUtil.fold(exp.subscripts, (func) -> foldExp(func = func), result)
+        result = fold(exp.exp, func, arg)
+        ListUtil.fold(exp.subscripts, (x, y) -> foldExp(x, func, y), result)
       end
 
       TUPLE_ELEMENT_EXPRESSION(__)  => begin
@@ -4531,7 +4515,7 @@ function toFlatSubscriptedString(exp::Expression, subs::List{<:Subscript}) ::Str
   local name::String
   exp_ty = typeOf(exp)
   dims = ListUtil.firstN(arrayDims(exp_ty), listLength(subs))
-  sub_tyl = list(P_Dimension.Dimension.subscriptType(d) for d in dims)
+  sub_tyl = list(subscriptType(d) for d in dims)
   name = Type.subscriptedTypeName(exp_ty, sub_tyl)
   strl = list(")")
   for s in subs
@@ -4941,7 +4925,7 @@ function arrayFromList(inExps::List{<:Expression}, elemTy::M_Type, inDims::List{
 end
 
 function replaceIterator2(exp::Expression, iterator::InstNode, iteratorValue::Expression) ::Expression
-  @assign exp = begin
+  exp = begin
     local node::InstNode
     @match exp begin
       CREF_EXPRESSION(cref = COMPONENT_REF_CREF(node = node))  => begin
@@ -4959,7 +4943,9 @@ function replaceIterator2(exp::Expression, iterator::InstNode, iteratorValue::Ex
   exp
 end
 
-function replaceIterator(exp::Expression, iterator::InstNode, iteratorValue::Expression) ::Expression
+function replaceIterator(@nospecialize(exp::Expression),
+                         @nospecialize(iterator::InstNode),
+                         @nospecialize(iteratorValue::Expression))
   map(exp, (x) -> replaceIterator2(x,  iterator, iteratorValue))
 end
 
@@ -4987,16 +4973,16 @@ function makeSubscriptedExp(subscripts::List{<:Subscript}, exp::Expression) ::Ex
       end
     end
   end
-  @assign dim_count = Type.dimensionCount(ty)
-  @assign (subs, extra_subs) = mergeList(subscripts, subs, dim_count)
+  dim_count = dimensionCount(ty)
+  (subs, extra_subs) = mergeList(subscripts, subs, dim_count)
   #=  Check that the expression has enough dimensions to be subscripted.
   =#
   if ! listEmpty(extra_subs)
     Error.assertion(false, getInstanceName() + ": too few dimensions in " + toString(exp) + " to apply subscripts " + toStringList(subscripts), sourceInfo())
   end
-  @assign ty = Type.subscript(ty, subs)
-  @assign outExp = SUBSCRIPTED_EXP_EXPRESSION(e, subs, ty)
-  outExp
+  ty = subscript(ty, subs)
+  outExp = SUBSCRIPTED_EXP_EXPRESSION(e, subs, ty)
+  return outExp
 end
 
 function applySubscriptIf(subscript::Subscript, exp::Expression, restSubscripts::List{<:Subscript}) ::Expression
@@ -5048,18 +5034,16 @@ end
 
 function applySubscriptCall(subscript::Subscript, exp::Expression, restSubscripts::List{<:Subscript}) ::Expression
   local outExp::Expression
-
   local call::Call
-
   @match CALL_EXPRESSION(call = call) = exp
-  @assign outExp = begin
+  outExp = begin
     local arg::Expression
     local ty::M_Type
     @match call begin
-      TYPED_CALL(arguments = arg <|  nil()) where (P_Function.P_Function.isSubscriptableBuiltin(call.fn))  => begin
-        @assign arg = applySubscript(subscript, arg, restSubscripts)
-        @assign ty = Type.copyDims(typeOf(arg), call.ty)
-        CALL(TYPED_CALL(call.fn, ty, call.var, list(arg), call.attributes))
+      TYPED_CALL(arguments = arg <| nil()) where (isSubscriptableBuiltin(call.fn))  => begin
+        arg = applySubscript(subscript, arg, restSubscripts)
+        ty = copyDims(typeOf(arg), call.ty)
+        CALL_EXPRESSION(TYPED_CALL(call.fn, ty, call.var, list(arg), call.attributes))
       end
 
       TYPED_ARRAY_CONSTRUCTOR(__)  => begin
@@ -5137,35 +5121,30 @@ end
 
 function applySubscriptRange(subscript::Subscript, exp::Expression) ::Expression
   local outExp::Expression
-
   local sub::Subscript
   local start_exp::Expression
   local stop_exp::Expression
   local step_exp::Option{Expression}
   local ty::M_Type
   local expl::List{Expression}
-
-  @assign sub = expandSlice(subscript)
-  @assign outExp = begin
+  (sub, _) = expandSlice(subscript)
+  outExp = begin
     @match sub begin
       SUBSCRIPT_INDEX(__)  => begin
         applyIndexSubscriptRange(exp, sub)
       end
-
       SUBSCRIPT_SLICE(__)  => begin
         @match RANGE_EXPRESSION(ty = ty) = exp
-        @assign ty = TYPE_ARRAY(Type.unliftArray(ty), list(toDimension(sub)))
+        ty = TYPE_ARRAY(Type.unliftArray(ty), list(toDimension(sub)))
         SUBSCRIPTED_EXP_EXPRESSION(exp, list(subscript), ty)
       end
-
       SUBSCRIPT_WHOLE(__)  => begin
         exp
       end
-
       SUBSCRIPT_EXPANDED_SLICE(__)  => begin
-        @assign expl = list(applyIndexSubscriptRange(exp, i) for i in sub.indices)
+        expl = list(applyIndexSubscriptRange(exp, i) for i in sub.indices)
         @match RANGE_EXPRESSION(ty = ty) = exp
-        makeArray(liftArrayLeft(ty, P_Dimension.Dimension.fromInteger(listLength(expl))), expl)
+        makeArray(liftArrayLeft(ty, fromInteger(listLength(expl))), expl)
       end
     end
   end
@@ -5230,7 +5209,7 @@ function applySubscriptArray(subscript::Subscript, exp::Expression, restSubscrip
           else
             Type.subscript(Type.unliftArray(ty), restSubscripts)
           end
-          @assign ty = liftArrayLeft(ty, P_Dimension.Dimension.fromInteger(el_count))
+          @assign ty = liftArrayLeft(ty, fromInteger(el_count))
           @assign outExp = makeArray(ty, expl, literal)
         end
         outExp
@@ -5245,7 +5224,7 @@ function applySubscriptArray(subscript::Subscript, exp::Expression, restSubscrip
         else
           Type.subscript(Type.unliftArray(ty), restSubscripts)
         end
-        @assign ty = liftArrayLeft(ty, P_Dimension.Dimension.fromInteger(el_count))
+        @assign ty = liftArrayLeft(ty, fromInteger(el_count))
         makeArray(ty, expl, literal)
       end
     end
@@ -5307,7 +5286,7 @@ function applySubscriptTypename(subscript::Subscript, ty::M_Type) ::Expression
 
       SUBSCRIPT_EXPANDED_SLICE(__)  => begin
         @assign expl = list(applyIndexSubscriptTypename(ty, i) for i in sub.indices)
-        makeArray(liftArrayLeft(ty, P_Dimension.Dimension.fromInteger(listLength(expl))), expl, literal = true)
+        makeArray(liftArrayLeft(ty, fromInteger(listLength(expl))), expl, literal = true)
       end
     end
   end
@@ -5326,96 +5305,83 @@ function applySubscriptCref(subscript::Subscript, cref::ComponentRef, restSubscr
   outExp
 end
 
-""" #= Subscripts an expression with the given subscript, and then applies the
-               optional list of subscripts to each element of the subscripted expression. =#"""
-                 function applySubscript(subscript::Subscript, exp::Expression, restSubscripts::List{<:Subscript} = nil) ::Expression
-                   local outExp::Expression
-
-                   @assign outExp = begin
-                     @match exp begin
-                       CREF_EXPRESSION(__)  => begin
-                         applySubscriptCref(subscript, exp.cref, restSubscripts)
-                       end
-
-                       TYPENAME_EXPRESSION(__) where (listEmpty(restSubscripts))  => begin
-                         applySubscriptTypename(subscript, exp.ty)
-                       end
-
-                       ARRAY_EXPRESSION(__)  => begin
-                         applySubscriptArray(subscript, exp, restSubscripts)
-                       end
-
-                       RANGE_EXPRESSION(__) where (listEmpty(restSubscripts))  => begin
-                         applySubscriptRange(subscript, exp)
-                       end
-
-                       CALL_EXPRESSION(call = TYPED_ARRAY_CONSTRUCTOR(__))  => begin
-                         applySubscriptArrayConstructor(subscript, exp.call, restSubscripts)
-                       end
-
-                       CALL_EXPRESSION(__)  => begin
-                         applySubscriptCall(subscript, exp, restSubscripts)
-                       end
-
-                       IF_EXPRESSION(__)  => begin
-                         applySubscriptIf(subscript, exp, restSubscripts)
-                       end
-
-                       BINDING_EXP(__)  => begin
-                         bindingExpMap(exp, (subscript, restSubscripts) -> applySubscript(subscript = subscript, restSubscripts = restSubscripts))
-                       end
-
-                       _  => begin
-                         makeSubscriptedExp(_cons(subscript, restSubscripts), exp)
-                       end
-                     end
-                   end
-                   outExp
-                 end
-
-""" #= Subscripts an expression with the given list of subscripts. =#"""
-function applySubscripts(subscripts::List{<:Subscript}, exp::Expression) ::Expression
+"""
+ Subscripts an expression with the given subscript, and then applies the
+ optional list of subscripts to each element of the subscripted expression.
+"""
+function applySubscript(subscript::Subscript, exp::Expression, restSubscripts::List{<:Subscript} = nil) ::Expression
   local outExp::Expression
-
-  if listEmpty(subscripts)
-    @assign outExp = exp
-  else
-    @assign outExp = applySubscript(listHead(subscripts), exp, listRest(subscripts))
+  outExp = begin
+    @match exp begin
+      CREF_EXPRESSION(__)  => begin
+        applySubscriptCref(subscript, exp.cref, restSubscripts)
+      end
+      TYPENAME_EXPRESSION(__) where (listEmpty(restSubscripts))  => begin
+        applySubscriptTypename(subscript, exp.ty)
+      end
+      ARRAY_EXPRESSION(__)  => begin
+        applySubscriptArray(subscript, exp, restSubscripts)
+      end
+      RANGE_EXPRESSION(__) where (listEmpty(restSubscripts))  => begin
+        applySubscriptRange(subscript, exp)
+      end
+      CALL_EXPRESSION(call = TYPED_ARRAY_CONSTRUCTOR(__))  => begin
+        applySubscriptArrayConstructor(subscript, exp.call, restSubscripts)
+      end
+      CALL_EXPRESSION(__)  => begin
+        applySubscriptCall(subscript, exp, restSubscripts)
+      end
+      IF_EXPRESSION(__)  => begin
+        applySubscriptIf(subscript, exp, restSubscripts)
+      end
+      BINDING_EXP(__)  => begin
+        bindingExpMap(exp, (expArg) -> applySubscript(subscript, expArg, restSubscripts))
+      end
+      _  => begin
+        makeSubscriptedExp(_cons(subscript, restSubscripts), exp)
+      end
+    end
   end
   outExp
 end
 
-function makeRecord(recordName::Absyn.Path, recordType::M_Type, fields::List{<:Expression}) ::Expression
-  local exp::Expression
+""" Subscripts an expression with the given list of subscripts. """
+function applySubscripts(subscripts::List{<:Subscript}, exp::Expression) ::Expression
+  local outExp::Expression
+  if listEmpty(subscripts)
+    outExp = exp
+  else
+    outExp = applySubscript(listHead(subscripts), exp, listRest(subscripts))
+  end
+  outExp
+end
 
-  @assign exp = RECORD_EXPRESSION(recordName, recordType, fields)
+function makeRecord(recordName::Absyn.Path, recordType::M_Type, fields::List{<:Expression})::Expression
+  local exp::Expression
+  exp = RECORD_EXPRESSION(recordName, recordType, fields)
   exp
 end
 
 function makeExpArray(elements::List{<:Expression}, isLiteral::Bool = false) ::Expression
   local exp::Expression
-
   local ty::M_Type
-
-  @assign ty = typeOf(listHead(elements))
-  @assign ty = liftArrayLeft(ty, P_Dimension.Dimension.fromInteger(listLength(elements)))
-  @assign exp = makeArray(ty, elements, isLiteral)
+  ty = typeOf(listHead(elements))
+  ty = liftArrayLeft(ty, fromInteger(listLength(elements)))
+  exp = makeArray(ty, elements, isLiteral)
   exp
 end
 
 function makeRealMatrix(values::List{<:List{<:AbstractFloat}}) ::Expression
   local exp::Expression
-
   local ty::M_Type
   local expl::List{Expression}
-
   if listEmpty(values)
-    @assign ty = TYPE_ARRAY(TYPE_REAL(), list(P_Dimension.Dimension.fromInteger(0), DIMENSION_UNKNOWN()))
+    @assign ty = TYPE_ARRAY(TYPE_REAL(), list(fromInteger(0), DIMENSION_UNKNOWN()))
     @assign exp = makeEmptyArray(ty)
   else
-    @assign ty = TYPE_ARRAY(TYPE_REAL(), list(P_Dimension.Dimension.fromInteger(listLength(listHead(values)))))
+    @assign ty = TYPE_ARRAY(TYPE_REAL(), list(fromInteger(listLength(listHead(values)))))
     @assign expl = list(makeArray(ty, list(REAL_EXPRESSION(v) for v in row), literal = true) for row in values)
-    @assign ty = liftArrayLeft(ty, P_Dimension.Dimension.fromInteger(listLength(expl)))
+    @assign ty = liftArrayLeft(ty, fromInteger(listLength(expl)))
     @assign exp = makeArray(ty, expl, literal = true)
   end
   exp
@@ -5423,23 +5389,20 @@ end
 
 function makeRealArray(values::List{<:AbstractFloat}) ::Expression
   local exp::Expression
-
-  @assign exp = makeArray(TYPE_ARRAY(TYPE_REAL(), list(P_Dimension.Dimension.fromInteger(listLength(values)))), list(REAL_EXPRESSION(v) for v in values); literal = true)
+  @assign exp = makeArray(TYPE_ARRAY(TYPE_REAL(), list(fromInteger(listLength(values)))), list(REAL_EXPRESSION(v) for v in values); literal = true)
   exp
 end
 
 function makeIntegerArray(values::List{<:Int}) ::Expression
   local exp::Expression
-
-    @assign exp = makeArray(TYPE_ARRAY(TYPE_INTEGER(),
-                                       list(fromInteger(listLength(values)))), list(INTEGER_EXPRESSION(v) for v in values)
-                            ; literal = true)
+  @assign exp = makeArray(TYPE_ARRAY(TYPE_INTEGER(),
+                                     list(fromInteger(listLength(values)))), list(INTEGER_EXPRESSION(v) for v in values)
+                          ; literal = true)
   exp
 end
 
 function makeEmptyArray(ty::M_Type) ::Expression
   local outExp::Expression
-
   @assign outExp = ARRAY_EXPRESSION(ty, nil, true)
   outExp
 end
@@ -5545,7 +5508,7 @@ end
          UNARY_EXPRESSION(setType(t, exp.operator), typeCast(exp.exp, ety))
        end
        (IF_EXPRESSION(__), _)  => begin
-         IF(exp.condition, typeCast(exp.trueBranch, ety), typeCast(exp.falseBranch, ety))
+         IF_EXPRESSION(exp.condition, typeCast(exp.trueBranch, ety), typeCast(exp.falseBranch, ety))
        end
        (CALL_EXPRESSION(__), _)  => begin
          typeCast(exp, ety)

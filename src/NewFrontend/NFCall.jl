@@ -1,14 +1,26 @@
 module ParameterTreeImpl
 using MetaModelica
 using ExportAll
-
 import ..Main.Expression
+import ..Main.toString
 
 #= Modelica extend clause =#
 const Key = String
 const Value = Expression
 
+#= Define the printing functions. =#
+function keyStr(key)
+  return key
+end
+
 include("../Util/baseAvlTreeCode.jl")
+addConflictDefault = addConflictReplace
+#= Add comp function =#
+keyCompare = (inKey1::Key, inKey2::Key) -> begin
+  #Should it default to ==== instead since types are in many cases immutable?
+  res = stringCompare(inKey1, inKey2)
+  return res
+end
 
 end #=ParameterTreeImpl=#
 
@@ -642,13 +654,11 @@ function isImpure(call::Call)::Bool
   impure = begin
     @match call begin
       UNTYPED_CALL(__) => begin
-        isImpure(listHead(P_Function.getRefCache(call.ref)))
+        isImpure(listHead(getRefCache(call.ref)))
       end
-
       TYPED_CALL(__) => begin
         isImpure(call.fn) || isOMImpure(call.fn)
       end
-
       _ => begin
         false
       end
@@ -1164,27 +1174,24 @@ end
 
 function evaluateCallTypeDimExp(exp::Expression, ptree::ParameterTree)::Expression
   local outExp::Expression
-
-  @assign outExp = begin
+  outExp = begin
     local node::InstNode
     local oexp::Option{Expression}
     local e::Expression
     @match exp begin
       CREF_EXPRESSION(
-        cref = CREF(
+        cref = COMPONENT_REF_CREF(
           node = node,
-          restCref = EMPTY(__),
+          restCref = COMPONENT_REF_EMPTY(__),
         ),
       ) => begin
-        @assign oexp = ParameterTree.getOpt(ptree, name(node))
+        oexp = ParameterTreeImpl.getOpt(ptree, name(node))
         if isSome(oexp)
           @match SOME(outExp) = oexp
         end
-        #=  TODO: Apply subscripts.
-        =#
+        #=  TODO: Apply subscripts. =#
         outExp
       end
-
       _ => begin
         exp
       end
@@ -1197,21 +1204,18 @@ function buildParameterTree(
   fnArgs::Tuple{<:M_Function, List{<:Expression}},
   ptree::ParameterTree,
 )::ParameterTree
-
   local fn::M_Function
   local args::List{Expression}
   local arg::Expression
-
-  if !ParameterTree.isEmpty(ptree)
+  if !(ParameterTreeImpl.isEmpty(ptree))
     return ptree
   end
   @assign (fn, args) = fnArgs
   for i in fn.inputs
     @match _cons(arg, args) = args
-    @assign ptree = ParameterTree.add(ptree, name(i), arg)
+    @assign ptree = ParameterTreeImpl.add(ptree, name(i), arg)
   end
-  #=  TODO: Add local variable bindings.
-  =#
+  #=  TODO: Add local variable bindings. =#
   return ptree
 end
 
@@ -1225,10 +1229,10 @@ function evaluateCallTypeDim(
     local exp::Expression
     @match dim begin
       DIMENSION_EXP(__) => begin
-        @assign ptree = buildParameterTree(fnArgs, ptree)
-        @assign exp = map(
+        ptree = buildParameterTree(fnArgs, ptree)
+        exp = map(
           dim.exp,
-          (ptree) -> evaluateCallTypeDimExp(ptree = ptree),
+          (expArg) -> evaluateCallTypeDimExp(expArg, ptree),
         )
         ErrorExt.setCheckpoint(getInstanceName())
         try
@@ -1258,13 +1262,13 @@ function evaluateCallType(
     local tys::List{NFType}
     @match ty begin
       TYPE_ARRAY(__) => begin
-        @assign (dims, ptree) =
+        (dims, ptree) =
           ListUtil.map1Fold(ty.dimensions, evaluateCallTypeDim, (fn, args), ptree)
         @assign ty.dimensions = dims
         ty
       end
       TYPE_TUPLE(__) => begin
-        @assign (tys, ptree) =
+        (tys, ptree) =
           ListUtil.map2Fold(ty.types, evaluateCallType, fn, args, ptree)
         @assign ty.types = tys
         ty
@@ -1326,7 +1330,6 @@ function vectorizeCall(
   info::SourceInfo,
 )::Call
   local vectorized_call::Call
-
   local ty::NFType
   local vect_ty::NFType
   local exp::Expression
@@ -1339,45 +1342,45 @@ function vectorizeCall(
   local vect_args::List{Expression}
   local sub::Subscript
   local vect_idxs::List{Int}
-
-  @assign vectorized_call = begin
+  vectorized_call = begin
     @match (base_call, mk) begin
-      (TYPED_CALL(arguments = call_args), VECTORIZED(__)) => begin
+      (TYPED_CALL(arguments = call_args), VECTORIZED_MATCH_KIND(__)) => begin
         @assign iters = nil
         @assign i = 1
         for dim in mk.vectDims
           Error.assertion(
-            P_Dimension.Dimension.isKnown(dim, allowExp = true),
+            isKnown(dim, true),
             getInstanceName() + " got unknown dimension for vectorized call",
             info,
           )
-          @assign ty = TYPE_ARRAY(TYPE_INTEGER(), list(dim))
-          @assign exp = RANGE_EXPRESSION(
+          ty = TYPE_ARRAY(TYPE_INTEGER(), list(dim))
+          exp = RANGE_EXPRESSION(
             ty,
             INTEGER_EXPRESSION(1),
             NONE(),
-            P_Dimension.Dimension.sizeExp(dim),
+            sizeExp(dim),
           )
-          @assign iter = fromComponent(
+          iter = fromComponent(
             "i" + intString(i),
             ITERATOR_COMPONENT(TYPE_INTEGER(), Variability.CONSTANT, info),
             scope,
           )
-          @assign iters = _cons((iter, exp), iters)
-          @assign exp = CREF_EXPRESSION(
+          iters = _cons((iter, exp), iters)
+          exp = CREF_EXPRESSION(
             TYPE_INTEGER(),
             makeIterator(iter, TYPE_INTEGER()),
           )
-          @assign sub = SUBSCRIPT_INDEX(exp)
-          @assign call_args = ListUtil.mapIndices(
+          sub = SUBSCRIPT_INDEX(exp)
+          call_args = ListUtil.mapIndices(
             call_args,
             mk.vectorizedArgs,
-            (sub, nil) -> applySubscript(
-              subscript = sub,
-              restSubscripts = nil,
+            (x) -> applySubscript(
+              sub,
+              x,
+              list(),
             ),
           )
-          @assign i = i + 1
+          i = i + 1
         end
         #=  Create the range on which we will iterate to vectorize.
         =#
@@ -1385,9 +1388,8 @@ function vectorizeCall(
         =#
         #=  Now that iterator is ready apply it, as a subscript, to each argument that is supposed to be vectorized
         =#
-        #=  Make a cref expression from the iterator
-        =#
-        @assign vect_ty = liftArrayLeftList(base_call.ty, mk.vectDims)
+        #=  Make a cref expression from the iterator =#
+        vect_ty = liftArrayLeftList(base_call.ty, mk.vectDims)
         @assign base_call.arguments = call_args
         TYPED_ARRAY_CONSTRUCTOR(
           vect_ty,
@@ -1888,12 +1890,10 @@ end
 
 function instNamedArg(absynArg::Absyn.NamedArg, scope::InstNode, info::SourceInfo)::NamedArg
   local arg::NamedArg
-
   local name::String
   local exp::Absyn.Exp
-
   @match Absyn.NAMEDARG(argName = name, argValue = exp) = absynArg
-  @assign arg = (name, Inst.instExp(exp, scope, info))
+  arg = (name, instExp(exp, scope, info))
   return arg
 end
 

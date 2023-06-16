@@ -1,6 +1,7 @@
 #=
 Original code by Per Ost
-Modified by John Tinnerholm
+Quite heavily mModified by John Tinnerholm
+(Hence not automatic logic beware here may be bugs...)
 =#
 module ConnectionSets
 
@@ -10,6 +11,7 @@ using ExportAll
 import DataStructures
 import ListUtil
 import Base.string
+import Base.length
 
 import ..NFConnector
 import ..CONNECTOR
@@ -37,7 +39,6 @@ Base.isequal(entry1::Entry, entry2::Entry) = begin
   return b
 end
 
-
 #= Using the Disjoint set data structure =#
 struct Sets
   nodes::Vector{Int}  #"An array of nodes"
@@ -47,14 +48,18 @@ end
 
 function string(s::Sets)
   str = "Nodes:" * toString(s.nodes) * "\n"
+  str *= "Node Count:" * string(s.nodeCount) * "\n"
   str *= "Elements:\n"
   for e in s.elements
     str *= toString(e[1]) * "| node_index:" * string(e[2]) * "\n"
   end
-  str *= "Node Count:" * string(s.nodeCount) * "\n"
+  return str
 end
 
-"""Creates a new disjoint-sets structure."""
+"""
+Creates a new disjoint-sets structure.
+Ignore the set count as per Adrians comment.
+"""
 function emptySets(setCount)
   sz = max(setCount, 3)
   nodes = arrayCreate(sz, -1)
@@ -117,9 +122,9 @@ function addConnector(conn, sets)
   return sets
 end
 
-""" #= Adds a connector to the sets if it does not already exist =#"""
+""" Adds a connector to the sets if it does not already exist  """
 function addSingleConnector(conn, sets)
-  for c in #= Connector. =# split(conn) 
+  for c in #= Connector. =# split(conn)
     sets = find(c, sets)
   end
   return sets
@@ -196,10 +201,12 @@ function findRoot(nodeIndex::Int, nodes::Vector)
 end
 
 
-"""Merges two sets into one. This is done by attaching one set-tree to the
-   other. The ranks are compared to determine which of the trees is the
-   smallest, and that one is attached to the larger one to keep the trees as
-   flat as possible."""
+"""
+Merges two sets into one. This is done by attaching one set-tree to the
+other. The ranks are compared to determine which of the trees is the
+smallest, and that one is attached to the larger one to keep the trees as
+flat as possible.
+"""
 function union(set1::Int, set2::Int, sets)
   local rank1
   local rank2
@@ -242,13 +249,12 @@ function find(entry, sets)::Tuple
 end
 
 """
-Returns an array indexed by the group index
-each pos contains a set array<list<Entry>>
-Author:johti17
+  Returns an array indexed by the group index
+  each pos contains a set Vector{List{Entry}}
+  Author:johti17
 """
-function extractSets(sets)
-  @debug "Sets before extractSets $(string(sets))"
-
+function extractSets(sets::Sets)
+  @debug("Sets before extractSets $(string(sets))")
 #  input Sets sets;
 #  output array<list<Entry>> setsArray "An array with all the sets.";
 #  output Sets assignedSets "Sets with the roots assigned to sets.";
@@ -268,16 +274,16 @@ function extractSets(sets)
   end
   #Create an array of lists to store the sets in, and fetch the list of
   #entry-index pairs stored in the hashtable.
-  setsArray = [] #arrayCreate(set_idx, list());
+  local setsArray = List{Entry}[] #arrayCreate(set_idx, list());
   for _ in 1:set_idx
     push!(setsArray, list())
   end
-  entries = sets.elements #BaseHashTable.hashTableListReversed(sets.elements);
+  entries = sets.elements
   #Go through each entry-index pair.
   for p in entries
-    (e, idx) = p;
+    (e, idx) = p
     #Follow the parent indices until we find the root.
-    set_idx = nodes[idx];
+    set_idx = nodes[idx]
     while set_idx > 0
       set_idx = nodes[set_idx]
     end
@@ -289,6 +295,8 @@ function extractSets(sets)
   assignedSets = Sets(nodes, sets.elements, sets.nodeCount);
   @debug "Sets after extractSets $(string(assignedSets))"
   @debug "Sets array: $(toString(setsArray))"
+  #= !Remove potentially empty sets! =#
+  filter!((s)-> !(s isa Nil), setsArray)
   return (setsArray, assignedSets)
 end
 
@@ -314,8 +322,8 @@ end
   Add a list of entries to the disjoint-sets forrest
 """
 function addList(entries::List{T}, sets) where {T}
-  @debug "Calling addList $(string(sets))" 
-  #= Make a new set 
+  @debug "Calling addList $(string(sets))"
+  #= Make a new set
   see below in the original impl:
   Sets.DISJOINT_SETS(nodes, elements, node_count) = sets;=#
   for e in entries
@@ -325,7 +333,7 @@ function addList(entries::List{T}, sets) where {T}
   return sets
 end
 
-""" 
+"""
   Replication of the add function in DisjointSets
   Adds an entry to the disjoint-sets forest. This function assumes that the
    entry does not already exist in the forest. If the entry might exist already,
@@ -341,7 +349,7 @@ function add(entry, sets::Sets)::Tuple
   # Make sure that we have enough space in the node array. New nodes have the
   # value -1, so we don't actually need to add a node to the array, just expand
   # it and fill the new places with -1.
-  if index > arrayLength(nodes)
+  if index > length(nodes)
 #    nodes = Array.expand(realInt(intReal(index) * 1.4), nodes, -1);
     push!(nodes, -1) #Letting it expand automatically by via Julia...
   end
@@ -349,6 +357,13 @@ function add(entry, sets::Sets)::Tuple
   elements[entry] = index #BaseHashTable.addNoUpdCheck((entry, index), elements);
   setsR = Sets(nodes, elements, index)
   return (setsR, index)
+end
+
+"""
+  Returns the length of the set datastructure
+"""
+function length(s::Sets)
+  return length(s.elements)
 end
 
 @exportAll()

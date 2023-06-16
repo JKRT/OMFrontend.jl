@@ -88,13 +88,15 @@ function scalarizeVariable(var::Variable, vars::List{<:Variable})
         binding_iter = fromExpToExpressionIterator(expandComplexCref(getTypedExp(binding,)))
         bind_var = variability(binding)
         for cr in crefs
-          (binding_iter, exp) = next(binding_iter)
-          binding = FLAT_BINDING(exp, bind_var)
-          ty_attr = nextTypeAttributes(ty_attr_names, ty_attr_iters)
-          vars = _cons(
-            VARIABLE(cr, ty, binding, vis, attr, ty_attr, cmt, info),
-            vars,
-          )
+          if hasNext(binding_iter)
+            (binding_iter, exp) = next(binding_iter)
+            binding = FLAT_BINDING(exp, bind_var)
+            ty_attr = nextTypeAttributes(ty_attr_names, ty_attr_iters)
+            vars = _cons(
+              VARIABLE(cr, ty, binding, vis, attr, ty_attr, cmt, info),
+              vars,
+            )
+          end
         end
       else
         for cr in crefs

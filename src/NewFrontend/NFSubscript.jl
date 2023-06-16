@@ -47,7 +47,7 @@ function toExp(subscript::Subscript)::Expression
         subscript.index
       end
 
-      SLICE(__) => begin
+      SUBSCRIPT_SLICE(__) => begin
         subscript.slice
       end
     end
@@ -156,7 +156,7 @@ function mergeList(
         @match _cons(old_sub, rest_old_subs) = rest_old_subs
         @assign (merged, outSubs) = begin
           @match old_sub begin
-            SLICE(__) => begin
+            SUBSCRIPT_SLICE(__) => begin
               #=  Loop over the old subscripts while this new subscript hasn't been
               =#
               #=  merged and there's still old subscript left.
@@ -181,7 +181,7 @@ function mergeList(
               (true, outSubs)
             end
 
-            WHOLE(__) => begin
+            SUBSCRIPT_WHOLE(__) => begin
               (true, _cons(new_sub, outSubs))
             end
 
@@ -276,7 +276,6 @@ end
 function expandSlice(subscript::Subscript)::Tuple{Subscript, Bool}
   local expanded::Bool
   local outSubscript::Subscript
-
   (outSubscript, expanded) = begin
     local exp::Expression
     @match subscript begin
@@ -302,10 +301,9 @@ function expandSlice(subscript::Subscript)::Tuple{Subscript, Bool}
 end
 
 function expand(subscript::Subscript, dimension::Dimension)::Tuple{Subscript, Bool}
-  local expanded::Bool
+  local expandedBool::Bool
   local outSubscript::Subscript
-
-  (outSubscript, expanded) = begin
+  (outSubscript, expandedBool) = begin
     local exp::Expression
     local iter::RangeIterator
     @match subscript begin
@@ -316,20 +314,20 @@ function expand(subscript::Subscript, dimension::Dimension)::Tuple{Subscript, Bo
         iter = fromDim(dimension)
         if isValid(iter)
           outSubscript =
-            EXPANDED_SLICE(P_RangeIterator.RangeIterator.map(iter, makeIndex))
-          #=expanded ==# true
+            SUBSCRIPT_EXPANDED_SLICE(map(iter, makeIndex))
+          expandedBool= true
         else
           outSubscript = subscript
-          #=expanded ==# false
+          expandedBool = false
         end
-        (outSubscript, expanded)
+        (outSubscript, expandedBool)
       end
       _ => begin
         (subscript, true)
       end
     end
   end
-  return (outSubscript, expanded)
+  return (outSubscript, expandedBool)
 end
 
 function scalarizeList(
@@ -374,7 +372,7 @@ function scalarize(subscript::Subscript, dimension::Dimension)::List{Subscript}
         list(subscript)
       end
 
-      SLICE(__) => begin
+      SUBSCRIPT_SLICE(__) => begin
         List(
           SUBSCRIPT_INDEX(e)
           for
@@ -383,7 +381,7 @@ function scalarize(subscript::Subscript, dimension::Dimension)::List{Subscript}
         )
       end
 
-      WHOLE(__) => begin
+      SUBSCRIPT_WHOLE(__) => begin
         P_RangeIterator.RangeIterator.map(
           P_RangeIterator.RangeIterator.fromDim(dimension),
           makeIndex,
@@ -394,7 +392,7 @@ function scalarize(subscript::Subscript, dimension::Dimension)::List{Subscript}
   return subscripts
 end
 
-""" #= Returns a dimension representing the size of the given subscript. =#"""
+"""  Returns a dimension representing the size of the given subscript. """
 function toDimension(subscript::Subscript)::Dimension
   local dimension::Dimension
   dimension = begin
@@ -420,7 +418,7 @@ function simplifySubscript(subscript::Subscript)::Subscript
       SUBSCRIPT_INDEX(__) => begin
         SUBSCRIPT_INDEX(simplify(subscript.index))
       end
-      SLICE(__) => begin
+      SUBSCRIPT_SLICE(__) => begin
         SUBSCRIPT_SLICE(simplify(subscript.slice))
       end
       _ => begin
@@ -520,15 +518,15 @@ function toString(subscript::Subscript)::String
         toString(subscript.index)
       end
 
-      SLICE(__) => begin
+      SUBSCRIPT_SLICE(__) => begin
         toString(subscript.slice)
       end
 
-      EXPANDED_SLICE(__) => begin
+      SUBSCRIPT_EXPANDED_SLICE(__) => begin
         ListUtil.toString(subscript.indices, toString, "", "{", ", ", "}", false)
       end
 
-      WHOLE(__) => begin
+      SUBSCRIPT_WHOLE(__) => begin
         ":"
       end
     end
@@ -545,7 +543,7 @@ function toDAEExp(subscript::Subscript)::DAE.Exp
         toDAE(subscript.index)
       end
 
-      SLICE(__) => begin
+      SUBSCRIPT_SLICE(__) => begin
         toDAE(subscript.slice)
       end
 
@@ -571,11 +569,11 @@ function toDAE(subscript::Subscript)::DAE.Subscript
         DAE.INDEX(toDAE(subscript.index))
       end
 
-      SLICE(__) => begin
+      SUBSCRIPT_SLICE(__) => begin
         DAE.SLICE(toDAE(subscript.slice))
       end
 
-      WHOLE(__) => begin
+      SUBSCRIPT_WHOLE(__) => begin
         DAE.WHOLEDIM()
       end
 
@@ -793,7 +791,7 @@ function applyExp(subscript::Subscript, func::ApplyFunc)
         ()
       end
 
-      SLICE(__) => begin
+      SUBSCRIPT_SLICE(__) => begin
         apply(subscript.slice, func)
         ()
       end
@@ -837,7 +835,7 @@ function containsExpShallow(
         func(subscript.index)
       end
 
-      SLICE(__) => begin
+      SUBSCRIPT_SLICE(__) => begin
         func(subscript.slice)
       end
 
@@ -878,7 +876,7 @@ function containsExp(subscript::Subscript, func::ContainsPred)::Bool
         contains(subscript.index, func)
       end
 
-      SLICE(__) => begin
+      SUBSCRIPT_SLICE(__) => begin
         contains(subscript.slice, func)
       end
 
@@ -960,12 +958,12 @@ function compare(subscript1::Subscript, subscript2::Subscript)::Int
         compare(subscript1.index, e)
       end
 
-      SLICE(__) => begin
-        @match SLICE(slice = e) = subscript2
+      SUBSCRIPT_SLICE(__) => begin
+        @match SUBSCRIPT_SLICE(slice = e) = subscript2
         compare(subscript1.slice, e)
       end
 
-      WHOLE(__) => begin
+      SUBSCRIPT_WHOLE(__) => begin
         0
       end
     end
@@ -1009,11 +1007,11 @@ function isEqual(subscript1::Subscript, subscript2::Subscript)::Bool
         isEqual(subscript1.index, subscript2.index)
       end
 
-      (SLICE(__), SLICE(__)) => begin
+      (SUBSCRIPT_SLICE(__), SUBSCRIPT_SLICE(__)) => begin
         isEqual(subscript1.slice, subscript2.slice)
       end
 
-      (WHOLE(__), WHOLE(__)) => begin
+      (SUBSCRIPT_WHOLE(__), SUBSCRIPT_WHOLE(__)) => begin
         true
       end
 
@@ -1062,7 +1060,7 @@ function isWhole(sub::Subscript)::Bool
   local isWhole::Bool
   @assign isWhole = begin
     @match sub begin
-      WHOLE(__) => begin
+      SUBSCRIPT_WHOLE(__) => begin
         true
       end
       _ => begin

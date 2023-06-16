@@ -269,7 +269,7 @@ function foldBindingExp(
       fromCref(var.name),
       binding_exp,
       var.ty,
-      ElementSource_createElementSource(var.info),
+      ElementSource.createElementSource(var.info),
     )
     @assign (htCr2U, htS2U, htU2S, fnCache) =
       foldEquation(eq, htCr2U, htS2U, htU2S, fnCache, dumpEqInitStruct)

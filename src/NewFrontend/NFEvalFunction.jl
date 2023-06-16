@@ -56,75 +56,73 @@ include("../Util/baseAvlTreeCode.jl")
 #   toString(inValue);
 # end
 
-# function keyCompare(inKey1::InstNode, inKey2::InstNode)
-#   refCompare(inKey1, inKey2)
-# end
+keyCompare = (inKey1::InstNode, inKey2::InstNode) -> begin
+  refCompare(inKey1, inKey2)
+end
 
 @exportAll()
 end
 
 FlowControl = (() -> begin #= Enumeration =#
-  NEXT = 1
-  CONTINUE = 2
-  BREAK = 3
-  RETURN = 4
-  ASSERTION = 5
-  () -> (NEXT; CONTINUE; BREAK; RETURN; ASSERTION)
-end)()
+                 NEXT = 1
+                 CONTINUE = 2
+                 BREAK = 3
+                 RETURN = 4
+                 ASSERTION = 5
+                 () -> (NEXT; CONTINUE; BREAK; RETURN; ASSERTION)
+               end)()
+const FlowControlType = Int
 
 function evaluate(fn::M_Function, args::List{<:Expression})::Expression
   local result::Expression
-
-  if P_Function.isExternal(fn)
-    @assign result = evaluateExternal(fn, args)
+  if isExternal(fn)
+    result = evaluateExternal(fn, args)
   else
-    @assign result = evaluateNormal(fn, args)
+    result = evaluateNormal(fn, args)
   end
   return result
 end
 
 function evaluateNormal(fn::M_Function, args::List{<:Expression})::Expression
   local result::Expression
-
   local fn_body::List{Statement}
   local bindings::List{Binding}
   local repl::ReplTree.Tree
   local call_count::Int
   local limit::Int
-  local call_counter::Pointer{Int} = fn.callCounter
-  local ctrl::FlowControl
-
+  local call_counter::Pointer = fn.callCounter
+  local ctrl::FlowControlType
   #=  Functions contain a mutable call counter that's increased by one at the
   =#
   #=  start of each evaluation, and decreased by one when the evalution is
   =#
   #=  finished. This is used to limit the number of recursive functions calls.
   =#
-  @assign call_count = Pointer.access(call_counter) + 1
-  @assign limit = Flags.getConfigInt(Flags.EVAL_RECURSION_LIMIT)
+  call_count = P_Pointer.access(call_counter) + 1
+  limit = Flags.getConfigInt(Flags.EVAL_RECURSION_LIMIT)
   if call_count > limit
     Pointer.update(call_counter, 0)
     Error.addSourceMessage(
       Error.EVAL_RECURSION_LIMIT_REACHED,
-      list(String(limit), AbsynUtil.pathString(P_Function.name(fn))),
+      list(String(limit), AbsynUtil.pathString(name(fn))),
       info(fn.node),
     )
     fail()
   end
-  Pointer.update(call_counter, call_count)
+  P_Pointer.update(call_counter, call_count)
   try
-    @assign fn_body = P_Function.getBody(fn)
-    @assign repl = createReplacements(fn, args)
-    @assign fn_body = applyReplacements(repl, fn_body)
-    @assign fn_body = optimizeBody(fn_body)
-    @assign ctrl = evaluateStatements(fn_body)
+    fn_body = getBody(fn)
+    repl = createReplacements(fn, args)
+    fn_body = applyReplacements(repl, fn_body)
+    fn_body = optimizeBody(fn_body)
+    ctrl = evaluateStatements(fn_body)
     if ctrl != FlowControl.ASSERTION
       @assign result = createResult(repl, fn.outputs)
     else
       fail()
     end
   catch
-    Pointer.update(call_counter, call_count - 1)
+    P_Pointer.update(call_counter, call_count - 1)
     fail()
   end
   #=  TODO: Also apply replacements to the replacements themselves, i.e. the
@@ -135,7 +133,7 @@ function evaluateNormal(fn::M_Function, args::List{<:Expression})::Expression
   =#
   #=  Make sure we always decrease the call counter even if the evaluation fails.
   =#
-  Pointer.update(call_counter, call_count - 1)
+  P_Pointer.update(call_counter, call_count - 1)
   return result
 end
 
@@ -309,26 +307,22 @@ end
 
 function buildBinding(node::InstNode, repl::ReplTree.Tree)::Expression
   local result::Expression
-
   local ty::M_Type
-
-  @assign ty = getType(node)
-  @assign ty = mapDims(ty, (repl) -> applyReplacementsDim(repl = repl))
-  @assign result = begin
+  ty = getType(node)
+  ty = mapDims(ty, (expArg) -> applyReplacementsDim(repl, expArg))
+  result = begin
     @match ty begin
-      TYPE_ARRAY(__) where {(Type.hasKnownSize(ty))} => begin
+      TYPE_ARRAY(__) where {(hasKnownSize(ty))} => begin
         fillType(
           ty,
-          EMPTY(arrayElementType(ty)),
+          EMPTY_EXPRESSION(arrayElementType(ty)),
         )
       end
-
       TYPE_COMPLEX(__) => begin
         buildRecordBinding(node, repl)
       end
-
       _ => begin
-        EMPTY(ty)
+        EMPTY_EXPRESSION(ty)
       end
     end
   end
@@ -336,19 +330,17 @@ function buildBinding(node::InstNode, repl::ReplTree.Tree)::Expression
 end
 
 function applyReplacementsDim(repl::ReplTree.Tree, dim::Dimension)::Dimension
-
-  @assign dim = begin
+  dim = begin
     local exp::Expression
     @match dim begin
       DIMENSION_EXP(__) => begin
-        @assign exp = map(
+        exp = map(
           dim.exp,
-          (repl) -> applyReplacements2(repl = repl),
+          (expArg) -> applyReplacements2(repl, expArg),
         )
-        @assign exp = Ceval.evalExp(exp)
+        exp = evalExp(exp)
         fromExp(exp, Variability.CONSTANT)
       end
-
       _ => begin
         dim
       end
@@ -405,7 +397,7 @@ function buildRecordBinding(recordNode::InstNode, repl::ReplTree.Tree)::Expressi
           =#
           ReplTree.map(
             local_repl,
-            (local_repl) -> applyBindingReplacement(repl = local_repl),
+            (nodeArg, expArg) -> applyBindingReplacement(nodeArg, expArg, local_repl),
           )
           makeRecord(
             scopePath(cls_node),
@@ -444,10 +436,9 @@ function applyBindingReplacement(
 end
 
 function applyReplacements(repl::ReplTree.Tree, fnBody::List{<:Statement})::List{Statement}
-
-  @assign fnBody = P_Statement.Statement.mapExpList(
+  fnBody = mapExpList(
     fnBody,
-    () -> map(func = (repl) -> applyReplacements2(repl = repl)),
+    (x) -> map(x, (expArg) -> applyReplacements2(repl, expArg)),
   )#= AbsyntoJulia.dumpPattern: UNHANDLED Abyn.Exp  =#
   return fnBody
 end
@@ -523,8 +514,8 @@ function applyReplacementCref(
         )
       end
     end
-    @assign outExp =
-      map(outExp, (repl) -> applyReplacements2(repl = repl))
+    outExp =
+      map(outExp, (expArg) -> applyReplacements2(repl, expArg))
   end
   #=  Look up the replacement for the first part in the replacement tree.
   =#
@@ -541,32 +532,19 @@ function optimizeBody(body::List{<:Statement})::List{Statement}
 end
 
 function optimizeStatement(stmt::Statement)::Statement
-
-  @assign () = begin
+  () = begin
     local iter_exp::Expression
-    #=  Replace iterators in for loops with mutable expressions, so we don't need
-    =#
-    #=  to do it each time we enter a for loop during evaluation.
+    #=
+    Replace iterators in for loops with mutable expressions, so we don't need
+    to do it each time we enter a for loop during evaluation.
     =#
     @match stmt begin
-      P_Statement.Statement.FOR(__) => begin
-        #=  Make a mutable expression with a placeholder value.
-        =#
-        @assign iter_exp =
-          makeMutable(EMPTY(TYPE_UNKNOWN()))
-        #=  Replace the iterator with the expression in the body of the for loop.
-        =#
-        @assign stmt.body = list(
-          P_Statement.Statement.mapExp(
-            s,
-            (iteratorArg, iter_expArg) -> replaceIterator(
-              iterator = iteratorArg,
-              iteratorValue = iter_expArg,
-            ),
-          ) for s in stmt.body
-        )
-        #=  Replace the iterator node with the mutable expression too.
-        =#
+      ALG_FOR(__) => begin
+        #=  Make a mutable expression with a placeholder value. =#
+        iter_exp = makeMutable(EMPTY_EXPRESSION(TYPE_UNKNOWN()))
+        #=  Replace the iterator with the expression in the body of the for loop. =#
+        @assign stmt.body = replaceIteratorList(stmt.body, stmt.iterator, iter_exp)
+        #=  Replace the iterator node with the mutable expression too. =#
         @assign stmt.iterator = EXP_NODE(iter_exp)
         ()
       end
@@ -581,25 +559,23 @@ end
 
 function createResult(repl::ReplTree.Tree, outputs::List{<:InstNode})::Expression
   local exp::Expression
-
   local expl::List{Expression}
   local types::List{M_Type}
   local e::Expression
-
   if listLength(outputs) == 1
-    @assign exp = Ceval.evalExp(ReplTree.get(repl, listHead(outputs)))
+    exp = evalExp(ReplTree.get(repl, listHead(outputs)))
     assertAssignedOutput(listHead(outputs), exp)
   else
-    @assign expl = nil
-    @assign types = nil
+    expl = nil
+    types = nil
     for o in outputs
-      @assign e = Ceval.evalExp(ReplTree.get(repl, o))
+      e = evalExp(ReplTree.get(repl, o))
       assertAssignedOutput(o, e)
-      @assign expl = _cons(e, expl)
+      expl = _cons(e, expl)
     end
-    @assign expl = listReverseInPlace(expl)
-    @assign types = list(typeOf(e) for e in expl)
-    @assign exp = TUPLE_EXPRESSION(TYPE_TUPLE(types, NONE()), expl)
+    expl = listReverseInPlace(expl)
+    types = list(typeOf(e) for e in expl)
+    exp = TUPLE_EXPRESSION(TYPE_TUPLE(types, NONE()), expl)
   end
   return exp
 end
@@ -607,7 +583,7 @@ end
 function assertAssignedOutput(outputNode::InstNode, value::Expression)
   return @assign () = begin
     @match value begin
-      EMPTY(__) => begin
+      EMPTY_EXPRESSION(__) => begin
         Error.addSourceMessage(
           Error.UNASSIGNED_FUNCTION_OUTPUT,
           list(name(outputNode)),
@@ -623,14 +599,13 @@ function assertAssignedOutput(outputNode::InstNode, value::Expression)
   end
 end
 
-function evaluateStatements(stmts::List{<:Statement})::FlowControl
-  local ctrl::FlowControl = FlowControl.NEXT
-
+function evaluateStatements(stmts::List{<:Statement})::FlowControlType
+  local ctrl::FlowControlType = FlowControl.NEXT
   for s in stmts
-    @assign ctrl = evaluateStatement(s)
+    ctrl = evaluateStatement(s)
     if ctrl != FlowControl.NEXT
       if ctrl == FlowControl.CONTINUE
-        @assign ctrl = FlowControl.NEXT
+        ctrl = FlowControl.NEXT
       end
       break
     end
@@ -638,8 +613,8 @@ function evaluateStatements(stmts::List{<:Statement})::FlowControl
   return ctrl
 end
 
-function evaluateStatement(stmt::Statement)::FlowControl
-  local ctrl::FlowControl
+function evaluateStatement(stmt::Statement)::FlowControlType
+  local ctrl::FlowControlType
 
   #=  adrpo: we really need some error handling here to detect which statement cannot be evaluated
   =#
@@ -651,31 +626,31 @@ function evaluateStatement(stmt::Statement)::FlowControl
         evaluateAssignment(stmt.lhs, stmt.rhs, stmt.source)
       end
 
-      P_Statement.Statement.FOR(__) => begin
+      ALG_FOR(__) => begin
         evaluateFor(stmt.iterator, stmt.range, stmt.body, stmt.source)
       end
 
-      P_Statement.Statement.IF(__) => begin
+      ALG_IF(__) => begin
         evaluateIf(stmt.branches, stmt.source)
       end
 
-      P_Statement.Statement.ASSERT(__) => begin
+      ALG_ASSERT(__) => begin
         evaluateAssert(stmt.condition, stmt)
       end
 
-      P_Statement.Statement.NORETCALL(__) => begin
+      ALG_NORETCALL(__) => begin
         evaluateNoRetCall(stmt.exp, stmt.source)
       end
 
-      P_Statement.Statement.WHILE(__) => begin
+      ALG_WHILE(__) => begin
         evaluateWhile(stmt.condition, stmt.body, stmt.source)
       end
 
-      P_Statement.Statement.RETURN(__) => begin
+      ALG_RETURN(__) => begin
         FlowControl.RETURN
       end
 
-      P_Statement.Statement.BREAK(__) => begin
+      ALG_BREAK(__) => begin
         FlowControl.BREAK
       end
 
@@ -704,10 +679,9 @@ function evaluateAssignment(
   lhsExp::Expression,
   rhsExp::Expression,
   source::DAE.ElementSource,
-)::FlowControl
-  local ctrl::FlowControl = FlowControl.NEXT
-
-  assignVariable(lhsExp, Ceval.evalExp(rhsExp, P_EvalTarget.STATEMENT(source)))
+)::FlowControlType
+  local ctrl::FlowControlType = FlowControl.NEXT
+  assignVariable(lhsExp, evalExp(rhsExp, EVALTARGET_STATEMENT(source)))
   return ctrl
 end
 
@@ -871,10 +845,9 @@ end
 
 function assignExp(lhs::Expression, rhs::Expression)::Expression
   local result::Expression
-
-  @assign result = begin
+  result = begin
     @match lhs begin
-RECORD_EXPRESSION(__) => begin
+      RECORD_EXPRESSION(__) => begin
         assignRecord(lhs, rhs)
       end
 
@@ -890,8 +863,7 @@ end
 
 function assignRecord(lhs::Expression, rhs::Expression)::Expression
   local result::Expression
-
-  @assign result = begin
+  result = begin
     local elems::List{Expression}
     local e::Expression
     local val::Expression
@@ -900,24 +872,23 @@ function assignRecord(lhs::Expression, rhs::Expression)::Expression
     local binding_exp::Option{Expression}
     local ty::M_Type
     @match rhs begin
-RECORD_EXPRESSION(__) => begin
-        @match RECORD(elements = elems) = lhs
+      RECORD_EXPRESSION(__) => begin
+        @match RECORD_EXPRESSION(elements = elems) = lhs
         for v in rhs.elements
           @match _cons(e, elems) = elems
           assignVariable(e, v)
         end
         lhs
       end
-
       CREF_EXPRESSION(__) => begin
-        @match RECORD(elements = elems) = lhs
-        @assign cls_tree =
+        @match RECORD_EXPRESSION(elements = elems) = lhs
+        cls_tree =
           classTree(getClass(node(rhs.cref)))
-        @assign comps = getComponents(cls_tree)
+        comps = getComponents(cls_tree)
         for c in comps
           @match _cons(e, elems) = elems
-          @assign ty = getType(c)
-          @assign val = CREF_EXPRESSION(
+          ty = getType(c)
+          val = CREF_EXPRESSION(
             liftArrayLeftList(ty, arrayDims(rhs.ty)),
             prefixCref(c, ty, nil, rhs.cref),
           )
@@ -925,7 +896,6 @@ RECORD_EXPRESSION(__) => begin
         end
         lhs
       end
-
       _ => begin
         rhs
       end
@@ -939,9 +909,8 @@ function evaluateFor(
   range::Option{<:Expression},
   forBody::List{<:Statement},
   source::DAE.ElementSource,
-)::FlowControl
-  local ctrl::FlowControl
-
+)::FlowControlType
+  local ctrl::FlowControlType
   local range_iter::RangeIterator
   local iter_exp::Pointer{Expression}
   local range_exp::Expression
@@ -949,23 +918,24 @@ function evaluateFor(
   local body::List{Statement} = forBody
   local i::Int = 0
   local limit::Int = Flags.getConfigInt(Flags.EVAL_LOOP_LIMIT)
-
-  @assign range_exp = Ceval.evalExp(Util.getOption(range), P_EvalTarget.STATEMENT(source))
-  @assign range_iter = P_RangeIterator.RangeIterator.fromExp(range_exp)
-  if P_RangeIterator.RangeIterator.hasNext(range_iter)
+  range_exp = evalExp(Util.getOption(range), EVALTARGET_STATEMENT(source))
+  range_iter = RangeIterator_fromExp(range_exp)
+    #=  Loop through each value in the iteration range. =#
+  if hasNext(range_iter)
     @match EXP_NODE(exp = MUTABLE_EXPRESSION(exp = iter_exp)) =
       iterator
-    while P_RangeIterator.RangeIterator.hasNext(range_iter)
-      @assign (range_iter, value) = P_RangeIterator.RangeIterator.next(range_iter)
+    while hasNext(range_iter)
+      (range_iter, value) = next(range_iter)
+      #=  Update the mutable expression with the iteration value and evaluate the statement. =#
       P_Pointer.update(iter_exp, value)
-      @assign ctrl = evaluateStatements(body)
+      ctrl = evaluateStatements(body)
       if ctrl != FlowControl.NEXT
         if ctrl == FlowControl.BREAK
-          @assign ctrl = FlowControl.NEXT
+          ctrl = FlowControl.NEXT
         end
         break
       end
-      @assign i = i + 1
+      i = i + 1
       if i > limit
         Error.addSourceMessage(
           Error.EVAL_LOOP_LIMIT_REACHED,
@@ -976,49 +946,42 @@ function evaluateFor(
       end
     end
   end
-  #=  Loop through each value in the iteration range.
-  =#
-  #=  Update the mutable expression with the iteration value and evaluate the statement.
-  =#
   return ctrl
 end
 
 function evaluateIf(
   branches::List{<:Tuple{<:Expression, List{<:Statement}}},
   source::DAE.ElementSource,
-)::FlowControl
-  local ctrl::FlowControl
-
+)::FlowControlType
+  local ctrl::FlowControlType
   local cond::Expression
   local body::List{Statement}
-
   for branch in branches
-    @assign (cond, body) = branch
-    if isTrue(Ceval.evalExp(cond, P_EvalTarget.STATEMENT(source)))
-      @assign ctrl = evaluateStatements(body)
+    (cond, body) = branch
+    if isTrue(evalExp(cond, EVALTARGET_STATEMENT(DAE.emptyElementSource)))#source)))
+      ctrl = evaluateStatements(body)
       return ctrl
     end
   end
-  @assign ctrl = FlowControl.NEXT
+  ctrl = FlowControl.NEXT
   return ctrl
 end
 
-function evaluateAssert(condition::Expression, assertStmt::Statement)::FlowControl
-  local ctrl::FlowControl = FlowControl.NEXT
-
+"""
+Evaluates assert statments
+"""
+function evaluateAssert(condition::Expression, assertStmt::Statement)::FlowControlType
+  local ctrl::FlowControlType = FlowControl.NEXT
   local cond::Expression
   local msg::Expression
   local lvl::Expression
   local source::DAE.ElementSource
-  local target::EvalTarget =
-    P_EvalTarget.STATEMENT(P_Statement.Statement.source(assertStmt))
-
-  if isFalse(Ceval.evalExp(condition, target))
-    @match P_Statement.Statement.ASSERT(message = msg, level = lvl, source = source) =
-      assertStmt
-    @assign msg = Ceval.evalExp(msg, target)
-    @assign lvl = Ceval.evalExp(lvl, target)
-    @assign () = begin
+  local target::EvalTarget = EVALTARGET_STATEMENT(DAE.emptyElementSource)#source(assertStmt))
+  if isFalse(evalExp(condition, target))
+    @match ALG_ASSERT(message = msg, level = lvl, source = source) =assertStmt
+    msg = evalExp(msg, target)
+    lvl = evalExp(lvl, target)
+    () = begin
       @match (msg, lvl) begin
         (
           STRING_EXPRESSION(__),
@@ -1041,10 +1004,9 @@ function evaluateAssert(condition::Expression, assertStmt::Statement)::FlowContr
             list(msg.value),
             ElementSource_getInfo(source),
           )
-          @assign ctrl = FlowControl.ASSERTION
+          ctrl = FlowControl.ASSERTION
           ()
         end
-
         _ => begin
           Error.assertion(
             false,
@@ -1064,10 +1026,10 @@ function evaluateAssert(condition::Expression, assertStmt::Statement)::FlowContr
   return ctrl
 end
 
-function evaluateNoRetCall(callExp::Expression, source::DAE.ElementSource)::FlowControl
-  local ctrl::FlowControl = FlowControl.NEXT
+function evaluateNoRetCall(callExp::Expression, source::DAE.ElementSource)::FlowControlType
+  local ctrl::FlowControlType = FlowControl.NEXT
 
-  Ceval.evalExp(callExp, P_EvalTarget.STATEMENT(source))
+  Ceval.evalExp(callExp, EVALTARGET_STATEMENT(source))
   return ctrl
 end
 
@@ -1075,12 +1037,12 @@ function evaluateWhile(
   condition::Expression,
   body::List{<:Statement},
   source::DAE.ElementSource,
-)::FlowControl
-  local ctrl::FlowControl = FlowControl.NEXT
+)::FlowControlType
+  local ctrl::FlowControlType = FlowControl.NEXT
 
   local i::Int = 0
   local limit::Int = Flags.getConfigInt(Flags.EVAL_LOOP_LIMIT)
-  local target::EvalTarget = P_EvalTarget.STATEMENT(source)
+  local target::EvalTarget = EVALTARGET_STATEMENT(source)
 
   while isTrue(Ceval.evalExp(condition, target))
     @assign ctrl = evaluateStatements(body)

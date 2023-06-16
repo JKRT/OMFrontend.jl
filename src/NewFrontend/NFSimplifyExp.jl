@@ -308,22 +308,19 @@ end
 
 function simplifyTranspose(arg::Expression, call::Call)::Expression
   local exp::Expression
-
   local e::Expression
-
-  @assign e = if hasArrayCall(arg)
-    arg
+  if hasArrayCall(arg)
+    e = arg
   else
-    P_ExpandExp.ExpandExp.expand(arg)
+    (e, _) = expand(arg)
   end
-  @assign exp = begin
+  exp = begin
     @match e begin
       ARRAY_EXPRESSION(
         __,
       ) where {(ListUtil.all(e.elements, isArray))} => begin
         transposeArray(e)
       end
-
       _ => begin
         CALL_EXPRESSION(call)
       end
@@ -392,7 +389,7 @@ function simplifySize(sizeExp::Expression)::Expression
             toInteger(index),
           )
           if isKnown(dim)
-            exp = INTEGER_EXPRESSION(P_Dimension.Dimension.size(dim))
+            exp = INTEGER_EXPRESSION(size(dim))
           else
             exp = SIZE_EXPRESSION(exp, SOME(index))
           end
@@ -422,13 +419,11 @@ function simplifySize(sizeExp::Expression)::Expression
 end
 
 function simplifyBinary(binaryExp::Expression)::Expression
-
   local e1::Expression
   local e2::Expression
   local se1::Expression
   local se2::Expression
   local op::Operator
-
   @match BINARY_EXPRESSION(e1, op, e2) = binaryExp
   @assign se1 = simplify(e1)
   @assign se2 = simplify(e2)
@@ -758,18 +753,16 @@ function simplifyLogicBinaryOr(exp1::Expression, op::Operator, exp2::Expression)
 end
 
 function simplifyLogicUnary(unaryExp::Expression)::Expression
-
   local e::Expression
   local se::Expression
   local op::Operator
-
   @match LUNARY_EXPRESSION(op, e) = unaryExp
-  @assign se = simplify(e)
+  se = simplify(e)
   if isLiteral(se)
-    @assign unaryExp = Ceval.evalLogicUnaryOp(se, op)
-    @assign unaryExp = stripBindingInfo(unaryExp)
+    unaryExp = evalLogicUnaryOp(se, op)
+    unaryExp = stripBindingInfo(unaryExp)
   elseif !referenceEq(e, se)
-    @assign unaryExp = LUNARY_EXPRESSION(op, se)
+    unaryExp = LUNARY_EXPRESSION(op, se)
   end
   return unaryExp
 end
@@ -835,9 +828,9 @@ function simplifyCast(exp::Expression, ty::NFType)::Expression
       end
       (TYPE_ARRAY(elementType = TYPE_REAL(__)), ARRAY_EXPRESSION(__)) =>
         begin
-          ety = Type.unliftArray(ty)
-          exp.elements = list(simplifyCast(e, ety) for e in exp.elements)
-          exp.ty = setArrayElementType(exp.ty, arrayElementType(ty))
+          ety = unliftArray(ty)
+          @assign exp.elements = list(simplifyCast(e, ety) for e in exp.elements)
+          @assign exp.ty = setArrayElementType(exp.ty, arrayElementType(ty))
           exp
         end
       _ => begin
@@ -851,22 +844,20 @@ end
 function simplifySubscriptedExp(subscriptedExp::Expression)::Expression
   local e::Expression
   local subs::List{Subscript}
-  local ty::NFtype
+  local ty::NFType
   @match SUBSCRIPTED_EXP_EXPRESSION(e, subs, ty) = subscriptedExp
-  @assign subscriptedExp = simplify(e)
-  @assign subscriptedExp = applySubscripts(
-    list(simplify(s) for s in subs),
+  subscriptedExp = simplify(e)
+  subscriptedExp = applySubscripts(
+    list(simplifySubscript(s) for s in subs),
     subscriptedExp
   )
   return subscriptedExp
 end
 
 function simplifyTupleElement(tupleExp::Expression)::Expression
-
   local e::Expression
   local index::Int
   local ty::M_Type
-
   @match TUPLE_ELEMENT_EXPRESSION(e, index, ty) = tupleExp
   @assign e = simplify(e)
   @assign tupleExp = tupleElement(e, ty, index)

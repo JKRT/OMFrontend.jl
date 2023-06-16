@@ -68,30 +68,25 @@ end
 
 function hasNext(iterator::RangeIterator)::Bool
   local hasNext::Bool
-
-  @assign hasNext = begin
+  hasNext = begin
     @match iterator begin
       RANGEITERATOR_INT_RANGE(__) => begin
         iterator.current <= iterator.last
       end
-
-      INT_STEP_RANGE(__) => begin
+      RANGEITERATOR_INT_STEP_RANGE(__) => begin
         if iterator.stepsize > 0
           iterator.current <= iterator.last
         else
           iterator.current >= iterator.last
         end
       end
-
-      REAL_RANGE(__) => begin
+      RANGEITERATOR_REAL_RANGE(__) => begin
         iterator.current < iterator.steps
       end
-
-      ARRAY_RANGE(__) => begin
+      RANGEITERATOR_ARRAY_RANGE(__) => begin
         !listEmpty(iterator.values)
       end
-
-      INVALID_RANGE(__) => begin
+      RANGEITERATOR_INVALID_RANGE(__) => begin
         Error.assertion(
           false,
           getInstanceName() +
@@ -108,8 +103,7 @@ end
 
 function next(iterator::RangeIterator)::Tuple{RangeIterator, Expression}
   local nextExp::Expression
-
-  @assign nextExp = begin
+  nextExp = begin
     @match iterator begin
       RANGEITERATOR_INT_RANGE(__) => begin
         @assign nextExp = INTEGER_EXPRESSION(iterator.current)
@@ -117,13 +111,13 @@ function next(iterator::RangeIterator)::Tuple{RangeIterator, Expression}
         nextExp
       end
 
-      INT_STEP_RANGE(__) => begin
+      RANGEITERATOR_INT_STEP_RANGE(__) => begin
         @assign nextExp = INTEGER_EXPRESSION(iterator.current)
         @assign iterator.current = iterator.current + iterator.stepsize
         nextExp
       end
 
-      REAL_RANGE(__) => begin
+      RANGEITERATOR_REAL_RANGE(__) => begin
         @assign nextExp = REAL_EXPRESSION(
           iterator.start + iterator.stepsize * iterator.current,
         )
@@ -131,7 +125,7 @@ function next(iterator::RangeIterator)::Tuple{RangeIterator, Expression}
         nextExp
       end
 
-      ARRAY_RANGE(__) => begin
+      RANGEITERATOR_ARRAY_RANGE(__) => begin
         @assign nextExp = listHead(iterator.values)
         @assign iterator.values = listRest(iterator.values)
         nextExp
@@ -187,10 +181,12 @@ function fromDim(dim::Dimension)::RangeIterator
   return iterator
 end
 
-""" #= Returns a RangeIterator created from the given expression. If the
-     expression isn't an expression that can be expanded into elements an
-     invalid range will be returned that will trigger an assertion when used.
-     The valididity of the returned iterator can be checked with isValid. =#"""
+"""
+Returns a RangeIterator created from the given expression. If the
+expression isn't an expression that can be expanded into elements an
+invalid range will be returned that will trigger an assertion when used.
+The valididity of the returned iterator can be checked with isValid.
+"""
 function RangeIterator_fromExp(exp::Expression)::RangeIterator
   local iterator::RangeIterator
 
@@ -289,18 +285,16 @@ function RangeIterator_fromExp(exp::Expression)::RangeIterator
 end
 
 function isValid(iterator::RangeIterator)::Bool
-  local isValid::Bool
-
-  @assign isValid = begin
+  local valid::Bool
+  valid = begin
     @match iterator begin
-      INVALID_RANGE(__) => begin
+      RANGEITERATOR_INVALID_RANGE(__) => begin
         false
       end
-
       _ => begin
         true
       end
     end
   end
-  return isValid
+  return valid
 end

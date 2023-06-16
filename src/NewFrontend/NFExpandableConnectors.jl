@@ -234,7 +234,7 @@ function getExpandableConnectorsInConnector(c1::Connector)::List{Connector}
             Connector.fromCref(
               name,
               ty,
-              ElementSource_createElementSource(info(n)),
+              ElementSource.createElementSource(info(n)),
             ),
             ecl,
           )

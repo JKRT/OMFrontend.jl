@@ -184,15 +184,16 @@ function lookupCrefWithError(cref::Absyn.ComponentRef, scope::InstNode, info::So
     @assign (foundCref, foundScope, state) = lookupCref(cref, scope)
   catch
     #Error.addSourceMessage(errMsg, list(Dump.printComponentRefStr(cref), scopeName(scope)), info)
-    @error "Failed to locate $cref"
+    @error "Lookup failed when looking up $toString(cref)"
     fail()
   end
   (foundCref, foundScope, state)
 end
 
-""" This function will look up an Absyn.ComponentRef in the given scope, and
-                   construct a ComponentRef from the found nodes. The scope where the first part
-                   of the cref was found will also be returned.
+"""
+  This function will look up an Absyn.ComponentRef in the given scope, and
+  construct a ComponentRef from the found nodes. The scope where the first part
+  of the cref was found will also be returned.
 """
 function lookupCref(cref::Absyn.ComponentRef, scope::InstNode #= The scope to look in. =#)
   local state::LookupState
@@ -765,8 +766,8 @@ function generateInner(outerNode::InstNode, topScope::InstNode)
 end
 
 """
-Returns a copy of the given node where the element definition has been
-changed to have the inner prefix.
+  Returns a copy of the given node where the element definition has been
+  changed to have the inner prefix.
 """
 function makeInnerNode(node::InstNode)
   @assign node = begin

@@ -381,14 +381,14 @@ function evaluateFuncExpTraverser(
     @match e begin
       CREF_EXPRESSION(__) => begin
         if !isLocalFunctionVariable(e.cref, fnNode)
-          @assign outExp = Ceval.evalCref(
+          outExp = evalCref(
             e.cref,
             e,
-            Ceval.EVALTARGET_IGNORE_ERRORS(),
+            EVALTARGET_IGNORE_ERRORS(),
             evalSubscripts = false,
           )
-          @assign outExp = stripBindingInfo(outExp)
-          @assign outChanged = true
+          outExp = stripBindingInfo(outExp)
+          outChanged = true
         elseif outChanged
           #=  If the cref's subscripts changed, recalculate its type. =#
           outExp = CREF_EXPRESSION(
@@ -416,17 +416,17 @@ end
 
 function isLocalFunctionVariable(cref::ComponentRef, fnNode::InstNode)::Bool
   local res::Bool
-  local node::InstNode
+  local nodeVar::InstNode
   if isPackageConstant(cref)
-    @assign res = false
+    res = false
   elseif nodeVariability(cref) <= Variability.PARAMETER
-    @assign node =
+    nodeVar =
       derivedParent(node(firstNonScope(
         cref,
       )))
-    @assign res = refEqual(fnNode, node)
+    res = refEqual(fnNode, nodeVar)
   else
-    @assign res = true
+    res = true
   end
   return res
 end

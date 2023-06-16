@@ -14,7 +14,7 @@ const FaceType = Int
     source::DAE.ElementSource
   end
 end
-Connector = NFConnector
+const Connector = NFConnector
 
 ScalarizeSetting = (() -> begin #= Enumeration =#
                     NONE = 1  #= a[2].b[2] => {a[2].b[2]} =#

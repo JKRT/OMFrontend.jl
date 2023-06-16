@@ -128,10 +128,12 @@ const ORIGIN_EQ_SUBEXPRESSION = intBitOr(ORIGIN_EQUATION, ORIGIN_SUBEXPRESSION):
 const ORIGIN_VALIDNAME_SCOPE = intBitOr(ORIGIN_ITERATION_RANGE, ORIGIN_DIMENSION)::M_Type_Int
 const ORIGIN_DISCRETE_SCOPE = intBitOr(ORIGIN_WHEN, intBitOr(ORIGIN_INITIAL, ORIGIN_FUNCTION))::M_Type_Int
 
-""" #= Returns true if the given origin indicates the expression is alone on
-     either side of an equality/assignment. =#"""
+"""
+  Returns true if the given origin indicates the expression is alone on
+  either side of an equality/assignment.
+"""
 function isSingleExpression(origin::M_Type_Int)::Bool
-  local isSingle::Bool = origin < ITERATION_RANGE - 1
+  local isSingle::Bool = origin < ORIGIN_ITERATION_RANGE - 1
   return isSingle
 end
 
@@ -1068,7 +1070,7 @@ function typeComponentBinding2(
               INVALID_BINDING(binding, ErrorExt.getCheckpointMessages())
           else
             #            ErrorExt.delCheckpoint(getInstanceName())
-            @error "Error in type componeent binding $e"
+            @error "Error in type component binding $e"
             fail()
           end
         end
@@ -2393,13 +2395,11 @@ function typeRange2(
     step = ostep_exp,
     stop = stop_exp,
   ) = rangeExp
-  #=  Type start and stop.
-  =#
-  @assign (start_exp, start_ty, start_var) = typeExp(start_exp, next_origin, info)
-  @assign (stop_exp, stop_ty, stop_var) = typeExp(stop_exp, next_origin, info)
-  @assign variability = variabilityMax(start_var, stop_var)
-  #=  Type check start and stop.
-  =#
+  #=  Type start and stop. =#
+  (start_exp, start_ty, start_var) = typeExp(start_exp, next_origin, info)
+  (stop_exp, stop_ty, stop_var) = typeExp(stop_exp, next_origin, info)
+  variability = variabilityMax(start_var, stop_var)
+  #=  Type check start and stop. =#
   @assign (start_exp, stop_exp, rangeType, ty_match) =
     matchExpressions(start_exp, start_ty, stop_exp, stop_ty)
   if isIncompatibleMatch(ty_match)
@@ -2407,19 +2407,19 @@ function typeRange2(
   end
   if isSome(ostep_exp)
     @match SOME(step_exp) = ostep_exp
-    @assign (step_exp, step_ty, step_var) = typeExp(step_exp, next_origin, info)
-    @assign variability = variabilityMax(step_var, variability)
-    @assign (start_exp, step_exp, rangeType, ty_match) =
+    (step_exp, step_ty, step_var) = typeExp(step_exp, next_origin, info)
+    variability = variabilityMax(step_var, variability)
+    (start_exp, step_exp, rangeType, ty_match) =
       matchExpressions(start_exp, start_ty, step_exp, step_ty)
     if isIncompatibleMatch(ty_match)
       printRangeTypeError(start_exp, start_ty, step_exp, step_ty, info)
     end
-    @assign stop_exp = matchTypes_cast(stop_ty, rangeType, stop_exp)
-    @assign ostep_exp = SOME(step_exp)
-    @assign ostep_ty = SOME(step_ty)
+    (stop_exp, _, _) = matchTypes_cast(stop_ty, rangeType, stop_exp)
+    ostep_exp = SOME(step_exp)
+    ostep_ty = SOME(step_ty)
   else
-    @assign ostep_exp = NONE()
-    @assign ostep_ty = NONE()
+    ostep_exp = NONE()
+    ostep_ty = NONE()
   end
   #=  Type step.
   =#
@@ -2429,9 +2429,9 @@ function typeRange2(
   =#
   #=  type compatible. Stop might need to be type cast here though.
   =#
-  @assign rangeType =
+  rangeType =
     getRangeType(start_exp, ostep_exp, stop_exp, rangeType, info)
-  @assign rangeExp =
+  rangeExp =
     RANGE_EXPRESSION(rangeType, start_exp, ostep_exp, stop_exp)
   if variability <= Variability.PARAMETER && !flagSet(origin, ORIGIN_FUNCTION)
     markStructuralParamsExp(rangeExp)
@@ -3624,7 +3624,7 @@ function typeStatement(st::Statement, origin::ORIGIN_Type)::Statement
       end
 
       ALG_WHILE(__) => begin
-        @assign e1 = typeCondition(
+        (e1, _, _) = typeCondition(
           st.condition,
           origin,
           st.source,
@@ -3830,7 +3830,7 @@ function isNonConstantIfCondition(@nospecialize(exp::Expression))::Bool
             end
 
             _ => begin
-              P_Call.isImpure(exp.call)
+              isImpure(exp.call)
             end
           end
         end

@@ -37,7 +37,6 @@ using ExportAll
 @UniontypeDecl IOStreamType
 @UniontypeDecl IOStreamData
 
-
 #= TODO! change these to X_TYPE =#
 @Uniontype IOStreamType begin
   @Record FILE begin

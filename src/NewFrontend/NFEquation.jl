@@ -870,6 +870,12 @@ function applyList(eql::List{<:Equation}, func::ApplyFn)
   end
 end
 
+"""
+ Should return nothing
+"""
+function applyList(eql::Union{Cons{Union{}}, Nil}, ::Function)
+end
+
 function Equation_info(eq::Equation)::SourceInfo
   local info::SourceInfo = sourceInfo() #DAE.ElementSource_getInfo(source(eq))
   return info

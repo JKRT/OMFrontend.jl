@@ -4331,14 +4331,14 @@ function isNotBuiltinClass(inClass::SCode.Element)::Bool
   return b
 end
 
-""" #= Returns the annotation with the given name in the element, or fails if no
-   such annotation could be found. =#"""
+"""
+ Returns the annotation with the given name in the element, or fails if no
+ such annotation could be found.
+"""
 function getElementNamedAnnotation(element::SCode.Element, name::String)::Absyn.Exp
   local exp::Absyn.Exp
-
   local ann::SCode.Annotation
-
-  @assign ann = begin
+  ann = begin
     @match element begin
       SCode.EXTENDS(ann = SOME(ann)) => begin
         ann
@@ -4353,7 +4353,7 @@ function getElementNamedAnnotation(element::SCode.Element, name::String)::Absyn.
       end
     end
   end
-  @assign exp = getNamedAnnotation(ann, name)
+  (exp, _) = getNamedAnnotation(ann, name)
   return exp
 end
 

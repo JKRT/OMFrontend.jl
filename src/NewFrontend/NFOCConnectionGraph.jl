@@ -29,7 +29,6 @@
 *
 */ =#
 
-
 using MetaModelica
 using ExportAll
 
@@ -97,36 +96,38 @@ const ConnectionsOperatorType = Int
            4. partially handles non-standard
              - Connections.uniqueRoot
              - Connections.uniqueRootIndices
+NOTE:
+For this function we keep the old lists even though, we could probably improve performance using vectors.
+Unsure how well matchcontinue and the backtracking plays with them...
+//John 2023-06-22
+
 """
 function handleOverconstrainedConnections(flatModel::FlatModel,
                                           conns::Connections,
                                           modelNameQualified::String)::Tuple{FlatModel, FlatEdges,NFOCConnectionGraph}
-  local outBroken::FlatEdges
-
-
   local broken::FlatEdges
   local c1::Connector
   local c2::Connector
   local call::Call
   local connected::FlatEdges
   local cref::ComponentRef
-  local eql::List{Equation} = nil
-  local eqlBroken::List{Equation}
+  local eql::Vector{Equation} = Equation[]
+  local eqlBroken::List{Equation} = nil
   local graph::NFOCConnectionGraph = EMPTY
-  local ieql::List{Equation}
+  local ieql::Vector{Equation} = Equation[]
   local lhs::ComponentRef
   local lhs_crefs::List{ComponentRef}
   local lst::List{Expression}
   local msg::Expression
   local nameStr::String
   local origin::ORIGIN_Type
+  local outBroken::FlatEdges
   local print_trace::Bool = Flags.isSet(Flags.CGRAPH)
   local priority::Int
   local rhs::ComponentRef
   local rhs_crefs::List{ComponentRef}
   local root::Expression
   local source::DAE.ElementSource
-
   @assign origin = intBitOr(ORIGIN_EQUATION, ORIGIN_CONNECT)
   #=  Go over all equations, connect, Connection.branch =#
   for conn in conns.connections
@@ -136,8 +137,7 @@ function handleOverconstrainedConnections(flatModel::FlatModel,
     if ! listEmpty(lhs_crefs)
       eqlBroken = generateEqualityConstraintEquation(c1.name, c1.ty, c2.name, c2.ty, origin, c1.source)
       graph = ListUtil.threadFold(lhs_crefs, rhs_crefs,
-                                  (x, y, z) -> addConnection(x, y, eqlBroken, print_trace, z),
-                                  graph)
+                                  (x, y, z) -> addConnection(x, y, eqlBroken, print_trace, z), graph)
     end
   end
   for eq in flatModel.equations
@@ -148,10 +148,9 @@ function handleOverconstrainedConnections(flatModel::FlatModel,
             @match identifyConnectionsOperator(name(call.fn)) begin
               ConnectionsOperator.ROOT  => begin
                 @match CREF_EXPRESSION(cref = cref) <| nil = lst
-                @assign graph = addDefiniteRoot(cref, print_trace, graph)
+                graph = addDefiniteRoot(cref, print_trace, graph)
                 eql
               end
-
               ConnectionsOperator.POTENTIAL_ROOT  => begin
                 @match arg1 <| arg2 <| nil = lst
                 @match CREF_EXPRESSION(cref = cref) = arg1
@@ -159,9 +158,8 @@ function handleOverconstrainedConnections(flatModel::FlatModel,
                 graph = addPotentialRoot(cref, priority, print_trace, graph)
                 eql
               end
-
               ConnectionsOperator.UNIQUE_ROOT  => begin
-                @assign graph = begin
+                graph = begin
                   @match lst begin
                     root && CREF_EXPRESSION(cref = cref) <|  nil()  => begin
                       addUniqueRoots(root, STRING_EXPRESSION(""), print_trace, graph)
@@ -174,40 +172,42 @@ function handleOverconstrainedConnections(flatModel::FlatModel,
                 end
                 eql
               end
-
               ConnectionsOperator.BRANCH  => begin
                 @match CREF_EXPRESSION(cref = lhs) <| CREF_EXPRESSION(cref = rhs) <| nil = lst
                 graph = addBranch(lhs, rhs, print_trace, graph)
                 eql
               end
-
               _  => begin
-                _cons(eq, eql)
+                eql = _cons(eq, eql)
               end
             end
           end
         end
-
         _  => begin
-          _cons(eq, eql)
+          eql = _cons(eq, eql)
         end
       end
     end
   end
   #=  now we have the graph, remove the broken connects and evaluate the equation operators =#
-  eql = listReverseInPlace(eql)
-  ieql = flatModel.initialEquations
+  eql = eql
+  ieql = arrayList(flatModel.initialEquations)
   (eql, ieql, connected, broken) = handleOverconstrainedConnections_dispatch(graph, modelNameQualified, eql, ieql)
   eql = removeBrokenConnects(eql, connected, broken)
-  @assign flatModel.equations = eql
-  @assign flatModel.initialEquations = ieql
-  @assign outBroken = broken
+  #= Convert the lists back to arrays =#
+  @assign flatModel.equations = listArray(eql)
+  @assign flatModel.initialEquations = listArray(ieql)
+  outBroken = broken
   (flatModel, outBroken, graph)
 end
 
-function generateEqualityConstraintEquation(clhs::ComponentRef, lhs_ty::M_Type, crhs::ComponentRef, rhs_ty::M_Type, origin::ORIGIN_Type, source::DAE.ElementSource) ::List{Equation}
+function generateEqualityConstraintEquation(clhs::ComponentRef,
+                                            lhs_ty::M_Type,
+                                            crhs::ComponentRef,
+                                            rhs_ty::M_Type,
+                                            origin::ORIGIN_Type,
+                                            source::DAE.ElementSource)::List{Equation}
   local eqsEqualityConstraint::List{Equation} = nil
-
   local c1::Connector
   local c2::Connector
   local cc1::Connector
@@ -237,7 +237,6 @@ function generateEqualityConstraintEquation(clhs::ComponentRef, lhs_ty::M_Type, 
   local ty2::M_Type
   local ty::M_Type
   local var::VariabilityType
-
   if ! System.getHasOverconstrainedConnectors()
     return eqsEqualityConstraint
   end
@@ -279,7 +278,7 @@ function generateEqualityConstraintEquation(clhs::ComponentRef, lhs_ty::M_Type, 
   eqsEqualityConstraint
 end
 
-function getOverconstrainedCrefs(conn::Connector) ::List{ComponentRef}
+function getOverconstrainedCrefs(conn::Connector)::List{ComponentRef}
   local crefs::List{ComponentRef}
   local conns::List{Connector}
   conns = split(conn, ScalarizeSetting.PREFIX)
@@ -331,7 +330,10 @@ end
            - evaluates Connections.uniqueRootIndices in the input DAE
            - evaluates the rooted operator in the input DAE
 """
-function handleOverconstrainedConnections_dispatch(inGraph::NFOCConnectionGraph, modelNameQualified::String, inEquations::List{<:Equation}, inInitialEquations::List{<:Equation}) ::Tuple{List{Equation}, List{Equation}, FlatEdges, FlatEdges}
+function handleOverconstrainedConnections_dispatch(inGraph::NFOCConnectionGraph,
+                                                   modelNameQualified::String,
+                                                   inEquations::List{Equation},
+                                                   inInitialEquations::List{Equation})::Tuple{List{Equation}, List{Equation}, FlatEdges, FlatEdges}
   local outBroken::FlatEdges
   local outConnected::FlatEdges
   local outInitialEquations::List{Equation}
@@ -356,8 +358,8 @@ function handleOverconstrainedConnections_dispatch(inGraph::NFOCConnectionGraph,
           print("Broken connections: " + stringDelimitList(ListUtil.map1(broken, printConnectionStr, "broken"), ", ") + "\\n")
           print("Allowed connections: " + stringDelimitList(ListUtil.map1(connected, printConnectionStr, "allowed"), ", ") + "\\n")
         end
-        @assign eqs = evalConnectionsOperators(roots, graph, eqs)
-        @assign ieqs = evalConnectionsOperators(roots, graph, ieqs)
+        eqs = evalConnectionsOperators(roots, graph, eqs)
+        ieqs = evalConnectionsOperators(roots, graph, ieqs)
         (eqs, ieqs, connected, broken)
       end
 
@@ -393,10 +395,7 @@ end
 
 """ Adds a new unique root to NFOCConnectionGraph """
 function addUniqueRoots(roots::Expression, message::Expression, printTrace::Bool, graph::NFOCConnectionGraph) ::NFOCConnectionGraph
-
-
   local unique_roots::UniqueRoots = graph.uniqueRoots
-
   for root in arrayScalarElements(roots)
     @assign unique_roots = begin
       @match root begin
@@ -408,8 +407,7 @@ function addUniqueRoots(roots::Expression, message::Expression, printTrace::Bool
         end
 
         _  => begin
-          #=  TODO! FIXME! print some meaningful error message here that the input is not an array of roots or a cref
-          =#
+          #=  TODO! FIXME! print some meaningful error message here that the input is not an array of roots or a cref =#
           unique_roots
         end
       end
@@ -427,7 +425,7 @@ function addBranch(ref1::ComponentRef, ref2::ComponentRef, printTrace::Bool, gra
 end
 
 """ Adds a new connection to NFOCConnectionGraph """
-function addConnection(ref1::ComponentRef, ref2::ComponentRef, brokenEquations::List{<:Equation}, printTrace::Bool, graph::NFOCConnectionGraph) ::NFOCConnectionGraph
+function addConnection(ref1::ComponentRef, ref2::ComponentRef, brokenEquations::List{Equation}, printTrace::Bool, graph::NFOCConnectionGraph) ::NFOCConnectionGraph
   if printTrace
     print("- NFOCConnectionGraph.addConnection(" + toString(ref1) + ", " + toString(ref2) + ")\\n")
   end
@@ -435,8 +433,9 @@ function addConnection(ref1::ComponentRef, ref2::ComponentRef, brokenEquations::
   graph
 end
 
-""" #= Returns the canonical element of the component where input element belongs to.
-           See explanation at the top of file. =#"""
+"""  Returns the canonical element of the component where input element belongs to.
+     See explanation at the top of file.
+"""
 function canonical(inPartition::NFHashTableCG.HashTable, inRef::ComponentRef) ::ComponentRef
   local outCanonical::ComponentRef
 
@@ -458,20 +457,6 @@ function canonical(inPartition::NFHashTableCG.HashTable, inRef::ComponentRef) ::
       end
     end
   end
-  #= fprintln(Flags.CGRAPH,
-  =#
-  #=   \"- NFOCConnectionGraph.canonical_case1(\" + ComponentRef.toString(ref) + \") = \" +
-  =#
-  #=   ComponentRef.toString(parentCanonical));
-  =#
-  #= partition2 = BaseHashTable.add((ref, parentCanonical), partition);
-  =#
-  #= fprintln(Flags.CGRAPH,
-  =#
-  #=   \"- NFOCConnectionGraph.canonical_case2(\" + ComponentRef.toString(ref) + \") = \" +
-  =#
-  #=   ComponentRef.toString(ref));
-  =#
   outCanonical
 end
 
@@ -481,8 +466,7 @@ end
 """
 function areInSameComponent(inPartition::NFHashTableCG.HashTable, inRef1::ComponentRef, inRef2::ComponentRef) ::Bool
   local outResult::Bool
-  #=  canonical(inPartition,inRef1) = canonical(inPartition,inRef2);
-  =#
+  #=  canonical(inPartition,inRef1) = canonical(inPartition,inRef2); =#
   @assign outResult = begin
     local partition::NFHashTableCG.HashTable
     local ref1::ComponentRef
@@ -491,12 +475,11 @@ function areInSameComponent(inPartition::NFHashTableCG.HashTable, inRef1::Compon
     local canon2::ComponentRef
     @matchcontinue (inPartition, inRef1, inRef2) begin
       (partition, ref1, ref2)  => begin
-        @assign canon1 = canonical(partition, ref1)
-        @assign canon2 = canonical(partition, ref2)
+        canon1 = canonical(partition, ref1)
+        canon2 = canonical(partition, ref2)
         @match true = isEqual(canon1, canon2)
         true
       end
-
       _  => begin
         false
       end
@@ -543,12 +526,12 @@ end
            on wheter the connection success or not (i.e are the components already
            connected), adds either inConnectionDae or inBreakDae to the list of
            DAE elements. """
-function connectComponents(inPartition::NFHashTableCG.HashTable, inFlatEdge::FlatEdge) ::Tuple{NFHashTableCG.HashTable, FlatEdges, FlatEdges}
+function connectComponents(inPartition::NFHashTableCG.HashTable, inFlatEdge::FlatEdge)::Tuple{NFHashTableCG.HashTable, FlatEdges, FlatEdges}
   local outBrokenConnections::FlatEdges
   local outConnectedConnections::FlatEdges
   local outPartition::NFHashTableCG.HashTable
 
-  @assign (outPartition, outConnectedConnections, outBrokenConnections) = begin
+  (outPartition, outConnectedConnections, outBrokenConnections) = begin
     local partition::NFHashTableCG.HashTable
     local ref1::ComponentRef
     local ref2::ComponentRef
@@ -744,12 +727,11 @@ function addPotentialRootsToTable(inTable::NFHashTableCG.HashTable, inPotentialR
 end
 
 """ #= Adds all connections to graph. =#"""
-function addConnections(inTable::NFHashTableCG.HashTable, inConnections::FlatEdges) ::Tuple{NFHashTableCG.HashTable, FlatEdges, FlatEdges}
+function addConnections(inTable::NFHashTableCG.HashTable, inConnections::FlatEdges)::Tuple{NFHashTableCG.HashTable, FlatEdges, FlatEdges}
   local outBrokenConnections::FlatEdges
   local outConnectedConnections::FlatEdges
   local outTable::NFHashTableCG.HashTable
-
-  @assign (outTable, outConnectedConnections, outBrokenConnections) = begin
+  (outTable, outConnectedConnections, outBrokenConnections) = begin
     local table::NFHashTableCG.HashTable
     local tail::FlatEdges
     local broken1::FlatEdges
@@ -759,18 +741,16 @@ function addConnections(inTable::NFHashTableCG.HashTable, inConnections::FlatEdg
     local connected2::FlatEdges
     local connected::FlatEdges
     local e::FlatEdge
-    #=  empty case
-    =#
+    #=  empty case =#
     @match (inTable, inConnections) begin
       (table,  nil())  => begin
         (table, nil, nil)
       end
-
       (table, e <| tail)  => begin
-        @assign (table, connected1, broken1) = connectComponents(table, e)
-        @assign (table, connected2, broken2) = addConnections(table, tail)
-        @assign connected = listAppend(connected1, connected2)
-        @assign broken = listAppend(broken1, broken2)
+        (table, connected1, broken1) = connectComponents(table, e)
+        (table, connected2, broken2) = addConnections(table, tail)
+        connected = listAppend(connected1, connected2)
+        broken = listAppend(broken1, broken2)
         (table, connected, broken)
       end
     end
@@ -1087,7 +1067,7 @@ function evalConnectionsOperators(inRoots::List{<:ComponentRef}, graph::NFOCConn
         connections = getConnections(graph)
         table = ListUtil.fold(connections, addConnectionsRooted, table)
         rooted = setRootDistance(inRoots, table, 0, nil, NFHashTable.emptyHashTable())
-        tmp = []
+        tmp = Equation[]
         for eq in inEquations
           info = Equation_info(eq)
           neq =  mapExp(eq, (x) -> evaluateOperators(x, rooted, inRoots, graph, info))
@@ -1118,7 +1098,7 @@ function findRootEquations(inRoots::List{<:ComponentRef}, graph::NFOCConnectionG
         connections = getConnections(graph)
         table = ListUtil.fold(connections, addConnectionsRooted, table)
         rooted = setRootDistance(inRoots, table, 0, nil, NFHashTable.emptyHashTable())
-        tmp = []
+        tmp = Equation[]
         for (i, eq) in enumerate(inEquations)
           info = Equation_info(eq)
           @match eq begin
@@ -1322,8 +1302,7 @@ function getRooted(cref1::ComponentRef, cref2::ComponentRef, rooted::NFHashTable
       end
     end
   end
-  #=  in fail case return true
-  =#
+  #=  in fail case return true =#
   result
 end
 
@@ -1927,22 +1906,22 @@ function removeBrokenConnects(inEquations::List{<:Equation}, inConnected::FlatEd
   outEquations
 end
 
-""" #= @author: adrpo
-           adds all the equalityConstraint equations from broken connections =#"""
-function addBrokenEqualityConstraintEquations(inEquations::List{<:Equation}, inBroken::FlatEdges) ::List{Equation}
+"""
+ @author: adrpo
+ adds all the equalityConstraint equations from broken connections
+"""
+function addBrokenEqualityConstraintEquations(inEquations::List{Equation}, inBroken::FlatEdges)
   local outEquations::List{Equation}
-
-  @assign outEquations = begin
+  outEquations = begin
     local equalityConstraintElements::List{Equation}
     local eqs::List{Equation}
     @matchcontinue (inEquations, inBroken) begin
       (_,  nil())  => begin
         inEquations
       end
-
       _  => begin
-        @assign equalityConstraintElements = ListUtil.flatten(ListUtil.map(inBroken, Util.tuple33))
-        @assign eqs = listAppend(equalityConstraintElements, inEquations)
+        equalityConstraintElements = ListUtil.flatten(ListUtil.map(inBroken, Util.tuple33))
+        eqs = listAppend(equalityConstraintElements, inEquations)
         eqs
       end
     end
@@ -1952,8 +1931,7 @@ end
 
 function identifyConnectionsOperator(functionName::Absyn.Path) ::ConnectionsOperatorType
   local call::ConnectionsOperatorType
-
-  @assign call = begin
+  call = begin
     local name::String
     @match functionName begin
       Absyn.QUALIFIED(name = "Connections", path = Absyn.IDENT(name = name))  => begin

@@ -32,7 +32,6 @@
 using MetaModelica
 using ExportAll
 
-
 module ReplTree
 
 using MetaModelica
@@ -85,7 +84,7 @@ end
 
 function evaluateNormal(fn::M_Function, args::List{<:Expression})::Expression
   local result::Expression
-  local fn_body::List{Statement}
+  local fn_body::Vector{Statement}
   local bindings::List{Binding}
   local repl::ReplTree.Tree
   local call_count::Int
@@ -435,7 +434,7 @@ function applyBindingReplacement(
   return outExp
 end
 
-function applyReplacements(repl::ReplTree.Tree, fnBody::List{<:Statement})::List{Statement}
+function applyReplacements(repl::ReplTree.Tree, fnBody::Vector{Statement})
   fnBody = mapExpList(
     fnBody,
     (x) -> map(x, (expArg) -> applyReplacements2(repl, expArg)),
@@ -526,8 +525,8 @@ function applyReplacementCref(
   return outExp
 end
 
-function optimizeBody(body::List{<:Statement})::List{Statement}
-  body = list(map(s, optimizeStatement) for s in body)
+function optimizeBody(body::Vector{Statement})
+  body = [map(s, optimizeStatement) for s in body]
   return body
 end
 
@@ -599,7 +598,7 @@ function assertAssignedOutput(outputNode::InstNode, value::Expression)
   end
 end
 
-function evaluateStatements(stmts::List{<:Statement})::FlowControlType
+function evaluateStatements(stmts::Vector{Statement})
   local ctrl::FlowControlType = FlowControl.NEXT
   for s in stmts
     ctrl = evaluateStatement(s)
@@ -615,7 +614,6 @@ end
 
 function evaluateStatement(stmt::Statement)::FlowControlType
   local ctrl::FlowControlType
-
   #=  adrpo: we really need some error handling here to detect which statement cannot be evaluated
   =#
   #=  try
@@ -906,8 +904,8 @@ end
 
 function evaluateFor(
   iterator::InstNode,
-  range::Option{<:Expression},
-  forBody::List{<:Statement},
+  range::Option{Expression},
+  forBody::Vector{Statement},
   source::DAE.ElementSource,
 )::FlowControlType
   local ctrl::FlowControlType
@@ -915,7 +913,7 @@ function evaluateFor(
   local iter_exp::Pointer{Expression}
   local range_exp::Expression
   local value::Expression
-  local body::List{Statement} = forBody
+  local body::Vector{Statement} = forBody
   local i::Int = 0
   local limit::Int = Flags.getConfigInt(Flags.EVAL_LOOP_LIMIT)
   range_exp = evalExp(Util.getOption(range), EVALTARGET_STATEMENT(source))
@@ -950,12 +948,12 @@ function evaluateFor(
 end
 
 function evaluateIf(
-  branches::List{<:Tuple{<:Expression, List{<:Statement}}},
+  branches::Vector{Tuple{Expression, Vector{Statement}}},
   source::DAE.ElementSource,
 )::FlowControlType
   local ctrl::FlowControlType
   local cond::Expression
-  local body::List{Statement}
+  local body::Vector{Statement}
   for branch in branches
     (cond, body) = branch
     if isTrue(evalExp(cond, EVALTARGET_STATEMENT(DAE.emptyElementSource)))#source)))

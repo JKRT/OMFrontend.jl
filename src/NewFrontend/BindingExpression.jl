@@ -35,9 +35,7 @@ if neither expression contains any binding expressions.
 function mostPropagatedSubExpBinary(exp1::Expression, exp2::Expression) ::Tuple{Expression, Int}
   local maxPropCount::Int
   local maxPropExp::Expression
-
-  #=  TODO: Optimize this, there's no need to check for bindings in e.g. literal arrays.
-  =#
+  #=  TODO: Optimize this, there's no need to check for bindings in e.g. literal arrays. =#
   @assign (maxPropCount, maxPropExp) = fold(exp1, mostPropagatedSubExp_traverser, (-1, exp1))
   @assign (maxPropCount, maxPropExp) = fold(exp2, mostPropagatedSubExp_traverser, (maxPropCount, maxPropExp))
   (maxPropExp, maxPropCount)
@@ -120,81 +118,77 @@ end
 """ #= Constructs an array with the given dimensions by calling the given
                function on the given expression for each combination of subscripts defined
                by the dimensions. =#"""
-                 function vectorize(exp::Expression, dims::List{<:Dimension}, func::FuncT, accumSubs::List{<:Subscript} = nil) ::Expression
-                   local outExp::Expression
+function vectorize(exp::Expression, dims::List{<:Dimension}, func::FuncT, accumSubs::List{<:Subscript} = nil) ::Expression
+  local outExp::Expression
 
-                   local iter::RangeIterator
-                   local dim::Dimension
-                   local rest_dims::List{Dimension}
-                   local expl::List{Expression}
-                   local e::Expression
+  local iter::RangeIterator
+  local dim::Dimension
+  local rest_dims::List{Dimension}
+  local expl::List{Expression}
+  local e::Expression
 
-                   if listEmpty(dims)
-                     @assign outExp = func(exp, listReverse(accumSubs))
-                   else
-                     @assign expl = nil
-                     @match _cons(dim, rest_dims) = dims
-                     @assign iter = P_RangeIterator.RangeIterator.fromDim(dim)
-                     while P_RangeIterator.RangeIterator.hasNext(iter)
-                       @assign (iter, e) = P_RangeIterator.RangeIterator.next(iter)
-                       @assign e = vectorize(exp, rest_dims, func, _cons(SUBSCRIPT_INDEX(e), accumSubs))
-                       @assign expl = _cons(e, expl)
-                     end
-                     @assign outExp = makeExpArray(listReverseInPlace(expl))
-                   end
-                   outExp
-                 end
+  if listEmpty(dims)
+    @assign outExp = func(exp, listReverse(accumSubs))
+  else
+    @assign expl = nil
+    @match _cons(dim, rest_dims) = dims
+    @assign iter = P_RangeIterator.RangeIterator.fromDim(dim)
+    while P_RangeIterator.RangeIterator.hasNext(iter)
+      @assign (iter, e) = P_RangeIterator.RangeIterator.next(iter)
+      @assign e = vectorize(exp, rest_dims, func, _cons(SUBSCRIPT_INDEX(e), accumSubs))
+      @assign expl = _cons(e, expl)
+    end
+    @assign outExp = makeExpArray(listReverseInPlace(expl))
+  end
+  outExp
+end
 
 """ #= Calculates the expression type and binding type of an expression given the
                number of dimensions it's been propagated through. =#"""
-                 function bindingExpType(exp::Expression, propagatedDimCount::Int) ::Tuple{M_Type, M_Type}
-                   local bindingType::M_Type
-                   local expType::M_Type
-
-                   @assign expType = typeOf(exp)
-                   @assign bindingType = if propagatedDimCount > 0
-                     Type.unliftArrayN(propagatedDimCount, expType)
-                   else
-                     expType
-                   end
-                   (expType, bindingType)
-                 end
+function bindingExpType(exp::Expression, propagatedDimCount::Int) ::Tuple{M_Type, M_Type}
+  local bindingType::M_Type
+  local expType::M_Type
+  expType = typeOf(exp)
+  bindingType = if propagatedDimCount > 0
+    Type.unliftArrayN(propagatedDimCount, expType)
+  else
+    expType
+  end
+  (expType, bindingType)
+end
 
 """ #= Returns the number of dimensions a binding expression has been propagated
                through. =#"""
-                 function propagatedDimCount(exp::Expression) ::Int
-                   local dimCount::Int
-
-                   @assign dimCount = begin
-                     @match exp begin
-                       BINDING_EXP(isEach = false)  => begin
-                         if isKnown(exp.expType)
-                           @assign dimCount = dimensionCount(exp.expType) - dimensionCount(exp.bindingType)
-                         else
-                           dimCount = 0
-                           for parent in listRest(exp.parents)
-                             dimCount = dimCount + dimensionCount(getType(parent))
-                           end
-                         end
-                         dimCount
-                       end
-
-                       _  => begin
-                         0
-                       end
-                     end
-                   end
-                   dimCount
-                 end
+function propagatedDimCount(exp::Expression) ::Int
+  local dimCount::Int
+  dimCount = begin
+    @match exp begin
+      BINDING_EXP(isEach = false)  => begin
+        if isKnown(exp.expType)
+          @assign dimCount = dimensionCount(exp.expType) - dimensionCount(exp.bindingType)
+        else
+          dimCount = 0
+          for parent in listRest(exp.parents)
+            dimCount = dimCount + dimensionCount(getType(parent))
+          end
+        end
+        dimCount
+      end
+      _  => begin
+        0
+      end
+    end
+  end
+  dimCount
+end
 
 """ #= Replaces all binding expressions in the given expression with the
-               expressions they contain. =#"""
-                 function stripBindingInfo(exp::Expression) ::Expression
-                   local outExp::Expression
-
-                   @assign outExp = map(exp, getBindingExp)
-                   outExp
-                 end
+                 expressions they contain. =#"""
+function stripBindingInfo(exp::Expression) ::Expression
+  local outExp::Expression
+  outExp = map(exp, getBindingExp)
+  outExp
+end
 
 """
     Returns the expression contained in a binding expression, if the given
@@ -238,8 +232,7 @@ end
 
 function nthEnumLiteral(ty::M_Type, n::Int) ::Expression
   local exp::Expression
-
-  @assign exp = ENUM_LITERAL_EXPRESSION(ty, Type.nthEnumLiteral(ty, n), n)
+  exp = ENUM_LITERAL_EXPRESSION(ty, Type.nthEnumLiteral(ty, n), n)
   exp
 end
 
@@ -341,71 +334,71 @@ end
 """ #= Returns the field with the given name in a record expression. If the
                expression is an array it will return the equivalent of calling the
                function on each element of the array. =#"""
-                 function recordElement(elementName::String, recordExp::Expression) ::Expression
-                   local outExp::Expression
-                   outExp = begin
-                     local node::InstNode
-                     local cls::Class
-                     local cls_tree::ClassTree
-                     local ty::M_Type
-                     local index::Int
-                     local expl::List{Expression}
-                     local cref::ComponentRef
-                     @match recordExp begin
-                       RECORD_EXPRESSION(ty = TYPE_COMPLEX(cls = node))  => begin
-                         cls = getClass(node)
-                         index = lookupComponentIndex(elementName, cls)
-                         listGet(recordExp.elements, index)
-                       end
+function recordElement(elementName::String, recordExp::Expression) ::Expression
+  local outExp::Expression
+  outExp = begin
+    local node::InstNode
+    local cls::Class
+    local cls_tree::ClassTree
+    local ty::M_Type
+    local index::Int
+    local expl::List{Expression}
+    local cref::ComponentRef
+    @match recordExp begin
+      RECORD_EXPRESSION(ty = TYPE_COMPLEX(cls = node))  => begin
+        cls = getClass(node)
+        index = lookupComponentIndex(elementName, cls)
+        listGet(recordExp.elements, index)
+      end
 
-                       CREF_EXPRESSION(ty = TYPE_COMPLEX(cls = node))  => begin
-                         @assign cls_tree = classTree(getClass(node))
-                         @match (node, false) = lookupElement(elementName, cls_tree)
-                         @assign ty = getType(node)
-                         @assign cref = prefixCref(node, ty, nil, recordExp.cref)
-                         @assign ty = liftArrayLeftList(ty, arrayDims(recordExp.ty))
-                         CREF_EXPRESSION(ty, cref)
-                       end
+      CREF_EXPRESSION(ty = TYPE_COMPLEX(cls = node))  => begin
+        @assign cls_tree = classTree(getClass(node))
+        @match (node, false) = lookupElement(elementName, cls_tree)
+        @assign ty = getType(node)
+        @assign cref = prefixCref(node, ty, nil, recordExp.cref)
+        @assign ty = liftArrayLeftList(ty, arrayDims(recordExp.ty))
+        CREF_EXPRESSION(ty, cref)
+      end
 
-                       ARRAY_EXPRESSION(elements =  nil(), ty = TYPE_ARRAY(elementType = TYPE_COMPLEX(cls = node)))  => begin
-                         cls = getClass(node)
-                         index = lookupComponentIndex(elementName, cls)
-                         ty = getType(nthComponent(index, cls))
-                         makeArray(ty, nil)
-                       end
+      ARRAY_EXPRESSION(elements =  nil(), ty = TYPE_ARRAY(elementType = TYPE_COMPLEX(cls = node)))  => begin
+        cls = getClass(node)
+        index = lookupComponentIndex(elementName, cls)
+        ty = getType(nthComponent(index, cls))
+        makeArray(ty, nil)
+      end
 
-                       ARRAY_EXPRESSION(ty = TYPE_ARRAY(elementType = TYPE_COMPLEX(cls = node)))  => begin
-                         @assign index = lookupComponentIndex(elementName, getClass(node))
-                         @assign expl = list(nthRecordElement(index, e) for e in recordExp.elements)
-                         @assign ty = liftArrayLeft(typeOf(listHead(expl)), fromInteger(listLength(expl)))
-                         makeArray(ty, expl, recordExp.literal)
-                       end
+      ARRAY_EXPRESSION(ty = TYPE_ARRAY(elementType = TYPE_COMPLEX(cls = node)))  => begin
+        @assign index = lookupComponentIndex(elementName, getClass(node))
+        @assign expl = list(nthRecordElement(index, e) for e in recordExp.elements)
+        @assign ty = liftArrayLeft(typeOf(listHead(expl)), fromInteger(listLength(expl)))
+        makeArray(ty, expl, recordExp.literal)
+      end
 
-                       BINDING_EXP(__)  => begin
-                         bindingExpMap(recordExp, (elementName) -> recordElement(elementName = elementName))
-                       end
+      BINDING_EXP(__)  => begin
+        bindingExpMap(recordExp, (elementName) -> recordElement(elementName = elementName))
+      end
 
-                       SUBSCRIPTED_EXP_EXPRESSION(__)  => begin
-                         @assign outExp = recordElement(elementName, recordExp.exp)
-                         SUBSCRIPTED_EXP_EXPRESSION(outExp, recordExp.subscripts, Type.lookupRecordFieldType(elementName, recordExp.ty))
-                       end
+      SUBSCRIPTED_EXP_EXPRESSION(__)  => begin
+        @assign outExp = recordElement(elementName, recordExp.exp)
+        SUBSCRIPTED_EXP_EXPRESSION(outExp, recordExp.subscripts, Type.lookupRecordFieldType(elementName, recordExp.ty))
+      end
 
-                       EMPTY(__)  => begin
-                         fail()
-                       end
+      EMPTY(__)  => begin
+        fail()
+      end
 
-                       _  => begin
-                         @assign ty = typeOf(recordExp)
-                         @match TYPE_COMPLEX(cls = node) = arrayElementType(ty)
-                         @assign cls = getClass(node)
-                         @assign index = lookupComponentIndex(elementName, cls)
-                         @assign ty = liftArrayRightList(getType(nthComponent(index, cls)), arrayDims(ty))
-                         RECORD_ELEMENT_EXPRESSION(recordExp, index, elementName, ty)
-                       end
-                     end
-                   end
-                   outExp
-                 end
+      _  => begin
+        @assign ty = typeOf(recordExp)
+        @match TYPE_COMPLEX(cls = node) = arrayElementType(ty)
+        @assign cls = getClass(node)
+        @assign index = lookupComponentIndex(elementName, cls)
+        @assign ty = liftArrayRightList(getType(nthComponent(index, cls)), arrayDims(ty))
+        RECORD_ELEMENT_EXPRESSION(recordExp, index, elementName, ty)
+      end
+    end
+  end
+  outExp
+end
 
 function tupleElement(exp::Expression, ty::M_Type, index::Int) ::Expression
   local tupleElem::Expression
@@ -4516,7 +4509,7 @@ function toFlatSubscriptedString(exp::Expression, subs::List{<:Subscript}) ::Str
   exp_ty = typeOf(exp)
   dims = ListUtil.firstN(arrayDims(exp_ty), listLength(subs))
   sub_tyl = list(subscriptType(d) for d in dims)
-  name = Type.subscriptedTypeName(exp_ty, sub_tyl)
+  name = subscriptedTypeName(exp_ty, sub_tyl)
   strl = list(")")
   for s in subs
     strl = _cons(toFlatString(s), strl)
@@ -7251,17 +7244,14 @@ end
 
 function isExplicitlyBound(binding::Binding)::Bool
   local isBound::Bool
-
-  @assign isBound = begin
+  isBound = begin
     @match binding begin
       UNBOUND(__) => begin
         false
       end
-
       CEVAL_BINDING(__) => begin
         false
       end
-
       _ => begin
         true
       end
@@ -7272,7 +7262,7 @@ end
 
 function isBound(binding::Binding)::Bool
   local isBound::Bool
-  @assign isBound = begin
+  isBound = begin
     @match binding begin
       UNBOUND(__) => begin
         false
@@ -7293,7 +7283,7 @@ function fromAbsyn(
   info::SourceInfo,
 )::Binding
   local binding::Binding
-  @assign binding = begin
+  binding = begin
     local exp::Absyn.Exp
     @match bindingExp begin
       SOME(exp) => begin

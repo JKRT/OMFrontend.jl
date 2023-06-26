@@ -93,6 +93,10 @@ function inlineSimpleCall(callExp::Expression)::Expression
   return result
 end
 
+"""
+  Function to inline calls
+@author johti17
+"""
 function inlineCall(call::Call)::Expression
   local exp::Expression
   exp = begin
@@ -102,7 +106,7 @@ function inlineCall(call::Call)::Expression
     local inputs::List{InstNode}
     local outputs::List{InstNode}
     local locals::List{InstNode}
-    local body::List{Statement}
+    local body::Vector{Statement}
     local stmt::Statement
     @match call begin
       TYPED_CALL(
@@ -117,7 +121,7 @@ function inlineCall(call::Call)::Expression
         body = getBody(fn)
         #=  This function can so far only handle functions with at most one =#
         #=  statement and output and no local variables. =#
-        if listLength(body) > 1 || listLength(outputs) != 1 || listLength(locals) > 0
+        if length(body) > 1 || listLength(outputs) != 1 || listLength(locals) > 0
           exp = CALL_EXPRESSION(call)
           return exp
         end
@@ -133,11 +137,11 @@ function inlineCall(call::Call)::Expression
         This might occur for instance for complex operators that are registered as calls in the frontend
         -johti17 2023-03-26
         =#
-        if body === nil
+        if isempty(body)
           exp = CALL_EXPRESSION(call)
           return exp
         end
-        stmt = listHead(body)
+        stmt = body[1]
         #=
         TODO: Instead of repeating this for each input we should probably
           just build a lookup tree or hash table and go through the

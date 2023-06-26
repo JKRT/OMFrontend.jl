@@ -7,17 +7,17 @@ MapFunc = Function
 #= The binary tree data structure. =#
 abstract type Tree end
 
-mutable struct NODE <: Tree
-  key::Key #= The key of the node. =#
-  value::Value
+mutable struct NODE{T0 <: Key, T1 <: Value} <: Tree
+  key::T0 #= The key of the node. =#
+  value::T1
   height::Int #= Height of tree, used for balancing =#
   left::Tree #= Left subtree. =#
   right::Tree #= Right subtree. =#
 end
 
-mutable struct LEAF <: Tree
-  key::Key #= The key of the node. =#
-  value::Value
+mutable struct LEAF{T0 <: Key, T1 <: Value} <: Tree
+  key::T0 #= The key of the node. =#
+  value::T1
 end
 
 struct EMPTY <: Tree
@@ -480,7 +480,7 @@ function add(
   return tree
 end
 
-""" #= Adds a list of key-value pairs to the tree. =#"""
+"""  Adds a list of key-value pairs to the tree. """
 function addList(
   tree::Tree,
   inValues::List{<:Tuple{<:Key, Value}},

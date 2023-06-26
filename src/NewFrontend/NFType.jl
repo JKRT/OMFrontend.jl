@@ -1,9 +1,9 @@
-FunctionType = (() -> begin #= Enumeration =#
-  FUNCTIONAL_PARAMETER = 1  #= Function parameter of function type. =#
-  FUNCTION_REFERENCE = 2  #= Function name used to reference a function. =#
-  FUNCTIONAL_VARIABLE = 3  #= A variable that contains a function reference. =#
-  () -> (FUNCTIONAL_PARAMETER; FUNCTION_REFERENCE; FUNCTIONAL_VARIABLE)  #= A variable that contains a function reference. =#
-end)()
+struct FunctionTypeStruct
+  FUNCTIONAL_PARAMETER::Int
+  FUNCTION_REFERENCE::Int
+  FUNCTIONAL_VARIABLE::Int
+end
+const FunctionType = FunctionTypeStruct(1, 2, 3)
 
 @UniontypeDecl NFType
 @Uniontype NFType begin
@@ -27,7 +27,8 @@ end)()
 
   @Record TYPE_FUNCTION begin
     fn::M_Function
-    fnType
+    #= Specified by the function type struct. =#
+    fnType::Int
   end
 
   @Record TYPE_COMPLEX begin
@@ -1576,8 +1577,10 @@ function liftArrayLeftList(ty::NFType, dims::List{<:Dimension})::NFType
   return ty
 end
 
-""" #= Adds an array dimension to a type on the left side, e.g.
-       listArrayLeft(Real[2, 3], [4]) => Real[4, 2, 3]. =#"""
+"""
+  Adds an array dimension to a type on the left side, e.g.
+  listArrayLeft(Real[2, 3], [4]) => Real[4, 2, 3].
+"""
 function liftArrayLeft(ty::M_Type, dim::Dimension)::M_Type
 
   @assign ty = begin

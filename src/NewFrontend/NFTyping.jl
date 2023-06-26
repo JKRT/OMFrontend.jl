@@ -2821,7 +2821,7 @@ function typeClassSections(classNode::InstNode, originArg::ORIGIN_Type)
         elements = CLASS_TREE_FLAT_TREE(components = components),
         sections = sections,
       ) => begin
-        @assign sections = begin
+        sections = begin
           @match sections begin
             SECTIONS(__) => begin
               initial_origin = setFlag(originArg, ORIGIN_INITIAL)
@@ -2898,23 +2898,23 @@ function typeFunctionSections(classNode::InstNode, origin::ORIGIN_Type)
   local sections::Sections
   local info::SourceInfo
   local alg::Algorithm
-  @assign cls = getClass(classNode)
+  cls = getClass(classNode)
   begin
     @match cls begin
       INSTANCED_CLASS(sections = sections) => begin
-        @assign sections = begin
+        sections = begin
           @match sections begin
-            SECTIONS(nil(), nil(), alg <| nil(), nil()) => begin
-              @assign sections.algorithms = list(typeAlgorithm(
+            SECTIONS([], [], [alg,], []) => begin
+              @assign sections.algorithms = Algorithm[typeAlgorithm(
                 alg,
                 setFlag(origin, ORIGIN_ALGORITHM),
-              ))
+              )]
               sections
             end
 
             SECTIONS(__) => begin
-              if listLength(sections.equations) > 0 ||
-                 listLength(sections.initialEquations) > 0
+              if length(sections.equations) > 0 ||
+                 length(sections.initialEquations) > 0
                 Error.addSourceMessage(
                   Error.EQUATION_TRANSITION_FAILURE,
                   list("function"),
@@ -2931,7 +2931,7 @@ function typeFunctionSections(classNode::InstNode, origin::ORIGIN_Type)
             end
 
             SECTIONS_EXTERNAL(explicit = true) => begin
-              @assign info = InstNode_info(classNode)
+              info = InstNode_info(classNode)
               @assign sections.args =
                 list(typeExternalArg(arg, info, classNode) for arg in sections.args)
               (res,_,_) = typeCref(sections.outputRef, origin, info)
@@ -3143,7 +3143,7 @@ function typeEquation(@nospecialize(eq::Equation), @nospecialize(origin::ORIGIN_
   typeEquation2(eq::Equation, origin::ORIGIN_Type)::Equation
 end
 
-function typeEquation2(eq::Equation, origin::ORIGIN_Type)::Equation
+function typeEquation2(@nospecialize(eq::Equation), origin::ORIGIN_Type)::Equation
   @assign eq = begin
     local cond::Expression
     local e1::Expression
@@ -3152,9 +3152,9 @@ function typeEquation2(eq::Equation, origin::ORIGIN_Type)::Equation
     local ty::NFType
     local ty1::NFType
     local ty2::NFType
-    local eqs1::List{Equation}
-    local body::List{Equation}
-    local tybrs::List{Equation}
+    local eqs1::Vector{Equation}
+    local body::Vector{Equation}
+    local tybrs::Vector{Equation}
     local iterator::InstNode
     local mk::MatchKindType
     local var::VariabilityType
@@ -3184,7 +3184,7 @@ function typeEquation2(eq::Equation, origin::ORIGIN_Type)::Equation
           fail()
         end
         next_origin = setFlag(origin, ORIGIN_FOR)
-        body = list(typeEquation(e, next_origin) for e in eq.body)
+        body = Equation[typeEquation(e, next_origin) for e in eq.body]
         EQUATION_FOR(eq.iterator, SOME(e1), body, eq.source)
       end
 
@@ -3215,7 +3215,7 @@ function typeEquation2(eq::Equation, origin::ORIGIN_Type)::Equation
       end
 
       EQUATION_REINIT(__) => begin
-        @assign (e1, e2) = typeReinit(eq.cref, eq.reinitExp, origin, eq.source)
+        (e1, e2) = typeReinit(eq.cref, eq.reinitExp, origin, eq.source)
         EQUATION_REINIT(e1, e2, eq.source)
       end
 
@@ -3450,16 +3450,16 @@ function checkLhsInWhen(@nospecialize(exp::Expression))::Bool
 end
 
 function typeAlgorithm(alg::Algorithm, origin::ORIGIN_Type)::Algorithm
-  @assign alg.statements = list(typeStatement(s, origin) for s in alg.statements)
+  @assign alg.statements = [typeStatement(s, origin) for s in alg.statements]
   return alg
 end
 
-function typeStatements(alg::List{<:Statement}, origin::ORIGIN_Type)::List{Statement}
-  alg = list(typeStatement(stmt, origin) for stmt in alg)
+function typeStatements(alg::Vector{Statement}, origin::ORIGIN_Type)
+  alg = [typeStatement(stmt, origin) for stmt in alg]
   return alg
 end
 
-function typeStatement(st::Statement, origin::ORIGIN_Type)::Statement
+function typeStatement(@nospecialize(st::Statement), origin::ORIGIN_Type)
   st = begin
     local cond::Expression
     local e1::Expression
@@ -3468,9 +3468,9 @@ function typeStatement(st::Statement, origin::ORIGIN_Type)::Statement
     local ty1::NFType
     local ty2::NFType
     local ty3::NFType
-    local sts1::List{Statement}
-    local body::List{Statement}
-    local tybrs::List{Tuple{Expression, List{Statement}}}
+    local sts1::Vector{Statement}
+    local body::Vector{Statement}
+    local tybrs::Vector{Tuple{Expression, Vector{Statement}}}
     local iterator::InstNode
     local mk::MatchKindType
     local next_origin::ORIGIN_Type
@@ -3522,9 +3522,9 @@ function typeStatement(st::Statement, origin::ORIGIN_Type)::Statement
       end
 
       ALG_IF(__) => begin
-        @assign next_origin = setFlag(origin, ORIGIN_IF)
-        @assign cond_origin = setFlag(next_origin, ORIGIN_CONDITION)
-        @assign tybrs = list(
+        next_origin = setFlag(origin, ORIGIN_IF)
+        cond_origin = setFlag(next_origin, ORIGIN_CONDITION)
+        tybrs = [
           begin
             @match br begin
               (cond, body) => begin
@@ -3534,18 +3534,18 @@ function typeStatement(st::Statement, origin::ORIGIN_Type)::Statement
                   st.source,
                   Error.IF_CONDITION_TYPE_ERROR,
                 )
-                sts1 = list(typeStatement(bst, next_origin) for bst in body)
+                sts1 = [typeStatement(bst, next_origin) for bst in body]
                 (e1, sts1)
               end
             end
           end for br in st.branches
-        )
+        ]
         ALG_IF(tybrs, st.source)
       end
 
       ALG_WHEN(__) => begin
         next_origin = setFlag(origin, ORIGIN_WHEN)
-        tybrs = list(
+        tybrs = [
           begin
             @match br begin
               (cond, body) => begin
@@ -3556,12 +3556,12 @@ function typeStatement(st::Statement, origin::ORIGIN_Type)::Statement
                   Error.WHEN_CONDITION_TYPE_ERROR,
                   allowVector = true,
                 )
-                sts1 = list(typeStatement(bst, next_origin) for bst in body)
+                sts1 = [typeStatement(bst, next_origin) for bst in body]
                 (e1, sts1)
               end
             end
           end for br in st.branches
-        )
+        ]
         ALG_WHEN(tybrs, st.source)
       end
 
@@ -3630,12 +3630,12 @@ function typeStatement(st::Statement, origin::ORIGIN_Type)::Statement
           st.source,
           Error.WHILE_CONDITION_TYPE_ERROR,
         )
-        @assign sts1 = list(typeStatement(bst, origin) for bst in st.body)
+        @assign sts1 = [typeStatement(bst, origin) for bst in st.body]
         ALG_WHILE(e1, sts1, st.source)
       end
 
       ALG_FAILURE(__) => begin
-        sts1 = list(typeStatement(bst, origin) for bst in st.body)
+        sts1 = [typeStatement(bst, origin) for bst in st.body]
         ALG_FAILURE(sts1, st.source)
       end
 
@@ -3675,9 +3675,9 @@ function typeEqualityEquation(
       fail()
     end
   end
-  @assign (e1, ty1) = typeExp(lhsExp, setFlag(origin, ORIGIN_LHS), info)
-  @assign (e2, ty2) = typeExp(rhsExp, setFlag(origin, ORIGIN_RHS), info)
-  @assign (e1, e2, ty, mk) = matchExpressions(e1, ty1, e2, ty2)
+  (e1, ty1) = typeExp(lhsExp, setFlag(origin, ORIGIN_LHS), info)
+  (e2, ty2) = typeExp(rhsExp, setFlag(origin, ORIGIN_RHS), info)
+  (e1, e2, ty, mk) = matchExpressions(e1, ty1, e2, ty2)
   if isIncompatibleMatch(mk)
     Error.addSourceMessage(
       Error.EQUATION_TYPE_MISMATCH_ERROR,
@@ -3689,7 +3689,7 @@ function typeEqualityEquation(
     )
     fail()
   end
-  @assign eq = EQUATION_EQUALITY(e1, e2, ty, source)
+  eq = EQUATION_EQUALITY(e1, e2, ty, source)
   return eq
 end
 
@@ -3710,7 +3710,7 @@ function typeCondition(
   info = sourceInfo() #DAE.emptyElementSource #TODO: DAE.ElementSource_getInfo(source)
   (condition, ty, variability) =
     typeExp(condition, origin, info)
-  @assign ety = if allowVector
+  ety = if allowVector
     arrayElementType(ty)
   else
     ty
@@ -3729,82 +3729,78 @@ function typeCondition(
 end
 
 function typeIfEquation(
-  branches::List{<:Equation_Branch},
+  branches::Vector{Equation_Branch},
   origin::ORIGIN_Type,
   source::DAE.ElementSource,
 )::Equation
   local ifEq::Equation
-
   local cond::Expression
-  local eql::List{Equation}
+  local eql::Vector{Equation}
   local accum_var::VariabilityType = Variability.CONSTANT
   local var::VariabilityType
-  local bl::List{Equation_Branch} = nil
-  local bl2::List{Equation_Branch} = nil
+  local bl::Vector{Equation_Branch} = Equation_Branch[]
+  local bl2::Vector{Equation_Branch} = Equation_Branch[]
   local next_origin::ORIGIN_Type = setFlag(origin, ORIGIN_IF)
   local cond_origin::ORIGIN_Type = setFlag(next_origin, ORIGIN_CONDITION)
-
-  #=  Type the conditions of all the branches.
-  =#
+  #=  Type the conditions of all the branches. =#
   for b in branches
     @match EQUATION_BRANCH(cond, _, eql) = b
-    @assign (cond, _, var) =
+    (cond, _, var) =
       typeCondition(cond, cond_origin, source, Error.IF_CONDITION_TYPE_ERROR)
     if var > Variability.PARAMETER || isExpressionNotFixed(cond, maxDepth = 100)
-      @assign next_origin = setFlag(next_origin, ORIGIN_NONEXPANDABLE)
+      next_origin = setFlag(next_origin, ORIGIN_NONEXPANDABLE)
     elseif var == Variability.PARAMETER && accum_var <= Variability.PARAMETER
-      @assign var = Variability.STRUCTURAL_PARAMETER
+      var = Variability.STRUCTURAL_PARAMETER
       markStructuralParamsExp(cond)
     end
-    @assign accum_var = variabilityMax(accum_var, var)
-    @assign bl = _cons(EQUATION_BRANCH(cond, var, eql), bl)
+    accum_var = variabilityMax(accum_var, var)
+    push!(bl, EQUATION_BRANCH(cond, var, eql))
   end
 
   for b in bl
     @match EQUATION_BRANCH(cond, var, eql) = b
     ErrorExt.setCheckpoint(getInstanceName())
     try
-      @assign eql = list(typeEquation(e, next_origin) for e in eql)
-      @assign bl2 = _cons(makeBranch(cond, eql, var), bl2)
+      eql = Equation[typeEquation(e, next_origin) for e in eql]
+      push!(bl2, makeBranch(cond, eql, var))
     catch
-      @assign bl2 = _cons(
+      bl2 = push!(
+        bl2,
         INVALID_BRANCH(
           makeBranch(cond, eql, var),
           ErrorExt.getCheckpointMessages(),
         ),
-        bl2,
       )
     end
     ErrorExt.delCheckpoint(getInstanceName())
   end
-  #=  Do branch selection anyway if -d=-nfScalarize is set, otherwise turning of
-  =#
+  #=  Do branch selection anyway if -d=-nfScalarize is set, otherwise turning of =#
   #=  scalarization breaks currently.
   =#
-  if false !Flags.isSet(Flags.NF_SCALARIZE)
-    @assign bl = bl2
-    @assign bl2 = nil
+  if !Flags.isSet(Flags.NF_SCALARIZE)
+    bl = bl2
+    bl2 = Equation_Branch[]
     for b in bl
       @assign bl2 = begin
         @match b begin
           EQUATION_BRANCH(
             __,
           ) where {(b.conditionVar <= Variability.STRUCTURAL_PARAMETER)} => begin
-            @assign b.condition = Ceval.evalExp(b.condition)
+            b.condition = evalExp(b.condition)
             if isFalse(b.condition)
               bl2
             else
-              _cons(b, bl2)
+              push!(bl2, b)
             end
           end
 
           _ => begin
-            _cons(b, bl2)
+            push!(bl2, b)
           end
         end
       end
     end
-    bl2 = listReverseInPlace(bl2)
+    #bl2 = listReverseInPlace(bl2) No reverse
   end
   ifEq = EQUATION_IF(bl2, source)
   return ifEq
@@ -3844,21 +3840,20 @@ function isNonConstantIfCondition(@nospecialize(exp::Expression))::Bool
 end
 
 function typeWhenEquation(
-  branches::List{<:Equation_Branch},
+  branches::Vector{Equation_Branch},
   origin::ORIGIN_Type,
   source::DAE.ElementSource,
 )::Equation
   local whenEq::Equation
   local next_origin::ORIGIN_Type = setFlag(origin, ORIGIN_WHEN)
-  local accum_branches::List{<:Equation_Branch} = nil
+  local accum_branches::Vector{Equation_Branch} = Equation_Branch[]
   local cond::Expression
-  local body::List{Equation}
+  local body::Vector{Equation}
   local ty::NFType
   local var::VariabilityType
-
   for branch in branches
     @match EQUATION_BRANCH(cond, _, body) = branch
-    @assign (cond, ty, var) = typeCondition(
+    (cond, ty, var) = typeCondition(
       cond,
       origin,
       source,
@@ -3867,7 +3862,7 @@ function typeWhenEquation(
       allowClock = true,
     )
     if isClock(ty)
-      if listLength(branches) != 1
+      if length(branches) != 1
         if referenceEq(branch, listHead(branches))
           Error.addSourceMessage(Error.ELSE_WHEN_CLOCK, nil, DAE.ElementSource_getInfo(source))
         else
@@ -3879,13 +3874,13 @@ function typeWhenEquation(
         end
         fail()
       else
-        @assign next_origin = setFlag(origin, ORIGIN_CLOCKED)
+        next_origin = setFlag(origin, ORIGIN_CLOCKED)
       end
     end
-      body = list(typeEquation(eq, next_origin) for eq in body)
-      accum_branches = _cons(makeBranch(cond, body, var), accum_branches)
+    body = Equation[typeEquation(eq, next_origin) for eq in body]
+    push!(accum_branches, makeBranch(cond, body, var))
   end
-  whenEq = EQUATION_WHEN(listReverseInPlace(accum_branches), source)
+  whenEq = EQUATION_WHEN(accum_branches, source)
   return whenEq
 end
 
@@ -3900,8 +3895,8 @@ function typeOperatorArg(
 )
   local ty::NFType
   local mk::MatchKindType
-  @assign (arg, ty, _) = typeExp(arg, origin, info)
-  @assign (arg, _, mk) = matchTypes(ty, expectedType, arg)
+  (arg, ty, _) = typeExp(arg, origin, info)
+  (arg, _, mk) = matchTypes(ty, expectedType, arg)
   if isIncompatibleMatch(mk)
     Error.addSourceMessage(
       Error.ARG_TYPE_MISMATCH,

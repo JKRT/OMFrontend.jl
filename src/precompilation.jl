@@ -1,3 +1,7 @@
+#=
+  Some routine to cache more naitve code for this package.
+  Not meant to be used by users.
+=#
 PrecompileTools.@compile_workload begin
   #= Make sure that we load the bultin scode=#
   packagePath = dirname(realpath(Base.find_package("OMFrontend")))
@@ -30,13 +34,42 @@ PrecompileTools.@compile_workload begin
   path = Main.AbsynUtil.stringPath("HelloWorld")
   @info "Timings concerning compiling core modules for instantiation:"
   @time res1 = Main.instClassInProgram(path, program)
-  @info "Testing to load  a large MSL model"
-  local precompile_libraryAsScode = OMFrontend.LIBRARY_CACHE["MSL_4_0_0"]
-  local precompile_prefix = "Modelica.Mechanics.MultiBody.Examples.Loops"
-  @info "Time spent precompiing MSL models in: $(precompile_prefix)"
-  local precompile_model_name = "$(precompile_prefix).Engine1a"
-  @info "Testing $(precompile_model_name)"
-  @time (FM, cache) = OMFrontend.instantiateSCodeToFM(precompile_model_name, precompile_libraryAsScode)
-  @info "Core compiler modules are successfully precompiled!"
-  @info "Compiler modules are successfully precompiled!"
+  #=
+  For other developers reading this.
+  Comment out below if you are using revise and want to have faster feedback when changing different datatypes.
+  -John 2023-06-22
+  =#
+  # @info "Testing to load  a large MSL model"
+  # function flattenModelInMSL_TST(modelName::String; MSL_V)
+  #   if !haskey(OMFrontend.LIBRARY_CACHE, MSL_V)
+  #     OMFrontend.initLoadMSL(MSL_Version= MSL_V)
+  #   end
+  #   local libraryAsScoded = OMFrontend.LIBRARY_CACHE[MSL_V]
+  #   (FM, cache) = OMFrontend.instantiateSCodeToFM(modelName, libraryAsScoded)
+  # end
+  # precompile_prefix = "Modelica.Electrical.Analog.Examples"
+  # precompile_model_names = [
+  #   "IdealTriacCircuit",
+  #   "NandGate",
+  #   "AmplifierWithOpAmpDetailed",
+  #   "SimpleTriacCircuit"
+  # ]
+  # for p in precompile_model_names
+  #   @info "Translating:" p
+  #   @time flattenModelInMSL_TST(string(precompile_prefix, ".", p); MSL_V = "MSL_4_0_0")
+  # end
+  # precompile_libraryAsScode = OMFrontend.LIBRARY_CACHE["MSL_4_0_0"]
+  # precompile_prefix = "Modelica.Mechanics.Rotational.Examples"
+  # precompile_model_names = [
+  #   "RollingWheel",
+  #   "OneWayClutch",
+  #   "SimpleGearShift"
+  # ]
+  # @info "Time spent precompiing MSL models in: $(precompile_prefix)"
+  # for p in precompile_model_names
+  #   @info "Translating:" string(precompile_prefix, ".", p)
+  #   @time flattenModelInMSL_TST(string(precompile_prefix, ".", p); MSL_V = "MSL_4_0_0")
+  # end
+  # @info "Core compiler modules are successfully precompiled!"
+  # @info "Compiler modules are successfully precompiled!"
 end

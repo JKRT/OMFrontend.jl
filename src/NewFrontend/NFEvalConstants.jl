@@ -149,29 +149,29 @@ function evaluateDimension(dim::Dimension)::Dimension
 end
 
 function evaluateEquations(
-  eql::List{<:Equation},
+  eql::Vector{Equation},
   constVariability::VariabilityType,
-)::List{Equation}
-  local outEql::List{Equation} =list(evaluateEquation(e, constVariability) for e in eql)
+)
+  local outEql = Equation[evaluateEquation(e, constVariability) for e in eql]
   return outEql
 end
 
-function evaluateEquation(eq::Equation, constVariability::VariabilityType)::Equation
-  @assign eq = begin
+function evaluateEquation(@nospecialize(eq::Equation), constVariability::VariabilityType)::Equation
+  eq = begin
     local e1::Expression
     local e2::Expression
     local e3::Expression
     local ty::M_Type
     @match eq begin
       EQUATION_EQUALITY(__) => begin
-        @assign ty = mapDims(eq.ty, evaluateDimension)
-        @assign e1 = evaluateExp(eq.lhs, constVariability)
-        @assign e2 = evaluateExp(eq.rhs, constVariability)
+        ty = mapDims(eq.ty, evaluateDimension)
+        e1 = evaluateExp(eq.lhs, constVariability)
+        e2 = evaluateExp(eq.rhs, constVariability)
         EQUATION_EQUALITY(e1, e2, ty, eq.source)
       end
       EQUATION_ARRAY_EQUALITY(__) => begin
-        @assign ty = mapDims(eq.ty, evaluateDimension)
-        @assign e2 = evaluateExp(eq.rhs, constVariability)
+        ty = mapDims(eq.ty, evaluateDimension)
+        e2 = evaluateExp(eq.rhs, constVariability)
         EQUATION_ARRAY_EQUALITY(eq.lhs, e2, ty, eq.source)
       end
       EQUATION_FOR(__) => begin
@@ -183,19 +183,17 @@ function evaluateEquation(eq::Equation, constVariability::VariabilityType)::Equa
         eq
       end
       EQUATION_IF(__) => begin
-        @assign eq.branches =
-          list(evaluateEqBranch(b, constVariability) for b in eq.branches)
+        @assign eq.branches = EQUATION_BRANCH[evaluateEqBranch(b, constVariability) for b in eq.branches]
         eq
       end
       EQUATION_WHEN(__) => begin
-        @assign eq.branches =
-          list(evaluateEqBranch(b, constVariability) for b in eq.branches)
+        @assign eq.branches = EQUATION_BRANCH[evaluateEqBranch(b, constVariability) for b in eq.branches]
         eq
       end
       EQUATION_ASSERT(__) => begin
-        @assign e1 = evaluateExp(eq.condition, constVariability)
-        @assign e2 = evaluateExp(eq.message, constVariability)
-        @assign e3 = evaluateExp(eq.level, constVariability)
+        e1 = evaluateExp(eq.condition, constVariability)
+        e2 = evaluateExp(eq.message, constVariability)
+        e3 = evaluateExp(eq.level, constVariability)
         EQUATION_ASSERT(e1, e2, e3, eq.source)
       end
       EQUATION_TERMINATE(__) => begin
@@ -218,20 +216,17 @@ function evaluateEquation(eq::Equation, constVariability::VariabilityType)::Equa
   return eq
 end
 
-function evaluateEqBranch(branch::Equation_Branch, constVariability::VariabilityType)::Equation_Branch
+function evaluateEqBranch(branch::Equation_Branch, constVariability::VariabilityType)
   local outBranch::Equation_Branch
-
-  @assign outBranch = begin
+  outBranch = begin
     local condition::Expression
     local body::List{Equation}
     @match branch begin
       EQUATION_BRANCH(condition = condition, body = body) => begin
-        @assign condition =
-          evaluateExp(condition, Variability.STRUCTURAL_PARAMETER)
-        @assign body = evaluateEquations(body, constVariability)
+        condition = evaluateExp(condition, Variability.STRUCTURAL_PARAMETER)
+        body = evaluateEquations(body, constVariability)
         EQUATION_BRANCH(condition, branch.conditionVar, body)
       end
-
       _ => begin
         branch
       end
@@ -241,25 +236,23 @@ function evaluateEqBranch(branch::Equation_Branch, constVariability::Variability
 end
 
 function evaluateAlgorithms(
-  algs::List{<:Algorithm},
+  algs::Vector{Algorithm},
   constVariability::VariabilityType,
-)::List{Algorithm}
-  local outAlgs::List{Algorithm} =
-    list(evaluateAlgorithm(a, constVariability) for a in algs)
+)
+  local outAlgs::Vector{Algorithm} = [evaluateAlgorithm(a, constVariability) for a in algs]
   return outAlgs
 end
 
-function evaluateAlgorithm(alg::Algorithm, constVariability::VariabilityType)::Algorithm
+function evaluateAlgorithm(alg::Algorithm, constVariability::VariabilityType)
   @assign alg.statements = evaluateStatements(alg.statements, constVariability)
   return alg
 end
 
 function evaluateStatements(
-  stmts::List{<:Statement},
+  stmts::Vector{Statement},
   constVariability::VariabilityType,
-)::List{Statement}
-  local outStmts::List{Statement} =
-    list(evaluateStatement(s, constVariability) for s in stmts)
+  )
+  local outStmts::Vector{Statement} = [evaluateStatement(s, constVariability) for s in stmts]
   return outStmts
 end
 
@@ -288,13 +281,13 @@ function evaluateStatement(stmt::Statement, constVariability::VariabilityType)::
 
       ALG_IF(__) => begin
         @assign stmt.branches =
-          list(evaluateStmtBranch(b, constVariability) for b in stmt.branches)
+          [evaluateStmtBranch(b, constVariability) for b in stmt.branches]
         stmt
       end
 
       ALG_WHEN(__) => begin
         @assign stmt.branches =
-          list(evaluateStmtBranch(b, constVariability) for b in stmt.branches)
+          [evaluateStmtBranch(b, constVariability) for b in stmt.branches]
         stmt
       end
 
@@ -329,16 +322,16 @@ function evaluateStatement(stmt::Statement, constVariability::VariabilityType)::
 end
 
 function evaluateStmtBranch(
-  branch::Tuple{<:Expression, List{<:Statement}},
+  branch::Tuple{Expression, Vector{Statement}},
   constVariability::VariabilityType,
-)::Tuple{Expression, List{Statement}}
-  local outBranch::Tuple{Expression, List{Statement}}
+)::Tuple{Expression, Vector{Statement}}
+  local outBranch::Tuple{Expression, Vector{Statement}}
   local cond::Expression
-  local body::List{Statement}
-  @assign (cond, body) = branch
-  @assign cond = evaluateExp(cond, Variability.STRUCTURAL_PARAMETER)
-  @assign body = evaluateStatements(body, constVariability)
-  @assign outBranch = (cond, body)
+  local body::Vector{Statement}
+  (cond, body) = branch
+  cond = evaluateExp(cond, Variability.STRUCTURAL_PARAMETER)
+  body = evaluateStatements(body, constVariability)
+  outBranch = (cond, body)
   return outBranch
 end
 

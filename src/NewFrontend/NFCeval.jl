@@ -1,7 +1,7 @@
 #= /*
 * This file is part of OpenModelica.
 *
-* Copyright (c) 1998-2014, Open Source Modelica Consortium (OSMC),
+* Copyright (c) 1998-CurrentYear, Open Source Modelica Consortium (OSMC),
 * c/o Linköpings universitet, Department of Computer and Information Science,
 * SE-58183 Linköping, Sweden.
 *
@@ -29,11 +29,6 @@
 *
 */ =#
 FuncT = Function
-ReductionFn = Function
-Expression = NFExpression
-Operator = NFOperator
-
-#import ..ElementSource
 
 @UniontypeDecl EvalTarget
 function EvalTarget_getInfo(target::EvalTarget)::SourceInfo
@@ -157,13 +152,14 @@ end
   end
 end
 
-
+"""
+  Evaluates an expression.
+"""
 function evalExp(
   exp::Expression,
   target::EvalTarget = EVALTARGET_IGNORE_ERRORS(),
 )::Expression
-
-  @assign exp = getBindingExp(evalExp_impl(exp, target))
+  exp = getBindingExp(evalExp_impl(exp, target))
   return exp
 end
 
@@ -184,11 +180,9 @@ function evalExp_impl(exp::Expression, target::EvalTarget)::Expression
       CREF_EXPRESSION(__) => begin
         evalCref(exp.cref, exp, target)
       end
-
       TYPENAME_EXPRESSION(__) => begin
         evalTypename(exp.ty, exp, target)
       end
-
       ARRAY_EXPRESSION(__) => begin
         if exp.literal
           exp
@@ -200,56 +194,45 @@ function evalExp_impl(exp::Expression, target::EvalTarget)::Expression
           )
         end
       end
-
       RANGE_EXPRESSION(__) => begin
         evalRange(exp, target)
       end
-
       TUPLE_EXPRESSION(__) => begin
         @assign exp.elements = list(evalExp_impl(e, target) for e in exp.elements)
         exp
       end
-
       RECORD_EXPRESSION(__) => begin
         @assign exp.elements = list(evalExp_impl(e, target) for e in exp.elements)
         exp
       end
-
       CALL_EXPRESSION(__) => begin
         evalCall(exp.call, target)
       end
-
       SIZE_EXPRESSION(__) => begin
         evalSize(exp.exp, exp.dimIndex, target)
       end
-
       BINARY_EXPRESSION(__) => begin
         @assign exp1 = evalExp_impl(exp.exp1, target)
         @assign exp2 = evalExp_impl(exp.exp2, target)
         evalBinaryOp(exp1, exp.operator, exp2, target)
       end
-
       UNARY_EXPRESSION(__) => begin
         @assign exp1 = evalExp_impl(exp.exp, target)
         evalUnaryOp(exp1, exp.operator)
       end
-
       LBINARY_EXPRESSION(__) => begin
         @assign exp1 = evalExp_impl(exp.exp1, target)
         evalLogicBinaryOp(exp1, exp.operator, exp.exp2, target)
       end
-
       LUNARY_EXPRESSION(__) => begin
         @assign exp1 = evalExp_impl(exp.exp, target)
         evalLogicUnaryOp(exp1, exp.operator)
       end
-
       RELATION_EXPRESSION(__) => begin
         @assign exp1 = evalExp_impl(exp.exp1, target)
         @assign exp2 = evalExp_impl(exp.exp2, target)
         evalRelationOp(exp1, exp.operator, exp2)
       end
-
       IF_EXPRESSION(__) => begin
         evalIfExp(exp, target)
       end
@@ -296,7 +279,7 @@ function evalExp_impl(exp::Expression, target::EvalTarget)::Expression
 end
 
 function evalExpOpt(
-  oexp::Option{<:Expression},
+  oexp::Option{Expression},
   target::EvalTarget = EVALTARGET_IGNORE_ERRORS(),
 )::Option{Expression}
 
@@ -383,12 +366,9 @@ function evalCref(
   evalSubscripts::Bool = true,
 )::Expression
   local exp::Expression
-
   local c::InstNode
   local evaled::Bool
-  local subs::List{Subscript}
-
-  @assign exp = begin
+  exp = begin
     @match cref begin
       COMPONENT_REF_CREF(
         node = c && COMPONENT_NODE(__),
@@ -417,7 +397,6 @@ function evalComponentBinding(
   local comp::Component
   local binding::Binding
   local evaluated::Bool
-  local subs::List{Subscript}
   local var::VariabilityType
   local start_exp::Option{Expression}
 
@@ -515,12 +494,11 @@ function subscriptEvaluatedBinding(
   local subs::List{Subscript}
   local cr::ComponentRef
 
-  #=  The subscripts of the first part of the cref are always applied.
-  =#
+  #=  The subscripts of the first part of the cref are always applied. =#
   subs = getSubscripts(cref)
   (cr, _) = stripSubscripts(cref)
   if evalSubscripts
-    @assign subs = list(eval(s) for s in subs)
+    subs = list(eval(s) for s in subs)
   end
   #=  The rest of the cref contributes subscripts based on where the expressions
   =#
@@ -654,14 +632,14 @@ function evalComponentStartBinding(
   end
   #=  Try to evaluate the binding if one exists.
   =#
-  @assign binding = getBinding(start_comp)
-  @assign outExp = begin
+  binding = getBinding(start_comp)
+  outExp = begin
     @match binding begin
       TYPED_BINDING(__) => begin
         @assign exp = evalExp_impl(binding.bindingExp, target)
         if !referenceEq(exp, binding.bindingExp)
-          @assign binding.bindingExp = exp
-          @assign start_comp = P_Component.setBinding(binding, start_comp)
+          binding.bindingExp = exp
+          start_comp = setBinding(binding, start_comp)
           updateComponent!(start_comp, start_node)
         end
         SOME(exp)
@@ -2371,7 +2349,7 @@ end
 
 function eval(
   fn::M_Function,
-  args::List{<:Expression},
+  args::List{Expression},
   target::EvalTarget,
 )::Expression
   local result::Expression
@@ -2635,7 +2613,7 @@ function evalNormalCallExp(callExp::Expression)::Expression
   return result
 end
 
-function evalNormalCall(fn::M_Function, args::List{<:Expression})::Expression
+function evalNormalCall(fn::M_Function, args::List{Expression})::Expression
   local result::Expression = evaluate(fn, args)
   return result
 end
@@ -2692,7 +2670,7 @@ function evalBuiltinAcos(arg::Expression, target::EvalTarget)::Expression
   return result
 end
 
-function evalBuiltinArray(args::List{<:Expression})::Expression
+function evalBuiltinArray(args::List{Expression})::Expression
   local result::Expression
 
   local ty::M_Type
@@ -2733,7 +2711,7 @@ function evalBuiltinAsin(arg::Expression, target::EvalTarget)::Expression
   return result
 end
 
-function evalBuiltinAtan2(args::List{<:Expression})::Expression
+function evalBuiltinAtan2(args::List{Expression})::Expression
   local result::Expression
 
   local y::AbstractFloat
@@ -2775,7 +2753,7 @@ end
 
 function evalBuiltinCat(
   argN::Expression,
-  args::List{<:Expression},
+  args::List{Expression},
   target::EvalTarget,
 )::Expression
   local result::Expression
@@ -2940,7 +2918,7 @@ function evalBuiltinDiagonal(arg::Expression)::Expression
   return result
 end
 
-function evalBuiltinDiv(args::List{<:Expression}, target::EvalTarget)::Expression
+function evalBuiltinDiv(args::List{Expression}, target::EvalTarget)::Expression
   local result::Expression
 
   local rx::AbstractFloat
@@ -3011,14 +2989,14 @@ function evalBuiltinExp(arg::Expression)::Expression
   return result
 end
 
-function evalBuiltinFill(args::List{<:Expression})::Expression
+function evalBuiltinFill(args::List{Expression})::Expression
   local result::Expression
 
   @assign result = evalBuiltinFill2(listHead(args), listRest(args))
   return result
 end
 
-function evalBuiltinFill2(fillValue::Expression, dims::List{<:Expression})::Expression
+function evalBuiltinFill2(fillValue::Expression, dims::List{Expression})::Expression
   local result::Expression = fillValue
 
   local dim_size::Int
@@ -3247,7 +3225,7 @@ function evalBuiltinMatrix2(arg::Expression, ty::M_Type)::Expression
   return result
 end
 
-function evalBuiltinMax(args::List{<:Expression}, fn::M_Function)::Expression
+function evalBuiltinMax(args::List{Expression}, fn::M_Function)::Expression
   local result::Expression
   local e1::Expression
   local e2::Expression
@@ -3340,7 +3318,7 @@ function evalBuiltinMax2(exp1::Expression, exp2::Expression)::Expression
   return result
 end
 
-function evalBuiltinMin(args::List{<:Expression}, fn::M_Function)::Expression
+function evalBuiltinMin(args::List{Expression}, fn::M_Function)::Expression
   local result::Expression
 
   local e1::Expression
@@ -3437,7 +3415,7 @@ function evalBuiltinMin2(exp1::Expression, exp2::Expression)::Expression
   return result
 end
 
-function evalBuiltinMod(args::List{<:Expression}, target::EvalTarget)::Expression
+function evalBuiltinMod(args::List{Expression}, target::EvalTarget)::Expression
   local result::Expression
   local x::Expression
   local y::Expression
@@ -3481,7 +3459,7 @@ function evalBuiltinMod(args::List{<:Expression}, target::EvalTarget)::Expressio
   return result
 end
 
-function evalBuiltinOnes(args::List{<:Expression})::Expression
+function evalBuiltinOnes(args::List{Expression})::Expression
   local result::Expression
 
   @assign result = evalBuiltinFill2(INTEGER_EXPRESSION(1), args)
@@ -3582,7 +3560,7 @@ function evalBuiltinPromote(arg::Expression, argN::Expression)::Expression
   return result
 end
 
-function evalBuiltinRem(args::List{<:Expression}, target::EvalTarget)::Expression
+function evalBuiltinRem(args::List{Expression}, target::EvalTarget)::Expression
   local result::Expression
 
   local x::Expression
@@ -3628,12 +3606,10 @@ function evalBuiltinRem(args::List{<:Expression}, target::EvalTarget)::Expressio
   return result
 end
 
-function evalBuiltinScalar(args::List{<:Expression})::Expression
+function evalBuiltinScalar(args::List{Expression})::Expression
   local result::Expression
-
   local exp::Expression = listHead(args)
-
-  @assign result = begin
+  result = begin
     @match exp begin
       ARRAY_EXPRESSION(__) => begin
         evalBuiltinScalar(exp.elements)
@@ -3649,8 +3625,7 @@ end
 
 function evalBuiltinSign(arg::Expression)::Expression
   local result::Expression
-
-  @assign result = begin
+  result = begin
     @match arg begin
       REAL_EXPRESSION(__) => begin
         INTEGER_EXPRESSION(if arg.value > 0
@@ -3788,7 +3763,7 @@ function evalBuiltinSqrt(arg::Expression)::Expression
   return result
 end
 
-function evalBuiltinString(args::List{<:Expression})::Expression
+function evalBuiltinString(args::List{Expression})::Expression
   local result::Expression
 
   @assign result = begin
@@ -4076,7 +4051,7 @@ function evalBuiltinVector(arg::Expression)::Expression
   return result
 end
 
-function evalBuiltinVector2(exp::Expression, expl::List{<:Expression})::List{Expression}
+function evalBuiltinVector2(exp::Expression, expl::List{Expression})::List{Expression}
 
   @assign expl = begin
     @match exp begin
@@ -4092,7 +4067,7 @@ function evalBuiltinVector2(exp::Expression, expl::List{<:Expression})::List{Exp
   return expl
 end
 
-function evalBuiltinZeros(args::List{<:Expression})::Expression
+function evalBuiltinZeros(args::List{Expression})::Expression
   local result::Expression
 
   @assign result = evalBuiltinFill2(INTEGER_EXPRESSION(0), args)
@@ -4101,7 +4076,7 @@ end
 
 function evalUriToFilename(
   fn::M_Function,
-  args::List{<:Expression},
+  args::List{Expression},
   target::EvalTarget,
 )::Expression
   local result::Expression
@@ -4129,7 +4104,7 @@ function evalUriToFilename(
   return result
 end
 
-function evalIntBitAnd(args::List{<:Expression})::Expression
+function evalIntBitAnd(args::List{Expression})::Expression
   local result::Expression
 
   local i1::Int
@@ -4151,7 +4126,7 @@ function evalIntBitAnd(args::List{<:Expression})::Expression
   return result
 end
 
-function evalIntBitOr(args::List{<:Expression})::Expression
+function evalIntBitOr(args::List{Expression})::Expression
   local result::Expression
 
   local i1::Int
@@ -4173,7 +4148,7 @@ function evalIntBitOr(args::List{<:Expression})::Expression
   return result
 end
 
-function evalIntBitXor(args::List{<:Expression})::Expression
+function evalIntBitXor(args::List{Expression})::Expression
   local result::Expression
 
   local i1::Int
@@ -4195,7 +4170,7 @@ function evalIntBitXor(args::List{<:Expression})::Expression
   return result
 end
 
-function evalIntBitLShift(args::List{<:Expression})::Expression
+function evalIntBitLShift(args::List{Expression})::Expression
   local result::Expression
 
   local i1::Int
@@ -4217,7 +4192,7 @@ function evalIntBitLShift(args::List{<:Expression})::Expression
   return result
 end
 
-function evalIntBitRShift(args::List{<:Expression})::Expression
+function evalIntBitRShift(args::List{Expression})::Expression
   local result::Expression
 
   local i1::Int
@@ -4239,7 +4214,7 @@ function evalIntBitRShift(args::List{<:Expression})::Expression
   return result
 end
 
-function evalInferredClock(args::List{<:Expression})::Expression
+function evalInferredClock(args::List{Expression})::Expression
   local result::Expression
 
   @assign result = begin
@@ -4257,7 +4232,7 @@ function evalInferredClock(args::List{<:Expression})::Expression
   return result
 end
 
-function evalRationalClock(args::List{<:Expression})::Expression
+function evalRationalClock(args::List{Expression})::Expression
   local result::Expression
 
   @assign result = begin
@@ -4282,7 +4257,7 @@ function evalRationalClock(args::List{<:Expression})::Expression
   return result
 end
 
-function evalRealClock(args::List{<:Expression})::Expression
+function evalRealClock(args::List{Expression})::Expression
   local result::Expression
 
   @assign result = begin
@@ -4303,7 +4278,7 @@ function evalRealClock(args::List{<:Expression})::Expression
   return result
 end
 
-function evalBooleanClock(args::List{<:Expression})::Expression
+function evalBooleanClock(args::List{Expression})::Expression
   local result::Expression
 
   @assign result = begin
@@ -4328,7 +4303,7 @@ function evalBooleanClock(args::List{<:Expression})::Expression
   return result
 end
 
-function evalSolverClock(args::List{<:Expression})::Expression
+function evalSolverClock(args::List{Expression})::Expression
   local result::Expression
 
   @assign result = begin
@@ -4355,7 +4330,7 @@ end
 
 function evalBuiltinDynamicSelect(
   fn::M_Function,
-  args::List{<:Expression},
+  args::List{Expression},
   target::EvalTarget,
 )::Expression
   local result::Expression
@@ -4432,8 +4407,8 @@ end
 
 function evalArrayConstructor3(
   exp::Expression,
-  ranges::List{<:Expression},
-  iterators::List{<:Pointer{<:Expression}},
+  ranges::List{Expression},
+  iterators::List{<:Pointer{Expression}},
   types::List{<:M_Type},
 )::Expression
   local result::Expression
@@ -4492,7 +4467,7 @@ function evalReduction2(
   local default_exp::Expression
   local ranges::List{Expression}
   local iters::List{Pointer{Expression}}
-  local red_fn::ReductionFn
+  local red_fn::Function
   local ty::M_Type
 
   @assign (e, ranges, iters) = createIterationRanges(exp, iterators)
@@ -4533,10 +4508,10 @@ end
 
 function evalReduction3(
   exp::Expression,
-  ranges::List{<:Expression},
-  iterators::List{<:Pointer{<:Expression}},
+  ranges::List{Expression},
+  iterators::List{<:Pointer{Expression}},
   foldExp::Expression,
-  fn::ReductionFn,
+  fn::Function,
 )::Expression
   local result::Expression
 
@@ -4567,7 +4542,7 @@ end
 
 function evalSize(
   exp::Expression,
-  optIndex::Option{<:Expression},
+  optIndex::Option{Expression},
   target::EvalTarget,
 )::Expression
   local outExp::Expression
@@ -4733,7 +4708,7 @@ function printUnboundError(component::Component, target::EvalTarget, exp::Expres
   end
 end
 
-function printWrongArgsError(evalFunc::String, args::List{<:Expression}, info::SourceInfo)
+function printWrongArgsError(evalFunc::String, args::List{Expression}, info::SourceInfo)
   return Error.addInternalError(
     evalFunc +
     " got invalid arguments " +

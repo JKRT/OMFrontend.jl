@@ -1,10 +1,34 @@
+"""
+```
 struct FLAT_MODEL <: FlatModel
   name::String
-  variables::List{Variable}
-  equations::List{Equation}
-  initialEquations::List{Equation}
-  algorithms::List{Algorithm}
-  initialAlgorithms::List{Algorithm}
+  variables::Vector{Variable}
+  equations::Vector{Equation}
+  initialEquations::Vector{Equation}
+  algorithms::Vector{Algorithm}
+  initialAlgorithms::Vector{Algorithm}
+  #= VSS Modelica extension =#
+  structuralSubmodels::List{FlatModel}
+  scodeProgram::Option{SCode.CLASS}
+  #= Dynamically Overconstrained connectors =#
+  DOCC_equations::List{Equation}
+  #= Contains the set of unresolved connect equations =#
+  unresolvedConnectEquations::List{Equation}
+  active_DOCC_Equations::Vector{Bool}
+  #= End VSS Modelica extension =#
+  comment::Option{SCode.Comment}
+end
+```
+
+  The flat representation of a Modelica Model.
+"""
+struct FLAT_MODEL <: FlatModel
+  name::String
+  variables::Vector{Variable}
+  equations::Vector{Equation}
+  initialEquations::Vector{Equation}
+  algorithms::Vector{Algorithm}
+  initialAlgorithms::Vector{Algorithm}
   #= VSS Modelica extension =#
   structuralSubmodels::List{FlatModel}
   scodeProgram::Option{SCode.CLASS}
@@ -163,7 +187,7 @@ function collectComponentFlatTypes(componentArg::InstNode, types::TypeTree)::Typ
 end
 
 function collectFunctionFlatTypes(fn::M_Function, types::TypeTree)::TypeTree
-  local body::List{Statement}
+  local body::Vector{Statement}
   types = foldComponents(
     classTree(getClass(fn.node)),
     collectComponentFlatTypes,
@@ -503,22 +527,22 @@ function toString(flatModel::FlatModel, printBindingTypes::Bool = false)::String
     s = toStream(v, "  ", printBindingTypes, s)
     s = IOStream_M.append(s, ";\\n")
   end
-  if !listEmpty(flatModel.initialEquations)
+  if !isempty(flatModel.initialEquations)
     s = IOStream_M.append(s, "initial equation\\n")
     s = toStreamList(flatModel.initialEquations, "  ", s)
   end
-  if !listEmpty(flatModel.equations)
+  if !isempty(flatModel.equations)
     s = IOStream_M.append(s, "equation\\n")
     s = toStreamList(flatModel.equations, "  ", s)
   end
   for alg in flatModel.initialAlgorithms
-    if !listEmpty(alg.statements)
+    if !isempty(alg.statements)
       s = IOStream_M.append(s, "initial algorithm\\n")
       s = toStreamList(alg.statements, "  ", s)
     end
   end
   for alg in flatModel.algorithms
-    if !listEmpty(alg.statements)
+    if !isempty(alg.statements)
       s = IOStream_M.append(s, "algorithm\\n")
       s = toStreamList(alg.statements, "  ", s)
     end
@@ -540,7 +564,7 @@ end
   This function will also return true if the model contains another change that might
   lead to recompilation.
 """
-function recompilationDirectiveExists(@nospecialize(eqs::List{Equation}))::Bool
+function recompilationDirectiveExists(@nospecialize(eqs::Vector{Equation}))::Bool
   local hasRecompilationDirective = containsList(eqs, (eq) -> containsCallNamed(eq, "recompilation"))
   return hasRecompilationDirective
 end
@@ -549,7 +573,7 @@ end
 """
   Returns true if the list of equations contains a branch directive.
 """
-function branchDirectiveExists(@nospecialize(eqs::List{Equation}))::Bool
+function branchDirectiveExists(@nospecialize(eqs::Vector{Equation}))::Bool
   local hasBranchDirective = containsList(eqs, (eq) -> containsCallNamed(eq, "Connections.branch"))
   return hasBranchDirective
 end
@@ -557,12 +581,8 @@ end
 """
   Collect all DOCCS Equations.
 """
-function collectDOCCS(@nospecialize(eqs::Cons{Equation}))
+function collectDOCCS(@nospecialize(eqs::Vector{Equation}))
   Base.collect(Iterators.flatten([containsDOCC(eq) for eq in eqs]))
-end
-
-function collectDOCCS(@nospecialize(eqs::Nil))
-  return Equation[]
 end
 
 """

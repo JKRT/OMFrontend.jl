@@ -640,7 +640,7 @@ end
                      (node, foundScope)
                    end
 
-function lookupIterator(iteratorName::String, iterators::List{<:InstNode})
+function lookupIterator(iteratorName::String, iterators::Vector{<:InstNode})
   local it::InstNode
   for i in iterators
     if iteratorName == name(i)

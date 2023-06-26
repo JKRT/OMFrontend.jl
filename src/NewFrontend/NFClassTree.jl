@@ -16,7 +16,7 @@ include("DuplicateTree.jl")
     tree::LookupTree.Tree
     classes::Vector{Pointer{InstNode}}
     components::Vector{Pointer{InstNode}}
-    localComponents::List{Int}
+    localComponents::Vector{Int}
     exts::Vector{InstNode}
     imports::Vector{Import}
     duplicates::DuplicateTree.Tree
@@ -694,25 +694,26 @@ function flatten(tree::ClassTree)::ClassTree
   return tree
 end
 
-""" #= Appens a list of local components to an instantiated class tree. =#"""
+"""
+Appends a list of local components to an instantiated class tree.
+"""
 function appendComponentsToInstTree(
   components::List{<:Pointer{<:InstNode}},
   tree::ClassTree,
 )::ClassTree
-
   if listEmpty(components)
     return tree
   else
-    @assign () = begin
+    () = begin
       local comp_idx::Int
-      local local_comps::List{Int}
+      local local_comps::Vector{Int} = Int[]
       @match tree begin
         CLASS_TREE_INSTANTIATED_TREE(__) => begin
-          @assign comp_idx = arrayLength(tree.components)
+          comp_idx = arrayLength(tree.components)
           @assign tree.components = ArrayUtil.appendList(tree.components, components)
-          @assign local_comps = tree.localComponents
+          local_comps = tree.localComponents
           for i = (comp_idx + 1):(comp_idx + listLength(components))
-            @assign local_comps = _cons(i, local_comps)
+            local_comps = prepend!([i], local_comps)
           end
           @assign tree.localComponents = local_comps
           ()
@@ -837,7 +838,7 @@ function instantiate(
   local clss::Vector{Pointer{InstNode}}
   local comps::Vector{Pointer{InstNode}}
   local ext_clss::Vector{Pointer{InstNode}}
-  local local_comps::List{Int} = nil
+  local local_comps::Vector{Int} = Int[]
   local cls_idx::Int = 1
   local comp_idx::Int = 1
   local cls_count::Int
@@ -958,32 +959,29 @@ function instantiate(
             end
           end
         end
-        #=  Copy both local and inherited components into the new array.
-        =#
+        #=  Copy both local and inherited components into the new array. =#
         for c in old_comps
-          @assign () = begin
+          () = begin
             @match c begin
               COMPONENT_NODE(__) => begin
                 #=  Set the component's parent and create a unique instance for it. =#
-                @assign node = setParent(instance, c)
-                @assign comp = component(node)
-                @assign node = replaceComponent(comp, node)
-                #=  If the component is outer, link it with the corresponding
-                =#
-                #=  inner component.
+                node = setParent(instance, c)
+                comp = component(node)
+                node = replaceComponent(comp, node)
+                #=
+                  If the component is outer, link it with the corresponding inner component.
                 =#
                 if isOuter(comp)
-                  @assign node = linkInnerOuter(node, inst_scope)
+                  node = linkInnerOuter(node, inst_scope)
                 end
-                #=  Add the node to the component array.
-                =#
+                #=  Add the node to the component array. =#
                 arrayUpdateNoBoundsChecking(comps, comp_idx, P_Pointer.create(node))
-                @assign local_comps = _cons(comp_idx, local_comps)
-                @assign comp_idx = comp_idx + 1
+                local_comps = prepend!([comp_idx], local_comps)
+                comp_idx = comp_idx + 1
                 ()
               end
               REF_NODE(__) => begin
-                @assign comp_idx = instExtendsComps(exts[c.index], comps, comp_idx)
+                comp_idx = instExtendsComps(exts[c.index], comps, comp_idx)
                 ()
               end
             end
@@ -1863,8 +1861,7 @@ function addInheritedElement(
       end
     end
   end
-  #=  Ignore IMPORT, since imports aren't inherited.
-  =#
+  #=  Ignore IMPORT, since imports aren't inherited. =#
   return tree
 end
 
@@ -2383,12 +2380,10 @@ function addLocalElementConflict(
         newEntry
       end
       _ => begin
-        #=  Local elements overwrite imported elements with same name.
-        =#
-        #=  Otherwise we have two local elements with the same name, which is an error.
-        =#
-        @assign n1 = findLocalConflictElement(newEntry, classTree)
-        @assign n2 = findLocalConflictElement(oldEntry, classTree)
+        #=  Local elements overwrite imported elements with same name. =#
+        #=  Otherwise we have two local elements with the same name, which is an error. =#
+        n1 = findLocalConflictElement(newEntry, classTree)
+        n2 = findLocalConflictElement(oldEntry, classTree)
         Error.addMultiSourceMessage(
           Error.DOUBLE_DECLARATION_OF_ELEMENTS,
           list(name),
@@ -2407,11 +2402,14 @@ function addLocalElement(
   classTree::ClassTree,
   tree::LookupTree.Tree,
 )::LookupTree.Tree
-  @assign tree = LookupTree.add(
+  tree = LookupTree.add(
     tree,
     name,
     entry,
-    (classTree) -> addLocalElementConflict(classTree = classTree),
+    (newEntryArg, oldEntryArg ,nameArg) -> addLocalElementConflict(newEntryArg,
+                                                                   oldEntryArg,
+                                                                   nameArg,
+                                                                   classTree)
   )
   return tree
 end

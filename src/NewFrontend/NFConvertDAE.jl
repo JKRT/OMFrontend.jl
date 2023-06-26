@@ -688,10 +688,10 @@ function lookupStateSelectMember(name::String)::DAE.StateSelect
 end
 
 function convertEquations(
-  equations::List{<:Equation},
+  equations::Vector{Equation},
   elements::List{<:DAE.Element} = nil,
 )::List{DAE.Element}
-  for eq in listReverse(equations)
+  for eq in equations
     elements = convertEquation(eq, elements)
   end
   return elements
@@ -874,21 +874,19 @@ function convertIfEquation(
 end
 
 function convertWhenEquation(
-  whenBranches::List{<:Equation_Branch},
+  whenBranches::Vector{Equation_Branch},
   source::DAE.ElementSource,
 )::DAE.Element
   local whenEquation::DAE.Element
-
   local cond::DAE.Exp
   local els::List{DAE.Element}
   local when_eq::Option{DAE.Element} = NONE()
-
-  for b in listReverse(whenBranches)
-    @assign when_eq = begin
+  for b in whenBranches
+    when_eq = begin
       @match b begin
         EQUATION_BRANCH(__) => begin
-          @assign cond = toDAE(b.condition)
-          @assign els = convertEquations(b.body)
+          cond = toDAE(b.condition)
+          els = convertEquations(b.body)
           SOME(DAE.WHEN_EQUATION(cond, els, when_eq, source))
         end
       end
@@ -899,12 +897,11 @@ function convertWhenEquation(
 end
 
 function convertInitialEquations(
-  equations::List{<:Equation},
+  equations::Vector{Equation},
   elements::List{<:DAE.Element} = nil,
 )::List{DAE.Element}
-
-  for eq in listReverse(equations)
-    @assign elements = convertInitialEquation(eq, elements)
+  for eq in equations
+    elements = convertInitialEquation(eq, elements)
   end
   return elements
 end
@@ -980,29 +977,26 @@ function convertInitialEquation(
 end
 
 function convertAlgorithms(
-  algorithms::List{<:Algorithm},
+  algorithms::Vector{Algorithm},
   elements::List{<:DAE.Element},
 )::List{DAE.Element}
-
-  for alg in listReverse(algorithms)
-    @assign elements = convertAlgorithm(alg, elements)
+  for alg in algorithms
+    elements = convertAlgorithm(alg, elements)
   end
   return elements
 end
 
 function convertAlgorithm(alg::Algorithm, elements::List{<:DAE.Element})::List{DAE.Element}
-
-  local stmts::List{DAE.P_Statement.Statement}
-  local dalg::DAE.P_Algorithm.Algorithm
+  local stmts::List{DAE.Statement}
+  local dalg::DAE.Algorithm
   local src::DAE.ElementSource
-
-  @assign stmts = convertStatements(alg.statements)
-  @assign dalg = DAE.ALGORITHM_STMTS(stmts)
-  @assign elements = _cons(DAE.ALGORITHM(dalg, alg.source), elements)
+  stmts = convertStatements(alg.statements)
+  dalg = DAE.ALGORITHM_STMTS(stmts)
+  elements = _cons(DAE.ALGORITHM(dalg, alg.source), elements)
   return elements
 end
 
-function convertStatements(statements::List{<:Statement})::List{DAE.Statement}
+function convertStatements(statements::Vector{Statement})::List{DAE.Statement}
   local elements::List{DAE.Statement}
   elements = list(convertStatement(s) for s in statements)
   return elements
@@ -1148,8 +1142,8 @@ function convertForStatement(forStmt::Statement)::DAE.P_Statement.Statement
   local iterator::InstNode
   local ty::M_Type
   local range::Expression
-  local body::List{Statement}
-  local dbody::List{DAE.P_Statement.Statement}
+  local body::Vector{Statement}
+  local dbody::List{DAE.Statement}
   local source::DAE.ElementSource
 
   @match P_Statement.Statement.FOR(
@@ -1221,12 +1215,11 @@ function convertWhenStatement(
 end
 
 function convertInitialAlgorithms(
-  algorithms::List{<:Algorithm},
+  algorithms::Vector{Algorithm},
   elements::List{<:DAE.Element},
 )::List{DAE.Element}
-
-  for alg in listReverse(algorithms)
-    @assign elements = convertInitialAlgorithm(alg, elements)
+  for alg in algorithms
+    elements = convertInitialAlgorithm(alg, elements)
   end
   return elements
 end
@@ -1236,12 +1229,11 @@ function convertInitialAlgorithm(
   elements::List{<:DAE.Element},
 )::List{DAE.Element}
 
-  local stmts::List{DAE.P_Statement.Statement}
-  local dalg::DAE.P_Algorithm.Algorithm
-
-  @assign stmts = convertStatements(alg.statements)
-  @assign dalg = DAE.ALGORITHM_STMTS(stmts)
-  @assign elements = _cons(DAE.INITIALALGORITHM(dalg, alg.source), elements)
+  local stmts::List{DAE.Statement}
+  local dalg::DAE.Algorithm
+  stmts = convertStatements(alg.statements)
+  dalg = DAE.ALGORITHM_STMTS(stmts)
+  elements = _cons(DAE.INITIALALGORITHM(dalg, alg.source), elements)
   return elements
 end
 

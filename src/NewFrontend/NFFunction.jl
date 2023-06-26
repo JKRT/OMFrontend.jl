@@ -351,7 +351,6 @@ function mapExp(
   mapParameters::Bool = true,
   mapBody::Bool = true,
 )::M_Function
-
   local cls::Class
   local ctree::ClassTree
   local comps::Vector{InstNode}
@@ -359,10 +358,9 @@ function mapExp(
   local comp::Component
   local binding::Binding
   local binding2::Binding
-
-  @assign cls = getClass(fn.node)
+  cls = getClass(fn.node)
   if mapParameters
-    @assign ctree = classTree(cls)
+    ctree = classTree(cls)
     applyComponents(ctree, (nodeArg) -> mapExpParameter(nodeArg, mapFn))
     @assign fn.returnType = makeReturnType(fn)
   end
@@ -408,14 +406,13 @@ function hasUnboxArgs(fn::M_Function)::Bool
   return res
 end
 
-function getBody(fn::M_Function)::List{Statement}
-  local body::List{Statement} = getBody2(fn.node)
+function getBody(fn::M_Function)::Vector{Statement}
+  local body::Vector{Statement} = getBody2(fn.node)
   return body
 end
 
 function makeDAEType(fn::M_Function, boxTypes::Bool = false)::DAE.Type
   local outType::DAE.Type
-
   local params::List{DAE.FuncArg} = nil
   local pname::String
   local ty::M_Type
@@ -424,7 +421,6 @@ function makeDAEType(fn::M_Function, boxTypes::Bool = false)::DAE.Type
   local ppar::DAE
   local pdefault::Option{DAE.Exp}
   local comp::Component
-
   for param in fn.inputs
     @assign comp = component(param)
     @assign pname = name(param)
@@ -1589,7 +1585,7 @@ function toFlatString(fn::M_Function)::String
 end
 
 function toFlatStream(fn::M_Function, s; overrideName::String)
-  local fn_body::List{Statement}
+  local fn_body::Vector{Statement}
   if isDefaultRecordConstructor(fn)
     s = IOStream_M.append(s, toFlatString(fn.node))
   else
@@ -1601,7 +1597,7 @@ end
 """
 Returns a function as  a flat string.
 """
-function toFlatStream(fn::M_Function, s::IOStream_M.IOStreamData)
+function toFlatStream(fn::M_Function, s::IOStream_M.IOSTREAM)
   local fn_name::String
   if isDefaultRecordConstructor(fn)
     s = IOStream_M.append(s, toFlatString(fn.node))
@@ -2570,12 +2566,12 @@ function paramDirection(@nospecialize(componentArg::InstNode))::DirectionType
   return direction
 end
 
-""" #= Sorts all the function parameters as inputs, outputs and locals. =#"""
+"""  Sorts all the function parameters as inputs, outputs and locals. """
 function collectParams(
   @nospecialize(node::InstNode),
-  inputs::List{<:InstNode} = nil,
-  outputs::List{<:InstNode} = nil,
-  locals::List{<:InstNode} = nil,
+  inputs::List{InstNode} = nil,
+  outputs::List{InstNode} = nil,
+  locals::List{InstNode} = nil,
 )::Tuple{List{InstNode}, List{InstNode}, List{InstNode}}
 
   local cls::Class
@@ -2686,22 +2682,25 @@ function analyseUnusedParameters(fn::M_Function)::List{Int}
   return unusedInputs
 end
 
-function getBody2(node::InstNode)::List{Statement}
-  local body::List{Statement}
+"""
+  Helper function for getBody
+"""
+function getBody2(node::InstNode)
+  local body::Vector{Statement}
   local cls::Class = getClass(node)
   local fn_body::Algorithm
   body = begin
     @match cls begin
       INSTANCED_CLASS(
-        sections = SECTIONS(algorithms = fn_body <| nil()),
+        sections = SECTIONS(algorithms = [fn_body,]),
       ) => begin
         fn_body.statements
       end
       INSTANCED_CLASS(sections = SECTIONS_EMPTY(__)) => begin
-        nil
+        []#Was nil
       end
       INSTANCED_CLASS(
-        sections = SECTIONS(algorithms = _ <| _),
+        sections = SECTIONS(algorithms) where length(algorithms) > 1,
       ) => begin
         Error.assertion(
           false,
@@ -2715,7 +2714,7 @@ function getBody2(node::InstNode)::List{Statement}
       end
       _ => begin
         #Error.assertion(false, getInstanceName() + " got unknown function", sourceInfo())
-        @error "Got unknown function for " * toString(node) * " $(isExternalFunction(getClass(node)))"
+        @error "Got a unknown function for " * toString(node) * ", $(isExternalFunction(getClass(node)))"
         fail()
       end
     end

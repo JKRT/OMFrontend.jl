@@ -1,7 +1,7 @@
 @UniontypeDecl NFStatement
 @Uniontype NFStatement begin
   @Record ALG_FAILURE begin
-    body::List{Statement}
+    body::Vector{Statement}
     source::DAE.ElementSource
   end
 
@@ -15,7 +15,7 @@
 
   @Record ALG_WHILE begin
     condition::Expression
-    body::List{Statement}
+    body::Vector{Statement}
     source::DAE.ElementSource
   end
 
@@ -37,19 +37,19 @@
   end
 
   @Record ALG_WHEN begin
-    branches::List{Tuple{Expression, List{Statement}}} #= List of branches, where each branch is a tuple of a condition and a body. =#
+    branches::Vector{Tuple{Expression, Vector{Statement}}} #= List of branches, where each branch is a tuple of a condition and a body. =#
     source::DAE.ElementSource
   end
 
   @Record ALG_IF begin
-    branches::List{Tuple{Expression, List{Statement}}} #= List of branches, where each branch is a tuple of a condition and a body. =#
+    branches::Vector{Tuple{Expression, Vector{Statement}}} #= List of branches, where each branch is a tuple of a condition and a body. =#
     source::DAE.ElementSource
   end
 
   @Record ALG_FOR begin
     iterator::InstNode
     range::Option{Expression}
-    body::List{Statement} #= The body of the for loop. =#
+    body::Vector{Statement} #= The body of the for loop. =#
     source::DAE.ElementSource
   end
 
@@ -69,7 +69,7 @@ end
 
 function isMultiLine(stmt::Statement)::Bool
   local multiLine::Bool
-  @assign multiLine = begin
+  multiLine = begin
     @match stmt begin
       ALG_FOR(__) => begin
         true
@@ -92,7 +92,7 @@ function isMultiLine(stmt::Statement)::Bool
 end
 
 function toFlatStreamList(
-  stmtl::List{<:Statement},
+  stmtl::Vector{Statement},
   indent::String,
   s,
 )
@@ -347,13 +347,13 @@ function toStream(stmt::Statement, indent::String, s)
         IOStream_M.append(s, toString(stmt.exp))
       end
 
-      WHILE(__) => begin
-        s = IOStream_Mappend(s, "while ")
-        s = IOStream_Mappend(s, toString(stmt.condition))
-        s = IOStream_Mappend(s, " then\\n")
+      ALG_WHILE(__) => begin
+        s = IOStream_M.append(s, "while ")
+        s = IOStream_M.append(s, toString(stmt.condition))
+        s = IOStream_M.append(s, " then\\n")
         s = toStreamList(stmt.body, indent + "  ", s)
-        s = IOStream_Mappend(s, indent)
-        s = IOStream_Mappend(s, "end while")
+        s = IOStream_M.append(s, indent)
+        s = IOStream_M.append(s, "end while")
         s
       end
 
@@ -376,9 +376,9 @@ end
 function toStringList(stmtl::List{<:Statement}, indent::String = "")::String
   local str::String
   local s
-  @assign s = IOStream.create(getInstanceName(), IOStream.IOStreamType.LIST())
-  @assign s = toStreamList(stmtl, indent, s)
-  @assign str = IOStream.string(s)
+  s = IOStream.create(getInstanceName(), IOStream.IOStreamType.LIST())
+  s = toStreamList(stmtl, indent, s)
+  str = IOStream.string(s)
   IOStream.delete(s)
   return str
 end
@@ -394,8 +394,7 @@ function toString(stmt::Statement, indent::String = "")::String
 end
 
 function foldExp(stmt::Statement, func::FoldFunc, arg::ArgT) where {ArgT}
-
-  @assign () = begin
+  () = begin
     @match stmt begin
       ALG_ASSIGNMENT(__) => begin
         arg = func(stmt.lhs, arg)
@@ -458,14 +457,13 @@ function foldExp(stmt::Statement, func::FoldFunc, arg::ArgT) where {ArgT}
   return arg
 end
 
-function foldExpList(stmt::List{Statement}, func::FoldFunc, arg::ArgT) where {ArgT}
-
+function foldExpList(stmt::Vector{Statement}, func::FoldFunc, arg::ArgT) where {ArgT}
   for s in stmt
-    @assign arg = foldExp(s, func, arg)
+    arg = foldExp(s, func, arg)
   end
   return arg
 end
-MapFunc = Function
+
 function mapExp(stmt::Statement, func::MapFunc)::Statement
   stmt = begin
     local e1::Expression
@@ -489,23 +487,23 @@ function mapExp(stmt::Statement, func::MapFunc)::Statement
       end
 
       ALG_IF(__) => begin
-        @assign stmt.branches = list(
+        @assign stmt.branches = [
           (func(Util.tuple21(b)), mapExpList(Util.tuple22(b), func)) for b in stmt.branches
-        )
+            ]
         stmt
       end
 
       ALG_WHEN(__) => begin
-        @assign stmt.branches = list(
+        @assign stmt.branches = [
           (func(Util.tuple21(b)), mapExpList(Util.tuple22(b), func)) for b in stmt.branches
-        )
+        ]
         stmt
       end
 
       ALG_ASSERT(__) => begin
-        @assign e1 = func(stmt.condition)
-        @assign e2 = func(stmt.message)
-        @assign e3 = func(stmt.level)
+        e1 = func(stmt.condition)
+        e2 = func(stmt.message)
+        e3 = func(stmt.level)
         if referenceEq(e1, stmt.condition) &&
            referenceEq(e2, stmt.message) &&
            referenceEq(e3, stmt.level)
@@ -516,7 +514,7 @@ function mapExp(stmt::Statement, func::MapFunc)::Statement
       end
 
       ALG_TERMINATE(__) => begin
-        @assign e1 = func(stmt.message)
+        e1 = func(stmt.message)
         if referenceEq(e1, stmt.message)
           stmt
         else
@@ -525,7 +523,7 @@ function mapExp(stmt::Statement, func::MapFunc)::Statement
       end
 
       ALG_NORETCALL(__) => begin
-        @assign e1 = func(stmt.exp)
+        e1 = func(stmt.exp)
         if referenceEq(e1, stmt.exp)
           stmt
         else
@@ -545,8 +543,8 @@ function mapExp(stmt::Statement, func::MapFunc)::Statement
   return stmt
 end
 
-function mapExpList(stmtl::List{<:Statement}, func::MapFunc)::List{Statement}
-  stmtl = list(mapExp(s, func) for s in stmtl)
+function mapExpList(stmtl::Vector{Statement}, func::MapFunc)
+  stmtl = [mapExp(s, func) for s in stmtl]
   return stmtl
 end
 
@@ -554,25 +552,23 @@ function map(stmt::Statement, func::MapFn)::Statement
   @assign () = begin
     @match stmt begin
       ALG_FOR(__) => begin
-        @assign stmt.body = list(map(s, func) for s in stmt.body)
+        @assign stmt.body = [map(s, func) for s in stmt.body]
         ()
       end
       ALG_IF(__) => begin
-        @assign stmt.branches = list(
-          (Util.tuple21(b), list(map(s, func) for s in Util.tuple22(b)))
-          for b in stmt.branches
-        )
+        @assign stmt.branches = [
+          (Util.tuple21(b), [map(s, func) for s in Util.tuple22(b)]) for b in stmt.branches ]
         ()
       end
       ALG_WHEN(__) => begin
-        @assign stmt.branches = List(
-          (Util.tuple21(b), list(map(s, func) for s in Util.tuple22(b)))
+        @assign stmt.branches = [
+          (Util.tuple21(b), [map(s, func) for s in Util.tuple22(b)])
           for b in stmt.branches
-        )
+        ]
         ()
       end
       ALG_WHILE(__) => begin
-        @assign stmt.body = list(map(s, func) for s in stmt.body)
+        @assign stmt.body = [map(s, func) for s in stmt.body]
         ()
       end
       _ => begin
@@ -580,21 +576,21 @@ function map(stmt::Statement, func::MapFn)::Statement
       end
     end
   end
-  @assign stmt = func(stmt)
+  stmt = func(stmt)
   return stmt
 end
 
 function apply(stmt::Statement, func::ApplyFn)
-  @assign () = begin
+  () = begin
     @match stmt begin
-      FOR(__) => begin
+      ALG_FOR(__) => begin
         for e in stmt.body
           apply(e, func)
         end
         ()
       end
 
-      IF(__) => begin
+      ALG_IF(__) => begin
         for b in stmt.branches
           for e in Util.tuple22(b)
             apply(e, func)
@@ -603,7 +599,7 @@ function apply(stmt::Statement, func::ApplyFn)
         ()
       end
 
-      WHEN(__) => begin
+      ALG_WHEN(__) => begin
         for b in stmt.branches
           for e in Util.tuple22(b)
             apply(e, func)
@@ -612,7 +608,7 @@ function apply(stmt::Statement, func::ApplyFn)
         ()
       end
 
-      WHILE(__) => begin
+      ALG_WHILE(__) => begin
         for e in stmt.body
           apply(e, func)
         end
@@ -645,7 +641,7 @@ function Statement_source(stmt::Statement)::DAE.ElementSource
 end
 
 function makeIf(
-  branches::List{<:Tuple{<:Expression, List{<:Statement}}},
+  branches::Vector{<:Tuple{<:Expression, Vector{<:Statement}}},
   src::DAE.ElementSource,
 )::Statement
   local stmt::Statement
@@ -669,7 +665,7 @@ function updateImplicitVariabilityAlg(alg::Algorithm)
   updateImplicitVariabilityStmts(alg.statements)
 end
 
-function updateImplicitVariabilityStmts(stmtl::List{<:Statement}, inWhen::Bool = false)
+function updateImplicitVariabilityStmts(stmtl::Vector{Statement}, inWhen::Bool = false)
   for s in stmtl
     updateImplicitVariabilityStmt(s, inWhen)
   end
@@ -726,17 +722,17 @@ function updateImplicitVariabilityStmt(stmt::Statement, inWhen::Bool)
   end
 end
 
-function replaceIteratorList(@nospecialize(stmtl::List{Statement}),
+function replaceIteratorList(@nospecialize(stmtl::Vector{Statement}),
                              @nospecialize(iterator::InstNode),
                              @nospecialize(value::Expression))
   return mapExpList(stmtl, (x)->replaceIterator(x, iterator, value))
 end
 
 function markStructuralParamsSubs(exp::Expression, dummy::Int) ::Int
-  @assign () = begin
+  () = begin
     @match exp begin
       CREF_EXPRESSION(__)  => begin
-          foldSubscripts(exp.cref, markStructuralParamsSub, 0)
+        foldSubscripts(exp.cref, markStructuralParamsSub, 0)
         ()
       end
       _  => begin
@@ -749,48 +745,48 @@ end
 
 function instStatement(scodeStmt::SCode.Statement, scope::InstNode, origin::ORIGIN_Type)::Statement
   local statement::Statement
-  @assign statement = begin
+  statement = begin
     local exp1::Expression
     local exp2::Expression
     local exp3::Expression
     local oexp::Option{Expression}
-    local stmtl::List{Statement}
-    local branches::List{Tuple{Expression, List{Statement}}}
+    local stmtl::Vector{Statement}
+    local branches::Vector{Tuple{Expression, Vector{Statement}}}
     local info::SourceInfo
     local for_scope::InstNode
     local iter::InstNode
     local next_origin::ORIGIN_Type
     @match scodeStmt begin
-      SCode.ALG_ASSIGN(info = info)  => begin
-        @assign exp1 = instExp(scodeStmt.assignComponent, scope, info)
-        @assign exp2 = instExp(scodeStmt.value, scope, info)
+      SCode.ALG_ASSIGN(info = info) => begin
+        exp1 = instExp(scodeStmt.assignComponent, scope, info)
+        exp2 = instExp(scodeStmt.value, scope, info)
         ALG_ASSIGNMENT(exp1, exp2, TYPE_UNKNOWN(), makeSource(scodeStmt.comment, info))
       end
 
-      SCode.ALG_FOR(info = info)  => begin
-        @assign oexp = instExpOpt(scodeStmt.range, scope, info)
-        @assign (for_scope, iter) = addIteratorToScope(scodeStmt.index, scope, info)
-        @assign next_origin = setFlag(origin, ORIGIN_FOR)
-        @assign stmtl = instStatements(scodeStmt.forBody, for_scope, next_origin)
+      SCode.ALG_FOR(info = info) => begin
+        oexp = instExpOpt(scodeStmt.range, scope, info)
+        (for_scope, iter) = addIteratorToScope(scodeStmt.index, scope, info)
+        next_origin = setFlag(origin, ORIGIN_FOR)
+        stmtl = instStatements(scodeStmt.forBody, for_scope, next_origin)
         ALG_FOR(iter, oexp, stmtl, makeSource(scodeStmt.comment, info))
       end
 
-      SCode.ALG_IF(info = info)  => begin
-        @assign branches = nil
-        @assign next_origin = setFlag(origin, ORIGIN_FOR)
+      SCode.ALG_IF(info = info) => begin
+        branches = Tuple{NFExpression, Vector{Statement}}[]
+        next_origin = setFlag(origin, ORIGIN_FOR)
         for branch in _cons((scodeStmt.boolExpr, scodeStmt.trueBranch), scodeStmt.elseIfBranch)
-          @assign exp1 = instExp(Util.tuple21(branch), scope, info)
-          @assign stmtl = instStatements(Util.tuple22(branch), scope, next_origin)
-          @assign branches = _cons((exp1, stmtl), branches)
+          exp1 = instExp(Util.tuple21(branch), scope, info)
+          stmtl = instStatements(Util.tuple22(branch), scope, next_origin)
+          push!(branches, (exp1, stmtl))
         end
-        if ! listEmpty(scodeStmt.elseBranch)
-          @assign stmtl = instStatements(scodeStmt.elseBranch, scope, next_origin)
-          @assign branches = _cons((BOOLEAN_EXPRESSION(true), stmtl), branches)
+        if ! isempty(scodeStmt.elseBranch)
+          stmtl = instStatements(scodeStmt.elseBranch, scope, next_origin)
+          branches = push!(branches, (BOOLEAN_EXPRESSION(true), stmtl))
         end
-        ALG_IF(listReverse(branches), makeSource(scodeStmt.comment, info))
+        ALG_IF(branches, makeSource(scodeStmt.comment, info))
       end
 
-      SCode.ALG_WHEN_A(info = info)  => begin
+      SCode.ALG_WHEN_A(info = info) => begin
         if origin > 0
           if flagSet(origin, ORIGIN_WHEN)
             Error.addSourceMessageAndFail(Error.NESTED_WHEN, nil, info)
@@ -800,25 +796,26 @@ function instStatement(scodeStmt::SCode.Statement, scope::InstNode, origin::ORIG
             Error.addSourceMessageAndFail(Error.INVALID_WHEN_STATEMENT_CONTEXT, nil, info)
           end
         end
-        @assign branches = nil
-        for branch in scodeStmt.branches
-          @assign exp1 = instExp(Util.tuple21(branch), scope, info)
-          @assign next_origin = setFlag(origin, ORIGIN_WHEN)
-          @assign stmtl = instStatements(Util.tuple22(branch), scope, next_origin)
-          @assign branches = _cons((exp1, stmtl), branches)
+        #= Preallocate =#
+        branches = Tuple{NFExpression, Vector{Statement}}[]
+        for (i, branch) in enumerate(scodeStmt.branches)
+          exp1 = instExp(Util.tuple21(branch), scope, info)
+          next_origin = setFlag(origin, ORIGIN_WHEN)
+          stmtl = instStatements(Util.tuple22(branch), scope, next_origin)
+          push!(branches, (exp1, stmtl))
         end
-        ALG_WHEN(listReverse(branches), makeSource(scodeStmt.comment, info))
+        ALG_WHEN(branches, makeSource(scodeStmt.comment, info))
       end
 
-      SCode.ALG_ASSERT(info = info)  => begin
-        @assign exp1 = instExp(scodeStmt.condition, scope, info)
-        @assign exp2 = instExp(scodeStmt.message, scope, info)
-        @assign exp3 = instExp(scodeStmt.level, scope, info)
+      SCode.ALG_ASSERT(info = info) => begin
+        exp1 = instExp(scodeStmt.condition, scope, info)
+        exp2 = instExp(scodeStmt.message, scope, info)
+        exp3 = instExp(scodeStmt.level, scope, info)
        ALG_ASSERT(exp1, exp2, exp3, makeSource(scodeStmt.comment, info))
       end
 
       SCode.ALG_TERMINATE(info = info)  => begin
-        @assign exp1 = instExp(scodeStmt.message, scope, info)
+        exp1 = instExp(scodeStmt.message, scope, info)
        ALG_TERMINATE(exp1, makeSource(scodeStmt.comment, info))
       end
 
@@ -828,15 +825,15 @@ function instStatement(scodeStmt::SCode.Statement, scope::InstNode, origin::ORIG
       end
 
       SCode.ALG_NORETCALL(info = info)  => begin
-        @assign exp1 = instExp(scodeStmt.exp, scope, info)
+        exp1 = instExp(scodeStmt.exp, scope, info)
        ALG_NORETCALL(exp1, makeSource(scodeStmt.comment, info))
       end
 
       SCode.ALG_WHILE(info = info)  => begin
-        @assign exp1 = instExp(scodeStmt.boolExpr, scope, info)
-        @assign next_origin = setFlag(origin, ORIGIN_WHILE)
-        @assign stmtl = instStatements(scodeStmt.whileBody, scope, next_origin)
-       ALG_WHILE(exp1, stmtl, makeSource(scodeStmt.comment, info))
+        exp1 = instExp(scodeStmt.boolExpr, scope, info)
+        next_origin = setFlag(origin, ORIGIN_WHILE)
+        stmtl = instStatements(scodeStmt.whileBody, scope, next_origin)
+        ALG_WHILE(exp1, stmtl, makeSource(scodeStmt.comment, info))
       end
 
       SCode.ALG_RETURN(__)  => begin
@@ -848,8 +845,8 @@ function instStatement(scodeStmt::SCode.Statement, scope::InstNode, origin::ORIG
       end
 
       SCode.ALG_FAILURE(__)  => begin
-        @assign stmtl = instStatements(scodeStmt.stmts, scope, origin)
-       ALG_FAILURE(stmtl, makeSource(scodeStmt.comment, scodeStmt.info))
+        stmtl = instStatements(scodeStmt.stmts, scope, origin)
+        ALG_FAILURE(stmtl, makeSource(scodeStmt.comment, scodeStmt.info))
       end
 
       _  => begin
@@ -861,20 +858,20 @@ function instStatement(scodeStmt::SCode.Statement, scope::InstNode, origin::ORIG
 statement
 end
 
-function instAlgorithmSections(algorithmSections::List{<:SCode.AlgorithmSection}, scope::InstNode, origin::ORIGIN_Type) ::List{Algorithm}
-  local algs::List{Algorithm}
-  @assign algs = list(instAlgorithmSection(alg, scope, origin) for alg in algorithmSections)
+function instAlgorithmSections(algorithmSections::List{<:SCode.AlgorithmSection}, scope::InstNode, origin::ORIGIN_Type)
+  local algs::Vector{Algorithm}
+  algs = [instAlgorithmSection(alg, scope, origin) for alg in algorithmSections]
   algs
 end
 
-function instAlgorithmSection(algorithmSection::SCode.AlgorithmSection, scope::InstNode, origin::ORIGIN_Type) ::Algorithm
+function instAlgorithmSection(algorithmSection::SCode.AlgorithmSection, scope::InstNode, origin::ORIGIN_Type)::Algorithm
   local alg::Algorithm
-  @assign alg = ALGORITHM(instStatements(algorithmSection.statements, scope, origin), DAE.emptyElementSource)
+  alg = ALGORITHM(instStatements(algorithmSection.statements, scope, origin), DAE.emptyElementSource)
   alg
 end
 
-function instStatements(scodeStmtl::List{<:SCode.Statement}, scope::InstNode, origin::ORIGIN_Type)::List{Statement}
-  local statements::List{Statement}
-  @assign statements = list(instStatement(stmt, scope, origin) for stmt in scodeStmtl)
-  statements
+function instStatements(scodeStmtl::List{<:SCode.Statement}, scope::InstNode, origin::ORIGIN_Type)
+  local statements::Vector{Statement} = Statement[]
+  statements = [instStatement(stmt, scope, origin) for stmt in scodeStmtl]
+  return statements
 end

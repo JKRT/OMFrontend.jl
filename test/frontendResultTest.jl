@@ -68,7 +68,17 @@ function runConnectTests(tests)
         res = flattenFM(mf[2], mf[3])
         #= Convert the flat model to a string =#
         res = OMFrontend.toString(first(res))
-        @test res == mf[1]
+        comp = res == mf[1]
+        if comp
+          @test true == comp
+        else
+          @error "Reference file mismatch for test: $(mf[2])"
+          @info "The result was:"
+          println(res)
+          @info "The reference string was:"
+          println(mf[1])
+          @test true == comp
+        end
       catch e
         @error "An exception was thrown: $(e) for test: $(mf[2])"
         throw("")
@@ -80,6 +90,4 @@ end
 runConnectTests(connectTsts)
 runConnectTests(tst)
 runConnectTests(equationTests)
-
-
 #= End Connector tests =#

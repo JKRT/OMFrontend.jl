@@ -16,13 +16,13 @@ end
 
 import ..LookupTree
 import ..InstNode
-const EntryType = (() -> begin #= Enumeration =#
-  DUPLICATE = 1
-  REDECLARE = 2
-  ENTRY = 3
-  () -> (DUPLICATE; REDECLARE; ENTRY)
-                   end)()
+struct EntryTypeStruct
+  DUPLICATE::Int
+  REDECLARE::Int
+  ENTRY::Int
+end
 
+const EntryType = EntryTypeStruct(#=DUPLICATE=# 1,  #=REDCLARE=# 2 , #= ENTRY =# 3)
 const EntryTypeTy = Int
 
 @Uniontype Entry begin

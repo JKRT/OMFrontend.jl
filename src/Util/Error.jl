@@ -101,7 +101,7 @@ end
     end
 end
 
-ErrorID = ModelicaInteger  #= Unique error id. Used to
+const ErrorID = ModelicaInteger  #= Unique error id. Used to
       look up message string and type and severity =#
 
 @Uniontype Message begin
@@ -122,7 +122,7 @@ end
      end
 end
 
-MessageTokens = List
+const MessageTokens = List
 
 @exportAll()
 
@@ -4578,19 +4578,21 @@ end
 
 global SOURCE_MESSAGES = []
 
-""" #= Implementation of Relations
+"""
+ Implementation of Relations
   function: addMessage
   Adds a message given ID and tokens. The rest of the info
-  is looked up in the message table. =#"""
+  is looked up in the message table. """
 function addMessage(
   inErrorMsg::ErrorTypes.Message,
   inMessageTokens::ErrorTypes.MessageTokens,
 )
 end
 
-""" #=
+"""
   Adds a message given ID, tokens and source file info.
-  The rest of the info is looked up in the message table. =#"""
+  The rest of the info is looked up in the message table.
+"""
 function addSourceMessage(
   inErrorMsg::ErrorTypes.Message,
   inMessageTokens::ErrorTypes.MessageTokens,
@@ -4889,7 +4891,6 @@ end
   Format is [filename:line start:column start-line end:column end] =#"""
 function infoStr(info::SourceInfo)::String
   local str::String
-
   @assign str = begin
     local filename::String
     local info_str::String
@@ -5017,7 +5018,9 @@ function addInternalError(message::String, info::SourceInfo)
 end
 
 
-""" Prints out a message and terminates the execution. """
+"""
+Prints out a message and terminates the execution.
+"""
 function terminateError(message::String, info::SourceInfo)
   # ErrorExt.addSourceMessage(
   #   0,

@@ -1,6 +1,5 @@
 @UniontypeDecl Replaceable
 
-
 module ConnectorType
 
 import ..Main.NFType
@@ -247,30 +246,28 @@ end
 
 const VariabilityType = Int
 
-Direction = (() -> begin #= Enumeration =#
-             NONE = 1
-             INPUT = 2
-             OUTPUT = 3
-             () -> (NONE; INPUT; OUTPUT)
-             end)()
+struct DirectionStruct{T0 <: Int}
+  NONE::T0
+  INPUT::T0
+  OUTPUT::T0
+end
+const Direction = DirectionStruct(1, 2, 3)
 const DirectionType = Int
 
-InnerOuter = (() -> begin #= Enumeration =#
-              NOT_INNER_OUTER = 1
-              INNER = 2
-              OUTER = 3
-              INNER_OUTER = 4
-              () -> (NOT_INNER_OUTER; INNER; OUTER; INNER_OUTER)
-              end)()
+struct InnerOuterStruct{T0 <: Int}
+  NOT_INNER_OUTER::T0
+  INNER::T0
+  OUTER::T0
+  INNER_OUTER::T0
+end
+const InnerOuter = InnerOuterStruct(1, 2, 3, 4)
 
-
-Visibility = (() -> begin #= Enumeration =#
-              PUBLIC = 1
-              PROTECTED = 2
-              () -> (PUBLIC; PROTECTED)
-              end)()
-
+struct VisibilityStruct{T0 <: Int}
+  PUBLIC::T0
+  PROTECTED::T0
+end
 const VisibilityType = Int
+const Visibility = VisibilityStruct(1, 2)
 
 @Uniontype Replaceable begin
   @Record REPLACEABLE begin

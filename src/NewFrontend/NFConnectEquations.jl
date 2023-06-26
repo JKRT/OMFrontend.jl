@@ -32,8 +32,8 @@
 const potFunc = Function
 const EQ_ASSERT_STR = STRING_EXPRESSION("Connected constants/parameters must be equal")
 
-function generateEquations(sets::Vector{<:List{<:Connector}})::List{Equation}
-  local equations::List{Equation} = nil
+function generateEquations(sets::Vector{<:List{<:Connector}})
+  local equations::Vector{Equation} = Equation[]
   local set_eql::List{Equation}
   local potfunc::potFunc
   local flowThreshold::Expression
@@ -65,7 +65,7 @@ function generateEquations(sets::Vector{<:List{<:Connector}})::List{Equation}
       )
       fail()
     end
-    equations = listAppend(set_eql, equations)
+    equations = vcat(listArray(set_eql), equations)
   end
   return equations
 end

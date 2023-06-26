@@ -233,14 +233,14 @@ equation
   R1_p_i + R2_p_i = 0.0;
   R1_n_i = 0.0;
   R2_n_i = 0.0;
-  R1_R * R1_i = R1_v;
-  R1_v = R1_p_v - R1_n_v;
-  0.0 = R1_p_i + R1_n_i;
-  R1_i = R1_p_i;
   R2_R * R2_i = R2_v;
   R2_v = R2_p_v - R2_n_v;
   0.0 = R2_p_i + R2_n_i;
   R2_i = R2_p_i;
+  R1_R * R1_i = R1_v;
+  R1_v = R1_p_v - R1_n_v;
+  0.0 = R1_p_i + R1_n_i;
+  R1_i = R1_p_i;
 end ElectricalComponentTest_ResistorCircuit0;
 "
 
@@ -273,18 +273,18 @@ equation
   R1_p_i + R2_p_i + R3_p_i = 0.0;
   R2_n_i = 0.0;
   R3_n_i = 0.0;
-  R1_R * R1_i = R1_v;
-  R1_v = R1_p_v - R1_n_v;
-  0.0 = R1_p_i + R1_n_i;
-  R1_i = R1_p_i;
-  R2_R * R2_i = R2_v;
-  R2_v = R2_p_v - R2_n_v;
-  0.0 = R2_p_i + R2_n_i;
-  R2_i = R2_p_i;
   R3_R * R3_i = R3_v;
   R3_v = R3_p_v - R3_n_v;
   0.0 = R3_p_i + R3_n_i;
   R3_i = R3_p_i;
+  R2_R * R2_i = R2_v;
+  R2_v = R2_p_v - R2_n_v;
+  0.0 = R2_p_i + R2_n_i;
+  R2_i = R2_p_i;
+  R1_R * R1_i = R1_v;
+  R1_v = R1_p_v - R1_n_v;
+  0.0 = R1_p_i + R1_n_i;
+  R1_i = R1_p_i;
 end ElectricalComponentTest_ResistorCircuit1;
 "
 
@@ -339,27 +339,27 @@ equation
   L_p_i + R2_n_i = 0.0;
   AC_n_i + G_p_i + C_n_i + L_n_i = 0.0;
   R1_p_i + AC_p_i + R2_p_i = 0.0;
-  R1_R * R1_i = R1_v;
-  R1_v = R1_p_v - R1_n_v;
-  0.0 = R1_p_i + R1_n_i;
-  R1_i = R1_p_i;
-  C_i = C_C * der(C_v);
-  C_v = C_p_v - C_n_v;
-  0.0 = C_p_i + C_n_i;
-  C_i = C_p_i;
-  R2_R * R2_i = R2_v;
-  R2_v = R2_p_v - R2_n_v;
-  0.0 = R2_p_i + R2_n_i;
-  R2_i = R2_p_i;
-  L_L * der(L_i) = L_v;
-  L_v = L_p_v - L_n_v;
-  0.0 = L_p_i + L_n_i;
-  L_i = L_p_i;
+  G_p_v = 0.0;
   AC_v = AC_A * sin(AC_w * time);
   AC_v = AC_p_v - AC_n_v;
   0.0 = AC_p_i + AC_n_i;
   AC_i = AC_p_i;
-  G_p_v = 0.0;
+  L_L * der(L_i) = L_v;
+  L_v = L_p_v - L_n_v;
+  0.0 = L_p_i + L_n_i;
+  L_i = L_p_i;
+  R2_R * R2_i = R2_v;
+  R2_v = R2_p_v - R2_n_v;
+  0.0 = R2_p_i + R2_n_i;
+  R2_i = R2_p_i;
+  C_i = C_C * der(C_v);
+  C_v = C_p_v - C_n_v;
+  0.0 = C_p_i + C_n_i;
+  C_i = C_p_i;
+  R1_R * R1_i = R1_v;
+  R1_v = R1_p_v - R1_n_v;
+  0.0 = R1_p_i + R1_n_i;
+  R1_i = R1_p_i;
 end ElectricalComponentTest_SimpleCircuit;
 "
 

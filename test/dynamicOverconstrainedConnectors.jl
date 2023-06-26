@@ -91,6 +91,7 @@ equation
   port_a_omegaRef = port_b_omegaRef;
 end DynamicOverconstrainedConnectors_TransmissionLine;
 "
+
 System1 = "class DynamicOverconstrainedConnectors_System1
   parameter Real G1_V(unit = \"1\") = 1.0;
   parameter Real G1_Ta(unit = \"s\", quantity = \"Time\") = 10.0;
@@ -167,19 +168,6 @@ equation
   G1_port_i_im + L1_port_i_im + T_port_a_i_im = 0.0;
   L2_port_i_re + G2_port_i_re + T_port_b_i_re = 0.0;
   T_port_b_i_im + G2_port_i_im + L2_port_i_im = 0.0;
-  der(G1_theta) = (G1_omega - G1_port_omegaRef) * 314.1592653589793;
-  G1_Ta * G1_omega * der(G1_omega) = G1_Ps + G1_Pc - G1_Pe;
-  G1_port_v = Complex.'constructor'.fromReal(G1_V * cos(G1_theta), G1_V * sin(G1_theta));
-  G1_Pe = -Modelica.ComplexMath.real(Modelica.SIunits.ComplexPerUnit.'*'.multiply(G1_port_v, Modelica.ComplexMath.conj(G1_port_i)));
-  G1_Pc = -(G1_omega - 1.0) / G1_droop;
-  G1_port_omegaRef = G1_omega;
-  der(G2_theta) = (G2_omega - G2_port_omegaRef) * 314.1592653589793;
-  G2_Ta * G2_omega * der(G2_omega) = G2_Ps + G2_Pc - G2_Pe;
-  G2_port_v = Complex.'constructor'.fromReal(G2_V * cos(G2_theta), G2_V * sin(G2_theta));
-  G2_Pe = -Modelica.ComplexMath.real(Modelica.SIunits.ComplexPerUnit.'*'.multiply(G2_port_v, Modelica.ComplexMath.conj(G2_port_i)));
-  G2_Pc = -(G2_omega - 1.0) / G2_droop;
-  Complex.'constructor'.fromReal(c1_re * c2_re - c1_im * c2_im, c1_re * c2_im + c1_im * c2_re) = Complex.'constructor'.fromReal(L1_P, L1_Q);
-  Complex.'constructor'.fromReal(c1_re * c2_re - c1_im * c2_im, c1_re * c2_im + c1_im * c2_re) = Complex.'constructor'.fromReal(L2_P, L2_Q);
   Complex.'constructor'.fromReal(c1_re + c2_re, c1_im + c2_im) = Complex.'constructor'.fromReal(0.0, 0.0);
   T_port_a_i = Complex.'constructor'.fromReal(c1_re * c2_re - c1_im * c2_im, c1_re * c2_im + c1_im * c2_re);
 
@@ -192,6 +180,19 @@ equation
   end when;
 
   T_port_a_omegaRef = T_port_b_omegaRef;
+  Complex.'constructor'.fromReal(c1_re * c2_re - c1_im * c2_im, c1_re * c2_im + c1_im * c2_re) = Complex.'constructor'.fromReal(L2_P, L2_Q);
+  Complex.'constructor'.fromReal(c1_re * c2_re - c1_im * c2_im, c1_re * c2_im + c1_im * c2_re) = Complex.'constructor'.fromReal(L1_P, L1_Q);
+  der(G2_theta) = (G2_omega - G2_port_omegaRef) * 314.1592653589793;
+  G2_Ta * G2_omega * der(G2_omega) = G2_Ps + G2_Pc - G2_Pe;
+  G2_port_v = Complex.'constructor'.fromReal(G2_V * cos(G2_theta), G2_V * sin(G2_theta));
+  G2_Pe = -Modelica.ComplexMath.real(Modelica.SIunits.ComplexPerUnit.'*'.multiply(G2_port_v, Modelica.ComplexMath.conj(G2_port_i)));
+  G2_Pc = -(G2_omega - 1.0) / G2_droop;
+  der(G1_theta) = (G1_omega - G1_port_omegaRef) * 314.1592653589793;
+  G1_Ta * G1_omega * der(G1_omega) = G1_Ps + G1_Pc - G1_Pe;
+  G1_port_v = Complex.'constructor'.fromReal(G1_V * cos(G1_theta), G1_V * sin(G1_theta));
+  G1_Pe = -Modelica.ComplexMath.real(Modelica.SIunits.ComplexPerUnit.'*'.multiply(G1_port_v, Modelica.ComplexMath.conj(G1_port_i)));
+  G1_Pc = -(G1_omega - 1.0) / G1_droop;
+  G1_port_omegaRef = G1_omega;
 end DynamicOverconstrainedConnectors_System1;
 "
 
@@ -282,12 +283,12 @@ System2 = "class DynamicOverconstrainedConnectors_System2
   flow Real T2_port_b_i_im(unit = \"1\");
   Real T2_port_b_omegaRef;
 initial equation
-  T1a_closed = true;
-  T1a_B_act = T1a_B;
-  T1b_closed = true;
-  T1b_B_act = T1b_B;
   T2_closed = true;
   T2_B_act = T2_B;
+  T1b_closed = true;
+  T1b_B_act = T1b_B;
+  T1a_closed = true;
+  T1a_B_act = T1a_B;
 equation
   T1b_port_a_omegaRef = L1_port_omegaRef;
   T1b_port_a_omegaRef = G1_port_omegaRef;
@@ -315,31 +316,18 @@ equation
   G1_port_i_im + T1b_port_a_i_im + L1_port_i_im + T1a_port_a_i_im = 0.0;
   T1a_port_b_i_re + T2_port_a_i_re + T1b_port_b_i_re = 0.0;
   T1a_port_b_i_im + T2_port_a_i_im + T1b_port_b_i_im = 0.0;
-  der(G1_theta) = (G1_omega - G1_port_omegaRef) * 314.1592653589793;
-  G1_Ta * G1_omega * der(G1_omega) = G1_Ps + G1_Pc - G1_Pe;
-  G1_port_v = Complex.'constructor'.fromReal(G1_V * cos(G1_theta), G1_V * sin(G1_theta));
-  G1_Pe = -Modelica.ComplexMath.real(Modelica.SIunits.ComplexPerUnit.'*'.multiply(G1_port_v, Modelica.ComplexMath.conj(G1_port_i)));
-  G1_Pc = -(G1_omega - 1.0) / G1_droop;
-  G1_port_omegaRef = G1_omega;
-  der(G2_theta) = (G2_omega - G2_port_omegaRef) * 314.1592653589793;
-  G2_Ta * G2_omega * der(G2_omega) = G2_Ps + G2_Pc - G2_Pe;
-  G2_port_v = Complex.'constructor'.fromReal(G2_V * cos(G2_theta), G2_V * sin(G2_theta));
-  G2_Pe = -Modelica.ComplexMath.real(Modelica.SIunits.ComplexPerUnit.'*'.multiply(G2_port_v, Modelica.ComplexMath.conj(G2_port_i)));
-  G2_Pc = -(G2_omega - 1.0) / G2_droop;
-  Complex.'constructor'.fromReal(c1_re * c2_re - c1_im * c2_im, c1_re * c2_im + c1_im * c2_re) = Complex.'constructor'.fromReal(L1_P, L1_Q);
-  Complex.'constructor'.fromReal(c1_re * c2_re - c1_im * c2_im, c1_re * c2_im + c1_im * c2_re) = Complex.'constructor'.fromReal(L2_P, L2_Q);
   Complex.'constructor'.fromReal(c1_re + c2_re, c1_im + c2_im) = Complex.'constructor'.fromReal(0.0, 0.0);
-  T1a_port_a_i = Complex.'constructor'.fromReal(c1_re * c2_re - c1_im * c2_im, c1_re * c2_im + c1_im * c2_re);
+  T2_port_a_i = Complex.'constructor'.fromReal(c1_re * c2_re - c1_im * c2_im, c1_re * c2_im + c1_im * c2_re);
 
-  when T1a_open then
-    T1a_closed = false;
-    T1a_B_act = 0.0;
-  elsewhen T1a_close then
-    T1a_closed = true;
-    T1a_B_act = T1a_B;
+  when T2_open then
+    T2_closed = false;
+    T2_B_act = 0.0;
+  elsewhen T2_close then
+    T2_closed = true;
+    T2_B_act = T2_B;
   end when;
 
-  T1a_port_a_omegaRef = T1a_port_b_omegaRef;
+  T2_port_a_omegaRef = T2_port_b_omegaRef;
   Complex.'constructor'.fromReal(c1_re + c2_re, c1_im + c2_im) = Complex.'constructor'.fromReal(0.0, 0.0);
   T1b_port_a_i = Complex.'constructor'.fromReal(c1_re * c2_re - c1_im * c2_im, c1_re * c2_im + c1_im * c2_re);
 
@@ -353,17 +341,30 @@ equation
 
   T1b_port_a_omegaRef = T1b_port_b_omegaRef;
   Complex.'constructor'.fromReal(c1_re + c2_re, c1_im + c2_im) = Complex.'constructor'.fromReal(0.0, 0.0);
-  T2_port_a_i = Complex.'constructor'.fromReal(c1_re * c2_re - c1_im * c2_im, c1_re * c2_im + c1_im * c2_re);
+  T1a_port_a_i = Complex.'constructor'.fromReal(c1_re * c2_re - c1_im * c2_im, c1_re * c2_im + c1_im * c2_re);
 
-  when T2_open then
-    T2_closed = false;
-    T2_B_act = 0.0;
-  elsewhen T2_close then
-    T2_closed = true;
-    T2_B_act = T2_B;
+  when T1a_open then
+    T1a_closed = false;
+    T1a_B_act = 0.0;
+  elsewhen T1a_close then
+    T1a_closed = true;
+    T1a_B_act = T1a_B;
   end when;
 
-  T2_port_a_omegaRef = T2_port_b_omegaRef;
+  T1a_port_a_omegaRef = T1a_port_b_omegaRef;
+  Complex.'constructor'.fromReal(c1_re * c2_re - c1_im * c2_im, c1_re * c2_im + c1_im * c2_re) = Complex.'constructor'.fromReal(L2_P, L2_Q);
+  Complex.'constructor'.fromReal(c1_re * c2_re - c1_im * c2_im, c1_re * c2_im + c1_im * c2_re) = Complex.'constructor'.fromReal(L1_P, L1_Q);
+  der(G2_theta) = (G2_omega - G2_port_omegaRef) * 314.1592653589793;
+  G2_Ta * G2_omega * der(G2_omega) = G2_Ps + G2_Pc - G2_Pe;
+  G2_port_v = Complex.'constructor'.fromReal(G2_V * cos(G2_theta), G2_V * sin(G2_theta));
+  G2_Pe = -Modelica.ComplexMath.real(Modelica.SIunits.ComplexPerUnit.'*'.multiply(G2_port_v, Modelica.ComplexMath.conj(G2_port_i)));
+  G2_Pc = -(G2_omega - 1.0) / G2_droop;
+  der(G1_theta) = (G1_omega - G1_port_omegaRef) * 314.1592653589793;
+  G1_Ta * G1_omega * der(G1_omega) = G1_Ps + G1_Pc - G1_Pe;
+  G1_port_v = Complex.'constructor'.fromReal(G1_V * cos(G1_theta), G1_V * sin(G1_theta));
+  G1_Pe = -Modelica.ComplexMath.real(Modelica.SIunits.ComplexPerUnit.'*'.multiply(G1_port_v, Modelica.ComplexMath.conj(G1_port_i)));
+  G1_Pc = -(G1_omega - 1.0) / G1_droop;
+  G1_port_omegaRef = G1_omega;
 end DynamicOverconstrainedConnectors_System2;
 "
 
@@ -454,12 +455,12 @@ System3 = "class DynamicOverconstrainedConnectors_System3
   flow Real T2_port_b_i_im(unit = \"1\");
   Real T2_port_b_omegaRef;
 initial equation
-  T1a_closed = true;
-  T1a_B_act = T1a_B;
-  T1b_closed = true;
-  T1b_B_act = T1b_B;
   T2_closed = true;
   T2_B_act = T2_B;
+  T1b_closed = true;
+  T1b_B_act = T1b_B;
+  T1a_closed = true;
+  T1a_B_act = T1a_B;
 equation
   T1b_port_a_omegaRef = L1_port_omegaRef;
   T1b_port_a_omegaRef = G1_port_omegaRef;
@@ -487,31 +488,18 @@ equation
   G1_port_i_im + T1b_port_a_i_im + L1_port_i_im + T1a_port_a_i_im = 0.0;
   T1a_port_b_i_re + T2_port_a_i_re + T1b_port_b_i_re = 0.0;
   T1a_port_b_i_im + T2_port_a_i_im + T1b_port_b_i_im = 0.0;
-  der(G1_theta) = (G1_omega - G1_port_omegaRef) * 314.1592653589793;
-  G1_Ta * G1_omega * der(G1_omega) = G1_Ps + G1_Pc - G1_Pe;
-  G1_port_v = Complex.'constructor'.fromReal(G1_V * cos(G1_theta), G1_V * sin(G1_theta));
-  G1_Pe = -Modelica.ComplexMath.real(Modelica.SIunits.ComplexPerUnit.'*'.multiply(G1_port_v, Modelica.ComplexMath.conj(G1_port_i)));
-  G1_Pc = -(G1_omega - 1.0) / G1_droop;
-  G1_port_omegaRef = G1_omega;
-  der(G2_theta) = (G2_omega - G2_port_omegaRef) * 314.1592653589793;
-  G2_Ta * G2_omega * der(G2_omega) = G2_Ps + G2_Pc - G2_Pe;
-  G2_port_v = Complex.'constructor'.fromReal(G2_V * cos(G2_theta), G2_V * sin(G2_theta));
-  G2_Pe = -Modelica.ComplexMath.real(Modelica.SIunits.ComplexPerUnit.'*'.multiply(G2_port_v, Modelica.ComplexMath.conj(G2_port_i)));
-  G2_Pc = -(G2_omega - 1.0) / G2_droop;
-  Complex.'constructor'.fromReal(c1_re * c2_re - c1_im * c2_im, c1_re * c2_im + c1_im * c2_re) = Complex.'constructor'.fromReal(L1_P, L1_Q);
-  Complex.'constructor'.fromReal(c1_re * c2_re - c1_im * c2_im, c1_re * c2_im + c1_im * c2_re) = Complex.'constructor'.fromReal(L2_P, L2_Q);
   Complex.'constructor'.fromReal(c1_re + c2_re, c1_im + c2_im) = Complex.'constructor'.fromReal(0.0, 0.0);
-  T1a_port_a_i = Complex.'constructor'.fromReal(c1_re * c2_re - c1_im * c2_im, c1_re * c2_im + c1_im * c2_re);
+  T2_port_a_i = Complex.'constructor'.fromReal(c1_re * c2_re - c1_im * c2_im, c1_re * c2_im + c1_im * c2_re);
 
-  when T1a_open then
-    T1a_closed = false;
-    T1a_B_act = 0.0;
-  elsewhen T1a_close then
-    T1a_closed = true;
-    T1a_B_act = T1a_B;
+  when T2_open then
+    T2_closed = false;
+    T2_B_act = 0.0;
+  elsewhen T2_close then
+    T2_closed = true;
+    T2_B_act = T2_B;
   end when;
 
-  T1a_port_a_omegaRef = T1a_port_b_omegaRef;
+  T2_port_a_omegaRef = T2_port_b_omegaRef;
   Complex.'constructor'.fromReal(c1_re + c2_re, c1_im + c2_im) = Complex.'constructor'.fromReal(0.0, 0.0);
   T1b_port_a_i = Complex.'constructor'.fromReal(c1_re * c2_re - c1_im * c2_im, c1_re * c2_im + c1_im * c2_re);
 
@@ -525,17 +513,30 @@ equation
 
   T1b_port_a_omegaRef = T1b_port_b_omegaRef;
   Complex.'constructor'.fromReal(c1_re + c2_re, c1_im + c2_im) = Complex.'constructor'.fromReal(0.0, 0.0);
-  T2_port_a_i = Complex.'constructor'.fromReal(c1_re * c2_re - c1_im * c2_im, c1_re * c2_im + c1_im * c2_re);
+  T1a_port_a_i = Complex.'constructor'.fromReal(c1_re * c2_re - c1_im * c2_im, c1_re * c2_im + c1_im * c2_re);
 
-  when T2_open then
-    T2_closed = false;
-    T2_B_act = 0.0;
-  elsewhen T2_close then
-    T2_closed = true;
-    T2_B_act = T2_B;
+  when T1a_open then
+    T1a_closed = false;
+    T1a_B_act = 0.0;
+  elsewhen T1a_close then
+    T1a_closed = true;
+    T1a_B_act = T1a_B;
   end when;
 
-  T2_port_a_omegaRef = T2_port_b_omegaRef;
+  T1a_port_a_omegaRef = T1a_port_b_omegaRef;
+  Complex.'constructor'.fromReal(c1_re * c2_re - c1_im * c2_im, c1_re * c2_im + c1_im * c2_re) = Complex.'constructor'.fromReal(L2_P, L2_Q);
+  Complex.'constructor'.fromReal(c1_re * c2_re - c1_im * c2_im, c1_re * c2_im + c1_im * c2_re) = Complex.'constructor'.fromReal(L1_P, L1_Q);
+  der(G2_theta) = (G2_omega - G2_port_omegaRef) * 314.1592653589793;
+  G2_Ta * G2_omega * der(G2_omega) = G2_Ps + G2_Pc - G2_Pe;
+  G2_port_v = Complex.'constructor'.fromReal(G2_V * cos(G2_theta), G2_V * sin(G2_theta));
+  G2_Pe = -Modelica.ComplexMath.real(Modelica.SIunits.ComplexPerUnit.'*'.multiply(G2_port_v, Modelica.ComplexMath.conj(G2_port_i)));
+  G2_Pc = -(G2_omega - 1.0) / G2_droop;
+  der(G1_theta) = (G1_omega - G1_port_omegaRef) * 314.1592653589793;
+  G1_Ta * G1_omega * der(G1_omega) = G1_Ps + G1_Pc - G1_Pe;
+  G1_port_v = Complex.'constructor'.fromReal(G1_V * cos(G1_theta), G1_V * sin(G1_theta));
+  G1_Pe = -Modelica.ComplexMath.real(Modelica.SIunits.ComplexPerUnit.'*'.multiply(G1_port_v, Modelica.ComplexMath.conj(G1_port_i)));
+  G1_Pc = -(G1_omega - 1.0) / G1_droop;
+  G1_port_omegaRef = G1_omega;
 end DynamicOverconstrainedConnectors_System3;
 "
 System4 = "class DynamicOverconstrainedConnectors_System4
@@ -630,12 +631,12 @@ System4 = "class DynamicOverconstrainedConnectors_System4
   protected flow Real T2_port_b_int_i_im(unit = \"1\");
   protected Real T2_port_b_int_omegaRef;
 initial equation
-  T1a_closed = true;
-  T1a_B_act = T1a_B;
-  T1b_closed = true;
-  T1b_B_act = T1b_B;
   T2_closed = true;
   T2_B_act = T2_B;
+  T1b_closed = true;
+  T1b_B_act = T1b_B;
+  T1a_closed = true;
+  T1a_B_act = T1a_B;
 equation
   T1b_port_a_omegaRef = L1_port_omegaRef;
   T1b_port_a_omegaRef = G1_port_omegaRef;
@@ -665,32 +666,18 @@ equation
   T1a_port_b_i_im + T2_port_a_i_im + T1b_port_b_i_im = 0.0;
   T2_port_b_int_i_re = 0.0;
   T2_port_b_int_i_im = 0.0;
-  der(G1_theta) = (G1_omega - G1_port_omegaRef) * 314.1592653589793;
-  G1_Ta * G1_omega * der(G1_omega) = G1_Ps + G1_Pc - G1_Pe;
-  G1_port_v = Complex.'constructor'.fromReal(G1_V * cos(G1_theta), G1_V * sin(G1_theta));
-  G1_Pe = -Modelica.ComplexMath.real(Modelica.SIunits.ComplexPerUnit.'*'.multiply(G1_port_v, Modelica.ComplexMath.conj(G1_port_i)));
-  G1_Pc = -(G1_omega - 1.0) / G1_droop;
-  G1_port_omegaRef = G1_omega;
-  der(G2_theta) = (G2_omega - G2_port_omegaRef) * 314.1592653589793;
-  G2_Ta * G2_omega * der(G2_omega) = G2_Ps + G2_Pc - G2_Pe;
-  G2_port_v = Complex.'constructor'.fromReal(G2_V * cos(G2_theta), G2_V * sin(G2_theta));
-  G2_Pe = -Modelica.ComplexMath.real(Modelica.SIunits.ComplexPerUnit.'*'.multiply(G2_port_v, Modelica.ComplexMath.conj(G2_port_i)));
-  G2_Pc = -(G2_omega - 1.0) / G2_droop;
-  G2_port_omegaRef = G2_omega;
-  Complex.'constructor'.fromReal(c1_re * c2_re - c1_im * c2_im, c1_re * c2_im + c1_im * c2_re) = Complex.'constructor'.fromReal(L1_P, L1_Q);
-  Complex.'constructor'.fromReal(c1_re * c2_re - c1_im * c2_im, c1_re * c2_im + c1_im * c2_re) = Complex.'constructor'.fromReal(L2_P, L2_Q);
   Complex.'constructor'.fromReal(c1_re + c2_re, c1_im + c2_im) = Complex.'constructor'.fromReal(0.0, 0.0);
-  T1a_port_a_i = Complex.'constructor'.fromReal(c1_re * c2_re - c1_im * c2_im, c1_re * c2_im + c1_im * c2_re);
+  T2_port_a_i = Complex.'constructor'.fromReal(c1_re * c2_re - c1_im * c2_im, c1_re * c2_im + c1_im * c2_re);
 
-  when T1a_open then
-    T1a_closed = false;
-    T1a_B_act = 0.0;
-  elsewhen T1a_close then
-    T1a_closed = true;
-    T1a_B_act = T1a_B;
+  when T2_open then
+    T2_closed = false;
+    T2_B_act = 0.0;
+  elsewhen T2_close then
+    T2_closed = true;
+    T2_B_act = T2_B;
   end when;
 
-  T1a_port_a_omegaRef = T1a_port_b_omegaRef;
+  T2_port_a_omegaRef = T2_port_b_int_omegaRef;
   Complex.'constructor'.fromReal(c1_re + c2_re, c1_im + c2_im) = Complex.'constructor'.fromReal(0.0, 0.0);
   T1b_port_a_i = Complex.'constructor'.fromReal(c1_re * c2_re - c1_im * c2_im, c1_re * c2_im + c1_im * c2_re);
 
@@ -704,19 +691,32 @@ equation
 
   T1b_port_a_omegaRef = T1b_port_b_omegaRef;
   Complex.'constructor'.fromReal(c1_re + c2_re, c1_im + c2_im) = Complex.'constructor'.fromReal(0.0, 0.0);
-  T2_port_a_i = Complex.'constructor'.fromReal(c1_re * c2_re - c1_im * c2_im, c1_re * c2_im + c1_im * c2_re);
+  T1a_port_a_i = Complex.'constructor'.fromReal(c1_re * c2_re - c1_im * c2_im, c1_re * c2_im + c1_im * c2_re);
 
-  when T2_open then
-    T2_closed = false;
-    T2_B_act = 0.0;
-  elsewhen T2_close then
-    T2_closed = true;
-    T2_B_act = T2_B;
+  when T1a_open then
+    T1a_closed = false;
+    T1a_B_act = 0.0;
+  elsewhen T1a_close then
+    T1a_closed = true;
+    T1a_B_act = T1a_B;
   end when;
 
-  T2_port_a_omegaRef = T2_port_b_int_omegaRef;
+  T1a_port_a_omegaRef = T1a_port_b_omegaRef;
+  Complex.'constructor'.fromReal(c1_re * c2_re - c1_im * c2_im, c1_re * c2_im + c1_im * c2_re) = Complex.'constructor'.fromReal(L2_P, L2_Q);
+  Complex.'constructor'.fromReal(c1_re * c2_re - c1_im * c2_im, c1_re * c2_im + c1_im * c2_re) = Complex.'constructor'.fromReal(L1_P, L1_Q);
+  der(G2_theta) = (G2_omega - G2_port_omegaRef) * 314.1592653589793;
+  G2_Ta * G2_omega * der(G2_omega) = G2_Ps + G2_Pc - G2_Pe;
+  G2_port_v = Complex.'constructor'.fromReal(G2_V * cos(G2_theta), G2_V * sin(G2_theta));
+  G2_Pe = -Modelica.ComplexMath.real(Modelica.SIunits.ComplexPerUnit.'*'.multiply(G2_port_v, Modelica.ComplexMath.conj(G2_port_i)));
+  G2_Pc = -(G2_omega - 1.0) / G2_droop;
+  G2_port_omegaRef = G2_omega;
+  der(G1_theta) = (G1_omega - G1_port_omegaRef) * 314.1592653589793;
+  G1_Ta * G1_omega * der(G1_omega) = G1_Ps + G1_Pc - G1_Pe;
+  G1_port_v = Complex.'constructor'.fromReal(G1_V * cos(G1_theta), G1_V * sin(G1_theta));
+  G1_Pe = -Modelica.ComplexMath.real(Modelica.SIunits.ComplexPerUnit.'*'.multiply(G1_port_v, Modelica.ComplexMath.conj(G1_port_i)));
+  G1_Pc = -(G1_omega - 1.0) / G1_droop;
+  G1_port_omegaRef = G1_omega;
 end DynamicOverconstrainedConnectors_System4;
 "
-
 
 end

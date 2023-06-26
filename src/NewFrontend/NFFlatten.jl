@@ -32,14 +32,14 @@ const NFFunctionTree = FunctionTreeImpl
 
 import .FunctionTree
 
-function flatten(classInst::InstNode, name::String; prefix = COMPONENT_REF_EMPTY())::FlatModel
+function flatten(classInst::InstNode, name::String; prefix = COMPONENT_REF_EMPTY())
   local flatModel::FlatModel
   local sections::Sections
   local vars::List{Variable}
-  local eql::List{Equation}
-  local ieql::List{Equation}
-  local alg::List{Algorithm}
-  local ialg::List{Algorithm}
+  local eql::Vector{Equation}
+  local ieql::Vector{Equation}
+  local alg::Vector{Algorithm}
+  local ialg::Vector{Algorithm}
   local structuralSubmodels::List{FLAT_MODEL} = nil
   local cmt::Option{SCode.Comment}
   sections = SECTIONS_EMPTY()
@@ -58,14 +58,25 @@ function flatten(classInst::InstNode, name::String; prefix = COMPONENT_REF_EMPTY
   flatModel = begin
     @match sections begin
       SECTIONS(__) => begin
-        eql = listReverseInPlace(sections.equations)
-        ieql = listReverseInPlace(sections.initialEquations)
-        alg = listReverseInPlace(sections.algorithms)
-        ialg = listReverseInPlace(sections.initialAlgorithms)
+        eql = sections.equations
+        ieql = sections.initialEquations
+        alg = sections.algorithms #Was reverse
+        ialg = sections.initialAlgorithms #Was reverse
         FLAT_MODEL(name, vars, eql, ieql, alg, ialg, structuralSubmodels, NONE(), nil, nil, Bool[], cmt)
       end
       _ => begin
-        FLAT_MODEL(name, vars, nil, nil, nil, nil, nil, NONE(), nil, nil, Bool[], cmt)
+        FLAT_MODEL(name,
+                   vars,
+                   Equation[],
+                   Equation[],
+                   Algorithm[],
+                   Algorithm[],
+                   nil,
+                   NONE(),
+                   nil,
+                   nil,
+                   Bool[],
+                   cmt)
       end
     end
   end
@@ -78,11 +89,10 @@ function collectFunctions(flatModel::FlatModel, name::String)::FunctionTree
   local funcs::FunctionTree
   funcs = FunctionTreeImpl.new()
   funcs = ListUtil.fold(flatModel.variables, collectComponentFuncs, funcs)
-  funcs = ListUtil.fold(flatModel.equations, collectEquationFuncs, funcs)
-  funcs = ListUtil.fold(flatModel.initialEquations, collectEquationFuncs, funcs)
-  funcs = ListUtil.fold(flatModel.algorithms, collectAlgorithmFuncs, funcs)
-  funcs = ListUtil.fold(flatModel.initialAlgorithms, collectAlgorithmFuncs, funcs)
-#  println(FunctionTreeImpl.printTreeStr(funcs)) to dump the tree
+  funcs = ArrayUtil.fold(flatModel.equations, collectEquationFuncs, funcs)
+  funcs = ArrayUtil.fold(flatModel.initialEquations, collectEquationFuncs, funcs)
+  funcs = ArrayUtil.fold(flatModel.algorithms, collectAlgorithmFuncs, funcs)
+  funcs = ArrayUtil.fold(flatModel.initialAlgorithms, collectAlgorithmFuncs, funcs)
   return funcs
 end
 
@@ -495,12 +505,10 @@ end
 
 function getRecordBindings(binding::Binding, comps::Vector{<:InstNode})::List{Binding}
   local recordBindings::List{Binding} = nil
-
   local binding_exp::Expression
   local var::VariabilityType
-
-  @assign binding_exp = getTypedExp(binding)
-  @assign var = variability(binding)
+  binding_exp = getTypedExp(binding)
+  var = variability(binding)
   #=  Convert the expressions in the record expression into bindings.
   =#
   @assign recordBindings = begin
@@ -806,7 +814,7 @@ function vectorizeAlgorithm(
     local iter::InstNode
     local stop::Int
     local range::Expression
-    local body::List{Statement}
+    local body::Vector{Statement}
     @match alg begin
       ALGORITHM(
         statements = ALG_ASSIGNMENT(
@@ -1113,12 +1121,11 @@ function flattenSections(
   prefix::ComponentRef,
   accumSections::Sections,
 )::Sections
-
-  @assign () = begin
-    local eq::List{Equation}
-    local ieq::List{Equation}
-    local alg::List{Algorithm}
-    local ialg::List{Algorithm}
+  () = begin
+    local eq::Vector{Equation}
+    local ieq::Vector{Equation}
+    local alg::Vector{Algorithm}
+    local ialg::Vector{Algorithm}
     @match sections begin
       SECTIONS(__) => begin
         eq = flattenEquations(sections.equations, prefix)
@@ -1129,7 +1136,6 @@ function flattenSections(
           prepend(eq, ieq, alg, ialg, accumSections)
         ()
       end
-
       _ => begin
         ()
       end
@@ -1138,8 +1144,8 @@ function flattenSections(
   return accumSections
 end
 
-function flattenEquations(eql::List{<:Equation}, prefix::ComponentRef)
-  local equations::List{Equation} = nil
+function flattenEquations(eql::Vector{Equation}, prefix::ComponentRef)
+  local equations::Vector{Equation} = Equation[]
   for eq in eql
     equations = flattenEquation(eq, prefix, equations)
   end
@@ -1147,70 +1153,63 @@ function flattenEquations(eql::List{<:Equation}, prefix::ComponentRef)
 end
 
 function flattenEquation(
-  eq::Equation,
-  prefix::ComponentRef,
-  inEquations::List{<:Equation},
+  @nospecialize(eq::Equation),
+  @nospecialize(prefix::ComponentRef),
+  inEquations::Vector{Equation},
 )
-  @assign equations = begin
+  equations = begin
     local e1::Expression
     local e2::Expression
     local e3::Expression
-    local eql::List{Equation}
+    local eql::Vector{Equation}
     @match eq begin
       EQUATION_EQUALITY(__) => begin
         e1 = flattenExp(eq.lhs, prefix)
         e2 = flattenExp(eq.rhs, prefix)
-        _cons(EQUATION_EQUALITY(e1, e2, eq.ty, eq.source), inEquations)
+        push!(inEquations, EQUATION_EQUALITY(e1, e2, eq.ty, eq.source))
       end
-
       EQUATION_FOR(__) => begin
-#        if Flags.isSet(Flags.NF_SCALARIZE) Currently we unroll everything -John Tinnerholm 2021-05-04
-        eql = unrollForLoop(eq, prefix, inEquations)
-        #else
-        #eql = splitForLoop(eq, prefix, equations)
-#        end
-#        eql
+        #Currently we unroll everything by default -John Tinnerholm 2021-05-04
+        eql = if Flags.isSet(Flags.NF_SCALARIZE)
+           unrollForLoop(eq, prefix, inEquations)
+        else
+          splitForLoop(eq, prefix, equations)
+        end
+        eql
       end
-
       EQUATION_CONNECT(__) => begin
-        @assign e1 = flattenExp(eq.lhs, prefix)
-        @assign e2 = flattenExp(eq.rhs, prefix)
-        _cons(EQUATION_CONNECT(e1, e2, eq.source), inEquations)
+        e1 = flattenExp(eq.lhs, prefix)
+        e2 = flattenExp(eq.rhs, prefix)
+        push!(inEquations, EQUATION_CONNECT(e1, e2, eq.source))
       end
-
       EQUATION_IF(__) => begin
         flattenIfEquation(eq, prefix, inEquations)
       end
-
       EQUATION_WHEN(__) => begin
-        @assign eq.branches = list(flattenEqBranch(b, prefix) for b in eq.branches)
-        _cons(eq, inEquations)
+        @assign eq.branches = Equation_Branch[flattenEqBranch(b, prefix) for b in eq.branches]
+        push!(inEquations, eq)
       end
-
       EQUATION_ASSERT(__) => begin
-        @assign e1 = flattenExp(eq.condition, prefix)
-        @assign e2 = flattenExp(eq.message, prefix)
-        @assign e3 = flattenExp(eq.level, prefix)
-        _cons(EQUATION_ASSERT(e1, e2, e3, eq.source), inEquations)
+        e1 = flattenExp(eq.condition, prefix)
+        e2 = flattenExp(eq.message, prefix)
+        e3 = flattenExp(eq.level, prefix)
+        push!(inEquations, EQUATION_ASSERT(e1, e2, e3, eq.source))
       end
-
       EQUATION_TERMINATE(__) => begin
         e1 = flattenExp(eq.message, prefix)
-        _cons(EQUATION_TERMINATE(e1, eq.source), inEquations)
+        push!(inEquations, EQUATION_TERMINATE(e1, eq.source))
       end
-
       EQUATION_REINIT(__) => begin
         e1 = flattenExp(eq.cref, prefix)
         e2 = flattenExp(eq.reinitExp, prefix)
-        _cons(EQUATION_REINIT(e1, e2, eq.source), inEquations)
+        push!(inEquations, EQUATION_REINIT(e1, e2, eq.source))
       end
-
       EQUATION_NORETCALL(__) => begin
         e1 = flattenExp(eq.exp, prefix)
-        _cons(EQUATION_NORETCALL(e1, eq.source), inEquations)
+        push!(inEquations, EQUATION_NORETCALL(e1, eq.source))
       end
       _ => begin
-        _cons(eq, inEquations)
+        push!(inEquations, eq)
       end
     end
   end
@@ -1218,15 +1217,15 @@ function flattenEquation(
 end
 
 function flattenIfEquation(
-  eq::Equation,
+  @nospecialize(eq::Equation),
   prefix::ComponentRef,
-  equations::List{<:Equation},
-)::List{Equation}
+  equations::Vector{Equation},
+)
   local branch::Equation_Branch
-  local branches::List{Equation_Branch}
-  local bl::List{Equation_Branch} = nil
+  local branches::Vector{Equation_Branch}
+  local bl::Vector{Equation_Branch} = Equation_Branch[]
   local cond::Expression
-  local eql::List{Equation}
+  local eql::Vector{Equation} = Equation[]
   local var::VariabilityType
   local has_connect::Bool
   local src::DAE.ElementSource
@@ -1243,19 +1242,17 @@ function flattenIfEquation(
   else
     EVALTARGET_IGNORE_ERRORS()
   end
-  while !listEmpty(branches)
-    @match _cons(branch, branches) = branches
+  while !isempty(branches)
+    @match [branch, branches...] = branches
     bl = begin
       @match branch begin
         EQUATION_BRANCH(cond, var, eql) => begin
-          #=  Flatten the condition and body of the branch.
-          =#
-          @assign cond = flattenExp(cond, prefix)
-          @assign eql = flattenEquations(eql, prefix)
-          #=  Evaluate structural conditions.
-          =#
+          #=  Flatten the condition and body of the branch. =#
+          cond = flattenExp(cond, prefix)
+          eql = flattenEquations(eql, prefix)
+          #=  Evaluate structural conditions. =#
           if var <= Variability.STRUCTURAL_PARAMETER
-            @assign cond = evalExp(cond, target)
+            cond = evalExp(cond, target)
             if !isBoolean(cond) && has_connect
               Error.addInternalError(
                 "Failed to evaluate branch condition in if equation containing connect equations: `" +
@@ -1266,33 +1263,21 @@ function flattenIfEquation(
               fail()
             end
           end
-          #=  Conditions in an if-equation that contains connects must be possible to evaluate.
-          =#
+          #=  Conditions in an if-equation that contains connects must be possible to evaluate. =#
           if isTrue(cond)           #=  The condition is true and the branch will thus always be selected =#
             #=  if reached, so we can discard the remaining branches.          =#
-            branches = nil
-            if listEmpty(bl) #= If we haven't collected any other branches yet, replace the if-equation with this branch.=#
-              equations = listAppend(eql, equations)
+            branches = Equation_Branch[]
+            if isempty(bl) #= If we haven't collected any other branches yet, replace the if-equation with this branch.=#
+              equations = vcat(eql, equations)
             else
-              bl = _cons(
-                  makeBranch(cond, listReverseInPlace(eql), var),
-                bl,
-              )
+              bl = push!(bl, makeBranch(cond, eql, var))
             end
           elseif !isFalse(cond)
-            bl = _cons(
-                makeBranch(cond, listReverseInPlace(eql), var),
-              bl,
-            )
+            push!(bl, makeBranch(cond, eql, var))
           end
-
-
-          #=  Otherwise, append this branch.
-          =#
-          #=  Only add the branch to the list of branches if the condition is not
-          =#
-          #=  literal false, otherwise just drop it since it will never trigger.
-          =#
+          #=  Otherwise, append this branch. =#
+          #=  Only add the branch to the list of branches if the condition is not =#
+          #=  literal false, otherwise just drop it since it will never trigger. =#
           bl
         end
           EQUATION_INVALID_BRANCH(
@@ -1304,26 +1289,25 @@ function flattenIfEquation(
           #=  An invalid branch must have a false condition, anything else is an error.
           =#
           if var <= Variability.STRUCTURAL_PARAMETER
-            @assign cond = evalExp(cond, target)
+            cond = evalExp(cond, target)
           end
           if !isFalse(cond)
             triggerErrors(branch)
           end
           bl
         end
-
         _ => begin
-          _cons(branch, bl)
+          push!(bl, branch)
         end
       end
     end
   end
-  #=  Add the flattened if-equation to the list of equations if there are any =#
-  #=  branches still remaining. =#
-  if !listEmpty(bl)
-#        @info equations
-    #    equations = _cons(EQUATION_IF(listReverseInPlace(bl), src), equations)
-    equations = _cons(EQUATION_IF(listReverseInPlace(bl), src), equations)
+  #=
+  Add the flattened if-equation to the list of equations if there are any
+  branches still remaining.
+  =#
+  if !isempty(bl)
+    equations = push!(equations, EQUATION_IF(bl, src))
     return equations
   end
   return equations
@@ -1354,37 +1338,38 @@ function isConnectEq(eq::Equation)::Bool
 end
 
 function flattenEqBranch(
-  branch::Equation_Branch,
-  prefix::ComponentRef,
+  @nospecialize(branch::Equation_Branch),
+  @nospecialize(prefix::ComponentRef),
 )::Equation_Branch
-
   local exp::Expression
-  local eql::List{Equation}
+  local eql::Vector{Equation}
   local var::VariabilityType
-
   @match EQUATION_BRANCH(exp, var, eql) = branch
   exp = flattenExp(exp, prefix)
   eql = flattenEquations(eql, prefix)
-  branch = makeBranch(exp, listReverseInPlace(eql), var)
+  branch = makeBranch(exp, eql, var)
   return branch
 end
 
+"""
+ Unrolls an equational for-loop.
+"""
 function unrollForLoop(
-  forLoop::Equation,
+  forLoop::EQUATION_FOR,
   prefix::ComponentRef,
-  equations::List{<:Equation},
-)::List{Equation}
-
+  equations::Vector{Equation},
+)
   local iter::InstNode
-  local body::List{Equation}
-  local unrolled_body::List{Equation}
+  local body::Vector{Equation}
+  local unrolled_body::Vector{Equation}
   local range::Expression
   local range_iter::RangeIterator
   local val::Expression
-
   @match EQUATION_FOR(iterator = iter, range = SOME(range), body = body) =
     forLoop
-  #=  Unroll the loop by replacing the iterator with each of its values in the for loop body.
+  #=
+  Unroll the loop by replacing the iterator with each of its values
+  in the for loop body.
   =#
   range = flattenExp(range, prefix)
   range =
@@ -1397,7 +1382,7 @@ function unrollForLoop(
       (expArg) -> replaceIterator(expArg, iter, val),
     )
     unrolled_body = flattenEquations(unrolled_body, prefix)
-    equations = listAppend(unrolled_body, equations)
+    equations = vcat(unrolled_body, equations)
   end
   return equations
 end
@@ -1406,13 +1391,13 @@ function splitForLoop(
   forLoop::Equation,
   prefix::ComponentRef,
   equations::List{<:Equation},
-)::List{Equation}
+)::Vector{Equation}
 
   local iter::InstNode
   local range::Option{Expression}
-  local body::List{Equation}
-  local connects::List{Equation}
-  local non_connects::List{Equation}
+  local body::Vector{Equation}
+  local connects::Vector{Equation}
+  local non_connects::Vector{Equation}
   local src::DAE.ElementSource
 
   @match EQUATION_FOR(iter, range, body, src) = forLoop
@@ -1428,12 +1413,12 @@ function splitForLoop(
   return equations
 end
 
-function splitForLoop2(forBody::List{<:Equation})::Tuple{List{Equation}, List{Equation}}
-  local nonConnects::List{Equation} = nil
-  local connects::List{Equation} = nil
+function splitForLoop2(forBody::List{<:Equation})::Tuple{Vector{Equation}, Vector{Equation}}
+  local nonConnects::Vector{Equation} = nil
+  local connects::Vector{Equation} = nil
 
-  local conns::List{Equation}
-  local nconns::List{Equation}
+  local conns::Vector{Equation}
+  local nconns::Vector{Equation}
 
   for eq in forBody
     @assign () = begin
@@ -1471,24 +1456,22 @@ function splitForLoop2(forBody::List{<:Equation})::Tuple{List{Equation}, List{Eq
 end
 
 function flattenAlgorithms(
-  algorithms::List{<:Algorithm},
-  prefix::ComponentRef,
-)::List{Algorithm}
-  local outAlgorithms::List{Algorithm} = nil
-
+  algorithms::Vector{Algorithm},
+  prefix::ComponentRef)
+  local outAlgorithms::Vector{Algorithm} = Algorithm[]
   for alg in algorithms
     @assign alg.statements = mapExpList(
       alg.statements,
       (x) -> flattenExp(x, prefix),
     )
     #=
-    CheckModel relies on the ElementSource to know whether a certain algorithm comes from
-    an array component, otherwise is will miscount the number of equations.
+      CheckModel relies on the ElementSource to know whether a certain algorithm comes from
+      an array component, otherwise is will miscount the number of equations.
     =#
     if hasSubscripts(prefix)
       @assign alg.source = addElementSourceArrayPrefix(alg.source, prefix)
     end
-    @assign outAlgorithms = _cons(alg, outAlgorithms)
+    outAlgorithms = prepend!([alg], outAlgorithms)
   end
   return outAlgorithms
 end
@@ -1521,7 +1504,7 @@ end
 """ Generates the connect equations and adds them to the equation list """
 function resolveConnections(flatModel::FlatModel, name::String)::FlatModel
   local conns::Connections
-  local conn_eql::List{Equation}
+  local conn_eql::Vector{Equation}
   local csets::ConnectionSets.Sets
   local csets_array::Vector{List{Connector}}
   local ctable::CardinalityTable.Table
@@ -1547,10 +1530,10 @@ function resolveConnections(flatModel::FlatModel, name::String)::FlatModel
   conn_eql = generateEquations(csets_array) #=In NFConnectEquations=#
   #=  append the equalityConstraint call equations for the broken connects =#
   if System.getHasOverconstrainedConnectors()
-    conn_eql = listAppend(conn_eql, ListUtil.flatten(ListUtil.map(broken, Util.tuple33)))
+    conn_eql = vcat(conn_eql, listArray(ListUtil.flatten(ListUtil.map(broken, Util.tuple33))))
   end
   #=  add the equations to the flat model=#
-  @assign flatModel.equations = listAppend(conn_eql, flatModel.equations)
+  @assign flatModel.equations = vcat(conn_eql, flatModel.equations)
   @assign flatModel.variables = list(v for v in flatModel.variables if isPresent(v))
   ctable = CardinalityTable.fromConnections(conns)
   #=  Evaluate any connection operators if they're used. =#
@@ -1609,12 +1592,12 @@ function evaluateBindingConnOp(
 end
 
 function evaluateEquationsConnOp(
-  equations::List{<:Equation},
+  equations::Vector{Equation},
   sets#=::ConnectionSets.Sets=#,
   setsArray::Vector{<:List{<:Connector}},
   ctable::CardinalityTable.Table,
-)::List{Equation}
-  equations = list(
+)
+  equations = [
     mapExp(
       eq,
       (expArg) -> evaluateOperators(
@@ -1624,7 +1607,7 @@ function evaluateEquationsConnOp(
         ctable,
       ),
     ) for eq in equations
-  )
+  ]
   return equations
 end
 
@@ -1717,63 +1700,54 @@ function collectStructor(node::InstNode, funcs::FunctionTree)::FunctionTree
   return funcs
 end
 
-function collectEquationFuncs(eq::Equation, funcs::FunctionTree)::FunctionTree
-
-  @assign () = begin
+function collectEquationFuncs(@nospecialize(eq::Equation),
+                              @nospecialize(funcs::FunctionTree))
+  () = begin
     @match eq begin
       EQUATION_EQUALITY(__) => begin
-        @assign funcs = collectExpFuncs(eq.lhs, funcs)
-        @assign funcs = collectExpFuncs(eq.rhs, funcs)
-        @assign funcs = collectTypeFuncs(eq.ty, funcs)
+        funcs = collectExpFuncs(eq.lhs, funcs)
+        funcs = collectExpFuncs(eq.rhs, funcs)
+        funcs = collectTypeFuncs(eq.ty, funcs)
         ()
       end
-
       EQUATION_ARRAY_EQUALITY(__) => begin
-        #=  Lhs is always a cref, no need to check it.
-        =#
-        @assign funcs = collectExpFuncs(eq.rhs, funcs)
-        @assign funcs = collectTypeFuncs(eq.ty, funcs)
+        #=  Lhs is always a cref, no need to check it. =#
+        funcs = collectExpFuncs(eq.rhs, funcs)
+        funcs = collectTypeFuncs(eq.ty, funcs)
         ()
       end
-
       EQUATION_FOR(__) => begin
-        #=  For equations are always unrolled, so functions in the range doesn't
+        #=
+          For equations are always unrolled, so functions in the range doesn't
+          matter since they are always evaluated.
         =#
-        #=  matter since they are always evaluated.
-        =#
-        @assign funcs = ListUtil.fold(eq.body, collectEquationFuncs, funcs)
+        funcs = ArrayUtil.fold(eq.body, collectEquationFuncs, funcs)
         ()
       end
-
       EQUATION_IF(__) => begin
-        @assign funcs = ListUtil.fold(eq.branches, collectEqBranchFuncs, funcs)
+        funcs = ArrayUtil.fold(eq.branches, collectEqBranchFuncs, funcs)
         ()
       end
-
       EQUATION_WHEN(__) => begin
-        @assign funcs = ListUtil.fold(eq.branches, collectEqBranchFuncs, funcs)
+        funcs = ArrayUtil.fold(eq.branches, collectEqBranchFuncs, funcs)
         ()
       end
-
       EQUATION_ASSERT(__) => begin
-        @assign funcs = collectExpFuncs(eq.condition, funcs)
-        @assign funcs = collectExpFuncs(eq.message, funcs)
-        @assign funcs = collectExpFuncs(eq.level, funcs)
+        funcs = collectExpFuncs(eq.condition, funcs)
+        funcs = collectExpFuncs(eq.message, funcs)
+        funcs = collectExpFuncs(eq.level, funcs)
         ()
       end
-
       EQUATION_TERMINATE(__) => begin
-        @assign funcs = collectExpFuncs(eq.message, funcs)
+        funcs = collectExpFuncs(eq.message, funcs)
         ()
       end
-
       EQUATION_REINIT(__) => begin
-        @assign funcs = collectExpFuncs(eq.reinitExp, funcs)
+        funcs = collectExpFuncs(eq.reinitExp, funcs)
         ()
       end
-
       EQUATION_NORETCALL(__) => begin
-        @assign funcs = collectExpFuncs(eq.exp, funcs)
+        funcs = collectExpFuncs(eq.exp, funcs)
         ()
       end
       _ => begin
@@ -1785,17 +1759,16 @@ function collectEquationFuncs(eq::Equation, funcs::FunctionTree)::FunctionTree
 end
 
 function collectEqBranchFuncs(
-  branch::Equation_Branch,
-  funcs::FunctionTree,
-)::FunctionTree
-  @assign () = begin
+  @nospecialize(branch::Equation_Branch),
+  @nospecialize(funcs::FunctionTree),
+  )::FunctionTree
+  () = begin
     @match branch begin
       EQUATION_BRANCH(__) => begin
-        @assign funcs = collectExpFuncs(branch.condition, funcs)
-        @assign funcs = ListUtil.fold(branch.body, collectEquationFuncs, funcs)
+        funcs = collectExpFuncs(branch.condition, funcs)
+        funcs = ArrayUtil.fold(branch.body, collectEquationFuncs, funcs)
         ()
       end
-
       _ => begin
         ()
       end
@@ -1805,12 +1778,12 @@ function collectEqBranchFuncs(
 end
 
 function collectAlgorithmFuncs(alg::Algorithm, funcs::FunctionTree)::FunctionTree
-  @assign funcs = ListUtil.fold(alg.statements, collectStatementFuncs, funcs)
+  funcs = ArrayUtil.fold(alg.statements, collectStatementFuncs, funcs)
   return funcs
 end
 
-function collectStatementFuncs(stmt::Statement, funcs::FunctionTree)::FunctionTree
-  @assign () = begin
+function collectStatementFuncs(@nospecialize(stmt::Statement), funcs::FunctionTree)::FunctionTree
+  () = begin
     @match stmt begin
       ALG_ASSIGNMENT(__) => begin
         funcs = collectExpFuncs(stmt.lhs, funcs)
@@ -1820,18 +1793,18 @@ function collectStatementFuncs(stmt::Statement, funcs::FunctionTree)::FunctionTr
       end
 
       ALG_FOR(__) => begin
-        funcs = ListUtil.fold(stmt.body, collectStatementFuncs, funcs)
+        funcs = ArrayUtil.fold(stmt.body, collectStatementFuncs, funcs)
         funcs = collectExpFuncs(Util.getOption(stmt.range), funcs)
         ()
       end
 
       ALG_IF(__) => begin
-        funcs = ListUtil.fold(stmt.branches, collectStmtBranchFuncs, funcs)
+        funcs = ArrayUtil.fold(stmt.branches, collectStmtBranchFuncs, funcs)
         ()
       end
 
       ALG_WHEN(__) => begin
-        funcs = ListUtil.fold(stmt.branches, collectStmtBranchFuncs, funcs)
+        funcs = ArrayUtil.fold(stmt.branches, collectStmtBranchFuncs, funcs)
         ()
       end
 
@@ -1854,7 +1827,7 @@ function collectStatementFuncs(stmt::Statement, funcs::FunctionTree)::FunctionTr
 
       ALG_WHILE(__) => begin
         funcs = collectExpFuncs(stmt.condition, funcs)
-        funcs = ListUtil.fold(stmt.body, collectStatementFuncs, funcs)
+        funcs = ArrayUtil.fold(stmt.body, collectStatementFuncs, funcs)
         ()
       end
 
@@ -1867,11 +1840,11 @@ function collectStatementFuncs(stmt::Statement, funcs::FunctionTree)::FunctionTr
 end
 
 function collectStmtBranchFuncs(
-  branch::Tuple{<:Expression, List{<:Statement}},
+  branch::Tuple{Expression, Vector{Statement}},
   funcs::FunctionTree,
 )::FunctionTree
-  @assign funcs = collectExpFuncs(Util.tuple21(branch), funcs)
-  @assign funcs = ListUtil.fold(Util.tuple22(branch), collectStatementFuncs, funcs)
+  funcs = collectExpFuncs(Util.tuple21(branch), funcs)
+  funcs = ArrayUtil.fold(Util.tuple22(branch), collectStatementFuncs, funcs)
   return funcs
 end
 
@@ -1950,11 +1923,10 @@ function collectClassFunctions(clsNode::InstNode, funcs::FunctionTree)::Function
             @assign funcs = collectExpFuncs(getTypedExp(binding), funcs)
           end
         end
-        @assign () = begin
+        () = begin
           @match sections begin
             SECTIONS(__) => begin
-              @assign funcs =
-                ListUtil.fold(sections.algorithms, collectAlgorithmFuncs, funcs)
+              funcs = ArrayUtil.fold(sections.algorithms, collectAlgorithmFuncs, funcs)
               ()
             end
 

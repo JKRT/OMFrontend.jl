@@ -131,7 +131,7 @@ end
 """
   Converts a function tree to a string
 """
-function Base.string(ft::Main.FunctionTreeImpl.LEAF)
+function Base.string(ft::Main.FunctionTreeImpl.Tree)
   fLst = OMFrontend.Main.FunctionTreeImpl.toList(ft)
   local buffer = IOBuffer()
   for (_, v) in fLst
@@ -204,7 +204,11 @@ function initLoadMSL(;MSL_Version = "MSL_3_2_3")
 end
 
 """
-  This function flattens a model with the MSL.
+`function flattenModelWithMSL(modelName::String, fileName::String; MSL_Version = "MSL_3_2_3")`
+
+Returns the flat representation of a modelica model along with the functions used and define by the model.
+See the keyword argument for specifying MSL version.
+Valid versions are 3.2.3 and 4.0.0.
 """
 function flattenModelWithMSL(modelName::String, fileName::String; MSL_Version = "MSL_3_2_3")
   if !haskey(LIBRARY_CACHE, MSL_Version)
@@ -219,6 +223,18 @@ function flattenModelWithMSL(modelName::String, fileName::String; MSL_Version = 
   program = listReverse(listAppend(lib, sCodeProgram))
   (FM, cache) = instantiateSCodeToFM(modelName, program)
 end
+
+"""
+`flattenModel(modelName::String, fileName::String)`
+
+Returns the flat representation of a modelica model along with the functions used and define by the model.
+"""
+function flattenModel(modelName::String, fileName::String)
+  local absynProgram = parseFile(fileName)
+  local sCodeProgram = translateToSCode(absynProgram)
+  (FM, cache) = instantiateSCodeToFM(modelName, sCodeProgram)
+end
+
 
 """
   @author: johti17
@@ -240,23 +256,29 @@ function loadMSL(; MSL_Version)
   end
 end
 
-#=
-  Custom pretty printing
-=#
-Base.show(io::IO, ::MIME"text/plain", fm::Main.FLAT_MODEL) = begin
+Base.show(io::IO, ::MIME"text/plain", fm::OMFrontend.Main.FLAT_MODEL) = begin
   print(io, "Flat Model:\n", string(fm))
 end
 
-Base.show(io::IO, ::MIME"text/plain", t::Tuple{Main.FLAT_MODEL, Main.FunctionTreeImpl.EMPTY}) = begin
+Base.show(io::IO, ::MIME"text/plain", t::Tuple{OMFrontend.Main.FLAT_MODEL, OMFrontend.Main.FunctionTreeImpl.EMPTY}) = begin
   print(io, "Flat Model:\n", string(first(t)))
-  print(io, "No Functions:\n")
+  print(io, "\n(No Functions)\n")
 end
 
-Base.show(io::IO, ::MIME"text/plain", t::Tuple{Main.FLAT_MODEL, cache::Main.FunctionTreeImpl.LEAF}) = begin
+Base.show(io::IO, ::MIME"text/plain", t::Tuple{OMFrontend.Main.FLAT_MODEL, OMFrontend.Main.FunctionTreeImpl.LEAF}) = begin
+  print(io, "Flat Model:\n", string(first(t)))
+  print(io, "\nFunctions:\n", string(last(t)))
+end
+
+Base.show(io::IO, ::MIME"text/plain", t::Tuple{OMFrontend.Main.FLAT_MODEL, OMFrontend.Main.FunctionTreeImpl.NODE}) = begin
   print(io, "Flat Model:\n", string(first(t)))
   print(io, "\nFunctions:\n", string(last(t)))
 end
 
 include("precompilation.jl")
 
-end # module
+end #OMFrontend
+
+#=
+  Custom pretty printing
+=#

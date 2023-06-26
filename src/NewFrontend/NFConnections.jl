@@ -66,7 +66,7 @@ function collect(flatModel::FlatModel)::Tuple{FlatModel, Connections}
   local c1::Connector
   local c2::Connector
   local source::DAE.ElementSource
-  local eql::List{Equation} = nil
+  local eql::Vector{Equation} = Equation[]
   local cl1::List{Connector}
   local cl2::List{Connector}
   local e1::Expression
@@ -75,8 +75,7 @@ function collect(flatModel::FlatModel)::Tuple{FlatModel, Connections}
   local ty2::M_Type
   local b1::Bool
   local b2::Bool
-  #=  Collect all flow variables.
-  =#
+  #=  Collect all flow variables. =#
   for var in flatModel.variables
     @assign comp = component(node(var.name))
     if isFlow(comp)
@@ -93,7 +92,7 @@ function collect(flatModel::FlatModel)::Tuple{FlatModel, Connections}
   #=  Collect all connects.
   =#
   for eq in flatModel.equations
-    @assign eql = begin
+    eql = begin
       @match eq begin
         EQUATION_CONNECT(
           lhs = CREF_EXPRESSION(ty = ty1, cref = lhs),
@@ -104,25 +103,24 @@ function collect(flatModel::FlatModel)::Tuple{FlatModel, Connections}
             isDeleted(lhs) ||
             isDeleted(rhs)
           )
-            @assign cl1 = makeConnectors(lhs, ty1, source)
-            @assign cl2 = makeConnectors(rhs, ty2, source)
+            cl1 = makeConnectors(lhs, ty1, source)
+            cl2 = makeConnectors(rhs, ty2, source)
             for c1 in cl1
               @match _cons(c2, cl2) = cl2
-              @assign conns =
-                addConnection(CONNECTION(c1, c2), conns)
+              conns = addConnection(CONNECTION(c1, c2), conns)
             end
           end
           eql
         end
 
         _ => begin
-          _cons(eq, eql)
+          push!(eql, eq)
         end
       end
     end
   end
   if !listEmpty(conns.connections)
-    @assign flatModel.equations = listReverseInPlace(eql)
+    @assign flatModel.equations = eql
   end
   return (flatModel, conns)
 end

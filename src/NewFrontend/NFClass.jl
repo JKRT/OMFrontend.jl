@@ -81,9 +81,9 @@ const DEFAULT_PREFIXES =
 function toFlatString(cls::Class, clsNode::InstNode)::String
   local str::String
   local s
-  @assign s = IOStream_M.create(getInstanceName(), IOStream_M.IOStreamType.LIST())
-  @assign s = toFlatStream(cls, clsNode, s)
-  @assign str = IOStream_M.string(s)
+  s = IOStream_M.create(getInstanceName(), IOStream_M.LIST())
+  s = toFlatStream(cls, clsNode, s)
+  str = IOStream_M.string(s)
   IOStream_M.delete(s)
   return str
 end
@@ -975,8 +975,8 @@ function fromSCode(
 )::Class
   local cls::Class
   local tree::ClassTree
-  @assign tree = fromSCode(elements, isClassExtends, scope)
-  @assign cls = PARTIAL_CLASS(tree, MODIFIER_NOMOD(), prefixes)
+  tree = fromSCode(elements, isClassExtends, scope)
+  cls = PARTIAL_CLASS(tree, MODIFIER_NOMOD(), prefixes)
   return cls
 end
 

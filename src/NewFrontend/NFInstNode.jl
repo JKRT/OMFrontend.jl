@@ -71,7 +71,7 @@ end
 
   @Record IMPLICIT_SCOPE begin
     parentScope::InstNode
-    locals::List{InstNode}
+    locals::Vector{InstNode}
   end
 
   @Record NAME_NODE begin
@@ -89,7 +89,7 @@ end
 
   @Record COMPONENT_NODE begin
     name::String
-    visibility
+    visibility::Int
     component::Pointer{Component}
     parent #= The instance that this component is part of. =#::InstNode
     nodeType::InstNodeType
@@ -98,7 +98,7 @@ end
   @Record CLASS_NODE begin
     name::String
     definition::SCode.Element
-    visibility
+    visibility::Int
     cls::Pointer
     caches::Vector{CachedData}
     parentScope::InstNode
@@ -770,12 +770,10 @@ end
                        end
 
 function addIterator(iterator::InstNode, scope::InstNode) ::InstNode
-
-
-  @assign scope = begin
+  scope = begin
     @match scope begin
       IMPLICIT_SCOPE(__)  => begin
-        IMPLICIT_SCOPE(scope, _cons(iterator, scope.locals))
+        IMPLICIT_SCOPE(scope, prepend!([iterator], scope.locals))
       end
     end
   end
@@ -784,34 +782,29 @@ end
 
 """ #= Returns the first parent of the node that's not an implicit scope, or the
                      node itself if it's not an implicit scope. =#"""
-                       function explicitScope(node::InstNode) ::InstNode
-                         local scope::InstNode
-
-                         @assign scope = begin
-                           @match node begin
-                             IMPLICIT_SCOPE(__)  => begin
-                               explicitScope(node.parentScope)
-                             end
-
-                             _  => begin
-                               node
-                             end
-                           end
-                         end
-                         scope
-                       end
+function explicitScope(node::InstNode) ::InstNode
+  local scope::InstNode
+  scope = begin
+    @match node begin
+      IMPLICIT_SCOPE(__)  => begin
+        explicitScope(node.parentScope)
+      end
+      _  => begin
+        node
+      end
+    end
+  end
+  scope
+end
 
 function openImplicitScope(scope::InstNode) ::InstNode
-
-
-  @assign scope = begin
+  scope = begin
     @match scope begin
       IMPLICIT_SCOPE(__)  => begin
         scope
       end
-
       _  => begin
-        IMPLICIT_SCOPE(scope, nil)
+        IMPLICIT_SCOPE(scope, InstNode[])
       end
     end
   end

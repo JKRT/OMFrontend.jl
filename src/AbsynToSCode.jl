@@ -50,12 +50,14 @@ const ASSERTION_LEVEL_ERROR =
     Absyn.CREF_IDENT("error", nil),
   )))::Absyn.Exp
 
-""" #= This function takes an Absyn.Program
+"""
+  This function takes an Absyn.Program
   and constructs a SCode.Program from it.
   This particular version of translate tries to fix any uniontypes
   in the inProgram before translating further. This should probably
   be moved into Parser.parse since you have to modify the tree every
-  single time you translate... =#"""
+  single time you translate...
+"""
 function translateAbsyn2SCode(inProgram::Absyn.Program)::SCode.Program
   local outProgram::SCode.Program
    outProgram = begin

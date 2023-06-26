@@ -44,13 +44,13 @@ Restriction = NFRestriction
 
 function toString(res::Restriction)::String
   local str::String
-  @assign str = begin
+  str = begin
     @match res begin
-      Restriction_CLASS(__) => begin
+      RESTRICTION_CLASS(__) => begin
         "class"
       end
 
-      Restriction_CONNECTOR(__) => begin
+      RESTRICTION_CONNECTOR(__) => begin
         if res.isExpandable
           "expandable connector"
         else

@@ -1,10 +1,16 @@
+"""
+```
+evaluate(flatModel::FlatModel)
+```
+
+Evaluates the flat model.
+Basically this routine does constant evaluations by resolving parts of the model that is known statically.
+"""
 function evaluate(flatModel::FlatModel)::FlatModel
   local const_var::VariabilityType = Variability.STRUCTURAL_PARAMETER
-  @assign flatModel.variables =
-    list(evaluateVariable(v, const_var) for v in flatModel.variables)
+  @assign flatModel.variables = Variable[evaluateVariable(v, const_var) for v in flatModel.variables]
+  @assign flatModel.initialEquations = evaluateEquations(flatModel.initialEquations, const_var)
   @assign flatModel.equations = evaluateEquations(flatModel.equations, const_var)
-  @assign flatModel.initialEquations =
-    evaluateEquations(flatModel.initialEquations, const_var)
   @assign flatModel.algorithms = evaluateAlgorithms(flatModel.algorithms, const_var)
   @assign flatModel.initialAlgorithms =
     evaluateAlgorithms(flatModel.initialAlgorithms, const_var)
@@ -22,9 +28,9 @@ function evaluateVariable(var::Variable, constVariability::VariabilityType)::Var
   if !referenceEq(binding, var.binding)
     @assign var.binding = binding
   end
-  @assign var.typeAttributes = list(
+  @assign var.typeAttributes = [
     evaluateTypeAttribute(a, Variability.STRUCTURAL_PARAMETER) for a in var.typeAttributes
-  )
+      ]
   return var
 end
 

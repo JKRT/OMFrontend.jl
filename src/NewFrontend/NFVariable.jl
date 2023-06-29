@@ -5,7 +5,7 @@
     binding::Binding
     visibility::VisibilityType
     attributes::Attributes
-    typeAttributes::List{Tuple{String, Binding}}
+    typeAttributes::Vector{Tuple{String, Binding}}
     comment::Option{SCode.Comment}
     info::SourceInfo
   end
@@ -29,7 +29,7 @@ function toFlatStream(var::Variable,
   s = IOStream_M.append(s, toFlatString(var.ty))
   s = IOStream_M.append(s, " ")
   s = IOStream_M.append(s, toFlatString(var.name))
-  if !listEmpty(var.typeAttributes)
+  if !isempty(var.typeAttributes)
     s = IOStream_M.append(s, "(")
     first = true
     var_dims = dimensionCount(var.ty)
@@ -81,7 +81,7 @@ function toStream(
   s = IOStream_M.append(s, toString(var.ty))
   s = IOStream_M.append(s, " ")
   s = IOStream_M.append(s, toString(var.name))
-  if !listEmpty(var.typeAttributes)
+  if !isempty(var.typeAttributes)
     @assign s = IOStream_M.append(s, "(")
     @assign first = true
     for a in var.typeAttributes

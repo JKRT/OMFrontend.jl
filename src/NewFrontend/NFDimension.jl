@@ -486,8 +486,8 @@ function toDAE(dim::Dimension)::DAE.Dimension
   return daeDim
 end
 
-function fromExpList(expl::List{<:Expression})::Dimension
-  local dim::Dimension = DIMENSION_INTEGER(listLength(expl), Variability.CONSTANT)
+function fromExpList(expl::Union{Vector{Expression}, List{<:Expression}})::Dimension
+  local dim::Dimension = DIMENSION_INTEGER(length(expl), Variability.CONSTANT)
   return dim
 end
 

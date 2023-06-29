@@ -1,5 +1,5 @@
 """
-  An experimental Julia frontend for the Modelica language
+  An experimental Modelica frontend written in the Julia Language
 """
 module OMFrontend
 
@@ -103,6 +103,9 @@ function instantiateSCodeToFM(elementToInstantiate::String, inProgram::SCode.Pro
 end
 
 """
+```
+  exportDAERepresentationToFile(fileName::String, contents::String)
+```
   Prints the DAE representation to a file
 """
 function exportDAERepresentationToFile(fileName::String, contents::String)
@@ -197,23 +200,27 @@ if ccall(:jl_generating_output, Cint, ()) == 1
   end
 end
 
-function initLoadMSL(;MSL_Version = "MSL_3_2_3")
+function initLoadMSL(;MSL_Version = "MSL:3.2.3")
+  MSL_Version = replace(MSL_Version, "." => "_")
+  MSL_Version = replace(MSL_Version, ":" => "_")
   @info "Loading MSL: $(MSL_Version)"
   @time loadMSL(MSL_Version = MSL_Version)
   @info "Loaded MSL:$(MSL_Version) successfully"
 end
 
 """
-`function flattenModelWithMSL(modelName::String, fileName::String; MSL_Version = "MSL_3_2_3")`
+`function flattenModelWithMSL(modelName::String, fileName::String; MSL_Version = "MSL:3.2.3")`
 
 Returns the flat representation of a modelica model along with the functions used and define by the model.
 See the keyword argument for specifying MSL version.
 Valid versions are 3.2.3 and 4.0.0.
 """
-function flattenModelWithMSL(modelName::String, fileName::String; MSL_Version = "MSL_3_2_3")
+function flattenModelWithMSL(modelName::String, fileName::String; MSL_Version = "MSL:3.2.3")
   if !haskey(LIBRARY_CACHE, MSL_Version)
     initLoadMSL(MSL_Version = MSL_Version)
   end
+  MSL_Version = replace(MSL_Version, "." => "_")
+  MSL_Version = replace(MSL_Version, ":" => "_")
   local lib = LIBRARY_CACHE[MSL_Version]
   local absynProgram = parseFile(fileName)
   local sCodeProgram = translateToSCode(absynProgram)
@@ -240,10 +247,17 @@ end
   @author: johti17
   Loads the Modelica Standard Library (MSL).
   Adds the Modelica standard library to the library cache.
-Currently 3_2_3 is the default version.
+Currently 3.2.3 is the default version.
+
+Available versions are:
+4.0.0
+3.2.3
 """
 function loadMSL(; MSL_Version)
+  MSL_Version = replace(MSL_Version, "." => "_")
+  MSL_Version = replace(MSL_Version, ":" => "_")
   if ! haskey(LIBRARY_CACHE, MSL_Version)
+    #= Initialize various global variables =#
     Main.Global.initialize()
     #= Find the MSL =#
     local packagePath = dirname(realpath(Base.find_package("OMFrontend")))

@@ -30,40 +30,37 @@
 =#
 
 function scalarize(flatModel::FlatModel, name::String)::FlatModel
-  local vars::List{Variable} = nil
-  local eql::List{Equation} = nil
-  local ieql::List{Equation} = nil
-  local alg::List{Algorithm} = nil
-  local ialg::List{Algorithm} = nil
+  local vars::Vector{Variable} = Variable[]
   for c in flatModel.variables
     vars = scalarizeVariable(c, vars)
   end
-  @assign flatModel.variables = listReverseInPlace(vars)
+  @assign flatModel.variables = vars
   @assign flatModel.equations = mapExpList(flatModel.equations, expandComplexCref)
   @assign flatModel.equations = scalarizeEquations(flatModel.equations)
   @assign flatModel.initialEquations = mapExpList(flatModel.initialEquations, expandComplexCref)
   @assign flatModel.initialEquations = scalarizeEquations(flatModel.initialEquations)
-  @assign flatModel.algorithms = [scalarizeAlgorithm(a) for a in flatModel.algorithms]
+  @assign flatModel.algorithms =
+    Algorithm[scalarizeAlgorithm(a) for a in flatModel.algorithms]
   @assign flatModel.initialAlgorithms =
-    [scalarizeAlgorithm(a) for a in flatModel.initialAlgorithms]
+    Algorithm[scalarizeAlgorithm(a) for a in flatModel.initialAlgorithms]
   #execStat(getInstanceName() + "(" + name + ")")
   return flatModel
 end
 
-function scalarizeVariable(var::Variable, vars::List{Variable})
+function scalarizeVariable(var::Variable, vars::Vector{Variable})
   local name::ComponentRef
   local binding::Binding
   local ty::M_Type
   local vis::VisibilityType
   local attr::Attributes
-  local ty_attr::List{Tuple{String, Binding}}
+  local ty_attr::Vector{Tuple{String, Binding}}
   local cmt::Option{SCode.Comment}
   local info::SourceInfo
   local binding_iter::ExpressionIterator
   local crefs::List{ComponentRef}
   local exp::Expression
   local v::Variable
-  local ty_attr_names::List{String}
+  local ty_attr_names::Vector{String}
   local ty_attr_iters::Vector{ExpressionIterator}
   local bind_var::VariabilityType
   if isArray(var.ty)
@@ -92,19 +89,17 @@ function scalarizeVariable(var::Variable, vars::List{Variable})
             (binding_iter, exp) = next(binding_iter)
             binding = FLAT_BINDING(exp, bind_var)
             ty_attr = nextTypeAttributes(ty_attr_names, ty_attr_iters)
-            vars = _cons(
-              VARIABLE(cr, ty, binding, vis, attr, ty_attr, cmt, info),
+            vars = push!(
               vars,
+              VARIABLE(cr, ty, binding, vis, attr, ty_attr, cmt, info)
             )
           end
         end
       else
         for cr in crefs
-          @assign ty_attr = nextTypeAttributes(ty_attr_names, ty_attr_iters)
-          @assign vars = _cons(
-            VARIABLE(cr, ty, binding, vis, attr, ty_attr, cmt, info),
-            vars,
-          )
+          ty_attr = nextTypeAttributes(ty_attr_names, ty_attr_iters)
+          vars = push!(vars,
+                       VARIABLE(cr, ty, binding, vis, attr, ty_attr, cmt, info))
         end
       end
     catch e
@@ -121,45 +116,45 @@ function scalarizeVariable(var::Variable, vars::List{Variable})
     end
   else
     @assign var.binding = mapExp(var.binding, expandComplexCref_traverser)
-    @assign vars = _cons(var, vars)
+    push!(vars, var)
   end
   return vars
 end
 
 function scalarizeTypeAttributes(
-  attrs::List{Tuple{String, Binding}},
-)::Tuple{List{String}, Array{ExpressionIterator}}
+  attrs::Vector{Tuple{String, Binding}},
+)
   local iters::Vector{ExpressionIterator}
-  local names::List{String} = nil
+  local names::Vector{String} = String[]
   local len::Int
   local i::Int
   local name::String
   local binding::Binding
-  len = listLength(attrs)
+  len = length(attrs)
   iters = arrayCreateNoInit(len, EXPRESSION_NONE_ITERATOR())
   i = len
   for attr in attrs
     (name, binding) = attr
-    names = _cons(name, names)
-    arrayUpdate(iters, i, fromBinding(binding))
+    push!(names, name)
+    iters[i] = fromBinding(binding)
     i = i - 1
   end
   return (names, iters)
 end
 
 function nextTypeAttributes(
-  names::List{String},
+  names::Vector{String},
   iters::Vector{ExpressionIterator},
-)::List{Tuple{String, Binding}}
-  local attrs::List{Tuple{String, Binding}} = nil
+)::Vector{Tuple{String, Binding}}
+  local attrs = Tuple{String, Binding}[]
   local i::Int = 1
   local iter::ExpressionIterator
   local exp::Expression
   for name in names
     (iter, exp) = next(iters[i])
-    arrayUpdate(iters, i, iter)
+    iters[i] = iter
     i = i + 1
-    attrs = _cons((name, FLAT_BINDING(exp, Variability.PARAMETER)), attrs)
+    attrs = push!(attrs, (name, FLAT_BINDING(exp, Variability.PARAMETER)))
   end
   return attrs
 end

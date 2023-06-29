@@ -112,7 +112,7 @@ function updateVariable(
         if isBound(binding)
           return var
         else
-          @assign var.typeAttributes = listDelete(var.typeAttributes, unit_idx)
+          @assign var.typeAttributes = deleteat!(var.typeAttributes, unit_idx)
           break
         end
       end
@@ -125,7 +125,7 @@ function updateVariable(
           STRING_EXPRESSION(unit_str),
           Variability.CONSTANT,
         )
-        @assign var.typeAttributes = _cons(("unit", binding), var.typeAttributes)
+        @assign var.typeAttributes = push!(var.typeAttributes, ("unit", binding))
       end
     catch
     end

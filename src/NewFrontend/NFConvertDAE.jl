@@ -35,7 +35,7 @@ const FUNCTION_VARIABLE_CONVERSION_SETTINGS =
   VARIABLE_CONVERSION_SETTINGS(false, true, false)::VariableConversionSettings
 
 function convertVariables(
-  variables::List{<:Variable},
+  variables::Vector{Variable},
   elements::List{<:DAE.Element},
 )::List{DAE.Element}
 #  local settings::VariableConversionSettings
@@ -45,7 +45,7 @@ function convertVariables(
     true# addTypeToSource = Flags.isSet(Flags.INFO_XML_OPERATIONS) ||
     #                   Flags.isSet(Flags.VISUAL_XML),
   )
-  for var in listReverse(variables)
+  for var in reverse(variables)
     @assign elements = _cons(convertVariable(var, settings), elements)
   end
   return elements
@@ -192,7 +192,7 @@ function getComponentDirection(dir::DirectionType, cref::ComponentRef)::Directio
 end
 
 function convertVarAttributes(
-  attrs::List{<:Tuple{<:String, Binding}},
+  attrs::Vector{Tuple{String, Binding}},
   ty::NFType,
   compAttrs::Attributes,
 )::Option{DAE.VariableAttributes}
@@ -201,15 +201,14 @@ function convertVarAttributes(
   local is_final_opt::Option{Bool}
   local elTy::M_Type
   local is_array::Bool = false
-
-  @assign is_final =
+  is_final =
     compAttrs.isFinal || compAttrs.variability == Variability.STRUCTURAL_PARAMETER
-  if listEmpty(attrs) && !is_final
-    @assign attributes = NONE()
+  if isempty(attrs) && !is_final
+    attributes = NONE()
     return attributes
   end
-  @assign is_final_opt = SOME(is_final)
-  @assign attributes = begin
+  is_final_opt = SOME(is_final)
+  attributes = begin
     @match arrayElementType(ty) begin
       TYPE_REAL(__) => begin
         convertRealVarAttributes(attrs, is_final_opt)
@@ -240,11 +239,10 @@ function convertVarAttributes(
 end
 
 function convertRealVarAttributes(
-  attrs::List{<:Tuple{<:String, Binding}},
+  attrs::Vector{Tuple{String, Binding}},
   isFinal::Option{<:Bool},
 )::Option{DAE.VariableAttributes}
   local attributes::Option{DAE.VariableAttributes}
-
   local name::String
   local b::Binding
   local quantity::Option{DAE.Exp} = NONE()
@@ -348,11 +346,10 @@ function convertRealVarAttributes(
 end
 
 function convertIntVarAttributes(
-  attrs::List{<:Tuple{<:String, Binding}},
+  attrs::Vector{Tuple{String, Binding}},
   isFinal::Option{<:Bool},
 )::Option{DAE.VariableAttributes}
   local attributes::Option{DAE.VariableAttributes}
-
   local name::String
   local b::Binding
   local quantity::Option{DAE.Exp} = NONE()
@@ -360,52 +357,39 @@ function convertIntVarAttributes(
   local max::Option{DAE.Exp} = NONE()
   local start::Option{DAE.Exp} = NONE()
   local fixed::Option{DAE.Exp} = NONE()
-
   for attr in attrs
-    @assign (name, b) = attr
-    @assign () = begin
-      @match name begin
-        "quantity" => begin
-          @assign quantity = convertVarAttribute(b)
-          ()
-        end
-
-        "min" => begin
-          @assign min = convertVarAttribute(b)
-          ()
-        end
-
-        "max" => begin
-          @assign max = convertVarAttribute(b)
-          ()
-        end
-
-        "start" => begin
-          @assign start = convertVarAttribute(b)
-          ()
-        end
-
-        "fixed" => begin
-          @assign fixed = convertVarAttribute(b)
-          ()
-        end
-
-        _ => begin
-          #=  The attributes should already be type checked, so we shouldn't get any
-          =#
-          #=  unknown attributes here.
-          =#
-          Error.assertion(
-            false,
-            getInstanceName() + " got unknown type attribute " + name,
-            sourceInfo(),
-          )
-          fail()
-        end
+    (name, b) = attr
+    @match name begin
+      "quantity" => begin
+        quantity = convertVarAttribute(b)
+      end
+      "min" => begin
+        min = convertVarAttribute(b)
+      end
+      "max" => begin
+        max = convertVarAttribute(b)
+      end
+      "start" => begin
+        start = convertVarAttribute(b)
+      end
+      "fixed" => begin
+        fixed = convertVarAttribute(b)
+      end
+      _ => begin
+        #=  The attributes should already be type checked, so we shouldn't get any
+        =#
+        #=  unknown attributes here.
+        =#
+        Error.assertion(
+          false,
+          getInstanceName() + " got unknown type attribute " + name,
+          sourceInfo(),
+        )
+        fail()
       end
     end
   end
-  @assign attributes = SOME(DAE.VAR_ATTR_INT(
+  attributes = SOME(DAE.VAR_ATTR_INT(
     quantity,
     min,
     max,

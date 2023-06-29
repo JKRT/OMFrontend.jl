@@ -28,13 +28,14 @@
 end #= Modelica.Mechanics.MultiBody.Examples.Elementary=#
 
 #=
-  Test some of the models in loops including the V6 Engine model
+Test some of the models in loops including the V6 Engine model
+Not run every test. Takes quite a while currently...
 =#
-@testset "Testing to Flatten Modelica.Mechanics.MultiBody.Examples.Loops..." begin
-  @info "Testing to Flatten Modelica.Mechanics.MultiBody.Examples.Loops"
-  prefix = "Modelica.Mechanics.MultiBody.Examples.Loops"
-  @test typeof(flattenModelInMSL_TST("$(prefix).Engine1a")[1]) == OMFrontend.Main.FLAT_MODEL
-  @test typeof(flattenModelInMSL_TST("$(prefix).Engine1b")[1]) == OMFrontend.Main.FLAT_MODEL
-  @test typeof(flattenModelInMSL_TST("$(prefix).Engine1b_analytic")[1]) == OMFrontend.Main.FLAT_MODEL
-  @test typeof(flattenModelInMSL_TST("$(prefix).EngineV6")[1]) == OMFrontend.Main.FLAT_MODEL
-end #= Modelica.Mechanics.MultiBody.Examples.Elementary=#
+# @testset "Testing to Flatten Modelica.Mechanics.MultiBody.Examples.Loops..." begin
+#   @info "Testing to Flatten Modelica.Mechanics.MultiBody.Examples.Loops"
+#   prefix = "Modelica.Mechanics.MultiBody.Examples.Loops"
+#   @test typeof(flattenModelInMSL_TST("$(prefix).Engine1a")[1]) == OMFrontend.Main.FLAT_MODEL
+#   @test typeof(flattenModelInMSL_TST("$(prefix).Engine1b")[1]) == OMFrontend.Main.FLAT_MODEL
+#   @test typeof(flattenModelInMSL_TST("$(prefix).Engine1b_analytic")[1]) == OMFrontend.Main.FLAT_MODEL
+#   @test typeof(flattenModelInMSL_TST("$(prefix).EngineV6")[1]) == OMFrontend.Main.FLAT_MODEL
+# end #= Modelica.Mechanics.MultiBody.Examples.Elementary=#

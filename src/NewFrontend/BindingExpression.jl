@@ -5349,12 +5349,24 @@ function applySubscripts(subscripts::List{<:Subscript}, exp::Expression) ::Expre
   outExp
 end
 
-function makeRecord(recordName::Absyn.Path, recordType::M_Type, fields::List{<:Expression})::Expression
+"""
+```
+makeRecord(recordName::Absyn.Path, @nospecialize(recordType::M_Type), fields::List{Expression})
+```
+  Creates a record expression.
+"""
+function makeRecord(recordName::Absyn.Path, @nospecialize(recordType::M_Type), fields::List{Expression})
   local exp::Expression
   exp = RECORD_EXPRESSION(recordName, recordType, fields)
   exp
 end
 
+"""
+```
+makeExpArray(elements::List{<:Expression}, isLiteral::Bool = false) ::Expression
+```
+  Creates an array expression
+"""
 function makeExpArray(elements::List{<:Expression}, isLiteral::Bool = false) ::Expression
   local exp::Expression
   local ty::M_Type

@@ -851,12 +851,6 @@ function applyList(eql::Vector{Equation}, func::ApplyFn)
   end
 end
 
-"""
- Should return nothing
-"""
-function applyList(eql::Union{Cons{Union{}}, Nil}, ::Function)
-end
-
 function Equation_info(@nospecialize(eq::Equation))::SourceInfo
   local info::SourceInfo = sourceInfo() #DAE.ElementSource_getInfo(source(eq))
   return info

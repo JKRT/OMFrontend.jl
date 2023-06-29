@@ -37,7 +37,6 @@ using ..Main
 import ..Main.NFComponentRef
 import ..Main.BaseHashTable
 import ..Main.toString
-import ..Main.toString2
 
 import ArrayUtil
 import ListUtil
@@ -765,13 +764,13 @@ end
 
 function hashhash(cref::ComponentRef, mod::Int)::Int
   stringHashDjb2Mod(toString(cref), mod)
-end  
+end
 
 """
   Returns an empty HashTable.
   Using the bucketsize size.
 """
-function emptyHashTableSized(size::Int)::HashTable  
+function emptyHashTableSized(size::Int)::HashTable
   local hashTable::HashTable
   isEq = (cref1, cref2) -> isEqual(cref1, cref2)
   ts = (cref) -> toString(cref)

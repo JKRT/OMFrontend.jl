@@ -3,7 +3,7 @@ const MakeElement = Function
 const MakeFunc = Function
 
 function simplifyFlatModel(flatModel::FlatModel)::FlatModel
-  @assign flatModel.variables = list(simplifyVariable(v) for v in flatModel.variables)
+  @assign flatModel.variables = Variable[simplifyVariable(v) for v in flatModel.variables]
   @assign flatModel.equations = simplifyEquations(flatModel.equations)
   @assign flatModel.initialEquations = simplifyEquations(flatModel.initialEquations)
   @assign flatModel.algorithms = simplifyAlgorithms(flatModel.algorithms)
@@ -14,7 +14,7 @@ end
 
 function simplifyVariable(var::Variable)::Variable
   @assign var.binding = simplifyBinding(var.binding)
-  @assign var.typeAttributes = list(simplifyTypeAttribute(a) for a in var.typeAttributes)
+  @assign var.typeAttributes = [simplifyTypeAttribute(a) for a in var.typeAttributes]
   return var
 end
 

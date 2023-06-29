@@ -1557,14 +1557,14 @@ function liftArrayRightList(ty::NFType, dims::List{<:Dimension})::NFType
   return ty
 end
 
-""" #= Adds array dimensions to a type on the left side, e.g.
-       listArrayLeft(Real[2, 3], [4, 5]) => Real[4, 5, 2, 3]. =#"""
+"""  Adds array dimensions to a type on the left side, e.g.
+     listArrayLeft(Real[2, 3], [4, 5]) => Real[4, 5, 2, 3].
+"""
 function liftArrayLeftList(ty::NFType, dims::List{<:Dimension})::NFType
-
   if listEmpty(dims)
     return ty
   end
-  @assign ty = begin
+  ty = begin
     @match ty begin
       TYPE_ARRAY(__) => begin
         TYPE_ARRAY(ty.elementType, listAppend(dims, ty.dimensions))

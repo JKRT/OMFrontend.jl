@@ -1,11 +1,11 @@
 [![Github Action CI](https://github.com/JKRT/OMFrontend.jl/workflows/CI/badge.svg)](https://github.com/JKRT/OMFrontend.jl/actions)[![License: OSMC-PL](https://img.shields.io/badge/license-OSMC--PL-lightgrey.svg)](OSMC-License.txt)
 # OMFrontend.jl
 Experimental implementation of NF. That is a Modelica frontend in Julia.
-
 For the entire suite of software components that make up this compiler see [OpenModelica.jl](https://github.com/JKRT/OM.jl)
 
 ## Notes regarding the first public release
-This should be considered an alpha. This means that changes may happen quickly, and that they might be breaking.
+This should be considered an alpha.
+This means that changes may happen quickly, and that they might be breaking.
 
 ## Example use
 
@@ -22,7 +22,7 @@ end HelloWorld;
 You can use the API in the following way (Assuming the file is in the active directory):
 
 ```
-import OMFrontend
+using OMFrontend
 modelFile = "HelloWorld.mo"
 modelName = "HelloWorld"
 p = OMFrontend.parseFile(modelFile)
@@ -45,11 +45,11 @@ For instance, say you are interested in `AD_DA_conversion` in `Modelica.Electric
 To instantiate this model we can define the function:
 ```julia
 function flattenModelInMSL_TST(modelName::String)
-  local MSL_V  = "MSL_4_0_0"
+  local MSL_V  = "MSL.4.0.0"
   if !haskey(OMFrontend.LIBRARY_CACHE, MSL_V)
     OMFrontend.initLoadMSL(MSL_Version= MSL_V)
   end
-  local libraryAsScoded = OMFrontend.LIBRARY_CACHE["MSL_4_0_0"]
+  local libraryAsScoded = OMFrontend.LIBRARY_CACHE["MSL.4.0.0"]
   (FM, cache) = OMFrontend.instantiateSCodeToFM(modelName, libraryAsScoded)
 end
 ```
@@ -74,6 +74,6 @@ An alternative is to use the DAE datastructure defined by [DAE.jl](https://githu
 There is also an API defined for using libraries, however, as of this writing the documentations for these procedures
 are not yet finalized and is subject to change. If you are a developer please see `OMFrontend.jl/src/OMFrontend.jl` for the other methods.
 
-### Issues/Questions
+### Issues/Questions/Contributing
 It should be noted that this package is a component of [OM.jl](https://github.com/JKRT/OM.jl) hence the API for OMFrontend is somewhat low level.
 For any questions or ideas on how we could collaborate on something please see my LiU email at my page [LiU-page](https://liu.se/en/employee/johti17)

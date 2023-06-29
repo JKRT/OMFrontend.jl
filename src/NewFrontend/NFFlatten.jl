@@ -35,7 +35,7 @@ import .FunctionTree
 function flatten(classInst::InstNode, name::String; prefix = COMPONENT_REF_EMPTY())
   local flatModel::FlatModel
   local sections::Sections
-  local vars::List{Variable}
+  local vars::Vector{Variable}
   local eql::Vector{Equation}
   local ieql::Vector{Equation}
   local alg::Vector{Algorithm}
@@ -50,11 +50,10 @@ function flatten(classInst::InstNode, name::String; prefix = COMPONENT_REF_EMPTY
     prefix,
     Visibility.PUBLIC,
     NONE(),
-    nil,
+    Variable[],
     sections,
     structuralSubmodels,
   )
-  vars = listReverseInPlace(vars)
   flatModel = begin
     @match sections begin
       SECTIONS(__) => begin
@@ -62,7 +61,18 @@ function flatten(classInst::InstNode, name::String; prefix = COMPONENT_REF_EMPTY
         ieql = sections.initialEquations
         alg = sections.algorithms #Was reverse
         ialg = sections.initialAlgorithms #Was reverse
-        FLAT_MODEL(name, vars, eql, ieql, alg, ialg, structuralSubmodels, NONE(), nil, nil, Bool[], cmt)
+        FLAT_MODEL(name,
+                   vars,
+                   eql,
+                   ieql,
+                   alg,
+                   ialg,
+                   structuralSubmodels,
+                   NONE(),
+                   nil,
+                   nil,
+                   Bool[],
+                   cmt)
       end
       _ => begin
         FLAT_MODEL(name,
@@ -88,7 +98,7 @@ end
 function collectFunctions(flatModel::FlatModel, name::String)::FunctionTree
   local funcs::FunctionTree
   funcs = FunctionTreeImpl.new()
-  funcs = ListUtil.fold(flatModel.variables, collectComponentFuncs, funcs)
+  funcs = ArrayUtil.fold(flatModel.variables, collectComponentFuncs, funcs)
   funcs = ArrayUtil.fold(flatModel.equations, collectEquationFuncs, funcs)
   funcs = ArrayUtil.fold(flatModel.initialEquations, collectEquationFuncs, funcs)
   funcs = ArrayUtil.fold(flatModel.algorithms, collectAlgorithmFuncs, funcs)
@@ -101,7 +111,7 @@ function flattenClass(
   prefix::ComponentRef,
   visibility::VisibilityType,
   binding::Option{<:Binding},
-  vars::List{<:Variable},
+  vars::Vector{Variable},
   sections::Sections,
   #= Extension. Models that are a structural part of a flat model and should not be merged.=#
   structuralSubModels::List{FLAT_MODEL},
@@ -195,7 +205,7 @@ function flattenComponent(
   prefix::ComponentRef,
   visibility::VisibilityType,
   outerBinding::Option{<:Binding},
-  vars::List{<:Variable},
+  vars::Vector{Variable},
   sections::Sections,
   #= Passed from the top level class. =#
   structuralSubModels::List{FLAT_MODEL}
@@ -404,9 +414,9 @@ function flattenSimpleComponent(
   outerBinding::Option{<:Binding},
   typeAttrs::List{<:Modifier},
   prefix::ComponentRef,
-  vars::List{<:Variable},
+  vars::Vector{Variable},
   sections::Sections,
-)::Tuple{List{Variable}, Sections}
+)
 
   local comp_node::InstNode = n
   local name::ComponentRef
@@ -417,7 +427,7 @@ function flattenSimpleComponent(
   local comp_attr::Attributes
   local vis::VisibilityType
   local eq::Equation
-  local ty_attrs::List{Tuple{String, Binding}}
+  local ty_attrs::Vector{Tuple{String, Binding}}
   local var::VariabilityType
   local unfix::Bool
   ty = comp.ty
@@ -425,13 +435,13 @@ function flattenSimpleComponent(
   comp_attr = comp.attributes
   cmt = comp.comment
   info = comp.info
-  @assign var = comp_attr.variability
+  var = comp_attr.variability
   if isSome(outerBinding)
     @match SOME(binding) = outerBinding
-    @assign unfix = isUnbound(binding) && var == Variability.PARAMETER
+    unfix = isUnbound(binding) && var == Variability.PARAMETER
   else
     binding = flattenBinding(binding, prefix)
-    @assign unfix = false
+    unfix = false
   end
   #=  If the component is an array component with a binding and at least discrete variability,
   =#
@@ -451,25 +461,26 @@ function flattenSimpleComponent(
   #   end
   # end
   name = prefixScope(comp_node, ty, nil, prefix)
-  ty_attrs = list(flattenTypeAttribute(m, name) for m in typeAttrs)
+  ty_attrs = [flattenTypeAttribute(m, name) for m in typeAttrs]
   #=  Set fixed = true for parameters that are part of a record instance whose
   =#
   #=  binding couldn't be split and was moved to an initial equation.
   =#
   if unfix
-    ty_attrs = ListUtil.removeOnTrue("fixed", isTypeAttributeNamed, ty_attrs)
-    ty_attrs = _cons(
+    ty_attrs = ArrayUtil.removeOnTrue("fixed", isTypeAttributeNamed, ty_attrs)
+    ty_attrs = push!(
+      ty_attrs,
       (
         "fixed",
         FLAT_BINDING(
           BOOLEAN_EXPRESSION(false),
           Variability.CONSTANT,
-        ),
-      ),
-      ty_attrs,
+        )
+      )
     )
   end
-  vars = _cons(
+  vars = push!(
+    vars,
     VARIABLE(
       name,
       ty,
@@ -480,7 +491,6 @@ function flattenSimpleComponent(
       cmt,
       info,
     ),
-    vars,
   )
   return (vars, sections)
 end
@@ -488,18 +498,16 @@ end
 function flattenTypeAttribute(attr::Modifier, prefix::ComponentRef)::Tuple{String, Binding}
   local outAttr::Tuple{String, Binding}
   local bnd::Binding
-  @assign bnd = flattenBinding(binding(attr), prefix, true)
-  @assign outAttr = (name(attr), bnd)
+  bnd = flattenBinding(binding(attr), prefix, true)
+  outAttr = (name(attr), bnd)
   return outAttr
 end
 
 function isTypeAttributeNamed(name::String, attr::Tuple{<:String, Binding})::Bool
   local isNamed::Bool
-
   local attr_name::String
-
-  @assign (attr_name, _) = attr
-  @assign isNamed = name == attr_name
+  (attr_name, _) = attr
+  isNamed = name == attr_name
   return isNamed
 end
 
@@ -548,9 +556,9 @@ function flattenComplexComponent(
   visibility::VisibilityType,
   outerBinding::Option{<:Binding},
   prefix::ComponentRef,
-  vars::List{<:Variable},
+  vars::Vector{Variable},
   sections::Sections,
-)::Tuple{List{Variable}, Sections}
+)::Tuple{Vector{Variable}, Sections}
   @debug "FLATTEN COMPLEX COMPONENT: " * toString(node)
   local dims::List{Dimension}
   local name::ComponentRef
@@ -632,20 +640,18 @@ function flattenArray(
   prefix::ComponentRef,
   visibility::VisibilityType,
   binding::Option{<:Binding},
-  vars::List{<:Variable},
+  vars::Vector{Variable},
   sections::Sections,
   subscripts::List{<:Subscript} = nil,
-)::Tuple{List{Variable}, Sections}
-
+)::Tuple{Vector{Variable}, Sections}
   local dim::Dimension
   local rest_dims::List{Dimension}
   local sub_pre::ComponentRef
   local range_iter::RangeIterator
   local sub_exp::Expression
   local subs::List{Subscript}
-  local vrs::List{Variable}
+  local vrs::Vector{Variable}
   local sects::Sections
-
   #=  if we don't scalarize flatten the class and vectorize it
   =#
   if !Flags.isSet(Flags.NF_SCALARIZE)
@@ -701,9 +707,9 @@ function flattenArray(
     return (vars, sections)
   end
   if listEmpty(dimensions)
-    @assign subs = listReverse(subscripts)
-    @assign sub_pre = setSubscripts(subs, prefix)
-    @assign (vars, sections) = flattenClass(
+    subs = listReverse(subscripts)
+    sub_pre = setSubscripts(subs, prefix)
+    (vars, sections) = flattenClass(
       cls,
       sub_pre,
       visibility,
@@ -714,10 +720,10 @@ function flattenArray(
     )
   else
     @match _cons(dim, rest_dims) = dimensions
-    @assign range_iter = fromDim(dim)
+    range_iter = fromDim(dim)
     while hasNext(range_iter)
-      @assign (range_iter, sub_exp) = next(range_iter)
-      @assign (vars, sections) = flattenArray(
+      (range_iter, sub_exp) = next(range_iter)
+      (vars, sections) = flattenArray(
         cls,
         rest_dims,
         prefix,
@@ -1025,21 +1031,20 @@ function flattenBindingExp(
   local pre::ComponentRef
   local cr_node::InstNode
   local par::InstNode
-  @assign outExp = begin
+  outExp = begin
     @match exp begin
       BINDING_EXP(exp = outExp) => begin
-        @assign parents = listRest(exp.parents)
+        parents = listRest(exp.parents)
         if !exp.isEach
-          if isTypeAttribute && !listEmpty(parents)
-            @assign parents = listRest(parents)
+          if isTypeAttribute && !isempty(parents)
+            parents = listRest(parents)
           end
-          if !listEmpty(parents)
-            @assign outExp = flattenBindingExp2(outExp, prefix, parents)
+          if !isempty(parents)
+            outExp = flattenBindingExp2(outExp, prefix, parents)
           end
         end
         flattenExp(outExp, prefix)
       end
-
       _ => begin
         exp
       end
@@ -1049,9 +1054,9 @@ function flattenBindingExp(
 end
 
 function flattenBindingExp2(
-  exp::Expression,
-  prefix::ComponentRef,
-  parents::List{<:InstNode},
+  @nospecialize(exp::Expression),
+  @nospecialize(prefix::ComponentRef),
+  parents::List{InstNode},
 )::Expression
   local outExp::Expression = exp
   local binding_level::Int = 0
@@ -1071,7 +1076,7 @@ function flattenBindingExp2(
     end
   end
   for parent in parents
-    @assign binding_level = binding_level + dimensionCount(getType(parent))
+    binding_level = binding_level + dimensionCount(getType(parent))
   end
   if binding_level > 0
     #subs = listAppend(listReverse(s) for s in subscriptsAll(pre)) modifed as per below
@@ -1081,7 +1086,7 @@ function flattenBindingExp2(
     binding_level = min(binding_level, listLength(subs))
     #subs = ListUtil.firstN_reverse(subs, binding_level)
     subs = ListUtil.firstN(subs, binding_level)
-    @assign outExp = applySubscripts(subs, exp)
+    outExp = applySubscripts(subs, exp)
   end
   #=
   TODO: Optimize this, making a list of all subscripts in the prefix when
@@ -1534,7 +1539,7 @@ function resolveConnections(flatModel::FlatModel, name::String)::FlatModel
   end
   #=  add the equations to the flat model=#
   @assign flatModel.equations = vcat(conn_eql, flatModel.equations)
-  @assign flatModel.variables = list(v for v in flatModel.variables if isPresent(v))
+  @assign flatModel.variables = [v for v in flatModel.variables if isPresent(v)]
   ctable = CardinalityTable.fromConnections(conns)
   #=  Evaluate any connection operators if they're used. =#
   if System.getHasStreamConnectors() || System.getUsesCardinality()
@@ -1550,9 +1555,9 @@ function evaluateConnectionOperators(
   setsArray::Vector{<:List{<:Connector}},
   ctable::CardinalityTable.Table,
 )::FlatModel
-
   @assign flatModel.variables =
-    list(evaluateBindingConnOp(c, sets, setsArray, ctable) for c in flatModel.variables)
+    Variable[evaluateBindingConnOp(c, sets, setsArray, ctable)
+             for c in flatModel.variables]
   @assign flatModel.equations =
     evaluateEquationsConnOp(flatModel.equations, sets, setsArray, ctable)
   @assign flatModel.initialEquations =

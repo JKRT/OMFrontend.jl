@@ -62,15 +62,15 @@ end
 @exportAll()
 end
 
-FlowControl = (() -> begin #= Enumeration =#
-                 NEXT = 1
-                 CONTINUE = 2
-                 BREAK = 3
-                 RETURN = 4
-                 ASSERTION = 5
-                 () -> (NEXT; CONTINUE; BREAK; RETURN; ASSERTION)
-               end)()
 const FlowControlType = Int
+struct FlowControlStruct{T}
+  NEXT::T
+  CONTINUE::T
+  BREAK::T
+  RETURN::T
+  ASSERTION::T
+end
+const FlowControl = FlowControlStruct{Int}(1,2,3,4,5)
 
 function evaluate(fn::M_Function, args::List{<:Expression})::Expression
   local result::Expression
@@ -211,11 +211,12 @@ function evaluateRecordConstructor(
   local inputs::List{InstNode} = fn.inputs
   local locals::List{InstNode} = fn.locals
   local node::InstNode
-
   repl = ReplTree.new()
   fields = recordFields(ty)
-  #=  Add the inputs and local variables to the replacement tree with their =#
-  #=  respective bindings. =#
+  #=
+  Add the inputs and local variables to the replacement tree with their
+  respective bindings.
+  =#
   for i in inputs
     @match _cons(arg, rest_args) = rest_args
     repl = ReplTree.add(repl, i, arg)
@@ -224,10 +225,10 @@ function evaluateRecordConstructor(
     repl = ReplTree.add(repl, l, getBindingExp(l, repl))
   end
   #=  Apply the replacements to all the variables. =#
-  @assign repl = ReplTree.map(repl, (nodeArg, expArg) -> applyBindingReplacement(nodeArg, expArg, repl))
-  #=  Fetch the new binding expressions for all the variables, both inputs and
-  =#
-  #=  locals.
+  repl = ReplTree.map(repl, (nodeArg, expArg) -> applyBindingReplacement(nodeArg, expArg, repl))
+  #=
+  Fetch the new binding expressions for all the variables, both inputs and
+  locals.
   =#
   for f in fields
     if isInput(f)
@@ -238,14 +239,11 @@ function evaluateRecordConstructor(
     e = ReplTree.get(repl, node)
     expl = _cons(e, expl)
   end
-  #=  Create a new record expression from the list of arguments.
-  =#
-  result =
-    makeRecord(name(fn), ty, listReverseInPlace(expl))
-  #=  Constant evaluate the expression if requested.
-  =#
+  #=  Create a new record expression from the list of arguments. =#
+  result = makeRecord(name(fn), ty, listReverseInPlace(expl))
+  #=  Constant evaluate the expression if requested. =#
   if evaluate
-    @assign result = Ceval.evalExp(result)
+    result = evalExp(result)
   end
   return result
 end

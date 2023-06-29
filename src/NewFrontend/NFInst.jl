@@ -56,8 +56,8 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
   cls = setNodeType(ROOT_CLASS(EMPTY_NODE()), cls)
   #=  Initialize the storage for automatically generated inner elements. =#
   top = setInnerOuterCache(top, C_TOP_SCOPE(NodeTree.new(), cls))
-  #=  Instantiate the class. =#
-  inst_cls = instantiateN1(cls, EMPTY_NODE())
+  @debug "Instantiate the class"
+   inst_cls = instantiateN1(cls, EMPTY_NODE())
   insertGeneratedInners(inst_cls, top)
   #execStat("NFInst.instantiate(" + name + ")")
   #=
@@ -65,18 +65,18 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
   bindings, dimensions, etc). This is done as a separate step after
   instantiation to make sure that lookup is able to find the correct nodes.
   =#
-  Base.inferencebarrier(instExpressions(inst_cls))
+  @debug "Instantiate Expressions"
+   Base.inferencebarrier(instExpressions(inst_cls))
   #                   execStat("NFInst.instExpressions(" + name + ")")
   #=  Mark structural parameters.
   =#
   updateImplicitVariability(inst_cls, false #== Flags.isSet(Flags.EVAL_PARAM) ==#)
   #execStat("NFInst.updateImplicitVariability")
-  #=  Type the class.
-  =#
-  Base.inferencebarrier(typeClass(inst_cls, name))
-  #=  Flatten the model and evaluate constants in it.
-  =#
-  flat_model = flatten(inst_cls, name)
+  #=  Type the class. =#
+  @debug "Type the class"
+   Base.inferencebarrier(typeClass(inst_cls, name))
+  @debug "Flatten the model and evaluate constants in it."
+   flat_model = flatten(inst_cls, name)
   #=
     Check if we are to performance recompilation. If true adds the SCode program to the flat model.
     Also check if we have a Connections.branch statement in an if-equation
@@ -146,8 +146,6 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
         #= Contains the equations of the system before the virtual connection graph is calculated  =#
         @assign flat_model.unresolvedConnectEquations = equationsWithoutDOCC
       end
-      #res = replace(toString(flat_model), "\\n" => "\n")
-      #println(res)
       #=
       Remove the doccs equations from the set of equations in the flat model
       (If they are to be removed)
@@ -155,7 +153,7 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
     end
     #= Resolve the connections of the current system. =#
     flat_model = resolveConnections(flat_model, name)
-    flat_model = if ! recompilationEnabled
+    flat_model =  if ! recompilationEnabled
       evaluate(flat_model)
     else
       flat_model
@@ -168,28 +166,32 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
   end
   #= Do unit checking =#
   #TODO  @assign flat_model = UnitCheck.checkUnits(flat_model)
-  #=  Apply simplifications to the model.=#
-  flat_model = inlineSimpleCalls(flat_model)
-  flat_model = simplifyFlatModel(flat_model)
-  #=  Collect a tree of all functions that are still used in the flat model.=#
-  funcs = collectFunctions(flat_model, name)
+  @debug "Inline trivial calls in the model"
+   flat_model = inlineSimpleCalls(flat_model)
+  @debug "Apply simplifications to the model"
+   flat_model = simplifyFlatModel(flat_model)
+  @debug "Collect a tree of all functions that are still used in the flat model"
+   funcs = collectFunctions(flat_model, name)
   #=  Collect package constants that couldn't be substituted with their values =#
   #=  (e.g. because they where used with non-constant subscripts), and add them to the model. =#
-  flat_model = collectConstants(flat_model, funcs)
+  @debug "Collect package constants"
+   flat_model = collectConstants(flat_model, funcs)
   if Flags.getConfigBool(Flags.FLAT_MODELICA)
     printFlatString(flat_model, FunctionTreeImpl.listValues(funcs))
   end
   #= Scalarize array components in the flat model.=#
   if Flags.isSet(Flags.NF_SCALARIZE)
-    flat_model = scalarize(flat_model, name)
+    @debug "Scalarization"
+     flat_model = scalarize(flat_model, name)
   else
     #=  Remove empty arrays from variables =#
     @assign flat_model.variables = ListUtil.filterOnFalse(flat_model.variables, isEmptyArray)
   end
-  verify(flat_model)
-  #                   if Flags.isSet(Flags.NF_DUMP_FLAT)
-  # print("FlatModel:\\n" + toString(flat_model) + "\\n")
-  #                  end
+  @debug "Verify the model"
+   verify(flat_model)
+  if Flags.isSet(Flags.NF_DUMP_FLAT)
+    print("FlatModel:\\n" + toString(flat_model) + "\\n")
+  end
   return (flat_model, funcs, inst_cls)
 end
 

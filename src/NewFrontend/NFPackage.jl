@@ -1,4 +1,3 @@
-
 module ConstantsSetImpl
 import ..NFComponentRef
 using MetaModelica
@@ -14,14 +13,12 @@ end
 Constants = ConstantsSetImpl.Tree
 
 function collectConstants(flatModel::FlatModel, functions::FunctionTree)::FlatModel
-
-  local vars::List{Variable} = nil
+  local vars::Vector{Variable} = Variable[]
   local binding::Binding
   local constants::Constants
-
   @assign constants = ConstantsSetImpl.new()
-  @assign constants =
-    ListUtil.fold(flatModel.variables, collectVariableConstants, constants)
+  constants =
+    ArrayUtil.fold(flatModel.variables, collectVariableConstants, constants)
   @assign constants =
     foldExpList(flatModel.equations, collectExpConstants, constants)
   @assign constants = foldExpList(
@@ -37,9 +34,8 @@ function collectConstants(flatModel::FlatModel, functions::FunctionTree)::FlatMo
     constants,
   )
   @assign constants = FunctionTreeImpl.fold(functions, collectFuncConstants, constants)
-  @assign vars =
-    listReverse(list(Variable_fromCref(c) for c in ConstantsSetImpl.listKeys(constants)))
-  @assign flatModel.variables = listAppend(vars, flatModel.variables)
+  vars = Variable[Variable_fromCref(c) for c in ConstantsSetImpl.listKeys(constants)]
+  @assign flatModel.variables = vcat(vars, flatModel.variables)
 #  execStat(getInstanceName()) TODO
   return flatModel
 end
@@ -48,9 +44,8 @@ function replaceConstants(
   flatModel::FlatModel,
   functions::FunctionTree,
 )::Tuple{FlatModel, FunctionTree}
-
   @assign flatModel.variables =
-    list(replaceVariableConstants(c) for c in flatModel.variables)
+    Variable[replaceVariableConstants(c) for c in flatModel.variables]
   @assign flatModel.equations =
     mapExpList(flatModel.equations, replaceExpConstants)
   @assign flatModel.initialEquations =

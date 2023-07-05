@@ -6,9 +6,6 @@ using OMFrontend
 using Profile
 using PProf
 
-# Collect a profile
-Profile.clear()
-
 function flattenModelInMSL_TST(modelName::String)
   local MSL_V  = "MSL_4_0_0"
   if !haskey(OMFrontend.LIBRARY_CACHE, MSL_V)
@@ -18,11 +15,26 @@ function flattenModelInMSL_TST(modelName::String)
   (FM, cache) = OMFrontend.instantiateSCodeToFM(modelName, libraryAsScoded)
 end
 
-#= Precompile j i c=#
-flattenModelInMSL_TST("Modelica.Mechanics.MultiBody.Examples.Loops.Engine1a");
-#=
-Try to flatten an engine model in the multibody library.
-=#
-@profile flattenModelInMSL_TST("Modelica.Mechanics.MultiBody.Examples.Loops.Engine1a");
+function profileMemory()
+  # Collect a profile
+  Profile.clear()
+  #= Precompile j i c=#
+  flattenModelInMSL_TST("Modelica.Mechanics.MultiBody.Examples.Loops.Engine1a");
+  #=
+  Try to flatten an engine model in the multibody library.
+  =#
+  Profile.Allocs.@profile flattenModelInMSL_TST("Modelica.Mechanics.MultiBody.Examples.Loops.Engine1a");
+  PProf.Allocs.pprof()
+end
 
-PProf.Allocs.pprof()
+function profilePerf()
+  # Collect a profile
+  Profile.clear()
+  #= Precompile j i c=#
+  flattenModelInMSL_TST("Modelica.Mechanics.MultiBody.Examples.Loops.Engine1a");
+  #=
+  Try to flatten an engine model in the multibody library.
+  =#
+  Profile.@profile flattenModelInMSL_TST("Modelica.Mechanics.MultiBody.Examples.Loops.Engine1a");
+  PProf.pprof()
+end

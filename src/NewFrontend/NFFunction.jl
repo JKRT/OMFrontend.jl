@@ -1943,7 +1943,7 @@ function instFunction3(fnNode::InstNode)::InstNode
   =#
   cacheInitFunc(fnNode)
   instExpressions(fnNode)
-  #@debug "Returning in instfunction3"
+  ##@debug "Returning in instfunction3"
   return fnNode
 end
 

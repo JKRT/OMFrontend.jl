@@ -70,25 +70,25 @@ end
 """ #= Creates a new DisjointSets from a list of connection and flow variables. =#"""
 function fromConnections(connections)
   ENV["JULIA_DEBUG"] = "" #Activate debug
-#  @debug "fromConnections: Our connections" connections
+#  #@debug "fromConnections: Our connections" connections
   local sz = listLength(connections.connections) + listLength(connections.flows)
   local sets::Sets = emptySets(sz) # duh, is not possible to give sz size hint to DisjointSets! -Adrian Pop
-  @debug "Sets before from connections $(string(sets))"
+  #@debug "Sets before from connections $(string(sets))"
   # Add flow variable to the sets, unless disabled by flag.
   # Do this here if NF_SCALARIZE to use fast addList for scalarized flows.
   # if ! Flags.isSet(Flags.DISABLE_SINGLE_FLOW_EQ) && Flags.isSet(Flags.NF_SCALARIZE) then
-  @debug "Before ListUtil 1 $(string(sets))"
+  #@debug "Before ListUtil 1 $(string(sets))"
   sets = ListUtil.fold(connections.flows, addConnector, sets)
   # end
   # Add the connections.
-  @debug "Before ListUtil 2 $(string(sets))"
+  #@debug "Before ListUtil 2 $(string(sets))"
   sets = ListUtil.fold1(connections.connections, addConnection, connections.broken, sets)
   # Add remaining flow variables to the sets, unless disabled by flag.
   # Do this after addConnection if not NF_SCALARIZE to get array dims right.
   # if ! Flags.isSet(Flags.DISABLE_SINGLE_FLOW_EQ) && ! Flags.isSet(Flags.NF_SCALARIZE) then
   # sets = ListUtil.fold(connections.flows, addSingleConnector, sets)
   # end
-  @debug "Sets after from connections $(string(sets))"
+  #@debug "Sets after from connections $(string(sets))"
   return sets
 end
 
@@ -118,7 +118,7 @@ end #=addConnection=#
 
 function addConnector(conn, sets)
   sets = addList(split(conn), sets)
-  @debug "After addConnector $(string(sets))"
+  #@debug "After addConnector $(string(sets))"
   return sets
 end
 
@@ -149,13 +149,13 @@ end
 
 """ Merges the two sets that the given entry belong to """
 function merge(conn1, conn2, sets)
-  @debug "Sets before merge: $(string(sets))"
+  #@debug "Sets before merge: $(string(sets))"
   #= Get the index of the two sets now. =#
   (set1Idx, sets) = findSet(conn1, sets);
   (set2Idx, sets) = findSet(conn2, sets);
   #= We need to access the integer internals of disjoint set.=#
   sets = union(set1Idx, set2Idx, sets)
-  @debug "Sets after merge: $(string(sets))"
+  #@debug "Sets after merge: $(string(sets))"
   #= Return the modified set=#
   return sets
 end
@@ -210,7 +210,7 @@ flat as possible.
 function union(set1::Int, set2::Int, sets)
   local rank1
   local rank2
-  @debug "Sets before union"
+  #@debug "Sets before union"
   if set1 != set2
     # Assume that the indices actually point to root nodes, in which case the
     # entries in the node array is actually the ranks of the nodes.
@@ -230,7 +230,7 @@ function union(set1::Int, set2::Int, sets)
       arrayUpdate(sets.nodes, set2, set1);
     end
   end
-  @debug "Sets after union"
+  #@debug "Sets after union"
   return sets
 end
 
@@ -254,7 +254,7 @@ end
   Author:johti17
 """
 function extractSets(sets::Sets)
-  @debug("Sets before extractSets $(string(sets))")
+  #@debug("Sets before extractSets $(string(sets))")
 #  input Sets sets;
 #  output array<list<Entry>> setsArray "An array with all the sets.";
 #  output Sets assignedSets "Sets with the roots assigned to sets.";
@@ -293,8 +293,8 @@ function extractSets(sets::Sets)
     setsArray[set_idx] = _cons(e, setsArray[set_idx])
   end
   assignedSets = Sets(nodes, sets.elements, sets.nodeCount);
-  @debug "Sets after extractSets $(string(assignedSets))"
-  @debug "Sets array: $(toString(setsArray))"
+  #@debug "Sets after extractSets $(string(assignedSets))"
+  #@debug "Sets array: $(toString(setsArray))"
   #= !Remove potentially empty sets! =#
   filter!((s)-> !(s isa Nil), setsArray)
   return (setsArray, assignedSets)
@@ -322,14 +322,14 @@ end
   Add a list of entries to the disjoint-sets forrest
 """
 function addList(entries::List{T}, sets) where {T}
-  @debug "Calling addList $(string(sets))"
+  #@debug "Calling addList $(string(sets))"
   #= Make a new set
   see below in the original impl:
   Sets.DISJOINT_SETS(nodes, elements, node_count) = sets;=#
   for e in entries
     (sets, idx) = add(e, sets)
   end
-  @debug "Sets after addList $(string(sets))"
+  #@debug "Sets after addList $(string(sets))"
   return sets
 end
 
@@ -340,7 +340,7 @@ end
    use find instead.
 """
 function add(entry, sets::Sets)::Tuple
-  @debug "Sets before add $(string(sets))"
+  #@debug "Sets before add $(string(sets))"
   local nodes::Vector{Int}
   local elements::Dict
   local node_count::Int

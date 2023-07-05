@@ -872,6 +872,6 @@ end
 
 function instStatements(scodeStmtl::List{<:SCode.Statement}, scope::InstNode, origin::ORIGIN_Type)
   local statements::Vector{Statement} = Statement[]
-  statements = [instStatement(stmt, scope, origin) for stmt in scodeStmtl]
+  statements = Statement[instStatement(stmt, scope, origin) for stmt in scodeStmtl]
   return statements
 end

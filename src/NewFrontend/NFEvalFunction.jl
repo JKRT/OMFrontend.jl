@@ -273,7 +273,7 @@ function createReplacements(fn::M_Function, args::List{<:Expression})::ReplTree.
   =#
   #=  building the tree to make sure all the replacements are available.
   =#
-  @assign repl = ReplTree.map(repl, (nodeArg, expArg) -> applyBindingReplacement(nodeArg, expArg, repl))
+  repl = ReplTree.map(repl, (nodeArg, expArg) -> applyBindingReplacement(nodeArg, expArg, repl))
   return repl
 end
 

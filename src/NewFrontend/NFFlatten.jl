@@ -43,7 +43,7 @@ function flatten(classInst::InstNode, name::String; prefix = COMPONENT_REF_EMPTY
   local structuralSubmodels::List{FLAT_MODEL} = nil
   local cmt::Option{SCode.Comment}
   sections = SECTIONS_EMPTY()
-  @debug "CALLING TOP LEVEL FLATTEN"
+  #@debug "CALLING TOP LEVEL FLATTEN"
   cmt = SCodeUtil.getElementComment(definition(classInst))
   (vars, sections, structuralSubmodels) = flattenClass(
     getClass(classInst),
@@ -117,7 +117,7 @@ function flattenClass(
   structuralSubModels::List{FLAT_MODEL},
   #= End extension =#
   )
-  @debug "CALLING flattenClass"
+  #@debug "CALLING flattenClass"
   local comps::Vector{InstNode}
   local bindings::List{Binding}
   local b::Binding
@@ -210,7 +210,7 @@ function flattenComponent(
   #= Passed from the top level class. =#
   structuralSubModels::List{FLAT_MODEL}
 )
-  @debug "FLATTEN COMPONENT: " * toString(inComponent)
+  #@debug "FLATTEN COMPONENT: " * toString(inComponent)
   local comp_node::InstNode
   local c::Component
   local ty::M_Type
@@ -239,7 +239,7 @@ function flattenComponent(
       if isComplexComponent(ty)
         #= A complex component such as a model or a class =#
         if c.attributes.isStructuralMode == true
-          @debug "FLATTEN A COMPLEX STRUCTURAL COMPONENT"
+          #@debug "FLATTEN A COMPLEX STRUCTURAL COMPONENT"
           #=
             Since this component is structural we do not flatten it.
             Instead we create a new FlatModel and add it to the list.
@@ -251,7 +251,7 @@ function flattenComponent(
             flatten(comp_node #= TODO: Or do we need some instantation specific stuff=#,
                     name(comp_node), prefix = prefixOfComponent) <| structuralSubModels
         else
-          @debug "FLATTEN A COMPLEX COMPONENT WITH ATTRIBUTES: " c.attributes
+          #@debug "FLATTEN A COMPLEX COMPONENT WITH ATTRIBUTES: " c.attributes
           (vars, sections) = flattenComplexComponent(
             comp_node,
             c,
@@ -265,7 +265,7 @@ function flattenComponent(
           )
         end
       else
-        @debug "Flatten a simple component"
+        #@debug "Flatten a simple component"
         (vars, sections) = flattenSimpleComponent(
           comp_node,
           c,
@@ -280,7 +280,7 @@ function flattenComponent(
       ()
     end
     DELETED_COMPONENT(__) => begin
-      @debug "Component deleted"
+      #@debug "Component deleted"
       ()
     end
     _ => begin
@@ -559,7 +559,7 @@ function flattenComplexComponent(
   vars::Vector{Variable},
   sections::Sections,
 )::Tuple{Vector{Variable}, Sections}
-  @debug "FLATTEN COMPLEX COMPONENT: " * toString(node)
+  #@debug "FLATTEN COMPLEX COMPONENT: " * toString(node)
   local dims::List{Dimension}
   local name::ComponentRef
   local binding::Binding
@@ -860,7 +860,7 @@ function vectorizeAlgorithm(
           NONE(),
           INTEGER_EXPRESSION(stop),
         )
-        @debug "Manually check this error. It has to do with higher order functions in the translation"
+        #@debug "Manually check this error. It has to do with higher order functions in the translation"
         @assign body = mapExpList(
           alg.statements,
           (x) -> addIterator(

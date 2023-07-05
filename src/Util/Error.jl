@@ -4934,7 +4934,6 @@ function assertion(b::Bool, message::String, info::SourceInfo)
       (true, _, _) => begin
         ()
       end
-
       _ => begin
         addSourceMessage(INTERNAL_ERROR, list(message), info)
         fail()

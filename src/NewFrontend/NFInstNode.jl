@@ -175,7 +175,7 @@ function setFuncCache(in_caches::Vector{<:CachedData}, in_cache::CachedData)
 end
 
 function getFuncCache(in_caches::Vector{<:CachedData}) ::CachedData
-#  @debug in_caches
+#  #@debug in_caches
   local out_cache::CachedData = arrayGet(in_caches, 1)
   out_cache
 end
@@ -997,7 +997,7 @@ function resolveInner(node::InstNode) ::InstNode
 end
 
 function isInnerOuterNode(node::InstNode) ::Bool
-  @debug "is inner outer node?"
+  #@debug "is inner outer node?"
   local isIO::Bool
   @assign isIO = begin
     @match node begin
@@ -1583,8 +1583,8 @@ function setParent(parent::InstNode, node::InstNode) ::InstNode
         ()
       end
       COMPONENT_NODE(__)  => begin
-        @debug "Setting parent! for parent: $(parent.name) and node: $(node.name)"
-        @debug "parent scope before $(node.parent)"
+        #@debug "Setting parent! for parent: $(parent.name) and node: $(node.name)"
+        #@debug "parent scope before $(node.parent)"
         @assign node.parent = parent
         ()
       end
@@ -1752,7 +1752,7 @@ function parent(node::InstNode) ::InstNode
         node.parentScope
       end
       COMPONENT_NODE(__)  => begin
-        @debug "node was: $(node.name)"
+        #@debug "node was: $(node.name)"
         node.parent
       end
       IMPLICIT_SCOPE(__)  => begin

@@ -3,16 +3,17 @@ module LookupTree
 using MetaModelica
 using ExportAll
 
-@Uniontype Entry begin
-  @Record IMPORT begin
-    index::Int
-  end
-  @Record COMPONENT begin
-    index::Int
-  end
-  @Record CLASS begin
-    index::Int
-  end
+abstract type Entry end
+struct IMPORT{T<:Number} <: Entry
+  index::T
+end
+
+struct COMPONENT{T<:Number} <: Entry
+  index::T
+end
+
+struct CLASS{T<:Number} <: Entry
+  index::T
 end
 
 const Key = String

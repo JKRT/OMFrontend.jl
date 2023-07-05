@@ -31,8 +31,8 @@
 
 function scalarize(flatModel::FlatModel, name::String)::FlatModel
   local vars::Vector{Variable} = Variable[]
-  for c in flatModel.variables
-    vars = scalarizeVariable(c, vars)
+  for v in flatModel.variables
+    scalarizeVariable(v, vars)
   end
   @assign flatModel.variables = vars
   @assign flatModel.equations = mapExpList(flatModel.equations, expandComplexCref)

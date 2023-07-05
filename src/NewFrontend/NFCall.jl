@@ -1904,15 +1904,15 @@ function instArgs(
 )::Tuple{List{Expression}, List{NamedArg}}
   local namedArgs::List{NamedArg}
   local posArgs::List{Expression}
-  @debug "Calling inst args for $args"
+  #@debug "Calling inst args for $args"
   @assign (posArgs, namedArgs) = begin
     @match args begin
       Absyn.FUNCTIONARGS(__) => begin
-        @debug "Matched function args"
+        #@debug "Matched function args"
         @assign posArgs = list(instExp(a, scope, info) for a in args.args)
-        @debug "Positional arguments done"
+        #@debug "Positional arguments done"
         @assign namedArgs = list(instNamedArg(a, scope, info) for a in args.argNames)
-        @debug "Named arguments done"
+        #@debug "Named arguments done"
         (posArgs, namedArgs)
       end
       _ => begin

@@ -9,6 +9,7 @@ import Absyn
 import SCode
 import OMParser
 import PrecompileTools
+import Distributed
 
 #=
 TODO:

@@ -1,6 +1,6 @@
 function needSpecialHandling(call::Call) ::Bool
   local special::Bool
-  @debug "Calling needSpecialHandling with: " * toString(call)
+  ##@debug "Calling needSpecialHandling with: " * toString(call)
   () = begin
     @match call begin
       UNTYPED_CALL(__)  => begin
@@ -13,7 +13,7 @@ function needSpecialHandling(call::Call) ::Bool
       end
     end
   end
-  @debug "Is it special: " special
+  #@debug "Is it special: " special
   special
 end
 
@@ -1236,13 +1236,13 @@ Extension. Types an initialStructuralState call.
 """
 function typeInitialStructuralStateCall(call::Call, origin::ORIGIN_Type, info::SourceInfo)
   local variabilityType::VariabilityType = Variability.PARAMETER
-  @debug "Typing..."
+  #@debug "Typing..."
   @match UNTYPED_CALL(fn_ref, args, namedArgs) = call
   if listLength(args) != 1
     @error "More then one state passed to initialStructuralState" #=TODO add source info..=#
     throw("Error typing!")
   end
-  @debug "Type the head of the list. A model is used as a parameter"
+  #@debug "Type the head of the list. A model is used as a parameter"
   @match CREF_EXPRESSION(ty, argCref) = listHead(args)
 
   local arg = CREF_EXPRESSION(TYPE_ANY() #= Reference to the model=#,

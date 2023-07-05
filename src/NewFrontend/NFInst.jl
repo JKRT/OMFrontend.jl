@@ -66,17 +66,17 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
   instantiation to make sure that lookup is able to find the correct nodes.
   =#
   @debug "Instantiate Expressions"
-   Base.inferencebarrier(instExpressions(inst_cls))
-  #                   execStat("NFInst.instExpressions(" + name + ")")
+  instExpressions(inst_cls)
+  # execStat("NFInst.instExpressions(" + name + ")")
   #=  Mark structural parameters.
   =#
   updateImplicitVariability(inst_cls, false #== Flags.isSet(Flags.EVAL_PARAM) ==#)
   #execStat("NFInst.updateImplicitVariability")
   #=  Type the class. =#
   @debug "Type the class"
-   Base.inferencebarrier(typeClass(inst_cls, name))
+  typeClass(inst_cls, name)
   @debug "Flatten the model and evaluate constants in it."
-   flat_model = flatten(inst_cls, name)
+  flat_model = flatten(inst_cls, name)
   #=
     Check if we are to performance recompilation. If true adds the SCode program to the flat model.
     Also check if we have a Connections.branch statement in an if-equation
@@ -1430,7 +1430,12 @@ function instComponentDef(component::SCode.Element,
       =#
       #=  empty here, and let instClass set it for us instead.
       =#
-      inst_comp = UNTYPED_COMPONENT(EMPTY_NODE(), listArray(dims), bindingVar, condition, attr, SOME(component.comment), false, info)
+      inst_comp = UNTYPED_COMPONENT(EMPTY_NODE(),
+                                    listArray(dims),
+                                    bindingVar,
+                                    condition,
+                                    attr,
+                                    SOME(component.comment), false, info)
       updateComponent!(inst_comp, node)
       #=  Instantiate the type of the component.
       =#
@@ -1997,7 +2002,7 @@ function instExpressions(@nospecialize(node::InstNode), @nospecialize(scope::Ins
         =#
         exts = getExtends(cls_tree)
         for ext in exts
-          Base.inferencebarrier(instExpressions(ext, ext, sections))
+          instExpressions(ext, ext, sections)
         end
         #=  A type must extend a basic type.
         =#

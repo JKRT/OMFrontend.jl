@@ -1,28 +1,27 @@
-valueStr = Function
-ConflictFunc = Function
-EachFunc = Function
-FoldFunc = Function
-MapFunc = Function
 #=  TODO: We should have an Any type =#
 #= The binary tree data structure. =#
 abstract type Tree end
 
-mutable struct NODE{T0 <: Key, T1 <: Value} <: Tree
-  key::T0 #= The key of the node. =#
-  value::T1
+mutable struct NODE <: Tree
+  key::Key #= The key of the node. =#
+  value::Value
   height::Int #= Height of tree, used for balancing =#
   left::Tree #= Left subtree. =#
   right::Tree #= Right subtree. =#
 end
 
-mutable struct LEAF{T0 <: Key, T1 <: Value} <: Tree
-  key::T0 #= The key of the node. =#
-  value::T1
+mutable struct LEAF <: Tree
+  key::Key #= The key of the node. =#
+  value::Value
 end
 
 struct EMPTY <: Tree
 end
 
+#=
+valueStr
+Need to be implemented by the client
+=#
 keyCompare = (inKey1::Key, inKey2::Key) -> begin
   res = inKey1 == inKey2
   return res
@@ -38,7 +37,7 @@ end
 function hasKey(inTree::Tree, inKey::Key)::Bool
   local comp::Bool = false
   local key::Key
-  local key_comp::Integer
+  local key_comp::Int
   local tree::Tree
   key = begin
     @match inTree begin
@@ -79,7 +78,7 @@ end
 
 function isEmpty(tree::Tree)::Bool
   local isEmpty::Bool
-  @assign isEmpty = begin
+   isEmpty = begin
     @match tree begin
       EMPTY(__) => begin
         true
@@ -95,7 +94,7 @@ end
 """  Converts the tree to a flat list of keys (in order). """
 function listKeys(inTree::Tree, lst::List{<:Key} = nil)::List{Key}
 
-  @assign lst = begin
+   lst = begin
     @match inTree begin
       LEAF(__) => begin
         _cons(inTree.key, lst)
@@ -119,7 +118,7 @@ end
 """ #= Converts the tree to a flat list of keys (in order). =#"""
 function listKeysReverse(inTree::Tree, lst::List{<:Key} = nil)::List{Key}
 
-  @assign lst = begin
+   lst = begin
     @match inTree begin
       LEAF(__) => begin
         _cons(inTree.key, lst)
@@ -172,7 +171,7 @@ end
 function referenceEqOrEmpty(t1::Tree, t2::Tree)::Bool
   local b::Bool
 
-  @assign b = begin
+   b = begin
     @match (t1, t2) begin
       (EMPTY(__), EMPTY(__)) => begin
         true
@@ -190,9 +189,9 @@ end
 function balance(inTree::Tree)
   local outTree::Tree = inTree
   outTree = begin
-    local lh::Integer
-    local rh::Integer
-    local diff::Integer
+    local lh::Int
+    local rh::Int
+    local diff::Int
     local child::Tree
     local balanced_tree::Tree
     @match outTree begin
@@ -224,7 +223,7 @@ function balance(inTree::Tree)
             rotateRight(outTree)
           end
         elseif outTree.height != max(lh, rh) + 1
-          @assign outTree.height = max(lh, rh) + 1
+           outTree.height = max(lh, rh) + 1
           balanced_tree = outTree
         else
           balanced_tree = outTree
@@ -237,9 +236,9 @@ function balance(inTree::Tree)
 end
 
 
-function height(inNode::Tree)::Integer
-  local outHeight::Integer
-  @assign outHeight = begin
+function height(inNode::Tree)::Int
+  local outHeight::Int
+   outHeight = begin
     @match inNode begin
       NODE(__) => begin
         inNode.height
@@ -255,8 +254,8 @@ function height(inNode::Tree)::Integer
   return outHeight
 end
 
-function calculateBalance(inNode::Tree)::Integer
-  local outBalance::Integer
+function calculateBalance(inNode::Tree)::Int
+  local outBalance::Int
 
   outBalance = begin
     @match inNode begin
@@ -280,7 +279,7 @@ end
 function rotateLeft(inNode::Tree)::Tree
   local outNode::Tree = inNode
 
-  @assign outNode = begin
+   outNode = begin
     local node::Tree
     local child::Tree
     @match outNode begin
@@ -306,7 +305,7 @@ end
 function rotateRight(inNode::Tree)::Tree
   local outNode::Tree = inNode
 
-  @assign outNode = begin
+   outNode = begin
     local node::Tree
     local child::Tree
     @match outNode begin
@@ -416,14 +415,14 @@ function add(
   inTree::Tree,
   inKey::Key,
   inValue::Value,
-  conflictFunc::ConflictFunc = addConflictDefault,
+  conflictFunc::Function = addConflictDefault,
 )::Tree #= Used to resolve conflicts. =#
   local tree::Tree = inTree
 
-  @assign tree = begin
+   tree = begin
     local key::Key
     local value::Value
-    local key_comp::Integer
+    local key_comp::Int
     local outTree::Tree
     #=  Empty tree.
     =#
@@ -433,15 +432,15 @@ function add(
       end
 
       NODE(key = key) => begin
-        @assign key_comp = keyCompare(inKey, key)
+         key_comp = keyCompare(inKey, key)
         if key_comp == (-1)
-          @assign tree.left = add(tree.left, inKey, inValue, conflictFunc)
+           tree.left = add(tree.left, inKey, inValue, conflictFunc)
         elseif key_comp == 1
-          @assign tree.right = add(tree.right, inKey, inValue, conflictFunc)
+           tree.right = add(tree.right, inKey, inValue, conflictFunc)
         else
-          @assign value = conflictFunc(inValue, tree.value, key)
+           value = conflictFunc(inValue, tree.value, key)
           if !referenceEq(tree.value, value)
-            @assign tree.value = value
+             tree.value = value
           end
         end
         #=  Replace left branch.
@@ -457,17 +456,17 @@ function add(
         end
       end
       LEAF(key = key) => begin
-        @assign key_comp = keyCompare(inKey, key)
+         key_comp = keyCompare(inKey, key)
         if key_comp == (-1)
-          @assign outTree = NODE(tree.key, tree.value, 2, LEAF(inKey, inValue), EMPTY())
+           outTree = NODE(tree.key, tree.value, 2, LEAF(inKey, inValue), EMPTY())
         elseif key_comp == 1
-          @assign outTree = NODE(tree.key, tree.value, 2, EMPTY(), LEAF(inKey, inValue))
+           outTree = NODE(tree.key, tree.value, 2, EMPTY(), LEAF(inKey, inValue))
         else
-          @assign value = conflictFunc(inValue, tree.value, key)
+           value = conflictFunc(inValue, tree.value, key)
           if !referenceEq(tree.value, value)
-            @assign tree.value = value
+             tree.value = value
           end
-          @assign outTree = tree
+           outTree = tree
         end
         if key_comp == 0
           outTree
@@ -484,15 +483,15 @@ end
 function addList(
   tree::Tree,
   inValues::List{<:Tuple{<:Key, Value}},
-  conflictFunc::ConflictFunc = addConflictDefault,
+  conflictFunc::Function = addConflictDefault,
 )::Tree #= Used to resolve conflicts. =#
 
   local key::Key
   local value::Value
 
   for t in inValues
-    @assign (key, value) = t
-    @assign tree = add(tree, key, value, conflictFunc)
+     (key, value) = t
+     tree = add(tree, key, value, conflictFunc)
   end
   return tree
 end
@@ -545,7 +544,7 @@ function getOpt(tree::Tree, key::Key)::Option{Value}
 
   local k::Key
 
-  @assign k = begin
+   k = begin
     @match tree begin
       NODE(__) => begin
         tree.key
@@ -560,7 +559,7 @@ function getOpt(tree::Tree, key::Key)::Option{Value}
       end
     end
   end
-  @assign value = begin
+   value = begin
     @match (keyCompare(key, k), tree) begin
       (0, LEAF(__)) => begin
         SOME(tree.value)
@@ -589,7 +588,7 @@ end
 """ #= Creates a new tree from a list of key-value pairs. =#"""
 function fromList(
   inValues::List{<:Tuple{<:Key, Value}},
-  conflictFunc::ConflictFunc = addConflictDefault,
+  conflictFunc::Function = addConflictDefault,
 )::Tree #= Used to resolve conflicts. =#
   local tree::Tree = EMPTY()
 
@@ -597,8 +596,8 @@ function fromList(
   local value::Value
 
   for t in inValues
-    @assign (key, value) = t
-    @assign tree = add(tree, key, value, conflictFunc)
+     (key, value) = t
+     tree = add(tree, key, value, conflictFunc)
   end
   return tree
 end
@@ -613,9 +612,9 @@ function toList(
     local value::Value
     @match inTree begin
       NODE(key = key, value = value) => begin
-        @assign lst = toList(inTree.right, lst)
-        @assign lst = _cons((key, value), lst)
-        @assign lst = toList(inTree.left, lst)
+         lst = toList(inTree.right, lst)
+         lst = _cons((key, value), lst)
+         lst = toList(inTree.left, lst)
         lst
       end
       LEAF(key = key, value = value) => begin
@@ -631,7 +630,7 @@ end
 
 """ #= Constructs a list of all the values in the tree. =#"""
 function listValues(tree::Tree, lst::List{T} = nil) where {T <: Value}
-  @assign lst = begin
+   lst = begin
     local value::Value
     @match tree begin
       NODE(value = value) => begin
@@ -655,19 +654,19 @@ end
 function join(
   tree::Tree,
   treeToJoin::Tree,
-  conflictFunc::ConflictFunc = addConflictDefault,
+  conflictFunc::Function = addConflictDefault,
 )::Tree #= Used to resolve conflicts. =#
 
-  @assign tree = begin
+   tree = begin
     @match treeToJoin begin
       EMPTY(__) => begin
         tree
       end
 
       NODE(__) => begin
-        @assign tree = add(tree, treeToJoin.key, treeToJoin.value, conflictFunc)
-        @assign tree = join(tree, treeToJoin.left, conflictFunc)
-        @assign tree = join(tree, treeToJoin.right, conflictFunc)
+         tree = add(tree, treeToJoin.key, treeToJoin.value, conflictFunc)
+         tree = join(tree, treeToJoin.left, conflictFunc)
+         tree = join(tree, treeToJoin.right, conflictFunc)
         tree
       end
 
@@ -681,8 +680,8 @@ end
 
 """ #= Traverses the tree in depth-first pre-order and applies the given function to
    each node, but without constructing a new tree like with map. =#"""
-function forEach(tree::Tree, func::EachFunc)
-  return @assign _ = begin
+function forEach(tree::Tree, func::Function)
+  return  _ = begin
     @match tree begin
       NODE(__) => begin
         forEach(tree.left, func)
@@ -709,7 +708,7 @@ end
 
 """ #= Traverses the tree in depth-first pre-order and applies the given function to
    each node, constructing a new tree with the resulting nodes. =#"""
-function map(inTree::Tree, inFunc::MapFunc)::Tree
+function map(inTree::Tree, inFunc::Function)::Tree
   local outTree::Tree = inTree
   outTree = begin
     local key::Key
@@ -719,24 +718,24 @@ function map(inTree::Tree, inFunc::MapFunc)::Tree
     local new_branch::Tree
     @match outTree begin
       NODE(key = key, value = value) => begin
-        @assign new_branch = map(outTree.left, inFunc)
+         new_branch = map(outTree.left, inFunc)
         if !referenceEq(new_branch, outTree.left)
-          @assign outTree.left = new_branch
+           outTree.left = new_branch
         end
-        @assign new_value = inFunc(key, value)
+         new_value = inFunc(key, value)
         if !referenceEq(value, new_value)
-          @assign outTree.value = new_value
+           outTree.value = new_value
         end
-        @assign new_branch = map(outTree.right, inFunc)
+         new_branch = map(outTree.right, inFunc)
         if !referenceEq(new_branch, outTree.right)
-          @assign outTree.right = new_branch
+           outTree.right = new_branch
         end
         outTree
       end
       LEAF(key = key, value = value) => begin
-        @assign new_value = inFunc(key, value)
+         new_value = inFunc(key, value)
         if !referenceEq(value, new_value)
-          @assign outTree.value = new_value
+          outTree.value = new_value
         end
         outTree
       end
@@ -750,7 +749,7 @@ end
 
 """ #= Traverses the tree in depth-first pre-order and applies the given function to
    each node, in the process updating the given argument. =#"""
-function fold(inTree::Tree, inFunc::FoldFunc, inStartValue::FT) where {FT}
+function fold(inTree::Tree, inFunc::Function, inStartValue::FT) where {FT}
   local outResult = inStartValue
   outResult = begin
     local key::Key
@@ -777,22 +776,22 @@ end
 """ #= Like fold, but takes two fold arguments. =#"""
 function fold_2(
   tree::Tree,
-  foldFunc::FoldFunc,
+  foldFunc::Function,
   foldArg1::FT1,
   foldArg2::FT2,
 ) where {FT1, FT2}
 
-  @assign () = begin
+   () = begin
     @match tree begin
       NODE(__) => begin
-        @assign (foldArg1, foldArg2) = fold_2(tree.left, foldFunc, foldArg1, foldArg2)
-        @assign (foldArg1, foldArg2) = foldFunc(tree.key, tree.value, foldArg1, foldArg2)
-        @assign (foldArg1, foldArg2) = fold_2(tree.right, foldFunc, foldArg1, foldArg2)
+         (foldArg1, foldArg2) = fold_2(tree.left, foldFunc, foldArg1, foldArg2)
+         (foldArg1, foldArg2) = foldFunc(tree.key, tree.value, foldArg1, foldArg2)
+         (foldArg1, foldArg2) = fold_2(tree.right, foldFunc, foldArg1, foldArg2)
         ()
       end
 
       LEAF(__) => begin
-        @assign (foldArg1, foldArg2) = foldFunc(tree.key, tree.value, foldArg1, foldArg2)
+         (foldArg1, foldArg2) = foldFunc(tree.key, tree.value, foldArg1, foldArg2)
         ()
       end
 
@@ -806,22 +805,22 @@ end
 
 """ #= Like fold, but if the fold function returns false it will not continue down
    into the tree (but will still continue with other branches). =#"""
-function foldCond(tree::Tree, foldFunc::FoldFunc, value::FT) where {FT}
+function foldCond(tree::Tree, foldFunc::Function, value::FT) where {FT}
 
-  @assign value = begin
+   value = begin
     local c::Bool
     @match tree begin
       NODE(__) => begin
-        @assign (value, c) = foldFunc(tree.key, tree.value, value)
+         (value, c) = foldFunc(tree.key, tree.value, value)
         if c
-          @assign value = foldCond(tree.left, foldFunc, value)
-          @assign value = foldCond(tree.right, foldFunc, value)
+           value = foldCond(tree.left, foldFunc, value)
+           value = foldCond(tree.right, foldFunc, value)
         end
         value
       end
 
       LEAF(__) => begin
-        @assign (value, c) = foldFunc(tree.key, tree.value, value)
+         (value, c) = foldFunc(tree.key, tree.value, value)
         value
       end
 
@@ -836,11 +835,11 @@ end
 """ #= Traverses the tree in depth-first pre-order and applies the given function to
    each node, constructing a new tree with the resulting nodes. mapFold also
    takes an extra argument which is updated on each call to the given function. =#"""
-function mapFold(inTree::Tree, inFunc::MapFunc, inStartValue::FT) where {FT}
+function mapFold(inTree::Tree, inFunc::Function, inStartValue::FT) where {FT}
   local outResult::FT = inStartValue
   local outTree::Tree = inTree
 
-  @assign outTree = begin
+   outTree = begin
     local key::Key
     local value::Value
     local new_value::Value
@@ -848,25 +847,25 @@ function mapFold(inTree::Tree, inFunc::MapFunc, inStartValue::FT) where {FT}
     local new_branch::Tree
     @match outTree begin
       NODE(key = key, value = value) => begin
-        @assign (new_branch, outResult) = mapFold(outTree.left, inFunc, outResult)
+         (new_branch, outResult) = mapFold(outTree.left, inFunc, outResult)
         if !referenceEq(new_branch, outTree.left)
-          @assign outTree.left = new_branch
+           outTree.left = new_branch
         end
-        @assign (new_value, outResult) = inFunc(key, value, outResult)
+         (new_value, outResult) = inFunc(key, value, outResult)
         if !referenceEq(value, new_value)
-          @assign outTree.value = new_value
+           outTree.value = new_value
         end
-        @assign (new_branch, outResult) = mapFold(outTree.right, inFunc, outResult)
+         (new_branch, outResult) = mapFold(outTree.right, inFunc, outResult)
         if !referenceEq(new_branch, outTree.right)
-          @assign outTree.right = new_branch
+           outTree.right = new_branch
         end
         outTree
       end
 
       LEAF(key = key, value = value) => begin
-        @assign (new_value, outResult) = inFunc(key, value, outResult)
+         (new_value, outResult) = inFunc(key, value, outResult)
         if !referenceEq(value, new_value)
-          @assign outTree.value = new_value
+           outTree.value = new_value
         end
         outTree
       end
@@ -885,7 +884,7 @@ end
 
 function setTreeLeftRight(orig::Tree; left::Tree = EMPTY(), right::Tree = EMPTY())::Tree
   local res::Tree
-  @assign res = begin
+  res = begin
     @match (orig, left, right) begin
       (NODE(__), EMPTY(__), EMPTY(__)) => begin
         LEAF(orig.key, orig.value)

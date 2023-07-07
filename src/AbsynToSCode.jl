@@ -521,7 +521,7 @@ function translateAttributes(
         sv = translateVariability(v)
         sp = translateParallelism(p)
         adim = listAppend(extraADim, adim)
-        @debug "Value of mode in translate Attributes" mo
+        #@debug "Value of mode in translate Attributes" mo
         SCode.ATTR(adim, ct, sp, sv, dir, fi, mo)
       end
     end
@@ -747,8 +747,7 @@ function translateAlternativeExternalAnnotation(
       end
     end
   end
-  #=  Else, merge
-  =#
+  #=  Else, merge =#
   return outDecl
 end
 

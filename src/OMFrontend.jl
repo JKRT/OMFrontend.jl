@@ -19,13 +19,13 @@ TODO:
 
 #= Cache for NFModelicaBuiltin. We only use the result once! =#
 """
-Cache for NFModelicaBuiltin.
-This cache is initialized when the module is loaded.
+  Cache for NFModelicaBuiltin.
+  This cache is initialized when the module is loaded.
 """
 const NFModelicaBuiltinCache = Dict()
 
 """
-This cache contains various instantiated libraries for later use.
+  This cache contains various instantiated libraries for later use.
 """
 const LIBRARY_CACHE = Dict()
 
@@ -293,7 +293,3 @@ end
 include("precompilation.jl")
 
 end #OMFrontend
-
-#=
-  Custom pretty printing
-=#

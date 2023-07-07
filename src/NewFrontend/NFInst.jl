@@ -56,8 +56,8 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
   cls = setNodeType(ROOT_CLASS(EMPTY_NODE()), cls)
   #=  Initialize the storage for automatically generated inner elements. =#
   top = setInnerOuterCache(top, C_TOP_SCOPE(NodeTree.new(), cls))
-  @debug "Instantiate the class"
-   inst_cls = instantiateN1(cls, EMPTY_NODE())
+  #@debug "Instantiate the class"
+  inst_cls = instantiateN1(cls, EMPTY_NODE())
   insertGeneratedInners(inst_cls, top)
   #execStat("NFInst.instantiate(" + name + ")")
   #=
@@ -65,7 +65,7 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
   bindings, dimensions, etc). This is done as a separate step after
   instantiation to make sure that lookup is able to find the correct nodes.
   =#
-  @debug "Instantiate Expressions"
+  #@debug "Instantiate Expressions"
   instExpressions(inst_cls)
   # execStat("NFInst.instExpressions(" + name + ")")
   #=  Mark structural parameters.
@@ -73,9 +73,9 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
   updateImplicitVariability(inst_cls, false #== Flags.isSet(Flags.EVAL_PARAM) ==#)
   #execStat("NFInst.updateImplicitVariability")
   #=  Type the class. =#
-  @debug "Type the class"
+  #@debug "Type the class"
   typeClass(inst_cls, name)
-  @debug "Flatten the model and evaluate constants in it."
+  #@debug "Flatten the model and evaluate constants in it."
   flat_model = flatten(inst_cls, name)
   #=
     Check if we are to performance recompilation. If true adds the SCode program to the flat model.
@@ -102,8 +102,8 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
       for eq in doccs
         equationsWithoutDOCC = ListUtil.deleteMemberF(equationsWithoutDOCC, eq)
       end
-      @debug length(flat_model.equations)
-      @debug length(equationsWithoutDOCC)
+      #@debug length(flat_model.equations)
+      #@debug length(equationsWithoutDOCC)
       #=
       Check if the existing equations in the flat model should be extended.
       =#
@@ -136,8 +136,8 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
               equationsWithoutDOCC
             end
           end
-          @debug "Length of the flat model" length(flat_model.equations)
-          @debug "Length of the flat model without docc" length(equationsWithoutDOCC)
+          #@debug "Length of the flat model" length(flat_model.equations)
+          #@debug "Length of the flat model without docc" length(equationsWithoutDOCC)
         end
         #=
           Add the special equations to the flat model
@@ -166,28 +166,28 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
   end
   #= Do unit checking =#
   #TODO  @assign flat_model = UnitCheck.checkUnits(flat_model)
-  @debug "Inline trivial calls in the model"
+  #@debug "Inline trivial calls in the model"
    flat_model = inlineSimpleCalls(flat_model)
-  @debug "Apply simplifications to the model"
+  #@debug "Apply simplifications to the model"
    flat_model = simplifyFlatModel(flat_model)
-  @debug "Collect a tree of all functions that are still used in the flat model"
+  #@debug "Collect a tree of all functions that are still used in the flat model"
    funcs = collectFunctions(flat_model, name)
   #=  Collect package constants that couldn't be substituted with their values =#
   #=  (e.g. because they where used with non-constant subscripts), and add them to the model. =#
-  @debug "Collect package constants"
+  #@debug "Collect package constants"
    flat_model = collectConstants(flat_model, funcs)
   if Flags.getConfigBool(Flags.FLAT_MODELICA)
     printFlatString(flat_model, FunctionTreeImpl.listValues(funcs))
   end
   #= Scalarize array components in the flat model.=#
   if Flags.isSet(Flags.NF_SCALARIZE)
-    @debug "Scalarization"
+    #@debug "Scalarization"
      flat_model = scalarize(flat_model, name)
   else
     #=  Remove empty arrays from variables =#
     @assign flat_model.variables = ListUtil.filterOnFalse(flat_model.variables, isEmptyArray)
   end
-  @debug "Verify the model"
+  #@debug "Verify the model"
    verify(flat_model)
   if Flags.isSet(Flags.NF_DUMP_FLAT)
     print("FlatModel:\\n" + toString(flat_model) + "\\n")
@@ -207,9 +207,9 @@ function inlineSimpleCalls(fm::FlatModel)
 end
 
 function instantiateN1(node::InstNode, parentNode::InstNode)::InstNode
-  @debug "Instantiating!!!! in Inst"
+  #@debug "Instantiating!!!! in Inst"
   node = expand(node)
-  @debug "After expansion in inst. Instantiating in class-tree "
+  #@debug "After expansion in inst. Instantiating in class-tree "
   (node, _) = instClass(node, MODIFIER_NOMOD(), DEFAULT_ATTR, true, 0, parentNode)
   return node
 end
@@ -709,9 +709,9 @@ end
 function instClass(node::InstNode, modifier::Modifier, attributes::Attributes = DEFAULT_ATTR, useBinding::Bool = false, instLevel::Int = 0, parent = EMPTY_NODE()) ::Tuple{InstNode, Attributes}
   local cls::Class
   local outer_mod::Modifier
-  @debug "INST CLASS CALLED. CALLING GETCLASS ON NODE."
+  #@debug "INST CLASS CALLED. CALLING GETCLASS ON NODE."
    cls = getClass(node)
-  @debug "OUR CLASS AFTER CALLING GETCLASS"
+  #@debug "OUR CLASS AFTER CALLING GETCLASS"
    outer_mod = getModifier(cls)
   #=  Give an error for modifiers such as (A = B), i.e. attempting to replace a =#
   #=  class without using redeclare. =#
@@ -719,7 +719,7 @@ function instClass(node::InstNode, modifier::Modifier, attributes::Attributes = 
     Error.addSourceMessage(Error.MISSING_REDECLARE_IN_CLASS_MOD, list(name(node)), Binding_getInfo(binding(outer_mod)))
     fail()
   end
-  @debug "CALLING INSTCLASSDEF"
+  #@debug "CALLING INSTCLASSDEF"
    (attributes, node) = instClassDef(cls, modifier, attributes, useBinding, node, parent, instLevel)
   (node, attributes)
 end
@@ -734,7 +734,7 @@ function instClassDef(cls::Class, outerMod::Modifier, attributes::Attributes, us
   local res::Restriction
   local ty::M_Type
   local attrs::Attributes
-  @debug "CALLING INSTCLASSDEF FOR CLASS"
+  #@debug "CALLING INSTCLASSDEF FOR CLASS"
    () = begin
     @match cls begin
       EXPANDED_CLASS(restriction = res)  => begin
@@ -764,8 +764,8 @@ function instClassDef(cls::Class, outerMod::Modifier, attributes::Attributes, us
         #=  Apply the modifiers of this scope.
         =#
 
-        strMod = toString(mod, true)
-        @debug "Merged mod EXPANDED_CLASS: $strMod"
+        #strMod = toString(mod, true)
+        #@debug "Merged mod EXPANDED_CLASS: $strMod"
 
         applyModifier(mod, cls_tree, name(node))
         #=  Apply element redeclares.
@@ -779,7 +779,7 @@ function instClassDef(cls::Class, outerMod::Modifier, attributes::Attributes, us
         =#
         redeclareClasses(cls_tree)
         #=  Instantiate the extends nodes. =#
-        @debug "Double check this line. Might be ome translation error here."
+        #@debug "Double check this line. Might be ome translation error here."
         mapExtends(cls_tree, (nodeX) -> instExtends(nodeX,
                                                     attributes,
                                                     useBinding,
@@ -812,8 +812,8 @@ function instClassDef(cls::Class, outerMod::Modifier, attributes::Attributes, us
          outer_mod = merge(outerMod, addParent(node, cls.modifier))
          mod = merge(outer_mod, mod)
 
-        strMod = toString(mod, true)
-        @debug "Merged mod EXPANDED_DERIVED: $strMod"
+        #strMod = toString(mod, true)
+        #@debug "Merged mod EXPANDED_DERIVED: $strMod"
 
          attrs = updateClassConnectorType(cls.restriction, cls.attributes)
          attributes = mergeDerivedAttributes(attrs, attributes, parentArg)
@@ -847,7 +847,7 @@ function instClassDef(cls::Class, outerMod::Modifier, attributes::Attributes, us
          mod = merge(outer_mod, mod)
 
         strMod = toString(mod, true)
-        @debug "Merged mod PARTIAL_BUILTIN: $strMod"
+        #@debug "Merged mod PARTIAL_BUILTIN: $strMod"
 
         applyModifier(mod, cls_tree, name(node))
          inst_cls = INSTANCED_BUILTIN(ty, cls_tree, res)
@@ -1607,7 +1607,7 @@ function instComponentAttributes(compAttr::SCode.Attributes, compPrefs)::Attribu
                       innerOuter = Absyn.NOT_INNER_OUTER(__),
                       replaceablePrefix = SCode.NOT_REPLACEABLE(__))
        ) => begin
-        @debug "Structural mode value: " structuralMode
+        #@debug "Structural mode value: " structuralMode
         DEFAULT_ATTR
       end
       _  => begin
@@ -1620,7 +1620,7 @@ function instComponentAttributes(compAttr::SCode.Attributes, compPrefs)::Attribu
         redecl = SCodeUtil.redeclareBool(compPrefs.redeclarePrefix)
         repl = NOT_REPLACEABLE()
         structuralMode = compAttr.mode
-        @debug "Structural mode value: " structuralMode
+        #@debug "Structural mode value: " structuralMode
         ATTRIBUTES(cty, par, var, dir, io, fin, redecl, repl, structuralMode)
       end
     end
@@ -2158,7 +2158,7 @@ end
 function instBuiltinAttribute(attribute::Modifier, node::InstNode) ::Modifier
 
  strMod1 = toString(attribute, true)
- @debug ">instBuiltinAttribute($strMod1)"
+ #@debug ">instBuiltinAttribute($strMod1)"
 
   @assign () = begin
     local bindingVar::Binding
@@ -2181,7 +2181,7 @@ function instBuiltinAttribute(attribute::Modifier, node::InstNode) ::Modifier
   end
 
   strMod2 = toString(attribute, true)
-  @debug "<instBuiltinAttribute($strMod2)"
+  #@debug "<instBuiltinAttribute($strMod2)"
   attribute
 end
 
@@ -2884,11 +2884,11 @@ function insertGeneratedInners(node::InstNode, topScope::InstNode)
   local cls::Class
   local cls_tree::ClassTree
   local base_node::InstNode
-@debug "Calling insert generate inners!"
+#@debug "Calling insert generate inners!"
   @match C_TOP_SCOPE(addedInner = inner_tree) = getInnerOuterCache(topScope)
   #=  Empty tree => nothing more to do. =#
   if NodeTree.isEmpty(inner_tree)
-    @debug "EMPTY NODE TREE"
+    #@debug "EMPTY NODE TREE"
     return
   end
   @assign inner_nodes = NodeTree.toList(inner_tree)

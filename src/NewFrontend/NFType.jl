@@ -80,9 +80,7 @@ end
 
 function subscriptedTypeName(expType::M_Type, subscriptTypes::List{<:M_Type})::String
   local str::String
-
   local strl::List{String}
-
   @assign strl = list(toString(t) for t in subscriptTypes)
   @assign strl = _cons("_", strl)
   @assign strl = _cons(toString(expType), strl)

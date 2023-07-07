@@ -1,6 +1,6 @@
 #=
 Original code by Per Ost
-Quite heavily mModified by John Tinnerholm
+Rewritten by John Tinnerholm(johti17)
 (Hence not automatic logic beware here may be bugs...)
 =#
 module ConnectionSets

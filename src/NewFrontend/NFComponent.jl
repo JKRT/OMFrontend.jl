@@ -194,46 +194,33 @@ end
 
 function getFixedAttribute(component::Component)::Bool
   local fixed::Bool
-
   local typeAttrs::List{Modifier} = nil
   local binding::Binding
-
-  #=  for parameters the default is fixed = true
-  =#
-  @assign fixed = isParameter(component) || isStructuralParameter(component)
-  @assign binding =
-    lookupAttributeBinding("fixed", getClass(classInstance(component)))
-  #=  no fixed attribute present
-  =#
+  #=  for parameters the default is fixed = true =#
+  fixed = isParameter(component) || isStructuralParameter(component)
+  binding = lookupAttributeBinding("fixed", getClass(classInstance(component)))
+  #=  no fixed attribute present =#
   if isUnbound(binding)
     return fixed
   end
-  @assign fixed =
-    fixed &&
-    isTrue(getBindingExp(getExp(
-      binding,
-    )))
+  fixed = fixed && isTrue(getBindingExp(getExp(binding)))
   return fixed
 end
 
 function getEvaluateAnnotation(component::Component)::Bool
   local evaluate::Bool
-
   local cmt::SCode.Comment
-
-  @assign evaluate = SCodeUtil.getEvaluateAnnotation(comment(component))
+  evaluate = SCodeUtil.getEvaluateAnnotation(comment(component))
   return evaluate
 end
 
 function ann(component::Component)::Option{Modifier}
   local ann::Option{Modifier}
-
-  @assign ann = begin
+  ann = begin
     @match component begin
       TYPED_COMPONENT(__) => begin
         component.ann
       end
-
       _ => begin
         NONE()
       end
@@ -994,7 +981,7 @@ function getType(component::Component)::M_Type
 end
 
 """
-Todo clean up the dbg prints here.
+  TODO Clean up the dbg prints here.
 """
 function mergeModifier(modifier::Modifier, component::Component)::Component
   component = begin
@@ -1023,8 +1010,7 @@ function mergeModifier(modifier::Modifier, component::Component)::Component
 end
 
 function setModifier(modifier::Modifier, component::Component)::Component
-
-  @assign () = begin
+  () = begin
     @match component begin
       COMPONENT_DEF(__) => begin
         @assign component.modifier = modifier
@@ -1042,17 +1028,14 @@ end
 
 function getModifier(component::Component)::Modifier
   local modifier::Modifier
-
-  @assign modifier = begin
+  modifier = begin
     @match component begin
       COMPONENT_DEF(__) => begin
         component.modifier
       end
-
       TYPE_ATTRIBUTE(__) => begin
         component.modifier
       end
-
       _ => begin
         MODIFIER_NOMOD()
       end
@@ -1062,8 +1045,7 @@ function getModifier(component::Component)::Modifier
 end
 
 function setClassInstance(classInst::InstNode, component::Component)::Component
-
-  @assign () = begin
+  () = begin
     @match component begin
       UNTYPED_COMPONENT(__) => begin
         @assign component.classInst = classInst
@@ -1081,8 +1063,7 @@ end
 
 function classInstance(component::Component)::InstNode
   local classInst::InstNode
-
-  @assign classInst = begin
+  classInst = begin
     @match component begin
       UNTYPED_COMPONENT(__) => begin
         component.classInst
@@ -1135,8 +1116,7 @@ end
 
 function isDefinition(component::Component)::Bool
   local isDefinition::Bool
-
-  @assign isDefinition = begin
+  isDefinition = begin
     @match component begin
       COMPONENT_DEF(__) => begin
         true
@@ -1170,11 +1150,9 @@ end
 
 function new(definition::SCode.Element)::Component
   local component::Component
-
-  @assign component = COMPONENT_DEF(definition, MODIFIER_NOMOD())
+  component = COMPONENT_DEF(definition, MODIFIER_NOMOD())
   return component
 end
-
 
 using MetaModelica
 using ExportAll

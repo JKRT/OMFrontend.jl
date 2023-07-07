@@ -13,11 +13,9 @@ module FunctionTreeImpl
   keyStr = (k) -> begin
     return AbsynUtil.pathString(k)
   end
-
   valueStr = (vs) -> begin
     return toFlatString(vs)
   end
-
 #= John 2023-04-03:
 Default(Julia) string compare does not give the right result.
 MetaModelica string comp is used instead.
@@ -25,7 +23,6 @@ MetaModelica string comp is used instead.
   keyCompare = (inKey1::Key, inKey2::Key) -> begin
     return stringCompare(keyStr(inKey1), keyStr(inKey2))
   end
-
 end #= FunctionTreeImpl =#
 FunctionTree = FunctionTreeImpl.Tree
 const NFFunctionTree = FunctionTreeImpl
@@ -643,7 +640,7 @@ function flattenArray(
   vars::Vector{Variable},
   sections::Sections,
   subscripts::List{<:Subscript} = nil,
-)::Tuple{Vector{Variable}, Sections}
+  )::Tuple{Vector{Variable}, Sections}
   local dim::Dimension
   local rest_dims::List{Dimension}
   local sub_pre::ComponentRef
@@ -853,7 +850,7 @@ function vectorizeAlgorithm(
             end
           end
         end
-        @match list(P_Dimension.Dimension.INTEGER_EXPRESSION(size = stop)) = dimensions
+        @match list(INTEGER_EXPRESSION(size = stop)) = dimensions
         @assign range = RANGE_EXPRESSION(
           TYPE_ARRAY(TYPE_INTEGER(), dimensions),
           INTEGER_EXPRESSION(1),
@@ -884,8 +881,7 @@ function addIterator(
   prefix::ComponentRef,
   subscript::Subscript,
 )::Expression
-
-  @assign exp = map(
+  exp = map(
     exp,
     (prefix, subscript) -> addIterator_traverse(prefix = prefix, subscript = subscript),
   )
@@ -1096,8 +1092,7 @@ function flattenBindingExp2(
 end
 
 function flattenExp(exp::Expression, prefix::ComponentRef)::Expression
-  @assign exp =
-    map(exp, (x) -> flattenExp_traverse(x,prefix))
+  exp = map(exp, (x) -> flattenExp_traverse(x, prefix))
   return exp
 end
 
@@ -1238,10 +1233,8 @@ function flattenIfEquation(
   local target::EvalTarget
   @match EQUATION_IF(branches = branches, source = src) = eq
   has_connect = contains(eq, isConnectEq)
-  #=  Print errors for unbound constants/parameters if the if-equation contains
-  =#
-  #=  connects, since we must select a branch in that case.
-  =#
+  #=  Print errors for unbound constants/parameters if the if-equation contains =#
+  #=  connects, since we must select a branch in that case. =#
   target = if has_connect
     EVALTARGET_GENERIC(Equation_info(eq))
   else
@@ -1406,10 +1399,9 @@ function splitForLoop(
   local src::DAE.ElementSource
 
   @match EQUATION_FOR(iter, range, body, src) = forLoop
-  @assign (connects, non_connects) = splitForLoop2(body)
+  (connects, non_connects) = splitForLoop2(body)
   if !listEmpty(connects)
-    @assign equations =
-      unrollForLoop(EQUATION_FOR(iter, range, connects, src), prefix, equations)
+    equations = unrollForLoop(EQUATION_FOR(iter, range, connects, src), prefix, equations)
   end
   if !listEmpty(non_connects)
     @assign equations =
@@ -1421,37 +1413,33 @@ end
 function splitForLoop2(forBody::List{<:Equation})::Tuple{Vector{Equation}, Vector{Equation}}
   local nonConnects::Vector{Equation} = nil
   local connects::Vector{Equation} = nil
-
   local conns::Vector{Equation}
   local nconns::Vector{Equation}
-
   for eq in forBody
-    @assign () = begin
+    () = begin
       @match eq begin
         EQUATION_CONNECT(__) => begin
-          @assign connects = _cons(eq, connects)
+          connects = _cons(eq, connects)
           ()
         end
-
         EQUATION_FOR(__) => begin
-          @assign (conns, nconns) = splitForLoop2(eq.body)
+          (conns, nconns) = splitForLoop2(eq.body)
           if !listEmpty(conns)
-            @assign connects = _cons(
+            connects = _cons(
               EQUATION_FOR(eq.iterator, eq.range, conns, eq.source),
               connects,
             )
           end
           if !listEmpty(nconns)
-            @assign nonConnects = _cons(
+            nonConnects = _cons(
               EQUATION_FOR(eq.iterator, eq.range, nconns, eq.source),
               nonConnects,
             )
           end
           ()
         end
-
         _ => begin
-          @assign nonConnects = _cons(eq, nonConnects)
+          nonConnects = _cons(eq, nonConnects)
           ()
         end
       end
@@ -1913,19 +1901,19 @@ function collectClassFunctions(clsNode::InstNode, funcs::FunctionTree)::Function
   local sections::Sections
   local comp::Component
   local binding::Binding
-  @assign cls = getClass(clsNode)
-  @assign () = begin
+  cls = getClass(clsNode)
+  () = begin
     @match cls begin
       INSTANCED_CLASS(
         elements = cls_tree && CLASS_TREE_FLAT_TREE(__),
         sections = sections,
       ) => begin
         for c in cls_tree.components
-          @assign comp = component(c)
-          @assign funcs = collectTypeFuncs(getType(comp), funcs)
-          @assign binding = getBinding(comp)
+          comp = component(c)
+          funcs = collectTypeFuncs(getType(comp), funcs)
+          binding = getBinding(comp)
           if isExplicitlyBound(binding)
-            @assign funcs = collectExpFuncs(getTypedExp(binding), funcs)
+            funcs = collectExpFuncs(getTypedExp(binding), funcs)
           end
         end
         () = begin
@@ -1944,7 +1932,7 @@ function collectClassFunctions(clsNode::InstNode, funcs::FunctionTree)::Function
       end
 
       TYPED_DERIVED(__) => begin
-        @assign funcs = collectClassFunctions(cls.baseClass, funcs)
+        funcs = collectClassFunctions(cls.baseClass, funcs)
         ()
       end
 

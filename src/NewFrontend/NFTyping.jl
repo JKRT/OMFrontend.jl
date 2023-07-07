@@ -1031,7 +1031,6 @@ function typeComponentBinding2(
   local bind_var::VariabilityType
   local bind_eff_var::VariabilityType
   local attrs::Attributes
-
   c = component(node)
   () = begin
     @match c begin
@@ -1042,17 +1041,15 @@ function typeComponentBinding2(
         nameStr = name(inComponent)
         binding = c.binding
         #ErrorExt.setCheckpoint(getInstanceName())
-        #TODO
-        @debug "ErrorExt.setCheckpoint(getInstanceName())"
+        #@debug "ErrorExt.setCheckpoint(getInstanceName())"
         try
-          @debug "Typing TC/UB ... for component: $nameStr"
+          #@debug "Typing TC/UB ... for component: $nameStr"
           checkBindingEach(c.binding)
-          @debug "Typing binding ... check each"
-          @assign binding =
-            typeBinding(binding, setFlag(origin, ORIGIN_BINDING))
-          @debug "Typing binding ... after typeBinding"
-          str = toString(binding)
-          @debug "Typed binding: $str"
+          #@debug "Typing binding ... check each"
+          binding = typeBinding(binding, setFlag(origin, ORIGIN_BINDING))
+          #@debug "Typing binding ... after typeBinding"
+          #str = toString(binding)
+          #@debug "Typed binding: $str"
           #if !(Config.getGraphicsExpMode() && stringEq(nameStr, "graphics")) TODO
           @assign binding = matchBinding(binding, c.ty, nameStr, node)
           #end
@@ -1062,8 +1059,7 @@ function typeComponentBinding2(
             @assign c.attributes = attrs
           end
           str2 = toString(binding)
-          @debug "Typed binding 2: $str2"
-
+          #@debug "Typed binding 2: $str2"
         catch e
           if isBound(c.condition)
             @assign binding =
@@ -1087,10 +1083,9 @@ function typeComponentBinding2(
       end
 
       TYPED_COMPONENT(__) => begin
-        #=  A component without a binding, or with a binding that's already been typed.
-        =#
-        @assign nameStr = name(inComponent)
-        @debug "Typing TC/TB binding ... for component: $nameStr"
+        #=  A component without a binding, or with a binding that's already been typed. =#
+        #@assign nameStr = name(inComponent)
+        #@debug "Typing TC/TB binding ... for component: $nameStr"
         checkBindingEach(c.binding)
         if isTyped(c.binding)
           @assign c.binding =
@@ -1117,7 +1112,7 @@ function typeComponentBinding2(
         #=  component. Type only the binding and let the case above handle the rest.
         =#
         @assign nameStr = name(inComponent)
-        @debug "Typing UC/UB binding ... for component: $nameStr"
+        #@debug "Typing UC/UB binding ... for component: $nameStr"
         checkBindingEach(c.binding)
         @assign binding =
           typeBinding(c.binding, setFlag(origin, ORIGIN_BINDING))
@@ -1140,8 +1135,8 @@ function typeComponentBinding2(
       end
 
       TYPE_ATTRIBUTE(__) => begin
-        @assign nameStr = name(inComponent)
-        @debug "Typing TA binding ... for component: $nameStr"
+        #@assign nameStr = name(inComponent)
+        #@debug "Typing TA binding ... for component: $nameStr"
         @assign c.modifier =
           typeTypeAttribute(c.modifier, c.ty, parent(inComponent), origin)
         updateComponent!(c, node)

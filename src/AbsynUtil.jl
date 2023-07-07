@@ -6392,9 +6392,7 @@ end
 
 function typeSpecStringNoQualNoDimsLst(inTypeSpecLst::List{<:TypeSpec})::String
   local outString::String
-
-  @assign outString =
-    ListUtil.toString(inTypeSpecLst, typeSpecStringNoQualNoDims, "", "", ", ", "", false)
+  outString = ListUtil.toString(inTypeSpecLst, typeSpecStringNoQualNoDims, "", "", ", ", "", false)
   return outString
 end
 

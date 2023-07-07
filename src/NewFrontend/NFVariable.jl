@@ -70,7 +70,7 @@ function toStream(
   indent::String = "",
   printBindingType::Bool = false,
   s = Nothing,
-)
+  )
   local first::Bool
   local b::Binding
   s = IOStream_M.append(s, indent)
@@ -82,23 +82,23 @@ function toStream(
   s = IOStream_M.append(s, " ")
   s = IOStream_M.append(s, toString(var.name))
   if !isempty(var.typeAttributes)
-    @assign s = IOStream_M.append(s, "(")
-    @assign first = true
+    s = IOStream_M.append(s, "(")
+    first = true
     for a in var.typeAttributes
       if first
-        @assign first = false
+        first = false
       else
-        @assign s = IOStream_M.append(s, ", ")
+        s = IOStream_M.append(s, ", ")
       end
-      @assign b = Util.tuple22(a)
+      b = Util.tuple22(a)
       if isEach(b)
-        @assign s = append(s, "each ")
+        s = append(s, "each ")
       end
-      @assign s = IOStream_M.append(s, Util.tuple21(a))
-      @assign s = IOStream_M.append(s, " = ")
-      @assign s = IOStream_M.append(s, toString(b))
+      s = IOStream_M.append(s, Util.tuple21(a))
+      s = IOStream_M.append(s, " = ")
+      s = IOStream_M.append(s, toString(b))
     end
-    @assign s = IOStream_M.append(s, ")")
+    s = IOStream_M.append(s, ")")
   end
   if isBound(var.binding)
     @assign s = IOStream_M.append(s, " = ")

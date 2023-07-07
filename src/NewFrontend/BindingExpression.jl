@@ -375,7 +375,8 @@ function recordElement(elementName::String, recordExp::Expression) ::Expression
       end
 
       BINDING_EXP(__)  => begin
-        bindingExpMap(recordExp, (elementName) -> recordElement(elementName = elementName))
+        local f = @closure (elementName) -> recordElement(elementName = elementName)
+        bindingExpMap(recordExp, f(elementName))
       end
 
       SUBSCRIPTED_EXP_EXPRESSION(__)  => begin
@@ -2085,7 +2086,7 @@ function mapFoldShallow(exp::Expression, func::MapFunc, arg::ArgT)  where {ArgT}
     local call::Call
     local subs::List{Subscript}
     local unchanged::Bool
-    @debug "Calling mapFoldShallow"
+    #@debug "Calling mapFoldShallow"
     @match exp begin
       CLKCONST_EXPRESSION(__)  => begin
         @assign (outExp, arg) = mapFoldClockShallow(exp, func, arg)

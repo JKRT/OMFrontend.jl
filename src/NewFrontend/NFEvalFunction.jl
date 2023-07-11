@@ -91,11 +91,10 @@ function evaluateNormal(fn::M_Function, args::List{<:Expression})::Expression
   local limit::Int
   local call_counter::Pointer = fn.callCounter
   local ctrl::FlowControlType
-  #=  Functions contain a mutable call counter that's increased by one at the
-  =#
-  #=  start of each evaluation, and decreased by one when the evalution is
-  =#
-  #=  finished. This is used to limit the number of recursive functions calls.
+  #=
+  Functions contain a mutable call counter that's increased by one at the
+  start of each evaluation, and decreased by one when the evalution is
+  finished. This is used to limit the number of recursive functions calls.
   =#
   call_count = P_Pointer.access(call_counter) + 1
   limit = Flags.getConfigInt(Flags.EVAL_RECURSION_LIMIT)
@@ -125,12 +124,9 @@ function evaluateNormal(fn::M_Function, args::List{<:Expression})::Expression
     fail()
   end
   #=  TODO: Also apply replacements to the replacements themselves, i.e. the
-  =#
-  #=        bindings of the function parameters. But they probably need to be
-  =#
-  #=        sorted by dependencies first.
-  =#
-  #=  Make sure we always decrease the call counter even if the evaluation fails.
+          bindings of the function parameters. But they probably need to be
+         sorted by dependencies first.
+  Make sure we always decrease the call counter even if the evaluation fails.
   =#
   P_Pointer.update(call_counter, call_count - 1)
   return result

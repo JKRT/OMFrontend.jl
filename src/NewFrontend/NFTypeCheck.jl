@@ -1,18 +1,14 @@
-MatchKind = (
-  () -> begin #= Enumeration =#
-    EXACT = 1  #= Exact match =#
-    CAST = 2  #= Matched by casting, e.g. Integer to Real =#
-    UNKNOWN_EXPECTED = 3  #= The expected type was unknown =#
-    UNKNOWN_ACTUAL = 4  #= The actual type was unknown =#
-    GENERIC = 5  #= Matched with a generic type e.g. function F<T> input T i; end F; F(1) =#
-    PLUG_COMPATIBLE = 6  #= Component by component matching, e.g. class A R r; end A; is plug compatible with class B R r; end B; =#
-    NOT_COMPATIBLE = 7
-    () -> (
-      EXACT; CAST; UNKNOWN_EXPECTED; UNKNOWN_ACTUAL; GENERIC; PLUG_COMPATIBLE; NOT_COMPATIBLE
-    )  #= Component by component matching, e.g. class A R r; end A; is plug compatible with class B R r; end B; =#
-  end
-)()
+struct MatchKindStruct{T <: Number}
+  EXACT::T #= Exact match =#
+  CAST::T  #= Matched by casting, e.g. Integer to Real =#
+  UNKNOWN_EXPECTED::T #= The expected type was unknown =#
+  UNKNOWN_ACTUAL::T #= The actual type was unknown =#
+  GENERIC::T #= Matched with a generic type e.g. function F<T> input T i; end F; F(1) =#
+  PLUG_COMPATIBLE::T  #= Component by component matching, e.g. class A R r; end A; is plug compatible with class B R r; end B; =#
+  NOT_COMPATIBLE::T
+end
 
+const MatchKind::MatchKindStruct{Int} = MatchKindStruct(1,2,3,4,5,6,7)
 const MatchKindType = Int
 
 function isCompatibleMatch(kind::MatchKindType)::Bool

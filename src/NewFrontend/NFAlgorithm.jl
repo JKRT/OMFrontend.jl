@@ -5,7 +5,7 @@
   end
 end
 
-function toString(alg::Algorithm)::String
+function toString(alg::ALGORITHM)::String
   local str::String
   @assign str = toStringList(alg.statements)
   return str
@@ -18,24 +18,28 @@ function foldExpList(algs::Vector{Algorithm}, func::FoldFunc, arg::ArgT) where {
   return arg
 end
 
-function foldExp(alg::Algorithm, func::FoldFunc, arg::ArgT) where {ArgT}
+function foldExp(alg::ALGORITHM, func::FoldFunc, arg::ArgT) where {ArgT}
   for s in alg.statements
     arg = foldExp(s, func, arg)
   end
   return arg
 end
 
+"""
+Declare with! to keep with the idioms of Julia.
+"""
 function mapExpList(algs::Vector{Algorithm}, func::MapFunc)
-  algs = [mapExp(alg, func) for alg in algs]
-  return algs
+  local f = @closure (alg) -> mapExp(alg, func)
+  local mAlgs::Vector{Algorithm} = map!(f, algs, algs)
+  return mAlgs
 end
 
-function mapExp(alg::Algorithm, func::MapFunc)::Algorithm
+function mapExp(alg::ALGORITHM, func::MapFunc)::Algorithm
   @assign alg.statements = mapExpList(alg.statements, func)
   return alg
 end
 
-function apply(alg::Algorithm, func::ApplyFn)
+function apply(alg::ALGORITHM, func::ApplyFn)
   for s in alg.statements
     Statement.apply(s, func)
   end

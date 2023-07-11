@@ -1058,7 +1058,7 @@ function typeComponentBinding2(
             @assign attrs.variability = comp_var
             @assign c.attributes = attrs
           end
-          str2 = toString(binding)
+          #str2 = toString(binding)
           #@debug "Typed binding 2: $str2"
         catch e
           if isBound(c.condition)
@@ -2352,22 +2352,20 @@ end
 
 
 function typeRange(
-  @nospecialize(rangeExp::RANGE_EXPRESSION),
-  @nospecialize(origin::ORIGIN_Type),
+  rangeExp::RANGE_EXPRESSION,
+  origin::ORIGIN_Type,
   @nospecialize(info::SourceInfo),
-  )::Tuple{RANGE_EXPRESSION, NFType, VariabilityType}
+  )
   typeRange2(
-    Base.inferencebarrier(rangeExp)::Expression,
-    Base.inferencebarrier(origin)::ORIGIN_Type,
-    Base.inferencebarrier(info)::SourceInfo,
-  )::Tuple{RANGE_EXPRESSION, NFType, VariabilityType}
+    rangeExp::RANGE_EXPRESSION,
+    origin::ORIGIN_Type,
+    info)
 end
 
 function typeRange2(
   @nospecialize(rangeExp::Expression),
   @nospecialize(origin::ORIGIN_Type),
-  @nospecialize(info::SourceInfo),
-)::Tuple{RANGE_EXPRESSION, NFType, VariabilityType}
+  @nospecialize(info::SourceInfo),)
   @nospecialize
   local variability::VariabilityType
   local rangeType::NFType
@@ -2506,7 +2504,7 @@ function typeSize(
   origin::ORIGIN_Type,
   info::SourceInfo,
   evaluate::Bool = true,
-)::Tuple{Expression, NFType, VariabilityType}
+)#Should return ::Tuple{Expression, NFType, VariabilityType}
   local variability::VariabilityType
   local sizeType::NFType
 
@@ -2677,7 +2675,7 @@ function typeIfExpression(
   ifExp::Expression,
   origin::ORIGIN_Type,
   info::SourceInfo,
-)::Tuple{Expression, NFType, VariabilityType}
+)#::Tuple{Expression, NFType, VariabilityType}
   local var::VariabilityType
   local ty::NFType
 

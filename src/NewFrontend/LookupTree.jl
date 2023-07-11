@@ -4,15 +4,16 @@ using MetaModelica
 using ExportAll
 
 abstract type Entry end
-struct IMPORT{T<:Number} <: Entry
+
+mutable struct IMPORT{T<:Number} <: Entry
   index::T
 end
 
-struct COMPONENT{T<:Number} <: Entry
+mutable struct COMPONENT{T<:Number} <: Entry
   index::T
 end
 
-struct CLASS{T<:Number} <: Entry
+mutable struct CLASS{T<:Number} <: Entry
   index::T
 end
 
@@ -1010,19 +1011,12 @@ keyStr = (key) -> begin
   return key
 end
 
+function isImport(entry::IMPORT)::Bool
+  true
+end
+
 function isImport(entry::Entry)::Bool
-  local isImport::Bool
-   isImport = begin
-    @match entry begin
-      IMPORT(__) => begin
-        true
-      end
-      _ => begin
-        false
-      end
-    end
-  end
-  return isImport
+  false
 end
 
 function isEqual(entry1::Entry, entry2::Entry)::Bool
@@ -1030,22 +1024,8 @@ function isEqual(entry1::Entry, entry2::Entry)::Bool
   return isEqual
 end
 
-function index(entry::Entry)::Int
-  local index::Int
-   index = begin
-    @match entry begin
-      CLASS(__) => begin
-        entry.index
-      end
-      COMPONENT(__) => begin
-        entry.index
-      end
-      IMPORT(__) => begin
-        entry.index
-      end
-    end
-  end
-  return index
+function index(entry::Entry)
+  return entry.index
 end
 
 @exportAll()

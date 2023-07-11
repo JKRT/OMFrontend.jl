@@ -91,23 +91,53 @@ function depth(cref::ComponentRef)::Int
   return d
 end
 
+# function toListReverse(
+#   cref::ComponentRef,
+#   accum::List{<:ComponentRef} = nil,
+#   )
+#   local crefs::List{ComponentRef}
+#   crefs = begin
+#     @match cref begin
+#       COMPONENT_REF_CREF(origin = Origin.CREF) => begin
+#         toListReverse(cref.restCref, _cons(cref, accum))
+#       end
+#       _ => begin
+#         accum
+#       end
+#     end
+#   end
+#   return crefs
+# end
+
+"""
+```
+toListReverse(
+  cref::COMPONENT_REF_CREF,
+  accum::List{<:ComponentRef} = nil)
+```
+@author:johti17
+"""
 function toListReverse(
-  cref::ComponentRef,
-  accum::List{<:ComponentRef} = nil,
-)::List{ComponentRef}
-  local crefs::List{ComponentRef}
-  @assign crefs = begin
-    @match cref begin
-      COMPONENT_REF_CREF(origin = Origin.CREF) => begin
-        toListReverse(cref.restCref, _cons(cref, accum))
-      end
-      _ => begin
-        accum
-      end
-    end
+  cref::COMPONENT_REF_CREF,
+  accum::List{<:ComponentRef} = nil)
+  local tmp = cref
+  while tmp isa COMPONENT_REF_CREF
+    accum = Cons{ComponentRef}(tmp, accum)
+    tmp = tmp.restCref
   end
-  return crefs
+  return accum
 end
+toListReverse(cref::ComponentRef, accum::List{<:ComponentRef} = nil) = accum
+
+function toString(crefLst::List{ComponentRef})
+  local buffer = IOBuffer()
+  print("list{ComponentRef}[")
+  for i in crefLst
+    print(buffer, toString(i) * ",")
+  end
+  print("]")
+end
+
 
 function isFromCref(cref::ComponentRef)::Bool
   local fromCref::Bool

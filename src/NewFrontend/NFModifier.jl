@@ -151,7 +151,6 @@ end
 
 function toString(mod::Modifier, printName::Bool = true)::String
   local string::String
-
   @assign string = begin
     local submods::List{Modifier}
     local subs_str::String
@@ -720,8 +719,8 @@ function checkFinalOverride(
   innerFinal::SCode.Final,
   outerMod::Modifier,
   innerInfo::SourceInfo,
-)
-  return @assign _ = begin
+  )
+  @assign _ = begin
     @match innerFinal begin
       SCode.FINAL(__) => begin
         Error.addMultiSourceMessage(

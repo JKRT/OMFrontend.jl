@@ -1,51 +1,87 @@
 @UniontypeDecl NFOperator
 
-Op = (
-  () -> begin #= Enumeration =#
-    ADD = 1
-    SUB = 2
-    MUL = 3
-    DIV = 4
-    POW = 5
-    ADD_EW = 6
-    SUB_EW = 7
-    MUL_EW = 8
-    DIV_EW = 9
-    POW_EW = 10
-    ADD_SCALAR_ARRAY = 11
-    ADD_ARRAY_SCALAR = 12
-    SUB_SCALAR_ARRAY = 13
-    SUB_ARRAY_SCALAR = 14
-    MUL_SCALAR_ARRAY = 15
-    MUL_ARRAY_SCALAR = 16
-    MUL_VECTOR_MATRIX = 17
-    MUL_MATRIX_VECTOR = 18
-    SCALAR_PRODUCT = 19
-    MATRIX_PRODUCT = 20
-    DIV_SCALAR_ARRAY = 21
-    DIV_ARRAY_SCALAR = 22
-    POW_SCALAR_ARRAY = 23
-    POW_ARRAY_SCALAR = 24
-    POW_MATRIX = 25
-    UMINUS = 26
-    AND = 27
-    OR = 28
-    NOT = 29
-    LESS = 30
-    LESSEQ = 31
-    GREATER = 32
-    GREATEREQ = 33
-    EQUAL = 34
-    NEQUAL = 35
-    USERDEFINED = 36
-    () -> (
-      ADD; SUB; MUL; DIV; POW; ADD_EW; SUB_EW; MUL_EW; DIV_EW; POW_EW; ADD_SCALAR_ARRAY; ADD_ARRAY_SCALAR; SUB_SCALAR_ARRAY; SUB_ARRAY_SCALAR; MUL_SCALAR_ARRAY; MUL_ARRAY_SCALAR; MUL_VECTOR_MATRIX; MUL_MATRIX_VECTOR; SCALAR_PRODUCT; MATRIX_PRODUCT; DIV_SCALAR_ARRAY; DIV_ARRAY_SCALAR; POW_SCALAR_ARRAY; POW_ARRAY_SCALAR; POW_MATRIX; UMINUS; AND; OR; NOT; LESS; LESSEQ; GREATER; GREATEREQ; EQUAL; NEQUAL; USERDEFINED
-    )
-  end
-)()
+"""
+  Structure describing different operators
+"""
+struct OpStruct
+  ADD::Int
+  SUB::Int
+  MUL::Int
+  DIV::Int
+  POW::Int
+  ADD_EW::Int
+  SUB_EW::Int
+  MUL_EW::Int
+  DIV_EW::Int
+  POW_EW::Int
+  ADD_SCALAR_ARRAY::Int
+  ADD_ARRAY_SCALAR::Int
+  SUB_SCALAR_ARRAY::Int
+  SUB_ARRAY_SCALAR::Int
+  MUL_SCALAR_ARRAY::Int
+  MUL_ARRAY_SCALAR::Int
+  MUL_VECTOR_MATRIX::Int
+  MUL_MATRIX_VECTOR::Int
+  SCALAR_PRODUCT::Int
+  MATRIX_PRODUCT::Int
+  DIV_SCALAR_ARRAY::Int
+  DIV_ARRAY_SCALAR::Int
+  POW_SCALAR_ARRAY::Int
+  POW_ARRAY_SCALAR::Int
+  POW_MATRIX::Int
+  UMINUS::Int
+  AND::Int
+  OR::Int
+  NOT::Int
+  LESS::Int
+  LESSEQ::Int
+  GREATER::Int
+  GREATEREQ::Int
+  EQUAL::Int
+  NEQUAL::Int
+  USERDEFINED::Int
+end
+
+const Op = OpStruct(
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10,
+  11,
+  12,
+  13,
+  14,
+  15,
+  16,
+  17,
+  18,
+  19,
+  20,
+  21,
+  22,
+  23,
+  24,
+  25,
+  26,
+  27,
+  28,
+  29,
+  30,
+  31,
+  32,
+  33,
+  34,
+  35,
+  36,
+)
 
 const OpType = Int
-
 
 @Uniontype NFOperator begin
   @Record OPERATOR begin

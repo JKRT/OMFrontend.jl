@@ -1,6 +1,8 @@
 include("LookupTree.jl")
 include("DuplicateTree.jl")
 
+import .DuplicateTree
+
 @Uniontype ClassTree begin
   @Record CLASS_TREE_EMPTY_TREE begin
   end
@@ -59,8 +61,6 @@ const EMPTY_FLAT_CLASS_TREE =
     listArray(nil),
     DuplicateTree.EMPTY(),
   )::ClassTree
-
-FuncT = Function
 
 function isEmptyTree(tree::ClassTree)
   if typeof(tree) isa CLASS_TREE_EMPTY_TREE
@@ -1448,7 +1448,9 @@ function replaceDuplicates4(
 )::DuplicateTree.Entry
 
   @assign entry.node = SOME(node)
-  @assign entry.children = list(replaceDuplicates4(c, node) for c in entry.children)
+  #@assign entry.children = DuplicateTree.Entry[ for c in entry.children]
+  local f = @closure c -> replaceDuplicates4(c, node)
+  map!(f, entry.children, entry.children)
   return entry
 end
 
@@ -1463,7 +1465,9 @@ function replaceDuplicates3(
   node = P_Pointer.access(node_ptr)
   @assign entry.node = SOME(node)
   P_Pointer.update(node_ptr, kept)
-  @assign entry.children = list(replaceDuplicates3(c, kept, tree) for c in entry.children)
+  local f = @closure c -> replaceDuplicates3(c, kept, tree)
+  #@assign entry.children = DuplicateTree.Entry[replaceDuplicates3(c, kept, tree) for c in entry.children]
+  map!(f, entry.children, entry.children)
   return entry
 end
 
@@ -1472,12 +1476,9 @@ function replaceDuplicates2(
   entry::DuplicateTree.Entry,
   tree::ClassTree,
 )::DuplicateTree.Entry
-
   local kept::InstNode
   local node_ptr::Pointer{InstNode}
-  local children::List{DuplicateTree.Entry}
   local kept_entry::DuplicateTree.Entry
-
   node_ptr = resolveEntryPtr(entry.entry, tree)
   () = begin
     @match entry.ty begin
@@ -1490,8 +1491,8 @@ function replaceDuplicates2(
       DuplicateTree.EntryType.DUPLICATE => begin
         kept = P_Pointer.access(node_ptr)
         @assign entry.node = SOME(kept)
-        @assign entry.children =
-          list(replaceDuplicates3(c, kept, tree) for c in entry.children)
+        local f = @closure c -> replaceDuplicates3(c, kept, tree)
+        map!(f, entry.children, entry.children)
         ()
       end
 
@@ -1991,35 +1992,13 @@ end
 
 function resolveImport(index::Int, tree::ClassTree)::InstNode
   local element::InstNode
-
   local imports::Vector{Import}
   local imp::Import
   local changed::Bool
-
-  imports = begin
-    @match tree begin
-      CLASS_TREE_PARTIAL_TREE(__) => begin
-        tree.imports
-      end
-
-      CLASS_TREE_EXPANDED_TREE(__) => begin
-        tree.imports
-      end
-
-      CLASS_TREE_INSTANTIATED_TREE(__) => begin
-        tree.imports
-      end
-
-      CLASS_TREE_FLAT_TREE(__) => begin
-        tree.imports
-      end
-    end
-  end
-  #=  Imports are resolved on demand, i.e. here.
-  =#
+  imports = tree.imports
+  #=  Imports are resolved on demand, i.e. here. =#
   (element, changed, imp) = resolve(imports[index])
-  #=  Save the import if it wasn't already resolved.
-  =#
+  #=  Save the import if it wasn't already resolved. =#
   if changed
     arrayUpdate(imports, index, imp)
   end
@@ -2142,7 +2121,7 @@ function addDuplicateConflict(
   entry = DuplicateTree.ENTRY(
     newEntry.entry,
     NONE(),
-    _cons(listHead(newEntry.children), oldEntry.children),
+    DuplicateTree.Entry[newEntry.children[1], oldEntry.children],
     DuplicateTree.EntryType.DUPLICATE,
   )
   return entry
@@ -2389,48 +2368,12 @@ end
 
 function lookupTree(ctree::ClassTree)::LookupTree.Tree
   local ltree::LookupTree.Tree
-  ltree = begin
-    @match ctree begin
-      CLASS_TREE_PARTIAL_TREE(__) => begin
-        ctree.tree
-      end
-      CLASS_TREE_EXPANDED_TREE(__) => begin
-        ctree.tree
-      end
-      CLASS_TREE_INSTANTIATED_TREE(__) => begin
-        ctree.tree
-      end
-      CLASS_TREE_FLAT_TREE(__) => begin
-        ctree.tree
-      end
-    end
-  end
+  ltree = ctree.tree
   return ltree
 end
 
 function getDuplicates(tree::ClassTree)::DuplicateTree.Tree
-  local duplicates::DuplicateTree.Tree
-
-  duplicates = begin
-    @match tree begin
-      CLASS_TREE_PARTIAL_TREE(__) => begin
-        tree.duplicates
-      end
-
-      CLASS_TREE_EXPANDED_TREE(__) => begin
-        tree.duplicates
-      end
-
-      CLASS_TREE_INSTANTIATED_TREE(__) => begin
-        tree.duplicates
-      end
-
-      CLASS_TREE_FLAT_TREE(__) => begin
-        tree.duplicates
-      end
-    end
-  end
-  return duplicates
+  return tree.duplicates
 end
 
 function instExtendsComps(

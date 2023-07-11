@@ -544,7 +544,7 @@ function mapExp(stmt::Statement, func::MapFunc)::Statement
 end
 
 function mapExpList(stmtl::Vector{Statement}, func::MapFunc)
-  stmtl = [mapExp(s, func) for s in stmtl]
+  stmtl = Statement[mapExp(s, func) for s in stmtl]
   return stmtl
 end
 
@@ -552,7 +552,10 @@ function map(stmt::Statement, func::MapFn)::Statement
   @assign () = begin
     @match stmt begin
       ALG_FOR(__) => begin
-        @assign stmt.body = [map(s, func) for s in stmt.body]
+        for (i,s) in enumerate(stmt.body)
+          @inbounds stmt.body[i] = map(s, func)
+        end
+        #@assign stmt.body = Statement[map(s, func) for s in stmt.body]
         ()
       end
       ALG_IF(__) => begin
@@ -561,14 +564,17 @@ function map(stmt::Statement, func::MapFn)::Statement
         ()
       end
       ALG_WHEN(__) => begin
-        @assign stmt.branches = [
+        @assign stmt.branches = Statement[
           (Util.tuple21(b), [map(s, func) for s in Util.tuple22(b)])
           for b in stmt.branches
         ]
         ()
       end
       ALG_WHILE(__) => begin
-        @assign stmt.body = [map(s, func) for s in stmt.body]
+        for (i, s) in stmt.body
+          @inbounds stmt.body[i] = map(s, func)
+        end
+        #@assign stmt.body = Statement[map(s, func) for s in stmt.body]
         ()
       end
       _ => begin
@@ -860,7 +866,7 @@ end
 
 function instAlgorithmSections(algorithmSections::List{<:SCode.AlgorithmSection}, scope::InstNode, origin::ORIGIN_Type)
   local algs::Vector{Algorithm}
-  algs = [instAlgorithmSection(alg, scope, origin) for alg in algorithmSections]
+  algs = Algorithm[instAlgorithmSection(alg, scope, origin) for alg in algorithmSections]
   algs
 end
 

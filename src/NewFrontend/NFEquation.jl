@@ -648,49 +648,50 @@ function mapExp(@nospecialize(eq::Equation), func::MapExpFn)::Equation
       end
 
        EQUATION_FOR(__) => begin
-        @assign eq.body = Equation[mapExp(e, func) for e in eq.body]
-        @assign eq.range = Util.applyOption(eq.range, func)
+         #@assign eq.body = Equation[mapExp(e, func) for e in eq.body]
+         for (i, e) in enumerate(eq.body)
+           @inbounds eq.body[i] = mapExp(e, func)
+         end
+         @assign eq.range = Util.applyOption(eq.range, func)
         eq
       end
 
-       EQUATION_IF(__) => begin
-         @assign eq.branches = Equation_Branch[mapExpBranch(b, func) for b in eq.branches]
+      EQUATION_IF(__) || EQUATION_WHEN(__) => begin
+         #@assign eq.branches = Equation_Branch[mapExpBranch(b, func) for b in eq.branches]
+        for (i, b) in enumerate(eq.branches)
+          @inbounds eq.branches[i] = mapExpBranch(b, func)
+        end
         eq
       end
 
-       EQUATION_WHEN(__) => begin
-        @assign eq.branches = Equation_Branch[mapExpBranch(b, func) for b in eq.branches]
-        eq
-      end
-
-       EQUATION_ASSERT(__) => begin
-         e1 = func(eq.condition)
-         e2 = func(eq.message)
-         e3 = func(eq.level)
+      EQUATION_ASSERT(__) => begin
+        e1 = func(eq.condition)
+        e2 = func(eq.message)
+        e3 = func(eq.level)
         if referenceEq(e1, eq.condition) &&
-           referenceEq(e2, eq.message) &&
-           referenceEq(e3, eq.level)
+          referenceEq(e2, eq.message) &&
+          referenceEq(e3, eq.level)
           eq
         else
           EQUATION_ASSERT(e1, e2, e3, eq.source)
         end
       end
 
-       EQUATION_TERMINATE(__) => begin
+      EQUATION_TERMINATE(__) => begin
         @assign e1 = func(eq.message)
-        if referenceEq(e1, eq.message)
-          eq
+         if referenceEq(e1, eq.message)
+           eq
         else
-          EQUATION_TERMINATE(e1, eq.source)
-        end
+           EQUATION_TERMINATE(e1, eq.source)
+         end
       end
 
        EQUATION_REINIT(__) => begin
-        @assign e1 = func(eq.cref)
-        @assign e2 = func(eq.reinitExp)
-        if referenceEq(e1, eq.cref) && referenceEq(e2, eq.reinitExp)
-          eq
-        else
+         @assign e1 = func(eq.cref)
+         @assign e2 = func(eq.reinitExp)
+         if referenceEq(e1, eq.cref) && referenceEq(e2, eq.reinitExp)
+           eq
+         else
            EQUATION_REINIT(e1, e2, eq.source)
         end
       end
@@ -740,7 +741,7 @@ function map(@nospecialize(eq::Equation), func::MapFn)::Equation
   @assign () = begin
     @match eq begin
       EQUATION_FOR(__) => begin
-        @assign eq.body = list(map(e, func) for e in eq.body)
+        @assign eq.body = Equation[map(e, func) for e in eq.body]
         ()
       end
       EQUATION_IF(__) => begin
@@ -748,7 +749,7 @@ function map(@nospecialize(eq::Equation), func::MapFn)::Equation
           begin
             @match b begin
               EQUATION_BRANCH(__) => begin
-                @assign b.body = list(map(e, func) for e in b.body)
+                @assign b.body = Equation[map(e, func) for e in b.body]
                 b
               end
 
@@ -761,23 +762,15 @@ function map(@nospecialize(eq::Equation), func::MapFn)::Equation
         ()
       end
       EQUATION_WHEN(__) => begin
-        @assign eq.branches = list(
-          begin
-            @match b begin
-              EQUATION_BRANCH(__) => begin
-                @assign b.body = list(map(e, func) for e in b.body)
-                b
-              end
-
-              _ => begin
-                b
-              end
-            end
-          end for b in eq.branches
-        )
+        @assign eq.branches = Equation[
+          if b isa EQUATION_BRANCH
+            @assign b.body = Equation[map(e, func) for e in b.body];
+            b
+          else
+            b
+          end for b in eq.branches]
         ()
       end
-
       _ => begin
         ()
       end

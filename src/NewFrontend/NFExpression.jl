@@ -126,10 +126,10 @@ struct CALL_EXPRESSION <: NFExpression
   call::Call
 end
 
-struct RECORD_EXPRESSION <: NFExpression
-  path
+mutable struct RECORD_EXPRESSION <: NFExpression
   #=  Maybe not needed since the type contains the name. Prefix? =#
-  ty::NFType
+  const path::Absyn.Path
+  const ty::NFType
   elements::List{Expression}
 end
 

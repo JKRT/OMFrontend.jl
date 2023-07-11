@@ -202,7 +202,7 @@ function evalExp_impl(exp::Expression, target::EvalTarget)::Expression
         exp
       end
       RECORD_EXPRESSION(__) => begin
-        @assign exp.elements = list(evalExp_impl(e, target) for e in exp.elements)
+        exp.elements = list(evalExp_impl(e, target) for e in exp.elements)
         exp
       end
       CALL_EXPRESSION(__) => begin
@@ -316,9 +316,10 @@ function evalExpPartial(
   local e2::Expression
   local eval1::Bool
   local eval2::Bool
+  local f = @closure (expArg, boolArg) -> evalExpPartial(expArg, target, boolArg)
   (e, outEvaluated) = mapFoldShallow(
     exp,
-    (expArg, boolArg) -> evalExpPartial(expArg, target, boolArg),
+    f,
     true,
   )
   outExp = begin
@@ -2313,7 +2314,7 @@ function evalCall(call::Call, target::EvalTarget)::Expression
         if isBuiltin(c.fn)
           bindingExpMap(
             CALL_EXPRESSION(c),
-            (x) -> evalxp(x, target),
+            @closure (x) -> evalxp(x, target)
           )
         else
           bindingExpMap(
@@ -4602,7 +4603,7 @@ function evalSubscriptedExp(
     end
   end
   @assign subs = list(
-    mapShallowExp(s, (x) -> evalExp_impl(x, target))
+    mapShallowExp(s, @closure (x) -> evalExp_impl(x, target))
     for s in subscripts
   )
   result = applySubscripts(subs, result)
@@ -4617,7 +4618,7 @@ function evalRecordElement(exp::Expression, target::EvalTarget)::Expression
   e = evalExp_impl(e, target)
   try
     result =
-      bindingExpMap(e, (x) -> evalRecordElement2(x, index))
+      bindingExpMap(e, @closure (x) -> evalRecordElement2(x, index))
   catch
     Error.assertion(
       false,
@@ -4630,10 +4631,9 @@ end
 
 function evalRecordElement2(exp::Expression, index::Int)::Expression
   local result::Expression
-
-  @assign result = begin
+  result = begin
     @match exp begin
-RECORD_EXPRESSION(__) => begin
+      RECORD_EXPRESSION(__) => begin
         listGet(exp.elements, index)
       end
     end

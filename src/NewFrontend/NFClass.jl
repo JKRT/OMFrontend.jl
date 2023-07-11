@@ -741,35 +741,7 @@ function classTreeApply(cls::Class, func::FuncType)::Class
 end
 
 function setClassTree(tree::ClassTree, cls::Class)::Class
-
-  @assign () = begin
-    @match cls begin
-      PARTIAL_CLASS(__) => begin
-        @assign cls.elements = tree
-        ()
-      end
-
-      EXPANDED_CLASS(__) => begin
-        @assign cls.elements = tree
-        ()
-      end
-
-      PARTIAL_BUILTIN(__) => begin
-        @assign cls.elements = tree
-        ()
-      end
-
-      INSTANCED_CLASS(__) => begin
-        @assign cls.elements = tree
-        ()
-      end
-
-      INSTANCED_BUILTIN(__) => begin
-        @assign cls.elements = tree
-        ()
-      end
-    end
-  end
+  @assign cls.elements = tree
   return cls
 end
 

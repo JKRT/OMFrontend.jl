@@ -296,8 +296,13 @@ function makeCatExp(n::Int, args::List{<:Expression}, tys::List{<:M_Type}, varia
       end
     end
   end
-  @assign maxn = max( [listLength(d) for d in dimsLst]...)
-  if maxn != min( [listLength(d) for d in dimsLst]... )
+  @assign maxn = max([listLength(d) for d in dimsLst]...)
+  # for L in dimsLst
+  #   for d in L
+  #     println(toString(d))
+  #   end
+  # end
+  if maxn != min([listLength(d) for d in dimsLst]...)
     Error.addSourceMessageAndFail(Error.NF_DIFFERENT_NUM_DIM_IN_ARGUMENTS, list(stringDelimitList(list(String(listLength(d)) for d in dimsLst), ", "), "cat"), info)
   end
   if n < 1 || n > maxn

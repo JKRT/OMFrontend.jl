@@ -456,7 +456,7 @@ function toString(call::Call)::String
       end
 
       UNTYPED_REDUCTION(__) => begin
-nameStr = toString(call.ref)
+        nameStr = toString(call.ref)
         @assign arg_str = toString(call.exp)
         @assign c = stringDelimitList(
           list(

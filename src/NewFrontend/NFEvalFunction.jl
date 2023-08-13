@@ -203,7 +203,6 @@ function evaluateRecordConstructor(
   local repl_exp::Expression
   local fields::List{Field}
   local rest_args::List{Expression} = args
-  local expl::List{Expression} = nil
   local inputs::List{InstNode} = fn.inputs
   local locals::List{InstNode} = fn.locals
   local node::InstNode
@@ -226,17 +225,18 @@ function evaluateRecordConstructor(
   Fetch the new binding expressions for all the variables, both inputs and
   locals.
   =#
-  for f in fields
+  local expl::Vector{Expression} = Vector(undef, length(fields))
+  for (i,f) in enumerate(fields)
     if isInput(f)
       @match node <| inputs = inputs
     else
       @match node <| locals = locals
     end
     e = ReplTree.get(repl, node)
-    expl = _cons(e, expl)
+    expl[i] = e
   end
   #=  Create a new record expression from the list of arguments. =#
-  result = makeRecord(name(fn), ty, listReverseInPlace(expl))
+  result = makeRecord(name(fn), ty, expl)
   #=  Constant evaluate the expression if requested. =#
   if evaluate
     result = evalExp(result)
@@ -354,12 +354,11 @@ function buildRecordBinding(recordNode::InstNode, repl::ReplTree.Tree)::Expressi
   local bindings::List{Expression}
   local exp::Expression
   local local_repl::ReplTree.Tree
-
-  @assign result = begin
+  result = begin
     @match cls begin
       INSTANCED_CLASS(elements = CLASS_TREE_FLAT_TREE(components = comps)) =>
         begin
-          @assign bindings = nil
+          bindings = nil
           #=  Create a replacement tree for just the record instance. This is
           =#
           #=  needed for records that contain local references such as:
@@ -376,11 +375,11 @@ function buildRecordBinding(recordNode::InstNode, repl::ReplTree.Tree)::Expressi
           =#
           #=  the binding expression of 'x'.
           =#
-          @assign local_repl = ReplTree.new()
+          local_repl = ReplTree.new()
           for i = arrayLength(comps):(-1):1
-            @assign exp = makeMutable(getBindingExp(comps[i], repl))
-            @assign local_repl = ReplTree.add(local_repl, comps[i], exp)
-            @assign bindings = _cons(exp, bindings)
+            exp = makeMutable(getBindingExp(comps[i], repl))
+            local_repl = ReplTree.add(local_repl, comps[i], exp)
+            bindings = _cons(exp, bindings)
           end
           #=  Add the expression to both the replacement tree and the list of bindings.
           =#
@@ -395,7 +394,7 @@ function buildRecordBinding(recordNode::InstNode, repl::ReplTree.Tree)::Expressi
           makeRecord(
             scopePath(cls_node),
             cls.ty,
-            bindings,
+            listArray(bindings),
           )
         end
 
@@ -856,7 +855,7 @@ end
 function assignRecord(lhs::Expression, rhs::Expression)::Expression
   local result::Expression
   result = begin
-    local elems::List{Expression}
+    local elems::Vector{Expression}
     local e::Expression
     local val::Expression
     local cls_tree::ClassTree
@@ -866,9 +865,8 @@ function assignRecord(lhs::Expression, rhs::Expression)::Expression
     @match rhs begin
       RECORD_EXPRESSION(__) => begin
         @match RECORD_EXPRESSION(elements = elems) = lhs
-        for v in rhs.elements
-          @match _cons(e, elems) = elems
-          assignVariable(e, v)
+        for (i, v) in enumerate(rhs.elements)
+          assignVariable(elems[i], v)
         end
         lhs
       end
@@ -877,8 +875,8 @@ function assignRecord(lhs::Expression, rhs::Expression)::Expression
         cls_tree =
           classTree(getClass(node(rhs.cref)))
         comps = getComponents(cls_tree)
-        for c in comps
-          @match _cons(e, elems) = elems
+        for (i, c) in enumerate(comps)
+          e = elems[i]
           ty = getType(c)
           val = CREF_EXPRESSION(
             liftArrayLeftList(ty, arrayDims(rhs.ty)),

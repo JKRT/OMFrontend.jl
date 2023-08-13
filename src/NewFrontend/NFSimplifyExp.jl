@@ -17,7 +17,7 @@ function simplify(exp::Expression)::Expression
       end
 
       RECORD_EXPRESSION(__) => begin
-        @assign exp.elements = list(simplify(e) for e in exp.elements)
+        exp.elements = Expression[simplify(e) for e in exp.elements]
         exp
       end
 

@@ -61,7 +61,7 @@
   end
 end
 
-@Uniontype InstNode begin
+@Mutable_Uniontype InstNode begin
   @Record EMPTY_NODE begin
   end
 
@@ -145,27 +145,27 @@ end
 
 const NUMBER_OF_CACHES = 3::Int
 
-function setInnerOuterCache(in_caches::Vector{<:CachedData}, in_cache::CachedData) ::Vector{CachedData}
+function setInnerOuterCache(in_caches::Vector{<:CachedData}, in_cache::CachedData)
   local out_caches::Vector{CachedData} = arrayUpdate(in_caches, 3, in_cache)
   out_caches
 end
 
-function getInnerOuterCache(in_caches::Vector{<:CachedData}) ::CachedData
+function getInnerOuterCache(in_caches::Vector{<:CachedData})
   local out_cache::CachedData = arrayGet(in_caches, 3)
   out_cache
 end
 
-function clearPackageCache(in_caches::Vector{<:CachedData}) ::Vector{CachedData}
+function clearPackageCache(in_caches::Vector{<:CachedData})
   local out_caches::Vector{CachedData} = arrayUpdate(in_caches, 2, C_NO_CACHE())
   out_caches
 end
 
-function setPackageCache(in_caches::Vector{<:CachedData}, in_cache::CachedData) ::Vector{CachedData}
+function setPackageCache(in_caches::Vector{<:CachedData}, in_cache::CachedData)
   local out_caches::Vector{CachedData} = arrayUpdate(in_caches, 2, in_cache)
   out_caches
 end
 
-function getPackageCache(in_caches::Vector{<:CachedData}) ::CachedData
+function getPackageCache(in_caches::Vector{<:CachedData})
   local out_cache::CachedData = arrayGet(in_caches, 2)
   out_cache
 end
@@ -174,7 +174,7 @@ function setFuncCache(in_caches::Vector{<:CachedData}, in_cache::CachedData)
   arrayUpdate(in_caches, 1, in_cache)
 end
 
-function getFuncCache(in_caches::Vector{<:CachedData}) ::CachedData
+function getFuncCache(in_caches::Vector{<:CachedData})
 #  #@debug in_caches
   local out_cache::CachedData = arrayGet(in_caches, 1)
   out_cache
@@ -220,12 +220,12 @@ function initFunc(caches::Vector{<:CachedData})
   setFuncCache(caches, func_cache)
 end
 
-function empty()::Vector{CachedData}
+function empty()
   local cache::Vector{CachedData} = arrayCreate(NUMBER_OF_CACHES, C_NO_CACHE())
   cache
 end
 
-function hasBinding(@nospecialize(node::InstNode)) ::Bool
+function hasBinding(@nospecialize(node::InstNode))
   local hb::Bool
   hb = begin
     @match node begin
@@ -255,8 +255,10 @@ function getSections(node::InstNode)
   end
 end
 
-
-function isModel(node::InstNode) ::Bool
+"""
+Returns true if a node is an instance of a model.
+"""
+function isModel(node::InstNode)
   local r::Bool
   r = begin
     @match node begin
@@ -274,7 +276,10 @@ function isModel(node::InstNode) ::Bool
   r
 end
 
-function isRecord(@nospecialize(node::InstNode)) ::Bool
+"""
+  Returns true if the node is an instance of a record
+"""
+function isRecord(@nospecialize(node::InstNode))
   local isRec::Bool
    isRec = begin
     @match node begin
@@ -289,26 +294,29 @@ function isRecord(@nospecialize(node::InstNode)) ::Bool
   isRec
 end
 
-function copyInstancePtr(@nospecialize(srcNode::InstNode), @nospecialize(dstNode::InstNode)) ::InstNode
-   () = begin
-    @match (srcNode, dstNode) begin
-      (COMPONENT_NODE(__), COMPONENT_NODE(__))  => begin
-        @assign dstNode.component = srcNode.component
-        #dstNode.component.x  = srcNode.component.x
-        ()
-      end
+"""
+  Copies the instance pointer of the src node to the destination node.
+  After applying this function this component is shared between the two nodes.
+"""
+function copyInstancePtr(@nospecialize(srcNode::InstNode),
+                         @nospecialize(dstNode::InstNode))
+  @match (srcNode, dstNode) begin
+    (COMPONENT_NODE(__), COMPONENT_NODE(__))  => begin
+      dstNode.component = srcNode.component
+      #dstNode.component.x  = srcNode.component.x
+      ()
+    end
 
-      (CLASS_NODE(__), CLASS_NODE(__))  => begin
-        @assign dstNode.cls = srcNode.cls
-        #dstNode.cls.x = srcNode.cls.x
-        ()
-      end
+    (CLASS_NODE(__), CLASS_NODE(__))  => begin
+      dstNode.cls = srcNode.cls
+      #dstNode.cls.x = srcNode.cls.x
+      ()
     end
   end
   dstNode
 end
 
-function getComments(node::InstNode, accumCmts::List{<:SCode.Comment} = nil) ::List{SCode.Comment}
+function getComments(node::InstNode, accumCmts::List{<:SCode.Comment} = nil)
   local cmts::List{SCode.Comment}
 
    cmts = begin
@@ -326,15 +334,15 @@ function getComments(node::InstNode, accumCmts::List{<:SCode.Comment} = nil) ::L
   cmts
 end
 
-function clone(node::InstNode) ::InstNode
+function clone(node::InstNode)
    () = begin
     local cls::Class
     @match node begin
       CLASS_NODE(__)  => begin
-         cls = P_Pointer.access(node.cls)
-         cls = classTreeApply(cls, clone)
-         @assign node.cls = P_Pointer.create(cls)
-         @assign node.caches = empty()
+        cls = P_Pointer.access(node.cls)
+        cls = classTreeApply(cls, clone)
+        @assign node.cls = P_Pointer.create(cls)
+        @assign node.caches = empty()
         ()
       end
 
@@ -346,7 +354,7 @@ function clone(node::InstNode) ::InstNode
   node
 end
 
-function isPartial(node::InstNode) ::Bool
+function isPartial(node::InstNode)
   local isPartial::Bool
    isPartial = begin
     @match node begin
@@ -362,7 +370,7 @@ function isPartial(node::InstNode) ::Bool
   isPartial
 end
 
-function isBuiltin(node::InstNode) ::Bool
+function isBuiltin(node::InstNode)
   local isBuiltin::Bool
    isBuiltin = begin
     @match node begin
@@ -378,7 +386,7 @@ function isBuiltin(node::InstNode) ::Bool
 end
 
 """ Returns the DAE type for a class, with the list of variables filled in. """
-function toFullDAEType(clsNode::InstNode) ::DAE.Type
+function toFullDAEType(clsNode::InstNode)
   local outType::DAE.Type
 
    outType = begin
@@ -408,7 +416,7 @@ function toFullDAEType(clsNode::InstNode) ::DAE.Type
   outType
 end
 
-function stripDAETypeVars(ty::DAE.Type) ::DAE.Type
+function stripDAETypeVars(ty::DAE.Type)
    () = begin
     @match ty begin
       DAE.Type.T_COMPLEX(__)  => begin
@@ -424,7 +432,7 @@ function stripDAETypeVars(ty::DAE.Type) ::DAE.Type
 end
 
 """ #= Returns the DAE type for a class, without the list of variables filled in. =#"""
-function toPartialDAEType(clsNode::InstNode) ::DAE.Type
+function toPartialDAEType(clsNode::InstNode)
   local outType::DAE.Type
 
    outType = begin
@@ -451,7 +459,7 @@ function toPartialDAEType(clsNode::InstNode) ::DAE.Type
   outType
 end
 
-function setModifier(mod::Modifier, node::InstNode) ::InstNode
+function setModifier(mod::Modifier, node::InstNode)
 
 
    () = begin
@@ -474,7 +482,7 @@ function setModifier(mod::Modifier, node::InstNode) ::InstNode
   node
 end
 
-function mergeModifier(mod::Modifier, node::InstNode) ::InstNode
+function mergeModifier(mod::Modifier, node::InstNode)
 
 
    () = begin
@@ -497,7 +505,7 @@ function mergeModifier(mod::Modifier, node::InstNode) ::InstNode
   node
 end
 
-function getModifier(node::InstNode) ::Modifier
+function getModifier(node::InstNode)
   local mod::Modifier
 
    mod = begin
@@ -518,9 +526,7 @@ function getModifier(node::InstNode) ::Modifier
   mod
 end
 
-function protectComponent(comp::InstNode) ::InstNode
-
-
+function protectComponent(comp::InstNode)
    () = begin
     @match comp begin
       COMPONENT_NODE(visibility = Visibility.PUBLIC)  => begin
@@ -536,9 +542,7 @@ function protectComponent(comp::InstNode) ::InstNode
   comp
 end
 
-function protectClass(cls::InstNode) ::InstNode
-
-
+function protectClass(cls::InstNode)
    () = begin
     @match cls begin
       CLASS_NODE(visibility = Visibility.PUBLIC)  => begin
@@ -554,7 +558,7 @@ function protectClass(cls::InstNode) ::InstNode
   cls
 end
 
-function isProtected(node::InstNode) ::Bool
+function isProtected(node::InstNode)
   local isProtected::Bool
 
    isProtected = begin
@@ -575,7 +579,7 @@ function isProtected(node::InstNode) ::Bool
   isProtected
 end
 
-function visibility(node::InstNode) ::VisibilityType
+function visibility(node::InstNode)
   local vis::VisibilityType
 
    vis = begin
@@ -596,7 +600,7 @@ function visibility(node::InstNode) ::VisibilityType
   vis
 end
 
-function isProtectedBaseClass(node::InstNode) ::Bool
+function isProtectedBaseClass(node::InstNode)
   local isProtected::Bool
 
    isProtected = begin
@@ -614,7 +618,7 @@ function isProtectedBaseClass(node::InstNode) ::Bool
   isProtected
 end
 
-function isRedeclare(node::InstNode) ::Bool
+function isRedeclare(node::InstNode)
   local isRedcl::Bool = false
    isRedcl = begin
     @match node begin
@@ -648,7 +652,7 @@ function toFlatStream(node::InstNode, s)
   s
 end
 
-function toFlatString(node::InstNode) ::String
+function toFlatString(node::InstNode)
   local name::String
    name = begin
     @match node begin
@@ -666,7 +670,7 @@ function toFlatString(node::InstNode) ::String
   name
 end
 
-function toString(node::InstNode) ::String
+function toString(node::InstNode)
   local name::String
    name = begin
     @match node begin
@@ -707,7 +711,7 @@ function checkIdentical(node1::InstNode, node2::InstNode)
   end
 end
 
-function isSame(node1::InstNode, node2::InstNode) ::Bool
+function isSame(node1::InstNode, node2::InstNode)
   local same::Bool = false
   local n1::InstNode = resolveOuter(node1)
   local n2::InstNode = resolveOuter(node2)
@@ -751,7 +755,7 @@ end
 
 """ #= Returns true if two nodes references the same class or component,
                      otherwise false. =#"""
-function refEqual(node1::InstNode, node2::InstNode) ::Bool
+function refEqual(node1::InstNode, node2::InstNode)
   local refEqualIs::Bool
   refEqualIs = begin
     @match (node1, node2) begin
@@ -771,7 +775,7 @@ function refEqual(node1::InstNode, node2::InstNode) ::Bool
   refEqualIs
 end
 
-function addIterator(iterator::InstNode, scope::InstNode) ::InstNode
+function addIterator(iterator::InstNode, scope::InstNode)
   scope = begin
     @match scope begin
       IMPLICIT_SCOPE(__)  => begin
@@ -784,7 +788,7 @@ end
 
 """ #= Returns the first parent of the node that's not an implicit scope, or the
                      node itself if it's not an implicit scope. =#"""
-function explicitScope(node::InstNode) ::InstNode
+function explicitScope(node::InstNode)
   local scope::InstNode
   scope = begin
     @match node begin
@@ -799,7 +803,7 @@ function explicitScope(node::InstNode) ::InstNode
   scope
 end
 
-function openImplicitScope(scope::InstNode) ::InstNode
+function openImplicitScope(scope::InstNode)
   scope = begin
     @match scope begin
       IMPLICIT_SCOPE(__)  => begin
@@ -813,7 +817,7 @@ function openImplicitScope(scope::InstNode) ::InstNode
   scope
 end
 
-function setInnerOuterCache(node::InstNode, in_out_cache::CachedData) ::InstNode
+function setInnerOuterCache(node::InstNode, in_out_cache::CachedData)
    () = begin
     @match node begin
       CLASS_NODE(__)  => begin
@@ -830,7 +834,7 @@ function setInnerOuterCache(node::InstNode, in_out_cache::CachedData) ::InstNode
   node
 end
 
-function getInnerOuterCache(inNode::InstNode) ::CachedData
+function getInnerOuterCache(inNode::InstNode)
   local pack_cache::CachedData
    pack_cache = begin
     @match inNode begin
@@ -846,7 +850,7 @@ function getInnerOuterCache(inNode::InstNode) ::CachedData
   pack_cache
 end
 
-function clearPackageCache(node::InstNode) ::InstNode
+function clearPackageCache(node::InstNode)
    () = begin
     @match node begin
       CLASS_NODE(__)  => begin
@@ -863,7 +867,7 @@ function clearPackageCache(node::InstNode) ::InstNode
   node
 end
 
-function setPackageCache(node::InstNode, in_pack_cache::CachedData) ::InstNode
+function setPackageCache(node::InstNode, in_pack_cache::CachedData)
    () = begin
     @match node begin
       CLASS_NODE(__)  => begin
@@ -880,7 +884,7 @@ function setPackageCache(node::InstNode, in_pack_cache::CachedData) ::InstNode
   node
 end
 
-function getPackageCache(inNode::InstNode) ::CachedData
+function getPackageCache(inNode::InstNode)
   local pack_cache::CachedData
 
    pack_cache = begin
@@ -898,7 +902,7 @@ function getPackageCache(inNode::InstNode) ::CachedData
   pack_cache
 end
 
-function setFuncCache(node::InstNode, in_func_cache::CachedData) ::InstNode
+function setFuncCache(node::InstNode, in_func_cache::CachedData)
    () = begin
     @match node begin
       CLASS_NODE(__)  => begin
@@ -915,7 +919,7 @@ function setFuncCache(node::InstNode, in_func_cache::CachedData) ::InstNode
   node
 end
 
-function getFuncCache(inNode::InstNode) ::CachedData
+function getFuncCache(inNode::InstNode)
   local func_cache::CachedData
    func_cache = begin
     @match inNode begin
@@ -931,7 +935,7 @@ function getFuncCache(inNode::InstNode) ::CachedData
   func_cache
 end
 
-function cacheAddFunc(node::InstNode, fn::M_Function, specialBuiltin::Bool) ::InstNode
+function cacheAddFunc(node::InstNode, fn::M_Function, specialBuiltin::Bool)
    () = begin
     @match node begin
       CLASS_NODE(__)  => begin
@@ -947,7 +951,7 @@ function cacheAddFunc(node::InstNode, fn::M_Function, specialBuiltin::Bool) ::In
   node
 end
 
-function cacheInitFunc(node::InstNode) ::InstNode
+function cacheInitFunc(node::InstNode)
    () = begin
     @match node begin
       CLASS_NODE(__)  => begin
@@ -964,7 +968,7 @@ function cacheInitFunc(node::InstNode) ::InstNode
   node
 end
 
-function resolveOuter(node::InstNode) ::InstNode
+function resolveOuter(node::InstNode)
   local outerNode::InstNode
 
    outerNode = begin
@@ -981,7 +985,7 @@ function resolveOuter(node::InstNode) ::InstNode
   outerNode
 end
 
-function resolveInner(node::InstNode) ::InstNode
+function resolveInner(node::InstNode)
   local innerNode::InstNode
 
    innerNode = begin
@@ -998,7 +1002,7 @@ function resolveInner(node::InstNode) ::InstNode
   innerNode
 end
 
-function isInnerOuterNode(node::InstNode) ::Bool
+function isInnerOuterNode(node::InstNode)
   #@debug "is inner outer node?"
   local isIO::Bool
    isIO = begin
@@ -1014,7 +1018,7 @@ function isInnerOuterNode(node::InstNode) ::Bool
   isIO
 end
 
-function isOnlyOuter(node::InstNode) ::Bool
+function isOnlyOuter(node::InstNode)
   local isOuter::Bool
 
    isOuter = begin
@@ -1039,7 +1043,7 @@ function isOnlyOuter(node::InstNode) ::Bool
   isOuter
 end
 
-function isOuter(node::InstNode) ::Bool
+function isOuter(node::InstNode)
   local isOuter::Bool
 
    isOuter = begin
@@ -1064,7 +1068,7 @@ function isOuter(node::InstNode) ::Bool
   isOuter
 end
 
-function isInner(node::InstNode) ::Bool
+function isInner(node::InstNode)
   local isInner::Bool
 
    isInner = begin
@@ -1089,7 +1093,7 @@ function isInner(node::InstNode) ::Bool
   isInner
 end
 
-function isOutput(node::InstNode) ::Bool
+function isOutput(node::InstNode)
   local isOutput::Bool
 
    isOutput = begin
@@ -1106,7 +1110,7 @@ function isOutput(node::InstNode) ::Bool
   isOutput
 end
 
-function isInput(node::InstNode) ::Bool
+function isInput(node::InstNode)
   local isInput::Bool
 
    isInput = begin
@@ -1123,7 +1127,7 @@ function isInput(node::InstNode) ::Bool
   isInput
 end
 
-function scopePathClass(node::InstNode, ty::InstNodeType, includeRoot::Bool, accumPath::Absyn.Path) ::Absyn.Path
+function scopePathClass(node::InstNode, ty::InstNodeType, includeRoot::Bool, accumPath::Absyn.Path)
   local path::Absyn.Path
 
    path = begin
@@ -1169,7 +1173,7 @@ function scopePathClass(node::InstNode, ty::InstNodeType, includeRoot::Bool, acc
   path
 end
 
-function scopePath2(node::InstNode, includeRoot::Bool, accumPath::Absyn.Path) ::Absyn.Path
+function scopePath2(node::InstNode, includeRoot::Bool, accumPath::Absyn.Path)
   local path::Absyn.Path
 
    path = begin
@@ -1190,7 +1194,7 @@ function scopePath2(node::InstNode, includeRoot::Bool, accumPath::Absyn.Path) ::
   path
 end
 
-function scopePath(node::InstNode; includeRoot::Bool = false #= Whether to include the root class name or not. =#) ::Absyn.Path
+function scopePath(node::InstNode; includeRoot::Bool = false #= Whether to include the root class name or not. =#)
   local path::Absyn.Path
 
    path = begin
@@ -1228,7 +1232,7 @@ function scopePath(node::InstNode; includeRoot::Bool = false #= Whether to inclu
   path
 end
 
-function scopeListClass(clsNode::InstNode, ty::InstNodeType, includeRoot::Bool, accumScopes::List{<:InstNode} = nil) ::List{InstNode}
+function scopeListClass(clsNode::InstNode, ty::InstNodeType, includeRoot::Bool, accumScopes::List{<:InstNode} = nil)
   local scopes::List{InstNode}
 
    scopes = begin
@@ -1274,11 +1278,11 @@ function scopeListClass(clsNode::InstNode, ty::InstNodeType, includeRoot::Bool, 
   scopes
 end
 
-function scopeList(node::InstNode, includeRoot::Bool, accumScopes::List{<:InstNode} = nil) ::List{InstNode}
+function scopeList(node::InstNode, includeRoot::Bool, accumScopes::List{<:InstNode} = nil)
   scopeList(node, includeRoot = includeRoot, accumScopes = accumScopes)
 end
 
-function scopeList(node::InstNode; includeRoot::Bool = false #= Whether to include the root class name or not. =#, accumScopes::List{<:InstNode} = nil) ::List{InstNode}
+function scopeList(node::InstNode; includeRoot::Bool = false #= Whether to include the root class name or not. =#, accumScopes::List{<:InstNode} = nil)
   local scopes::List{InstNode}
 
    scopes = begin
@@ -1338,7 +1342,7 @@ function classApply(node::InstNode, func::FuncType, arg::ArgT)  where {ArgT}
   node
 end
 
-function getType(node::InstNode)::NFType
+function getType(node::InstNode)
   local ty::M_Type
    ty = begin
     @match node begin
@@ -1354,7 +1358,7 @@ function getType(node::InstNode)::NFType
   ty
 end
 
-function InstNode_info(node::InstNode) ::SourceInfo
+function InstNode_info(node::InstNode)
   local infoV::SourceInfo
 
    infoV = begin
@@ -1383,11 +1387,11 @@ function InstNode_info(node::InstNode) ::SourceInfo
   infoV
 end
 
-function setDefinition(definition::SCode.Element, node::InstNode) ::InstNode
+function setDefinition(definition::SCode.Element, node::InstNode)
    () = begin
     @match node begin
       CLASS_NODE(__)  => begin
-        @assign node.definition = definition
+        node.definition = definition
         ()
       end
     end
@@ -1395,7 +1399,7 @@ function setDefinition(definition::SCode.Element, node::InstNode) ::InstNode
   node
 end
 
-function definition(node::InstNode)::SCode.Element
+function definition(node::InstNode)
   local def::SCode.Element
   def = begin
     @match node begin
@@ -1410,7 +1414,7 @@ function definition(node::InstNode)::SCode.Element
   def
 end
 
-function setNodeType(nodeType::InstNodeType, node::InstNode) ::InstNode
+function setNodeType(nodeType::InstNodeType, node::InstNode)
    () = begin
     @match node begin
       CLASS_NODE(__)  => begin
@@ -1431,7 +1435,7 @@ function setNodeType(nodeType::InstNodeType, node::InstNode) ::InstNode
   node
 end
 
-function nodeType(node::InstNode) ::InstNodeType
+function nodeType(node::InstNode)
   local nodeType::InstNodeType
    nodeType = begin
     @match node begin
@@ -1446,10 +1450,11 @@ function nodeType(node::InstNode) ::InstNodeType
   nodeType
 end
 
-function replaceClass(cls::Class, node::InstNode) ::InstNode
+function replaceClass(cls::Class, node::InstNode)
    () = begin
     @match node begin
       CLASS_NODE(__)  => begin
+        #= NB: @assign is needed here. =#
         @assign node.cls = P_Pointer.create(cls)
         ()
       end
@@ -1458,10 +1463,11 @@ function replaceClass(cls::Class, node::InstNode) ::InstNode
   node
 end
 
-function replaceComponent(component::Component, node::InstNode) ::InstNode
+function replaceComponent(component::Component, node::InstNode)
    () = begin
     @match node begin
       COMPONENT_NODE(__)  => begin
+        #= NB assign is needed =#
         @assign node.component = P_Pointer.create(component)
         ()
       end
@@ -1470,7 +1476,7 @@ function replaceComponent(component::Component, node::InstNode) ::InstNode
   node
 end
 
-function updateComponent!(component::Component, node::InstNode) ::InstNode
+function updateComponent!(component::Component, node::InstNode)
    node = begin
     @match node begin
       COMPONENT_NODE(__)  => begin
@@ -1482,7 +1488,7 @@ function updateComponent!(component::Component, node::InstNode) ::InstNode
   node
 end
 
-function component(node::InstNode) ::Component
+function component(node::InstNode)
   local component::Component
 
    component = begin
@@ -1495,7 +1501,7 @@ function component(node::InstNode) ::Component
   component
 end
 
-function updateClass(cls::Class, node::InstNode)::InstNode
+function updateClass(cls::Class, node::InstNode)
    node = begin
     @match node begin
       CLASS_NODE(__)  => begin
@@ -1507,7 +1513,7 @@ function updateClass(cls::Class, node::InstNode)::InstNode
   node
 end
 
-function getDerivedNode(node::InstNode) ::InstNode
+function getDerivedNode(node::InstNode)
   local derived::InstNode
 
    derived = begin
@@ -1524,7 +1530,7 @@ function getDerivedNode(node::InstNode) ::InstNode
   derived
 end
 
-function getDerivedClass(node::InstNode) ::Class
+function getDerivedClass(node::InstNode)
   local cls::Class
 
    cls = begin
@@ -1541,7 +1547,7 @@ function getDerivedClass(node::InstNode) ::Class
   cls
 end
 
-function getClass(node::InstNode) ::Class
+function getClass(node::InstNode)
   local cls::Class
    cls = begin
     @match node begin
@@ -1557,8 +1563,8 @@ function getClass(node::InstNode) ::Class
   cls
 end
 
-""" #= Sets the parent of a node if the node lacks a parent, otherwise does nothing. =#"""
-function setOrphanParent(parent::InstNode, node::InstNode) ::InstNode
+"""  Sets the parent of a node if the node lacks a parent, otherwise does nothing. """
+function setOrphanParent(parent::InstNode, node::InstNode)
    () = begin
     @match node begin
       CLASS_NODE(parentScope = EMPTY_NODE(__))  => begin
@@ -1577,20 +1583,23 @@ function setOrphanParent(parent::InstNode, node::InstNode) ::InstNode
   node
 end
 
-function setParent(parent::InstNode, node::InstNode) ::InstNode
+function setParent(parent::InstNode, node::InstNode)
    () = begin
     @match node begin
       CLASS_NODE(__)  => begin
+        #= NB: Assign is needed here =#
         @assign node.parentScope = parent
         ()
       end
       COMPONENT_NODE(__)  => begin
         #@debug "Setting parent! for parent: $(parent.name) and node: $(node.name)"
         #@debug "parent scope before $(node.parent)"
+        #= NB: Assign is needed here =#
         @assign node.parent = parent
         ()
       end
       IMPLICIT_SCOPE(__)  => begin
+        #= NB: Assign is needed here =#
         @assign node.parentScope = parent
         ()
       end
@@ -1599,7 +1608,7 @@ function setParent(parent::InstNode, node::InstNode) ::InstNode
   node
 end
 
-function topComponent(node::InstNode) ::InstNode
+function topComponent(node::InstNode)
   local topComponent::InstNode
 
    topComponent = begin
@@ -1616,7 +1625,7 @@ function topComponent(node::InstNode) ::InstNode
   topComponent
 end
 
-function topScope(node::InstNode) ::InstNode
+function topScope(node::InstNode)
   local ts::InstNode
    ts = begin
     @match node begin
@@ -1631,7 +1640,7 @@ function topScope(node::InstNode) ::InstNode
   ts
 end
 
-function classScope(node::InstNode) ::InstNode
+function classScope(node::InstNode)
   local scope::InstNode
    scope = begin
     @match node begin
@@ -1651,7 +1660,7 @@ end
   the enclosing class. In the case of a component it is the enclosing class of
   the component's type.
 """
-function parentScope(node::InstNode)::InstNode
+function parentScope(node::InstNode)
   local scope::InstNode
    scope = begin
     @match node begin
@@ -1674,7 +1683,7 @@ function parentScope(node::InstNode)::InstNode
   scope
 end
 
-function rootTypeParent(nodeType::InstNodeType, node::InstNode) ::InstNode
+function rootTypeParent(nodeType::InstNodeType, node::InstNode)
   local parentVar::InstNode
    parentVar = begin
     @match nodeType begin
@@ -1692,7 +1701,7 @@ function rootTypeParent(nodeType::InstNodeType, node::InstNode) ::InstNode
   parentVar
 end
 
-function rootParent(node::InstNode) ::InstNode
+function rootParent(node::InstNode)
   local parent::InstNode
 
    parent = begin
@@ -1709,7 +1718,7 @@ function rootParent(node::InstNode) ::InstNode
   parent
 end
 
-function derivedParent(node::InstNode) ::InstNode
+function derivedParent(node::InstNode)
   local parent::InstNode
 
    parent = begin
@@ -1734,19 +1743,19 @@ function derivedParent(node::InstNode) ::InstNode
   parent
 end
 
-function classParent(node::InstNode) ::InstNode
+function classParent(node::InstNode)
   local parent::InstNode
 
   @match CLASS_NODE(parentScope = parent) = node
   parent
 end
 
-function explicitParent(node::InstNode) ::InstNode
+function explicitParent(node::InstNode)
   local parentNode::InstNode = explicitScope(parent(node))
   parentNode
 end
 
-function parent(node::InstNode) ::InstNode
+function parent(node::InstNode)
   local parent::InstNode
    parent = begin
     @match node begin
@@ -1768,16 +1777,16 @@ function parent(node::InstNode) ::InstNode
   parent
 end
 
-function rename(name::String, node::InstNode) ::InstNode
+function rename(name::String, node::InstNode)
    () = begin
     @match node begin
       CLASS_NODE(__)  => begin
-        @assign node.name = name
+        node.name = name
         ()
       end
 
       COMPONENT_NODE(__)  => begin
-        @assign node.name = name
+        node.name = name
         ()
       end
     end
@@ -1786,7 +1795,7 @@ function rename(name::String, node::InstNode) ::InstNode
 end
 
 """ #= Returns the type of node the given node is as a string. =#"""
-function typeName(node::InstNode) ::String
+function typeName(node::InstNode)
   local name::String
 
    name = begin
@@ -1825,12 +1834,12 @@ end
 
 """ #= Returns the name of a scope, which in the case of a component is the name
                      of the component's type, and for a class simply the name of the class. =#"""
-                       function scopeName(node::InstNode) ::String
+                       function scopeName(node::InstNode)
                          local outName::String = name(classScope(explicitScope(node)))
                          outName
                        end
 
-function className(node::InstNode) ::String
+function className(node::InstNode)
   local name::String
 
   @match CLASS_NODE(name = name) = node
@@ -1838,7 +1847,7 @@ function className(node::InstNode) ::String
 end
 
 
-function name(@nospecialize(node::InstNode))::String
+function name(@nospecialize(node::InstNode))
   local nameVar::String
    nameVar = begin
     @match node begin
@@ -1872,7 +1881,7 @@ function name(@nospecialize(node::InstNode))::String
   nameVar
 end
 
-function isOperator(node::InstNode) ::Bool
+function isOperator(node::InstNode)
   local op::Bool
    op = begin
     @match node begin
@@ -1894,7 +1903,7 @@ end
  @author: adrpo
 returns true if itself or any of the parents are expandable connectors
 """
-function hasParentExpandableConnector(node::InstNode) ::Bool
+function hasParentExpandableConnector(node::InstNode)
   local b::Bool = isExpandableConnector(node)
   local p::InstNode
   p = node
@@ -1908,7 +1917,7 @@ function hasParentExpandableConnector(node::InstNode) ::Bool
   b
 end
 
-function isExpandableConnector(node::InstNode) ::Bool
+function isExpandableConnector(node::InstNode)
   local isConnector::Bool
    isConnector = begin
     @match node begin
@@ -1924,7 +1933,7 @@ function isExpandableConnector(node::InstNode) ::Bool
   isConnector
 end
 
-function isConnector(node::InstNode) ::Bool
+function isConnector(node::InstNode)
   local isConnectorBool::Bool
 
    isConnectorBool = begin
@@ -1945,7 +1954,7 @@ function isConnector(node::InstNode) ::Bool
   isConnectorBool
 end
 
-function isName(node::InstNode) ::Bool
+function isName(node::InstNode)
   local isName::Bool
 
    isName = begin
@@ -1962,7 +1971,7 @@ function isName(node::InstNode) ::Bool
   isName
 end
 
-function isImplicit(node::InstNode) ::Bool
+function isImplicit(node::InstNode)
   local isImplicit::Bool
 
    isImplicit = begin
@@ -1979,7 +1988,7 @@ function isImplicit(node::InstNode) ::Bool
   isImplicit
 end
 
-function isEmpty(node::InstNode) ::Bool
+function isEmpty(node::InstNode)
   local isEmpty::Bool
    isEmpty = begin
     @match node begin
@@ -1994,7 +2003,7 @@ function isEmpty(node::InstNode) ::Bool
   isEmpty
 end
 
-function isRef(node::InstNode) ::Bool
+function isRef(node::InstNode)
   local isRef::Bool
 
    isRef = begin
@@ -2011,7 +2020,7 @@ function isRef(node::InstNode) ::Bool
   isRef
 end
 
-function isComponent(node::InstNode) ::Bool
+function isComponent(node::InstNode)
   local isComponent::Bool
 
    isComponent = begin
@@ -2032,7 +2041,7 @@ function isComponent(node::InstNode) ::Bool
   isComponent
 end
 
-function isFunction(node::InstNode) ::Bool
+function isFunction(node::InstNode)
   local isFunc::Bool
 
    isFunc = begin
@@ -2049,7 +2058,7 @@ function isFunction(node::InstNode) ::Bool
   isFunc
 end
 
-function isDerivedClass(node::InstNode) ::Bool
+function isDerivedClass(node::InstNode)
   local isDerived::Bool
 
    isDerived = begin
@@ -2066,7 +2075,7 @@ function isDerivedClass(node::InstNode) ::Bool
   isDerived
 end
 
-function isUserdefinedClass(node::InstNode) ::Bool
+function isUserdefinedClass(node::InstNode)
   local isUserdefined::Bool
 
    isUserdefined = begin
@@ -2101,7 +2110,7 @@ function isUserdefinedClass(node::InstNode) ::Bool
   isUserdefined
 end
 
-function isBaseClass(node::InstNode) ::Bool
+function isBaseClass(node::InstNode)
   local isBaseClass::Bool
 
    isBaseClass = begin
@@ -2118,7 +2127,7 @@ function isBaseClass(node::InstNode) ::Bool
   isBaseClass
 end
 
-function isClass(node::InstNode) ::Bool
+function isClass(node::InstNode)
   local isClass::Bool
 
    isClass = begin
@@ -2139,14 +2148,14 @@ function isClass(node::InstNode) ::Bool
   isClass
 end
 
-function fromComponent(name::String, component::Component, parent::InstNode) ::InstNode
+function fromComponent(name::String, component::Component, parent::InstNode)
   local node::InstNode
 
    node = COMPONENT_NODE(name, Visibility.PUBLIC, P_Pointer.create(component), parent, NORMAL_COMP())
   node
 end
 
-function newExtends(definition::SCode.Element, parent::InstNode) ::InstNode
+function newExtends(definition::SCode.Element, parent::InstNode)
   local node::InstNode
 
   local base_path::Absyn.Path
@@ -2159,7 +2168,7 @@ function newExtends(definition::SCode.Element, parent::InstNode) ::InstNode
   node
 end
 
-function newComponent(definition::SCode.Element, parent::InstNode = EMPTY_NODE()) ::InstNode
+function newComponent(definition::SCode.Element, parent::InstNode = EMPTY_NODE())
   local node::InstNode
 
   local name::String
@@ -2170,7 +2179,7 @@ function newComponent(definition::SCode.Element, parent::InstNode = EMPTY_NODE()
   node
 end
 
-function newClass(definition::SCode.Element, parent::InstNode, nodeType::InstNodeType = NORMAL_CLASS()) ::InstNode
+function newClass(definition::SCode.Element, parent::InstNode, nodeType::InstNodeType = NORMAL_CLASS())
   local node::InstNode
   local name::String
   local vis::SCode.Visibility
@@ -2179,7 +2188,7 @@ function newClass(definition::SCode.Element, parent::InstNode, nodeType::InstNod
   node
 end
 
-function new(definition::SCode.Element, parent::InstNode) ::InstNode
+function new(definition::SCode.Element, parent::InstNode)
   local node::InstNode
    node = begin
     @match definition begin

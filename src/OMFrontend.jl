@@ -217,6 +217,7 @@ See the keyword argument for specifying MSL version.
 Valid versions are 3.2.3 and 4.0.0.
 """
 function flattenModelWithMSL(modelName::String, fileName::String; MSL_Version = "MSL:3.2.3")
+  println("Flatten model with MSL")
   if !haskey(LIBRARY_CACHE, MSL_Version)
     initLoadMSL(MSL_Version = MSL_Version)
   end
@@ -228,7 +229,8 @@ function flattenModelWithMSL(modelName::String, fileName::String; MSL_Version = 
   #= Add builtin function to the program (model) and instantiate it =#
   builtin = NFModelicaBuiltinCache["NFModelicaBuiltin"]
   program = listReverse(listAppend(builtin, sCodeProgram))
-  program = listReverse(listAppend(lib, sCodeProgram))
+  program = listAppend(lib, sCodeProgram)
+  println("Attempting to instantiate..." * modelName)
   (FM, cache) = instantiateSCodeToFM(modelName, program)
 end
 
@@ -261,13 +263,18 @@ function loadMSL(; MSL_Version)
     #= Initialize various global variables =#
     Main.Global.initialize()
     #= Find the MSL =#
-    local packagePath = dirname(realpath(Base.find_package("OMFrontend")))
-    local packagePath *= "/.."
-    local pathToLib = packagePath * string("/lib/Modelica/", MSL_Version, ".mo")
-    local p = parseFile(pathToLib)
-    #= Translate it to SCode =#
-    local scodeMSL = OMFrontend.translateToSCode(p)
-    LIBRARY_CACHE[MSL_Version] = scodeMSL
+    try
+      local packagePath = dirname(realpath(Base.find_package("OMFrontend")))
+      local packagePath *= "/.."
+      local pathToLib = packagePath * string("/lib/Modelica/", MSL_Version, ".mo")
+      local p = parseFile(pathToLib)
+      #= Translate it to SCode =#
+      local scodeMSL = OMFrontend.translateToSCode(p)
+      global LIBRARY_CACHE[MSL_Version] = scodeMSL
+    catch e
+      @info "Failed loading the Modelica Standard Library. Valid versions are 3.2.3 and 4.0.0"
+      @info "Continue instantiating the model until the next error."
+    end
   end
 end
 

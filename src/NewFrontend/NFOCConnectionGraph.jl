@@ -32,12 +32,6 @@
 using MetaModelica
 using ExportAll
 
-import ..NFHashTableCG
-import ..NFComponentRef
-import ..ComponentRef
-import ..NFHashTable3
-import ..NFHashTable
-
 #=
 A tuple with two crefs and equation(s) for calling the equalityConstraint function call =#
 const FlatEdge = BrokenEdge
@@ -1928,7 +1922,12 @@ function addBrokenEqualityConstraintEquations(inEquations::Vector{Equation}, inB
   outEquations
 end
 
-function identifyConnectionsOperator(functionName::Absyn.Path) ::ConnectionsOperatorType
+"""
+Identify what kind of connection operator we are dealing with based on an Absyn.Path
+Should return an object of type:
+ConnectionsOperatorType
+"""
+function identifyConnectionsOperator(functionName::Absyn.Path)
   local call::ConnectionsOperatorType
   call = begin
     local name::String

@@ -20,7 +20,7 @@ end
 @exportAll()
 end
 
-@Uniontype Modifier begin
+@Mutable_Uniontype Modifier begin
   @Record MODIFIER_NOMOD begin
   end
   @Record MODIFIER_REDECLARE begin

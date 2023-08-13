@@ -1,6 +1,5 @@
 @UniontypeDecl VariableConversionSettings
 
-
 function convert(
   flatModel::FlatModel,
   functions::FunctionTree,
@@ -406,7 +405,7 @@ function convertIntVarAttributes(
 end
 
 function convertBoolVarAttributes(
-  attrs::List{<:Tuple{<:String, Binding}},
+  attrs::Vector{<:Tuple{<:String, Binding}},
   isFinal::Option{<:Bool},
 )::Option{DAE.VariableAttributes}
   local attributes::Option{DAE.VariableAttributes}
@@ -671,10 +670,13 @@ function lookupStateSelectMember(name::String)::DAE.StateSelect
   return stateSelect
 end
 
+"""
+  Converts a set of equations to List{DAE.Element}.
+"""
 function convertEquations(
-  equations::Vector{Equation},
+  equations::Union{Vector{Equation}, List{<:Equation}},
   elements::List{<:DAE.Element} = nil,
-)::List{DAE.Element}
+  )::List{DAE.Element}
   for eq in equations
     elements = convertEquation(eq, elements)
   end
@@ -808,7 +810,7 @@ function convertForEquation(forEquation::Equation)::DAE.Element
 end
 
 function convertIfEquation(
-  ifBranches::List{<:Equation_Branch},
+  ifBranches::Vector{Equation_Branch},
   source::DAE.ElementSource;
   isInitial::Bool,
 )::DAE.Element
@@ -819,22 +821,19 @@ function convertIfEquation(
   local dconds::List{DAE.Exp}
   local dbranches::List{List{DAE.Element}}
   local else_branch::List{DAE.Element}
-
   for branch in ifBranches
-    @assign (conds, branches) = begin
+    (conds, branches) = begin
       @match branch begin
         EQUATION_BRANCH(__) => begin
-          (_cons(branch.condition, conds), _cons(branch.body, branches))
+          (_cons(branch.condition, conds), _cons(arrayList(branch.body), branches))
         end
-
-        P_Equation.Equation.INVALID_BRANCH(__) => begin
-          P_Equation.Equation.triggerErrors(branch)
-          fail()
+        EQUATION_INVALID_BRANCH(__) => begin
+          triggerErrors(branch)
         end
       end
     end
   end
-  @assign dbranches = if isInitial
+  dbranches = if isInitial
     list(convertInitialEquations(b) for b in branches)
   else
     list(convertEquations(b) for b in branches)
@@ -843,13 +842,13 @@ function convertIfEquation(
   =#
   if isTrue(listHead(conds))
     @match _cons(else_branch, dbranches) = dbranches
-    @assign conds = listRest(conds)
+    conds = listRest(conds)
   else
-    @assign else_branch = nil
+    else_branch = nil
   end
-  @assign dconds = listReverse(list(toDAE(c) for c in conds))
-  @assign dbranches = listReverseInPlace(dbranches)
-  @assign ifEquation = if isInitial
+  dconds = listReverse(list(toDAE(c) for c in conds))
+  dbranches = listReverseInPlace(dbranches)
+  ifEquation = if isInitial
     DAE.INITIAL_IF_EQUATION(dconds, dbranches, else_branch, source)
   else
     DAE.IF_EQUATION(dconds, dbranches, else_branch, source)

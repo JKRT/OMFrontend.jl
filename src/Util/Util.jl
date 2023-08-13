@@ -10,23 +10,9 @@ using ExportAll
 @UniontypeDecl Status
 @UniontypeDecl DateTime
 
-FuncType = Function
-
-FuncType = Function
-
-FuncType = Function
-
-FuncType = Function
-
-FuncType = Function
-
-FuncType = Function
-
-CompareFunc = Function
-
-FuncType = Function
-
-FuncT = Function
+const FuncType = Function
+const CompareFunc = Function
+const FuncT = Function
 
 #= /*
 * This file is part of OpenModelica.
@@ -1068,7 +1054,7 @@ function mulListIntegerOpt(inList::List{<:Option{<:Integer}}, inAccum::Integer =
   return outResult
 end
 
-StatefulBoolean = Array  #= A single boolean value that can be updated (a destructive operation). NOTE: Use Mutable<Boolean> instead. This implementation is kept since Susan cannot use that type. =#
+const StatefulBoolean = Array  #= A single boolean value that can be updated (a destructive operation). NOTE: Use Mutable<Boolean> instead. This implementation is kept since Susan cannot use that type. =#
 
 """ #= Create a boolean with state (that is, it is mutable) =#"""
 function makeStatefulBoolean(b::Bool)::StatefulBoolean
@@ -1841,6 +1827,10 @@ function applyTuple31(inTuple::Tuple{T1, T2, T3}, func::FuncT) where {T1, T2, T3
   return outTuple
 end
 
+"""
+  Dangerous function used for reference compare.
+  This is among other things used to compare instantiated nodes during function evaluation.
+"""
 function unsafe_pointer_from_objref(@nospecialize(x))
   ccall(:jl_value_ptr, Ptr{Cvoid}, (Any,), x)
 end

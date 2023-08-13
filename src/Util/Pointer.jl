@@ -1,4 +1,3 @@
-
 module P_Pointer
 
 const Pointer = Ref

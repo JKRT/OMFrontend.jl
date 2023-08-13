@@ -261,19 +261,20 @@ function splitRecordCref(exp::Expression) ::Expression
   (outExp, _) = expand(exp)
   outExp = begin
     local cls::InstNode
-    local comps::Vector{InstNode}
     local cr::ComponentRef
     local field_cr::ComponentRef
     local ty::M_Type
-    local fields::List{Expression}
     @match outExp begin
       CREF_EXPRESSION(ty = TYPE_COMPLEX(cls = cls), cref = cr)  => begin
-        comps = getComponents(classTree(getClass(cls)))
-        fields = nil
-        for i in arrayLength(comps):(-1):1
+        local comps::Vector{InstNode} = getComponents(classTree(getClass(cls)))
+        local compsLen::Int = arrayLength(comps)
+        local fields::Vector{Expression} = Vector{Expression}(undef, compsLen)
+        local j::Int = 1
+        for i in compsLen:(-1):1
           ty = getType(comps[i])
           field_cr = prefixCref(comps[i], ty, nil, cr)
-          fields = _cons(CREF_EXPRESSION(ty, field_cr), fields)
+          fields[j] = CREF_EXPRESSION(ty, field_cr) #_cons(CREF_EXPRESSION(ty, field_cr), fields)
+          j += 1
         end
         makeRecord(scopePath(cls), outExp.ty, fields)
       end
@@ -300,7 +301,7 @@ function nthRecordElement(index::Int, recordExp::Expression) ::Expression
     local expl::List{Expression}
     @match recordExp begin
       RECORD_EXPRESSION(__)  => begin
-        listGet(recordExp.elements, index)
+        recordExp.elements[index]
       end
 
       ARRAY_EXPRESSION(elements =  nil(), ty = TYPE_ARRAY(elementType = TYPE_COMPLEX(cls = node)))  => begin
@@ -349,7 +350,7 @@ function recordElement(elementName::String, recordExp::Expression) ::Expression
       RECORD_EXPRESSION(ty = TYPE_COMPLEX(cls = node))  => begin
         cls = getClass(node)
         index = lookupComponentIndex(elementName, cls)
-        listGet(recordExp.elements, index)
+        recordExp.elements[index]
       end
 
       CREF_EXPRESSION(ty = TYPE_COMPLEX(cls = node))  => begin
@@ -527,6 +528,13 @@ function variabilityList(expl::List{<:Expression}, var::VariabilityType = Variab
   var
 end
 
+function variabilityVector(expl::Vector{Expression}, var::VariabilityType = Variability.CONSTANT)
+  for e in expl
+    var = variabilityMax(var, variability(e))
+  end
+  var
+end
+
 function variability(@nospecialize(exp::Expression))::VariabilityType
   local var::VariabilityType
   @assign var = begin
@@ -585,7 +593,7 @@ function variability(@nospecialize(exp::Expression))::VariabilityType
       end
 
       RECORD_EXPRESSION(__)  => begin
-        variabilityList(exp.elements)
+        variabilityVector(exp.elements)
       end
 
       CALL_EXPRESSION(__)  => begin
@@ -1162,22 +1170,8 @@ function isRecordOrRecordArray(exp::Expression) ::Bool
   isRecord
 end
 
-function isRecord(exp::Expression) ::Bool
-  local isRecord::Bool
-
-  @assign isRecord = begin
-    @match exp begin
-      RECORD_EXPRESSION(__)  => begin
-        true
-      end
-
-      _  => begin
-        false
-      end
-    end
-  end
-  isRecord
-end
+isRecord(exp::Expression)::Bool = false
+isRecord(exp::RECORD_EXPRESSION)::Bool = true
 
 function isBoolean(exp::Expression) ::Bool
   local isBool::Bool
@@ -1243,7 +1237,7 @@ function isLiteral(exp::Expression) ::Bool
       end
 
       RECORD_EXPRESSION(__)  => begin
-        ListUtil.all(exp.elements, isLiteral)
+        ArrayUtil.all(exp.elements, isLiteral)
       end
 
       RANGE_EXPRESSION(__)  => begin
@@ -1743,6 +1737,18 @@ function listContains(expl::List{<:Expression}, func::ContainsPred) ::Bool
   res
 end
 
+function vectorContains(expl::Vector{Expression}, func::ContainsPred)
+  local res::Bool
+  for e in expl
+    if contains(e, func)
+      @assign res = true
+      return res
+    end
+  end
+  @assign res = false
+  res
+end
+
 function crefContains(cref::ComponentRef, func::ContainsPred) ::Bool
   local res::Bool
 
@@ -1792,7 +1798,7 @@ function contains(exp::Expression, func::ContainsPred) ::Bool
         listContains(exp.elements, func)
       end
       RECORD_EXPRESSION(__)  => begin
-        listContains(exp.elements, func)
+        vectorContains(exp.elements, func)
       end
       CALL_EXPRESSION(__)  => begin
         callContains(exp.call, func)
@@ -2075,7 +2081,7 @@ function mapFoldClockShallow(clockExp::Expression, func::MapFunc, arg::ArgT)  wh
   (outExp, arg)
 end
 
-function mapFoldShallow(exp::Expression, func::MapFunc, arg::ArgT)  where {ArgT}
+function mapFoldShallow(@nospecialize(exp::Expression), func::MapFunc, arg::ArgT)  where {ArgT}
   local outExp::Expression
   outExp = begin
     local e1::Expression
@@ -2124,8 +2130,8 @@ function mapFoldShallow(exp::Expression, func::MapFunc, arg::ArgT)  where {ArgT}
       end
 
       RECORD_EXPRESSION(__)  => begin
-        @assign (expl, arg) = ListUtil.mapFold(exp.elements, func, arg)
-        RECORD_EXPRESSION(exp.path, exp.ty, expl)
+        (expV, arg) = ArrayUtil.mapFold(exp.elements, func, arg)
+        RECORD_EXPRESSION(exp.path, exp.ty, expV)
       end
 
       CALL_EXPRESSION(__)  => begin
@@ -2273,8 +2279,8 @@ function mapFoldShallow(exp::Expression, func::MapFunc, arg::ArgT)  where {ArgT}
         exp
       end
     end
-end
-(outExp, arg)
+  end
+  (outExp, arg)
 end
 
 function mapFoldCref(cref::ComponentRef, func::MapFunc, arg::ArgT)  where {ArgT}
@@ -2516,7 +2522,7 @@ function mapFold(@nospecialize(exp::Expression), @nospecialize(func::MapFunc), @
       end
 
       RECORD_EXPRESSION(__)  => begin
-        @assign (expl, arg) = ListUtil.map1Fold(exp.elements, mapFold, func, arg)
+        (expl, arg) = ArrayUtil.map1Fold(exp.elements, mapFold, func, arg)
         RECORD_EXPRESSION(exp.path, exp.ty, expl)
       end
 
@@ -3222,7 +3228,7 @@ function foldOpt(exp::Option{Expression}, func::FoldFunc, arg::ArgT)  where {Arg
   result
 end
 
-function foldList(expl::List{Expression}, func::FoldFunc, arg)
+function foldList(expl::Union{List{Expression}, Vector{Expression}}, func::FoldFunc, arg)
   local result = arg
   for e in expl
     result = fold(e, func, result)
@@ -3469,7 +3475,7 @@ function mapShallow(@nospecialize(exp::Expression), func::MapFunc) ::Expression
       end
 
       RECORD_EXPRESSION(__)  => begin
-        RECORD_EXPRESSION(exp.path, exp.ty, list(func(e) for e in exp.elements))
+        RECORD_EXPRESSION(exp.path, exp.ty, Expression[func(e) for e in exp.elements])
       end
 
       CALL_EXPRESSION(__)  => begin
@@ -3846,7 +3852,7 @@ function map(exp::Expression, func::MapFunc) ::Expression
       end
 
       RECORD_EXPRESSION(__)  => begin
-        RECORD_EXPRESSION(exp.path, exp.ty, list(map(e, func) for e in exp.elements))
+        RECORD_EXPRESSION(exp.path, exp.ty, Expression[map(e, func) for e in exp.elements])
       end
 
       CALL_EXPRESSION(__)  => begin
@@ -4679,11 +4685,9 @@ end
 
 function toString(exp::Expression) ::String
   local str::String
-
   local t::M_Type
   local clk::ClockKind
-
-  @assign str = begin
+  str = begin
     @match exp begin
       INTEGER_EXPRESSION(__)  => begin
         intString(exp.value)
@@ -4738,7 +4742,7 @@ function toString(exp::Expression) ::String
       end
 
       RECORD_EXPRESSION(__)  => begin
-        ListUtil.toString(exp.elements, toString, AbsynUtil.pathString(exp.path), "(", ", ", ")", true)
+        ArrayUtil.toString(exp.elements, toString, AbsynUtil.pathString(exp.path), "(", ", ", ")", true)
       end
 
       CALL_EXPRESSION(__)  => begin
@@ -5359,7 +5363,7 @@ makeRecord(recordName::Absyn.Path, @nospecialize(recordType::M_Type), fields::Li
 ```
   Creates a record expression.
 """
-function makeRecord(recordName::Absyn.Path, @nospecialize(recordType::M_Type), fields::List{Expression})
+function makeRecord(recordName::Absyn.Path, @nospecialize(recordType::M_Type), fields::Vector{Expression})
   local exp::Expression
   exp = RECORD_EXPRESSION(recordName, recordType, fields)
   exp
@@ -5960,7 +5964,7 @@ function compare(exp1::Expression, exp2::Expression) ::Int
 
       RECORD_EXPRESSION(__)  => begin
         @match RECORD_EXPRESSION(path = p, elements = expl) = exp2
-        @assign comp = AbsynUtil.pathCompare(exp1.path, p)
+                          comp = AbsynUtil.pathCompare(exp1.path, p)
         if comp == 0
           compareList(exp1.elements, expl)
         else
@@ -6482,7 +6486,7 @@ function containsExp(binding::Binding, predFn::PredFunc)::Bool
 end
 
 function foldExp(binding::Binding, foldFn::FoldFunc, arg::ArgT) where {ArgT}
-  @assign arg = begin
+  arg = begin
     @match binding begin
       UNTYPED_BINDING(__) => begin
         fold(binding.bindingExp, foldFn, arg)
@@ -6509,40 +6513,38 @@ function foldExp(binding::Binding, foldFn::FoldFunc, arg::ArgT) where {ArgT}
 end
 
 function mapExpShallow(binding::Binding, mapFn::MapFunc)::Binding
-
   local e1::Expression
   local e2::Expression
-
-  @assign () = begin
+  () = begin
     @match binding begin
       UNTYPED_BINDING(bindingExp = e1) => begin
-        @assign e2 = mapFn(e1)
+        e2 = mapFn(e1)
         if !referenceEq(e1, e2)
-          @assign binding.bindingExp = e2
+          binding.bindingExp = e2
         end
         ()
       end
 
       TYPED_BINDING(bindingExp = e1) => begin
-        @assign e2 = mapFn(e1)
+        e2 = mapFn(e1)
         if !referenceEq(e1, e2)
-          @assign binding.bindingExp = e2
+          binding.bindingExp = e2
         end
         ()
       end
 
       FLAT_BINDING(bindingExp = e1) => begin
-        @assign e2 = mapFn(e1)
+        e2 = mapFn(e1)
         if !referenceEq(e1, e2)
-          @assign binding.bindingExp = e2
+          binding.bindingExp = e2
         end
         ()
       end
 
       CEVAL_BINDING(bindingExp = e1) => begin
-        @assign e2 = mapFn(e1)
+        e2 = mapFn(e1)
         if !referenceEq(e1, e2)
-          @assign binding.bindingExp = e2
+          binding.bindingExp = e2
         end
         ()
       end
@@ -6556,40 +6558,38 @@ function mapExpShallow(binding::Binding, mapFn::MapFunc)::Binding
 end
 
 function mapExp(binding::Binding, mapFn::MapFunc)::Binding
-
   local e1::Expression
   local e2::Expression
-
-  @assign () = begin
+  () = begin
     @match binding begin
       UNTYPED_BINDING(bindingExp = e1) => begin
-        @assign e2 = map(e1, mapFn)
+        e2 = map(e1, mapFn)
         if !referenceEq(e1, e2)
-          @assign binding.bindingExp = e2
+          binding.bindingExp = e2
         end
         ()
       end
 
       TYPED_BINDING(bindingExp = e1) => begin
-        @assign e2 = map(e1, mapFn)
+        e2 = map(e1, mapFn)
         if !referenceEq(e1, e2)
-          @assign binding.bindingExp = e2
+          binding.bindingExp = e2
         end
         ()
       end
 
       FLAT_BINDING(bindingExp = e1) => begin
-        @assign e2 = map(e1, mapFn)
+        e2 = map(e1, mapFn)
         if !referenceEq(e1, e2)
-          @assign binding.bindingExp = e2
+          binding.bindingExp = e2
         end
         ()
       end
 
       CEVAL_BINDING(bindingExp = e1) => begin
-        @assign e2 = map(e1, mapFn)
+        e2 = map(e1, mapFn)
         if !referenceEq(e1, e2)
-          @assign binding.bindingExp = e2
+          binding.bindingExp = e2
         end
         ()
       end
@@ -6813,22 +6813,19 @@ function isClassBinding(binding::Binding)::Bool
 end
 
 function addParent(parent::InstNode, binding::Binding)::Binding
+  @match binding begin
+    UNBOUND(isEach = true) => begin
+      @assign binding.parents = _cons(parent, binding.parents)
+      ()
+    end
 
-  @assign () = begin
-    @match binding begin
-      UNBOUND(isEach = true) => begin
-        @assign binding.parents = _cons(parent, binding.parents)
-        ()
-      end
+    RAW_BINDING(__) => begin
+      @assign binding.parents = _cons(parent, binding.parents)
+      ()
+    end
 
-      RAW_BINDING(__) => begin
-        @assign binding.parents = _cons(parent, binding.parents)
-        ()
-      end
-
-      _ => begin
-        ()
-      end
+    _ => begin
+      ()
     end
   end
   return binding
@@ -7009,7 +7006,6 @@ end
 
 function recordFieldBinding(fieldNode::InstNode, recordBinding::Binding)::Binding
   local fieldBinding::Binding = recordBinding
-
   local exp::Expression
   local ty::M_Type
   local var::VariabilityType
@@ -7018,17 +7014,15 @@ function recordFieldBinding(fieldNode::InstNode, recordBinding::Binding)::Bindin
   @assign fieldBinding = begin
     @match fieldBinding begin
       UNTYPED_BINDING(__) => begin
-        @assign fieldBinding.bindingExp =
-          recordElement(field_name, fieldBinding.bindingExp)
+        fieldBinding.bindingExp = recordElement(field_name, fieldBinding.bindingExp)
         fieldBinding
       end
 
       TYPED_BINDING(__) => begin
-        @assign exp =
-          recordElement(field_name, fieldBinding.bindingExp)
-        @assign exp = addBindingExpParent(fieldNode, exp)
-        @assign ty = typeOf(exp)
-        @assign var = variability(exp)
+        exp = recordElement(field_name, fieldBinding.bindingExp)
+        exp = addBindingExpParent(fieldNode, exp)
+        ty = typeOf(exp)
+        var = variability(exp)
         TYPED_BINDING(
           exp,
           ty,
@@ -7041,15 +7035,13 @@ function recordFieldBinding(fieldNode::InstNode, recordBinding::Binding)::Bindin
       end
 
       FLAT_BINDING(__) => begin
-        @assign exp =
-          recordElement(field_name, fieldBinding.bindingExp)
-        @assign var = variability(exp)
+        exp = recordElement(field_name, fieldBinding.bindingExp)
+        var = variability(exp)
         FLAT_BINDING(exp, var)
       end
 
       CEVAL_BINDING(__) => begin
-        @assign fieldBinding.bindingExp =
-          recordElement(field_name, fieldBinding.bindingExp)
+        fieldBinding.bindingExp = recordElement(field_name, fieldBinding.bindingExp)
         fieldBinding
       end
     end
@@ -7090,21 +7082,20 @@ function isRecordExp(binding::Binding)::Bool
 end
 
 function setExp(exp::Expression, binding::Binding)::Binding
-
-  @assign () = begin
+  () = begin
     @match binding begin
       UNTYPED_BINDING(__) => begin
-        @assign binding.bindingExp = exp
+        binding.bindingExp = exp
         ()
       end
 
       TYPED_BINDING(__) => begin
-        @assign binding.bindingExp = exp
+        binding.bindingExp = exp
         ()
       end
 
       FLAT_BINDING(__) => begin
-        @assign binding.bindingExp = exp
+        binding.bindingExp = exp
         ()
       end
     end
@@ -7162,16 +7153,14 @@ function setTypedExp(exp::Expression, binding::Binding)::Binding
 
   local ty1::M_Type
   local ty2::M_Type
-
-  @assign () = begin
+  () = begin
     @match binding begin
       TYPED_BINDING(__) => begin
-        @assign binding.bindingExp = exp
+        binding.bindingExp = exp
         ()
       end
-
       FLAT_BINDING(__) => begin
-        @assign binding.bindingExp = exp
+        binding.bindingExp = exp
         ()
       end
     end

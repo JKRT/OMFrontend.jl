@@ -86,29 +86,29 @@ struct IF_EXPRESSION <: NFExpression
   falseBranch::Expression
 end
 
-struct RELATION_EXPRESSION <: NFExpression
+mutable struct RELATION_EXPRESSION <: NFExpression
   exp1::Expression
   operator::Operator
   exp2::Expression
 end
 
-struct LUNARY_EXPRESSION <: NFExpression
+mutable struct LUNARY_EXPRESSION <: NFExpression
   operator::Operator
   exp::Expression
 end
 
-struct LBINARY_EXPRESSION <: NFExpression
+mutable struct LBINARY_EXPRESSION <: NFExpression
   exp1::Expression
   operator::Operator
   exp2::Expression
 end
 
-struct UNARY_EXPRESSION <: NFExpression
+mutable struct UNARY_EXPRESSION <: NFExpression
   operator::Operator
   exp::Expression
 end
 
-struct BINARY_EXPRESSION <: NFExpression
+mutable struct BINARY_EXPRESSION <: NFExpression
   exp1::Expression
   operator::Operator
   exp2::Expression
@@ -130,7 +130,7 @@ mutable struct RECORD_EXPRESSION <: NFExpression
   #=  Maybe not needed since the type contains the name. Prefix? =#
   const path::Absyn.Path
   const ty::NFType
-  elements::List{Expression}
+  elements::Vector{Expression}
 end
 
 struct TUPLE_EXPRESSION <: NFExpression

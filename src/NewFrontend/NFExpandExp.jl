@@ -142,11 +142,9 @@ end
 function expandUnary(exp::Expression, op::Operator)::Tuple{Expression, Bool}
   local expanded::Bool
   local outExp::Expression
-
   local scalar_op::Operator
-
-  @assign (outExp, expanded) = expand(exp)
-  @assign scalar_op = scalarize(op)
+  (outExp, expanded) = expand(exp)
+  scalar_op = scalarize(op)
   if expanded
     @assign outExp = mapArrayElements(
       outExp,
@@ -251,19 +249,19 @@ function makeBinaryMatrixProduct(exp1::Expression, exp2::Expression)::Expression
   local n::Dimension
   local p::Dimension
 
-  @match ARRAY_EXPRESSION(TYPE_ARRAY(ty, list(n, _)), expl1) = exp1
+  @match ARRAY_EXPRESSION(TYPE_ARRAY(ty, n <| _), expl1) = exp1
   #=  Transpose the second matrix. This makes it easier to do the multiplication,
   =#
   #=  since we can do row-row multiplications instead of row-column.
   =#
-  @match ARRAY_EXPRESSION(TYPE_ARRAY(dimensions = list(p, _)), expl2) =
+  @match ARRAY_EXPRESSION(TYPE_ARRAY(dimensions = p <| _), expl2) =
     transposeArray(exp2)
   @assign mat_ty = TYPE_ARRAY(ty, list(n, p))
   if listEmpty(expl2)
     @assign exp = makeZero(mat_ty)
   else
-    @assign row_ty = TYPE_ARRAY(ty, list(p))
-    @assign expl1 = List(
+    row_ty = TYPE_ARRAY(ty, list(p))
+    expl1 = list(
       makeArray(row_ty, makeBinaryMatrixProduct2(e, expl2))
       for e in expl1
     )

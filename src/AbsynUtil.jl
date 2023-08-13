@@ -1961,21 +1961,20 @@ function pathStringWork(
   reverse::Bool,
 )::String
   local s::String = ""
-
   local p::Path = inPath
   local b::Bool = true
   local count::Integer = 0
   #=  Allocate a string of the exact required length
   =#
-  local sb::String = "" #System.StringAllocator = System.StringAllocator(len)
+  local sb = IOBuffer() #System.StringAllocator = System.StringAllocator(len)
 
   #=  Fill the string
   =#
   while b
-    @assign (p, count, b) = begin
+    (p, count, b) = begin
       @match p begin
         IDENT(__) => begin
-          sb *= p.name
+          print(sb, p.name)
           (p, count + stringLength(p.name), false)
         end
 
@@ -1994,7 +1993,8 @@ function pathStringWork(
           #   else
           #     count + stringLength(p.name)
           #   end)
-          sb = sb * p.name * delimiter
+          print(sb, p.name)
+          print(sb, delimiter)
           (p.path, count + stringLength(p.name) + dlen, true)
         end
 
@@ -2004,7 +2004,7 @@ function pathStringWork(
           # else
           #   count
           # end)
-          sb = sb * delimiter
+          print(sb, delimiter)
           (p.path, count + dlen, true)
         end
       end
@@ -2012,8 +2012,8 @@ function pathStringWork(
   end
   #=  Return the string
   =#
-  s = sb
-#  @info s
+  s = String(take!(sb))
+  #  @info s
   return s
 end
 

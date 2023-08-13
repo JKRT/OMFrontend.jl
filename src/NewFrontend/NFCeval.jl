@@ -28,13 +28,11 @@
 * See the full OSMC Public License conditions for more details.
 *
 */ =#
-FuncT = Function
 
 @UniontypeDecl EvalTarget
 function EvalTarget_getInfo(target::EvalTarget)::SourceInfo
   local info::SourceInfo
-
-  @assign info = begin
+  info = begin
     @match target begin
       EVALTARGET_DIMENSION(__) => begin
         target.info
@@ -71,7 +69,7 @@ end
 function hasInfo(target::EvalTarget)::Bool
   local hasInfo::Bool
 
-  @assign hasInfo = begin
+  hasInfo = begin
     @match target begin
       DIMENSION(__) => begin
         true
@@ -107,7 +105,7 @@ end
 
 function isRange(target::EvalTarget)::Bool
   local isR::Bool
-  @assign isR = begin
+  isR = begin
     @match target begin
       EVALTARGET_RANGE(__) => begin
         true
@@ -164,7 +162,7 @@ function evalExp(
 end
 
 function evalExp_impl(exp::Expression, target::EvalTarget)::Expression
-  @assign exp = begin
+  exp = begin
     local c::InstNode
     local binding::Binding
     local exp1::Expression
@@ -198,11 +196,14 @@ function evalExp_impl(exp::Expression, target::EvalTarget)::Expression
         evalRange(exp, target)
       end
       TUPLE_EXPRESSION(__) => begin
-        @assign exp.elements = list(evalExp_impl(e, target) for e in exp.elements)
+         exp.elements = list(evalExp_impl(e, target) for e in exp.elements)
         exp
       end
       RECORD_EXPRESSION(__) => begin
-        exp.elements = list(evalExp_impl(e, target) for e in exp.elements)
+        #= In place handling...  =#
+        for (i, e) in enumerate(exp.elements)
+          exp.elements[i] = e
+        end
         exp
       end
       CALL_EXPRESSION(__) => begin
@@ -212,25 +213,25 @@ function evalExp_impl(exp::Expression, target::EvalTarget)::Expression
         evalSize(exp.exp, exp.dimIndex, target)
       end
       BINARY_EXPRESSION(__) => begin
-        @assign exp1 = evalExp_impl(exp.exp1, target)
-        @assign exp2 = evalExp_impl(exp.exp2, target)
+         exp1 = evalExp_impl(exp.exp1, target)
+         exp2 = evalExp_impl(exp.exp2, target)
         evalBinaryOp(exp1, exp.operator, exp2, target)
       end
       UNARY_EXPRESSION(__) => begin
-        @assign exp1 = evalExp_impl(exp.exp, target)
+         exp1 = evalExp_impl(exp.exp, target)
         evalUnaryOp(exp1, exp.operator)
       end
       LBINARY_EXPRESSION(__) => begin
-        @assign exp1 = evalExp_impl(exp.exp1, target)
+         exp1 = evalExp_impl(exp.exp1, target)
         evalLogicBinaryOp(exp1, exp.operator, exp.exp2, target)
       end
       LUNARY_EXPRESSION(__) => begin
-        @assign exp1 = evalExp_impl(exp.exp, target)
+         exp1 = evalExp_impl(exp.exp, target)
         evalLogicUnaryOp(exp1, exp.operator)
       end
       RELATION_EXPRESSION(__) => begin
-        @assign exp1 = evalExp_impl(exp.exp1, target)
-        @assign exp2 = evalExp_impl(exp.exp2, target)
+         exp1 = evalExp_impl(exp.exp1, target)
+         exp2 = evalExp_impl(exp.exp2, target)
         evalRelationOp(exp1, exp.operator, exp2)
       end
       IF_EXPRESSION(__) => begin
@@ -238,12 +239,12 @@ function evalExp_impl(exp::Expression, target::EvalTarget)::Expression
       end
 
       CAST_EXPRESSION(__) => begin
-        @assign exp1 = evalExp_impl(exp.exp, target)
+         exp1 = evalExp_impl(exp.exp, target)
         evalCast(exp1, exp.ty)
       end
 
       UNBOX_EXPRESSION(__) => begin
-        @assign exp1 = evalExp_impl(exp.exp, target)
+         exp1 = evalExp_impl(exp.exp, target)
         UNBOX_EXPRESSION(exp1, exp.ty)
       end
 
@@ -252,7 +253,7 @@ function evalExp_impl(exp::Expression, target::EvalTarget)::Expression
       end
 
       TUPLE_ELEMENT_EXPRESSION(__) => begin
-        @assign exp1 = evalExp_impl(exp.tupleExp, target)
+         exp1 = evalExp_impl(exp.tupleExp, target)
         tupleElement(exp1, exp.ty, exp.index)
       end
 
@@ -261,12 +262,12 @@ function evalExp_impl(exp::Expression, target::EvalTarget)::Expression
       end
 
       MUTABLE_EXPRESSION(__) => begin
-        @assign exp1 = evalExp_impl(P_Pointer.access(exp.exp), target)
+         exp1 = evalExp_impl(P_Pointer.access(exp.exp), target)
         exp1
       end
 
       BINDING_EXP(__) => begin
-        @assign exp.exp = evalExp_impl(exp.exp, target)
+         exp.exp = evalExp_impl(exp.exp, target)
         exp
       end
 
@@ -283,7 +284,7 @@ function evalExpOpt(
   target::EvalTarget = EVALTARGET_IGNORE_ERRORS(),
 )::Option{Expression}
 
-  @assign oexp = begin
+   oexp = begin
     local e::Expression
     @match oexp begin
       SOME(e) => begin
@@ -343,7 +344,7 @@ function evalExpPartial(
         =#
         #=  evaluated they're usually used as mutable iterators.
         =#
-        @assign outEvaluated = false
+         outEvaluated = false
         e
       end
 
@@ -356,7 +357,7 @@ function evalExpPartial(
       end
     end
   end
-  @assign outEvaluated = evaluated && outEvaluated
+   outEvaluated = evaluated && outEvaluated
   return (outExp, outEvaluated) #= True if the whole expression is evaluated, otherwise false. =#
 end
 
@@ -401,19 +402,19 @@ function evalComponentBinding(
   local var::VariabilityType
   local start_exp::Option{Expression}
 
-  @assign exp_origin = if isFunction(explicitParent(node))
+   exp_origin = if isFunction(explicitParent(node))
     ORIGIN_FUNCTION
   else
     ORIGIN_CLASS
   end
   typeComponentBinding2(node, exp_origin, false)
-  @assign comp = component(node)
-  @assign binding = getBinding(comp)
+   comp = component(node)
+   binding = getBinding(comp)
   if isUnbound(binding)
-    @assign binding =
+     binding =
       makeComponentBinding(comp, node, toCref(defaultExp), target)
     if isUnbound(binding)
-      @assign start_exp =
+       start_exp =
         evalComponentStartBinding(node, comp, cref, target, evalSubscripts)
       if isSome(start_exp)
         @match SOME(exp) = start_exp
@@ -431,16 +432,16 @@ function evalComponentBinding(
   =#
   #=  evaluated by evalComponentStartBinding, so skip the rest of the function.
   =#
-  @assign (exp, evaluated) = begin
+   (exp, evaluated) = begin
     @match binding begin
       TYPED_BINDING(__) => begin
         if binding.evaluated
-          @assign exp = binding.bindingExp
+           exp = binding.bindingExp
         else
-          @assign exp = evalExp_impl(binding.bindingExp, target)
-          @assign binding.bindingExp = exp
-          @assign binding.evaluated = true
-          @assign comp = setBinding(binding, comp)
+           exp = evalExp_impl(binding.bindingExp, target)
+           binding.bindingExp = exp
+           binding.evaluated = true
+           comp = setBinding(binding, comp)
           updateComponent!(comp, node)
         end
         (exp, true)
@@ -464,14 +465,14 @@ function evalComponentBinding(
   #=  Apply subscripts from the cref to the binding expression as needed.
   =#
   if evaluated
-    @assign exp = subscriptEvaluatedBinding(exp, cref, evalSubscripts)
+     exp = subscriptEvaluatedBinding(exp, cref, evalSubscripts)
   end
   return exp
 end
 
 function flattenBindingExp(exp::Expression)::Expression
   local outExp::Expression
-  @assign outExp = begin
+   outExp = begin
     @match exp begin
       BINDING_EXP(exp = BINDING_EXP(__)) => begin
         flattenBindingExp(exp.exp)
@@ -517,7 +518,7 @@ function subscriptEvaluatedBinding2(
   bindingSubs::List{<:Subscript} = nil,
 )::Expression
 
-  @assign exp = begin
+   exp = begin
     local e::Expression
     local exp_ty::M_Type
     local bind_ty::M_Type
@@ -530,28 +531,28 @@ function subscriptEvaluatedBinding2(
       BINDING_EXP(bindingType = bind_ty, parents = parents) =>
         begin
           if exp.isEach
-            @assign parents = list(listHead(parents))
+             parents = list(listHead(parents))
           end
-          @assign cr = cref
-          @assign accum_subs = subscripts
-          @assign subs = nil
+           cr = cref
+           accum_subs = subscripts
+           subs = nil
           if !isEmpty(cr)
-            @assign cr_node = node(cr)
+             cr_node = node(cr)
             while !(listEmpty(parents) || refEqual(listHead(parents), cr_node))
-              @assign parents = listRest(parents)
+               parents = listRest(parents)
             end
             while !listEmpty(parents)
               if !refEqual(listHead(parents), cr_node)
                 break
               end
-              @assign subs =
+               subs =
                 listAppend(getSubscripts(cr), subs)
-              @assign parents = listRest(parents)
-              @assign cr = rest(cr)
+               parents = listRest(parents)
+               cr = rest(cr)
               if isEmpty(cr)
                 break
               end
-              @assign cr_node = node(cr)
+               cr_node = node(cr)
             end
             if evalSubscripts
               subs = list(eval(s) for s in subs)
@@ -611,7 +612,7 @@ function evalComponentStartBinding(
 
   #=  Only use the start value if the component is a fixed parameter.
   =#
-  @assign var = variability(comp)
+   var = variability(comp)
   if var != Variability.PARAMETER && var != Variability.STRUCTURAL_PARAMETER ||
      !getFixedAttribute(comp)
     return outExp
@@ -619,7 +620,7 @@ function evalComponentStartBinding(
   #=  Look up \"start\" in the class.
   =#
   try
-    @assign start_node = lookupElement("start", getClass(node))
+     start_node = lookupElement("start", getClass(node))
   catch
     return outExp
   end
@@ -627,7 +628,7 @@ function evalComponentStartBinding(
   =#
   #=  other element named start in the class.
   =#
-  @assign start_comp = component(start_node)
+   start_comp = component(start_node)
   if !P_Component.isTypeAttribute(start_comp)
     return outExp
   end
@@ -637,7 +638,7 @@ function evalComponentStartBinding(
   outExp = begin
     @match binding begin
       TYPED_BINDING(__) => begin
-        @assign exp = evalExp_impl(binding.bindingExp, target)
+         exp = evalExp_impl(binding.bindingExp, target)
         if !referenceEq(exp, binding.bindingExp)
           binding.bindingExp = exp
           start_comp = setBinding(binding, start_comp)
@@ -671,7 +672,7 @@ function makeComponentBinding(
   local exp::Expression
   local rest_cr::ComponentRef
 
-  @assign binding = begin
+   binding = begin
     @matchcontinue (component, cref) begin
       (
         TYPED_COMPONENT(
@@ -681,12 +682,12 @@ function makeComponentBinding(
       ) => begin
         #=  A record component without an explicit binding, create one from its children.
         =#
-        @assign exp =
+         exp =
           makeRecordBindingExp(component.classInst, rec_node, component.ty, cref)
-        @assign exp_ty = typeOf(exp)
-        @assign exp =
+         exp_ty = typeOf(exp)
+         exp =
           BINDING_EXP(exp, exp_ty, exp_ty, list(node), true)
-        @assign binding = CEVAL_BINDING(exp)
+         binding = CEVAL_BINDING(exp)
         if !hasSubscripts(cref)
           updateComponent!(P_Component.setBinding(binding, component), node)
         end
@@ -703,13 +704,13 @@ function makeComponentBinding(
       ) => begin
         #=  A record array component without an explicit binding, create one from its children.
         =#
-        @assign exp =
+         exp =
           makeRecordBindingExp(component.classInst, rec_node, component.ty, cref)
-        @assign exp = splitRecordArrayExp(exp)
-        @assign exp_ty = typeOf(exp)
-        @assign exp =
+         exp = splitRecordArrayExp(exp)
+         exp_ty = typeOf(exp)
+         exp =
           BINDING_EXP(exp, exp_ty, exp_ty, list(node), true)
-        @assign binding = CEVAL_BINDING(exp)
+         binding = CEVAL_BINDING(exp)
         if !hasSubscripts(cref)
           updateComponent!(P_Component.setBinding(binding, component), node)
         end
@@ -721,7 +722,7 @@ function makeComponentBinding(
         =#
         #=  if it has one and fetch the binding from it instead.
         =#
-        @assign exp = makeRecordFieldBindingFromParent(cref, target)
+         exp = makeRecordFieldBindingFromParent(cref, target)
         CEVAL_BINDING(exp)
       end
 
@@ -742,13 +743,13 @@ function makeRecordFieldBindingFromParent(
   local parent_cr::ComponentRef
   local parent_ty::M_Type
 
-  @assign parent_cr = rest(cref)
-  @assign parent_ty = nodeType(parent_cr)
+   parent_cr = rest(cref)
+   parent_ty = nodeType(parent_cr)
   @match true = Type.isRecord(arrayElementType(parent_ty))
   try
-    @assign exp = evalCref(parent_cr, EMPTY_EXPRESSION(parent_ty), target)
+     exp = evalCref(parent_cr, EMPTY_EXPRESSION(parent_ty), target)
   catch
-    @assign exp = makeRecordFieldBindingFromParent(parent_cr, target)
+     exp = makeRecordFieldBindingFromParent(parent_cr, target)
   end
   #=  Pass an EMPTY expression here as the default expression instead of the
   =#
@@ -758,7 +759,7 @@ function makeRecordFieldBindingFromParent(
   =#
   #=  If the parent didn't have a binding, try the parent's parent.
   =#
-  @assign exp =
+   exp =
     recordElement(firstName(cref), exp)
   return exp
 end
@@ -780,21 +781,21 @@ function makeRecordBindingExp(
   local cr::ComponentRef
   local arg::Expression
 
-  @assign tree = classTree(getClass(typeNode))
-  @assign comps = getComponents(tree)
-  @assign args = nil
+   tree = classTree(getClass(typeNode))
+   comps = getComponents(tree)
+   args = nil
   for i = arrayLength(comps):(-1):1
-    @assign c = comps[i]
-    @assign ty = getType(c)
-    @assign cr =
+     c = comps[i]
+     ty = getType(c)
+     cr =
       CREF(c, nil, ty, P_NFComponentRef.Origin.CREF, cref)
-    @assign arg = CREF_EXPRESSION(ty, cr)
+     arg = CREF_EXPRESSION(ty, cr)
     if variability(component(c)) <= Variability.PARAMETER
-      @assign arg = evalExp_impl(arg, EVALTARGET_IGNORE_ERRORS())
+       arg = evalExp_impl(arg, EVALTARGET_IGNORE_ERRORS())
     end
-    @assign args = _cons(arg, args)
+     args = _cons(arg, args)
   end
-  @assign exp =
+   exp =
     makeRecord(scopePath(recordNode), recordType, args)
   return exp
 end
@@ -803,11 +804,11 @@ function splitRecordArrayExp(exp::Expression)::Expression
 
   local path::Absyn.Path
   local ty::M_Type
-  local expl::List{Expression}
+  local expl::Vector{Expression}
 
   @match RECORD_EXPRESSION(path, ty, expl) = exp
-  @assign exp = makeRecord(path, arrayElementType(ty), expl)
-  @assign exp = fillType(ty, exp)
+   exp = makeRecord(path, arrayElementType(ty), expl)
+   exp = fillType(ty, exp)
   return exp
 end
 
@@ -818,7 +819,7 @@ function evalTypename(ty::M_Type, originExp::Expression, target::EvalTarget)::Ex
   =#
   #=  them as typenames when used as e.g. dimensions.
   =#
-  @assign exp = if P_EvalTarget.isRange(target)
+   exp = if P_EvalTarget.isRange(target)
     P_ExpandExp.ExpandExp.expandTypename(ty)
   else
     originExp
@@ -842,21 +843,21 @@ function evalRange(rangeExp::Expression, target::EvalTarget)::Expression
     step = step_exp,
     stop = stop_exp,
   ) = rangeExp
-  @assign start_exp = evalExp(start_exp, target)
-  @assign step_exp = evalExpOpt(step_exp, target)
-  @assign stop_exp = evalExp(stop_exp, target)
+   start_exp = evalExp(start_exp, target)
+   step_exp = evalExpOpt(step_exp, target)
+   stop_exp = evalExp(stop_exp, target)
   if isRange(target)
-    @assign ty = getRangeType(
+     ty = getRangeType(
       start_exp,
       step_exp,
       stop_exp,
       arrayElementType(ty),
       EvalTarget_getInfo(target),
     )
-    @assign result = RANGE_EXPRESSION(ty, start_exp, step_exp, stop_exp)
+     result = RANGE_EXPRESSION(ty, start_exp, step_exp, stop_exp)
   else
-    @assign result = RANGE_EXPRESSION(ty, start_exp, step_exp, stop_exp)
-    @assign result = bindingExpMap(result, evalRangeExp)
+     result = RANGE_EXPRESSION(ty, start_exp, step_exp, stop_exp)
+     result = bindingExpMap(result, evalRangeExp)
   end
   return result
 end
@@ -877,7 +878,7 @@ function evalRangeExp(rangeExp::Expression)::Expression
     rangeExp
   if isSome(opt_step)
     @match SOME(step) = opt_step
-    @assign (ty, expl) = begin
+     (ty, expl) = begin
       @match (start, step, stop) begin
         (
           INTEGER_EXPRESSION(__),
@@ -886,7 +887,7 @@ function evalRangeExp(rangeExp::Expression)::Expression
         ) => begin
           #=  The compiler decided to randomly dislike using step.value here, hence istep.
           =#
-          @assign expl = list(
+           expl = list(
             INTEGER_EXPRESSION(i) for i = (start.value):istep:(stop.value)
           )
           (TYPE_INTEGER(), expl)
@@ -897,7 +898,7 @@ function evalRangeExp(rangeExp::Expression)::Expression
           REAL_EXPRESSION(__),
           REAL_EXPRESSION(__),
         ) => begin
-          @assign expl = evalRangeReal(start.value, step.value, stop.value)
+           expl = evalRangeReal(start.value, step.value, stop.value)
           (TYPE_REAL(), expl)
         end
 
@@ -908,23 +909,23 @@ function evalRangeExp(rangeExp::Expression)::Expression
       end
     end
   else
-    @assign (ty, expl) = begin
+     (ty, expl) = begin
       @match (start, stop) begin
         (INTEGER_EXPRESSION(__), INTEGER_EXPRESSION(__)) =>
           begin
-            @assign expl =
+             expl =
               list(INTEGER_EXPRESSION(i) for i = (start.value):(stop.value))
             (TYPE_INTEGER(), expl)
           end
 
         (REAL_EXPRESSION(__), REAL_EXPRESSION(__)) => begin
-          @assign expl = evalRangeReal(start.value, 1.0, stop.value)
+           expl = evalRangeReal(start.value, 1.0, stop.value)
           (TYPE_REAL(), expl)
         end
 
         (BOOLEAN_EXPRESSION(__), BOOLEAN_EXPRESSION(__)) =>
           begin
-            @assign expl =
+             expl =
               list(BOOLEAN_EXPRESSION(b) for b = (start.value):(stop.value))
             (TYPE_BOOLEAN(), expl)
           end
@@ -933,7 +934,7 @@ function evalRangeExp(rangeExp::Expression)::Expression
           ENUM_LITERAL_EXPRESSION(ty = ty && TYPE_ENUMERATION(__)),
           ENUM_LITERAL_EXPRESSION(__),
         ) => begin
-          @assign expl = list(
+           expl = list(
             ENUM_LITERAL_EXPRESSION(ty, listGet(ty.literals, i), i)
             for i = (start.index):(stop.index)
           )
@@ -963,21 +964,21 @@ function evalRangeReal(
 
   local steps::Int
 
-  @assign steps = Util.realRangeSize(start, step, stop)
+   steps = Util.realRangeSize(start, step, stop)
   #=  Real ranges are tricky, make sure that start and stop are reproduced
   =#
   #=  exactly if they are part of the range.
   =#
   if steps == 0
-    @assign result = nil
+     result = nil
   elseif steps == 1
-    @assign result = list(REAL_EXPRESSION(start))
+     result = list(REAL_EXPRESSION(start))
   else
-    @assign result = list(REAL_EXPRESSION(stop))
+     result = list(REAL_EXPRESSION(stop))
     for i = (steps - 2):(-1):1
-      @assign result = _cons(REAL_EXPRESSION(start + i * step), result)
+       result = _cons(REAL_EXPRESSION(start + i * step), result)
     end
-    @assign result = _cons(REAL_EXPRESSION(start), result)
+     result = _cons(REAL_EXPRESSION(start), result)
   end
   return result
 end
@@ -1000,17 +1001,17 @@ function evalBinaryOp(
   local max_prop_exp::Expression
   local max_prop_count::Int
 
-  @assign (max_prop_exp, max_prop_count) =
+   (max_prop_exp, max_prop_count) =
     mostPropagatedSubExpBinary(exp1, exp2)
   if max_prop_count >= 0
-    @assign exp = bindingExpMap2(
+     exp = bindingExpMap2(
       BINARY_EXPRESSION(exp1, op, exp2),
       (x) -> evalBinaryExp(x, target), #Change by me:) John
       max_prop_count,
       max_prop_exp,
     )
   else
-    @assign exp = evalBinaryOp_dispatch(exp1, op, exp2, target)
+     exp = evalBinaryOp_dispatch(exp1, op, exp2, target)
   end
   return exp
 end
@@ -1022,7 +1023,7 @@ function evalBinaryExp(binaryExp::Expression, target::EvalTarget)::Expression
   local op::Operator
 
   @match BINARY_EXPRESSION(exp1 = e1, operator = op, exp2 = e2) = binaryExp
-  @assign result = evalBinaryOp_dispatch(e1, op, e2, target)
+   result = evalBinaryOp_dispatch(e1, op, e2, target)
   return result
 end
 
@@ -1034,7 +1035,7 @@ function evalBinaryOp_dispatch(
 )::Expression
   local exp::Expression
 
-  @assign exp = begin
+   exp = begin
     @match op.op begin
       Op.ADD => begin
         evalBinaryAdd(exp1, exp2)
@@ -1133,7 +1134,7 @@ end
 function evalBinaryAdd(exp1::Expression, exp2::Expression)::Expression
   local exp::Expression
 
-  @assign exp = begin
+   exp = begin
     @match (exp1, exp2) begin
       (INTEGER_EXPRESSION(__), INTEGER_EXPRESSION(__)) => begin
         INTEGER_EXPRESSION(exp1.value + exp2.value)
@@ -1162,7 +1163,7 @@ function evalBinaryAdd(exp1::Expression, exp2::Expression)::Expression
       end
 
       _ => begin
-        @assign exp = BINARY_EXPRESSION(
+         exp = BINARY_EXPRESSION(
           exp1,
           makeAdd(TYPE_UNKNOWN()),
           exp2,
@@ -1178,7 +1179,7 @@ end
 function evalBinarySub(exp1::Expression, exp2::Expression)::Expression
   local exp::Expression
 
-  @assign exp = begin
+   exp = begin
     @match (exp1, exp2) begin
       (INTEGER_EXPRESSION(__), INTEGER_EXPRESSION(__)) => begin
         INTEGER_EXPRESSION(exp1.value - exp2.value)
@@ -1203,7 +1204,7 @@ function evalBinarySub(exp1::Expression, exp2::Expression)::Expression
       end
 
       _ => begin
-        @assign exp = BINARY_EXPRESSION(
+         exp = BINARY_EXPRESSION(
           exp1,
           makeSub(TYPE_UNKNOWN()),
           exp2,
@@ -1219,7 +1220,7 @@ end
 function evalBinaryMul(exp1::Expression, exp2::Expression)::Expression
   local exp::Expression
 
-  @assign exp = begin
+   exp = begin
     @match (exp1, exp2) begin
       (INTEGER_EXPRESSION(__), INTEGER_EXPRESSION(__)) => begin
         INTEGER_EXPRESSION(exp1.value * exp2.value)
@@ -1244,7 +1245,7 @@ function evalBinaryMul(exp1::Expression, exp2::Expression)::Expression
       end
 
       _ => begin
-        @assign exp = BINARY_EXPRESSION(
+         exp = BINARY_EXPRESSION(
           exp1,
           makeMul(TYPE_UNKNOWN()),
           exp2,
@@ -1260,7 +1261,7 @@ end
 function evalBinaryDiv(exp1::Expression, exp2::Expression, target::EvalTarget)::Expression
   local exp::Expression
 
-  @assign exp = begin
+   exp = begin
     @match (exp1, exp2) begin
       (_, REAL_EXPRESSION(0.0)) => begin
         if P_EvalTarget.hasInfo(target)
@@ -1274,7 +1275,7 @@ function evalBinaryDiv(exp1::Expression, exp2::Expression, target::EvalTarget)::
           )
           fail()
         else
-          @assign exp = BINARY_EXPRESSION(
+           exp = BINARY_EXPRESSION(
             exp1,
             makeDiv(TYPE_REAL()),
             exp2,
@@ -1302,7 +1303,7 @@ function evalBinaryDiv(exp1::Expression, exp2::Expression, target::EvalTarget)::
       end
 
       _ => begin
-        @assign exp = BINARY_EXPRESSION(
+         exp = BINARY_EXPRESSION(
           exp1,
           makeDiv(TYPE_UNKNOWN()),
           exp2,
@@ -1318,7 +1319,7 @@ end
 function evalBinaryPow(exp1::Expression, exp2::Expression)::Expression
   local exp::Expression
 
-  @assign exp = begin
+   exp = begin
     @match (exp1, exp2) begin
       (REAL_EXPRESSION(__), REAL_EXPRESSION(__)) => begin
         REAL_EXPRESSION(exp1.value^exp2.value)
@@ -1339,7 +1340,7 @@ function evalBinaryPow(exp1::Expression, exp2::Expression)::Expression
       end
 
       _ => begin
-        @assign exp = BINARY_EXPRESSION(
+         exp = BINARY_EXPRESSION(
           exp1,
           makePow(TYPE_UNKNOWN()),
           exp2,
@@ -1358,7 +1359,7 @@ function evalBinaryScalarArray(
   opFunc::FuncT,
 )::Expression
   local exp::Expression
-  @assign exp = begin
+   exp = begin
     @match arrayExp begin
       ARRAY_EXPRESSION(__) => begin
         makeArray(
@@ -1405,15 +1406,15 @@ function evalBinaryMulVectorMatrix(vectorExp::Expression, matrixExp::Expression)
   local m::Dimension
   local ty::M_Type
 
-  @assign exp = begin
+   exp = begin
     @match transposeArray(matrixExp) begin
       ARRAY_EXPRESSION(TYPE_ARRAY(ty, m <| _ <| nil()), expl) => begin
-        @assign expl = list(evalBinaryScalarProduct(vectorExp, e) for e in expl)
+         expl = list(evalBinaryScalarProduct(vectorExp, e) for e in expl)
         makeArray(TYPE_ARRAY(ty, list(m)), expl, literal = true)
       end
 
       _ => begin
-        @assign exp = BINARY_EXPRESSION(
+         exp = BINARY_EXPRESSION(
           vectorExp,
           makeMul(TYPE_UNKNOWN()),
           matrixExp,
@@ -1433,15 +1434,15 @@ function evalBinaryMulMatrixVector(matrixExp::Expression, vectorExp::Expression)
   local n::Dimension
   local ty::M_Type
 
-  @assign exp = begin
+   exp = begin
     @match matrixExp begin
       ARRAY_EXPRESSION(TYPE_ARRAY(ty, n <| _ <| nil()), expl) => begin
-        @assign expl = list(evalBinaryScalarProduct(e, vectorExp) for e in expl)
+         expl = list(evalBinaryScalarProduct(e, vectorExp) for e in expl)
         makeArray(TYPE_ARRAY(ty, list(n)), expl, literal = true)
       end
 
       _ => begin
-        @assign exp = BINARY_EXPRESSION(
+         exp = BINARY_EXPRESSION(
           matrixExp,
           makeMul(TYPE_UNKNOWN()),
           vectorExp,
@@ -1457,7 +1458,7 @@ end
 function evalBinaryScalarProduct(exp1::Expression, exp2::Expression)::Expression
   local exp::Expression
 
-  @assign exp = begin
+   exp = begin
     local elem_ty::M_Type
     local e2::Expression
     local rest_e2::List{Expression}
@@ -1466,17 +1467,17 @@ function evalBinaryScalarProduct(exp1::Expression, exp2::Expression)::Expression
         ARRAY_EXPRESSION(ty = TYPE_ARRAY(elem_ty)),
         ARRAY_EXPRESSION(__),
       ) where {(listLength(exp1.elements) == listLength(exp2.elements))} => begin
-        @assign exp = makeZero(elem_ty)
-        @assign rest_e2 = exp2.elements
+         exp = makeZero(elem_ty)
+         rest_e2 = exp2.elements
         for e1 in exp1.elements
           @match _cons(e2, rest_e2) = rest_e2
-          @assign exp = evalBinaryAdd(exp, evalBinaryMul(e1, e2))
+           exp = evalBinaryAdd(exp, evalBinaryMul(e1, e2))
         end
         exp
       end
 
       _ => begin
-        @assign exp = BINARY_EXPRESSION(
+         exp = BINARY_EXPRESSION(
           exp1,
           makeMul(TYPE_UNKNOWN()),
           exp2,
@@ -1501,32 +1502,32 @@ function evalBinaryMatrixProduct(exp1::Expression, exp2::Expression)::Expression
   local n::Dimension
   local p::Dimension
 
-  @assign e2 = transposeArray(exp2)
-  @assign exp = begin
+   e2 = transposeArray(exp2)
+   exp = begin
     @match (exp1, e2) begin
       (
         ARRAY_EXPRESSION(TYPE_ARRAY(elem_ty, n <| _ <| nil()), expl1),
         ARRAY_EXPRESSION(TYPE_ARRAY(_, p <| _ <| nil()), expl2),
       ) => begin
-        @assign mat_ty = TYPE_ARRAY(elem_ty, list(n, p))
+         mat_ty = TYPE_ARRAY(elem_ty, list(n, p))
         if listEmpty(expl2)
-          @assign exp = makeZero(mat_ty)
+           exp = makeZero(mat_ty)
         else
-          @assign row_ty = TYPE_ARRAY(elem_ty, list(p))
-          @assign expl1 = list(
+           row_ty = TYPE_ARRAY(elem_ty, list(p))
+           expl1 = list(
             makeArray(
               row_ty,
               list(evalBinaryScalarProduct(r, c) for c in expl2),
               literal = true,
             ) for r in expl1
           )
-          @assign exp = makeArray(mat_ty, expl1, literal = true)
+           exp = makeArray(mat_ty, expl1, literal = true)
         end
         exp
       end
 
       _ => begin
-        @assign exp = BINARY_EXPRESSION(
+         exp = BINARY_EXPRESSION(
           exp1,
           makeMul(TYPE_UNKNOWN()),
           exp2,
@@ -1544,11 +1545,11 @@ function evalBinaryPowMatrix(matrixExp::Expression, nExp::Expression)::Expressio
 
   local n::Int
 
-  @assign exp = begin
+   exp = begin
     @match (matrixExp, nExp) begin
       (ARRAY_EXPRESSION(__), INTEGER_EXPRESSION(value = 0)) =>
         begin
-          @assign n = P_Dimension.Dimension.size(listHead(arrayDims(matrixExp.ty)))
+           n = P_Dimension.Dimension.size(listHead(arrayDims(matrixExp.ty)))
           makeIdentityMatrix(n, TYPE_REAL())
         end
 
@@ -1557,7 +1558,7 @@ function evalBinaryPowMatrix(matrixExp::Expression, nExp::Expression)::Expressio
       end
 
       _ => begin
-        @assign exp = BINARY_EXPRESSION(
+         exp = BINARY_EXPRESSION(
           matrixExp,
           makePow(TYPE_UNKNOWN()),
           nExp,
@@ -1573,7 +1574,7 @@ end
 function evalBinaryPowMatrix2(matrix::Expression, n::Int)::Expression
   local exp::Expression
 
-  @assign exp = begin
+   exp = begin
     @match n begin
       1 => begin
         matrix
@@ -1590,14 +1591,14 @@ function evalBinaryPowMatrix2(matrix::Expression, n::Int)::Expression
         =#
         #=  A^n = A^m * A^m where n = 2*m
         =#
-        @assign exp = evalBinaryPowMatrix2(matrix, intDiv(n, 2))
+         exp = evalBinaryPowMatrix2(matrix, intDiv(n, 2))
         evalBinaryMatrixProduct(exp, exp)
       end
 
       _ => begin
         #=  A^n = A * A^(n-1)
         =#
-        @assign exp = evalBinaryPowMatrix2(matrix, n - 1)
+         exp = evalBinaryPowMatrix2(matrix, n - 1)
         evalBinaryMatrixProduct(matrix, exp)
       end
     end
@@ -1608,7 +1609,7 @@ end
 function evalUnaryOp(exp1::Expression, op::Operator)::Expression
   local exp::Expression
 
-  @assign exp = begin
+   exp = begin
     @match op.op begin
       Op.UMINUS => begin
         bindingExpMap(exp1, evalUnaryMinus)
@@ -1631,7 +1632,7 @@ end
 function evalUnaryMinus(exp1::Expression)::Expression
   local exp::Expression
 
-  @assign exp = begin
+   exp = begin
     @match exp1 begin
       INTEGER_EXPRESSION(__) => begin
         INTEGER_EXPRESSION(-exp1.value)
@@ -1642,12 +1643,12 @@ function evalUnaryMinus(exp1::Expression)::Expression
       end
 
       ARRAY_EXPRESSION(__) => begin
-        @assign exp1.elements = list(evalUnaryMinus(e) for e in exp1.elements)
+         exp1.elements = list(evalUnaryMinus(e) for e in exp1.elements)
         exp1
       end
 
       _ => begin
-        @assign exp = UNARY_EXPRESSION(
+         exp = UNARY_EXPRESSION(
           makeUMinus(TYPE_UNKNOWN()),
           exp1,
         )
@@ -1671,17 +1672,17 @@ function evalLogicBinaryOp(
   local max_prop_exp::Expression
   local max_prop_count::Int
 
-  @assign (max_prop_exp, max_prop_count) =
+   (max_prop_exp, max_prop_count) =
     mostPropagatedSubExpBinary(exp1, exp2)
   if max_prop_count >= 0
-    @assign exp = bindingExpMap2(
+     exp = bindingExpMap2(
       LBINARY_EXPRESSION(exp1, op, exp2),
       (binaryExpArg) -> evalLogicBinaryExp(binaryExpArg, target),
       max_prop_count,
       max_prop_exp,
     )
   else
-    @assign exp = evalLogicBinaryOp_dispatch(exp1, op, exp2, target)
+     exp = evalLogicBinaryOp_dispatch(exp1, op, exp2, target)
   end
   return exp
 end
@@ -1694,7 +1695,7 @@ function evalLogicBinaryExp(binaryExp::Expression, target::EvalTarget)::Expressi
   local op::Operator
 
   @match LBINARY_EXPRESSION(exp1 = e1, operator = op, exp2 = e2) = binaryExp
-  @assign result = evalLogicBinaryOp_dispatch(e1, op, e2, target)
+   result = evalLogicBinaryOp_dispatch(e1, op, e2, target)
   return result
 end
 
@@ -1706,7 +1707,7 @@ function evalLogicBinaryOp_dispatch(
 )::Expression
   local exp::Expression
 
-  @assign exp = begin
+   exp = begin
     @match op.op begin
       Op.AND => begin
         evalLogicBinaryAnd(evalExp(exp1, target), exp2, target)
@@ -1737,7 +1738,7 @@ function evalLogicBinaryAnd(
 )::Expression
   local exp::Expression
 
-  @assign exp = begin
+   exp = begin
     local expl::List{Expression}
     @matchcontinue exp1 begin
       BOOLEAN_EXPRESSION(__) => begin
@@ -1750,7 +1751,7 @@ function evalLogicBinaryAnd(
 
       ARRAY_EXPRESSION(__) => begin
         @match ARRAY_EXPRESSION(elements = expl) = evalExp_impl(exp2, target)
-        @assign expl =
+         expl =
           list(@do_threaded_for evalLogicBinaryAnd(e1, e2, target) (e1, e2) (
             exp1.elements,
             expl,
@@ -1763,7 +1764,7 @@ function evalLogicBinaryAnd(
       end
 
       _ => begin
-        @assign exp = LBINARY_EXPRESSION(
+         exp = LBINARY_EXPRESSION(
           exp1,
           makeAnd(TYPE_UNKNOWN()),
           exp2,
@@ -1783,7 +1784,7 @@ function evalLogicBinaryOr(
 )::Expression
   local exp::Expression
 
-  @assign exp = begin
+   exp = begin
     local expl::List{Expression}
     @match exp1 begin
       BOOLEAN_EXPRESSION(__) => begin
@@ -1796,7 +1797,7 @@ function evalLogicBinaryOr(
 
       ARRAY_EXPRESSION(__) => begin
         @match ARRAY_EXPRESSION(elements = expl) = evalExp_impl(exp2, target)
-        @assign expl =
+         expl =
           list(@do_threaded_for evalLogicBinaryOr(e1, e2, target) (e1, e2) (
             exp1.elements,
             expl,
@@ -1809,7 +1810,7 @@ function evalLogicBinaryOr(
       end
 
       _ => begin
-        @assign exp = LBINARY_EXPRESSION(
+         exp = LBINARY_EXPRESSION(
           exp1,
           makeOr(TYPE_UNKNOWN()),
           exp2,
@@ -1825,7 +1826,7 @@ end
 function evalLogicUnaryOp(exp1::Expression, op::Operator)::Expression
   local exp::Expression
 
-  @assign exp = begin
+   exp = begin
     @match op.op begin
       Op.NOT => begin
         bindingExpMap(exp1, evalLogicUnaryNot)
@@ -1848,7 +1849,7 @@ end
 function evalLogicUnaryNot(exp1::Expression)::Expression
   local exp::Expression
 
-  @assign exp = begin
+   exp = begin
     @match exp1 begin
       BOOLEAN_EXPRESSION(__) => begin
         BOOLEAN_EXPRESSION(!exp1.value)
@@ -1859,7 +1860,7 @@ function evalLogicUnaryNot(exp1::Expression)::Expression
       end
 
       _ => begin
-        @assign exp = LUNARY_EXPRESSION(
+         exp = LUNARY_EXPRESSION(
           makeNot(TYPE_UNKNOWN()),
           exp1,
         )
@@ -1877,17 +1878,17 @@ function evalRelationOp(exp1::Expression, op::Operator, exp2::Expression)::Expre
   local max_prop_exp::Expression
   local max_prop_count::Int
 
-  @assign (max_prop_exp, max_prop_count) =
+   (max_prop_exp, max_prop_count) =
     mostPropagatedSubExpBinary(exp1, exp2)
   if max_prop_count >= 0
-    @assign exp = bindingExpMap2(
+     exp = bindingExpMap2(
       RELATION_EXPRESSION(exp1, op, exp2),
       evalRelationExp,
       max_prop_count,
       max_prop_exp,
     )
   else
-    @assign exp = evalRelationOp_dispatch(exp1, op, exp2)
+     exp = evalRelationOp_dispatch(exp1, op, exp2)
   end
   return exp
 end
@@ -1900,7 +1901,7 @@ function evalRelationExp(relationExp::Expression)::Expression
   local op::Operator
 
   @match RELATION_EXPRESSION(exp1 = e1, operator = op, exp2 = e2) = relationExp
-  @assign result = evalRelationOp_dispatch(e1, op, e2)
+   result = evalRelationOp_dispatch(e1, op, e2)
   return result
 end
 
@@ -1913,7 +1914,7 @@ function evalRelationOp_dispatch(
 
   local res::Bool
 
-  @assign res = begin
+   res = begin
     @match op.op begin
       Op.LESS => begin
         evalRelationLess(exp1, exp2)
@@ -1954,14 +1955,14 @@ function evalRelationOp_dispatch(
       end
     end
   end
-  @assign exp = BOOLEAN_EXPRESSION(res)
+   exp = BOOLEAN_EXPRESSION(res)
   return exp
 end
 
 function evalRelationLess(exp1::Expression, exp2::Expression)::Bool
   local res::Bool
 
-  @assign res = begin
+   res = begin
     @match (exp1, exp2) begin
       (INTEGER_EXPRESSION(__), INTEGER_EXPRESSION(__)) => begin
         exp1.value < exp2.value
@@ -2006,7 +2007,7 @@ end
 function evalRelationLessEq(exp1::Expression, exp2::Expression)::Bool
   local res::Bool
 
-  @assign res = begin
+   res = begin
     @match (exp1, exp2) begin
       (INTEGER_EXPRESSION(__), INTEGER_EXPRESSION(__)) => begin
         exp1.value <= exp2.value
@@ -2051,7 +2052,7 @@ end
 function evalRelationGreater(exp1::Expression, exp2::Expression)::Bool
   local res::Bool
 
-  @assign res = begin
+   res = begin
     @match (exp1, exp2) begin
       (INTEGER_EXPRESSION(__), INTEGER_EXPRESSION(__)) => begin
         exp1.value > exp2.value
@@ -2096,7 +2097,7 @@ end
 function evalRelationGreaterEq(exp1::Expression, exp2::Expression)::Bool
   local res::Bool
 
-  @assign res = begin
+   res = begin
     @match (exp1, exp2) begin
       (INTEGER_EXPRESSION(__), INTEGER_EXPRESSION(__)) => begin
         exp1.value >= exp2.value
@@ -2141,7 +2142,7 @@ end
 function evalRelationEqual(exp1::Expression, exp2::Expression)::Bool
   local res::Bool
 
-  @assign res = begin
+   res = begin
     @match (exp1, exp2) begin
       (INTEGER_EXPRESSION(__), INTEGER_EXPRESSION(__)) => begin
         exp1.value == exp2.value
@@ -2186,7 +2187,7 @@ end
 function evalRelationNotEqual(exp1::Expression, exp2::Expression)::Bool
   local res::Bool
 
-  @assign res = begin
+   res = begin
     @match (exp1, exp2) begin
       (INTEGER_EXPRESSION(__), INTEGER_EXPRESSION(__)) => begin
         exp1.value != exp2.value
@@ -2240,8 +2241,8 @@ function evalIfExp(ifExp::Expression, target::EvalTarget)::Expression
     trueBranch = btrue,
     falseBranch = bfalse,
   ) = ifExp
-  @assign result = IF_EXPRESSION(evalExp_impl(cond, target), btrue, bfalse)
-  @assign result =
+   result = IF_EXPRESSION(evalExp_impl(cond, target), btrue, bfalse)
+   result =
     bindingExpMap(result, (x) -> evalIfExp2(x, target))
   return result
 end
@@ -2282,15 +2283,15 @@ end
 function evalCast(castExp::Expression, castTy::M_Type)::Expression
   local exp::Expression
 
-  @assign exp = typeCast(castExp, castTy)
+   exp = typeCast(castExp, castTy)
   #=  Expression.typeCast will just create a CAST if it can't typecast
   =#
   #=  the expression, so make sure we actually got something else back.
   =#
-  @assign () = begin
+   () = begin
     @match exp begin
       CAST_EXPRESSION(__) => begin
-        @assign exp = CAST_EXPRESSION(castTy, castExp)
+         exp = CAST_EXPRESSION(castTy, castExp)
         printFailedEvalError(getInstanceName(), exp, sourceInfo())
         fail()
       end
@@ -2357,7 +2358,7 @@ function eval(
 
   local fn_path::Absyn.Path = nameConsiderBuiltin(fn)
 
-  @assign result = begin
+   result = begin
     @match AbsynUtil.pathFirstIdent(fn_path) begin
       "abs" => begin
         evalBuiltinAbs(listHead(args))
@@ -2622,7 +2623,7 @@ end
 function evalBuiltinAbs(arg::Expression)::Expression
   local result::Expression
 
-  @assign result = begin
+   result = begin
     @match arg begin
       INTEGER_EXPRESSION(__) => begin
         INTEGER_EXPRESSION(abs(arg.value))
@@ -2646,7 +2647,7 @@ function evalBuiltinAcos(arg::Expression, target::EvalTarget)::Expression
 
   local x::AbstractFloat
 
-  @assign result = begin
+   result = begin
     @match arg begin
       REAL_EXPRESSION(value = x) => begin
         if x < (-1.0) || x > 1.0
@@ -2676,9 +2677,9 @@ function evalBuiltinArray(args::List{Expression})::Expression
 
   local ty::M_Type
 
-  @assign ty = typeOf(listHead(args))
-  @assign ty = liftArrayLeft(ty, P_Dimension.Dimension.fromInteger(listLength(args)))
-  @assign result = makeArray(ty, args, literal = true)
+   ty = typeOf(listHead(args))
+   ty = liftArrayLeft(ty, P_Dimension.Dimension.fromInteger(listLength(args)))
+   result = makeArray(ty, args, literal = true)
   return result
 end
 
@@ -2687,7 +2688,7 @@ function evalBuiltinAsin(arg::Expression, target::EvalTarget)::Expression
 
   local x::AbstractFloat
 
-  @assign result = begin
+   result = begin
     @match arg begin
       REAL_EXPRESSION(value = x) => begin
         if x < (-1.0) || x > 1.0
@@ -2718,7 +2719,7 @@ function evalBuiltinAtan2(args::List{Expression})::Expression
   local y::AbstractFloat
   local x::AbstractFloat
 
-  @assign result = begin
+   result = begin
     @match args begin
       REAL_EXPRESSION(value = y) <|
       REAL_EXPRESSION(value = x) <| nil() => begin
@@ -2737,7 +2738,7 @@ end
 function evalBuiltinAtan(arg::Expression)::Expression
   local result::Expression
 
-  @assign result = begin
+   result = begin
     @match arg begin
       REAL_EXPRESSION(__) => begin
         REAL_EXPRESSION(atan(arg.value))
@@ -2802,7 +2803,7 @@ end
 function evalBuiltinCeil(arg::Expression)::Expression
   local result::Expression
 
-  @assign result = begin
+   result = begin
     @match arg begin
       REAL_EXPRESSION(__) => begin
         REAL_EXPRESSION(ceil(arg.value))
@@ -2820,7 +2821,7 @@ end
 function evalBuiltinCosh(arg::Expression)::Expression
   local result::Expression
 
-  @assign result = begin
+   result = begin
     @match arg begin
       REAL_EXPRESSION(__) => begin
         REAL_EXPRESSION(cosh(arg.value))
@@ -2838,7 +2839,7 @@ end
 function evalBuiltinCos(arg::Expression)::Expression
   local result::Expression
 
-  @assign result = begin
+   result = begin
     @match arg begin
       REAL_EXPRESSION(__) => begin
         REAL_EXPRESSION(cos(arg.value))
@@ -2856,7 +2857,7 @@ end
 function evalBuiltinDer(arg::Expression)::Expression
   local result::Expression
 
-  @assign result = fillType(
+   result = fillType(
     typeOf(arg),
     REAL_EXPRESSION(0.0),
   )
@@ -2877,30 +2878,30 @@ function evalBuiltinDiagonal(arg::Expression)::Expression
   local e_lit::Bool
   local arg_lit::Bool = true
 
-  @assign result = begin
+   result = begin
     @match arg begin
       ARRAY_EXPRESSION(elements = nil()) => begin
         arg
       end
 
       ARRAY_EXPRESSION(elements = elems) => begin
-        @assign n = listLength(elems)
-        @assign elem_ty = typeOf(listHead(elems))
-        @assign row_ty = liftArrayLeft(elem_ty, P_Dimension.Dimension.fromInteger(n))
-        @assign zero = makeZero(elem_ty)
+         n = listLength(elems)
+         elem_ty = typeOf(listHead(elems))
+         row_ty = liftArrayLeft(elem_ty, P_Dimension.Dimension.fromInteger(n))
+         zero = makeZero(elem_ty)
         for e in listReverse(elems)
-          @assign row = nil
+           row = nil
           for j = 2:i
-            @assign row = _cons(zero, row)
+             row = _cons(zero, row)
           end
-          @assign row = _cons(e, row)
-          @assign e_lit = isLiteral(e)
-          @assign arg_lit = arg_lit && e_lit
+           row = _cons(e, row)
+           e_lit = isLiteral(e)
+           arg_lit = arg_lit && e_lit
           for j = i:(n - 1)
-            @assign row = _cons(zero, row)
+             row = _cons(zero, row)
           end
-          @assign i = i + 1
-          @assign rows =
+           i = i + 1
+           rows =
             _cons(makeArray(row_ty, row, e_lit), rows)
         end
         makeArray(
@@ -2927,7 +2928,7 @@ function evalBuiltinDiv(args::List{Expression}, target::EvalTarget)::Expression
   local ix::Int
   local iy::Int
 
-  @assign result = begin
+   result = begin
     @match args begin
       INTEGER_EXPRESSION(ix) <| INTEGER_EXPRESSION(iy) <| nil() => begin
         if iy == 0
@@ -2955,7 +2956,7 @@ function evalBuiltinDiv(args::List{Expression}, target::EvalTarget)::Expression
             end
             fail()
           end
-          @assign rx = rx / ry
+           rx = rx / ry
           REAL_EXPRESSION(if rx < 0.0
             ceil(rx)
           else
@@ -2975,7 +2976,7 @@ end
 function evalBuiltinExp(arg::Expression)::Expression
   local result::Expression
 
-  @assign result = begin
+   result = begin
     @match arg begin
       REAL_EXPRESSION(__) => begin
         REAL_EXPRESSION(exp(arg.value))
@@ -2993,7 +2994,7 @@ end
 function evalBuiltinFill(args::List{Expression})::Expression
   local result::Expression
 
-  @assign result = evalBuiltinFill2(listHead(args), listRest(args))
+   result = evalBuiltinFill2(listHead(args), listRest(args))
   return result
 end
 
@@ -3030,7 +3031,7 @@ end
 function evalBuiltinFloor(arg::Expression)::Expression
   local result::Expression
 
-  @assign result = begin
+   result = begin
     @match arg begin
       REAL_EXPRESSION(__) => begin
         REAL_EXPRESSION(floor(arg.value))
@@ -3048,7 +3049,7 @@ end
 function evalBuiltinIdentity(arg::Expression)::Expression
   local result::Expression
 
-  @assign result = begin
+   result = begin
     @match arg begin
       INTEGER_EXPRESSION(__) => begin
         makeIdentityMatrix(arg.value, TYPE_INTEGER())
@@ -3066,7 +3067,7 @@ end
 function evalBuiltinInteger(arg::Expression)::Expression
   local result::Expression
 
-  @assign result = begin
+   result = begin
     @match arg begin
       INTEGER_EXPRESSION(__) => begin
         arg
@@ -3088,7 +3089,7 @@ end
 function evalBuiltinIntegerEnum(arg::Expression)::Expression
   local result::Expression
 
-  @assign result = begin
+   result = begin
     @match arg begin
       ENUM_LITERAL_EXPRESSION(__) => begin
         INTEGER_EXPRESSION(arg.index)
@@ -3108,7 +3109,7 @@ function evalBuiltinLog10(arg::Expression, target::EvalTarget)::Expression
 
   local x::AbstractFloat
 
-  @assign result = begin
+   result = begin
     @match arg begin
       REAL_EXPRESSION(value = x) => begin
         if x <= 0.0
@@ -3138,7 +3139,7 @@ function evalBuiltinLog(arg::Expression, target::EvalTarget)::Expression
 
   local x::AbstractFloat
 
-  @assign result = begin
+   result = begin
     @match arg begin
       REAL_EXPRESSION(value = x) => begin
         if x <= 0.0
@@ -3166,7 +3167,7 @@ end
 function evalBuiltinMatrix(arg::Expression)::Expression
   local result::Expression
 
-  @assign result = begin
+   result = begin
     local dim_count::Int
     local expl::List{Expression}
     local dim1::Dimension
@@ -3174,25 +3175,25 @@ function evalBuiltinMatrix(arg::Expression)::Expression
     local ty::M_Type
     @match arg begin
       ARRAY_EXPRESSION(ty = ty) => begin
-        @assign dim_count = Type.dimensionCount(ty)
+         dim_count = Type.dimensionCount(ty)
         if dim_count < 2
-          @assign result = promote(arg, ty, 2)
+           result = promote(arg, ty, 2)
         elseif dim_count == 2
-          @assign result = arg
+           result = arg
         else
           @match _cons(dim1, _cons(dim2, _)) = arrayDims(ty)
-          @assign ty = liftArrayLeft(arrayElementType(ty), dim2)
-          @assign expl = list(evalBuiltinMatrix2(e, ty) for e in arg.elements)
-          @assign ty = liftArrayLeft(ty, dim1)
-          @assign result = makeArray(ty, expl)
+           ty = liftArrayLeft(arrayElementType(ty), dim2)
+           expl = list(evalBuiltinMatrix2(e, ty) for e in arg.elements)
+           ty = liftArrayLeft(ty, dim1)
+           result = makeArray(ty, expl)
         end
         result
       end
 
       _ => begin
-        @assign ty = typeOf(arg)
+         ty = typeOf(arg)
         if Type.isScalar(ty)
-          @assign result = promote(arg, ty, 2)
+           result = promote(arg, ty, 2)
         else
           printWrongArgsError(getInstanceName(), list(arg), sourceInfo())
           fail()
@@ -3207,7 +3208,7 @@ end
 function evalBuiltinMatrix2(arg::Expression, ty::M_Type)::Expression
   local result::Expression
 
-  @assign result = begin
+   result = begin
     @match arg begin
       ARRAY_EXPRESSION(__) => begin
         makeArray(
@@ -3265,7 +3266,7 @@ end
 function evalBuiltinMax2(exp1::Expression, exp2::Expression)::Expression
   local result::Expression
 
-  @assign result = begin
+   result = begin
     @match (exp1, exp2) begin
       (INTEGER_EXPRESSION(__), INTEGER_EXPRESSION(__)) => begin
         if exp1.value < exp2.value
@@ -3327,20 +3328,20 @@ function evalBuiltinMin(args::List{Expression}, fn::M_Function)::Expression
   local expl::List{Expression}
   local ty::M_Type
 
-  @assign result = begin
+   result = begin
     @match args begin
       e1 <| e2 <| nil() => begin
         evalBuiltinMin2(e1, e2)
       end
 
       e1 && ARRAY_EXPRESSION(ty = ty) <| nil() => begin
-        @assign result = fold(
+         result = fold(
           e1,
           evalBuiltinMin2,
           EMPTY(ty),
         )
         if isEmpty(result)
-          @assign result = CALL_EXPRESSION(P_Call.makeTypedCall(
+           result = CALL_EXPRESSION(P_Call.makeTypedCall(
             fn,
             list(makeEmptyArray(ty)),
             Variability.CONSTANT,
@@ -3362,7 +3363,7 @@ end
 function evalBuiltinMin2(exp1::Expression, exp2::Expression)::Expression
   local result::Expression
 
-  @assign result = begin
+   result = begin
     @match (exp1, exp2) begin
       (INTEGER_EXPRESSION(__), INTEGER_EXPRESSION(__)) => begin
         if exp1.value > exp2.value
@@ -3463,14 +3464,14 @@ end
 function evalBuiltinOnes(args::List{Expression})::Expression
   local result::Expression
 
-  @assign result = evalBuiltinFill2(INTEGER_EXPRESSION(1), args)
+   result = evalBuiltinFill2(INTEGER_EXPRESSION(1), args)
   return result
 end
 
 function evalBuiltinProduct(arg::Expression)::Expression
   local result::Expression
 
-  @assign result = begin
+   result = begin
     @match arg begin
       ARRAY_EXPRESSION(__) => begin
         begin
@@ -3510,7 +3511,7 @@ end
 
 function evalBuiltinProductInt(exp::Expression, result::Int)::Int
 
-  @assign result = begin
+   result = begin
     @match exp begin
       INTEGER_EXPRESSION(__) => begin
         result * exp.value
@@ -3530,7 +3531,7 @@ end
 
 function evalBuiltinProductReal(exp::Expression, result::AbstractFloat)::AbstractFloat
 
-  @assign result = begin
+   result = begin
     @match exp begin
       REAL_EXPRESSION(__) => begin
         result * exp.value
@@ -3568,7 +3569,7 @@ function evalBuiltinRem(args::List{Expression}, target::EvalTarget)::Expression
   local y::Expression
 
   @match list(x, y) = args
-  @assign result = begin
+   result = begin
     @match (x, y) begin
       (INTEGER_EXPRESSION(__), INTEGER_EXPRESSION(__)) => begin
         if y.value == 0
@@ -3664,7 +3665,7 @@ end
 function evalBuiltinSinh(arg::Expression)::Expression
   local result::Expression
 
-  @assign result = begin
+   result = begin
     @match arg begin
       REAL_EXPRESSION(__) => begin
         REAL_EXPRESSION(sinh(arg.value))
@@ -3682,7 +3683,7 @@ end
 function evalBuiltinSin(arg::Expression)::Expression
   local result::Expression
 
-  @assign result = begin
+   result = begin
     @match arg begin
       REAL_EXPRESSION(__) => begin
         REAL_EXPRESSION(sin(arg.value))
@@ -3710,30 +3711,30 @@ function evalBuiltinSkew(arg::Expression)::Expression
   local zero::Expression
   local literal::Bool
 
-  @assign result = begin
+   result = begin
     @match arg begin
       ARRAY_EXPRESSION(
         ty = ty,
         elements = x1 <| x2 <| x3 <| nil(),
         literal = literal,
       ) => begin
-        @assign zero = makeZero(arrayElementType(ty))
-        @assign y1 = makeArray(
+         zero = makeZero(arrayElementType(ty))
+         y1 = makeArray(
           ty,
           list(zero, negate(x3), x2),
           literal,
         )
-        @assign y2 = makeArray(
+         y2 = makeArray(
           ty,
           list(x3, zero, negate(x1)),
           literal,
         )
-        @assign y3 = makeArray(
+         y3 = makeArray(
           ty,
           list(negate(x2), x1, zero),
           literal,
         )
-        @assign ty = liftArrayLeft(ty, P_Dimension.Dimension.fromInteger(3))
+         ty = liftArrayLeft(ty, P_Dimension.Dimension.fromInteger(3))
         makeArray(ty, list(y1, y2, y3), literal)
       end
 
@@ -3749,7 +3750,7 @@ end
 function evalBuiltinSqrt(arg::Expression)::Expression
   local result::Expression
 
-  @assign result = begin
+   result = begin
     @match arg begin
       REAL_EXPRESSION(__) => begin
         REAL_EXPRESSION(sqrt(arg.value))
@@ -3767,7 +3768,7 @@ end
 function evalBuiltinString(args::List{Expression})::Expression
   local result::Expression
 
-  @assign result = begin
+   result = begin
     local arg::Expression
     local min_len::Int
     local str_len::Int
@@ -3782,7 +3783,7 @@ function evalBuiltinString(args::List{Expression})::Expression
       arg <|
       INTEGER_EXPRESSION(min_len) <|
       BOOLEAN_EXPRESSION(left_justified) <| nil() => begin
-        @assign str = begin
+         str = begin
           @match arg begin
             INTEGER_EXPRESSION(__) => begin
               intString(arg.value)
@@ -3802,12 +3803,12 @@ function evalBuiltinString(args::List{Expression})::Expression
             end
           end
         end
-        @assign str_len = stringLength(str)
+         str_len = stringLength(str)
         if str_len < min_len
           if left_justified
-            @assign str = str + stringAppendList(ListUtil.fill(" ", min_len - str_len))
+             str = str + stringAppendList(ListUtil.fill(" ", min_len - str_len))
           else
-            @assign str = stringAppendList(ListUtil.fill(" ", min_len - str_len)) + str
+             str = stringAppendList(ListUtil.fill(" ", min_len - str_len)) + str
           end
         end
         STRING_EXPRESSION(str)
@@ -3817,7 +3818,7 @@ function evalBuiltinString(args::List{Expression})::Expression
       INTEGER_EXPRESSION(significant_digits) <|
       INTEGER_EXPRESSION(min_len) <|
       BOOLEAN_EXPRESSION(left_justified) <| nil() => begin
-        @assign format =
+         format =
           "%" +
           (
             if left_justified
@@ -3830,12 +3831,12 @@ function evalBuiltinString(args::List{Expression})::Expression
           "." +
           intString(significant_digits) +
           "g"
-        @assign str = System.sprintff(format, r)
+         str = System.sprintff(format, r)
         STRING_EXPRESSION(str)
       end
 
       REAL_EXPRESSION(r) <| STRING_EXPRESSION(format) <| nil() => begin
-        @assign str = System.sprintff(format, r)
+         str = System.sprintff(format, r)
         STRING_EXPRESSION(str)
       end
     end
@@ -3846,7 +3847,7 @@ end
 function evalBuiltinSum(arg::Expression)::Expression
   local result::Expression
 
-  @assign result = begin
+   result = begin
     @match arg begin
       ARRAY_EXPRESSION(__) => begin
         begin
@@ -3886,7 +3887,7 @@ end
 
 function evalBuiltinSumInt(exp::Expression, result::Int)::Int
 
-  @assign result = begin
+   result = begin
     @match exp begin
       INTEGER_EXPRESSION(__) => begin
         result + exp.value
@@ -3906,7 +3907,7 @@ end
 
 function evalBuiltinSumReal(exp::Expression, result::AbstractFloat)::AbstractFloat
 
-  @assign result = begin
+   result = begin
     @match exp begin
       REAL_EXPRESSION(__) => begin
         result + exp.value
@@ -3933,25 +3934,25 @@ function evalBuiltinSymmetric(arg::Expression)::Expression
   local expl::List{Expression}
   local accum::List{Expression} = nil
 
-  @assign result = begin
+   result = begin
     @match arg begin
       ARRAY_EXPRESSION(__) where {(Type.isMatrix(arg.ty))} => begin
-        @assign mat = listArray(List(
+         mat = listArray(List(
           listArray(arrayElements(row))
           for row in arrayElements(arg)
         ))
-        @assign n = arrayLength(mat)
-        @assign row_ty = Type.unliftArray(arg.ty)
+         n = arrayLength(mat)
+         row_ty = Type.unliftArray(arg.ty)
         for i = n:(-1):1
-          @assign expl = nil
+           expl = nil
           for j = n:(-1):1
-            @assign expl = _cons(if i > j
+             expl = _cons(if i > j
               arrayGet(mat[j], i)
             else
               arrayGet(mat[i], j)
             end, expl)
           end
-          @assign accum = _cons(
+           accum = _cons(
             makeArray(row_ty, expl, literal = true),
             accum,
           )
@@ -3971,7 +3972,7 @@ end
 function evalBuiltinTanh(arg::Expression)::Expression
   local result::Expression
 
-  @assign result = begin
+   result = begin
     @match arg begin
       REAL_EXPRESSION(__) => begin
         REAL_EXPRESSION(tanh(arg.value))
@@ -3989,7 +3990,7 @@ end
 function evalBuiltinTan(arg::Expression)::Expression
   local result::Expression
 
-  @assign result = begin
+   result = begin
     @match arg begin
       REAL_EXPRESSION(__) => begin
         REAL_EXPRESSION(tan(arg.value))
@@ -4043,18 +4044,18 @@ function evalBuiltinVector(arg::Expression)::Expression
   local expl::List{Expression}
   local ty::M_Type
 
-  @assign expl = fold(arg, evalBuiltinVector2, nil)
-  @assign ty = liftArrayLeft(
+   expl = fold(arg, evalBuiltinVector2, nil)
+   ty = liftArrayLeft(
     arrayElementType(typeOf(arg)),
     P_Dimension.Dimension.fromInteger(listLength(expl)),
   )
-  @assign result = makeArray(ty, listReverse(expl), literal = true)
+   result = makeArray(ty, listReverse(expl), literal = true)
   return result
 end
 
 function evalBuiltinVector2(exp::Expression, expl::List{Expression})::List{Expression}
 
-  @assign expl = begin
+   expl = begin
     @match exp begin
       ARRAY_EXPRESSION(__) => begin
         expl
@@ -4071,7 +4072,7 @@ end
 function evalBuiltinZeros(args::List{Expression})::Expression
   local result::Expression
 
-  @assign result = evalBuiltinFill2(INTEGER_EXPRESSION(0), args)
+   result = evalBuiltinFill2(INTEGER_EXPRESSION(0), args)
   return result
 end
 
@@ -4087,12 +4088,12 @@ function evalUriToFilename(
   local s::String
   local f::M_Function
 
-  @assign arg = listHead(args)
-  @assign result = begin
+   arg = listHead(args)
+   result = begin
     @match arg begin
       STRING_EXPRESSION(__) => begin
-        @assign s = OpenModelica.Scripting.uriToFilename(arg.value)
-        @assign e = STRING_EXPRESSION(s)
+         s = OpenModelica.Scripting.uriToFilename(arg.value)
+         e = STRING_EXPRESSION(s)
         e
       end
 
@@ -4111,7 +4112,7 @@ function evalIntBitAnd(args::List{Expression})::Expression
   local i1::Int
   local i2::Int
 
-  @assign result = begin
+   result = begin
     @match args begin
       INTEGER_EXPRESSION(value = i1) <|
       INTEGER_EXPRESSION(value = i2) <| nil() => begin
@@ -4133,7 +4134,7 @@ function evalIntBitOr(args::List{Expression})::Expression
   local i1::Int
   local i2::Int
 
-  @assign result = begin
+   result = begin
     @match args begin
       INTEGER_EXPRESSION(value = i1) <|
       INTEGER_EXPRESSION(value = i2) <| nil() => begin
@@ -4155,7 +4156,7 @@ function evalIntBitXor(args::List{Expression})::Expression
   local i1::Int
   local i2::Int
 
-  @assign result = begin
+   result = begin
     @match args begin
       INTEGER_EXPRESSION(value = i1) <|
       INTEGER_EXPRESSION(value = i2) <| nil() => begin
@@ -4177,7 +4178,7 @@ function evalIntBitLShift(args::List{Expression})::Expression
   local i1::Int
   local i2::Int
 
-  @assign result = begin
+   result = begin
     @match args begin
       INTEGER_EXPRESSION(value = i1) <|
       INTEGER_EXPRESSION(value = i2) <| nil() => begin
@@ -4199,7 +4200,7 @@ function evalIntBitRShift(args::List{Expression})::Expression
   local i1::Int
   local i2::Int
 
-  @assign result = begin
+   result = begin
     @match args begin
       INTEGER_EXPRESSION(value = i1) <|
       INTEGER_EXPRESSION(value = i2) <| nil() => begin
@@ -4218,7 +4219,7 @@ end
 function evalInferredClock(args::List{Expression})::Expression
   local result::Expression
 
-  @assign result = begin
+   result = begin
     @match args begin
       nil() => begin
         CLKCONST(P_Expression.P_ClockKind.Expression.INFERRED_CLOCK())
@@ -4236,7 +4237,7 @@ end
 function evalRationalClock(args::List{Expression})::Expression
   local result::Expression
 
-  @assign result = begin
+   result = begin
     local interval::Expression
     local resolution::Expression
     @match args begin
@@ -4261,7 +4262,7 @@ end
 function evalRealClock(args::List{Expression})::Expression
   local result::Expression
 
-  @assign result = begin
+   result = begin
     local interval::Expression
     @match args begin
       interval && REAL_EXPRESSION(__) <| nil() => begin
@@ -4282,7 +4283,7 @@ end
 function evalBooleanClock(args::List{Expression})::Expression
   local result::Expression
 
-  @assign result = begin
+   result = begin
     local condition::Expression
     local interval::Expression
     @match args begin
@@ -4307,7 +4308,7 @@ end
 function evalSolverClock(args::List{Expression})::Expression
   local result::Expression
 
-  @assign result = begin
+   result = begin
     local c::Expression
     local solver::Expression
     @match args begin
@@ -4368,16 +4369,16 @@ function evalArrayConstructor2(
   local types::List{M_Type} = nil
   local ty::M_Type
 
-  @assign (e, ranges, iters) = createIterationRanges(exp, iterators)
+   (e, ranges, iters) = createIterationRanges(exp, iterators)
   #=  Precompute all the types we're going to need for the arrays created.
   =#
-  @assign ty = typeOf(e)
+   ty = typeOf(e)
   for r in ranges
-    @assign ty =
+     ty =
       liftArrayLeftList(ty, arrayDims(typeOf(r)))
-    @assign types = _cons(ty, types)
+     types = _cons(ty, types)
   end
-  @assign result = evalArrayConstructor3(e, ranges, iters, types)
+   result = evalArrayConstructor3(e, ranges, iters, types)
   return result
 end
 
@@ -4393,15 +4394,15 @@ function createIterationRanges(
   local iter::Pointer{Expression}
 
   for i in iterators
-    @assign (node, range) = i
-    @assign iter = P_Pointer.create(INTEGER_EXPRESSION(0))
-    @assign exp = replaceIterator(
+     (node, range) = i
+     iter = P_Pointer.create(INTEGER_EXPRESSION(0))
+     exp = replaceIterator(
       exp,
       node,
       MUTABLE_EXPRESSION(iter),
     )
-    @assign iters = _cons(iter, iters)
-    @assign ranges = _cons(evalExp_impl(range, EVALTARGET_IGNORE_ERRORS()), ranges)
+     iters = _cons(iter, iters)
+     ranges = _cons(evalExp_impl(range, EVALTARGET_IGNORE_ERRORS()), ranges)
   end
   return (exp, ranges, iters)
 end
@@ -4449,8 +4450,8 @@ function evalReduction(
 )::Expression
   local result::Expression
 
-  @assign result = evalExpPartial(exp)
-  @assign result = bindingExpMap(
+   result = evalExpPartial(exp)
+   result = bindingExpMap(
     result,
     (fn, iterators) -> evalReduction2(fn = fn, iterators = iterators),
   )
@@ -4471,9 +4472,9 @@ function evalReduction2(
   local red_fn::Function
   local ty::M_Type
 
-  @assign (e, ranges, iters) = createIterationRanges(exp, iterators)
-  @assign ty = typeOf(e)
-  @assign (red_fn, default_exp) = begin
+   (e, ranges, iters) = createIterationRanges(exp, iterators)
+   ty = typeOf(e)
+   (red_fn, default_exp) = begin
     @match AbsynUtil.pathString(P_Function.name(fn)) begin
       "sum" => begin
         (evalBinaryAdd, makeZero(ty))
@@ -4503,7 +4504,7 @@ function evalReduction2(
       end
     end
   end
-  @assign result = evalReduction3(e, ranges, iters, default_exp, red_fn)
+   result = evalReduction3(e, ranges, iters, default_exp, red_fn)
   return result
 end
 
@@ -4526,16 +4527,16 @@ function evalReduction3(
   local el_ty::M_Type
 
   if listEmpty(ranges)
-    @assign result = fn(foldExp, evalExp_impl(exp, EVALTARGET_IGNORE_ERRORS()))
+     result = fn(foldExp, evalExp_impl(exp, EVALTARGET_IGNORE_ERRORS()))
   else
     @match _cons(range, ranges_rest) = ranges
     @match _cons(iter, iters_rest) = iterators
-    @assign range_iter = P_ExpressionIterator.ExpressionIterator.fromExp(range)
-    @assign result = foldExp
+     range_iter = P_ExpressionIterator.ExpressionIterator.fromExp(range)
+     result = foldExp
     while P_ExpressionIterator.ExpressionIterator.hasNext(range_iter)
-      @assign (range_iter, value) = P_ExpressionIterator.ExpressionIterator.next(range_iter)
+       (range_iter, value) = P_ExpressionIterator.ExpressionIterator.next(range_iter)
       P_Pointer.update(iter, value)
-      @assign result = evalReduction3(exp, ranges_rest, iters_rest, result, fn)
+       result = evalReduction3(exp, ranges_rest, iters_rest, result, fn)
     end
   end
   return result
@@ -4586,7 +4587,7 @@ function evalSubscriptedExp(
 
   local subs::List{Subscript}
 
-  @assign result = begin
+   result = begin
     @match exp begin
       RANGE_EXPRESSION(__) => begin
         RANGE_EXPRESSION(
@@ -4602,7 +4603,7 @@ function evalSubscriptedExp(
       end
     end
   end
-  @assign subs = list(
+   subs = list(
     mapShallowExp(s, @closure (x) -> evalExp_impl(x, target))
     for s in subscripts
   )
@@ -4610,7 +4611,7 @@ function evalSubscriptedExp(
   return result
 end
 
-function evalRecordElement(exp::Expression, target::EvalTarget)::Expression
+function evalRecordElement(exp::RECORD_EXPRESSION, target::EvalTarget)
   local result::Expression
   local e::Expression
   local index::Int
@@ -4629,20 +4630,12 @@ function evalRecordElement(exp::Expression, target::EvalTarget)::Expression
   return result
 end
 
-function evalRecordElement2(exp::Expression, index::Int)::Expression
-  local result::Expression
-  result = begin
-    @match exp begin
-      RECORD_EXPRESSION(__) => begin
-        listGet(exp.elements, index)
-      end
-    end
-  end
-  return result
+function evalRecordElement2(exp::RECORD_EXPRESSION, index::Int)
+  exp.elements[index]
 end
 
 function printUnboundError(component::Component, target::EvalTarget, exp::Expression)
-  return @assign () = begin
+  return  () = begin
     @match target begin
       EVALTARGET_IGNORE_ERRORS(__) => begin
         ()

@@ -54,19 +54,19 @@ include("./NewFrontend/NFType.jl")
 include("./NewFrontend/NFComplexType.jl")
 include("./NewFrontend/NFPrefixes.jl")
 include("./NewFrontend/NFComponent.jl")
+include("./NewFrontend/NFEquation.jl")
 include("./NewFrontend/NFInstNode.jl")
 include("./NewFrontend/NFSections.jl")
 include("./NewFrontend/NFRecord.jl")
 include("./NewFrontend/NFOperatorOverloading.jl")
 include("./NewFrontend/NFCeval.jl")
-include("./NewFrontend/NFEquation.jl")
 include("./NewFrontend/NFDimension.jl")
 include("./NewFrontend/NFTyping.jl")
 
 include("./NewFrontend/NFScalarize.jl")
 
+include("./NewFrontend/NFClass.jl")
 include("./NewFrontend/NFExpressionIterator.jl")
-
 include("./NewFrontend/NFInst.jl")
 include("./NewFrontend/NFAlgorithm.jl")
 include("./NewFrontend/NFStatement.jl")
@@ -95,7 +95,6 @@ include("./NewFrontend/NFConvertDAE.jl")
 
 include("./NewFrontend/NFRestriction.jl")
 
-include("./NewFrontend/NFClass.jl")
 
 include("./NewFrontend/NFImport.jl")
 

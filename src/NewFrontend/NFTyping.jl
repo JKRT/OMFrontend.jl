@@ -156,12 +156,12 @@ function flagNotSet(origin::M_Type_Int, flag::M_Type_Int)::Bool
 end
 
 function typeClass(@nospecialize(cls::InstNode), @nospecialize(name::String))
-  typeClassType(Base.inferencebarrier(cls), EMPTY_BINDING, ORIGIN_CLASS, cls)
-  typeComponents(Base.inferencebarrier(cls), ORIGIN_CLASS)
+  typeClassType(cls, EMPTY_BINDING, ORIGIN_CLASS, cls)
+  typeComponents(cls, ORIGIN_CLASS)
 #  execStat("NFtypeComponents(" + name + ")")
-  typeBindings(Base.inferencebarrier(cls), Base.inferencebarrier(cls), ORIGIN_CLASS)
+  typeBindings(cls, cls, ORIGIN_CLASS)
 #  execStat("NFTyping.typeBindings(" + name + ")")
-  typeClassSections(Base.inferencebarrier(cls), ORIGIN_CLASS)
+  typeClassSections(cls, ORIGIN_CLASS)
   #execStat("NFTyping.typeClassSections(" + name + ")")
   return
 end
@@ -1062,7 +1062,7 @@ function typeComponentBinding2(
           #@debug "Typed binding 2: $str2"
         catch e
           if isBound(c.condition)
-            @assign binding =
+            binding =
               INVALID_BINDING(binding, ErrorExt.getCheckpointMessages())
           else
             #            ErrorExt.delCheckpoint(getInstanceName())
@@ -1071,9 +1071,9 @@ function typeComponentBinding2(
           end
         end
         #        ErrorExt.delCheckpoint(getInstanceName()) TODO
-        @assign c.binding = binding
+        c.binding = binding
         if isBound(c.condition)
-        @assign c.condition = typeComponentCondition(c.condition, origin)
+          c.condition = typeComponentCondition(c.condition, origin)
         end
         updateComponent!(c, node)
         if typeChildren
@@ -1088,11 +1088,11 @@ function typeComponentBinding2(
         #@debug "Typing TC/TB binding ... for component: $nameStr"
         checkBindingEach(c.binding)
         if isTyped(c.binding)
-          @assign c.binding =
+          c.binding =
             matchBinding(c.binding, c.ty, name(inComponent), node)
         end
         if isBound(c.condition)
-          @assign c.condition = typeComponentCondition(c.condition, origin)
+          c.condition = typeComponentCondition(c.condition, origin)
           updateComponent!(c, node)
         end
         if typeChildren
@@ -1111,17 +1111,16 @@ function typeComponentBinding2(
         =#
         #=  component. Type only the binding and let the case above handle the rest.
         =#
-        @assign nameStr = name(inComponent)
+        nameStr = name(inComponent)
         #@debug "Typing UC/UB binding ... for component: $nameStr"
         checkBindingEach(c.binding)
-        @assign binding =
-          typeBinding(c.binding, setFlag(origin, ORIGIN_BINDING))
-        @assign comp_var = checkComponentBindingVariability(nameStr, c, binding, origin)
+        binding = typeBinding(c.binding, setFlag(origin, ORIGIN_BINDING))
+        comp_var = checkComponentBindingVariability(nameStr, c, binding, origin)
         if comp_var != attrs.variability
-          @assign attrs.variability = comp_var
-          @assign c.attributes = attrs
+          attrs.variability = comp_var
+          c.attributes = attrs
         end
-        @assign c.binding = binding
+        c.binding = binding
         updateComponent!(c, node)
         ()
       end
@@ -1137,13 +1136,14 @@ function typeComponentBinding2(
       TYPE_ATTRIBUTE(__) => begin
         #@assign nameStr = name(inComponent)
         #@debug "Typing TA binding ... for component: $nameStr"
-        @assign c.modifier =
+        c.modifier =
           typeTypeAttribute(c.modifier, c.ty, parent(inComponent), origin)
         updateComponent!(c, node)
         ()
       end
 
       _ => begin
+
         #        Error.assertion( TODO
         #          false,
         #          getInstanceName() + " got invalid node " + name(node),

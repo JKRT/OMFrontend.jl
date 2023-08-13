@@ -516,9 +516,9 @@ function getRecordBindings(binding::Binding, comps::Vector{<:InstNode})::List{Bi
   var = variability(binding)
   #=  Convert the expressions in the record expression into bindings.
   =#
-  @assign recordBindings = begin
+  recordBindings = begin
     @match binding_exp begin
-RECORD_EXPRESSION(__) => begin
+      RECORD_EXPRESSION(__) => begin
         list(if isEmpty(e)
           EMPTY_BINDING
         else

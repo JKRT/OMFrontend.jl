@@ -724,6 +724,12 @@ function instClass(node::InstNode, modifier::Modifier, attributes::Attributes = 
   (node, attributes)
 end
 
+#= On failure call the generic function. =#
+function instClassDef(cls::Class)
+  @error "Unknown class during instantiation"
+  fail()
+end
+
 function instClassDef(cls::INSTANCED_CLASS,
                       outerMod::Modifier,
                       attributes::Attributes,
@@ -753,7 +759,6 @@ function instClassDef(cls::INSTANCED_CLASS,
   updateComponentType(parentArg, node)
   return (attributes, node)
 end
-
 
 function instClassDef(cls::PARTIAL_BUILTIN,
                       outerMod::Modifier,
@@ -2034,7 +2039,7 @@ function instExpressions(@nospecialize(node::InstNode), @nospecialize(scope::Ins
         #=  Instantiate expressions in the extends nodes.
         =#
         for ext in getExtends(cls_tree)
-          @assign sections = instExpressions(ext, ext, sections)
+          sections = instExpressions(ext, ext, sections)
         end
         #=  Instantiate expressions in the local components.
         =#
@@ -2239,8 +2244,8 @@ function instComponentExpressions(componentArg::InstNode)
   return ()
 end
 
-function instBinding(bindingVar::Binding)::Binding
-  @assign bindingVar = begin
+function instBinding(bindingVar::Binding)
+  bindingVar = begin
     local bind_exp::Expression
     @match bindingVar begin
       RAW_BINDING(__)  => begin
@@ -2274,7 +2279,7 @@ end
 
 function instExp(absynExp::Absyn.Exp, scope::InstNode, info::SourceInfo) ::Expression
   local exp::Expression
-  @assign exp = begin
+  exp = begin
     local e1::Expression
     local e2::Expression
     local e3::Expression

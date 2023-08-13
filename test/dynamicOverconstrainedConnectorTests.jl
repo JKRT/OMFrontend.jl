@@ -12,6 +12,7 @@ macro test_pass_if_not_throws(modelName::String, modelFile::String)
       true
     catch e
       @error "Test of $modelName failed" e
+      throw(e)
       false
     end
   end

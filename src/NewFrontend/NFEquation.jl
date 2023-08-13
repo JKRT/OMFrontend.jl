@@ -737,32 +737,36 @@ function mapExpList(eql::Nil, func::MapExpFn)
   return nil
 end
 
-function map(@nospecialize(eq::Equation), func::MapFn)::Equation
-  @assign () = begin
+"""
+```
+map(@nospecialize(eq::Equation), func::MapFn)
+```
+Applies the function `func` to `eq`
+"""
+function map(@nospecialize(eq::Equation), func::MapFn)
+  function f(b::Equation_Branch)
+    @match b begin
+      EQUATION_BRANCH(__) => begin
+        @assign b.body = Equation[map(e, func) for e in b.body]
+        b
+      end
+      _ => b
+    end
+  end
+  () = begin
     @match eq begin
       EQUATION_FOR(__) => begin
-        @assign eq.body = Equation[map(e, func) for e in eq.body]
+        @assign eq.body =
+          Equation[map(e, func) for e in eq.body]
         ()
       end
       EQUATION_IF(__) => begin
-        @assign eq.branches = List(
-          begin
-            @match b begin
-              EQUATION_BRANCH(__) => begin
-                @assign b.body = Equation[map(e, func) for e in b.body]
-                b
-              end
-
-              _ => begin
-                b
-              end
-            end
-          end for b in eq.branches
-        )
+        @assign eq.branches =
+          Equation_Branch[res =  f(b) for b in eq.branches]
         ()
       end
       EQUATION_WHEN(__) => begin
-        @assign eq.branches = Equation[
+        @assign eq.branches = Equation_Branch[
           if b isa EQUATION_BRANCH
             @assign b.body = Equation[map(e, func) for e in b.body];
             b
@@ -925,7 +929,7 @@ function triggerErrors(branch::Equation_Branch)
     @match branch begin
       EQUATION_INVALID_BRANCH(__) => begin
         #Error.addTotalMessages(branch.errors) TODO
-        @error "Invalid branch detected"
+        @error "Invalid branch detected. Branch was: " * toString(branch)
         fail()
       end
       _ => begin

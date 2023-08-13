@@ -769,20 +769,20 @@ end
   Returns a copy of the given node where the element definition has been
   changed to have the inner prefix.
 """
-function makeInnerNode(node::InstNode)
-  @assign node = begin
+function makeInnerNode(nodeArg::InstNode)
+  node = begin
     local def::SCode.Element
     local prefs::SCode.Prefixes
     local comp::Component
-    @match node begin
+    @match nodeArg begin
       CLASS_NODE(definition = def && SCode.CLASS(prefixes = prefs))  => begin
-        @assign prefs.innerOuter = Absyn.INNER()
-        @assign def.prefixes = prefs
-        @assign node.definition = def
-        node
+        prefs.innerOuter = Absyn.INNER()
+        def.prefixes = prefs
+        nodeArg.definition = def
+        nodeArg
       end
       COMPONENT_NODE(__)  => begin
-        comp = component(node)
+        comp = component(nodeArg)
         comp = begin
           @match comp begin
             COMPONENT_DEF(definition = def && SCode.COMPONENT(prefixes = prefs))  => begin
@@ -798,7 +798,7 @@ function makeInnerNode(node::InstNode)
             end
           end
         end
-        replaceComponent(comp, node)
+        replaceComponent(comp, nodeArg)
       end
       _  => begin
         #        Error.assertion(false, getInstanceName() + " got unknown node", sourceInfo())

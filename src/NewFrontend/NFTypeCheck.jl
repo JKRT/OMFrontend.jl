@@ -2261,7 +2261,7 @@ function matchComplexTypes(
   local cty2::ComplexType
   local e::Expression
   local elements::List{Expression}
-  local matched_elements::List{Expression} = nil
+  local elementsV::List{Expression}
   local mk::MatchKindType
   local comp1::Component
   local comp2::Component
@@ -2271,45 +2271,46 @@ function matchComplexTypes(
   #=  TODO: revise this.
   =#
   if isSame(anode, enode)
-    @assign matchKind = MatchKind.EXACT
+    matchKind = MatchKind.EXACT
     return (expression, compatibleType, matchKind)
   end
-  @assign cls1 = getClass(anode)
-  @assign cls2 = getClass(enode)
-  @assign () = begin
+  cls1 = getClass(anode)
+  cls2 = getClass(enode)
+  () = begin
     @match (cls1, cls2, expression) begin
       (
         INSTANCED_CLASS(elements = CLASS_TREE_FLAT_TREE(components = comps1)),
         INSTANCED_CLASS(elements = CLASS_TREE_FLAT_TREE(components = comps2)),
-        RECORD_EXPRESSION(elements = elements),
+        RECORD_EXPRESSION(elements = elementsV),
       ) => begin
-        @assign matchKind = MatchKind.PLUG_COMPATIBLE
+        matchKind = MatchKind.PLUG_COMPATIBLE
         if arrayLength(comps1) != arrayLength(comps2) ||
-           arrayLength(comps1) != listLength(elements)
-          @assign matchKind = MatchKind.NOT_COMPATIBLE
+           arrayLength(comps1) != length(elementsV)
+          matchKind = MatchKind.NOT_COMPATIBLE
         else
+          local matched_elements = Expression[]
           for i = 1:arrayLength(comps1)
-            @match _cons(e, elements) = elements
+            e = elementsV[i]
             @assign (e, _, mk) = matchTypes(
               getType(comps1[i]),
               getType(comps2[i]),
               e,
               allowUnknown,
             )
-            @assign matched_elements = _cons(e, matched_elements)
+            push!(matched_elements, e)
             if mk == MatchKind.CAST
-              @assign matchKind = mk
+              matchKind = mk
             elseif !isValidPlugCompatibleMatch(mk)
-              @assign matchKind = MatchKind.NOT_COMPATIBLE
+              matchKind = MatchKind.NOT_COMPATIBLE
               break
             end
           end
           if matchKind == MatchKind.CAST
-            @assign expression.elements = listReverse(matched_elements)
+            expression.elements = matched_elements
           end
         end
         if matchKind != MatchKind.NOT_COMPATIBLE
-          @assign matchKind = MatchKind.PLUG_COMPATIBLE
+          matchKind = MatchKind.PLUG_COMPATIBLE
         end
         ()
       end

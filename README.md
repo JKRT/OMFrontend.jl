@@ -12,7 +12,7 @@ This means that changes may happen quickly, and that they might be breaking.
 Assuming you have the following Modelica model:
 ```
 model HelloWorld
-  Real x( start = 1, fixed = true );
+  Real x(start = 1, fixed = true);
   parameter Real a = 1;
 equation
   der(x) = - a * x;
@@ -22,6 +22,7 @@ end HelloWorld;
 You can use the API in the following way (Assuming the file is in the active directory):
 
 ```
+# Note that we use using. This is done in order to allow the correct overloading of various pretty printing printouts
 using OMFrontend
 modelFile = "HelloWorld.mo"
 modelName = "HelloWorld"
@@ -52,6 +53,7 @@ function flattenModelInMSL_TST(modelName::String)
   local libraryAsScoded = OMFrontend.LIBRARY_CACHE["MSL.4.0.0"]
   (FM, cache) = OMFrontend.instantiateSCodeToFM(modelName, libraryAsScoded)
 end
+
 ```
 To flatten this model execute:
 ```
@@ -59,8 +61,10 @@ To flatten this model execute:
 ```
 Note the `;` the representation use pointers in order to share the data.
 Hence, if the above is executed without it there may be looping output.
+This can be resolved by using `using OMFrontend` before you start using the package.
 
 Similar to the code above it can be exported to a string by:
+
 ```
 str = OMFrontend.string(FM)
 println(str)
@@ -75,5 +79,7 @@ There is also an API defined for using libraries, however, as of this writing th
 are not yet finalized and is subject to change. If you are a developer please see `OMFrontend.jl/src/OMFrontend.jl` for the other methods.
 
 ### Issues/Questions/Contributing
-It should be noted that this package is a component of [OM.jl](https://github.com/JKRT/OM.jl) hence the API for OMFrontend is somewhat low level.
+It should be noted that this package is a component of [OM.jl](https://github.com/JKRT/OM.jl) hence the API and the functionality for OMFrontend.jl is somewhat low level.
+
+
 For any questions or ideas on how we could collaborate on something please see my LiU email at my page [LiU-page](https://liu.se/en/employee/johti17)

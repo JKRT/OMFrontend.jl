@@ -110,17 +110,16 @@ function removeGivenSubModNames(submod::SCode.SubMod; namesToRemove::List{String
 end
 
 
-""" #= Return the Element with the name given as first argument from the Class. =#"""
+"""  Return the Element with the name given as first argument from the Class. """
 function getElementNamed(inIdent::SCode.Ident, inClass::SCode.Element)::SCode.Element
   local outElement::SCode.Element
-
-  @assign outElement = begin
+  outElement = begin
     local elt::SCode.Element
     local id::String
     local elts::List{SCode.Element}
     @match (inIdent, inClass) begin
       (id, SCode.CLASS(classDef = SCode.PARTS(elementLst = elts))) => begin
-        @assign elt = getElementNamedFromElts(id, elts)
+        elt = getElementNamedFromElts(id, elts)
         elt
       end
 
@@ -139,7 +138,9 @@ function getElementNamed(inIdent::SCode.Ident, inClass::SCode.Element)::SCode.El
   return outElement
 end
 
-""" #= Helper function to getElementNamed. =#"""
+"""
+  Helper function to getElementNamed.
+"""
 function getElementNamedFromElts(
   inIdent::SCode.Ident,
   inElementLst::List{<:SCode.Element},
@@ -153,6 +154,7 @@ function getElementNamedFromElts(
     local id1::String
     local xs::List{SCode.Element}
     @matchcontinue (inIdent, inElementLst) begin
+      #= Case 1. Components. =#
       (id2, comp <| xs) => begin
         @match SCode.COMPONENT(name = id1) = comp
         @match true = stringEq(id1, id2)
@@ -161,39 +163,39 @@ function getElementNamedFromElts(
 
       (id2, SCode.COMPONENT(name = id1) <| xs) => begin
         @match false = stringEq(id1, id2)
-        @assign elt = getElementNamedFromElts(id2, xs)
+        elt = getElementNamedFromElts(id2, xs)
         elt
       end
 
       (id2, SCode.CLASS(name = id1) <| xs) => begin
         @match false = stringEq(id1, id2)
-        @assign elt = getElementNamedFromElts(id2, xs)
+        elt = getElementNamedFromElts(id2, xs)
         elt
       end
 
       (id2, SCode.EXTENDS(__) <| xs) => begin
-        @assign elt = getElementNamedFromElts(id2, xs)
+        elt = getElementNamedFromElts(id2, xs)
         elt
       end
 
-      (id2, cdef && SCode.CLASS(name = id1) <| xs) => begin
+      (id2, cdef <| xs && SCode.CLASS(name = id1) <| xs) => begin
         @match true = stringEq(id1, id2)
         cdef
       end
-
+      #=  Try next. =#
       (id2, h <| xs) => begin
-        @assign elt = getElementNamedFromElts(id2, xs)
+        elt = getElementNamedFromElts(id2, xs)
         elt
       end
     end
   end
-  #=  Try next. =#
   return outElement
 end
 
-""" #=
+"""
 Author BZ, 2009-01
-check if an element is of type EXTENDS or not. =#"""
+check if an element is of type EXTENDS or not.
+"""
 function isElementExtends(ele::SCode.Element)::Bool
   local isExtend::Bool
 

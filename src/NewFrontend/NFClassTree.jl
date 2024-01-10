@@ -2339,7 +2339,7 @@ function addLocalElementConflict(
         Error.addMultiSourceMessage(
           Error.DOUBLE_DECLARATION_OF_ELEMENTS,
           list(name),
-          list(info(n2), info(n1)),
+          list(InstNode_info(n2), InstNode_info(n1)),
         )
         fail()
       end

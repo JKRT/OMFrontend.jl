@@ -1,5 +1,6 @@
 module ErrorExt
 
+import ..Gettext
 using MetaModelica
 using ExportAll
 
@@ -33,11 +34,13 @@ using ExportAll
 * See the full OSMC License conditions for more details.
 *
 */ =#
-import ..Error.ErrorTypes
+import ..ErrorTypes
 
 function registerModelicaFormatError()
   return @warn "TODO: Defined in the runtime"
 end
+
+global SOURCE_MESSAGES = []
 
 function addSourceMessage(
   id::ErrorTypes.ErrorID,
@@ -55,37 +58,156 @@ function addSourceMessage(
   @warn "TODO: Defined in the runtime"
 end
 
-function printMessagesStr(warningsAsErrors::Bool = false)::String
-  local outString::String = "Placeholder error string"
-  @warn "TODO: printMessagesStr not defined in the runtime"
+"""=
+  Converts a MessageType to a string.
+"""
+function messageTypeStr(inMessageType::ErrorTypes.MessageType)::String
+  local outString::String
+
+  @assign outString = begin
+    @match inMessageType begin
+      ErrorTypes.SYNTAX(__) => begin
+        "SYNTAX"
+      end
+
+      ErrorTypes.GRAMMAR(__) => begin
+        "GRAMMAR"
+      end
+
+      ErrorTypes.TRANSLATION(__) => begin
+        "TRANSLATION"
+      end
+
+      ErrorTypes.SYMBOLIC(__) => begin
+        "SYMBOLIC"
+      end
+
+      ErrorTypes.SIMULATION(__) => begin
+        "SIMULATION"
+      end
+
+      ErrorTypes.SCRIPTING(__) => begin
+        "SCRIPTING"
+      end
+    end
+  end
   return outString
 end
 
+"""
+ Converts a Severity to a string.
+"""
+function severityStr(inSeverity::ErrorTypes.Severity)::String
+  local outString::String
+  @assign outString = begin
+    @match inSeverity begin
+      ErrorTypes.INTERNAL(__) => begin
+        "Internal error"
+      end
+
+      ErrorTypes.ERROR(__) => begin
+        "Error"
+      end
+
+      ErrorTypes.WARNING(__) => begin
+        "Warning"
+      end
+
+      ErrorTypes.NOTIFICATION(__) => begin
+        "Notification"
+      end
+    end
+  end
+  return outString
+end
+
+"""
+  Converts an SourceInfo into a string ready to be used in error messages.
+  Format is [filename:line start:column start-line end:column end]
+"""
+function infoStr(info::SourceInfo)::String
+  local str::String
+  @assign str = begin
+    local filename::String
+    local info_str::String
+    local line_start::Integer
+    local line_end::Integer
+    local col_start::Integer
+    local col_end::Integer
+    @match info begin
+      SOURCEINFO(
+        fileName = filename,
+        lineNumberStart = line_start,
+        columnNumberStart = col_start,
+        lineNumberEnd = line_end,
+        columnNumberEnd = col_end,
+      ) => begin
+        @assign info_str =
+          "[" +
+          "file:" * filename +
+          ":" +
+          intString(line_start) +
+          ":" +
+          intString(col_start) +
+          "-" +
+          intString(line_end) +
+          ":" +
+          intString(col_end) +
+          "]"
+        info_str
+      end
+    end
+  end
+  return str
+end
+
+function printMessagesStr(;warningsAsErrors::Bool = false)::String
+  local buffer = IOBuffer()
+  for (m, tokens, mInfo) in SOURCE_MESSAGES
+    println(buffer, string(severityStr(m.severity), ":"))
+    println(buffer, string("\tMessage Type:", messageTypeStr(m.ty)))
+    println(buffer, string("\t", infoStr(mInfo)))
+    local msg = Gettext.translateContent(m.message)
+    #= Add the tokens to the message string =#
+    for token in tokens
+      msg = replace(msg, "%s" => token, count = 1)
+    end
+    println(buffer, string("\tMessage:", msg))
+  end
+  return String(take!(buffer))
+end
+
 function getNumMessages()
-  local num = 0
-  @warn "TODO: Defined in the runtime"
-  return 0
+  local num = length(SOURCE_MESSAGES)
+  return num
 end
 
 function getNumErrorMessages()::Integer
-  local num::Integer
-
-  @warn "TODO: Defined in the runtime"
+  local num::Integer = 0
+  for m in SOURCE_MESSAGES
+    if typeof(m.id) === Severity.ERROR
+      num += 1
+    end
+  end
   return num
 end
 
 function getNumWarningMessages()::Integer
-  local num::Integer
-
-  @warn "TODO: Defined in the runtime"
+  local num::Integer = 0
+  for m in SOURCE_MESSAGES
+    if typeof(m.id) === Severity.WARNING
+      num += 1
+    end
+  end
   return num
 end
 
 """ #= Returns all error messages and pops them from the message queue. =#"""
 function getMessages()::List{ErrorTypes.TotalMessage}
-  local res::List{ErrorTypes.TotalMessage}
-
-  @warn "TODO: Defined in the runtime"
+  local res::List{ErrorTypes.TotalMessage} = nil
+  for m in SOURCE_MESSAGES
+    res = res <| pop!(SOURCE_MESSAGES)
+  end
   return res
 end
 
@@ -98,7 +220,7 @@ function getCheckpointMessages()::List{ErrorTypes.TotalMessage}
 end
 
 function clearMessages()
-  return @warn "TODO: Defined in the runtime"
+  global SOURCE_MESSAGES = []
 end
 
 """ #= Used to rollback/delete checkpoints without considering the identifier. Used to reset the error messages after a stack overflow exception. =#"""

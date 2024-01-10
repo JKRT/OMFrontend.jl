@@ -6995,8 +6995,7 @@ function variability(binding::Binding)::VariabilityType
       end
 
       _ => begin
-        #Error.assertion(false, getInstanceName() + " got unknown binding", sourceInfo())
-        @error "Got Unknown binding!"
+        Error.assertion(false, getInstanceName() + " got unknown binding", sourceInfo())
         fail()
       end
     end

@@ -35,11 +35,9 @@ using MetaModelica
 using ExportAll
 #= Forward declarations for uniontypes until Julia adds support for mutual recursion =#
 
-FilterFunc = Function
-
-FoldFunc = Function
-
-TraverseFunc = Function
+const FilterFunc = Function
+const FoldFunc = Function
+const TraverseFunc = Function
 
 import SCode
 import Absyn
@@ -125,7 +123,7 @@ function getElementNamed(inIdent::SCode.Ident, inClass::SCode.Element)::SCode.El
 
       (
         id,
-        SCode.CLASS(
+        SCode.CLASS(#= /* adrpo: handle also the case model extends X then X; */ =#
           classDef = SCode.CLASS_EXTENDS(composition = SCode.PARTS(elementLst = elts)),
         ),
       ) => begin
@@ -134,7 +132,6 @@ function getElementNamed(inIdent::SCode.Ident, inClass::SCode.Element)::SCode.El
       end
     end
   end
-  #= /* adrpo: handle also the case model extends X then X; */ =#
   return outElement
 end
 
@@ -4867,18 +4864,19 @@ function isElementEncapsulated(inElement::SCode.Element)::Bool
   return outIsEncapsulated
 end
 
-""" #= replace the element in program at the specified path (includes the element name).
+"""
+ Replace the element in program at the specified path (includes the element name).
  if the element does not exist at that location then it fails.
  this function will fail if any of the path prefixes
- to the element are not found in the given program =#"""
+ to the element are not found in the given program
+"""
 function replaceOrAddElementInProgram(
   inProgram::SCode.Program,
   inElement::SCode.Element,
   inClassPath::Absyn.Path,
 )::SCode.Program
   local outProgram::SCode.Program
-
-  @assign outProgram = begin
+  outProgram = begin
     local sp::SCode.Program
     local c::SCode.Element
     local e::SCode.Element
@@ -4886,21 +4884,21 @@ function replaceOrAddElementInProgram(
     local i::Absyn.Ident
     @match (inProgram, inElement, inClassPath) begin
       (_, _, Absyn.QUALIFIED(i, p)) => begin
-        @assign e = getElementWithId(inProgram, i)
-        @assign sp = getElementsFromElement(inProgram, e)
-        @assign sp = replaceOrAddElementInProgram(sp, inElement, p)
-        @assign e = replaceElementsInElement(inProgram, e, sp)
-        @assign sp = replaceOrAddElementWithId(inProgram, e, i)
+        e = getElementWithId(inProgram, i)
+        sp = getElementsFromElement(inProgram, e)
+        sp = replaceOrAddElementInProgram(sp, inElement, p)
+        e = replaceElementsInElement(inProgram, e, sp)
+        sp = replaceOrAddElementWithId(inProgram, e, i)
         sp
       end
 
       (_, _, Absyn.IDENT(i)) => begin
-        @assign sp = replaceOrAddElementWithId(inProgram, inElement, i)
+        sp = replaceOrAddElementWithId(inProgram, inElement, i)
         sp
       end
 
       (_, _, Absyn.FULLYQUALIFIED(p)) => begin
-        @assign sp = replaceOrAddElementInProgram(inProgram, inElement, p)
+        sp = replaceOrAddElementInProgram(inProgram, inElement, p)
         sp
       end
     end
@@ -5003,7 +5001,7 @@ end
 function replaceElementsInElement(
   inProgram::SCode.Program,
   inElement::SCode.Element,
-  inElements::SCode.Program,
+  inElements::List,
 )::SCode.Element
   local outElement::SCode.Element
 
@@ -5063,9 +5061,11 @@ function replaceElementsInElement(
   return outElement
 end
 
-""" #= replaces the elements in class definition.
- if derived a SOME(element) is returned,
- otherwise the modified class def and NONE() =#"""
+"""
+  Replaces the elements in class definition.
+  if derived a SOME(element) is returned,
+  otherwise the modified class def and NONE()
+"""
 function replaceElementsInClassDef(
   inProgram::SCode.Program,
   classDef::SCode.ClassDef,
@@ -5122,16 +5122,16 @@ function getElementWithId(inProgram::SCode.Program, inId::String)::SCode.Element
     local i::Absyn.Ident
     local n::Absyn.Ident
     @match (inProgram, inId) begin
-      (e && SCode.CLASS(name = n) <| _, i) where {(stringEq(n, i))} => begin
+      (e <| _ && SCode.CLASS(name = n) <| _, i) where {(stringEq(n, i))} => begin
         e
       end
 
-      (e && SCode.COMPONENT(name = n) <| _, i) where {(stringEq(n, i))} => begin
+      (e <| _ && SCode.COMPONENT(name = n) <| _, i) where {(stringEq(n, i))} => begin
         e
       end
 
       (
-        e && SCode.EXTENDS(baseClassPath = p) <| _,
+        e <| _ && SCode.EXTENDS(baseClassPath = p) <| _,
         i,
       ) where {(stringEq(AbsynUtil.pathString(p), i))} => begin
         e
@@ -5179,7 +5179,10 @@ function getElementWithPath(inProgram::SCode.Program, inPath::Absyn.Path)::SCode
   return outElement
 end
 
-""" #=  =#"""
+"""
+Retrieves the name of a SCode element.
+Returns the name as a string.
+"""
 function getElementName(e::SCode.Element)::String
   local s::String
 

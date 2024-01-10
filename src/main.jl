@@ -22,8 +22,9 @@ include("./Util/Pointer.jl")
 include("./Util/System.jl")
 include("./Util/Corba.jl")
 include("./Util/Gettext.jl")
-include("./Util/Error.jl")
+include("./Util/ErrorTypes.jl")
 include("./Util/ErrorExt.jl")
+include("./Util/Error.jl")
 import .P_Pointer
 const Pointer = P_Pointer.Pointer
 include("./Util/Mutable.jl")

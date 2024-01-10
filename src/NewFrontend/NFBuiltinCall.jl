@@ -208,9 +208,8 @@ function typeSpecial(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{
         case \"ticksInState\" guard Config.synchronousFeaturesAllowed() then typeTicksInStateCall(call, next_origin, info);
         case \"timeInState\" guard Config.synchronousFeaturesAllowed() then typeTimeInStateCall(call, next_origin, info);
         */ =#
-        #        Error.assertion(false, getInstanceName() + " got unhandled builtin function: " + P_Call.toString(call), sourceInfo())
-        @error getInstanceName() * " got unhandled builtin function: " * toString(call)
-        fail()
+        Error.assertion(false, getInstanceName() + " got unhandled builtin function: " + P_Call.toString(call), sourceInfo())
+        #@error getInstanceName() * " got unhandled builtin function: " * toString(call)
       end
     end
   end

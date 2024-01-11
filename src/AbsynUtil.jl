@@ -2017,7 +2017,10 @@ function pathStringWork(
   return s
 end
 
-@ExtendedFunction pathStringNoQual pathString(usefq = false)
+function pathStringNoQual(path::Path, delimiter::String = ".",
+                          usefq::Bool = false, reverse::Bool = false)
+  return pathString(path, delimiter, usefq, reverse)
+end
 
 function pathStringDefault(path::Path)::String
   local s::String = pathString(path)

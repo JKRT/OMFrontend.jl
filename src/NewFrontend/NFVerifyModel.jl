@@ -97,7 +97,7 @@ end
 
 """ #= Helper function to verifyWhenEquation, returns the set of crefs that the
      given list of equations contains on the lhs. =#"""
-function whenEquationBranchCrefs(eql::List{<:Equation})::List{ComponentRef}
+function whenEquationBranchCrefs(eql::Union{List{<:Equation}, Vector{<:Equation}})::List{ComponentRef}
   local crefs::List{ComponentRef} = nil
   for eq in eql
     @assign crefs = begin
@@ -137,7 +137,7 @@ function verifyWhenEquation(
   local crefs1::List{ComponentRef}
   local crefs2::List{ComponentRef}
   local rest_branches::List{Equation_Branch}
-  local body::List{Equation}
+  local body::Vector{Equation}
   #=  Only when-equation with more than one branch needs to be checked. =#
   if ListUtil.hasOneElement(branches)
     return

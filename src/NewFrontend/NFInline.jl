@@ -100,7 +100,7 @@ end
 function inlineCall(call::Call)::Expression
   local exp::Expression
   exp = begin
-    local fn::M_Function3
+    local fn::M_Function
     local arg::Expression
     local args::List{Expression}
     local inputs::List{InstNode}

@@ -226,7 +226,7 @@ function evaluateEqBranch(branch::Equation_Branch, constVariability::Variability
   local outBranch::Equation_Branch
   outBranch = begin
     local condition::Expression
-    local body::List{Equation}
+    local body
     @match branch begin
       EQUATION_BRANCH(condition = condition, body = body) => begin
         condition = evaluateExp(condition, Variability.STRUCTURAL_PARAMETER)

@@ -202,11 +202,13 @@ if ccall(:jl_generating_output, Cint, ()) == 1
 end
 
 function initLoadMSL(;MSL_Version = "MSL:3.2.3")
+  # For printing
+  local MSL_VersionP = deepcopy(MSL_Version)
+  @info "Loading MSL Version: $(MSL_Version)"
   MSL_Version = replace(MSL_Version, "." => "_")
   MSL_Version = replace(MSL_Version, ":" => "_")
-  @info "Loading MSL: $(MSL_Version)"
   @time loadMSL(MSL_Version = MSL_Version)
-  @info "Loaded MSL:$(MSL_Version) successfully"
+  @info "Loaded MSL Version:$(MSL_VersionP) successfully"
 end
 
 """

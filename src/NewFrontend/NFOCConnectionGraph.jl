@@ -659,8 +659,8 @@ function ord(inEl1::PotentialRoot, inEl2::PotentialRoot) ::Bool
   local outBoolean::Bool
 
   @assign outBoolean = begin
-    local r1::Float
-    local r2::Float
+    local r1::Float64
+    local r2::Float64
     local c1::ComponentRef
     local c2::ComponentRef
     local s1::String

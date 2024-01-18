@@ -1,4 +1,15 @@
 #= Test for the multi body components =#
+@testset "Modelica.Mechanics.MultiBody.Parts" begin
+  prefix = "Modelica.Mechanics.MultiBody.Parts"
+  @test typeof(flattenModelInMSL_TST("$(prefix).Fixed")[1]) == OMFrontend.Main.FLAT_MODEL
+  @test typeof(flattenModelInMSL_TST("$(prefix).FixedTranslation")[1]) == OMFrontend.Main.FLAT_MODEL
+  @test typeof(flattenModelInMSL_TST("$(prefix).Body")[1]) == OMFrontend.Main.FLAT_MODEL
+  @test typeof(flattenModelInMSL_TST("$(prefix).BodyShape")[1]) == OMFrontend.Main.FLAT_MODEL
+  @test typeof(flattenModelInMSL_TST("$(prefix).BodyBox")[1]) == OMFrontend.Main.FLAT_MODEL
+  @test typeof(flattenModelInMSL_TST("$(prefix).BodyCylinder")[1]) == OMFrontend.Main.FLAT_MODEL
+  @test typeof(flattenModelInMSL_TST("$(prefix).PointMass")[1]) == OMFrontend.Main.FLAT_MODEL
+  @test typeof(flattenModelInMSL_TST("$(prefix).Mounting1D")[1]) == OMFrontend.Main.FLAT_MODEL
+end
 
 @testset "Testing to Flatten Modelica.Mechanics.MultiBody.Examples.Elementary..." begin
   @info "Testing to Flatten Modelica.Mechanics.MultiBody.Examples.Elementary"
@@ -27,6 +38,11 @@
   #= Add more examples here! =#
 end #= Modelica.Mechanics.MultiBody.Examples.Elementary=#
 
+
+@testset "Testing to Flatten Modelica.Mechanics.MultiBody.Examples.Loops.Utilities" begin
+  prefix = "Modelica.Mechanics.MultiBody.Examples.Loops.Utilities"
+  @test typeof(flattenModelInMSL_TST("$(prefix).Cylinder")[1]) == OMFrontend.Main.FLAT_MODEL
+end
 #=
 Test some of the models in loops including the V6 Engine model
 Not run every test. Takes quite a while currently...

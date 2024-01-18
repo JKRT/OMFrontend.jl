@@ -6,45 +6,42 @@ const EquationFn = Function
 const AlgorithmFn = Function
 const EquationFn = Function
 const AlgorithmFn = Function
-
-@UniontypeDecl NFSections
 #=Necessary redefinitions=#
 const Sections = NFSections
 const Equation = NFEquation
 const Algorithm = NFAlgorithm
 
-@Uniontype NFSections begin
-  @Record SECTIONS_EMPTY begin
-  end
-  @Record SECTIONS_EXTERNAL begin
-    name::String
-    args::List{Expression}
-    outputRef::ComponentRef
-    language::String
-    ann::Option{SCode.Annotation}
-    explicit::Bool
-  end
-  @Record SECTIONS begin
-    equations::Vector{Equation}
-    initialEquations::Vector{Equation}
-    algorithms::Vector{Algorithm}
-    initialAlgorithms::Vector{Algorithm}
-  end
+abstract type NFSections
 end
 
-function isEmpty(sections::Sections)::Bool
-  local isEmpty::Bool
-  @assign isEmpty = begin
-    @match sections begin
-      EMPTY(__) => begin
-        true
-      end
-      _ => begin
-        false
-      end
+struct SECTIONS_EMPTY <: NFSections
+end
+
+mutable struct SECTIONS_EXTERNAL <: NFSections
+  name::String
+  args::List{Expression}
+  outputRef::ComponentRef
+  language::String
+  ann::Option{SCode.Annotation}
+  explicit::Bool
+end
+
+mutable struct SECTIONS <: NFSections
+  equations::Vector{Equation}
+  initialEquations::Vector{Equation}
+  algorithms::Vector{Algorithm}
+  initialAlgorithms::Vector{Algorithm}
+end
+
+function isEmpty(sections::Sections)
+  @match sections begin
+    SECTIONS_EMPTY(__) => begin
+      true
+    end
+    _ => begin
+      false
     end
   end
-  return isEmpty
 end
 
 function apply(
@@ -248,9 +245,9 @@ function prependAlgorithm(
     @match sections begin
       SECTIONS(__) => begin
         if isInitial
-          @assign sections.initialAlgorithms = _cons(alg, sections.initialAlgorithms)
+          sections.initialAlgorithms = _cons(alg, sections.initialAlgorithms)
         else
-          @assign sections.algorithms = _cons(alg, sections.algorithms)
+          sections.algorithms = _cons(alg, sections.algorithms)
         end
         sections
       end
@@ -362,7 +359,7 @@ function prependEquation(
 
       EMPTY(__) => begin
         if isInitial
-          SECTIONS(Equation[], [eq], Algorithm[], Algorithm[])
+          SECTIONS(Equation[], Equation[eq], Algorithm[], Algorithm[])
         else
           SECTIONS(list(eq), Equation[], Algorithm[], Algorithm[])
         end

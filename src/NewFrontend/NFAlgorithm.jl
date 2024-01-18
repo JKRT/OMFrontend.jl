@@ -1,8 +1,8 @@
-@Uniontype NFAlgorithm begin
-  @Record ALGORITHM begin
+abstract type NFAlgorithm end
+
+mutable struct ALGORITHM <: NFAlgorithm
     statements::Vector{Statement}
     source::DAE.ElementSource
-  end
 end
 
 function toString(alg::ALGORITHM)::String

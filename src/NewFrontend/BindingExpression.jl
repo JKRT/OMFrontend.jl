@@ -1915,9 +1915,9 @@ function mapFoldCallShallow(@nospecialize(call::Call), func::MapFunc, foldArg::A
   local outCall::Call
   outCall = begin
     local args::List{Expression}
-    local nargs::List{P_Function.NamedArg}
-    local targs::List{P_Function.TypedArg}
-    local tnargs::List{P_Function.TypedNamedArg}
+    local nargs::List{NamedArg}
+    local targs::List{TypedArg}
+    local tnargs::List{TypedNamedArg}
     local s::String
     local e::Expression
     local t::M_Type
@@ -2332,9 +2332,9 @@ function mapFoldCall(call::Call, func::MapFunc, foldArg::ArgT)  where {ArgT}
 
   @assign outCall = begin
     local args::List{Expression}
-    local nargs::List{P_Function.NamedArg}
-    local targs::List{P_Function.TypedArg}
-    local tnargs::List{P_Function.TypedNamedArg}
+    local nargs::List{NamedArg}
+    local targs::List{TypedArg}
+    local tnargs::List{TypedNamedArg}
     local s::String
     local e::Expression
     local t::M_Type
@@ -4597,7 +4597,7 @@ function toFlatString(@nospecialize(exp::Expression)) ::String
       end
 
       RECORD_EXPRESSION(__)  => begin
-        ListUtil.toString(exp.elements, toFlatString, "'" + AbsynUtil.pathString(exp.path), "'(", ", ", ")", true)
+        ListUtil.toString(arrayList(exp.elements), toFlatString, "'" + AbsynUtil.pathString(exp.path), "'(", ", ", ")", true)
       end
 
       CALL_EXPRESSION(__)  => begin

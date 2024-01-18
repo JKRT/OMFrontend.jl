@@ -1415,21 +1415,17 @@ function definition(node::InstNode)
 end
 
 function setNodeType(nodeType::InstNodeType, node::InstNode)
-   () = begin
-    @match node begin
-      CLASS_NODE(__)  => begin
-        @assign node.nodeType = nodeType
-        ()
-      end
-
-      COMPONENT_NODE(__)  => begin
-        @assign node.nodeType = nodeType
-        ()
-      end
-
-      _  => begin
-        ()
-      end
+  @match node begin
+    CLASS_NODE(__)  => begin
+      @assign node.nodeType = nodeType
+      ()
+    end
+    COMPONENT_NODE(__)  => begin
+      @assign node.nodeType = nodeType
+      ()
+    end
+    _  => begin
+      ()
     end
   end
   node

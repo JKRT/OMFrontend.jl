@@ -293,7 +293,7 @@ end
 function merge(outerMod::Modifier, innerMod::Modifier, name::String = "")::Modifier
   local mergedMod::Modifier
 
-  @assign mergedMod = begin
+  mergedMod = begin
     local submods::ModTable.Tree
     local binding::Binding
     #=  One of the modifiers is NOMOD, return the other.
@@ -311,12 +311,12 @@ function merge(outerMod::Modifier, innerMod::Modifier, name::String = "")::Modif
         #=  Two modifiers, merge bindings and submodifiers.
         =#
         checkFinalOverride(innerMod.finalPrefix, outerMod, innerMod.info)
-        @assign binding = if isBound(outerMod.binding)
+        binding = if isBound(outerMod.binding)
           outerMod.binding
         else
           innerMod.binding
         end
-        @assign submods =
+        submods =
           ModTable.join(innerMod.subModifiers, outerMod.subModifiers, merge)
         MODIFIER_MODIFIER(
           outerMod.name,
@@ -356,13 +356,10 @@ function merge(outerMod::Modifier, innerMod::Modifier, name::String = "")::Modif
 end
 
 function setBinding(binding::Binding, modifier::Modifier)::Modifier
-
-  @assign () = begin
-    @match modifier begin
-      MODIFIER_MODIFIER(__) => begin
-        @assign modifier.binding = binding
-        ()
-      end
+  @match modifier begin
+    MODIFIER_MODIFIER(__) => begin
+      @assign modifier.binding = binding
+      ()
     end
   end
   return modifier
@@ -474,11 +471,11 @@ end
 
 function addParent(parentNode::InstNode, mod::Modifier)::Modifier
   local outMod::Modifier
-  @assign outMod = begin
+  outMod = begin
     local binding::Binding
     @match mod begin
       MODIFIER_MODIFIER(binding = binding) => begin
-        @assign mod.binding = addParent(parentNode, binding)
+        mod.binding = addParent(parentNode, binding)
         map(mod, (x,y) -> addParent_work(x, parentNode, y))
       end
       _ => begin

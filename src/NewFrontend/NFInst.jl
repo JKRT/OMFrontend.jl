@@ -64,7 +64,7 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
     #=  Initialize the storage for automatically generated inner elements. =#
     top = setInnerOuterCache(top, C_TOP_SCOPE(NodeTree.new(), cls))
     #@debug "Instantiate the class"
-    inst_cls = instantiateN1(cls, EMPTY_NODE())
+    @time inst_cls = instantiateN1(cls, EMPTY_NODE())
     insertGeneratedInners(inst_cls, top)
     #execStat("NFInst.instantiate(" + name + ")")
     #=
@@ -73,7 +73,7 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
     instantiation to make sure that lookup is able to find the correct nodes.
     =#
     #@debug "Instantiate Expressions"
-    instExpressions(inst_cls)
+    @time instExpressions(inst_cls)
     # execStat("NFInst.instExpressions(" + name + ")")
     #=  Mark structural parameters.
     =#
@@ -81,9 +81,9 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
     #execStat("NFInst.updateImplicitVariability")
     #=  Type the class. =#
     #@debug "Type the class"
-    typeClass(inst_cls, name)
+    @time typeClass(inst_cls, name)
     #@debug "Flatten the model and evaluate constants in it."
-    flat_model = flatten(inst_cls, name)
+    @time flat_model = flatten(inst_cls, name)
     #=
     Check if we are to performance recompilation. If true adds the SCode program to the flat model.
     Also check if we have a Connections.branch statement in an if-equation
@@ -159,7 +159,7 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
         =#
       end
       #= Resolve the connections of the current system. =#
-      flat_model = resolveConnections(flat_model, name)
+      @time flat_model = resolveConnections(flat_model, name)
       flat_model =  if ! recompilationEnabled
         evaluate(flat_model)
       else
@@ -189,7 +189,7 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
     #= Scalarize array components in the flat model.=#
     if Flags.isSet(Flags.NF_SCALARIZE)
       #@debug "Scalarization"
-      flat_model = scalarize(flat_model, name)
+      @time flat_model = scalarize(flat_model, name)
     else
       #=  Remove empty arrays from variables =#
       @assign flat_model.variables = ListUtil.filterOnFalse(flat_model.variables, isEmptyArray)
@@ -3068,26 +3068,26 @@ function isBindingNotFixed(binding::Binding, requireFinal::Bool, maxDepth::Int =
   isNotFixed
 end
 
-function isComponentBindingNotFixed(component::Component, node::InstNode, requireFinal::Bool, maxDepth::Int, isRecord::Bool = false) ::Bool
+function isComponentBindingNotFixed(component::Component, node::InstNode, requireFinal::Bool, maxDepth::Int, isRecordB::Bool = false) ::Bool
   local isNotFixed::Bool
 
   local binding::Binding
-  local parent::InstNode
+  local parentNode::InstNode
 
-  @assign binding = getBinding(component)
+  binding = getBinding(component)
   if isUnbound(binding)
-    if isRecord || isRecord(node)
-      @assign isNotFixed = false
+    if isRecordB || isRecord(node)
+      isNotFixed = false
     else
-      @assign parent = parent(node)
-      if isComponent(parent) && isRecord(parent)
-        @assign isNotFixed = isComponentBindingNotFixed(component(parent), parent, requireFinal, maxDepth, true)
+      parentNode = parent(node)
+      if isComponent(parentNode) && isRecord(parentNode)
+        isNotFixed = isComponentBindingNotFixed(component(parent), parentNode, requireFinal, maxDepth, true)
       else
-        @assign isNotFixed = true
+        isNotFixed = true
       end
     end
   else
-    @assign isNotFixed = isBindingNotFixed(binding, requireFinal, maxDepth)
+    isNotFixed = isBindingNotFixed(binding, requireFinal, maxDepth)
   end
   #=  TODO: Check whether the record fields have bindings or not.
   =#

@@ -20,23 +20,22 @@ end
 @exportAll()
 end
 
-@Mutable_Uniontype Modifier begin
-  @Record MODIFIER_NOMOD begin
-  end
-  @Record MODIFIER_REDECLARE begin
-    finalPrefix::SCode.Final
-    eachPrefix::SCode.Each
-    element::InstNode
-    mod::Modifier
-  end
-  @Record MODIFIER_MODIFIER begin
-    name::String
-    finalPrefix::SCode.Final
-    eachPrefix::SCode.Each
-    binding::Binding
-    subModifiers::ModTable.Tree
-    info::SourceInfo
-  end
+abstract type Modifier end
+struct MODIFIER_NOMOD <: Modifier
+end
+mutable struct MODIFIER_REDECLARE <: Modifier
+  finalPrefix::SCode.Final
+  eachPrefix::SCode.Each
+  element::InstNode
+  mod::Modifier
+end
+mutable struct MODIFIER_MODIFIER <: Modifier
+  name::String
+  finalPrefix::SCode.Final
+  eachPrefix::SCode.Each
+  binding::Binding
+  subModifiers::ModTable.Tree
+  info::SourceInfo
 end
 
 #= Structure that represents where a modifier comes from. =#
@@ -192,16 +191,13 @@ function toString(mod::Modifier, printName::Bool = true)::String
 end
 
 function map(mod::Modifier, func::FuncT)::Modifier
-  @assign () = begin
-    @match mod begin
-      MODIFIER_MODIFIER(__) => begin
-        @assign mod.subModifiers = ModTable.map(mod.subModifiers, func)
-        ()
+  @match mod begin
+    MODIFIER_MODIFIER(__) => begin
+      mod.subModifiers = ModTable.map(mod.subModifiers, func)
+      ()
       end
-
-      _ => begin
-        ()
-      end
+    _ => begin
+      ()
     end
   end
   return mod
@@ -329,13 +325,13 @@ function merge(outerMod::Modifier, innerMod::Modifier, name::String = "")::Modif
       end
 
       (MODIFIER_REDECLARE(__), MODIFIER_MODIFIER(__)) => begin
-        @assign outerMod.mod = merge(outerMod.mod, innerMod)
-        outerMod
+        mod = merge(outerMod.mod, innerMod)
+        MODIFIER_REDECLARE(outerMod.finalPrefix, outerMod.eachPrefix, outerMod.element, mod)
       end
 
       (MODIFIER_MODIFIER(__), MODIFIER_REDECLARE(__)) => begin
-        @assign innerMod.mod = merge(outerMod, innerMod.mod)
-        innerMod
+        mod = merge(outerMod, innerMod.mod)
+        MODIFIER_REDECLARE(innerMod.finalPrefix, innerMod.eachPrefix, innerMod.element, mod)
       end
 
       (MODIFIER_REDECLARE(__), _) => begin
@@ -358,7 +354,7 @@ end
 function setBinding(binding::Binding, modifier::Modifier)::Modifier
   @match modifier begin
     MODIFIER_MODIFIER(__) => begin
-      @assign modifier.binding = binding
+      modifier.binding = binding
       ()
     end
   end
@@ -449,11 +445,11 @@ end
 
 function addParent_work(name::String, parentNode::InstNode, mod::Modifier)::Modifier
   local outMod::Modifier
-  @assign outMod = begin
+  outMod = begin
     local binding::Binding
     @match mod begin
       MODIFIER_MODIFIER(binding = binding) => begin
-        @assign mod.binding = addParent(parentNode, binding)
+        mod.binding = addParent(parentNode, binding)
         if !isEach(binding)
           map(mod, (x,y) -> addParent_work(x, parentNode, y))
         else
@@ -497,7 +493,7 @@ function patchElementModFinal(
 )::SCode.Mod
 
   if SCodeUtil.finalBool(SCodeUtil.prefixesFinal(prefixes))
-    @assign mod = begin
+    mod = begin
       @match mod begin
         SCode.MOD(__) => begin
           @assign mod.finalPrefix = SCode.FINAL()
@@ -524,8 +520,7 @@ function fromElement(
   scope::InstNode,
 )::Modifier
   local mod::Modifier
-
-  @assign mod = begin
+  mod = begin
     local def::SCode.ClassDef
     local smod::SCode.Mod
     @match element begin
@@ -540,7 +535,7 @@ function fromElement(
       end
 
       SCode.COMPONENT(__) => begin
-        @assign smod =
+        smod =
           patchElementModFinal(element.prefixes, element.info, element.modifications)
         create(smod, element.name, SCOPE_COMPONENT(element.name), parents, scope)
       end

@@ -676,8 +676,7 @@ end
 
 function getModifier(cls::Class)::Modifier
   local modifier::Modifier
-
-  @assign modifier = begin
+  modifier = begin
     @match cls begin
       PARTIAL_CLASS(__) => begin
         cls.modifier

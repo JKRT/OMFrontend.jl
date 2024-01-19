@@ -985,7 +985,8 @@ end
 Note that we need to clone a new object by using @assign here...
 """
 function mergeModifier(modifier::Modifier, component::Component)
-  component = @match component begin
+  local mod
+  modifiedComponent = @match component begin
     COMPONENT_DEF(__) => begin
       #strMod1 = toString(modifier, true)
       #strMod2 = toString(component.modifier, true)
@@ -1005,7 +1006,7 @@ function mergeModifier(modifier::Modifier, component::Component)
       TYPE_ATTRIBUTE(component.ty, mod)
     end
   end
-  return component
+  return modifiedComponent
 end
 
 function setModifier(modifier::Modifier, component::Component)::Component

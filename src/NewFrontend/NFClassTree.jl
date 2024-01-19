@@ -356,25 +356,26 @@ function applyComponents(tree::ClassTree, func::FuncT)
   end
 end
 
-function applyLocalComponents(tree::CLASS_TREE_INSTANTIATED_TREE, func::FuncT)
+function applyLocalComponents(tree::CLASS_TREE_INSTANTIATED_TREE, func::Function)
   for i in tree.localComponents
-    func(P_Pointer.access(arrayGetNoBoundsChecking(tree.components, i)))
+    local arg = P_Pointer.access(@inbounds tree.components[i])
+    func(arg)
   end
-  ()
+  return nothing
 end
 
 function applyLocalComponents(tree::CLASS_TREE_PARTIAL_TREE, func::FuncT)
   for c in tree.components
     func(c)
   end
-  ()
+  return nothing
 end
 
 function applyLocalComponents(tree::CLASS_TREE_EXPANDED_TREE, func::FuncT)
   for c in tree.components
     func(c)
   end
-  ()
+  return nothing
 end
 
 """ #= Applies a mutating function to each extends node in the class tree.
@@ -382,7 +383,7 @@ end
 function mapFoldExtends(tree::ClassTree, func::Function, arg::ArgT) where {ArgT}
   local exts::Vector{InstNode} = getExtends(tree)
   local ext::InstNode
-  for i = 1:arrayLength(exts)
+  for (i, _) in enumerate(exts)
     (ext, arg) = func(arrayGetNoBoundsChecking(exts, i), arg)
     arrayUpdateNoBoundsChecking(exts, i, ext)
   end

@@ -5867,12 +5867,11 @@ function compare(exp1::Expression, exp2::Expression) ::Int
   #=  Check if the expressions are the same object.
   =#
   if referenceEq(exp1, exp2)
-    @assign comp = 0
-    return comp
+    return 0
   end
   #=  Return false if the expressions are of different kinds.
   =#
-  @assign comp = Util.intCompare(valueConstructor(exp1), valueConstructor(exp2))
+  comp = Util.intCompare(valueConstructor(exp1), valueConstructor(exp2))
   if comp != 0
     return comp
   end
@@ -6152,8 +6151,7 @@ end
 """ #= Returns true if the two expressions are equal, otherwise false. =#"""
 function isEqual(exp1::Expression, exp2::Expression) ::Bool
   local isEqual::Bool
-
-  @assign isEqual = 0 == compare(exp1, exp2)
+  isEqual = 0 == compare(exp1, exp2)
   isEqual
 end
 

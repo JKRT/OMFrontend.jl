@@ -61,52 +61,52 @@
   end
 end
 
-@Mutable_Uniontype InstNode begin
-  @Record EMPTY_NODE begin
-  end
+abstract type InstNode end
 
-  @Record EXP_NODE begin
-    exp::Expression
-  end
-
-  @Record IMPLICIT_SCOPE begin
-    parentScope::InstNode
-    locals::Vector{InstNode}
-  end
-
-  @Record NAME_NODE begin
-    name::String
-  end
-
-  @Record REF_NODE begin
-    index::Int
-  end
-
-  @Record INNER_OUTER_NODE begin
-    innerNode::InstNode
-    outerNode::InstNode
-  end
-
-  @Record COMPONENT_NODE begin
-    name::String
-    visibility::Int
-    component::Pointer{Component}
-    parent #= The instance that this component is part of. =#::InstNode
-    nodeType::InstNodeType
-  end
-
-  @Record CLASS_NODE begin
-    name::String
-    definition::SCode.Element
-    visibility::Int
-    cls::Pointer
-    caches::Vector{CachedData}
-    parentScope::InstNode
-    nodeType::InstNodeType
-  end
-
+struct EMPTY_NODE <: InstNode
 end
 
+mutable struct EXP_NODE <: InstNode
+  exp::Expression
+end
+
+mutable struct IMPLICIT_SCOPE <: InstNode
+  parentScope::InstNode
+  locals::Vector{InstNode}
+end
+
+mutable struct NAME_NODE <: InstNode
+  name::String
+end
+
+
+mutable struct REF_NODE{T <: Int} <: InstNode
+  index::T
+end
+
+
+mutable struct INNER_OUTER_NODE <: InstNode
+  innerNode::InstNode
+  outerNode::InstNode
+end
+
+mutable struct COMPONENT_NODE <: InstNode
+  name::String
+  visibility::Int
+  component::Pointer{Component}
+  parent #= The instance that this component is part of. =#::InstNode
+  nodeType::InstNodeType
+end
+
+mutable struct CLASS_NODE <: InstNode
+  name::String
+  definition::SCode.Element
+  visibility::Int
+  cls::Pointer
+  caches::Vector{CachedData}
+  parentScope::InstNode
+  nodeType::InstNodeType
+end
 
 module NodeTree
 

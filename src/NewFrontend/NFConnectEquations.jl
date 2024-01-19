@@ -55,16 +55,17 @@ function generateEquations(sets::Vector{<:List{<:Connector}})
     elseif isStream(cty)
       set_eql = generateStreamEquations(set, flowThreshold)
     else
-      # Error.addInternalError(
-      #   getInstanceName() +
-      #   " got connection set with invalid type '" +
-      #   toDebugString(cty) +
-      #   "': " +
-      #   ListUtil.toString(set, toString, "", "{", ", ", "}", true),
-      #   sourceInfo(),
-      @error "Got connection set with invalid type: " + toString(cty) + ", " +  ListUtil.toString(set, toString, "", "{", ", ", "}", true)
-      # )
-      #fail()
+      Error.addInternalError(
+        getInstanceName() +
+        " got connection set with invalid type '" +
+        toDebugString(cty) +
+        "': " +
+        ListUtil.toString(set, toString, "", "{", ", ", "}", true),
+        sourceInfo()
+      )
+      # @error "Got connection set with invalid type: " + toString(cty) + ", " +  ListUtil.toString(set, toString, "", "{", ", ", "}", true)
+      # # )
+      # fail()
     end
     equations = vcat(listArray(set_eql), equations)
   end

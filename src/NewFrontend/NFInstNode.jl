@@ -528,7 +528,7 @@ function protectComponent(comp::InstNode)
    () = begin
     @match comp begin
       COMPONENT_NODE(visibility = Visibility.PUBLIC)  => begin
-        @assign comp.visibility = Visibility.PROTECTED
+        comp.visibility = Visibility.PROTECTED
         ()
       end
 
@@ -544,7 +544,7 @@ function protectClass(cls::InstNode)
    () = begin
     @match cls begin
       CLASS_NODE(visibility = Visibility.PUBLIC)  => begin
-        @assign cls.visibility = Visibility.PROTECTED
+        cls.visibility = Visibility.PROTECTED
         ()
       end
 

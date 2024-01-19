@@ -2186,31 +2186,29 @@ function instRecordConstructor(node::InstNode)
   end
 end
 
-function instBuiltinAttribute(attribute::Modifier, node::InstNode) ::Modifier
+function instBuiltinAttribute(attribute::Modifier, node::InstNode)
 # strMod1 = toString(attribute, true)
  #@debug ">instBuiltinAttribute($strMod1)"
-  () = begin
-    local bindingVar::Binding
-    @match attribute begin
-      MODIFIER_MODIFIER(binding=bindingVar)  => begin
-        bindingVar = addParent(node, bindingVar)
-        @assign attribute.binding = instBinding(bindingVar)
-        ()
-      end
-      MODIFIER_REDECLARE(__)  => begin
-        #=  Redeclaration of builtin attributes is not allowed.
-        =#
-        Error.addSourceMessage(Error.INVALID_REDECLARE_IN_BASIC_TYPE, list(name(attribute)), Modifier_info(attribute))
-        fail()
-      end
-      _  => begin
-        ()
-      end
+  local bindingVar::Binding
+  @match attribute begin
+    MODIFIER_MODIFIER(binding=bindingVar)  => begin
+      bindingVar = addParent(node, bindingVar)
+      attribute.binding = instBinding(bindingVar)
+      ()
+    end
+    MODIFIER_REDECLARE(__)  => begin
+      #=  Redeclaration of builtin attributes is not allowed.
+      =#
+      Error.addSourceMessage(Error.INVALID_REDECLARE_IN_BASIC_TYPE, list(name(attribute)), Modifier_info(attribute))
+      fail()
+    end
+    _  => begin
+      ()
     end
   end
   #strMod2 = toString(attribute, true)
   #@debug "<instBuiltinAttribute($strMod2)"
-  attribute
+  return attribute
 end
 
 function instComponentExpressions(componentArg::InstNode)
@@ -2219,8 +2217,8 @@ function instComponentExpressions(componentArg::InstNode)
   local dims::Vector{Dimension}
   @match c begin
     UNTYPED_COMPONENT(dimensions = dims, instantiated = false)  => begin
-      @assign c.binding = instBinding(c.binding)
-      @assign c.condition = instBinding(c.condition)
+      c.binding = instBinding(c.binding)
+      c.condition = instBinding(c.condition)
       instExpressions(c.classInst, node)
       for i in 1:arrayLength(dims)
         @inbounds dims[i] = instDimension(dims[i], parent(node), c.info)
@@ -2229,7 +2227,7 @@ function instComponentExpressions(componentArg::InstNode)
       =#
       #=  which can otherwise happen with duplicate components at this stage.
       =#
-      @assign c.instantiated = true
+      c.instantiated = true
       updateComponent!(c, node)
       ()
     end
@@ -2247,7 +2245,7 @@ function instComponentExpressions(componentArg::InstNode)
     end
 
     TYPE_ATTRIBUTE(__)  => begin
-      @assign c.modifier = instBuiltinAttribute(c.modifier, componentArg)
+      c.modifier = instBuiltinAttribute(c.modifier, componentArg)
       updateComponent!(c, node)
       ()
     end

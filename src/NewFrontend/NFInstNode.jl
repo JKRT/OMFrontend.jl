@@ -335,20 +335,18 @@ function getComments(node::InstNode, accumCmts::List{<:SCode.Comment} = nil)
 end
 
 function clone(node::InstNode)
-   () = begin
-    local cls::Class
-    @match node begin
-      CLASS_NODE(__)  => begin
-        cls = P_Pointer.access(node.cls)
-        cls = classTreeApply(cls, clone)
-        @assign node.cls = P_Pointer.create(cls)
-        @assign node.caches = empty()
-        ()
-      end
-
-      _  => begin
-        ()
-      end
+  local cls::Class
+  @match node begin
+    CLASS_NODE(__)  => begin
+      cls = P_Pointer.access(node.cls)
+      cls = classTreeApply(cls, clone)
+      #= !NB should be assign here! =#
+      @assign node.cls = P_Pointer.create(cls)
+      node.caches = empty()
+      ()
+    end
+    _  => begin
+      ()
     end
   end
   node

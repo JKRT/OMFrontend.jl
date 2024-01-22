@@ -573,7 +573,7 @@ function createResult(repl::ReplTree.Tree, outputs::List{<:InstNode})::Expressio
 end
 
 function assertAssignedOutput(outputNode::InstNode, value::Expression)
-  return @assign () = begin
+  return  () = begin
     @match value begin
       EMPTY_EXPRESSION(__) => begin
         Error.addSourceMessage(
@@ -677,7 +677,7 @@ function evaluateAssignment(
 end
 
 function assignVariable(variable::Expression, value::Expression)
-  return @assign () = begin
+  return  () = begin
     local var::Expression
     local val::Expression
     local vals::List{Expression}
@@ -1186,7 +1186,7 @@ function evaluateKnownExternal(name::String, args::List{<:Expression})::Expressi
         "ModelicaInternal_readLine",
         STRING_EXPRESSION(s1) <| INTEGER_EXPRESSION(i) <| nil(),
       ) => begin
-        @assign (s1, b) = ModelicaExternalC.Streams_readLine(s1, i)
+         (s1, b) = ModelicaExternalC.Streams_readLine(s1, i)
         TUPLE_EXPRESSION(
           TYPE_TUPLE(list(TYPE_STRING(), TYPE_BOOLEAN()), NONE()),
           list(STRING_EXPRESSION(s1), BOOLEAN_EXPRESSION(b)),
@@ -1221,7 +1221,7 @@ function evaluateKnownExternal(name::String, args::List{<:Expression})::Expressi
         STRING_EXPRESSION(s1) <|
         INTEGER_EXPRESSION(i) <| BOOLEAN_EXPRESSION(b) <| nil(),
       ) => begin
-        @assign (i, r) = ModelicaExternalC.Strings_scanReal(s1, i, b)
+         (i, r) = ModelicaExternalC.Strings_scanReal(s1, i, b)
         TUPLE_EXPRESSION(
           TYPE_TUPLE(list(TYPE_INTEGER(), TYPE_REAL()), NONE()),
           list(INTEGER_EXPRESSION(i), REAL_EXPRESSION(r)),
@@ -1233,7 +1233,7 @@ function evaluateKnownExternal(name::String, args::List{<:Expression})::Expressi
         STRING_EXPRESSION(s1) <|
         INTEGER_EXPRESSION(i) <| BOOLEAN_EXPRESSION(b) <| nil(),
       ) => begin
-        @assign (i, i2) = ModelicaExternalC.Strings_scanInteger(s1, i, b)
+         (i, i2) = ModelicaExternalC.Strings_scanInteger(s1, i, b)
         TUPLE_EXPRESSION(
           TYPE_TUPLE(list(TYPE_INTEGER(), TYPE_INTEGER()), NONE()),
           list(INTEGER_EXPRESSION(i), INTEGER_EXPRESSION(i2)),
@@ -1244,7 +1244,7 @@ function evaluateKnownExternal(name::String, args::List{<:Expression})::Expressi
         "ModelicaStrings_scanString",
         STRING_EXPRESSION(s1) <| INTEGER_EXPRESSION(i) <| nil(),
       ) => begin
-        @assign (i, s2) = ModelicaExternalC.Strings_scanString(s1, i)
+         (i, s2) = ModelicaExternalC.Strings_scanString(s1, i)
         TUPLE_EXPRESSION(
           TYPE_TUPLE(list(TYPE_INTEGER(), TYPE_STRING()), NONE()),
           list(INTEGER_EXPRESSION(i), STRING_EXPRESSION(s2)),
@@ -1255,7 +1255,7 @@ function evaluateKnownExternal(name::String, args::List{<:Expression})::Expressi
         "ModelicaStrings_scanIdentifier",
         STRING_EXPRESSION(s1) <| INTEGER_EXPRESSION(i) <| nil(),
       ) => begin
-        @assign (i, s2) = ModelicaExternalC.Strings_scanIdentifier(s1, i)
+         (i, s2) = ModelicaExternalC.Strings_scanIdentifier(s1, i)
         TUPLE_EXPRESSION(
           TYPE_TUPLE(list(TYPE_INTEGER(), TYPE_STRING()), NONE()),
           list(INTEGER_EXPRESSION(i), STRING_EXPRESSION(s2)),
@@ -1344,7 +1344,7 @@ function evaluateOpenModelicaRegex(args::List{<:Expression})::Expression
       INTEGER_EXPRESSION(i) <|
       BOOLEAN_EXPRESSION(extended) <|
       BOOLEAN_EXPRESSION(insensitive) <| nil() => begin
-        @assign (n, strs) = System.regex(str, re, i, extended, insensitive)
+         (n, strs) = System.regex(str, re, i, extended, insensitive)
         @assign expl = list(STRING_EXPRESSION(s) for s in strs)
         @assign strs_ty =
           TYPE_ARRAY(TYPE_STRING(), list(P_Dimension.Dimension.fromInteger(i)))
@@ -1434,7 +1434,7 @@ function evaluateExternal2(
 end
 
 function evaluateExternal3(name::String, args::List{<:Expression})
-  return @assign () = begin
+  return  () = begin
     @match name begin
       "dgeev" => begin
         EvalFunctionExt.Lapack_dgeev(args)

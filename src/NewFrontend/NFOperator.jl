@@ -164,7 +164,7 @@ end
 
 function stripEW(op::Operator)::Operator
 
-  @assign () = begin
+   () = begin
     @match op.op begin
       Op.ADD_EW => begin
         @assign op.op = Op.ADD

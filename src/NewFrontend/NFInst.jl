@@ -64,7 +64,7 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
     #=  Initialize the storage for automatically generated inner elements. =#
     top = setInnerOuterCache(top, C_TOP_SCOPE(NodeTree.new(), cls))
     #@debug "Instantiate the class"
-    @time inst_cls = instantiateN1(cls, EMPTY_NODE())
+    inst_cls = instantiateN1(cls, EMPTY_NODE())
     insertGeneratedInners(inst_cls, top)
     #execStat("NFInst.instantiate(" + name + ")")
     #=
@@ -73,7 +73,7 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
     instantiation to make sure that lookup is able to find the correct nodes.
     =#
     #@debug "Instantiate Expressions"
-    @time instExpressions(inst_cls)
+    instExpressions(inst_cls)
     # execStat("NFInst.instExpressions(" + name + ")")
     #=  Mark structural parameters.
     =#
@@ -81,9 +81,9 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
     #execStat("NFInst.updateImplicitVariability")
     #=  Type the class. =#
     #@debug "Type the class"
-    @time typeClass(inst_cls, name)
+    typeClass(inst_cls, name)
     #@debug "Flatten the model and evaluate constants in it."
-    @time flat_model = flatten(inst_cls, name)
+    flat_model = flatten(inst_cls, name)
     #=
     Check if we are to performance recompilation. If true adds the SCode program to the flat model.
     Also check if we have a Connections.branch statement in an if-equation
@@ -159,7 +159,7 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
         =#
       end
       #= Resolve the connections of the current system. =#
-      @time flat_model = resolveConnections(flat_model, name)
+      flat_model = resolveConnections(flat_model, name)
       flat_model =  if ! recompilationEnabled
         evaluate(flat_model)
       else
@@ -189,10 +189,10 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
     #= Scalarize array components in the flat model.=#
     if Flags.isSet(Flags.NF_SCALARIZE)
       #@debug "Scalarization"
-      @time flat_model = scalarize(flat_model, name)
+      flat_model = scalarize(flat_model, name)
     else
       #=  Remove empty arrays from variables =#
-      @assign flat_model.variables = ListUtil.filterOnFalse(flat_model.variables, isEmptyArray)
+      @assign flat_model.variables = filter( (x) -> !isEmptyArray(x), flat_model.variables)
     end
     #@debug "Verify the model"
     verify(flat_model)
@@ -1438,7 +1438,7 @@ function instComponentDef(component::SCode.COMPONENT,
   bindingVar = if useBinding
     binding(mod)
   else
-    EMPTY_BINDING
+    EMPTY_BINDING()
   end
   condition = fromAbsyn(component.condition, false, list(node), parentNode, info)
   #=  Instantiate the component's attributes, and merge them with the
@@ -1697,7 +1697,7 @@ function mergeComponentAttributes(outerAttr::Attributes, innerAttr::Attributes, 
 end
 
 function checkDeclaredComponentAttributes(attr::Attributes, parentRestriction::Restriction, component::InstNode) ::Attributes
-  @assign () = begin
+   () = begin
     @match parentRestriction begin
      RESTRICTION_CONNECTOR(__)  => begin
         #=  Components of a connector may not have prefixes 'inner' or 'outer'.
@@ -1705,7 +1705,7 @@ function checkDeclaredComponentAttributes(attr::Attributes, parentRestriction::R
         assertNotInnerOuter(attr.innerOuter, component, parentRestriction)
         if parentRestriction.isExpandable
           assertNotFlowStream(attr.connectorType, component, parentRestriction)
-          @assign attr.connectorType = intBitOr(attr.connectorType, ConnectorType.POTENTIALLY_PRESENT)
+          attr.connectorType = intBitOr(attr.connectorType, ConnectorType.POTENTIALLY_PRESENT)
         end
         #=  Components of an expandable connector may not have the prefix 'flow'.
         =#
@@ -1896,7 +1896,7 @@ end
 function updateComponentVariability(attr::Attributes, cls::Class, clsNode::InstNode) ::Attributes
   local var::VariabilityType = attr.variability
   if referenceEq(attr, DEFAULT_ATTR) && isDiscreteClass(clsNode)
-    @assign attr = IMPL_DISCRETE_ATTR
+    attr = IMPL_DISCRETE_ATTR
   elseif var == Variability.CONTINUOUS && isDiscreteClass(clsNode)
     @assign attr.variability = Variability.IMPLICITLY_DISCRETE
   end
@@ -2024,7 +2024,7 @@ function instExpressions(@nospecialize(node::InstNode), @nospecialize(scope::Ins
   local dim_scope::InstNode
   local info::SourceInfo
   local ty::NFType
-  @assign () = begin
+   () = begin
     @match cls begin
       EXPANDED_CLASS(elements = cls_tree, restriction = RESTRICTION_TYPE(__))  => begin
         #=  Long class declaration of a type.
@@ -2144,7 +2144,7 @@ function makeRecordComplexType(node::InstNode, cls::Class) ::ComplexType
 end
 
 function instComplexType(ty::NFType)
-  @assign () = begin
+   () = begin
     local node::InstNode
     local cache::CachedData
     @match ty begin
@@ -2416,7 +2416,7 @@ function instCref(absynCref::Absyn.ComponentRef, scope::InstNode, info::SourceIn
   local found_scope::InstNode
   local ty::M_Type
   local comp::Component
-  @assign (cref, found_scope) = begin
+   (cref, found_scope) = begin
     @match absynCref begin
       Absyn.WILD(__)  => begin
         (COMPONENT_REF_WILD(), scope)
@@ -2534,7 +2534,7 @@ function checkUnsubscriptableCref(cref::ComponentRef, info::SourceInfo)
 end
 
 function instCrefSubscripts(cref::ComponentRef, scope::InstNode, info::SourceInfo) ::ComponentRef
-  @assign () = begin
+   () = begin
     local rest_cr::ComponentRef
     @match cref begin
       COMPONENT_REF_CREF(__)  => begin
@@ -2674,7 +2674,7 @@ end
 
 """  Checks that the language declared for an external function is valid. """
 function checkExternalDeclLanguage(language::String, info::SourceInfo)
-  @assign () = begin
+   () = begin
     @match language begin
       "C"  => begin
         ()
@@ -2848,7 +2848,7 @@ function instConnectorCref(absynCref::Absyn.ComponentRef, scope::InstNode, info:
   local cref::ComponentRef
   local prefix::ComponentRef
   local found_scope::InstNode
-  @assign (cref, found_scope) = lookupConnector(absynCref, scope, info)
+   (cref, found_scope) = lookupConnector(absynCref, scope, info)
   @assign cref = instCrefSubscripts(cref, scope, info)
   @assign prefix = fromNodeList(scopeList(found_scope))
   if ! isEmpty(prefix)
@@ -2896,10 +2896,12 @@ function checkIteratorShadowing(nameArg::String, scope::InstNode, infoArg::Sourc
   end
 end
 
-" #= Inner elements can be generated automatically during instantiation if they're
+"""
+Inner elements can be generated automatically during instantiation if they're
                    missing, and are stored in the cache of the top scope since that's easily
                    accessible during lookup. This function copies any such inner elements into
-                   the class we're instantiating, so that they are typed and flattened properly. =#"
+                   the class we're instantiating, so that they are typed and flattened properly.
+"""
 function insertGeneratedInners(node::InstNode, topScope::InstNode)
   local inner_tree::NodeTree.Tree
   local inner_nodes::List{Tuple{String, InstNode}}
@@ -2917,27 +2919,25 @@ function insertGeneratedInners(node::InstNode, topScope::InstNode)
     #@debug "EMPTY NODE TREE"
     return
   end
-  @assign inner_nodes = NodeTree.toList(inner_tree)
-  @assign inner_comps = nil
+  inner_nodes = NodeTree.toList(inner_tree)
+  inner_comps = nil
   for e in inner_nodes
-    @assign (name, n) = e
+    (name, n) = e
     Error.addSourceMessage(Error.MISSING_INNER_ADDED, list(typeName(n), name), InstNode_info(n))
     if isComponent(n)
       instComponent(n, DEFAULT_ATTR, MODIFIER_NOMOD(), true, 0)
       try
-        @match Absyn.STRING(str) = SCodeUtil.getElementNamedAnnotation(definition(classScope(n)), "missingInnerMessage")
+        local absynStr::Absyn.STRING = SCodeUtil.getElementNamedAnnotation(definition(classScope(n)), "missingInnerMessage")
         Error.addSourceMessage(Error.MISSING_INNER_MESSAGE, list(System.unescapedString(str)), InstNode_info(n))
       catch
-        @error "Error missing inners!"
-        fail()
       end
       @assign inner_comps = _cons(P_Pointer.create(n), inner_comps)
     end
   end
   if ! listEmpty(inner_comps)
-    @assign base_node = lastBaseClass(node)
-    @assign cls = getClass(base_node)
-    @assign cls_tree = appendComponentsToInstTree(inner_comps, classTree(cls))
+    base_node = lastBaseClass(node)
+    cls = getClass(base_node)
+    cls_tree = appendComponentsToInstTree(inner_comps, classTree(cls))
     updateClass(setClassTree(cls_tree, cls), base_node)
   end
 end
@@ -2945,7 +2945,7 @@ end
 function updateImplicitVariability(node::InstNode, evalAllParams::Bool)
   local cls::Class = getClass(node)
   local cls_tree::ClassTree
-  @assign () = begin
+   () = begin
     @match cls begin
       INSTANCED_CLASS(elements = cls_tree && CLASS_TREE_FLAT_TREE(__))  => begin
         for c in cls_tree.components
@@ -2981,7 +2981,7 @@ function updateImplicitVariabilityComp(co::InstNode, evalAllParams::Bool)
   local node::InstNode = resolveOuter(co)
   local c::Component = component(node)
 
-  @assign () = begin
+   () = begin
     local bnd::Binding
     local condition::Binding
     @match c begin
@@ -3161,7 +3161,7 @@ function getRecordFieldBinding(comp::Component, node::InstNode) ::Binding
 end
 
 function markStructuralParamsDim(dimension::Dimension)
-  @assign () = begin
+   () = begin
     @match dimension begin
       DIMENSION_UNTYPED(__)  => begin
         markStructuralParamsExp(dimension.dimension)
@@ -3185,7 +3185,7 @@ function markStructuralParamsExp(exp::Expression)
 end
 
 function markStructuralParamsExp_traverser(exp::Expression)
-  @assign () = begin
+   () = begin
     local node::InstNode
     local comp::Component
     local binding::Option{Expression}
@@ -3223,7 +3223,7 @@ function markStructuralParamsExpSize(exp::Expression)
 end
 
 function markStructuralParamsExpSize_traverser(exp::Expression)
-  @assign () = begin
+   () = begin
     local iters::List{Tuple{InstNode, Expression}}
     @match exp begin
       CALL_EXPRESSION(call = UNTYPED_ARRAY_CONSTRUCTOR(iters = iters))  => begin
@@ -3300,7 +3300,7 @@ function updateImplicitVariabilityEq(@nospecialize(eq::Equation), inWhen::Bool =
 end
 
 function markStructuralParamsSub(sub::Subscript, dummy::Int = 0) ::Int
-  @assign () = begin
+   () = begin
     @match sub begin
       SUBSCRIPT_UNTYPED(__)  => begin
         markStructuralParamsExp(sub.exp)
@@ -3327,7 +3327,7 @@ function markImplicitWhenExp(exp::Expression)
 end
 
 function markImplicitWhenExp_traverser(exp::Expression)
-  @assign () = begin
+   () = begin
     local node::InstNode
     local comp::Component
     @match exp begin

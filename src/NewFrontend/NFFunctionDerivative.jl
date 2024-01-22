@@ -30,7 +30,7 @@ function conditionToDAE(
   local idx::Int
   local c::ConditionType
 
-  @assign (idx, c) = cond
+   (idx, c) = cond
   @assign daeCond = begin
     @match c begin
       Condition.ZERO_DERIVATIVE => begin
@@ -179,7 +179,7 @@ function getDerivativeAttributes(
 
   for attr in attrs
     @match SCode.NAMEMOD(id, mod) = attr
-    @assign () = begin
+     () = begin
       @match (id, mod) begin
         ("order", SCode.MOD(binding = SOME(aexp))) => begin
           if !isEmpty(order)
@@ -254,7 +254,7 @@ function instDerivativeMod(
     local conds::List{Tuple{Int, ConditionType}}
     @match mod begin
       SCode.MOD(subModLst = attrs, binding = SOME(Absyn.CREF(acref))) => begin
-        @assign (_, der_node) = instFunction(acref, scope, mod.info)
+         (_, der_node) = instFunction(acref, scope, mod.info)
         addLowerOrderDerivative(der_node, fnNode)
         (order, conds) = getDerivativeAttributes(attrs, fn, fnNode, mod.info)
         _cons(FUNCTION_DER(der_node, fnNode, order, conds, nil), fnDers)

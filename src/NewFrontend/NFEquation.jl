@@ -489,7 +489,7 @@ function contains(@nospecialize(eq::Equation), func::PredFn)::Bool
 end
 
 function foldExp(@nospecialize(eq::Equation), func::FoldFunc, arg::ArgT) where {ArgT}
-  @assign () = begin
+   () = begin
     @match eq begin
       EQUATION_EQUALITY(__) => begin
         @assign arg = func(eq.lhs, arg)
@@ -519,7 +519,7 @@ function foldExp(@nospecialize(eq::Equation), func::FoldFunc, arg::ArgT) where {
 
       EQUATION_IF(__) => begin
         for b in eq.branches
-          @assign () = begin
+           () = begin
             @match b begin
               EQUATION_BRANCH(__) => begin
                 @assign arg = func(b.condition, arg)
@@ -785,7 +785,7 @@ function map(@nospecialize(eq::Equation), func::MapFn)
 end
 
 function apply(@nospecialize(eq::Equation), func::ApplyFn)
-  @assign () = begin
+   () = begin
     @match eq begin
       FOR(__) => begin
         for e in eq.body
@@ -796,7 +796,7 @@ function apply(@nospecialize(eq::Equation), func::ApplyFn)
 
       IF(__) => begin
         for b in eq.branches
-          @assign () = begin
+           () = begin
             @match b begin
               BRANCH(__) => begin
                 for e in b.body
@@ -816,7 +816,7 @@ function apply(@nospecialize(eq::Equation), func::ApplyFn)
 
       WHEN(__) => begin
         for b in eq.branches
-          @assign () = begin
+           () = begin
             @match b begin
               BRANCH(__) => begin
                 for e in b.body
@@ -925,7 +925,7 @@ end
 
 
 function triggerErrors(branch::Equation_Branch)
-  return @assign () = begin
+  return  () = begin
     @match branch begin
       EQUATION_INVALID_BRANCH(__) => begin
         #Error.addTotalMessages(branch.errors) TODO

@@ -549,7 +549,7 @@ function mapExpList(stmtl::Vector{Statement}, func::MapFunc)
 end
 
 function map(stmt::Statement, func::MapFn)::Statement
-  @assign () = begin
+   () = begin
     @match stmt begin
       ALG_FOR(__) => begin
         for (i,s) in enumerate(stmt.body)
@@ -678,7 +678,7 @@ function updateImplicitVariabilityStmts(stmtl::Vector{Statement}, inWhen::Bool =
 end
 
 function updateImplicitVariabilityStmt(stmt::Statement, inWhen::Bool)
-  @assign () = begin
+   () = begin
     @match stmt begin
      ALG_ASSIGNMENT(__)  => begin
         if inWhen

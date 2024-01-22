@@ -408,7 +408,7 @@ function generateStreamEquations(
       _ => begin
         #=  The general case with N inside connectors and M outside:
         =#
-        @assign (outside, inside) =
+         (outside, inside) =
           ListUtil.splitOnTrue(elements, Connector.isOutside)
         streamEquationGeneral(outside, inside, flowThreshold)
       end
@@ -564,7 +564,7 @@ function sumOutside1(element::Connector, flowThreshold::Expression)::Expression
   local stream_exp::Expression
   local flow_exp::Expression
 
-  @assign (stream_exp, flow_exp) = streamFlowExp(element)
+   (stream_exp, flow_exp) = streamFlowExp(element)
   @assign exp = BINARY_EXPRESSION(
     makePositiveMaxCall(flow_exp, element, flowThreshold),
     makeMul(TYPE_REAL()),
@@ -583,7 +583,7 @@ function sumInside1(element::Connector, flowThreshold::Expression)::Expression
   local flow_exp::Expression
   local flow_threshold::Expression
 
-  @assign (stream_exp, flow_exp) = streamFlowExp(element)
+   (stream_exp, flow_exp) = streamFlowExp(element)
   @assign flow_exp =
     UNARY_EXPRESSION(makeUMinus(TYPE_REAL()), flow_exp)
   @assign exp = BINARY_EXPRESSION(
@@ -721,7 +721,7 @@ function evaluateOperatorReductionExp(
       CALL_EXPRESSION(call = call && P_Call.TYPED_REDUCTION(__)) => begin
         @assign ty = typeOf(call.exp)
         for iter in call.iters
-          @assign (iter_node, iter_exp) = iter
+           (iter_node, iter_exp) = iter
           if variability(component(iter_node)) >
              Variability.PARAMETER
             print("Iteration range in reduction containing connector operator calls must be a parameter expression.")
@@ -759,7 +759,7 @@ function evaluateOperatorArrayConstructorExp(
 
   local expanded::Bool
 
-  @assign (evalExp, expanded) = P_ExpandExp.ExpandExp.expand(exp)
+   (evalExp, expanded) = P_ExpandExp.ExpandExp.expand(exp)
   if !expanded
     Error.addInternalError(
       getInstanceName() +
@@ -866,7 +866,7 @@ function generateInStreamExp(
       _ => begin
         #=  The general case:
         =#
-        @assign (outside, inside) =
+         (outside, inside) =
           ListUtil.splitOnTrue(reducedStreams, Connector.isOutside)
         @assign inside = removeStreamSetElement(streamCref, inside)
         @assign exp = streamSumEquationExp(

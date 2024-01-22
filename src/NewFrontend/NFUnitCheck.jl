@@ -54,10 +54,10 @@ function checkUnits(flatModel::FlatModel)::FlatModel
     @assign htU2S = Unit.getKnownUnitsInverse()
     @assign fn_cache = FunctionUnitCache.emptyCache(BaseHashTable.defaultBucketSize)
     for v in flatModel.variables
-      @assign (htCr2U1, htS2U, htU2S) = convertUnitString2unit(v, htCr2U1, htS2U, htU2S)
+       (htCr2U1, htS2U, htU2S) = convertUnitString2unit(v, htCr2U1, htS2U, htU2S)
     end
     @assign htCr2U2 = BaseHashTable.copy(htCr2U1)
-    @assign (htCr2U2, htS2U, htU2S) = checkModelConsistency(
+     (htCr2U2, htS2U, htU2S) = checkModelConsistency(
       flatModel.variables,
       flatModel.equations,
       flatModel.initialEquations,
@@ -106,7 +106,7 @@ function updateVariable(
 
   if isReal(var.ty)
     for attr in var.typeAttributes
-      @assign (name, binding) = attr
+       (name, binding) = attr
       @assign unit_idx = unit_idx + 1
       if name == "unit"
         if isBound(binding)
@@ -232,15 +232,15 @@ function checkModelConsistency(
   local dump_eq_unit::Bool = Flags.isSet(Flags.DUMP_EQ_UNIT_STRUCT)
 
   for v in variables
-    @assign (htCr2U, htS2U, htU2S, fnCache) =
+     (htCr2U, htS2U, htU2S, fnCache) =
       foldBindingExp(v, htCr2U, htS2U, htU2S, fnCache, dump_eq_unit)
   end
   for eq in equations
-    @assign (htCr2U, htS2U, htU2S, fnCache) =
+     (htCr2U, htS2U, htU2S, fnCache) =
       foldEquation(eq, htCr2U, htS2U, htU2S, fnCache, dump_eq_unit)
   end
   for ieq in initialEquations
-    @assign (htCr2U, htS2U, htU2S, fnCache) =
+     (htCr2U, htS2U, htU2S, fnCache) =
       foldEquation(ieq, htCr2U, htS2U, htU2S, fnCache, dump_eq_unit)
   end
   return (htCr2U, htS2U, htU2S, fnCache)
@@ -271,7 +271,7 @@ function foldBindingExp(
       var.ty,
       ElementSource.createElementSource(var.info),
     )
-    @assign (htCr2U, htS2U, htU2S, fnCache) =
+     (htCr2U, htS2U, htU2S, fnCache) =
       foldEquation(eq, htCr2U, htS2U, htU2S, fnCache, dumpEqInitStruct)
   end
   return (htCr2U, htS2U, htU2S, fnCache)
@@ -294,7 +294,7 @@ function foldEquation(
 
   local inconsistent_units::List{List{Tuple{Expression, Unit.Unit}}}
 
-  @assign (htCr2U, htS2U, htU2S, fnCache, inconsistent_units) =
+   (htCr2U, htS2U, htU2S, fnCache, inconsistent_units) =
     foldEquation2(eq, dumpEqInitStruct, htCr2U, htS2U, htU2S, fnCache)
   for u in inconsistent_units
     Errorfunction(u, eq, htU2S)
@@ -341,8 +341,8 @@ function foldEquation2(
       ) where {(!isBuiltin(P_Call.typedFunction(rhs.call)))} => begin
         @assign fn_name =
           AbsynUtil.pathString(AbsynUtil.makeNotFullyQualified(P_Call.functionName(rhs.call)))
-        @assign (_, out_vars, _, out_units) = getCallUnits(fn_name, rhs.call, fnCache)
-        @assign (htCr2U, htS2U, htU2S, fnCache, icu1) = foldCallArg1(
+         (_, out_vars, _, out_units) = getCallUnits(fn_name, rhs.call, fnCache)
+         (htCr2U, htS2U, htU2S, fnCache, icu1) = foldCallArg1(
           lhs.elements,
           htCr2U,
           htS2U,
@@ -353,7 +353,7 @@ function foldEquation2(
           out_vars,
           fn_name,
         )
-        @assign (_, htCr2U, htS2U, htU2S, fnCache, icu2) =
+         (_, htCr2U, htS2U, htU2S, fnCache, icu2) =
           insertUnitInEquation(rhs, Unit.MASTER(nil), htCr2U, htS2U, htU2S, fnCache)
         ListUtil.append_reverse(icu1, icu2)
       end
@@ -363,9 +363,9 @@ function foldEquation2(
       ) where {(!isBuiltin(P_Call.typedFunction(rhs.call)))} => begin
         @assign fn_name =
           AbsynUtil.pathString(AbsynUtil.makeNotFullyQualified(P_Call.functionName(rhs.call)))
-        @assign (_, out_vars, _, out_units, fnCache) =
+         (_, out_vars, _, out_units, fnCache) =
           getCallUnits(fn_name, rhs.call, fnCache)
-        @assign (unit1, htCr2U, htS2U, htU2S, fnCache, _) =
+         (unit1, htCr2U, htS2U, htU2S, fnCache, _) =
           insertUnitInEquation(eq.lhs, Unit.MASTER(nil), htCr2U, htS2U, htU2S, fnCache)
         @assign formal_args = listHead(out_units)
         @assign formal_var = listHead(out_vars)
@@ -381,7 +381,7 @@ function foldEquation2(
           @assign icu1 =
             list(list((eq.lhs, unit1), (makeNewCref(formal_var, fn_name), unit2)))
         end
-        @assign (_, htCr2U, htS2U, htU2S, fnCache, icu2) =
+         (_, htCr2U, htS2U, htU2S, fnCache, icu2) =
           insertUnitInEquation(rhs, Unit.MASTER(nil), htCr2U, htS2U, htU2S, fnCache)
         ListUtil.append_reverse(icu1, icu2)
       end
@@ -395,7 +395,7 @@ function foldEquation2(
         if dumpEqInitStruct
           ExpressionDump.dumpExp(toDAE(temp))
         end
-        @assign (_, htCr2U, htS2U, htU2S, fnCache, inconsistentUnits) =
+         (_, htCr2U, htS2U, htU2S, fnCache, inconsistentUnits) =
           insertUnitInEquation(temp, Unit.MASTER(nil), htCr2U, htS2U, htU2S, fnCache)
         inconsistentUnits
       end
@@ -409,7 +409,7 @@ function foldEquation2(
         if dumpEqInitStruct
           ExpressionDump.dumpExp(toDAE(temp))
         end
-        @assign (_, htCr2U, htS2U, htU2S, fnCache, inconsistentUnits) =
+         (_, htCr2U, htS2U, htU2S, fnCache, inconsistentUnits) =
           insertUnitInEquation(temp, Unit.MASTER(nil), htCr2U, htS2U, htU2S, fnCache)
         inconsistentUnits
       end
@@ -419,7 +419,7 @@ function foldEquation2(
       ) => begin
         @assign inconsistentUnits = nil
         for e in eql
-          @assign (htCr2U, htS2U, htU2S, fnCache, icu1) =
+           (htCr2U, htS2U, htU2S, fnCache, icu1) =
             foldEquation2(e, dumpEqInitStruct, htCr2U, htS2U, htU2S, fnCache)
           @assign inconsistentUnits = ListUtil.append_reverse(icu1, inconsistentUnits)
         end
@@ -427,7 +427,7 @@ function foldEquation2(
       end
 
       EQUATION_NORETCALL(__) => begin
-        @assign (_, htCr2U, htS2U, htU2S, fnCache, inconsistentUnits) =
+         (_, htCr2U, htS2U, htU2S, fnCache, inconsistentUnits) =
           insertUnitInEquation(eq.exp, Unit.MASTER(nil), htCr2U, htS2U, htU2S, fnCache)
         inconsistentUnits
       end
@@ -476,7 +476,7 @@ function insertUnitInEquation(
 
   import ..P_NFOperator.Op
 
-  @assign (unit, inconsistentUnits) = begin
+   (unit, inconsistentUnits) = begin
     local exp1::Expression
     local exp2::Expression
     local unit1::Unit.Unit
@@ -493,7 +493,7 @@ function insertUnitInEquation(
       BINARY_EXPRESSION(exp1, OPERATOR(op = Op.SUB), exp2) => begin
         @match ((@match Unit.UNIT() = unit1), htCr2U, htS2U, htU2S, fnCache, icu1) =
           insertUnitInEquation(exp1, unit, htCr2U, htS2U, htU2S, fnCache)
-        @assign (unit2, htCr2U, htS2U, htU2S, fnCache, icu2) =
+         (unit2, htCr2U, htS2U, htU2S, fnCache, icu2) =
           insertUnitInEquation(exp2, unit1, htCr2U, htS2U, htU2S, fnCache)
         @match (true, op_unit, htCr2U) = unitTypesEqual(unit1, unit2, htCr2U)
         (op_unit, ListUtil.append_reverse(icu1, icu2))
@@ -506,9 +506,9 @@ function insertUnitInEquation(
       ) => begin
         #=  SUB equal summands
         =#
-        @assign (unit2, htCr2U, htS2U, htU2S, fnCache, icu1) =
+         (unit2, htCr2U, htS2U, htU2S, fnCache, icu1) =
           insertUnitInEquation(exp2, unit, htCr2U, htS2U, htU2S, fnCache)
-        @assign (unit1, htCr2U, htS2U, htU2S, fnCache, icu2) =
+         (unit1, htCr2U, htS2U, htU2S, fnCache, icu2) =
           insertUnitInEquation(exp1, unit2, htCr2U, htS2U, htU2S, fnCache)
         @match (true, op_unit, htCr2U) = unitTypesEqual(unit1, unit2, htCr2U)
         (op_unit, ListUtil.append_reverse(icu1, icu2))
@@ -523,7 +523,7 @@ function insertUnitInEquation(
         =#
         @match ((@match Unit.UNIT() = unit1), htCr2U, htS2U, htU2S, fnCache, icu1) =
           insertUnitInEquation(exp1, unit, htCr2U, htS2U, htU2S, fnCache)
-        @assign (unit2, htCr2U, htS2U, htU2S, fnCache, icu2) =
+         (unit2, htCr2U, htS2U, htU2S, fnCache, icu2) =
           insertUnitInEquation(exp2, unit1, htCr2U, htS2U, htU2S, fnCache)
         @match (false, _, _) = unitTypesEqual(unit1, unit2, htCr2U)
         (
@@ -539,9 +539,9 @@ function insertUnitInEquation(
       ) => begin
         #=  SUB unequal summands
         =#
-        @assign (unit2, htCr2U, htS2U, htU2S, fnCache, icu1) =
+         (unit2, htCr2U, htS2U, htU2S, fnCache, icu1) =
           insertUnitInEquation(exp2, unit, htCr2U, htS2U, htU2S, fnCache)
-        @assign (unit1, htCr2U, htS2U, htU2S, fnCache, icu2) =
+         (unit1, htCr2U, htS2U, htU2S, fnCache, icu2) =
           insertUnitInEquation(exp1, unit2, htCr2U, htS2U, htU2S, fnCache)
         @match (false, _, _) = unitTypesEqual(unit1, unit2, htCr2U)
         (
@@ -559,7 +559,7 @@ function insertUnitInEquation(
         =#
         @match ((@match Unit.UNIT() = unit1), htCr2U, htS2U, htU2S, fnCache, icu1) =
           insertUnitInEquation(exp1, unit, htCr2U, htS2U, htU2S, fnCache)
-        @assign (unit2, htCr2U, htS2U, htU2S, fnCache, icu2) =
+         (unit2, htCr2U, htS2U, htU2S, fnCache, icu2) =
           insertUnitInEquation(exp2, unit1, htCr2U, htS2U, htU2S, fnCache)
         @match (true, op_unit, htCr2U) = unitTypesEqual(unit1, unit2, htCr2U)
         (op_unit, ListUtil.append_reverse(icu1, icu2))
@@ -572,9 +572,9 @@ function insertUnitInEquation(
       ) => begin
         #=  ADD equal summands
         =#
-        @assign (unit2, htCr2U, htS2U, htU2S, fnCache, icu1) =
+         (unit2, htCr2U, htS2U, htU2S, fnCache, icu1) =
           insertUnitInEquation(exp2, unit, htCr2U, htS2U, htU2S, fnCache)
-        @assign (unit1, htCr2U, htS2U, htU2S, fnCache, icu2) =
+         (unit1, htCr2U, htS2U, htU2S, fnCache, icu2) =
           insertUnitInEquation(exp1, unit2, htCr2U, htS2U, htU2S, fnCache)
         @match (true, op_unit, htCr2U) = unitTypesEqual(unit1, unit2, htCr2U)
         (op_unit, ListUtil.append_reverse(icu1, icu2))
@@ -589,7 +589,7 @@ function insertUnitInEquation(
         =#
         @match ((@match Unit.UNIT() = unit1), htCr2U, htS2U, htU2S, fnCache, icu1) =
           insertUnitInEquation(exp1, unit, htCr2U, htS2U, htU2S, fnCache)
-        @assign (unit2, htCr2U, htS2U, htU2S, fnCache, icu2) =
+         (unit2, htCr2U, htS2U, htU2S, fnCache, icu2) =
           insertUnitInEquation(exp2, unit1, htCr2U, htS2U, htU2S, fnCache)
         @match (false, _, _) = unitTypesEqual(unit1, unit2, htCr2U)
         (
@@ -605,9 +605,9 @@ function insertUnitInEquation(
       ) => begin
         #=  ADD unequal summands
         =#
-        @assign (unit2, htCr2U, htS2U, htU2S, fnCache, icu1) =
+         (unit2, htCr2U, htS2U, htU2S, fnCache, icu1) =
           insertUnitInEquation(exp2, unit, htCr2U, htS2U, htU2S, fnCache)
-        @assign (unit1, htCr2U, htS2U, htU2S, fnCache, icu2) =
+         (unit1, htCr2U, htS2U, htU2S, fnCache, icu2) =
           insertUnitInEquation(exp1, unit2, htCr2U, htS2U, htU2S, fnCache)
         @match (false, _, _) = unitTypesEqual(unit1, unit2, htCr2U)
         (
@@ -628,7 +628,7 @@ function insertUnitInEquation(
         @match ((@match Unit.UNIT() = unit2), htCr2U, htS2U, htU2S, fnCache, icu2) =
           insertUnitInEquation(exp2, Unit.MASTER(nil), htCr2U, htS2U, htU2S, fnCache)
         @assign op_unit = Unit.unitMul(unit1, unit2)
-        @assign (htS2U, htU2S) = insertUnitString(op_unit, htS2U, htU2S)
+         (htS2U, htU2S) = insertUnitString(op_unit, htS2U, htU2S)
         (op_unit, ListUtil.append_reverse(icu1, icu2))
       end
 
@@ -655,7 +655,7 @@ function insertUnitInEquation(
           insertUnitInEquation(exp2, Unit.MASTER(nil), htCr2U, htS2U, htU2S, fnCache)
         @assign op_unit = Unit.unitDiv(unit, unit2)
         @assign htCr2U = ListUtil.fold1(vars, updateHtCr2U, op_unit, htCr2U)
-        @assign (htS2U, htU2S) = insertUnitString(op_unit, htS2U, htU2S)
+         (htS2U, htU2S) = insertUnitString(op_unit, htS2U, htU2S)
         (unit, ListUtil.append_reverse(icu1, icu2))
       end
 
@@ -682,7 +682,7 @@ function insertUnitInEquation(
           insertUnitInEquation(exp2, Unit.MASTER(nil), htCr2U, htS2U, htU2S, fnCache)
         @assign op_unit = Unit.unitDiv(unit, unit2)
         @assign htCr2U = ListUtil.fold1(vars, updateHtCr2U, op_unit, htCr2U)
-        @assign (htS2U, htU2S) = insertUnitString(op_unit, htS2U, htU2S)
+         (htS2U, htU2S) = insertUnitString(op_unit, htS2U, htU2S)
         (unit, ListUtil.append_reverse(icu1, icu2))
       end
 
@@ -710,7 +710,7 @@ function insertUnitInEquation(
         @match ((@match Unit.UNIT() = unit2), htCr2U, htS2U, htU2S, fnCache, icu2) =
           insertUnitInEquation(exp2, Unit.MASTER(nil), htCr2U, htS2U, htU2S, fnCache)
         @assign op_unit = Unit.unitDiv(unit1, unit2)
-        @assign (htS2U, htU2S) = insertUnitString(op_unit, htS2U, htU2S)
+         (htS2U, htU2S) = insertUnitString(op_unit, htS2U, htU2S)
         (op_unit, ListUtil.append_reverse(icu1, icu2))
       end
 
@@ -738,7 +738,7 @@ function insertUnitInEquation(
           insertUnitInEquation(exp2, Unit.MASTER(nil), htCr2U, htS2U, htU2S, fnCache)
         @assign op_unit = Unit.unitMul(unit, unit2)
         @assign htCr2U = ListUtil.fold1(vars, updateHtCr2U, op_unit, htCr2U)
-        @assign (htS2U, htU2S) = insertUnitString(op_unit, htS2U, htU2S)
+         (htS2U, htU2S) = insertUnitString(op_unit, htS2U, htU2S)
         (unit, ListUtil.append_reverse(icu1, icu2))
       end
 
@@ -765,7 +765,7 @@ function insertUnitInEquation(
           insertUnitInEquation(exp2, Unit.MASTER(nil), htCr2U, htS2U, htU2S, fnCache)
         @assign op_unit = Unit.unitDiv(unit2, unit)
         @assign htCr2U = ListUtil.fold1(vars, updateHtCr2U, op_unit, htCr2U)
-        @assign (htS2U, htU2S) = insertUnitString(op_unit, htS2U, htU2S)
+         (htS2U, htU2S) = insertUnitString(op_unit, htS2U, htU2S)
         (unit, ListUtil.append_reverse(icu1, icu2))
       end
 
@@ -793,7 +793,7 @@ function insertUnitInEquation(
         @assign i = realInt(exp2.value)
         @match true = realEq(exp2.value, i)
         @assign op_unit = Unit.unitPow(unit, i)
-        @assign (htS2U, htU2S) = insertUnitString(op_unit, htS2U, htU2S)
+         (htS2U, htU2S) = insertUnitString(op_unit, htS2U, htU2S)
         (op_unit, icu1)
       end
 
@@ -806,7 +806,7 @@ function insertUnitInEquation(
           insertUnitInEquation(exp1, Unit.MASTER(nil), htCr2U, htS2U, htU2S, fnCache)
         @assign op_unit = Unit.unitRoot(unit, exp2.value)
         @assign htCr2U = ListUtil.fold1(vars, updateHtCr2U, op_unit, htCr2U)
-        @assign (htS2U, htU2S) = insertUnitString(op_unit, htS2U, htU2S)
+         (htS2U, htU2S) = insertUnitString(op_unit, htS2U, htU2S)
         (unit, icu1)
       end
 
@@ -815,7 +815,7 @@ function insertUnitInEquation(
         OPERATOR(op = Op.POW),
         REAL_EXPRESSION(__),
       ) => begin
-        @assign (_, htCr2U, htS2U, htU2S, fnCache, icu1) =
+         (_, htCr2U, htS2U, htU2S, fnCache, icu1) =
           insertUnitInEquation(exp1, Unit.MASTER(nil), htCr2U, htS2U, htU2S, fnCache)
         (Unit.MASTER(nil), icu1)
       end
@@ -823,17 +823,17 @@ function insertUnitInEquation(
       CALL_EXPRESSION(__) => begin
         #=  Call
         =#
-        @assign (op_unit, htCr2U, htS2U, htU2S, fnCache, icu1) =
+         (op_unit, htCr2U, htS2U, htU2S, fnCache, icu1) =
           insertUnitInEquationCall(eq.call, unit, htCr2U, htS2U, htU2S, fnCache)
         (op_unit, icu1)
       end
 
       IF_EXPRESSION(__) => begin
-        @assign (unit1, htCr2U, htS2U, htU2S, fnCache, icu1) =
+         (unit1, htCr2U, htS2U, htU2S, fnCache, icu1) =
           insertUnitInEquation(eq.trueBranch, unit, htCr2U, htS2U, htU2S, fnCache)
-        @assign (unit2, htCr2U, htS2U, htU2S, fnCache, icu2) =
+         (unit2, htCr2U, htS2U, htU2S, fnCache, icu2) =
           insertUnitInEquation(eq.falseBranch, unit1, htCr2U, htS2U, htU2S, fnCache)
-        @assign (b, op_unit, htCr2U) = unitTypesEqual(unit1, unit2, htCr2U)
+         (b, op_unit, htCr2U) = unitTypesEqual(unit1, unit2, htCr2U)
         @assign inconsistentUnits = ListUtil.append_reverse(icu1, icu2)
         if !b
           @assign inconsistentUnits = _cons(
@@ -846,11 +846,11 @@ function insertUnitInEquation(
       end
 
       RELATION_EXPRESSION(__) => begin
-        @assign (unit1, htCr2U, htS2U, htU2S, fnCache, icu1) =
+         (unit1, htCr2U, htS2U, htU2S, fnCache, icu1) =
           insertUnitInEquation(eq.exp1, unit, htCr2U, htS2U, htU2S, fnCache)
-        @assign (unit2, htCr2U, htS2U, htU2S, fnCache, icu2) =
+         (unit2, htCr2U, htS2U, htU2S, fnCache, icu2) =
           insertUnitInEquation(eq.exp2, unit, htCr2U, htS2U, htU2S, fnCache)
-        @assign (b, op_unit, htCr2U) = unitTypesEqual(unit1, unit2, htCr2U)
+         (b, op_unit, htCr2U) = unitTypesEqual(unit1, unit2, htCr2U)
         @assign inconsistentUnits = ListUtil.append_reverse(icu1, icu2)
         if !b
           @assign inconsistentUnits =
@@ -863,7 +863,7 @@ function insertUnitInEquation(
       UNARY_EXPRESSION(
         operator = OPERATOR(op = Op.UMINUS),
       ) => begin
-        @assign (op_unit, htCr2U, htS2U, htU2S, fnCache, icu1) =
+         (op_unit, htCr2U, htS2U, htU2S, fnCache, icu1) =
           insertUnitInEquation(eq.exp, unit, htCr2U, htS2U, htU2S, fnCache)
         (op_unit, icu1)
       end
@@ -920,16 +920,16 @@ function insertUnitInEquationCall(
 
   @assign fn_path = P_Call.functionName(call)
   @assign call_args = P_Call.arguments(call)
-  @assign (unit, inconsistentUnits) = begin
+   (unit, inconsistentUnits) = begin
     @matchcontinue fn_path begin
       Absyn.IDENT("pre") => begin
-        @assign (op_unit, htCr2U, htS2U, htU2S, fnCache, inconsistentUnits) =
+         (op_unit, htCr2U, htS2U, htU2S, fnCache, inconsistentUnits) =
           insertUnitInEquation(listHead(call_args), unit, htCr2U, htS2U, htU2S, fnCache)
         (Unit.MASTER(nil), inconsistentUnits)
       end
 
       Absyn.IDENT("der") => begin
-        @assign (op_unit, htCr2U, htS2U, htU2S, fnCache, inconsistentUnits) =
+         (op_unit, htCr2U, htS2U, htU2S, fnCache, inconsistentUnits) =
           insertUnitInEquation(
             listHead(call_args),
             Unit.MASTER(nil),
@@ -940,12 +940,12 @@ function insertUnitInEquationCall(
           )
         if Unit.isUnit(op_unit)
           @assign op_unit = Unit.unitDiv(op_unit, Unit.UNIT(1e0, 0, 0, 0, 1, 0, 0, 0))
-          @assign (htS2U, htU2S) = insertUnitString(op_unit, htS2U, htU2S)
+           (htS2U, htU2S) = insertUnitString(op_unit, htS2U, htU2S)
         elseif Unit.isUnit(unit)
           @match Unit.MASTER(varList = vars) = op_unit
           @assign op_unit = Unit.unitMul(unit, Unit.UNIT(1e0, 0, 0, 0, 1, 0, 0, 0))
           @assign htCr2U = ListUtil.fold1(vars, updateHtCr2U, op_unit, htCr2U)
-          @assign (htS2U, htU2S) = insertUnitString(op_unit, htS2U, htU2S)
+           (htS2U, htU2S) = insertUnitString(op_unit, htS2U, htU2S)
         else
           @assign op_unit = Unit.MASTER(nil)
         end
@@ -953,7 +953,7 @@ function insertUnitInEquationCall(
       end
 
       Absyn.IDENT("sqrt") => begin
-        @assign (op_unit, htCr2U, htS2U, htU2S, fnCache, inconsistentUnits) =
+         (op_unit, htCr2U, htS2U, htU2S, fnCache, inconsistentUnits) =
           insertUnitInEquation(
             listHead(call_args),
             Unit.MASTER(nil),
@@ -964,12 +964,12 @@ function insertUnitInEquationCall(
           )
         if Unit.isUnit(op_unit)
           @assign op_unit = Unit.unitRoot(op_unit, 2.0)
-          @assign (htS2U, htU2S) = insertUnitString(op_unit, htS2U, htU2S)
+           (htS2U, htU2S) = insertUnitString(op_unit, htS2U, htU2S)
         elseif Unit.isUnit(unit)
           @match Unit.MASTER(varList = vars) = op_unit
           @assign op_unit = Unit.unitPow(unit, 2)
           @assign htCr2U = ListUtil.fold1(vars, updateHtCr2U, op_unit, htCr2U)
-          @assign (htS2U, htU2S) = insertUnitString(op_unit, htS2U, htU2S)
+           (htS2U, htU2S) = insertUnitString(op_unit, htS2U, htU2S)
           @assign op_unit = unit
         else
           @assign op_unit = Unit.MASTER(nil)
@@ -978,16 +978,16 @@ function insertUnitInEquationCall(
       end
 
       Absyn.IDENT(__) where {(isBuiltin(P_Call.typedFunction(call)))} => begin
-        @assign (htCr2U, htS2U, htU2S, fnCache, inconsistentUnits) =
+         (htCr2U, htS2U, htU2S, fnCache, inconsistentUnits) =
           foldCallArg(call_args, htCr2U, htS2U, htU2S, fnCache)
         (Unit.MASTER(nil), inconsistentUnits)
       end
 
       _ => begin
         @assign fn_name = AbsynUtil.pathString(AbsynUtil.makeNotFullyQualified(fn_path))
-        @assign (var_names, _, unit_names, _, fnCache) =
+         (var_names, _, unit_names, _, fnCache) =
           getCallUnits(fn_name, call, fnCache)
-        @assign (htCr2U, htS2U, htU2S, fnCache, inconsistentUnits) = foldCallArg1(
+         (htCr2U, htS2U, htU2S, fnCache, inconsistentUnits) = foldCallArg1(
           call_args,
           htCr2U,
           htS2U,
@@ -1077,7 +1077,7 @@ function unitTypesEqual(
   local outUnit::Unit.Unit
   local isEqual::Bool
 
-  @assign (isEqual, outUnit, outHtCr2U) = begin
+   (isEqual, outUnit, outHtCr2U) = begin
     local r::AbstractFloat
     local vars1::List{ComponentRef}
     local vars2::List{ComponentRef}
@@ -1243,7 +1243,7 @@ function foldCallArg(
   local icu::List{List{Tuple{Expression, Unit.Unit}}}
 
   for exp in args
-    @assign (_, htCr2U, htS2U, htU2S, fnCache, icu) =
+     (_, htCr2U, htS2U, htU2S, fnCache, icu) =
       insertUnitInEquation(exp, Unit.MASTER(nil), htCr2U, htS2U, htU2S, fnCache)
     @assign inconsistentUnits = ListUtil.append_reverse(icu, inconsistentUnits)
   end
@@ -1284,14 +1284,14 @@ function foldCallArg1(
   for arg in args
     @match _cons(var, rest_vars) = rest_vars
     @match _cons(unit, rest_units) = rest_units
-    @assign (op_unit, htCr2U, htS2U, htU2S, fnCache, icu) =
+     (op_unit, htCr2U, htS2U, htU2S, fnCache, icu) =
       insertUnitInEquation(arg, inUnit, htCr2U, htS2U, htU2S, fnCache)
     if unit == "NONE"
       @assign op_unit2 = Unit.MASTER(nil)
     else
       @assign op_unit2 = Unit.parseUnitString(unit, htS2U)
     end
-    @assign (b, op_unit) = unitTypesEqual(op_unit, op_unit2, htCr2U)
+     (b, op_unit) = unitTypesEqual(op_unit, op_unit2, htCr2U)
     if b
       @assign icu = nil
     else
@@ -1346,12 +1346,12 @@ function convertUnitString2unit(
 
   @assign unit_binding = P_Variable.Variable.lookupTypeAttribute("unit", var)
   @assign unit_exp = typedExp(unit_binding)
-  @assign () = begin
+   () = begin
     @match unit_exp begin
       SOME(STRING_EXPRESSION(
         value = unit_string,
       )) where {(!stringEmpty(unit_string))} => begin
-        @assign (unit, htS2U, htU2S) = parse(unit_string, var.name, htS2U, htU2S)
+         (unit, htS2U, htU2S) = parse(unit_string, var.name, htS2U, htU2S)
         @assign htCr2U = BaseHashTable.add((var.name, unit), htCr2U)
         ()
       end

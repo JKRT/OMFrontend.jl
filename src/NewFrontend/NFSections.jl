@@ -51,7 +51,7 @@ function apply(
   ieqFn::EquationFn = eqFn,
   ialgFn::AlgorithmFn = algFn,
 )
-  return @assign () = begin
+  return  () = begin
     @match sections begin
       SECTIONS(__) => begin
         for eq in sections.equations

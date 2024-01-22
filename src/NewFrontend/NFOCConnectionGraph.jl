@@ -347,7 +347,7 @@ function handleOverconstrainedConnections_dispatch(inGraph::NFOCConnectionGraph,
         if Flags.isSet(Flags.CGRAPH)
           print("Summary: \\n\\t" + "Nr Roots:           " + intString(listLength(getDefiniteRoots(graph))) + "\\n\\t" + "Nr Potential Roots: " + intString(listLength(getPotentialRoots(graph))) + "\\n\\t" + "Nr Unique Roots:    " + intString(listLength(getUniqueRoots(graph))) + "\\n\\t" + "Nr Branches:        " + intString(listLength(getBranches(graph))) + "\\n\\t" + "Nr Connections:     " + intString(listLength(getConnections(graph))) + "\\n")
         end
-        @assign (roots, connected, broken) = findResultGraph(graph, modelNameQualified)
+         (roots, connected, broken) = findResultGraph(graph, modelNameQualified)
         if Flags.isSet(Flags.CGRAPH)
           print("Roots: " + stringDelimitList(ListUtil.map(roots, toString), ", ") + "\\n")
           print("Broken connections: " + stringDelimitList(ListUtil.map1(broken, printConnectionStr, "broken"), ", ") + "\\n")
@@ -568,7 +568,7 @@ function connectCanonicalComponents(inPartition::NFHashTableCG.HashTable, inRef1
   local outReallyConnected::Bool
   local outPartition::NFHashTableCG.HashTable
 
-  @assign (outPartition, outReallyConnected) = begin
+   (outPartition, outReallyConnected) = begin
     local partition::NFHashTableCG.HashTable
     local ref1::ComponentRef
     local ref2::ComponentRef
@@ -689,7 +689,7 @@ function addPotentialRootsToTable(inTable::NFHashTableCG.HashTable, inPotentialR
   local outRoots::DefiniteRoots
   local outTable::NFHashTableCG.HashTable
 
-  @assign (outTable, outRoots) = begin
+   (outTable, outRoots) = begin
     local table::NFHashTableCG.HashTable
     local potentialRoot::ComponentRef
     local firstRoot::ComponentRef
@@ -707,12 +707,12 @@ function addPotentialRootsToTable(inTable::NFHashTableCG.HashTable, inPotentialR
         @assign canon1 = canonical(table, potentialRoot)
         @assign canon2 = canonical(table, firstRoot)
         @match (table, true) = connectCanonicalComponents(table, canon1, canon2)
-        @assign (table, finalRoots) = addPotentialRootsToTable(table, tail, _cons(potentialRoot, roots), firstRoot)
+         (table, finalRoots) = addPotentialRootsToTable(table, tail, _cons(potentialRoot, roots), firstRoot)
         (table, finalRoots)
       end
 
       (table, _ <| tail, roots, firstRoot)  => begin
-        @assign (table, finalRoots) = addPotentialRootsToTable(table, tail, roots, firstRoot)
+         (table, finalRoots) = addPotentialRootsToTable(table, tail, roots, firstRoot)
         (table, finalRoots)
       end
     end
@@ -762,7 +762,7 @@ function findResultGraph(inGraph::NFOCConnectionGraph, modelNameQualified::Strin
   local outConnectedConnections::FlatEdges
   local outRoots::DefiniteRoots
 
-  @assign (outRoots, outConnectedConnections, outBrokenConnections) = begin
+   (outRoots, outConnectedConnections, outBrokenConnections) = begin
     local definiteRoots::DefiniteRoots
     local finalRoots::DefiniteRoots
     local potentialRoots::PotentialRoots
@@ -793,9 +793,9 @@ function findResultGraph(inGraph::NFOCConnectionGraph, modelNameQualified::Strin
         if Flags.isSet(Flags.CGRAPH)
           print("Ordered Potential Roots: " + stringDelimitList(ListUtil.map(orderedPotentialRoots, printPotentialRootTuple), ", ") + "\\n")
         end
-        @assign (table, connected, broken) = addConnections(table, connections)
+         (table, connected, broken) = addConnections(table, connections)
         @assign dummyRoot = NFBuiltin.TIME_CREF
-        @assign (table, finalRoots) = addPotentialRootsToTable(table, orderedPotentialRoots, definiteRoots, dummyRoot)
+         (table, finalRoots) = addPotentialRootsToTable(table, orderedPotentialRoots, definiteRoots, dummyRoot)
         @assign brokenConnectsViaGraphViz = generateGraphViz(modelNameQualified, definiteRoots, potentialRoots, uniqueRoots, branches, connections, finalRoots, broken)
         if stringEq(brokenConnectsViaGraphViz, "")
         else
@@ -807,7 +807,7 @@ function findResultGraph(inGraph::NFOCConnectionGraph, modelNameQualified::Strin
           @assign connections = orderConnectsGuidedByUser(connections, userBrokenTplLst)
           @assign connections = listReverse(connections)
           print("\\nAfer ordering:\\n")
-          @assign (finalRoots, connected, broken) = findResultGraph(GRAPH(false, definiteRoots, potentialRoots, uniqueRoots, branches, connections), modelNameQualified)
+           (finalRoots, connected, broken) = findResultGraph(GRAPH(false, definiteRoots, potentialRoots, uniqueRoots, branches, connections), modelNameQualified)
         end
         (finalRoots, connected, broken)
       end
@@ -827,7 +827,7 @@ function orderConnectsGuidedByUser(inConnections::FlatEdges, inUserSelectedBreak
   local sc2::String
 
   for e in inConnections
-    @assign (c1, c2, _) = e
+     (c1, c2, _) = e
     @assign sc1 = toString(c1)
     @assign sc2 = toString(c2)
     if listMember((sc1, sc2), inUserSelectedBreaking) || listMember((sc2, sc1), inUserSelectedBreaking)
@@ -986,7 +986,7 @@ function addBranches(edge::Edge, itable::NFHashTable3.HashTable) ::NFHashTable3.
   local cref1::ComponentRef
   local cref2::ComponentRef
 
-  @assign (cref1, cref2) = edge
+   (cref1, cref2) = edge
   @assign otable = addConnectionRooted(cref1, cref2, itable)
   @assign otable = addConnectionRooted(cref2, cref1, otable)
   otable
@@ -998,7 +998,7 @@ function addConnectionsRooted(connection::FlatEdge, itable::NFHashTable3.HashTab
   local cref1::ComponentRef
   local cref2::ComponentRef
 
-  @assign (cref1, cref2, _) = connection
+   (cref1, cref2, _) = connection
   @assign otable = addConnectionRooted(cref1, cref2, itable)
   @assign otable = addConnectionRooted(cref2, cref1, otable)
   otable

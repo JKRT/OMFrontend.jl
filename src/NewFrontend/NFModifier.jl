@@ -21,22 +21,32 @@ end
 end
 
 abstract type Modifier end
-struct MODIFIER_NOMOD <: Modifier
+
+struct MODIFIER_NOMOD <: Modifier end
+
+mutable struct MODIFIER_REDECLARE{  T0 <: SCode.Final,
+                                    T1 <: SCode.Each,
+                                    T2 <: InstNode,
+                                    T3 <: Modifier} <: Modifier
+  finalPrefix::T0
+  eachPrefix::T1
+  element::T2
+  mod::T3
 end
-mutable struct MODIFIER_REDECLARE <: Modifier
-  finalPrefix::SCode.Final
-  eachPrefix::SCode.Each
-  element::InstNode
-  mod::Modifier
-end
-mutable struct MODIFIER_MODIFIER <: Modifier
-  name::String
-  finalPrefix::SCode.Final
-  eachPrefix::SCode.Each
+
+mutable struct MODIFIER_MODIFIER{ T0 <: String,
+                                  T1 <: SCode.Final,
+                                  T2 <: SCode.Each,
+                                  T4 <: ModTable.Tree,
+                                  T5 <: SOURCEINFO} <: Modifier
+  name::T0
+  finalPrefix::T1
+  eachPrefix::T2
   binding::Binding
-  subModifiers::ModTable.Tree
-  info::SourceInfo
+  subModifiers::T4
+  info::T5
 end
+
 
 #= Structure that represents where a modifier comes from. =#
 @Uniontype ModifierScope begin
@@ -51,7 +61,7 @@ end
   end
 end
 
-const EMPTY_MOD = MODIFIER_NOMOD()::Modifier
+const EMPTY_MOD = MODIFIER_NOMOD()::MODIFIER_NOMOD
 
 function toString(scope::ModifierScope)::String
   local string::String
@@ -304,8 +314,7 @@ function merge(outerMod::Modifier, innerMod::Modifier, name::String = "")::Modif
       end
 
       (MODIFIER_MODIFIER(__), MODIFIER_MODIFIER(__)) => begin
-        #=  Two modifiers, merge bindings and submodifiers.
-        =#
+        #=  Two modifiers, merge bindings and submodifiers. =#
         checkFinalOverride(innerMod.finalPrefix, outerMod, innerMod.info)
         binding = if isBound(outerMod.binding)
           outerMod.binding
@@ -369,7 +378,7 @@ function binding(modifier::Modifier)::Binding
         modifier.binding
       end
       _ => begin
-        EMPTY_BINDING
+        EMPTY_BINDING()
       end
     end
   end
@@ -429,8 +438,7 @@ end
 
 function lookupModifier(modName::String, modifier::Modifier)::Modifier
   local subMod::Modifier
-
-  @assign subMod = begin
+  subMod = begin
     @matchcontinue modifier begin
       MODIFIER_MODIFIER(__) => begin
         ModTable.get(modifier.subModifiers, modName)
@@ -605,8 +613,7 @@ function create(
   scope::InstNode,
 )::Modifier
   local newMod::Modifier
-
-  @assign newMod = begin
+  newMod = begin
     local submod_lst::List{Tuple{String, Modifier}}
     local submod_table::ModTable.Tree
     local binding::Binding
@@ -691,7 +698,7 @@ function mergeLocal(
       _ => begin
         #=  Both modifiers modify the same element, give duplicate modification error.
         =#
-        @assign comp_name =
+        comp_name =
           stringDelimitList(listReverse(_cons(P_Modifier.name(mod1), prefix)), ".")
         Error.addMultiSourceMessage(
           Error.DUPLICATE_MODIFICATIONS,

@@ -158,7 +158,7 @@ function verifyWhenEquation(
 end
 
 function verifyEquation(eq::Equation)
-  return @assign () = begin
+  return  () = begin
     @match eq begin
       EQUATION_WHEN(__) => begin
         verifyWhenEquation(arrayList(eq.branches), eq.source)

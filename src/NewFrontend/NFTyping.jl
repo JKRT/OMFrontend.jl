@@ -156,7 +156,7 @@ function flagNotSet(origin::M_Type_Int, flag::M_Type_Int)::Bool
 end
 
 function typeClass(@nospecialize(cls::InstNode), @nospecialize(name::String))
-  typeClassType(cls, EMPTY_BINDING, ORIGIN_CLASS, cls)
+  typeClassType(cls, EMPTY_BINDING(), ORIGIN_CLASS, cls)
   typeComponents(cls, ORIGIN_CLASS)
 #  execStat("NFtypeComponents(" + name + ")")
   typeBindings(cls, cls, ORIGIN_CLASS)
@@ -952,7 +952,7 @@ function getRecordElementBinding(component::InstNode)::Tuple{Binding, Int}
        binding = recordFieldBinding(component, binding)
     end
   else
-     binding = EMPTY_BINDING
+     binding = EMPTY_BINDING()
   end
   return (binding, parentDims)
 end

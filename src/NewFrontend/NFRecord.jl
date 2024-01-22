@@ -74,8 +74,8 @@ function instDefaultConstructor(
   @assign out_comp = UNTYPED_COMPONENT(
     ctor_node,
     listArray(nil),
-    EMPTY_BINDING,
-    EMPTY_BINDING,
+    EMPTY_BINDING(),
+    EMPTY_BINDING(),
     OUTPUT_ATTR,
     NONE(),
     false,
@@ -122,7 +122,7 @@ function collectRecordParams(
   local pcomps::Vector{Pointer{InstNode}}
   local tree::ClassTree
   @assign tree = classTree(getClass(recNode))
-  @assign () = begin
+   () = begin
     @match tree begin
       CLASS_TREE_FLAT_TREE(components = comps) => begin
         for i = arrayLength(comps):(-1):1
@@ -202,7 +202,7 @@ end
 function fieldsToDAE(fields::List{<:Field})::List{String}
   local fieldNames::List{String} = nil
   for field in fields
-    @assign () = begin
+     () = begin
       @match field begin
         INPUT(__) => begin
           @assign fieldNames = _cons(field.name, fieldNames)

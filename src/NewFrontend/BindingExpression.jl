@@ -36,8 +36,8 @@ function mostPropagatedSubExpBinary(exp1::Expression, exp2::Expression) ::Tuple{
   local maxPropCount::Int
   local maxPropExp::Expression
   #=  TODO: Optimize this, there's no need to check for bindings in e.g. literal arrays. =#
-  @assign (maxPropCount, maxPropExp) = fold(exp1, mostPropagatedSubExp_traverser, (-1, exp1))
-  @assign (maxPropCount, maxPropExp) = fold(exp2, mostPropagatedSubExp_traverser, (maxPropCount, maxPropExp))
+   (maxPropCount, maxPropExp) = fold(exp1, mostPropagatedSubExp_traverser, (-1, exp1))
+   (maxPropCount, maxPropExp) = fold(exp2, mostPropagatedSubExp_traverser, (maxPropCount, maxPropExp))
   (maxPropExp, maxPropCount)
 end
 
@@ -134,7 +134,7 @@ function vectorize(exp::Expression, dims::List{<:Dimension}, func::FuncT, accumS
     @match _cons(dim, rest_dims) = dims
     @assign iter = P_RangeIterator.RangeIterator.fromDim(dim)
     while P_RangeIterator.RangeIterator.hasNext(iter)
-      @assign (iter, e) = P_RangeIterator.RangeIterator.next(iter)
+       (iter, e) = P_RangeIterator.RangeIterator.next(iter)
       @assign e = vectorize(exp, rest_dims, func, _cons(SUBSCRIPT_INDEX(e), accumSubs))
       @assign expl = _cons(e, expl)
     end
@@ -1478,7 +1478,7 @@ function callContainsShallow(call::Call, func::ContainsPred) ::Bool
         @assign res = listContainsShallow(call.arguments, func)
         if ! res
           for arg in call.named_args
-            @assign (_, e) = arg
+             (_, e) = arg
             if func(e)
               @assign res = true
               break
@@ -1490,14 +1490,14 @@ function callContainsShallow(call::Call, func::ContainsPred) ::Bool
 
       ARG_TYPED_CALL(__)  => begin
         for arg in call.arguments
-          @assign (e, _, _) = arg
+           (e, _, _) = arg
           if func(e)
             @assign res = true
             return
           end
         end
         for arg in call.named_args
-          @assign (_, e, _, _) = arg
+           (_, e, _, _) = arg
           if func(e)
             @assign res = true
             return
@@ -1672,7 +1672,7 @@ function callContains(call::Call, func::ContainsPred) ::Bool
         @assign res = listContains(call.arguments, func)
         if ! res
           for arg in call.named_args
-            @assign (_, e) = arg
+             (_, e) = arg
             if contains(e, func)
               @assign res = true
               break
@@ -1684,14 +1684,14 @@ function callContains(call::Call, func::ContainsPred) ::Bool
 
       ARG_TYPED_CALL(__)  => begin
         for arg in call.arguments
-          @assign (e, _, _) = arg
+           (e, _, _) = arg
           if contains(e, func)
             @assign res = true
             return
           end
         end
         for arg in call.named_args
-          @assign (_, e, _, _) = arg
+           (_, e, _, _) = arg
           if contains(e, func)
             @assign res = true
             return
@@ -1899,8 +1899,8 @@ function mapFoldCallIteratorsShallow(iters::List{Tuple{InstNode, Expression}}, f
   local new_exp::Expression
 
   for i in iters
-    @assign (node, exp) = i
-    @assign (new_exp, arg) = func(exp, arg)
+     (node, exp) = i
+     (new_exp, arg) = func(exp, arg)
     @assign outIters = _cons(if referenceEq(new_exp, exp)
                              i
                              else
@@ -1928,11 +1928,11 @@ function mapFoldCallShallow(@nospecialize(call::Call), func::MapFunc, foldArg::A
     local oe::Option{Expression}
     @match call begin
       UNTYPED_CALL(__)  => begin
-        @assign (args, foldArg) = ListUtil.mapFold(call.arguments, func, foldArg)
+         (args, foldArg) = ListUtil.mapFold(call.arguments, func, foldArg)
         @assign nargs = nil
         for arg in call.named_args
-          @assign (s, e) = arg
-          @assign (e, foldArg) = func(e, foldArg)
+           (s, e) = arg
+           (e, foldArg) = func(e, foldArg)
           @assign nargs = _cons((s, e), nargs)
         end
         UNTYPED_CALL(call.ref, args, listReverse(nargs), call.call_scope)
@@ -1942,25 +1942,25 @@ function mapFoldCallShallow(@nospecialize(call::Call), func::MapFunc, foldArg::A
         @assign targs = nil
         @assign tnargs = nil
         for arg in call.arguments
-          @assign (e, t, v) = arg
-          @assign (e, foldArg) = func(e, foldArg)
+           (e, t, v) = arg
+           (e, foldArg) = func(e, foldArg)
           @assign targs = _cons((e, t, v), targs)
         end
         for arg in call.named_args
-          @assign (s, e, t, v) = arg
-          @assign (e, foldArg) = func(e, foldArg)
+           (s, e, t, v) = arg
+           (e, foldArg) = func(e, foldArg)
           @assign tnargs = _cons((s, e, t, v), tnargs)
         end
         ARG_TYPED_CALL(call.ref, listReverse(targs), listReverse(tnargs), call.call_scope)
       end
 
       TYPED_CALL(__)  => begin
-        @assign (args, foldArg) = ListUtil.mapFold(call.arguments, func, foldArg)
+         (args, foldArg) = ListUtil.mapFold(call.arguments, func, foldArg)
         TYPED_CALL(call.fn, call.ty, call.var, args, call.attributes)
       end
 
       UNTYPED_ARRAY_CONSTRUCTOR(__)  => begin
-        @assign (e, foldArg) = func(call.exp, foldArg)
+         (e, foldArg) = func(call.exp, foldArg)
         @assign iters = mapFoldCallIteratorsShallow(call.iters, func, foldArg)
         UNTYPED_ARRAY_CONSTRUCTOR(e, iters)
       end
@@ -1972,18 +1972,18 @@ function mapFoldCallShallow(@nospecialize(call::Call), func::MapFunc, foldArg::A
       end
 
       UNTYPED_REDUCTION(__)  => begin
-        @assign (e, foldArg) = func(call.exp, foldArg)
+         (e, foldArg) = func(call.exp, foldArg)
         @assign iters = mapFoldCallIteratorsShallow(call.iters, func, foldArg)
         UNTYPED_REDUCTION(call.ref, e, iters)
       end
 
       TYPED_REDUCTION(__)  => begin
-        @assign (e, foldArg) = func(call.exp, foldArg)
+         (e, foldArg) = func(call.exp, foldArg)
         @assign iters = mapFoldCallIteratorsShallow(call.iters, func, foldArg)
-        @assign (default_exp, foldArg) = mapFoldOptShallow(call.defaultExp, func, foldArg)
+         (default_exp, foldArg) = mapFoldOptShallow(call.defaultExp, func, foldArg)
         @assign oe = Util.tuple31(call.foldExp)
         if isSome(oe)
-          @assign (oe, foldArg) = mapFoldOptShallow(oe, func, foldArg)
+           (oe, foldArg) = mapFoldOptShallow(oe, func, foldArg)
           @assign fold_exp = Util.applyTuple31(call.foldExp, (oe) -> Util.replace(arg = oe))
         else
           @assign fold_exp = call.foldExp
@@ -2005,7 +2005,7 @@ function mapFoldOptShallow(exp::Option{Expression}, func::MapFunc, arg::ArgT)  w
   @assign outExp = begin
     @match exp begin
       SOME(e1)  => begin
-        @assign (e2, arg) = func(e1, arg)
+         (e2, arg) = func(e1, arg)
         if referenceEq(e1, e2)
           exp
         else
@@ -2035,8 +2035,8 @@ function mapFoldClockShallow(clockExp::Expression, func::MapFunc, arg::ArgT)  wh
   @assign outExp = begin
     @match clk begin
       INTEGER_CLOCK(e1, e2)  => begin
-        @assign (e3, arg) = func(e1, arg)
-        @assign (e4, arg) = func(e2, arg)
+         (e3, arg) = func(e1, arg)
+         (e4, arg) = func(e2, arg)
         if referenceEq(e1, e3) && referenceEq(e2, e4)
           clockExp
         else
@@ -2045,7 +2045,7 @@ function mapFoldClockShallow(clockExp::Expression, func::MapFunc, arg::ArgT)  wh
       end
 
       REAL_CLOCK(e1)  => begin
-        @assign (e2, arg) = func(e1, arg)
+         (e2, arg) = func(e1, arg)
         if referenceEq(e1, e2)
           clockExp
         else
@@ -2054,8 +2054,8 @@ function mapFoldClockShallow(clockExp::Expression, func::MapFunc, arg::ArgT)  wh
       end
 
       BOOLEAN_CLOCK(e1, e2)  => begin
-        @assign (e3, arg) = func(e1, arg)
-        @assign (e4, arg) = func(e2, arg)
+         (e3, arg) = func(e1, arg)
+         (e4, arg) = func(e2, arg)
         if referenceEq(e1, e3) && referenceEq(e2, e4)
           clockExp
         else
@@ -2064,8 +2064,8 @@ function mapFoldClockShallow(clockExp::Expression, func::MapFunc, arg::ArgT)  wh
       end
 
       SOLVER_CLOCK(e1, e2)  => begin
-        @assign (e3, arg) = func(e1, arg)
-        @assign (e4, arg) = func(e2, arg)
+         (e3, arg) = func(e1, arg)
+         (e4, arg) = func(e2, arg)
         if referenceEq(e1, e3) && referenceEq(e2, e4)
           clockExp
         else
@@ -2097,11 +2097,11 @@ function mapFoldShallow(@nospecialize(exp::Expression), func::MapFunc, arg::ArgT
     #@debug "Calling mapFoldShallow"
     @match exp begin
       CLKCONST_EXPRESSION(__)  => begin
-        @assign (outExp, arg) = mapFoldClockShallow(exp, func, arg)
+         (outExp, arg) = mapFoldClockShallow(exp, func, arg)
         outExp
       end
       CREF_EXPRESSION(__)  => begin
-        @assign (cr, arg) = mapFoldCrefShallow(exp.cref, func, arg)
+         (cr, arg) = mapFoldCrefShallow(exp.cref, func, arg)
         if referenceEq(exp.cref, cr)
           exp
         else
@@ -2109,14 +2109,14 @@ function mapFoldShallow(@nospecialize(exp::Expression), func::MapFunc, arg::ArgT
         end
       end
       ARRAY_EXPRESSION(__)  => begin
-        @assign (expl, arg) = ListUtil.mapFold(exp.elements, func, arg)
+         (expl, arg) = ListUtil.mapFold(exp.elements, func, arg)
         ARRAY_EXPRESSION(exp.ty, expl, exp.literal)
       end
 
       RANGE_EXPRESSION(step = oe)  => begin
-        @assign (e1, arg) = func(exp.start, arg)
-        @assign (oe, arg) = mapFoldOptShallow(exp.step, func, arg)
-        @assign (e3, arg) = func(exp.stop, arg)
+         (e1, arg) = func(exp.start, arg)
+         (oe, arg) = mapFoldOptShallow(exp.step, func, arg)
+         (e3, arg) = func(exp.stop, arg)
         if referenceEq(e1, exp.start) && referenceEq(oe, exp.step) && referenceEq(e3, exp.stop)
           exp
         else
@@ -2125,7 +2125,7 @@ function mapFoldShallow(@nospecialize(exp::Expression), func::MapFunc, arg::ArgT
       end
 
       TUPLE_EXPRESSION(__)  => begin
-        @assign (expl, arg) = ListUtil.mapFold(exp.elements, func, arg)
+         (expl, arg) = ListUtil.mapFold(exp.elements, func, arg)
         TUPLE_EXPRESSION(exp.ty, expl)
       end
 
@@ -2135,7 +2135,7 @@ function mapFoldShallow(@nospecialize(exp::Expression), func::MapFunc, arg::ArgT
       end
 
       CALL_EXPRESSION(__)  => begin
-        @assign (call, arg) = mapFoldCallShallow(exp.call, func, arg)
+         (call, arg) = mapFoldCallShallow(exp.call, func, arg)
         if referenceEq(exp.call, call)
           exp
         else
@@ -2144,8 +2144,8 @@ function mapFoldShallow(@nospecialize(exp::Expression), func::MapFunc, arg::ArgT
       end
 
       SIZE_EXPRESSION(__)  => begin
-        @assign (e1, arg) = func(exp.exp, arg)
-        @assign (oe, arg) = mapFoldOptShallow(exp.dimIndex, func, arg)
+         (e1, arg) = func(exp.exp, arg)
+         (oe, arg) = mapFoldOptShallow(exp.dimIndex, func, arg)
         if referenceEq(exp.exp, e1) && referenceEq(exp.dimIndex, oe)
           exp
         else
@@ -2154,8 +2154,8 @@ function mapFoldShallow(@nospecialize(exp::Expression), func::MapFunc, arg::ArgT
       end
 
       BINARY_EXPRESSION(__)  => begin
-        @assign (e1, arg) = func(exp.exp1, arg)
-        @assign (e2, arg) = func(exp.exp2, arg)
+         (e1, arg) = func(exp.exp1, arg)
+         (e2, arg) = func(exp.exp2, arg)
         if referenceEq(exp.exp1, e1) && referenceEq(exp.exp2, e2)
           exp
         else
@@ -2164,7 +2164,7 @@ function mapFoldShallow(@nospecialize(exp::Expression), func::MapFunc, arg::ArgT
       end
 
       UNARY_EXPRESSION(__)  => begin
-        @assign (e1, arg) = func(exp.exp, arg)
+         (e1, arg) = func(exp.exp, arg)
         if referenceEq(exp.exp, e1)
           exp
         else
@@ -2173,8 +2173,8 @@ function mapFoldShallow(@nospecialize(exp::Expression), func::MapFunc, arg::ArgT
       end
 
       LBINARY_EXPRESSION(__)  => begin
-        @assign (e1, arg) = func(exp.exp1, arg)
-        @assign (e2, arg) = func(exp.exp2, arg)
+         (e1, arg) = func(exp.exp1, arg)
+         (e2, arg) = func(exp.exp2, arg)
         if referenceEq(exp.exp1, e1) && referenceEq(exp.exp2, e2)
           exp
         else
@@ -2183,7 +2183,7 @@ function mapFoldShallow(@nospecialize(exp::Expression), func::MapFunc, arg::ArgT
       end
 
       LUNARY_EXPRESSION(__)  => begin
-        @assign (e1, arg) = func(exp.exp, arg)
+         (e1, arg) = func(exp.exp, arg)
         if referenceEq(exp.exp, e1)
           exp
         else
@@ -2192,8 +2192,8 @@ function mapFoldShallow(@nospecialize(exp::Expression), func::MapFunc, arg::ArgT
       end
 
       RELATION_EXPRESSION(__)  => begin
-        @assign (e1, arg) = func(exp.exp1, arg)
-        @assign (e2, arg) = func(exp.exp2, arg)
+         (e1, arg) = func(exp.exp1, arg)
+         (e2, arg) = func(exp.exp2, arg)
         if referenceEq(exp.exp1, e1) && referenceEq(exp.exp2, e2)
           exp
         else
@@ -2202,9 +2202,9 @@ function mapFoldShallow(@nospecialize(exp::Expression), func::MapFunc, arg::ArgT
       end
 
       IF_EXPRESSION(__)  => begin
-        @assign (e1, arg) = func(exp.condition, arg)
-        @assign (e2, arg) = func(exp.trueBranch, arg)
-        @assign (e3, arg) = func(exp.falseBranch, arg)
+         (e1, arg) = func(exp.condition, arg)
+         (e2, arg) = func(exp.trueBranch, arg)
+         (e3, arg) = func(exp.falseBranch, arg)
         if referenceEq(exp.condition, e1) && referenceEq(exp.trueBranch, e2) && referenceEq(exp.falseBranch, e3)
           exp
         else
@@ -2213,7 +2213,7 @@ function mapFoldShallow(@nospecialize(exp::Expression), func::MapFunc, arg::ArgT
       end
 
       CAST_EXPRESSION(__)  => begin
-        @assign (e1, arg) = func(exp.exp, arg)
+         (e1, arg) = func(exp.exp, arg)
         if referenceEq(exp.exp, e1)
           exp
         else
@@ -2246,7 +2246,7 @@ function mapFoldShallow(@nospecialize(exp::Expression), func::MapFunc, arg::ArgT
       end
 
       RECORD_ELEMENT_EXPRESSION(__)  => begin
-        @assign (e1, arg) = func(exp.recordExp, arg)
+         (e1, arg) = func(exp.recordExp, arg)
         if referenceEq(exp.recordExp, e1)
           exp
         else
@@ -2255,13 +2255,13 @@ function mapFoldShallow(@nospecialize(exp::Expression), func::MapFunc, arg::ArgT
       end
 
       MUTABLE_EXPRESSION(__)  => begin
-        @assign (e1, arg) = func(P_Pointer.access(exp.exp), arg)
+         (e1, arg) = func(P_Pointer.access(exp.exp), arg)
         P_Pointer.update(exp.exp, e1)
         exp
       end
 
       PARTIAL_FUNCTION_APPLICATION_EXPRESSION(__)  => begin
-        @assign (expl, arg) = ListUtil.mapFold(exp.args, func, arg)
+         (expl, arg) = ListUtil.mapFold(exp.args, func, arg)
         @assign exp.args = expl
         exp
       end
@@ -2292,8 +2292,8 @@ function mapFoldCref(cref::ComponentRef, func::MapFunc, arg::ArgT)  where {ArgT}
     local rest::ComponentRef
     @match cref begin
       COMPONENT_REF_CREF(origin = Origin.CREF)  => begin
-        @assign (subs, arg) = ListUtil.map1Fold(cref.subscripts, mapFoldExp, func, arg)
-        @assign (rest, arg) = mapFoldCref(cref.restCref, func, arg)
+         (subs, arg) = ListUtil.map1Fold(cref.subscripts, mapFoldExp, func, arg)
+         (rest, arg) = mapFoldCref(cref.restCref, func, arg)
         COMPONENT_REF_CREF(cref.node, subs, cref.ty, cref.origin, rest)
       end
 
@@ -2314,8 +2314,8 @@ function mapFoldCallIterators(iters::List{Tuple{InstNode, Expression}}, func::Ma
   local new_exp::Expression
 
   for i in iters
-    @assign (node, exp) = i
-    @assign (new_exp, arg) = mapFold(exp, func, arg)
+     (node, exp) = i
+     (new_exp, arg) = mapFold(exp, func, arg)
     @assign outIters = _cons(if referenceEq(new_exp, exp)
                              i
                              else
@@ -2345,11 +2345,11 @@ function mapFoldCall(call::Call, func::MapFunc, foldArg::ArgT)  where {ArgT}
     local oe::Option{Expression}
     @match call begin
       UNTYPED_CALL(__)  => begin
-        @assign (args, foldArg) = ListUtil.map1Fold(call.arguments, mapFold, func, foldArg)
+         (args, foldArg) = ListUtil.map1Fold(call.arguments, mapFold, func, foldArg)
         @assign nargs = nil
         for arg in call.named_args
-          @assign (s, e) = arg
-          @assign (e, foldArg) = mapFold(e, func, foldArg)
+           (s, e) = arg
+           (e, foldArg) = mapFold(e, func, foldArg)
           @assign nargs = _cons((s, e), nargs)
         end
         UNTYPED_CALL(call.ref, args, listReverse(nargs), call.call_scope)
@@ -2359,45 +2359,45 @@ function mapFoldCall(call::Call, func::MapFunc, foldArg::ArgT)  where {ArgT}
         @assign targs = nil
         @assign tnargs = nil
         for arg in call.arguments
-          @assign (e, t, v) = arg
-          @assign (e, foldArg) = mapFold(e, func, foldArg)
+           (e, t, v) = arg
+           (e, foldArg) = mapFold(e, func, foldArg)
           @assign targs = _cons((e, t, v), targs)
         end
         for arg in call.named_args
-          @assign (s, e, t, v) = arg
-          @assign (e, foldArg) = mapFold(e, func, foldArg)
+           (s, e, t, v) = arg
+           (e, foldArg) = mapFold(e, func, foldArg)
           @assign tnargs = _cons((s, e, t, v), tnargs)
         end
         ARG_TYPED_CALL(call.ref, listReverse(targs), listReverse(tnargs), call.call_scope)
       end
 
       TYPED_CALL(__)  => begin
-        @assign (args, foldArg) = ListUtil.map1Fold(call.arguments, mapFold, func, foldArg)
+         (args, foldArg) = ListUtil.map1Fold(call.arguments, mapFold, func, foldArg)
         TYPED_CALL(call.fn, call.ty, call.var, args, call.attributes)
       end
 
       UNTYPED_ARRAY_CONSTRUCTOR(__)  => begin
-        @assign (e, foldArg) = mapFold(call.exp, func, foldArg)
+         (e, foldArg) = mapFold(call.exp, func, foldArg)
         UNTYPED_ARRAY_CONSTRUCTOR(e, call.iters)
       end
 
       TYPED_ARRAY_CONSTRUCTOR(__)  => begin
-        @assign (e, foldArg) = mapFold(call.exp, func, foldArg)
+         (e, foldArg) = mapFold(call.exp, func, foldArg)
         TYPED_ARRAY_CONSTRUCTOR(call.ty, call.var, e, call.iters)
       end
 
       UNTYPED_REDUCTION(__)  => begin
-        @assign (e, foldArg) = mapFold(call.exp, func, foldArg)
+         (e, foldArg) = mapFold(call.exp, func, foldArg)
         UNTYPED_REDUCTION(call.ref, e, call.iters)
       end
 
       TYPED_REDUCTION(__)  => begin
-        @assign (e, foldArg) = mapFold(call.exp, func, foldArg)
-        @assign (iters, foldArg) = mapFoldCallIterators(call.iters, func, foldArg)
-        @assign (default_exp, foldArg) = mapFoldOpt(call.defaultExp, func, foldArg)
+         (e, foldArg) = mapFold(call.exp, func, foldArg)
+         (iters, foldArg) = mapFoldCallIterators(call.iters, func, foldArg)
+         (default_exp, foldArg) = mapFoldOpt(call.defaultExp, func, foldArg)
         @assign oe = Util.tuple31(call.foldExp)
         if isSome(oe)
-          @assign (oe, foldArg) = mapFoldOpt(oe, func, foldArg)
+           (oe, foldArg) = mapFoldOpt(oe, func, foldArg)
           @assign fold_exp = Util.applyTuple31(call.foldExp, (oe) -> Util.replace(arg = oe))
         else
           @assign fold_exp = call.foldExp
@@ -2418,7 +2418,7 @@ function mapFoldOpt(exp::Option{Expression}, func::MapFunc, arg::ArgT)  where {A
   @assign outExp = begin
     @match exp begin
       SOME(e)  => begin
-        @assign (e, arg) = mapFold(e, func, arg)
+         (e, arg) = mapFold(e, func, arg)
         SOME(e)
       end
 
@@ -2443,8 +2443,8 @@ function mapFold(@nospecialize(exp::Expression), @nospecialize(func::MapFunc), @
     local subs::List{Subscript}
     @match exp begin
       CLKCONST_EXPRESSION(INTEGER_CLOCK(e1, e2))  => begin
-        @assign (e3, arg) = mapFold(e1, func, arg)
-        @assign (e4, arg) = mapFold(e2, func, arg)
+         (e3, arg) = mapFold(e1, func, arg)
+         (e4, arg) = mapFold(e2, func, arg)
         if referenceEq(e1, e3) && referenceEq(e2, e4)
           exp
         else
@@ -2453,7 +2453,7 @@ function mapFold(@nospecialize(exp::Expression), @nospecialize(func::MapFunc), @
       end
 
       CLKCONST_EXPRESSION(REAL_CLOCK(e1))  => begin
-        @assign (e2, arg) = mapFold(e1, func, arg)
+         (e2, arg) = mapFold(e1, func, arg)
         if referenceEq(e1, e2)
           exp
         else
@@ -2462,8 +2462,8 @@ function mapFold(@nospecialize(exp::Expression), @nospecialize(func::MapFunc), @
       end
 
       CLKCONST_EXPRESSION(BOOLEAN_CLOCK(e1, e2))  => begin
-        @assign (e3, arg) = mapFold(e1, func, arg)
-        @assign (e4, arg) = mapFold(e2, func, arg)
+         (e3, arg) = mapFold(e1, func, arg)
+         (e4, arg) = mapFold(e2, func, arg)
         if referenceEq(e1, e3) && referenceEq(e2, e4)
           exp
         else
@@ -2472,8 +2472,8 @@ function mapFold(@nospecialize(exp::Expression), @nospecialize(func::MapFunc), @
       end
 
       CLKCONST_EXPRESSION(SOLVER_CLOCK(e1, e2))  => begin
-        @assign (e3, arg) = mapFold(e1, func, arg)
-        @assign (e4, arg) = mapFold(e2, func, arg)
+         (e3, arg) = mapFold(e1, func, arg)
+         (e4, arg) = mapFold(e2, func, arg)
         if referenceEq(e1, e3) && referenceEq(e2, e4)
           exp
         else
@@ -2482,7 +2482,7 @@ function mapFold(@nospecialize(exp::Expression), @nospecialize(func::MapFunc), @
       end
 
       CREF_EXPRESSION(__)  => begin
-        @assign (cr, arg) = mapFoldCref(exp.cref, func, arg)
+         (cr, arg) = mapFoldCref(exp.cref, func, arg)
         if referenceEq(exp.cref, cr)
           exp
         else
@@ -2491,14 +2491,14 @@ function mapFold(@nospecialize(exp::Expression), @nospecialize(func::MapFunc), @
       end
 
       ARRAY_EXPRESSION(__)  => begin
-        @assign (expl, arg) = ListUtil.map1Fold(exp.elements, mapFold, func, arg)
+         (expl, arg) = ListUtil.map1Fold(exp.elements, mapFold, func, arg)
         ARRAY_EXPRESSION(exp.ty, expl, exp.literal)
       end
 
       RANGE(step = SOME(e2))  => begin
-        @assign (e1, arg) = mapFold(exp.start, func, arg)
-        @assign (e4, arg) = mapFold(e2, func, arg)
-        @assign (e3, arg) = mapFold(exp.stop, func, arg)
+         (e1, arg) = mapFold(exp.start, func, arg)
+         (e4, arg) = mapFold(e2, func, arg)
+         (e3, arg) = mapFold(exp.stop, func, arg)
         if referenceEq(exp.start, e1) && referenceEq(e2, e4) && referenceEq(exp.stop, e3)
           exp
         else
@@ -2507,8 +2507,8 @@ function mapFold(@nospecialize(exp::Expression), @nospecialize(func::MapFunc), @
       end
 
       RANGE_EXPRESSION(__)  => begin
-        @assign (e1, arg) = mapFold(exp.start, func, arg)
-        @assign (e3, arg) = mapFold(exp.stop, func, arg)
+         (e1, arg) = mapFold(exp.start, func, arg)
+         (e3, arg) = mapFold(exp.stop, func, arg)
         if referenceEq(exp.start, e1) && referenceEq(exp.stop, e3)
           exp
         else
@@ -2517,7 +2517,7 @@ function mapFold(@nospecialize(exp::Expression), @nospecialize(func::MapFunc), @
       end
 
       TUPLE_EXPRESSION(__)  => begin
-        @assign (expl, arg) = ListUtil.map1Fold(exp.elements, mapFold, func, arg)
+         (expl, arg) = ListUtil.map1Fold(exp.elements, mapFold, func, arg)
         TUPLE_EXPRESSION(exp.ty, expl)
       end
 
@@ -2527,7 +2527,7 @@ function mapFold(@nospecialize(exp::Expression), @nospecialize(func::MapFunc), @
       end
 
       CALL_EXPRESSION(__)  => begin
-        @assign (call, arg) = mapFoldCall(exp.call, func, arg)
+         (call, arg) = mapFoldCall(exp.call, func, arg)
         if referenceEq(exp.call, call)
           exp
         else
@@ -2536,8 +2536,8 @@ function mapFold(@nospecialize(exp::Expression), @nospecialize(func::MapFunc), @
       end
 
       SIZE_EXPRESSION(dimIndex = SOME(e2))  => begin
-        @assign (e1, arg) = mapFold(exp.exp, func, arg)
-        @assign (e3, arg) = mapFold(e2, func, arg)
+         (e1, arg) = mapFold(exp.exp, func, arg)
+         (e3, arg) = mapFold(e2, func, arg)
         if referenceEq(exp.exp, e1) && referenceEq(e2, e3)
           exp
         else
@@ -2546,7 +2546,7 @@ function mapFold(@nospecialize(exp::Expression), @nospecialize(func::MapFunc), @
       end
 
       SIZE_EXPRESSION(__)  => begin
-        @assign (e1, arg) = mapFold(exp.exp, func, arg)
+         (e1, arg) = mapFold(exp.exp, func, arg)
         if referenceEq(exp.exp, e1)
           exp
         else
@@ -2555,8 +2555,8 @@ function mapFold(@nospecialize(exp::Expression), @nospecialize(func::MapFunc), @
       end
 
       BINARY_EXPRESSION(__)  => begin
-        @assign (e1, arg) = mapFold(exp.exp1, func, arg)
-        @assign (e2, arg) = mapFold(exp.exp2, func, arg)
+         (e1, arg) = mapFold(exp.exp1, func, arg)
+         (e2, arg) = mapFold(exp.exp2, func, arg)
         if referenceEq(exp.exp1, e1) && referenceEq(exp.exp2, e2)
           exp
         else
@@ -2565,7 +2565,7 @@ function mapFold(@nospecialize(exp::Expression), @nospecialize(func::MapFunc), @
       end
 
       UNARY_EXPRESSION(__)  => begin
-        @assign (e1, arg) = mapFold(exp.exp, func, arg)
+         (e1, arg) = mapFold(exp.exp, func, arg)
         if referenceEq(exp.exp, e1)
           exp
         else
@@ -2574,8 +2574,8 @@ function mapFold(@nospecialize(exp::Expression), @nospecialize(func::MapFunc), @
       end
 
       LBINARY_EXPRESSION(__)  => begin
-        @assign (e1, arg) = mapFold(exp.exp1, func, arg)
-        @assign (e2, arg) = mapFold(exp.exp2, func, arg)
+         (e1, arg) = mapFold(exp.exp1, func, arg)
+         (e2, arg) = mapFold(exp.exp2, func, arg)
         if referenceEq(exp.exp1, e1) && referenceEq(exp.exp2, e2)
           exp
         else
@@ -2584,7 +2584,7 @@ function mapFold(@nospecialize(exp::Expression), @nospecialize(func::MapFunc), @
       end
 
       LUNARY(__)  => begin
-        @assign (e1, arg) = mapFold(exp.exp, func, arg)
+         (e1, arg) = mapFold(exp.exp, func, arg)
         if referenceEq(exp.exp, e1)
           exp
         else
@@ -2593,8 +2593,8 @@ function mapFold(@nospecialize(exp::Expression), @nospecialize(func::MapFunc), @
       end
 
       RELATION_EXPRESSION(__)  => begin
-        @assign (e1, arg) = mapFold(exp.exp1, func, arg)
-        @assign (e2, arg) = mapFold(exp.exp2, func, arg)
+         (e1, arg) = mapFold(exp.exp1, func, arg)
+         (e2, arg) = mapFold(exp.exp2, func, arg)
         if referenceEq(exp.exp1, e1) && referenceEq(exp.exp2, e2)
           exp
         else
@@ -2603,9 +2603,9 @@ function mapFold(@nospecialize(exp::Expression), @nospecialize(func::MapFunc), @
       end
 
       IF_EXPRESSION(__)  => begin
-        @assign (e1, arg) = mapFold(exp.condition, func, arg)
-        @assign (e2, arg) = mapFold(exp.trueBranch, func, arg)
-        @assign (e3, arg) = mapFold(exp.falseBranch, func, arg)
+         (e1, arg) = mapFold(exp.condition, func, arg)
+         (e2, arg) = mapFold(exp.trueBranch, func, arg)
+         (e3, arg) = mapFold(exp.falseBranch, func, arg)
         if referenceEq(exp.condition, e1) && referenceEq(exp.trueBranch, e2) && referenceEq(exp.falseBranch, e3)
           exp
         else
@@ -2614,7 +2614,7 @@ function mapFold(@nospecialize(exp::Expression), @nospecialize(func::MapFunc), @
       end
 
       CAST_EXPRESSION(__)  => begin
-        @assign (e1, arg) = mapFold(exp.exp, func, arg)
+         (e1, arg) = mapFold(exp.exp, func, arg)
         if referenceEq(exp.exp, e1)
           exp
         else
@@ -2623,7 +2623,7 @@ function mapFold(@nospecialize(exp::Expression), @nospecialize(func::MapFunc), @
       end
 
 UNBOX_EXPRESSION(__)  => begin
-  @assign (e1, arg) = mapFold(exp.exp, func, arg)
+   (e1, arg) = mapFold(exp.exp, func, arg)
   if referenceEq(exp.exp, e1)
     exp
   else
@@ -2632,13 +2632,13 @@ UNBOX_EXPRESSION(__)  => begin
 end
 
 SUBSCRIPTED_EXP_EXPRESSION(__)  => begin
-  @assign (e1, arg) = mapFold(exp.exp, func, arg)
-  @assign (subs, arg) = ListUtil.mapFold(exp.subscripts, (func) -> mapFoldExp(func = func), arg)
+   (e1, arg) = mapFold(exp.exp, func, arg)
+   (subs, arg) = ListUtil.mapFold(exp.subscripts, (func) -> mapFoldExp(func = func), arg)
   SUBSCRIPTED_EXP_EXPRESSION(e1, subs, exp.ty)
 end
 
 TUPLE_ELEMENT_EXPRESSION(__)  => begin
-  @assign (e1, arg) = mapFold(exp.tupleExp, func, arg)
+   (e1, arg) = mapFold(exp.tupleExp, func, arg)
   if referenceEq(exp.tupleExp, e1)
     exp
   else
@@ -2647,7 +2647,7 @@ TUPLE_ELEMENT_EXPRESSION(__)  => begin
 end
 
 RECORD_ELEMENT_EXPRESSION(__)  => begin
-  @assign (e1, arg) = mapFold(exp.recordExp, func, arg)
+   (e1, arg) = mapFold(exp.recordExp, func, arg)
   if referenceEq(exp.recordExp, e1)
     exp
   else
@@ -2656,19 +2656,19 @@ RECORD_ELEMENT_EXPRESSION(__)  => begin
 end
 
 MUTABLE_EXPRESSION(__)  => begin
-  @assign (e1, arg) = mapFold(P_Pointer.access(exp.exp), func, arg)
+   (e1, arg) = mapFold(P_Pointer.access(exp.exp), func, arg)
   P_Pointer.update(exp.exp, e1)
   exp
 end
 
 PARTIAL_FUNCTION_APPLICATION_EXPRESSION(__)  => begin
-  @assign (expl, arg) = ListUtil.map1Fold(exp.args, mapFold, func, arg)
+   (expl, arg) = ListUtil.map1Fold(exp.args, mapFold, func, arg)
   @assign exp.args = expl
   exp
 end
 
 BINDING_EXP(__)  => begin
-  @assign (e1, arg) = mapFold(exp.exp, func, arg)
+   (e1, arg) = mapFold(exp.exp, func, arg)
   if referenceEq(exp.exp, e1)
     exp
   else
@@ -2681,12 +2681,12 @@ _  => begin
 end
 end
 end
-@assign (outExp, arg) = func(outExp, arg)
+ (outExp, arg) = func(outExp, arg)
 (outExp, arg)
 end
 
 function applyCrefSubscript(subscript::Subscript, func::ApplyFunc)
-  @assign () = begin
+   () = begin
     @match subscript begin
       SUBSCRIPT_UNTYPED(__)  => begin
         apply(subscript.exp, func)
@@ -2711,7 +2711,7 @@ function applyCrefSubscript(subscript::Subscript, func::ApplyFunc)
 end
 
 function applyCref(cref::ComponentRef, func::ApplyFunc)
-  @assign () = begin
+   () = begin
     @match cref begin
       COMPONENT_REF_CREF(origin = Origin.CREF)  => begin
         for s in cref.subscripts
@@ -2729,13 +2729,13 @@ function applyCref(cref::ComponentRef, func::ApplyFunc)
 end
 
 function applyCall(call::Call, func::ApplyFunc)
-  @assign () = begin
+   () = begin
     local e::Expression
     @match call begin
       UNTYPED_CALL(__)  => begin
         applyList(call.arguments, func)
         for arg in call.named_args
-          @assign (_, e) = arg
+           (_, e) = arg
           apply(e, func)
         end
         ()
@@ -2743,11 +2743,11 @@ function applyCall(call::Call, func::ApplyFunc)
 
       ARG_TYPED_CALL(__)  => begin
         for arg in call.arguments
-          @assign (e, _, _) = arg
+           (e, _, _) = arg
           apply(e, func)
         end
         for arg in call.named_args
-          @assign (_, e, _, _) = arg
+           (_, e, _, _) = arg
           apply(e, func)
         end
         ()
@@ -2796,7 +2796,7 @@ function applyCall(call::Call, func::ApplyFunc)
 end
 
 function apply(@nospecialize(exp::Expression), func::ApplyFunc)
-  @assign () = begin
+   () = begin
     local e::Expression
     local e1::Expression
     local e2::Expression
@@ -3008,11 +3008,11 @@ function foldCall(call::Call, func::FoldFunc, foldArg::ArgT) where {ArgT}
 
       ARG_TYPED_CALL(__)  => begin
         for arg in call.arguments
-          @assign (e, _, _) = arg
+           (e, _, _) = arg
           @assign foldArg = fold(e, func, foldArg)
         end
         for arg in call.named_args
-          @assign (_, e, _, _) = arg
+           (_, e, _, _) = arg
           @assign foldArg = fold(e, func, foldArg)
         end
         ()
@@ -3263,7 +3263,7 @@ function mapCallShallowIterators(iters::List{<:Tuple{<:InstNode, Expression}}, f
   local new_exp::Expression
 
   for i in iters
-    @assign (node, exp) = i
+     (node, exp) = i
     @assign new_exp = func(exp)
     @assign outIters = _cons(if referenceEq(new_exp, exp)
                              i
@@ -3294,7 +3294,7 @@ function mapCallShallow(call::Call, func::MapFunc) ::Call
         @assign args = list(func(arg) for arg in call.arguments)
         @assign nargs = nil
         for arg in call.named_args
-          @assign (s, e) = arg
+           (s, e) = arg
           @assign e = func(e)
           @assign nargs = _cons((s, e), nargs)
         end
@@ -3305,12 +3305,12 @@ function mapCallShallow(call::Call, func::MapFunc) ::Call
         @assign targs = nil
         @assign tnargs = nil
         for arg in call.arguments
-          @assign (e, t, v) = arg
+           (e, t, v) = arg
           @assign e = func(e)
           @assign targs = _cons((e, t, v), targs)
         end
         for arg in call.named_args
-          @assign (s, e, t, v) = arg
+           (s, e, t, v) = arg
           @assign e = func(e)
           @assign tnargs = _cons((s, e, t, v), tnargs)
         end
@@ -3662,7 +3662,7 @@ function mapCallIterators(iters::List{<:Tuple{<:InstNode, Expression}}, func::Ma
   local new_exp::Expression
 
   for i in iters
-    @assign (node, exp) = i
+     (node, exp) = i
     @assign new_exp = map(exp, func)
     @assign outIters = _cons(if referenceEq(new_exp, exp)
                              i
@@ -3693,7 +3693,7 @@ function mapCall(call::Call, func::MapFunc) ::Call
         @assign args = list(map(arg, func) for arg in call.arguments)
         @assign nargs = nil
         for arg in call.named_args
-          @assign (s, e) = arg
+           (s, e) = arg
           @assign e = map(e, func)
           @assign nargs = _cons((s, e), nargs)
         end
@@ -3704,12 +3704,12 @@ function mapCall(call::Call, func::MapFunc) ::Call
         @assign targs = nil
         @assign tnargs = nil
         for arg in call.arguments
-          @assign (e, t, v) = arg
+           (e, t, v) = arg
           @assign e = map(e, func)
           @assign targs = _cons((e, t, v), targs)
         end
         for arg in call.named_args
-          @assign (s, e, t, v) = arg
+           (s, e, t, v) = arg
           @assign e = map(e, func)
           @assign tnargs = _cons((s, e, t, v), tnargs)
         end
@@ -4065,7 +4065,7 @@ function toDAEValueRecord(ty::M_Type, path::Absyn.Path, args::List{<:Expression}
 
   for field in Type.recordFields(ty)
     @match _cons(arg, rest_args) = rest_args
-    @assign () = begin
+     () = begin
       @match field begin
         Record.P_Field.INPUT(__)  => begin
           @assign field_names = _cons(field.name, field_names)
@@ -4147,7 +4147,7 @@ function toDAERecord(ty::M_Type, path::Absyn.Path, args::List{<:Expression}) ::D
 
   for field in Type.recordFields(ty)
     @match _cons(arg, rest_args) = rest_args
-    @assign () = begin
+     () = begin
       @match field begin
         Record.P_Field.INPUT(__)  => begin
           @assign field_names = _cons(field.name, field_names)
@@ -4963,7 +4963,7 @@ function makeSubscriptedExp(subscripts::List{<:Subscript}, exp::Expression) ::Ex
   =#
   #=  old subscripts with the new. Otherwise we just create a new SUBSCRIPTED_EXP_EXPRESSION.
   =#
-  @assign (e, subs, ty) = begin
+   (e, subs, ty) = begin
     @match exp begin
       SUBSCRIPTED_EXP_EXPRESSION(__)  => begin
         (exp.exp, exp.subscripts, typeOf(exp.exp))
@@ -5011,7 +5011,7 @@ function applyIndexSubscriptArrayConstructor(call::Call, index::Subscript) ::Exp
   local iter::InstNode
 
   @match TYPED_ARRAY_CONSTRUCTOR(ty, var, exp, iters) = call
-  @assign ((iter, iter_exp), iters) = ListUtil.splitLast(iters)
+   ((iter, iter_exp), iters) = ListUtil.splitLast(iters)
   @assign iter_exp = applySubscript(index, iter_exp)
   @assign subscriptedExp = replaceIterator(exp, iter, iter_exp)
   if ! listEmpty(iters)
@@ -5559,7 +5559,7 @@ end
 
 function setType(ty::NFType, exp::Expression) ::Expression
 
-  @assign () = begin
+   () = begin
     @match exp begin
       ENUM_LITERAL_EXPRESSION(__)  => begin
         @assign exp.ty = ty
@@ -6810,18 +6810,16 @@ function isClassBinding(binding::Binding)::Bool
   return false
 end
 
-function addParent(parent::InstNode, binding::Binding)::Binding
+function addParent(parent::InstNode, binding::Binding)
   @match binding begin
     UNBOUND(isEach = true) => begin
       @assign binding.parents = _cons(parent, binding.parents)
       ()
     end
-
     RAW_BINDING(__) => begin
       @assign binding.parents = _cons(parent, binding.parents)
       ()
     end
-
     _ => begin
       ()
     end
@@ -7295,7 +7293,7 @@ function fromAbsyn(
         if eachPrefix
           UNBOUND(parents, true, info)
         else
-          EMPTY_BINDING
+          EMPTY_BINDING()
         end
       end
     end

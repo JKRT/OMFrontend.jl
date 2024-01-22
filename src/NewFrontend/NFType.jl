@@ -748,7 +748,7 @@ function foldDims(ty::M_Type, func::FuncT, arg::ArgT) where {ArgT}
 end
 
 function mapDims(ty::M_Type, func::FuncT)::M_Type
-  @assign () = begin
+   () = begin
     local fn::M_Function
     @match ty begin
       TYPE_ARRAY(__) => begin

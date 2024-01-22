@@ -81,7 +81,7 @@ const VariabilityType = Int
   end
 end
 
-const EMPTY_BINDING = UNBOUND(nil, false, AbsynUtil.dummyInfo)::Binding
+function EMPTY_BINDING() = UNBOUND(nil, false, AbsynUtil.dummyInfo)::Binding
 
 EachType = (() -> begin #= Enumeration =#
   NOT_EACH = 1

@@ -1,18 +1,22 @@
 using MetaModelica
 using ExportAll
 
-@Uniontype Attributes begin
-  @Record ATTRIBUTES begin
-    connectorType::Int
-    parallelism::Int
-    variability::Int
-    direction::Int
-    innerOuter::Int
-    isFinal::Bool
-    isRedeclare::Bool
-    isReplaceable::Replaceable
-    isStructuralMode::Bool
-  end
+abstract type Attributes end
+
+"""
+  Attributes is a constant struct.
+  Note, can not be optimized into a mutable type, since DEFAULT attribute is used quite a lot and it would result in errors when doing comparisions by reference for attributes.
+"""
+struct ATTRIBUTES <: Attributes
+  connectorType::Int
+  parallelism::Int
+  variability::Int
+  direction::Int
+  innerOuter::Int
+  isFinal::Bool
+  isRedeclare::Bool
+  isReplaceable::Replaceable
+  isStructuralMode::Bool
 end
 
 @Mutable_Uniontype Component begin
@@ -123,10 +127,6 @@ const IMPL_DISCRETE_ATTR =
     NOT_REPLACEABLE(),
     false,
   )
-
-#= Forward declarations for uniontypes until Julia adds support for mutual recursion =#
-
-@UniontypeDecl Component
 
 function isTypeAttribute(component::Component)::Bool
   local isAttribute::Bool
@@ -719,7 +719,7 @@ function getCondition(component::Component)::Binding
       end
 
       _ => begin
-        EMPTY_BINDING
+        EMPTY_BINDING()
       end
     end
   end
@@ -823,7 +823,7 @@ function getBinding(component::Component)::Binding
         binding(component.modifier)
       end
       _ => begin
-        EMPTY_BINDING
+        EMPTY_BINDING()
       end
     end
   end

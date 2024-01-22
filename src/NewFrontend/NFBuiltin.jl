@@ -766,8 +766,7 @@ const CLOCK_CLASS_TREE =
     listArray(nil),
     DuplicateTree.EMPTY(),
   )::ClassTree
-#=  TODO: #4895: This should be listArrayLiteral too, but causes compilation issues.
-=#
+#=  TODO: #4895: This should be listArrayLiteral too, but causes compilation issues. =#
 const CLOCK_NODE =
   CLASS_NODE(
     "Clock",
@@ -799,8 +798,8 @@ const TIME =
     P_Pointer.createImmutable(TYPED_COMPONENT(
       REAL_NODE,
       TYPE_REAL(),
-      EMPTY_BINDING,
-      EMPTY_BINDING,
+      EMPTY_BINDING(),
+      EMPTY_BINDING(),
       INPUT_ATTR,
       NONE(),
       NONE(),

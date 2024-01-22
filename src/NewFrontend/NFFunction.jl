@@ -255,7 +255,7 @@ function foldExpParameter(node::InstNode, foldFn::FoldFunc, arg::ArgT) where {Ar
 
   @assign comp = component(node)
   @assign arg = foldExp(getBinding(comp), foldFn, arg)
-  @assign () = begin
+   () = begin
     @match comp begin
       TYPED_COMPONENT(__) => begin
         @assign arg = Type.foldDims(
@@ -802,7 +802,7 @@ function applyPartialApplicationArg(
     @match _cons(i, rest_inputs) = rest_inputs
     @match _cons(s, rest_slots) = rest_slots
     if s.name == argName
-      @assign (argExp, _, mk) =
+       (argExp, _, mk) =
         matchTypes(argType, getType(i), argExp, true)
       if TypeCheck.isIncompatibleMatch(mk)
         Error.addSourceMessage(
@@ -873,9 +873,9 @@ function typePartialApplication(
     Variability.CONSTANT
   end
   for arg in args
-    @assign (arg, arg_ty, arg_var) = typeExp(arg, origin, info)
+     (arg, arg_ty, arg_var) = typeExp(arg, origin, info)
     @match _cons(arg_name, rest_names) = rest_names
-    @assign (arg, inputs, slots) =
+     (arg, inputs, slots) =
       applyPartialApplicationArg(arg_name, arg, arg_ty, inputs, slots, fn, info)
     @assign ty_args = _cons(box(arg), ty_args)
     @assign variability = variabilityMax(variability, arg_var)
@@ -925,7 +925,7 @@ function typeFunctionSignature(fn::M_Function)::M_Function
   local attr::DAE.FunctionAttributes
   local node::InstNode = fn.node
   if !isTyped(fn)
-    typeClassType(node, EMPTY_BINDING, ORIGIN_FUNCTION, node)
+    typeClassType(node, EMPTY_BINDING(), ORIGIN_FUNCTION, node)
     typeComponents(node, ORIGIN_FUNCTION)
     if isPartial(node)
       applyComponents(
@@ -1047,7 +1047,7 @@ function matchFunctions(
 
   @assign matchedFunctions = nil
   for func in funcs
-    @assign (m_args, matchKind) = matchFunction(func, args, named_args, info, vectorize)
+     (m_args, matchKind) = matchFunction(func, args, named_args, info, vectorize)
     if isValid(matchKind)
       @assign matchedFunctions =
         _cons(MATCHED_FUNC(func, m_args, matchKind), matchedFunctions)
@@ -1068,9 +1068,9 @@ function matchFunction(
 
   local slot_matched::Bool
 
-  @assign (out_args, slot_matched) = fillArgs(args, named_args, func, info)
+   (out_args, slot_matched) = fillArgs(args, named_args, func, info)
   if slot_matched
-    @assign (out_args, matchKind) = matchArgs(func, out_args, info, vectorize)
+     (out_args, matchKind) = matchArgs(func, out_args, info, vectorize)
   end
   return (out_args, matchKind)
 end
@@ -1150,7 +1150,7 @@ function matchArgVectorized(
   #=  the dimensions to vectorize over has been removed from the argument's type.
   =#
   @assign rest_ty = liftArrayLeftList(arrayElementType(argTy), rest_dims)
-  @assign (argExp, argTy, matchKind) =
+   (argExp, argTy, matchKind) =
     matchTypes(rest_ty, inputTy, argExp, allowUnknown = false)
   return (argExp, argTy, vectArg, vectDims, matchKind)
 end
@@ -1180,7 +1180,7 @@ function matchArgs(
   local vectorized_args::List{Int} = nil
 
   for arg in args
-    @assign (arg_exp, arg_ty, arg_var) = arg
+     (arg_exp, arg_ty, arg_var) = arg
     @match _cons(input_node, inputs) = inputs
     @assign comp = component(input_node)
     if arg_var > variability(comp)
@@ -1449,7 +1449,7 @@ function fillNamedArg(
   =#
   for i = arrayLength(slots):(-1):1
     @assign s = slots[i]
-    @assign (argName, argExp, ty, var) = inArg
+     (argName, argExp, ty, var) = inArg
     if s.name == argName
       if !named(s)
         matching = false
@@ -1544,12 +1544,12 @@ function fillArgs(
   #=  Slot doesn't allow positional arguments (used for some builtin functions).
   =#
   for narg in namedArgs
-    @assign (slots_arr, matching) = fillNamedArg(narg, slots_arr, fn, info)
+     (slots_arr, matching) = fillNamedArg(narg, slots_arr, fn, info)
     if !matching
       return (args, matching)
     end
   end
-  @assign (args, matching) = collectArgs(slots_arr, info)
+   (args, matching) = collectArgs(slots_arr, info)
   return (args, matching)
 end
 
@@ -1957,7 +1957,7 @@ function instFunction2(
 
   local def::SCode.Element = definition(fnNode)
 
-  @assign (fnNode, specialBuiltin) = begin
+   (fnNode, specialBuiltin) = begin
     local cdef::SCode.ClassDef
     local fn::M_Function
     local cr::Absyn.ComponentRef
@@ -1986,7 +1986,7 @@ function instFunction2(
       SCode.CLASS(classDef = cdef && SCode.OVERLOAD(__)) => begin
         for p in cdef.pathLst
           @assign cr = AbsynUtil.pathToCref(p)
-          @assign (_, sub_fnNode, specialBuiltin) = instFunction(cr, fnNode, info)
+           (_, sub_fnNode, specialBuiltin) = instFunction(cr, fnNode, info)
           for f in getCachedFuncs(sub_fnNode)
             @assign fnNode = cacheAddFunc(fnNode, f, specialBuiltin)
           end
@@ -2017,7 +2017,7 @@ end
 function instFunctionNode(node::InstNode)::InstNode
   local cache::CachedData
   @assign cache = getFuncCache(node)
-  @assign () = begin
+   () = begin
     @match cache begin
       C_FUNCTION(__) => begin
         ()
@@ -2114,7 +2114,7 @@ function lookupFunctionSimple(functionName::String, scope::InstNode)::ComponentR
   local state::LookupState
   local functionPath::Absyn.Path
   local prefix::ComponentRef
-  @assign (functionRef, found_scope) =
+   (functionRef, found_scope) =
     lookupFunctionNameSilent(Absyn.CREF_IDENT(functionName, nil), scope)
   @assign prefix =
     fromNodeList(scopeList(found_scope))
@@ -2132,7 +2132,7 @@ function new(path::Absyn.Path, node::InstNode)::M_Function
   local attr::DAE.FunctionAttributes
   local status::FunctionStatusType
 
-  @assign (inputs, outputs, locals) = collectParams(node)
+   (inputs, outputs, locals) = collectParams(node)
   @assign attr = makeAttributes(node, inputs, outputs)
   #=  Make sure builtin functions aren't added to the function tree.
   =#
@@ -2584,13 +2584,13 @@ function collectParams(
   #   sourceInfo(),
   # ) TODO
   @assign cls = getClass(node)
-  @assign () = begin
+   () = begin
     @match cls begin
       INSTANCED_CLASS(elements = CLASS_TREE_FLAT_TREE(components = comps)) =>
         begin
           for i = arrayLength(comps):(-1):1
             @assign n = comps[i]
-            @assign () = begin
+             () = begin
               @match paramDirection(n) begin
                 Direction.INPUT => begin
                   #=  Sort the components based on their direction.
@@ -2615,7 +2615,7 @@ function collectParams(
         end
 
       EXPANDED_DERIVED(__) => begin
-        @assign (inputs, outputs, locals) = collectParams(cls.baseClass)
+         (inputs, outputs, locals) = collectParams(cls.baseClass)
         ()
       end
 
@@ -2637,7 +2637,7 @@ function analyseUnusedParametersExp2(
   params::List{<:InstNode},
 )::List{InstNode}
 
-  @assign () = begin
+   () = begin
     @match exp begin
       CREF_EXPRESSION(__) => begin
         @assign params = ListUtil.deleteMemberOnTrue(

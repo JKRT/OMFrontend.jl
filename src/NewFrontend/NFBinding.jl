@@ -81,12 +81,16 @@ mutable struct UNBOUND <: Binding
   info::SourceInfo
 end
 
-const EMPTY_BINDING = UNBOUND(nil, false, AbsynUtil.dummyInfo)::Binding
+#const EMPTY_BINDING() = UNBOUND(nil, false, AbsynUtil.dummyInfo)::Binding
+function EMPTY_BINDING()
+  return UNBOUND(nil, false, AbsynUtil.dummyInfo)
+end
 
-const EachType = (() -> begin #= Enumeration =#
-  NOT_EACH = 1
-  EACH = 2
-  REPEAT = 3
-  () -> (NOT_EACH; EACH; REPEAT)
-end)()
+struct EachTypeStruct{T <: Int}
+  NOT_EACH::T
+  EACH::T
+  REPEAT::T
+end
+
 const EachTypeType = Int
+const EachType::EachTypeStruct = EachTypeStruct(1,2,3)

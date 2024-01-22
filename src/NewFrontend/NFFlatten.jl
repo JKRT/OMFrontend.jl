@@ -165,7 +165,7 @@ function flattenClass(
         end
 
       TYPED_DERIVED(__) => begin
-        @assign (vars, sections) = flattenClass(
+         (vars, sections) = flattenClass(
           getClass(cls.baseClass),
           prefix,
           visibility,
@@ -359,7 +359,7 @@ function deleteClassComponents(clsNode::InstNode)
   local cls::Class = getClass(clsNode)
   local comps::Vector{InstNode}
 
-  return @assign () = begin
+  return  () = begin
     @match cls begin
       INSTANCED_CLASS(
         elements = CLASS_TREE_FLAT_TREE(components = comps),
@@ -454,7 +454,7 @@ function flattenSimpleComponent(
   #       ElementSource.createElementSource(info),
   #     )
   #     @assign sections = prependEquation(eq, sections)
-  #     @assign binding = EMPTY_BINDING
+  #     @assign binding = EMPTY_BINDING()
   #   end
   # end
   name = prefixScope(comp_node, ty, nil, prefix)
@@ -520,7 +520,7 @@ function getRecordBindings(binding::Binding, comps::Vector{<:InstNode})::List{Bi
     @match binding_exp begin
       RECORD_EXPRESSION(__) => begin
         list(if isEmpty(e)
-          EMPTY_BINDING
+          EMPTY_BINDING()
         else
           FLAT_BINDING(e, var)
         end for e in binding_exp.elements)
@@ -604,7 +604,7 @@ function flattenComplexComponent(
         sections,
         comp_var <= Variability.PARAMETER,
       )
-      opt_binding = SOME(EMPTY_BINDING)
+      opt_binding = SOME(EMPTY_BINDING())
     else
       binding = setTypedExp(binding_exp, binding)
       opt_binding = SOME(binding)
@@ -652,7 +652,7 @@ function flattenArray(
   #=  if we don't scalarize flatten the class and vectorize it
   =#
   if !Flags.isSet(Flags.NF_SCALARIZE)
-    @assign (vrs, sects) = flattenClass(
+     (vrs, sects) = flattenClass(
       cls,
       prefix,
       visibility,
@@ -664,7 +664,7 @@ function flattenArray(
       @assign v.ty = liftArrayLeftList(v.ty, dimensions)
       @assign vars = _cons(v, vars)
     end
-    @assign () = begin
+     () = begin
       @match sects begin
         P_Sections.Sections.SECTIONS(__) => begin
           #=  add dimensions to the types
@@ -989,7 +989,7 @@ function flattenBinding(
       end
 
       CEVAL_BINDING(__) => begin
-        EMPTY_BINDING
+        EMPTY_BINDING()
       end
 
       FLAT_BINDING(__) => begin
@@ -1628,7 +1628,7 @@ function collectBindingFuncs(binding::Binding, funcs::FunctionTree)::FunctionTre
 end
 
 function collectTypeFuncs(ty::NFType, funcs::FunctionTree)::FunctionTree
-  @assign () = begin
+   () = begin
     local con::InstNode
     local de::InstNode
     local fn::M_Function
@@ -1676,7 +1676,7 @@ function collectStructor(node::InstNode, funcs::FunctionTree)::FunctionTree
   local cache::CachedData
   local fn::List{M_Function}
   @assign cache = getFuncCache(node)
-  @assign () = begin
+   () = begin
     @match cache begin
       C_FUNCTION(__) => begin
         for fn in cache.funcs
@@ -1847,7 +1847,7 @@ function collectExpFuncs(exp::Expression, funcs::FunctionTree)::FunctionTree
 end
 
 function collectExpFuncs_traverse(exp::Expression, funcs::FunctionTree)::FunctionTree
-  @assign () = begin
+   () = begin
     local fn::M_Function
     @match exp begin
       CALL_EXPRESSION(__) => begin

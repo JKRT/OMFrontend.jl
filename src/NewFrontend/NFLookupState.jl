@@ -251,7 +251,7 @@ end
      the element was not the first part of a name while being protected.
      I.e. P.a is allowed if P is protected, but not e.g. a.P or a.P.b. =#"""
 function checkProtection(node::InstNode, currentState::LookupState)
-  return @assign () = begin
+  return  () = begin
     @match currentState begin
       LOOKUP_STATE_BEGIN(__) => begin
         ()

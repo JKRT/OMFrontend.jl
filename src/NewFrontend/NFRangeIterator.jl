@@ -41,7 +41,7 @@ function map(iterator::RangeIterator, func::FuncT)
   local exp::Expression
 
   while hasNext(iter)
-    @assign (iter, exp) = next(iter)
+     (iter, exp) = next(iter)
     @assign lst = _cons(func(exp), lst)
   end
   @assign lst = listReverse(lst)
@@ -55,7 +55,7 @@ function toListReverse(iterator::RangeIterator)::List{Expression}
   local exp::Expression
 
   while hasNext(iter)
-    @assign (iter, exp) = next(iter)
+     (iter, exp) = next(iter)
     @assign expl = _cons(exp, expl)
   end
   return expl

@@ -52,7 +52,7 @@ function instUnqualified(
   @assign node = lookupImport(path, scope, info)
   @assign node = Inst.instPackage(node)
   @assign tree = classTree(getClass(node))
-  @assign () = begin
+   () = begin
     @match tree begin
       CLASS_TREE_FLAT_TREE(__) => begin
         for cls in tree.classes
@@ -101,10 +101,10 @@ function resolve(imp::Import)::Tuple{InstNode, Bool, Import}
   local changed::Bool
   local node::InstNode
 
-  @assign (outImport, node, changed) = begin
+   (outImport, node, changed) = begin
     @match imp begin
       UNRESOLVED_IMPORT(__) => begin
-        @assign (outImport, node) = instQualified(imp.imp, imp.scope, imp.info)
+         (outImport, node) = instQualified(imp.imp, imp.scope, imp.info)
         (outImport, node, true)
       end
 

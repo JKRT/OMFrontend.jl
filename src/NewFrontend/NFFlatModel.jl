@@ -103,7 +103,7 @@ function reconstructRecordInstance(
     end
   end
   if listEmpty(field_exps)
-    @assign record_binding = EMPTY_BINDING
+    @assign record_binding = EMPTY_BINDING()
   else
     @assign field_exps = listReverseInPlace(field_exps)
     @assign record_exp = makeRecord(
@@ -235,7 +235,7 @@ function collectStmtBranchFlatTypes(
 end
 
 function collectStatementFlatTypes(stmt::Statement, types::TypeTree)::TypeTree
-  @assign () = begin
+   () = begin
     @match stmt begin
       ALG_ASSIGNMENT(__) => begin
         @assign types = collectExpFlatTypes(stmt.lhs, types)

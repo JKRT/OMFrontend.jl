@@ -9,7 +9,7 @@ using MetaModelica.Dangerous
   end
 end
 
-@Uniontype Class begin
+@Mutable_Uniontype Class begin
   @Record DAE_TYPE begin
     ty::DAE.Type
   end
@@ -243,7 +243,7 @@ end
 
 function setPrefixes(prefs::Prefixes, cls::Class)::Class
 
-  @assign () = begin
+   () = begin
     @match cls begin
       EXPANDED_CLASS(__) => begin
         @assign cls.prefixes = prefs
@@ -353,32 +353,32 @@ end
 
 function setRestriction(res::Restriction, cls::Class)::Class
 
-  @assign () = begin
+   () = begin
     @match cls begin
       EXPANDED_CLASS(__) => begin
         #=  PARTIAL_BUILTIN is only used for predefined builtin types and not needed here.
         =#
-        @assign cls.restriction = res
+        cls.restriction = res
         ()
       end
 
       EXPANDED_DERIVED(__) => begin
-        @assign cls.restriction = res
+        cls.restriction = res
         ()
       end
 
       INSTANCED_CLASS(__) => begin
-        @assign cls.restriction = res
+        cls.restriction = res
         ()
       end
 
       INSTANCED_BUILTIN(__) => begin
-        @assign cls.restriction = res
+        cls.restriction = res
         ()
       end
 
       TYPED_DERIVED(__) => begin
-        @assign cls.restriction = res
+        cls.restriction = res
         ()
       end
     end
@@ -423,12 +423,11 @@ function restriction(cls::Class)::Restriction
   return res
 end
 
-function setType(ty::M_Type, cls::Class)::Class
-
-  @assign () = begin
+function setType(ty::M_Type, @nospecialize(cls::Class))
+   () = begin
     @match cls begin
       PARTIAL_BUILTIN(__) => begin
-        @assign cls.ty = ty
+        cls.ty = ty
         ()
       end
 
@@ -438,17 +437,17 @@ function setType(ty::M_Type, cls::Class)::Class
       end
 
       INSTANCED_CLASS(__) => begin
-        @assign cls.ty = ty
+        cls.ty = ty
         ()
       end
 
       INSTANCED_BUILTIN(__) => begin
-        @assign cls.ty = ty
+        cls.ty = ty
         ()
       end
 
       TYPED_DERIVED(__) => begin
-        @assign cls.ty = ty
+        cls.ty = ty
         ()
       end
 
@@ -610,7 +609,7 @@ end
 
 function mergeModifier(modifier::Modifier, cls::Class)::Class
 
-  @assign () = begin
+   () = begin
     @match cls begin
       PARTIAL_CLASS(__) => begin
         @assign cls.modifier = merge(modifier, cls.modifier)
@@ -643,7 +642,7 @@ end
 
 function setModifier(modifier::Modifier, cls::Class)::Class
 
-  @assign () = begin
+   () = begin
     @match cls begin
       PARTIAL_CLASS(__) => begin
         @assign cls.modifier = modifier
@@ -704,7 +703,7 @@ end
 
 function classTreeApply(cls::Class, func::FuncType)::Class
 
-  @assign () = begin
+   () = begin
     @match cls begin
       PARTIAL_CLASS(__) => begin
         @assign cls.elements = func(cls.elements)
@@ -830,7 +829,7 @@ function lookupAttributeBinding(name::String, cls::Class)::Binding
     @assign attr_node = lookupElement(name, classTree(cls))
     @assign binding = getBinding(component(attr_node))
   catch
-    @assign binding = EMPTY_BINDING
+    @assign binding = EMPTY_BINDING()
   end
   return binding
 end
@@ -853,7 +852,7 @@ function lookupElement(name::String, cls::Class)::Tuple{InstNode, Bool}
   local isImport::Bool
   local node::InstNode
 
-  @assign (node, isImport) = lookupElement(name, classTree(cls))
+   (node, isImport) = lookupElement(name, classTree(cls))
   return (node, isImport)
 end
 

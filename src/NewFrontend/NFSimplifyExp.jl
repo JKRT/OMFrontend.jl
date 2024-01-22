@@ -279,7 +279,7 @@ function simplifySumProduct(arg::Expression, call::Call, isSum::Bool)::Expressio
   local ty::M_Type
   local op::Operator
 
-  @assign (exp, expanded) = P_ExpandExp.ExpandExp.expand(arg)
+   (exp, expanded) = P_ExpandExp.ExpandExp.expand(arg)
   if expanded
     @assign args = arrayScalarElements(exp)
     @assign ty = arrayElementType(typeOf(arg))

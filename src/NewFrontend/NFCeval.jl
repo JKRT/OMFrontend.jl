@@ -727,7 +727,7 @@ function makeComponentBinding(
       end
 
       _ => begin
-        EMPTY_BINDING
+        EMPTY_BINDING()
       end
     end
   end

@@ -255,8 +255,8 @@ function convertRealVarAttributes(
   local state_select::Option{DAE.StateSelect} = NONE()
 
   for attr in attrs
-    @assign (name, b) = attr
-    @assign () = begin
+     (name, b) = attr
+     () = begin
       @match name begin
         "displayUnit" => begin
           @assign displayUnit = convertVarAttribute(b)
@@ -417,8 +417,8 @@ function convertBoolVarAttributes(
   local fixed::Option{DAE.Exp} = NONE()
 
   for attr in attrs
-    @assign (name, b) = attr
-    @assign () = begin
+     (name, b) = attr
+     () = begin
       @match name begin
         "quantity" => begin
           @assign quantity = convertVarAttribute(b)
@@ -475,8 +475,8 @@ function convertStringVarAttributes(
   local fixed::Option{DAE.Exp} = NONE()
 
   for attr in attrs
-    @assign (name, b) = attr
-    @assign () = begin
+     (name, b) = attr
+     () = begin
       @match name begin
         "quantity" => begin
           @assign quantity = convertVarAttribute(b)
@@ -535,8 +535,8 @@ function convertEnumVarAttributes(
   local fixed::Option{DAE.Exp} = NONE()
 
   for attr in attrs
-    @assign (name, b) = attr
-    @assign () = begin
+     (name, b) = attr
+     () = begin
       @match name begin
         "fixed" => begin
           @assign fixed = convertVarAttribute(b)
@@ -1522,7 +1522,7 @@ function stripScopePrefixExp(exp::Expression)::Expression
 end
 
 function stripScopePrefixCrefExp(exp::Expression)::Expression
-  @assign () = begin
+   () = begin
     @match exp begin
       CREF_EXPRESSION(__) => begin
         @assign exp.cref = stripScopePrefixCref(exp.cref)
@@ -1541,7 +1541,7 @@ function stripScopePrefixCref(cref::ComponentRef)::ComponentRef
   if isSimple(cref)
     return cref
   end
-  @assign () = begin
+   () = begin
     @match cref begin
       CREF(__) => begin
         if isFromCref(cref.restCref)

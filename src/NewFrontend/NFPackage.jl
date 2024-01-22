@@ -83,7 +83,7 @@ end
 
 function collectExpConstants_traverser(@nospecialize(exp::Expression), @nospecialize(constants::Constants))::Constants
   local cref::ComponentRef
-  @assign () = begin
+   () = begin
     @match exp begin
       CREF_EXPRESSION(cref = cref && CREF_EXPRESSION(__)) =>
         begin
@@ -121,7 +121,7 @@ function collectFuncConstants(
   local sections::Sections
 
   @assign cls = getClass(func.node)
-  @assign () = begin
+   () = begin
     @match cls begin
       INSTANCED_CLASS(
         elements = CLASS_TREE_FLAT_TREE(components = comps),
@@ -133,7 +133,7 @@ function collectFuncConstants(
             constants,
           )
         end
-        @assign () = begin
+         () = begin
           @match sections begin
             SECTIONS(__) => begin
               @assign constants = foldExpList(
@@ -168,11 +168,9 @@ function collectFuncConstants(
 end
 
 function replaceVariableConstants(var::Variable)::Variable
-
   local cref::ComponentRef
   local binding::Binding
-
-  @assign binding = replaceBindingConstants(var.binding)
+  binding = replaceBindingConstants(var.binding)
   if !referenceEq(binding, var.binding)
     @assign var.binding = binding
   end
@@ -180,8 +178,7 @@ function replaceVariableConstants(var::Variable)::Variable
 end
 
 function replaceBindingConstants(binding::Binding)::Binding
-
-  @assign () = begin
+   () = begin
     @match binding begin
       TYPED_BINDING(__) => begin
         @assign binding.bindingExp = replaceExpConstants(binding.bindingExp)
@@ -235,7 +232,7 @@ function replaceFuncConstants(name::Absyn.Path, func::M_Function)::M_Function
   local eval_binding::Binding
 
   @assign cls = getClass(func.node)
-  @assign () = begin
+   () = begin
     @match cls begin
       INSTANCED_CLASS(
         elements = CLASS_TREE_FLAT_TREE(components = comps),
@@ -250,7 +247,7 @@ function replaceFuncConstants(name::Absyn.Path, func::M_Function)::M_Function
             updateComponent!(comp, c)
           end
         end
-        @assign () = begin
+         () = begin
           @match sections begin
             P_Sections.Sections.SECTIONS(__) => begin
               @assign sections.algorithms = list(

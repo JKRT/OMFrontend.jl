@@ -40,7 +40,7 @@ function simplifyTypeAttribute(attribute::Tuple{<:String, Binding})::Tuple{Strin
   local binding::Binding
   local sbinding::Binding
 
-  @assign (name, binding) = attribute
+   (name, binding) = attribute
   @assign sbinding = simplifyBinding(binding)
   if !referenceEq(binding, sbinding)
     @assign attribute = (name, sbinding)
@@ -339,7 +339,7 @@ end
 """ #= Replaces tuple elements that has one or more zero dimension with _. =#"""
 function removeEmptyTupleElements(exp::Expression)::Expression
 
-  @assign () = begin
+   () = begin
     local tyl::List{M_Type}
     @match exp begin
       TUPLE_EXPRESSION(ty = TYPE_TUPLE(types = tyl)) => begin
@@ -363,7 +363,7 @@ function removeEmptyFunctionArguments(@nospecialize(exp::Expression), isArg::Boo
   local outExp::Expression
   local is_arg::Bool
   if isArg
-    @assign () = begin
+     () = begin
       @match exp begin
         CREF_EXPRESSION(__) where {(isEmptyArray(exp.ty))} => begin
           @assign outExp =

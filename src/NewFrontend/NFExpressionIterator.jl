@@ -209,7 +209,7 @@ function fromExpToExpressionIterator(exp::Expression)::ExpressionIterator
             sourceInfo(),
           )
         end
-        @assign (arr, slice) = nextArraySlice(arr)
+         (arr, slice) = nextArraySlice(arr)
         EXPRESSION_ARRAY_ITERATOR(arr, slice)
       end
 
@@ -252,10 +252,10 @@ function nextArraySlice(
     @assign slice = nil
   else
     @assign e = listHead(Array)
-    @assign (Array, slice) = begin
+     (Array, slice) = begin
       @match e begin
         ARRAY_EXPRESSION(__) => begin
-          @assign (arr, slice) = nextArraySlice(e.elements)
+           (arr, slice) = nextArraySlice(e.elements)
           if listEmpty(arr)
             @assign Array = listRest(Array)
           else

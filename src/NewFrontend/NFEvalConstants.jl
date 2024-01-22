@@ -63,7 +63,7 @@ function evaluateTypeAttribute(
   local binding::Binding
   local sbinding::Binding
   local structural::Bool
-  @assign (name, binding) = attribute
+   (name, binding) = attribute
   @assign structural = name == "fixed" || name == "stateSelect"
   @assign sbinding = evaluateBinding(binding, structural, constVariability)
   if !referenceEq(binding, sbinding)

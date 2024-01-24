@@ -1015,8 +1015,8 @@ function flattenBinding(
 end
 
 function flattenBindingExp(
-  exp::Expression,
-  prefix::ComponentRef,
+  @nospecialize(exp::Expression),
+  @nospecialize(prefix::ComponentRef),
   isTypeAttribute::Bool = false
 )::Expression
   local outExp::Expression
@@ -1049,6 +1049,10 @@ function flattenBindingExp(
   return outExp
 end
 
+"""
+TODO:
+Optimize this function
+"""
 function flattenBindingExp2(
   @nospecialize(exp::Expression),
   @nospecialize(prefix::ComponentRef),

@@ -16,10 +16,13 @@ function instClassInProgram(classPath::Absyn.Path, program::SCode.Program)
   local funcs::FunctionTree
   name = AbsynUtil.pathString(classPath)
   try
-    (flat_model, funcs, inst_cls) = instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)
+    (flat_model, funcs, inst_cls) = instClassInProgramFM2(classPath::Absyn.Path, program::SCode.Program)
   catch e
-    @info "The compiler failed to instance a model."
+    println("The compiler failed to process a model with the following message(s):")
     println(Error.printMessagesStr())
+    Error.clearMessages()
+    #=TODO: Add a @static flag later to supress this message. =#
+    println("Internal stack trace:")
     throw(e)
   end
   (dae, daeFuncs) = convert(flat_model, funcs, name, InstNode_info(inst_cls))
@@ -32,174 +35,9 @@ end
   Author:johti17
 """
 function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tuple
-  local top::InstNode
-  local cls::InstNode
-  local inst_cls::InstNode
-  local name::String
-  local flat_model::FlatModel
-  local funcs::FunctionTree
+  local flat_model, funcs, inst_cls
   try
-    #= Add the program currently being translated into the SCode cache. =#
-    local currentProgram = listHead(program)
-    #=  gather here all the flags to disable expansion
-    =#
-    #=  and scalarization if -d=-nfScalarize is on
-    =#
-    if ! Flags.isSet(Flags.NF_SCALARIZE)
-      FlagsUtil.set(Flags.NF_EXPAND_OPERATIONS, false)
-      FlagsUtil.set(Flags.NF_EXPAND_FUNC_ARGS, false)
-    end
-    #=  make sure we don't expand anything=#
-    System.setUsesCardinality(false)
-    System.setHasOverconstrainedConnectors(false)
-    System.setHasStreamConnectors(false)
-    #=  Create a root node from the given top-level classes.
-    =#
-    top = makeTopNode(program)
-    name = AbsynUtil.pathString(classPath)
-    #=  Look up the class to instantiate and mark it as the root class.
-    =#
-    cls = lookupClassName(classPath, top, AbsynUtil.dummyInfo, false)
-    cls = setNodeType(ROOT_CLASS(EMPTY_NODE()), cls)
-    #=  Initialize the storage for automatically generated inner elements. =#
-    top = setInnerOuterCache(top, C_TOP_SCOPE(NodeTree.new(), cls))
-    #@debug "Instantiate the class"
-    inst_cls = instantiateN1(cls, EMPTY_NODE())
-    insertGeneratedInners(inst_cls, top)
-    #execStat("NFInst.instantiate(" + name + ")")
-    #=
-    Instantiate expressions (i.e. anything that can contains crefs, like
-    bindings, dimensions, etc). This is done as a separate step after
-    instantiation to make sure that lookup is able to find the correct nodes.
-    =#
-    #@debug "Instantiate Expressions"
-    instExpressions(inst_cls)
-    # execStat("NFInst.instExpressions(" + name + ")")
-    #=  Mark structural parameters.
-    =#
-    updateImplicitVariability(inst_cls, false #== Flags.isSet(Flags.EVAL_PARAM) ==#)
-    #execStat("NFInst.updateImplicitVariability")
-    #=  Type the class. =#
-    #@debug "Type the class"
-    typeClass(inst_cls, name)
-    #@debug "Flatten the model and evaluate constants in it."
-    flat_model = flatten(inst_cls, name)
-    #=
-    Check if we are to performance recompilation. If true adds the SCode program to the flat model.
-    Also check if we have a Connections.branch statement in an if-equation
-    =#
-    local recompilationEnabled = recompilationDirectiveExists(flat_model.equations)
-    local doccs = collectDOCCS(flat_model.equations)
-    for docc in doccs
-      println(toString(docc))
-    end
-    local modelWithDOCC  = ! isempty(doccs)
-    if recompilationEnabled || modelWithDOCC
-      @assign flat_model.scodeProgram = SOME(listHead(program))
-      if modelWithDOCC
-        #=
-        1. Evaluate the initial state of the special if-equation (by looking at the condition)
-        Either the equation starts with the relevant equation in the model,
-        or the equations are added during the simulation.
-        (It should also be noted that, the equations are to be removed in some conditions)
-
-        =#
-        #= Remove the conditionals themselves from the flat model =#
-        local equationsWithoutDOCC = flat_model.equations
-        for eq in doccs
-          equationsWithoutDOCC = ListUtil.deleteMemberF(equationsWithoutDOCC, eq)
-        end
-        #@debug length(flat_model.equations)
-        #@debug length(equationsWithoutDOCC)
-        #=
-        Check if the existing equations in the flat model should be extended.
-        =#
-        initialEqMapping = evalInitialEqMapping(flat_model.initialEquations)
-        for eq in doccs
-          @assert eq isa EQUATION_IF
-          for br in eq.branches
-            @assert br isa EQUATION_BRANCH
-            tst = evaluateExp(br.condition, Variability.DISCRETE)
-            tst = Variable_fromCref(toCref(tst))
-            local varAsStr = toString(tst.name)
-            if in(varAsStr, keys(initialEqMapping))
-              expr = initialEqMapping[varAsStr]
-              #=
-              Evaluate the expression. It should be a boolean
-              Depending on the value we do two things.
-              Either we remove equations from the starting model
-              or we add them to the model.
-              =#
-              @match BOOLEAN_EXPRESSION(active) = expr
-              @assign flat_model.equations = if active
-                #=
-                Equations for this if equation active at the start.
-                mark as active on both branches. Index is assumed to match with each equation.
-                =#
-                push!(flat_model.active_DOCC_Equations, true)
-                listAppend(equationsWithoutDOCC, br.body)
-              else #= Otherwise these equations are active at some later stage =#
-                push!(flat_model.active_DOCC_Equations, false)
-                equationsWithoutDOCC
-              end
-            end
-            #@debug "Length of the flat model" length(flat_model.equations)
-            #@debug "Length of the flat model without docc" length(equationsWithoutDOCC)
-          end
-          #=
-          Add the special equations to the flat model
-          =#
-          @assign flat_model.DOCC_equations = arrayList(doccs)
-          #= Contains the equations of the system before the virtual connection graph is calculated  =#
-          @assign flat_model.unresolvedConnectEquations = equationsWithoutDOCC
-        end
-        #=
-        Remove the doccs equations from the set of equations in the flat model
-        (If they are to be removed)
-        =#
-      end
-      #= Resolve the connections of the current system. =#
-      flat_model = resolveConnections(flat_model, name)
-      flat_model =  if ! recompilationEnabled
-        evaluate(flat_model)
-      else
-        flat_model
-      end
-      #println("\n************* AFTER RESOLVE *************\n")
-      #println(replace(toString(flat_model), "\\n" => "\n"))
-    else     #= Regular system without simulaton time reconfigurations =#
-      flat_model = resolveConnections(flat_model, name)
-      flat_model = evaluate(flat_model)
-    end
-    #= Do unit checking =#
-    #TODO  @assign flat_model = UnitCheck.checkUnits(flat_model)
-    #@debug "Inline trivial calls in the model"
-    flat_model = inlineSimpleCalls(flat_model)
-    #@debug "Apply simplifications to the model"
-    flat_model = simplifyFlatModel(flat_model)
-    #@debug "Collect a tree of all functions that are still used in the flat model"
-    funcs = collectFunctions(flat_model, name)
-    #=  Collect package constants that couldn't be substituted with their values =#
-    #=  (e.g. because they where used with non-constant subscripts), and add them to the model. =#
-    #@debug "Collect package constants"
-    flat_model = collectConstants(flat_model, funcs)
-    if Flags.getConfigBool(Flags.FLAT_MODELICA)
-      printFlatString(flat_model, FunctionTreeImpl.listValues(funcs))
-    end
-    #= Scalarize array components in the flat model.=#
-    if Flags.isSet(Flags.NF_SCALARIZE)
-      #@debug "Scalarization"
-      flat_model = scalarize(flat_model, name)
-    else
-      #=  Remove empty arrays from variables =#
-      @assign flat_model.variables = filter( (x) -> !isEmptyArray(x), flat_model.variables)
-    end
-    #@debug "Verify the model"
-    verify(flat_model)
-    if Flags.isSet(Flags.NF_DUMP_FLAT)
-      print("FlatModel:\\n" + toString(flat_model) + "\\n")
-    end
-
+    (flat_model, funcs, inst_cls) = instClassInProgramFM2(classPath::Absyn.Path, program::SCode.Program)
   catch e
     println("The compiler failed to process a model with the following message(s):")
     println(Error.printMessagesStr())
@@ -207,6 +45,180 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
     #=TODO: Add a @static flag later to supress this message. =#
     println("Internal stack trace:")
     throw(e)
+  else
+    println(Error.printMessagesStr())
+    Error.clearMessages()
+  end
+  return (flat_model, funcs, inst_cls)
+end
+
+
+function instClassInProgramFM2(classPath::Absyn.Path, program::SCode.Program)::Tuple
+  local top::InstNode
+  local cls::InstNode
+  local inst_cls::InstNode
+  local name::String
+  local flat_model::FlatModel
+  local funcs::FunctionTree
+  #= Add the program currently being translated into the SCode cache. =#
+  local currentProgram = listHead(program)
+  #=  gather here all the flags to disable expansion
+  =#
+  #=  and scalarization if -d=-nfScalarize is on
+  =#
+  if ! Flags.isSet(Flags.NF_SCALARIZE)
+    FlagsUtil.set(Flags.NF_EXPAND_OPERATIONS, false)
+    FlagsUtil.set(Flags.NF_EXPAND_FUNC_ARGS, false)
+  end
+  #=  make sure we don't expand anything=#
+  System.setUsesCardinality(false)
+  System.setHasOverconstrainedConnectors(false)
+  System.setHasStreamConnectors(false)
+  #=  Create a root node from the given top-level classes.
+  =#
+  top = makeTopNode(program)
+  name = AbsynUtil.pathString(classPath)
+  #=  Look up the class to instantiate and mark it as the root class.
+  =#
+  cls = lookupClassName(classPath, top, AbsynUtil.dummyInfo, false)
+  cls = setNodeType(ROOT_CLASS(EMPTY_NODE()), cls)
+  #=  Initialize the storage for automatically generated inner elements. =#
+  top = setInnerOuterCache(top, C_TOP_SCOPE(NodeTree.new(), cls))
+  #@debug "Instantiate the class"
+  inst_cls = instantiateN1(cls, EMPTY_NODE())
+  insertGeneratedInners(inst_cls, top)
+  #execStat("NFInst.instantiate(" + name + ")")
+  #=
+  Instantiate expressions (i.e. anything that can contains crefs, like
+  bindings, dimensions, etc). This is done as a separate step after
+  instantiation to make sure that lookup is able to find the correct nodes.
+  =#
+  #@debug "Instantiate Expressions"
+  instExpressions(inst_cls)
+  # execStat("NFInst.instExpressions(" + name + ")")
+  #=  Mark structural parameters.
+  =#
+  updateImplicitVariability(inst_cls, false #== Flags.isSet(Flags.EVAL_PARAM) ==#)
+  #execStat("NFInst.updateImplicitVariability")
+  #=  Type the class. =#
+  #@debug "Type the class"
+  typeClass(inst_cls, name)
+  #@debug "Flatten the model and evaluate constants in it."
+  flat_model = flatten(inst_cls, name)
+  #=
+  Check if we are to performance recompilation. If true adds the SCode program to the flat model.
+  Also check if we have a Connections.branch statement in an if-equation
+  =#
+  local recompilationEnabled = recompilationDirectiveExists(flat_model.equations)
+  local doccs = collectDOCCS(flat_model.equations)
+  for docc in doccs
+    println(toString(docc))
+  end
+  local modelWithDOCC  = ! isempty(doccs)
+  if recompilationEnabled || modelWithDOCC
+    @assign flat_model.scodeProgram = SOME(listHead(program))
+    if modelWithDOCC
+      #=
+      1. Evaluate the initial state of the special if-equation (by looking at the condition)
+      Either the equation starts with the relevant equation in the model,
+      or the equations are added during the simulation.
+      (It should also be noted that, the equations are to be removed in some conditions)
+
+      =#
+      #= Remove the conditionals themselves from the flat model =#
+      local equationsWithoutDOCC = flat_model.equations
+      for eq in doccs
+        equationsWithoutDOCC = ListUtil.deleteMemberF(equationsWithoutDOCC, eq)
+      end
+      #@debug length(flat_model.equations)
+      #@debug length(equationsWithoutDOCC)
+      #=
+      Check if the existing equations in the flat model should be extended.
+      =#
+      initialEqMapping = evalInitialEqMapping(flat_model.initialEquations)
+      for eq in doccs
+        @assert eq isa EQUATION_IF
+        for br in eq.branches
+          @assert br isa EQUATION_BRANCH
+          tst = evaluateExp(br.condition, Variability.DISCRETE)
+          tst = Variable_fromCref(toCref(tst))
+          local varAsStr = toString(tst.name)
+          if in(varAsStr, keys(initialEqMapping))
+            expr = initialEqMapping[varAsStr]
+            #=
+            Evaluate the expression. It should be a boolean
+            Depending on the value we do two things.
+            Either we remove equations from the starting model
+            or we add them to the model.
+            =#
+            @match BOOLEAN_EXPRESSION(active) = expr
+            @assign flat_model.equations = if active
+              #=
+              Equations for this if equation active at the start.
+              mark as active on both branches. Index is assumed to match with each equation.
+              =#
+              push!(flat_model.active_DOCC_Equations, true)
+              listAppend(equationsWithoutDOCC, br.body)
+            else #= Otherwise these equations are active at some later stage =#
+              push!(flat_model.active_DOCC_Equations, false)
+              equationsWithoutDOCC
+            end
+          end
+          #@debug "Length of the flat model" length(flat_model.equations)
+          #@debug "Length of the flat model without docc" length(equationsWithoutDOCC)
+        end
+        #=
+        Add the special equations to the flat model
+        =#
+        @assign flat_model.DOCC_equations = arrayList(doccs)
+        #= Contains the equations of the system before the virtual connection graph is calculated  =#
+        @assign flat_model.unresolvedConnectEquations = equationsWithoutDOCC
+      end
+      #=
+      Remove the doccs equations from the set of equations in the flat model
+      (If they are to be removed)
+      =#
+    end
+    #= Resolve the connections of the current system. =#
+    flat_model = resolveConnections(flat_model, name)
+    flat_model =  if ! recompilationEnabled
+      evaluate(flat_model)
+    else
+      flat_model
+    end
+    #println("\n************* AFTER RESOLVE *************\n")
+    #println(replace(toString(flat_model), "\\n" => "\n"))
+  else     #= Regular system without simulaton time reconfigurations =#
+    flat_model = resolveConnections(flat_model, name)
+    flat_model = evaluate(flat_model)
+  end
+  #= Do unit checking =#
+  #TODO  @assign flat_model = UnitCheck.checkUnits(flat_model)
+  #@debug "Inline trivial calls in the model"
+  flat_model = inlineSimpleCalls(flat_model)
+  #@debug "Apply simplifications to the model"
+  flat_model = simplifyFlatModel(flat_model)
+  #@debug "Collect a tree of all functions that are still used in the flat model"
+  funcs = collectFunctions(flat_model, name)
+  #=  Collect package constants that couldn't be substituted with their values =#
+  #=  (e.g. because they where used with non-constant subscripts), and add them to the model. =#
+  #@debug "Collect package constants"
+  flat_model = collectConstants(flat_model, funcs)
+  if Flags.getConfigBool(Flags.FLAT_MODELICA)
+    printFlatString(flat_model, FunctionTreeImpl.listValues(funcs))
+  end
+  #= Scalarize array components in the flat model.=#
+  if Flags.isSet(Flags.NF_SCALARIZE)
+    #@debug "Scalarization"
+    flat_model = scalarize(flat_model, name)
+  else
+    #=  Remove empty arrays from variables =#
+    @assign flat_model.variables = filter( (x) -> !isEmptyArray(x), flat_model.variables)
+  end
+  #@debug "Verify the model"
+  verify(flat_model)
+  if Flags.isSet(Flags.NF_DUMP_FLAT)
+    print("FlatModel:\\n" + toString(flat_model) + "\\n")
   end
   return (flat_model, funcs, inst_cls)
 end
@@ -412,18 +424,14 @@ function expandClass2(node::InstNode) ::InstNode
 end
 
 function expandClassParts(def::SCode.Element, node::InstNode, info::SourceInfo) ::InstNode
-
-
   local cls::Class
   local cls_tree::ClassTree
   local mod::Modifier
   local builtin_ext::InstNode
   local prefs::Prefixes
   local res::Restriction
-
    cls = getClass(node)
-  #=  Change the class to an empty expanded class, to avoid instantiation loops.
-  =#
+  #=  Change the class to an empty expanded class, to avoid instantiation loops. =#
    cls = initExpandedClass(cls)
    node = updateClass(cls, node)
   @match EXPANDED_CLASS(elements = cls_tree, modifier = mod, prefixes = prefs) = cls
@@ -736,7 +744,7 @@ function instClass(node::InstNode, modifier::Modifier, attributes::Attributes = 
     fail()
   end
   #@debug "CALLING INSTCLASSDEF"
-   (attributes, node) = instClassDef(cls, modifier, attributes, useBinding, node, parent, instLevel)
+  (attributes, node) = instClassDef(cls, modifier, attributes, useBinding, node, parent, instLevel)
   (node, attributes)
 end
 
@@ -876,7 +884,6 @@ function instClassDef(cls::EXPANDED_CLASS,
   outer_mod = merge(outerMod, cls.modifier)
   mod = merge(outer_mod, mod)
   #=  Apply the modifiers of extends nodes. =#
-
   mapExtends(cls_tree, @closure (extendsNodeX) -> modifyExtends(extendsNodeX, par))
   #=  Apply the modifiers of this scope. =#
   applyModifier(mod, cls_tree, name(node))
@@ -1385,18 +1392,28 @@ function instComponent(node::InstNode,
   @match COMPONENT_DEF(definition = def, modifier = outer_mod) = comp
   if isRedeclare(outer_mod)
     checkOuterComponentMod(outer_mod, def, comp_node)
-    instComponentDef(def, MODIFIER_NOMOD(), MODIFIER_NOMOD(), DEFAULT_ATTR, useBinding, comp_node, parentNode, instLevel, originalAttr; isRedeclared = true)
+    instComponentDef(def, MODIFIER_NOMOD(), MODIFIER_NOMOD(),
+                     DEFAULT_ATTR, useBinding, comp_node, parentNode,
+                     instLevel, originalAttr; isRedeclared = true)
     @match MODIFIER_REDECLARE(element = rdcl_node, mod = outer_mod) = outer_mod
     cc_smod = SCodeUtil.getConstrainingMod(def)
     if ! SCodeUtil.isEmptyMod(cc_smod)
       nameStr = name(node)
       cc_mod = create(cc_smod, nameStr, SCOPE_COMPONENT(nameStr), nil, parentNode)
     end
-    @assign outer_mod = merge(getModifier(rdcl_node), outer_mod)
+    outer_mod = merge(getModifier(rdcl_node), outer_mod)
     setModifier(outer_mod, rdcl_node)
     redeclareComponent(rdcl_node, node, MODIFIER_NOMOD(), cc_mod, attributes, node, instLevel)
   else
-    instComponentDef(def, outer_mod, cc_mod, attributes, useBinding, comp_node, parentNode, instLevel, originalAttr)
+    instComponentDef(def,
+                     outer_mod,
+                     cc_mod,
+                     attributes,
+                     useBinding,
+                     comp_node,
+                     parentNode,
+                     instLevel,
+                     originalAttr)
   end
 end
 
@@ -1432,7 +1449,6 @@ function instComponentDef(component::SCode.COMPONENT,
   mod = merge(mod, innerMod)
   mod = merge(outerMod, mod)
   mod = addParent(node, mod)
-  #      str = toString(mod, true)
   checkOuterComponentMod(mod, component, node)
   dims = Dimension[DIMENSION_RAW_DIM(d) for d in component.attributes.arrayDims]
   bindingVar = if useBinding
@@ -1441,10 +1457,8 @@ function instComponentDef(component::SCode.COMPONENT,
     EMPTY_BINDING()
   end
   condition = fromAbsyn(component.condition, false, list(node), parentNode, info)
-  #=  Instantiate the component's attributes, and merge them with the
-  =#
-  #=  attributes of the component's parent (e.g. constant SomeComplexClass c).
-  =#
+  #=  Instantiate the component's attributes, and merge them with the =#
+  #=  attributes of the component's parent (e.g. constant SomeComplexClass c). =#
   parent_res = restriction(getClass(parentNode))
   attr = instComponentAttributes(component.attributes, component.prefixes)
   attr = checkDeclaredComponentAttributes(attr, parent_res, node)
@@ -1455,15 +1469,12 @@ function instComponentDef(component::SCode.COMPONENT,
   if ! attr.isFinal && isFinal(mod)
     @assign attr.isFinal = true
   end
-  #=  Create the untyped component and update the node with it. We need the
-  =#
-  #=  untyped component in instClass to make sure everything is scoped
-  =#
-  #=  correctly during lookup, but the class node the component should have
-  =#
-  #=  is created by instClass. To break the circle we leave the class node
-  =#
-  #=  empty here, and let instClass set it for us instead.
+  #=
+  Create the untyped component and update the node with it. We need the
+  untyped component in instClass to make sure everything is scoped
+  correctly during lookup, but the class node the component should have
+  is created by instClass. To break the circle we leave the class node
+  empty here, and let instClass set it for us instead.
   =#
   inst_comp = UNTYPED_COMPONENT(EMPTY_NODE(),
                                 dims,
@@ -1472,15 +1483,14 @@ function instComponentDef(component::SCode.COMPONENT,
                                 attr,
                                 SOME(component.comment), false, info)
   updateComponent!(inst_comp, node)
-  #=  Instantiate the type of the component.
-  =#
-  (ty_node, ty_attr) = instTypeSpec(component.typeSpec, mod, attr, useBinding && ! isBound(bindingVar), parentNode, node, info, instLevel)
+  #=  Instantiate the type of the component. =#
+  (ty_node, ty_attr) = instTypeSpec(component.typeSpec, mod, attr,
+                                    useBinding && ! isBound(bindingVar),
+                                    parentNode, node, info, instLevel)
   ty = getClass(ty_node)
-  #=  Update the component's variability based on its type (e.g. Integer is discrete).
-  =#
+  #=  Update the component's variability based on its type (e.g. Integer is discrete). =#
   ty_attr = updateComponentVariability(ty_attr, ty, ty_node)
-  #=  Update the component's connector type now that we have its type.
-  =#
+  #=  Update the component's connector type now that we have its type. =#
   res = restriction(getClass(ty_node))
   ty_attr = updateComponentConnectorType(ty_attr, res, isRedeclared, node)
   if ! referenceEq(attr, ty_attr)
@@ -1490,7 +1500,7 @@ end
 
 function instConstrainingMod(element::SCode.Element, parent::InstNode) ::Modifier
   local ccMod::Modifier
-  @assign ccMod = begin
+  ccMod = begin
     local smod::SCode.Mod
     @match element begin
       SCode.CLASS(prefixes = SCode.PREFIXES(replaceablePrefix = SCode.REPLACEABLE(cc = SOME(SCode.CONSTRAINCLASS(modifier = smod)))))  => begin
@@ -2045,8 +2055,8 @@ function instExpressions(@nospecialize(node::InstNode), @nospecialize(scope::Ins
           Error.addSourceMessage(Error.MISSING_TYPE_BASETYPE, list(name(node)), infoInstNode_info(node))
           fail()
         end
-        @assign cls_tree = flatten(cls_tree)
-        @assign inst_cls = INSTANCED_CLASS(ty, cls_tree, SECTIONS_EMPTY(), cls.restriction)
+        cls_tree = flatten(cls_tree)
+        inst_cls = INSTANCED_CLASS(ty, cls_tree, SECTIONS_EMPTY(), cls.restriction)
         updateClass(inst_cls, node)
         ()
       end
@@ -2079,7 +2089,7 @@ function instExpressions(@nospecialize(node::InstNode), @nospecialize(scope::Ins
         dim_scope = parent(node)
         info = InstNode_info(node)
         for i in 1:arrayLength(dims)
-          @assign dims[i] = instDimension(dims[i], dim_scope, info)
+          dims[i] = instDimension(dims[i], dim_scope, info)
         end
         if isRecord(cls.restriction)
           instRecordConstructor(node)
@@ -2250,8 +2260,8 @@ function instComponentExpressions(componentArg::InstNode)
       ()
     end
     _  => begin
-      @error "Relaxed instantation for: " + name(componentArg)
-      #Error.assertion(false, getInstanceName() + " got invalid component", sourceInfo())
+      #@error "Relaxed instantation for: " + name(componentArg)
+      Error.assertion(false, getInstanceName() + " got invalid component", sourceInfo())
       fail()
     end
   end
@@ -2264,6 +2274,7 @@ function instBinding(bindingVar::Binding)
     @match bindingVar begin
       RAW_BINDING(__)  => begin
         bind_exp = instExp(bindingVar.bindingExp, bindingVar.scope, bindingVar.info)
+        #= TODO: Convert the array in binding exp to a vector =#
         bind_exp = BINDING_EXP(bind_exp, TYPE_UNKNOWN(), TYPE_UNKNOWN(), bindingVar.parents, bindingVar.isEach)
         UNTYPED_BINDING(bind_exp, false, bindingVar.scope, bindingVar.isEach, bindingVar.info)
       end
@@ -2541,7 +2552,7 @@ function instCrefSubscripts(cref::ComponentRef, scope::InstNode, info::SourceInf
         if ! listEmpty(cref.subscripts)
           @assign cref.subscripts = list(instSubscript(s, scope, info) for s in cref.subscripts)
         end
-        @assign rest_cr = instCrefSubscripts(cref.restCref, scope, info)
+        rest_cr = instCrefSubscripts(cref.restCref, scope, info)
         if ! referenceEq(rest_cr, cref.restCref)
           @assign cref.restCref = rest_cr
         end

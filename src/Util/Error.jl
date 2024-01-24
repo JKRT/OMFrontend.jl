@@ -4816,16 +4816,16 @@ end
 function addInternalError(message::String, info::SourceInfo)
   local filename::String
 
-  return if Testsuite.isRunning()
-    @match SOURCEINFO(fileName = filename) = info
-    addSourceMessage(
-      INTERNAL_ERROR,
-      list(message),
-      SOURCEINFO(filename, false, 0, 0, 0, 0, 0),
-    )
-  else
-    addSourceMessage(INTERNAL_ERROR, list(message), info)
-  end
+  # return if Testsuite.isRunning()
+  #   @match SOURCEINFO(fileName = filename) = info
+  #   addSourceMessage(
+  #     INTERNAL_ERROR,
+  #     list(message),
+  #     SOURCEINFO(filename, false, 0, 0, 0, 0, 0),
+  #   )
+  # else
+  addSourceMessage(INTERNAL_ERROR, list(message), info)
+#  end
 end
 
 

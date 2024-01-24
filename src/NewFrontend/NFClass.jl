@@ -352,12 +352,10 @@ function isConnectorClass(cls::Class)::Bool
 end
 
 function setRestriction(res::Restriction, cls::Class)::Class
-
    () = begin
     @match cls begin
       EXPANDED_CLASS(__) => begin
-        #=  PARTIAL_BUILTIN is only used for predefined builtin types and not needed here.
-        =#
+        #=  PARTIAL_BUILTIN is only used for predefined builtin types and not needed here. =#
         cls.restriction = res
         ()
       end

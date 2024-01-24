@@ -51,6 +51,7 @@ end
 
 mutable struct TYPED_BINDING <: Binding
   bindingExp::Expression
+
   bindingType
   variability::VariabilityType
   eachType::Int

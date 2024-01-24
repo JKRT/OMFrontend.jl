@@ -3187,16 +3187,14 @@ function matchBinding(
     local exp_ty::NFType
     local comp_ty::NFType
     local dims::List{List{Dimension}}
-    @match binding begin
+     @match binding begin
       TYPED_BINDING(bindingExp = exp) => begin
          (exp_ty, comp_ty) = begin
           @match exp begin
             BINDING_EXP(
               __,
             ) where {(binding.eachType == EachType.NOT_EACH)} => begin
-              dims = list(
-                arrayDims(getType(p)) for p in listRest(exp.parents)
-              )
+              dims = list(arrayDims(getType(p)) for p in listRest(exp.parents))
               (
                 exp.expType,
                 liftArrayLeftList(componentType, ListUtil.flattenReverse(dims)),

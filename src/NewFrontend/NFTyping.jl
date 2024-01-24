@@ -568,8 +568,7 @@ function typeDimensions(
   binding::Binding,
   origin::ORIGIN_Type,
   info::SourceInfo,
-)::Vector{Dimension}
-
+  )
   for i = 1:arrayLength(dimensions)
     typeDimension(dimensions, i, component, binding, origin, info)
   end
@@ -650,7 +649,7 @@ function typeDimension2(
         =#
         #=  If we are in a functions we allow e.g. size expression of unknown dimensions.
         =#
-         dim = DIMENSION_UNKNOWN()
+        dim = DIMENSION_UNKNOWN()
         arrayUpdate(dimensions, index, dim)
         dim
       end
@@ -765,9 +764,7 @@ function typeDimension2(
                 list(String(index), name(component), toString(b)),
                 info,
               )
-              fail()
             end
-
             _ => begin
               ()
             end
@@ -964,7 +961,7 @@ function typeBindings(cls::InstNode,
 end
 
 function typeBindings2(cls::InstNode,
-                      component::InstNode,
+                       component::InstNode,
                        origin::ORIGIN_Type)
   local c::Class
   local cls_tree::ClassTree
@@ -1062,8 +1059,7 @@ function typeComponentBinding2(
           #@debug "Typed binding 2: $str2"
         catch e
           if isBound(c.condition)
-            binding =
-              INVALID_BINDING(binding, ErrorExt.getCheckpointMessages())
+            binding = INVALID_BINDING(binding, ErrorExt.getCheckpointMessages())
           else
             #            ErrorExt.delCheckpoint(getInstanceName())
             @error "Error in type component binding $e"
@@ -1247,7 +1243,7 @@ function typeBinding(binding::Binding, origin::ORIGIN_Type)::Binding
 end
 
 function checkBindingEach(binding::Binding)
-  local parentBindings::List{InstNode}
+  local parentBindings
   if isEach(binding)
     parentBindings = listRest(parents(binding))
     for parent in parentBindings
@@ -1255,11 +1251,11 @@ function checkBindingEach(binding::Binding)
         return
       end
     end
-    # Error.addStrictMessage(
-    #   Error.EACH_ON_NON_ARRAY,
-    #   list(name(listHead(parents))),
-    #   Binding_getInfo(binding),
-    # )
+    Error.addStrictMessage(
+      Error.EACH_ON_NON_ARRAY,
+      list(name(listHead(parents))),
+      Binding_getInfo(binding),
+    )
   end
 end
 
@@ -1890,7 +1886,9 @@ function nthDimensionBoundsChecked(
   local dim_size::Int = dimensionCount(ty)
   local index::Int = dimIndex + offset
   if index < 1 || index > dim_size
-    dim = DIMENSION_UNKNOWNy()
+    #println(index)
+    ##println(dim_size)
+    dim = DIMENSION_UNKNOWN()
     error = OUT_OF_BOUNDS(dim_size - offset)
   else
     dim = nthDimension(ty, index)
@@ -2121,8 +2119,7 @@ function typeSubscript(
       end
 
       _ => begin
-        #=  Other subscripts have already been typed, but still need to be type checked.
-        =#
+        #=  Other subscripts have already been typed, but still need to be type checked. =#
         Error.assertion(false, getInstanceName() + " got unknown subscript", sourceInfo())
         fail()
       end

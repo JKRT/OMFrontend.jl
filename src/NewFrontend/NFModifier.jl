@@ -232,13 +232,11 @@ end
 
 function isEach(mod::Modifier)::Bool
   local isEach::Bool
-
-  @assign isEach = begin
+  isEach = begin
     @match mod begin
       MODIFIER_MODIFIER(eachPrefix = SCode.EACH(__)) => begin
         true
       end
-
       _ => begin
         false
       end
@@ -302,8 +300,7 @@ function merge(outerMod::Modifier, innerMod::Modifier, name::String = "")::Modif
   mergedMod = begin
     local submods::ModTable.Tree
     local binding::Binding
-    #=  One of the modifiers is NOMOD, return the other.
-    =#
+    #=  One of the modifiers is NOMOD, return the other. =#
     @match (outerMod, innerMod) begin
       (MODIFIER_NOMOD(__), _) => begin
         innerMod
@@ -352,7 +349,7 @@ function merge(outerMod::Modifier, innerMod::Modifier, name::String = "")::Modif
       end
 
       _ => begin
-        Error.addMessage(Error.INTERNAL_ERROR, list("Mod.mergeMod failed on unknown mod."))
+        Error.addMessage(Error.INTERNAL_ERROR, list("Mod.mergeMod failed on unknown modifier."))
         fail()
       end
     end
@@ -480,7 +477,7 @@ function addParent(parentNode::InstNode, mod::Modifier)::Modifier
     @match mod begin
       MODIFIER_MODIFIER(binding = binding) => begin
         mod.binding = addParent(parentNode, binding)
-        map(mod, (x,y) -> addParent_work(x, parentNode, y))
+        map(mod, (x, y) -> addParent_work(x, parentNode, y))
       end
       _ => begin
         mod
@@ -490,10 +487,11 @@ function addParent(parentNode::InstNode, mod::Modifier)::Modifier
   return outMod
 end
 
-""" #= This function makes modifiers applied to final elements final, e.g. for
+"""  This function makes modifiers applied to final elements final, e.g. for
      'final Real x(start = 1.0)' it will mark '(start = 1.0)' as final. This is
      done so that we only need to check for final violations while merging
-     modifiers. =#"""
+     modifiers.
+"""
 function patchElementModFinal(
   prefixes::SCode.Prefixes,
   info::SourceInfo,
@@ -526,7 +524,7 @@ function fromElement(
   element::SCode.Element,
   parents::List{<:InstNode},
   scope::InstNode,
-)::Modifier
+  )
   local mod::Modifier
   mod = begin
     local def::SCode.ClassDef
@@ -605,13 +603,11 @@ function stripSCodeMod(elem::SCode.Element)::Tuple{SCode.Element, SCode.Mod}
   return (elem, mod)
 end
 
-function create(
-  mod::SCode.Mod,
-  name::String,
-  modScope::ModifierScope,
-  parents::List{<:InstNode},
-  scope::InstNode,
-)::Modifier
+function create(mod::SCode.Mod,
+                name::String,
+                modScope::ModifierScope,
+                parents::List{<:InstNode},
+                scope::InstNode)
   local newMod::Modifier
   newMod = begin
     local submod_lst::List{Tuple{String, Modifier}}
@@ -712,8 +708,10 @@ function mergeLocal(
   return mod
 end
 
-""" #= Checks that a modifier is not trying to override a final modifier. In that
-     case it prints an error and fails, otherwise it does nothing. =#"""
+"""
+Checks that a modifier is not trying to override a final modifier.
+In that case it prints an error and fails, otherwise it does nothing.
+"""
 function checkFinalOverride(
   innerFinal::SCode.Final,
   outerMod::Modifier,
@@ -736,12 +734,10 @@ function checkFinalOverride(
   end
 end
 
-function createSubMod(
-  subMod::SCode.SubMod,
-  modScope::ModifierScope,
-  parents::List{<:InstNode},
-  scope::InstNode,
-)::Modifier
+function createSubMod(subMod::SCode.SubMod,
+                      modScope::ModifierScope,
+                      parents::List{<:InstNode},
+                      scope::InstNode)
   local mod::Modifier = create(subMod.mod, subMod.ident, modScope, parents, scope)
   return mod
 end

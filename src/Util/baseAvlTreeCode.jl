@@ -650,6 +650,29 @@ function listValues(tree::Tree, lst::List{T} = nil) where {T <: Value}
   return lst
 end
 
+"""
+  Same as listValues but does it for vectors instead.
+"""
+function vectorValues(tree::Tree, vec::Vector{T}) where {T <: Value}
+  local value::Value
+  @match tree begin
+    NODE(value = value) => begin
+      push!(vec, vectorValues(tree.right, vec))
+      pushfirst!(vec, value)
+      push!(vec, vectorValues(tree.left, vec))
+      return vec
+    end
+    LEAF(value = value) => begin
+      pushfirst!(vec, value)
+      return vec
+    end
+    _ => begin
+      return vec
+    end
+  end
+end
+
+
 """ #= Joins two trees by adding the second one to the first. =#"""
 function join(
   tree::Tree,

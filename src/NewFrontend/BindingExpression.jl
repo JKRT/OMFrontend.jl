@@ -20,7 +20,7 @@ function mostPropagatedSubExp_traverser(exp::Expression, mostPropagated::Tuple{I
     (max_prop, _) = mostPropagated
     exp_prop = propagatedDimCount(exp)
     if exp_prop > max_prop
-      @assign mostPropagated = (exp_prop, exp)
+      mostPropagated = (exp_prop, exp)
     end
   end
   mostPropagated
@@ -36,8 +36,8 @@ function mostPropagatedSubExpBinary(exp1::Expression, exp2::Expression) ::Tuple{
   local maxPropCount::Int
   local maxPropExp::Expression
   #=  TODO: Optimize this, there's no need to check for bindings in e.g. literal arrays. =#
-   (maxPropCount, maxPropExp) = fold(exp1, mostPropagatedSubExp_traverser, (-1, exp1))
-   (maxPropCount, maxPropExp) = fold(exp2, mostPropagatedSubExp_traverser, (maxPropCount, maxPropExp))
+  (maxPropCount, maxPropExp) = fold(exp1, mostPropagatedSubExp_traverser, (-1, exp1))
+  (maxPropCount, maxPropExp) = fold(exp2, mostPropagatedSubExp_traverser, (maxPropCount, maxPropExp))
   (maxPropExp, maxPropCount)
 end
 
@@ -165,7 +165,7 @@ function propagatedDimCount(exp::Expression) ::Int
     @match exp begin
       BINDING_EXP(isEach = false)  => begin
         if isKnown(exp.expType)
-          @assign dimCount = dimensionCount(exp.expType) - dimensionCount(exp.bindingType)
+          dimCount = dimensionCount(exp.expType) - dimensionCount(exp.bindingType)
         else
           dimCount = 0
           for parent in listRest(exp.parents)
@@ -6447,14 +6447,9 @@ function compare(ck1::ClockKind, ck2::ClockKind) ::Int
 end
 
 #= Forward declarations for uniontypes until Julia adds support for mutual recursion =#
-
-PredFunc = Function
-FoldFunc = Function
-MapFunc = Function
-MapFunc = Function
 @UniontypeDecl Binding
 
-function containsExp(binding::Binding, predFn::PredFunc)::Bool
+function containsExp(binding::Binding, predFn::Function)::Bool
   local res::Bool
 
   @assign res = begin
@@ -6483,7 +6478,7 @@ function containsExp(binding::Binding, predFn::PredFunc)::Bool
   return res
 end
 
-function foldExp(binding::Binding, foldFn::FoldFunc, arg::ArgT) where {ArgT}
+function foldExp(binding::Binding, foldFn::Function, arg::ArgT) where {ArgT}
   arg = begin
     @match binding begin
       UNTYPED_BINDING(__) => begin
@@ -6510,7 +6505,7 @@ function foldExp(binding::Binding, foldFn::FoldFunc, arg::ArgT) where {ArgT}
   return arg
 end
 
-function mapExpShallow(binding::Binding, mapFn::MapFunc)::Binding
+function mapExpShallow(binding::Binding, mapFn::Function)::Binding
   local e1::Expression
   local e2::Expression
   () = begin
@@ -6555,7 +6550,7 @@ function mapExpShallow(binding::Binding, mapFn::MapFunc)::Binding
   return binding
 end
 
-function mapExp(binding::Binding, mapFn::MapFunc)::Binding
+function mapExp(binding::Binding, mapFn::Function)::Binding
   local e1::Expression
   local e2::Expression
   () = begin
@@ -6801,7 +6796,7 @@ function propagatedDimCount(binding::Binding)::Int
   return count
 end
 
-function isClassBinding(binding::Binding)::Bool
+function isClassBinding(binding::Binding)
   for parent in parents(binding)
     if isClass(parent)
       return true
@@ -6810,9 +6805,9 @@ function isClassBinding(binding::Binding)::Bool
   return false
 end
 
-function addParent(parent::InstNode, binding::Binding)
+function addParent(@nospecialize(parent::InstNode), @nospecialize(binding::Binding))
   @match binding begin
-    UNBOUND(isEach = true) => begin
+    UNBOUND(isEach = true) => begin #Should be vcat?
       @assign binding.parents = _cons(parent, binding.parents)
       ()
     end
@@ -6828,39 +6823,33 @@ function addParent(parent::InstNode, binding::Binding)
 end
 
 function parentCount(binding::Binding)::Int
-  local count::Int = listLength(parents(binding))
+  local count::Int = length(parents(binding))
   return count
 end
 
-function parents(binding::Binding)::List{InstNode}
-  local parents::List{InstNode}
-
-  @assign parents = begin
+function parents(@nospecialize(binding::Binding))
+  local parents::Union{Vector{InstNode}, List{InstNode}}
+  parents = begin
     @match binding begin
       UNBOUND(__) => begin
         binding.parents
       end
-
       RAW_BINDING(__) => begin
         binding.parents
       end
-
       UNTYPED_BINDING(
-        bindingExp = BINDING_EXP(parents = parents),
+        bindingExp = BINDING_EXP(__),
       ) => begin
-        parents
+        binding.bindingExp.parents
       end
-
-      TYPED_BINDING(bindingExp = BINDING_EXP(parents = parents)) => begin
-        parents
+      TYPED_BINDING(bindingExp = BINDING_EXP(__)) => begin
+        binding.bindingExp.parents
       end
-
-      CEVAL_BINDING(bindingExp = BINDING_EXP(parents = parents)) => begin
-        parents
+      CEVAL_BINDING(bindingExp = BINDING_EXP(__)) => begin
+        binding.bindingExp.parents
       end
-
       _ => begin
-        nil
+        InstNode[]
       end
     end
   end

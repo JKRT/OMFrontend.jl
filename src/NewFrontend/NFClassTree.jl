@@ -3,47 +3,48 @@ include("DuplicateTree.jl")
 
 import .DuplicateTree
 
-@Uniontype ClassTree begin
-  @Record CLASS_TREE_EMPTY_TREE begin
-  end
-  @Record CLASS_TREE_FLAT_TREE begin
-    tree::LookupTree.Tree
-    classes::Vector{InstNode}
-    components::Vector{InstNode}
-    imports::Vector{Import}
-    duplicates::DuplicateTree.Tree
-  end
+abstract type ClassTree end
 
-  @Record CLASS_TREE_INSTANTIATED_TREE begin
-    tree::LookupTree.Tree
-    classes::Vector{Pointer{InstNode}}
-    components::Vector{Pointer{InstNode}}
-    localComponents::Vector{Int}
-    exts::Vector{InstNode}
-    imports::Vector{Import}
-    duplicates::DuplicateTree.Tree
-  end
+struct CLASS_TREE_EMPTY_TREE <: ClassTree end
 
-  @Record CLASS_TREE_EXPANDED_TREE begin
-    tree::LookupTree.Tree
-    classes::Vector{InstNode}
-    components::Vector{InstNode}
-    exts::Vector{InstNode}
-    imports::Vector{Import}
-    duplicates::DuplicateTree.Tree
-  end
-
-  @Record CLASS_TREE_PARTIAL_TREE begin
-    tree::LookupTree.Tree
-    classes::Vector{InstNode}
-    components::Vector{InstNode}
-    exts::Vector{InstNode}
-    imports::Vector{Import}
-    duplicates::DuplicateTree.Tree
-  end
+struct CLASS_TREE_FLAT_TREE <: ClassTree
+  tree::LookupTree.Tree
+  classes::Vector{InstNode}
+  components::Vector{InstNode}
+  imports::Vector{Import}
+  duplicates::DuplicateTree.Tree
 end
 
-const EMPTY_CLASS_TREE =
+struct CLASS_TREE_INSTANTIATED_TREE <: ClassTree
+  tree::LookupTree.Tree
+  classes::Vector{Pointer{InstNode}}
+  components::Vector{Pointer{InstNode}}
+  localComponents::Vector{Int}
+  exts::Vector{InstNode}
+  imports::Vector{Import}
+  duplicates::DuplicateTree.Tree
+end
+
+struct CLASS_TREE_EXPANDED_TREE <: ClassTree
+  tree::LookupTree.Tree
+  classes::Vector{InstNode}
+  components::Vector{InstNode}
+  exts::Vector{InstNode}
+  imports::Vector{Import}
+  duplicates::DuplicateTree.Tree
+end
+
+struct CLASS_TREE_PARTIAL_TREE <: ClassTree
+  tree::LookupTree.Tree
+  classes::Vector{InstNode}
+  components::Vector{InstNode}
+  exts::Vector{InstNode}
+  imports::Vector{Import}
+  duplicates::DuplicateTree.Tree
+end
+
+#= Empty tree, references to these two variables should be done using deepcopy=#
+const EMPTY_CLASS_TREE::CLASS_TREE_PARTIAL_TREE =
   CLASS_TREE_PARTIAL_TREE(
     LookupTree.EMPTY(),
     listArray(nil),
@@ -51,16 +52,16 @@ const EMPTY_CLASS_TREE =
     listArray(nil),
     listArray(nil),
     DuplicateTree.EMPTY(),
-  )::ClassTree
+  )
 
-const EMPTY_FLAT_CLASS_TREE =
+const EMPTY_FLAT_CLASS_TREE::CLASS_TREE_FLAT_TREE =
   CLASS_TREE_FLAT_TREE(
     LookupTree.EMPTY(),
     listArray(nil),
     listArray(nil),
     listArray(nil),
     DuplicateTree.EMPTY(),
-  )::ClassTree
+  )
 
 function isEmptyTree(tree::ClassTree)
   if typeof(tree) isa CLASS_TREE_EMPTY_TREE

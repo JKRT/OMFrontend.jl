@@ -19,7 +19,7 @@ function instClassInProgram(classPath::Absyn.Path, program::SCode.Program)
     (flat_model, funcs, inst_cls) = instClassInProgramFM2(classPath::Absyn.Path, program::SCode.Program)
   catch e
     println("The compiler failed to process a model with the following message(s):")
-    println(Error.printMessagesStr())
+    print(Error.printMessagesStr())
     Error.clearMessages()
     #=TODO: Add a @static flag later to supress this message. =#
     println("Internal stack trace:")
@@ -40,13 +40,14 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
     (flat_model, funcs, inst_cls) = instClassInProgramFM2(classPath::Absyn.Path, program::SCode.Program)
   catch e
     println("The compiler failed to process a model with the following message(s):")
-    println(Error.printMessagesStr())
+    print(Error.printMessagesStr())
     Error.clearMessages()
     #=TODO: Add a @static flag later to supress this message. =#
     println("Internal stack trace:")
     throw(e)
   else
-    println(Error.printMessagesStr())
+    print(Error.printMessagesStr(; printErrors = false #= Incase instatiate was successful,
+                                 errors that have been added but have been resolved during instatiation should not be printed.=#))
     Error.clearMessages()
   end
   return (flat_model, funcs, inst_cls)
@@ -576,7 +577,11 @@ function expandExternalObject(clsTree::ClassTree, node::InstNode) ::InstNode
   =#
   #=  possible to call the constructor or destructor explicitly.
   =#
-   c = PARTIAL_BUILTIN(TYPE_COMPLEX(node, eo_ty), EMPTY_FLAT_CLASS_TREE, MODIFIER_NOMOD(), DEFAULT_PREFIXES, RESTRICTION_EXTERNAL_OBJECT())
+  c = PARTIAL_BUILTIN(TYPE_COMPLEX(node, eo_ty),
+                      deepcopy(EMPTY_FLAT_CLASS_TREE),
+                      MODIFIER_NOMOD(),
+                      DEFAULT_PREFIXES,
+                      RESTRICTION_EXTERNAL_OBJECT())
    node = updateClass(c, node)
   node
 end
@@ -830,20 +835,20 @@ function instClassDef(cls::EXPANDED_DERIVED,
   mod = fromElement(definition(node), list(node), rootParent(node))
   outer_mod = merge(outerMod, addParent(node, cls.modifier))
   mod = merge(outer_mod, mod)
-
   #strMod = toString(mod, true)
   #@debug "Merged mod EXPANDED_DERIVED: $strMod"
-
   attrs = updateClassConnectorType(cls.restriction, cls.attributes)
   attributes = mergeDerivedAttributes(attrs, attributes, parentArg)
   #=  Instantiate the base class and update the nodes.
   =#
   (base_node, attributes) = instClass(base_node, mod, attributes, useBinding, instLevel, par)
-  @assign cls.baseClass = base_node
-  @assign cls.attributes = attributes
-  @assign cls.dims = arrayCopy(cls.dims)
-  #=  Update the parentArg's type with the new class instance.
-  =#
+  cls = EXPANDED_DERIVED(base_node,
+                         cls.modifier,
+                         arrayCopy(cls.dims),
+                         cls.prefixes,
+                         attributes,
+                         cls.restriction)
+  #=  Update the parentArg's type with the new class instance. =#
   node = updateClass(cls, node)
   updateComponentType(parentArg, node)
   return (attributes, node)
@@ -884,32 +889,45 @@ function instClassDef(cls::EXPANDED_CLASS,
   outer_mod = merge(outerMod, cls.modifier)
   mod = merge(outer_mod, mod)
   #=  Apply the modifiers of extends nodes. =#
-  mapExtends(cls_tree, @closure (extendsNodeX) -> modifyExtends(extendsNodeX, par))
+  function modifyExtendsFunc(@nospecialize(node::InstNode))
+    modifyExtends(node, par)
+  end
+  function redeclareElementsFunc(@nospecialize(treeArg))
+    redeclareElements(treeArg, instLevel)
+  end
+  mapExtends(cls_tree, modifyExtendsFunc)
   #=  Apply the modifiers of this scope. =#
   applyModifier(mod, cls_tree, name(node))
   #=  Apply element redeclares. =#
-  mapRedeclareChains(cls_tree, @closure (treeArg) -> redeclareElements(treeArg, instLevel))
+  mapRedeclareChains(cls_tree, redeclareElementsFunc)
   #=  Redeclare classes with redeclare modifiers. Redeclared components could
     also be handled here, but since each component is only instantiated once
     it's more efficient to apply the redeclare when instantiating them instead.
   =#
   redeclareClasses(cls_tree)
   #=  Instantiate the extends nodes. =#
-  mapExtends(cls_tree, @closure (nodeX) -> instExtends(nodeX,
-                                                       attributes,
-                                                       useBinding,
-                                                       ExtendsVisibility.PUBLIC,
-                                                       instLevel + 1))
+
+  function instExtendsMapFunc(@nospecialize(node::InstNode))
+    instExtends(node,
+                attributes,
+                useBinding,
+                ExtendsVisibility.PUBLIC,
+                instLevel + 1)
+  end
+
+  mapExtends(cls_tree, instExtendsMapFunc)
   #=  Instantiate local components. =#
-  instCp = @closure (node) -> instComponent(
-    node,
-    attributes,
-    MODIFIER_NOMOD(),
-    useBinding,
-    instLevel + 1,
-    NONE()
-  )
-  applyLocalComponents(cls_tree, instCp)
+  function applyComponentMapFunc(@nospecialize(node::InstNode))
+    instComponent(
+      node,
+      attributes,
+      MODIFIER_NOMOD(),
+      useBinding,
+      instLevel + 1,
+      NONE()
+    )
+  end
+  applyLocalComponents(cls_tree, applyComponentMapFunc)
   #=  Remove duplicate elements. =#
   cls_tree = replaceDuplicates(cls_tree)
   checkDuplicates(cls_tree)

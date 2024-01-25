@@ -61,8 +61,9 @@ end
     modifier::Modifier
     prefixes
   end
-  @Record NOT_INSTANTIATED begin
-  end
+end
+
+struct NOT_INSTANTIATED <: Class
 end
 
 

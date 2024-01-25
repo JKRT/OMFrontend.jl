@@ -161,9 +161,12 @@ function infoStr(info::SourceInfo)::String
   return str
 end
 
-function printMessagesStr(;warningsAsErrors::Bool = false)::String
+function printMessagesStr(;warningsAsErrors::Bool = false, printErrors = true #= In some cases we only want to print warnings.=#)::String
   local buffer = IOBuffer()
   for (m, tokens, mInfo) in SOURCE_MESSAGES
+    if printErrors == false && typeof(m.id) !== ErrorTypes.WARNING
+      continue
+    end
     println(buffer, string(severityStr(m.severity), ":"))
     println(buffer, string("\tMessage Type:", messageTypeStr(m.ty)))
     println(buffer, string("\t", infoStr(mInfo)))
@@ -172,7 +175,6 @@ function printMessagesStr(;warningsAsErrors::Bool = false)::String
     for token in tokens
       msg = replace(msg, "%s" => token, count = 1)
     end
-    println(buffer, string("\tMessage:", msg))
   end
   return String(take!(buffer))
 end

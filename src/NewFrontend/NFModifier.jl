@@ -717,13 +717,13 @@ function checkFinalOverride(
   outerMod::Modifier,
   innerInfo::SourceInfo,
   )
-  @assign _ = begin
+  _ = begin
     @match innerFinal begin
       SCode.FINAL(__) => begin
         Error.addMultiSourceMessage(
           Error.FINAL_COMPONENT_OVERRIDE,
-          list(name(outerMod), P_Modifier.toString(outerMod, printName = false)),
-          list(info(outerMod), innerInfo),
+          list(name(outerMod), toString(outerMod, false)),
+          list(Modifier_info(outerMod), innerInfo),
         )
         fail()
       end

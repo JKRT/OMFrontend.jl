@@ -123,9 +123,11 @@ import ..Main.TYPE_ENUMERATION
 import ..Main.TYPE_INTEGER
 import ..Main.TYPE_REAL
 import ..Main.TYPE_BOOLEAN
-#==#
+import ..Main.CachedData
+import ..Main.InstNode
+
+#= Modules =#
 import ..LookupTree
-import ..InstNode
 
 import ..Main.NORMAL_COMP
 import ..Main.COMPONENT_NODE
@@ -150,7 +152,7 @@ import ..Main.TYPED_COMPONENT
 import ..Main.EMPTY_BINDING
 import ..Main.INPUT_ATTR
 
-const EMPTY_NODE_CACHE = listArrayLiteral(list(C_FUNCTION(nil, true, true)))::Vector
+const EMPTY_NODE_CACHE::Vector{CachedData} = listArrayLiteral(list(C_FUNCTION(nil, true, true)))
 #=  InstNodes for the builtin types. These have empty class trees to prevent
 =#
 #=  access to the attributes via dot notation (which is not needed for
@@ -158,7 +160,7 @@ const EMPTY_NODE_CACHE = listArrayLiteral(list(C_FUNCTION(nil, true, true)))::Ve
 #=  modifiers and illegal in other cases).
 =#
 const POLYMORPHIC_NODE =
-  CLASS_NODE(
+  CLASS_NODE{String, Int}(
     "polymorphic",
     Elements.ANY,
     Visibility.PUBLIC,
@@ -346,7 +348,7 @@ const REAL_CLASS_TREE =
 #=  TODO: #4895: This should be listArrayLiteral too, but causes compilation issues.
 =#
 const REAL_NODE =
-  CLASS_NODE(
+  CLASS_NODE{String, Int}(
     "Real",
     Elements.REAL,
     Visibility.PUBLIC,

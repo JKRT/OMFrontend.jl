@@ -203,12 +203,11 @@ end
 
 function initLoadMSL(;MSL_Version = "MSL:3.2.3")
   # For printing
-  local MSL_VersionP = deepcopy(MSL_Version)
   @info "Loading MSL Version: $(MSL_Version)"
   MSL_Version = replace(MSL_Version, "." => "_")
   MSL_Version = replace(MSL_Version, ":" => "_")
   @time loadMSL(MSL_Version = MSL_Version)
-  @info "Loaded MSL Version:$(MSL_VersionP) successfully"
+  @info "Loaded MSL successfully"
 end
 
 """

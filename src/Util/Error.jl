@@ -4540,16 +4540,13 @@ end
 """ #= Adds an error message given the message, token and a list of file info. The
    the last file info in the list is used for the message itself, the rest of the
    file infos are used to print a trace of where the error came from. =#"""
-function addMultiSourceMessage(
-  inErrorMsg::ErrorTypes.Message,
-  inMessageTokens::ErrorTypes.MessageTokens,
-  inInfo::List{<:SourceInfo},
-)
-  return @assign _ = begin
+function addMultiSourceMessage(inErrorMsg::ErrorTypes.Message,
+                               inMessageTokens::ErrorTypes.MessageTokens,
+                               inInfo::List{<:SourceInfo})
+  _ = begin
     local info::SourceInfo
     local rest_info::List{SourceInfo}
-    #=  Only one info left, print out the message.
-    =#
+    #=  Only one info left, print out the message. =#
     @match (inErrorMsg, inMessageTokens, inInfo) begin
       (_, _, info <| nil()) => begin
         addSourceMessage(inErrorMsg, inMessageTokens, info)
@@ -4570,8 +4567,7 @@ function addMultiSourceMessage(
       end
     end
   end
-  #=  No infos given, print a sourceless error.
-  =#
+  #=  No infos given, print a sourceless error. =#
 end
 
 """ #= @author:adrpo
@@ -4622,9 +4618,9 @@ Relations for pretty printing.
 function: printMessagesStr
 Prints messages to a string.
 """
-function printMessagesStr(warningsAsErrors::Bool = false)::String
+function printMessagesStr(warningsAsErrors::Bool = false; printErrors = true)::String
   local res::String
-  res = ErrorExt.printMessagesStr(warningsAsErrors = warningsAsErrors)
+  res = ErrorExt.printMessagesStr(warningsAsErrors = warningsAsErrors; printErrors = printErrors)
   return res
 end
 

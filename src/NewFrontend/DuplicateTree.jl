@@ -16,10 +16,11 @@ end
 
 import ..LookupTree
 import ..InstNode
-struct EntryTypeStruct
-  DUPLICATE::Int
-  REDECLARE::Int
-  ENTRY::Int
+
+struct EntryTypeStruct{T0 <: Integer}
+  DUPLICATE::T0
+  REDECLARE::T0
+  ENTRY::T0
 end
 
 const EntryType = EntryTypeStruct(#=DUPLICATE=# 1,  #=REDCLARE=# 2 , #= ENTRY =# 3)

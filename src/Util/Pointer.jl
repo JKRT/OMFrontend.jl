@@ -14,12 +14,12 @@ function update(MutableType::Pointer{T}, data) where T
 end
 
 function createImmutable(data::T) where T
-  st = supertype(T)
+  local st = supertype(T)
   return Pointer{st}(data)
 end
 
 function create(data::T)::Pointer where T
-  st = supertype(T)
+  local st = supertype(T)
   local ptr = Pointer{st}(data)
   return ptr
 end

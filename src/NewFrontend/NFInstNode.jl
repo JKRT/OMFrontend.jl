@@ -79,31 +79,29 @@ mutable struct NAME_NODE <: InstNode
   name::String
 end
 
-
 mutable struct REF_NODE{T <: Int} <: InstNode
   index::T
 end
-
 
 mutable struct INNER_OUTER_NODE <: InstNode
   innerNode::InstNode
   outerNode::InstNode
 end
 
-mutable struct COMPONENT_NODE <: InstNode
-  name::String
-  visibility::Int
+mutable struct COMPONENT_NODE{T0 <: String, T1 <: Integer} <: InstNode
+  name::T0
+  visibility::T1
   component::Pointer{Component}
   parent #= The instance that this component is part of. =#::InstNode
   nodeType::InstNodeType
 end
 
-mutable struct CLASS_NODE <: InstNode
-  name::String
+mutable struct CLASS_NODE{T0 <: String, T1 <: Integer} <: InstNode
+  name::T0
   definition::SCode.Element
-  visibility::Int
+  visibility::T1
   cls::Pointer
-  caches::Vector{CachedData}
+  caches::Vector{<:Any}
   parentScope::InstNode
   nodeType::InstNodeType
 end
@@ -143,7 +141,7 @@ end
   end
 end
 
-const NUMBER_OF_CACHES = 3::Int
+const NUMBER_OF_CACHES::Int = 3
 
 function setInnerOuterCache(in_caches::Vector{<:CachedData}, in_cache::CachedData)
   local out_caches::Vector{CachedData} = arrayUpdate(in_caches, 3, in_cache)
@@ -359,7 +357,6 @@ function isPartial(node::InstNode)
       CLASS_NODE(__)  => begin
         SCodeUtil.isPartial(node.definition)
       end
-
       _  => begin
         false
       end
@@ -1412,7 +1409,8 @@ function definition(node::InstNode)
   def
 end
 
-function setNodeType(nodeType::InstNodeType, node::InstNode)
+function setNodeType(@nospecialize(nodeType::InstNodeType),
+                     @nospecialize(node::InstNode))
   @match node begin
     CLASS_NODE(__)  => begin
       @assign node.nodeType = nodeType
@@ -1444,30 +1442,48 @@ function nodeType(node::InstNode)
   nodeType
 end
 
+# function replaceClass(cls::Class, node::InstNode)
+#   () = begin
+#     @match node begin
+#       CLASS_NODE(__)  => begin
+#         #= NB: @assign is needed here. =#
+#         @assign node.cls = P_Pointer.create(cls)
+#         ()
+#       end
+#     end
+#   end
+#   node
+# end
+
 function replaceClass(cls::Class, node::InstNode)
-   () = begin
-    @match node begin
-      CLASS_NODE(__)  => begin
-        #= NB: @assign is needed here. =#
-        @assign node.cls = P_Pointer.create(cls)
-        ()
-      end
-    end
+  local replacedClass = if node isa CLASS_NODE
+    local classPtr = P_Pointer.create(cls)
+    CLASS_NODE{String, Int}(node.name,
+                            node.definition,
+                            node.visibility,
+                            classPtr,
+                            node.caches,
+                            node.parentScope,
+                            node.nodeType)
+  else
+    node
   end
-  node
+  return replacedClass
 end
 
+
 function replaceComponent(component::Component, node::InstNode)
-   () = begin
-    @match node begin
-      COMPONENT_NODE(__)  => begin
-        #= NB assign is needed =#
-        @assign node.component = P_Pointer.create(component)
-        ()
-      end
-    end
+  local replacedNode =  if node isa COMPONENT_NODE
+    local componentPointer = P_Pointer.create(component)
+    COMPONENT_NODE{String, Int}(node.name,
+                                node.visibility,
+                                componentPointer,
+                                node.parent,
+                                node.nodeType)
+  else
+    node
   end
-  node
+  return replacedNode
 end
 
 function updateComponent!(component::Component, node::InstNode)
@@ -1577,7 +1593,8 @@ function setOrphanParent(parent::InstNode, node::InstNode)
   node
 end
 
-function setParent(parent::InstNode, node::InstNode)
+function setParent(@nospecialize(parent::InstNode),
+                   @nospecialize(node::InstNode))
    () = begin
     @match node begin
       CLASS_NODE(__)  => begin
@@ -1586,8 +1603,6 @@ function setParent(parent::InstNode, node::InstNode)
         ()
       end
       COMPONENT_NODE(__)  => begin
-        #@debug "Setting parent! for parent: $(parent.name) and node: $(node.name)"
-        #@debug "parent scope before $(node.parent)"
         #= NB: Assign is needed here =#
         @assign node.parent = parent
         ()
@@ -1604,13 +1619,11 @@ end
 
 function topComponent(node::InstNode)
   local topComponent::InstNode
-
    topComponent = begin
     @match node begin
       COMPONENT_NODE(parent = EMPTY_NODE(__))  => begin
         node
       end
-
       COMPONENT_NODE(__)  => begin
         topComponent(node.parent)
       end
@@ -1654,7 +1667,7 @@ end
   the enclosing class. In the case of a component it is the enclosing class of
   the component's type.
 """
-function parentScope(node::InstNode)
+function parentScope(@nospecialize(node::InstNode))
   local scope::InstNode
    scope = begin
     @match node begin
@@ -1697,13 +1710,11 @@ end
 
 function rootParent(node::InstNode)
   local parent::InstNode
-
    parent = begin
     @match node begin
       CLASS_NODE(__)  => begin
         rootTypeParent(node.nodeType, node)
       end
-
       _  => begin
         parent(node)
       end
@@ -1714,21 +1725,17 @@ end
 
 function derivedParent(node::InstNode)
   local parent::InstNode
-
    parent = begin
     @match node begin
       CLASS_NODE(__)  => begin
         getDerivedNode(node.parentScope)
       end
-
       COMPONENT_NODE(__)  => begin
         getDerivedNode(node.parent)
       end
-
       IMPLICIT_SCOPE(__)  => begin
         getDerivedNode(node.parentScope)
       end
-
       _  => begin
         EMPTY_NODE()
       end
@@ -1739,7 +1746,6 @@ end
 
 function classParent(node::InstNode)
   local parent::InstNode
-
   @match CLASS_NODE(parentScope = parent) = node
   parent
 end
@@ -1791,7 +1797,6 @@ end
 """ #= Returns the type of node the given node is as a string. =#"""
 function typeName(node::InstNode)
   local name::String
-
    name = begin
     @match node begin
       CLASS_NODE(__)  => begin
@@ -1826,20 +1831,20 @@ function typeName(node::InstNode)
   name
 end
 
-""" #= Returns the name of a scope, which in the case of a component is the name
-                     of the component's type, and for a class simply the name of the class. =#"""
-                       function scopeName(node::InstNode)
-                         local outName::String = name(classScope(explicitScope(node)))
-                         outName
-                       end
+"""
+Returns the name of a scope, which in the case of a component is the name
+of the component's type, and for a class simply the name of the class.
+"""
+function scopeName(node::InstNode)
+  local outName::String = name(classScope(explicitScope(node)))
+  outName
+end
 
 function className(node::InstNode)
   local name::String
-
   @match CLASS_NODE(name = name) = node
   name
 end
-
 
 function name(@nospecialize(node::InstNode))
   local nameVar::String
@@ -1855,7 +1860,7 @@ function name(@nospecialize(node::InstNode))
         name(node.innerNode)
       end
       REF_NODE(__)  => begin
-        "REF[" + String(node.index) + "]"
+        "REF[" + string(node.index) + "]"
       end
       NAME_NODE(__)  => begin
         node.name
@@ -1871,8 +1876,7 @@ function name(@nospecialize(node::InstNode))
       end
     end
   end
-  #=  For bug catching, these names should never be used. =#
-  nameVar
+  return nameVar
 end
 
 function isOperator(node::InstNode)

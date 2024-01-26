@@ -808,26 +808,36 @@ function variability(call::Call)::VariabilityType
   return var
 end
 
-function setType(call::Call, ty::NFType)::Call
-   call = begin
-    @match call begin
-      TYPED_CALL(__) => begin
-        @assign call.ty = ty
-        call
-      end
+# function setType(call::Call, ty::NFType)
+#    call = begin
+#     @match call begin
+#       TYPED_CALL(__) => begin
+#         @assign call.ty = ty
+#         call
+#       end
+#       TYPED_ARRAY_CONSTRUCTOR(__) => begin
+#         @assign call.ty = ty
+#         call
+#       end
+#       TYPED_REDUCTION(__) => begin
+#         @assign call.ty = ty
+#         call
+#       end
+#     end
+#   end
+#   return call
+# end
 
-      TYPED_ARRAY_CONSTRUCTOR(__) => begin
-        @assign call.ty = ty
-        call
-      end
-
-      TYPED_REDUCTION(__) => begin
-        @assign call.ty = ty
-        call
-      end
-    end
+function setType(@nospecialize(call::Call), @nospecialize(ty::NFType))
+  local callWithNewType = if call isa TYPED_CALL
+    TYPED_CALL(call.fn, ty, call.var, call.arguments, call.attributes)
+  elseif call isa TYPED_ARRAY_CONSTRUCTOR
+    TYPED_ARRAY_CONSTRUCTOR(ty, call.var, call.exp, call.iters)
+  elseif call isa TYPED_REDUCTION
+    TYPED_REDUCTION(call.fn, ty, call.var, call.exp,
+                    call.iters, call.defaultExp, call.foldExp)
   end
-  return call
+  return callWithNewType
 end
 
 function typeOf(call::Call)::NFType
@@ -855,7 +865,6 @@ function typeOf(call::Call)::NFType
 end
 
 function matchTypedNormalCall(call::Call, origin::ORIGIN_Type, info::SourceInfo)::Call
-
   local func::M_Function
   local args::List{Expression}
   local typed_args::List{TypedArg}
@@ -906,7 +915,7 @@ function matchTypedNormalCall(call::Call, origin::ORIGIN_Type, info::SourceInfo)
   #=  treated as implicitly discrete if the arguments are continuous.
   =#
   (ty, _) = evaluateCallType(ty, func, args)
-   call = makeTypedCall(func, args, var, ty)
+  call = makeTypedCall(func, args, var, ty)
   #=  If the matching was a vectorized one then create a map call
   =#
   #=  using the vectorization dim. This means going through each argument
@@ -989,14 +998,14 @@ function typeCall(
   @nospecialize(callExp::Expression),
   @nospecialize(origin::ORIGIN_Type),
   @nospecialize(info::SourceInfo),
-  )::Tuple{Expression, NFType, VariabilityType}
+  )
   arg1 = callExp::Expression
   arg2 = origin::ORIGIN_Type
   arg3 = info
   typeCall2(
-    Base.inferencebarrier(arg1),
-    Base.inferencebarrier(arg2),
-    Base.inferencebarrier(arg3),
+    arg1,
+    arg2,
+    arg3,
   )
 end
 
@@ -1038,30 +1047,30 @@ function typeCall2(
       end
 
       UNTYPED_ARRAY_CONSTRUCTOR(__) => begin
-         (ty_call, ty, var) = typeArrayConstructor(call, origin, info)
+        (ty_call, ty, var) = typeArrayConstructor(call, origin, info)
         CALL_EXPRESSION(ty_call)
       end
 
       UNTYPED_REDUCTION(__) => begin
-         (ty_call, ty, var) = typeReduction(call, origin, info)
+        (ty_call, ty, var) = typeReduction(call, origin, info)
         CALL_EXPRESSION(ty_call)
       end
 
       TYPED_CALL(__) => begin
-         ty = call.ty
-         var = call.var
+        ty = call.ty
+        var = call.var
         callExp
       end
 
       TYPED_ARRAY_CONSTRUCTOR(__) => begin
-         ty = call.ty
-         var = call.var
+        ty = call.ty
+        var = call.var
         callExp
       end
 
       TYPED_REDUCTION(__) => begin
-         ty = call.ty
-         var = call.var
+        ty = call.ty
+        var = call.var
         callExp
       end
 

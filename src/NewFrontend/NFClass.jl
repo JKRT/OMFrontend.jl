@@ -89,45 +89,42 @@ function toFlatString(cls::Class, clsNode::InstNode)::String
   return str
 end
 
-function toFlatStream(cls::Class,
-  clsNode::InstNode,
-  s,
-)
+function toFlatStream(cls::Class, clsNode::InstNode, s)
   local name::String
-  @assign name = AbsynUtil.pathString(scopePath(clsNode))
-  @assign s = begin
+  name = AbsynUtil.pathString(scopePath(clsNode))
+  s = begin
     @match cls begin
       INSTANCED_CLASS(__) => begin
-        @assign s = IOStream_M.append(s, toString(cls.restriction))
-        @assign s = IOStream_M.append(s, " '")
-        @assign s = IOStream_M.append(s, name)
-        @assign s = IOStream_M.append(s, "'\\n")
+        s = IOStream_M.append(s, toString(cls.restriction))
+        s = IOStream_M.append(s, " '")
+        s = IOStream_M.append(s, name)
+        s = IOStream_M.append(s, "'\\n")
         for comp in getComponents(cls.elements)
-          @assign s = IOStream_M.append(s, "  ")
-          @assign s = IOStream_M.append(s, toFlatString(comp))
-          @assign s = IOStream_M.append(s, ";\\n")
+          s = IOStream_M.append(s, "  ")
+          s = IOStream_M.append(s, toFlatString(comp))
+          s = IOStream_M.append(s, ";\\n")
         end
-        @assign s = IOStream_M.append(s, "end '")
-        @assign s = IOStream_M.append(s, name)
-        @assign s = IOStream_M.append(s, "'")
+        s = IOStream_M.append(s, "end '")
+        s = IOStream_M.append(s, name)
+        s = IOStream_M.append(s, "'")
         s
       end
 
       INSTANCED_BUILTIN(__) => begin
-        @assign s = IOStream_M.append(s, "INSTANCED_BUILTIN(")
-        @assign s = IOStream_M.append(s, name)
-        @assign s = IOStream_M.append(s, ")")
+        s = IOStream_M.append(s, "INSTANCED_BUILTIN(")
+        s = IOStream_M.append(s, name)
+        s = IOStream_M.append(s, ")")
         s
       end
 
       TYPED_DERIVED(__) => begin
-        @assign s = IOStream_M.append(s, toString(cls.restriction))
-        @assign s = IOStream_M.append(s, " '")
-        @assign s = IOStream_M.append(s, name)
-        @assign s = IOStream_M.append(s, "' = '")
-        @assign s =
+        s = IOStream_M.append(s, toString(cls.restriction))
+        s = IOStream_M.append(s, " '")
+        s = IOStream_M.append(s, name)
+        s = IOStream_M.append(s, "' = '")
+        s =
           IOStream_M.append(s, AbsynUtil.pathString(scopePath(cls.baseClass)))
-        @assign s = IOStream_M.append(s, "'")
+        s = IOStream_M.append(s, "'")
         s
       end
 

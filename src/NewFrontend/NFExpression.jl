@@ -171,18 +171,18 @@ struct ENUM_LITERAL_EXPRESSION <: NFExpression
   index::Int
 end
 
-struct BOOLEAN_EXPRESSION <: NFExpression
-  value::Bool
+struct BOOLEAN_EXPRESSION{T0 <: Bool} <: NFExpression
+  value::T0
 end
 
-struct STRING_EXPRESSION <: NFExpression
-  value::String
+struct STRING_EXPRESSION{T0 <: String} <: NFExpression
+  value::T0
 end
 
 struct REAL_EXPRESSION{T0 <: AbstractFloat} <: NFExpression
   value::T0
 end
 
-struct INTEGER_EXPRESSION <: NFExpression
-  value::Int
+struct INTEGER_EXPRESSION{T0 <: Integer} <: NFExpression
+  value::T0
 end

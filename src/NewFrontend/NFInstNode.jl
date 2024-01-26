@@ -75,8 +75,8 @@ mutable struct IMPLICIT_SCOPE <: InstNode
   locals::Vector{InstNode}
 end
 
-mutable struct NAME_NODE <: InstNode
-  name::String
+mutable struct NAME_NODE{T0 <: String} <: InstNode
+  name::T0
 end
 
 mutable struct REF_NODE{T <: Int} <: InstNode
@@ -332,22 +332,23 @@ function getComments(node::InstNode, accumCmts::List{<:SCode.Comment} = nil)
   cmts
 end
 
-function clone(node::InstNode)
+function clone(@nospecialize(node::InstNode))
   local cls::Class
-  @match node begin
-    CLASS_NODE(__)  => begin
-      cls = P_Pointer.access(node.cls)
-      cls = classTreeApply(cls, clone)
-      #= !NB should be assign here! =#
-      @assign node.cls = P_Pointer.create(cls)
-      node.caches = empty()
-      ()
-    end
-    _  => begin
-      ()
-    end
+  local clonedNode::InstNode
+  clonedNode = if node isa CLASS_NODE
+    cls = P_Pointer.access(node.cls)
+    cls = classTreeApply(cls, clone)
+    #= !NB should be assign here! =#
+    local nodeClassPtr = P_Pointer.create(cls)
+    CLASS_NODE{String, Int}(node.name,
+                            node.definition,
+                            node.visibility,
+                            nodeClassPtr,
+                            empty(),
+                            node.parentScope,
+                            node.nodeType)
   end
-  node
+  return clonedNode
 end
 
 function isPartial(node::InstNode)
@@ -1409,22 +1410,46 @@ function definition(node::InstNode)
   def
 end
 
+# function setNodeType(@nospecialize(nodeType::InstNodeType),
+#                      @nospecialize(node::InstNode))
+#   @match node begin
+#     CLASS_NODE(__)  => begin
+#       @assign node.nodeType = nodeType
+#       ()
+#     end
+#     COMPONENT_NODE(__)  => begin
+#       @assign node.nodeType = nodeType
+#       ()
+#     end
+#     _  => begin
+#       ()
+#     end
+#   end
+#   node
+# end
+
+
 function setNodeType(@nospecialize(nodeType::InstNodeType),
                      @nospecialize(node::InstNode))
-  @match node begin
-    CLASS_NODE(__)  => begin
-      @assign node.nodeType = nodeType
-      ()
-    end
-    COMPONENT_NODE(__)  => begin
-      @assign node.nodeType = nodeType
-      ()
-    end
-    _  => begin
-      ()
-    end
+
+  local newNode = if node isa COMPONENT_NODE
+    COMPONENT_NODE{String, Int}(node.name,
+                                node.visibility,
+                                node.component,
+                                node.parent,
+                                nodeType)
+  elseif node isa CLASS_NODE
+    CLASS_NODE{String, Int}(node.name,
+                            node.definition,
+                            node.visibility,
+                            node.cls,
+                            node.caches,
+                            node.parentScope,
+                            nodeType)
+  else
+    node
   end
-  node
+  newNode
 end
 
 function nodeType(node::InstNode)
@@ -1441,19 +1466,6 @@ function nodeType(node::InstNode)
   end
   nodeType
 end
-
-# function replaceClass(cls::Class, node::InstNode)
-#   () = begin
-#     @match node begin
-#       CLASS_NODE(__)  => begin
-#         #= NB: @assign is needed here. =#
-#         @assign node.cls = P_Pointer.create(cls)
-#         ()
-#       end
-#     end
-#   end
-#   node
-# end
 
 function replaceClass(cls::Class, node::InstNode)
   local replacedClass = if node isa CLASS_NODE
@@ -1593,28 +1605,53 @@ function setOrphanParent(parent::InstNode, node::InstNode)
   node
 end
 
+# function setParent(@nospecialize(parent::InstNode),
+#                    @nospecialize(node::InstNode))
+#    () = begin
+#     @match node begin
+#       CLASS_NODE(__)  => begin
+#         #= NB: Assign is needed here =#
+#         @assign node.parentScope = parent
+#         ()
+#       end
+#       COMPONENT_NODE(__)  => begin
+#         #= NB: Assign is needed here =#
+#         @assign node.parent = parent
+#         ()
+#       end
+#       IMPLICIT_SCOPE(__)  => begin
+#         #= NB: Assign is needed here =#
+#         @assign node.parentScope = parent
+#         ()
+#       end
+#     end
+#   end
+#   node
+# end
+
 function setParent(@nospecialize(parent::InstNode),
-                   @nospecialize(node::InstNode))
-   () = begin
-    @match node begin
-      CLASS_NODE(__)  => begin
-        #= NB: Assign is needed here =#
-        @assign node.parentScope = parent
-        ()
-      end
-      COMPONENT_NODE(__)  => begin
-        #= NB: Assign is needed here =#
-        @assign node.parent = parent
-        ()
-      end
-      IMPLICIT_SCOPE(__)  => begin
-        #= NB: Assign is needed here =#
-        @assign node.parentScope = parent
-        ()
-      end
-    end
-  end
-  node
+                    node::CLASS_NODE)
+  CLASS_NODE{String, Int}(node.name,
+                          node.definition,
+                          node.visibility,
+                          node.cls,
+                          node.caches,
+                          parent,
+                          node.nodeType)
+end
+
+function setParent(@nospecialize(parent::InstNode),
+                    node::COMPONENT_NODE)
+  COMPONENT_NODE{String, Int}(node.name,
+                              node.visibility,
+                              node.component,
+                              parent,
+                              node.nodeType)
+end
+
+function setParent(@nospecialize(parent::InstNode),
+                    node::IMPLICIT_SCOPE)
+  IMPLICIT_SCOPE(parent, node.locals)
 end
 
 function topComponent(node::InstNode)

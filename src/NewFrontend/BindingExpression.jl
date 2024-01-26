@@ -6805,22 +6805,25 @@ function isClassBinding(binding::Binding)
   return false
 end
 
-function addParent(@nospecialize(parent::InstNode), @nospecialize(binding::Binding))
-  @match binding begin
-    UNBOUND(isEach = true) => begin #Should be vcat?
-      @assign binding.parents = _cons(parent, binding.parents)
-      ()
-    end
-    RAW_BINDING(__) => begin
-      @assign binding.parents = _cons(parent, binding.parents)
-      ()
-    end
-    _ => begin
-      ()
-    end
+function addParent(@nospecialize(parent::InstNode),
+                    @nospecialize(binding::Binding))
+  local parentLst = _cons(parent, binding.parents)
+  local newBinding = if binding isa UNBOUND
+    UNBOUND(parentLst,
+            binding.isEach,
+            binding.info)
+  elseif binding isa RAW_BINDING
+    RAW_BINDING(binding.bindingExp,
+                binding.scope,
+                parentLst,
+                binding.isEach,
+                binding.info)
+  else
+    binding
   end
-  return binding
+  return newBinding
 end
+
 
 function parentCount(binding::Binding)::Int
   local count::Int = length(parents(binding))

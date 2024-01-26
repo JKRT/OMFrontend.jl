@@ -71,48 +71,19 @@ function isEmptyTree(tree::ClassTree)
   end
 end
 
-function getComponents(tree::ClassTree)::Vector{InstNode}
-  local comps::Vector{InstNode}
-
-  comps = begin
-    @match tree begin
-      CLASS_TREE_PARTIAL_TREE(__) => begin
-        tree.components
-      end
-
-      CLASS_TREE_EXPANDED_TREE(__) => begin
-        tree.components
-      end
-
-      CLASS_TREE_FLAT_TREE(__) => begin
-        tree.components
-      end
-    end
-  end
+function getComponents(tree::ClassTree)
+  local comps::Vector{InstNode} = tree.components
   return comps
 end
 
-function getExtends(tree::ClassTree)::Vector{InstNode}
+function getExtends(tree::ClassTree)
   local exts::Vector{InstNode}
   exts = tree.exts
   return exts
 end
 
-function getClasses(tree::ClassTree)::Vector{InstNode}
-  local clss::Vector{InstNode}
-  clss = begin
-    @match tree begin
-      CLASS_TREE_PARTIAL_TREE(__) => begin
-        tree.classes
-      end
-      CLASS_TREE_EXPANDED_TREE(__) => begin
-        tree.classes
-      end
-      CLASS_TREE_FLAT_TREE(__) => begin
-        tree.classes
-      end
-    end
-  end
+function getClasses(tree::ClassTree)
+  local clss::Vector{InstNode} = tree.classes
   return clss
 end
 
@@ -675,28 +646,29 @@ Appends a list of local components to an instantiated class tree.
 function appendComponentsToInstTree(
   components::List{<:Pointer{<:InstNode}},
   tree::ClassTree,
-)::ClassTree
+  )::ClassTree
   if listEmpty(components)
     return tree
-  else
-    () = begin
-      local comp_idx::Int
-      local local_comps::Vector{Int} = Int[]
-      @match tree begin
-        CLASS_TREE_INSTANTIATED_TREE(__) => begin
-          comp_idx = arrayLength(tree.components)
-          @assign tree.components = ArrayUtil.appendList(tree.components, components)
-          local_comps = tree.localComponents
-          for i = (comp_idx + 1):(comp_idx + listLength(components))
-            local_comps = prepend!([i], local_comps)
-          end
-          @assign tree.localComponents = local_comps
-          ()
-        end
+  end
+  local comp_idx::Int
+  local local_comps::Vector{Int} = Int[]
+  @match tree begin
+    CLASS_TREE_INSTANTIATED_TREE(__) => begin
+      comp_idx = arrayLength(tree.components)
+      local tmpComponents = ArrayUtil.appendList(tree.components, components)
+      local_comps = tree.localComponents
+      for i = (comp_idx + 1):(comp_idx + listLength(components))
+        local_comps = prepend!([i], local_comps)
       end
+      localComponentsTmp = local_comps
+      return CLASS_TREE_INSTANTIATED_TREE(tree.tree,
+                                          tree.classes,
+                                          tmpComponents,
+                                          localComponentsTmp,
+                                          tree.exts,
+                                          tree.imports, tree.duplicates)
     end
   end
-  return tree
 end
 
 """

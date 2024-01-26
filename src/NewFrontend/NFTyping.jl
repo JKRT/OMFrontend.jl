@@ -1459,10 +1459,10 @@ function typeExp2(
       end
 
       CALL_EXPRESSION(__) => begin
-        (e1, ty, var1) = typeCall(exp, origin, info)::Tuple{Expression, NFType, VariabilityType}
-        #=  If the call has multiple outputs and isn't alone on either side of an
-        =#
-        #=  equation/algorithm, select the first output.
+        (e1, ty, var1) = typeCall(exp, origin, info)
+        #=
+        If the call has multiple outputs and isn't alone on either side of an
+        equation/algorithm, select the first output.
         =#
         if isTuple(ty) && !isSingleExpression(origin)
            ty = firstTupleType(ty)

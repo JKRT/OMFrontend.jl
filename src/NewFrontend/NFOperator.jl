@@ -83,11 +83,11 @@ const Op = OpStruct(
 
 const OpType = Int
 
-@Uniontype NFOperator begin
-  @Record OPERATOR begin
-    ty::M_Type
-    op::OpType
-  end
+abstract type NFOperator end
+
+struct OPERATOR{T <: Integer} <: NFOperator
+  ty::M_Type
+  op::T
 end
 
 function negate(op::Operator)::Operator
@@ -647,19 +647,18 @@ function symbol(op::Operator, spacing::String = " ")::String
   return symbol
 end
 
-function unlift(op::Operator)::Operator
-  @assign op.ty = Type.unliftArray(op.ty)
-  return op
+function unlift(op::OPERATOR)
+  local ty = Type.unliftArray(op.ty)
+  return OPERATOR{Int}(ty, op.op)
 end
 
-function scalarize(op::Operator)::Operator
-  @assign op.ty = arrayElementType(op.ty)
-  return op
+function scalarize(op::OPERATOR)
+  local ty = arrayElementType(op.ty)
+  return OPERATOR{Int}(ty, op.op)
 end
 
-function setType(ty::M_Type, op::Operator)::Operator
-  @assign op.ty = ty
-  return op
+function setType(@nospecialize(ty::M_Type), op::OPERATOR)
+  return OPERATOR{Int}(ty, op.op)
 end
 
 function typeOf(op::Operator)::M_Type

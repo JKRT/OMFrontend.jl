@@ -1,16 +1,11 @@
-function addBindingExpParent(parent::InstNode, exp::Expression) ::Expression
-   () = begin
-    @match exp begin
-      BINDING_EXP(__)  => begin
-        @assign exp.parents = _cons(parent, exp.parents)
-        ()
-      end
-      _  => begin
-        ()
-      end
-    end
+function addBindingExpParent(@nospecialize(parent::InstNode),
+                             @nospecialize(exp::Expression))
+  local modifiedExp = if exp isa BINDING_EXP
+    BINDING_EXP(exp.exp, expType, parents, exp.isEach)
+  else
+    exp
   end
-  exp
+  return modifiedExp
 end
 
 function mostPropagatedSubExp_traverser(exp::Expression, mostPropagated::Tuple{Int, Expression})::Tuple{Int, Expression}
@@ -1902,9 +1897,9 @@ function mapFoldCallIteratorsShallow(iters::List{Tuple{InstNode, Expression}}, f
      (node, exp) = i
      (new_exp, arg) = func(exp, arg)
     @assign outIters = _cons(if referenceEq(new_exp, exp)
-                             i
+                               i
                              else
-                             (node, new_exp)
+                               (node, new_exp)
                              end, outIters)
   end
   @assign outIters = listReverseInPlace(outIters)
@@ -5557,108 +5552,85 @@ function typeCastOpt(exp::Option{<:Expression}, ty::M_Type) ::Option{Expression}
   outExp
 end
 
-function setType(ty::NFType, exp::Expression) ::Expression
+function setType(ty::NFType, exp::Expression)
+  @match exp begin
+    ENUM_LITERAL_EXPRESSION(__)  => begin
+      @assign exp.ty = ty
+      ()
+    end
 
-   () = begin
-    @match exp begin
-      ENUM_LITERAL_EXPRESSION(__)  => begin
-        @assign exp.ty = ty
+    CREF_EXPRESSION(__)  => begin
+      @assign exp.ty = ty
+      ()
+    end
+
+    TYPENAME_EXPRESSION(__)  => begin
+      @assign exp.ty = ty
+      ()
+    end
+
+    ARRAY_EXPRESSION(__)  => begin
+      @assign exp.ty = ty
+      ()
+    end
+
+    RANGE_EXPRESSION(__)  => begin
+      @assign exp.ty = ty
+      ()
+    end
+
+    TUPLE_EXPRESSION(__)  => begin
+      @assign exp.ty = ty
+      ()
+    end
+
+    RECORD_EXPRESSION(__)  => begin
+      @assign exp.ty = ty
+      ()
+    end
+
+    CALL_EXPRESSION(__)  => begin
+      @assign exp.call = setType(exp.call, ty)
+      ()
+    end
+
+    BINARY_EXPRESSION(__) || UNARY_EXPRESSION(__) || LBINARY_EXPRESSION(__) ||
+      RELATION_EXPRESSION(__) ||  LUNARY_EXPRESSION(__) => begin
+        exp.operator = setType(ty, exp.operator)
         ()
       end
 
-      CREF_EXPRESSION(__)  => begin
-        @assign exp.ty = ty
-        ()
-      end
+    CAST_EXPRESSION(__)  => begin
+      @assign exp.ty = ty
+      ()
+    end
 
-      TYPENAME_EXPRESSION(__)  => begin
-        @assign exp.ty = ty
-        ()
-      end
+    UNBOX_EXPRESSION(__)  => begin
+      @assign exp.ty = ty
+      ()
+    end
 
-      ARRAY_EXPRESSION(__)  => begin
-        @assign exp.ty = ty
-        ()
-      end
+    SUBSCRIPTED_EXP_EXPRESSION(__)  => begin
+      @assign exp.ty = ty
+      ()
+    end
 
-      RANGE_EXPRESSION(__)  => begin
-        @assign exp.ty = ty
-        ()
-      end
+    TUPLE_ELEMENT_EXPRESSION(__)  => begin
+      @assign exp.ty = ty
+      ()
+    end
 
-      TUPLE_EXPRESSION(__)  => begin
-        @assign exp.ty = ty
-        ()
-      end
+    RECORD_ELEMENT_EXPRESSION(__)  => begin
+      @assign exp.ty = ty
+      ()
+    end
 
-      RECORD_EXPRESSION(__)  => begin
-        @assign exp.ty = ty
-        ()
-      end
-
-      CALL_EXPRESSION(__)  => begin
-        @assign exp.call = setType(exp.call, ty)
-        ()
-      end
-
-      BINARY_EXPRESSION(__)  => begin
-        @assign exp.operator = setType(ty, exp.operator)
-        ()
-      end
-
-      UNARY_EXPRESSION(__)  => begin
-        @assign exp.operator = setType(ty, exp.operator)
-        ()
-      end
-
-      LBINARY_EXPRESSION(__)  => begin
-        @assign exp.operator = setType(ty, exp.operator)
-        ()
-      end
-
-      LUNARY_EXPRESSION(__)  => begin
-        @assign exp.operator = setType(ty, exp.operator)
-        ()
-      end
-
-      RELATION_EXPRESSION(__)  => begin
-        @assign exp.operator = setType(ty, exp.operator)
-        ()
-      end
-
-      CAST_EXPRESSION(__)  => begin
-        @assign exp.ty = ty
-        ()
-      end
-
-      UNBOX_EXPRESSION(__)  => begin
-        @assign exp.ty = ty
-        ()
-      end
-
-      SUBSCRIPTED_EXP_EXPRESSION(__)  => begin
-        @assign exp.ty = ty
-        ()
-      end
-
-      TUPLE_ELEMENT_EXPRESSION(__)  => begin
-        @assign exp.ty = ty
-        ()
-      end
-
-      RECORD_ELEMENT_EXPRESSION(__)  => begin
-        @assign exp.ty = ty
-        ()
-      end
-
-      PARTIAL_FUNCTION_APPLICATION_EXPRESSION(__)  => begin
-        @assign exp.ty = ty
-        ()
-      end
-
-      _  => begin
-        ()
-      end
+    PARTIAL_FUNCTION_APPLICATION_EXPRESSION(__)  => begin
+      @assign exp.ty = ty
+      ()
+    end
+    _  => begin
+      ()
     end
   end
   exp

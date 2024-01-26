@@ -116,7 +116,7 @@ const Key = String
 const Value = InstNode
 include("../Util/baseAvlTreeCode.jl")
 
-keyCompare = (inKey1::String, inKey2::String) -> begin
+keyCompare::Function = (inKey1::String, inKey2::String) -> begin
   res = stringCompare(inKey1, inKey2)
   return res
 end
@@ -1313,8 +1313,6 @@ function scopeList(node::InstNode; includeRoot::Bool = false #= Whether to inclu
 end
 
 function componentApply(node::InstNode, func::FuncType, arg::ArgT)  where {ArgT}
-
-
    () = begin
     @match node begin
       COMPONENT_NODE(__)  => begin
@@ -1409,25 +1407,6 @@ function definition(node::InstNode)
   end
   def
 end
-
-# function setNodeType(@nospecialize(nodeType::InstNodeType),
-#                      @nospecialize(node::InstNode))
-#   @match node begin
-#     CLASS_NODE(__)  => begin
-#       @assign node.nodeType = nodeType
-#       ()
-#     end
-#     COMPONENT_NODE(__)  => begin
-#       @assign node.nodeType = nodeType
-#       ()
-#     end
-#     _  => begin
-#       ()
-#     end
-#   end
-#   node
-# end
-
 
 function setNodeType(@nospecialize(nodeType::InstNodeType),
                      @nospecialize(node::InstNode))
@@ -1585,49 +1564,31 @@ function getClass(node::InstNode)
   cls
 end
 
-"""  Sets the parent of a node if the node lacks a parent, otherwise does nothing. """
-function setOrphanParent(parent::InstNode, node::InstNode)
-   () = begin
-    @match node begin
-      CLASS_NODE(parentScope = EMPTY_NODE(__))  => begin
-        @assign node.parentScope = parent
-        ()
-      end
-      COMPONENT_NODE(parent = EMPTY_NODE(__))  => begin
-        @assign node.parent = parent
-        ()
-      end
-      _  => begin
-        ()
-      end
-    end
+function setOrphanParent(parent::InstNode, node::CLASS_NODE)
+  if node.parentScope isa EMPTY_NODE
+    CLASS_NODE{String, Int}(node.name,
+                            node.definition,
+                            node.visibility,
+                            node.cls,
+                            node.caches,
+                            parent,
+                            node.nodeType)
+  else
+    node
   end
-  node
 end
 
-# function setParent(@nospecialize(parent::InstNode),
-#                    @nospecialize(node::InstNode))
-#    () = begin
-#     @match node begin
-#       CLASS_NODE(__)  => begin
-#         #= NB: Assign is needed here =#
-#         @assign node.parentScope = parent
-#         ()
-#       end
-#       COMPONENT_NODE(__)  => begin
-#         #= NB: Assign is needed here =#
-#         @assign node.parent = parent
-#         ()
-#       end
-#       IMPLICIT_SCOPE(__)  => begin
-#         #= NB: Assign is needed here =#
-#         @assign node.parentScope = parent
-#         ()
-#       end
-#     end
-#   end
-#   node
-# end
+function setOrphanParent(parent::InstNode, node::COMPONENT_NODE)
+  if node.parent isa EMPTY_NODE
+    COMPONENT_NODE{String, Int}(node.name,
+                                node.visibility,
+                                node.component,
+                                parent,
+                                node.nodeType)
+  else
+    node
+  end
+end
 
 function setParent(@nospecialize(parent::InstNode),
                     node::CLASS_NODE)

@@ -1114,7 +1114,7 @@ function instExtends(node::InstNode,
         if vis == ExtendsVisibility.PUBLIC && isProtectedBaseClass(node)
           vis = ExtendsVisibility.DERIVED_PROTECTED
         end
-        @assign cls.baseClass = instExtends(cls.baseClass, attributes, useBinding, vis, instLevel)
+        cls.baseClass = instExtends(cls.baseClass, attributes, useBinding, vis, instLevel)
         node = updateClass(cls, node)
         ()
       end
@@ -1956,13 +1956,13 @@ function isDiscreteClass(clsNode::InstNode) ::Bool
   discrete
 end
 
-function instTypeSpec(typeSpec::Absyn.TypeSpec,
-                      modifier::Modifier,
-                      attributes::Attributes,
-                      useBinding::Bool,
-                      scope::InstNode,
-                      parent::InstNode,
-                      info::SourceInfo,
+function instTypeSpec(@nospecialize(typeSpec::Absyn.TypeSpec),
+                      @nospecialize(modifier::Modifier),
+                      @nospecialize(attributes::Attributes),
+                      @nospecialize(useBinding::Bool),
+                      @nospecialize(scope::InstNode),
+                      @nospecialize(parent::InstNode),
+                      @nospecialize(info::SourceInfo),
                       instLevel::Int)
   local outAttributes::Attributes
   local node::InstNode
@@ -2066,9 +2066,9 @@ function instExpressions(@nospecialize(node::InstNode), @nospecialize(scope::Ins
         #=  A type must extend a basic type.
         =#
         if arrayLength(exts) == 1
-          @assign ty = TYPE_COMPLEX(node, COMPLEX_EXTENDS_TYPE(exts[1]))
+          ty = TYPE_COMPLEX(node, COMPLEX_EXTENDS_TYPE(exts[1]))
         elseif SCodeUtil.hasBooleanNamedAnnotationInClass(definition(node), "__OpenModelica_builtinType")
-          @assign ty = TYPE_COMPLEX(node, COMPLEX_CLASS())
+          ty = TYPE_COMPLEX(node, COMPLEX_CLASS())
         else
           Error.addSourceMessage(Error.MISSING_TYPE_BASETYPE, list(name(node)), infoInstNode_info(node))
           fail()

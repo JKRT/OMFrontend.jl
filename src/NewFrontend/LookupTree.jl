@@ -30,10 +30,10 @@ const MapFunc = Function
 
 abstract type Tree end
 
-mutable struct NODE <:Tree
-  key::Key #= The key of the node. =#
-  value::Value
-  height::Int #= Height of tree, used for balancing =#
+mutable struct NODE{T0 <: Key, T1 <: Value, T2 <: Integer} <:Tree
+  key::T0 #= The key of the node. =#
+  value::T1
+  height::T2 #= Height of tree, used for balancing =#
   left::Tree #= Left subtree. =#
   right::Tree #= Right subtree. =#
 end

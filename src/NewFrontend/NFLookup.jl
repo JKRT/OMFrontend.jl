@@ -776,8 +776,8 @@ function makeInnerNode(nodeArg::InstNode)
     local comp::Component
     @match nodeArg begin
       CLASS_NODE(definition = def && SCode.CLASS(prefixes = prefs))  => begin
-        prefs.innerOuter = Absyn.INNER()
-        def.prefixes = prefs
+        @assign prefs.innerOuter = Absyn.INNER()
+        @assign def.prefixes = prefs
         nodeArg.definition = def
         nodeArg
       end

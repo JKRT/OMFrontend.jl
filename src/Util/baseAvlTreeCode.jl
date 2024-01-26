@@ -22,7 +22,7 @@ end
 valueStr
 Need to be implemented by the client
 =#
-keyCompare = (inKey1::Key, inKey2::Key) -> begin
+keyCompare::Function = (inKey1::Key, inKey2::Key) -> begin
   res = inKey1 == inKey2
   return res
 end

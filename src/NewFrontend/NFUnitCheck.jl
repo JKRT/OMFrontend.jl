@@ -28,7 +28,7 @@ function dummyPrint(args::Functionargs)::String
 end
 function emptyCache(size::Int)::Cache
   local table::Cache
-  @assign table = BaseHashTable.emptyHashTableWork(
+  table = BaseHashTable.emptyHashTableWork(
     size,
     (stringHashDjb2Mod, stringEq, Util.id, dummyPrint),
   )

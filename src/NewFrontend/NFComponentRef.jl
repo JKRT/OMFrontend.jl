@@ -66,24 +66,19 @@ function isComplexArray(cref::ComponentRef)::Bool
   return complexArray
 end
 
-function depth(cref::ComponentRef)::Int
+function depth(cref::ComponentRef)
   local d::Int = 0
-
-  @assign d = begin
+  d = begin
     @match cref begin
       COMPONENT_REF_CREF(restCref = COMPONENT_REF_EMPTY(__)) => begin
         d + 1
       end
-
       COMPONENT_REF_CREF(__) => begin
-        @assign d = 1 + depth(cref.restCref)
-        d
+        1 + depth(cref.restCref)
       end
-
       COMPONENT_REF_WILD(__) => begin
         0
       end
-
       _ => begin  #= COMPONENT_REF_EMPTY_COMPONENT_REF_CREF =#
         0
       end
@@ -996,21 +991,25 @@ function firstName(cref::ComponentRef)::String
   return nameVar
 end
 
-function updateNodeType(cref::ComponentRef)::ComponentRef
+function updateNodeType(cref::ComponentRef)
+  #  () = begin
+  #   @match cref begin
+  #     COMPONENT_REF_CREF(__) => begin
+  #       @assign cref.ty = getType(cref.node)
+  #       ()
+  #     end
 
-   () = begin
-    @match cref begin
-      COMPONENT_REF_CREF(__) => begin
-        @assign cref.ty = getType(cref.node)
-        ()
-      end
-
-      _ => begin
-        ()
-      end
-    end
+  #     _ => begin
+  #       ()
+  #     end
+  #   end
+  # end
+  local crefRet = if cref isa COMPONENT_REF_CREF
+    cref.ty = getType(cref.node)
+  else
+    cref
   end
-  return cref
+  return crefRet
 end
 
 function nodeType(cref::ComponentRef)::M_Type
@@ -1141,8 +1140,8 @@ function fromAbsyn(
 )::ComponentRef
   local cref::ComponentRef
   local sl::List{Subscript}
-  @assign sl = list(SUBSCRIPT_RAW_SUBSCRIPT(s) for s in subs)
-  @assign cref = COMPONENT_REF_CREF(node, sl, TYPE_UNKNOWN(), Origin.CREF, restCref)
+  sl = list(SUBSCRIPT_RAW_SUBSCRIPT(s) for s in subs)
+  cref = COMPONENT_REF_CREF(node, sl, TYPE_UNKNOWN(), Origin.CREF, restCref)
   return cref
 end
 

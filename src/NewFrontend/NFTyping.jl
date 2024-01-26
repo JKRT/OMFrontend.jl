@@ -971,7 +971,6 @@ function typeBindings2(cls::InstNode,
     @match c begin
       INSTANCED_CLASS(elements = cls_tree && CLASS_TREE_FLAT_TREE(__)) => begin
         for c in cls_tree.components
-          str = name(c)
           typeComponentBinding(c, origin)
         end
         ()
@@ -979,7 +978,6 @@ function typeBindings2(cls::InstNode,
 
       INSTANCED_BUILTIN(elements = cls_tree && CLASS_TREE_FLAT_TREE(__)) => begin
         for c in cls_tree.components
-          str = name(c)
           typeComponentBinding(c, origin)
         end
         ()
@@ -2154,7 +2152,6 @@ function typeArray(
   local variability::VariabilityType = Variability.CONSTANT
   local arrayType::NFType = TYPE_UNKNOWN()
   local arrayExp::Expression
-
   local exp::Expression
   local expl::List{Expression} = nil
   local expl2::List{Expression} = nil
@@ -2166,8 +2163,7 @@ function typeArray(
   local mk::MatchKindType
   local n::Int = 1
   local next_origin::ORIGIN_Type
-
-   next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
+  next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
   for e in elements
      (exp, ty2, var) = typeExp(e, next_origin, info)
      variability = variabilityMax(var, variability)
@@ -2211,8 +2207,8 @@ function typeArray(
   end
   #=  forget errors when handling annotations
   =#
-   arrayType = liftArrayLeft(ty1, fromExpList(expl2))
-   arrayExp = makeArray(arrayType, expl2)
+  arrayType = liftArrayLeft(ty1, fromExpList(expl2))
+  arrayExp = makeArray(arrayType, expl2)
   return (arrayExp, arrayType, variability)
 end
 

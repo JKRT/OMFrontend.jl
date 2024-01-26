@@ -808,26 +808,6 @@ function variability(call::Call)::VariabilityType
   return var
 end
 
-# function setType(call::Call, ty::NFType)
-#    call = begin
-#     @match call begin
-#       TYPED_CALL(__) => begin
-#         @assign call.ty = ty
-#         call
-#       end
-#       TYPED_ARRAY_CONSTRUCTOR(__) => begin
-#         @assign call.ty = ty
-#         call
-#       end
-#       TYPED_REDUCTION(__) => begin
-#         @assign call.ty = ty
-#         call
-#       end
-#     end
-#   end
-#   return call
-# end
-
 function setType(@nospecialize(call::Call), @nospecialize(ty::NFType))
   local callWithNewType = if call isa TYPED_CALL
     TYPED_CALL(call.fn, ty, call.var, call.arguments, call.attributes)

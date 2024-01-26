@@ -94,4 +94,4 @@ struct EachTypeStruct{T <: Int}
 end
 
 const EachTypeType = Int
-const EachType::EachTypeStruct = EachTypeStruct(1,2,3)
+const EachType::EachTypeStruct{Int} = EachTypeStruct{Int}(1,2,3)

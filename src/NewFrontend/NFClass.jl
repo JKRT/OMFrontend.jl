@@ -66,7 +66,6 @@ end
 struct NOT_INSTANTIATED <: Class
 end
 
-
 const DEFAULT_PREFIXES =
   PREFIXES(
     SCode.NOT_ENCAPSULATED(),
@@ -75,9 +74,6 @@ const DEFAULT_PREFIXES =
     Absyn.NOT_INNER_OUTER(),
     SCode.NOT_REPLACEABLE()
   )
-
-
-@UniontypeDecl Class
 
 function toFlatString(cls::Class, clsNode::InstNode)::String
   local str::String
@@ -603,63 +599,52 @@ function isIdentical(cls1::Class, cls2::Class)::Bool
   return identical
 end
 
-function mergeModifier(modifier::Modifier, cls::Class)::Class
-
-   () = begin
-    @match cls begin
-      PARTIAL_CLASS(__) => begin
-        @assign cls.modifier = merge(modifier, cls.modifier)
-        ()
-      end
-
-      EXPANDED_CLASS(__) => begin
-        @assign cls.modifier = merge(modifier, cls.modifier)
-        ()
-      end
-
-      EXPANDED_DERIVED(__) => begin
-        @assign cls.modifier = merge(modifier, cls.modifier)
-        ()
-      end
-
-      PARTIAL_BUILTIN(__) => begin
-        @assign cls.modifier = merge(modifier, cls.modifier)
-        ()
-      end
-
-      _ => begin
-        Error.assertion(false, getInstanceName() + " got non-modifiable class", sourceInfo())
-        fail()
-      end
+function mergeModifier(@nospecialize(modifier::Modifier), @nospecialize(cls::Class))
+  local mod
+  local resClass = @match cls begin
+    PARTIAL_CLASS(__) => begin
+      mod = merge(modifier, cls.modifier)
+      PARTIAL_CLASS(cls.elements, mod, cls.prefixes)
+    end
+    EXPANDED_CLASS(__) => begin
+      mod = merge(modifier, cls.modifier)
+      EXPANDED_CLASS(cls.elements, mod, cls.prefixes, cls.restriction)
+    end
+    EXPANDED_DERIVED(__) => begin
+      mod = merge(modifier, cls.modifier)
+      EXPANDED_DERIVED(cls.baseClass, mod, cls.dims, cls.prefixes, cls.attributes, cls.restriction)
+    end
+    PARTIAL_BUILTIN(__) => begin
+      mod = merge(modifier, cls.modifier)
+      PARTIAL_BUILTIN(cls.ty, cls.elements, mod, cls.prefixes, cls.restriction)
     end
   end
-  return cls
+  return resClass
 end
 
-function setModifier(modifier::Modifier, cls::Class)::Class
-
+function setModifier(@nospecialize(modifier::Modifier),
+                     @nospecialize(cls::Class))
    () = begin
     @match cls begin
       PARTIAL_CLASS(__) => begin
-        @assign cls.modifier = modifier
+        cls.modifier = modifier
         ()
       end
 
       EXPANDED_CLASS(__) => begin
-        @assign cls.modifier = modifier
+        cls.modifier = modifier
         ()
       end
 
       EXPANDED_DERIVED(__) => begin
-        @assign cls.modifier = modifier
+        cls.modifier = modifier
         ()
       end
 
       PARTIAL_BUILTIN(__) => begin
-        @assign cls.modifier = modifier
+        cls.modifier = modifier
         ()
       end
-
       _ => begin
         Error.assertion(false, getInstanceName() + " got non-modifiable class", sourceInfo())
         fail()
@@ -697,46 +682,24 @@ function getModifier(cls::Class)::Modifier
   return modifier
 end
 
-function classTreeApply(cls::Class, func::FuncType)::Class
-
-   () = begin
-    @match cls begin
-      PARTIAL_CLASS(__) => begin
-        @assign cls.elements = func(cls.elements)
-        ()
-      end
-
-      EXPANDED_CLASS(__) => begin
-        @assign cls.elements = func(cls.elements)
-        ()
-      end
-
-      PARTIAL_BUILTIN(__) => begin
-        @assign cls.elements = func(cls.elements)
-        ()
-      end
-
-      INSTANCED_CLASS(__) => begin
-        @assign cls.elements = func(cls.elements)
-        ()
-      end
-
-      INSTANCED_BUILTIN(__) => begin
-        @assign cls.elements = func(cls.elements)
-        ()
-      end
-
-      _ => begin
-        ()
-      end
-    end
+function classTreeApply(cls::Class, func::FuncType)
+  local tmpCls = if hasproperty(cls, :elements)
+    @assign cls.elements = func(cls.elements)
+    cls
+  else
+    cls
   end
-  return cls
+  return tmpCls
 end
 
-function setClassTree(tree::ClassTree, cls::Class)::Class
-  @assign cls.elements = tree
-  return cls
+function setClassTree(tree::ClassTree, cls::Class)
+  local classTmp::Class = if hasproperty(cls, :elements)
+    @assign cls.elements = tree
+    cls
+  else
+    cls
+  end
+  return classTmp
 end
 
 function classTree(cls::Class)::ClassTree
@@ -818,14 +781,12 @@ end
 
 function lookupAttributeBinding(name::String, cls::Class)::Binding
   local binding::Binding
-
   local attr_node::InstNode
-
   try
-    @assign attr_node = lookupElement(name, classTree(cls))
-    @assign binding = getBinding(component(attr_node))
+    attr_node = lookupElement(name, classTree(cls))
+    binding = getBinding(component(attr_node))
   catch
-    @assign binding = EMPTY_BINDING()
+    binding = EMPTY_BINDING()
   end
   return binding
 end
@@ -916,14 +877,11 @@ function fromEnumeration(
   literals::List{<:SCode.Enum},
   enumType::M_Type,
   prefixes::Prefixes,
-  enumClass::InstNode,
-)::Class
+  enumClass::InstNode)
   local cls::Class
-
   local tree::ClassTree
-
-  @assign tree = fromEnumeration(literals, enumType, enumClass)
-  @assign cls = PARTIAL_BUILTIN(
+  tree = fromEnumeration(literals, enumType, enumClass)
+  cls = PARTIAL_BUILTIN(
     enumType,
     tree,
     MODIFIER_NOMOD(),
@@ -937,8 +895,7 @@ function fromSCode(
   elements::List{<:SCode.Element},
   isClassExtends::Bool,
   scope::InstNode,
-  prefixes::Prefixes,
-)::Class
+  prefixes::Prefixes)
   local cls::Class
   local tree::ClassTree
   tree = fromSCode(elements, isClassExtends, scope)

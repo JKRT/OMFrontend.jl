@@ -375,14 +375,11 @@ function makeEnumerationType(literals::List{<:SCode.Enum}, scope::InstNode) ::M_
 end
 
 function expandClass(node::InstNode) ::InstNode
-
-
-   node = begin
+  node = begin
     @match getClass(node) begin
       PARTIAL_CLASS(__)  => begin
         expandClass2(node)
       end
-
       _  => begin
         node
       end
@@ -1308,8 +1305,7 @@ function redeclareClass(redeclareNode::InstNode, originalNode::InstNode, outerMo
         end
 
         (EXPANDED_CLASS(__), PARTIAL_CLASS(__))  => begin
-          #=  Class extends of a long class declaration.
-          =#
+          #=  Class extends of a long class declaration. =#
            node_ty = BASE_CLASS(parent(orig_node), definition(orig_node))
            orig_node = setNodeType(node_ty, orig_node)
           @assign rdcl_cls.elements = setClassExtends(orig_node, rdcl_cls.elements)
@@ -1351,9 +1347,9 @@ function redeclareClass(redeclareNode::InstNode, originalNode::InstNode, outerMo
       end
     end
   end
-  @assign redeclaredNode = replaceClass(new_cls, redeclareNode)
-  @assign node_ty = REDECLARED_CLASS(parent(originalNode), nodeType(originalNode))
-  @assign redeclaredNode = setNodeType(node_ty, redeclaredNode)
+  redeclaredNode = replaceClass(new_cls, redeclareNode)
+  node_ty = REDECLARED_CLASS(parent(originalNode), nodeType(originalNode))
+  redeclaredNode = setNodeType(node_ty, redeclaredNode)
   redeclaredNode
 end
 
@@ -1540,15 +1536,15 @@ function updateComponentConnectorType(attributes::Attributes, restriction::Restr
   if isConnectorType(cty)
     if isConnector(restriction)
       if isExpandableConnector(restriction)
-        @assign cty = setPresent(cty)
+        cty = setPresent(cty)
       else
-        @assign cty = intBitAnd(cty, intBitNot(ConnectorType.EXPANDABLE))
+        cty = intBitAnd(cty, intBitNot(ConnectorType.EXPANDABLE))
       end
     else
-      @assign cty = intBitAnd(cty, intBitNot(intBitOr(ConnectorType.CONNECTOR, ConnectorType.EXPANDABLE)))
+      cty = intBitAnd(cty, intBitNot(intBitOr(ConnectorType.CONNECTOR, ConnectorType.EXPANDABLE)))
     end
     if ! isFlowOrStream(cty)
-      @assign cty = setPotential(cty)
+      cty = setPotential(cty)
     end
     if cty != attributes.connectorType
       @assign attributes.connectorType = cty
@@ -1579,23 +1575,23 @@ function redeclareComponent(redeclareNode::InstNode, originalNode::InstNode, out
     Error.addMultiSourceMessage(Error.INVALID_REDECLARE_AS, list(typeName(originalNode), name(originalNode), typeName(redeclareNode)), list(InstNode_info(redeclareNode), InstNode_info(originalNode)))
     fail()
   end
-  @assign orig_comp = component(originalNode)
-  @assign rdcl_type = REDECLARED_COMP(parent(originalNode))
-  @assign rdcl_node = setNodeType(rdcl_type, redeclareNode)
-  @assign rdcl_node = copyInstancePtr(originalNode, rdcl_node)
-  @assign rdcl_node = updateComponent!(component(redeclareNode), rdcl_node)
+  orig_comp = component(originalNode)
+  rdcl_type = REDECLARED_COMP(parent(originalNode))
+  rdcl_node = setNodeType(rdcl_type, redeclareNode)
+  rdcl_node = copyInstancePtr(originalNode, rdcl_node)
+  rdcl_node = updateComponent!(component(redeclareNode), rdcl_node)
   instComponent(rdcl_node, outerAttr, constrainingMod, true, instLevel, SOME(getAttributes(orig_comp)))
-  @assign rdcl_comp = component(rdcl_node)
-  @assign new_comp = begin
+  rdcl_comp = component(rdcl_node)
+  new_comp = begin
     @match (orig_comp, rdcl_comp) begin
       (UNTYPED_COMPONENT(__), UNTYPED_COMPONENT(__))  => begin
         #=  Take the binding from the outer modifier, the redeclare, or the
         =#
         #=  original component, in that order of priority.
         =#
-        @assign bindingVar = binding(outerMod)
+        bindingVar = binding(outerMod)
         if isUnbound(bindingVar)
-          @assign bindingVar = if isBound(rdcl_comp.binding)
+          bindingVar = if isBound(rdcl_comp.binding)
             rdcl_comp.binding
           else
             orig_comp.binding
@@ -1607,18 +1603,18 @@ function redeclareComponent(redeclareNode::InstNode, originalNode::InstNode, out
           Error.addSourceMessage(Error.REDECLARE_CONDITION, list(name(redeclareNode)), InstNode_info(redeclareNode))
           fail()
         end
-        @assign condition = orig_comp.condition
-        @assign attr = rdcl_comp.attributes
+        condition = orig_comp.condition
+        attr = rdcl_comp.attributes
         #=  Use the dimensions of the redeclare if any, otherwise take them from the original.
         =#
-        @assign dims = if arrayEmpty(rdcl_comp.dimensions)
+        dims = if arrayEmpty(rdcl_comp.dimensions)
           orig_comp.dimensions
         else
           rdcl_comp.dimensions
         end
         #=  TODO: Use comment of redeclare if available?
         =#
-        @assign cmt = orig_comp.comment
+        cmt = orig_comp.comment
         UNTYPED_COMPONENT(rdcl_comp.classInst, dims, bindingVar, condition, attr, cmt, false, rdcl_comp.info)
       end
 
@@ -1826,16 +1822,15 @@ function mergeRedeclaredComponentAttributes(origAttr::Attributes, redeclAttr::At
   local fin::Bool
   local redecl::Bool
   local repl::Replaceable
-
   if referenceEq(origAttr, DEFAULT_ATTR)
-    @assign attr = redeclAttr
+    attr = redeclAttr
   elseif referenceEq(redeclAttr, DEFAULT_ATTR)
-    @assign attr = origAttr
+    attr = origAttr
   else
     @match ATTRIBUTES(cty, par, var, dir, io, _, _, _) = origAttr
     @match ATTRIBUTES(rcty, rpar, rvar, rdir, rio, fin, redecl, repl) = redeclAttr
-    @assign rcty_fs = intBitAnd(rcty, ConnectorType.FLOW_STREAM_MASK)
-    @assign cty_fs = intBitAnd(cty, ConnectorType.FLOW_STREAM_MASK)
+    rcty_fs = intBitAnd(rcty, ConnectorType.FLOW_STREAM_MASK)
+    cty_fs = intBitAnd(cty, ConnectorType.FLOW_STREAM_MASK)
     if rcty_fs > 0
       if cty_fs > 0 && rcty_fs != cty_fs
         printRedeclarePrefixError(node, ConnectorType.toString(rcty), ConnectorType.toString(cty))
@@ -1845,27 +1840,27 @@ function mergeRedeclaredComponentAttributes(origAttr::Attributes, redeclAttr::At
       if par != Parallelism.NON_PARALLEL && par != rpar
         printRedeclarePrefixError(node, parallelismString(rpar), parallelismString(par))
       end
-      @assign par = rpar
+      par = rpar
     end
     if rvar != Variability.CONTINUOUS
       if rvar > var
         printRedeclarePrefixError(node, variabilityString(rvar), variabilityString(var))
       end
-      @assign var = rvar
+      var = rvar
     end
     if rdir != Direction.NONE
       if dir != Direction.NONE && rdir != dir
         printRedeclarePrefixError(node, directionString(rdir), directionString(dir))
       end
-      @assign dir = rdir
+      dir = rdir
     end
     if rio != InnerOuter.NOT_INNER_OUTER
       if io != InnerOuter.NOT_INNER_OUTER && rio != io
         printRedeclarePrefixError(node, innerOuterString(rio), innerOuterString(io))
       end
-      @assign io = rio
+      io = rio
     end
-    @assign attr = Attributes.ATTRIBUTES(rcty, par, var, dir, io, fin, redecl, repl)
+    attr = Attributes.ATTRIBUTES(rcty, par, var, dir, io, fin, redecl, repl)
   end
   attr
 end
@@ -1941,7 +1936,7 @@ function isDiscreteClass(clsNode::InstNode) ::Bool
   discrete = begin
     @match cls begin
       EXPANDED_CLASS(restriction = RESTRICTION_TYPE(__))  => begin
-        @assign exts = getExtends(cls.elements)
+        exts = getExtends(cls.elements)
         if arrayLength(exts) == 1
           isDiscreteClass(exts[1])
         else
@@ -2014,7 +2009,7 @@ function checkRecursiveDefinition(componentType::InstNode, component::InstNode, 
 end
 
 function instDimension(dimension::Dimension, scope::InstNode, info::SourceInfo) ::Dimension
-  @assign dimension = begin
+  dimension = begin
     local dim::Absyn.Subscript
     local exp::Expression
     @match dimension begin
@@ -2026,7 +2021,7 @@ function instDimension(dimension::Dimension, scope::InstNode, info::SourceInfo) 
             end
 
             Absyn.SUBSCRIPT(__)  => begin
-              @assign exp = instExp(dim.subscript, scope, info)
+              exp = instExp(dim.subscript, scope, info)
               DIMENSION_UNTYPED(exp, false)
             end
           end
@@ -2041,7 +2036,9 @@ function instDimension(dimension::Dimension, scope::InstNode, info::SourceInfo) 
   dimension
 end
 
-function instExpressions(@nospecialize(node::InstNode), @nospecialize(scope::InstNode = node), @nospecialize(sections::Sections = SECTIONS_EMPTY()))::Sections
+function instExpressions(@nospecialize(node::InstNode),
+                         @nospecialize(scope::InstNode = node),
+                         @nospecialize(sections::Sections = SECTIONS_EMPTY()))
   local cls::Class = getClass(node)
   local inst_cls::Class
   local local_comps::Vector{InstNode}
@@ -2142,7 +2139,7 @@ end
 function makeComplexType(restriction::Restriction, node::InstNode, cls::Class)::NFType
   local ty::NFType
   local cty::ComplexType
-  @assign cty = begin
+  cty = begin
     @match restriction begin
       RESTRICTION_RECORD(__)  => begin
         makeRecordComplexType(classScope(getDerivedNode(node)), cls)
@@ -2152,8 +2149,7 @@ function makeComplexType(restriction::Restriction, node::InstNode, cls::Class)::
       end
     end
   end
-  @assign ty = TYPE_COMPLEX(node, cty)
-  ty
+  TYPE_COMPLEX(node, cty)
 end
 
 function makeRecordComplexType(node::InstNode, cls::Class) ::ComplexType
@@ -2162,13 +2158,12 @@ function makeRecordComplexType(node::InstNode, cls::Class) ::ComplexType
   local cls_node::InstNode
   local fields::List{Record.P_Field}
 
-  @assign cls_node = if SCodeUtil.isOperatorRecord(definition(node))
+  cls_node = if SCodeUtil.isOperatorRecord(definition(node))
     classScope(node)
   else
     classScope(getDerivedNode(node))
   end
-  @assign ty = COMPLEX_RECORD(cls_node, nil)
-  ty
+  COMPLEX_RECORD(cls_node, nil)
 end
 
 function instComplexType(ty::NFType)
@@ -2352,69 +2347,69 @@ function instExp(absynExp::Absyn.Exp, scope::InstNode, info::SourceInfo) ::Expre
       end
 
       Absyn.ARRAY(__)  => begin
-        @assign expl = list(instExp(e, scope, info) for e in absynExp.arrayExp)
+         expl = list(instExp(e, scope, info) for e in absynExp.arrayExp)
         makeArray(TYPE_UNKNOWN(), expl)
       end
 
       Absyn.MATRIX(__)  => begin
-        @assign expll = list(list(instExp(e, scope, info) for e in el) for el in absynExp.matrix)
+         expll = list(list(instExp(e, scope, info) for e in el) for el in absynExp.matrix)
         MATRIX_EXPRESSION(expll)
       end
 
       Absyn.RANGE(__)  => begin
-        @assign e1 = instExp(absynExp.start, scope, info)
-        @assign oe = instExpOpt(absynExp.step, scope, info)
-        @assign e3 = instExp(absynExp.stop, scope, info)
+         e1 = instExp(absynExp.start, scope, info)
+         oe = instExpOpt(absynExp.step, scope, info)
+         e3 = instExp(absynExp.stop, scope, info)
         RANGE_EXPRESSION(TYPE_UNKNOWN(), e1, oe, e3)
       end
 
       Absyn.TUPLE(__)  => begin
-        @assign expl = list(instExp(e, scope, info) for e in absynExp.expressions)
+         expl = list(instExp(e, scope, info) for e in absynExp.expressions)
         TUPLE_EXPRESSION(TYPE_UNKNOWN(), expl)
       end
 
       Absyn.BINARY(__)  => begin
-        @assign e1 = instExp(absynExp.exp1, scope, info)
-        @assign e2 = instExp(absynExp.exp2, scope, info)
-        @assign op = fromAbsyn(absynExp.op)
+         e1 = instExp(absynExp.exp1, scope, info)
+         e2 = instExp(absynExp.exp2, scope, info)
+         op = fromAbsyn(absynExp.op)
         BINARY_EXPRESSION(e1, op, e2)
       end
 
       Absyn.UNARY(__)  => begin
-        @assign e1 = instExp(absynExp.exp, scope, info)
-        @assign op = fromAbsyn(absynExp.op)
+         e1 = instExp(absynExp.exp, scope, info)
+         op = fromAbsyn(absynExp.op)
         UNARY_EXPRESSION(op, e1)
       end
 
       Absyn.LBINARY(__)  => begin
-        @assign e1 = instExp(absynExp.exp1, scope, info)
-        @assign e2 = instExp(absynExp.exp2, scope, info)
-        @assign op = fromAbsyn(absynExp.op)
+         e1 = instExp(absynExp.exp1, scope, info)
+         e2 = instExp(absynExp.exp2, scope, info)
+         op = fromAbsyn(absynExp.op)
         LBINARY_EXPRESSION(e1, op, e2)
       end
 
       Absyn.LUNARY(__)  => begin
-        @assign e1 = instExp(absynExp.exp, scope, info)
-        @assign op = fromAbsyn(absynExp.op)
+         e1 = instExp(absynExp.exp, scope, info)
+         op = fromAbsyn(absynExp.op)
         LUNARY_EXPRESSION(op, e1)
       end
 
       Absyn.RELATION(__)  => begin
-        @assign e1 = instExp(absynExp.exp1, scope, info)
-        @assign e2 = instExp(absynExp.exp2, scope, info)
-        @assign op = fromAbsyn(absynExp.op)
+         e1 = instExp(absynExp.exp1, scope, info)
+         e2 = instExp(absynExp.exp2, scope, info)
+         op = fromAbsyn(absynExp.op)
         RELATION_EXPRESSION(e1, op, e2)
       end
 
       Absyn.IFEXP(__)  => begin
-        @assign e3 = instExp(absynExp.elseBranch, scope, info)
+         e3 = instExp(absynExp.elseBranch, scope, info)
         for branch in listReverse(absynExp.elseIfBranch)
-          @assign e1 = instExp(Util.tuple21(branch), scope, info)
-          @assign e2 = instExp(Util.tuple22(branch), scope, info)
-          @assign e3 = IF_EXPRESSION(e1, e2, e3)
+           e1 = instExp(Util.tuple21(branch), scope, info)
+           e2 = instExp(Util.tuple22(branch), scope, info)
+           e3 = IF_EXPRESSION(e1, e2, e3)
         end
-        @assign e1 = instExp(absynExp.ifExp, scope, info)
-        @assign e2 = instExp(absynExp.trueBranch, scope, info)
+         e1 = instExp(absynExp.ifExp, scope, info)
+         e2 = instExp(absynExp.trueBranch, scope, info)
         IF_EXPRESSION(e1, e2, e3)
       end
 
@@ -2458,8 +2453,8 @@ function instCref(absynCref::Absyn.ComponentRef, scope::InstNode, info::SourceIn
       end
     end
   end
-  @assign cref = instCrefSubscripts(cref, scope, info)
-  @assign crefExp = begin
+   cref = instCrefSubscripts(cref, scope, info)
+   crefExp = begin
     @match cref begin
       COMPONENT_REF_CREF(__)  => begin
         begin
@@ -2493,8 +2488,8 @@ function instCrefComponent(cref::ComponentRef, node::InstNode, scope::InstNode, 
   local crefExp::Expression
   local comp::Component
   local prefixed_cref::ComponentRef
-  @assign comp = component(node)
-  @assign crefExp = begin
+   comp = component(node)
+   crefExp = begin
     @match comp begin
       ITERATOR_COMPONENT(__)  => begin
         checkUnsubscriptableCref(cref, info)
@@ -2509,8 +2504,8 @@ function instCrefComponent(cref::ComponentRef, node::InstNode, scope::InstNode, 
         fail()
       end
       _  => begin
-        @assign prefixed_cref = fromNodeList(scopeList(scope))
-        @assign prefixed_cref = if isEmpty(prefixed_cref)
+         prefixed_cref = fromNodeList(scopeList(scope))
+         prefixed_cref = if isEmpty(prefixed_cref)
           cref
         else
           append(cref, prefixed_cref)
@@ -2527,8 +2522,8 @@ function instCrefFunction(cref::ComponentRef, info::SourceInfo) ::Expression
 
   local fn_ref::ComponentRef
 
-  @assign fn_ref = instFunctionRef(cref, info)
-  @assign crefExp = CREF_EXPRESSION(TYPE_UNKNOWN(), fn_ref)
+   fn_ref = instFunctionRef(cref, info)
+   crefExp = CREF_EXPRESSION(TYPE_UNKNOWN(), fn_ref)
   crefExp
 end
 
@@ -2536,8 +2531,8 @@ function instCrefTypename(@nospecialize(cref::ComponentRef), @nospecialize(node:
   local crefExp::Expression
   local ty::NFType
   checkUnsubscriptableCref(cref, info)
-  @assign ty = getType(node)
-  @assign ty = begin
+   ty = getType(node)
+   ty = begin
     @match ty begin
       TYPE_BOOLEAN(__)  => begin
         TYPE_ARRAY(ty, list(P_Dimension.Dimension.BOOLEAN()))
@@ -2551,7 +2546,7 @@ function instCrefTypename(@nospecialize(cref::ComponentRef), @nospecialize(node:
       end
     end
   end
-  @assign crefExp = Expression.TYPENAME(ty)
+   crefExp = Expression.TYPENAME(ty)
   crefExp
 end
 
@@ -2873,23 +2868,21 @@ instEq
 end
 
 function instConnectorCref(absynCref::Absyn.ComponentRef, scope::InstNode, info::SourceInfo) ::Expression
-  local outExp::Expression
   local cref::ComponentRef
   local prefix::ComponentRef
   local found_scope::InstNode
    (cref, found_scope) = lookupConnector(absynCref, scope, info)
-  @assign cref = instCrefSubscripts(cref, scope, info)
-  @assign prefix = fromNodeList(scopeList(found_scope))
+  cref = instCrefSubscripts(cref, scope, info)
+  prefix = fromNodeList(scopeList(found_scope))
   if ! isEmpty(prefix)
-    @assign cref = append(cref, prefix)
+    cref = append(cref, prefix)
   end
-  @assign outExp = CREF_EXPRESSION(TYPE_UNKNOWN(), cref)
-  outExp
+  CREF_EXPRESSION(TYPE_UNKNOWN(), cref)
 end
 
-function makeSource(comment::SCode.Comment, info::SourceInfo) ::DAE.ElementSource
+function makeSource(comment::SCode.Comment, info::SourceInfo)
   local source::DAE.ElementSource
-  @assign source = DAE.SOURCE(info, nil, "TODO Dummy", nil, nil, nil, list(comment))
+  source = DAE.SOURCE(info, nil, "TODO Dummy", nil, nil, nil, list(comment))
   source
 end
 
@@ -2897,9 +2890,9 @@ function addIteratorToScope(name::String, scope::InstNode, info::SourceInfo, ite
   local iterator::InstNode
   local iter_comp::Component
   scope = openImplicitScope(scope)
-  @assign iter_comp = ITERATOR_COMPONENT(iter_type, Variability.CONTINUOUS, info)
-  @assign iterator = fromComponent(name, iter_comp, scope)
-  @assign scope = addIterator(iterator, scope)
+  iter_comp = ITERATOR_COMPONENT(iter_type, Variability.CONTINUOUS, info)
+  iterator = fromComponent(name, iter_comp, scope)
+  scope = addIterator(iterator, scope)
   (scope, iterator)
 end
 """
@@ -3054,43 +3047,40 @@ end
 
 function isStructuralComponent(component::Component, compAttrs::Attributes, compBinding::Binding, compNode::InstNode, evalAllParams::Bool) ::Bool
   local isStructural::Bool
-
   local is_fixed::Bool
-
   if compAttrs.variability != Variability.PARAMETER
-    @assign isStructural = false
+     isStructural = false
   elseif evalAllParams || getEvaluateAnnotation(component)
     if ! getFixedAttribute(component)
-      @assign isStructural = false
+       isStructural = false
     elseif isExternalObject(component)
-      @assign isStructural = false
+       isStructural = false
     elseif ! hasBinding(compNode)
       if ! evalAllParams && ! Flags.getConfigBool(Flags.CHECK_MODEL)
         Error.addSourceMessage(Error.UNBOUND_PARAMETER_EVALUATE_TRUE, list(name(compNode)), info(compNode))
       end
-      @assign isStructural = false
+       isStructural = false
     elseif isBindingNotFixed(compBinding, #= requireFinal = =# false)
-      @assign isStructural = false
+       isStructural = false
     else
-      @assign isStructural = true
+       isStructural = true
     end
   else
-    @assign isStructural = false
+     isStructural = false
   end
   isStructural
 end
 
 function isBindingNotFixed(binding::Binding, requireFinal::Bool, maxDepth::Int = 4) ::Bool
   local isNotFixed::Bool
-
   if maxDepth == 0
-    @assign isNotFixed = true
+     isNotFixed = true
     return isNotFixed
   end
   if hasExp(binding)
-    @assign isNotFixed = isExpressionNotFixed(getBindingExp(getExp(binding)), requireFinal = requireFinal, maxDepth = maxDepth)
+     isNotFixed = isExpressionNotFixed(getBindingExp(getExp(binding)), requireFinal = requireFinal, maxDepth = maxDepth)
   else
-    @assign isNotFixed = true
+     isNotFixed = true
   end
   isNotFixed
 end
@@ -3176,14 +3166,12 @@ end
 
 function getRecordFieldBinding(comp::Component, node::InstNode) ::Binding
   local binding::Binding
-
   local parent::InstNode
-
-  @assign binding = getBinding(comp)
+  binding = getBinding(comp)
   if isUnbound(binding)
-    @assign parent = parent(node)
+    parent = parent(node)
     if isComponent(parent) && isRecord(restriction(getClass(parent)))
-      @assign binding = getRecordFieldBinding(component(parent), parent)
+      binding = getRecordFieldBinding(component(parent), parent)
     end
   end
   binding
@@ -3239,9 +3227,9 @@ end
 function markStructuralParamsComp(component::Component, node::InstNode)
   local comp::Component
   local binding::Option{Expression}
-  @assign comp = setVariability(Variability.STRUCTURAL_PARAMETER, component)
+  comp = setVariability(Variability.STRUCTURAL_PARAMETER, component)
   updateComponent!(comp, node)
-  @assign binding = untypedExp(getBinding(comp))
+  binding = untypedExp(getBinding(comp))
   if isSome(binding)
     markStructuralParamsExp(Util.getOption(binding))
   end

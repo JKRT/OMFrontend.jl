@@ -175,7 +175,7 @@ function typeComponents(@nospecialize(cls::InstNode), origin::ORIGIN_Type)
   local de::InstNode
 
   return  () = begin
-    @match c begin
+    @unsafematch c begin
       INSTANCED_CLASS(restriction = RESTRICTION_TYPE(__)) => begin
         ()
       end
@@ -185,7 +185,7 @@ function typeComponents(@nospecialize(cls::InstNode), origin::ORIGIN_Type)
           typeComponent(c, origin)
         end
          () = begin
-          @match c.ty begin
+          @unsafematch c.ty begin
             TYPE_COMPLEX(complexTy = COMPLEX_RECORD(constructor = con)) => begin
               typeStructor(con)
               ()
@@ -1046,12 +1046,12 @@ function typeComponentBinding2(
           #str = toString(binding)
           #@debug "Typed binding: $str"
           #if !(Config.getGraphicsExpMode() && stringEq(nameStr, "graphics")) TODO
-           binding = matchBinding(binding, c.ty, nameStr, node)
+          binding = matchBinding(binding, c.ty, nameStr, node)
           #end
            comp_var = checkComponentBindingVariability(nameStr, c, binding, origin)
           if comp_var != attrs.variability
-             @assign attrs.variability = comp_var
-             @assign c.attributes = attrs
+            @assign attrs.variability = comp_var
+            c.attributes = attrs
           end
           #str2 = toString(binding)
           #@debug "Typed binding 2: $str2"
@@ -1081,10 +1081,13 @@ function typeComponentBinding2(
         # nameStr = name(inComponent)
         #@debug "Typing TC/TB binding ... for component: $nameStr"
         checkBindingEach(c.binding)
+        local cBinding = nothing
+        local cCond = nothing
         if isTyped(c.binding)
           c.binding =
             matchBinding(c.binding, c.ty, name(inComponent), node)
         end
+
         if isBound(c.condition)
           c.condition = typeComponentCondition(c.condition, origin)
           updateComponent!(c, node)
@@ -1092,6 +1095,14 @@ function typeComponentBinding2(
         if typeChildren
           typeBindings(c.classInst, inComponent, origin)
         end
+        # c = TYPED_COMPONENT(c.classInst,
+        #                     c.ty,
+        #                     if cBinding != nothing cBinding else c.binding end,
+        #                     if cCond != nothing cCond else  c.condition end,
+        #                     c.attributes,
+        #                     c.ann,
+        #                     c.comment,
+        #                     c.info)
         ()
       end
 
@@ -1130,8 +1141,8 @@ function typeComponentBinding2(
       TYPE_ATTRIBUTE(__) => begin
         # nameStr = name(inComponent)
         #@debug "Typing TA binding ... for component: $nameStr"
-        c.modifier =
-          typeTypeAttribute(c.modifier, c.ty, parent(inComponent), origin)
+        local mod = typeTypeAttribute(c.modifier, c.ty, parent(inComponent), origin)
+        c = TYPE_ATTRIBUTE(c.ty, mod)
         updateComponent!(c, node)
         ()
       end
@@ -1384,7 +1395,7 @@ function typeExp(
   @nospecialize(info::SourceInfo)
   )::Tuple
   #= Stop excessive type inference =#
-  return Base.inferencebarrier(typeExp2(exp, origin, info))
+  return typeExp2(exp, origin, info)
 end
 
 function typeExp2(
@@ -1614,7 +1625,7 @@ function typeBindingExp(
   exp::BINDING_EXP,
   origin::ORIGIN_Type,
   info::SourceInfo,
-)::Tuple{Expression, NFType, VariabilityType}
+  )
   local variability::VariabilityType
   local ty::NFType
   local outExp::Expression
@@ -1950,7 +1961,8 @@ function typeCref2(
     local fn::M_Function
     @match cref begin
       COMPONENT_REF_CREF(origin = Origin.SCOPE) => begin
-        @assign cref.ty = getType(cref.node)
+        local crefTy = getType(cref.node)
+        cref = COMPONENT_REF_CREF(cref.node, cref.subscripts, crefTy, cref.origin, cref.restCref)
         (cref, Variability.CONSTANT)
       end
 
@@ -1992,13 +2004,15 @@ function typeCref2(
         node = CLASS_NODE(__),
       ) where {(firstPart && isFunction(cref.node))} => begin
         @match _cons(fn, _) = P_Function.typeNodeCache(cref.node)
-         @assign cref.ty = Type.FUNCTION(fn, FunctionType.FUNCTION_REFERENCE)
-         @assign cref.restCref = typeCref2(cref.restCref, origin, info, false)
+        local crefTy = Type.FUNCTION(fn, FunctionType.FUNCTION_REFERENCE)
+        local crefRestCref = typeCref2(cref.restCref, origin, info, false)
+        cref = COMPONENT_REF_CREF(cref.node, cref.subscripts, crefTy, cref.origin, crefRestCref)
         (cref, Variability.CONTINUOUS)
       end
 
       COMPONENT_REF_CREF(node = CLASS_NODE(__)) => begin
-         @assign cref.ty = getType(cref.node)
+        local crefTy = getType(cref.node)
+        cref = COMPONENT_REF_CREF(cref.node, cref.subscripts, crefTy, cref.origin, cref.restCref)
         (cref, Variability.CONSTANT)
       end
 
@@ -2262,12 +2276,10 @@ end
 function typeMatrixComma(
   elements::List{<:Expression},
   origin::ORIGIN_Type,
-  info::SourceInfo,
-)::Tuple{Expression, NFType, VariabilityType}
+  info::SourceInfo)
   local variability::VariabilityType = Variability.CONSTANT
   local arrayType::NFType
   local arrayExp::Expression
-
   local exp::Expression
   local expl::List{Expression} = nil
   local res::List{Expression} = nil

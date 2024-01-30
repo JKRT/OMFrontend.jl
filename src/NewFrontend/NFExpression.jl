@@ -165,7 +165,7 @@ struct CREF_EXPRESSION <: NFExpression
   cref::ComponentRef
 end
 
-struct ENUM_LITERAL_EXPRESSION <: NFExpression
+struct ENUM_LITERAL_EXPRESSION{T0 <: NFType, T1 <: String, T2 <: Int} <: NFExpression
   ty::NFType
   name::String
   index::Int

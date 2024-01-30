@@ -152,12 +152,12 @@ end
      return (cref, state)
    end
    expand(node)
-   @assign cls = getClass(node)
+   cls = getClass(node)
     () = begin
      @match cls begin
        PARTIAL_BUILTIN(ty = TYPE_COMPLEX(complexTy = COMPLEX_EXTERNAL_OBJECT(constructor = constructor)))  => begin
-         @assign cref = prefixCref(constructor, TYPE_UNKNOWN(), nil, cref)
-         @assign state = LOOKUP_STATE_FUNC()
+         cref = prefixCref(constructor, TYPE_UNKNOWN(), nil, cref)
+         state = LOOKUP_STATE_FUNC()
          ()
        end
        _  => begin

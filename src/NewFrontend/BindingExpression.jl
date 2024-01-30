@@ -240,7 +240,8 @@ function retype(exp::Expression) ::Expression
         ()
       end
       CALL_EXPRESSION(call = TYPED_ARRAY_CONSTRUCTOR(__))  => begin
-        @assign exp.call = retype(exp.call)
+        local expCall = retype(exp.call)
+        exp = CALL_EXPRESSION(expCall)
         ()
       end
       _  => begin
@@ -5552,8 +5553,8 @@ function typeCastOpt(exp::Option{<:Expression}, ty::M_Type) ::Option{Expression}
   outExp
 end
 
-function setType(ty::NFType, exp::Expression)
-  @match exp begin
+function setType(@nospecialize(ty::NFType), @nospecialize(exp::Expression))
+  @unsafematch exp begin
     ENUM_LITERAL_EXPRESSION(__)  => begin
       @assign exp.ty = ty
       ()
@@ -5590,7 +5591,7 @@ function setType(ty::NFType, exp::Expression)
     end
 
     CALL_EXPRESSION(__)  => begin
-      @assign exp.call = setType(exp.call, ty)
+      CALL_EXPRESSION(setType(exp.call, ty))
       ()
     end
 
@@ -5636,11 +5637,12 @@ function setType(ty::NFType, exp::Expression)
   exp
 end
 
+
 function typeOf(exp::Expression) ::M_Type
   local ty::M_Type
 
-  @assign ty = begin
-    @match exp begin
+  ty = begin
+    @unsafematch exp begin
       INTEGER_EXPRESSION(__)  => begin
         TYPE_INTEGER()
       end
@@ -5866,7 +5868,7 @@ function compare(exp1::Expression, exp2::Expression) ::Int
     local clk1::ClockKind
     local clk2::ClockKind
     local me::Pointer{Expression}
-    @match exp1 begin
+    @unsafematch exp1 begin
       INTEGER_EXPRESSION(__)  => begin
         @match INTEGER_EXPRESSION(value = i) = exp2
         Util.intCompare(exp1.value, i)

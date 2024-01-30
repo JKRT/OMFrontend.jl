@@ -336,14 +336,14 @@ function applyLocalComponents(tree::CLASS_TREE_INSTANTIATED_TREE, func::Function
   return nothing
 end
 
-function applyLocalComponents(tree::CLASS_TREE_PARTIAL_TREE, func::FuncT)
+function applyLocalComponents(tree::CLASS_TREE_PARTIAL_TREE, func::Function)
   for c in tree.components
     func(c)
   end
   return nothing
 end
 
-function applyLocalComponents(tree::CLASS_TREE_EXPANDED_TREE, func::FuncT)
+function applyLocalComponents(tree::CLASS_TREE_EXPANDED_TREE, func::Function)
   for c in tree.components
     func(c)
   end
@@ -952,18 +952,19 @@ function instantiate(
         end
         #=  Create a new class tree and update the class in the node.
         =#
-        @assign cls.elements =
-          CLASS_TREE_INSTANTIATED_TREE(ltree, clss, comps, local_comps, exts, imps, dups)
-          ()
+        cls = EXPANDED_CLASS(CLASS_TREE_INSTANTIATED_TREE(ltree, clss, comps, local_comps, exts, imps, dups),
+                             cls.modifier,
+                             cls.prefixes,
+                             cls.restriction)
+        ()
       end
       EXPANDED_DERIVED(baseClass = node) => begin
         node = setNodeType(
           BASE_CLASS(clsNode, definition(node)),
           node,
         )
-        (node, instance, classCount, compCount) =
-          instantiate(node, instance, scope)
-        @assign cls.baseClass = node
+        (node, instance, classCount, compCount) = instantiate(node, instance, scope)
+        cls = EXPANDED_DERIVED(node, cls.modifier, cls.dims, cls.prefixes, cls.attributes, cls.restriction)
         ()
       end
       PARTIAL_BUILTIN(elements = tree && CLASS_TREE_FLAT_TREE(components = old_comps)) =>
@@ -980,9 +981,9 @@ function instantiate(
             old_comps[i] =
               replaceComponent(component(node), node)
           end
-          @assign tree.components = old_comps
-          @assign cls.elements = tree
-          compCount = arrayLength(old_comps)
+          tree = CLASS_TREE_FLAT_TREE(tree.tree, tree.classes, old_comps, tree.imports, tree.duplicates)
+          cls = PARTIAL_BUILTIN(cls.ty, tree, cls.modifier, cls.prefixes, cls.restriction)
+          compCount = length(old_comps)
           ()
         end
       PARTIAL_BUILTIN(__) => begin
@@ -1613,13 +1614,13 @@ function joinDuplicates(
   newEntry::DuplicateTree.Entry,
   oldEntry::DuplicateTree.Entry,
   name::String,
-)::DuplicateTree.Entry
+  )
   local entry::DuplicateTree.Entry = oldEntry
 
   #=  Add the new entry as a child of the old entry.
   =#
-  @assign entry.children = _cons(newEntry, entry.children)
-  return entry
+  entryChildren = _cons(newEntry, entry.children)
+  return DuplicateTree.ENTRY(oldEntry.entry, oldEntry.node, children, oldEntry.ty)
 end
 
 function offsetDuplicate(
@@ -1788,19 +1789,20 @@ function addInheritedElement(
   componentOffset::Int,
   conflictFunc::LookupTree.ConflictFunc,
   tree::LookupTree.Tree,
-)::LookupTree.Tree
+  )
 
-  () = begin
     @match entry begin
       LookupTree.CLASS(__) => begin
-        @assign entry.index = entry.index + classOffset
-        tree = LookupTree.add(tree, name, entry, conflictFunc)
+        #@assign entry.index = entry.index + classOffset
+        local newEntry = LookupTree.CLASS(entry.index + classOffset)
+        tree = LookupTree.add(tree, name, newEntry, conflictFunc)
         ()
       end
 
       LookupTree.COMPONENT(__) => begin
-        @assign entry.index = entry.index + componentOffset
-        tree = LookupTree.add(tree, name, entry, conflictFunc)
+        #@assign entry.index = entry.index + componentOffset
+        local newEntry = LookupTree.COMPONENT(entry.index + componentOffset)
+        tree = LookupTree.add(tree, name, newEntry, conflictFunc)
         ()
       end
 
@@ -1808,7 +1810,6 @@ function addInheritedElement(
         ()
       end
     end
-  end
   #=  Ignore IMPORT, since imports aren't inherited. =#
   return tree
 end

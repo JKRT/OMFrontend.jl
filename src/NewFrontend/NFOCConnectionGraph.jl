@@ -37,7 +37,7 @@ A tuple with two crefs and equation(s) for calling the equalityConstraint functi
 const FlatEdge = BrokenEdge
  #= a list of broken edges =#
 const FlatEdges = BrokenEdges
-Connector=NFConnector
+const Connector=NFConnector
 
 const Edge = Tuple  #= an edge is a tuple with two component references =#
 const Edges = List  #= A list of edges =#
@@ -1303,8 +1303,7 @@ end
 """ #= return the Edge partner of a edge, fails if not found =#"""
 function getEdge(cr::ComponentRef, edges::Edges) ::ComponentRef
   local ocr::ComponentRef
-
-  @assign ocr = begin
+  ocr = begin
     local rest::Edges
     local cref1::ComponentRef
     local cref2::ComponentRef
@@ -1325,14 +1324,12 @@ end
 """ #= return the Edge partner of a edge, fails if not found =#"""
 function getEdge1(cr::ComponentRef, cref1::ComponentRef, cref2::ComponentRef) ::ComponentRef
   local ocr::ComponentRef
-
-  @assign ocr = begin
+  ocr = begin
     @matchcontinue (cr, cref1, cref2) begin
       (_, _, _)  => begin
         @match true = isEqual(cr, cref1)
         cref2
       end
-
       _  => begin
         @match true = isEqual(cr, cref2)
         cref1

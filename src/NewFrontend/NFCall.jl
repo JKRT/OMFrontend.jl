@@ -1,4 +1,5 @@
 module ParameterTreeImpl
+
 using MetaModelica
 using ExportAll
 import ..Main.Expression
@@ -915,18 +916,9 @@ function typeMatchNormalCall(call::Call, origin::ORIGIN_Type, info::SourceInfo):
   return call
 end
 
-function unboxArgs(call::Call)::Call
-
-   () = begin
-    @match call begin
-      TYPED_CALL(__) => begin
-        @assign call.arguments =
-          list(unbox(arg) for arg in call.arguments)
-        ()
-      end
-    end
-  end
-  return call
+function unboxArgs(call::TYPED_CALL)
+  local args = list(unbox(arg) for arg in call.arguments)
+  return TYPED_CALL(call.fn, call.ty, call.var, args, call.attributes)
 end
 
 function makeTypedCall(
@@ -993,7 +985,7 @@ function typeCall2(
   @nospecialize(callExp::Expression),
   @nospecialize(origin::ORIGIN_Type),
   @nospecialize(info::SourceInfo),
-  )::Tuple
+  )
   @nospecialize
   local var::VariabilityType
   local ty::NFType
@@ -1245,7 +1237,7 @@ function evaluateCallType(
   fn::M_Function,
   args::List{<:Expression},
   ptree::ParameterTree = ParameterTreeImpl.EMPTY(),
-)::Tuple{NFType, ParameterTree}
+  )::Tuple{NFType, ParameterTree}
    ty = begin
     local dims::List{Dimension}
     local tys::List{NFType}
@@ -1275,12 +1267,10 @@ end
      be used where e.g. correct types are required. =#"""
 function devectorizeCall(call::Call)::Call
   local outCall::Call
-
   local exp::Expression
   local iter_exp::Expression
   local iters::List{Tuple{InstNode, Expression}}
   local iter_node::InstNode
-
   @match TYPED_ARRAY_CONSTRUCTOR(exp = exp, iters = iters) = call
   for i in iters
      (iter_node, iter_exp) = i
@@ -1415,7 +1405,7 @@ function iteratorToDAE(iter::Tuple{<:InstNode, Expression})::DAE.ReductionIterat
   return diter
 end
 
-function checkMatchingFunctions(call::Call, info::SourceInfo)::MatchedFunction
+function checkMatchingFunctions(call::Call, info::SourceInfo)
   local matchedFunc::MatchedFunction
 
   local matchedFunctions::List{MatchedFunction}
@@ -1501,8 +1491,20 @@ function checkMatchingFunctions(call::Call, info::SourceInfo)::MatchedFunction
   =#
   if isBuiltin(matchedFunc.func)
     func = matchedFunc.func
-    @assign func.path = nameConsiderBuiltin(func)
-    @assign matchedFunc.func = func
+    local funcPath = nameConsiderBuiltin(func)
+    func = M_FUNCTION(funcPath,
+               func.node,
+               func.inputs,
+               func.outputs,
+               func.locals,
+               func.slots,
+               func.returnType,
+               func.attributes,
+               func.derivatives,
+               func.status,
+               func.callCounter)
+    #@assign matchedFunc.func = func
+    matchedFunc = MATCHED_FUNC(func, matchedFunc.args, matchedFunc.mk)
   end
   return matchedFunc
 end
@@ -1847,7 +1849,7 @@ function instIteratorCall(
   functionArgs::Absyn.FunctionArgs,
   scope::InstNode,
   info::SourceInfo,
-)::Expression
+  )::Expression
   local callExp::Expression
   local fn_name::Absyn.ComponentRef
   local fn_ref::ComponentRef

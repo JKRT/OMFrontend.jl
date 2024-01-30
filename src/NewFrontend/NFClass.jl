@@ -235,17 +235,16 @@ function isEncapsulated(cls::Class)::Bool
   return isEncapsulated
 end
 
-function setPrefixes(prefs::Prefixes, cls::Class)::Class
-
+function setPrefixes(prefs::Prefixes, cls::Class)
    () = begin
     @match cls begin
       EXPANDED_CLASS(__) => begin
-        @assign cls.prefixes = prefs
+        cls.prefixes = prefs
         ()
       end
 
       EXPANDED_DERIVED(__) => begin
-        @assign cls.prefixes = prefs
+        cls.prefixes = prefs
         ()
       end
     end
@@ -253,23 +252,19 @@ function setPrefixes(prefs::Prefixes, cls::Class)::Class
   return cls
 end
 
-function getPrefixes(cls::Class)::Prefixes
+function getPrefixes(cls::Class)
   local prefs::Prefixes
-
   @assign prefs = begin
     @match cls begin
       PARTIAL_CLASS(__) => begin
         cls.prefixes
       end
-
       PARTIAL_BUILTIN(__) => begin
         cls.prefixes
       end
-
       EXPANDED_CLASS(__) => begin
         cls.prefixes
       end
-
       EXPANDED_DERIVED(__) => begin
         cls.prefixes
       end
@@ -284,9 +279,9 @@ function isOverdetermined(cls::Class)::Bool
   try
     lookupElement("equalityConstraint", cls)
     System.setHasOverconstrainedConnectors(true)
-    @assign isOverdetermined = true
+    isOverdetermined = true
   catch
-    @assign isOverdetermined = false
+    isOverdetermined = false
   end
   #=  set the external flag that signals the presence of expandable connectors in the model
   =#

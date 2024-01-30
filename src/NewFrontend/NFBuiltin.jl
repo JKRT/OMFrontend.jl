@@ -705,15 +705,15 @@ const ASSERTIONLEVEL_TYPE =
   TYPE_ENUMERATION(Absyn.IDENT("AssertionLevel"),
                    list("error", "warning"))
 
-const ASSERTIONLEVEL_ERROR =
-  ENUM_LITERAL_EXPRESSION(ASSERTIONLEVEL_TYPE
+const ASSERTIONLEVEL_ERROR::ENUM_LITERAL_EXPRESSION =
+  ENUM_LITERAL_EXPRESSION{TYPE_ENUMERATION, String, Int}(ASSERTIONLEVEL_TYPE
                           , "error"
-                          , 1)::Expression
+                          , 1)
 
-const ASSERTIONLEVEL_WARNING =
-  ENUM_LITERAL_EXPRESSION(ASSERTIONLEVEL_TYPE
-                          , "error"
-                          , 2)::Expression
+const ASSERTIONLEVEL_WARNING::ENUM_LITERAL_EXPRESSION =
+  ENUM_LITERAL_EXPRESSION{TYPE_ENUMERATION, String, Int}(ASSERTIONLEVEL_TYPE
+                                                         ,"error"
+                                                         ,2)
 
 const CLOCK_LOOKUP_TREE =
   LookupTree.NODE(

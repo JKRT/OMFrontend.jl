@@ -723,7 +723,7 @@ function setSubscriptsList(
     local rest_cref::ComponentRef
     @match (subscripts, cref) begin
       (subs <| rest_subs, COMPONENT_REF_CREF(__)) => begin
-        @assign rest_cref = setSubscriptsList(rest_subs, cref.restCref)
+        rest_cref = setSubscriptsList(rest_subs, cref.restCref)
         COMPONENT_REF_CREF(cref.node, subs, cref.ty, cref.origin, rest_cref)
       end
 
@@ -735,29 +735,21 @@ function setSubscriptsList(
   return cref
 end
 
-""" #= Sets the subscripts of the first part of a cref. =#"""
-function setSubscripts(subscripts::List{<:Subscript}, cref::ComponentRef)::ComponentRef
-
-   () = begin
-    @match cref begin
-      COMPONENT_REF_CREF(__) => begin
-        @assign cref.subscripts = subscripts
-        ()
-      end
-    end
+function setSubscripts(subscripts::List{<:Subscript}, @nospecialize(cref::ComponentRef))
+  local tmpCref = if cref isa COMPONENT_REF_CREF
+    COMPONENT_REF_CREF(cref.node, subscripts, cref.ty, cref.origin, cref.restCref)
+  else
+    cref
   end
-  return cref
 end
 
 function getSubscripts(cref::ComponentRef)::List{Subscript}
   local subscripts::List{Subscript}
-
-  @assign subscripts = begin
+  subscripts = begin
     @match cref begin
       COMPONENT_REF_CREF(__) => begin
         cref.subscripts
       end
-
       _ => begin
         nil
       end

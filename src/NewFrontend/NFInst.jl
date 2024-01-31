@@ -85,27 +85,28 @@ function instClassInProgramFM2(classPath::Absyn.Path, program::SCode.Program)::T
   cls = setNodeType(ROOT_CLASS(EMPTY_NODE()), cls)
   #=  Initialize the storage for automatically generated inner elements. =#
   top = setInnerOuterCache(top, C_TOP_SCOPE(NodeTree.new(), cls))
-  #@debug "Instantiate the class"
-  inst_cls = instantiateN1(cls, EMPTY_NODE())
-  insertGeneratedInners(inst_cls, top)
+  @info "Instantiate the class"
+  @time inst_cls = instantiateN1(cls, EMPTY_NODE())
+  @info "Instantiate generate inners"
+  @time insertGeneratedInners(inst_cls, top)
   #execStat("NFInst.instantiate(" + name + ")")
   #=
   Instantiate expressions (i.e. anything that can contains crefs, like
   bindings, dimensions, etc). This is done as a separate step after
   instantiation to make sure that lookup is able to find the correct nodes.
   =#
-  #@debug "Instantiate Expressions"
-  instExpressions(inst_cls)
+  @info "Instantiate Expressions"
+  @time instExpressions(inst_cls)
   # execStat("NFInst.instExpressions(" + name + ")")
   #=  Mark structural parameters.
   =#
   updateImplicitVariability(inst_cls, false #== Flags.isSet(Flags.EVAL_PARAM) ==#)
   #execStat("NFInst.updateImplicitVariability")
   #=  Type the class. =#
-  #@debug "Type the class"
-  typeClass(inst_cls, name)
-  #@debug "Flatten the model and evaluate constants in it."
-  flat_model = flatten(inst_cls, name)
+  @info "Type the class"
+  @time typeClass(inst_cls, name)
+  @info "Flatten the model and evaluate constants in it."
+  @time flat_model = flatten(inst_cls, name)
   #=
   Check if we are to performance recompilation. If true adds the SCode program to the flat model.
   Also check if we have a Connections.branch statement in an if-equation
@@ -190,15 +191,16 @@ function instClassInProgramFM2(classPath::Absyn.Path, program::SCode.Program)::T
     #println("\n************* AFTER RESOLVE *************\n")
     #println(replace(toString(flat_model), "\\n" => "\n"))
   else     #= Regular system without simulaton time reconfigurations =#
-    flat_model = resolveConnections(flat_model, name)
+    println("Connection handling...")
+    @time flat_model = resolveConnections(flat_model, name)
     flat_model = evaluate(flat_model)
   end
   #= Do unit checking =#
   #TODO  @assign flat_model = UnitCheck.checkUnits(flat_model)
   #@debug "Inline trivial calls in the model"
   flat_model = inlineSimpleCalls(flat_model)
-  #@debug "Apply simplifications to the model"
-  flat_model = simplifyFlatModel(flat_model)
+  @info "Apply simplifications to the model"
+  @time flat_model = simplifyFlatModel(flat_model)
   #@debug "Collect a tree of all functions that are still used in the flat model"
   funcs = collectFunctions(flat_model, name)
   #=  Collect package constants that couldn't be substituted with their values =#
@@ -935,7 +937,7 @@ end
 """ #= Sets the class instance of a component node. =#"""
 function updateComponentType(component::InstNode, cls::InstNode) ::InstNode
   if isComponent(component)
-     component = componentApply(component, setClassInstance, cls)
+    component = componentApply(component, setClassInstance, cls)
   end
   component
 end
@@ -2087,7 +2089,8 @@ function instExpressions(@nospecialize(node::InstNode),
         applyLocalComponents(cls_tree, instComponentExpressions)
         #=  Flatten the class tree so we don't need to deal with extends anymore.
         =#
-        @assign cls.elements = flatten(cls_tree)
+        local elements = flatten(cls_tree)
+        cls = EXPANDED_CLASS(elements, cls.modifier, cls.prefixes, cls.restriction)
         updateClass(cls, node)
         #=  Instantiate local equation/algorithm sections.
         =#

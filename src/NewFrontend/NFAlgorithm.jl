@@ -35,7 +35,7 @@ function mapExpList(algs::Vector{Algorithm}, func::MapFunc)
 end
 
 function mapExp(alg::ALGORITHM, func::MapFunc)::Algorithm
-  @assign alg.statements = mapExpList(alg.statements, func)
+  alg.statements = mapExpList(alg.statements, func)
   return alg
 end
 

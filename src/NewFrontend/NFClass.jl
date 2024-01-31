@@ -169,8 +169,7 @@ function hasOperator(name::String, cls::Class)::Bool
 end
 
 function getDerivedComments(cls::Class, cmts::List{<:SCode.Comment})::List{SCode.Comment}
-
-  @assign cmts = begin
+  cmts = begin
     @match cls begin
       EXPANDED_DERIVED(__) => begin
         getComments(cls.baseClass, cmts)
@@ -189,10 +188,8 @@ function getDerivedComments(cls::Class, cmts::List{<:SCode.Comment})::List{SCode
 end
 
 function lastBaseClass(node::InstNode)::InstNode
-
   local cls::Class = getClass(node)
-
-  @assign node = begin
+  node = begin
     @match cls begin
       EXPANDED_DERIVED(__) => begin
         lastBaseClass(cls.baseClass)
@@ -212,21 +209,17 @@ end
 
 function isEncapsulated(cls::Class)::Bool
   local isEncapsulated::Bool
-
-  @assign isEncapsulated = begin
+  isEncapsulated = begin
     @match cls begin
       PARTIAL_CLASS(__) => begin
         SCodeUtil.encapsulatedBool(cls.prefixes.encapsulatedPrefix)
       end
-
       EXPANDED_CLASS(__) => begin
         SCodeUtil.encapsulatedBool(cls.prefixes.encapsulatedPrefix)
       end
-
       EXPANDED_DERIVED(__) => begin
         SCodeUtil.encapsulatedBool(cls.prefixes.encapsulatedPrefix)
       end
-
       _ => begin
         false
       end
@@ -236,17 +229,15 @@ function isEncapsulated(cls::Class)::Bool
 end
 
 function setPrefixes(prefs::Prefixes, cls::Class)
-   () = begin
-    @match cls begin
-      EXPANDED_CLASS(__) => begin
-        cls.prefixes = prefs
-        ()
-      end
+  @match cls begin
+    EXPANDED_CLASS(__) => begin
+      cls.prefixes = prefs
+      ()
+    end
 
-      EXPANDED_DERIVED(__) => begin
-        cls.prefixes = prefs
-        ()
-      end
+    EXPANDED_DERIVED(__) => begin
+      cls.prefixes = prefs
+      ()
     end
   end
   return cls
@@ -254,7 +245,7 @@ end
 
 function getPrefixes(cls::Class)
   local prefs::Prefixes
-  @assign prefs = begin
+  prefs = begin
     @match cls begin
       PARTIAL_CLASS(__) => begin
         cls.prefixes
@@ -290,8 +281,7 @@ end
 
 function isExternalFunction(cls::Class)::Bool
   local isExtFunc::Bool
-
-  @assign isExtFunc = begin
+  isExtFunc = begin
     local lang::String
     @match cls begin
       EXPANDED_DERIVED(__) => begin
@@ -677,30 +667,70 @@ function getModifier(cls::Class)::Modifier
   return modifier
 end
 
-function classTreeApply(cls::Class, func::FuncType)
-  local tmpCls = if hasproperty(cls, :elements)
-    @assign cls.elements = func(cls.elements)
-    cls
-  else
-    cls
-  end
+classTreeApply(cls::Class, func::FuncType) = cls
+
+function classTreeApply(cls::INSTANCED_BUILTIN, func::FuncType)
+  local elements = func(cls.elements)
+  local tmpCls = INSTANCED_BUILTIN(cls.ty, elements, cls.restriction)
+  return tmpCls
+end
+
+function classTreeApply(cls::INSTANCED_CLASS, func::FuncType)
+  local elements = func(cls.elements)
+  local tmpCls = INSTANCED_CLASS(cls.ty, elements, cls.sections, cls.restriction)
+  return tmpCls
+end
+
+function classTreeApply(cls::EXPANDED_CLASS, func::FuncType)
+  local elements = func(cls.elements)
+  local tmpCls = EXPANDED_CLASS(elements, cls.modifier, cls.prefixes, cls.restriction)
+  return tmpCls
+end
+
+function classTreeApply(cls::PARTIAL_BUILTIN, func::FuncType)
+  local elements = func(cls.elements)
+  local tmpCls = PARTIAL_BUILTIN(cls.ty, elements, cls.modifier, cls.prefixes, cls.restriction)
+  return tmpCls
+end
+
+function classTreeApply(cls::PARTIAL_CLASS, func::FuncType)
+  local elements = func(cls.elements)
+  local tmpCls = PARTIAL_CLASS(elements, cls.modifier, cls.prefixes)
   return tmpCls
 end
 
 function setClassTree(tree::ClassTree, cls::Class)
-  local classTmp::Class = if hasproperty(cls, :elements)
-    @assign cls.elements = tree
-    cls
-  else
-    cls
-  end
-  return classTmp
+  return cls
+end
+
+function setClassTree(tree::ClassTree, cls::INSTANCED_BUILTIN)
+  local tmpCls = INSTANCED_BUILTIN(cls.ty, tree, cls.restriction)
+  return tmpCls
+end
+
+function setClassTree(tree::ClassTree, cls::INSTANCED_CLASS)
+  local tmpCls = INSTANCED_CLASS(cls.ty, tree, cls.sections, cls.restriction)
+  return tmpCls
+end
+
+function setClassTree(tree::ClassTree, cls::EXPANDED_CLASS)
+  local tmpCls = EXPANDED_CLASS(tree, cls.modifier, cls.prefixes, cls.restriction)
+  return tmpCls
+end
+
+function setClassTree(tree::ClassTree, cls::PARTIAL_BUILTIN)
+  local tmpCls = PARTIAL_BUILTIN(cls.ty, tree, cls.modifier, cls.prefixes, cls.restriction)
+  return tmpCls
+end
+
+function setClassTree(tree::ClassTree, cls::PARTIAL_CLASS)
+  local tmpCls = PARTIAL_CLASS(tree, cls.modifier, cls.prefixes)
+  return tmpCls
 end
 
 function classTree(cls::Class)::ClassTree
   local tree::ClassTree
-
-  @assign tree = begin
+  tree = begin
     @match cls begin
       PARTIAL_CLASS(__) => begin
         cls.elements
@@ -735,15 +765,14 @@ function classTree(cls::Class)::ClassTree
     end
   end
   #@debug "Our resulting tree in class tree"
-#  str = LookupTree.printTreeStr(lookupTree(tree))
+  #  str = LookupTree.printTreeStr(lookupTree(tree))
   #@debug "Value of str"
   return tree
 end
 
 function isBuiltin(cls::Class)::Bool
   local b::Bool
-
-  @assign b = begin
+  b = begin
     @match cls begin
       PARTIAL_BUILTIN(__) => begin
         true
@@ -788,15 +817,13 @@ end
 
 function nthComponent(index::Int, cls::Class)::InstNode
   local component::InstNode
-
-  @assign component = nthComponent(index, classTree(cls))
+  component = nthComponent(index, classTree(cls))
   return component
 end
 
 function lookupComponentIndex(name::String, cls::Class)::Int
   local index::Int
-
-  @assign index = lookupComponentIndex(name, classTree(cls))
+  index = lookupComponentIndex(name, classTree(cls))
   return index
 end
 
@@ -809,7 +836,7 @@ function lookupElement(name::String, cls::Class)::Tuple{InstNode, Bool}
 end
 
 function setSections(sections::Sections, cls::Class)::Class
-  @assign cls = begin
+  cls = begin
     @match cls begin
       INSTANCED_CLASS(__) => begin
         INSTANCED_CLASS(cls.ty, cls.elements, sections, cls.restriction)
@@ -838,7 +865,7 @@ function getSections(cls::Class)::Sections
 end
 
 function initExpandedClass(cls::Class)::Class
-  @assign cls = begin
+  cls = begin
     @match cls begin
       PARTIAL_CLASS(__) => begin
         EXPANDED_CLASS(

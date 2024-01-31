@@ -111,10 +111,8 @@ end
 
 function enumerateComponents(tree::ClassTree)::List{InstNode}
   local components::List{InstNode}
-
   local ltree::LookupTree.Tree
   local comps::Vector{InstNode}
-
   @match CLASS_TREE_FLAT_TREE(tree = ltree, components = comps) = tree
   components = LookupTree.fold(ltree, (name, entry, components) -> enumerateComponents2(name, entry, comps, components), nil)
   return components

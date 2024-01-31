@@ -413,18 +413,14 @@ function toFullDAEType(clsNode::InstNode)
 end
 
 function stripDAETypeVars(ty::DAE.Type)
-   () = begin
-    @match ty begin
-      DAE.Type.T_COMPLEX(__)  => begin
-        @assign ty.varLst = nil
-        ()
-      end
-      _  => begin
-        ()
-      end
+  @match ty begin
+    DAE.T_COMPLEX(__)  => begin
+      ty = DAE.T_COMPLEX(ty.complexClassType, ty.varLst, ty.equalityConstraint)
+    end
+    _  => begin
+      ty
     end
   end
-  ty
 end
 
 """ #= Returns the DAE type for a class, without the list of variables filled in. =#"""

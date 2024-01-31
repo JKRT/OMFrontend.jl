@@ -1668,11 +1668,9 @@ function typeGetInstanceName(call::Call) ::Tuple{Expression, M_Type, Variability
   local var::VariabilityType = Variability.CONSTANT
   local ty::M_Type = TYPE_STRING()
   local result::Expression
-
   local scope::InstNode
-
   @match UNTYPED_CALL(call_scope = scope) = call
-  @assign result = STRING_EXPRESSION(AbsynUtil.pathString(scopePath(scope, includeRoot = true)))
+  result = STRING_EXPRESSION(AbsynUtil.pathString(scopePath(scope, includeRoot = true)))
   (result, ty, var)
 end
 
@@ -1873,7 +1871,8 @@ function typeActualInStreamCall2(name::String, fn::M_Function, arg::Expression, 
       end
 
       ARRAY_EXPRESSION(__)  => begin
-        @assign arg.elements = list(typeActualInStreamCall2(name, fn, e, var, info) for e in arg.elements)
+        local argElements = list(typeActualInStreamCall2(name, fn, e, var, info) for e in arg.elements)
+        ARRAY_EXPRESSION(arg.ty, argElements, arg.literal)
         arg
       end
 

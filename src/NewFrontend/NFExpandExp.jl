@@ -522,11 +522,9 @@ end
 function expandBinaryElementWise(exp::Expression)::Tuple{Expression, Bool}
   local expanded::Bool
   local outExp::Expression
-
   local exp1::Expression
   local exp2::Expression
   local op::Operator
-
   @match BINARY_EXPRESSION(exp1 = exp1, operator = op, exp2 = exp2) = exp
   if isArray(typeOf(op))
      (exp1, expanded) = expand(exp1)
@@ -534,14 +532,14 @@ function expandBinaryElementWise(exp::Expression)::Tuple{Expression, Bool}
        (exp2, expanded) = expand(exp2)
     end
     if expanded
-      @assign outExp =
+      outExp =
         expandBinaryElementWise2(exp1, op, exp2, simplifyBinaryOp)
     else
-      @assign outExp = exp
+      outExp = exp
     end
   else
-    @assign outExp = exp
-    @assign expanded = true
+    outExp = exp
+    expanded = true
   end
   return (outExp, expanded)
 end

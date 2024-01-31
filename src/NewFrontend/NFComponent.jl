@@ -36,20 +36,24 @@ struct ITERATOR_COMPONENT{T0 <: M_Type, T1 <: VariabilityType, T2 <: SourceInfo}
   info::T2
 end
 
-mutable struct TYPE_ATTRIBUTE <: Component
-  ty::M_Type
-  modifier::Modifier
+mutable struct TYPE_ATTRIBUTE{T0 <: M_Type, T1 <: Modifier} <: Component
+  ty::T0
+  modifier::T1
 end
 
-mutable struct TYPED_COMPONENT <: Component
-  classInst::InstNode
-  ty::M_Type
-  binding::Binding
-  condition::Binding
+mutable struct TYPED_COMPONENT{T0 <: InstNode,
+                               T1 <: M_Type,
+                               T2 <: Binding,
+                               T3 <: Binding,
+                               T4 <: SourceInfo} <: Component
+  classInst::T0
+  ty::T1
+  binding::T2
+  condition::T3
   attributes::ATTRIBUTES
   ann::Option{Modifier} #= the annotation from SCode.Comment as a modifier =#
   comment::Option{SCode.Comment}
-  info::SourceInfo
+  info::T4
 end
 
 mutable struct UNTYPED_COMPONENT <: Component
@@ -761,20 +765,18 @@ function hasBinding(component::Component, parent::InstNode = EMPTY_NODE())
 end
 
 function setBinding(binding::Binding, component::Component)
-   () = begin
-    @match component begin
-      UNTYPED_COMPONENT(__) => begin
-         component.binding = binding
-        ()
-      end
-      TYPED_COMPONENT(__) => begin
-         component.binding = binding
-        ()
-      end
-      TYPE_ATTRIBUTE(__) => begin
-         component.modifier = P_Modifier.setBinding(binding, component.modifier)
-        ()
-      end
+  @match component begin
+    UNTYPED_COMPONENT(__) => begin
+      component.binding = binding
+      ()
+    end
+    TYPED_COMPONENT(__) => begin
+      component.binding = binding
+      ()
+    end
+    TYPE_ATTRIBUTE(__) => begin
+      component.modifier = setBinding(binding, component.modifier)
+      ()
     end
   end
   return component
@@ -1014,17 +1016,15 @@ function getModifier(component::Component)
 end
 
 function setClassInstance(classInst::InstNode, component::Component)
-  () = begin
-    @match component begin
-      UNTYPED_COMPONENT(__) => begin
-         component.classInst = classInst
-        ()
-      end
+  @match component begin
+    UNTYPED_COMPONENT(__) => begin
+      component.classInst = classInst
+      ()
+    end
 
-      TYPED_COMPONENT(__) => begin
-         component.classInst = classInst
-        ()
-      end
+    TYPED_COMPONENT(__) => begin
+      component.classInst = classInst
+      ()
     end
   end
   return component
@@ -1101,8 +1101,8 @@ function newEnum(enumType::M_Type, literalName::String, literalIndex::Int)
   local component::Component
   component =
     ENUM_LITERAL_COMPONENT{ENUM_LITERAL_EXPRESSION}(ENUM_LITERAL_EXPRESSION{TYPE_ENUMERATION, String, Int64}(enumType,
-                                                                                    literalName,
-                                                                                    literalIndex))
+                                                                                                             literalName,
+                                                                                                             literalIndex))
   return component
 end
 

@@ -496,21 +496,18 @@ function patchElementModFinal(
   prefixes::SCode.Prefixes,
   info::SourceInfo,
   mod::SCode.Mod,
-)::SCode.Mod
-
+  )
   if SCodeUtil.finalBool(SCodeUtil.prefixesFinal(prefixes))
     mod = begin
       @match mod begin
         SCode.MOD(__) => begin
-          @assign mod.finalPrefix = SCode.FINAL()
-          mod
+          local modFinalPrefix = SCode.FINAL()
+          SCode.MOD(modFinalPrefix, mod.eachPrefix, mod.subModLst, mod.binding, mod.info)
         end
-
         SCode.REDECL(__) => begin
-          @assign mod.finalPrefix = SCode.FINAL()
-          mod
+          local modFinalPrefix = SCode.FINAL()
+          SCode.REDECL(modFinalPrefix, mod.eachPrefix, mod.element)
         end
-
         _ => begin
           SCode.MOD(SCode.Final.FINAL(), SCode.NOT_EACH(), nil, NONE(), info)
         end

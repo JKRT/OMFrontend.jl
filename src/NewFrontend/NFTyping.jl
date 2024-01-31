@@ -285,8 +285,8 @@ function typeClassType(
       INSTANCED_CLASS(
         restriction = RESTRICTION_CONNECTOR(isExpandable = is_expandable),
       ) => begin
-         ty = TYPE_COMPLEX(clsNode, makeConnectorType(cls.elements, is_expandable))
-         @assign cls.ty = ty
+        ty = TYPE_COMPLEX(clsNode, makeConnectorType(cls.elements, is_expandable))
+        cls.ty = ty
         updateClass(cls, clsNode)
         ty
       end
@@ -297,8 +297,8 @@ function typeClassType(
           complexTy = COMPLEX_RECORD(constructor = node),
         ),
       ) => begin
-         ty = TYPE_COMPLEX(ty_node, makeRecordType(node))
-         @assign cls.ty = ty
+        ty = TYPE_COMPLEX(ty_node, makeRecordType(node))
+        cls.ty = ty
         updateClass(cls, clsNode)
         ty
       end
@@ -308,8 +308,8 @@ function typeClassType(
       ) => begin
         #=  A long class declaration of a type extending from a type has the type of the base class.
         =#
-         ty = typeClassType(node, componentBinding, origin, instanceNode)
-         @assign cls.ty = ty
+        ty = typeClassType(node, componentBinding, origin, instanceNode)
+        cls.ty = ty
         updateClass(cls, clsNode)
         ty
       end
@@ -329,7 +329,7 @@ function typeClassType(
           fail()
         end
          ty = TYPE_FUNCTION(fn, FunctionType.FUNCTIONAL_PARAMETER)
-         @assign cls.ty = ty
+        cls.ty = ty
         updateClass(cls, clsNode)
         ty
       end
@@ -340,9 +340,9 @@ function typeClassType(
 
       EXPANDED_DERIVED(__) => begin
         typeDimensions(cls.dims, clsNode, componentBinding, origin, InstNode_info(clsNode))
-         ty = typeClassType(cls.baseClass, componentBinding, origin, instanceNode)
-         ty = liftArrayLeftList(ty, arrayList(cls.dims))
-         ty_cls = TYPED_DERIVED(ty, cls.baseClass, cls.restriction)
+        ty = typeClassType(cls.baseClass, componentBinding, origin, instanceNode)
+        ty = liftArrayLeftList(ty, arrayList(cls.dims))
+        ty_cls = TYPED_DERIVED(ty, cls.baseClass, cls.restriction)
         updateClass(ty_cls, clsNode)
         ty
       end
@@ -1027,136 +1027,147 @@ function typeComponentBinding2(
   local bind_eff_var::VariabilityType
   local attrs::Attributes
   c = component(node)
-  () = begin
-    @match c begin
-      TYPED_COMPONENT(
-        binding = UNTYPED_BINDING(__),
-        attributes = attrs,
-      ) => begin
-        nameStr = name(inComponent)
-        binding = c.binding
-        #ErrorExt.setCheckpoint(getInstanceName())
-        #@debug "ErrorExt.setCheckpoint(getInstanceName())"
-        try
-          #@debug "Typing TC/UB ... for component: $nameStr"
-          checkBindingEach(c.binding)
-          #@debug "Typing binding ... check each"
-          binding = typeBinding(binding, setFlag(origin, ORIGIN_BINDING))
-          #@debug "Typing binding ... after typeBinding"
-          #str = toString(binding)
-          #@debug "Typed binding: $str"
-          #if !(Config.getGraphicsExpMode() && stringEq(nameStr, "graphics")) TODO
-          binding = matchBinding(binding, c.ty, nameStr, node)
-          #end
-           comp_var = checkComponentBindingVariability(nameStr, c, binding, origin)
-          if comp_var != attrs.variability
-            @assign attrs.variability = comp_var
-            c.attributes = attrs
-          end
-          #str2 = toString(binding)
-          #@debug "Typed binding 2: $str2"
-        catch e
-          if isBound(c.condition)
-            binding = INVALID_BINDING(binding, ErrorExt.getCheckpointMessages())
-          else
-            #            ErrorExt.delCheckpoint(getInstanceName())
-            @error "Error in type component binding $e"
-            fail()
-          end
-        end
-        #        ErrorExt.delCheckpoint(getInstanceName()) TODO
-        c.binding = binding
-        if isBound(c.condition)
-          c.condition = typeComponentCondition(c.condition, origin)
-        end
-        updateComponent!(c, node)
-        if typeChildren
-          typeBindings(c.classInst, inComponent, origin)
-        end
-        ()
-      end
-
-      TYPED_COMPONENT(__) => begin
-        #=  A component without a binding, or with a binding that's already been typed. =#
-        # nameStr = name(inComponent)
-        #@debug "Typing TC/TB binding ... for component: $nameStr"
+  @match c begin
+    TYPED_COMPONENT(
+      binding = UNTYPED_BINDING(__),
+      attributes = attrs,
+    ) => begin
+      nameStr = name(inComponent)
+      binding = c.binding
+      #ErrorExt.setCheckpoint(getInstanceName())
+      #@debug "ErrorExt.setCheckpoint(getInstanceName())"
+      try
+        #@debug "Typing TC/UB ... for component: $nameStr"
         checkBindingEach(c.binding)
-        local cBinding = nothing
-        local cCond = nothing
-        if isTyped(c.binding)
-          c.binding =
-            matchBinding(c.binding, c.ty, name(inComponent), node)
-        end
-
-        if isBound(c.condition)
-          c.condition = typeComponentCondition(c.condition, origin)
-          updateComponent!(c, node)
-        end
-        if typeChildren
-          typeBindings(c.classInst, inComponent, origin)
-        end
-        # c = TYPED_COMPONENT(c.classInst,
-        #                     c.ty,
-        #                     if cBinding != nothing cBinding else c.binding end,
-        #                     if cCond != nothing cCond else  c.condition end,
-        #                     c.attributes,
-        #                     c.ann,
-        #                     c.comment,
-        #                     c.info)
-        ()
-      end
-
-      UNTYPED_COMPONENT(
-        binding = UNTYPED_BINDING(__),
-        attributes = attrs,
-      ) => begin
-        #=  An untyped component with a binding. This might happen when typing a
-        =#
-        #=  dimension and having to evaluate the binding of a not yet typed
-        =#
-        #=  component. Type only the binding and let the case above handle the rest.
-        =#
-        nameStr = name(inComponent)
-        #@debug "Typing UC/UB binding ... for component: $nameStr"
-        checkBindingEach(c.binding)
-        binding = typeBinding(c.binding, setFlag(origin, ORIGIN_BINDING))
+        #@debug "Typing binding ... check each"
+        binding = typeBinding(binding, setFlag(origin, ORIGIN_BINDING))
+        #@debug "Typing binding ... after typeBinding"
+        #str = toString(binding)
+        #@debug "Typed binding: $str"
+        #if !(Config.getGraphicsExpMode() && stringEq(nameStr, "graphics")) TODO
+        binding = matchBinding(binding, c.ty, nameStr, node)
+        #end
         comp_var = checkComponentBindingVariability(nameStr, c, binding, origin)
         if comp_var != attrs.variability
-          attrs.variability = comp_var
+          @assign attrs.variability = comp_var
           c.attributes = attrs
         end
-        c.binding = binding
+        #str2 = toString(binding)
+        #@debug "Typed binding 2: $str2"
+      catch e
+        if isBound(c.condition)
+          binding = INVALID_BINDING(binding, ErrorExt.getCheckpointMessages())
+        else
+          #            ErrorExt.delCheckpoint(getInstanceName())
+          @error "Error in type component binding $e"
+          fail()
+        end
+      end
+      #        ErrorExt.delCheckpoint(getInstanceName()) TODO
+      c = TYPED_COMPONENT(c.classInst,
+                          c.ty,
+                          binding,
+                          if isBound(c.condition)
+                            typeComponentCondition(c.condition, origin)
+                          else
+                            c.condition
+                          end,
+                          c.attributes,
+                          c.ann,
+                          c.comment,
+                          c.info)
+      updateComponent!(c, node)
+      if typeChildren
+        typeBindings(c.classInst, inComponent, origin)
+      end
+      ()
+    end
+
+    TYPED_COMPONENT(__) => begin
+      #=  A component without a binding, or with a binding that's already been typed. =#
+      # nameStr = name(inComponent)
+      #@debug "Typing TC/TB binding ... for component: $nameStr"
+      checkBindingEach(c.binding)
+      if isTyped(c.binding)
+        cBinding = matchBinding(c.binding, c.ty, name(inComponent), node)
+        c = TYPED_COMPONENT(c.classInst,
+                            c.ty,
+                            cBinding,
+                            c.condition,
+                            c.attributes,
+                            c.ann,
+                            c.comment,
+                            c.info)
+      end
+
+      if isBound(c.condition)
+        local cCond = typeComponentCondition(c.condition, origin)
+        c = TYPED_COMPONENT(c.classInst,
+                            c.ty,
+                            c.binding,
+                            cCond,
+                            c.attributes,
+                            c.ann,
+                            c.comment,
+                            c.info)
         updateComponent!(c, node)
-        ()
       end
-
-      ENUM_LITERAL_COMPONENT(__) => begin
-        ()
+      if typeChildren
+        typeBindings(c.classInst, inComponent, origin)
       end
+      ()
+    end
 
-      TYPE_ATTRIBUTE(modifier = MODIFIER_NOMOD(__)) => begin
-        ()
+    UNTYPED_COMPONENT(
+      binding = UNTYPED_BINDING(__),
+      attributes = attrs,
+    ) => begin
+      #=  An untyped component with a binding. This might happen when typing a
+      =#
+      #=  dimension and having to evaluate the binding of a not yet typed
+      =#
+      #=  component. Type only the binding and let the case above handle the rest.
+      =#
+      nameStr = name(inComponent)
+      #@debug "Typing UC/UB binding ... for component: $nameStr"
+      checkBindingEach(c.binding)
+      binding = typeBinding(c.binding, setFlag(origin, ORIGIN_BINDING))
+      comp_var = checkComponentBindingVariability(nameStr, c, binding, origin)
+      if comp_var != attrs.variability
+        attrs.variability = comp_var
+        c.attributes = attrs
       end
+      c.binding = binding
+      updateComponent!(c, node)
+      ()
+    end
 
-      TYPE_ATTRIBUTE(__) => begin
-        # nameStr = name(inComponent)
-        #@debug "Typing TA binding ... for component: $nameStr"
-        local mod = typeTypeAttribute(c.modifier, c.ty, parent(inComponent), origin)
-        c = TYPE_ATTRIBUTE(c.ty, mod)
-        updateComponent!(c, node)
-        ()
-      end
+    ENUM_LITERAL_COMPONENT(__) => begin
+      ()
+    end
 
-      _ => begin
+    TYPE_ATTRIBUTE(modifier = MODIFIER_NOMOD(__)) => begin
+      ()
+    end
 
-        #        Error.assertion( TODO
-        #          false,
-        #          getInstanceName() + " got invalid node " + name(node),
-        #          sourceInfo(),
-        #        )
-        @error getInstanceName() * "got invalid node" * name(node)
-        fail()
-      end
+    TYPE_ATTRIBUTE(__) => begin
+      # nameStr = name(inComponent)
+      #@debug "Typing TA binding ... for component: $nameStr"
+      local mod = typeTypeAttribute(c.modifier, c.ty, parent(inComponent), origin)
+      c = TYPE_ATTRIBUTE(c.ty, mod)
+      updateComponent!(c, node)
+      ()
+    end
+
+    _ => begin
+
+      #        Error.assertion( TODO
+      #          false,
+      #          getInstanceName() + " got invalid node " + name(node),
+      #          sourceInfo(),
+      #        )
+      @error getInstanceName() * "got invalid node" * name(node)
+      fail()
     end
   end
 end

@@ -1679,12 +1679,12 @@ end
 function collectStructor(node::InstNode, funcs::FunctionTree)::FunctionTree
   local cache::CachedData
   local fn::List{M_Function}
-  @assign cache = getFuncCache(node)
+  cache = getFuncCache(node)
    () = begin
     @match cache begin
       C_FUNCTION(__) => begin
         for fn in cache.funcs
-          @assign funcs = flattenFunction(fn, funcs)
+          funcs = flattenFunction(fn, funcs)
         end
         ()
       end

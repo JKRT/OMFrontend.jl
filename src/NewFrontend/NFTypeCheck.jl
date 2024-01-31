@@ -3228,12 +3228,11 @@ function matchBinding(
         ()
       end
       _ => begin
-        # Error.assertion(
-        #   false,
-        #   getInstanceName() + " got untyped binding " + toString(binding),
-        #   sourceInfo(),
-        # )
-        @error "Untyped binding"
+        Error.assertion(
+          false,
+          getInstanceName() + " got untyped binding " + toString(binding),
+          sourceInfo(),
+        )
         fail()
       end
     end

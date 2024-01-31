@@ -1,9 +1,10 @@
-const MatchType = #= Enumeration =# (() -> begin
-                               FOUND  = 1
-                               NOT_FOUND  = 2
-                               PARTIAL  = 3
-                               ()->(FOUND ;NOT_FOUND ;PARTIAL )
-                               end)()
+struct MatchTypeStruct{T0 <: Integer}
+  FOUND::T0
+  NOT_FOUND::T0
+  PARTIAL::T0
+end
+
+const MatchType = MatchTypeStruct(1, 2, 3)
 const MatchTypeTy = Int
 
 function lookupClassName(name::Absyn.Path, scope::InstNode, info::SourceInfo, checkAccessViolations::Bool = true)
@@ -750,7 +751,8 @@ function generateInner(outerNode::InstNode, topScope::InstNode)
         else
           innerNode = makeInnerNode(outerNode)
           innerNode = setParent(cache.rootClass, innerNode)
-          @assign cache.addedInner = NodeTree.add(cache.addedInner, nameStr, innerNode)
+          local addedInner = NodeTree.add(cache.addedInner, nameStr, innerNode)
+          cache = C_TOP_SCOPE(addedInner, cache.rootClass)
           setInnerOuterCache(topScope, cache)
         end
         ()
@@ -788,8 +790,7 @@ function makeInnerNode(nodeArg::InstNode)
             COMPONENT_DEF(definition = def && SCode.COMPONENT(prefixes = prefs))  => begin
               @assign prefs.innerOuter = Absyn.INNER()
               @assign def.prefixes = prefs
-              @assign comp.definition = def
-              comp
+              COMPONENT_DEF(def, comp.modifier)
             end
             _  => begin
               #             Error.assertion(false, getInstanceName() + " got unknown component", sourceInfo())

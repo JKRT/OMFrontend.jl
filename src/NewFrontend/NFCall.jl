@@ -1369,7 +1369,7 @@ function vectorizeCall(
         =#
         #=  Make a cref expression from the iterator =#
         vect_ty = liftArrayLeftList(base_call.ty, mk.vectDims)
-        @assign base_call.arguments = call_args
+        base_call = TYPED_CALL(base_call.fn, base_call.ty, base_call.var, call_args, base_call.attributes)
         TYPED_ARRAY_CONSTRUCTOR(
           vect_ty,
           base_call.var,

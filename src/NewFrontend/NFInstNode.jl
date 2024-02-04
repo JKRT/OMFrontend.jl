@@ -100,7 +100,7 @@ mutable struct CLASS_NODE{T0 <: String, T1 <: Integer} <: InstNode
   name::T0
   definition::SCode.Element
   visibility::T1
-  cls::Pointer
+  cls::Pointer{Class}
   caches::Vector{<:Any}
   parentScope::InstNode
   nodeType::InstNodeType
@@ -296,19 +296,14 @@ end
   Copies the instance pointer of the src node to the destination node.
   After applying this function this component is shared between the two nodes.
 """
-function copyInstancePtr(@nospecialize(srcNode::InstNode),
-                         @nospecialize(dstNode::InstNode))
-  @match (srcNode, dstNode) begin
-    (COMPONENT_NODE(__), COMPONENT_NODE(__))  => begin
+function copyInstancePtr(srcNode::InstNode,
+                         dstNode::InstNode)
+  @match srcNode begin
+    COMPONENT_NODE(__) where dstNode isa COMPONENT_NODE  => begin
       dstNode.component = srcNode.component
-      #dstNode.component.x  = srcNode.component.x
-      ()
     end
-
-    (CLASS_NODE(__), CLASS_NODE(__))  => begin
+    CLASS_NODE(__) where dstNode isa CLASS_NODE => begin
       dstNode.cls = srcNode.cls
-      #dstNode.cls.x = srcNode.cls.x
-      ()
     end
   end
   dstNode
@@ -497,25 +492,37 @@ function mergeModifier(mod::Modifier, node::InstNode)
   node
 end
 
+# function getModifier(node::InstNode)
+#   local mod::Modifier
+
+#    mod = begin
+#     @match node begin
+#       CLASS_NODE(__)  => begin
+#         getModifier(P_Pointer.access(node.cls))
+#       end
+
+#       COMPONENT_NODE(__)  => begin
+#         getModifier(P_Pointer.access(node.component))
+#       end
+
+#       _  => begin
+#         MODIFIER_NOMOD()
+#       end
+#     end
+#   end
+#   mod
+# end
+
+
 function getModifier(node::InstNode)
-  local mod::Modifier
-
-   mod = begin
-    @match node begin
-      CLASS_NODE(__)  => begin
-        getModifier(P_Pointer.access(node.cls))
-      end
-
-      COMPONENT_NODE(__)  => begin
-        getModifier(P_Pointer.access(node.component))
-      end
-
-      _  => begin
-        MODIFIER_NOMOD()
-      end
-    end
+  local mod
+  mod = if node isa CLASS_NODE
+    getModifier(P_Pointer.access(node.cls))
+  elseif node isa COMPONENT_NODE
+    getModifier(P_Pointer.access(node.component))
+  else
+    MODIFIER_NOMOD()
   end
-  mod
 end
 
 function protectComponent(comp::InstNode)
@@ -1527,37 +1534,44 @@ function getDerivedNode(node::InstNode)
   derived
 end
 
+# function getDerivedClass(node::InstNode)
+#   local cls::Class
+
+#    cls = begin
+#     @match node begin
+#       CLASS_NODE(__)  => begin
+#         getClass(getDerivedNode(node))
+#       end
+
+#       COMPONENT_NODE(__)  => begin
+#         getClass(getDerivedNode(P_Component.classInstance(P_Pointer.access(node.component))))
+#       end
+#     end
+#   end
+#   cls
+# end
+
+
 function getDerivedClass(node::InstNode)
-  local cls::Class
-
-   cls = begin
-    @match node begin
-      CLASS_NODE(__)  => begin
-        getClass(getDerivedNode(node))
-      end
-
-      COMPONENT_NODE(__)  => begin
-        getClass(getDerivedNode(P_Component.classInstance(P_Pointer.access(node.component))))
-      end
-    end
-  end
+   cls =  if cls isa CLASS_NODE
+     getClass(getDerivedNode(node))
+   elseif cls isa COMPONENT_NODE
+     getClass(getDerivedNode(P_Component.classInstance(P_Pointer.access(node.component))))
+   else
+     fail()
+   end
   cls
 end
 
+
 function getClass(node::InstNode)
-  local cls::Class
-   cls = begin
-    @match node begin
-      CLASS_NODE(__)  => begin
-        res = P_Pointer.access(node.cls)
-        res
-      end
-      COMPONENT_NODE(__)  => begin
-        getClass(classInstance(P_Pointer.access(node.component)))
-      end
-    end
+  cls = if node isa CLASS_NODE
+    P_Pointer.access(node.cls)
+  elseif  node isa COMPONENT_NODE
+    getClass(classInstance(P_Pointer.access(node.component)))
+  else
+    fail()
   end
-  cls
 end
 
 function setOrphanParent(parent::InstNode, node::CLASS_NODE)

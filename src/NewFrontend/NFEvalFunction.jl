@@ -751,69 +751,67 @@ function assignArrayElement(
   subscripts::List{<:Subscript},
   value::Expression,
 )::Expression
-  local result::Expression
-
+  local result::ARRAY_EXPRESSION
   local sub::Expression
   local val::Expression
   local rest_subs::List{Subscript}
   local idx::Int
   local subs::List{Expression}
   local vals::List{Expression}
-
-  @assign result = begin
+  result = begin
     @match (arrayExp, subscripts) begin
       (
         ARRAY_EXPRESSION(__),
         SUBSCRIPT_INDEX(sub) <| rest_subs,
       ) where {(isScalarLiteral(sub))} => begin
-        @assign idx = toInteger(sub)
+        idx = toInteger(sub)
         if listEmpty(rest_subs)
-          @assign arrayExp.elements = ListUtil.set(arrayExp.elements, idx, value)
+         arrayExpElements = ListUtil.set(arrayExp.elements, idx, value)
         else
-          @assign arrayExp.elements = ListUtil.set(
+          arrayExpElements = ListUtil.set(
             arrayExp.elements,
             idx,
             assignArrayElement(listGet(arrayExp.elements, idx), rest_subs, value),
           )
         end
-        arrayExp
+        ARRAY_EXPRESSION(arrayExp.ty, arrayExpElements, arrayExp.literal)
       end
 
       (ARRAY_EXPRESSION(__), SUBSCRIPT_SLICE(sub) <| rest_subs) => begin
-        @assign subs = arrayElements(sub)
-        @assign vals = arrayElements(value)
+        subs = arrayElements(sub)
+        vals = arrayElements(value)
         if listEmpty(rest_subs)
           for s in subs
             @match _cons(val, vals) = vals
-            @assign idx = toInteger(s)
-            @assign arrayExp.elements = ListUtil.set(arrayExp.elements, idx, val)
+            idx = toInteger(s)
+            arrayExpElements = ListUtil.set(arrayExp.elements, idx, val)
           end
         else
           for s in subs
             @match _cons(val, vals) = vals
-            @assign idx = toInteger(s)
-            @assign arrayExp.elements = ListUtil.set(
+            idx = toInteger(s)
+            arrayExpElements = ListUtil.set(
               arrayExp.elements,
               idx,
               assignArrayElement(listGet(arrayExp.elements, idx), rest_subs, val),
             )
           end
         end
-        arrayExp
+        ARRAY_EXPRESSION(ty, arrayExpElements, arrayExp.literal)
       end
 
       (ARRAY_EXPRESSION(__), SUBSCRIPT_WHOLE(__) <| rest_subs) =>
         begin
           if listEmpty(rest_subs)
-            @assign arrayExp.elements = arrayElements(value)
+            arrayExpElements = arrayElements(value)
           else
-            @assign arrayExp.elements =
+            arrayExpElements =
               list(@do_threaded_for assignArrayElement(e, rest_subs, v) (e, v) (
                 arrayExp.elements,
                 arrayElements(value),
               ))
           end
-          arrayExp
+          ARRAY_EXPRESSION(ty, arrayExpElements, arrayExp.literal)
         end
 
       _ => begin

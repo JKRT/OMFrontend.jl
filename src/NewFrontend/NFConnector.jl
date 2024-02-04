@@ -80,9 +80,8 @@ function isDeleted(conn::Connector)::Bool
 end
 
 function setOutside(conn::Connector)::Connector
-
   if conn.face != Face.OUTSIDE
-    @assign conn.face = Face.OUTSIDE
+    conn = CONNECTOR(conn.name, conn.ty, Face.OUTSIDE, conn.cty, conn.source)
   end
   return conn
 end

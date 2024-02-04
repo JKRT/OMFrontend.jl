@@ -2,7 +2,34 @@ const NamedArg = Tuple
 const TypedArg = Tuple
 const TypedNamedArg = Tuple
 
-SlotType = (() -> begin #= Enumeration =#
+#= Forward declarations for uniontypes until Julia adds support for mutual recursion =#
+abstract type M_Function end
+
+struct M_FUNCTION <: M_Function
+  path::Absyn.Path
+  node::InstNode
+  inputs::List{InstNode}
+  outputs::List{InstNode}
+  locals::List{InstNode}
+  slots::List{Slot}
+  returnType::NFType
+  attributes::DAE.FunctionAttributes
+  derivatives::List{FunctionDerivative}
+  status::Pointer
+  callCounter::Pointer
+end
+
+
+@Uniontype MatchedFunction begin
+  @Record MATCHED_FUNC begin
+    func::M_FUNCTION
+    args::List{TypedArg}
+    mk::FunctionMatchKind
+  end
+end
+
+
+const SlotType = (() -> begin #= Enumeration =#
   POSITIONAL = 1  #= Only accepts positional arguments. =#
   NAMED = 2  #= Only accepts named argument. =#
   GENERIC = 3  #= Accepts both positional and named arguments. =#
@@ -11,7 +38,7 @@ SlotType = (() -> begin #= Enumeration =#
 end)()
 const SlotTypeType = Int
 
-SlotEvalStatus = (() -> begin #= Enumeration =#
+const SlotEvalStatus = (() -> begin #= Enumeration =#
   NOT_EVALUATED = 1
   EVALUATING = 2
   EVALUATED = 3
@@ -181,15 +208,8 @@ function getExactMatches(matchedFunctions::List{<:MatchedFunction})::List{Matche
   return outFuncs
 end
 
-@Uniontype MatchedFunction begin
-  @Record MATCHED_FUNC begin
-    func::M_Function
-    args::List{TypedArg}
-    mk::FunctionMatchKind
-  end
-end
 
-FunctionStatus = (() -> begin #= Enumeration =#
+const FunctionStatus = (() -> begin #= Enumeration =#
   BUILTIN = 1  #= A builtin function. =#
   INITIAL = 2  #= The initial status. =#
   EVALUATED = 3  #= Constants in the function has been evaluated by EvalConstants. =#
@@ -203,29 +223,8 @@ const FunctionStatusType = Int
 
 using MetaModelica
 using ExportAll
-#= Forward declarations for uniontypes until Julia adds support for mutual recursion =#
-FoldFunc = Function
-FoldFunc = Function
-MapFunc = Function
-MapFunc = Function
-MapFn = Function
-@Uniontype M_Function begin
-  @Record M_FUNCTION begin
-    path::Absyn.Path
-    node::InstNode
-    inputs::List{InstNode}
-    outputs::List{InstNode}
-    locals::List{InstNode}
-    slots::List{Slot}
-    returnType::NFType
-    attributes::DAE.FunctionAttributes
-    derivatives::List{FunctionDerivative}
-    status::Pointer
-    callCounter::Pointer
-  end
-end
 
-function getLocalArguments(fn::M_Function)::List{Expression}
+function getLocalArguments(fn::M_FUNCTION)::List{Expression}
   local localArgs::List{Expression} = nil
   local binding::Binding
   for l in fn.locals
@@ -243,7 +242,7 @@ function getLocalArguments(fn::M_Function)::List{Expression}
   return localArgs
 end
 
-function isPartial(fn::M_Function)::Bool
+function isPartial(fn::M_FUNCTION)::Bool
   local isPartial::Bool = isPartial(fn.node)
   return isPartial
 end
@@ -281,7 +280,7 @@ function foldExpParameter(node::InstNode, foldFn::FoldFunc, arg::ArgT) where {Ar
 end
 
 function foldExp(
-  fn::M_Function,
+  fn::M_FUNCTION,
   foldFn::FoldFunc,
   arg::ArgT,
   mapParameters::Bool = true,
@@ -325,9 +324,9 @@ function mapExpParameter(node::InstNode, mapFn::MapFunc)
           mapDims(comp.ty, (x) -> mapExp(x, mapFn))
         if !referenceEq(ty, comp.ty)
           @assign comp.ty = ty
-          @assign dirty = true
+          dirty = true
         end
-        @assign cls = getClass(comp.classInst)
+        cls = getClass(comp.classInst)
         applyComponents(
           classTree(cls),
           (nodeArg) -> mapExpParameter(nodeArg, mapFn),
@@ -346,11 +345,11 @@ function mapExpParameter(node::InstNode, mapFn::MapFunc)
 end
 
 function mapExp(
-  fn::M_Function,
+  fn::M_FUNCTION,
   mapFn::MapFunc,
   mapParameters::Bool = true,
   mapBody::Bool = true,
-)::M_Function
+)::M_FUNCTION
   local cls::Class
   local ctree::ClassTree
   local comps::Vector{InstNode}
@@ -387,7 +386,7 @@ function hasUnboxArgsAnnotation(cmt::SCode.Comment)::Bool
 end
 
 """ #= Returns true if the function has the __OpenModelica_UnboxArguments annotation, otherwise false. =#"""
-function hasUnboxArgs(fn::M_Function)::Bool
+function hasUnboxArgs(fn::M_FUNCTION)::Bool
   local res::Bool
 
   @assign res = begin
@@ -406,12 +405,12 @@ function hasUnboxArgs(fn::M_Function)::Bool
   return res
 end
 
-function getBody(fn::M_Function)::Vector{Statement}
+function getBody(fn::M_FUNCTION)::Vector{Statement}
   local body::Vector{Statement} = getBody2(fn.node)
   return body
 end
 
-function makeDAEType(fn::M_Function, boxTypes::Bool = false)::DAE.Type
+function makeDAEType(fn::M_FUNCTION, boxTypes::Bool = false)::DAE.Type
   local outType::DAE.Type
   local params::List{DAE.FuncArg} = nil
   local pname::String
@@ -449,7 +448,7 @@ function makeDAEType(fn::M_Function, boxTypes::Bool = false)::DAE.Type
   return outType
 end
 
-function toDAE(fn::M_Function, def::DAE.FunctionDefinition)::DAE.P_Function
+function toDAE(fn::M_FUNCTION, def::DAE.FunctionDefinition)::DAE.P_Function
   local daeFn::DAE.P_Function
 
   local vis::SCode.Visibility
@@ -491,7 +490,7 @@ function toDAE(fn::M_Function, def::DAE.FunctionDefinition)::DAE.P_Function
   return daeFn
 end
 
-function isDefaultRecordConstructor(fn::M_Function)::Bool
+function isDefaultRecordConstructor(fn::M_FUNCTION)::Bool
   local isConstructor::Bool
   @assign isConstructor = begin
     @match restriction(getClass(fn.node)) begin
@@ -506,7 +505,7 @@ function isDefaultRecordConstructor(fn::M_Function)::Bool
   return isConstructor
 end
 
-function inlineBuiltin(fn::M_Function)::DAE.InlineType
+function inlineBuiltin(fn::M_FUNCTION)::DAE.InlineType
   local inlineType::DAE.InlineType
   @assign inlineType = begin
     @match fn.attributes.isBuiltin begin
@@ -521,39 +520,39 @@ function inlineBuiltin(fn::M_Function)::DAE.InlineType
   return inlineType
 end
 
-function isExternal(fn::M_Function)::Bool
+function isExternal(fn::M_FUNCTION)::Bool
   local isExt::Bool =
     !isEmpty(fn.node) && isExternalFunction(getClass(fn.node))
   return isExt
 end
 
-function setFunctionPointer(isPointer::Bool, fn::M_Function)::M_Function
+function setFunctionPointer(isPointer::Bool, fn::M_FUNCTION)::M_FUNCTION
   local attr::DAE.FunctionAttributes = fn.attributes
   @assign attr.isFunctionPointer = isPointer
   @assign fn.attributes = attr
   return fn
 end
 
-function isFunctionPointer(fn::M_Function)::Bool
+function isFunctionPointer(fn::M_FUNCTION)::Bool
   local isPointer::Bool = fn.attributes.isFunctionPointer
   return isPointer
 end
 
-function isOMImpure(fn::M_Function)::Bool
+function isOMImpure(fn::M_FUNCTION)::Bool
   local isImpure::Bool = !fn.attributes.isOpenModelicaPure
   return isImpure
 end
 
-function isImpure(fn::M_Function)::Bool
+function isImpure(fn::M_FUNCTION)::Bool
   local impure::Bool = fn.attributes.isImpure
   return impure
 end
 
-function isNotImpure(fn::M_Function)::Bool
+function isNotImpure(fn::M_FUNCTION)::Bool
   return !isImpure(fn)
 end
 
-function isSubscriptableBuiltin(fn::M_Function)::Bool
+function isSubscriptableBuiltin(fn::M_FUNCTION)::Bool
   local scalarBuiltin::Bool
   if !isBuiltin(fn)
     @assign scalarBuiltin = false
@@ -586,7 +585,7 @@ end
   and needs to be handled in a different way.
   Examples of such functions is der
 """
-function isSpecialBuiltin(fn::M_Function)::Bool
+function isSpecialBuiltin(fn::M_FUNCTION)::Bool
   local special::Bool
   local path::Absyn.Path
   if !isBuiltin(fn)
@@ -775,7 +774,7 @@ function isBuiltinAttr(attrs::DAE.FunctionAttributes)::Bool
   return isBuiltin
 end
 
-function isBuiltin(fn::M_Function)::Bool
+function isBuiltin(fn::M_FUNCTION)::Bool
   local isBuiltin::Bool = isBuiltinAttr(fn.attributes)
   return isBuiltin
 end
@@ -786,7 +785,7 @@ function applyPartialApplicationArg(
   argType::M_Type,
   inputs::List{<:InstNode},
   slots::List{<:Slot},
-  fn::M_Function,
+  fn::M_FUNCTION,
   info::SourceInfo,
 )::Tuple{Expression, List{InstNode}, List{Slot}}
   local outSlots::List{Slot} = nil
@@ -851,7 +850,7 @@ function typePartialApplication(
   local arg_exp::Expression
   local arg_ty::M_Type
   local arg_var::VariabilityType
-  local fn::M_Function
+  local fn::M_FUNCTION
   local next_origin::ORIGIN_Type = setFlag(origin, ORIGIN_SUBEXPRESSION)
   local inputs::List{InstNode}
   local slots::List{Slot}
@@ -902,7 +901,7 @@ end
 
 """ #= Types the body of a function, along with any bindings of local variables
      and outputs. =#"""
-function typeFunctionBody(fn::M_Function)::M_Function
+function typeFunctionBody(fn::M_FUNCTION)::M_FUNCTION
   #=  Type the bindings of the outputs and local variables. =#
   for c in fn.outputs
     typeComponentBinding(c, ORIGIN_FUNCTION)
@@ -921,11 +920,11 @@ function typeFunctionBody(fn::M_Function)::M_Function
 end
 
 """ #= Types a function's parameters, local components and default arguments. =#"""
-function typeFunctionSignature(fn::M_Function)::M_Function
+function typeFunctionSignature(fn::M_FUNCTION)
   local attr::DAE.FunctionAttributes
   local node::InstNode = fn.node
   if !isTyped(fn)
-    typeClassType(node, EMPTY_BINDING(), ORIGIN_FUNCTION, node)
+    typeClassType(node, EMPTY_BINDING, ORIGIN_FUNCTION, node)
     typeComponents(node, ORIGIN_FUNCTION)
     if isPartial(node)
       applyComponents(
@@ -936,25 +935,35 @@ function typeFunctionSignature(fn::M_Function)::M_Function
     for c in fn.inputs
       typeComponentBinding(c, ORIGIN_FUNCTION)
     end
-    @assign fn.slots = makeSlots(fn.inputs)
+    fnSlots = makeSlots(fn.inputs)
     checkParamTypes(fn)
-    @assign fn.returnType = makeReturnType(fn)
+    fnReturnType = makeReturnType(fn)
+    fn = M_FUNCTION(
+      fn.path,
+      fn.node,
+      fn.inputs,
+      fn.outputs,
+      fn.locals,
+      fnSlots,
+      fnReturnType,
+      fn.attributes,
+      fn.derivatives,
+      fn.status,
+      fn.callCounter)
   end
   return fn
 end
 
-function typeFunction(fn::M_Function)::M_Function
+function typeFunction(fn::M_FUNCTION)
   fn = typeFunctionSignature(fn)
   fn = typeFunctionBody(fn)
   return fn
 end
 
-function getRefCache(fnRef::ComponentRef)::List{M_Function}
+function getRefCache(fnRef::ComponentRef)
   local functions::List{M_Function}
-
   local fn_node::InstNode
-
-  @assign fn_node = classScope(node(fnRef))
+  fn_node = classScope(node(fnRef))
   @match C_FUNCTION(funcs = functions) = getFuncCache(fn_node)
   return functions
 end
@@ -967,10 +976,9 @@ function typeNodeCache(@nospecialize(functionNode::InstNode))::List{M_Function}
   local typed::Bool
   local special::Bool
   local name::String
-  @assign fn_node = classScope(functionNode)
+  fn_node = classScope(functionNode)
   @match C_FUNCTION(functions, typed, special) = getFuncCache(fn_node)
-  #=  Type the function(s) if not already done.
-  =#
+  #=  Type the function(s) if not already done. =#
   if !typed
     functions = list(typeFunctionSignature(f) for f in functions)
     setFuncCache(fn_node, C_FUNCTION(functions, true, special))
@@ -1002,7 +1010,7 @@ function typeRefCache(@nospecialize(functionRef::ComponentRef))::List{M_Function
   return functions
 end
 
-function isTyped(fn::M_Function)::Bool
+function isTyped(fn::M_FUNCTION)::Bool
   local isTyped::Bool
   @assign isTyped = begin
     @match fn.returnType begin
@@ -1018,38 +1026,35 @@ function isTyped(fn::M_Function)::Bool
 end
 
 function matchFunctionsSilent(
-  funcs::List{<:M_Function},
-  args::List{<:TypedArg},
-  named_args::List{<:TypedNamedArg},
+  funcs::List{M_Function},
+  args::List{TypedArg},
+  named_args::List{TypedNamedArg},
   info::SourceInfo,
   vectorize::Bool = true,
-)::List{MatchedFunction}
+  )
   local matchedFunctions::List{MatchedFunction}
-
   ErrorExt.setCheckpoint("NFFunction:matchFunctions")
-  @assign matchedFunctions = matchFunctions(funcs, args, named_args, info, vectorize)
+  matchedFunctions = matchFunctions(funcs, args, named_args, info, vectorize)
   ErrorExt.rollBack("NFFunction:matchFunctions")
   return matchedFunctions
 end
 
 function matchFunctions(
-  funcs::List{<:M_Function},
+  funcs::List{M_Function},
   args::List{<:TypedArg},
   named_args::List{<:TypedNamedArg},
   info::SourceInfo,
   vectorize::Bool = true,
-)::List{MatchedFunction}
+  )
   local matchedFunctions::List{MatchedFunction}
-
   local m_args::List{TypedArg}
   local matchKind::FunctionMatchKind
   local matched::Bool
-
-  @assign matchedFunctions = nil
+  matchedFunctions = nil
   for func in funcs
-     (m_args, matchKind) = matchFunction(func, args, named_args, info, vectorize)
+    (m_args, matchKind) = matchFunction(func, args, named_args, info, vectorize)
     if isValid(matchKind)
-      @assign matchedFunctions =
+      matchedFunctions =
         _cons(MATCHED_FUNC(func, m_args, matchKind), matchedFunctions)
     end
   end
@@ -1057,7 +1062,7 @@ function matchFunctions(
 end
 
 function matchFunction(
-  func::M_Function,
+  func::M_FUNCTION,
   args::List{<:TypedArg},
   named_args::List{<:TypedNamedArg},
   info::SourceInfo,
@@ -1156,7 +1161,7 @@ function matchArgVectorized(
 end
 
 function matchArgs(
-  func::M_Function,
+  func::M_FUNCTION,
   args::List{<:TypedArg},
   info::SourceInfo,
   vectorize::Bool = true,
@@ -1231,16 +1236,16 @@ function matchArgs(
       local msgPart2 = "\nExpected type: $expectedType. Argument type was: $actualType"
       #@error msgPart1 * msgPart2 it should not be an error yet. These should be printed in the end.
       # Fix the error reporting module.
-      @assign funcMatchKind = NO_MATCH
+      funcMatchKind = NO_MATCH
       return (args, funcMatchKind)
     end
     if isCastMatch(mk)
-      @assign funcMatchKind = CAST_MATCH
+      funcMatchKind = CAST_MATCH
     elseif isGenericMatch(mk)
-      @assign funcMatchKind = GENERIC_MATCH
+      funcMatchKind = GENERIC_MATCH
     end
-    @assign checked_args = _cons((arg_exp, ty, arg_var), checked_args)
-    @assign arg_idx = arg_idx + 1
+    checked_args = _cons((arg_exp, ty, arg_var), checked_args)
+    arg_idx = arg_idx + 1
   end
   #=  Check that the variability of the argument and input parameter matches.
   =#
@@ -1255,10 +1260,10 @@ function matchArgs(
   #=  last match.
   =#
   if !listEmpty(vectorized_args)
-    @assign funcMatchKind =
+    funcMatchKind =
       VECTORIZED_MATCH_KIND(vect_dims, listReverse(vectorized_args), funcMatchKind)
   end
-  @assign args = listReverse(checked_args)
+  args = listReverse(checked_args)
   return (args, funcMatchKind)
 end
 
@@ -1430,7 +1435,7 @@ end
 function fillNamedArg(
   inArg::TypedNamedArg,
   slots::Vector{<:Slot},
-  fn::M_Function,
+  fn::M_FUNCTION,
   info::SourceInfo,
 )::Tuple{Array{Slot}, Bool} #= For error reporting =#
   local matching::Bool = true
@@ -1499,7 +1504,7 @@ end
 function fillArgs(
   posArgs::List{<:TypedArg},
   namedArgs::List{<:TypedNamedArg},
-  fn::M_Function,
+  fn::M_FUNCTION,
   info::SourceInfo,
 )::Tuple{List{TypedArg}, Bool}
   local matching::Bool
@@ -1553,28 +1558,28 @@ function fillArgs(
   return (args, matching)
 end
 
-function getSlots(fn::M_Function)::List{Slot}
+function getSlots(fn::M_FUNCTION)::List{Slot}
   local slots::List{Slot} = fn.slots
   return slots
 end
 
-function setReturnType(ty::M_Type, fn::M_Function)::M_Function
+function setReturnType(ty::M_Type, fn::M_FUNCTION)::M_FUNCTION
 
   @assign fn.returnType = ty
   return fn
 end
 
-function returnType(fn::M_Function)::M_Type
+function returnType(fn::M_FUNCTION)::M_Type
   local ty::M_Type = fn.returnType
   return ty
 end
 
-function instance(fn::M_Function)::InstNode
+function instance(fn::M_FUNCTION)::InstNode
   local node::InstNode = fn.node
   return node
 end
 
-function toFlatString(fn::M_Function)::String
+function toFlatString(fn::M_FUNCTION)::String
   local str::String
   local s
   s = IOStream_M.create(getInstanceName(), IOStream_M.LIST())
@@ -1584,12 +1589,12 @@ function toFlatString(fn::M_Function)::String
   return str
 end
 
-function toFlatStream(fn::M_Function, s; overrideName::String)
+function toFlatStream(fn::M_FUNCTION, s; overrideName::String)
   local fn_body::Vector{Statement}
   if isDefaultRecordConstructor(fn)
     s = IOStream_M.append(s, toFlatString(fn.node))
   else
-    s = toFlatStreamHelper(fn::M_Function, s, overrideName)
+    s = toFlatStreamHelper(fn::M_FUNCTION, s, overrideName)
   end
   return s
 end
@@ -1597,18 +1602,18 @@ end
 """
 Returns a function as  a flat string.
 """
-function toFlatStream(fn::M_Function, s::IOStream_M.IOSTREAM)
+function toFlatStream(fn::M_FUNCTION, s::IOStream_M.IOSTREAM)
   local fn_name::String
   if isDefaultRecordConstructor(fn)
     s = IOStream_M.append(s, toFlatString(fn.node))
   else
     fn_name = AbsynUtil.pathString(fn.path)
-    s = toFlatStreamHelper(fn::M_Function, s, string("'", fn_name, "'"))
+    s = toFlatStreamHelper(fn::M_FUNCTION, s, string("'", fn_name, "'"))
   end
   return s
 end
 
-function toFlatStreamHelper(fn::M_Function, s, fn_name)
+function toFlatStreamHelper(fn::M_FUNCTION, s, fn_name)
     s = IOStream_M.append(s, "function ")
     s = IOStream_M.append(s, fn_name)
     s = IOStream_M.append(s, "\\n")
@@ -1666,7 +1671,7 @@ end
 """  Constructs a string representing the type of the function, on the form
      function_name<function>(input types) => output type
 """
-function typeString(fn::M_Function)::String
+function typeString(fn::M_FUNCTION)::String
   local str::String
 
   @assign str = ListUtil.toString(
@@ -1683,7 +1688,7 @@ end
 
 """ #= Constructs a string representing a call, for use in error messages. =#"""
 function callString(
-  fn::M_Function,
+  fn::M_FUNCTION,
   posArgs::List{<:Expression},
   namedArgs::List{<:NamedArg},
 )::String
@@ -1707,7 +1712,7 @@ function callString(
   return str
 end
 
-function candidateFuncListString(fns::List{<:M_Function})::String
+function candidateFuncListString(fns::List{<:M_FUNCTION})::String
   local s::String =
     stringDelimitList(list(signatureString(fn, true) for fn in fns), "\\n  ")
   return s
@@ -1715,7 +1720,7 @@ end
 
 
 """ #= Constructs a signature string for a function, e.g. Real func(Real x, Real y) =#"""
-function signatureString(fn::M_Function, printTypes::Bool = true)::String
+function signatureString(fn::M_FUNCTION, printTypes::Bool = true)::String
   local str::String
 
   local fn_name::Absyn.Path
@@ -1781,7 +1786,7 @@ function signatureString(fn::M_Function, printTypes::Bool = true)::String
 end
 
 """ #= Handles the DAE.mo structure where builtin calls are replaced by their simpler name =#"""
-function nameConsiderBuiltin(fn::M_Function)::Absyn.Path
+function nameConsiderBuiltin(fn::M_FUNCTION)::Absyn.Path
   local path::Absyn.Path
 
   @assign path = begin
@@ -1803,18 +1808,18 @@ function nameConsiderBuiltin(fn::M_Function)::Absyn.Path
   return path
 end
 
-function setName(name::Absyn.Path, fn::M_Function)::M_Function
+function setName(name::Absyn.Path, fn::M_FUNCTION)::M_FUNCTION
   @assign fn.path = name
   return fn
 end
 
-function name(fn::M_Function)::Absyn.Path
+function name(fn::M_FUNCTION)::Absyn.Path
   local path::Absyn.Path = fn.path
   return path
 end
 
 """ #= Marks this function as collected for addition to the function tree. =#"""
-function collect(fn::M_Function)
+function collect(fn::M_FUNCTION)
   #=  The pointer might be immutable, check before assigning to it.
   =#
   return if P_Pointer.access(fn.status) != FunctionStatus.BUILTIN
@@ -1824,7 +1829,7 @@ end
 
 """ #= Returns true if this function has already been added to the function tree
      (or shouldn't be added, e.g. if it's builtin), otherwise false. =#"""
-function isCollected(fn::M_Function)::Bool
+function isCollected(fn::M_FUNCTION)::Bool
   local collected::Bool
   @assign collected = begin
     @match P_Pointer.access(fn.status) begin
@@ -1842,13 +1847,13 @@ function isCollected(fn::M_Function)::Bool
   return collected
 end
 
-function markSimplified(fn::M_Function)
+function markSimplified(fn::M_FUNCTION)
   return if P_Pointer.access(fn.status) != FunctionStatus.BUILTIN
     P_Pointer.update(fn.status, FunctionStatus.SIMPLIFIED)
   end
 end
 
-function isSimplified(fn::M_Function)::Bool
+function isSimplified(fn::M_FUNCTION)::Bool
   local simplified::Bool
 
   @assign simplified = begin
@@ -1869,13 +1874,13 @@ function isSimplified(fn::M_Function)::Bool
   return simplified
 end
 
-function markEvaluated(fn::M_Function)
+function markEvaluated(fn::M_FUNCTION)
   return if P_Pointer.access(fn.status) != FunctionStatus.BUILTIN
     P_Pointer.update(fn.status, FunctionStatus.EVALUATED)
   end
 end
 
-function isEvaluated(fn::M_Function)::Bool
+function isEvaluated(fn::M_FUNCTION)::Bool
   local evaluated::Bool
   local status = P_Pointer.access(fn.status)
   evaluated = begin
@@ -1897,13 +1902,13 @@ end
 function mapCachedFuncs(inNode::InstNode, mapFn::MapFn)
   local cls_node::InstNode
   local cache::CachedData
-
-  @assign cls_node = classScope(inNode)
-  @assign cache = getFuncCache(cls_node)
-  @assign cache = begin
+  cls_node = classScope(inNode)
+  cache = getFuncCache(cls_node)
+  cache = begin
     @match cache begin
       C_FUNCTION(__) => begin
-        @assign cache.funcs = list(mapFn(fn) for fn in cache.funcs)
+        cacheFuncs = list(mapFn(fn) for fn in cache.funcs)
+        cache = C_FUNCTION(cacheFuncs, cache.typed, cache.specialBuiltin)
         cache
       end
 
@@ -1915,18 +1920,15 @@ function mapCachedFuncs(inNode::InstNode, mapFn::MapFn)
   return setFuncCache(cls_node, cache)
 end
 
-function getCachedFuncs(inNode::InstNode)::List{M_Function}
+function getCachedFuncs(inNode::InstNode)
   local outFuncs::List{M_Function}
-
   local cache::CachedData
-
-  @assign cache = getFuncCache(classScope(inNode))
-  @assign outFuncs = begin
+  cache = getFuncCache(classScope(inNode))
+  outFuncs = begin
     @match cache begin
       C_FUNCTION(__) => begin
         cache.funcs
       end
-
       _ => begin
         fail()
       end
@@ -1959,7 +1961,7 @@ function instFunction2(
 
    (fnNode, specialBuiltin) = begin
     local cdef::SCode.ClassDef
-    local fn::M_Function
+    local fn::M_FUNCTION
     local cr::Absyn.ComponentRef
     local sub_fnNode::InstNode
     local funcs::List{M_Function}
@@ -1985,10 +1987,10 @@ function instFunction2(
 
       SCode.CLASS(classDef = cdef && SCode.OVERLOAD(__)) => begin
         for p in cdef.pathLst
-          @assign cr = AbsynUtil.pathToCref(p)
+          cr = AbsynUtil.pathToCref(p)
            (_, sub_fnNode, specialBuiltin) = instFunction(cr, fnNode, info)
           for f in getCachedFuncs(sub_fnNode)
-            @assign fnNode = cacheAddFunc(fnNode, f, specialBuiltin)
+            fnNode = cacheAddFunc(fnNode, f, specialBuiltin)
           end
         end
         (fnNode, false)
@@ -1998,14 +2000,25 @@ function instFunction2(
         if SCodeUtil.isOperator(def)
           checkOperatorRestrictions(fnNode)
         end
-        @assign fnNode =
-          setNodeType(ROOT_CLASS(parent), fnNode)
-        @assign fnNode = instFunction3(fnNode)
-        @assign fn = new(fnPath, fnNode)
-        @assign specialBuiltin = isSpecialBuiltin(fn)
-        @assign fn.derivatives =
+        fnNode = setNodeType(ROOT_CLASS(parent), fnNode)
+        fnNode = instFunction3(fnNode)
+        fn = new(fnPath, fnNode)
+        specialBuiltin = isSpecialBuiltin(fn)
+        fnDerivatives =
           instDerivatives(fnNode, fn)
-        @assign fnNode = cacheAddFunc(fnNode, fn, specialBuiltin)
+        fn = M_FUNCTION(
+          fn.path,
+          fn.node,
+          fn.inputs,
+          fn.outputs,
+          fn.locals,
+          fn.slots,
+          fn.returnType,
+          fn.attributes,
+          fnDerivatives,
+          fn.status,
+          fn.callCounter)
+        fnNode = cacheAddFunc(fnNode, fn, specialBuiltin)
         (fnNode, specialBuiltin)
       end
     end
@@ -2122,8 +2135,8 @@ function lookupFunctionSimple(functionName::String, scope::InstNode)::ComponentR
   return functionRef
 end
 
-function new(path::Absyn.Path, node::InstNode)::M_Function
-  local fn::M_Function
+function new(path::Absyn.Path, node::InstNode)::M_FUNCTION
+  local fn::M_FUNCTION
   local cls::Class
   local inputs::List{InstNode}
   local outputs::List{InstNode}
@@ -2262,7 +2275,7 @@ end
 
 """ #= Checks that all the function parameters have types which are allowed in a
      function. =#"""
-function checkParamTypes(fn::M_Function)
+function checkParamTypes(fn::M_FUNCTION)
   checkParamTypes2(fn.inputs)
   checkParamTypes2(fn.outputs)
   return checkParamTypes2(fn.locals)
@@ -2667,7 +2680,7 @@ function analyseUnusedParametersExp(
   return params
 end
 
-function analyseUnusedParameters(fn::M_Function)::List{Int}
+function analyseUnusedParameters(fn::M_FUNCTION)::List{Int}
   local unusedInputs::List{Int} = nil
 
   local inputs::List{InstNode}
@@ -2722,11 +2735,11 @@ function getBody2(node::InstNode)
   return body
 end
 
-function makeReturnType(fn::M_Function)::M_Type
+function makeReturnType(fn::M_FUNCTION)::M_Type
   local returnType::M_Type
   local ret_tyl::List{M_Type}
-  @assign ret_tyl = list(getType(o) for o in fn.outputs)
-  @assign returnType = begin
+  ret_tyl = list(getType(o) for o in fn.outputs)
+  returnType = begin
     @match ret_tyl begin
       nil() => begin
         TYPE_NORETCALL()

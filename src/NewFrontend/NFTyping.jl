@@ -156,7 +156,7 @@ function flagNotSet(origin::M_Type_Int, flag::M_Type_Int)::Bool
 end
 
 function typeClass(@nospecialize(cls::InstNode), @nospecialize(name::String))
-  typeClassType(cls, EMPTY_BINDING(), ORIGIN_CLASS, cls)
+  typeClassType(cls, EMPTY_BINDING, ORIGIN_CLASS, cls)
   typeComponents(cls, ORIGIN_CLASS)
 #  execStat("NFtypeComponents(" + name + ")")
   typeBindings(cls, cls, ORIGIN_CLASS)
@@ -949,7 +949,7 @@ function getRecordElementBinding(component::InstNode)::Tuple{Binding, Int}
        binding = recordFieldBinding(component, binding)
     end
   else
-     binding = EMPTY_BINDING()
+     binding = EMPTY_BINDING
   end
   return (binding, parentDims)
 end
@@ -1266,8 +1266,8 @@ function checkBindingEach(binding::Binding)
   local parentBindings
   if isEach(binding)
     parentBindings = listRest(parents(binding))
-    for parent in parentBindings
-      if isArray(getType(parent))
+    for p in parentBindings
+      if isArray(getType(p))
         return
       end
     end
@@ -1386,7 +1386,15 @@ function typeTypeAttribute(
             )
             fail()
           end
-           attribute.binding = binding
+          attributeBinding = binding
+          attribute = MODIFIER_MODIFIER(
+            attribute.name,
+            attribute.finalPrefix,
+            attribute.eachPrefix,
+            attributeBinding,
+            attribute.subModifiers,
+            attribute.info,
+          )
         end
         #=  Check the variability. All builtin attributes have parameter variability.
         =#
@@ -3459,12 +3467,16 @@ function checkLhsInWhen(@nospecialize(exp::Expression))::Bool
 end
 
 function typeAlgorithm(alg::Algorithm, origin::ORIGIN_Type)::Algorithm
-   alg.statements = [typeStatement(s, origin) for s in alg.statements]
+  for (i,s) in enumerate(alg.statements)
+    @inbounds alg.statements[i] = typeStatement(s, origin)
+  end
   return alg
 end
 
 function typeStatements(alg::Vector{Statement}, origin::ORIGIN_Type)
-  alg = [typeStatement(stmt, origin) for stmt in alg]
+  for (i, s) in enumerate(alg)
+    @inbounds alg[i] = typeStatement(s, origin)
+  end
   return alg
 end
 

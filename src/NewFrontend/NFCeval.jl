@@ -439,9 +439,9 @@ function evalComponentBinding(
            exp = binding.bindingExp
         else
            exp = evalExp_impl(binding.bindingExp, target)
-           binding.bindingExp = exp
-           binding.evaluated = true
-           comp = setBinding(binding, comp)
+          @assign binding.bindingExp = exp
+          @assign binding.evaluated = true
+          comp = setBinding(binding, comp)
           updateComponent!(comp, node)
         end
         (exp, true)
@@ -727,7 +727,7 @@ function makeComponentBinding(
       end
 
       _ => begin
-        EMPTY_BINDING()
+        EMPTY_BINDING
       end
     end
   end
@@ -2311,7 +2311,8 @@ function evalCall(call::Call, target::EvalTarget)::Expression
     local args::List{Expression}
     @match c begin
       TYPED_CALL(__) => begin
-        @assign c.arguments = list(evalExp_impl(arg, target) for arg in c.arguments)
+        cArgs = list(evalExp_impl(arg, target) for arg in c.arguments)
+        c = TYPED_CALL(c.fn, c.ty, c.var, cArgs, c.attributes)
         if isBuiltin(c.fn)
           bindingExpMap(
             CALL_EXPRESSION(c),

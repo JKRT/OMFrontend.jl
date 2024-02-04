@@ -114,7 +114,7 @@ function mapExp(sections::Sections, mapFn::MapFn)::Sections
         SECTIONS(eq, ieq, alg, ialg)
       end
       SECTIONS_EXTERNAL(__) => begin
-        @assign sections.args = list(mapFn(e) for e in sections.args)
+        sections.args = list(mapFn(e) for e in sections.args)
         sections
       end
       _ => begin

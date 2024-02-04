@@ -454,7 +454,7 @@ function flattenSimpleComponent(
   #       ElementSource.createElementSource(info),
   #     )
   #     @assign sections = prependEquation(eq, sections)
-  #     @assign binding = EMPTY_BINDING()
+  #     @assign binding = EMPTY_BINDING
   #   end
   # end
   name = prefixScope(comp_node, ty, nil, prefix)
@@ -520,7 +520,7 @@ function getRecordBindings(binding::Binding, comps::Vector{<:InstNode})::List{Bi
     @match binding_exp begin
       RECORD_EXPRESSION(__) => begin
         list(if isEmpty(e)
-          EMPTY_BINDING()
+          EMPTY_BINDING
         else
           FLAT_BINDING(e, var)
         end for e in binding_exp.elements)
@@ -604,7 +604,7 @@ function flattenComplexComponent(
         sections,
         comp_var <= Variability.PARAMETER,
       )
-      opt_binding = SOME(EMPTY_BINDING())
+      opt_binding = SOME(EMPTY_BINDING)
     else
       binding = setTypedExp(binding_exp, binding)
       opt_binding = SOME(binding)
@@ -989,7 +989,7 @@ function flattenBinding(
       end
 
       CEVAL_BINDING(__) => begin
-        EMPTY_BINDING()
+        EMPTY_BINDING
       end
 
       FLAT_BINDING(__) => begin
@@ -1531,7 +1531,7 @@ function resolveConnections(flatModel::FlatModel, name::String)::FlatModel
   end
   #=  add the equations to the flat model=#
   @assign flatModel.equations = vcat(conn_eql, flatModel.equations)
-  @assign flatModel.variables = [v for v in flatModel.variables if isPresent(v)]
+  @assign flatModel.variables = Variable[v for v in flatModel.variables if isPresent(v)]
   ctable = CardinalityTable.fromConnections(conns)
   #=  Evaluate any connection operators if they're used. =#
   if System.getHasStreamConnectors() || System.getUsesCardinality()

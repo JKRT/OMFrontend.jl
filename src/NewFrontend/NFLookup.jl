@@ -10,7 +10,7 @@ const MatchTypeTy = Int
 function lookupClassName(name::Absyn.Path, scope::InstNode, info::SourceInfo, checkAccessViolations::Bool = true)
   local node::InstNode
   local state::LookupState
-   (node, state) = lookupNameWithError(name, scope, info, "error placeholderx", checkAccessViolations)
+  (node, state) = lookupNameWithError(name, scope, info, "error", checkAccessViolations)
   assertClass(state, node, name, info)
   return node
 end
@@ -21,8 +21,7 @@ function lookupBaseClassName(name::Absyn.Path, scope::InstNode, info::SourceInfo
   try
      (nodes, state) = lookupNames(name, scope)
   catch e
-    @error "Error looking up base class $e"
-    #Error.addSourceMessage(Error.LOOKUP_BASECLASS_ERROR, list(AbsynUtil.pathString(name), scopeName(scope)), info)
+    Error.addSourceMessage(Error.LOOKUP_BASECLASS_ERROR, list(AbsynUtil.pathString(name), scopeName(scope)), info)
     throw(e)
   end
   assertClass(state, listHead(nodes), name, info)
@@ -40,17 +39,11 @@ function lookupComponent(cref::Absyn.ComponentRef, scope::InstNode #= The scope 
     nodeVar = node(foundCref)
     @match false = isName(nodeVar)
   catch e
-    # Error.addSourceMessageAndFail(Error.LOOKUP_VARIABLE_ERROR, list(Dump.printComponentRefStr(cref), scopeName(scope)), info)
-    #treee = lookupTree(scope.cls.x.elements)
-#    @error "Lookupvariable error for cref:$cref in scope $(scope.name). Error: $e"
-#    @error "Our tree was $(LookupTree.printTreeStr(treee))"
-    #    @error "Repr3: $treee"
-    @error "Variable lookup error: $(e)"
-    fail()
+    Error.addSourceMessageAndFail(Error.LOOKUP_VARIABLE_ERROR, list(Dump.printComponentRefStr(cref), scopeName(scope)), info)
   end
-  @assign state = fixTypenameState(nodeVar, state)
+  state = fixTypenameState(nodeVar, state)
   assertComponent(state, nodeVar, cref, info)
-  (foundCref, foundScope #= The scope the cref was found in. =#)
+  (foundCref, foundScope)
 end
 
 function lookupConnector(cref::Absyn.ComponentRef, scope::InstNode #= The scope to look in. =#, info::SourceInfo)
@@ -63,12 +56,10 @@ function lookupConnector(cref::Absyn.ComponentRef, scope::InstNode #= The scope 
   try
      (foundCref, foundScope, state) = lookupCref(cref, scope)
   catch e
-    @error "Error looking up connector: $e"
-    #Error.addSourceMessageAndFail(Error.LOOKUP_VARIABLE_ERROR, list(Dump.printComponentRefStr(cref), scopeName(scope)), info)
-    throw("Lookup error") #My addition
+    Error.addSourceMessageAndFail(Error.LOOKUP_VARIABLE_ERROR, list(Dump.printComponentRefStr(cref), scopeName(scope)), info)
   end
-  @assign nodeVar = node(foundCref)
-  @assign state = fixTypenameState(nodeVar, state)
+  nodeVar = node(foundCref)
+  state = fixTypenameState(nodeVar, state)
   assertComponent(state, nodeVar, cref, info)
   (foundCref, foundScope #= The scope the cref was found in. =#)
 end
@@ -76,8 +67,8 @@ end
 function fixTypenameState(n::InstNode, state::LookupState)
   local ty::NFType
   if isClass(n)
-    @assign ty = getType(expand(n))
-    @assign state = begin
+    ty = getType(expand(n))
+    state = begin
       @match ty begin
         TYPE_ENUMERATION(__)  => begin
           LOOKUP_STATE_COMP()
@@ -111,13 +102,9 @@ function lookupFunctionName(cref::Absyn.ComponentRef, scope::InstNode #= The sco
   local foundCref::ComponentRef
   local state::LookupState
   local nodeVar::InstNode
-#  try
-    (foundCref, foundScope, state) = lookupCref(cref, scope)
-    nodeVar = node(foundCref)
-    @match false = isName(nodeVar)
-#  catch e
-#    @error "Function lookup error for function $(cref). With exception:" e
-#  end
+  (foundCref, foundScope, state) = lookupCref(cref, scope)
+  nodeVar = node(foundCref)
+  @match false = isName(nodeVar)
   (foundCref, state) = fixExternalObjectCall(nodeVar, foundCref, state)
   assertFunction(state, nodeVar, cref, info)
   (foundCref, foundScope)
@@ -126,10 +113,8 @@ end
 function lookupFunctionNameSilent(cref::Absyn.ComponentRef, scope::InstNode #= The scope to look in. =#)
   local foundScope::InstNode
   local foundCref::ComponentRef
-
   local state::LookupState
   local nodeVar::InstNode
-
   (foundCref, foundScope, state) = lookupCref(cref, scope)
   nodeVar = node(foundCref)
   (foundCref, state) = fixExternalObjectCall(nodeVar, foundCref, state)
@@ -144,35 +129,35 @@ end
                  is changed to
                    'ExtObj eo = ExtObj.constructor(...)'
 """
- function fixExternalObjectCall(node::InstNode, cref::ComponentRef, state::LookupState)
-   local cls::Class
-   local constructor::InstNode
-   #=  If it's not a class it can't be an external object.
-   =#
-   if ! isClass(state)
-     return (cref, state)
-   end
-   expand(node)
-   cls = getClass(node)
-    () = begin
-     @match cls begin
-       PARTIAL_BUILTIN(ty = TYPE_COMPLEX(complexTy = COMPLEX_EXTERNAL_OBJECT(constructor = constructor)))  => begin
-         cref = prefixCref(constructor, TYPE_UNKNOWN(), nil, cref)
-         state = LOOKUP_STATE_FUNC()
-         ()
-       end
-       _  => begin
-         ()
-       end
-     end
-   end
-   (cref, state)
- end
+function fixExternalObjectCall(node::InstNode, cref::ComponentRef, state::LookupState)
+  local cls::Class
+  local constructor::InstNode
+  #=  If it's not a class it can't be an external object.
+  =#
+  if ! isClass(state)
+    return (cref, state)
+  end
+  expand(node)
+  cls = getClass(node)
+  () = begin
+    @match cls begin
+      PARTIAL_BUILTIN(ty = TYPE_COMPLEX(complexTy = COMPLEX_EXTERNAL_OBJECT(constructor = constructor)))  => begin
+        cref = prefixCref(constructor, TYPE_UNKNOWN(), nil, cref)
+        state = LOOKUP_STATE_FUNC()
+        ()
+      end
+      _  => begin
+        ()
+      end
+    end
+  end
+  (cref, state)
+end
 
 function lookupImport(name::Absyn.Path, scope::InstNode, info::SourceInfo)
   local element::InstNode
   local state::LookupState
-   (element, state) = lookupNameWithError(name, topScope(scope), info, Error.LOOKUP_IMPORT_ERROR)
+  (element, state) = lookupNameWithError(name, topScope(scope), info, Error.LOOKUP_IMPORT_ERROR)
   assertImport(state, element, name, info)
   element
 end
@@ -184,9 +169,7 @@ function lookupCrefWithError(cref::Absyn.ComponentRef, scope::InstNode, info::So
   try
      (foundCref, foundScope, state) = lookupCref(cref, scope)
   catch
-    #Error.addSourceMessage(errMsg, list(Dump.printComponentRefStr(cref), scopeName(scope)), info)
-    @error "Lookup failed when looking up $toString(cref)"
-    fail()
+    Error.addSourceMessage(errMsg, list(Dump.printComponentRefStr(cref), scopeName(scope)), info)
   end
   (foundCref, foundScope, state)
 end
@@ -250,9 +233,9 @@ function lookupLocalCref(cref::Absyn.ComponentRef, scope::InstNode #= The scope 
 
       Absyn.CREF_QUAL(__)  => begin
          (node, foundScope) = lookupLocalSimpleCref(cref.name, scope)
-        @assign state = nodeState(node)
-        @assign foundCref = fromAbsyn(node, cref.subscripts)
-         (foundCref, foundScope, state) = lookupCrefInNode(cref.componentRef, node, foundCref, foundScope, state)
+        state = nodeState(node)
+        foundCref = fromAbsyn(node, cref.subscripts)
+        (foundCref, foundScope, state) = lookupCrefInNode(cref.componentRef, node, foundCref, foundScope, state)
         (foundCref, foundScope, state)
       end
 
@@ -280,7 +263,6 @@ function lookupInner(outerNode::InstNode, scope::InstNode)
       @match true = isInner(innerNode)
       return innerNode
     catch e
-#      @error "DBG error $e"
       prev_scope = cur_scope
       cur_scope = derivedParent(cur_scope)
     end
@@ -297,7 +279,7 @@ function lookupLocalSimpleName(n::String, scope::InstNode)
   #@debug "Looking up simple name $n"
    (node, isImport) = lookupElement(n, getClass(scope))
   #@debug "We lookup an element"
-  @assign node = resolveInner(node)
+  node = resolveInner(node)
   return (node, isImport)
 end
 
@@ -328,9 +310,9 @@ function lookupNameWithError(name::Absyn.Path, scope::InstNode, info::SourceInfo
   try
     (node, state) = lookupName(name, scope, checkAccessViolations)
   catch e
-    #   Error.addSourceMessage(errorType, list(AbsynUtil.pathString(name), scopeName(scope)), info)
-    @error "Lookup error for path: $(AbsynUtil.pathString(name)) in the scope $(scopeName(scope))
-       with the following error: $(e)"
+    Error.addSourceMessage(errorType, list(AbsynUtil.pathString(name), scopeName(scope)), info)
+    #@error "Lookup error for path: $(AbsynUtil.pathString(name)) in the scope $(scopeName(scope))
+    #   with the following error: $(e)"
     throw(e)
   end
   (node, state)
@@ -419,9 +401,9 @@ function lookupLocalName(name::Absyn.Path, node::InstNode, state::LookupState, c
          (node, is_import) = lookupLocalSimpleName(name.name, node)
         #@debug "HERE WE ARE!"
         if is_import
-          @assign state = LOOKUP_STATE_ERROR(LOOKUP_STATE_IMPORT())
+          state = LOOKUP_STATE_ERROR(LOOKUP_STATE_IMPORT())
         else
-          @assign state = next(node, state, checkAccessViolations)
+          state = next(node, state, checkAccessViolations)
         end
         ()
       end
@@ -429,10 +411,10 @@ function lookupLocalName(name::Absyn.Path, node::InstNode, state::LookupState, c
       Absyn.QUALIFIED(__)  => begin
          (node, is_import) = lookupLocalSimpleName(name.name, node)
         if is_import
-          @assign state = LOOKUP_STATE_ERROR(LOOKUP_STATE_IMPORT())
+          state = LOOKUP_STATE_ERROR(LOOKUP_STATE_IMPORT())
         else
-          @assign state = next(node, state, checkAccessViolations)
-           (node, state) = lookupLocalName(name.path, node, state, checkAccessViolations)
+          state = next(node, state, checkAccessViolations)
+          (node, state) = lookupLocalName(name.path, node, state, checkAccessViolations)
         end
         ()
       end
@@ -534,7 +516,7 @@ function lookupSimpleBuiltinCref(name::String, subs::List{T}) where {T}
     end
   end
   if ! listEmpty(subs)
-    @assign cref = setSubscripts(list(SUBSCRIPT_RAW_SUBSCRIPT(s) for s in subs), cref)
+    cref = setSubscripts(list(SUBSCRIPT_RAW_SUBSCRIPT(s) for s in subs), cref)
   end
   (node, cref, state)
 end
@@ -581,13 +563,13 @@ function lookupSimpleCref(name::String, subs::List{<:Absyn.Subscript}, scope::In
           @assign foundScope = parent(node)
         elseif isInnerOuterNode(node)
           #@debug "Not a import checking inner"
-          @assign node = resolveInner(node)
-          @assign foundScope = parent(node)
+          node = resolveInner(node)
+          foundScope = parent(node)
         end
         #@debug "Not inner outer. Checking state"
-        @assign state = nodeState(node)
+        state = nodeState(node)
         #@debug "State checked. Checking fromAbsyn"
-        @assign cref = fromAbsyn(node, subs)
+        cref = fromAbsyn(node, subs)
         #@debug "After from absyn. Returning..."
         return (node, cref, foundScope, state)
       catch e
@@ -605,41 +587,41 @@ end
 
 """ #= This function look up a simple name as a cref in a given component, without
                  searching in any enclosing scope. =#"""
-                   function lookupLocalSimpleCref(name::String, scope::InstNode)
-                     local foundScope::InstNode = scope
-                     local node::InstNode
+function lookupLocalSimpleCref(name::String, scope::InstNode)
+  local foundScope::InstNode = scope
+  local node::InstNode
 
-                     local is_import::Bool
+  local is_import::Bool
 
-                      (node, is_import) = begin
-                       @match foundScope begin
-                         IMPLICIT_SCOPE(__)  => begin
-                           (lookupIterator(name, foundScope.locals), false)
-                         end
+  (node, is_import) = begin
+    @match foundScope begin
+      IMPLICIT_SCOPE(__)  => begin
+        (lookupIterator(name, foundScope.locals), false)
+      end
 
-                         CLASS_NODE(__)  => begin
-                           lookupElement(name, getClass(foundScope))
-                         end
+      CLASS_NODE(__)  => begin
+        lookupElement(name, getClass(foundScope))
+      end
 
-                         COMPONENT_NODE(__)  => begin
-                           lookupElement(name, getClass(foundScope))
-                         end
+      COMPONENT_NODE(__)  => begin
+        lookupElement(name, getClass(foundScope))
+      end
 
-                         INNER_OUTER_NODE(__)  => begin
-                           lookupElement(name, getClass(foundScope.innerNode))
-                         end
-                       end
-                     end
-                     if is_import
-                       @assign foundScope = parent(node)
-                     elseif isInnerOuterNode(node)
-                       @assign node = resolveInner(node)
-                       @assign foundScope = parent(node)
-                     end
-                     #=  If the node is an outer node, return the inner instead.
-                     =#
-                     (node, foundScope)
-                   end
+      INNER_OUTER_NODE(__)  => begin
+        lookupElement(name, getClass(foundScope.innerNode))
+      end
+    end
+  end
+  if is_import
+    @assign foundScope = parent(node)
+  elseif isInnerOuterNode(node)
+    @assign node = resolveInner(node)
+    @assign foundScope = parent(node)
+  end
+  #=  If the node is an outer node, return the inner instead.
+  =#
+  (node, foundScope)
+end
 
 function lookupIterator(iteratorName::String, iterators::Vector{<:InstNode})
   local it::InstNode
@@ -663,7 +645,7 @@ function lookupCrefInNode(cref::Absyn.ComponentRef #=modification-040321=#, node
   if isError(state)
     return (foundCref, foundScope, state)
   end
-  @assign scope = begin
+  scope = begin
     @match node begin
       CLASS_NODE(__)  => begin
         instPackage(node)
@@ -673,24 +655,23 @@ function lookupCrefInNode(cref::Absyn.ComponentRef #=modification-040321=#, node
       end
     end
   end
-  @assign name = AbsynUtil.crefFirstIdent(cref)
-  @assign cls = getClass(scope)
+  name = AbsynUtil.crefFirstIdent(cref)
+  cls = getClass(scope)
   try
      (n, is_import) = lookupElement(name, cls)
   catch e
-    @error "DBG Error $e"
     @match true = isComponent(node)
     @match true = isExpandableConnectorClass(cls)
-    @assign foundCref = fromAbsynCref(cref, foundCref)
+    foundCref = fromAbsynCref(cref, foundCref)
     return (foundCref, foundScope, state)
   end
   if is_import
-    @assign state = P_LookupState.ERROR(P_LookupState.IMPORT())
-    @assign foundCref = fromAbsyn(n, nil, foundCref)
+    state = P_LookupState.ERROR(P_LookupState.IMPORT())
+    foundCref = fromAbsyn(n, nil, foundCref)
     return (foundCref, foundScope, state)
   end
    (n, foundCref, foundScope) = resolveInnerCref(n, foundCref, foundScope)
-  @assign state = next(n, state)
+  state = next(n, state)
    (foundCref, foundScope, state) = begin
     @match cref begin
       Absyn.CREF_IDENT(__)  => begin
@@ -698,7 +679,7 @@ function lookupCrefInNode(cref::Absyn.ComponentRef #=modification-040321=#, node
       end
 
       Absyn.CREF_QUAL(__)  => begin
-        @assign foundCref = fromAbsyn(n, cref.subscripts, foundCref)
+        foundCref = fromAbsyn(n, cref.subscripts, foundCref)
         lookupCrefInNode(cref.componentRef, n, foundCref, foundScope, state)
       end
     end
@@ -710,28 +691,28 @@ end
                      collapses the given cref so that it refers to the correct node. The scope a
                    cref is found in may also change if the inner is outside the scope found by
                      lookupCref. =#"""
-                       function resolveInnerCref(node::InstNode, cref::ComponentRef, foundScope::InstNode)
-                         local prev_node::InstNode
-                         local scope::InstNode
-                         if isInnerOuterNode(node)
-                           @assign node = resolveInner(node)
-                           @assign scope = parent(node)
-                           while ! isEmpty(cref)
-                             if referenceEq(node(cref), scope)
-                               break
-                             else
-                               @assign cref = rest(cref)
-                             end
-                           end
-                           if isEmpty(cref)
-                             @assign foundScope = scope
-                           end
-                         end
-                         (node, cref, foundScope)
-                       end
+function resolveInnerCref(node::InstNode, cref::ComponentRef, foundScope::InstNode)
+  local prev_node::InstNode
+  local scope::InstNode
+  if isInnerOuterNode(node)
+    node = resolveInner(node)
+    scope = parent(node)
+    while ! isEmpty(cref)
+      if referenceEq(node(cref), scope)
+        break
+      else
+        cref = rest(cref)
+      end
+    end
+    if isEmpty(cref)
+      foundScope = scope
+    end
+  end
+  (node, cref, foundScope)
+end
 
 """
-Generates an inner element given an outer one, or returns the already
+  Generates an inner element given an outer one, or returns the already
 generated inner element if one has already been generated.
 """
 function generateInner(outerNode::InstNode, topScope::InstNode)

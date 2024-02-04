@@ -3,7 +3,7 @@ const MakeElement = Function
 const MakeFunc = Function
 
 function simplifyFlatModel(flatModel::FlatModel)::FlatModel
-  @assign flatModel.variables = Variable[simplifyVariable(v) for v in flatModel.variables]
+  @assign flatModel.variables = simplifyVariables(flatModel.variables)
   @assign flatModel.equations = simplifyEquations(flatModel.equations)
   @assign flatModel.initialEquations = simplifyEquations(flatModel.initialEquations)
   @assign flatModel.algorithms = simplifyAlgorithms(flatModel.algorithms)
@@ -12,26 +12,47 @@ function simplifyFlatModel(flatModel::FlatModel)::FlatModel
   return flatModel
 end
 
-function simplifyVariable(var::Variable)::Variable
-  @assign var.binding = simplifyBinding(var.binding)
-  @assign var.typeAttributes = [simplifyTypeAttribute(a) for a in var.typeAttributes]
-  return var
+function simplifyVariables(variables::Vector{Variable})
+  for (i, v) in enumerate(variables)
+    @inbounds variables[i] = simplifyVariable(v)
+  end
+  return variables
 end
 
-function simplifyBinding(binding::Binding)::Binding
+function simplifyVariable(var::Variable)::Variable
+  varBinding = simplifyBinding(var.binding)
+  varTypeAttributes = simplifyTypeAttributes(var.typeAttributes)
+  VARIABLE(
+    var.name,
+    var.ty,
+    varBinding,
+    var.visibility,
+    var.attributes,
+    varTypeAttributes,
+    var.comment,
+    var.info
+  )
+end
 
+function simplifyBinding(binding::Binding)
   local exp::Expression
   local sexp::Expression
-
   if isBound(binding)
-    @assign exp = getTypedExp(binding)
-    @assign sexp = simplify(exp)
-    @assign sexp = removeEmptyFunctionArguments(sexp)
+    exp = getTypedExp(binding)
+    sexp = simplify(exp)
+    sexp = removeEmptyFunctionArguments(sexp)
     if !referenceEq(exp, sexp)
-      @assign binding = setTypedExp(sexp, binding)
+      binding = setTypedExp(sexp, binding)
     end
   end
   return binding
+end
+
+function simplifyTypeAttributes(typeAttributes)
+  for (i, a) in enumerate(typeAttributes)
+    @inbounds typeAttributes[i] = simplifyTypeAttribute(a)
+  end
+  return typeAttributes
 end
 
 function simplifyTypeAttribute(attribute::Tuple{<:String, Binding})::Tuple{String, Binding}
@@ -80,6 +101,17 @@ function simplifyEquations(eql::Vector{<:Equation})
   return outEql
 end
 
+
+function simplifyBranch(b)
+  @match b begin
+    EQUATION_BRANCH(__) => begin
+      @assign b.condition = simplify(b.condition)
+      @assign b.body = simplifyEquations(b.body)
+      b
+    end
+  end
+end
+
 function simplifyEquation(@nospecialize(eq::Equation), equations::Vector{Equation})
   equations = begin
     local e::Expression
@@ -106,19 +138,7 @@ function simplifyEquation(@nospecialize(eq::Equation), equations::Vector{Equatio
       end
 
       EQUATION_WHEN(__) => begin
-        @assign eq.branches = begin
-          [
-            @match b begin
-              EQUATION_BRANCH(__) =>
-                begin
-                  @assign b.condition = simplify(b.condition)
-                  @assign b.body = simplifyEquations(b.body)
-                  b
-                end
-            end
-            for b in eq.branches
-          ]
-        end
+        @assign eq.branches = Equation_Branch[simplifyBranch(b) for b in eq.branches]
         push!(equations, eq)
       end
 
@@ -337,26 +357,23 @@ function simplifyTupleElement(
 end
 
 """ #= Replaces tuple elements that has one or more zero dimension with _. =#"""
-function removeEmptyTupleElements(exp::Expression)::Expression
-
-   () = begin
-    local tyl::List{M_Type}
-    @match exp begin
-      TUPLE_EXPRESSION(ty = TYPE_TUPLE(types = tyl)) => begin
-        @assign exp.elements = list(@do_threaded_for if Type.isEmptyArray(t)
-          CREF_EXPRESSION(t, WILD())
-        else
-          e
-        end (e, t) (exp.elements, tyl))
-        ()
-      end
-
-      _ => begin
-        ()
-      end
+function removeEmptyTupleElements(exp::Expression)
+  local tyl::List{M_Type}
+  local rExp
+  rExp = @match exp begin
+    TUPLE_EXPRESSION(ty = TYPE_TUPLE(types = tyl)) => begin
+      local expElements = list(@do_threaded_for if Type.isEmptyArray(t)
+                                 CREF_EXPRESSION(t, WILD())
+                               else
+                                 e
+                               end (e, t) (exp.elements, tyl))
+      TUPLE_EXPRESSION(ty, expElements)
+    end
+    _ => begin
+      exp
     end
   end
-  return exp
+  return rExp
 end
 
 function removeEmptyFunctionArguments(@nospecialize(exp::Expression), isArg::Bool = false)::Expression

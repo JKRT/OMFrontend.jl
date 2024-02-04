@@ -85,28 +85,28 @@ function instClassInProgramFM2(classPath::Absyn.Path, program::SCode.Program)::T
   cls = setNodeType(ROOT_CLASS(EMPTY_NODE()), cls)
   #=  Initialize the storage for automatically generated inner elements. =#
   top = setInnerOuterCache(top, C_TOP_SCOPE(NodeTree.new(), cls))
-  @info "Instantiate the class"
-  @time inst_cls = instantiateN1(cls, EMPTY_NODE())
-  @info "Instantiate generate inners"
-  @time insertGeneratedInners(inst_cls, top)
+  #@info "Instantiate the class"
+  inst_cls = instantiateN1(cls, EMPTY_NODE())
+  #@info "Instantiate generate inners"
+  insertGeneratedInners(inst_cls, top)
   #execStat("NFInst.instantiate(" + name + ")")
   #=
   Instantiate expressions (i.e. anything that can contains crefs, like
   bindings, dimensions, etc). This is done as a separate step after
   instantiation to make sure that lookup is able to find the correct nodes.
   =#
-  @info "Instantiate Expressions"
-  @time instExpressions(inst_cls)
+  #@info "Instantiate Expressions"
+  instExpressions(inst_cls)
   # execStat("NFInst.instExpressions(" + name + ")")
   #=  Mark structural parameters.
   =#
   updateImplicitVariability(inst_cls, false #== Flags.isSet(Flags.EVAL_PARAM) ==#)
   #execStat("NFInst.updateImplicitVariability")
   #=  Type the class. =#
-  @info "Type the class"
-  @time typeClass(inst_cls, name)
-  @info "Flatten the model and evaluate constants in it."
-  @time flat_model = flatten(inst_cls, name)
+  #"Type the class"
+  typeClass(inst_cls, name)
+  #@info "Flatten the model and evaluate constants in it."
+  flat_model = flatten(inst_cls, name)
   #=
   Check if we are to performance recompilation. If true adds the SCode program to the flat model.
   Also check if we have a Connections.branch statement in an if-equation
@@ -191,16 +191,16 @@ function instClassInProgramFM2(classPath::Absyn.Path, program::SCode.Program)::T
     #println("\n************* AFTER RESOLVE *************\n")
     #println(replace(toString(flat_model), "\\n" => "\n"))
   else     #= Regular system without simulaton time reconfigurations =#
-    println("Connection handling...")
-    @time flat_model = resolveConnections(flat_model, name)
+    #println("Connection handling...")
+    flat_model = resolveConnections(flat_model, name)
     flat_model = evaluate(flat_model)
   end
   #= Do unit checking =#
   #TODO  @assign flat_model = UnitCheck.checkUnits(flat_model)
   #@debug "Inline trivial calls in the model"
   flat_model = inlineSimpleCalls(flat_model)
-  @info "Apply simplifications to the model"
-  @time flat_model = simplifyFlatModel(flat_model)
+  #  @info "Apply simplifications to the model"
+  flat_model = simplifyFlatModel(flat_model)
   #@debug "Collect a tree of all functions that are still used in the flat model"
   funcs = collectFunctions(flat_model, name)
   #=  Collect package constants that couldn't be substituted with their values =#
@@ -1470,7 +1470,7 @@ function instComponentDef(component::SCode.COMPONENT,
   bindingVar = if useBinding
     binding(mod)
   else
-    EMPTY_BINDING()
+    EMPTY_BINDING
   end
   condition = fromAbsyn(component.condition, false, list(node), parentNode, info)
   #=  Instantiate the component's attributes, and merge them with the =#
@@ -2215,26 +2215,32 @@ end
 function instBuiltinAttribute(attribute::Modifier, node::InstNode)
 # strMod1 = toString(attribute, true)
  #@debug ">instBuiltinAttribute($strMod1)"
-  local bindingVar::Binding
-  @match attribute begin
+  local bindingVar
+  local outAttr = @match attribute begin
     MODIFIER_MODIFIER(binding=bindingVar)  => begin
       bindingVar = addParent(node, bindingVar)
-      attribute.binding = instBinding(bindingVar)
-      ()
+      attributeBinding = instBinding(bindingVar)
+      MODIFIER_MODIFIER(
+        attribute.name,
+        attribute.finalPrefix,
+        attribute.eachPrefix,
+        attributeBinding,
+        attribute.subModifiers,
+        attribute.info,
+      )
     end
     MODIFIER_REDECLARE(__)  => begin
-      #=  Redeclaration of builtin attributes is not allowed.
-      =#
+      #=  Redeclaration of builtin attributes is not allowed. =#
       Error.addSourceMessage(Error.INVALID_REDECLARE_IN_BASIC_TYPE, list(name(attribute)), Modifier_info(attribute))
       fail()
     end
     _  => begin
-      ()
+      attribute
     end
   end
   #strMod2 = toString(attribute, true)
   #@debug "<instBuiltinAttribute($strMod2)"
-  return attribute
+  return outAttr
 end
 
 function instComponentExpressions(componentArg::InstNode)
@@ -2560,24 +2566,18 @@ function checkUnsubscriptableCref(cref::ComponentRef, info::SourceInfo)
   end
 end
 
-function instCrefSubscripts(cref::ComponentRef, scope::InstNode, info::SourceInfo) ::ComponentRef
-   () = begin
-    local rest_cr::ComponentRef
-    @match cref begin
-      COMPONENT_REF_CREF(__)  => begin
-        if ! listEmpty(cref.subscripts)
-          @assign cref.subscripts = list(instSubscript(s, scope, info) for s in cref.subscripts)
-        end
-        rest_cr = instCrefSubscripts(cref.restCref, scope, info)
-        if ! referenceEq(rest_cr, cref.restCref)
-          @assign cref.restCref = rest_cr
-        end
-        ()
-      end
-      _  => begin
-        ()
-      end
-    end
+
+instCrefSubscripts(cref::ComponentRef, scope::InstNode, info::SourceInfo) = cref
+
+function instCrefSubscripts(cref::COMPONENT_REF_CREF, scope::InstNode, info::SourceInfo) ::ComponentRef
+  local rest_cr::ComponentRef
+  if ! listEmpty(cref.subscripts)
+    local crefSubscripts = list(instSubscript(s, scope, info) for s in cref.subscripts)
+    cref = COMPONENT_REF_CREF(cref.node, crefSubscripts, cref.ty, cref.origin, cref.restCref)
+  end
+  local rest_cr = instCrefSubscripts(cref.restCref, scope, info)
+  if ! referenceEq(rest_cr, cref.restCref)
+    cref = COMPONENT_REF_CREF(cref.node, cref.subscripts, cref.ty, cref.origin, rest_cr)
   end
   cref
 end

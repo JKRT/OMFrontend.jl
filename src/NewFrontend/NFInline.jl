@@ -1,7 +1,7 @@
 #= /*
 * This file is part of OpenModelica.
 *
-* Copyright (c) 1998-2014, Open Source Modelica Consortium (OSMC),
+* Copyright (c) 1998-CurrentYear, Open Source Modelica Consortium (OSMC),
 * c/o Linköpings universitet, Department of Computer and Information Science,
 * SE-58183 Linköping, Sweden.
 *
@@ -28,6 +28,8 @@
 * See the full OSMC Public License conditions for more details.
 *
 */ =#
+
+#= Somewhat rewritten by me (John) to adjust certain things in N.  =#
 function inlineCallExp(callExp::Expression)::Expression
   local result::Expression
   @assign result = begin
@@ -78,7 +80,8 @@ function inlineSimpleCall(callExp::Expression)::Expression
       #= We might want to inline more things, so check arguments anyway =#
       if !shouldInline
         local newArgs = list(map(arg, inlineSimpleCall) for arg in arguments)
-        @assign call.arguments = newArgs
+        callArguments = newArgs
+        TYPED_CALL(c.fn, c.ty, c.var, callArguments, c.attributes)
         return CALL_EXPRESSION(call)
       end
       shouldInline

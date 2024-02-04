@@ -128,11 +128,11 @@ function lookupTypeAttribute(name::String, var::Variable)::Binding
   local binding::Binding
   for attr in var.typeAttributes
     if Util.tuple21(attr) == name
-      @assign binding = Util.tuple22(attr)
+      binding = Util.tuple22(attr)
       return binding
     end
   end
-  binding = EMPTY_BINDING()
+  binding = EMPTY_BINDING
   return binding
 end
 

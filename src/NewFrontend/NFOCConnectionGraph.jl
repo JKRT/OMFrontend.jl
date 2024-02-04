@@ -375,8 +375,13 @@ function addDefiniteRoot(root::ComponentRef, printTrace::Bool, graph::NFOCConnec
   if printTrace
     print("- NFOCConnectionGraph.addDefiniteRoot(" + toString(root) + ")\\n")
   end
-  @assign graph.definiteRoots = _cons(root, graph.definiteRoots)
-  graph
+  graphDefiniteRoots = _cons(root, graph.definiteRoots)
+  OCC_GRAPH(graph.updateGraph,
+            graphDefiniteRoots,
+            graph.potentialRoots,
+            graph.uniqueRoots,
+            graph.branches,
+            graph.connections)
 end
 
 """ Adds a new potential root to NFOCConnectionGraph """
@@ -384,8 +389,13 @@ function addPotentialRoot(root::ComponentRef, priority::Int, printTrace::Bool, g
   if printTrace
     print("- NFOCConnectionGraph.addPotentialRoot(" + toString(root) + ", " + realString(priority) + ")" + "\\n")
   end
-  @assign graph.potentialRoots = _cons((root, priority), graph.potentialRoots)
-  graph
+  graphPotentialRoots = _cons((root, priority), graph.potentialRoots)
+  OCC_GRAPH(graph.updateGraph,
+            graph.definiteRoots,
+            graphPotentialRoots,
+            graph.uniqueRoots,
+            graph.branches,
+            graph.connections)
 end
 
 """ Adds a new unique root to NFOCConnectionGraph """
@@ -415,17 +425,27 @@ function addBranch(ref1::ComponentRef, ref2::ComponentRef, printTrace::Bool, gra
   if printTrace
     print("- NFOCConnectionGraph.addBranch(" + toString(ref1) + ", " + toString(ref2) + ")\\n")
   end
-  @assign graph.branches = _cons((ref1, ref2), graph.branches)
-  graph
+  graphBranches = _cons((ref1, ref2), graph.branches)
+  OCC_GRAPH(graph.updateGraph,
+            graph.definiteRoots,
+            graph.potentialRoots,
+            graph.uniqueRoots,
+            graphBranches,
+            graph.connections)
 end
 
 """ Adds a new connection to NFOCConnectionGraph """
-function addConnection(ref1::ComponentRef, ref2::ComponentRef, brokenEquations::Vector{Equation}, printTrace::Bool, graph::NFOCConnectionGraph) ::NFOCConnectionGraph
+function addConnection(ref1::ComponentRef, ref2::ComponentRef, brokenEquations::Vector{Equation}, printTrace::Bool, graph::NFOCConnectionGraph)
   if printTrace
     print("- NFOCConnectionGraph.addConnection(" + toString(ref1) + ", " + toString(ref2) + ")\\n")
   end
-  @assign graph.connections = _cons((ref1, ref2, arrayList(brokenEquations)), graph.connections)
-  graph
+  graphConnections = _cons((ref1, ref2, arrayList(brokenEquations)), graph.connections)
+  return OCC_GRAPH(graph.updateGraph,
+            graph.definiteRoots,
+            graph.potentialRoots,
+            graph.uniqueRoots,
+            graph.branches,
+            graphConnections)
 end
 
 """  Returns the canonical element of the component where input element belongs to.

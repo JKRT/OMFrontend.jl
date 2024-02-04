@@ -5,15 +5,15 @@ using ExportAll
 
 abstract type Entry end
 
-mutable struct IMPORT{T<:Number} <: Entry
+struct IMPORT{T<:Number} <: Entry
   index::T
 end
 
-mutable struct COMPONENT{T<:Number} <: Entry
+struct COMPONENT{T<:Number} <: Entry
   index::T
 end
 
-mutable struct CLASS{T<:Number} <: Entry
+struct CLASS{T<:Number} <: Entry
   index::T
 end
 
@@ -389,33 +389,23 @@ end
 function get(tree::Tree, key::Key)::Value
   local value::Value
   local k::Key
-  k = begin
-    @match tree begin
-      NODE(__) => begin
-        tree.key
-      end
-      LEAF(__) => begin
-        tree.key
-      end
-    end
+  if tree isa EMPTY
+    fail()
+  end
+
+  k = if tree isa NODE || tree isa LEAF
+    tree.key
   end
   value = begin
-    @match (keyCompare(key, k), tree) begin
-      (0, LEAF(__)) => begin
-        tree.value
-      end
-
-      (0, NODE(__)) => begin
-        tree.value
-      end
-
-      (1, NODE(__)) => begin
-        get(tree.right, key)
-      end
-
-      (-1, NODE(__)) => begin
-        get(tree.left, key)
-      end
+    local kc = keyCompare(key, k)
+    if kc == 0
+      tree.value
+    elseif kc == 1
+      get(tree.right, key)
+    elseif kc == -1
+      get(tree.left, key)
+    else
+      fail()
     end
   end
   return value
@@ -907,8 +897,10 @@ function intersection(tree1::Tree, tree2::Tree)::Tree
   end
   #=  we operate on sorted lists from the trees!
   =#
-  @match _cons(k1, keylist1) = listKeys(tree1)
-  @match _cons(k2, keylist2) = listKeys(tree2)
+  local lst1 = listKeys(tree1)
+  k1,keylist1 = (lst1.head, lst1.tail)
+  local lst2 = listKeys(tree2)
+  k2,keylist2 = (lst2.head, lst2.tail)
   while true
     key_comp = keyCompare(k1, k2)
     if key_comp > 0

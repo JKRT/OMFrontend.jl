@@ -747,33 +747,30 @@ function foldDims(ty::M_Type, func::FuncT, arg::ArgT) where {ArgT}
   return arg
 end
 
-function mapDims(ty::M_Type, func::FuncT)::M_Type
-   () = begin
-    local fn::M_Function
-    @match ty begin
-      TYPE_ARRAY(__) => begin
-        @assign ty.dimensions = list(func(d) for d in ty.dimensions)
-        ()
-      end
-      TYPE_TUPLE(__) => begin
-        @assign ty.types = list(mapDims(t, func) for t in ty.types)
-        ()
-      end
-      TYPE_FUNCTION(fn = fn) => begin
-        @assign ty.fn =
-          setReturnmapDims(mapDims(returnType(fn), func), fn)
-        ()
-      end
-      TYPE_METABOXED(__) => begin
-        @assign ty.ty = mapDims(ty.ty, func)
-        ()
-      end
-      _ => begin
-        ()
-      end
+function mapDims(@nospecialize(ty::M_Type), func::FuncT)
+  local fn::M_Function
+  local retTy = @match ty begin
+    TYPE_ARRAY(__) => begin
+      local tyDimensions = list(func(d) for d in ty.dimensions)
+      TYPE_ARRAY(ty.elementType, tyDimensions)
+    end
+    TYPE_TUPLE(__) => begin
+      local tyTypes = list(mapDims(t, func) for t in ty.types)
+      TYPE_TUPE(tyTpes, ty.dimensions)
+    end
+    TYPE_FUNCTION(fn = fn) => begin
+      tyFn = setReturnmapDims(mapDims(returnType(fn), func), fn)
+      TYPE_FUNCTION(fn, tyFn)
+    end
+    TYPE_METABOXED(__) => begin
+      tyTy = mapDims(ty.ty, func)
+      TYPE_METABOXED(tyTy)
+    end
+    _ => begin
+      ty
     end
   end
-  return ty
+  return retTy
 end
 
 function hasZeroDimension(ty::M_Type)::Bool

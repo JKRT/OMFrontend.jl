@@ -135,7 +135,7 @@ function getRedeclaredNode(name::String, tree::ClassTree)::InstNode
     if isSome(entry.node)
       @match SOME(node) = entry.node
     else
-      node = resolveEntry(entry.entry, tree)
+      (node, _) = resolveEntry(entry.entry, tree)
     end
   catch
     Error.assertion(false, getInstanceName() + " failed on " + name, sourceInfo())
@@ -198,29 +198,24 @@ function extendsCount(tree::ClassTree)::Int
   return count
 end
 
-function componentCount(tree::ClassTree)::Int
-  local count::Int
+function componentCount(tree::ClassTree)
+  @match tree begin
+    CLASS_TREE_PARTIAL_TREE(__) => begin
+      length(tree.components) - length(tree.exts)
+    end
 
-  count = begin
-    @match tree begin
-      CLASS_TREE_PARTIAL_TREE(__) => begin
-        arrayLength(tree.components) - arrayLength(tree.exts)
-      end
+    CLASS_TREE_EXPANDED_TREE(__) => begin
+      length(tree.components) - length(tree.exts)
+    end
 
-      CLASS_TREE_EXPANDED_TREE(__) => begin
-        arrayLength(tree.components) - arrayLength(tree.exts)
-      end
+    CLASS_TREE_INSTANTIATED_TREE(__) => begin
+      length(tree.components)
+    end
 
-      CLASS_TREE_INSTANTIATED_TREE(__) => begin
-        arrayLength(tree.components)
-      end
-
-      CLASS_TREE_FLAT_TREE(__) => begin
-        arrayLength(tree.components)
-      end
+    CLASS_TREE_FLAT_TREE(__) => begin
+      length(tree.components)
     end
   end
-  return count
 end
 
 function classCount(tree::ClassTree)::Int
@@ -464,15 +459,16 @@ function lookupElementPtr(name::String, tree::ClassTree)::Pointer{InstNode}
 end
 
 """ #= Returns the class or component with the given name in the class tree. =#"""
-function lookupElement(name::String, tree::ClassTree)::Tuple{InstNode, Bool}
+function lookupElement(name::String, tree::ClassTree)#::Tuple{InstNode, Bool}
   local isImport::Bool
   local element::InstNode
   local entry::LookupTree.Entry
   #@debug "Looking up element $name in class tree!"
   #@debug "Fetching from tree. Soon to report entry"
-  entry = LookupTree.get(lookupTree(tree), name)
-  (element, isImport) = resolveEntry(entry, tree)
-  return (element, isImport)
+  lTree = lookupTree(tree)
+  entry = LookupTree.get(lTree, name)
+  res = resolveEntry(entry, tree)
+  return res
 end
 
 function flattenLookupTree2(
@@ -673,18 +669,15 @@ end
   This function replaces all duplicate elements with the element that is
   kept, such that lookup in the extends nodes will find the correct node.
 """
-function replaceDuplicates(tree::ClassTree)::ClassTree
-  () = begin
-    @match tree begin
-      CLASS_TREE_INSTANTIATED_TREE(__) where {(!DuplicateTree.isEmpty(tree.duplicates))} => begin
-        @assign tree.duplicates =
-          DuplicateTree.map(tree.duplicates, (name, entry) -> replaceDuplicates2(name, entry, tree))
-        ()
-      end
-
-      _ => begin
-        ()
-      end
+replaceDuplicates(tree::ClassTree) = tree
+function replaceDuplicates(tree::CLASS_TREE_INSTANTIATED_TREE)
+  @match tree begin
+    CLASS_TREE_INSTANTIATED_TREE(__) where {(!DuplicateTree.isEmpty(tree.duplicates))} => begin
+      local treeDuplicates = DuplicateTree.map(tree.duplicates, (name, entry) -> replaceDuplicates2(name, entry, tree))
+      CLASS_TREE_INSTANTIATED_TREE(tree.tree, tree.classes, tree.components, tree.localComponents, tree.exts, tree.imports, treeDuplicates)
+    end
+    _ => begin
+      tree
     end
   end
   return tree
@@ -961,7 +954,7 @@ function instantiate(
           BASE_CLASS(clsNode, definition(node)),
           node,
         )
-        (node, instance, classCount, compCount) = instantiate(node, instance, scope)
+        @match (node, instance, classCount, compCount) = instantiate(node, instance, scope)
         cls = EXPANDED_DERIVED(node, cls.modifier, cls.dims, cls.prefixes, cls.attributes, cls.restriction)
         ()
       end
@@ -1416,19 +1409,17 @@ function linkInnerOuter(outerNode::InstNode, scope::InstNode)::InstNode
 end
 
 function replaceDuplicates4(
-  entry::DuplicateTree.Entry,
+  entry::DuplicateTree.DUPLICATE_TREE_ENTRY,
   node::InstNode,
-)::DuplicateTree.Entry
-
-  @assign entry.node = SOME(node)
-  #@assign entry.children = DuplicateTree.Entry[ for c in entry.children]
+  )
+  local replacedEntry = DuplicateTree.DUPLICATE_TREE_ENTRY(entry.entry, SOME(node), entry.children, entry.ty)
   local f = @closure c -> replaceDuplicates4(c, node)
-  map!(f, entry.children, entry.children)
-  return entry
+  map!(f, replacedEntry.children, replacedEntry.children)
+  return replacedEntry
 end
 
 function replaceDuplicates3(
-  entry::DuplicateTree.Entry,
+  entry::DuplicateTree.DUPLICATE_TREE_ENTRY,
   kept::InstNode,
   tree::ClassTree,
 )::DuplicateTree.Entry
@@ -1436,43 +1427,37 @@ function replaceDuplicates3(
   local node::InstNode
   node_ptr = resolveEntryPtr(entry.entry, tree)
   node = P_Pointer.access(node_ptr)
-  @assign entry.node = SOME(node)
+  local replacedEntry = DuplicateTree.DUPLICATE_TREE_ENTRY(entry.entry, SOME(node), entry.children, entry.ty)
   P_Pointer.update(node_ptr, kept)
   local f = @closure c -> replaceDuplicates3(c, kept, tree)
   #@assign entry.children = DuplicateTree.Entry[replaceDuplicates3(c, kept, tree) for c in entry.children]
-  map!(f, entry.children, entry.children)
-  return entry
+  map!(f, replacedEntry.children, replacedEntry.children)
+  return replacedEntry
 end
 
 function replaceDuplicates2(
   name::String,
-  entry::DuplicateTree.Entry,
+  entry::DuplicateTree.DUPLICATE_TREE_ENTRY,
   tree::ClassTree,
 )::DuplicateTree.Entry
-  local kept::InstNode
+  local kept
   local node_ptr::Pointer{InstNode}
   local kept_entry::DuplicateTree.Entry
   node_ptr = resolveEntryPtr(entry.entry, tree)
-  () = begin
     @match entry.ty begin
       DuplicateTree.EntryType.REDECLARE => begin
         kept = P_Pointer.access(resolveEntryPtr(entry.entry, tree))
         entry = replaceDuplicates4(entry, kept)
-        ()
       end
-
       DuplicateTree.EntryType.DUPLICATE => begin
         kept = P_Pointer.access(node_ptr)
-        @assign entry.node = SOME(kept)
+        local replacedEntry = DuplicateTree.DUPLICATE_TREE_ENTRY(entry.entry, SOME(kept), entry.children, entry.ty)
+        entry = replacedEntry
         local f = @closure c -> replaceDuplicates3(c, kept, tree)
         map!(f, entry.children, entry.children)
-        ()
       end
-
       _ => begin
-        ()
       end
-    end
   end
   return entry
 end
@@ -1671,10 +1656,9 @@ function addInheritedElementConflict(
   extDuplicates::DuplicateTree.Tree,
 )::LookupTree.Entry
   local entry::LookupTree.Entry
-
   local dups::DuplicateTree.Tree
-  local opt_dup_entry::Option{DuplicateTree.Entry}
-  local dup_entry::DuplicateTree.Entry
+  local opt_dup_entry::Option{DuplicateTree.DUPLICATE_TREE_ENTRY}
+  local dup_entry::DuplicateTree.DUPLICATE_TREE_ENTRY
   local new_id::Int = LookupTree.index(newEntry)
   local old_id::Int = LookupTree.index(oldEntry)
   local ty::DuplicateTree.EntryType
@@ -1704,8 +1688,8 @@ function addInheritedElementConflict(
     if !DuplicateTree.idExistsInEntry(newEntry, dup_entry)
       if ty == DuplicateTree.EntryType.REDECLARE
         entry = newEntry
-        @assign dup_entry.children =
-          _cons(DuplicateTree.newEntry(newEntry), dup_entry.children)
+        local dup_entryChildren = _cons(DuplicateTree.newEntry(newEntry), dup_entry.children)
+        dup_entry = DuplicateTree.DUPLICATE_TREE_ENTRY(dup_entry.entry, dup_entry.node, dup_entryChildren, dup_entry.ty)
       else
         if new_id < old_id
           entry = newEntry
@@ -1717,8 +1701,8 @@ function addInheritedElementConflict(
           )
         else
           entry = oldEntry
-          @assign dup_entry.children =
-            _cons(DuplicateTree.newEntry(newEntry), dup_entry.children)
+          local dup_entryChildren = _cons(DuplicateTree.newEntry(newEntry), dup_entry.children)
+          dup_entry = DuplicateTree.DUPLICATE_TREE_ENTRY(dup_entry.entry, dup_entry.node, dup_entryChildren, dup_entry.ty)
         end
       end
       dups = DuplicateTree.update(dups, name, dup_entry)
@@ -1726,8 +1710,8 @@ function addInheritedElementConflict(
     elseif !DuplicateTree.idExistsInEntry(oldEntry, dup_entry)
       if ty == DuplicateTree.EntryType.REDECLARE || new_id < old_id
         entry = newEntry
-        @assign dup_entry.children =
-          _cons(DuplicateTree.newEntry(oldEntry), dup_entry.children)
+        local dup_entryChildren = _cons(DuplicateTree.newEntry(oldEntry), dup_entry.children)
+        dup_entry = DuplicateTree.DUPLICATE_TREE_ENTRY(dup_entry.entry, dup_entry.node, dup_entryChildren, dup_entry.ty)
       else
         entry = newEntry
         dup_entry = DuplicateTree.Entry.ENTRY(
@@ -1747,36 +1731,6 @@ function addInheritedElementConflict(
       end
     end
   end
-  #=  If no duplicate entry yet exists, add a new one.
-  =#
-  #=  Here it's possible for either the new or the old entry to not exist in the duplicate entry.
-  =#
-  #=  The new might not exist simply because it hasn't been added yet, while the old might not
-  =#
-  #=  exist because it wasn't a duplicate in its own scope. At least one of them must exist though,
-  =#
-  #=  since duplicate entries are added for any name occurring more than once.
-  =#
-  #=  If the existing entry is for a redeclare, then the position of the element
-  =#
-  #=  doesn't matter and the new entry should be added as a child to the redeclare.
-  =#
-  #=  Otherwise we need to keep the 'first' element as the parent.
-  =#
-  #=  Note that this only actually works for components, since we don't
-  =#
-  #=  preserve the order for classes. But which class we choose shouldn't
-  =#
-  #=  matter since they should be identical. We might also compare e.g. a
-  =#
-  #=  component to a class here, but that will be caught in checkDuplicates.
-  =#
-  #=  Same as above but we add the old entry instead.
-  =#
-  #=  If both the old and the new entry already exists, which can happen if the
-  =#
-  #=  new entry was added by expandExtents, then we don't need to add anything.
-  =#
   return entry
 end
 
@@ -2058,22 +2012,24 @@ function resolveEntryPtr(entry::LookupTree.Entry, tree::ClassTree)::Pointer{Inst
 end
 
 """ #= Resolves a lookup tree entry to an inst node. =#"""
-function resolveEntry(entry::LookupTree.Entry, tree::ClassTree)::Tuple{InstNode, Bool}
+function resolveEntry(entry::LookupTree.Entry, tree::ClassTree)
   local isImport::Bool
   local element::InstNode
-
-  (element, isImport) = begin
+  element = begin
     @match entry begin
       LookupTree.CLASS(__) => begin
-        (resolveClass(entry.index, tree), false)
+        isImport = false
+        resolveClass(entry.index, tree)
       end
 
       LookupTree.COMPONENT(__) => begin
-        (resolveComponent(entry.index, tree), false)
+        isImport = false
+        resolveComponent(entry.index, tree)
       end
 
       LookupTree.IMPORT(__) => begin
-        (resolveImport(entry.index, tree), true)
+        isImport = true
+        resolveImport(entry.index, tree)
       end
     end
   end

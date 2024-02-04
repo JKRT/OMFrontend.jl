@@ -9,59 +9,60 @@ using MetaModelica.Dangerous
   end
 end
 
-@Mutable_Uniontype Class begin
-  @Record DAE_TYPE begin
-    ty::DAE.Type
-  end
-
-  @Record TYPED_DERIVED begin
-    ty::NFType
-    baseClass::InstNode
-    restriction::Restriction
-  end
-
-  @Record INSTANCED_BUILTIN begin
-    ty::NFType
-    elements::ClassTree
-    restriction::Restriction
-  end
-
-  @Record INSTANCED_CLASS begin
-    ty::NFType
-    elements::ClassTree
-    sections::Sections
-    restriction::Restriction
-  end
-
-  @Record EXPANDED_DERIVED begin
-    baseClass::InstNode
-    modifier::Modifier
-    dims::Vector{Dimension}
-    prefixes::Prefixes
-    attributes::Attributes
-    restriction::Restriction
-  end
-
-  @Record EXPANDED_CLASS begin
-    elements::ClassTree
-    modifier::Modifier
-    prefixes::Prefixes
-    restriction::Restriction
-  end
-
-  @Record PARTIAL_BUILTIN begin
-    ty::NFType
-    elements::ClassTree
-    modifier::Modifier
-    prefixes::Prefixes
-    restriction::Restriction
-  end
-  @Record PARTIAL_CLASS begin
-    elements::ClassTree
-    modifier::Modifier
-    prefixes
-  end
+abstract type Class end
+struct DAE_TYPE <: Class
+  ty::DAE.Type
 end
+
+struct TYPED_DERIVED{T0 <: NFType, T1 <: InstNode, T2 <: Restriction} <: Class
+  ty::T0
+  baseClass::T1
+  restriction::T2
+end
+
+mutable struct INSTANCED_BUILTIN <: Class
+  ty::NFType
+  elements::ClassTree
+  restriction::Restriction
+end
+
+mutable struct INSTANCED_CLASS <: Class
+  ty::NFType
+  elements::ClassTree
+  sections::Sections
+  restriction::Restriction
+end
+
+mutable struct EXPANDED_DERIVED <: Class
+  baseClass::InstNode
+  modifier::Modifier
+  dims::Vector{Dimension}
+  prefixes::Prefixes
+  attributes::Attributes
+  restriction::Restriction
+end
+
+mutable struct EXPANDED_CLASS <: Class
+  elements::ClassTree
+  modifier::Modifier
+  prefixes::Prefixes
+  restriction::Restriction
+end
+
+mutable struct PARTIAL_BUILTIN <: Class
+  ty::NFType
+  elements::ClassTree
+  modifier::Modifier
+  prefixes::Prefixes
+  restriction::Restriction
+end
+
+mutable struct PARTIAL_CLASS <: Class
+  elements::ClassTree
+  modifier::Modifier
+  prefixes
+end
+
 
 struct NOT_INSTANTIATED <: Class
 end
@@ -78,7 +79,7 @@ const DEFAULT_PREFIXES =
 function toFlatString(cls::Class, clsNode::InstNode)::String
   local str::String
   local s
-  s = IOStream_M.create(getInstanceName(), IOStream_M.LIST())
+  s = IOStream_M.create(getInstanceName(), IOStream_M.JULIA_BUFFER())
   s = toFlatStream(cls, clsNode, s)
   str = IOStream_M.string(s)
   IOStream_M.delete(s)
@@ -639,33 +640,11 @@ function setModifier(@nospecialize(modifier::Modifier),
   return cls
 end
 
-function getModifier(cls::Class)::Modifier
-  local modifier::Modifier
-  modifier = begin
-    @match cls begin
-      PARTIAL_CLASS(__) => begin
-        cls.modifier
-      end
-
-      EXPANDED_CLASS(__) => begin
-        cls.modifier
-      end
-
-      EXPANDED_DERIVED(__) => begin
-        cls.modifier
-      end
-
-      PARTIAL_BUILTIN(__) => begin
-        cls.modifier
-      end
-
-      _ => begin
-        MODIFIER_NOMOD()
-      end
-    end
-  end
-  return modifier
+function getModifier(cls::Union{PARTIAL_CLASS, EXPANDED_CLASS, EXPANDED_DERIVED, PARTIAL_BUILTIN})
+  return cls.modifier
 end
+
+getModifier(cls::Class) = MODIFIER_NOMOD()
 
 classTreeApply(cls::Class, func::FuncType) = cls
 
@@ -810,7 +789,7 @@ function lookupAttributeBinding(name::String, cls::Class)::Binding
     attr_node = lookupElement(name, classTree(cls))
     binding = getBinding(component(attr_node))
   catch
-    binding = EMPTY_BINDING()
+    binding = EMPTY_BINDING
   end
   return binding
 end

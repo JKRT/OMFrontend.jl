@@ -14,7 +14,8 @@ struct COMPONENT_REF_WILD <: NFComponentRef end
 
 struct COMPONENT_REF_EMPTY <: NFComponentRef end
 
-struct COMPONENT_REF_STRING{T0 <: String, T1 <: ComponentRef} <: NFComponentRef
+struct COMPONENT_REF_STRING{T0 <: String,
+                            T1 <: ComponentRef} <: NFComponentRef
   name::T0
   restCref::T1
 end
@@ -23,7 +24,7 @@ struct COMPONENT_REF_CREF <: NFComponentRef
   node::InstNode
   subscripts::List{Subscript}
   ty::NFType #= The type of the node, without taking subscripts into account. =#
-  origin::OriginType
+  origin::Integer
   restCref::ComponentRef
 end
 
@@ -911,13 +912,12 @@ function getComponentType(cref::ComponentRef)::M_Type
   return ty
 end
 
-function append(cref::ComponentRef, restCref::ComponentRef)::ComponentRef
-
+function append(cref::ComponentRef, restCref::ComponentRef)
    cref = begin
     @match cref begin
       COMPONENT_REF_CREF(__) => begin
-        @assign cref.restCref = append(cref.restCref, restCref)
-        cref
+        local restCrefTmp = append(cref.restCref, restCref)
+        COMPONENT_REF_CREF(cref.node, cref.subscripts, cref.ty, cref.origin, restCrefTmp)
       end
 
       COMPONENT_REF_EMPTY(__) => begin
@@ -951,10 +951,8 @@ function firstNonScope(cref::ComponentRef)::ComponentRef
   return first
 end
 
-function rest(cref::ComponentRef)::ComponentRef
-  local restCref::ComponentRef
-
-  @match COMPONENT_REF_CREF(restCref = restCref) = cref
+function rest(cref::COMPONENT_REF_CREF)
+  local restCref = cref.restCref
   return restCref
 end
 
@@ -974,29 +972,16 @@ function firstName(cref::ComponentRef)::String
 end
 
 function updateNodeType(cref::ComponentRef)
-  #  () = begin
-  #   @match cref begin
-  #     COMPONENT_REF_CREF(__) => begin
-  #       @assign cref.ty = getType(cref.node)
-  #       ()
-  #     end
-
-  #     _ => begin
-  #       ()
-  #     end
-  #   end
-  # end
   local crefRet = if cref isa COMPONENT_REF_CREF
-    cref.ty = getType(cref.node)
+    crefTy = getType(cref.node)
+    COMPONENT_REF_CREF(cref.node, cref.subscripts, crefTy, cref.origin, restCrefTmp)
   else
     cref
   end
   return crefRet
 end
 
-function nodeType(cref::ComponentRef)::M_Type
-  local ty::M_Type
-
+function nodeType(cref::ComponentRef)
   @match COMPONENT_REF_CREF(ty = ty) = cref
   return ty
 end
@@ -1018,7 +1003,7 @@ function containsNode(cref::ComponentRef, node::InstNode)::Bool
   return res
 end
 
-function node(cref::ComponentRef)::InstNode
+function node(cref::ComponentRef)
   local nodeVar::InstNode
   @match COMPONENT_REF_CREF(node = nodeVar) = cref
   return nodeVar

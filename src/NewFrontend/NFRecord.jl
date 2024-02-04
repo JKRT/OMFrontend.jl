@@ -74,8 +74,8 @@ function instDefaultConstructor(
   @assign out_comp = UNTYPED_COMPONENT(
     ctor_node,
     listArray(nil),
-    EMPTY_BINDING(),
-    EMPTY_BINDING(),
+    EMPTY_BINDING,
+    EMPTY_BINDING,
     OUTPUT_ATTR,
     NONE(),
     false,

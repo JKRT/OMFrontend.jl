@@ -1,83 +1,90 @@
 @UniontypeDecl Equation_Branch
-@Uniontype NFEquation begin
-  @Record EQUATION_NORETCALL begin
-    exp::Expression
-    source::DAE.ElementSource
-  end
+abstract type Equation_Branch end
+abstract type NFEquation end
 
-  @Record EQUATION_REINIT begin
-    cref::Expression #= The variable to reinitialize. =#
-    reinitExp::Expression #= The new value of the variable. =#
-    source::DAE.ElementSource
-  end
-
-  @Record EQUATION_TERMINATE begin
-    message::Expression #= The message to display if the terminate triggers. =#
-    source::DAE.ElementSource
-  end
-
-  @Record EQUATION_ASSERT begin
-    condition::Expression #= The assert condition. =#
-    message::Expression #= The message to display if the assert fails. =#
-    level::Expression #= Error or warning =#
-    source::DAE.ElementSource
-  end
-
-  @Record EQUATION_WHEN begin
-    branches::Vector{Equation_Branch}
-    source::DAE.ElementSource
-  end
-
-  @Record EQUATION_IF begin
-    branches::Vector{Equation_Branch}
-    source::DAE.ElementSource
-  end
-
-  @Record EQUATION_FOR begin
-    iterator::InstNode
-    range::Option{Expression}
-    body::Vector{Equation} #= The body of the for loop. =#
-    source::DAE.ElementSource
-  end
-
-  @Record EQUATION_CONNECT begin
-    lhs::Expression
-    rhs::Expression
-    source::DAE.ElementSource
-  end
-
-  @Record EQUATION_ARRAY_EQUALITY begin
-    lhs::Expression
-    rhs::Expression
-    ty::NFType
-    source::DAE.ElementSource
-  end
-
-  @Record EQUATION_CREF_EQUALITY begin
-    lhs::ComponentRef
-    rhs::ComponentRef
-    source::DAE.ElementSource
-  end
-
-  @Record EQUATION_EQUALITY begin
-    lhs::Expression #= The left hand side expression. =#
-    rhs::Expression #= The right hand side expression. =#
-    ty::NFType
-    source::DAE.ElementSource
-  end
+struct EQUATION_NORETCALL{T0 <: Expression, T1 <: DAE.ElementSource} <: NFEquation
+  exp::T0
+  source::T1
 end
 
-@Uniontype Equation_Branch begin
-  @Record EQUATION_INVALID_BRANCH begin
-    branch::Equation_Branch
-    errors::Vector
-  end
-  @Record EQUATION_BRANCH begin
-    condition::Expression
-    conditionVar::Int
-    body::Vector{Equation}
-  end
+struct EQUATION_REINIT{T0 <: Expression, T1 <: Expression, T2 <: DAE.ElementSource} <: NFEquation
+  cref::T0 #= The variable to reinitialize. =#
+  reinitExp::T1 #= The new value of the variable. =#
+  source::T2
 end
+
+struct EQUATION_TERMINATE{T0 <: Expression, T1 <: DAE.ElementSource} <: NFEquation
+  message::T0 #= The message to display if the terminate triggers. =#
+  source::T1
+end
+
+struct EQUATION_ASSERT{T0 <: Expression,
+                       T1 <: Expression,
+                       T2 <: Expression,
+                       T3 <: DAE.ElementSource} <: NFEquation
+  condition::T0 #= The assert condition. =#
+  message::T1 #= The message to display if the assert fails. =#
+  level::T2 #= Error or warning =#
+  source::T3
+end
+
+struct EQUATION_WHEN{T0 <: DAE.ElementSource} <: NFEquation
+  branches::Vector{Equation_Branch}
+  source::T0
+end
+
+struct EQUATION_IF{T1 <: DAE.ElementSource} <: NFEquation
+  branches::Vector{Equation_Branch}
+  source::T1
+end
+
+struct EQUATION_FOR{T0 <: InstNode, T1 <:Expression, T2 <: DAE.ElementSource} <: NFEquation
+  iterator::T0
+  range::Option{T1}
+  body::Vector{Equation} #= The body of the for loop. =#
+  source::T2
+end
+
+struct EQUATION_CONNECT{T0 <: Expression, T1 <: Expression, T2 <: DAE.ElementSource} <: NFEquation
+  lhs::T0
+  rhs::T1
+  source::T2
+end
+
+struct EQUATION_ARRAY_EQUALITY{T0 <: Expression,
+                               T1 <: Expression,
+                               T2 <: NFType,
+                               T3 <: DAE.ElementSource} <: NFEquation
+  lhs::T0
+  rhs::T1
+  ty::T2
+  source::T3
+end
+
+struct EQUATION_CREF_EQUALITY <: NFEquation
+  lhs::ComponentRef
+  rhs::ComponentRef
+  source::DAE.ElementSource
+end
+
+struct EQUATION_EQUALITY <: NFEquation
+  lhs::Expression #= The left hand side expression. =#
+  rhs::Expression #= The right hand side expression. =#
+  ty::NFType
+  source::DAE.ElementSource
+end
+
+struct EQUATION_INVALID_BRANCH <: Equation_Branch
+  branch::Equation_Branch
+  errors::Vector
+end
+
+struct EQUATION_BRANCH <: Equation_Branch
+  condition::Expression
+  conditionVar::Int
+  body::Vector{Equation}
+end
+
 
 function isMultiLine(@nospecialize(eq::Equation))::Bool
   local singleLine::Bool
@@ -103,8 +110,7 @@ end
 function toFlatStreamList(
   eql::Vector{<:Equation},
   indent::String,
-  s,
-)
+  s)
   local prev_multi_line::Bool = false
   local multi_line::Bool
   local first::Bool = true
@@ -265,106 +271,106 @@ function toStreamList(
 end
 
 function toStream(@nospecialize(eq::Equation), indent::String, s)
-  @assign s = IOStream_M.append(s, indent)
-  @assign s = begin
+   s = IOStream_M.append(s, indent)
+   s = begin
     @match eq begin
       EQUATION_EQUALITY(__) => begin
-        @assign s = IOStream_M.append(s, toString(eq.lhs))
-        @assign s = IOStream_M.append(s, " = ")
-        @assign s = IOStream_M.append(s, toString(eq.rhs))
+         s = IOStream_M.append(s, toString(eq.lhs))
+         s = IOStream_M.append(s, " = ")
+         s = IOStream_M.append(s, toString(eq.rhs))
         s
       end
 
       EQUATION_CREF_EQUALITY(__) => begin
-        @assign s = IOStream_M.append(s, toString(eq.lhs))
-        @assign s = IOStream_M.append(s, " = ")
-        @assign s = IOStream_M.append(s, toString(eq.rhs))
+         s = IOStream_M.append(s, toString(eq.lhs))
+         s = IOStream_M.append(s, " = ")
+         s = IOStream_M.append(s, toString(eq.rhs))
         s
       end
 
       EQUATION_ARRAY_EQUALITY(__) => begin
-        @assign s = IOStream_M.append(s, toString(eq.lhs))
-        @assign s = IOStream_M.append(s, " = ")
-        @assign s = IOStream_M.append(s, toString(eq.rhs))
+         s = IOStream_M.append(s, toString(eq.lhs))
+         s = IOStream_M.append(s, " = ")
+         s = IOStream_M.append(s, toString(eq.rhs))
         s
       end
 
       EQUATION_CONNECT(__) => begin
-        @assign s = IOStream_M.append(s, "connect(")
-        @assign s = IOStream_M.append(s, toString(eq.lhs))
-        @assign s = IOStream_M.append(s, " , ")
-        @assign s = IOStream_M.append(s, toString(eq.rhs))
-        @assign s = IOStream_M.append(s, ")")
+         s = IOStream_M.append(s, "connect(")
+         s = IOStream_M.append(s, toString(eq.lhs))
+         s = IOStream_M.append(s, " , ")
+         s = IOStream_M.append(s, toString(eq.rhs))
+         s = IOStream_M.append(s, ")")
         s
       end
 
       EQUATION_FOR(__) => begin
-        @assign s = IOStream_M.append(s, "for ")
-        @assign s = IOStream_M.append(s, name(eq.iterator))
+         s = IOStream_M.append(s, "for ")
+         s = IOStream_M.append(s, name(eq.iterator))
         if isSome(eq.range)
-          @assign s = IOStream_M.append(s, " in ")
-          @assign s = IOStream_M.append(
+           s = IOStream_M.append(s, " in ")
+           s = IOStream_M.append(
             s,
             toString(Util.getOption(eq.range)),
           )
         end
-        @assign s = IOStream_M.append(s, " loop\\n")
-        @assign s = toStreamList(eq.body, indent + "  ", s)
-        @assign s = IOStream_M.append(s, indent)
-        @assign s = IOStream_M.append(s, "end for")
+         s = IOStream_M.append(s, " loop\\n")
+         s = toStreamList(eq.body, indent + "  ", s)
+         s = IOStream_M.append(s, indent)
+         s = IOStream_M.append(s, "end for")
         s
       end
 
       EQUATION_IF(__) => begin
-        @assign s = IOStream_M.append(s, "if ")
-        @assign s = toStream(listHead(arrayList(eq.branches)), indent, s)
+         s = IOStream_M.append(s, "if ")
+         s = toStream(listHead(arrayList(eq.branches)), indent, s)
         for b in listRest(arrayList(eq.branches))
-          @assign s = IOStream_M.append(s, indent)
-          @assign s = IOStream_M.append(s, "elseif ")
-          @assign s = toStream(b, indent, s)
+           s = IOStream_M.append(s, indent)
+           s = IOStream_M.append(s, "elseif ")
+           s = toStream(b, indent, s)
         end
-        @assign s = IOStream_M.append(s, indent)
-        @assign s = IOStream_M.append(s, "end if")
+         s = IOStream_M.append(s, indent)
+         s = IOStream_M.append(s, "end if")
         s
       end
 
       EQUATION_WHEN(__) => begin
-        @assign s = IOStream_M.append(s, "when ")
-        @assign s = toStream(listHead(arrayList(eq.branches)), indent, s)
+         s = IOStream_M.append(s, "when ")
+         s = toStream(listHead(arrayList(eq.branches)), indent, s)
         for b in listRest(arrayList(eq.branches))
-          @assign s = IOStream_M.append(s, indent)
-          @assign s = IOStream_M.append(s, "elsewhen ")
-          @assign s = toStream(b, indent, s)
+           s = IOStream_M.append(s, indent)
+           s = IOStream_M.append(s, "elsewhen ")
+           s = toStream(b, indent, s)
         end
-        @assign s = IOStream_M.append(s, indent)
-        @assign s = IOStream_M.append(s, "end when")
+         s = IOStream_M.append(s, indent)
+         s = IOStream_M.append(s, "end when")
         s
       end
 
       EQUATION_ASSERT(__) => begin
-        @assign s = IOStream_M.append(s, "assert(")
-        @assign s = IOStream_M.append(s, toString(eq.condition))
-        @assign s = IOStream_M.append(s, ", ")
-        @assign s = IOStream_M.append(s, toString(eq.message))
-        @assign s = IOStream_M.append(s, ", ")
-        @assign s = IOStream_M.append(s, toString(eq.level))
-        @assign s = IOStream_M.append(s, ")")
+         s = IOStream_M.append(s, "assert(")
+         s = IOStream_M.append(s, toString(eq.condition))
+         s = IOStream_M.append(s, ", ")
+         s = IOStream_M.append(s, toString(eq.message))
+         s = IOStream_M.append(s, ", ")
+         s = IOStream_M.append(s, toString(eq.level))
+         s = IOStream_M.append(s, ")")
         s
       end
 
       EQUATION_TERMINATE(__) => begin
-        @assign s = IOStream_M.append(s, "terminate(")
-        @assign s = IOStream_M.append(s, toString(eq.message))
-        @assign s = IOStream_M.append(s, ")")
+         s = IOStream_M.append(s, "terminate(")
+         s = IOStream_M.append(s, toString(eq.message))
+         s = IOStream_M.append(s, ")")
         s
       end
 
       EQUATION_REINIT(__) => begin
-        @assign s = IOStream_M.append(s, "reinit(")
-        @assign s = IOStream_M.append(s, toString(eq.cref))
-        @assign s = IOStream_M.append(s, ", ")
-        @assign s = IOStream_M.append(s, toString(eq.reinitExp))
-        @assign s = IOStream_M.append(s, ")")
+         s = IOStream_M.append(s, "reinit(")
+         s = IOStream_M.append(s, toString(eq.cref))
+         s = IOStream_M.append(s, ", ")
+         s = IOStream_M.append(s, toString(eq.reinitExp))
+         s = IOStream_M.append(s, ")")
         s
       end
 
@@ -383,9 +389,9 @@ end
 function toStringList(eql::List{<:Equation}, indent::String = "")::String
   local str::String
   local s
-  @assign s = IOStream_M.create(getInstanceName(), IOStream_M.IOStream_MType.LIST())
-  @assign s = toStreamList(eql, indent, s)
-  @assign str = IOStream_M.string(s)
+   s = IOStream_M.create(getInstanceName(), IOStream_M.IOStream_MType.LIST())
+   s = toStreamList(eql, indent, s)
+   str = IOStream_M.string(s)
   IOStream_M.delete(s)
   return str
 end
@@ -402,13 +408,11 @@ end
 
 function isConnect(@nospecialize(eq::Equation))::Bool
   local isConnect::Bool
-
-  @assign isConnect = begin
+  isConnect = begin
     @match eq begin
       CONNECT(__) => begin
         true
       end
-
       _ => begin
         false
       end
@@ -492,27 +496,27 @@ function foldExp(@nospecialize(eq::Equation), func::FoldFunc, arg::ArgT) where {
    () = begin
     @match eq begin
       EQUATION_EQUALITY(__) => begin
-        @assign arg = func(eq.lhs, arg)
-        @assign arg = func(eq.rhs, arg)
+         arg = func(eq.lhs, arg)
+         arg = func(eq.rhs, arg)
         ()
       end
 
       EQUATION_ARRAY_EQUALITY(__) => begin
-        @assign arg = func(eq.lhs, arg)
-        @assign arg = func(eq.rhs, arg)
+         arg = func(eq.lhs, arg)
+         arg = func(eq.rhs, arg)
         ()
       end
 
       EQUATION_CONNECT(__) => begin
-        @assign arg = func(eq.lhs, arg)
-        @assign arg = func(eq.rhs, arg)
+         arg = func(eq.lhs, arg)
+         arg = func(eq.rhs, arg)
         ()
       end
 
       EQUATION_FOR(__) => begin
-        @assign arg = foldExpList(eq.body, func, arg)
+         arg = foldExpList(eq.body, func, arg)
         if isSome(eq.range)
-          @assign arg = func(Util.getOption(eq.range), arg)
+           arg = func(Util.getOption(eq.range), arg)
         end
         ()
       end
@@ -522,8 +526,8 @@ function foldExp(@nospecialize(eq::Equation), func::FoldFunc, arg::ArgT) where {
            () = begin
             @match b begin
               EQUATION_BRANCH(__) => begin
-                @assign arg = func(b.condition, arg)
-                @assign arg = foldExpList(b.body, func, arg)
+                 arg = func(b.condition, arg)
+                 arg = foldExpList(b.body, func, arg)
                 ()
               end
 
@@ -638,8 +642,8 @@ function mapExp(@nospecialize(eq::Equation), func::MapExpFn)::Equation
       end
 
        EQUATION_CONNECT(__) => begin
-        @assign e1 = func(eq.lhs)
-        @assign e2 = func(eq.rhs)
+         e1 = func(eq.lhs)
+         e2 = func(eq.rhs)
         if referenceEq(e1, eq.lhs) && referenceEq(e2, eq.rhs)
           eq
         else
@@ -678,7 +682,7 @@ function mapExp(@nospecialize(eq::Equation), func::MapExpFn)::Equation
       end
 
       EQUATION_TERMINATE(__) => begin
-        @assign e1 = func(eq.message)
+        e1 = func(eq.message)
          if referenceEq(e1, eq.message)
            eq
         else
@@ -687,8 +691,8 @@ function mapExp(@nospecialize(eq::Equation), func::MapExpFn)::Equation
       end
 
        EQUATION_REINIT(__) => begin
-         @assign e1 = func(eq.cref)
-         @assign e2 = func(eq.reinitExp)
+          e1 = func(eq.cref)
+          e2 = func(eq.reinitExp)
          if referenceEq(e1, eq.cref) && referenceEq(e2, eq.reinitExp)
            eq
          else
@@ -697,7 +701,7 @@ function mapExp(@nospecialize(eq::Equation), func::MapExpFn)::Equation
       end
 
        EQUATION_NORETCALL(__) => begin
-        @assign e1 = func(eq.exp)
+         e1 = func(eq.exp)
         if referenceEq(e1, eq.exp)
           eq
         else
@@ -716,17 +720,33 @@ end
 """
   mapExpList with atleast one element
 """
-function mapExpList(eql::Vector{Equation}, func::MapExpFn)
-  eql = Equation[mapExp(eq, func) for eq in eql]
+function mapExpList!(eql::Vector{Equation}, func::MapExpFn)
+  #local eqV = Equation[mapExp(eq, func) for eq in eql]
+  for (i, eq) in enumerate(eql)
+    eql[i] = mapExp(eq, func)
+  end
   return eql
+end
+
+function mapExpList(eql::Vector{Equation}, func::MapExpFn)
+  local eqV = Equation[mapExp(eq, func) for eq in eql]
+  return eqV
 end
 
 """
   Map a list of equations with a least one element
 """
-function mapList(eql::Vector{Equation}, func::Function)
-  eql = Equation[map(eq, func) for eq in eql]
+function mapList!(eql::Vector{Equation}, func::Function)
+  #eqs = Equation[map(eq, func) for eq in eql]
+  for (i, eq) in enumerate(eql)
+    eql[i] = map(eq, func)
+  end
   return eql
+end
+
+
+function mapList(eql::Vector{Equation}, func::Function)
+  eqs = Equation[map(eq, func) for eq in eql]
 end
 
 
@@ -747,42 +767,40 @@ function map(@nospecialize(eq::Equation), func::MapFn)
   function f(b::Equation_Branch)
     @match b begin
       EQUATION_BRANCH(__) => begin
-        @assign b.body = Equation[map(e, func) for e in b.body]
+        eqBody = Equation[map(e, func) for e in b.body]
+        EQUATION_BRANCH(eq.condition, eq.conditionVar, eqBody)
         b
       end
       _ => b
     end
   end
-  () = begin
-    @match eq begin
-      EQUATION_FOR(__) => begin
-        @assign eq.body =
-          Equation[map(e, func) for e in eq.body]
-        ()
-      end
-      EQUATION_IF(__) => begin
-        @assign eq.branches =
-          Equation_Branch[res =  f(b) for b in eq.branches]
-        ()
-      end
-      EQUATION_WHEN(__) => begin
-        @assign eq.branches = Equation_Branch[
-          if b isa EQUATION_BRANCH
-            @assign b.body = Equation[map(e, func) for e in b.body];
-            b
-          else
-            b
-          end for b in eq.branches]
-        ()
-      end
-      _ => begin
-        ()
-      end
+  eq = @match eq begin
+    EQUATION_FOR(__) => begin
+      eqBody = Equation[map(e, func) for e in eq.body]
+      EQUATION_FOR(eq.iterator, eq.range, eqBody, eq.source)
+    end
+    EQUATION_IF(__) => begin
+      eqBranches = Equation_Branch[res =  f(b) for b in eq.branches]
+      EQUATION_IF(eqBranches, eq.source)
+    end
+    EQUATION_WHEN(__) => begin
+      eqBranches = Equation_Branch[
+        if b isa EQUATION_BRANCH
+          eqBody = Equation[map(e, func) for e in b.body];
+          EQUATION_BRANCH(eq.condition, eq.conditionVar, eqBody)
+        else
+          b
+        end for b in eq.branches]
+      EQUATION_WHEN(eqBranches, eq.source)
+    end
+    _ => begin
+      eq
     end
   end
   eq = func(eq)
   return eq
 end
+
 
 function apply(@nospecialize(eq::Equation), func::ApplyFn)
    () = begin
@@ -855,8 +873,7 @@ end
 
 function source(@nospecialize(eq::Equation))::DAE.ElementSource
   local sourceVar::DAE.ElementSource
-
-  @assign sourceVar = begin
+   sourceVar = begin
     @match eq begin
       EQUATION_EQUALITY(__) => begin
         eq.source
@@ -898,7 +915,7 @@ end
 
 function makeIf(branches::Vector{Equation_Branch}, src::DAE.ElementSource)
   local eq::Equation
-  @assign eq = EQUATION_IF(branches, src)
+   eq = EQUATION_IF(branches, src)
   return eq
 end
 
@@ -908,7 +925,7 @@ function makeBranch(
   condVar = Variability.CONTINUOUS,
 )::Equation_Branch
   local branch::Equation_Branch
-  @assign branch = EQUATION_BRANCH(condition, condVar, body)
+   branch = EQUATION_BRANCH(condition, condVar, body)
   return branch
 end
 
@@ -919,10 +936,9 @@ function makeEquality(
   src::DAE.ElementSource,
 )::Equation
   local eq::Equation
-  @assign eq = EQUATION_EQUALITY(lhs, rhs, ty, src)
+   eq = EQUATION_EQUALITY(lhs, rhs, ty, src)
   return eq
 end
-
 
 function triggerErrors(branch::Equation_Branch)
   return  () = begin
@@ -961,7 +977,7 @@ function toFlatStream(branch::Equation_Branch,
 end
 
 function toStream(branch::Equation_Branch, indent::String, s)
-  @assign s = begin
+   s = begin
     @match branch begin
       EQUATION_BRANCH(__) => begin
         s = IOStream_M.append(s, toString(branch.condition))

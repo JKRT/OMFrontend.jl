@@ -162,6 +162,10 @@ function evaluateEquations(
   return outEql
 end
 
+"""
+Evaluates an equation.
+Note that an optimization that can be done to this function is to instead use the inline map! functions defined in NFEquation.
+"""
 function evaluateEquation(@nospecialize(eq::Equation), constVariability::VariabilityType)::Equation
   eq = begin
     local e1::Expression
@@ -170,49 +174,49 @@ function evaluateEquation(@nospecialize(eq::Equation), constVariability::Variabi
     local ty::M_Type
     @match eq begin
       EQUATION_EQUALITY(__) => begin
-        ty = mapDims(eq.ty, evaluateDimension)
-        e1 = evaluateExp(eq.lhs, constVariability)
-        e2 = evaluateExp(eq.rhs, constVariability)
+        local ty = mapDims(eq.ty, evaluateDimension)
+        local e1 = evaluateExp(eq.lhs, constVariability)
+        local e2 = evaluateExp(eq.rhs, constVariability)
         EQUATION_EQUALITY(e1, e2, ty, eq.source)
       end
       EQUATION_ARRAY_EQUALITY(__) => begin
-        ty = mapDims(eq.ty, evaluateDimension)
-        e2 = evaluateExp(eq.rhs, constVariability)
+        local ty = mapDims(eq.ty, evaluateDimension)
+        local e2 = evaluateExp(eq.rhs, constVariability)
         EQUATION_ARRAY_EQUALITY(eq.lhs, e2, ty, eq.source)
       end
       EQUATION_FOR(__) => begin
-        @assign eq.range = Util.applyOption(
+        local eqRange = Util.applyOption(
           eq.range,
           (constVariability) -> evaluateExp(constVariability = constVariability),
         )
-        @assign eq.body = evaluateEquations(eq.body, constVariability)
-        eq
+        local eqBody = evaluateEquations(eq.body, constVariability)
+        EQUATION_FOR(eq.iterator, eqRange, eqBody, eq.source)
       end
       EQUATION_IF(__) => begin
-        @assign eq.branches = EQUATION_BRANCH[evaluateEqBranch(b, constVariability) for b in eq.branches]
-        eq
+        local eqBranches = Equation_Branch[evaluateEqBranch(b, constVariability) for b in eq.branches]
+        EQUATION_IF(eqBranches, eq.source)
       end
       EQUATION_WHEN(__) => begin
-        @assign eq.branches = EQUATION_BRANCH[evaluateEqBranch(b, constVariability) for b in eq.branches]
-        eq
+        local eqBranches = Equation_Branch[evaluateEqBranch(b, constVariability) for b in eq.branches]
+        EQUATION_WHEN(eqBranches, eq.source)
       end
       EQUATION_ASSERT(__) => begin
-        e1 = evaluateExp(eq.condition, constVariability)
-        e2 = evaluateExp(eq.message, constVariability)
-        e3 = evaluateExp(eq.level, constVariability)
+        local e1 = evaluateExp(eq.condition, constVariability)
+        local e2 = evaluateExp(eq.message, constVariability)
+        local e3 = evaluateExp(eq.level, constVariability)
         EQUATION_ASSERT(e1, e2, e3, eq.source)
       end
       EQUATION_TERMINATE(__) => begin
-        @assign eq.message = evaluateExp(eq.message, constVariability)
-        eq
+        local eqMessage = evaluateExp(eq.message, constVariability)
+        EQUATION_TERMINATE(eqMessage, eq.source)
       end
       EQUATION_REINIT(__) => begin
-        @assign eq.reinitExp = evaluateExp(eq.reinitExp, constVariability)
-        eq
+        local eqReinitExp = evaluateExp(eq.reinitExp, constVariability)
+        EQUATION_REINIT(eq.cref, eqReinitExp, eq.source)
       end
       EQUATION_NORETCALL(__) => begin
-        @assign eq.exp = evaluateExp(eq.exp, constVariability)
-        eq
+        local eqExp = evaluateExp(eq.exp, constVariability)
+        EQUATION_NORETCALL(eqExp, eq.source)
       end
       _ => begin
         eq

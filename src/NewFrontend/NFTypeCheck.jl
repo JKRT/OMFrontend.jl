@@ -369,7 +369,7 @@ function checkOverloadedBinaryArrayAddSub(
   exp2::Expression,
   type2::M_Type,
   var2::VariabilityType,
-  candidates::List{<:M_Function},
+  candidates::List{M_Function},
   info::SourceInfo,
 )::Tuple{Expression, M_Type}
   local outType::M_Type
@@ -413,7 +413,7 @@ function checkOverloadedBinaryArrayAddSub2(
   exp2::Expression,
   type2::M_Type,
   var2::VariabilityType,
-  candidates::List{<:M_Function},
+  candidates::List{M_Function},
   info::SourceInfo,
 )::Tuple{Expression, M_Type}
   local outType::M_Type
@@ -510,7 +510,7 @@ function checkOverloadedBinaryArrayMul(
   exp2::Expression,
   type2::M_Type,
   var2::VariabilityType,
-  candidates::List{<:M_Function},
+  candidates::List{M_Function},
   info::SourceInfo,
 )::Tuple{Expression, M_Type}
   local outType::M_Type
@@ -608,7 +608,7 @@ function checkOverloadedBinaryScalarArray(
   exp2::Expression,
   type2::M_Type,
   var2::VariabilityType,
-  candidates::List{<:M_Function},
+  candidates::List{M_Function},
   info::SourceInfo,
 )::Tuple{Expression, M_Type}
   local outType::M_Type
@@ -636,7 +636,7 @@ function checkOverloadedBinaryScalarArray2(
   exp2::Expression,
   type2::M_Type,
   var2::VariabilityType,
-  candidates::List{<:M_Function},
+  candidates::List{M_Function},
   info::SourceInfo,
 )::Tuple{Expression, M_Type}
   local outType::M_Type
@@ -721,7 +721,7 @@ function checkOverloadedBinaryArrayScalar(
   exp2::Expression,
   type2::M_Type,
   var2::VariabilityType,
-  candidates::List{<:M_Function},
+  candidates::List{M_Function},
   info::SourceInfo,
 )::Tuple{Expression, M_Type}
   local outType::M_Type
@@ -749,7 +749,7 @@ function checkOverloadedBinaryArrayScalar2(
   exp2::Expression,
   type2::M_Type,
   var2::VariabilityType,
-  candidates::List{<:M_Function},
+  candidates::List{M_Function},
   info::SourceInfo,
 )::Tuple{Expression, M_Type}
   local outType::M_Type
@@ -835,7 +835,7 @@ function checkOverloadedBinaryArrayDiv(
   exp2::Expression,
   type2::M_Type,
   var2::VariabilityType,
-  candidates::List{<:M_Function},
+  candidates::List{M_Function},
   info::SourceInfo,
 )::Tuple{Expression, M_Type}
   local outType::M_Type
@@ -871,7 +871,7 @@ function checkOverloadedBinaryArrayEW(
   exp2::Expression,
   type2::M_Type,
   var2::VariabilityType,
-  candidates::List{<:M_Function},
+  candidates::List{M_Function},
   info::SourceInfo,
 )::Tuple{Expression, M_Type}
   local outType::M_Type
@@ -917,7 +917,7 @@ function checkOverloadedBinaryArrayEW2(
   exp2::Expression,
   type2::M_Type,
   var2::VariabilityType,
-  candidates::List{<:M_Function},
+  candidates::List{M_Function},
   info::SourceInfo,
 )::Tuple{Expression, M_Type}
   local outType::M_Type
@@ -1025,14 +1025,14 @@ function checkOverloadedBinaryArrayEW2(
 end
 
 function implicitConstructAndMatch(
-  candidates::List{<:M_Function},
+  candidates::List{Function},
   inExp1::Expression,
   inType1::M_Type,
   op::Operator,
   inExp2::Expression,
   inType2::M_Type,
   info::SourceInfo,
-)::Tuple{Expression, M_Type}
+  )::Tuple{Expression, M_Type}
   local outType::M_Type
   local outExp::Expression
 
@@ -2512,13 +2512,11 @@ end
 
 function matchEnumerationTypes(type1::NFType, type2::NFType)::MatchKindType
   local matchKind::MatchKindType
-
   local lits1::List{String}
   local lits2::List{String}
-
   @match TYPE_ENUMERATION(literals = lits1) = type1
   @match TYPE_ENUMERATION(literals = lits2) = type2
-  @assign matchKind = if ListUtil.isEqualOnTrue(lits1, lits2, stringEqual)
+  matchKind = if ListUtil.isEqualOnTrue(lits1, lits2, stringEqual)
     MatchKind.EXACT
   else
     MatchKind.NOT_COMPATIBLE

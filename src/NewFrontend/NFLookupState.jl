@@ -54,8 +54,7 @@ end
 
 function firstIdent(name::LookupStateName)::String
   local id::String
-
-  @assign id = begin
+  id = begin
     @match name begin
       LOOKUP_STATE_NAME_PATH(__) => begin
         AbsynUtil.pathFirstIdent(name.path)
@@ -71,8 +70,7 @@ end
 
 function toString(name::LookupStateName)::String
   local str::String
-
-  @assign str = begin
+  str = begin
     @match name begin
       LOOKUP_STATE_NAME_PATH(__) => begin
         AbsynUtil.pathString(name.path)
@@ -240,9 +238,9 @@ end
 function nodeState(node::InstNode)::LookupState
   local state::LookupState
   if isComponent(node) || isName(node)
-    @assign state = LOOKUP_STATE_COMP()
+    state = LOOKUP_STATE_COMP()
   else
-    @assign state = elementState(definition(node))
+    state = elementState(definition(node))
   end
   return state
 end

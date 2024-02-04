@@ -109,32 +109,41 @@ end
 
 function instDerivatives(fnNode::InstNode, fn::M_Function)::List{FunctionDerivative}
   local ders::List{FunctionDerivative} = nil
-
   local der_mods::List{SCode.Mod}
   local scope::InstNode
-
-  @assign der_mods = getDerivativeAnnotations(definition(fnNode))
-  @assign scope = parent(fnNode)
+  der_mods = getDerivativeAnnotations(definition(fnNode))
+  scope = parent(fnNode)
   for m in der_mods
-    @assign ders = instDerivativeMod(m, fnNode, fn, scope, ders)
+    ders = instDerivativeMod(m, fnNode, fn, scope, ders)
   end
   return ders
 end
 
-function addLowerOrderDerivative2(fn::M_Function, lowerDerNode::InstNode)::M_Function
-
-  @assign fn.derivatives = list(
+function addLowerOrderDerivative2(fn::M_Function, lowerDerNode::InstNode)
+  fnDerivatives = list(
     begin
-      @match fn_der begin
-        FUNCTION_DER(__) => begin
-          @assign fn_der.lowerOrderDerivatives =
-            _cons(lowerDerNode, fn_der.lowerOrderDerivatives)
-          fn_der
-        end
+      if fn_der isa FUNCTION_DER
+        fn_derLowerOrderDerivatives = _cons(lowerDerNode, fn_der.lowerOrderDerivatives)
+        FUNCTION_DER(fn_der.derivativeFn,
+                     fn_der.derivedFn,
+                     fn_der.order,
+                     fn_der.conditions,
+                     fn_derLowerOrderDerivatives)
       end
-    end for fn_der in fn.derivatives
-  )
-  return fn
+    end
+    for fn_der in fn.derivatives)
+  local f = M_FUNCTION(fn.path,
+                       fn.node,
+                       fn.inputs,
+                       fn.outputs,
+                       fn.locals,
+                       fn.slots,
+                       fn.returnType,
+                       fn.attributes,
+                       fnDerivatives,
+                       fn.status,
+                       fn.callCounter)
+  return f
 end
 
 function addLowerOrderDerivative(fnNode::InstNode, lowerDerNode::InstNode)

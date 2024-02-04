@@ -106,7 +106,7 @@ end
   end
 end
 
-function typeCast(callExp::CALL_EXPRESSION, ty::NFType)::Expression
+function typeCast(callExp::CALL_EXPRESSION, ty::NFType)
   local call::Call
   local cast_ty::NFType
   @match CALL_EXPRESSION(call = call) = callExp
@@ -121,19 +121,20 @@ function typeCast(callExp::CALL_EXPRESSION, ty::NFType)::Expression
               =#
               #=  whole array that 'fill' constructs.
               =#
-              @assign call.arguments = _cons(
+              callArguments = _cons(
                 typeCast(listHead(call.arguments), ty),
                 listRest(call.arguments),
               )
-              @assign call.ty = cast_ty
+              callTy = cast_ty
+              call = TYPED_CALL(call.fn, callTy, call.var, callArguments, call.attributes)
               CALL_EXPRESSION(call)
             end
             #=  For diagonal we can type cast the argument rather than the =#
             "diagonal" => begin
               #=  matrix that diagonal constructs.=#
-              @assign call.arguments =
-                list(typeCast(listHead(call.arguments), ty))
-              @assign call.ty = cast_ty
+              callArguments = list(typeCast(listHead(call.arguments), ty))
+              callTy = cast_ty
+              call = TYPED_CALL(call.fn, callTy, call.var, callArguments, call.attributes)
               CALL_EXPRESSION(call)
             end
 
@@ -166,7 +167,8 @@ function retype(call::Call)::Call
             dims,
           )
         end
-        @assign call.ty = liftArrayLeftList(arrayElementType(call.ty), dims)
+        callTy = liftArrayLeftList(arrayElementType(call.ty), dims)
+        call = TYPED_ARRAY_CONSTRUCTOR(callTy, call.var, call.exp, call.iters)
         ()
       end
 
@@ -1182,7 +1184,7 @@ function evaluateCallTypeDimExp(exp::Expression, ptree::ParameterTree)::Expressi
 end
 
 function buildParameterTree(
-  fnArgs::Tuple{<:M_Function, List{<:Expression}},
+  fnArgs::Tuple{M_Function, List{<:Expression}},
   ptree::ParameterTree,
 )::ParameterTree
   local fn::M_Function
@@ -1202,7 +1204,7 @@ end
 
 function evaluateCallTypeDim(
   dim::Dimension,
-  fnArgs::Tuple{<:M_Function, List{<:Expression}},
+  fnArgs::Tuple{M_Function, List{<:Expression}},
   ptree::ParameterTree,
 )::Tuple{Dimension, ParameterTree}
 
@@ -1243,16 +1245,14 @@ function evaluateCallType(
     local tys::List{NFType}
     @match ty begin
       TYPE_ARRAY(__) => begin
-        (dims, ptree) =
-          ListUtil.map1Fold(ty.dimensions, evaluateCallTypeDim, (fn, args), ptree)
-        @assign ty.dimensions = dims
-        ty
+        (dims, ptree) = ListUtil.map1Fold(ty.dimensions, evaluateCallTypeDim, (fn, args), ptree)
+        tyDimensions = dims
+        TYPE_ARRAY(ty.elementType, tyDimensions)
       end
       TYPE_TUPLE(__) => begin
-        (tys, ptree) =
-          ListUtil.map2Fold(ty.types, evaluateCallType, fn, args, ptree)
-        @assign ty.types = tys
-        ty
+        (tys, ptree) = ListUtil.map2Fold(ty.types, evaluateCallType, fn, args, ptree)
+        tyTypes = tys
+        TYPE_TUPLE(tyTypes, ty.names)
       end
       _ => begin
         ty
@@ -1417,12 +1417,12 @@ function checkMatchingFunctions(call::Call, info::SourceInfo)
   local errors::List{Int}
 
   ErrorExt.setCheckpoint("NFCall:checkMatchingFunctions")
-   matchedFunctions = begin
+  matchedFunctions = begin
     @match call begin
       ARG_TYPED_CALL(ref = COMPONENT_REF_CREF(node = fn_node)) => begin
-         allfuncs = getCachedFuncs(fn_node)
+        allfuncs = getCachedFuncs(fn_node)
         if listLength(allfuncs) > 1
-           allfuncs =
+          allfuncs =
             list(fn for fn in allfuncs if !isDefaultRecordConstructor(fn))
         end
         matchFunctions(allfuncs, call.arguments, call.named_args, info)
@@ -1570,7 +1570,7 @@ function reductionFoldExpression(
       @match AbsynUtil.pathFirstIdent(P_Function.name(reductionFn)) begin
         "sum" => begin
           @match TYPE_COMPLEX(cls = op_node) = reductionType
-           op_node = lookupElement("'+'", getClass(op_node))
+          op_node = lookupElement("'+'", getClass(op_node))
           instFunctionNode(op_node)
           @match list(fn) = P_Function.typeNodeCache(op_node)
           SOME(CALL_EXPRESSION(makeTypedCall(

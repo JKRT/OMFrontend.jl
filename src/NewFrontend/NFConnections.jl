@@ -77,7 +77,7 @@ function collect(flatModel::FlatModel)::Tuple{FlatModel, Connections}
   local b2::Bool
   #=  Collect all flow variables. =#
   for var in flatModel.variables
-    @assign comp = component(node(var.name))
+    comp = component(node(var.name))
     if isFlow(comp)
       c1 = fromFacedCref(
         var.name,
@@ -125,24 +125,26 @@ function collect(flatModel::FlatModel)::Tuple{FlatModel, Connections}
   return (flatModel, conns)
 end
 
-function addBroken(broken::BrokenEdges, conns::Connections)::Connections
-  @assign conns.broken = broken
+function addBroken(broken::BrokenEdges, conns::Connections)
+  conns = CONNECTIONS(conns.connections, conns.flows, broken)
   return conns
 end
 
-function addFlow(conn::Connector, conns::Connections)::Connections
-  @assign conns.flows = _cons(conn, conns.flows)
+function addFlow(conn::Connector, conns::Connections)
+  local connsFlows = _cons(conn, conns.flows)
+  conns = CONNECTIONS(conns.connections, connsFlows, conns.broken)
   return conns
 end
 
-function addConnection(conn::Connection, conns::Connections)::Connections
-  @assign conns.connections = _cons(conn, conns.connections)
+function addConnection(conn::Connection, conns::Connections)
+  local connsConnections = _cons(conn, conns.connections)
+  conns = CONNECTIONS(connsConnections, conns.flows, conns.broken)
   return conns
 end
 
-function fromConnectionList(connl::List{<:Connection})::Connections
+function fromConnectionList(connl::List{<:Connection})
   local conns::Connections
-  @assign conns = CONNECTIONS(connl, nil, nil)
+  conns = CONNECTIONS(connl, nil, nil)
   return conns
 end
 

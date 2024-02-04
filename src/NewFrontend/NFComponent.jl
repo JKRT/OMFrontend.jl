@@ -572,29 +572,45 @@ function isConst(component::Component)
   return isConst
 end
 
-function setVariability(variability, component::Component)
-
-   () = begin
+function setVariability(variability::Int, component::Component)
     local attr::Attributes
-    @match component begin
-      UNTYPED_COMPONENT(attributes = attr) => begin
-        @assign attr.variability = variability
-        component.attributes = attr
-        ()
+  @match component begin
+    UNTYPED_COMPONENT(attributes = attr) || TYPED_COMPONENT(attributes = attr) => begin
+      local localAttri = ATTRIBUTES(attr.connectorType,
+                                    attr.parallelism,
+                                    variability,
+                                    attr.direction,
+                                    attr.innerOuter,
+                                    attr.isFinal,
+                                    attr.isRedeclare,
+                                    attr.isReplaceable,
+                                    attr.isStructuralMode)
+      component.attributes = localAttri
+      if component isa UNTYPED_COMPONENT
+        component = UNTYPED_COMPONENT(component.classInst,
+                                      component.dimensions,
+                                      component.binding,
+                                      component.condition,
+                                      localAttri,
+                                      component.comment,
+                                      component.instantiated,
+                                      component.info)
+      else
+        component = TYPED_COMPONENT(component.classInst,
+                                    component.ty,
+                                    component.binding,
+                                    component.condition,
+                                    localAttri,
+                                    component.ann,
+                                    component.comment,
+                                    component.info)
       end
-
-      TYPED_COMPONENT(attributes = attr) => begin
-        @assign attr.variability = variability
-        component.attributes = attr
-        ()
-      end
-
-      _ => begin
-        ()
-      end
+      return component
+    end
+    _ => begin
+      return component
     end
   end
-  return component
 end
 
 function variability(component::Component)
@@ -723,7 +739,7 @@ function getCondition(component::Component)
       end
 
       _ => begin
-        EMPTY_BINDING()
+        EMPTY_BINDING
       end
     end
   end
@@ -822,7 +838,7 @@ function getBinding(component::Component)
         binding(component.modifier)
       end
       _ => begin
-        EMPTY_BINDING()
+        EMPTY_BINDING
       end
     end
   end

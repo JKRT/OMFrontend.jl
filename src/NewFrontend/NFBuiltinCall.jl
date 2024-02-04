@@ -285,17 +285,17 @@ function makeCatExp(n::Int, args::List{<:Expression}, tys::List{<:M_Type}, varia
   =#
   for arg in args
     @match _cons(ty, tys2) = tys2
-    @assign dimsLst = _cons(arrayDims(ty), dimsLst)
-    if isEqual(resTy, TYPE_UNKNOWN())
-      @assign resTy = arrayElementType(ty)
+    dimsLst = _cons(arrayDims(ty), dimsLst)
+    if resTy isa TYPE_UNKNOWN
+      resTy = arrayElementType(ty)
     else
        (_, _, ty1, mk) = matchExpressions(INTEGER_EXPRESSION(0), arrayElementType(ty), INTEGER_EXPRESSION(0), resTy)
       if isCompatibleMatch(mk)
-        @assign resTy = ty1
+        resTy = ty1
       end
     end
   end
-  @assign maxn = max([listLength(d) for d in dimsLst]...)
+  maxn = max([listLength(d) for d in dimsLst]...)
   # for L in dimsLst
   #   for d in L
   #     println(toString(d))
@@ -307,37 +307,38 @@ function makeCatExp(n::Int, args::List{<:Expression}, tys::List{<:M_Type}, varia
   if n < 1 || n > maxn
     Error.addSourceMessageAndFail(Error.NF_CAT_WRONG_DIMENSION, list(String(maxn), String(n)), info)
   end
-  @assign tys2 = tys
-  @assign tys3 = nil
-  @assign args2 = nil
-  @assign pos = listLength(args) + 2
+  tys2 = tys
+  tys3 = nil
+  args2 = nil
+  pos = listLength(args) + 2
   #=  Second: Try to match the element type of all the arguments
   =#
   for arg in args
-    @match _cons(ty, tys2) = tys2
-    @assign pos = pos - 1
-    @assign ty2 = setArrayElementType(ty, resTy)
+    ty = listHead(tys2)
+    tys2 = listRest(tys2)
+    pos = pos - 1
+    ty2 = setArrayElementType(ty, resTy)
      (arg2, ty1, mk) = matchTypes(ty, ty2, arg, allowUnknown = true)
     if isIncompatibleMatch(mk)
       Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list(String(pos), "cat", "arg", toString(arg), Type.toString(ty), Type.toString(ty2)), info)
     end
-    @assign args2 = _cons(arg2, args2)
-    @assign tys3 = _cons(ty1, tys3)
+    args2 = _cons(arg2, args2)
+    tys3 = _cons(ty1, tys3)
   end
   #=  Third: We now have matched the element types of all arguments
   =#
   #=         Try to match the dimensions as well
   =#
-  @assign resTy = TYPE_UNKNOWN()
-  @assign tys2 = tys3
+  resTy = TYPE_UNKNOWN()
+  tys2 = tys3
   for arg in args2
     @match _cons(ty, tys2) = tys2
-    if isEqual(resTy, TYPE_UNKNOWN())
-      @assign resTy = ty
+    if resTy isa TYPE_UNKNOWN
+      resTy = ty
     else
        (_, _, ty1, mk) = matchExpressions(INTEGER_EXPRESSION(0), ty, INTEGER_EXPRESSION(0), resTy)
       if isCompatibleMatch(mk)
-        @assign resTy = ty1
+        resTy = ty1
       end
     end
   end
@@ -345,34 +346,34 @@ function makeCatExp(n::Int, args::List{<:Expression}, tys::List{<:M_Type}, varia
   =#
   #=  with the concatenated dimension set to unknown.
   =#
-  @assign dims = arrayDims(resTy)
+  dims = arrayDims(resTy)
   resTyToMatch = TYPE_ARRAY(arrayElementType(resTy), ListUtil.set(dims, n, DIMENSION_UNKNOWN()))
-  @assign dims = list(listGet(lst, n) for lst in dimsLst)
-  @assign sumDim = fromInteger(0)
+  dims = list(listGet(lst, n) for lst in dimsLst)
+  sumDim = fromInteger(0)
   for d in dims
-    @assign sumDim = add(sumDim, d)
+    sumDim = add(sumDim, d)
   end
   #=  Create the concatenated dimension
   =#
-  @assign resTy = TYPE_ARRAY(arrayElementType(resTy), ListUtil.set(arrayDims(resTy), n, sumDim))
-  @assign tys2 = tys3
-  @assign tys3 = nil
-  @assign res = nil
-  @assign pos = listLength(args) + 2
+  resTy = TYPE_ARRAY(arrayElementType(resTy), ListUtil.set(arrayDims(resTy), n, sumDim))
+  tys2 = tys3
+  tys3 = nil
+  res = nil
+  pos = listLength(args) + 2
   for arg in args2
     @match _cons(ty, tys2) = tys2
-    @assign pos = pos - 1
+    pos = pos - 1
      (arg2, ty1, mk) = matchTypes(ty, resTyToMatch, arg, allowUnknown = true)
     if isIncompatibleMatch(mk)
       Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list(String(pos), "cat", "arg", toString(arg), Type.toString(ty), Type.toString(resTyToMatch)), info)
     end
-    @assign res = _cons(arg2, res)
-    @assign tys3 = _cons(ty1, tys3)
+    res = _cons(arg2, res)
+    tys3 = _cons(ty1, tys3)
   end
   #=  We have all except dimension n having equal sizes; with matching types
   =#
-  @assign ty = resTy
-  @assign callExp = CALL_EXPRESSION(makeTypedCall(NFBuiltinFuncs.CAT, _cons(INTEGER_EXPRESSION(n), res), variability, resTy))
+  ty = resTy
+  callExp = CALL_EXPRESSION(makeTypedCall(NFBuiltinFuncs.CAT, _cons(INTEGER_EXPRESSION(n), res), variability, resTy))
   (callExp, ty)
 end
 

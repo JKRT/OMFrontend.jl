@@ -16,24 +16,24 @@ function collectConstants(flatModel::FlatModel, functions::FunctionTree)::FlatMo
   local vars::Vector{Variable} = Variable[]
   local binding::Binding
   local constants::Constants
-  @assign constants = ConstantsSetImpl.new()
+  constants = ConstantsSetImpl.new()
   constants =
     ArrayUtil.fold(flatModel.variables, collectVariableConstants, constants)
-  @assign constants =
+  constants =
     foldExpList(flatModel.equations, collectExpConstants, constants)
-  @assign constants = foldExpList(
+  constants = foldExpList(
     flatModel.initialEquations,
     collectExpConstants,
     constants,
   )
-  @assign constants =
+  constants =
     foldExpList(flatModel.algorithms, collectExpConstants, constants)
-  @assign constants = foldExpList(
+  constants = foldExpList(
     flatModel.initialAlgorithms,
     collectExpConstants,
     constants,
   )
-  @assign constants = FunctionTreeImpl.fold(functions, collectFuncConstants, constants)
+  constants = FunctionTreeImpl.fold(functions, collectFuncConstants, constants)
   vars = Variable[Variable_fromCref(c) for c in ConstantsSetImpl.listKeys(constants)]
   @assign flatModel.variables = vcat(vars, flatModel.variables)
 #  execStat(getInstanceName()) TODO

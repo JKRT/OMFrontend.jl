@@ -103,7 +103,7 @@ function reconstructRecordInstance(
     end
   end
   if listEmpty(field_exps)
-    @assign record_binding = EMPTY_BINDING()
+    @assign record_binding = EMPTY_BINDING
   else
     @assign field_exps = listReverseInPlace(field_exps)
     @assign record_exp = makeRecord(
@@ -441,7 +441,7 @@ function collectFlatTypes(flatModel::FlatModel, functions::List{<:M_Function})::
 end
 
 function toFlatStream(flatModel::FlatModel,
-  functions::List{<:M_Function},
+  functions::List{M_Function},
   printBindingTypes::Bool = false,
   s = Nothing
 )
@@ -491,7 +491,7 @@ end
 
 function printFlatString(
   flatModel::FlatModel,
-  functions::List{<:M_Function},
+  functions::List{M_Function},
   printBindingTypes::Bool = false,
 )
   local s
@@ -502,7 +502,7 @@ end
 
 function toFlatString(
   flatModel::FlatModel,
-  functions::List{<:M_Function},
+  functions::List{M_Function},
   printBindingTypes::Bool = false,
 )::String
   local str::String

@@ -93,8 +93,7 @@ end
 function negate(op::Operator)::Operator
   local outOp::Operator
   local neg_op::OpType
-
-  @assign neg_op = begin
+  neg_op = begin
     @match op.op begin
       Op.ADD => begin
         Op.SUB
@@ -125,14 +124,13 @@ function negate(op::Operator)::Operator
       end
     end
   end
-  @assign outOp = OPERATOR(op.ty, neg_op)
+  outOp = OPERATOR(op.ty, neg_op)
   return outOp
 end
 
 function isElementWise(op::Operator)::Bool
   local ew::Bool
-
-  @assign ew = begin
+  ew = begin
     @match op.op begin
       Op.ADD_EW => begin
         true
@@ -162,49 +160,38 @@ function isElementWise(op::Operator)::Bool
   return ew
 end
 
-function stripEW(op::Operator)::Operator
+function stripEW(op::Operator)
+  opOP = @match op.op begin
+    Op.ADD_EW => begin
+      Op.ADD
+    end
 
-   () = begin
-    @match op.op begin
-      Op.ADD_EW => begin
-        @assign op.op = Op.ADD
-        ()
-      end
+    Op.SUB_EW => begin
+      Op.SUB
+    end
 
-      Op.SUB_EW => begin
-        @assign op.op = Op.SUB
-        ()
-      end
+    Op.MUL_EW => begin
+      Op.MUL
+    end
 
-      Op.MUL_EW => begin
-        @assign op.op = Op.MUL
-        ()
-      end
+    Op.DIV_EW => begin
+      Op.DIV
+    end
 
-      Op.DIV_EW => begin
-        @assign op.op = Op.DIV
-        ()
-      end
-
-      Op.POW_EW => begin
-        @assign op.op = Op.POW
-        ()
-      end
-
-      _ => begin
-        ()
-      end
+    Op.POW_EW => begin
+      Op.POW
+    end
+    _ => begin
+      return op
     end
   end
-  return op
+  return OPERATOR(op.ty, opOP)
 end
 
 function makeArrayScalar(ty::M_Type, op::OpType)::Operator
   local outOp::Operator
-
   local o::OpType
-
-  @assign o = begin
+  o = begin
     @match op begin
       Op.ADD => begin
         Op.ADD_ARRAY_SCALAR
@@ -227,14 +214,14 @@ function makeArrayScalar(ty::M_Type, op::OpType)::Operator
       end
     end
   end
-  @assign outOp = OPERATOR(ty, o)
+  outOp = OPERATOR(ty, o)
   return outOp
 end
 
 function makeScalarArray(ty::M_Type, op::OpType)::Operator
   local outOp::Operator
   local o::OpType
-  @assign o = begin
+  o = begin
     @match op begin
       Op.ADD => begin
         Op.ADD_SCALAR_ARRAY
@@ -257,7 +244,7 @@ function makeScalarArray(ty::M_Type, op::OpType)::Operator
       end
     end
   end
-  @assign outOp = OPERATOR(ty, o)
+  outOp = OPERATOR(ty, o)
   return outOp
 end
 
@@ -835,8 +822,7 @@ end
 function fromAbsyn(inOperator::Absyn.Operator)::Operator
   local outOperator::Operator
   local op::OpType
-
-  @assign op = begin
+  op = begin
     @match inOperator begin
       Absyn.ADD(__) => begin
         Op.ADD
@@ -931,7 +917,7 @@ function fromAbsyn(inOperator::Absyn.Operator)::Operator
       end
     end
   end
-  @assign outOperator = OPERATOR(TYPE_UNKNOWN(), op)
+  outOperator = OPERATOR(TYPE_UNKNOWN(), op)
   return outOperator
 end
 
@@ -939,6 +925,6 @@ function compare(op1::Operator, op2::Operator)::Int
   local comp::Int
   local o1::OpType = op1.op
   local o2::OpType = op2.op
-  @assign comp = Util.intCompare(Int(o1), Int(o2))
+  comp = Util.intCompare(Int(o1), Int(o2))
   return comp
 end

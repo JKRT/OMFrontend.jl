@@ -1019,8 +1019,8 @@ function expandCref2(
   subs = begin
     @match cref begin
       COMPONENT_REF_CREF(origin = Origin.CREF) => begin
-        @assign dims = arrayDims(cref.ty)
-        @assign cr_subs = expandList(cref.subscripts, dims)
+        dims = arrayDims(cref.ty)
+        cr_subs = expandList(cref.subscripts, dims)
         if listEmpty(cr_subs) && !listEmpty(dims)
           nil
         else
@@ -1070,28 +1070,27 @@ end
      try to expand the whole list. In both cases the output 'expanded' indicates
      whether the whole list could be expanded or not. =#"""
 function expandList(
-  expl::List{<:Expression},
+  expl::List{Expression},
   abortOnFailure::Bool = true,
-)::Tuple{List{Expression}, Bool}
+  )::Tuple{List{Expression}, Bool}
   local expanded::Bool = true
   local outExpl::List{Expression} = nil
-
   local res::Bool
-
   for exp in expl
-     (exp, res) = expand(exp)
-    @assign expanded = res && expanded
+    #(exp, res) = expand(exp)
+    @match (exp, res) = expand(exp)
+    expanded = res && expanded
     if !res && abortOnFailure
-      @assign outExpl = expl
+      outExpl = expl
       return (outExpl, expanded)
     end
-    @assign outExpl = _cons(exp, outExpl)
+    outExpl = _cons(exp, outExpl)
   end
-  @assign outExpl = listReverseInPlace(outExpl)
+  outExpl = listReverseInPlace(outExpl)
   return (outExpl, expanded)
 end
 
-function expand(@nospecialize(exp::Expression))::Tuple{Expression, Bool}
+function expand(@nospecialize(exp::Expression))
   local expanded::Bool
 
    (exp, expanded) = begin
@@ -1108,8 +1107,9 @@ function expand(@nospecialize(exp::Expression))::Tuple{Expression, Bool}
       ARRAY_EXPRESSION(__) => begin
         #=  One-dimensional arrays are already expanded.
         =#
-         (expl, expanded) = expandList(exp.elements)
-        @assign exp.elements = expl
+        (expl, expanded) = expandList(exp.elements)
+        expElements = expl
+        exp = ARRAY_EXPRESSION(exp.ty, expElements, exp.literal)
         (exp, expanded)
       end
 

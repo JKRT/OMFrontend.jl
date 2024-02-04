@@ -1055,15 +1055,14 @@ function parseFunctionUnits(funcName::String, func::M_Function)::Functionargs
   local out_units::List{String}
   local in_args::List{String}
   local out_args::List{String}
-
-  @assign in_units =
+  in_units =
     list(P_Component.getUnitAttribute(component(p), "NONE") for p in func.inputs)
-  @assign out_units = List(
+  out_units = List(
     P_Component.getUnitAttribute(component(p), "NONE") for p in func.outputs
   )
-  @assign in_args = list(name(p) for p in func.inputs)
-  @assign out_args = list(name(p) for p in func.outputs)
-  @assign outArgs = FUNCTIONUNITS(funcName, in_args, out_args, in_units, out_units)
+  in_args = list(name(p) for p in func.inputs)
+  out_args = list(name(p) for p in func.outputs)
+  outArgs = FUNCTIONUNITS(funcName, in_args, out_args, in_units, out_units)
   return outArgs
 end
 

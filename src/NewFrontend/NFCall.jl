@@ -1570,7 +1570,7 @@ function reductionFoldExpression(
       @match AbsynUtil.pathFirstIdent(P_Function.name(reductionFn)) begin
         "sum" => begin
           @match TYPE_COMPLEX(cls = op_node) = reductionType
-          op_node = lookupElement("'+'", getClass(op_node))
+          @match ENTRY_INFO(op_node, _) = lookupElement("'+'", getClass(op_node))
           instFunctionNode(op_node)
           @match list(fn) = P_Function.typeNodeCache(op_node)
           SOME(CALL_EXPRESSION(makeTypedCall(

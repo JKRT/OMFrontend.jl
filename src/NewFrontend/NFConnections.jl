@@ -24,7 +24,7 @@ function makeConnectors(
   local cr::ComponentRef
   local expanded::Bool
 
-  @assign cr = evaluateSubscripts(cref)
+  cr = evaluateSubscripts(cref)
   #= If we are to expand the connectors or not. Let's assume we do for now=#
   #= Change by John (johti17) 2021-04-26=#
   # if !Flags.isSet(Flags.NF_SCALARIZE)

@@ -620,7 +620,7 @@ function evalComponentStartBinding(
   #=  Look up \"start\" in the class.
   =#
   try
-     start_node = lookupElement("start", getClass(node))
+     (start_node, isImport) = lookupElement("start", getClass(node))
   catch
     return outExp
   end

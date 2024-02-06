@@ -843,8 +843,7 @@ function unparseInnerOuter(io)::String
 end
 
 function visibilityFromSCode(scodeVis::SCode.Visibility)
-  local vis
-  @assign vis = begin
+  vis = begin
     @match scodeVis begin
       SCode.PUBLIC(__) => begin
         Visibility.PUBLIC

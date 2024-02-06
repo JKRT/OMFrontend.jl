@@ -5,7 +5,8 @@ using MetaModelica
 using ExportAll
 
 function access(MutableType::Pointer)
-  return MutableType.x
+  local res = MutableType.x
+  return res
 end
 
 function update(MutableType::Pointer{T}, data) where T
@@ -13,12 +14,12 @@ function update(MutableType::Pointer{T}, data) where T
   return MutableType
 end
 
-function createImmutable(data::T) where T
+function createImmutable(data::T) where {T}
   local st = supertype(T)
-  return Pointer{st}(data)
+  return Pointer{Union{T, st}}(data)
 end
 
-function create(data::T)::Pointer where T
+function create(data::T) where{T}
   local st = supertype(T)
   local ptr = Pointer{st}(data)
   return ptr

@@ -1938,7 +1938,7 @@ function getCachedFuncs(inNode::InstNode)
 end
 
 function instFunction3(fnNode::InstNode)::InstNode
-  @assign fnNode = instantiateN1(fnNode, EMPTY_NODE())
+  fnNode = instantiateN1(fnNode, EMPTY_NODE())
   #=  Set up an empty function cache to signal that this function is
   =#
   #=  currently being instantiatdded, so recursive functions can be handled.

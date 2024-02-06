@@ -145,21 +145,23 @@ function balance(inTree::Tree)
         diff = lh - rh
         if diff < (-1)
           balanced_tree = if calculateBalance(outTree.right) > 0
-            rotateLeft(setTreeLeftRight(
+            t = setTreeLeftRight(
               outTree,
-              left = outTree.left,
-              right = rotateRight(outTree.right),
-            ))
+              outTree.left,
+              rotateRight(outTree.right),
+            )
+            rotateLeft(t)
           else
             rotateLeft(outTree)
           end
         elseif diff > 1
           balanced_tree = if calculateBalance(outTree.left) < 0
-            rotateRight(setTreeLeftRight(
+            t = setTreeLeftRight(
               outTree,
-              left = rotateLeft(outTree.left),
-              right = outTree.right,
-            ))
+              rotateLeft(outTree.left),
+              outTree.right,
+            )
+            rotateRight(t)
           else
             rotateRight(outTree)
           end
@@ -321,9 +323,9 @@ function add(
       EMPTY(__) => begin
         LEAF(inKey, inValue)
       end
-      NODE(key = key) => begin
+      NODE(key) => begin
         key_comp = keyCompare(inKey, key)
-        if key_comp == (-1)
+        if key_comp == -1
           tree.left = add(tree.left, inKey, inValue, conflictFunc)
         elseif key_comp == 1
           tree.right = add(tree.right, inKey, inValue, conflictFunc)
@@ -339,9 +341,9 @@ function add(
           balance(tree)
         end
       end
-      LEAF(key = key) => begin
+      LEAF(key) => begin
          key_comp = keyCompare(inKey, key)
-        if key_comp == (-1)
+        if key_comp == -1
            outTree = NODE(tree.key, tree.value, 2, LEAF(inKey, inValue), EMPTY())
         elseif key_comp == 1
            outTree = NODE(tree.key, tree.value, 2, EMPTY(), LEAF(inKey, inValue))
@@ -386,13 +388,12 @@ end
 
 """ #= Fetches a value from the tree given a key, or fails if no value is associated
    with the key. =#"""
-function get(tree::Tree, key::Key)::Value
+function get(tree::Tree, key::Key)
   local value::Value
   local k::Key
   if tree isa EMPTY
     fail()
   end
-
   k = if tree isa NODE || tree isa LEAF
     tree.key
   end
@@ -750,34 +751,21 @@ function mapFold(inTree::Tree, inFunc::MapFunc, inStartValue::FT) where {FT}
   return (outTree, outResult)
 end
 
-function setTreeLeftRight(orig::Tree, left::Tree, right::Tree)::Tree
-  setTreeLeftRight(orig, left = left, right = right)
-end
-
-function setTreeLeftRight(orig::Tree; left::Tree = EMPTY(), right::Tree = EMPTY())::Tree
-  local res::Tree
-  res = begin
-    @match (orig, left, right) begin
-      (NODE(__), EMPTY(__), EMPTY(__)) => begin
-        LEAF(orig.key, orig.value)
-      end
-
-      (LEAF(__), EMPTY(__), EMPTY(__)) => begin
-        orig
-      end
-
-      (NODE(__), _, _) => begin
-        if referenceEqOrEmpty(orig.left, left) && referenceEqOrEmpty(orig.right, right)
-          orig
-        else
-          NODE(orig.key, orig.value, max(height(left), height(right)) + 1, left, right)
-        end
-      end
-
-      (LEAF(__), _, _) => begin
-        NODE(orig.key, orig.value, max(height(left), height(right)) + 1, left, right)
-      end
+function setTreeLeftRight(orig::Tree,  left::Tree = EMPTY(), right::Tree = EMPTY())::Tree
+  res = if orig isa NODE && left isa EMPTY && right isa EMPTY
+    LEAF(orig.key, orig.value)
+  elseif orig isa LEAF && left isa EMPTY && right isa EMPTY
+    orig
+  elseif orig isa NODE
+    if referenceEqOrEmpty(orig.left, left) && referenceEqOrEmpty(orig.right, right)
+      orig
+    else
+      NODE(orig.key, orig.value, max(height(left), height(right)) + 1, left, right)
     end
+  elseif orig isa LEAF
+    NODE(orig.key, orig.value, max(height(left), height(right)) + 1, left, right)
+  else
+    fail()
   end
   return res
 end
@@ -972,19 +960,18 @@ end
 """ #= Performs an AVL right rotation on the given tree. =#"""
 function rotateRight(inNode::Tree)::Tree
   local outNode::Tree = inNode
-
    outNode = begin
     local node::Tree
     local child::Tree
     @match outNode begin
       NODE(left = child && NODE(__)) => begin
-        node = setTreeLeftRight(outNode, left = child.right, right = outNode.right)
-        setTreeLeftRight(child, right = node, left = child.left)
+        node = setTreeLeftRight(outNode, child.right, outNode.right)
+        setTreeLeftRight(child, child.left, node)
       end
 
       NODE(left = child && LEAF(__)) => begin
-        node = setTreeLeftRight(outNode, left = EMPTY(), right = outNode.right)
-        setTreeLeftRight(child, right = node, left = EMPTY())
+        node = setTreeLeftRight(outNode, EMPTY(), outNode.right)
+        setTreeLeftRight(child, EMPTY(), node)
       end
       _ => begin
         inNode

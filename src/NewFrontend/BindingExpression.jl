@@ -346,11 +346,11 @@ function recordElement(elementName::String, recordExp::Expression) ::Expression
       end
 
       CREF_EXPRESSION(ty = TYPE_COMPLEX(cls = node))  => begin
-         cls_tree = classTree(getClass(node))
-        @match (node, false) = lookupElement(elementName, cls_tree)
-         ty = getType(node)
-         cref = prefixCref(node, ty, nil, recordExp.cref)
-         ty = liftArrayLeftList(ty, arrayDims(recordExp.ty))
+        cls_tree = classTree(getClass(node))
+        @match ENTRY_INFO(node, false) = lookupElement(elementName, cls_tree)
+        ty = getType(node)
+        cref = prefixCref(node, ty, nil, recordExp.cref)
+        ty = liftArrayLeftList(ty, arrayDims(recordExp.ty))
         CREF_EXPRESSION(ty, cref)
       end
 
@@ -1055,7 +1055,7 @@ function makeOperatorRecordZero(recordNode::InstNode) ::Expression
   local op_node::InstNode
   local fn::P_Function.P_Function
 
-   op_node = lookupElement("'0'", getClass(recordNode))
+  @match ENTRY_INFO(op_node, _) = lookupElement("'0'", getClass(recordNode))
   P_Function.instFunctionNode(op_node)
   @match list(fn) = P_Function.P_Function.typeNodeCache(op_node)
    zeroExp = CALL_EXPRESSION(makeTypedCall(fn, nil, Variability.CONSTANT))
@@ -2145,8 +2145,8 @@ function mapFoldShallow(@nospecialize(exp::Expression), func::MapFunc, arg::ArgT
       end
 
       BINARY_EXPRESSION(__)  => begin
-         (e1, arg) = func(exp.exp1, arg)
-         (e2, arg) = func(exp.exp2, arg)
+         @match (e1, arg) = func(exp.exp1, arg)
+         @match (e2, arg) = func(exp.exp2, arg)
         if referenceEq(exp.exp1, e1) && referenceEq(exp.exp2, e2)
           exp
         else

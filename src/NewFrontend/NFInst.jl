@@ -85,7 +85,7 @@ function instClassInProgramFM2(classPath::Absyn.Path, program::SCode.Program)::T
   cls = setNodeType(ROOT_CLASS(EMPTY_NODE()), cls)
   #=  Initialize the storage for automatically generated inner elements. =#
   top = setInnerOuterCache(top, C_TOP_SCOPE(NodeTree.new(), cls))
-  #@info "Instantiate the class"
+  #@info "Instantiate"
   inst_cls = instantiateN1(cls, EMPTY_NODE())
   #@info "Instantiate generate inners"
   insertGeneratedInners(inst_cls, top)
@@ -1150,7 +1150,7 @@ function applyModifier(modifier::Modifier, cls::ClassTree, clsName::String) ::Cl
       CLASS_TREE_FLAT_TREE(__)  => begin
         for mod in mods
           try
-            (node, _) = lookupElement(name(mod), cls)
+            @match ENTRY_INFO(node, _) = lookupElement(name(mod), cls)
           catch e
             #Error.addSourceMessage(Error.MISSING_MODIFIED_ELEMENT, list(name(mod), clsName), Mofifier_info(mod))
             @error "Missing modified element!. Error was $(e)"
@@ -2769,8 +2769,8 @@ function instEEquation(@nospecialize(scodeEq::SCode.EEquation), @nospecialize(sc
     local next_origin::ORIGIN_Type
     @match scodeEq begin
       SCode.EQ_EQUALS(info = info)  => begin
-        @assign exp1 = instExp(scodeEq.expLeft, scope, info)
-        @assign exp2 = instExp(scodeEq.expRight, scope, info)
+        exp1 = instExp(scodeEq.expLeft, scope, info)
+        exp2 = instExp(scodeEq.expRight, scope, info)
         EQUATION_EQUALITY(exp1, exp2, TYPE_UNKNOWN(), makeSource(scodeEq.comment, info))
       end
 
@@ -2779,8 +2779,8 @@ function instEEquation(@nospecialize(scodeEq::SCode.EEquation), @nospecialize(sc
           Error.addSourceMessage(Error.CONNECT_IN_WHEN, list(Dump.printComponentRefStr(scodeEq.crefLeft), Dump.printComponentRefStr(scodeEq.crefRight)), info)
           fail()
         end
-        @assign exp1 = instConnectorCref(scodeEq.crefLeft, scope, info)
-        @assign exp2 = instConnectorCref(scodeEq.crefRight, scope, info)
+        exp1 = instConnectorCref(scodeEq.crefLeft, scope, info)
+        exp2 = instConnectorCref(scodeEq.crefRight, scope, info)
         EQUATION_CONNECT(exp1, exp2, makeSource(scodeEq.comment, info))
       end
 
@@ -2851,8 +2851,8 @@ function instEEquation(@nospecialize(scodeEq::SCode.EEquation), @nospecialize(sc
           Error.addSourceMessage(Error.REINIT_NOT_IN_WHEN, nil, info)
           fail()
         end
-        @assign exp1 = instExp(scodeEq.cref, scope, info)
-        @assign exp2 = instExp(scodeEq.expReinit, scope, info)
+        exp1 = instExp(scodeEq.cref, scope, info)
+        exp2 = instExp(scodeEq.expReinit, scope, info)
         EQUATION_REINIT(exp1, exp2, makeSource(scodeEq.comment, info))
       end
 
@@ -3034,7 +3034,7 @@ function updateImplicitVariabilityComp(co::InstNode, evalAllParams::Bool)
       end
 
       TYPE_ATTRIBUTE(__) where (listMember(name(co), list("fixed", "stateSelect")))  => begin
-        @assign bnd = binding(c.modifier)
+        bnd = binding(c.modifier)
         if isBound(bnd)
           markStructuralParamsExp(getUntypedExp(bnd))
         end

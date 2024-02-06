@@ -768,7 +768,7 @@ function map(@nospecialize(eq::Equation), func::MapFn)
     @match b begin
       EQUATION_BRANCH(__) => begin
         eqBody = Equation[map(e, func) for e in b.body]
-        EQUATION_BRANCH(eq.condition, eq.conditionVar, eqBody)
+        EQUATION_BRANCH(b.condition, b.conditionVar, eqBody)
         b
       end
       _ => b
@@ -787,7 +787,7 @@ function map(@nospecialize(eq::Equation), func::MapFn)
       eqBranches = Equation_Branch[
         if b isa EQUATION_BRANCH
           eqBody = Equation[map(e, func) for e in b.body];
-          EQUATION_BRANCH(eq.condition, eq.conditionVar, eqBody)
+          EQUATION_BRANCH(b.condition, b.conditionVar, eqBody)
         else
           b
         end for b in eq.branches]

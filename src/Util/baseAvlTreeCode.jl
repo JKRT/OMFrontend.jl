@@ -304,7 +304,6 @@ end
 """ #= Performs an AVL right rotation on the given tree. =#"""
 function rotateRight(inNode::Tree)::Tree
   local outNode::Tree = inNode
-
    outNode = begin
     local node::Tree
     local child::Tree
@@ -516,20 +515,21 @@ function get(tree::Tree, key::Key)::Value
     end
   end
   value = begin
-    @match (keyCompare(key, k), tree) begin
-      (0, LEAF(__)) => begin
+    local kv = keyCompare(key, k)
+    @match tree begin
+      LEAF(__) where kv == 0  => begin
         tree.value
       end
 
-      (0, NODE(__)) => begin
+      NODE(__) where kv == 0 => begin
         tree.value
       end
 
-      (1, NODE(__)) => begin
+      NODE(__) where kv == 1=> begin
         get(tree.right, key)
       end
 
-      (-1, NODE(__)) => begin
+      NODE(__) where kv == -1 => begin
         get(tree.left, key)
       end
     end
@@ -602,11 +602,27 @@ function fromList(
   return tree
 end
 
+
+function fromVector(
+  inValues::Vector{Tuple{Key, Value}},
+  conflictFunc::Function = addConflictDefault,
+  )::Tree #= Used to resolve conflicts. =#
+  local tree::Tree = EMPTY()
+  local key::Key
+  local value::Value
+  for t in inValues
+     (key, value) = t
+     tree = add(tree, key, value, conflictFunc)
+  end
+  return tree
+end
+
+
 """ #= Converts the tree to a flat list of key-value tuples. =#"""
 function toList(
   inTree::Tree,
   lst::List{<:Tuple{<:Key, Value}} = nil,
-)::List{Tuple{Key, Value}}
+  )#::List{Tuple{Key, Value}}
   lst = begin
     local key::Key
     local value::Value
@@ -628,7 +644,35 @@ function toList(
   return lst
 end
 
-""" #= Constructs a list of all the values in the tree. =#"""
+"""
+  Creates a vector from a tree. Not tested yet
+"""
+function toVector!(
+  inTree::Tree,
+  vec::Vector{Tuple{Key, Value}} = Tuple{Key, Value}[],
+  )#::List{Tuple{Key, Value}}
+  vec = begin
+    local key::Key
+    local value::Value
+    @match inTree begin
+      NODE(key = key, value = value) => begin
+        toVector(inTree.right, vec)
+        vec = push!(vec, (key, value))
+        toVector(inTree.left, vec)
+        vec
+      end
+      LEAF(key = key, value = value) => begin
+        push!((vec, (key, value)))
+      end
+      _ => begin
+        vec
+      end
+    end
+  end
+  return vec
+end
+
+""" Constructs a list of all the values in the tree. """
 function listValues(tree::Tree, lst::List{T} = nil) where {T <: Value}
    lst = begin
     local value::Value
@@ -651,25 +695,25 @@ function listValues(tree::Tree, lst::List{T} = nil) where {T <: Value}
 end
 
 """
-  Same as listValues but does it for vectors instead.
+  Same as listValues but creates a vector from a tree instead.
+  This function modifies the vector inplace, it then returns the result.
 """
-function vectorValues(tree::Tree, vec::Vector{T}) where {T <: Value}
-  local value::Value
-  @match tree begin
+function vectorValues!(tree::Tree, vec::Vector{T} = Value[]) where {T <: Value}
+  vec = @match tree begin
     NODE(value = value) => begin
-      push!(vec, vectorValues(tree.right, vec))
-      pushfirst!(vec, value)
-      push!(vec, vectorValues(tree.left, vec))
-      return vec
+      vectorValues!(tree.right, vec)
+      push!(vec, value)
+      vectorValues!(tree.left, vec)
+      vec
     end
     LEAF(value = value) => begin
-      pushfirst!(vec, value)
-      return vec
+      push!(vec, value)
     end
     _ => begin
-      return vec
+      vec
     end
   end
+  return reverse!(vec)
 end
 
 
@@ -678,14 +722,12 @@ function join(
   tree::Tree,
   treeToJoin::Tree,
   conflictFunc::Function = addConflictDefault,
-)::Tree #= Used to resolve conflicts. =#
-
+  )
    tree = begin
     @match treeToJoin begin
       EMPTY(__) => begin
         tree
       end
-
       NODE(__) => begin
          tree = add(tree, treeToJoin.key, treeToJoin.value, conflictFunc)
          tree = join(tree, treeToJoin.left, conflictFunc)

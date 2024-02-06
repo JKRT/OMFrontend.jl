@@ -433,7 +433,7 @@ function augmentExpandableConnector(
     @assign elem_name = Connector.name(c)
     @assign node = node(elem_name)
     try
-      @assign comp_node = lookupElement(name(node), cls_tree)
+      @match ENTRY_INFO(comp_node, isImport) = lookupElement(name(node), cls_tree)
     catch
       @assign comp_node = EMPTY_NODE()
     end
@@ -453,7 +453,7 @@ function augmentExpandableConnector(
       )
       @assign vars = _cons(var, vars)
     else
-      @assign comp_node = lookupElement(name(node), cls_tree)
+      @match ENTRY_INFO(comp_node, _) = lookupElement(name(node), cls_tree)
       @assign comp_node = resolveInner(comp_node)
       if isComponent(comp_node)
         markComponentPresent(comp_node)

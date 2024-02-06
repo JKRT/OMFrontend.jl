@@ -69,7 +69,7 @@ end
 
 """ #= Creates a new DisjointSets from a list of connection and flow variables. =#"""
 function fromConnections(connections)
-  ENV["JULIA_DEBUG"] = "" #Activate debug
+  #ENV["JULIA_DEBUG"] = "" #Activate debug
 #  #@debug "fromConnections: Our connections" connections
   local sz = listLength(connections.connections) + listLength(connections.flows)
   local sets::Sets = emptySets(sz) # duh, is not possible to give sz size hint to DisjointSets! -Adrian Pop

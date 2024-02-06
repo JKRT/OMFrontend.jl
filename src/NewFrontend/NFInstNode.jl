@@ -2186,11 +2186,11 @@ function newComponent(definition::SCode.Element, parent::InstNode = EMPTY_NODE()
 end
 
 function newClass(definition::SCode.Element, parent::InstNode, nodeType::InstNodeType = NORMAL_CLASS())
-  local node::InstNode
-  local name::String
   local vis::SCode.Visibility
-  @match SCode.CLASS(name = name, prefixes = SCode.PREFIXES(visibility = vis)) = definition
-   node = CLASS_NODE(name, definition, visibilityFromSCode(vis), P_Pointer.create(NOT_INSTANTIATED()), empty(), parent, nodeType)
+  #@match SCode.CLASS(name = name, prefixes = SCode.PREFIXES(visibility = vis)) = definition
+  @match SCode.CLASS(_, SCode.PREFIXES(vis)) = definition
+  local v = visibilityFromSCode(vis)
+  local node = CLASS_NODE(definition.name, definition, v, P_Pointer.create(NOT_INSTANTIATED()), empty(), parent, nodeType)
   node
 end
 

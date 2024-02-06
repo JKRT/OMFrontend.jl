@@ -45,26 +45,24 @@ const FuncT = Function
 *
 */ =#
 
+
 #= Used to signal success or failure of a function call =#
 @Uniontype Status begin
   @Record SUCCESS begin
-
   end
-
   @Record FAILURE begin
-
   end
 end
 
 @Uniontype DateTime begin
   @Record DATETIME begin
 
-    sec::Integer
-    min::Integer
-    hour::Integer
-    mday::Integer
-    mon::Integer
-    year::Integer
+    sec::Int
+    min::Int
+    hour::Int
+    mday::Int
+    mon::Int
+    year::Int
   end
 end
 
@@ -75,7 +73,7 @@ const dummyInfo = SOURCEINFO("", false, 0, 0, 0, 0, 0.0)::SourceInfo
 const derivativeNamePrefix = "DER"::String
 
 """ #= Author: BZ =#"""
-function isIntGreater(lhs::Integer, rhs::Integer)::Bool
+function isIntGreater(lhs::Int, rhs::Int)::Bool
   local b::Bool = lhs > rhs
   return b
 end
@@ -90,8 +88,8 @@ end
 function linuxDotSlash()::String
   local str::String
 
-  @assign str = Autoconf.os
-  @assign str = if str == "linux" || str == "OSX"
+   str = Autoconf.os
+   str = if str == "linux" || str == "OSX"
     "./"
   else
     ""
@@ -114,7 +112,7 @@ function flagValue(flag::String, arguments::List{<:String})::String
       break
     end
   end
-  @assign flagVal = if listEmpty(rest)
+   flagVal = if listEmpty(rest)
     ""
   else
     listHead(rest)
@@ -129,11 +127,11 @@ function selectFirstNonEmptyString(inStrings::List{<:String})::String
 
   for e in inStrings
     if e != ""
-      @assign outResult = e
+       outResult = e
       return outResult
     end
   end
-  @assign outResult = ""
+   outResult = ""
   return outResult
 end
 
@@ -143,12 +141,12 @@ end
 function compareTupleIntGt(inTplA::Tuple{Integer, T}, inTplB::Tuple{Integer, T}) where {T}
   local res::Bool
 
-  local a::Integer
-  local b::Integer
+  local a::Int
+  local b::Int
 
-  @assign (a, _) = inTplA
-  @assign (b, _) = inTplB
-  @assign res = intGt(a, b)
+   (a, _) = inTplA
+   (b, _) = inTplB
+   res = intGt(a, b)
   return res
 end
 
@@ -158,12 +156,12 @@ end
 function compareTupleIntLt(inTplA::Tuple{Integer, T}, inTplB::Tuple{Integer, T}) where {T}
   local res::Bool
 
-  local a::Integer
-  local b::Integer
+  local a::Int
+  local b::Int
 
-  @assign (a, _) = inTplA
-  @assign (b, _) = inTplB
-  @assign res = intLt(a, b)
+   (a, _) = inTplA
+   (b, _) = inTplB
+   res = intLt(a, b)
   return res
 end
 
@@ -173,12 +171,12 @@ end
 function compareTuple2IntGt(inTplA::Tuple{T, Integer}, inTplB::Tuple{T, Integer}) where {T}
   local res::Bool
 
-  local a::Integer
-  local b::Integer
+  local a::Int
+  local b::Int
 
-  @assign (_, a) = inTplA
-  @assign (_, b) = inTplB
-  @assign res = intGt(a, b)
+   (_, a) = inTplA
+   (_, b) = inTplB
+   res = intGt(a, b)
   return res
 end
 
@@ -188,12 +186,12 @@ end
 function compareTuple2IntLt(inTplA::Tuple{T, Integer}, inTplB::Tuple{T, Integer}) where {T}
   local res::Bool
 
-  local a::Integer
-  local b::Integer
+  local a::Int
+  local b::Int
 
-  @assign (_, a) = inTplA
-  @assign (_, b) = inTplB
-  @assign res = intLt(a, b)
+   (_, a) = inTplA
+   (_, b) = inTplB
+   res = intLt(a, b)
   return res
 end
 
@@ -202,7 +200,7 @@ end
 function tuple21(inTuple::Tuple{T1, T2}) where {T1, T2}
   local outValue::T1
 
-  @assign (outValue, _) = inTuple
+   (outValue, _) = inTuple
   return outValue
 end
 
@@ -211,7 +209,7 @@ end
 function tuple22(inTuple::Tuple{T1, T2}) where {T1, T2}
   local outValue::T2
 
-  @assign (_, outValue) = inTuple
+   (_, outValue) = inTuple
   return outValue
 end
 
@@ -232,8 +230,8 @@ function tuple312(inTuple::Tuple{T1, T2, T3}) where {T1, T2, T3}
   local e1::T1
   local e2::T2
 
-  @assign (e1, e2, _) = inTuple
-  @assign outTuple = (e1, e2)
+   (e1, e2, _) = inTuple
+   outTuple = (e1, e2)
   return outTuple
 end
 
@@ -242,7 +240,7 @@ end
 function tuple31(inValue::Tuple{T1, T2, T3}) where {T1, T2, T3}
   local outValue::T1
 
-  @assign (outValue, _, _) = inValue
+   (outValue, _, _) = inValue
   return outValue
 end
 
@@ -251,7 +249,7 @@ end
 function tuple32(inValue::Tuple{T1, T2, T3}) where {T1, T2, T3}
   local outValue::T2
 
-  @assign (_, outValue, _) = inValue
+   (_, outValue, _) = inValue
   return outValue
 end
 
@@ -260,84 +258,84 @@ end
 function tuple33(inValue::Tuple{T1, T2, T3}) where {T1, T2, T3}
   local outValue::T3
 
-  @assign (_, _, outValue) = inValue
+   (_, _, outValue) = inValue
   return outValue
 end
 
 function tuple41(inTuple::Tuple{T1, T2, T3, T4}) where {T1, T2, T3, T4}
   local outValue::T1
 
-  @assign (outValue, _, _, _) = inTuple
+   (outValue, _, _, _) = inTuple
   return outValue
 end
 
 function tuple42(inTuple::Tuple{T1, T2, T3, T4}) where {T1, T2, T3, T4}
   local outValue::T2
 
-  @assign (_, outValue, _, _) = inTuple
+   (_, outValue, _, _) = inTuple
   return outValue
 end
 
 function tuple43(inTuple::Tuple{T1, T2, T3, T4}) where {T1, T2, T3, T4}
   local outValue::T3
 
-  @assign (_, _, outValue, _) = inTuple
+   (_, _, outValue, _) = inTuple
   return outValue
 end
 
 function tuple44(inTuple::Tuple{T1, T2, T3, T4}) where {T1, T2, T3, T4}
   local outValue::T4
 
-  @assign (_, _, _, outValue) = inTuple
+   (_, _, _, outValue) = inTuple
   return outValue
 end
 
 function tuple51(inTuple::Tuple{T1, T2, T3, T4, T5}) where {T1, T2, T3, T4, T5}
   local outValue::T1
 
-  @assign (outValue, _, _, _, _) = inTuple
+   (outValue, _, _, _, _) = inTuple
   return outValue
 end
 
 function tuple52(inTuple::Tuple{T1, T2, T3, T4, T5}) where {T1, T2, T3, T4, T5}
   local outValue::T2
 
-  @assign (_, outValue, _, _, _) = inTuple
+   (_, outValue, _, _, _) = inTuple
   return outValue
 end
 
 function tuple53(inTuple::Tuple{T1, T2, T3, T4, T5}) where {T1, T2, T3, T4, T5}
   local outValue::T3
 
-  @assign (_, _, outValue, _, _) = inTuple
+   (_, _, outValue, _, _) = inTuple
   return outValue
 end
 
 function tuple54(inTuple::Tuple{T1, T2, T3, T4, T5}) where {T1, T2, T3, T4, T5}
   local outValue::T4
 
-  @assign (_, _, _, outValue, _) = inTuple
+   (_, _, _, outValue, _) = inTuple
   return outValue
 end
 
 function tuple55(inTuple::Tuple{T1, T2, T3, T4, T5}) where {T1, T2, T3, T4, T5}
   local outValue::T5
 
-  @assign (_, _, _, _, outValue) = inTuple
+   (_, _, _, _, outValue) = inTuple
   return outValue
 end
 
 function tuple61(inTuple::Tuple{T1, T2, T3, T4, T5, T6}) where {T1, T2, T3, T4, T5, T6}
   local outValue::T1
 
-  @assign (outValue, _, _, _, _, _) = inTuple
+   (outValue, _, _, _, _, _) = inTuple
   return outValue
 end
 
 function tuple62(inTuple::Tuple{T1, T2, T3, T4, T5, T6}) where {T1, T2, T3, T4, T5, T6}
   local outValue::T2
 
-  @assign (_, outValue, _, _, _, _) = inTuple
+   (_, outValue, _, _, _, _) = inTuple
   return outValue
 end
 
@@ -345,7 +343,7 @@ end
 function stringContainsChar(str::String, char::String)::Bool
   local res::Bool
 
-  @assign res = begin
+   res = begin
     @matchcontinue () begin
       () => begin
         @match _cons(_, _cons(_, _)) = stringSplitAtChar(str, char)
@@ -366,7 +364,7 @@ Same functionality as stringDelimitListPrint, but writes to print buffer instead
 Usefull for heavy string operations(causes malloc error on some models when generating init file).
  =#"""
 function stringDelimitListPrintBuf(inStringLst::List{<:String}, inDelimiter::String)
-  return @assign _ = begin
+  return  _ = begin
     local f::String
     local delim::String
     local str1::String
@@ -407,15 +405,15 @@ function stringDelimitListAndSeparate(
   str::List{<:String},
   sep1::String,
   sep2::String,
-  n::Integer,
+  n::Int,
 )::String
   local res::String
 
-  local handle::Integer
+  local handle::Int
 
-  @assign handle = Print.saveAndClearBuf()
+   handle = Print.saveAndClearBuf()
   stringDelimitListAndSeparate2(str, sep1, sep2, n, 0)
-  @assign res = Print.getString()
+   res = Print.getString()
   Print.restoreBuf(handle)
   return res
 end
@@ -426,10 +424,10 @@ function stringDelimitListAndSeparate2(
   inStringLst1::List{<:String},
   inString2::String,
   inString3::String,
-  inInteger4::Integer,
-  inInteger5::Integer,
+  inInteger4::Int,
+  inInteger5::Int,
 )
-  return @assign _ = begin
+  return  _ = begin
     local s::String
     local str1::String
     local str::String
@@ -437,9 +435,9 @@ function stringDelimitListAndSeparate2(
     local sep1::String
     local sep2::String
     local r::List{String}
-    local n::Integer
-    local iter_1::Integer
-    local iter::Integer
+    local n::Int
+    local iter_1::Int
+    local iter::Int
     @matchcontinue (inStringLst1, inString2, inString3, inInteger4, inInteger5) begin
       (nil(), _, _, _, _) => begin
         ()
@@ -459,7 +457,7 @@ function stringDelimitListAndSeparate2(
 
       (f <| r, sep1, sep2, n, iter) => begin
         @match 0 = intMod(iter, n) #= insert second delimiter =#
-        @assign iter_1 = iter + 1
+         iter_1 = iter + 1
         Print.printBuf(f)
         Print.printBuf(sep1)
         Print.printBuf(sep2)
@@ -468,7 +466,7 @@ function stringDelimitListAndSeparate2(
       end
 
       (f <| r, sep1, sep2, n, iter) => begin
-        @assign iter_1 = iter + 1 #= not inserting second delimiter =#
+         iter_1 = iter + 1 #= not inserting second delimiter =#
         Print.printBuf(f)
         Print.printBuf(sep1)
         stringDelimitListAndSeparate2(r, sep1, sep2, n, iter_1)
@@ -491,25 +489,25 @@ function stringDelimitListNonEmptyElts(lst::List{<:String}, delim::String)::Stri
 
   local lst1::List{String}
 
-  @assign lst1 = ListUtil.select(lst, isNotEmptyString)
-  @assign str = stringDelimitList(lst1, delim)
+   lst1 = ListUtil.select(lst, isNotEmptyString)
+   str = stringDelimitList(lst1, delim)
   return str
 end
 
 """ #=  splits the input string at the delimiter string in list of strings and converts to integer list which is then summarized
    =#"""
-function mulStringDelimit2Int(inString::String, delim::String)::Integer
-  local i::Integer
+function mulStringDelimit2Int(inString::String, delim::String)::Int
+  local i::Int
 
   local lst::List{String}
   local lst2::List{Integer}
 
-  @assign lst = stringSplitAtChar(inString, delim)
-  @assign lst2 = ListUtil.map(lst, stringInt)
+   lst = stringSplitAtChar(inString, delim)
+   lst2 = ListUtil.map(lst, stringInt)
   if !listEmpty(lst2)
-    @assign i = ListUtil.fold(lst2, intMul, 1)
+     i = ListUtil.fold(lst2, intMul, 1)
   else
-    @assign i = 0
+     i = 0
   end
   return i
 end
@@ -523,7 +521,7 @@ end
 function stringReplaceChar(inString1::String, inString2::String, inString3::String)::String
   local outString::String
 
-  @assign outString = System.stringReplace(inString1, inString2, inString3)
+   outString = System.stringReplace(inString1, inString2, inString3)
   return outString
 end
 
@@ -532,21 +530,21 @@ end
 function stringSplitAtChar(string::String, token::String)::List{String}
   local strings::List{String} = nil
 
-  local ch::Integer = stringCharInt(token)
+  local ch::Int = stringCharInt(token)
   local cur::List{String} = nil
 
   for c in stringListStringChar(string)
     if stringCharInt(c) == ch
-      @assign strings = _cons(stringAppendList(listReverse(cur)), strings)
-      @assign cur = nil
+       strings = _cons(stringAppendList(listReverse(cur)), strings)
+       cur = nil
     else
-      @assign cur = _cons(c, cur)
+       cur = _cons(c, cur)
     end
   end
   if !listEmpty(cur)
-    @assign strings = _cons(stringAppendList(listReverse(cur)), strings)
+     strings = _cons(stringAppendList(listReverse(cur)), strings)
   end
-  @assign strings = listReverse(strings)
+   strings = listReverse(strings)
   return strings
 end
 
@@ -558,7 +556,7 @@ function boolOrList(inBooleanLst::List{<:Bool})::Bool
 
   for b in inBooleanLst
     if b
-      @assign outBoolean = true
+       outBoolean = true
       return outBoolean
     end
   end
@@ -575,7 +573,7 @@ function boolAndList(inBooleanLst::List{<:Bool})::Bool
 
   for b in inBooleanLst
     if !b
-      @assign outBoolean = false
+       outBoolean = false
       return outBoolean
     end
   end
@@ -592,7 +590,7 @@ end
 function applyOption(inOption::Option{TI}, inFunc::FuncType) where {TI}
   local outOption::Option
 
-  @assign outOption = begin
+   outOption = begin
     local ival::TI
     local oval
     @match inOption begin
@@ -640,7 +638,7 @@ function applyOptionOrDefault(
 ) where {TI, TO}
   local outValue::TO
 
-  @assign outValue = begin
+   outValue = begin
     local value::TI
     local res::TO
     @match inValue begin
@@ -667,7 +665,7 @@ function applyOptionOrDefault1(
 ) where {TI, TO, ArgT}
   local outValue::TO
 
-  @assign outValue = begin
+   outValue = begin
     local value::TI
     local res::TO
     @match inValue begin
@@ -695,7 +693,7 @@ function applyOptionOrDefault2(
 ) where {TI, TO, ArgT1, ArgT2}
   local outValue::TO
 
-  @assign outValue = begin
+   outValue = begin
     local value::TI
     local res::TO
     @match inValue begin
@@ -714,7 +712,7 @@ end
 function applyOption_2(inValue1::Option{T}, inValue2::Option{T}, inFunc::FuncType) where {T}
   local outValue::Option{T}
 
-  @assign outValue = begin
+   outValue = begin
     @match (inValue1, inValue2) begin
       (NONE(), _) => begin
         inValue2
@@ -761,7 +759,7 @@ end
 function stringOption(inStringOption::Option{<:String})::String
   local outString::String
 
-  @assign outString = begin
+   outString = begin
     local s::String
     @match inStringOption begin
       SOME(s) => begin
@@ -787,7 +785,7 @@ end
 function getOptionOrDefault(inOption::Option{T}, inDefault::T) where {T}
   local outValue::T
 
-  @assign outValue = begin
+   outValue = begin
     local value::T
     @match inOption begin
       SOME(value) => begin
@@ -803,25 +801,25 @@ function getOptionOrDefault(inOption::Option{T}, inDefault::T) where {T}
 end
 
 """ #= Returns true if integer value is greater zero (> 0) =#"""
-function intGreaterZero(v::Integer)::Bool
+function intGreaterZero(v::Int)::Bool
   local res::Bool = v > 0
   return res
 end
 
 """ #= Returns true if integer value is positive (>= 0) =#"""
-function intPositive(v::Integer)::Bool
+function intPositive(v::Int)::Bool
   local res::Bool = v >= 0
   return res
 end
 
 """ #= Returns true if integer value is negative (< 0) =#"""
-function intNegative(v::Integer)::Bool
+function intNegative(v::Int)::Bool
   local res::Bool = v < 0
   return res
 end
 
-function intSign(i::Integer)::Integer
-  local o::Integer = if i == 0
+function intSign(i::Int)::Int
+  local o::Int = if i == 0
     0
   elseif (i > 0)
     1
@@ -833,8 +831,8 @@ end
 
 """ #= Compares two integers and return -1 if the first is smallest, 1 if the second
    is smallest, or 0 if they are equal. =#"""
-function intCompare(inN::Integer, inM::Integer)::Integer
-  local outResult::Integer = if inN == inM
+function intCompare(inN::Int, inM::Int)::Int
+  local outResult::Int = if inN == inM
     0
   elseif (inN > inM)
     1
@@ -845,12 +843,12 @@ function intCompare(inN::Integer, inM::Integer)::Integer
 end
 
 """ #= Performs integer exponentiation. =#"""
-function intPow(base::Integer, exponent::Integer)::Integer
-  local result::Integer = 1
+function intPow(base::Int, exponent::Int)::Int
+  local result::Int = 1
 
   if exponent >= 0
     for i = 1:exponent
-      @assign result = result * base
+       result = result * base
     end
   else
     fail()
@@ -860,8 +858,8 @@ end
 
 """ #= Compares two reals and return -1 if the first is smallest, 1 if the second
    is smallest, or 0 if they are equal. =#"""
-function realCompare(inN::AbstractFloat, inM::AbstractFloat)::Integer
-  local outResult::Integer = if inN == inM
+function realCompare(inN::AbstractFloat, inM::AbstractFloat)::Int
+  local outResult::Int = if inN == inM
     0
   elseif (inN > inM)
     1
@@ -873,8 +871,8 @@ end
 
 """ #= Compares two booleans and return -1 if the first is smallest, 1 if the second
    is smallest, or 0 if they are equal. =#"""
-function boolCompare(inN::Bool, inM::Bool)::Integer
-  local outResult::Integer = if inN == inM
+function boolCompare(inN::Bool, inM::Bool)::Int
+  local outResult::Int = if inN == inM
     0
   elseif (inN > inM)
     1
@@ -903,25 +901,25 @@ end
 function stringStartsWith(inString1::String, inString2::String)::Bool
   local outEqual::Bool
 
-  @assign outEqual = 0 == System.strncmp(inString1, inString2, stringLength(inString1))
+   outEqual = 0 == System.strncmp(inString1, inString2, stringLength(inString1))
   return outEqual
 end
 
 """ #= Compare two strings up to the nth character
   Returns true if they are equal. =#"""
-function strncmp(inString1::String, inString2::String, inLength::Integer)::Bool
+function strncmp(inString1::String, inString2::String, inLength::Int)::Bool
   local outEqual::Bool
 
-  @assign outEqual = 0 == System.strncmp(inString1, inString2, inLength)
+   outEqual = 0 == System.strncmp(inString1, inString2, inLength)
   return outEqual
 end
 
 """ #= Compares two strings up to the nth character. Returns true if they are not
   equal. =#"""
-function notStrncmp(inString1::String, inString2::String, inLength::Integer)::Bool
+function notStrncmp(inString1::String, inString2::String, inLength::Int)::Bool
   local outEqual::Bool
 
-  @assign outEqual = 0 != System.strncmp(inString1, inString2, inLength)
+   outEqual = 0 != System.strncmp(inString1, inString2, inLength)
   return outEqual
 end
 
@@ -938,9 +936,9 @@ function replaceWindowsBackSlashWithPathDelimiter(inPath::String)::String
   local outPath::String
 
   if Autoconf.os == "Windows_NT"
-    @assign outPath = System.stringReplace(inPath, "\\\\", Autoconf.pathDelimiter)
+     outPath = System.stringReplace(inPath, "\\\\", Autoconf.pathDelimiter)
   else
-    @assign outPath = inPath
+     outPath = inPath
   end
   return outPath
 end
@@ -955,10 +953,10 @@ function getAbsoluteDirectoryAndFile(filename::String)::Tuple{String, String}
 
   local realpath::String
 
-  @assign realpath = System.realpath(filename)
-  @assign dirname = System.dirname(realpath)
-  @assign basename = System.basename(realpath)
-  @assign dirname = replaceWindowsBackSlashWithPathDelimiter(dirname)
+   realpath = System.realpath(filename)
+   dirname = System.dirname(realpath)
+   basename = System.basename(realpath)
+   dirname = replaceWindowsBackSlashWithPathDelimiter(dirname)
   return (dirname, basename)
 end
 
@@ -967,8 +965,8 @@ end
 function rawStringToInputString(inString::String)::String
   local outString::String
 
-  @assign outString = System.stringReplace(inString, "\\\\\\", "\\") #= change backslash-double-quote to double-quote  =#
-  @assign outString = System.stringReplace(outString, "\\\\\\\\", "\\\\") #= double-backslash with backslash  =#
+   outString = System.stringReplace(inString, "\\\\\\", "\\") #= change backslash-double-quote to double-quote  =#
+   outString = System.stringReplace(outString, "\\\\\\\\", "\\\\") #= double-backslash with backslash  =#
   return outString
 end
 
@@ -977,7 +975,7 @@ function escapeModelicaStringToCString(modelicaString::String)::String
 
   #=  C cannot handle newline in string constants
   =#
-  @assign cString = System.escapedString(modelicaString, true)
+   cString = System.escapedString(modelicaString, true)
   return cString
 end
 
@@ -986,11 +984,11 @@ function escapeModelicaStringToJLString(modelicaString::String)::String
 
   #= TODO. Do this the proper way. We just remove all the dollars for now
   =#
-  @assign cString = System.stringReplace(modelicaString, "", "")
-  @assign cString = System.stringReplace(cString, "\\", "")
-  @assign cString = System.stringReplace(cString, "\\", "")
-  @assign cString = System.stringReplace(cString, "\\\\", "")
-  @assign cString = System.escapedString(cString, true)
+   cString = System.stringReplace(modelicaString, "", "")
+   cString = System.stringReplace(cString, "\\", "")
+   cString = System.stringReplace(cString, "\\", "")
+   cString = System.stringReplace(cString, "\\\\", "")
+   cString = System.escapedString(cString, true)
   return cString
 end
 
@@ -999,10 +997,10 @@ function escapeModelicaStringToXmlString(modelicaString::String)::String
 
   #=  C cannot handle newline in string constants
   =#
-  @assign xmlString = System.stringReplace(modelicaString, "&", "&amp;")
-  @assign xmlString = System.stringReplace(xmlString, "\\", "&quot;")
-  @assign xmlString = System.stringReplace(xmlString, "<", "&lt;")
-  @assign xmlString = System.stringReplace(xmlString, ">", "&gt;")
+   xmlString = System.stringReplace(modelicaString, "&", "&amp;")
+   xmlString = System.stringReplace(xmlString, "\\", "&quot;")
+   xmlString = System.stringReplace(xmlString, "<", "&lt;")
+   xmlString = System.stringReplace(xmlString, ">", "&gt;")
   #=  TODO! FIXME!, we have issues with accented chars in comments
   =#
   #=  that end up in the Model_init.xml file and makes it not well
@@ -1031,11 +1029,11 @@ function make3Tuple(inValue1::T1, inValue2::T2, inValue3::T3) where {T1, T2, T3}
   return outTuple
 end
 
-function mulListIntegerOpt(inList::List{<:Option{<:Integer}}, inAccum::Integer = 1)::Integer
-  local outResult::Integer
+function mulListIntegerOpt(inList::List{<:Option{<:Integer}}, inAccum::Int = 1)::Int
+  local outResult::Int
 
-  @assign outResult = begin
-    local i::Integer
+   outResult = begin
+    local i::Int
     local rest::List{Option{Integer}}
     @match inList begin
       nil() => begin
@@ -1081,7 +1079,7 @@ function optionEqual(
 ) where {T1, T2}
   local outEqual::Bool
 
-  @assign outEqual = begin
+   outEqual = begin
     local val1::T1
     local val2::T2
     @match (inOption1, inOption2) begin
@@ -1106,9 +1104,9 @@ function makeValueOrDefault(inFunc::FuncType, inArg::TI, inDefaultValue::TO) whe
   local outValue::TO
 
   try
-    @assign outValue = inFunc(inArg)
+     outValue = inFunc(inArg)
   catch
-    @assign outValue = inDefaultValue
+     outValue = inDefaultValue
   end
   return outValue
 end
@@ -1117,10 +1115,10 @@ end
 function xmlEscape(s1::String)::String
   local s2::String
 
-  @assign s2 = stringReplaceChar(s1, "&", "&amp;")
-  @assign s2 = stringReplaceChar(s2, "<", "&lt;")
-  @assign s2 = stringReplaceChar(s2, ">", "&gt;")
-  @assign s2 = stringReplaceChar(s2, "\\", "&quot;")
+   s2 = stringReplaceChar(s1, "&", "&amp;")
+   s2 = stringReplaceChar(s2, "<", "&lt;")
+   s2 = stringReplaceChar(s2, ">", "&gt;")
+   s2 = stringReplaceChar(s2, "\\", "&quot;")
   return s2
 end
 
@@ -1140,7 +1138,7 @@ end
 function stringAppendNonEmpty(inString1::String, inString2::String)::String
   local outString::String
 
-  @assign outString = begin
+   outString = begin
     @match inString2 begin
       "" => begin
         inString2
@@ -1157,22 +1155,22 @@ end
 function getCurrentDateTime()::DateTime
   local dt::DateTime
 
-  local sec::Integer
-  local min::Integer
-  local hour::Integer
-  local mday::Integer
-  local mon::Integer
-  local year::Integer
+  local sec::Int
+  local min::Int
+  local hour::Int
+  local mday::Int
+  local mon::Int
+  local year::Int
 
-  @assign (sec, min, hour, mday, mon, year) = System.getCurrentDateTime()
-  @assign dt = DATETIME(sec, min, hour, mday, mon, year)
+   (sec, min, hour, mday, mon, year) = System.getCurrentDateTime()
+   dt = DATETIME(sec, min, hour, mday, mon, year)
   return dt
 end
 
 function isSuccess(status::Status)::Bool
   local bool::Bool
 
-  @assign bool = begin
+   bool = begin
     @match status begin
       SUCCESS(__) => begin
         true
@@ -1201,7 +1199,7 @@ function buildMapStr(
 )::String
   local outStr::String
 
-  @assign outStr = begin
+   outStr = begin
     local ra::List{String}
     local rb::List{String}
     local fa::String
@@ -1215,13 +1213,13 @@ function buildMapStr(
       end
 
       (fa <| nil(), fb <| nil(), md, _) => begin
-        @assign str = stringAppendList(list(fa, md, fb))
+         str = stringAppendList(list(fa, md, fb))
         str
       end
 
       (fa <| ra, fb <| rb, md, ed) => begin
-        @assign str = buildMapStr(ra, rb, md, ed)
-        @assign str = stringAppendList(list(fa, md, fb, ed, str))
+         str = buildMapStr(ra, rb, md, ed)
+         str = stringAppendList(list(fa, md, fb, ed, str))
         str
       end
     end
@@ -1239,8 +1237,8 @@ function assoc(inKey::Key, inList::List{Tuple{Key, Val}}) where {Key, Val}
   local k::Key
   local v::Val
 
-  @assign (k, v) = listHead(inList)
-  @assign outValue = if valueEq(inKey, k)
+   (k, v) = listHead(inList)
+   outValue = if valueEq(inKey, k)
     v
   else
     assoc(inKey, listRest(inList))
@@ -1249,8 +1247,8 @@ function assoc(inKey::Key, inList::List{Tuple{Key, Val}}) where {Key, Val}
 end
 
 """ #= Returns 1 if the given boolean is true, otherwise 0. =#"""
-function boolInt(inBoolean::Bool)::Integer
-  local outInteger::Integer = if inBoolean
+function boolInt(inBoolean::Bool)::Int
+  local outInteger::Int = if inBoolean
     1
   else
     0
@@ -1259,7 +1257,7 @@ function boolInt(inBoolean::Bool)::Integer
 end
 
 """ #= Returns true if the given integer is larger than 0, otherwise false. =#"""
-function intBool(inInteger::Integer)::Bool
+function intBool(inInteger::Int)::Bool
   local outBoolean::Bool = inInteger > 0
   return outBoolean
 end
@@ -1269,7 +1267,7 @@ end
 function stringBool(inString::String)::Bool
   local outBoolean::Bool
 
-  @assign outBoolean = stringBool2(System.tolower(inString))
+   outBoolean = stringBool2(System.tolower(inString))
   return outBoolean
 end
 
@@ -1277,7 +1275,7 @@ end
 function stringBool2(inString::String)::Bool
   local outBoolean::Bool
 
-  @assign outBoolean = begin
+   outBoolean = begin
     @match inString begin
       "true" => begin
         true
@@ -1302,7 +1300,7 @@ end
 function stringEqCaseInsensitive(str1::String, str2::String)::Bool
   local eq::Bool
 
-  @assign eq = stringEq(System.tolower(str1), System.tolower(str2))
+   eq = stringEq(System.tolower(str1), System.tolower(str2))
   return eq
 end
 
@@ -1311,7 +1309,7 @@ end
 function optionList(inOption::Option{T}) where {T}
   local outList::List{T}
 
-  @assign outList = begin
+   outList = begin
     local value::T
     @match inOption begin
       SOME(value) => begin
@@ -1332,25 +1330,25 @@ end
 function listOfOptionToList(inOptLst::List{Option{T}}) where {T}
   local outLst::List{T}
 
-  @assign outLst = ListUtil.flatten(ListUtil.map(inOptLst, optionList))
+   outLst = ListUtil.flatten(ListUtil.map(inOptLst, optionList))
   return outLst
 end
 
 """ #= Pads a string with the given padding so that the resulting string is as long
    as the given width. If the string is already longer nothing is done to it.
    Note that the length of the padding is assumed to be one, i.e. a single char. =#"""
-function stringPadRight(inString::String, inPadWidth::Integer, inPadString::String)::String
+function stringPadRight(inString::String, inPadWidth::Int, inPadString::String)::String
   local outString::String
 
-  local pad_length::Integer
+  local pad_length::Int
   local pad_str::String
 
-  @assign pad_length = inPadWidth - stringLength(inString)
+   pad_length = inPadWidth - stringLength(inString)
   if pad_length > 0
-    @assign pad_str = stringAppendList(list(inPadString for i = 1:pad_length))
-    @assign outString = inString + pad_str
+     pad_str = stringAppendList(list(inPadString for i = 1:pad_length))
+     outString = inString + pad_str
   else
-    @assign outString = inString
+     outString = inString
   end
   return outString
 end
@@ -1358,18 +1356,18 @@ end
 """ #= Pads a string with the given padding so that the resulting string is as long
    as the given width. If the string is already longer nothing is done to it.
    Note that the length of the padding is assumed to be one, i.e. a single char. =#"""
-function stringPadLeft(inString::String, inPadWidth::Integer, inPadString::String)::String
+function stringPadLeft(inString::String, inPadWidth::Int, inPadString::String)::String
   local outString::String
 
-  local pad_length::Integer
+  local pad_length::Int
   local pad_str::String
 
-  @assign pad_length = inPadWidth - stringLength(inString)
+   pad_length = inPadWidth - stringLength(inString)
   if pad_length > 0
-    @assign pad_str = stringAppendList(list(inPadString for i = 1:pad_length))
-    @assign outString = pad_str + inString
+     pad_str = stringAppendList(list(inPadString for i = 1:pad_length))
+     outString = pad_str + inString
   else
-    @assign outString = inString
+     outString = inString
   end
   return outString
 end
@@ -1378,15 +1376,15 @@ end
 function stringRest(inString::String)::String
   local outRest::String
 
-  local len::Integer
+  local len::Int
 
-  @assign len = stringLength(inString)
-  @assign outRest = substring(inString, 2, len)
+   len = stringLength(inString)
+   outRest = substring(inString, 2, len)
   return outRest
 end
 
-function intProduct(lst::List{<:Integer})::Integer
-  local i::Integer = ListUtil.fold(lst, intMul, 1)
+function intProduct(lst::List{<:Integer})::Int
+  local i::Int = ListUtil.fold(lst, intMul, 1)
   return i
 end
 
@@ -1396,10 +1394,10 @@ end
    small (the largest gap between primes up to 32 bit is only around 300) it's
    still reasonably fast. It's useful for e.g. determining a good size for a
    hash table with a known number of elements. =#"""
-function nextPrime(inN::Integer)::Integer
-  local outNextPrime::Integer
+function nextPrime(inN::Int)::Int
+  local outNextPrime::Int
 
-  @assign outNextPrime = if inN <= 2
+   outNextPrime = if inN <= 2
     2
   else
     nextPrime2(inN + intMod(inN + 1, 2))
@@ -1409,10 +1407,10 @@ end
 
 """ #= Helper function to nextPrime2, does the actual work of finding the next
    prime. =#"""
-function nextPrime2(inN::Integer)::Integer
-  local outNextPrime::Integer
+function nextPrime2(inN::Int)::Int
+  local outNextPrime::Int
 
-  @assign outNextPrime = if nextPrime_isPrime(inN)
+   outNextPrime = if nextPrime_isPrime(inN)
     inN
   else
     nextPrime2(inN + 2)
@@ -1423,27 +1421,27 @@ end
 """ #= Helper function to nextPrime2, checks if a given number is a prime or not.
    Note that this function is not a general prime checker, it only works for
    positive odd numbers. =#"""
-function nextPrime_isPrime(inN::Integer)::Bool
+function nextPrime_isPrime(inN::Int)::Bool
   local outIsPrime::Bool
 
-  local i::Integer = 3
-  local q::Integer = intDiv(inN, 3)
+  local i::Int = 3
+  local q::Int = intDiv(inN, 3)
 
   #=  Check all factors up to sqrt(inN)
   =#
   while q >= i
     if inN == q * i
-      @assign outIsPrime = false
+       outIsPrime = false
       return outIsPrime
     end
-    @assign i = i + 2
-    @assign q = intDiv(inN, i)
+     i = i + 2
+     q = intDiv(inN, i)
   end
   #=  The number is divisible by a factor => not a prime.
   =#
   #=  All factors have been checked, inN is a prime.
   =#
-  @assign outIsPrime = true
+   outIsPrime = true
   return outIsPrime
 end
 
@@ -1456,21 +1454,21 @@ end
 function removeLast3Char(str::String)::String
   local outStr::String
 
-  @assign outStr = substring(str, 1, stringLength(str) - 3)
+   outStr = substring(str, 1, stringLength(str) - 3)
   return outStr
 end
 
 function removeLast4Char(str::String)::String
   local outStr::String
 
-  @assign outStr = substring(str, 1, stringLength(str) - 4)
+   outStr = substring(str, 1, stringLength(str) - 4)
   return outStr
 end
 
-function removeLastNChar(str::String, n::Integer)::String
+function removeLastNChar(str::String, n::Int)::String
   local outStr::String
 
-  @assign outStr = substring(str, 1, stringLength(str) - n)
+   outStr = substring(str, 1, stringLength(str) - n)
   return outStr
 end
 
@@ -1483,7 +1481,7 @@ function swap(cond::Bool, in1::T, in2::T) where {T}
   local out2::T
   local out1::T
 
-  @assign (out1, out2) = begin
+   (out1, out2) = begin
     @match cond begin
       true => begin
         (in2, in1)
@@ -1507,11 +1505,11 @@ function realRangeSize(
   inStart::AbstractFloat,
   inStep::AbstractFloat,
   inStop::AbstractFloat,
-)::Integer
-  local outSize::Integer
+)::Int
+  local outSize::Int
 
-  @assign outSize = integer(floor((inStop - inStart) / inStep + 5e-15)) + 1
-  @assign outSize = max(outSize, 0)
+   outSize = integer(floor((inStop - inStart) / inStep + 5e-15)) + 1
+   outSize = max(outSize, 0)
   return outSize
 end
 
@@ -1522,23 +1520,23 @@ function createDirectoryTreeH(
 )::Bool
   local outBool::Bool
 
-  @assign outBool = begin
+   outBool = begin
     local b::Bool
     @matchcontinue parentDirExists begin
       _ => begin
         @match true = stringEqual(parentDir, System.dirname(parentDir))
-        @assign b = System.createDirectory(inString)
+         b = System.createDirectory(inString)
         b
       end
 
       true => begin
-        @assign b = System.createDirectory(inString)
+         b = System.createDirectory(inString)
         b
       end
 
       false => begin
         @match true = createDirectoryTree(parentDir)
-        @assign b = System.createDirectory(inString)
+         b = System.createDirectory(inString)
         b
       end
 
@@ -1556,45 +1554,45 @@ function createDirectoryTree(inString::String)::Bool
   local parentDir::String
   local parentDirExists::Bool
 
-  @assign parentDir = System.dirname(inString)
-  @assign parentDirExists = System.directoryExists(parentDir)
-  @assign outBool = createDirectoryTreeH(inString, parentDir, parentDirExists)
+   parentDir = System.dirname(inString)
+   parentDirExists = System.directoryExists(parentDir)
+   outBool = createDirectoryTreeH(inString, parentDir, parentDirExists)
   return outBool
 end
 
 """ #= Rounds up to the nearest power of 2 =#"""
-function nextPowerOf2(i::Integer)::Integer
-  local v::Integer
+function nextPowerOf2(i::Int)::Int
+  local v::Int
 
-  @assign v = i - 1
-  @assign v = intBitOr(v, intBitLShift(v, 1))
-  @assign v = intBitOr(v, intBitLShift(v, 2))
-  @assign v = intBitOr(v, intBitLShift(v, 4))
-  @assign v = intBitOr(v, intBitLShift(v, 8))
-  @assign v = intBitOr(v, intBitLShift(v, 16))
-  @assign v = v + 1
+   v = i - 1
+   v = intBitOr(v, intBitLShift(v, 1))
+   v = intBitOr(v, intBitLShift(v, 2))
+   v = intBitOr(v, intBitLShift(v, 4))
+   v = intBitOr(v, intBitLShift(v, 8))
+   v = intBitOr(v, intBitLShift(v, 16))
+   v = v + 1
   return v
 end
 
 function endsWith(inString::String, inSuffix::String)::Bool
   local outEndsWith::Bool
 
-  local start::Integer
-  local stop::Integer
-  local str_len::Integer
-  local suf_len::Integer
+  local start::Int
+  local stop::Int
+  local str_len::Int
+  local suf_len::Int
 
   if inString == ""
-    @assign outEndsWith = false
+     outEndsWith = false
   else
-    @assign str_len = stringLength(inString)
-    @assign suf_len = stringLength(inSuffix)
-    @assign start = if str_len > suf_len
+     str_len = stringLength(inString)
+     suf_len = stringLength(inSuffix)
+     start = if str_len > suf_len
       str_len - suf_len + 1
     else
       1
     end
-    @assign outEndsWith = inSuffix == substring(inString, start, str_len)
+     outEndsWith = inSuffix == substring(inString, start, str_len)
   end
   return outEndsWith
 end
@@ -1602,30 +1600,30 @@ end
 function isCIdentifier(str::String)::Bool
   local b::Bool
 
-  local i::Integer
+  local i::Int
 
-  @assign (i, _) = System.regex(str, "^[_A-Za-z][_A-Za-z0-9]*", 0, true, false)
-  @assign b = i == 1
+   (i, _) = System.regex(str, "^[_A-Za-z][_A-Za-z0-9]*", 0, true, false)
+   b = i == 1
   return b
 end
 
 function isIntegerString(str::String)::Bool
   local b::Bool
 
-  local i::Integer
+  local i::Int
 
-  @assign (i, _) = System.regex(str, "^[0-9][0-9]*", 0, true, false)
-  @assign b = i == 1
+   (i, _) = System.regex(str, "^[0-9][0-9]*", 0, true, false)
+   b = i == 1
   return b
 end
 
 """ #= @author:adrpo
  if the string is bigger than len keep only until len
  if not, return the same string =#"""
-function stringTrunc(str::String, len::Integer)::String
+function stringTrunc(str::String, len::Int)::String
   local truncatedStr::String
 
-  @assign truncatedStr = if stringLength(str) <= len
+   truncatedStr = if stringLength(str) <= len
     str
   else
     substring(str, 0, len)
@@ -1637,7 +1635,7 @@ end
 function getTempVariableIndex()::String
   local name::String
 
-  @assign name =
+   name =
     stringAppend("tmpVar", intString(System.tmpTickIndex(Global.tmpVariableIndex)))
   return name
 end
@@ -1655,9 +1653,9 @@ function absoluteOrRelative(inFileName::String)::String
   local pwd::String
   local pd::String
 
-  @assign pwd = System.pwd()
-  @assign pd = Autoconf.pathDelimiter
-  @assign outFileName = if System.regularFileExists(inFileName)
+   pwd = System.pwd()
+   pd = Autoconf.pathDelimiter
+   outFileName = if System.regularFileExists(inFileName)
     inFileName
   else
     stringAppendList(list(pwd, pd, inFileName))
@@ -1668,7 +1666,7 @@ end
 function intLstString(lst::List{<:Integer})::String
   local s::String
 
-  @assign s = stringDelimitList(ListUtil.map(lst, intString), ", ")
+   s = stringDelimitList(ListUtil.map(lst, intString), ", ")
   return s
 end
 
@@ -1676,7 +1674,7 @@ end
 function sourceInfoIsEmpty(inInfo::SourceInfo)::Bool
   local outIsEmpty::Bool
 
-  @assign outIsEmpty = begin
+   outIsEmpty = begin
     @match inInfo begin
       SOURCEINFO(fileName = "") => begin
         true
@@ -1694,7 +1692,7 @@ end
 function sourceInfoIsEqual(inInfo1::SourceInfo, inInfo2::SourceInfo)::Bool
   local outIsEqual::Bool
 
-  @assign outIsEqual = begin
+   outIsEqual = begin
     @match (inInfo1, inInfo2) begin
       (SOURCEINFO(__), SOURCEINFO(__)) => begin
         inInfo1.fileName == inInfo2.fileName &&
@@ -1728,9 +1726,9 @@ function profilerresults()
   local t1::AbstractFloat
   local t2::AbstractFloat
 
-  @assign tg = System.realtimeTock(ClockIndexes.RT_PROFILER0)
-  @assign t1 = profilertime1()
-  @assign t2 = profilertime2()
+   tg = System.realtimeTock(ClockIndexes.RT_PROFILER0)
+   t1 = profilertime1()
+   t2 = profilertime2()
   print("Time all: ")
   print(realString(tg))
   print("\\n")
@@ -1748,14 +1746,14 @@ end
 function profilertime1()::AbstractFloat
   local t1::AbstractFloat
 
-  @assign t1 = getGlobalRoot(Global.profilerTime1Index)
+   t1 = getGlobalRoot(Global.profilerTime1Index)
   return t1
 end
 
 function profilertime2()::AbstractFloat
   local t2::AbstractFloat
 
-  @assign t2 = getGlobalRoot(Global.profilerTime2Index)
+   t2 = getGlobalRoot(Global.profilerTime2Index)
   return t2
 end
 
@@ -1770,7 +1768,7 @@ end
 function profilerstop1()
   local t::AbstractFloat
 
-  @assign t = System.realtimeTock(ClockIndexes.RT_PROFILER1)
+   t = System.realtimeTock(ClockIndexes.RT_PROFILER1)
   return setGlobalRoot(
     Global.profilerTime1Index,
     realAdd(getGlobalRoot(Global.profilerTime1Index), t),
@@ -1780,7 +1778,7 @@ end
 function profilerstop2()
   local t::AbstractFloat
 
-  @assign t = System.realtimeTock(ClockIndexes.RT_PROFILER2)
+   t = System.realtimeTock(ClockIndexes.RT_PROFILER2)
   return setGlobalRoot(
     Global.profilerTime2Index,
     realAdd(getGlobalRoot(Global.profilerTime2Index), t),
@@ -1798,14 +1796,14 @@ end
 function profilertock1()::AbstractFloat
   local t::AbstractFloat
 
-  @assign t = System.realtimeTock(ClockIndexes.RT_PROFILER1)
+   t = System.realtimeTock(ClockIndexes.RT_PROFILER1)
   return t
 end
 
 function profilertock2()::AbstractFloat
   local t::AbstractFloat
 
-  @assign t = System.realtimeTock(ClockIndexes.RT_PROFILER2)
+   t = System.realtimeTock(ClockIndexes.RT_PROFILER2)
   return t
 end
 
@@ -1817,9 +1815,9 @@ function applyTuple31(inTuple::Tuple{T1, T2, T3}, func::FuncT) where {T1, T2, T3
   local t2::T2
   local t3::T3
 
-  @assign (t1, t2, t3) = inTuple
-  @assign t1_new = func(t1)
-  @assign outTuple = if referenceEq(t1, t1_new)
+   (t1, t2, t3) = inTuple
+   t1_new = func(t1)
+   outTuple = if referenceEq(t1, t1_new)
     inTuple
   else
     (t1_new, t2, t3)
@@ -1840,7 +1838,7 @@ end
    equal, or greater than the address of ref2.
 """
 function referenceCompare(ref1::T1, ref2::T2) where {T1, T2}
-  local result::Integer
+  local result::Int
   result = if ref1 === ref2
     0
   else

@@ -1187,13 +1187,11 @@ function dladdr(symbol::T #= Function pointer =#)  where {T}
   local name::String
   local file::String
   local info::String
-
-  @assign (file, name) = _dladdr(symbol)
-  @assign info = file + ": " + name
+  (file, name) = _dladdr(symbol)
+  info = file + ": " + name
   function _dladdr(symbol::T #= Function pointer =#)  where {T}
     local name::String
     local file::String
-
     @error "TODO: Defined in the runtime"
     (file, name)
   end

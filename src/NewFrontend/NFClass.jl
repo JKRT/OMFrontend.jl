@@ -158,7 +158,7 @@ function hasOperator(name::String, cls::Class)::Bool
   local op_cls::Class
   if isOperatorRecord(restriction(cls))
     try
-      @assign op_node = lookupElement(name, cls)
+     @match ENTRY_INFO(op_node) = lookupElement(name, cls)
       @assign hasOperator = SCodeUtil.isOperator(definition(op_node))
     catch
       @assign hasOperator = false
@@ -786,7 +786,7 @@ function lookupAttributeBinding(name::String, cls::Class)::Binding
   local binding::Binding
   local attr_node::InstNode
   try
-    attr_node = lookupElement(name, classTree(cls))
+    @match ENTRY_INFO(attr_node, isImport) = lookupElement(name, classTree(cls))
     binding = getBinding(component(attr_node))
   catch
     binding = EMPTY_BINDING
@@ -806,12 +806,11 @@ function lookupComponentIndex(name::String, cls::Class)::Int
   return index
 end
 
-function lookupElement(name::String, cls::Class)::Tuple{InstNode, Bool}
+function lookupElement(name::String, cls::Class)#::Tuple{InstNode, Bool}
   local isImport::Bool
   local node::InstNode
-
-   (node, isImport) = lookupElement(name, classTree(cls))
-  return (node, isImport)
+  @match ENTRY_INFO(node, isImport) = lookupElement(name, classTree(cls))
+  return ENTRY_INFO(node, isImport) #Adjust later
 end
 
 function setSections(sections::Sections, cls::Class)::Class

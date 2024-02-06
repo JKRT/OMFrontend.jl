@@ -1569,8 +1569,8 @@ function typeBinaryExpression(
   origin::ORIGIN_Type,
   info::SourceInfo,)::Tuple{Expression, NFType, VariabilityType}
   next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
-  (e1, ty1, var1) = typeExp(exp.exp1, next_origin, info)
-  (e2, ty2, var2) = typeExp(exp.exp2, next_origin, info)
+  @match (e1, ty1, var1) = typeExp(exp.exp1, next_origin, info)
+  @match (e2, ty2, var2) = typeExp(exp.exp2, next_origin, info)
   (exp, ty) = checkBinaryOperation(
     e1,
     ty1,

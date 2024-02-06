@@ -126,16 +126,15 @@ end
 
 function getRedeclaredNode(name::String, tree::ClassTree)::InstNode
   local node::InstNode
-
   local entry::DuplicateTree.Entry
-
   try
     entry = DuplicateTree.get(getDuplicates(tree), name)
     entry = listHead(entry.children)
     if isSome(entry.node)
       @match SOME(node) = entry.node
     else
-      (node, _) = resolveEntry(entry.entry, tree)
+      entry = resolveEntry(entry.entry, tree)
+      node = entry.node
     end
   catch
     Error.assertion(false, getInstanceName() + " failed on " + name, sourceInfo())
@@ -2011,6 +2010,11 @@ function resolveEntryPtr(entry::LookupTree.Entry, tree::ClassTree)::Pointer{Inst
   return element
 end
 
+struct ENTRY_INFO{T0 <: InstNode, T1 <: Bool}
+  node::T0
+  isImport::T1
+end
+
 """ #= Resolves a lookup tree entry to an inst node. =#"""
 function resolveEntry(entry::LookupTree.Entry, tree::ClassTree)
   local isImport::Bool
@@ -2033,7 +2037,7 @@ function resolveEntry(entry::LookupTree.Entry, tree::ClassTree)
       end
     end
   end
-  return (element, isImport)
+  return ENTRY_INFO(element, isImport)
 end
 
 function addDuplicateConflict(

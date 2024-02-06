@@ -211,7 +211,8 @@ function lookupRecordFieldType(name::String, recordType::M_Type)::M_Type
   @assign fieldType = begin
     @match recordType begin
       COMPLEX(__) => begin
-        getType(lookupElement(name, getClass(recordType.cls)))
+        entryInfo = lookupElement(name, getClass(recordType.cls))
+        getType(entryInfo.node, entryInfo.isImport)
       end
 
       TYPE_ARRAY(__) => begin

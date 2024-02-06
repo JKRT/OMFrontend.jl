@@ -925,18 +925,23 @@ function subscriptBindingOpt(
   subscripts::List{<:Subscript},
   binding::Option{<:Binding},
 )::Option{Binding}
-
   local b::Binding
   local exp::Expression
   local ty::M_Type
-
   if isSome(binding)
     @match SOME(b) = binding
     @assign binding = begin
       @match b begin
         TYPED_BINDING(bindingExp = exp, bindingType = ty) => begin
-          @assign b.bindingExp = applySubscripts(subscripts, exp)
-          @assign b.bindingType = arrayElementType(ty)
+          bindingExp = applySubscripts(subscripts, exp)
+          bindingType = arrayElementType(ty)
+          TYPED_BINDING(bindingExp,
+                        bindingType,
+                        b.variability,
+                        b.eachType,
+                        b.evaluated,
+                        isFlattened,
+                        b.info)
           SOME(b)
         end
 
@@ -966,8 +971,8 @@ function flattenBinding(
   binding::Binding,
   prefix::ComponentRef,
   isTypeAttribute::Bool
-)::Binding
-  @assign binding = begin
+  )
+  binding = begin
     local subs::List{Subscript}
     local accum_subs::List{Subscript}
     local binding_level::Int
@@ -982,10 +987,16 @@ function flattenBinding(
         if binding.isFlattened
           return binding
         end
-        @assign binding.bindingExp =
+        bindingExp =
           flattenBindingExp(binding.bindingExp, prefix, isTypeAttribute)
-        @assign binding.isFlattened = true
-        binding
+        isFlattened = true
+        TYPED_BINDING(bindingExp,
+                      binding.bindingType,
+                      binding.variability,
+                      binding.eachType,
+                      binding.evaluated,
+                      isFlattened,
+                      binding.info)
       end
 
       CEVAL_BINDING(__) => begin
@@ -1104,7 +1115,8 @@ function flattenExp_traverse(exp::Expression, prefix::ComponentRef)::Expression
   exp = begin
     @match exp begin
       CREF_EXPRESSION(__) => begin
-        @assign exp.cref = transferSubscripts(prefix, exp.cref)
+        expCref = transferSubscripts(prefix, exp.cref)
+        CREF_EXPRESSION(exp.ty, expCref)
         exp
       end
 

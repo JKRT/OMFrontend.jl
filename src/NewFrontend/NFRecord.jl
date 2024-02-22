@@ -54,7 +54,7 @@ function instDefaultConstructor(
   local ctor_cls::Class
   local ty_node::InstNode
   try
-    (ctor_node, _) = lookupLocalSimpleName(
+    @match ENTRY_INFO(ctor_node, _) = lookupLocalSimpleName(
       name(node),
       classScope(parent(node)),
     )

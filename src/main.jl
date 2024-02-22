@@ -15,6 +15,29 @@ import DAE
 import ListUtil
 import SCode
 import PrecompileTools
+
+
+function toString(vec::Vector{T}) where {T}
+  buffer = IOBuffer()
+  println(buffer, "[")
+  for v in vec
+    print(buffer, toString(v))
+  end
+  println(buffer, "]")
+  String(take!(buffer))
+end
+
+function toString(vec::List{T}) where {T}
+  buffer = IOBuffer()
+  println(buffer, "{")
+  for v in vec
+    println(buffer, toString(v), " ,")
+  end
+  println(buffer, "}")
+  String(take!(buffer))
+end
+
+
 #= Top level functionality =#
 
 include("./Util/ElementSource.jl")
@@ -68,6 +91,7 @@ include("./NewFrontend/NFScalarize.jl")
 
 include("./NewFrontend/NFClass.jl")
 include("./NewFrontend/NFExpressionIterator.jl")
+include("./NewFrontend/NFComponentRef.jl")
 include("./NewFrontend/NFInst.jl")
 include("./NewFrontend/NFAlgorithm.jl")
 include("./NewFrontend/NFStatement.jl")
@@ -107,7 +131,6 @@ include("./NewFrontend/NFLookup.jl")
 
 include("./NewFrontend/NFLookupState.jl")
 
-include("./NewFrontend/NFComponentRef.jl")
 @exportAll
 #= For over constrained connectors =#
 include("./NewFrontend/NFHashTable.jl")

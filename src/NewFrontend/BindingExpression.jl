@@ -6497,51 +6497,53 @@ end
 function mapExp(binding::Binding, mapFn::Function)
   local e1::Expression
   local e2::Expression
-    @match binding begin
-      UNTYPED_BINDING(bindingExp = e1) => begin
-        e2 = map(e1, mapFn)
-        if !referenceEq(e1, e2)
-          bindingExp = e2
-          UNTYPED_BINDING(bindinExp, binding.isProcessing, binding.isEach, binding.info)
-         else
-          binding
-        end
-      end
-      TYPED_BINDING(bindingExp = e1) => begin
-        e2 = map(e1, mapFn)
-        binding = if !referenceEq(e1, e2)
-          bindingExp = e2
-          TYPED_BINDING(bindingExp,
-                        binding.bindingType,
-                        binding.variability,
-                        binding.eachType,
-                        binding.evaluated,
-                        binding.isFlattened,
-                        binding.info)
-        else
-          binding
-        end
-      end
-      FLAT_BINDING(bindingExp = e1) => begin
-        e2 = map(e1, mapFn)
-        binding = if !referenceEq(e1, e2)
-          @assign binding.bindingExp = e2
-        end
-        binding
-      end
-      CEVAL_BINDING(bindingExp = e1) => begin
-        e2 = map(e1, mapFn)
-        binding = if !referenceEq(e1, e2)
-          bindingBindingExp = e2
-          CEVAL_BINDING(binding)
-        else
-          binding
-        end
-      end
-      _ => begin
+  local res = @match binding begin
+    UNTYPED_BINDING(bindingExp = e1) => begin
+      e2 = map(e1, mapFn)
+      binding = if !referenceEq(e1, e2)
+        bindingExp = e2
+        UNTYPED_BINDING(bindinExp, binding.isProcessing, binding.isEach, binding.info)
+      else
         binding
       end
     end
+    TYPED_BINDING(bindingExp = e1) => begin
+      e2 = map(e1, mapFn)
+      if !referenceEq(e1, e2)
+        bindingExp = e2
+        TYPED_BINDING(bindingExp,
+                      binding.bindingType,
+                      binding.variability,
+                      binding.eachType,
+                      binding.evaluated,
+                      binding.isFlattened,
+                      binding.info)
+      else
+        binding
+      end
+    end
+    FLAT_BINDING(bindingExp = e1) => begin
+      e2 = map(e1, mapFn)
+      if !referenceEq(e1, e2)
+        bindingBindingExp = e2
+        FLAT_BINDING(bindingBindingExp, binding.variability)
+      end
+      binding
+    end
+    CEVAL_BINDING(bindingExp = e1) => begin
+      e2 = map(e1, mapFn)
+      binding = if !referenceEq(e1, e2)
+        bindingBindingExp = e2
+        CEVAL_BINDING(bindingBindingExp)
+      else
+        binding
+      end
+    end
+    _ => begin
+      binding
+    end
+  end
+  return res
 end
 
 function toDAEExp(binding::Binding)

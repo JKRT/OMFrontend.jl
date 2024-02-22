@@ -34,7 +34,7 @@ function new()::Tree
 end
 
 """  Gets a value from the tree given a key. """
-function hasKey(inTree::Tree, inKey::Key)::Bool
+function hasKey(inTree::Tree, inKey::Key)
   local comp::Bool = false
   local key::Key
   local key_comp::Int
@@ -92,7 +92,7 @@ function isEmpty(tree::Tree)::Bool
 end
 
 """  Converts the tree to a flat list of keys (in order). """
-function listKeys(inTree::Tree, lst::List{<:Key} = nil)::List{Key}
+function listKeys(inTree::Tree, lst::List{<:Key} = nil)
 
    lst = begin
     @match inTree begin
@@ -116,7 +116,7 @@ function listKeys(inTree::Tree, lst::List{<:Key} = nil)::List{Key}
 end
 
 """ #= Converts the tree to a flat list of keys (in order). =#"""
-function listKeysReverse(inTree::Tree, lst::List{<:Key} = nil)::List{Key}
+function listKeysReverse(inTree::Tree, lst::List{<:Key} = nil)
 
    lst = begin
     @match inTree begin
@@ -144,7 +144,7 @@ end
   Prints the tree to a string using UTF-8 box-drawing characters to construct a
   graphical view of the tree.
 """
-function printTreeStr(inTree::Tree)::String
+function printTreeStr(inTree::Tree)
   local outString::String
   local left::Tree
   local right::Tree
@@ -168,7 +168,7 @@ function printTreeStr(inTree::Tree)::String
   return outString
 end
 
-function referenceEqOrEmpty(t1::Tree, t2::Tree)::Bool
+function referenceEqOrEmpty(t1::Tree, t2::Tree)
   local b::Bool
 
    b = begin
@@ -206,8 +206,8 @@ function balance(inTree::Tree)
           balanced_tree = if calculateBalance(outTree.right) > 0
             rotateLeft(setTreeLeftRight(
               outTree,
-              left = outTree.left,
-              right = rotateRight(outTree.right),
+              outTree.left,
+              rotateRight(outTree.right),
             ))
           else
             rotateLeft(outTree)
@@ -216,8 +216,8 @@ function balance(inTree::Tree)
           balanced_tree = if calculateBalance(outTree.left) < 0
             rotateRight(setTreeLeftRight(
               outTree,
-              left = rotateLeft(outTree.left),
-              right = outTree.right,
+              rotateLeft(outTree.left),
+              outTree.right,
             ))
           else
             rotateRight(outTree)
@@ -276,7 +276,7 @@ function calculateBalance(inNode::Tree)::Int
 end
 
 """ #= Performs an AVL left rotation on the given tree. =#"""
-function rotateLeft(inNode::Tree)::Tree
+function rotateLeft(inNode::Tree)
   local outNode::Tree = inNode
 
    outNode = begin
@@ -309,13 +309,13 @@ function rotateRight(inNode::Tree)::Tree
     local child::Tree
     @match outNode begin
       NODE(left = child && NODE(__)) => begin
-        node = setTreeLeftRight(outNode, left = child.right, right = outNode.right)
-        setTreeLeftRight(child, right = node, left = child.left)
+        node = setTreeLeftRight(outNode, child.right, outNode.right)
+        setTreeLeftRight(child, child.left, node)
       end
 
       NODE(left = child && LEAF(__)) => begin
-        node = setTreeLeftRight(outNode, left = EMPTY(), right = outNode.right)
-        setTreeLeftRight(child, right = node, left = EMPTY())
+        node = setTreeLeftRight(outNode, EMPTY(), outNode.right)
+        setTreeLeftRight(child, EMPTY(), node)
       end
       _ => begin
         inNode
@@ -326,7 +326,7 @@ function rotateRight(inNode::Tree)::Tree
 end
 
 """ #= Helper function to printTreeStr. =#"""
-function printTreeStr2(inTree::Tree, isLeft::Bool, inIndent::String)::String
+function printTreeStr2(inTree::Tree, isLeft::Bool, inIndent::String)
   local outString::String
   local val_node::Option{ValueNode}
   local left::Option{Tree}
@@ -374,7 +374,7 @@ end
 
 
 #===#
-function printNodeStr(inNode::Tree)::String
+function printNodeStr(inNode::Tree)
   outString = begin
     @match inNode begin
       NODE(__) => begin
@@ -392,19 +392,19 @@ end
 
 #= Default conflict resolving function for add. =#
  """ #= Conflict resolving function for add which fails on conflict. =#"""
-function addConflictFail(newValue::Value, oldValue::Value, key::Key)::Value
+function addConflictFail(newValue::Value, oldValue::Value, key::Key)
   fail()
 end
 addConflictDefault = addConflictFail
 
 """ #= Conflict resolving function for add which replaces the old value with the new. =#"""
-function addConflictReplace(newValue::Value, oldValue::Value, key::Key)::Value
+function addConflictReplace(newValue::Value, oldValue::Value, key::Key)
   local value::Value = newValue
   return value
 end
 
 """ #= Conflict resolving function for add which keeps the old value. =#"""
-function addConflictKeep(newValue::Value, oldValue::Value, key::Key)::Value
+function addConflictKeep(newValue::Value, oldValue::Value, key::Key)
   local value::Value = oldValue
   return value
 end
@@ -505,33 +505,25 @@ end
   Fetches a value from the tree given a key, or fails if no value is associated
   with the key.
 """
-function get(tree::Tree, key::Key)::Value
+function get(tree::Tree, key::Key)
   local value::Value
   local k::Key
-  k = begin
-    @match tree begin
-      NODE(__) =>  tree.key
-      LEAF(__) => tree.key
-    end
+  if tree isa EMPTY
+    fail()
+  end
+  k = if tree isa NODE || tree isa LEAF
+    tree.key
   end
   value = begin
-    local kv = keyCompare(key, k)
-    @match tree begin
-      LEAF(__) where kv == 0  => begin
-        tree.value
-      end
-
-      NODE(__) where kv == 0 => begin
-        tree.value
-      end
-
-      NODE(__) where kv == 1=> begin
-        get(tree.right, key)
-      end
-
-      NODE(__) where kv == -1 => begin
-        get(tree.left, key)
-      end
+    local kc = keyCompare(key, k)
+    if kc == 0
+      tree.value
+    elseif kc == 1 && tree isa NODE
+      get(tree.right, key)
+    elseif kc == -1 && tree isa NODE
+      get(tree.left, key)
+    else
+      fail()
     end
   end
   return value
@@ -539,7 +531,7 @@ end
 
 """ #= Fetches a value from the tree given a key, or returns NONE if no value is
    associated with the key. =#"""
-function getOpt(tree::Tree, key::Key)::Option{Value}
+function getOpt(tree::Tree, key::Key)
   local value::Option{Value}
 
   local k::Key
@@ -943,11 +935,7 @@ function mapFold(inTree::Tree, inFunc::Function, inStartValue::FT) where {FT}
   return (outTree, outResult)
 end
 
-function setTreeLeftRight(orig::Tree, left::Tree, right::Tree)::Tree
-  setTreeLeftRight(orig, left = left, right = right)
-end
-
-function setTreeLeftRight(orig::Tree; left::Tree = EMPTY(), right::Tree = EMPTY())::Tree
+function setTreeLeftRight(orig::Tree, left::Tree = EMPTY(), right::Tree = EMPTY())
   local res::Tree
   res = begin
     @match (orig, left, right) begin

@@ -313,9 +313,9 @@ function lookupNameWithError(name::Absyn.Path, scope::InstNode, info::SourceInfo
   try
     (node, state) = lookupName(name, scope, checkAccessViolations)
   catch e
-    #Error.addSourceMessage(errorType, list(AbsynUtil.pathString(name), scopeName(scope)), info)
-    @error "Lookup error for path: $(AbsynUtil.pathString(name)) in the scope $(scopeName(scope))
-         with the following error: $(e)"
+    Error.addSourceMessage(Error.LOOKUP_ERROR, list(AbsynUtil.pathString(name), scopeName(scope)), info)
+    #@error "Lookup error for path: $(AbsynUtil.pathString(name)) in the scope $(scopeName(scope))
+    #with the following error: $(e)"
     throw(e)
   end
   (node, state)

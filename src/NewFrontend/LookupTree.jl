@@ -289,7 +289,7 @@ function addConflictFail(newValue::Value, oldValue::Value, key::Key)::Value
   return value
 end
 
-addConflictDefault = addConflictFail
+addConflictDefault::Function = addConflictFail
 
 """ #= Conflict resolving function for add which replaces the old value with the new. =#"""
 function addConflictReplace(newValue::Value, oldValue::Value, key::Key)::Value
@@ -401,9 +401,9 @@ function get(tree::Tree, key::Key)
     local kc = keyCompare(key, k)
     if kc == 0
       tree.value
-    elseif kc == 1
+    elseif kc == 1 && tree isa NODE
       get(tree.right, key)
-    elseif kc == -1
+    elseif kc == -1 && tree isa NODE
       get(tree.left, key)
     else
       fail()

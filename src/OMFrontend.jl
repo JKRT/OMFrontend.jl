@@ -90,7 +90,8 @@ end
   The element to instantiate should be provided in the following format:
   <component>.<component_1>.<component_2>...
 """
-function instantiateSCodeToFM(elementToInstantiate::String, inProgram::SCode.Program; scalarize = true)
+function instantiateSCodeToFM(elementToInstantiate::String,
+                              inProgram::SCode.Program; scalarize = true)
   # initialize globals
   Main.Global.initialize()
   # make sure we have all the flags loaded!
@@ -203,11 +204,11 @@ end
 
 function initLoadMSL(;MSL_Version = "MSL:3.2.3")
   # For printing
-  @info "Loading MSL Version: $(MSL_Version)"
+  @info "Loading MSL\n\t Version: $(MSL_Version)"
   MSL_Version = replace(MSL_Version, "." => "_")
   MSL_Version = replace(MSL_Version, ":" => "_")
   @time loadMSL(MSL_Version = MSL_Version)
-  @info "Loaded MSL successfully"
+  @info "MSL successfully Loaded"
 end
 
 """
@@ -217,8 +218,8 @@ Returns the flat representation of a modelica model along with the functions use
 See the keyword argument for specifying MSL version.
 Valid versions are 3.2.3 and 4.0.0.
 """
-function flattenModelWithMSL(modelName::String, fileName::String; MSL_Version = "MSL:3.2.3")
-  println("Flatten model with MSL")
+function flattenModelWithMSL(modelName::String,
+                             fileName::String; MSL_Version = "MSL:3.2.3")
   if !haskey(LIBRARY_CACHE, MSL_Version)
     initLoadMSL(MSL_Version = MSL_Version)
   end
@@ -229,8 +230,8 @@ function flattenModelWithMSL(modelName::String, fileName::String; MSL_Version = 
   local sCodeProgram = translateToSCode(absynProgram)
   #= Add builtin function to the program (model) and instantiate it =#
   builtin = NFModelicaBuiltinCache["NFModelicaBuiltin"]
-  program = listReverse(listAppend(builtin, sCodeProgram))
-  program = listAppend(lib, sCodeProgram)
+  #program = listReverse(listAppend(sCodeProgram, builtin))
+  program = listAppend(sCodeProgram, lib)
   println("Attempting to instantiate..." * modelName)
   (FM, cache) = instantiateSCodeToFM(modelName, program)
 end

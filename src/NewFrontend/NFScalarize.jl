@@ -115,8 +115,17 @@ function scalarizeVariable(var::Variable, vars::Vector{Variable})
       throw(e)
     end
   else
-    @assign var.binding = mapExp(var.binding, expandComplexCref_traverser)
+    local res
+    #try
+    res = mapExp(var.binding, expandComplexCref_traverser)
+    @assign var.binding = res
     push!(vars, var)
+    #catch e
+    #println(toString(var.binding))
+    #println(typeof(var.binding))
+    #println(res)
+    #fail()
+  end
   end
   return vars
 end

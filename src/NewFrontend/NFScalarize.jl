@@ -126,7 +126,6 @@ function scalarizeVariable(var::Variable, vars::Vector{Variable})
     #println(res)
     #fail()
   end
-  end
   return vars
 end
 

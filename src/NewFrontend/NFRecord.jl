@@ -65,13 +65,12 @@ function instDefaultConstructor(
   #= Backported from the original code. =#
   setNodeType(ROOT_CLASS(parent(node)), ctor_node)
   #= End=#
-  ctor_node = instantiateN1(ctor_node, parent(ctor_node))
+  ctor_node = instantiateN1(ctor_node) #, parent(ctor_node))
   instExpressions(ctor_node)
-#  @info "Record fields"
   #=  Collect the record fields.=#
   (inputs, locals, all_params) = collectRecordParams(ctor_node)
   #=  Create the output record element, using the instance created above as both parent and type. =#
-  @assign out_comp = UNTYPED_COMPONENT(
+  out_comp = UNTYPED_COMPONENT(
     ctor_node,
     listArray(nil),
     EMPTY_BINDING,
@@ -81,16 +80,15 @@ function instDefaultConstructor(
     false,
     AbsynUtil.dummyInfo,
   )
-  @assign out_rec =
-    fromComponent("out" + name(ctor_node), out_comp, ctor_node)
+  out_rec = fromComponent("out" + name(ctor_node), out_comp, ctor_node)
   #=  Make a record constructor class and create a node for the constructor.
   =#
-  @assign ctor_cls = makeRecordConstructor(all_params, out_rec)
-  @assign ctor_node = replaceClass(ctor_cls, ctor_node)
+  ctor_cls = makeRecordConstructor(all_params, out_rec)
+  ctor_node = replaceClass(ctor_cls, ctor_node)
   classApply(ctor_node, setType, TYPE_COMPLEX(ctor_node, COMPLEX_CLASS()))
   #=  Create the constructor function and add it to the function cache. =#
-  @assign attr = DAE.FUNCTION_ATTRIBUTES_DEFAULT
-  @assign status = P_Pointer.create(FunctionStatus.INITIAL)
+  attr = DAE.FUNCTION_ATTRIBUTES_DEFAULT
+  status = P_Pointer.create(FunctionStatus.INITIAL)
   cacheAddFunc(
     node,
     M_FUNCTION(

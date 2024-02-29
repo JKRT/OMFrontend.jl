@@ -7,7 +7,7 @@ const FunctionType = FunctionTypeStruct(1, 2, 3)
 
 @UniontypeDecl NFType
 @Uniontype NFType begin
-  @Record SUBSCRIPTED_TYPE begin
+  @Record TYPE_SUBSCRIPTED begin
     name::String
     ty::M_Type
     subs::List{M_Type}
@@ -598,7 +598,7 @@ function toFlatDeclarationStream(ty::NFType, s::IOStream_M.IOSTREAM)
       s = IOStream_M.append(s, toString(ty.ty))
       s = IOStream_M.append(s, " exp;\n")
       index = 1
-      for sub in ty.subs loop
+      for sub in ty.subs
         s = IOStream_M.append(s, "input ")
         s = IOStream_M.append(s, toString(sub))
         s = IOStream_M.append(s, " s")
@@ -623,8 +623,7 @@ end
 
 function toString(ty::M_Type)::String
   local str::String
-
-  @assign str = begin
+  str = begin
     @match ty begin
       TYPE_INTEGER(__) => begin
         "Integer"
@@ -685,7 +684,7 @@ function toString(ty::M_Type)::String
         P_Function.typeString(ty.fn)
       end
 
-      Type.METABOXED(__) => begin
+      TYPE_METABOXED(__) => begin
         "#" + toString(ty.ty)
       end
 
@@ -697,6 +696,8 @@ function toString(ty::M_Type)::String
       TYPE_ANY(__) => begin
         "ANY"
       end
+
+
 
       _ => begin
         Error.assertion(

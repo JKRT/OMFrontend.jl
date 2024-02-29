@@ -8814,7 +8814,11 @@ function printExp(str::STRING)
 end
 
 function printExp(arr::ARRAY)
-  "{" * printExpLst(arr.arrayExp) * "}"
+  if !isempty(arr.arrayExp)
+    "{" * printExpLst(arr.arrayExp) * "}"
+  else
+   "{/*Empty array*/}"
+  end
 end
 
 @exportAll()

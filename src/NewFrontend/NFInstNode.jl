@@ -2009,6 +2009,16 @@ function isEmpty(node::InstNode)
   isEmpty
 end
 
+function isReplaceable(node::InstNode)
+  local elem;
+  repl = @match node begin
+    CLASS_NODE(__) =>  SCodeUtil.isElementReplaceable(node.definition)
+    COMPONENT_NODE(definition = SOME(elem)) =>  SCodeUtil.isElementReplaceable(elem)
+    _ => false
+  end
+  return repl
+end
+
 function isRef(node::InstNode)
   local isRef::Bool
 
@@ -2170,7 +2180,7 @@ function newExtends(definition::SCode.Element, parent::InstNode)
 
   @match SCode.EXTENDS(baseClassPath = base_path, visibility = vis) = definition
   name = AbsynUtil.pathLastIdent(base_path)
-  node = CLASS_NODE(name, definition, visibilityFromSCode(vis), P_Pointer.create(NOT_INSTANTIATED()), #=P_CachedData.=#empty(), parent, BASE_CLASS(parent, definition))
+  node = CLASS_NODE(name, definition, visibilityFromSCode(vis), P_Pointer.create(NOT_INSTANTIATED()), #=P_CachedData.=# empty(), parent, BASE_CLASS(parent, definition))
   node
 end
 

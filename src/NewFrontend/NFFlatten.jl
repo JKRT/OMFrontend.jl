@@ -514,8 +514,7 @@ function getRecordBindings(binding::Binding, comps::Vector{<:InstNode})::List{Bi
   local var::VariabilityType
   binding_exp = getTypedExp(binding)
   var = variability(binding)
-  #=  Convert the expressions in the record expression into bindings.
-  =#
+  #=  Convert the expressions in the record expression into bindings. =#
   recordBindings = begin
     @match binding_exp begin
       RECORD_EXPRESSION(__) => begin
@@ -652,13 +651,13 @@ function flattenArray(
   #=  if we don't scalarize flatten the class and vectorize it
   =#
   if !Flags.isSet(Flags.NF_SCALARIZE)
-     (vrs, sects) = flattenClass(
+    (vrs, sects) = flattenClass(
       cls,
       prefix,
       visibility,
       binding,
       nil,
-      P_Sections.Sections.SECTIONS(nil, nil, nil, nil),
+      SECTIONS(nil, nil, nil, nil),
     )
     for v in vrs
       @assign v.ty = liftArrayLeftList(v.ty, dimensions)

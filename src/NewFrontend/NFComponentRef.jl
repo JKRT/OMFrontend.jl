@@ -379,14 +379,18 @@ function toFlatString(cref::ComponentRef)::String
   local strl::List{String} = nil
   (cr, subs) = stripSubscripts(cref)
   strl = toFlatString_impl(cr, strl)
-  #= TODO: The moving of the quotes make it work for scalarized models. However, it fails for nonscalarized. =#
-  str = stringAppendList(list(
-    "'",
-    stringDelimitList(strl, "."),
-    "'",
-    toFlatStringList(subs)
-  ))
   #Special case
+  if !Flags.isSet(Flags.NF_SCALARIZE)
+    str = stringAppendList(list(
+      "'",
+      stringDelimitList(strl, "."),
+      "'",
+      toFlatStringList(subs)
+    ))
+  else
+    str = stringAppendList(
+      list("'", stringDelimitList(strl, "."), toFlatStringList(subs), "'",))
+  end
   if str  == "'time'"
     return "time"
   end

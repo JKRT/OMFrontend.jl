@@ -1974,8 +1974,8 @@ function instFunction2(
       end
 
       SCode.CLASS(__) where {(SCodeUtil.isRecord(def))} => begin
-        @assign fnNode = instFunction3(fnNode)
-        @assign fnNode = Record.instDefaultConstructor(fnPath, fnNode, info)
+        fnNode = instFunction3(fnNode)
+        fnNode = instDefaultConstructor(fnPath, fnNode, info)
         (fnNode, false)
       end
 

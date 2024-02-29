@@ -457,16 +457,18 @@ function lookupElementPtr(name::String, tree::ClassTree)::Pointer{InstNode}
   return element
 end
 
-""" #= Returns the class or component with the given name in the class tree. =#"""
+"""  Returns the class or component with the given name in the class tree. """
 function lookupElement(name::String, tree::ClassTree)#::Tuple{InstNode, Bool}
   local isImport::Bool
   local element::InstNode
   local entry::LookupTree.Entry
-  #@debug "Looking up element $name in class tree!"
-  #@debug "Fetching from tree. Soon to report entry"
+  #@info "Looking up element $name in class tree!"
+  #@info "Fetching from tree. Soon to report entry"
+  #@info "Structure of the tree" LookupTree.printTreeStr(tree.tree)
   lTree = lookupTree(tree)
   entry = LookupTree.get(lTree, name)
   res = resolveEntry(entry, tree)
+  #@info "Entry lookup complete"
   return res
 end
 
@@ -604,9 +606,9 @@ function flatten(tree::ClassTree)::ClassTree
         #=  time on filtering them out.
         =#
         flattenElements(tree.classes, clss)
-        #=  Component duplicates should be removed though, since we don't
-        =#
-        #=  want any duplicates in the flat model.
+        #=
+        Component duplicates should be removed though, since we don't
+        want any duplicates in the flat model.
         =#
         if listEmpty(dup_comp)
           flattenElements(tree.components, comps)
@@ -2174,12 +2176,11 @@ function addEnumConflict(
   literal::InstNode,
 )::LookupTree.Entry
   local entry::LookupTree.Entry
-  @error "An element with name $(name(literal)) is already declared in this scope" newEntry oldEntry nameStr
-  # Error.addSourceMessage(
-  #   Error.DOUBLE_DECLARATION_OF_ELEMENTS,
-  #   lis t(name(literal)),
-  #   info(literal),
-  # )
+  Error.addSourceMessage(
+    Error.DOUBLE_DECLARATION_OF_ELEMENTS,
+    list(name(literal)),
+    info(literal),
+  )
   fail()
   return entry
 end

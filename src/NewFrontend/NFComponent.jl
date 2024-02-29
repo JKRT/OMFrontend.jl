@@ -865,13 +865,11 @@ end
 
 function getAttributes(component::Component)
   local attr
-
    attr = begin
     @match component begin
       UNTYPED_COMPONENT(__) => begin
         component.attributes
       end
-
       TYPED_COMPONENT(__) => begin
         component.attributes
       end

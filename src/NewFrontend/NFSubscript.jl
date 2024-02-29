@@ -495,7 +495,6 @@ end
 
 function toStringList(subscripts::List{<:Subscript})::String
   local string::String
-
    string = ListUtil.toString(subscripts, toString, "", "[", ", ", "]", false)
   return string
 end

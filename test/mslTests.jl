@@ -43,5 +43,7 @@ end
   @testset "Electrical" begin
     @info "Testing Modelica.Electrical.Analog"
     include("analog.jl")
+    @info "Testing Modelica.Electrical.Batteries"
+    #include("batteries.jl")
   end
 end

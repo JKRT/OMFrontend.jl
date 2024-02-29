@@ -339,10 +339,14 @@ function toFlatString(call::Call)::String
     @match call begin
       TYPED_CALL(__) => begin
         nameVar = AbsynUtil.pathString(name(call.fn))
-         arg_str = stringDelimitList(
+        @info "Printing $nameVar to a string"
+        arg_str = stringDelimitList(
           list(toFlatString(arg) for arg in call.arguments),
           ", ",
         )
+        if nameVar == "Modelica.Mechanics.MultiBody.Frames.Quaternions.nullRotation"
+          println(arg_str)
+        end
         if isBuiltin(call.fn)
           stringAppendList(list(nameVar, "(", arg_str, ")"))
         else

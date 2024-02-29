@@ -260,7 +260,9 @@ struct InnerOuterStruct{T0 <: Int}
   OUTER::T0
   INNER_OUTER::T0
 end
+
 const InnerOuter = InnerOuterStruct(1, 2, 3, 4)
+const InnerOuterType = Int
 
 struct VisibilityStruct{T0 <: Int}
   PUBLIC::T0

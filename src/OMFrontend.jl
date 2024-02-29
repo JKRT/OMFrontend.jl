@@ -137,7 +137,7 @@ end
   Converts a function tree to a string
 """
 function Base.string(ft::Main.FunctionTreeImpl.Tree)
-  fLst = OMFrontend.Main.FunctionTreeImpl.toList(ft)
+  local fLst = OMFrontend.Main.FunctionTreeImpl.toList(ft)
   local buffer = IOBuffer()
   for (_, v) in fLst
     println(buffer, OMFrontend.Main.toFlatString(v))
@@ -146,6 +146,12 @@ function Base.string(ft::Main.FunctionTreeImpl.Tree)
 end
 
 function toFlatModelica(fm, fLst; printBindingTypes = false)
+  return replace(Main.toFlatString(fm, fLst, printBindingTypes), "\\n" => "\n")
+end
+
+function toFlatModelica(flatModelicaAndFunctionTree::Tuple; printBindingTypes = false)
+  local fLst = cacheToFunctionList(last(flatModelicaAndFunctionTree))
+  local fm = first(flatModelicaAndFunctionTree)
   return replace(Main.toFlatString(fm, fLst, printBindingTypes), "\\n" => "\n")
 end
 
@@ -246,7 +252,6 @@ function flattenModel(modelName::String, fileName::String)
   local sCodeProgram = translateToSCode(absynProgram)
   (FM, cache) = instantiateSCodeToFM(modelName, sCodeProgram)
 end
-
 
 """
   @author: johti17

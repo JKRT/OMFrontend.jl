@@ -613,15 +613,15 @@ function evalComponentStartBinding(
   #=  Only use the start value if the component is a fixed parameter.
   =#
    var = variability(comp)
-  if var != Variability.PARAMETER && var != Variability.STRUCTURAL_PARAMETER ||
-     !getFixedAttribute(comp)
+  if var != Variability.PARAMETER && var != Variability.STRUCTURAL_PARAMETER || !getFixedAttribute(comp)
     return outExp
   end
   #=  Look up \"start\" in the class.
   =#
   try
-     (start_node, isImport) = lookupElement("start", getClass(node))
-  catch
+    @match ENTRY_INFO(start_node, isImport) = lookupElement("start", getClass(node))
+  catch e
+    @error "DBG ERROR"
     return outExp
   end
   #=  Make sure we have an actual start attribute, and didn't just find some
@@ -629,7 +629,7 @@ function evalComponentStartBinding(
   #=  other element named start in the class.
   =#
    start_comp = component(start_node)
-  if !P_Component.isTypeAttribute(start_comp)
+  if !isTypeAttribute(start_comp)
     return outExp
   end
   #=  Try to evaluate the binding if one exists.
@@ -745,7 +745,7 @@ function makeRecordFieldBindingFromParent(
 
    parent_cr = rest(cref)
    parent_ty = nodeType(parent_cr)
-  @match true = Type.isRecord(arrayElementType(parent_ty))
+  @match true = isRecord(arrayElementType(parent_ty))
   try
      exp = evalCref(parent_cr, EMPTY_EXPRESSION(parent_ty), target)
   catch
@@ -4642,7 +4642,7 @@ function printUnboundError(component::Component, target::EvalTarget, exp::Expres
         ()
       end
 
-      P_EvalTarget.DIMENSION(__) => begin
+      EVALTARGET_DIMENSION(__) => begin
         Error.addSourceMessage(
           Error.STRUCTURAL_PARAMETER_OR_CONSTANT_WITH_NO_BINDING,
           list(toString(exp), name(target.component)),
@@ -4651,7 +4651,7 @@ function printUnboundError(component::Component, target::EvalTarget, exp::Expres
         fail()
       end
 
-      P_EvalTarget.CONDITION(__) => begin
+      EVALTARGET_CONDITION(__) => begin
         Error.addSourceMessage(
           Error.CONDITIONAL_EXP_WITHOUT_VALUE,
           list(toString(exp)),
@@ -4666,7 +4666,7 @@ function printUnboundError(component::Component, target::EvalTarget, exp::Expres
         if listMember(
           variability(component),
           list(Variability.STRUCTURAL_PARAMETER, Variability.PARAMETER),
-        ) && P_Component.getEvaluateAnnotation(component)
+        ) && getEvaluateAnnotation(component)
           if getFixedAttribute(component)
             Error.addMultiSourceMessage(
               Error.UNBOUND_PARAMETER_EVALUATE_TRUE,

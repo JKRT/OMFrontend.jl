@@ -48,18 +48,18 @@ function instUnqualified(
   local tree::ClassTree
   local elements::List{InstNode}
 
-  @match Absyn.Import.UNQUAL_IMPORT(path = path) = imp
-  @assign node = lookupImport(path, scope, info)
-  @assign node = Inst.instPackage(node)
-  @assign tree = classTree(getClass(node))
+  @match Absyn.UNQUAL_IMPORT(path = path) = imp
+  node = lookupImport(path, scope, info)
+  node = instPackage(node)
+  tree = classTree(getClass(node))
    () = begin
     @match tree begin
       CLASS_TREE_FLAT_TREE(__) => begin
         for cls in tree.classes
-          @assign imps = _cons(RESOLVED_IMPORT(cls, info), imps)
+          imps = _cons(RESOLVED_IMPORT(cls, info), imps)
         end
         for comp in tree.components
-          @assign imps = _cons(RESOLVED_IMPORT(comp, info), imps)
+          imps = _cons(RESOLVED_IMPORT(comp, info), imps)
         end
         ()
       end
@@ -123,8 +123,7 @@ end
 
 function Import_info(imp::Import)::SourceInfo
   local info::SourceInfo
-
-  @assign info = begin
+  info = begin
     @match imp begin
       UNRESOLVED_IMPORT(__) => begin
         imp.info
@@ -139,18 +138,15 @@ function Import_info(imp::Import)::SourceInfo
 end
 
 function name(imp::Import)::String
-  local name::String
-
-  @assign name = begin
+  local importName = begin
     @match imp begin
       UNRESOLVED_IMPORT(__) => begin
         AbsynUtil.importName(imp.imp)
       end
-
       RESOLVED_IMPORT(__) => begin
         name(imp.node)
       end
     end
-  end
-  return name
+  end::String
+  return importName
 end

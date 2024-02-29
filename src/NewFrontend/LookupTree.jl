@@ -386,11 +386,13 @@ function update(tree::Tree, key::Key, value::Value)::Tree
   return outTree
 end
 
-""" #= Fetches a value from the tree given a key, or fails if no value is associated
-   with the key. =#"""
+"""
+Fetches a value from the tree given a key, or fails if no value is associated with the key.
+"""
 function get(tree::Tree, key::Key)
   local value::Value
   local k::Key
+  #@info "Calling get in lookup tree with tree and key. Key was: $key"
   if tree isa EMPTY
     fail()
   end
@@ -399,6 +401,7 @@ function get(tree::Tree, key::Key)
   end
   value = begin
     local kc = keyCompare(key, k)
+    #@info "Key status code was:$kc"
     if kc == 0
       tree.value
     elseif kc == 1 && tree isa NODE
@@ -406,6 +409,7 @@ function get(tree::Tree, key::Key)
     elseif kc == -1 && tree isa NODE
       get(tree.left, key)
     else
+      #@info "Failing type of tree was: $(typeof(tree)) value was $(tree.value)"
       fail()
     end
   end

@@ -230,18 +230,26 @@ end
     Inlines uncomplicated functions.
     Currently it inlines all functions.
     Throws an error if a function is not complex enough.
-  """
+"""
 function inlineSimpleCalls(fm::FlatModel)
   local inlinedEqs = mapExpList(fm.equations, inlineSimpleCall)
   @assign fm.equations = inlinedEqs
   return fm
 end
 
-function instantiateN1(node::InstNode, parentNode::InstNode)::InstNode
+function instantiateN1(node::InstNode, parentNode::InstNode)
   #@debug "Instantiating!!!! in Inst"
   node = expand(node)
   #@debug "After expansion in inst. Instantiating in class-tree "
   (node, _) = instClass(node, MODIFIER_NOMOD(), DEFAULT_ATTR, true, 0, parentNode)
+  return node
+end
+
+function instantiateN1(node::InstNode)
+  #@debug "Instantiating!!!! in Inst"
+  node = expand(node)
+  #@debug "After expansion in inst. Instantiating in class-tree "
+  (node, _) = instClass(node, MODIFIER_NOMOD(), DEFAULT_ATTR, true, 0, EMPTY_NODE())
   return node
 end
 
@@ -470,11 +478,11 @@ function expandExtends(ext::InstNode, builtinExt::InstNode = EMPTY_NODE()) ::Tup
         #=  Look up the base class and expand it.
         =#
         scope = parent(ext)
-        #        @match (@match _cons(base_node, _) = base_nodes) = lookupBaseClassName(base_path, scope, info)
-        base_nodes = lookupBaseClassName(base_path, scope, info) #Modification by me:)
+        #@match (@match _cons(base_node, _) = base_nodes) = lookupBaseClassName(base_path, scope, info)
+        base_nodes = lookupBaseClassName(base_path, scope, info) #Modification by me:) Corresponds to the above
         base_node = listHead(base_nodes)
         checkExtendsLoop(base_node, base_path, info)
-        #checkReplaceableBaseClass(base_nodes, base_path, info)
+        checkReplaceableBaseClass(base_nodes, base_path, info)
         base_node = expand(base_node)
         ext = setNodeType(BASE_CLASS(scope, def), base_node)
         #=  If the extended class is a builtin class, like Real or any type derived
@@ -529,7 +537,6 @@ function checkReplaceableBaseClass(baseClasses::List{<:InstNode}, basePath::Absy
   local pos::Int
   local name::String
   local rest::List{InstNode}
-
   for base in baseClasses
      i = i + 1
     if SCodeUtil.isElementReplaceable(definition(base))
@@ -1813,14 +1820,14 @@ function mergeRedeclaredComponentAttributes(origAttr::Attributes, redeclAttr::At
   local rcty::ConnectorType.TYPE
   local cty_fs::ConnectorType.TYPE
   local rcty_fs::ConnectorType.TYPE
-  local par::Parallelism
-  local rpar::Parallelism
+  local par::ParallelismType
+  local rpar::ParallelismType
   local var::VariabilityType
   local rvar::VariabilityType
   local dir::DirectionType
   local rdir::DirectionType
-  local io::InnerOuter
-  local rio::InnerOuter
+  local io::InnerOuterType
+  local rio::InnerOuterType
   local fin::Bool
   local redecl::Bool
   local repl::Replaceable
@@ -1862,7 +1869,7 @@ function mergeRedeclaredComponentAttributes(origAttr::Attributes, redeclAttr::At
       end
       io = rio
     end
-    attr = Attributes.ATTRIBUTES(rcty, par, var, dir, io, fin, redecl, repl)
+    attr = ATTRIBUTES(rcty, par, var, dir, io, fin, redecl, repl, false)
   end
   attr
 end

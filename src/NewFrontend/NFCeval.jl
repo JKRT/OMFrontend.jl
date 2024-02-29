@@ -361,12 +361,10 @@ function evalExpPartial(
   return (outExp, outEvaluated) #= True if the whole expression is evaluated, otherwise false. =#
 end
 
-function evalCref(
-  cref::ComponentRef,
-  defaultExp::Expression,
-  target::EvalTarget;
-  evalSubscripts::Bool = true,
-)::Expression
+function evalCref(cref::ComponentRef,
+                  defaultExp::Expression,
+                  target::EvalTarget;
+                  evalSubscripts::Bool = true)
   local exp::Expression
   local c::InstNode
   local evaled::Bool
@@ -374,7 +372,7 @@ function evalCref(
     @match cref begin
       COMPONENT_REF_CREF(
         node = c && COMPONENT_NODE(__),
-      ) where {(!isIterator(cref))} => begin
+      ) where {(!isIterator(cref)) && nodeVariability(cref) < Variability.NON_STRUCTURAL_PARAMETER} => begin
         evalComponentBinding(c, cref, defaultExp, target, evalSubscripts)
       end
 
@@ -394,51 +392,64 @@ function evalComponentBinding(
   evalSubscripts::Bool = true,
 )::Expression #= The expression returned if the binding couldn't be evaluated =#
   local exp::Expression
-
   local exp_origin::ORIGIN_Type
   local comp::Component
   local binding::Binding
   local evaluated::Bool
   local var::VariabilityType
   local start_exp::Option{Expression}
-
    exp_origin = if isFunction(explicitParent(node))
     ORIGIN_FUNCTION
   else
     ORIGIN_CLASS
-  end
+   end
+  println("EVALUATE:" * toString(cref))
   typeComponentBinding2(node, exp_origin, false)
-   comp = component(node)
-   binding = getBinding(comp)
+  comp = component(node)
+  binding = getBinding(comp)
+  println(typeof(binding))
+  println(toString((binding)))
+  println(toString("COMPONENT BEING EVALUATED", comp))
+  print("Parent was:")
+  parent_cr = rest(cref)
+  println(toString(parent_cr))
   if isUnbound(binding)
+    #=
+    In some cases we need to construct a binding for the node, for example when
+    a record has bindings on the fields but not on the record instance as a whole.
+    =#
      binding =
-      makeComponentBinding(comp, node, toCref(defaultExp), target)
+       makeComponentBinding(comp, node, toCref(defaultExp), target)
     if isUnbound(binding)
+      #=
+      If we couldn't construct a binding, try to use the start value instead.
+      =#
        start_exp =
-        evalComponentStartBinding(node, comp, cref, target, evalSubscripts)
+         evalComponentStartBinding(node, comp, cref, target, evalSubscripts)
+      #=
+      The component had a valid start value. The value has already been
+      evaluated by evalComponentStartBinding, so skip the rest of the function.
+      =#
       if isSome(start_exp)
         @match SOME(exp) = start_exp
         return exp
       end
     end
   end
-  #=  In some cases we need to construct a binding for the node, for example when
-  =#
-  #=  a record has bindings on the fields but not on the record instance as a whole.
-  =#
-  #=  If we couldn't construct a binding, try to use the start value instead.
-  =#
-  #=  The component had a valid start value. The value has already been
-  =#
-  #=  evaluated by evalComponentStartBinding, so skip the rest of the function.
-  =#
    (exp, evaluated) = begin
     @match binding begin
       TYPED_BINDING(__) => begin
         if binding.evaluated
            exp = binding.bindingExp
         else
-           exp = evalExp_impl(binding.bindingExp, target)
+          #= Try to evaluate the binding =#
+          try
+            exp = evalExp_impl(binding.bindingExp, target)
+          catch e
+            @assign binding.evaluated = false
+            throw(e)
+          end
+          #= Update the binding and set is as evaluated =#
           @assign binding.bindingExp = exp
           @assign binding.evaluated = true
           comp = setBinding(binding, comp)
@@ -467,6 +478,7 @@ function evalComponentBinding(
   if evaluated
      exp = subscriptEvaluatedBinding(exp, cref, evalSubscripts)
   end
+  println("DONE")
   return exp
 end
 
@@ -610,35 +622,57 @@ function evalComponentStartBinding(
   local subs::List{Subscript}
   local pcount::Int
 
-  #=  Only use the start value if the component is a fixed parameter.
-  =#
-   var = variability(comp)
-  if var != Variability.PARAMETER && var != Variability.STRUCTURAL_PARAMETER || !getFixedAttribute(comp)
+  #=  Only use the start value if the component is a fixed parameter. =#
+  var = variability(comp)
+  @info "Component was:" toString("Component", comp)
+  @info "It was named" toString(cref)
+  @info "Variability was" Variability.variabilityAsString(var)
+  local notParamAndNotStructuralParam = (var != Variability.PARAMETER && var != Variability.STRUCTURAL_PARAMETER)
+  @info "notParamAndNotStructuralParam" notParamAndNotStructuralParam
+  if (notParamAndNotStructuralParam) || !getFixedAttribute(comp)
+    var != Variability.PARAMETER && var != Variability.STRUCTURAL_PARAMETER
     return outExp
   end
-  #=  Look up \"start\" in the class.
-  =#
+  #=  Look up \"start\" in the class. =#
+  @info "Checking start in the class"
   try
     @match ENTRY_INFO(start_node, isImport) = lookupElement("start", getClass(node))
   catch e
     @error "DBG ERROR"
     return outExp
   end
-  #=  Make sure we have an actual start attribute, and didn't just find some
+  #=
+  Make sure we have an actual start attribute, and didn't just find some
+  other element named start in the class.
   =#
-  #=  other element named start in the class.
-  =#
-   start_comp = component(start_node)
+  start_comp = component(start_node)
+  @info "start comp" toString("start_comp", start_comp)
   if !isTypeAttribute(start_comp)
     return outExp
   end
-  #=  Try to evaluate the binding if one exists.
-  =#
+  #=  Try to evaluate the binding if one exists. =#
   binding = getBinding(start_comp)
+  @info "binding" toString(binding)
+  @info "typeof binding" typeof(binding)
   outExp = begin
     @match binding begin
+      #=
+      In case the binding is not typed. We type it and then evaluate it.
+      added John: Feb 2024
+      =#
+      UNTYPED_BINDING(__) => begin
+        binding = typeBinding(binding, ORIGIN_BINDING)
+        exp = evalExp_impl(binding.bindingExp, target)
+        if !referenceEq(exp, binding.bindingExp)
+          binding.bindingExp = exp
+          start_comp = setBinding(binding, start_comp)
+          updateComponent!(start_comp, start_node)
+        end
+        SOME(exp)
+      end
+
       TYPED_BINDING(__) => begin
-         exp = evalExp_impl(binding.bindingExp, target)
+        exp = evalExp_impl(binding.bindingExp, target)
         if !referenceEq(exp, binding.bindingExp)
           binding.bindingExp = exp
           start_comp = setBinding(binding, start_comp)
@@ -671,9 +705,21 @@ function makeComponentBinding(
   local rec_node::InstNode
   local exp::Expression
   local rest_cr::ComponentRef
-
-   binding = begin
+  binding = begin
     @matchcontinue (component, cref) begin
+      (_, _) => begin
+        #=  A record field without an explicit binding, evaluate the parent's binding
+        =#
+        #=  if it has one and fetch the binding from it instead.
+        =#
+        try
+          exp = makeRecordFieldBindingFromParent(cref, target)
+          CEVAL_BINDING(exp)
+        catch e
+          println(e)
+          throw(e)
+        end
+      end
       (
         TYPED_COMPONENT(
           ty = TYPE_COMPLEX(complexTy = COMPLEX_RECORD(rec_node)),
@@ -682,12 +728,12 @@ function makeComponentBinding(
       ) => begin
         #=  A record component without an explicit binding, create one from its children.
         =#
-         exp =
+        exp =
           makeRecordBindingExp(component.classInst, rec_node, component.ty, cref)
-         exp_ty = typeOf(exp)
-         exp =
+        exp_ty = typeOf(exp)
+        exp =
           BINDING_EXP(exp, exp_ty, exp_ty, list(node), true)
-         binding = CEVAL_BINDING(exp)
+        binding = CEVAL_BINDING(exp)
         if !hasSubscripts(cref)
           updateComponent!(P_Component.setBinding(binding, component), node)
         end
@@ -704,26 +750,17 @@ function makeComponentBinding(
       ) => begin
         #=  A record array component without an explicit binding, create one from its children.
         =#
-         exp =
+        exp =
           makeRecordBindingExp(component.classInst, rec_node, component.ty, cref)
-         exp = splitRecordArrayExp(exp)
-         exp_ty = typeOf(exp)
-         exp =
+        exp = splitRecordArrayExp(exp)
+        exp_ty = typeOf(exp)
+        exp =
           BINDING_EXP(exp, exp_ty, exp_ty, list(node), true)
-         binding = CEVAL_BINDING(exp)
+        binding = CEVAL_BINDING(exp)
         if !hasSubscripts(cref)
-          updateComponent!(P_Component.setBinding(binding, component), node)
+          updateComponent!(setBinding(binding, component), node)
         end
         binding
-      end
-
-      (_, _) => begin
-        #=  A record field without an explicit binding, evaluate the parent's binding
-        =#
-        #=  if it has one and fetch the binding from it instead.
-        =#
-         exp = makeRecordFieldBindingFromParent(cref, target)
-        CEVAL_BINDING(exp)
       end
 
       _ => begin
@@ -734,33 +771,44 @@ function makeComponentBinding(
   return binding
 end
 
+"""
+```
+  makeRecordFieldBindingFromParent(cref::ComponentRef, target::EvalTarget)
+```
+  Updated with code from the latest frontend.
+"""
 function makeRecordFieldBindingFromParent(
   cref::ComponentRef,
   target::EvalTarget,
-)::Expression
+  )::Expression
   local exp::Expression
-
   local parent_cr::ComponentRef
   local parent_ty::M_Type
-
-   parent_cr = rest(cref)
-   parent_ty = nodeType(parent_cr)
-  @match true = isRecord(arrayElementType(parent_ty))
-  try
-     exp = evalCref(parent_cr, EMPTY_EXPRESSION(parent_ty), target)
-  catch
-     exp = makeRecordFieldBindingFromParent(parent_cr, target)
+  parent_cr = rest(cref)
+  println("Make record fieldbinding from Parent")
+  println(toString(cref))
+  println(toString(parent_cr))
+  parent_ty = nodeType(parent_cr)
+  #@match true = isRecord(arrayElementType(parent_ty))
+  #= NEW =#
+  parent = node(parent_cr)
+  typeComponentBinding2(parent, ORIGIN_CLASS, #= typeChildren =# false);
+  comp = component(parent)
+  binding = getBinding(comp)
+  subs = getSubscripts(parent_cr)
+  if hasExp(binding)
+    exp = getExp(binding)
+    exp = applySubscripts(subs, exp)
+    exp = recordElement(firstName(cref), exp)
+    exp = evalExp(exp, target)
+    indicesToKeep = nodesIncludingSplitSubs(cref)
+    exp = map(exp, (x) -> expandNonListedSplitIndices(x, indicesToKeep))
+  else
+    #= Try parent instead=#
+    exp = makeRecordFieldBindingFromParent(parent_cr, target);
+    exp = applySubscripts(subs, exp);
+    exp = recordElement(firstName(cref), exp);
   end
-  #=  Pass an EMPTY expression here as the default expression instead of the
-  =#
-  #=  cref. Otherwise evalCref might attempt to make a binding for the parent
-  =#
-  #=  from its children, which would create an evaluation loop.
-  =#
-  #=  If the parent didn't have a binding, try the parent's parent.
-  =#
-   exp =
-    recordElement(firstName(cref), exp)
   return exp
 end
 
@@ -769,9 +817,8 @@ function makeRecordBindingExp(
   recordNode::InstNode,
   recordType::M_Type,
   cref::ComponentRef,
-)::Expression
+  )
   local exp::Expression
-
   local tree::ClassTree
   local comps::Vector{InstNode}
   local args::List{Expression}
@@ -780,7 +827,6 @@ function makeRecordBindingExp(
   local c::InstNode
   local cr::ComponentRef
   local arg::Expression
-
    tree = classTree(getClass(typeNode))
    comps = getComponents(tree)
    args = nil

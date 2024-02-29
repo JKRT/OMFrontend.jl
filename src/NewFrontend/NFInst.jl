@@ -608,79 +608,79 @@ end
 
 """ #= Constructs a ComplexType for an external object, and also checks that the
              external object declaration is valid. =#"""
-               function makeExternalObjectType(tree::ClassTree, node::InstNode) ::ComplexType
-                 local ty::ComplexType
+function makeExternalObjectType(tree::ClassTree, node::InstNode) ::ComplexType
+  local ty::ComplexType
 
-                 local base_path::Absyn.Path
-                 local constructor::InstNode = EMPTY_NODE()
-                 local destructor::InstNode = EMPTY_NODE()
+  local base_path::Absyn.Path
+  local constructor::InstNode = EMPTY_NODE()
+  local destructor::InstNode = EMPTY_NODE()
 
-                  ty = begin
-                   @match tree begin
-                     CLASS_TREE_PARTIAL_TREE(__)  => begin
-                       #=  An external object may not contain components.
-                       =#
-                       for comp in tree.components
-                         if isComponent(comp)
-                           Error.addSourceMessage(Error.EXTERNAL_OBJECT_INVALID_ELEMENT, list(name(node), name(comp)), Component_info(comp))
-                           fail()
-                         end
-                       end
-                       #=  An external object may not contain extends other than the ExternalObject one.
-                       =#
-                       if arrayLength(tree.exts) > 1
-                         for ext in tree.exts
-                           if name(ext) != "ExternalObject"
-                             @match CLASS_NODE(nodeType = BASE_CLASS(definition = SCode.EXTENDS(baseClassPath = base_path))) = ext
-                             Error.addSourceMessage(Error.EXTERNAL_OBJECT_INVALID_ELEMENT, list(name(node), "extends " + AbsynUtil.pathString(base_path)), InstNode_info(ext))
-                             fail()
-                           end
-                         end
-                       end
-                       #=  An external object must have exactly two functions called constructor and
-                       =#
-                       #=  destructor.
-                       =#
-                       for cls in tree.classes
-                          () = begin
-                           @match name(cls) begin
-                             "constructor" where (SCodeUtil.isFunction(definition(cls)))  => begin
-                                constructor = cls
-                               ()
-                             end
+  ty = begin
+    @match tree begin
+      CLASS_TREE_PARTIAL_TREE(__)  => begin
+        #=  An external object may not contain components.
+        =#
+        for comp in tree.components
+          if isComponent(comp)
+            Error.addSourceMessage(Error.EXTERNAL_OBJECT_INVALID_ELEMENT, list(name(node), name(comp)), Component_info(comp))
+            fail()
+          end
+        end
+        #=  An external object may not contain extends other than the ExternalObject one.
+        =#
+        if arrayLength(tree.exts) > 1
+          for ext in tree.exts
+            if name(ext) != "ExternalObject"
+              @match CLASS_NODE(nodeType = BASE_CLASS(definition = SCode.EXTENDS(baseClassPath = base_path))) = ext
+              Error.addSourceMessage(Error.EXTERNAL_OBJECT_INVALID_ELEMENT, list(name(node), "extends " + AbsynUtil.pathString(base_path)), InstNode_info(ext))
+              fail()
+            end
+          end
+        end
+        #=  An external object must have exactly two functions called constructor and
+        =#
+        #=  destructor.
+        =#
+        for cls in tree.classes
+          () = begin
+            @match name(cls) begin
+              "constructor" where (SCodeUtil.isFunction(definition(cls)))  => begin
+                constructor = cls
+                ()
+              end
 
-                             "destructor" where (SCodeUtil.isFunction(definition(cls)))  => begin
-                                destructor = cls
-                               ()
-                             end
+              "destructor" where (SCodeUtil.isFunction(definition(cls)))  => begin
+                destructor = cls
+                ()
+              end
 
-                             _  => begin
-                               #=  Found some other element => error.
-                               =#
-                               Error.addSourceMessage(Error.EXTERNAL_OBJECT_INVALID_ELEMENT, list(name(node), name(cls)), InstNode_info(cls))
-                               fail()
-                             end
-                           end
-                         end
-                       end
-                       if isEmpty(constructor)
-                         Error.addSourceMessage(Error.EXTERNAL_OBJECT_MISSING_STRUCTOR, list(name(node), "constructor"), InstNode_info(node))
-                         fail()
-                       end
-                       #=  The constructor is missing.
-                       =#
-                       if isEmpty(destructor)
-                         Error.addSourceMessage(Error.EXTERNAL_OBJECT_MISSING_STRUCTOR, list(name(node), "destructor"), InstNode_info(node))
-                         fail()
-                       end
-                       #=  The destructor is missing.
-                       =#
-                       COMPLEX_EXTERNAL_OBJECT(constructor, destructor)
-                     end
-                   end
-                 end
-                 ty
-               end
+              _  => begin
+                #=  Found some other element => error.
+                =#
+                Error.addSourceMessage(Error.EXTERNAL_OBJECT_INVALID_ELEMENT, list(name(node), name(cls)), InstNode_info(cls))
+                fail()
+              end
+            end
+          end
+        end
+        if isEmpty(constructor)
+          Error.addSourceMessage(Error.EXTERNAL_OBJECT_MISSING_STRUCTOR, list(name(node), "constructor"), InstNode_info(node))
+          fail()
+        end
+        #=  The constructor is missing.
+        =#
+        if isEmpty(destructor)
+          Error.addSourceMessage(Error.EXTERNAL_OBJECT_MISSING_STRUCTOR, list(name(node), "destructor"), InstNode_info(node))
+          fail()
+        end
+        #=  The destructor is missing.
+        =#
+        COMPLEX_EXTERNAL_OBJECT(constructor, destructor)
+      end
+    end
+  end
+  ty
+end
 
 function expandClassDerived(element::SCode.Element, definition::SCode.ClassDef, node::InstNode, info::SourceInfo) ::InstNode
 
@@ -1139,8 +1139,10 @@ function instExtends(node::InstNode,
   node
 end
 
-""" #= Applies a modifier in the given scope, by splitting the modifier and merging
-             each part with the relevant element in the scope. =#"""
+"""
+Applies a modifier in the given scope, by splitting the modifier and merging
+each part with the relevant element in the scope.
+"""
 function applyModifier(modifier::Modifier, cls::ClassTree, clsName::String) ::ClassTree
   local mods::List{Modifier}
   local node_ptrs::List{Pointer{InstNode}}

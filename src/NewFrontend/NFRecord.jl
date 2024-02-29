@@ -77,7 +77,7 @@ function instDefaultConstructor(
     EMPTY_BINDING,
     OUTPUT_ATTR,
     NONE(),
-    false,
+    true, #= Not sure if this change should be made.... =#
     AbsynUtil.dummyInfo,
   )
   out_rec = fromComponent("out" + name(ctor_node), out_comp, ctor_node)

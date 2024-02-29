@@ -181,16 +181,16 @@ end
 
 
 
-function simplifySubscripts(cref::ComponentRef)::ComponentRef
+function simplifySubscripts(cref::ComponentRef; trim = false)::ComponentRef
   cref = begin
     local subs::List{Subscript}
     @match cref begin
       COMPONENT_REF_CREF(subscripts = nil(), origin = Origin.CREF) => begin
-        COMPONENT_REF_CREF(cref.node, cref.subscripts, cref.ty, cref.origin, simplifySubscripts(cref.restCref))
+        COMPONENT_REF_CREF(cref.node, cref.subscripts, cref.ty, cref.origin, simplifySubscripts(cref.restCref, trim = trim))
       end
       COMPONENT_REF_CREF(origin = Origin.CREF) => begin
         subs = list(simplifySubscript(s) for s in cref.subscripts)
-        COMPONENT_REF_CREF(cref.node, subs, cref.ty, cref.origin, simplifySubscripts(cref.restCref))
+        COMPONENT_REF_CREF(cref.node, subs, cref.ty, cref.origin, simplifySubscripts(cref.restCref, trim = trim))
       end
       _ => begin
         cref
@@ -1144,4 +1144,49 @@ function fromNode(
 )::ComponentRef
   local cref::ComponentRef = COMPONENT_REF_CREF(node, subs, ty, origin, COMPONENT_REF_EMPTY())
   return cref
+end
+
+function nodesIncludingSplitSubs(cref::ComponentRef, accum::List = nil)
+  local tmpNode
+  nodes = @match cref begin
+    COMPONENT_REF_CREF(__) => begin
+      for s in cref.subscripts
+        if isSplitIndex(s)
+          @match SUBSCRIPT_SPLIT_INDEX(tmpNode) = s
+          nodes = tmpNode <| nodes
+        end
+      end
+      nodesIncludingSplitSubs(cref.restCref, cref.node <| nodes);
+    end
+    _ => begin
+      nodes
+    end
+  end
+end
+
+
+
+function hasSplitSubscripts(cref::ComponentRef)
+  res = @match cref begin
+    COMPONENT_REF_CREF(__) => begin
+      ListUtil.exist(cref.subscripts, isSplitIndex)
+    end
+    _ => begin
+      false
+    end
+  end
+end
+
+function mapSubscripts(@nospecialize(cref::ComponentRef), func::Function)
+  res = @match cref begin
+    COMPONENT_REF_CREF(__) => begin
+      if !listEmpty(cref.subscripts)
+        @assign cref.subscripts = list(func(s) for s in cref.subscripts)
+      end
+      @assign cref.restCref = mapSubscripts(cref.restCref, func)
+      cref
+    end
+    _ => cref
+  end
+  return res
 end

@@ -242,6 +242,19 @@ const NON_STRUCTURAL_PARAMETER = 4
 const DISCRETE = 5
 const IMPLICITLY_DISCRETE = 6
 const CONTINUOUS = 7
+
+const variabilityStrings = ["CONSTANT",
+                            "STRUCTURAL_PARAMETER",
+                            "PARAMETER",
+                            "NON_STRUCTURAL_PARAMETER",
+                            "DISCRETE",
+                            "IMPLICITLY_DISCRETE",
+                            "CONTINUOUS",]
+
+function variabilityAsString(var::Int)
+  return variabilityStrings[var]
+end
+
 end
 
 const VariabilityType = Int

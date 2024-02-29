@@ -1211,7 +1211,6 @@ function evaluateCallTypeDim(
   fnArgs::Tuple{M_Function, List{<:Expression}},
   ptree::ParameterTree,
 )::Tuple{Dimension, ParameterTree}
-
    dim = begin
     local exp::Expression
     @match dim begin
@@ -1223,8 +1222,9 @@ function evaluateCallTypeDim(
         )
         ErrorExt.setCheckpoint(getInstanceName())
         try
-           exp = Ceval.evalExp(exp, Ceval.EVALTARGET_IGNORE_ERRORS())
-        catch
+           exp = evalExp(exp, EVALTARGET_IGNORE_ERRORS())
+        catch e
+          @error "DBG: ERROR" e
         end
         ErrorExt.rollBack(getInstanceName())
         fromExp(exp, Variability.CONSTANT)

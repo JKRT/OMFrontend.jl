@@ -1220,7 +1220,7 @@ function checkComponentBindingVariability(
 end
 
 function typeBinding(binding::Binding, origin::ORIGIN_Type)::Binding
-   binding = begin
+  binding = begin
     local exp::Expression
     local ty::NFType
     local var::VariabilityType

@@ -231,6 +231,20 @@ function nthEnumLiteral(ty::M_Type, n::Int) ::Expression
   exp
 end
 
+"""
+Replaces split indices in a subscripted expression with : subscripts,
+except for indices that reference nodes in the given list.
+"""
+function expandNonListedSplitIndices(exp::Expression, indicesToKeep::List{InstNode}, outExp::Expression)
+  outExp = @match exp begin
+    SUBSCRIPTED_EXP(split = true) => begin
+      applySubscripts(Subscript.expandSplitIndices(exp.subscripts, indicesToKeep), exp.exp);
+    end
+    _ => exp
+  end
+  return outExp
+end
+
 function retype(exp::Expression)
   exp = @match exp begin
     RANGE_EXPRESSION(__)  => begin

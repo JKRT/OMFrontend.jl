@@ -339,7 +339,7 @@ function toFlatString(call::Call)::String
     @match call begin
       TYPED_CALL(__) => begin
         nameVar = AbsynUtil.pathString(name(call.fn))
-        @info "Printing $nameVar to a string"
+        #@info "Printing $nameVar to a string"
         arg_str = stringDelimitList(
           list(toFlatString(arg) for arg in call.arguments),
           ", ",

@@ -1189,22 +1189,6 @@ function mapSubscripts(@nospecialize(cref::ComponentRef), func::Function)
   return res
 end
 
-#= New Code backported =#
-function hasSplitSubscripts(cref::ComponentRef)
-  local res::Bool
-  res = begin
-    @match cref begin
-      COMPONENT_REF_CREF(origin = Origin.CREF)  => begin
-        ListUtil.exist(cref.subscripts, Subscript.isSplitIndex) || hasSplitSubscripts(cref.restCref)
-      end
-      _  => begin
-        false
-      end
-    end
-  end
-  res
-end
-
 function hasNonModelSubscripts(cref::ComponentRef) ::Bool
   local hasSubscripts::Bool
   hasSubscripts = begin

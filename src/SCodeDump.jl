@@ -37,19 +37,16 @@ using ExportAll
 *
 */ =#
 
+#= Note all methods in this module are not currently supported. =#
 import Absyn
-
-import Main.AbsynUtil
-
-import Main.SCode
-
-import Main.Dump
-
+import SCode
 import ListUtil
 
-import Main.SCodeDumpTpl
-
-import Main.Tpl
+import ..Main.AbsynUtil
+import ..SCodeUtil
+#import ..Main.Dump
+#import ..Main.SCodeDumpTpl
+#import ..Main.Tpl
 
 @Uniontype SCodeDumpOptions begin
   @Record OPTIONS begin
@@ -109,7 +106,6 @@ end
 """ #= Prints SCode.Mod to a string. =#"""
 function printModStr(inMod::SCode.Mod, options::SCodeDumpOptions = defaultOptions)::String
   local outString::String
-
   @assign outString = Tpl.tplString2(SCodeDumpTpl.dumpModifier, inMod, options)
   return outString
 end
@@ -147,20 +143,24 @@ function printCommentStr(
   return outString
 end
 
-""" #= Prints SCode.Comment.annotation to a string. =#"""
+""" Prints SCode.Comment.annotation to a string. """
 function printAnnotationStr(
   inComment::SCode.Comment,
   options::SCodeDumpOptions = defaultOptions,
 )::String
   local outString::String
-
   @assign outString = begin
     local annotation_::Option{SCode.Annotation}
     @match (inComment, options) begin
       (SCode.COMMENT(annotation_ = annotation_), _) => begin
-        Tpl.tplString2(SCodeDumpTpl.dumpAnnotationOpt, annotation_, options)
+        #Tpl.tplString2(SCodeDumpTpl.dumpAnnotationOpt, annotation_, options) TODO
+        if isSome(annotation_)
+          @match SOME(ann) = annotation_
+          dumpAnnotation(ann, options)
+        else
+          ""
+        end
       end
-
       _ => begin
         ""
       end
@@ -168,6 +168,78 @@ function printAnnotationStr(
   end
   return outString
 end
+
+"""
+Custom implementation of dumpAnnotation
+author johti17
+"""
+function dumpAnnotation(annotation::SCode.ANNOTATION, options)
+  local stripAlgorithmSections::Bool
+  local stripProtectedImports::Bool
+  local stripProtectedClasses::Bool
+  local stripProtectedComponents::Bool
+  local stripMetaRecords::Bool
+  local stripGraphicalAnnotations::Bool
+  local stripStringComments::Bool
+  local stripExternalDecl::Bool
+  local stripOutputBindings::Bool
+  #= Get options =#
+  @match OPTIONS(stripAlgorithmSections,
+                 stripProtectedImports,
+                 stripProtectedClasses,
+                 stripProtectedComponents,
+                 stripMetaRecords,
+                 stripMetaRecords,
+                 stripGraphicalAnnotations,
+                 stripStringComments,
+                 stripOutputBindings) = options
+  local modifier = annotation.modification
+  local buffer = IOBuffer()
+  write(buffer, "annotation(")
+  write(buffer, dumpModifier(modifier::SCode.Mod, options))
+  write(buffer, ")")
+  return String(take!(buffer))
+end
+
+function dumpModifier(mod::SCode.Mod, options)
+  local modifier = mod
+  local buffer = IOBuffer()
+  str = @match modifier begin
+    SCode.NOMOD(__) => ""
+    SCode.REDECL(finalPrefix, eachPrefix, element) => begin
+      if SCodeUtil.finalBool(finalPrefix)
+        write(buffer, "final ")
+      end
+      if SCodeUtil.eachBool(eachPrefix)
+        write(buffer, "each ")
+      end
+      write(buffer, "TODO: Unknown element for redeclare")
+    end
+    SCode.MOD(finalPrefix, eachPrefix, subModLst, binding, info) => begin
+      if SCodeUtil.finalBool(finalPrefix)
+        write(buffer, "final ")
+      end
+      if SCodeUtil.eachBool(eachPrefix)
+        write(buffer, "each ")
+      end
+      for (i,sm) in enumerate(subModLst)
+        local smStr = dumpModifier(sm.mod::SCode.Mod, options)
+        write(buffer, string(sm.ident, "=", smStr))
+        if i != length(subModLst)
+          write(buffer, ",")
+        end
+      end
+      if isSome(binding)
+        @match SOME(exp) = binding
+        write(buffer, AbsynUtil.printExp(exp))
+      else
+        write(buffer, string(""))
+      end
+    end
+  end
+  return String(take!(buffer))
+end
+
 
 """ #= Prints SCode.Restriction to a string. =#"""
 function restrString(inRestriction::SCode.Restriction)::String

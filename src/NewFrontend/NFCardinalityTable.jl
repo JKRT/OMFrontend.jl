@@ -1,14 +1,3 @@
-module NFCardinalityTable
-
-using MetaModelica
-using ExportAll
-#= Forward declarations for uniontypes until Julia adds support for mutual recursion =#
-
-FuncHash = Function
-FuncEq = Function
-FuncKeyStr = Function
-FuncValueStr = Function
-
 #= /*
 * This file is part of OpenModelica.
 *
@@ -39,67 +28,69 @@ FuncValueStr = Function
 * See the full OSMC Public License conditions for more details.
 *
 */ =#
-import ..BaseHashTable
+
+module NFCardinalityTable
+
 import ..System
 import ..Util
+import ..CONNECTOR
+import ..toString
+import ..INTEGER_EXPRESSION
+
+using ExportAll
 using MetaModelica
 
-Key = String
-Value = Int
-Table = Tuple
+const Table = Dict{String, Int}
 
-function emptyCardinalityTable(size::Int)::Table
-  local table::Table
-  @assign table = BaseHashTable.emptyHashTableWork(
-    size,
-    (stringHashDjb2Mod, stringEq, Util.id, intString),
-  )
-  return table
+function emptyCardinalityTable()
+  return Table()
 end
 
-function fromConnections(conns)::Table
+function fromConnections(conns)
   local table::Table
   if System.getUsesCardinality()
-    @assign table =
-      emptyCardinalityTable(max(1, Util.nextPrime(listLength(conns.connections))))
+    table = emptyCardinalityTable()
     for conn in conns.connections
-      @assign table = addConnector(conn.lhs, table)
-      @assign table = addConnector(conn.rhs, table)
+      table = addConnector(conn.lhs, table)
+      table = addConnector(conn.rhs, table)
     end
   else
-    @assign table = emptyCardinalityTable(1)
+    table = emptyCardinalityTable()
   end
   return table
 end
 
-function addConnector(conn, table::Table)::Table
+function addConnector(conn::CONNECTOR, table::Table)
   local conn_str::String
   local count::Int
-  @assign conn_str = Main.Connector.toString(conn)
-  try
-    @assign count = BaseHashTable.get(conn_str, table)
-    BaseHashTable.update((conn_str, count + 1), table)
-  catch
-    @assign table = BaseHashTable.add((conn_str, 1), table)
-  end
+  conn_str = toString(conn)
+    if (conn_str) in keys(table)
+      count = table[conn_str]
+      table[conn_str] = count + 1
+    else
+      table[conn_str] = 1
+    end
   return table
 end
 
-function evaluateCardinality(arg, table::Table)
+function evaluateCardinality(@nospecialize(arg), table::Table)
   local res::Expression
   local count::Int
-  try
-    @assign count = BaseHashTable.get(toString(arg), table)
-  catch
-    @assign count = 0
+  local argStr = toString(arg)
+  count = if argStr in keys(table)
+    table[toString(arg)]
+  else
+    count = 0
   end
-  @assign res = INTEGER_EXPRESSION(count)
-  return res
+  return INTEGER_EXPRESSION(count)
 end
 
+"""
+  Prints the table
+"""
 function print(table::Table)
-  return for e in BaseHashTable.hashTableList(table)
-    print(Util.tuple21(e) + ": " + String(Util.tuple22(e)) + "\\n")
+  for p in table
+    println(first(table) * ":"  * string(last(p)))
   end
 end
 

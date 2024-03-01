@@ -1,16 +1,15 @@
-
-function simplify(exp::Expression)::Expression
-  @assign exp = begin
+function simplify(@nospecialize(exp::Expression))
+  exp = begin
     @match exp begin
       CREF_EXPRESSION(__) => begin
-        @assign exp.cref = simplifySubscripts(exp.cref)
-        @assign exp.ty = getSubscriptedType(exp.cref)
-        exp
+        local expCref = simplifySubscripts(exp.cref)
+        local expTy = getSubscriptedType(exp.cref)
+        CREF_EXPRESSION(expTy, expCref)
       end
 
       ARRAY_EXPRESSION(__) => begin
-        @assign exp.elements = list(simplify(e) for e in exp.elements)
-        exp
+        expElements = list(simplify(e) for e in exp.elements)
+        ARRAY_EXPRESSION(exp.ty, expElements, exp.literal)
       end
 
       RANGE_EXPRESSION(__) => begin
@@ -18,7 +17,7 @@ function simplify(exp::Expression)::Expression
       end
 
       RECORD_EXPRESSION(__) => begin
-        @assign exp.elements = list(simplify(e) for e in exp.elements)
+        exp.elements = Expression[simplify(e) for e in exp.elements]
         exp
       end
 
@@ -85,11 +84,9 @@ function simplify(exp::Expression)::Expression
   return exp
 end
 
-function simplifyOpt(exp::Option{<:Expression})::Option{Expression}
-
+function simplifyOpt(exp::Option{<:Expression})
   local e::Expression
-
-  @assign exp = begin
+   exp = begin
     @match exp begin
       SOME(e) => begin
         SOME(simplify(e))
@@ -103,7 +100,7 @@ function simplifyOpt(exp::Option{<:Expression})::Option{Expression}
   return exp
 end
 
-function simplifyRange(range::Expression)::Expression
+function simplifyRange(range::Expression)
   local exp::Expression
 
   local start_exp1::Expression
@@ -120,39 +117,37 @@ function simplifyRange(range::Expression)::Expression
     step = step_exp1,
     stop = stop_exp1,
   ) = range
-  @assign start_exp2 = simplify(start_exp1)
-  @assign step_exp2 = simplifyOpt(step_exp1)
-  @assign stop_exp2 = simplify(stop_exp1)
+   start_exp2 = simplify(start_exp1)
+   step_exp2 = simplifyOpt(step_exp1)
+   stop_exp2 = simplify(stop_exp1)
   if referenceEq(start_exp1, start_exp2) &&
      referenceEq(step_exp1, step_exp2) &&
      referenceEq(stop_exp1, stop_exp2)
-    @assign exp = range
+     exp = range
   else
-    @assign ty = TypeCheck.getRangeType(
+     ty = TypeCheck.getRangeType(
       start_exp2,
       step_exp2,
       stop_exp2,
       arrayElementType(ty),
       AbsynUtil.dummyInfo,
     )
-    @assign exp = RANGE_EXPRESSION(ty, start_exp2, step_exp2, stop_exp2)
+     exp = RANGE_EXPRESSION(ty, start_exp2, step_exp2, stop_exp2)
   end
   return exp
 end
 
-function simplifyCall(callExp::Expression)::Expression
-
+function simplifyCall(callExp::Expression)
   local call::Call
   local args::List{Expression}
   local builtin::Bool
   local is_pure::Bool
-
   @match CALL_EXPRESSION(call = call) = callExp
-  @assign callExp = begin
+  callExp = begin
     @match call begin
       TYPED_CALL(arguments = args) where {(!isExternal(call))} => begin
         if Flags.isSet(Flags.NF_EXPAND_FUNC_ARGS)
-          @assign args = list(if hasArrayCall(arg)
+          args = list(if hasArrayCall(arg)
             arg
           else
             P_ExpandExp.ExpandExp.expand(arg)
@@ -165,35 +160,36 @@ function simplifyCall(callExp::Expression)::Expression
             "DynamicSelect",
             AbsynUtil.pathString(nameConsiderBuiltin(call.fn)),
           )
-            @assign callExp = simplify(listHead(args))
+             callExp = simplify(listHead(args))
             return
           end
         end
-        @assign args = list(simplify(arg) for arg in args)
-        @assign call.arguments = args
-        @assign builtin = isBuiltin(call.fn)
-        @assign is_pure = !isImpure(call.fn)
+        args = list(simplify(arg) for arg in args)
+        callArgs = args
+        call = TYPED_CALL(call.fn, call.ty, call.var, callArgs, call.attributes)
+        builtin = isBuiltin(call.fn)
+        is_pure = !isImpure(call.fn)
         #=  Use Ceval for builtin pure functions with literal arguments.
         =#
         if builtin
           if is_pure && ListUtil.all(args, isLiteral)
             try
-              @assign callExp = Ceval.evalCall(call, P_EvalTarget.IGNORE_ERRORS())
-              @assign callExp = stripBindingInfo(callExp)
+              callExp = Ceval.evalCall(call, P_EvalTarget.IGNORE_ERRORS())
+              callExp = stripBindingInfo(callExp)
             catch
             end
           else
             if Flags.isSet(Flags.NF_SCALARIZE)
-              @assign callExp =
-                simplifynameConsiderBuiltin(call.fn, args, call)
+              callExp =
+                simplify(nameConsiderBuiltin(call.fn), args, call)
             end
           end
         elseif Flags.isSet(Flags.NF_EVAL_CONST_ARG_FUNCS) &&
                is_pure &&
                ListUtil.all(args, isLiteral)
-          @assign callExp = simplifyCall2(call)
+          callExp = simplifyCall2(call)
         else
-          @assign callExp = CALL_EXPRESSION(call)
+          callExp = CALL_EXPRESSION(call)
         end
         #=  do not expand builtin calls if we should not scalarize
         =#
@@ -221,13 +217,13 @@ function simplifyCall(callExp::Expression)::Expression
   return callExp
 end
 
-function simplifyCall2(call::Call)::Expression
+function simplifyCall2(call::Call)
   local outExp::Expression
 
   ErrorExt.setCheckpoint(getInstanceName())
   try
-    @assign outExp = Ceval.evalCall(call, P_EvalTarget.IGNORE_ERRORS())
-    @assign outExp = stripBindingInfo(outExp)
+     outExp = Ceval.evalCall(call, P_EvalTarget.IGNORE_ERRORS())
+     outExp = stripBindingInfo(outExp)
     ErrorExt.delCheckpoint(getInstanceName())
   catch
     if Flags.isSet(Flags.FAILTRACE)
@@ -238,7 +234,7 @@ function simplifyCall2(call::Call)::Expression
     else
       ErrorExt.rollBack(getInstanceName())
     end
-    @assign outExp = CALL_EXPRESSION(call)
+     outExp = CALL_EXPRESSION(call)
   end
   return outExp
 end
@@ -247,28 +243,23 @@ function simplify(
   name::Absyn.Path,
   args::List{<:Expression},
   call::Call,
-)::Expression
+)
   local exp::Expression
-
-  @assign exp = begin
+  exp = begin
     @match AbsynUtil.pathFirstIdent(name) begin
       "cat" => begin
-        @assign exp = P_ExpandExp.ExpandExp.expandBuiltinCat(args, call)
+        (exp, _) = expandBuiltinCat(args, call)
         exp
       end
-
       "sum" => begin
         simplifySumProduct(listHead(args), call, isSum = true)
       end
-
       "product" => begin
         simplifySumProduct(listHead(args), call, isSum = false)
       end
-
       "transpose" => begin
         simplifyTranspose(listHead(args), call)
       end
-
       _ => begin
         CALL_EXPRESSION(call)
       end
@@ -277,7 +268,7 @@ function simplify(
   return exp
 end
 
-function simplifySumProduct(arg::Expression, call::Call, isSum::Bool)::Expression
+function simplifySumProduct(arg::Expression, call::Call, isSum::Bool)
   local exp::Expression
 
   local expanded::Bool
@@ -285,51 +276,48 @@ function simplifySumProduct(arg::Expression, call::Call, isSum::Bool)::Expressio
   local ty::M_Type
   local op::Operator
 
-  @assign (exp, expanded) = P_ExpandExp.ExpandExp.expand(arg)
+   (exp, expanded) = P_ExpandExp.ExpandExp.expand(arg)
   if expanded
-    @assign args = arrayScalarElements(exp)
-    @assign ty = arrayElementType(typeOf(arg))
+     args = arrayScalarElements(exp)
+     ty = arrayElementType(typeOf(arg))
     if listEmpty(args)
-      @assign exp = if isSum
+       exp = if isSum
         makeZero(ty)
       else
         makeOne(ty)
       end
     else
       @match _cons(exp, args) = args
-      @assign op = if isSum
+       op = if isSum
         makeAdd(ty)
       else
         makeMul(ty)
       end
       for e in args
-        @assign exp = BINARY_EXPRESSION(exp, op, e)
+         exp = BINARY_EXPRESSION(exp, op, e)
       end
     end
   else
-    @assign exp = CALL_EXPRESSION(call)
+     exp = CALL_EXPRESSION(call)
   end
   return exp
 end
 
-function simplifyTranspose(arg::Expression, call::Call)::Expression
+function simplifyTranspose(arg::Expression, call::Call)
   local exp::Expression
-
   local e::Expression
-
-  @assign e = if hasArrayCall(arg)
-    arg
+  if hasArrayCall(arg)
+    e = arg
   else
-    P_ExpandExp.ExpandExp.expand(arg)
+    (e, _) = expand(arg)
   end
-  @assign exp = begin
+  exp = begin
     @match e begin
       ARRAY_EXPRESSION(
         __,
       ) where {(ListUtil.all(e.elements, isArray))} => begin
         transposeArray(e)
       end
-
       _ => begin
         CALL_EXPRESSION(call)
       end
@@ -338,7 +326,7 @@ function simplifyTranspose(arg::Expression, call::Call)::Expression
   return exp
 end
 
-function simplifyArrayConstructor(call::Call)::Expression
+function simplifyArrayConstructor(call::Call)
   local outExp::Expression
   local ty::M_Type
   local var::VariabilityType
@@ -375,7 +363,7 @@ function simplifyArrayConstructor(call::Call)::Expression
       end
 
       _ => begin
-        @assign exp = simplify(exp)
+         exp = simplify(exp)
         CALL_EXPRESSION(TYPED_ARRAY_CONSTRUCTOR(ty, var, exp, iters))
       end
     end
@@ -383,8 +371,8 @@ function simplifyArrayConstructor(call::Call)::Expression
   return outExp
 end
 
-function simplifySize(sizeExp::Expression)::Expression
-  @assign sizeExp = begin
+function simplifySize(sizeExp::Expression)
+   sizeExp = begin
     local exp::Expression
     local index::Expression
     local dim::Dimension
@@ -398,7 +386,7 @@ function simplifySize(sizeExp::Expression)::Expression
             toInteger(index),
           )
           if isKnown(dim)
-            exp = INTEGER_EXPRESSION(P_Dimension.Dimension.size(dim))
+            exp = INTEGER_EXPRESSION(size(dim))
           else
             exp = SIZE_EXPRESSION(exp, SOME(index))
           end
@@ -408,9 +396,9 @@ function simplifySize(sizeExp::Expression)::Expression
         exp
       end
       SIZE_EXPRESSION(__) => begin
-        @assign dims = arrayDims(typeOf(sizeExp.exp))
+         dims = arrayDims(typeOf(sizeExp.exp))
         if listUtil.all(dims, (x, y=true) -> P_Dimension.Dimension.isKnown(x, y))
-          @assign exp = makeArray(
+           exp = makeArray(
             TYPE_ARRAY(
               TYPE_INTEGER(),
               list(P_Dimension.Dimension.fromInteger(listLength(dims))),
@@ -418,7 +406,7 @@ function simplifySize(sizeExp::Expression)::Expression
             list(P_Dimension.Dimension.sizeExp(d) for d in dims),
           )
         else
-          @assign exp = sizeExp
+           exp = sizeExp
         end
         exp
       end
@@ -427,18 +415,16 @@ function simplifySize(sizeExp::Expression)::Expression
   return sizeExp
 end
 
-function simplifyBinary(binaryExp::Expression)::Expression
-
+function simplifyBinary(binaryExp::Expression)
   local e1::Expression
   local e2::Expression
   local se1::Expression
   local se2::Expression
   local op::Operator
-
   @match BINARY_EXPRESSION(e1, op, e2) = binaryExp
-  @assign se1 = simplify(e1)
-  @assign se2 = simplify(e2)
-  @assign binaryExp = simplifyBinaryOp(se1, op, se2)
+   se1 = simplify(e1)
+   se2 = simplify(e2)
+   binaryExp = simplifyBinaryOp(se1, op, se2)
 #  if Flags.isSet(Flags.NF_EXPAND_OPERATIONS) && TODO: John
 #     !hasArrayCall(binaryExp)
 #    @assign binaryExp = P_ExpandExp.ExpandExp.expand(binaryExp)
@@ -446,18 +432,18 @@ function simplifyBinary(binaryExp::Expression)::Expression
   return binaryExp
 end
 
-function simplifyBinaryOp(exp1::Expression, op::Operator, exp2::Expression)::Expression
+function simplifyBinaryOp(exp1::Expression, op::Operator, exp2::Expression)
   local outExp::Expression
 
   if isLiteral(exp1) && isLiteral(exp2)
-    @assign outExp = evalBinaryOp(
+    outExp = evalBinaryOp(
       expand(exp1)[1],
       op,
       expand(exp2)[1],
     )
-    @assign outExp = stripBindingInfo(outExp)
+    outExp = stripBindingInfo(outExp)
   else
-    @assign outExp = begin
+    outExp = begin
       @match op.op begin
         Op.ADD => begin
           simplifyBinaryAdd(exp1, op, exp2)
@@ -488,21 +474,21 @@ function simplifyBinaryOp(exp1::Expression, op::Operator, exp2::Expression)::Exp
   return outExp
 end
 
-function simplifyBinaryAdd(exp1::Expression, op::Operator, exp2::Expression)::Expression
+function simplifyBinaryAdd(exp1::Expression, op::Operator, exp2::Expression)
   local outExp::Expression
 
   if isZero(exp1)
-    @assign outExp = exp2
+    outExp = exp2
   elseif isZero(exp2)
-    @assign outExp = exp1
+    outExp = exp1
   elseif isNegated(exp2)
-    @assign outExp = BINARY_EXPRESSION(
+    outExp = BINARY_EXPRESSION(
       exp1,
       negate(op),
       negate(exp2),
     )
   else
-    @assign outExp = BINARY_EXPRESSION(exp1, op, exp2)
+    outExp = BINARY_EXPRESSION(exp1, op, exp2)
   end
   #=  0 + e = e
   =#
@@ -513,24 +499,24 @@ function simplifyBinaryAdd(exp1::Expression, op::Operator, exp2::Expression)::Ex
   return outExp
 end
 
-function simplifyBinarySub(exp1::Expression, op::Operator, exp2::Expression)::Expression
+function simplifyBinarySub(exp1::Expression, op::Operator, exp2::Expression)
   local outExp::Expression
 
   if isZero(exp1)
-    @assign outExp = UNARY_EXPRESSION(
+     outExp = UNARY_EXPRESSION(
       makeUMinus(typeOf(op)),
       exp2,
     )
   elseif isZero(exp2)
-    @assign outExp = exp1
+     outExp = exp1
   elseif isNegated(exp2)
-    @assign outExp = BINARY_EXPRESSION(
+     outExp = BINARY_EXPRESSION(
       exp1,
       negate(op),
       negate(exp2),
     )
   else
-    @assign outExp = BINARY_EXPRESSION(exp1, op, exp2)
+     outExp = BINARY_EXPRESSION(exp1, op, exp2)
   end
   #=  0 - e = -e
   =#
@@ -546,10 +532,10 @@ function simplifyBinaryMul(
   op::Operator,
   exp2::Expression,
   switched::Bool = false,
-)::Expression
+)
   local outExp::Expression
 
-  @assign outExp = begin
+   outExp = begin
     @match exp1 begin
       INTEGER_EXPRESSION(value = 0) => begin
         exp1
@@ -583,49 +569,49 @@ function simplifyBinaryMul(
   return outExp
 end
 
-function simplifyBinaryDiv(exp1::Expression, op::Operator, exp2::Expression)::Expression
+function simplifyBinaryDiv(exp1::Expression, op::Operator, exp2::Expression)
   local outExp::Expression
 
   #=  e / 1 = e
   =#
   if isOne(exp2)
-    @assign outExp = exp1
+     outExp = exp1
   else
-    @assign outExp = BINARY_EXPRESSION(exp1, op, exp2)
+     outExp = BINARY_EXPRESSION(exp1, op, exp2)
   end
   return outExp
 end
 
-function simplifyBinaryPow(exp1::Expression, op::Operator, exp2::Expression)::Expression
+function simplifyBinaryPow(exp1::Expression, op::Operator, exp2::Expression)
   local outExp::Expression
 
   if isZero(exp2)
-    @assign outExp = makeOne(typeOf(op))
+     outExp = makeOne(typeOf(op))
   elseif isOne(exp2)
-    @assign outExp = exp1
+     outExp = exp1
   else
-    @assign outExp = BINARY_EXPRESSION(exp1, op, exp2)
+     outExp = BINARY_EXPRESSION(exp1, op, exp2)
   end
   return outExp
 end
 
-function simplifyUnary(unaryExp::Expression)::Expression
+function simplifyUnary(unaryExp::Expression)
 
   local e::Expression
   local se::Expression
   local op::Operator
 
   @match UNARY_EXPRESSION(op, e) = unaryExp
-  @assign se = simplify(e)
-  @assign unaryExp = simplifyUnaryOp(se, op)
+   se = simplify(e)
+   unaryExp = simplifyUnaryOp(se, op)
 #  if Flags.isSet(Flags.NF_EXPAND_OPERATIONS) && TODO John
 #     !hasArrayCall(unaryExp)
-#    @assign unaryExp = P_ExpandExp.ExpandExp.expand(unaryExp)
+#     unaryExp = P_ExpandExp.ExpandExp.expand(unaryExp)
 #  end
   return unaryExp
 end
 
-function simplifyUnaryOp(exp::Expression, op::Operator)::Expression
+function simplifyUnaryOp(exp::Expression, op::Operator)
   local outExp::Expression
   if isLiteral(exp)
     outExp = evalUnaryOp(exp, op)
@@ -636,7 +622,7 @@ function simplifyUnaryOp(exp::Expression, op::Operator)::Expression
   return outExp
 end
 
-function simplifyLogicBinary(binaryExp::Expression)::Expression
+function simplifyLogicBinary(binaryExp::Expression)
 
   local e1::Expression
   local e2::Expression
@@ -645,9 +631,9 @@ function simplifyLogicBinary(binaryExp::Expression)::Expression
   local op::Operator
 
   @match LBINARY_EXPRESSION(e1, op, e2) = binaryExp
-  @assign se1 = simplify(e1)
-  @assign se2 = simplify(e2)
-  @assign binaryExp = begin
+   se1 = simplify(e1)
+   se2 = simplify(e2)
+   binaryExp = begin
     @match op.op begin
       Op.AND => begin
         simplifyLogicBinaryAnd(se1, op, se2)
@@ -665,10 +651,10 @@ function simplifyLogicBinaryAnd(
   exp1::Expression,
   op::Operator,
   exp2::Expression,
-)::Expression
+)
   local exp::Expression
 
-  @assign exp = begin
+   exp = begin
     local expl::List{Expression}
     local o::Operator
     #=  false and e => false
@@ -697,8 +683,8 @@ function simplifyLogicBinaryAnd(
         =#
         #=  e and true => e
         =#
-        @assign o = unlift(op)
-        @assign expl =
+         o = unlift(op)
+         expl =
           list(@do_threaded_for simplifyLogicBinaryAnd(e1, o, e2) (e1, e2) (
             exp1.elements,
             exp2.elements,
@@ -714,10 +700,10 @@ function simplifyLogicBinaryAnd(
   return exp
 end
 
-function simplifyLogicBinaryOr(exp1::Expression, op::Operator, exp2::Expression)::Expression
+function simplifyLogicBinaryOr(exp1::Expression, op::Operator, exp2::Expression)
   local exp::Expression
 
-  @assign exp = begin
+   exp = begin
     local expl::List{Expression}
     local o::Operator
     #=  true or e => true
@@ -746,8 +732,8 @@ function simplifyLogicBinaryOr(exp1::Expression, op::Operator, exp2::Expression)
         =#
         #=  e or false => e
         =#
-        @assign o = unlift(op)
-        @assign expl =
+         o = unlift(op)
+         expl =
           list(@do_threaded_for simplifyLogicBinaryAnd(e1, o, e2) (e1, e2) (
             exp1.elements,
             exp2.elements,
@@ -763,24 +749,22 @@ function simplifyLogicBinaryOr(exp1::Expression, op::Operator, exp2::Expression)
   return exp
 end
 
-function simplifyLogicUnary(unaryExp::Expression)::Expression
-
+function simplifyLogicUnary(unaryExp::Expression)
   local e::Expression
   local se::Expression
   local op::Operator
-
   @match LUNARY_EXPRESSION(op, e) = unaryExp
-  @assign se = simplify(e)
+  se = simplify(e)
   if isLiteral(se)
-    @assign unaryExp = Ceval.evalLogicUnaryOp(se, op)
-    @assign unaryExp = stripBindingInfo(unaryExp)
+    unaryExp = evalLogicUnaryOp(se, op)
+    unaryExp = stripBindingInfo(unaryExp)
   elseif !referenceEq(e, se)
-    @assign unaryExp = LUNARY_EXPRESSION(op, se)
+    unaryExp = LUNARY_EXPRESSION(op, se)
   end
   return unaryExp
 end
 
-function simplifyRelation(relationExp::Expression)::Expression
+function simplifyRelation(relationExp::Expression)
 
   local e1::Expression
   local e2::Expression
@@ -789,26 +773,26 @@ function simplifyRelation(relationExp::Expression)::Expression
   local op::Operator
 
   @match RELATION_EXPRESSION(e1, op, e2) = relationExp
-  @assign se1 = simplify(e1)
-  @assign se2 = simplify(e2)
+   se1 = simplify(e1)
+   se2 = simplify(e2)
   if isLiteral(se1) && isLiteral(se2)
-    @assign relationExp = Ceval.evalRelationOp(se1, op, se2)
-    @assign relationExp = stripBindingInfo(relationExp)
+     relationExp = evalRelationOp(se1, op, se2)
+     relationExp = stripBindingInfo(relationExp)
   elseif !(referenceEq(e1, se1) && referenceEq(e2, se2))
-    @assign relationExp = RELATION_EXPRESSION(se1, op, se2)
+     relationExp = RELATION_EXPRESSION(se1, op, se2)
   end
   return relationExp
 end
 
-function simplifyIf(ifExp::Expression)::Expression
+function simplifyIf(ifExp::Expression)
 
   local cond::Expression
   local tb::Expression
   local fb::Expression
 
   @match IF_EXPRESSION(cond, tb, fb) = ifExp
-  @assign cond = simplify(cond)
-  @assign ifExp = begin
+   cond = simplify(cond)
+   ifExp = begin
     @match cond begin
       BOOLEAN_EXPRESSION(__) => begin
         simplify(if cond.value
@@ -818,8 +802,8 @@ function simplifyIf(ifExp::Expression)::Expression
         end)
       end
       _ => begin
-        @assign tb = simplify(tb)
-        @assign fb = simplify(fb)
+         tb = simplify(tb)
+         fb = simplify(fb)
         if isEqual(tb, fb)
           tb
         else
@@ -831,7 +815,7 @@ function simplifyIf(ifExp::Expression)::Expression
   return ifExp
 end
 
-function simplifyCast(exp::Expression, ty::NFType)::Expression
+function simplifyCast(exp::Expression, ty::NFType)
   local castExp::Expression
   castExp = begin
     local ety::NFType
@@ -841,10 +825,10 @@ function simplifyCast(exp::Expression, ty::NFType)::Expression
       end
       (TYPE_ARRAY(elementType = TYPE_REAL(__)), ARRAY_EXPRESSION(__)) =>
         begin
-          ety = Type.unliftArray(ty)
-          exp.elements = list(simplifyCast(e, ety) for e in exp.elements)
-          exp.ty = setArrayElementType(exp.ty, arrayElementType(ty))
-          exp
+          ety = unliftArray(ty)
+          expElements = list(simplifyCast(e, ety) for e in exp.elements)
+          expTy = setArrayElementType(exp.ty, arrayElementType(ty))
+          ARRAY_EXPRESSION(expTy, expElements, exp.literal)
         end
       _ => begin
         CAST_EXPRESSION(ty, exp)
@@ -854,27 +838,25 @@ function simplifyCast(exp::Expression, ty::NFType)::Expression
   return castExp
 end
 
-function simplifySubscriptedExp(subscriptedExp::Expression)::Expression
+function simplifySubscriptedExp(subscriptedExp::Expression)
   local e::Expression
   local subs::List{Subscript}
-  local ty::NFtype
+  local ty::NFType
   @match SUBSCRIPTED_EXP_EXPRESSION(e, subs, ty) = subscriptedExp
-  @assign subscriptedExp = simplify(e)
-  @assign subscriptedExp = applySubscripts(
-    list(simplify(s) for s in subs),
+  subscriptedExp = simplify(e)
+  subscriptedExp = applySubscripts(
+    list(simplifySubscript(s) for s in subs),
     subscriptedExp
   )
   return subscriptedExp
 end
 
-function simplifyTupleElement(tupleExp::Expression)::Expression
-
+function simplifyTupleElement(tupleExp::Expression)
   local e::Expression
   local index::Int
   local ty::M_Type
-
   @match TUPLE_ELEMENT_EXPRESSION(e, index, ty) = tupleExp
-  @assign e = simplify(e)
-  @assign tupleExp = tupleElement(e, ty, index)
+  e = simplify(e)
+  tupleExp = tupleElement(e, ty, index)
   return tupleExp
 end

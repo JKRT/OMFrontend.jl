@@ -1,6 +1,5 @@
 @UniontypeDecl VariableConversionSettings
 
-
 function convert(
   flatModel::FlatModel,
   functions::FunctionTree,
@@ -18,7 +17,7 @@ function convert(
   elems = convertAlgorithms(flatModel.algorithms, elems)
   elems = convertInitialAlgorithms(flatModel.initialAlgorithms, elems)
   @assign class_elem =
-    DAE.COMP(name, elems, DAE.emptyElementSource, flatModel.comment) # TODO DAE.ElementSource_createElementSource(info)
+    DAE.COMP(name, elems, DAE.emptyElementSource, flatModel.comment) # TODO DAE.ElementSource.createElementSource(info)
   @assign dae = DAE.DAE_LIST(list(class_elem))
   return (dae, daeFunctions)
 end
@@ -35,7 +34,7 @@ const FUNCTION_VARIABLE_CONVERSION_SETTINGS =
   VARIABLE_CONVERSION_SETTINGS(false, true, false)::VariableConversionSettings
 
 function convertVariables(
-  variables::List{<:Variable},
+  variables::Vector{Variable},
   elements::List{<:DAE.Element},
 )::List{DAE.Element}
 #  local settings::VariableConversionSettings
@@ -45,7 +44,7 @@ function convertVariables(
     true# addTypeToSource = Flags.isSet(Flags.INFO_XML_OPERATIONS) ||
     #                   Flags.isSet(Flags.VISUAL_XML),
   )
-  for var in listReverse(variables)
+  for var in reverse(variables)
     @assign elements = _cons(convertVariable(var, settings), elements)
   end
   return elements
@@ -95,7 +94,7 @@ function makeDAEVar(
   else
     ty
   end)
-  @assign source = DAE.emptyElementSource #ElementSource_createElementSource(info)
+  @assign source = DAE.emptyElementSource #ElementSource.createElementSource(info)
   if settings.addTypeToSource
     @assign source = addComponentTypeToSource(cref, source)
   end
@@ -157,7 +156,7 @@ function addComponentTypeToSource(
   @assign source = begin
     @match cref begin
       COMPONENT_REF_CREF(__) => begin
-        # TODO!  @assign source = DAE.ElementSource_createElementSource(source)
+        # TODO!  @assign source = DAE.ElementSource.createElementSource(source)
         # addComponentTypeToSource(cref.restCref, source)
         source
       end
@@ -174,12 +173,12 @@ end
    a component in a top-level connector, otherwise returns Direction.NONE. =#"""
 function getComponentDirection(dir::DirectionType, cref::ComponentRef)::DirectionType
   local rest_cref::ComponentRef = rest(cref)
-  @assign dir = begin
+  dir = begin
     @match rest_cref begin
-      EMPTY(__) => begin
+      COMPONENT_REF_EMPTY(__) => begin
         dir
       end
-      CREF(__) => begin
+      COMPONENT_REF_CREF(__) => begin
         if isConnector(rest_cref.node)
           getComponentDirection(dir, rest_cref)
         else
@@ -192,7 +191,7 @@ function getComponentDirection(dir::DirectionType, cref::ComponentRef)::Directio
 end
 
 function convertVarAttributes(
-  attrs::List{<:Tuple{<:String, Binding}},
+  attrs::Vector{Tuple{String, Binding}},
   ty::NFType,
   compAttrs::Attributes,
 )::Option{DAE.VariableAttributes}
@@ -201,15 +200,14 @@ function convertVarAttributes(
   local is_final_opt::Option{Bool}
   local elTy::M_Type
   local is_array::Bool = false
-
-  @assign is_final =
+  is_final =
     compAttrs.isFinal || compAttrs.variability == Variability.STRUCTURAL_PARAMETER
-  if listEmpty(attrs) && !is_final
-    @assign attributes = NONE()
+  if isempty(attrs) && !is_final
+    attributes = NONE()
     return attributes
   end
-  @assign is_final_opt = SOME(is_final)
-  @assign attributes = begin
+  is_final_opt = SOME(is_final)
+  attributes = begin
     @match arrayElementType(ty) begin
       TYPE_REAL(__) => begin
         convertRealVarAttributes(attrs, is_final_opt)
@@ -240,11 +238,10 @@ function convertVarAttributes(
 end
 
 function convertRealVarAttributes(
-  attrs::List{<:Tuple{<:String, Binding}},
+  attrs::Vector{Tuple{String, Binding}},
   isFinal::Option{<:Bool},
 )::Option{DAE.VariableAttributes}
   local attributes::Option{DAE.VariableAttributes}
-
   local name::String
   local b::Binding
   local quantity::Option{DAE.Exp} = NONE()
@@ -258,8 +255,8 @@ function convertRealVarAttributes(
   local state_select::Option{DAE.StateSelect} = NONE()
 
   for attr in attrs
-    @assign (name, b) = attr
-    @assign () = begin
+     (name, b) = attr
+     () = begin
       @match name begin
         "displayUnit" => begin
           @assign displayUnit = convertVarAttribute(b)
@@ -348,11 +345,10 @@ function convertRealVarAttributes(
 end
 
 function convertIntVarAttributes(
-  attrs::List{<:Tuple{<:String, Binding}},
+  attrs::Vector{Tuple{String, Binding}},
   isFinal::Option{<:Bool},
 )::Option{DAE.VariableAttributes}
   local attributes::Option{DAE.VariableAttributes}
-
   local name::String
   local b::Binding
   local quantity::Option{DAE.Exp} = NONE()
@@ -360,52 +356,39 @@ function convertIntVarAttributes(
   local max::Option{DAE.Exp} = NONE()
   local start::Option{DAE.Exp} = NONE()
   local fixed::Option{DAE.Exp} = NONE()
-
   for attr in attrs
-    @assign (name, b) = attr
-    @assign () = begin
-      @match name begin
-        "quantity" => begin
-          @assign quantity = convertVarAttribute(b)
-          ()
-        end
-
-        "min" => begin
-          @assign min = convertVarAttribute(b)
-          ()
-        end
-
-        "max" => begin
-          @assign max = convertVarAttribute(b)
-          ()
-        end
-
-        "start" => begin
-          @assign start = convertVarAttribute(b)
-          ()
-        end
-
-        "fixed" => begin
-          @assign fixed = convertVarAttribute(b)
-          ()
-        end
-
-        _ => begin
-          #=  The attributes should already be type checked, so we shouldn't get any
-          =#
-          #=  unknown attributes here.
-          =#
-          Error.assertion(
-            false,
-            getInstanceName() + " got unknown type attribute " + name,
-            sourceInfo(),
-          )
-          fail()
-        end
+    (name, b) = attr
+    @match name begin
+      "quantity" => begin
+        quantity = convertVarAttribute(b)
+      end
+      "min" => begin
+        min = convertVarAttribute(b)
+      end
+      "max" => begin
+        max = convertVarAttribute(b)
+      end
+      "start" => begin
+        start = convertVarAttribute(b)
+      end
+      "fixed" => begin
+        fixed = convertVarAttribute(b)
+      end
+      _ => begin
+        #=  The attributes should already be type checked, so we shouldn't get any
+        =#
+        #=  unknown attributes here.
+        =#
+        Error.assertion(
+          false,
+          getInstanceName() + " got unknown type attribute " + name,
+          sourceInfo(),
+        )
+        fail()
       end
     end
   end
-  @assign attributes = SOME(DAE.VAR_ATTR_INT(
+  attributes = SOME(DAE.VAR_ATTR_INT(
     quantity,
     min,
     max,
@@ -422,7 +405,7 @@ function convertIntVarAttributes(
 end
 
 function convertBoolVarAttributes(
-  attrs::List{<:Tuple{<:String, Binding}},
+  attrs::Vector{<:Tuple{<:String, Binding}},
   isFinal::Option{<:Bool},
 )::Option{DAE.VariableAttributes}
   local attributes::Option{DAE.VariableAttributes}
@@ -434,8 +417,8 @@ function convertBoolVarAttributes(
   local fixed::Option{DAE.Exp} = NONE()
 
   for attr in attrs
-    @assign (name, b) = attr
-    @assign () = begin
+     (name, b) = attr
+     () = begin
       @match name begin
         "quantity" => begin
           @assign quantity = convertVarAttribute(b)
@@ -492,8 +475,8 @@ function convertStringVarAttributes(
   local fixed::Option{DAE.Exp} = NONE()
 
   for attr in attrs
-    @assign (name, b) = attr
-    @assign () = begin
+     (name, b) = attr
+     () = begin
       @match name begin
         "quantity" => begin
           @assign quantity = convertVarAttribute(b)
@@ -552,8 +535,8 @@ function convertEnumVarAttributes(
   local fixed::Option{DAE.Exp} = NONE()
 
   for attr in attrs
-    @assign (name, b) = attr
-    @assign () = begin
+     (name, b) = attr
+     () = begin
       @match name begin
         "fixed" => begin
           @assign fixed = convertVarAttribute(b)
@@ -687,11 +670,14 @@ function lookupStateSelectMember(name::String)::DAE.StateSelect
   return stateSelect
 end
 
+"""
+  Converts a set of equations to List{DAE.Element}.
+"""
 function convertEquations(
-  equations::List{<:Equation},
+  equations::Union{Vector{Equation}, List{<:Equation}},
   elements::List{<:DAE.Element} = nil,
-)::List{DAE.Element}
-  for eq in listReverse(equations)
+  )::List{DAE.Element}
+  for eq in equations
     elements = convertEquation(eq, elements)
   end
   return elements
@@ -824,7 +810,7 @@ function convertForEquation(forEquation::Equation)::DAE.Element
 end
 
 function convertIfEquation(
-  ifBranches::List{<:Equation_Branch},
+  ifBranches::Vector{Equation_Branch},
   source::DAE.ElementSource;
   isInitial::Bool,
 )::DAE.Element
@@ -835,22 +821,19 @@ function convertIfEquation(
   local dconds::List{DAE.Exp}
   local dbranches::List{List{DAE.Element}}
   local else_branch::List{DAE.Element}
-
   for branch in ifBranches
-    @assign (conds, branches) = begin
+    (conds, branches) = begin
       @match branch begin
         EQUATION_BRANCH(__) => begin
-          (_cons(branch.condition, conds), _cons(branch.body, branches))
+          (_cons(branch.condition, conds), _cons(arrayList(branch.body), branches))
         end
-
-        P_Equation.Equation.INVALID_BRANCH(__) => begin
-          P_Equation.Equation.triggerErrors(branch)
-          fail()
+        EQUATION_INVALID_BRANCH(__) => begin
+          triggerErrors(branch)
         end
       end
     end
   end
-  @assign dbranches = if isInitial
+  dbranches = if isInitial
     list(convertInitialEquations(b) for b in branches)
   else
     list(convertEquations(b) for b in branches)
@@ -859,13 +842,13 @@ function convertIfEquation(
   =#
   if isTrue(listHead(conds))
     @match _cons(else_branch, dbranches) = dbranches
-    @assign conds = listRest(conds)
+    conds = listRest(conds)
   else
-    @assign else_branch = nil
+    else_branch = nil
   end
-  @assign dconds = listReverse(list(toDAE(c) for c in conds))
-  @assign dbranches = listReverseInPlace(dbranches)
-  @assign ifEquation = if isInitial
+  dconds = listReverse(list(toDAE(c) for c in conds))
+  dbranches = listReverseInPlace(dbranches)
+  ifEquation = if isInitial
     DAE.INITIAL_IF_EQUATION(dconds, dbranches, else_branch, source)
   else
     DAE.IF_EQUATION(dconds, dbranches, else_branch, source)
@@ -874,21 +857,19 @@ function convertIfEquation(
 end
 
 function convertWhenEquation(
-  whenBranches::List{<:Equation_Branch},
+  whenBranches::Vector{Equation_Branch},
   source::DAE.ElementSource,
 )::DAE.Element
   local whenEquation::DAE.Element
-
   local cond::DAE.Exp
   local els::List{DAE.Element}
   local when_eq::Option{DAE.Element} = NONE()
-
-  for b in listReverse(whenBranches)
-    @assign when_eq = begin
+  for b in whenBranches
+    when_eq = begin
       @match b begin
         EQUATION_BRANCH(__) => begin
-          @assign cond = toDAE(b.condition)
-          @assign els = convertEquations(b.body)
+          cond = toDAE(b.condition)
+          els = convertEquations(b.body)
           SOME(DAE.WHEN_EQUATION(cond, els, when_eq, source))
         end
       end
@@ -899,12 +880,11 @@ function convertWhenEquation(
 end
 
 function convertInitialEquations(
-  equations::List{<:Equation},
+  equations::Vector{Equation},
   elements::List{<:DAE.Element} = nil,
 )::List{DAE.Element}
-
-  for eq in listReverse(equations)
-    @assign elements = convertInitialEquation(eq, elements)
+  for eq in equations
+    elements = convertInitialEquation(eq, elements)
   end
   return elements
 end
@@ -980,112 +960,106 @@ function convertInitialEquation(
 end
 
 function convertAlgorithms(
-  algorithms::List{<:Algorithm},
+  algorithms::Vector{Algorithm},
   elements::List{<:DAE.Element},
 )::List{DAE.Element}
-
-  for alg in listReverse(algorithms)
-    @assign elements = convertAlgorithm(alg, elements)
+  for alg in algorithms
+    elements = convertAlgorithm(alg, elements)
   end
   return elements
 end
 
 function convertAlgorithm(alg::Algorithm, elements::List{<:DAE.Element})::List{DAE.Element}
-
-  local stmts::List{DAE.P_Statement.Statement}
-  local dalg::DAE.P_Algorithm.Algorithm
+  local stmts::List{DAE.Statement}
+  local dalg::DAE.Algorithm
   local src::DAE.ElementSource
-
-  @assign stmts = convertStatements(alg.statements)
-  @assign dalg = DAE.ALGORITHM_STMTS(stmts)
-  @assign elements = _cons(DAE.ALGORITHM(dalg, alg.source), elements)
+  stmts = convertStatements(alg.statements)
+  dalg = DAE.ALGORITHM_STMTS(stmts)
+  elements = _cons(DAE.ALGORITHM(dalg, alg.source), elements)
   return elements
 end
 
-function convertStatements(statements::List{<:Statement})::List{DAE.P_Statement.Statement}
-  local elements::List{DAE.P_Statement.Statement}
-
-  @assign elements = list(convertStatement(s) for s in statements)
+function convertStatements(statements::Vector{Statement})::List{DAE.Statement}
+  local elements::List{DAE.Statement}
+  elements = list(convertStatement(s) for s in statements)
   return elements
 end
 
-function convertStatement(stmt::Statement)::DAE.P_Statement.Statement
-  local elem::DAE.P_Statement.Statement
-
+function convertStatement(stmt::Statement)::DAE.Statement
+  local elem::DAE.Statement
   @assign elem = begin
     local e1::DAE.Exp
     local e2::DAE.Exp
     local e3::DAE.Exp
     local ty::DAE.Type
-    local body::List{DAE.P_Statement.Statement}
+    local body::List{DAE.Statement}
     @match stmt begin
       ALG_ASSIGNMENT(__) => begin
         convertAssignment(stmt)
       end
 
-      P_Statement.Statement.FUNCTION_ARRAY_INIT(__) => begin
+      ALG_FUNCTION_ARRAY_INIT(__) => begin
         @assign ty = toDAE(stmt.ty)
-        DAE.P_Statement.Statement.STMT_ARRAY_INIT(stmt.name, ty, stmt.source)
+        DAE.STMT_ARRAY_INIT(stmt.name, ty, stmt.source)
       end
 
-      P_Statement.Statement.FOR(__) => begin
+      ALG_FOR(__) => begin
         convertForStatement(stmt)
       end
 
-      P_Statement.Statement.IF(__) => begin
+      ALG_IF(__) => begin
         convertIfStatement(stmt.branches, stmt.source)
       end
 
-      P_Statement.Statement.WHEN(__) => begin
+      ALG_WHEN(__) => begin
         convertWhenStatement(stmt.branches, stmt.source)
       end
 
-      P_Statement.Statement.ASSERT(__) => begin
-        @assign e1 = toDAE(stmt.condition)
-        @assign e2 = toDAE(stmt.message)
-        @assign e3 = toDAE(stmt.level)
-        DAE.P_Statement.Statement.STMT_ASSERT(e1, e2, e3, stmt.source)
+      ALG_ASSERT(__) => begin
+        e1 = toDAE(stmt.condition)
+        e2 = toDAE(stmt.message)
+        e3 = toDAE(stmt.level)
+        DAE.STMT_ASSERT(e1, e2, e3, stmt.source)
       end
 
-      P_Statement.Statement.TERMINATE(__) => begin
-        DAE.P_Statement.Statement.STMT_TERMINATE(
+      ALG_TERMINATE(__) => begin
+        DAE.STMT_TERMINATE(
           toDAE(stmt.message),
           stmt.source,
         )
       end
 
-      P_Statement.Statement.NORETCALL(__) => begin
-        DAE.P_Statement.Statement.STMT_NORETCALL(
+      ALG_NORETCALL(__) => begin
+        DAE.Statement.STMT_NORETCALL(
           toDAE(stmt.exp),
           stmt.source,
         )
       end
 
-      P_Statement.Statement.WHILE(__) => begin
-        @assign e1 = toDAE(stmt.condition)
-        @assign body = convertStatements(stmt.body)
-        DAE.P_Statement.Statement.STMT_WHILE(e1, body, stmt.source)
+      ALG_WHILE(__) => begin
+        e1 = toDAE(stmt.condition)
+        body = convertStatements(stmt.body)
+        DAE.STMT_WHILE(e1, body, stmt.source)
       end
 
-      P_Statement.Statement.RETURN(__) => begin
-        DAE.P_Statement.Statement.STMT_RETURN(stmt.source)
+      ALG_RETURN(__) => begin
+        DAE.STMT_RETURN(stmt.source)
       end
 
-      P_Statement.Statement.BREAK(__) => begin
-        DAE.P_Statement.Statement.STMT_BREAK(stmt.source)
+      ALG_BREAK(__) => begin
+        DAE.STMT_BREAK(stmt.source)
       end
 
-      P_Statement.Statement.FAILURE(__) => begin
-        DAE.P_Statement.Statement.STMT_FAILURE(convertStatements(stmt.body), stmt.source)
+      ALG_FAILURE(__) => begin
+        DAE.STMT_FAILURE(convertStatements(stmt.body), stmt.source)
       end
     end
   end
   return elem
 end
 
-function convertAssignment(stmt::Statement)::DAE.P_Statement.Statement
-  local daeStmt::DAE.P_Statement.Statement
-
+function convertAssignment(stmt::Statement)::DAE.Statement
+  local daeStmt::DAE.Statement
   local lhs::Expression
   local rhs::Expression
   local src::DAE.ElementSource
@@ -1094,14 +1068,13 @@ function convertAssignment(stmt::Statement)::DAE.P_Statement.Statement
   local dlhs::DAE.Exp
   local drhs::DAE.Exp
   local expl::List{Expression}
-
   @match ALG_ASSIGNMENT(lhs, rhs, ty, src) = stmt
-  if Type.isTuple(ty)
+  if isTuple(ty)
     @match TUPLE_EXPRESSION(elements = expl) = lhs
-    @assign daeStmt = begin
+    daeStmt = begin
       @match expl begin
         nil() => begin
-          DAE.P_Statement.Statement.STMT_NORETCALL(toDAE(rhs), src)
+          DAE.STMT_NORETCALL(toDAE(rhs), src)
         end
 
         lhs <| nil() => begin
@@ -1111,12 +1084,12 @@ function convertAssignment(stmt::Statement)::DAE.P_Statement.Statement
           =#
           @assign dty = toDAE(ty)
           @assign dlhs = toDAE(lhs)
-          @assign drhs = DAE.Exp.TSUB(toDAE(rhs), 1, dty)
+          @assign drhs = DAE.TSUB(toDAE(rhs), 1, dty)
           if isArray(ty)
             @assign daeStmt =
-              DAE.P_Statement.Statement.STMT_ASSIGN_ARR(dty, dlhs, drhs, src)
+              DAE.STMT_ASSIGN_ARR(dty, dlhs, drhs, src)
           else
-            @assign daeStmt = DAE.P_Statement.Statement.STMT_ASSIGN(dty, dlhs, drhs, src)
+            @assign daeStmt = DAE.STMT_ASSIGN(dty, dlhs, drhs, src)
           end
           daeStmt
         end
@@ -1124,7 +1097,7 @@ function convertAssignment(stmt::Statement)::DAE.P_Statement.Statement
         _ => begin
           @assign dty = toDAE(ty)
           @assign drhs = toDAE(rhs)
-          DAE.P_Statement.Statement.STMT_TUPLE_ASSIGN(
+          DAE.STMT_TUPLE_ASSIGN(
             dty,
             list(toDAE(e) for e in expl),
             drhs,
@@ -1134,13 +1107,13 @@ function convertAssignment(stmt::Statement)::DAE.P_Statement.Statement
       end
     end
   else
-    @assign dty = toDAE(ty)
-    @assign dlhs = toDAE(lhs)
-    @assign drhs = toDAE(rhs)
+    dty = toDAE(ty)
+    dlhs = toDAE(lhs)
+    drhs = toDAE(rhs)
     if isArray(ty)
-      @assign daeStmt = DAE.P_Statement.Statement.STMT_ASSIGN_ARR(dty, dlhs, drhs, src)
+      daeStmt = DAE.STMT_ASSIGN_ARR(dty, dlhs, drhs, src)
     else
-      @assign daeStmt = DAE.P_Statement.Statement.STMT_ASSIGN(dty, dlhs, drhs, src)
+      daeStmt = DAE.STMT_ASSIGN(dty, dlhs, drhs, src)
     end
   end
   return daeStmt
@@ -1152,8 +1125,8 @@ function convertForStatement(forStmt::Statement)::DAE.P_Statement.Statement
   local iterator::InstNode
   local ty::M_Type
   local range::Expression
-  local body::List{Statement}
-  local dbody::List{DAE.P_Statement.Statement}
+  local body::Vector{Statement}
+  local dbody::List{DAE.Statement}
   local source::DAE.ElementSource
 
   @match P_Statement.Statement.FOR(
@@ -1179,31 +1152,28 @@ end
 function convertIfStatement(
   ifBranches::List{<:Tuple{<:Expression, List{<:Statement}}},
   source::DAE.ElementSource,
-)::DAE.P_Statement.Statement
-  local ifStatement::DAE.P_Statement.Statement
-
+)::DAE.Statement
+  local ifStatement::DAE.Statement
   local cond::Expression
   local dcond::DAE.Exp
   local stmts::List{Statement}
-  local dstmts::List{DAE.P_Statement.Statement}
+  local dstmts::List{DAE.Statement}
   local first::Bool = true
-  local else_stmt::DAE.Else = DAE.Else.NOELSE()
-
+  local else_stmt::DAE.Else = DAE.NOELSE()
   for b in listReverse(ifBranches)
-    @assign (cond, stmts) = b
-    @assign dcond = toDAE(cond)
-    @assign dstmts = convertStatements(stmts)
+    (cond, stmts) = b
+    dcond = toDAE(cond)
+    dstmts = convertStatements(stmts)
     if first && isTrue(cond)
-      @assign else_stmt = DAE.Else.ELSE(dstmts)
+      else_stmt = DAE.ELSE(dstmts)
     else
-      @assign else_stmt = DAE.Else.ELSEIF(dcond, dstmts, else_stmt)
+      else_stmt = DAE.ELSEIF(dcond, dstmts, else_stmt)
     end
-    @assign first = false
+    first = false
   end
-  #=  This should always be an ELSEIF due to branch selection in earlier phases.
-  =#
-  @match DAE.Else.ELSEIF(dcond, dstmts, else_stmt) = else_stmt
-  @assign ifStatement = DAE.P_Statement.Statement.STMT_IF(dcond, dstmts, else_stmt, source)
+  #=  This should always be an ELSEIF due to branch selection in earlier phases. =#
+  @match DAE.ELSEIF(dcond, dstmts, else_stmt) = else_stmt
+  ifStatement = DAE.STMT_IF(dcond, dstmts, else_stmt, source)
   return ifStatement
 end
 
@@ -1211,29 +1181,28 @@ function convertWhenStatement(
   whenBranches::List{<:Tuple{<:Expression, List{<:Statement}}},
   source::DAE.ElementSource,
 )::DAE.P_Statement.Statement
-  local whenStatement::DAE.P_Statement.Statement
+  local whenStatement::DAE.Statement
 
   local cond::DAE.Exp
-  local stmts::List{DAE.P_Statement.Statement}
-  local when_stmt::Option{DAE.P_Statement.Statement} = NONE()
+  local stmts::List{DAE.Statement}
+  local when_stmt::Option{DAE.Statement} = NONE()
 
   for b in listReverse(whenBranches)
     @assign cond = toDAE(Util.tuple21(b))
     @assign stmts = convertStatements(Util.tuple22(b))
     @assign when_stmt =
-      SOME(DAE.P_Statement.Statement.STMT_WHEN(cond, nil, false, stmts, when_stmt, source))
+      SOME(DAE.STMT_WHEN(cond, nil, false, stmts, when_stmt, source))
   end
   @match SOME(whenStatement) = when_stmt
   return whenStatement
 end
 
 function convertInitialAlgorithms(
-  algorithms::List{<:Algorithm},
+  algorithms::Vector{Algorithm},
   elements::List{<:DAE.Element},
 )::List{DAE.Element}
-
-  for alg in listReverse(algorithms)
-    @assign elements = convertInitialAlgorithm(alg, elements)
+  for alg in algorithms
+    elements = convertInitialAlgorithm(alg, elements)
   end
   return elements
 end
@@ -1243,12 +1212,11 @@ function convertInitialAlgorithm(
   elements::List{<:DAE.Element},
 )::List{DAE.Element}
 
-  local stmts::List{DAE.P_Statement.Statement}
-  local dalg::DAE.P_Algorithm.Algorithm
-
-  @assign stmts = convertStatements(alg.statements)
-  @assign dalg = DAE.ALGORITHM_STMTS(stmts)
-  @assign elements = _cons(DAE.INITIALALGORITHM(dalg, alg.source), elements)
+  local stmts::List{DAE.Statement}
+  local dalg::DAE.Algorithm
+  stmts = convertStatements(alg.statements)
+  dalg = DAE.ALGORITHM_STMTS(stmts)
+  elements = _cons(DAE.INITIALALGORITHM(dalg, alg.source), elements)
   return elements
 end
 
@@ -1295,7 +1263,7 @@ function convertFunction(func::M_Function)::DAE.Function
         @assign elems = convertFunctionParams(func.locals, elems)
         @assign def = begin
           @match sections begin
-            SECTIONS_SECTIONS(__) => begin
+            SECTIONS(__) => begin
               #=  A function with an algorithm section. =#
               @assign elems = convertAlgorithms(sections.algorithms, elems)
               DAE.FunctionDefinition.FUNCTION_DEF(listReverse(elems))
@@ -1348,25 +1316,21 @@ function convertFunctionParam(node::InstNode)::DAE.Element
   local cref::ComponentRef
   local attr::Attributes
   local ty::M_Type
-  local binding::Option{DAE.Exp}
+  local bindingV::Option{DAE.Exp}
   local ty_attr::List{Tuple{String, Binding}}
-
-  @assign comp = component(node)
-  @assign element = begin
+  comp = component(node)
+  element = begin
     @match comp begin
       TYPED_COMPONENT(ty = ty, info = info, attributes = attr) => begin
-        @assign cref = fromNode(node, ty)
-        @assign binding = toDAEExp(comp.binding)
-        @assign cls = getClass(comp.classInst)
-        @assign ty_attr = list(
-          (P_Modifier.name(m), P_Modifier.binding(m))
-          for m in getTypeAttributes(cls)
-        )
-        @assign var_attr = convertVarAttributes(ty_attr, ty, attr)
+        cref = fromNode(node, ty)
+        bindingV = toDAEExp(comp.binding)
+        cls = getClass(comp.classInst)
+        ty_attr = list((name(m), binding(m)) for m in getTypeAttributes(cls))
+        var_attr = convertVarAttributes(ty_attr, ty, attr)
         makeDAEVar(
           cref,
           ty,
-          binding,
+          bindingV,
           attr,
           visibility(node),
           var_attr,
@@ -1558,7 +1522,7 @@ function stripScopePrefixExp(exp::Expression)::Expression
 end
 
 function stripScopePrefixCrefExp(exp::Expression)::Expression
-  @assign () = begin
+   () = begin
     @match exp begin
       CREF_EXPRESSION(__) => begin
         @assign exp.cref = stripScopePrefixCref(exp.cref)
@@ -1577,7 +1541,7 @@ function stripScopePrefixCref(cref::ComponentRef)::ComponentRef
   if isSimple(cref)
     return cref
   end
-  @assign () = begin
+   () = begin
     @match cref begin
       CREF(__) => begin
         if isFromCref(cref.restCref)

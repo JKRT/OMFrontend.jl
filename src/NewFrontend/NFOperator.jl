@@ -1,65 +1,99 @@
-
 @UniontypeDecl NFOperator
 
-Op = (
-  () -> begin #= Enumeration =#
-    ADD = 1
-    SUB = 2
-    MUL = 3
-    DIV = 4
-    POW = 5
-    ADD_EW = 6
-    SUB_EW = 7
-    MUL_EW = 8
-    DIV_EW = 9
-    POW_EW = 10
-    ADD_SCALAR_ARRAY = 11
-    ADD_ARRAY_SCALAR = 12
-    SUB_SCALAR_ARRAY = 13
-    SUB_ARRAY_SCALAR = 14
-    MUL_SCALAR_ARRAY = 15
-    MUL_ARRAY_SCALAR = 16
-    MUL_VECTOR_MATRIX = 17
-    MUL_MATRIX_VECTOR = 18
-    SCALAR_PRODUCT = 19
-    MATRIX_PRODUCT = 20
-    DIV_SCALAR_ARRAY = 21
-    DIV_ARRAY_SCALAR = 22
-    POW_SCALAR_ARRAY = 23
-    POW_ARRAY_SCALAR = 24
-    POW_MATRIX = 25
-    UMINUS = 26
-    AND = 27
-    OR = 28
-    NOT = 29
-    LESS = 30
-    LESSEQ = 31
-    GREATER = 32
-    GREATEREQ = 33
-    EQUAL = 34
-    NEQUAL = 35
-    USERDEFINED = 36
-    () -> (
-      ADD; SUB; MUL; DIV; POW; ADD_EW; SUB_EW; MUL_EW; DIV_EW; POW_EW; ADD_SCALAR_ARRAY; ADD_ARRAY_SCALAR; SUB_SCALAR_ARRAY; SUB_ARRAY_SCALAR; MUL_SCALAR_ARRAY; MUL_ARRAY_SCALAR; MUL_VECTOR_MATRIX; MUL_MATRIX_VECTOR; SCALAR_PRODUCT; MATRIX_PRODUCT; DIV_SCALAR_ARRAY; DIV_ARRAY_SCALAR; POW_SCALAR_ARRAY; POW_ARRAY_SCALAR; POW_MATRIX; UMINUS; AND; OR; NOT; LESS; LESSEQ; GREATER; GREATEREQ; EQUAL; NEQUAL; USERDEFINED
-    )
-  end
-)()
+"""
+  Structure describing different operators
+"""
+struct OpStruct
+  ADD::Int
+  SUB::Int
+  MUL::Int
+  DIV::Int
+  POW::Int
+  ADD_EW::Int
+  SUB_EW::Int
+  MUL_EW::Int
+  DIV_EW::Int
+  POW_EW::Int
+  ADD_SCALAR_ARRAY::Int
+  ADD_ARRAY_SCALAR::Int
+  SUB_SCALAR_ARRAY::Int
+  SUB_ARRAY_SCALAR::Int
+  MUL_SCALAR_ARRAY::Int
+  MUL_ARRAY_SCALAR::Int
+  MUL_VECTOR_MATRIX::Int
+  MUL_MATRIX_VECTOR::Int
+  SCALAR_PRODUCT::Int
+  MATRIX_PRODUCT::Int
+  DIV_SCALAR_ARRAY::Int
+  DIV_ARRAY_SCALAR::Int
+  POW_SCALAR_ARRAY::Int
+  POW_ARRAY_SCALAR::Int
+  POW_MATRIX::Int
+  UMINUS::Int
+  AND::Int
+  OR::Int
+  NOT::Int
+  LESS::Int
+  LESSEQ::Int
+  GREATER::Int
+  GREATEREQ::Int
+  EQUAL::Int
+  NEQUAL::Int
+  USERDEFINED::Int
+end
+
+const Op = OpStruct(
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10,
+  11,
+  12,
+  13,
+  14,
+  15,
+  16,
+  17,
+  18,
+  19,
+  20,
+  21,
+  22,
+  23,
+  24,
+  25,
+  26,
+  27,
+  28,
+  29,
+  30,
+  31,
+  32,
+  33,
+  34,
+  35,
+  36,
+)
 
 const OpType = Int
 
+abstract type NFOperator end
 
-@Uniontype NFOperator begin
-  @Record OPERATOR begin
-    ty::M_Type
-    op::OpType
-  end
+struct OPERATOR{T <: Integer} <: NFOperator
+  ty::M_Type
+  op::T
 end
 
 function negate(op::Operator)::Operator
   local outOp::Operator
   local neg_op::OpType
-
-  @assign neg_op = begin
+  neg_op = begin
     @match op.op begin
       Op.ADD => begin
         Op.SUB
@@ -90,14 +124,13 @@ function negate(op::Operator)::Operator
       end
     end
   end
-  @assign outOp = OPERATOR(op.ty, neg_op)
+  outOp = OPERATOR(op.ty, neg_op)
   return outOp
 end
 
 function isElementWise(op::Operator)::Bool
   local ew::Bool
-
-  @assign ew = begin
+  ew = begin
     @match op.op begin
       Op.ADD_EW => begin
         true
@@ -127,49 +160,38 @@ function isElementWise(op::Operator)::Bool
   return ew
 end
 
-function stripEW(op::Operator)::Operator
+function stripEW(op::Operator)
+  opOP = @match op.op begin
+    Op.ADD_EW => begin
+      Op.ADD
+    end
 
-  @assign () = begin
-    @match op.op begin
-      Op.ADD_EW => begin
-        @assign op.op = Op.ADD
-        ()
-      end
+    Op.SUB_EW => begin
+      Op.SUB
+    end
 
-      Op.SUB_EW => begin
-        @assign op.op = Op.SUB
-        ()
-      end
+    Op.MUL_EW => begin
+      Op.MUL
+    end
 
-      Op.MUL_EW => begin
-        @assign op.op = Op.MUL
-        ()
-      end
+    Op.DIV_EW => begin
+      Op.DIV
+    end
 
-      Op.DIV_EW => begin
-        @assign op.op = Op.DIV
-        ()
-      end
-
-      Op.POW_EW => begin
-        @assign op.op = Op.POW
-        ()
-      end
-
-      _ => begin
-        ()
-      end
+    Op.POW_EW => begin
+      Op.POW
+    end
+    _ => begin
+      return op
     end
   end
-  return op
+  return OPERATOR(op.ty, opOP)
 end
 
 function makeArrayScalar(ty::M_Type, op::OpType)::Operator
   local outOp::Operator
-
   local o::OpType
-
-  @assign o = begin
+  o = begin
     @match op begin
       Op.ADD => begin
         Op.ADD_ARRAY_SCALAR
@@ -192,14 +214,14 @@ function makeArrayScalar(ty::M_Type, op::OpType)::Operator
       end
     end
   end
-  @assign outOp = OPERATOR(ty, o)
+  outOp = OPERATOR(ty, o)
   return outOp
 end
 
 function makeScalarArray(ty::M_Type, op::OpType)::Operator
   local outOp::Operator
   local o::OpType
-  @assign o = begin
+  o = begin
     @match op begin
       Op.ADD => begin
         Op.ADD_SCALAR_ARRAY
@@ -222,7 +244,7 @@ function makeScalarArray(ty::M_Type, op::OpType)::Operator
       end
     end
   end
-  @assign outOp = OPERATOR(ty, o)
+  outOp = OPERATOR(ty, o)
   return outOp
 end
 
@@ -355,9 +377,9 @@ function isNonAssociative(op::Operator)::Bool
 end
 
 function isAssociative(op::Operator)::Bool
-  local isAssociative::Bool
+  local isAssoc::Bool
 
-  @assign isAssociative = begin
+  isAssoc = begin
     @match op.op begin
       Op.ADD => begin
         true
@@ -376,11 +398,10 @@ function isAssociative(op::Operator)::Bool
       end
     end
   end
-  #= case ADD_ARRAY_SCALAR() then true;
-  =#
+  #= case ADD_ARRAY_SCALAR() then true; =#
   #= case MUL_ARRAY_SCALAR() then true;
   =#
-  return isAssociative
+  return isAssoc
 end
 
 function priority(op::Operator, lhs::Bool)::Int
@@ -613,19 +634,18 @@ function symbol(op::Operator, spacing::String = " ")::String
   return symbol
 end
 
-function unlift(op::Operator)::Operator
-  @assign op.ty = Type.unliftArray(op.ty)
-  return op
+function unlift(op::OPERATOR)
+  local ty = Type.unliftArray(op.ty)
+  return OPERATOR{Int}(ty, op.op)
 end
 
-function scalarize(op::Operator)::Operator
-  @assign op.ty = arrayElementType(op.ty)
-  return op
+function scalarize(op::OPERATOR)
+  local ty = arrayElementType(op.ty)
+  return OPERATOR{Int}(ty, op.op)
 end
 
-function setType(ty::M_Type, op::Operator)::Operator
-  @assign op.ty = ty
-  return op
+function setType(@nospecialize(ty::M_Type), op::OPERATOR)
+  return OPERATOR{Int}(ty, op.op)
 end
 
 function typeOf(op::Operator)::M_Type
@@ -802,8 +822,7 @@ end
 function fromAbsyn(inOperator::Absyn.Operator)::Operator
   local outOperator::Operator
   local op::OpType
-
-  @assign op = begin
+  op = begin
     @match inOperator begin
       Absyn.ADD(__) => begin
         Op.ADD
@@ -898,7 +917,7 @@ function fromAbsyn(inOperator::Absyn.Operator)::Operator
       end
     end
   end
-  @assign outOperator = OPERATOR(TYPE_UNKNOWN(), op)
+  outOperator = OPERATOR(TYPE_UNKNOWN(), op)
   return outOperator
 end
 
@@ -906,6 +925,6 @@ function compare(op1::Operator, op2::Operator)::Int
   local comp::Int
   local o1::OpType = op1.op
   local o2::OpType = op2.op
-  @assign comp = Util.intCompare(Int(o1), Int(o2))
+  comp = Util.intCompare(Int(o1), Int(o2))
   return comp
 end

@@ -14,7 +14,7 @@ function elaborate(
   =#
   #=  virtual/potentially present connectors, or only normal connectors.
   =#
-  @assign (expandable_conns, undeclared_conns, conns) =
+   (expandable_conns, undeclared_conns, conns) =
     sortConnections(connections.connections)
   #=  Don't do anything if there aren't any expandable connectors in the model.
   =#
@@ -30,7 +30,7 @@ function elaborate(
   @assign csets =
     ConnectionSets.emptySets(listLength(expandable_conns) + listLength(undeclared_conns))
   @assign csets = addExpandableConnectorsToSets(expandable_conns, csets)
-  @assign (undeclared_conns, csets) =
+   (undeclared_conns, csets) =
     ListUtil.mapFold(undeclared_conns, addUndeclaredConnectorToSets, csets)
   #=  Extract the sets of connected connectors.
   =#
@@ -201,7 +201,7 @@ function addNestedExpandableConnectorsToSets(
     return csets
   end
   for ec1 in ecl1
-    @assign (ecl2, oec) =
+     (ecl2, oec) =
       ListUtil.deleteMemberOnTrue(ec1, ecl2, Connector.isNodeNameEqual)
     if isSome(oec)
       @assign csets = addConnectionToSets(ec1, Util.getOption(oec), csets)
@@ -234,7 +234,7 @@ function getExpandableConnectorsInConnector(c1::Connector)::List{Connector}
             Connector.fromCref(
               name,
               ty,
-              ElementSource_createElementSource(info(n)),
+              ElementSource.createElementSource(info(n)),
             ),
             ecl,
           )
@@ -433,7 +433,7 @@ function augmentExpandableConnector(
     @assign elem_name = Connector.name(c)
     @assign node = node(elem_name)
     try
-      @assign comp_node = lookupElement(name(node), cls_tree)
+      @match ENTRY_INFO(comp_node, isImport) = lookupElement(name(node), cls_tree)
     catch
       @assign comp_node = EMPTY_NODE()
     end
@@ -453,7 +453,7 @@ function augmentExpandableConnector(
       )
       @assign vars = _cons(var, vars)
     else
-      @assign comp_node = lookupElement(name(node), cls_tree)
+      @match ENTRY_INFO(comp_node, _) = lookupElement(name(node), cls_tree)
       @assign comp_node = resolveInner(comp_node)
       if isComponent(comp_node)
         markComponentPresent(comp_node)
@@ -512,13 +512,13 @@ function updateExpandableConnection(
   local e2::Expression
 
   @match P_Connection.Connection.CONNECTION(lhs = c1, rhs = c2) = conn
-  @assign (c1, ty1) = updateExpandableConnector(c1)
-  @assign (c2, ty2) = updateExpandableConnector(c2)
+   (c1, ty1) = updateExpandableConnector(c1)
+   (c2, ty2) = updateExpandableConnector(c2)
   #=  Check that the types match now that the connectors have been augmented.
   =#
   @assign e1 = CREF_EXPRESSION(ty1, Connector.name(c1))
   @assign e2 = CREF_EXPRESSION(ty2, Connector.name(c2))
-  @assign (_, _, _, mk) = TypeCheck.matchExpressions(e1, ty1, e2, ty2, allowUnknown = true)
+   (_, _, _, mk) = TypeCheck.matchExpressions(e1, ty1, e2, ty2, allowUnknown = true)
   if TypeCheck.isIncompatibleMatch(mk)
     Error.addSourceMessageAndFail(
       Error.INVALID_CONNECTOR_VARIABLE,

@@ -1,4 +1,3 @@
-
 #= /*
 * This file is part of OpenModelica.
 *
@@ -38,7 +37,6 @@ using ExportAll
 @UniontypeDecl IOStreamType
 @UniontypeDecl IOStreamData
 
-
 #= TODO! change these to X_TYPE =#
 @Uniontype IOStreamType begin
   @Record FILE begin
@@ -47,6 +45,8 @@ using ExportAll
   @Record LIST begin
   end
   @Record BUFFER begin
+  end
+  @Record JULIA_BUFFER begin
   end
 end
 
@@ -59,6 +59,10 @@ end
   end
   @Record BUFFER_DATA begin
     data::Integer
+  end
+  #= johti17 =#
+  @Record JULIA_BUFFER_DATA begin
+    internalBuffer::IOBuffer
   end
 end
 
@@ -81,8 +85,7 @@ import ListUtil
 
 function create(streamName::String, streamType::IOStreamType)::IOSTREAM
   local outStream::IOSTREAM
-
-  @assign outStream = begin
+  outStream = begin
     local fileName::String
     local fileID::Integer
     local bufferID::Integer
@@ -100,6 +103,11 @@ function create(streamName::String, streamType::IOStreamType)::IOSTREAM
         @assign bufferID = IOStreamExt.createBuffer()
         IOSTREAM(streamName, streamType, BUFFER_DATA(bufferID))
       end
+
+      (_, JULIA_BUFFER(__)) => begin
+        IOSTREAM(streamName, streamType, JULIA_BUFFER_DATA(IOBuffer()))
+      end
+
     end
   end
   return outStream
@@ -107,8 +115,7 @@ end
 
 function append(inStream::IOSTREAM, inString::String)::IOSTREAM
   local outStream::IOSTREAM
-
-  @assign outStream = begin
+  outStream = begin
     local listData::List{String}
     local fileID::Integer
     local bufferID::Integer
@@ -131,6 +138,12 @@ function append(inStream::IOSTREAM, inString::String)::IOSTREAM
         IOStreamExt.appendBuffer(bufferID, inString)
         bStream
       end
+
+      (bStream && IOSTREAM(data = JULIA_BUFFER_DATA(buffer)), _) => begin
+        println(buffer, inString)
+        bStream
+      end
+
     end
   end
   return outStream
@@ -222,8 +235,7 @@ function clear(inStream::IOSTREAM)::IOSTREAM
 end
 
 function string(inStream::IOSTREAM)::String
-  local string::String
-  @assign string = begin
+  local string = begin
     local listData::List{String}
     local fileID::Integer
     local bufferID::Integer
@@ -233,16 +245,19 @@ function string(inStream::IOSTREAM)::String
     local str::String
     @match inStream begin
       IOSTREAM(data = FILE_DATA(fileID)) => begin
-        @assign str = IOStreamExt.readFile(fileID)
+        str = IOStreamExt.readFile(fileID)
         str
       end
       IOSTREAM(data = LIST_DATA(listData)) => begin
-        @assign str = IOStreamExt.appendReversedList(listData)
+        str = IOStreamExt.appendReversedList(listData)
         str
       end
       IOSTREAM(data = BUFFER_DATA(bufferID)) => begin
-        @assign str = IOStreamExt.readBuffer(bufferID)
+        str = IOStreamExt.readBuffer(bufferID)
         str
+      end
+      IOSTREAM(data = JULIA_BUFFER_DATA(jlBuffer)) => begin
+        String(take!(jlBuffer))
       end
     end
   end

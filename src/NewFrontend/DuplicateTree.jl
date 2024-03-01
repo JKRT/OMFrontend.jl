@@ -1,52 +1,56 @@
 module DuplicateTree
 using MetaModelica
 
-@UniontypeDecl Entry
+import ..LookupTree
+import ..InstNode
+
+struct DUPLICATE_TREE_ENTRY{T0 <: LookupTree.Entry}
+  entry::T0
+  node::Option
+  children::Vector{DUPLICATE_TREE_ENTRY}
+  ty::Int
+end
+
+#= Singelton uniontype =#
+const Entry = DUPLICATE_TREE_ENTRY
 const Key = String
 const Value = Entry
 
 #= Modelica extend clause =#
 include("../Util/baseAvlTreeCode.jl")
 
-import ..LookupTree
-import ..InstNode
-const EntryType = (() -> begin #= Enumeration =#
-  DUPLICATE = 1
-  REDECLARE = 2
-  ENTRY = 3
-  () -> (DUPLICATE; REDECLARE; ENTRY)
-end)()
+#= Use proper string compare =#
+keyCompare = (inKey1::Key, inKey2::Key) -> begin
+  res = stringCompare(inKey1, inKey2)
+  return res
+end
+
+
+struct EntryTypeStruct{T0 <: Integer}
+  DUPLICATE::T0
+  REDECLARE::T0
+  ENTRY::T0
+end
+
+const EntryType = EntryTypeStruct(#=DUPLICATE=# 1,  #=REDCLARE=# 2 , #= ENTRY =# 3)
 const EntryTypeTy = Int
 
-@Uniontype Entry begin
-  @Record DUPLICATE_TREE_ENTRY begin
-    entry::LookupTree.Entry
-    node::Option{InstNode}
-    children::List{Entry}
-    ty::EntryTypeTy
-  end
+function newRedeclare(entry::LookupTree.Entry)
+  DUPLICATE_TREE_ENTRY(entry, NONE(), Entry[], EntryType.REDECLARE)
 end
 
-function newRedeclare(entry::LookupTree.Entry) :Entry
-  local redecl::Entry = DUPLICATE_TREE_ENTRY(entry, NONE(), nil, EntryType.REDECLARE)
-  return redecl
+function newDuplicate(kept::LookupTree.Entry, duplicate::LookupTree.Entry)
+  DUPLICATE_TREE_ENTRY(kept, NONE(), Entry[newEntry(duplicate)], EntryType.DUPLICATE)
 end
 
-function newDuplicate(kept::LookupTree.Entry, duplicate::LookupTree.Entry)::Entry
-  local entry::Entry = DUPLICATE_TREE_ENTRY(kept, NONE(), list(newEntry(duplicate)), EntryType.DUPLICATE)
-  return entry
+function newEntry(entry::LookupTree.Entry)
+  DUPLICATE_TREE_ENTRY(entry, NONE(), Entry[], EntryType.ENTRY)
 end
 
-function newEntry(lentry::LookupTree.Entry)::Entry
-  local entry::Entry = DUPLICATE_TREE_ENTRY(lentry, NONE(), nil, EntryType.ENTRY)
-  return entry
-end
-
-function idExistsInEntry(id::LookupTree.Entry, entry::Entry)::Bool
+function idExistsInEntry(id::LookupTree.Entry, entry::Entry)
   local exists::Bool
     exists =
-    LookupTree.isEqual(id, entry.entry) ||
-    ListUtil.exist(entry.children, (id) -> idExistsInEntry(id = id))
+    LookupTree.isEqual(id, entry.entry) || ArrayUtil.exist(entry.children, (id) -> idExistsInEntry(id = id))
   return exists
 end
 

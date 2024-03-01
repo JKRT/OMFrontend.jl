@@ -28,7 +28,7 @@
 * See the full OSMC Public License conditions for more details.
 *
 =#
-@Uniontype NFExpressionIterator begin
+@Mutable_Uniontype NFExpressionIterator begin
   @Record EXPRESSION_REPEAT_ITERATOR begin
     current::List{Expression}
     all::List{Expression}
@@ -87,13 +87,13 @@ function next(iterator::ExpressionIterator)::Tuple{ExpressionIterator, Expressio
           (arr, rest) = nextArraySlice(iterator.array)
           iterator = EXPRESSION_ARRAY_ITERATOR(arr, rest)
         else
-          @assign iterator.slice = rest
+          iterator.slice = rest
         end
         (iterator, next)
       end
 
       EXPRESSION_SCALAR_ITERATOR(__) => begin
-        (NONE_ITERATOR(), iterator.exp)
+        (EXPRESSION_NONE_ITERATOR(), iterator.exp)
       end
 
       EXPRESSION_EACH_ITERATOR(__) => begin
@@ -106,7 +106,7 @@ function next(iterator::ExpressionIterator)::Tuple{ExpressionIterator, Expressio
         else
           @match _cons(next, rest) = arr
         end
-        (REPEAT_ITERATOR(rest, arr), next)
+        (EXPRESSION_REPEAT_ITERATOR(rest, arr), next)
       end
     end
   end
@@ -115,8 +115,7 @@ end
 
 function hasNext(iterator::ExpressionIterator)::Bool
   local hasNext::Bool
-
-  @assign hasNext = begin
+  hasNext = begin
     @match iterator begin
       EXPRESSION_ARRAY_ITERATOR(__) => begin
         !listEmpty(iterator.slice)
@@ -191,7 +190,7 @@ end
 
 function fromExpToExpressionIterator(exp::Expression)::ExpressionIterator
   local iterator::ExpressionIterator
-  @assign iterator = begin
+  iterator = begin
     local arr::List{Expression}
     local slice::List{Expression}
     local e::Expression
@@ -209,13 +208,13 @@ function fromExpToExpressionIterator(exp::Expression)::ExpressionIterator
             sourceInfo(),
           )
         end
-        @assign (arr, slice) = nextArraySlice(arr)
+         (arr, slice) = nextArraySlice(arr)
         EXPRESSION_ARRAY_ITERATOR(arr, slice)
       end
 
       CREF_EXPRESSION(__) => begin
-        @assign e = P_ExpandExp.ExpandExp.expandCref(exp)
-        @assign iterator = begin
+        (e, _) = expandCref(exp)
+        iterator = begin
           @match e begin
             ARRAY_EXPRESSION(__) => begin
               fromExpToExpressionIterator(e)
@@ -242,34 +241,39 @@ function fromExpToExpressionIterator(exp::Expression)::ExpressionIterator
   return iterator
 end
 
+"""
+Fetches the next slice of arrays.
+TODO: John Jan 2024. Can be optimized I think
+"""
 function nextArraySlice(
-  Array::List{<:Expression},
-)::Tuple{List{Expression}, List{Expression}}
+  arrayArg::List{<:Expression},
+  )::Tuple{List{Expression}, List{Expression}}
   local slice::List{Expression}
   local e::Expression
   local arr::List{Expression}
-  if listEmpty(Array)
-    @assign slice = nil
+  if listEmpty(arrayArg)
+    slice = nil
   else
-    @assign e = listHead(Array)
-    @assign (Array, slice) = begin
+    e = listHead(arrayArg)
+    (arrayArg, slice) = begin
       @match e begin
         ARRAY_EXPRESSION(__) => begin
-          @assign (arr, slice) = nextArraySlice(e.elements)
+          (arr, slice) = nextArraySlice(e.elements)
           if listEmpty(arr)
-            @assign Array = listRest(Array)
+            arrayArg = listRest(arrayArg)
           else
-            @assign e.elements = arr
-            @assign Array = _cons(e, listRest(Array))
+            local eElements = arr
+            e = ARRAY_EXPRESSION(e.ty, eElements, e.literal)
+            arrayArg = _cons(e, listRest(arrayArg))
           end
-          (Array, slice)
+          (arrayArg, slice)
         end
 
         _ => begin
-          (nil, Array)
+          (nil, arrayArg)
         end
       end
     end
   end
-  return (Array, slice)
+  return (arrayArg, slice)
 end

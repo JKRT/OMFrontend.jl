@@ -58,7 +58,7 @@ function mapExp(dim::Dimension, func::MapFunc)::Dimension
     local e2::Expression
     @match dim begin
       DIMENSION_UNTYPED(dimension = e1) => begin
-        @assign e2 = map(e1, func)
+        e2 = map(e1, func)
         if referenceEq(e1, e2)
           dim
         else
@@ -71,7 +71,7 @@ function mapExp(dim::Dimension, func::MapFunc)::Dimension
         if referenceEq(e1, e2)
           dim
         else
-          DIMENSION_EXP(e2, dim.var)
+          fromExp(e2, dim.var)
         end
       end
 
@@ -486,8 +486,8 @@ function toDAE(dim::Dimension)::DAE.Dimension
   return daeDim
 end
 
-function fromExpList(expl::List{<:Expression})::Dimension
-  local dim::Dimension = DIMENSION_INTEGER(listLength(expl), Variability.CONSTANT)
+function fromExpList(expl::Union{Vector{Expression}, List{<:Expression}})::Dimension
+  local dim::Dimension = DIMENSION_INTEGER(length(expl), Variability.CONSTANT)
   return dim
 end
 

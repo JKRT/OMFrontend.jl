@@ -1,6 +1,5 @@
-@UniontypeDecl Modifier
-
 module ModTable
+
 import ..Modifier
 using MetaModelica
 using ExportAll
@@ -20,24 +19,33 @@ end
 @exportAll()
 end
 
-@Uniontype Modifier begin
-  @Record MODIFIER_NOMOD begin
-  end
-  @Record MODIFIER_REDECLARE begin
-    finalPrefix::SCode.Final
-    eachPrefix::SCode.Each
-    element::InstNode
-    mod::Modifier
-  end
-  @Record MODIFIER_MODIFIER begin
-    name::String
-    finalPrefix::SCode.Final
-    eachPrefix::SCode.Each
-    binding::Binding
-    subModifiers::ModTable.Tree
-    info::SourceInfo
-  end
+abstract type Modifier end
+
+struct MODIFIER_NOMOD <: Modifier end
+
+struct MODIFIER_REDECLARE{  T0 <: SCode.Final,
+                            T1 <: SCode.Each,
+                            T2 <: InstNode,
+                            T3 <: Modifier} <: Modifier
+  finalPrefix::T0
+  eachPrefix::T1
+  element::T2
+  mod::T3
 end
+
+struct MODIFIER_MODIFIER{ T0 <: String,
+                          T1 <: SCode.Final,
+                          T2 <: SCode.Each,
+                          T4 <: ModTable.Tree,
+                          T5 <: SOURCEINFO} <: Modifier
+  name::T0
+  finalPrefix::T1
+  eachPrefix::T2
+  binding::Binding
+  subModifiers::T4
+  info::T5
+end
+
 
 #= Structure that represents where a modifier comes from. =#
 @Uniontype ModifierScope begin
@@ -52,9 +60,9 @@ end
   end
 end
 
-const EMPTY_MOD = MODIFIER_NOMOD()::Modifier
+const EMPTY_MOD = MODIFIER_NOMOD()
 
-function toString(scope::ModifierScope)::String
+function toString(scope::ModifierScope)
   local string::String
   @assign string = begin
     @match scope begin
@@ -74,7 +82,7 @@ function toString(scope::ModifierScope)::String
   return string
 end
 
-function name(scope::ModifierScope)::String
+function name(scope::ModifierScope)
   local name::String
   @assign name = begin
     @match scope begin
@@ -92,7 +100,7 @@ function name(scope::ModifierScope)::String
   return name
 end
 
-function fromElement(element::SCode.Element)::ModifierScope
+function fromElement(element::SCode.Element)
   local scope::ModifierScope
   @assign scope = begin
     @match element begin
@@ -111,7 +119,7 @@ function fromElement(element::SCode.Element)::ModifierScope
 end
 
 
-function toFlatString(mod::Modifier, printName::Bool = true)::String
+function toFlatString(mod::Modifier, printName::Bool = true)
   local string::String
   @assign string = begin
     local submods::List{Modifier}
@@ -149,9 +157,8 @@ function toFlatString(mod::Modifier, printName::Bool = true)::String
   return string
 end
 
-function toString(mod::Modifier, printName::Bool = true)::String
+function toString(mod::Modifier, printName::Bool = true)
   local string::String
-
   @assign string = begin
     local submods::List{Modifier}
     local subs_str::String
@@ -192,26 +199,27 @@ function toString(mod::Modifier, printName::Bool = true)::String
   return string
 end
 
-function map(mod::Modifier, func::FuncT)::Modifier
-  @assign () = begin
-    @match mod begin
-      MODIFIER_MODIFIER(__) => begin
-        @assign mod.subModifiers = ModTable.map(mod.subModifiers, func)
-        ()
+function map(mod::Modifier, func::FuncT)
+  @match mod begin
+    MODIFIER_MODIFIER(__) => begin
+      local subModifiers = ModTable.map(mod.subModifiers, func)
+      mod = MODIFIER_MODIFIER(
+        mod.name,
+        mod.finalPrefix,
+        mod.eachPrefix,
+        mod.binding,
+        subModifiers,
+        mod.info,
+      )
       end
-
-      _ => begin
-        ()
-      end
-    end
+    _ => begin end
   end
   return mod
 end
 
-function isFinal(mod::Modifier)::Bool
+function isFinal(mod::Modifier)
   local isFinal::Bool
-
-  @assign isFinal = begin
+  isFinal = begin
     @match mod begin
       MODIFIER_MODIFIER(finalPrefix = SCode.FINAL(__)) => begin
         true
@@ -225,15 +233,13 @@ function isFinal(mod::Modifier)::Bool
   return isFinal
 end
 
-function isEach(mod::Modifier)::Bool
+function isEach(mod::Modifier)
   local isEach::Bool
-
-  @assign isEach = begin
+  isEach = begin
     @match mod begin
       MODIFIER_MODIFIER(eachPrefix = SCode.EACH(__)) => begin
         true
       end
-
       _ => begin
         false
       end
@@ -247,7 +253,11 @@ function toList(mod::Modifier)
   modList = begin
     @match mod begin
       MODIFIER_MODIFIER(__) => begin
-        ModTable.listValues(mod.subModifiers)
+        #println("Vector")
+        #res = ModTable.vectorValues!(mod.subModifiers)
+        #println(toString(res))
+        #println("List")
+        res = ModTable.listValues(mod.subModifiers)
       end
       _ => begin
         nil
@@ -257,15 +267,30 @@ function toList(mod::Modifier)
   return modList
 end
 
-function isRedeclare(mod::Modifier)::Bool
-  local isRedeclare::Bool
+const TMP_MOD = Modifier[]
+function toVector!(mod::Modifier)
+  local modV::Vector{Modifier}
+  # println("Vector...")
+  # println(toString(mod))
+  # println("....")
+  modV = @match mod begin
+    MODIFIER_MODIFIER(__) where mod.subModifiers !== nothing => begin
+      ModTable.vectorValues!(mod.subModifiers)
+    end
+    _ => begin
+      TMP_MOD
+    end
+  end
+  return modV
+end
 
-  @assign isRedeclare = begin
+function isRedeclare(mod::Modifier)
+  local isRedeclare::Bool
+  isRedeclare = begin
     @match mod begin
       MODIFIER_REDECLARE(__) => begin
         true
       end
-
       _ => begin
         false
       end
@@ -274,15 +299,13 @@ function isRedeclare(mod::Modifier)::Bool
   return isRedeclare
 end
 
-function isEmpty(mod::Modifier)::Bool
+function isEmpty(mod::Modifier)
   local isEmpty::Bool
-
-  @assign isEmpty = begin
+  isEmpty = begin
     @match mod begin
       MODIFIER_NOMOD(__) => begin
         true
       end
-
       _ => begin
         false
       end
@@ -291,14 +314,13 @@ function isEmpty(mod::Modifier)::Bool
   return isEmpty
 end
 
-function merge(outerMod::Modifier, innerMod::Modifier, name::String = "")::Modifier
+function merge(outerMod::Modifier, innerMod::Modifier, name::String = "")
   local mergedMod::Modifier
 
-  @assign mergedMod = begin
+  mergedMod = begin
     local submods::ModTable.Tree
     local binding::Binding
-    #=  One of the modifiers is NOMOD, return the other.
-    =#
+    #=  One of the modifiers is NOMOD, return the other. =#
     @match (outerMod, innerMod) begin
       (MODIFIER_NOMOD(__), _) => begin
         innerMod
@@ -309,16 +331,16 @@ function merge(outerMod::Modifier, innerMod::Modifier, name::String = "")::Modif
       end
 
       (MODIFIER_MODIFIER(__), MODIFIER_MODIFIER(__)) => begin
-        #=  Two modifiers, merge bindings and submodifiers.
-        =#
+        #=  Two modifiers, merge bindings and submodifiers. =#
         checkFinalOverride(innerMod.finalPrefix, outerMod, innerMod.info)
-        @assign binding = if isBound(outerMod.binding)
+        binding = if isBound(outerMod.binding)
           outerMod.binding
         else
           innerMod.binding
         end
-        @assign submods =
-          ModTable.join(innerMod.subModifiers, outerMod.subModifiers, merge)
+        submods =
+          ModTable.join(innerMod.subModifiers,
+                        outerMod.subModifiers, merge)
         MODIFIER_MODIFIER(
           outerMod.name,
           outerMod.finalPrefix,
@@ -330,13 +352,13 @@ function merge(outerMod::Modifier, innerMod::Modifier, name::String = "")::Modif
       end
 
       (MODIFIER_REDECLARE(__), MODIFIER_MODIFIER(__)) => begin
-        @assign outerMod.mod = merge(outerMod.mod, innerMod)
-        outerMod
+        mod = merge(outerMod.mod, innerMod)
+        MODIFIER_REDECLARE(outerMod.finalPrefix, outerMod.eachPrefix, outerMod.element, mod)
       end
 
       (MODIFIER_MODIFIER(__), MODIFIER_REDECLARE(__)) => begin
-        @assign innerMod.mod = merge(outerMod, innerMod.mod)
-        innerMod
+        mod = merge(outerMod, innerMod.mod)
+        MODIFIER_REDECLARE(innerMod.finalPrefix, innerMod.eachPrefix, innerMod.element, mod)
       end
 
       (MODIFIER_REDECLARE(__), _) => begin
@@ -348,7 +370,7 @@ function merge(outerMod::Modifier, innerMod::Modifier, name::String = "")::Modif
       end
 
       _ => begin
-        Error.addMessage(Error.INTERNAL_ERROR, list("Mod.mergeMod failed on unknown mod."))
+        Error.addMessage(Error.INTERNAL_ERROR, list("Mod.mergeMod failed on unknown modifier."))
         fail()
       end
     end
@@ -356,22 +378,21 @@ function merge(outerMod::Modifier, innerMod::Modifier, name::String = "")::Modif
   return mergedMod
 end
 
-function setBinding(binding::Binding, modifier::Modifier)::Modifier
-
-  @assign () = begin
-    @match modifier begin
-      MODIFIER_MODIFIER(__) => begin
-        @assign modifier.binding = binding
-        ()
-      end
-    end
-  end
+function setBinding(binding::Binding, modifier::MODIFIER_MODIFIER)
+      MODIFIER_MODIFIER(
+        mod.name,
+        mod.finalPrefix,
+        mod.eachPrefix,
+        binding,
+        mod.subModifiers,
+        mod.info,
+      )
   return modifier
 end
 
-function binding(modifier::Modifier)::Binding
+function binding(modifier::Modifier)
   local binding::Binding
-  @assign binding = begin
+  binding = begin
     @match modifier begin
       MODIFIER_MODIFIER(__) => begin
         modifier.binding
@@ -384,7 +405,7 @@ function binding(modifier::Modifier)::Binding
   return binding
 end
 
-function hasBinding(modifier::Modifier)::Bool
+function hasBinding(modifier::Modifier)
   local b::Bool
   b = begin
     @match modifier begin
@@ -399,10 +420,9 @@ function hasBinding(modifier::Modifier)::Bool
   return b
 end
 
-function Modifier_info(modifier::Modifier)::SourceInfo
+function Modifier_info(modifier::Modifier)
   local info::SourceInfo
-
-  @assign info = begin
+  info = begin
     @match modifier begin
       MODIFIER_MODIFIER(__) => begin
         modifier.info
@@ -420,7 +440,7 @@ function Modifier_info(modifier::Modifier)::SourceInfo
   return info
 end
 
-function name(modifier::Modifier)::String
+function name(modifier::Modifier)
   local nameStr::String
   nameStr = begin
     @match modifier begin
@@ -435,10 +455,9 @@ function name(modifier::Modifier)::String
   return nameStr
 end
 
-function lookupModifier(modName::String, modifier::Modifier)::Modifier
+function lookupModifier(modName::String, modifier::Modifier)
   local subMod::Modifier
-
-  @assign subMod = begin
+  subMod = begin
     @matchcontinue modifier begin
       MODIFIER_MODIFIER(__) => begin
         ModTable.get(modifier.subModifiers, modName)
@@ -451,17 +470,18 @@ function lookupModifier(modName::String, modifier::Modifier)::Modifier
   return subMod
 end
 
-function addParent_work(name::String, parentNode::InstNode, mod::Modifier)::Modifier
+function addParent_work(name::String, parentNode::InstNode, mod::Modifier)
   local outMod::Modifier
-  @assign outMod = begin
+  outMod = begin
     local binding::Binding
     @match mod begin
       MODIFIER_MODIFIER(binding = binding) => begin
-        @assign mod.binding = addParent(parentNode, binding)
+        modBinding = addParent(parentNode, binding)
+        lmod = MODIFIER_MODIFIER(mod.name, mod.finalPrefix, mod.eachPrefix, modBinding, mod.subModifiers, mod.info)
         if !isEach(binding)
-          map(mod, (x,y) -> addParent_work(x, parentNode, y))
+          map(lmod, (x,y) -> addParent_work(x, parentNode, y))
         else
-          mod
+          lmod
         end
       end
 
@@ -473,14 +493,15 @@ function addParent_work(name::String, parentNode::InstNode, mod::Modifier)::Modi
   return outMod
 end
 
-function addParent(parentNode::InstNode, mod::Modifier)::Modifier
+function addParent(parentNode::InstNode, mod::Modifier)
   local outMod::Modifier
-  @assign outMod = begin
+  outMod = begin
     local binding::Binding
     @match mod begin
       MODIFIER_MODIFIER(binding = binding) => begin
-        @assign mod.binding = addParent(parentNode, binding)
-        map(mod, (x,y) -> addParent_work(x, parentNode, y))
+        modBinding = addParent(parentNode, binding)
+        lmod = MODIFIER_MODIFIER(mod.name, mod.finalPrefix, mod.eachPrefix, modBinding, mod.subModifiers, mod.info)
+        map(lmod, (x, y) -> addParent_work(x, parentNode, y))
       end
       _ => begin
         mod
@@ -490,31 +511,30 @@ function addParent(parentNode::InstNode, mod::Modifier)::Modifier
   return outMod
 end
 
-""" #= This function makes modifiers applied to final elements final, e.g. for
+"""  This function makes modifiers applied to final elements final, e.g. for
      'final Real x(start = 1.0)' it will mark '(start = 1.0)' as final. This is
      done so that we only need to check for final violations while merging
-     modifiers. =#"""
+     modifiers.
+"""
+const DUMMY_MOD::SCode.MOD = SCode.MOD(SCode.FINAL(), SCode.NOT_EACH(), nil, NONE(), DAE.dummyInfo)
 function patchElementModFinal(
   prefixes::SCode.Prefixes,
   info::SourceInfo,
   mod::SCode.Mod,
-)::SCode.Mod
-
+  )
   if SCodeUtil.finalBool(SCodeUtil.prefixesFinal(prefixes))
-    @assign mod = begin
+    mod = begin
       @match mod begin
         SCode.MOD(__) => begin
-          @assign mod.finalPrefix = SCode.FINAL()
-          mod
+          local modFinalPrefix = SCode.FINAL()
+          SCode.MOD(modFinalPrefix, mod.eachPrefix, mod.subModLst, mod.binding, mod.info)
         end
-
         SCode.REDECL(__) => begin
-          @assign mod.finalPrefix = SCode.FINAL()
-          mod
+          local modFinalPrefix = SCode.FINAL()
+          SCode.REDECL(modFinalPrefix, mod.eachPrefix, mod.element)
         end
-
         _ => begin
-          SCode.MOD(SCode.Final.FINAL(), SCode.NOT_EACH(), nil, NONE(), info)
+          DUMMY_MOD
         end
       end
     end
@@ -526,10 +546,9 @@ function fromElement(
   element::SCode.Element,
   parents::List{<:InstNode},
   scope::InstNode,
-)::Modifier
+  )
   local mod::Modifier
-
-  @assign mod = begin
+  mod = begin
     local def::SCode.ClassDef
     local smod::SCode.Mod
     @match element begin
@@ -544,7 +563,7 @@ function fromElement(
       end
 
       SCode.COMPONENT(__) => begin
-        @assign smod =
+        smod =
           patchElementModFinal(element.prefixes, element.info, element.modifications)
         create(smod, element.name, SCOPE_COMPONENT(element.name), parents, scope)
       end
@@ -577,23 +596,37 @@ function fromElement(
   return mod
 end
 
-function stripSCodeMod(elem::SCode.Element)::Tuple{SCode.Element, SCode.Mod}
+function stripSCodeMod(elem::SCode.Element)
   local mod::SCode.Mod
-
-  @assign mod = begin
+  local retElem
+  mod = begin
     local cdef::SCode.ClassDef
     @match elem begin
-      SCode.CLASS(classDef = cdef && SCode.ClassDef.DERIVED(modifications = mod)) => begin
+      SCode.CLASS(classDef = cdef && SCode.DERIVED(modifications = mod)) => begin
         if !SCodeUtil.isEmptyMod(mod)
-          @assign cdef.modifications = SCode.NOMOD()
-          @assign elem.classDef = cdef
+          cdef = SCode.DERIVED(cdef.typeSpec, SCode.NOMOD(), cdef.attributes)
+          retElem = SCode.CLASS(elem.name,
+                                elem.prefixes,
+                                elem.encapsulatedPrefix,
+                                elem.partialPrefix,
+                                elem.restriction,
+                                cdef,
+                                elem.cmt,
+                                elem.info)
         end
         mod
       end
 
-      SCode.Element.COMPONENT(modifications = mod) => begin
+      SCode.COMPONENT(modifications = mod) => begin
         if !SCodeUtil.isEmptyMod(mod)
-          @assign elem.modifications = SCode.NOMOD()
+          retElem = SCode.COMPONENT(elem.name,
+                                    elem.prefixes,
+                                    elem.attributes,
+                                    elem.typeSpec,
+                                    SCode.NOMOD(),
+                                    elem.comment,
+                                    elem.condition,
+                                    elem.info)
         end
         mod
       end
@@ -603,20 +636,17 @@ function stripSCodeMod(elem::SCode.Element)::Tuple{SCode.Element, SCode.Mod}
       end
     end
   end
-  return (elem, mod)
+  return (retElem, mod)
 end
 
-function create(
-  mod::SCode.Mod,
-  name::String,
-  modScope::ModifierScope,
-  parents::List{<:InstNode},
-  scope::InstNode,
-)::Modifier
+function create(mod::SCode.Mod,
+                name::String,
+                modScope::ModifierScope,
+                parents::List{<:InstNode},
+                scope::InstNode)
   local newMod::Modifier
-
-  @assign newMod = begin
-    local submod_lst::List{Tuple{String, Modifier}}
+  newMod = begin
+    local submodV::Vector{Tuple{String, Modifier}}
     local submod_table::ModTable.Tree
     local binding::Binding
     local elem::SCode.Element
@@ -630,17 +660,15 @@ function create(
       end
       SCode.MOD(__) => begin
         is_each = SCodeUtil.eachBool(mod.eachPrefix)
-        binding =
-          fromAbsyn(mod.binding, is_each, parents, scope, mod.info)
+        binding = fromAbsyn(mod.binding, is_each, parents, scope, mod.info)
         pars = if is_each
           nil
         else
           parents
         end
-        submod_lst =
-          list(tuple(m.ident, createSubMod(m, modScope, pars, scope)) for m in mod.subModLst)
-        submod_table = ModTable.fromList(
-          submod_lst,
+        submodV = Tuple{String, Modifier}[tuple(m.ident, createSubMod(m, modScope, pars, scope)) for m in mod.subModLst]
+        submod_table = ModTable.fromVector(
+          submodV,
           (modScope, nil) -> mergeLocal(scope = modScope, prefix = nil),
         )
         MODIFIER_MODIFIER(name, mod.finalPrefix, mod.eachPrefix, binding, submod_table, mod.info)
@@ -666,41 +694,51 @@ function mergeLocal(
   mod2::Modifier,
   name::String = "",
   scope::ModifierScope = nothing,
-  prefix::List{<:String} = nil,
-)::Modifier
+  prefix::Vector{String} = String[],
+  )
   local mod::Modifier
   local comp_name::String
-  @assign mod = begin
+  mod = begin
     @match (mod1, mod2) begin
       (MODIFIER_MODIFIER(__), MODIFIER_MODIFIER(binding = UNBOUND(__))) => begin
         #=  The second modifier has no binding, use the binding from the first.
         =#
-        lst = mod1.name <| prefix
-        @debug "Value of $lst"
-        @assign mod1.subModifiers = ModTable.join(
+        #local prefixV = mod1.name <| prefix
+        push!(prefix, mod1.name)
+        #@debug "Value of $lst"
+        local mod1SubModifiers = ModTable.join(
           mod1.subModifiers,
           mod2.subModifiers,
-          (x, scope, lst) ->
-            mergeLocal(x, scope, lst))
-        mod1
+          @closure (x) -> mergeLocal(x, scope, prefix))
+        MODIFIER_MODIFIER(mod1.name,
+                          mod1.finalPrefix,
+                          mod1.eachPrefix,
+                          mod1.binding,
+                          mod1SubModifiers,
+                          mod1.info)
       end
       (MODIFIER_MODIFIER(binding = UNBOUND(__)), MODIFIER_MODIFIER(__)) => begin
         #=  The first modifier has no binding, use the binding from the second.
         =#
-        lst = mod1.name <| prefix
-        @debug "Value of $lst"
-        @assign mod2.subModifiers = ModTable.join(
+        #local lst = mod1.name <| prefix
+        push!(prefix, mod1.name)
+        #@debug "Value of $lst"
+        local mod2SubModifiers = ModTable.join(
           mod2.subModifiers,
           mod1.subModifiers,
-          (x) ->
-            mergeLocal(x, scope, lst))
-        mod2
+          @closure (x) -> mergeLocal(x, scope, prefix))
+        MODIFIER_MODIFIER(mod2.name,
+                          mod2.finalPrefix,
+                          mod2.eachPrefix,
+                          mod2.binding,
+                          mod2SubModifiers,
+                          mod2.info)
       end
 
       _ => begin
         #=  Both modifiers modify the same element, give duplicate modification error.
         =#
-        @assign comp_name =
+        comp_name =
           stringDelimitList(listReverse(_cons(P_Modifier.name(mod1), prefix)), ".")
         Error.addMultiSourceMessage(
           Error.DUPLICATE_MODIFICATIONS,
@@ -714,20 +752,22 @@ function mergeLocal(
   return mod
 end
 
-""" #= Checks that a modifier is not trying to override a final modifier. In that
-     case it prints an error and fails, otherwise it does nothing. =#"""
+"""
+Checks that a modifier is not trying to override a final modifier.
+In that case it prints an error and fails, otherwise it does nothing.
+"""
 function checkFinalOverride(
   innerFinal::SCode.Final,
   outerMod::Modifier,
   innerInfo::SourceInfo,
-)
-  return @assign _ = begin
+  )
+  _ = begin
     @match innerFinal begin
       SCode.FINAL(__) => begin
         Error.addMultiSourceMessage(
           Error.FINAL_COMPONENT_OVERRIDE,
-          list(name(outerMod), P_Modifier.toString(outerMod, printName = false)),
-          list(info(outerMod), innerInfo),
+          list(name(outerMod), toString(outerMod, false)),
+          list(Modifier_info(outerMod), innerInfo),
         )
         fail()
       end
@@ -738,12 +778,10 @@ function checkFinalOverride(
   end
 end
 
-function createSubMod(
-  subMod::SCode.SubMod,
-  modScope::ModifierScope,
-  parents::List{<:InstNode},
-  scope::InstNode,
-)::Modifier
+function createSubMod(subMod::SCode.SubMod,
+                      modScope::ModifierScope,
+                      parents::List{<:InstNode},
+                      scope::InstNode)
   local mod::Modifier = create(subMod.mod, subMod.ident, modScope, parents, scope)
   return mod
 end

@@ -1,19 +1,7 @@
-module SCodeUtil
-
-using MetaModelica
-using ExportAll
-#= Forward declarations for uniontypes until Julia adds support for mutual recursion =#
-
-FilterFunc = Function
-
-FoldFunc = Function
-
-TraverseFunc = Function
-
 #= /*
 * This file is part of OpenModelica.
 *
-* Copyright (c) 1998-2014, Open Source Modelica Consortium (OSMC),
+* Copyright (c) 1998-CurrentYear, Open Source Modelica Consortium (OSMC),
 * c/o Linköpings universitet, Department of Computer and Information Science,
 * SE-58183 Linköping, Sweden.
 *
@@ -40,6 +28,17 @@ TraverseFunc = Function
 * See the full OSMC Public License conditions for more details.
 *
 */ =#
+
+module SCodeUtil
+
+using MetaModelica
+using ExportAll
+#= Forward declarations for uniontypes until Julia adds support for mutual recursion =#
+
+const FilterFunc = Function
+const FoldFunc = Function
+const TraverseFunc = Function
+
 import SCode
 import Absyn
 
@@ -47,7 +46,7 @@ import ..Main.AbsynUtil
 import ..Main.Util
 import ListUtil
 
-Argument = Any
+const Argument = Any
 const dummyInfo = SOURCEINFO("", false, 0, 0, 0, 0, 0.0)::SourceInfo
 
 """ #= Removes all submodifiers from the Mod. =#"""
@@ -100,23 +99,31 @@ function filterSubMods(mod::SCode.Mod, filter::FilterFunc)::SCode.Mod
   return mod
 end
 
-""" #= Return the Element with the name given as first argument from the Class. =#"""
+function filterGivenSubModNames(submod::SCode.SubMod; namesToKeep::List{String})
+  listMember(submod.ident, namesToKeep)
+end
+
+function removeGivenSubModNames(submod::SCode.SubMod; namesToRemove::List{String})
+  !(listMember(submod.ident, namesToRemove))
+end
+
+
+"""  Return the Element with the name given as first argument from the Class. """
 function getElementNamed(inIdent::SCode.Ident, inClass::SCode.Element)::SCode.Element
   local outElement::SCode.Element
-
-  @assign outElement = begin
+  outElement = begin
     local elt::SCode.Element
     local id::String
     local elts::List{SCode.Element}
     @match (inIdent, inClass) begin
       (id, SCode.CLASS(classDef = SCode.PARTS(elementLst = elts))) => begin
-        @assign elt = getElementNamedFromElts(id, elts)
+        elt = getElementNamedFromElts(id, elts)
         elt
       end
 
       (
         id,
-        SCode.CLASS(
+        SCode.CLASS(#= /* adrpo: handle also the case model extends X then X; */ =#
           classDef = SCode.CLASS_EXTENDS(composition = SCode.PARTS(elementLst = elts)),
         ),
       ) => begin
@@ -125,11 +132,12 @@ function getElementNamed(inIdent::SCode.Ident, inClass::SCode.Element)::SCode.El
       end
     end
   end
-  #= /* adrpo: handle also the case model extends X then X; */ =#
   return outElement
 end
 
-""" #= Helper function to getElementNamed. =#"""
+"""
+  Helper function to getElementNamed.
+"""
 function getElementNamedFromElts(
   inIdent::SCode.Ident,
   inElementLst::List{<:SCode.Element},
@@ -143,6 +151,7 @@ function getElementNamedFromElts(
     local id1::String
     local xs::List{SCode.Element}
     @matchcontinue (inIdent, inElementLst) begin
+      #= Case 1. Components. =#
       (id2, comp <| xs) => begin
         @match SCode.COMPONENT(name = id1) = comp
         @match true = stringEq(id1, id2)
@@ -151,39 +160,39 @@ function getElementNamedFromElts(
 
       (id2, SCode.COMPONENT(name = id1) <| xs) => begin
         @match false = stringEq(id1, id2)
-        @assign elt = getElementNamedFromElts(id2, xs)
+        elt = getElementNamedFromElts(id2, xs)
         elt
       end
 
       (id2, SCode.CLASS(name = id1) <| xs) => begin
         @match false = stringEq(id1, id2)
-        @assign elt = getElementNamedFromElts(id2, xs)
+        elt = getElementNamedFromElts(id2, xs)
         elt
       end
 
       (id2, SCode.EXTENDS(__) <| xs) => begin
-        @assign elt = getElementNamedFromElts(id2, xs)
+        elt = getElementNamedFromElts(id2, xs)
         elt
       end
 
-      (id2, cdef && SCode.CLASS(name = id1) <| xs) => begin
+      (id2, cdef <| xs && SCode.CLASS(name = id1) <| xs) => begin
         @match true = stringEq(id1, id2)
         cdef
       end
-
+      #=  Try next. =#
       (id2, h <| xs) => begin
-        @assign elt = getElementNamedFromElts(id2, xs)
+        elt = getElementNamedFromElts(id2, xs)
         elt
       end
     end
   end
-  #=  Try next. =#
   return outElement
 end
 
-""" #=
+"""
 Author BZ, 2009-01
-check if an element is of type EXTENDS or not. =#"""
+check if an element is of type EXTENDS or not.
+"""
 function isElementExtends(ele::SCode.Element)::Bool
   local isExtend::Bool
 
@@ -4321,14 +4330,14 @@ function isNotBuiltinClass(inClass::SCode.Element)::Bool
   return b
 end
 
-""" #= Returns the annotation with the given name in the element, or fails if no
-   such annotation could be found. =#"""
+"""
+ Returns the annotation with the given name in the element, or fails if no
+ such annotation could be found.
+"""
 function getElementNamedAnnotation(element::SCode.Element, name::String)::Absyn.Exp
   local exp::Absyn.Exp
-
   local ann::SCode.Annotation
-
-  @assign ann = begin
+  ann = begin
     @match element begin
       SCode.EXTENDS(ann = SOME(ann)) => begin
         ann
@@ -4343,7 +4352,7 @@ function getElementNamedAnnotation(element::SCode.Element, name::String)::Absyn.
       end
     end
   end
-  @assign exp = getNamedAnnotation(ann, name)
+  (exp, _) = getNamedAnnotation(ann, name)
   return exp
 end
 
@@ -4855,18 +4864,19 @@ function isElementEncapsulated(inElement::SCode.Element)::Bool
   return outIsEncapsulated
 end
 
-""" #= replace the element in program at the specified path (includes the element name).
+"""
+ Replace the element in program at the specified path (includes the element name).
  if the element does not exist at that location then it fails.
  this function will fail if any of the path prefixes
- to the element are not found in the given program =#"""
+ to the element are not found in the given program
+"""
 function replaceOrAddElementInProgram(
   inProgram::SCode.Program,
   inElement::SCode.Element,
   inClassPath::Absyn.Path,
 )::SCode.Program
   local outProgram::SCode.Program
-
-  @assign outProgram = begin
+  outProgram = begin
     local sp::SCode.Program
     local c::SCode.Element
     local e::SCode.Element
@@ -4874,21 +4884,21 @@ function replaceOrAddElementInProgram(
     local i::Absyn.Ident
     @match (inProgram, inElement, inClassPath) begin
       (_, _, Absyn.QUALIFIED(i, p)) => begin
-        @assign e = getElementWithId(inProgram, i)
-        @assign sp = getElementsFromElement(inProgram, e)
-        @assign sp = replaceOrAddElementInProgram(sp, inElement, p)
-        @assign e = replaceElementsInElement(inProgram, e, sp)
-        @assign sp = replaceOrAddElementWithId(inProgram, e, i)
+        e = getElementWithId(inProgram, i)
+        sp = getElementsFromElement(inProgram, e)
+        sp = replaceOrAddElementInProgram(sp, inElement, p)
+        e = replaceElementsInElement(inProgram, e, sp)
+        sp = replaceOrAddElementWithId(inProgram, e, i)
         sp
       end
 
       (_, _, Absyn.IDENT(i)) => begin
-        @assign sp = replaceOrAddElementWithId(inProgram, inElement, i)
+        sp = replaceOrAddElementWithId(inProgram, inElement, i)
         sp
       end
 
       (_, _, Absyn.FULLYQUALIFIED(p)) => begin
-        @assign sp = replaceOrAddElementInProgram(inProgram, inElement, p)
+        sp = replaceOrAddElementInProgram(inProgram, inElement, p)
         sp
       end
     end
@@ -4991,7 +5001,7 @@ end
 function replaceElementsInElement(
   inProgram::SCode.Program,
   inElement::SCode.Element,
-  inElements::SCode.Program,
+  inElements::List,
 )::SCode.Element
   local outElement::SCode.Element
 
@@ -5051,9 +5061,11 @@ function replaceElementsInElement(
   return outElement
 end
 
-""" #= replaces the elements in class definition.
- if derived a SOME(element) is returned,
- otherwise the modified class def and NONE() =#"""
+"""
+  Replaces the elements in class definition.
+  if derived a SOME(element) is returned,
+  otherwise the modified class def and NONE()
+"""
 function replaceElementsInClassDef(
   inProgram::SCode.Program,
   classDef::SCode.ClassDef,
@@ -5110,16 +5122,16 @@ function getElementWithId(inProgram::SCode.Program, inId::String)::SCode.Element
     local i::Absyn.Ident
     local n::Absyn.Ident
     @match (inProgram, inId) begin
-      (e && SCode.CLASS(name = n) <| _, i) where {(stringEq(n, i))} => begin
+      (e <| _ && SCode.CLASS(name = n) <| _, i) where {(stringEq(n, i))} => begin
         e
       end
 
-      (e && SCode.COMPONENT(name = n) <| _, i) where {(stringEq(n, i))} => begin
+      (e <| _ && SCode.COMPONENT(name = n) <| _, i) where {(stringEq(n, i))} => begin
         e
       end
 
       (
-        e && SCode.EXTENDS(baseClassPath = p) <| _,
+        e <| _ && SCode.EXTENDS(baseClassPath = p) <| _,
         i,
       ) where {(stringEq(AbsynUtil.pathString(p), i))} => begin
         e
@@ -5167,7 +5179,10 @@ function getElementWithPath(inProgram::SCode.Program, inPath::Absyn.Path)::SCode
   return outElement
 end
 
-""" #=  =#"""
+"""
+Retrieves the name of a SCode element.
+Returns the name as a string.
+"""
 function getElementName(e::SCode.Element)::String
   local s::String
 
@@ -5403,8 +5418,10 @@ function getClassDef(inClass::SCode.Element)::SCode.ClassDef
   return outCdef
 end
 
-""" #= @author:
- returns true if equations contains reinit =#"""
+"""
+ @author: adrpo
+ returns true if equations contains reinit
+"""
 function equationsContainReinit(inEqs::List{<:SCode.EEquation})::Bool
   local hasReinit::Bool
 
@@ -5420,8 +5437,69 @@ function equationsContainReinit(inEqs::List{<:SCode.EEquation})::Bool
   return hasReinit
 end
 
-""" #= @author:
- returns true if equation contains reinit =#"""
+"""
+@author: johti17
+Returns true if the equations contains an Connections.branch call.
+"""
+function equationsContainConnectorsBranch(inEqs::List{<:SCode.EEquation})::Bool
+  local hasReinit::Bool
+  @assign hasReinit = begin
+    local b::Bool
+    @match inEqs begin
+      _ => begin
+        @assign b = ListUtil.applyAndFold(inEqs, boolOr, equationContainConnectorsBranch, false)
+        b
+      end
+    end
+  end
+  return hasReinit
+end
+
+
+"""
+  Returns true if the equation contains a Connectors.branch statement
+"""
+function equationContainConnectorsBranch(inEq::SCode.EEquation)::Bool
+  local hasBranch::Bool
+  @assign hasBranch = begin
+    local b::Bool
+    local eqs::List{SCode.EEquation}
+    local eqs_lst::List{List{SCode.EEquation}}
+    local tpl_el::List{Tuple{Absyn.Exp, List{SCode.EEquation}}}
+    @match inEq begin
+      SCode.EQ_NORETCALL(Absyn.CALL(
+        Absyn.CREF_QUAL("Connections", Nil{Any}(),
+                        Absyn.CREF_IDENT("branch", Nil{Any}())), _, _), _, _) => true
+      SCode.EQ_WHEN(eEquationLst = eqs, elseBranches = tpl_el) => begin
+        b = equationsContainConnectorsBranch(eqs)
+        eqs_lst = ListUtil.map(tpl_el, Util.tuple22)
+        b = ListUtil.applyAndFold(eqs_lst, boolOr, equationsContainConnectorsBranch, b)
+        b
+      end
+
+      SCode.EQ_IF(thenBranch = eqs_lst, elseBranch = eqs) => begin
+        b = equationsContainConnectorsBranch(eqs)
+        b = ListUtil.applyAndFold(eqs_lst, boolOr, equationsContainConnectorsBranch, b)
+        b
+      end
+
+      SCode.EQ_FOR(eEquationLst = eqs) => begin
+        b = equationsContainConnectorsBranch(eqs)
+        b
+      end
+
+      _ => begin
+        false
+      end
+    end
+  end
+  return hasBranch
+end
+
+"""
+@author: adrpo
+ returns true if equation contains reinit
+"""
 function equationContainReinit(inEq::SCode.EEquation)::Bool
   local hasReinit::Bool
 

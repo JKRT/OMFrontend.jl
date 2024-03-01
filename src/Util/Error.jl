@@ -1,12 +1,12 @@
 module Error
 
+import ..ErrorExt
+
 using MetaModelica
 using ExportAll
 #= Forward declarations for uniontypes until Julia adds support for mutual recursion =#
 
-prefixToStr = Function
-
-prefixToStr = Function
+const prefixToStr = Function
 
 #= /*
 * This file is part of OpenModelica.
@@ -40,93 +40,7 @@ prefixToStr = Function
 */ =#
 
 import ..Gettext
-
-module ErrorTypes
-
-using MetaModelica
-#= ExportAll is not good practice but it makes it so that we do not have to write export after each function :( =#
-using ExportAll
-#= Necessary to write declarations for your uniontypes until Julia adds support for mutually recursive types =#
-
-import ..Gettext
-
-@UniontypeDecl Severity
-@UniontypeDecl MessageType
-@UniontypeDecl Message
-@UniontypeDecl TotalMessage
-
-#= severity of message =#
-@Uniontype Severity begin
-    @Record INTERNAL begin
-
-    end
-
-    @Record ERROR begin
-
-    end
-
-    @Record WARNING begin
-
-    end
-
-    @Record NOTIFICATION begin
-
-    end
-end
-
-#= runtime scripting /interpretation error =#
-@Uniontype MessageType begin
-    @Record SYNTAX begin
-
-    end
-
-    @Record GRAMMAR begin
-
-    end
-
-    @Record TRANSLATION begin
-
-    end
-
-    @Record SYMBOLIC begin
-
-    end
-
-    @Record SIMULATION begin
-
-    end
-
-    @Record SCRIPTING begin
-
-    end
-end
-
-ErrorID = ModelicaInteger  #= Unique error id. Used to
-      look up message string and type and severity =#
-
-@Uniontype Message begin
-    @Record MESSAGE begin
-
-             id::ErrorID
-             ty::MessageType
-             severity::Severity
-             message::Gettext.TranslatableContent
-    end
-end
-
-@Uniontype TotalMessage begin
-     @Record TOTALMESSAGE begin
-
-              msg::Message
-              info::SourceInfo
-     end
-end
-
-MessageTokens = List
-
-@exportAll()
-
-end # ErrorTypes
+using ..ErrorTypes
 
 
 #=
@@ -4532,7 +4446,7 @@ function updateCurrentComponent(
 end
 
 """ #= Gets the current component as a string. =#"""
-function getCurrentComponent() where {T}
+function getCurrentComponent()
   local filename::String = ""
   local read_only::Bool = false
   local sline::Integer = 0
@@ -4576,27 +4490,27 @@ function getCurrentComponent() where {T}
   return (str, sline, scol, eline, ecol, read_only, filename)
 end
 
-global SOURCE_MESSAGES = []
-
-""" #= Implementation of Relations
+"""
+ Implementation of Relations
   function: addMessage
   Adds a message given ID and tokens. The rest of the info
-  is looked up in the message table. =#"""
+  is looked up in the message table. """
 function addMessage(
   inErrorMsg::ErrorTypes.Message,
   inMessageTokens::ErrorTypes.MessageTokens,
-)
+  )
 end
 
-""" #=
+"""
   Adds a message given ID, tokens and source file info.
-  The rest of the info is looked up in the message table. =#"""
+  The rest of the info is looked up in the message table.
+"""
 function addSourceMessage(
   inErrorMsg::ErrorTypes.Message,
   inMessageTokens::ErrorTypes.MessageTokens,
   inInfo::SourceInfo,
 )
-  #push!(SOURCE_MESSAGES, [inErrorMsg, inMessageTokens, inInfo])
+  push!(ErrorExt.SOURCE_MESSAGES, [inErrorMsg, inMessageTokens, inInfo])
 end
 
 function addSourceMessageAsError(
@@ -4626,16 +4540,13 @@ end
 """ #= Adds an error message given the message, token and a list of file info. The
    the last file info in the list is used for the message itself, the rest of the
    file infos are used to print a trace of where the error came from. =#"""
-function addMultiSourceMessage(
-  inErrorMsg::ErrorTypes.Message,
-  inMessageTokens::ErrorTypes.MessageTokens,
-  inInfo::List{<:SourceInfo},
-)
-  return @assign _ = begin
+function addMultiSourceMessage(inErrorMsg::ErrorTypes.Message,
+                               inMessageTokens::ErrorTypes.MessageTokens,
+                               inInfo::List{<:SourceInfo})
+  _ = begin
     local info::SourceInfo
     local rest_info::List{SourceInfo}
-    #=  Only one info left, print out the message.
-    =#
+    #=  Only one info left, print out the message. =#
     @match (inErrorMsg, inMessageTokens, inInfo) begin
       (_, _, info <| nil()) => begin
         addSourceMessage(inErrorMsg, inMessageTokens, info)
@@ -4656,8 +4567,7 @@ function addMultiSourceMessage(
       end
     end
   end
-  #=  No infos given, print a sourceless error.
-  =#
+  #=  No infos given, print a sourceless error. =#
 end
 
 """ #= @author:adrpo
@@ -4703,13 +4613,14 @@ function addTotalMessages(messages::List{<:ErrorTypes.TotalMessage})
   end
 end
 
-""" #= Relations for pretty printing.
-  function: printMessagesStr
-  Prints messages to a string. =#"""
-function printMessagesStr(warningsAsErrors::Bool = false)::String
+"""
+Relations for pretty printing.
+function: printMessagesStr
+Prints messages to a string.
+"""
+function printMessagesStr(warningsAsErrors::Bool = false; printErrors = true)::String
   local res::String
-
-  @assign res = ErrorExt.printMessagesStr(warningsAsErrors)
+  res = ErrorExt.printMessagesStr(warningsAsErrors = warningsAsErrors; printErrors = printErrors)
   return res
 end
 
@@ -4769,7 +4680,7 @@ end
 
 """ #= clears the message buffer =#"""
 function clearMessages()
-  return ErrorExt.clearMessages()
+  ErrorExt.clearMessages()
 end
 
 """ #= Returns the number of messages in the message queue =#"""
@@ -4783,8 +4694,7 @@ end
 """ #= Returns the number of messages with severity 'Error' in the message queue  =#"""
 function getNumErrorMessages()::Integer
   local num::Integer
-
-  @assign num = ErrorExt.getNumErrorMessages()
+  num = ErrorExt.getNumErrorMessages()
   return num
 end
 
@@ -4796,7 +4706,6 @@ end
   message, written out as a string. =#"""
 function getMessages()::List{ErrorTypes.TotalMessage}
   local res::List{ErrorTypes.TotalMessage}
-
   @assign res = ErrorExt.getMessages()
   return res
 end
@@ -4818,112 +4727,10 @@ end
   Filtered by a specific MessageType. =#"""
 function getMessagesStrSeverity(inSeverity::ErrorTypes.Severity)::String
   local outString::String
-
   @assign outString = "not impl yet."
   return outString
 end
 
-""" #=
-  Converts a MessageType to a string. =#"""
-function messageTypeStr(inMessageType::ErrorTypes.MessageType)::String
-  local outString::String
-
-  @assign outString = begin
-    @match inMessageType begin
-      ErrorTypes.SYNTAX(__) => begin
-        "SYNTAX"
-      end
-
-      ErrorTypes.GRAMMAR(__) => begin
-        "GRAMMAR"
-      end
-
-      ErrorTypes.TRANSLATION(__) => begin
-        "TRANSLATION"
-      end
-
-      ErrorTypes.SYMBOLIC(__) => begin
-        "SYMBOLIC"
-      end
-
-      ErrorTypes.SIMULATION(__) => begin
-        "SIMULATION"
-      end
-
-      ErrorTypes.SCRIPTING(__) => begin
-        "SCRIPTING"
-      end
-    end
-  end
-  return outString
-end
-
-""" #=
-  Converts a Severity to a string. =#"""
-function severityStr(inSeverity::ErrorTypes.Severity)::String
-  local outString::String
-
-  @assign outString = begin
-    @match inSeverity begin
-      ErrorTypes.INTERNAL(__) => begin
-        "Internal error"
-      end
-
-      ErrorTypes.ERROR(__) => begin
-        "Error"
-      end
-
-      ErrorTypes.WARNING(__) => begin
-        "Warning"
-      end
-
-      ErrorTypes.NOTIFICATION(__) => begin
-        "Notification"
-      end
-    end
-  end
-  return outString
-end
-
-""" #=
-  Converts an SourceInfo into a string ready to be used in error messages.
-  Format is [filename:line start:column start-line end:column end] =#"""
-function infoStr(info::SourceInfo)::String
-  local str::String
-
-  @assign str = begin
-    local filename::String
-    local info_str::String
-    local line_start::Integer
-    local line_end::Integer
-    local col_start::Integer
-    local col_end::Integer
-    @match info begin
-      SOURCEINFO(
-        fileName = filename,
-        lineNumberStart = line_start,
-        columnNumberStart = col_start,
-        lineNumberEnd = line_end,
-        columnNumberEnd = col_end,
-      ) => begin
-        @assign info_str =
-          "[" +
-          Testsuite.friendly(filename) +
-          ":" +
-          intString(line_start) +
-          ":" +
-          intString(col_start) +
-          "-" +
-          intString(line_end) +
-          ":" +
-          intString(col_end) +
-          "]"
-        info_str
-      end
-    end
-  end
-  return str
-end
 
 """ #=
   Used to make compiler-internal assertions. These messages are not meant
@@ -4934,7 +4741,6 @@ function assertion(b::Bool, message::String, info::SourceInfo)
       (true, _, _) => begin
         ()
       end
-
       _ => begin
         addSourceMessage(INTERNAL_ERROR, list(message), info)
         fail()
@@ -5000,25 +4806,28 @@ function addCompilerNotification(message::String)
   return addMessage(COMPILER_NOTIFICATION, list(message))
 end
 
-""" #=
-  Used to make an internal error =#"""
+"""
+  Used to make an internal error
+"""
 function addInternalError(message::String, info::SourceInfo)
   local filename::String
 
-  return if Testsuite.isRunning()
-    @match SOURCEINFO(fileName = filename) = info
-    addSourceMessage(
-      INTERNAL_ERROR,
-      list(message),
-      SOURCEINFO(filename, false, 0, 0, 0, 0, 0),
-    )
-  else
-    addSourceMessage(INTERNAL_ERROR, list(message), info)
-  end
+  # return if Testsuite.isRunning()
+  #   @match SOURCEINFO(fileName = filename) = info
+  #   addSourceMessage(
+  #     INTERNAL_ERROR,
+  #     list(message),
+  #     SOURCEINFO(filename, false, 0, 0, 0, 0, 0),
+  #   )
+  # else
+  addSourceMessage(INTERNAL_ERROR, list(message), info)
+#  end
 end
 
 
-""" Prints out a message and terminates the execution. """
+"""
+Prints out a message and terminates the execution.
+"""
 function terminateError(message::String, info::SourceInfo)
   # ErrorExt.addSourceMessage(
   #   0,

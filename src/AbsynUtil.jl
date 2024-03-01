@@ -1961,21 +1961,20 @@ function pathStringWork(
   reverse::Bool,
 )::String
   local s::String = ""
-
   local p::Path = inPath
   local b::Bool = true
   local count::Integer = 0
   #=  Allocate a string of the exact required length
   =#
-  local sb::String = "" #System.StringAllocator = System.StringAllocator(len)
+  local sb = IOBuffer() #System.StringAllocator = System.StringAllocator(len)
 
   #=  Fill the string
   =#
   while b
-    @assign (p, count, b) = begin
+    (p, count, b) = begin
       @match p begin
         IDENT(__) => begin
-          sb *= p.name
+          print(sb, p.name)
           (p, count + stringLength(p.name), false)
         end
 
@@ -1994,7 +1993,8 @@ function pathStringWork(
           #   else
           #     count + stringLength(p.name)
           #   end)
-          sb = sb * p.name * delimiter
+          print(sb, p.name)
+          print(sb, delimiter)
           (p.path, count + stringLength(p.name) + dlen, true)
         end
 
@@ -2004,7 +2004,7 @@ function pathStringWork(
           # else
           #   count
           # end)
-          sb = sb * delimiter
+          print(sb, delimiter)
           (p.path, count + dlen, true)
         end
       end
@@ -2012,12 +2012,15 @@ function pathStringWork(
   end
   #=  Return the string
   =#
-  s = sb
-#  @info s
+  s = String(take!(sb))
+  #  @info s
   return s
 end
 
-@ExtendedFunction pathStringNoQual pathString(usefq = false)
+function pathStringNoQual(path::Path, delimiter::String = ".",
+                          usefq::Bool = false, reverse::Bool = false)
+  return pathString(path, delimiter, usefq, reverse)
+end
 
 function pathStringDefault(path::Path)::String
   local s::String = pathString(path)
@@ -6392,9 +6395,7 @@ end
 
 function typeSpecStringNoQualNoDimsLst(inTypeSpecLst::List{<:TypeSpec})::String
   local outString::String
-
-  @assign outString =
-    ListUtil.toString(inTypeSpecLst, typeSpecStringNoQualNoDims, "", "", ", ", "", false)
+  outString = ListUtil.toString(inTypeSpecLst, typeSpecStringNoQualNoDims, "", "", ", ", "", false)
   return outString
 end
 
@@ -8793,6 +8794,31 @@ function elementSpecIsComponents(es::ElementSpec)::Bool
     end
   end
   return isComponents
+end
+
+#= Custom IMPL John Apr 2023=#
+function printExpLst(expLst::List{Exp})
+  local buffer = IOBuffer()
+  local l = length(expLst)
+  for (i,exp) in enumerate(expLst)
+    write(buffer, printExp(exp))
+    if i != l
+      write(buffer, ",")
+    end
+  end
+  String(take!(buffer))
+end
+
+function printExp(str::STRING)
+  "\"$(str.value)\""
+end
+
+function printExp(arr::ARRAY)
+  if !isempty(arr.arrayExp)
+    "{" * printExpLst(arr.arrayExp) * "}"
+  else
+   "{/*Empty array*/}"
+  end
 end
 
 @exportAll()

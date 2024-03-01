@@ -97,7 +97,7 @@ end
 
 """ #= Helper function to verifyWhenEquation, returns the set of crefs that the
      given list of equations contains on the lhs. =#"""
-function whenEquationBranchCrefs(eql::List{<:Equation})::List{ComponentRef}
+function whenEquationBranchCrefs(eql::Union{List{<:Equation}, Vector{<:Equation}})::List{ComponentRef}
   local crefs::List{ComponentRef} = nil
   for eq in eql
     @assign crefs = begin
@@ -129,7 +129,7 @@ function whenEquationBranchCrefs(eql::List{<:Equation})::List{ComponentRef}
   return crefs
 end
 
-""" #= Checks that each branch in a when-equation has the same set of crefs on the lhs. =#"""
+""" Checks that each branch in a when-equation has the same set of crefs on the lhs. """
 function verifyWhenEquation(
   branches::List{<:Equation_Branch},
   source::DAE.ElementSource,
@@ -137,7 +137,7 @@ function verifyWhenEquation(
   local crefs1::List{ComponentRef}
   local crefs2::List{ComponentRef}
   local rest_branches::List{Equation_Branch}
-  local body::List{Equation}
+  local body::Vector{Equation}
   #=  Only when-equation with more than one branch needs to be checked. =#
   if ListUtil.hasOneElement(branches)
     return
@@ -158,10 +158,10 @@ function verifyWhenEquation(
 end
 
 function verifyEquation(eq::Equation)
-  return @assign () = begin
+  return  () = begin
     @match eq begin
       EQUATION_WHEN(__) => begin
-        verifyWhenEquation(eq.branches, eq.source)
+        verifyWhenEquation(arrayList(eq.branches), eq.source)
         ()
       end
       _ => begin

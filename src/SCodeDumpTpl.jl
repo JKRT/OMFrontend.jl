@@ -9,17 +9,17 @@ import Absyn
 
 import Main.Dump
 
-import Main.SCode
+import SCode
 
-import Main.SCodeDump
+import ..SCodeDump
 
-import Main.Config
+import ..Config
 
-import Main.System
+import ..System
 
-import Main.Util
+import ..Util
 
-import Main.Error
+import ..Error
 
 import Main.AbsynDumpTpl
 

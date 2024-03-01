@@ -1,69 +1,78 @@
 using MetaModelica
 using ExportAll
 
-@Uniontype Attributes begin
-  @Record ATTRIBUTES begin
-    connectorType::Int
-    parallelism::Int
-    variability::Int
-    direction::Int
-    innerOuter::Int
-    isFinal::Bool
-    isRedeclare::Bool
-    isReplaceable::Replaceable
-    isStructuralMode::Bool
-  end
+abstract type Attributes end
+
+"""
+  Attributes is a constant struct.
+  Note, can not be optimized into a mutable type, since DEFAULT attribute is used quite a lot and it would result in errors when doing comparisions by reference for attributes.
+"""
+struct ATTRIBUTES <: Attributes
+  connectorType::Int
+  parallelism::Int
+  variability::Int
+  direction::Int
+  innerOuter::Int
+  isFinal::Bool
+  isRedeclare::Bool
+  isReplaceable::Replaceable
+  isStructuralMode::Bool
 end
 
-@Uniontype Component begin
-  @Record DELETED_COMPONENT begin
-    component::Component
-  end
 
-  @Record TYPE_ATTRIBUTE begin
-    ty::M_Type
-    modifier::Modifier
-  end
+abstract type Component end
 
-  @Record ENUM_LITERAL_COMPONENT begin
-    literal::Expression
-  end
-
-  @Record ITERATOR_COMPONENT begin
-    ty::M_Type
-    variability
-    info::SourceInfo
-  end
-
-  @Record TYPED_COMPONENT begin
-    classInst::InstNode
-    ty::M_Type
-    binding::Binding
-    condition::Binding
-    attributes::ATTRIBUTES
-    ann::Option{Modifier} #= the annotation from SCode.Comment as a modifier =#
-    comment::Option{SCode.Comment}
-    info::SourceInfo
-  end
-
-  @Record UNTYPED_COMPONENT begin
-    classInst::InstNode
-    dimensions::Vector{Dimension}
-    binding::Binding
-    condition::Binding
-    attributes::ATTRIBUTES
-    comment::Option{SCode.Comment}
-    instantiated::Bool
-    info::SourceInfo
-  end
-
-  @Record COMPONENT_DEF begin
-    definition::SCode.Element
-    modifier::Modifier
-  end
+struct DELETED_COMPONENT{T0 <: Component} <: Component
+  component::T0
 end
 
-const DEFAULT_ATTR =
+struct ENUM_LITERAL_COMPONENT{T0 <: Expression} <: Component
+  literal::T0
+end
+
+struct ITERATOR_COMPONENT{T0 <: M_Type, T1 <: VariabilityType, T2 <: SourceInfo} <: Component
+  ty::T0
+  variability::T1
+  info::T2
+end
+
+mutable struct TYPE_ATTRIBUTE{T0 <: M_Type, T1 <: Modifier} <: Component
+  ty::T0
+  modifier::T1
+end
+
+mutable struct TYPED_COMPONENT{T0 <: InstNode,
+                               T1 <: M_Type,
+                               T2 <: Binding,
+                               T3 <: Binding,
+                               T4 <: SourceInfo} <: Component
+  classInst::T0
+  ty::T1
+  binding::T2
+  condition::T3
+  attributes::ATTRIBUTES
+  ann::Option{Modifier} #= the annotation from SCode.Comment as a modifier =#
+  comment::Option{SCode.Comment}
+  info::T4
+end
+
+mutable struct UNTYPED_COMPONENT <: Component
+  classInst::InstNode
+  dimensions::Vector{Dimension}
+  binding::Binding
+  condition::Binding
+  attributes::ATTRIBUTES
+  comment::Option{SCode.Comment}
+  instantiated::Bool
+  info::SourceInfo
+end
+
+mutable struct COMPONENT_DEF <: Component
+  definition::SCode.Element
+  modifier::Modifier
+end
+
+const DEFAULT_ATTR::ATTRIBUTES =
   ATTRIBUTES(
     ConnectorType.NON_CONNECTOR,
     Parallelism.NON_PARALLEL,
@@ -75,7 +84,7 @@ const DEFAULT_ATTR =
     NOT_REPLACEABLE(),
     false,
   )
-const INPUT_ATTR =
+const INPUT_ATTR::ATTRIBUTES =
   ATTRIBUTES(
     ConnectorType.NON_CONNECTOR,
     Parallelism.NON_PARALLEL,
@@ -87,7 +96,7 @@ const INPUT_ATTR =
     NOT_REPLACEABLE(),
     false,
   )
-const OUTPUT_ATTR =
+const OUTPUT_ATTR::ATTRIBUTES =
   ATTRIBUTES(
     ConnectorType.NON_CONNECTOR,
     Parallelism.NON_PARALLEL,
@@ -99,7 +108,7 @@ const OUTPUT_ATTR =
     NOT_REPLACEABLE(),
     false,
   )
-const CONSTANT_ATTR =
+const CONSTANT_ATTR::ATTRIBUTES =
   ATTRIBUTES(
     ConnectorType.NON_CONNECTOR,
     Parallelism.NON_PARALLEL,
@@ -111,7 +120,7 @@ const CONSTANT_ATTR =
     NOT_REPLACEABLE(),
     false,
   )
-const IMPL_DISCRETE_ATTR =
+const IMPL_DISCRETE_ATTR::ATTRIBUTES =
   ATTRIBUTES(
     ConnectorType.NON_CONNECTOR,
     Parallelism.NON_PARALLEL,
@@ -124,13 +133,9 @@ const IMPL_DISCRETE_ATTR =
     false,
   )
 
-#= Forward declarations for uniontypes until Julia adds support for mutual recursion =#
-
-@UniontypeDecl Component
-
-function isTypeAttribute(component::Component)::Bool
+function isTypeAttribute(component::Component)
   local isAttribute::Bool
-  @assign isAttribute = begin
+   isAttribute = begin
     @match component begin
       TYPE_ATTRIBUTE(__) => begin
         true
@@ -143,9 +148,9 @@ function isTypeAttribute(component::Component)::Bool
   return isAttribute
 end
 
-function isDeleted(component::Component)::Bool
+function isDeleted(component::Component)
   local isDeleted::Bool
-  @assign isDeleted = begin
+   isDeleted = begin
     local condition::Binding
     @match component begin
       TYPED_COMPONENT(condition = condition) => begin
@@ -165,20 +170,20 @@ function isDeleted(component::Component)::Bool
   return isDeleted
 end
 
-function getUnitAttribute(component::Component, defaultUnit::String = "")::String
+function getUnitAttribute(component::Component, defaultUnit::String = "")
   local unitString::String
 
   local binding::Binding
   local unit::Expression
 
-  @assign binding =
+   binding =
     lookupAttributeBinding("unit", getClass(classInstance(component)))
   if isUnbound(binding)
-    @assign unitString = defaultUnit
+     unitString = defaultUnit
     return unitString
   end
-  @assign unit = getBindingExp(getExp(binding))
-  @assign unitString = begin
+   unit = getBindingExp(getExp(binding))
+   unitString = begin
     @match unit begin
       STRING_EXPRESSION(__) => begin
         unit.value
@@ -192,48 +197,38 @@ function getUnitAttribute(component::Component, defaultUnit::String = "")::Strin
   return unitString
 end
 
-function getFixedAttribute(component::Component)::Bool
+function getFixedAttribute(component::Component)
   local fixed::Bool
-
   local typeAttrs::List{Modifier} = nil
   local binding::Binding
-
-  #=  for parameters the default is fixed = true
-  =#
-  @assign fixed = isParameter(component) || isStructuralParameter(component)
-  @assign binding =
-    lookupAttributeBinding("fixed", getClass(classInstance(component)))
-  #=  no fixed attribute present
-  =#
+  #=  for parameters the default is fixed = true =#
+  fixed = isParameter(component) || isStructuralParameter(component)
+  #println("Fixed is true?:", fixed)
+  binding = lookupAttributeBinding("fixed", getClass(classInstance(component)))
+  #println("binding?", toString(binding))
+  #=  no fixed attribute present =#
   if isUnbound(binding)
+    #println("Return fixed ", fixed)
     return fixed
   end
-  @assign fixed =
-    fixed &&
-    isTrue(getBindingExp(getExp(
-      binding,
-    )))
+  fixed = fixed && isTrue(getBindingExp(getExp(binding)))
   return fixed
 end
 
-function getEvaluateAnnotation(component::Component)::Bool
+function getEvaluateAnnotation(component::Component)
   local evaluate::Bool
-
   local cmt::SCode.Comment
-
-  @assign evaluate = SCodeUtil.getEvaluateAnnotation(comment(component))
+  evaluate = SCodeUtil.getEvaluateAnnotation(comment(component))
   return evaluate
 end
 
-function ann(component::Component)::Option{Modifier}
+function ann(component::Component)
   local ann::Option{Modifier}
-
-  @assign ann = begin
+  ann = begin
     @match component begin
       TYPED_COMPONENT(__) => begin
         component.ann
       end
-
       _ => begin
         NONE()
       end
@@ -242,10 +237,10 @@ function ann(component::Component)::Option{Modifier}
   return ann
 end
 
-function comment(component::Component)::Option{SCode.Comment}
+function comment(component::Component)
   local comment::Option{SCode.Comment}
 
-  @assign comment = begin
+   comment = begin
     @match component begin
       COMPONENT_DEF(__) => begin
         SCodeUtil.getElementComment(component.definition)
@@ -267,9 +262,9 @@ function comment(component::Component)::Option{SCode.Comment}
   return comment
 end
 
-function dimensionCount(@nospecialize(component::Component))::Int
+function dimensionCount(@nospecialize(component::Component))
   local count::Int
-  @assign count = begin
+   count = begin
     @match component begin
       UNTYPED_COMPONENT(__) => begin
         arrayLength(component.dimensions)
@@ -285,15 +280,15 @@ function dimensionCount(@nospecialize(component::Component))::Int
   return count
 end
 
-function setDimensions(dims::List{<:Dimension}, component::Component)::Component
-  @assign () = begin
+function setDimensions(dims::List{<:Dimension}, component::Component)
+   () = begin
     @match component begin
       UNTYPED_COMPONENT(__) => begin
-        @assign component.dimensions = listArray(dims)
+         component.dimensions = listArray(dims)
         ()
       end
       TYPED_COMPONENT(__) => begin
-        @assign component.ty =
+         component.ty =
           liftArrayLeftList(arrayElementType(component.ty), dims)
         ()
       end
@@ -305,15 +300,15 @@ function setDimensions(dims::List{<:Dimension}, component::Component)::Component
   return component
 end
 
-function toFlatString(name::String, component::Component)::String
+function toFlatString(name::String, component::Component)
   local str::String
 
-  @assign str = begin
+   str = begin
     local def::SCode.Element
     @match component begin
       TYPED_COMPONENT(__) => begin
-        P_Attributes.toFlatString(component.attributes, component.ty) +
-        Type.toFlatString(component.ty) +
+        toFlatString(component.attributes, component.ty) +
+          toFlatString(component.ty) +
         " '" +
         name +
         "'" +
@@ -328,10 +323,10 @@ function toFlatString(name::String, component::Component)::String
   return str
 end
 
-function toString(name::String, component::Component)::String
+function toString(name::String, component::Component)
   local str::String
 
-  @assign str = begin
+   str = begin
     local def::SCode.Element
     @match component begin
       COMPONENT_DEF(definition = def && SCode.COMPONENT(__)) => begin
@@ -365,19 +360,19 @@ function toString(name::String, component::Component)::String
       end
 
       TYPE_ATTRIBUTE(__) => begin
-        name + P_Modifier.toString(component.modifier, printName = false)
+        name + toString(component.modifier, #= printName =# false)
       end
     end
   end
   return str
 end
 
-function isIdentical(comp1::Component, comp2::Component)::Bool
+function isIdentical(comp1::Component, comp2::Component)
   local identical::Bool = false
   if referenceEq(comp1, comp2)
-    @assign identical = true
+     identical = true
   else
-    @assign identical = begin
+     identical = begin
       @match (comp1, comp2) begin
         (UNTYPED_COMPONENT(__), UNTYPED_COMPONENT(__)) => begin
           if !isIdentical(
@@ -401,9 +396,9 @@ function isIdentical(comp1::Component, comp2::Component)::Bool
   return identical
 end
 
-function isExternalObject(component::Component)::Bool
+function isExternalObject(component::Component)
   local isEO::Bool
-  @assign isEO = begin
+   isEO = begin
     @match component begin
       UNTYPED_COMPONENT(__) => begin
         isExternalObject(getClass(component.classInst))
@@ -419,31 +414,31 @@ function isExternalObject(component::Component)::Bool
   return isEO
 end
 
-function isExpandableConnector(component::Component)::Bool
+function isExpandableConnector(component::Component)
   local isConnector::Bool = ConnectorType.isExpandable(connectorType(component))
   return isConnector
 end
 
-function isConnector(component::Component)::Bool
+function isConnector(component::Component)
   return isConnectorType(connectorType(component))
 end
 
-function isFlow(component::Component)::Bool
+function isFlow(component::Component)
   return isFlow(connectorType(component))
 end
 
-function setConnectorType(cty::ConnectorType.TYPE, component::Component)::Component
-  @assign () = begin
+function setConnectorType(cty::ConnectorType.TYPE, component::Component)
+   () = begin
     local attr::Attributes
     @match component begin
       UNTYPED_COMPONENT(attributes = attr) => begin
-        @assign attr.connectorType = cty
-        @assign component.attributes = attr
+         attr.connectorType = cty
+         component.attributes = attr
         ()
       end
       TYPED_COMPONENT(attributes = attr) => begin
-        @assign attr.connectorType = cty
-        @assign component.attributes = attr
+         attr.connectorType = cty
+         component.attributes = attr
         ()
       end
       _ => begin
@@ -454,9 +449,9 @@ function setConnectorType(cty::ConnectorType.TYPE, component::Component)::Compon
   return component
 end
 
-function connectorType(component::Component)::ConnectorType.TYPE
+function connectorType(component::Component)
   local cty::ConnectorType.TYPE
-  @assign cty = begin
+   cty = begin
     @match component begin
       UNTYPED_COMPONENT(attributes = ATTRIBUTES(connectorType = cty)) => begin
           cty
@@ -475,32 +470,32 @@ function connectorType(component::Component)::ConnectorType.TYPE
   return cty
 end
 
-function isOnlyOuter(component::Component)::Bool
+function isOnlyOuter(component::Component)
   local isOuter::Bool = innerOuter(component) == InnerOuter.OUTER
   return isOuter
 end
 
-function isOuter(component::Component)::Bool
+function isOuter(component::Component)
   local isOuter::Bool
 
   local io = innerOuter(component)
 
-  @assign isOuter = io == InnerOuter.OUTER || io == InnerOuter.INNER_OUTER
+   isOuter = io == InnerOuter.OUTER || io == InnerOuter.INNER_OUTER
   return isOuter
 end
 
-function isInner(component::Component)::Bool
+function isInner(component::Component)
   local isInner::Bool
 
   local io = innerOuter(component)
 
-  @assign isInner = io == InnerOuter.INNER || io == InnerOuter.INNER_OUTER
+   isInner = io == InnerOuter.INNER || io == InnerOuter.INNER_OUTER
   return isInner
 end
 
 function innerOuter(component::Component)
   local io
-  @assign io = begin
+   io = begin
     @match component begin
       UNTYPED_COMPONENT(attributes = ATTRIBUTES(innerOuter = io)) => begin
         io
@@ -522,10 +517,10 @@ function innerOuter(component::Component)
   return io
 end
 
-function isFinal(component::Component)::Bool
+function isFinal(component::Component)
   local isFinal::Bool
 
-  @assign isFinal = begin
+   isFinal = begin
     @match component begin
       COMPONENT_DEF(__) => begin
         SCodeUtil.finalBool(SCodeUtil.prefixesFinal(SCodeUtil.elementPrefixes(component.definition)))
@@ -545,9 +540,9 @@ function isFinal(component::Component)::Bool
   return isFinal
 end
 
-function isRedeclare(component::Component)::Bool
+function isRedeclare(component::Component)
   local isRedeclare::Bool
-  @assign isRedeclare = begin
+   isRedeclare = begin
     @match component begin
       COMPONENT_DEF(__) => begin
         SCodeUtil.isElementRedeclare(component.definition)
@@ -560,49 +555,65 @@ function isRedeclare(component::Component)::Bool
   return isRedeclare
 end
 
-function isVar(component::Component)::Bool
+function isVar(component::Component)
   local isVar::Bool = variability(component) == CONTINIUOUS
   return isVar
 end
 
-function isStructuralParameter(component::Component)::Bool
+function isStructuralParameter(component::Component)
   local b::Bool = variability(component) == Variability.STRUCTURAL_PARAMETER
   return b
 end
 
-function isParameter(component::Component)::Bool
+function isParameter(component::Component)
   local b::Bool = variability(component) == Variability.PARAMETER
   return b
 end
 
-function isConst(component::Component)::Bool
+function isConst(component::Component)
   local isConst::Bool = variability(component) == Variability.CONSTANT
   return isConst
 end
 
-function setVariability(variability, component::Component)::Component
-
-  @assign () = begin
+function setVariability(variability::Int, component::Component)
     local attr::Attributes
-    @match component begin
-      UNTYPED_COMPONENT(attributes = attr) => begin
-        @assign attr.variability = variability
-        @assign component.attributes = attr
-        ()
+  @match component begin
+    UNTYPED_COMPONENT(attributes = attr) || TYPED_COMPONENT(attributes = attr) => begin
+      local localAttri = ATTRIBUTES(attr.connectorType,
+                                    attr.parallelism,
+                                    variability,
+                                    attr.direction,
+                                    attr.innerOuter,
+                                    attr.isFinal,
+                                    attr.isRedeclare,
+                                    attr.isReplaceable,
+                                    attr.isStructuralMode)
+      component.attributes = localAttri
+      if component isa UNTYPED_COMPONENT
+        component = UNTYPED_COMPONENT(component.classInst,
+                                      component.dimensions,
+                                      component.binding,
+                                      component.condition,
+                                      localAttri,
+                                      component.comment,
+                                      component.instantiated,
+                                      component.info)
+      else
+        component = TYPED_COMPONENT(component.classInst,
+                                    component.ty,
+                                    component.binding,
+                                    component.condition,
+                                    localAttri,
+                                    component.ann,
+                                    component.comment,
+                                    component.info)
       end
-
-      TYPED_COMPONENT(attributes = attr) => begin
-        @assign attr.variability = variability
-        @assign component.attributes = attr
-        ()
-      end
-
-      _ => begin
-        ()
-      end
+      return component
+    end
+    _ => begin
+      return component
     end
   end
-  return component
 end
 
 function variability(component::Component)
@@ -634,10 +645,10 @@ function variability(component::Component)
   return v
 end
 
-function parallelism(component::Component)::Parallelism
+function parallelism(component::Component)
   local parallelism::Parallelism
 
-  @assign parallelism = begin
+   parallelism = begin
     @match component begin
       TYPED_COMPONENT(attributes = ATTRIBUTES(parallelism = parallelism)) => begin
         parallelism
@@ -655,26 +666,26 @@ function parallelism(component::Component)::Parallelism
   return parallelism
 end
 
-function isOutput(component::Component)::Bool
+function isOutput(component::Component)
   local isOutput::Bool = direction(component) == Direction.OUTPUT
   return isOutput
 end
 
-function makeInput(component::Component)::Component
+function makeInput(component::Component)
 
   local attr::Attributes
 
-  @assign () = begin
+   () = begin
     @match component begin
       UNTYPED_COMPONENT(attributes = attr) => begin
-        @assign attr.direction = Direction.INPUT
-        @assign component.attributes = attr
+         attr.direction = Direction.INPUT
+         component.attributes = attr
         ()
       end
 
       TYPED_COMPONENT(attributes = attr) => begin
-        @assign attr.direction = Direction.INPUT
-        @assign component.attributes = attr
+         attr.direction = Direction.INPUT
+         component.attributes = attr
         ()
       end
 
@@ -686,7 +697,7 @@ function makeInput(component::Component)::Component
   return component
 end
 
-function isInput(component::Component)::Bool
+function isInput(component::Component)
   local isInput::Bool = direction(component) == Direction.INPUT
   return isInput
 end
@@ -711,17 +722,16 @@ function direction(component::Component)
   return direction
 end
 
-function hasCondition(component::Component)::Bool
+function hasCondition(component::Component)
   local b::Bool
-
-  @assign b = isBound(getCondition(component))
+   b = isBound(getCondition(component))
   return b
 end
 
-function getCondition(component::Component)::Binding
+function getCondition(component::Component)
   local cond::Binding
 
-  @assign cond = begin
+   cond = begin
     @match component begin
       UNTYPED_COMPONENT(__) => begin
         component.condition
@@ -739,14 +749,14 @@ function getCondition(component::Component)::Binding
   return cond
 end
 
-function hasBinding(component::Component, parent::InstNode = EMPTY_NODE())::Bool
+function hasBinding(component::Component, parent::InstNode = EMPTY_NODE())
   local b::Bool
 
   local cls::Class
   local children::Vector{InstNode}
 
   if isBound(getBinding(component))
-    @assign b = true
+     b = true
     return b
   end
   #=  Simple case, component has normal binding equation.
@@ -755,44 +765,37 @@ function hasBinding(component::Component, parent::InstNode = EMPTY_NODE())::Bool
   =#
   #=  its own binding equation.
   =#
-  @assign cls = getClass(classInstance(component))
+   cls = getClass(classInstance(component))
   if !isRecord(restriction(cls))
-    @assign b = false
+     b = false
     return b
   end
-  #=  Not record.
-  =#
-  #=  Check if any child of this component is missing a binding.
-  =#
-  @assign children = getComponents(classTree(cls))
+  #=  Not record. =#
+  #=  Check if any child of this component is missing a binding. =#
+   children = getComponents(classTree(cls))
   for c in children
     if isComponent(c) && !hasBinding(component(c))
-      @assign b = false
+       b = false
       return b
     end
   end
-  @assign b = true
+   b = true
   return b
 end
 
-function setBinding(binding::Binding, component::Component)::Component
-
-  @assign () = begin
-    @match component begin
-      UNTYPED_COMPONENT(__) => begin
-        @assign component.binding = binding
-        ()
-      end
-
-      TYPED_COMPONENT(__) => begin
-        @assign component.binding = binding
-        ()
-      end
-
-      TYPE_ATTRIBUTE(__) => begin
-        @assign component.modifier = P_Modifier.setBinding(binding, component.modifier)
-        ()
-      end
+function setBinding(binding::Binding, component::Component)
+  @match component begin
+    UNTYPED_COMPONENT(__) => begin
+      component.binding = binding
+      ()
+    end
+    TYPED_COMPONENT(__) => begin
+      component.binding = binding
+      ()
+    end
+    TYPE_ATTRIBUTE(__) => begin
+      component.modifier = setBinding(binding, component.modifier)
+      ()
     end
   end
   return component
@@ -801,19 +804,19 @@ end
 """ #= Returns the component's binding. If the component does not have a binding
      and is a record instance it will try to create a binding from the
      component's children. =#"""
-function getImplicitBinding(component::Component)::Binding
+function getImplicitBinding(component::Component)
   local binding::Binding
 
   local cls_node::InstNode
   local record_exp::Expression
 
-  @assign binding = getBinding(component)
+   binding = getBinding(component)
   if isUnbound(binding)
-    @assign cls_node = classInstance(component)
+     cls_node = classInstance(component)
     if isRecord(cls_node)
       try
-        @assign record_exp = makeRecordExp(cls_node)
-        @assign binding = FLAT_BINDING(
+         record_exp = makeRecordExp(cls_node)
+         binding = FLAT_BINDING(
           record_exp,
           variability(record_exp),
         )
@@ -824,9 +827,9 @@ function getImplicitBinding(component::Component)::Binding
   return binding
 end
 
-function getBinding(component::Component)::Binding
+function getBinding(component::Component)
   local b::Binding
-  @assign b = begin
+   b = begin
     @match component begin
       UNTYPED_COMPONENT(__) => begin
         component.binding
@@ -845,17 +848,17 @@ function getBinding(component::Component)::Binding
   return b
 end
 
-function setAttributes(attr, component::Component)::Component
+function setAttributes(attr, component::Component)
 
-  @assign () = begin
+   () = begin
     @match component begin
       UNTYPED_COMPONENT(__) => begin
-        @assign component.attributes = attr
+         component.attributes = attr
         ()
       end
 
       TYPED_COMPONENT(__) => begin
-        @assign component.attributes = attr
+         component.attributes = attr
         ()
       end
     end
@@ -865,13 +868,11 @@ end
 
 function getAttributes(component::Component)
   local attr
-
-  @assign attr = begin
+   attr = begin
     @match component begin
       UNTYPED_COMPONENT(__) => begin
         component.attributes
       end
-
       TYPED_COMPONENT(__) => begin
         component.attributes
       end
@@ -880,21 +881,18 @@ function getAttributes(component::Component)
   return attr
 end
 
-function unliftType(component::Component)::Component
-
-  @assign () = begin
+function unliftType(component::Component)
+   () = begin
     local ty::M_Type
     @match component begin
       TYPED_COMPONENT(ty = TYPE_ARRAY(elementType = ty)) => begin
-        @assign component.ty = ty
+         component.ty = ty
         ()
       end
-
       ITERATOR(ty = TYPE_ARRAY(elementType = ty)) => begin
-        @assign component.ty = ty
+         component.ty = ty
         ()
       end
-
       _ => begin
         ()
       end
@@ -903,24 +901,23 @@ function unliftType(component::Component)::Component
   return component
 end
 
-function isTyped(component::Component)::Bool
+function isTyped(component::Component)
   local isTyped::Bool
 
-  @assign isTyped = begin
-    @match component begin
+   isTyped = begin    @match component begin
       TYPED_COMPONENT(__) => begin
         true
       end
 
-      ITERATOR(ty = TYPE_UNKNOWN(__)) => begin
+      ITERATOR_COMPONENT(ty = TYPE_UNKNOWN(__)) => begin
         false
       end
 
-      ITERATOR(__) => begin
+      ITERATOR_COMPONENT(__) => begin
         true
       end
 
-      TYPE_ATTRIBUTE(__) => begin
+      TYPE_ATTRIBUTE_COMPONENT(__) => begin
         true
       end
 
@@ -932,9 +929,9 @@ function isTyped(component::Component)::Bool
   return isTyped
 end
 
-function setType(ty::M_Type, component::Component)::Component
+function setType(ty::M_Type, component::Component)
 
-  @assign component = begin
+   component = begin
     @match component begin
       UNTYPED_COMPONENT(__) => begin
         TYPED_COMPONENT(
@@ -950,12 +947,12 @@ function setType(ty::M_Type, component::Component)::Component
       end
 
       TYPED_COMPONENT(__) => begin
-        @assign component.ty = ty
+        component.ty = ty
         component
       end
 
       ITERATOR(__) => begin
-        @assign component.ty = ty
+         component.ty = ty
         component
       end
     end
@@ -963,10 +960,10 @@ function setType(ty::M_Type, component::Component)::Component
   return component
 end
 
-function getType(component::Component)::M_Type
+function getType(component::Component)
   local ty::M_Type
 
-  @assign ty = begin
+   ty = begin
     @match component begin
       TYPED_COMPONENT(__) => begin
         component.ty
@@ -996,63 +993,37 @@ function getType(component::Component)::M_Type
   return ty
 end
 
-function mergeModifier(modifier::Modifier, component::Component)::Component
-  @assign component = begin
-    @match component begin
-      COMPONENT_DEF(__) => begin
-        strMod1 = toString(modifier, true)
-        strMod2 = toString(component.modifier, true)
-        @debug "c/mergeModifier($strMod1, $strMod2)"
-        @assign component.modifier = merge(modifier, component.modifier)
-        strMod3 = toString(component.modifier, true)
-        @debug "c/mergeModifier($strMod1, $strMod2) -> $strMod3"
-        component
-      end
-      TYPE_ATTRIBUTE(__) => begin
-        strMod1 = toString(modifier, true)
-        strMod2 = toString(component.modifier, true)
-        @debug "t/mergeModifier($strMod1, $strMod2)"
-        mod = merge(modifier, component.modifier)
-        strMod3 = toString(mod, true)
-        @debug "t/mergeModifier($strMod1, $strMod2) -> $strMod3"
-        TYPE_ATTRIBUTE(component.ty, mod)
-      end
-    end
+"""
+  TODO Clean up the dbg prints here.
+Note that we need to clone a new object by using @assign here...
+"""
+function mergeModifier(modifier::Modifier, component::Union{COMPONENT_DEF, TYPE_ATTRIBUTE})
+  local mod = merge(modifier, component.modifier)
+  local modifiedComponent = if component isa COMPONENT_DEF
+    COMPONENT_DEF(component.definition, mod)
+  else
+    TYPE_ATTRIBUTE(component.ty, mod)
+  end
+  return modifiedComponent
+end
+
+function setModifier(@nospecialize(modifier::Modifier), @nospecialize(component::Component))
+  if component isa COMPONENT_DEF || component isa TYPED_ATTRIBUTE
+    component.modifier = modifier
   end
   return component
 end
 
-function setModifier(modifier::Modifier, component::Component)::Component
-
-  @assign () = begin
-    @match component begin
-      COMPONENT_DEF(__) => begin
-        @assign component.modifier = modifier
-        ()
-      end
-
-      TYPE_ATTRIBUTE(__) => begin
-        @assign component.modifier = modifier
-        ()
-      end
-    end
-  end
-  return component
-end
-
-function getModifier(component::Component)::Modifier
+function getModifier(component::Component)
   local modifier::Modifier
-
-  @assign modifier = begin
+  modifier = begin
     @match component begin
       COMPONENT_DEF(__) => begin
         component.modifier
       end
-
       TYPE_ATTRIBUTE(__) => begin
         component.modifier
       end
-
       _ => begin
         MODIFIER_NOMOD()
       end
@@ -1061,47 +1032,31 @@ function getModifier(component::Component)::Modifier
   return modifier
 end
 
-function setClassInstance(classInst::InstNode, component::Component)::Component
+function setClassInstance(classInst::InstNode, component::Component)
+  @match component begin
+    UNTYPED_COMPONENT(__) => begin
+      component.classInst = classInst
+      ()
+    end
 
-  @assign () = begin
-    @match component begin
-      UNTYPED_COMPONENT(__) => begin
-        @assign component.classInst = classInst
-        ()
-      end
-
-      TYPED_COMPONENT(__) => begin
-        @assign component.classInst = classInst
-        ()
-      end
+    TYPED_COMPONENT(__) => begin
+      component.classInst = classInst
+      ()
     end
   end
   return component
 end
 
-function classInstance(component::Component)::InstNode
-  local classInst::InstNode
-
-  @assign classInst = begin
-    @match component begin
-      UNTYPED_COMPONENT(__) => begin
-        component.classInst
-      end
-
-      TYPED_COMPONENT(__) => begin
-        component.classInst
-      end
-    end
-  end
-  return classInst
+function classInstance(component::Component)
+  return component.classInst
 end
 
 """ #= This function shouldn't be used! Use InstNode.info instead, so that e.g.
      enumeration literals can be handled correctly. =#"""
-function Component_info(component::Component)::SourceInfo
+function Component_info(component::Component)
   local info::SourceInfo
 
-  @assign info = begin
+   info = begin
     @match component begin
       COMPONENT_DEF(__) => begin
         SCodeUtil.elementInfo(component.definition)
@@ -1120,7 +1075,7 @@ function Component_info(component::Component)::SourceInfo
       end
 
       TYPE_ATTRIBUTE(__) => begin
-        P_Modifier.info(component.modifier)
+        info(component.modifier)
       end
 
       DELETED_COMPONENT(__) => begin
@@ -1133,10 +1088,9 @@ function Component_info(component::Component)::SourceInfo
   return info
 end
 
-function isDefinition(component::Component)::Bool
+function isDefinition(component::Component)
   local isDefinition::Bool
-
-  @assign isDefinition = begin
+  isDefinition = begin
     @match component begin
       COMPONENT_DEF(__) => begin
         true
@@ -1150,7 +1104,7 @@ function isDefinition(component::Component)::Bool
   return isDefinition
 end
 
-function definition(component::Component)::SCode.Element
+function definition(component::Component)
   local def::SCode.Element
   def = @match component begin
     COMPONENT_DEF(def, mod) => component.definition
@@ -1160,37 +1114,35 @@ function definition(component::Component)::SCode.Element
   return def
 end
 
-function newEnum(enumType::M_Type, literalName::String, literalIndex::Int)::Component
+function newEnum(enumType::M_Type, literalName::String, literalIndex::Int)
   local component::Component
   component =
-    ENUM_LITERAL_COMPONENT(ENUM_LITERAL_EXPRESSION(enumType,
-                                                    literalName, literalIndex))
+    ENUM_LITERAL_COMPONENT{ENUM_LITERAL_EXPRESSION}(ENUM_LITERAL_EXPRESSION{TYPE_ENUMERATION, String, Int64}(enumType,
+                                                                                                             literalName,
+                                                                                                             literalIndex))
   return component
 end
 
-function new(definition::SCode.Element)::Component
-  local component::Component
-
-  @assign component = COMPONENT_DEF(definition, MODIFIER_NOMOD())
-  return component
+function new(definition::SCode.Element)
+  COMPONENT_DEF(definition, MODIFIER_NOMOD())
 end
-
 
 using MetaModelica
 using ExportAll
 
-@UniontypeDecl Attributes
-
-function toFlatString(attr::Attributes, ty::M_Type)::String
-  local str::String
-
-  @assign str =
-    P_Prefixes.unparseVariability(attr.variability, ty) +
-    P_Prefixes.unparseDirection(attr.direction)
+function toFlatString(attr::Attributes, ty::M_Type; isTopLevel = true)
+  local str::String = ""
+  if attr.isFinal
+    str = str * "final "
+  end
+  str = str * unparseVariability(attr.variability, ty)
+  if isTopLevel
+    str = str * unparseDirection(attr.direction)
+  end
   return str
 end
 
-function toString(attr::Attributes, ty::M_Type)::String
+function toString(attr::Attributes, ty::M_Type)
   local str::String
   str =
     (
@@ -1216,7 +1168,7 @@ function toString(attr::Attributes, ty::M_Type)::String
   return str
 end
 
-function toDAE(ina::Attributes, vis)::DAE.Attributes
+function toDAE(ina::Attributes, vis)
   local outa::DAE.Attributes
   outa = DAE.ATTR(
     toDAE(ina.connectorType),

@@ -18,172 +18,171 @@
   end
 end
 
-@Uniontype NFExpression begin
-  @Record BINDING_EXP begin
-    exp::Expression
-    expType #= The actual type of exp. =#::NFType
-    bindingType #= The type of the propagated binding. =#::NFType
-    parents::List{InstNode}
-    isEach::Bool
-  end
+abstract type NFExpression end
 
-  @Record PARTIAL_FUNCTION_APPLICATION_EXPRESSION begin
-    fn::ComponentRef
-    args::List{Expression}
-    argNames::List{String}
-    ty::NFType
-  end
+mutable struct BINDING_EXP <: NFExpression
+  exp::Expression
+  expType #= The actual type of exp. =#::NFType
+  bindingType #= The type of the propagated binding. =#::NFType
+  parents::List{InstNode}
+  isEach::Bool
+end
 
-  @Record CLKCONST_EXPRESSION begin
-    clk #= Clock kinds =#::ClockKind
-  end
+struct PARTIAL_FUNCTION_APPLICATION_EXPRESSION <: NFExpression
+  fn::ComponentRef
+  args::List{Expression}
+  argNames::List{String}
+  ty::NFType
+end
 
-  @Record EMPTY_EXPRESSION begin
-    ty::NFType
-  end
+struct CLKCONST_EXPRESSION <: NFExpression
+  clk #= Clock kinds =#::ClockKind
+end
 
-  @Record MUTABLE_EXPRESSION begin
-    exp::Pointer{Expression}
-  end
+struct EMPTY_EXPRESSION <: NFExpression
+  ty::NFType
+end
 
-  @Record BOX_EXPRESSION begin
-    exp::Expression
-  end
+struct MUTABLE_EXPRESSION <: NFExpression
+  exp::Pointer{Expression}
+end
 
-  @Record RECORD_ELEMENT_EXPRESSION begin
-    recordExp::Expression
-    index::Int
-    fieldName::String
-    ty::NFType
-  end
+struct BOX_EXPRESSION <: NFExpression
+  exp::Expression
+end
 
-  @Record TUPLE_ELEMENT_EXPRESSION begin
-    tupleExp::Expression
-    index::Int
-    ty::NFType
-  end
+struct RECORD_ELEMENT_EXPRESSION <: NFExpression
+  recordExp::Expression
+  index::Int
+  fieldName::String
+  ty::NFType
+end
 
-  @Record SUBSCRIPTED_EXP_EXPRESSION begin
-    exp::Expression
-    subscripts::List{Subscript}
-    ty::NFType
-  end
+struct TUPLE_ELEMENT_EXPRESSION <: NFExpression
+  tupleExp::Expression
+  index::Int
+  ty::NFType
+end
 
-  @Record UNBOX_EXPRESSION begin
-    exp::Expression
-    ty::NFType
-  end
+struct SUBSCRIPTED_EXP_EXPRESSION <: NFExpression
+  exp::Expression
+  subscripts::List{Subscript}
+  ty::NFType
+end
 
-  @Record CAST_EXPRESSION begin
-    ty::NFType
-    exp::Expression
-  end
+struct UNBOX_EXPRESSION <: NFExpression
+  exp::Expression
+  ty::NFType
+end
 
-  @Record IF_EXPRESSION begin
-    condition::Expression
-    trueBranch::Expression
-    falseBranch::Expression
-  end
+struct CAST_EXPRESSION <: NFExpression
+  ty::NFType
+  exp::Expression
+end
 
-  @Record RELATION_EXPRESSION begin
-    exp1::Expression
-    operator::Operator
-    exp2::Expression
-  end
+struct IF_EXPRESSION <: NFExpression
+  condition::Expression
+  trueBranch::Expression
+  falseBranch::Expression
+end
 
-  @Record LUNARY_EXPRESSION begin
-    operator::Operator
-    exp::Expression
-  end
+mutable struct RELATION_EXPRESSION <: NFExpression
+  exp1::Expression
+  operator::Operator
+  exp2::Expression
+end
 
-  @Record LBINARY_EXPRESSION begin
-    exp1::Expression
-    operator::Operator
-    exp2::Expression
-  end
+mutable struct LUNARY_EXPRESSION <: NFExpression
+  operator::Operator
+  exp::Expression
+end
 
-  @Record UNARY_EXPRESSION begin
-    operator::Operator
-    exp::Expression
-  end
+mutable struct LBINARY_EXPRESSION <: NFExpression
+  exp1::Expression
+  operator::Operator
+  exp2::Expression
+end
 
-  @Record BINARY_EXPRESSION begin
-    exp1::Expression
-    operator::Operator
-    exp2::Expression
-  end
+mutable struct UNARY_EXPRESSION <: NFExpression
+  operator::Operator
+  exp::Expression
+end
 
-  @Record END_EXPRESSION begin
-  end
+mutable struct BINARY_EXPRESSION <: NFExpression
+  exp1::Expression
+  operator::Operator
+  exp2::Expression
+end
 
-  @Record SIZE_EXPRESSION begin
-    exp::Expression
-    dimIndex::Option{Expression}
-  end
+struct END_EXPRESSION <: NFExpression
+end
 
-  @Record CALL_EXPRESSION begin
-    call::Call
-  end
+struct SIZE_EXPRESSION <: NFExpression
+  exp::Expression
+  dimIndex::Option{Expression}
+end
 
-  @Record RECORD_EXPRESSION begin
-    path
-    #=  Maybe not needed since the type contains the name. Prefix? =#
-    ty::NFType
-    elements::List{Expression}
-  end
+struct CALL_EXPRESSION <: NFExpression
+  call::Call
+end
 
-  @Record TUPLE_EXPRESSION begin
-    ty::NFType
-    elements::List{Expression}
-  end
+mutable struct RECORD_EXPRESSION <: NFExpression
+  #=  Maybe not needed since the type contains the name. Prefix? =#
+  const path::Absyn.Path
+  const ty::NFType
+  elements::Vector{Expression}
+end
 
-  @Record RANGE_EXPRESSION begin
-    ty::NFType
-    start::Expression
-    step::Option{Expression}
-    stop::Expression
-  end
+struct TUPLE_EXPRESSION <: NFExpression
+  ty::NFType
+  elements::List{Expression}
+end
 
-  @Record MATRIX_EXPRESSION begin
-    #=  Does not have a type since we only keep this operator before type-checking
-    =#
-    elements::List{List{Expression}}
-  end
+struct RANGE_EXPRESSION <: NFExpression
+  ty::NFType
+  start::Expression
+  step::Option{Expression}
+  stop::Expression
+end
 
-  @Record ARRAY_EXPRESSION begin
-    ty::NFType
-    elements::List{Expression}
-    literal #= True if the array is known to only contain literal expressions. =#::Bool
-  end
+struct MATRIX_EXPRESSION <: NFExpression
+  #=  Does not have a type since we only keep this operator before type-checking =#
+  elements::List{List{Expression}}
+end
 
-  @Record TYPENAME_EXPRESSION begin
-    ty::NFType
-  end
+struct ARRAY_EXPRESSION <: NFExpression
+  ty::NFType
+  elements::List{Expression}
+  literal #= True if the array is known to only contain literal expressions. =#::Bool
+end
 
-  @Record CREF_EXPRESSION begin
-    ty::NFType
-    cref::ComponentRef
-  end
+struct TYPENAME_EXPRESSION <: NFExpression
+  ty::NFType
+end
 
-  @Record ENUM_LITERAL_EXPRESSION begin
-    ty::NFType
-    name::String
-    index::Int
-  end
+struct CREF_EXPRESSION <: NFExpression
+  ty::NFType
+  cref::ComponentRef
+end
 
-  @Record BOOLEAN_EXPRESSION begin
-    value::Bool
-  end
+struct ENUM_LITERAL_EXPRESSION{T0 <: NFType, T1 <: String, T2 <: Int} <: NFExpression
+  ty::NFType
+  name::String
+  index::Int
+end
 
-  @Record STRING_EXPRESSION begin
-    value::String
-  end
+struct BOOLEAN_EXPRESSION{T0 <: Bool} <: NFExpression
+  value::T0
+end
 
-  @Record REAL_EXPRESSION begin
-    value::AbstractFloat
-  end
+struct STRING_EXPRESSION{T0 <: String} <: NFExpression
+  value::T0
+end
 
-  @Record INTEGER_EXPRESSION begin
-    value::Int
-  end
+struct REAL_EXPRESSION{T0 <: AbstractFloat} <: NFExpression
+  value::T0
+end
+
+struct INTEGER_EXPRESSION{T0 <: Integer} <: NFExpression
+  value::T0
 end

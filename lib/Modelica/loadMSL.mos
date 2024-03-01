@@ -1,5 +1,6 @@
 /*
   Loads the MSL as a single file.
 */
-loadModel(Modelica);getErrorString();
-writeFile("msl.mo", list())
+installPackage(Modelica, "4.0", exactMatch=false);
+loadModel(Modelica, {"4.0"});getErrorString();
+writeFile("msl_4_0.mo", list())

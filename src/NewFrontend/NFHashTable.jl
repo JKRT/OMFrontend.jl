@@ -161,20 +161,20 @@ function add(entry::HashEntry, hashTable::HashTable)::HashTable
   local val::Value
   local indices::HashNode
 
-  @assign (key, _) = entry
+   (key, _) = entry
   @match (hashvec, varr, bsize, (@match (hashFunc, keyEqual, _, _) = fntpl)) = hashTable
   @assign hash_idx = hashFunc(key, bsize) + 1
   @assign indices = hashvec[hash_idx]
   for i in indices
-    @assign (key2, _) = i
+     (key2, _) = i
     if keyEqual(key, key2)
-      @assign (_, arr_idx) = i
+       (_, arr_idx) = i
       valueArraySet(varr, arr_idx, entry)
       @assign outHashTable = hashTable
       return outHashTable
     end
   end
-  @assign (varr, new_pos) = valueArrayAdd(varr, entry)
+   (varr, new_pos) = valueArrayAdd(varr, entry)
   arrayUpdate(hashvec, hash_idx, _cons((key, new_pos), indices))
   @assign outHashTable = (hashvec, varr, bsize, fntpl)
   return outHashTable
@@ -230,7 +230,7 @@ function addNoUpdCheck(entry::HashEntry, hashTable::HashTable)::HashTable
     @matchcontinue (entry, hashTable) begin
       (v && (key, _), (hashvec, varr, bsize, fntpl && (hashFunc, _, _, _))) => begin
         @assign indx = hashFunc(key, bsize) + 1
-        @assign (varr, newpos) = valueArrayAdd(varr, v)
+         (varr, newpos) = valueArrayAdd(varr, v)
         @assign indexes = hashvec[indx]
         @assign hashvec = arrayUpdate(hashvec, indx, _cons((key, newpos), indexes))
         (hashvec, varr, bsize, fntpl)
@@ -261,11 +261,11 @@ function addUnique(entry::HashEntry, hashTable::HashTable)::HashTable
 
   #=  Adding when not existing previously
   =#
-  @assign (key, _) = entry
+   (key, _) = entry
   @match (hashvec, varr, bsize, (@match (hashFunc, _, _, _) = fntpl)) = hashTable
   @shouldFail @assign _ = get(key, hashTable)
   @assign indx = hashFunc(key, bsize) + 1
-  @assign (varr, newpos) = valueArrayAdd(varr, entry)
+   (varr, newpos) = valueArrayAdd(varr, entry)
   @assign indexes = hashvec[indx]
   @assign hashvec = arrayUpdate(hashvec, indx, _cons((key, newpos), indexes))
   @assign outHashTable = (hashvec, varr, bsize, fntpl)
@@ -279,8 +279,8 @@ function update(entry::HashEntry, hashTable::HashTable)
   local index::Integer
   local key::Key
 
-  @assign (key, _) = entry
-  @assign (_, varr, _, _) = hashTable
+   (key, _) = entry
+   (_, varr, _, _) = hashTable
   @assign index = hasKeyIndex(key, hashTable)
   @match true = valueArrayKeyIndexExists(varr, index)
   return valueArraySet(varr, index, entry)
@@ -295,7 +295,7 @@ function delete(key::Key, hashTable::HashTable)
   local varr::ValueArray
 
   @assign indx = hasKeyIndex(key, hashTable)
-  @assign (_, varr, _, _) = hashTable
+   (_, varr, _, _) = hashTable
   if !valueArrayKeyIndexExists(varr, indx)
     print("BaseHashTable.delete failed\\n")
     fail()
@@ -309,7 +309,7 @@ function hasKey(key::Key, hashTable::HashTable)::Bool
 
   local varr::ValueArray
 
-  @assign (_, varr, _, _) = hashTable
+   (_, varr, _, _) = hashTable
   @assign b = valueArrayKeyIndexExists(varr, hasKeyIndex(key, hashTable))
   return b
 end
@@ -337,8 +337,8 @@ function get(key::Key, hashTable::HashTable)::Value
 
   @assign i = hasKeyIndex(key, hashTable)
   @match false = i == (-1)
-  @assign (_, varr, _, _) = hashTable
-  @assign (_, value) = getValueArray(varr, i)
+   (_, varr, _, _) = hashTable
+   (_, value) = getValueArray(varr, i)
   return value
 end
 
@@ -353,7 +353,7 @@ function hasKeyIndex(key::Key, hashTable::HashTable)::Integer
   local keyEqual::FuncEq
   local hashFunc::FuncHash
 
-  @assign (hashvec, _, bsize, (hashFunc, keyEqual, _, _)) = hashTable
+   (hashvec, _, bsize, (hashFunc, keyEqual, _, _)) = hashTable
   @assign hashindx = hashFunc(key, bsize) + 1
   @assign indexes = hashvec[hashindx]
   @assign indx = hasKeyIndex2(key, indexes, keyEqual)
@@ -367,7 +367,7 @@ function hasKeyIndex2(key::Key, keyIndices::HashNode, keyEqual::FuncEq)::Integer
   local key2::Key
 
   for keyIndex in keyIndices
-    @assign (key2, index) = keyIndex
+     (key2, index) = keyIndex
     if keyEqual(key, key2)
       return index #= Returns -1 on failure =#
     end
@@ -382,10 +382,10 @@ function dumpHashTable(t::HashTable)
   local k::Key
   local v::Value
 
-  @assign (_, _, _, (_, _, printKey, printValue)) = t
+   (_, _, _, (_, _, printKey, printValue)) = t
   print("HashTable:\\n")
   return for entry in hashTableList(t)
-    @assign (k, v) = entry
+     (k, v) = entry
     print("{")
     print(printKey(k))
     print(",{")
@@ -408,7 +408,7 @@ function debugDump(ht::HashTable)
   local he::HashEntry
   local hashVector::Array{HashNode}
 
-  @assign (hashVector, (n, size, arr), szBucket, (_, _, printKey, printValue)) = ht
+   (hashVector, (n, size, arr), szBucket, (_, _, printKey, printValue)) = ht
   print("Debug HashTable:\\n")
   print("szBucket: " + intString(szBucket) + "\\n")
   print("Debug ValueArray:\\n")
@@ -429,7 +429,7 @@ function debugDump(ht::HashTable)
     if !listEmpty(node)
       print(intString(i) + ":")
       for n in node
-        @assign (k, j) = n
+         (k, j) = n
         print(" {" + printKey(k) + ", " + intString(j) + "}")
       end
       print("\\n")
@@ -449,7 +449,7 @@ function dumpTuple(
   local sk::String
   local sv::String
 
-  @assign (k, v) = tpl
+   (k, v) = tpl
   @assign sk = printKey(k)
   @assign sv = printValue(v)
   @assign str = stringAppendList(list("{", sk, ",{", sv, "}}"))
@@ -478,7 +478,7 @@ function hashTableList(hashTable::HashTable)::List{HashEntry}
 
   local varr::ValueArray
 
-  @assign (_, varr, _, _) = hashTable
+   (_, varr, _, _) = hashTable
   @assign outEntries = valueArrayList(varr)
   return outEntries
 end
@@ -490,7 +490,7 @@ function hashTableListReversed(hashTable::HashTable)::List{HashEntry}
 
   local varr::ValueArray
 
-  @assign (_, varr, _, _) = hashTable
+   (_, varr, _, _) = hashTable
   @assign entries = valueArrayListReversed(varr)
   return entries
 end
@@ -501,7 +501,7 @@ function valueArrayList(valueArray::ValueArray)::List{HashEntry}
 
   local arr::Array{Option{HashEntry}}
 
-  @assign (_, _, arr) = valueArray
+   (_, _, arr) = valueArray
   @assign outEntries = ArrayUtil.fold(arr, ListUtil.consOption, nil)
   @assign outEntries = listReverse(outEntries)
   return outEntries
@@ -514,7 +514,7 @@ function valueArrayListReversed(valueArray::ValueArray)::List{HashEntry}
 
   local arr::Array{Option{HashEntry}}
 
-  @assign (_, _, arr) = valueArray
+   (_, _, arr) = valueArray
   @assign entries = ArrayUtil.fold(arr, ListUtil.consOption, nil)
   return entries
 end
@@ -525,7 +525,7 @@ function hashTableCurrentSize(hashTable::HashTable)::Integer
 
   local va::ValueArray
 
-  @assign (_, va, _, _) = hashTable
+   (_, va, _, _) = hashTable
   @assign sz = valueArrayLength(va)
   return sz
 end
@@ -534,7 +534,7 @@ end
 function valueArrayLength(valueArray::ValueArray)::Integer
   local sz::Integer
 
-  @assign (sz, _, _) = valueArray
+   (sz, _, _) = valueArray
   return sz
 end
 
@@ -544,7 +544,7 @@ function valueArrayAdd(valueArray::ValueArray, entry::HashEntry)::Tuple{ValueArr
   local newpos::Integer
   local outValueArray::ValueArray
 
-  @assign (outValueArray, newpos) = begin
+   (outValueArray, newpos) = begin
     local n::Integer
     local size::Integer
     local expandsize::Integer
@@ -624,7 +624,7 @@ function valueArrayClear(valueArray::ValueArray, pos::Integer)
   local arr::Array{Option{HashEntry}}
   local size::Integer
 
-  @assign (_, size, arr) = valueArray
+   (_, size, arr) = valueArray
   @match true = pos <= size
   #=  TODO: Needed? arrayUpdate checks bounds and we should more reasonably check n?
   =#
@@ -639,7 +639,7 @@ function getValueArray(valueArray::ValueArray, pos::Integer)::Tuple{Key, Value}
   local arr::Array{Option{HashEntry}}
   local n::Integer
 
-  @assign (n, _, arr) = valueArray
+   (n, _, arr) = valueArray
   @match true = pos <= n
   #=  In case the user sends in higher values and we did not clear the array properly?
   =#
@@ -685,7 +685,7 @@ function copy(inHashTable::HashTable)::HashTable
   local ft::FuncsTuple
   local vae::Array{Option{HashEntry}}
 
-  @assign (hv, (vs, ve, vae), bs, ft) = inHashTable
+   (hv, (vs, ve, vae), bs, ft) = inHashTable
   @assign hv = arrayCopy(hv)
   @assign vae = arrayCopy(vae)
   @assign outCopy = (hv, (vs, ve, vae), bs, ft)

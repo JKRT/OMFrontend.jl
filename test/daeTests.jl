@@ -20,4 +20,3 @@ testPassIfNoException("Casc6", "./Models/Casc6.mo")
 testPassIfNoException("TestImport.A", "./Models/TestImport.mo")
 testPassIfNoException("TestEnum", "./Models/TestEnum.mo")
 testPassIfNoException("SimpleClock", "./Models/SimpleClock.mo")
-

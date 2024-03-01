@@ -1,13 +1,13 @@
-FunctionType = (() -> begin #= Enumeration =#
-  FUNCTIONAL_PARAMETER = 1  #= Function parameter of function type. =#
-  FUNCTION_REFERENCE = 2  #= Function name used to reference a function. =#
-  FUNCTIONAL_VARIABLE = 3  #= A variable that contains a function reference. =#
-  () -> (FUNCTIONAL_PARAMETER; FUNCTION_REFERENCE; FUNCTIONAL_VARIABLE)  #= A variable that contains a function reference. =#
-end)()
+struct FunctionTypeStruct
+  FUNCTIONAL_PARAMETER::Int
+  FUNCTION_REFERENCE::Int
+  FUNCTIONAL_VARIABLE::Int
+end
+const FunctionType = FunctionTypeStruct(1, 2, 3)
 
 @UniontypeDecl NFType
 @Uniontype NFType begin
-  @Record SUBSCRIPTED_TYPE begin
+  @Record TYPE_SUBSCRIPTED begin
     name::String
     ty::M_Type
     subs::List{M_Type}
@@ -27,7 +27,8 @@ end)()
 
   @Record TYPE_FUNCTION begin
     fn::M_Function
-    fnType
+    #= Specified by the function type struct. =#
+    fnType::Int
   end
 
   @Record TYPE_COMPLEX begin
@@ -79,9 +80,7 @@ end
 
 function subscriptedTypeName(expType::M_Type, subscriptTypes::List{<:M_Type})::String
   local str::String
-
   local strl::List{String}
-
   @assign strl = list(toString(t) for t in subscriptTypes)
   @assign strl = _cons("_", strl)
   @assign strl = _cons(toString(expType), strl)
@@ -161,18 +160,15 @@ end
 
 function enumSize(ty::M_Type)::Int
   local size::Int
-
   local literals::List{String}
-
-  @match ENUMERATION(literals = literals) = ty
+  @match TYPE_ENUMERATION(literals = literals) = ty
   @assign size = listLength(literals)
   return size
 end
 
 function enumName(ty::M_Type)::Absyn.Path
   local name::Absyn.Path
-
-  @match ENUMERATION(typePath = name) = ty
+  @match TYPE_ENUMERATION(typePath = name) = ty
   return name
 end
 
@@ -215,7 +211,8 @@ function lookupRecordFieldType(name::String, recordType::M_Type)::M_Type
   @assign fieldType = begin
     @match recordType begin
       COMPLEX(__) => begin
-        getType(lookupElement(name, getClass(recordType.cls)))
+        entryInfo = lookupElement(name, getClass(recordType.cls))
+        getType(entryInfo.node, entryInfo.isImport)
       end
 
       TYPE_ARRAY(__) => begin
@@ -496,8 +493,7 @@ function toFlatString(ty::M_Type)::String
       end
 
       TYPE_ENUMERATION(__) => begin
-        "'" + AbsynUtil.pathString(ty.typePath)
-        +"'"
+        "'" * AbsynUtil.pathString(ty.typePath) * "'"
       end
 
       TYPE_ENUMERATION_ANY(__) => begin
@@ -508,7 +504,7 @@ function toFlatString(ty::M_Type)::String
         toString(ty.elementType) +
         "[" +
         stringDelimitList(
-          ListUtil.map(ty.dimensions, P_Dimension.Dimension.toString),
+          ListUtil.map(ty.dimensions, toString),
           ", ",
         ) +
         "]"
@@ -528,8 +524,7 @@ function toFlatString(ty::M_Type)::String
       end
 
       TYPE_COMPLEX(__) => begin
-        "'" + AbsynUtil.pathString(scopePath(ty.cls))
-        +"'"
+        "'" * AbsynUtil.pathString(scopePath(ty.cls)) * "'"
       end
 
       TYPE_FUNCTION(__) => begin
@@ -562,10 +557,73 @@ function toFlatString(ty::M_Type)::String
   return str
 end
 
+function toFlatDeclarationStream(ty::NFType, s::IOStream_M.IOSTREAM)
+  local index = 0
+  @match ty begin
+    TYPE_ENUMERATION(__) => begin
+      s = IOStream_M.append(s, "type '")
+      s = IOStream_M.append(s, AbsynUtil.pathString(ty.typePath))
+      s = IOStream_M.append(s, "' = enumeration(")
+      if ! listEmpty(ty.literals)
+        s = IOStream_M.append(s, listHead(ty.literals))
+        for l in listRest(ty.literals)
+          s = IOStream_M.append(s, ", ")
+          s = IOStream_M.append(s, l)
+        end
+      end
+      s = IOStream_M.append(s, ")")
+    end
+    TYPE_COMPLEX(_, COMPLEX_RECORD(__)) =>  begin
+      toFlatStream(ty.cls, s)
+    end
+    TYPE_COMPLEX(complexTy = COMPLEX_EXTERNAL_OBJECT(__)) =>  begin
+      path = scopePath(ty.cls);
+      name = Util.makeQuotedIdentifier(AbsynUtil.pathString(path))
+      s = IOStream_M.append(s, "class ")
+      s = IOStream_M.append(s, name)
+      s = IOStream_M.append(s, "\n  extends ExternalObject;\n\n")
+      local f = listHead(typeNodeCache(ty.complexTy.constructor))
+      s = toFlatStream(f, s, overrideName="constructor")
+      s = IOStream_M.append(s, ";\n\n")
+      f = listHead(typeNodeCache(ty.complexTy.destructor))
+      s = toFlatStream(f, s, overrideName="destructor")
+      s = IOStream_M.append(s, ";\n\nend ")
+      s = IOStream_M.append(s, name)
+    end
+    TYPE_SUBSCRIPTED(__) => begin
+      s = IOStream_M.append(s, "function '")
+      s = IOStream_M.append(s, ty.name)
+      s = IOStream_M.append(s, "'\n")
+      s = IOStream_M.append(s, "input ")
+      s = IOStream_M.append(s, toString(ty.ty))
+      s = IOStream_M.append(s, " exp;\n")
+      index = 1
+      for sub in ty.subs
+        s = IOStream_M.append(s, "input ")
+        s = IOStream_M.append(s, toString(sub))
+        s = IOStream_M.append(s, " s")
+        s = IOStream_M.append(s, String(index))
+        s = IOStream_M.append(s, ";\n")
+        index = index + 1
+      end
+      s = IOStream_M.append(s, "output ")
+      s = IOStream_M.append(s, toString(ty.subscriptedTy))
+      s = IOStream_M.append(s, " result = exp[")
+      s = IOStream_M.append(s,
+                          stringDelimitList(list("s" + String(i) for i in 1:listLength(ty.subs)), ","))
+      s = IOStream_M.append(s, "];\n")
+
+      s = IOStream_M.append(s, "end '")
+      s = IOStream_M.append(s, ty.name)
+      s = IOStream_M.append(s, "'")
+    end
+    _ => s
+  end
+end
+
 function toString(ty::M_Type)::String
   local str::String
-
-  @assign str = begin
+  str = begin
     @match ty begin
       TYPE_INTEGER(__) => begin
         "Integer"
@@ -588,8 +646,7 @@ function toString(ty::M_Type)::String
       end
 
       TYPE_ENUMERATION(__) => begin
-        "enumeration " + AbsynUtil.pathString(ty.typePath)
-        +"(" + stringDelimitList(ty.literals, ", ") + ")"
+        "enumeration " + AbsynUtil.pathString(ty.typePath) + "(" + stringDelimitList(ty.literals, ", ") + ")"
       end
 
       TYPE_ENUMERATION_ANY(__) => begin
@@ -627,7 +684,7 @@ function toString(ty::M_Type)::String
         P_Function.typeString(ty.fn)
       end
 
-      Type.METABOXED(__) => begin
+      TYPE_METABOXED(__) => begin
         "#" + toString(ty.ty)
       end
 
@@ -639,6 +696,8 @@ function toString(ty::M_Type)::String
       TYPE_ANY(__) => begin
         "ANY"
       end
+
+
 
       _ => begin
         Error.assertion(
@@ -690,33 +749,30 @@ function foldDims(ty::M_Type, func::FuncT, arg::ArgT) where {ArgT}
   return arg
 end
 
-function mapDims(ty::M_Type, func::FuncT)::M_Type
-  @assign () = begin
-    local fn::M_Function
-    @match ty begin
-      TYPE_ARRAY(__) => begin
-        @assign ty.dimensions = list(func(d) for d in ty.dimensions)
-        ()
-      end
-      TYPE_TUPLE(__) => begin
-        @assign ty.types = list(mapDims(t, func) for t in ty.types)
-        ()
-      end
-      TYPE_FUNCTION(fn = fn) => begin
-        @assign ty.fn =
-          setReturnmapDims(mapDims(returnType(fn), func), fn)
-        ()
-      end
-      TYPE_METABOXED(__) => begin
-        @assign ty.ty = mapDims(ty.ty, func)
-        ()
-      end
-      _ => begin
-        ()
-      end
+function mapDims(@nospecialize(ty::M_Type), func::FuncT)
+  local fn::M_Function
+  local retTy = @match ty begin
+    TYPE_ARRAY(__) => begin
+      local tyDimensions = list(func(d) for d in ty.dimensions)
+      TYPE_ARRAY(ty.elementType, tyDimensions)
+    end
+    TYPE_TUPLE(__) => begin
+      local tyTypes = list(mapDims(t, func) for t in ty.types)
+      TYPE_TUPE(tyTpes, ty.dimensions)
+    end
+    TYPE_FUNCTION(fn = fn) => begin
+      tyFn = setReturnmapDims(mapDims(returnType(fn), func), fn)
+      TYPE_FUNCTION(fn, tyFn)
+    end
+    TYPE_METABOXED(__) => begin
+      tyTy = mapDims(ty.ty, func)
+      TYPE_METABOXED(tyTy)
+    end
+    _ => begin
+      ty
     end
   end
-  return ty
+  return retTy
 end
 
 function hasZeroDimension(ty::M_Type)::Bool
@@ -804,22 +860,22 @@ function nthDimension(ty::M_Type, index::Int)::Dimension
   return dim
 end
 
-""" #= Copies array dimensions from one type to another, discarding the existing
-     dimensions of the destination type but keeping its element type. =#"""
+"""
+ Copies array dimensions from one type to another, discarding the existing
+ dimensions of the destination type but keeping its element type.
+"""
 function copyDims(srcType::M_Type, dstType::M_Type)::M_Type
   local ty::M_Type
-
   if listEmpty(arrayDims(srcType))
-    @assign ty = arrayElementType(dstType)
+    ty = arrayElementType(dstType)
   else
-    @assign ty = begin
+    ty = begin
       @match dstType begin
-        ARRAY(__) => begin
-          ARRAY(dstType.elementType, arrayDims(srcType))
+        TYPE_ARRAY(__) => begin
+          TYPE_ARRAY(dstType.elementType, arrayDims(srcType))
         end
-
         _ => begin
-          ARRAY(dstType, arrayDims(srcType))
+          TYPE_ARRAY(dstType, arrayDims(srcType))
         end
       end
     end
@@ -866,8 +922,10 @@ function elementType(ty::NFType)::NFType
   return elementTy
 end
 
-""" #= Sets the common type of the elements in an array, if the type is an array
-     type. Otherwise it just returns the given element type. =#"""
+"""
+Sets the common type of the elements in an array, if the type is an array
+type. Otherwise it just returns the given element type.
+"""
 function setArrayElementType(arrayTy::M_Type, elementTy::NFType)::NFType
   local ty::NFType
   @assign ty = begin
@@ -904,17 +962,14 @@ end
 
 function nthTupleType(ty::M_Type, n::Int)::M_Type
   local outTy::M_Type
-
-  @assign outTy = begin
+  outTy = begin
     @match ty begin
-      TUPLE(__) => begin
+      TYPE_TUPLE(__) => begin
         listGet(ty.types, n)
       end
-
       TYPE_ARRAY(__) => begin
         TYPE_ARRAY(nthTupleType(ty.elementType, n), ty.dimensions)
       end
-
       _ => begin
         ty
       end
@@ -925,17 +980,14 @@ end
 
 function firstTupleType(ty::M_Type)::M_Type
   local outTy::M_Type
-
-  @assign outTy = begin
+  outTy = begin
     @match ty begin
-      TUPLE(__) => begin
+      TYPE_TUPLE(__) => begin
         listHead(ty.types)
       end
-
       TYPE_ARRAY(__) => begin
         TYPE_ARRAY(firstTupleType(ty.elementType), ty.dimensions)
       end
-
       _ => begin
         ty
       end
@@ -1502,14 +1554,14 @@ function liftArrayRightList(ty::NFType, dims::List{<:Dimension})::NFType
   return ty
 end
 
-""" #= Adds array dimensions to a type on the left side, e.g.
-       listArrayLeft(Real[2, 3], [4, 5]) => Real[4, 5, 2, 3]. =#"""
+"""  Adds array dimensions to a type on the left side, e.g.
+     listArrayLeft(Real[2, 3], [4, 5]) => Real[4, 5, 2, 3].
+"""
 function liftArrayLeftList(ty::NFType, dims::List{<:Dimension})::NFType
-
   if listEmpty(dims)
     return ty
   end
-  @assign ty = begin
+  ty = begin
     @match ty begin
       TYPE_ARRAY(__) => begin
         TYPE_ARRAY(ty.elementType, listAppend(dims, ty.dimensions))
@@ -1522,8 +1574,10 @@ function liftArrayLeftList(ty::NFType, dims::List{<:Dimension})::NFType
   return ty
 end
 
-""" #= Adds an array dimension to a type on the left side, e.g.
-       listArrayLeft(Real[2, 3], [4]) => Real[4, 2, 3]. =#"""
+"""
+  Adds an array dimension to a type on the left side, e.g.
+  listArrayLeft(Real[2, 3], [4]) => Real[4, 2, 3].
+"""
 function liftArrayLeft(ty::M_Type, dim::Dimension)::M_Type
 
   @assign ty = begin

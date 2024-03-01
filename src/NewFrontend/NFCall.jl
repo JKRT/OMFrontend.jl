@@ -1,14 +1,27 @@
 module ParameterTreeImpl
+
 using MetaModelica
 using ExportAll
-
 import ..Main.Expression
+import ..Main.toString
 
 #= Modelica extend clause =#
 const Key = String
 const Value = Expression
 
+#= Define the printing functions. =#
+function keyStr(key)
+  return key
+end
+
 include("../Util/baseAvlTreeCode.jl")
+addConflictDefault = addConflictReplace
+#= Add comp function =#
+keyCompare = (inKey1::Key, inKey2::Key) -> begin
+  #Should it default to ==== instead since types are in many cases immutable?
+  res = stringCompare(inKey1, inKey2)
+  return res
+end
 
 end #=ParameterTreeImpl=#
 
@@ -70,7 +83,7 @@ end
 
 function toDAE(attr::CallAttributes, returnType::NFType)::DAE.CallAttributes
   local fattr::DAE.CallAttributes
-  @assign fattr = DAE.CALL_ATTR(
+   fattr = DAE.CALL_ATTR(
     toDAE(returnType),
     attr.tuple_,
     attr.builtin,
@@ -93,37 +106,35 @@ end
   end
 end
 
-function typeCast(callExp::CALL_EXPRESSION, ty::NFType)::Expression
+function typeCast(callExp::CALL_EXPRESSION, ty::NFType)
   local call::Call
   local cast_ty::NFType
   @match CALL_EXPRESSION(call = call) = callExp
-  @assign callExp = begin
+   callExp = begin
     @match call begin
       TYPED_CALL(__) where {(isBuiltin(call.fn))} => begin
-        @assign cast_ty = setArrayElementType(call.ty, ty)
+         cast_ty = setArrayElementType(call.ty, ty)
         begin
-          @match AbsynUtil.pathFirstIdent(P_Function.name(call.fn)) begin
+          @match AbsynUtil.pathFirstIdent(name(call.fn)) begin
             "fill" => begin
               #=  For 'fill' we can type cast the first argument rather than the
               =#
               #=  whole array that 'fill' constructs.
               =#
-              @assign call.arguments = _cons(
+              callArguments = _cons(
                 typeCast(listHead(call.arguments), ty),
                 listRest(call.arguments),
               )
-              @assign call.ty = cast_ty
+              callTy = cast_ty
+              call = TYPED_CALL(call.fn, callTy, call.var, callArguments, call.attributes)
               CALL_EXPRESSION(call)
             end
-
+            #=  For diagonal we can type cast the argument rather than the =#
             "diagonal" => begin
-              #=  For diagonal we can type cast the argument rather than the
-              =#
-              #=  matrix that diagonal constructs.
-              =#
-              @assign call.arguments =
-                list(typeCast(listHead(call.arguments), ty))
-              @assign call.ty = cast_ty
+              #=  matrix that diagonal constructs.=#
+              callArguments = list(typeCast(listHead(call.arguments), ty))
+              callTy = cast_ty
+              call = TYPED_CALL(call.fn, callTy, call.var, callArguments, call.attributes)
               CALL_EXPRESSION(call)
             end
 
@@ -144,19 +155,20 @@ end
 
 function retype(call::Call)::Call
 
-  @assign () = begin
+   () = begin
     local ty::NFType
     local dims::List{Dimension}
     @match call begin
       TYPED_ARRAY_CONSTRUCTOR(__) => begin
-        @assign dims = nil
+         dims = nil
         for i in listReverse(call.iters)
-          @assign dims = listAppend(
+           dims = listAppend(
             arrayDims(typeOf(Util.tuple22(i))),
             dims,
           )
         end
-        @assign call.ty = liftArrayLeftList(arrayElementType(call.ty), dims)
+        callTy = liftArrayLeftList(arrayElementType(call.ty), dims)
+        call = TYPED_ARRAY_CONSTRUCTOR(callTy, call.var, call.exp, call.iters)
         ()
       end
 
@@ -201,7 +213,7 @@ end
 
 function toDAE(@nospecialize(call::Call))
   local daeCall::DAE.Exp
-  @assign daeCall = begin
+   daeCall = begin
     local fold_id::String
     local res_id::String
     local fold_exp::Option{Expression}
@@ -214,8 +226,8 @@ function toDAE(@nospecialize(call::Call))
         )
       end
       TYPED_ARRAY_CONSTRUCTOR(__) => begin
-        @assign fold_id = Util.getTempVariableIndex()
-        @assign res_id = Util.getTempVariableIndex()
+         fold_id = Util.getTempVariableIndex()
+         res_id = Util.getTempVariableIndex()
         DAE.REDUCTION(
           DAE.REDUCTIONINFO(
             name(NFBuiltinFuncs.ARRAY_FUNC),
@@ -232,7 +244,7 @@ function toDAE(@nospecialize(call::Call))
       end
 
       TYPED_REDUCTION(__) => begin
-        @assign (fold_exp, fold_id, res_id) = call.foldExp
+         (fold_exp, fold_id, res_id) = call.foldExp
         DAE.REDUCTION(
           DAE.REDUCTIONINFO(
             P_Function.name(call.fn),
@@ -266,11 +278,11 @@ function typedString(call::Call)::String
   local c::String
   local argexp::Expression
 
-  @assign str = begin
+   str = begin
     @match call begin
       ARG_TYPED_CALL(__) => begin
-        @assign name = toString(call.ref)
-        @assign arg_str = stringDelimitList(
+         name = toString(call.ref)
+         arg_str = stringDelimitList(
           list(
             "/*" +
             toString(Util.tuple32(arg)) +
@@ -281,12 +293,12 @@ function typedString(call::Call)::String
           ", ",
         )
         for arg in call.named_args
-          @assign c = if arg_str == ""
+           c = if arg_str == ""
             ""
           else
             ", "
           end
-          @assign arg_str =
+           arg_str =
             arg_str +
             c +
             Util.tuple41(arg) +
@@ -299,8 +311,8 @@ function typedString(call::Call)::String
       end
 
       TYPED_CALL(__) => begin
-        @assign name = AbsynUtil.pathString(P_Function.name(call.fn))
-        @assign arg_str = stringDelimitList(
+         name = AbsynUtil.pathString(P_Function.name(call.fn))
+         arg_str = stringDelimitList(
           list(toStringTyped(arg) for arg in call.arguments),
           ", ",
         )
@@ -317,35 +329,35 @@ end
 
 function toFlatString(call::Call)::String
   local str::String
-
-  local name::String
+  local nameVar::String
   local arg_str::String
   local c::String
   local argexp::Expression
   local iters::List{InstNode}
 
-  @assign str = begin
+   str = begin
     @match call begin
       TYPED_CALL(__) => begin
-        @assign name = AbsynUtil.pathString(P_Function.name(call.fn))
-        @assign arg_str = stringDelimitList(
+        nameVar = AbsynUtil.pathString(name(call.fn))
+        @info "Printing $nameVar to a string"
+        arg_str = stringDelimitList(
           list(toFlatString(arg) for arg in call.arguments),
           ", ",
         )
         if isBuiltin(call.fn)
-          stringAppendList(list(name, "(", arg_str, ")"))
+          stringAppendList(list(nameVar, "(", arg_str, ")"))
         else
-          stringAppendList(list("'", name, "'(", arg_str, ")"))
+          stringAppendList(list("'", nameVar, "'(", arg_str, ")"))
         end
       end
 
       TYPED_ARRAY_CONSTRUCTOR(__) => begin
         if isVectorized(call)
-          @assign str = toFlatString(devectorizeCall(call))
+           str = toFlatString(devectorizeCall(call))
         else
-          @assign name = AbsynUtil.pathString(P_Function.name(NFBuiltinFuncs.ARRAY_FUNC))
-          @assign arg_str = toFlatString(call.exp)
-          @assign c = stringDelimitList(
+           nameVar = AbsynUtil.pathString(P_Function.name(NFBuiltinFuncs.ARRAY_FUNC))
+           arg_str = toFlatString(call.exp)
+           c = stringDelimitList(
             list(
               name(Util.tuple21(iter)) +
               " in " +
@@ -354,7 +366,7 @@ function toFlatString(call::Call)::String
             ),
             ", ",
           )
-          @assign str = stringAppendList(list("{", arg_str, " for ", c, "}"))
+           str = stringAppendList(list("{", arg_str, " for ", c, "}"))
         end
         #=  Vectorized calls contains iterators with illegal Modelica names
         =#
@@ -366,9 +378,9 @@ function toFlatString(call::Call)::String
       end
 
       TYPED_REDUCTION(__) => begin
-        @assign name = AbsynUtil.pathString(P_Function.name(call.fn))
-        @assign arg_str = toFlatString(call.exp)
-        @assign c = stringDelimitList(
+         nameVar = AbsynUtil.pathString(P_Function.name(call.fn))
+         arg_str = toFlatString(call.exp)
+         c = stringDelimitList(
           list(
             name(Util.tuple21(iter)) +
             " in " +
@@ -378,9 +390,9 @@ function toFlatString(call::Call)::String
           ", ",
         )
         if isBuiltin(call.fn)
-          stringAppendList(list(name, "(", arg_str, " for ", c, ")"))
+          stringAppendList(list(nameVar, "(", arg_str, " for ", c, ")"))
         else
-          stringAppendList(list("'", name, "'(", arg_str, " for ", c, ")"))
+          stringAppendList(list("'", nameVar, "'(", arg_str, " for ", c, ")"))
         end
       end
     end
@@ -397,11 +409,11 @@ function toString(call::Call)::String
   local argexp::Expression
   local iters::List{InstNode}
 
-  @assign str = begin
+   str = begin
     @match call begin
       UNTYPED_CALL(__) => begin
         nameStr = toString(call.ref)
-        @assign arg_str = stringDelimitList(
+         arg_str = stringDelimitList(
           list(toString(arg) for arg in call.arguments),
           ", ",
         )
@@ -410,19 +422,19 @@ function toString(call::Call)::String
 
       ARG_TYPED_CALL(__) => begin
         nameStr = toString(call.ref)
-        @assign arg_str = stringDelimitList(
+         arg_str = stringDelimitList(
           list(
             toString(Util.tuple31(arg)) for arg in call.arguments
           ),
           ", ",
         )
         for arg in call.named_args
-          @assign c = if arg_str == ""
+           c = if arg_str == ""
             ""
           else
             ", "
           end
-          @assign arg_str =
+           arg_str =
             arg_str *
             c *
             Util.tuple41(arg) +
@@ -448,9 +460,9 @@ function toString(call::Call)::String
       end
 
       UNTYPED_REDUCTION(__) => begin
-nameStr = toString(call.ref)
-        @assign arg_str = toString(call.exp)
-        @assign c = stringDelimitList(
+        nameStr = toString(call.ref)
+         arg_str = toString(call.exp)
+         c = stringDelimitList(
           list(
             name(Util.tuple21(iter)) +
             " in " +
@@ -488,8 +500,8 @@ nameStr = toString(call.ref)
 
       TYPED_REDUCTION(__) => begin
 nameStr = AbsynUtil.pathString(P_Function.name(call.fn))
-        @assign arg_str = toString(call.exp)
-        @assign c = stringDelimitList(
+         arg_str = toString(call.exp)
+         c = stringDelimitList(
           list(
             name(Util.tuple21(iter)) +
             " in " +
@@ -508,7 +520,7 @@ end
 function toRecordExpression(call::Call, ty::NFType)::Expression
   local exp::Expression
 
-  @assign exp = begin
+   exp = begin
     @match call begin
       TYPED_CALL(__) => begin
         evaluateRecordConstructor(call.fn, ty, call.arguments; evaluate = false)
@@ -526,7 +538,7 @@ end
 function arguments(call::Call)::List{Expression}
   local arguments::List{Expression}
 
-  @assign arguments = begin
+   arguments = begin
     @match call begin
       UNTYPED_CALL(__) => begin
         call.arguments
@@ -541,9 +553,9 @@ function arguments(call::Call)::List{Expression}
 end
 
 function functionName(call::Call)::Absyn.Path
-  local name::Absyn.Path
+  local nameV::Absyn.Path
 
-  @assign name = begin
+  nameV = begin
     @match call begin
       UNTYPED_CALL(__) => begin
         toPath(call.ref)
@@ -554,7 +566,7 @@ function functionName(call::Call)::Absyn.Path
       end
 
       TYPED_CALL(__) => begin
-        P_Function.name(call.fn)
+        name(call.fn)
       end
 
       UNTYPED_ARRAY_CONSTRUCTOR(__) => begin
@@ -570,17 +582,17 @@ function functionName(call::Call)::Absyn.Path
       end
 
       TYPED_REDUCTION(__) => begin
-        P_Function.name(call.fn)
+        name(call.fn)
       end
     end
   end
-  return name
+  return nameV
 end
 
 function typedFunction(call::Call)::M_Function
   local fn::M_Function
 
-  @assign fn = begin
+   fn = begin
     @match call begin
       TYPED_CALL(__) => begin
         call.fn
@@ -606,7 +618,7 @@ end
 function inlineType(call::Call)::DAE.InlineType
   local inlineTy::DAE.InlineType
 
-  @assign inlineTy = begin
+   inlineTy = begin
     @match call begin
       TYPED_CALL(attributes = CALL_ATTR(inlineType = inlineTy)) => begin
         inlineTy
@@ -623,7 +635,7 @@ end
 function isRecordConstructor(call::Call)::Bool
   local isConstructor::Bool
 
-  @assign isConstructor = begin
+   isConstructor = begin
     @match call begin
       UNTYPED_CALL(__) => begin
         SCodeUtil.isRecord(definition(node(call.ref)))
@@ -646,13 +658,11 @@ function isImpure(call::Call)::Bool
   impure = begin
     @match call begin
       UNTYPED_CALL(__) => begin
-        isImpure(listHead(P_Function.getRefCache(call.ref)))
+        isImpure(listHead(getRefCache(call.ref)))
       end
-
       TYPED_CALL(__) => begin
         isImpure(call.fn) || isOMImpure(call.fn)
       end
-
       _ => begin
         false
       end
@@ -666,9 +676,8 @@ function isNotImpure(@nospecialize(call::Call))::Bool
 end
 
 function isExternal(call::Call)::Bool
-  local isExternal::Bool
-
-  @assign isExternal = begin
+  local isExt::Bool
+  isExt = begin
     @match call begin
       UNTYPED_CALL(__) => begin
         isExternalFunction(getClass(node(call.ref)))
@@ -679,8 +688,7 @@ function isExternal(call::Call)::Bool
       end
 
       TYPED_CALL(__) => begin
-        #isExternal(call.fn) TODO
-        true
+        isExternal(call.fn) #Changed from just returning true johti17 2023-03-26
       end
 
       _ => begin
@@ -688,13 +696,13 @@ function isExternal(call::Call)::Bool
       end
     end
   end
-  return isExternal
+  return isExt
 end
 
 function compare(call1::Call, call2::Call)::Int
   local comp::Int
 
-  @assign comp = begin
+   comp = begin
     @match (call1, call2) begin
       (UNTYPED_CALL(__), UNTYPED_CALL(__)) => begin
         compare(call1.ref, call2.ref)
@@ -720,7 +728,7 @@ function compare(call1::Call, call2::Call)::Int
     end
   end
   if comp == 0
-    @assign comp = compareList(arguments(call1), arguments(call2))
+     comp = compareList(arguments(call1), arguments(call2))
   end
   return comp
 end
@@ -728,13 +736,13 @@ end
 function variability(call::Call)::VariabilityType
   local var::VariabilityType
 
-  @assign var = begin
+   var = begin
     local var_set::Bool
     @match call begin
       UNTYPED_CALL(__) => begin
-        @assign var_set = true
+         var_set = true
         if isSimple(call.ref)
-          @assign var = begin
+           var = begin
             @match firstName(call.ref) begin
               "change" => begin
                 Variability.DISCRETE
@@ -757,16 +765,16 @@ function variability(call::Call)::VariabilityType
               end
 
               _ => begin
-                @assign var_set = false
+                 var_set = false
                 Variability.CONTINUOUS
               end
             end
           end
         end
         if !var_set
-          @assign var = variabilityList(call.arguments)
+           var = variabilityList(call.arguments)
           for narg in call.named_args
-            @assign var = variabilityMax(
+             var = variabilityMax(
               var,
               variability(Util.tuple22(narg)),
             )
@@ -804,31 +812,21 @@ function variability(call::Call)::VariabilityType
   return var
 end
 
-function setType(call::Call, ty::NFType)::Call
-  @assign call = begin
-    @match call begin
-      TYPED_CALL(__) => begin
-        @assign call.ty = ty
-        call
-      end
-
-      TYPED_ARRAY_CONSTRUCTOR(__) => begin
-        @assign call.ty = ty
-        call
-      end
-
-      TYPED_REDUCTION(__) => begin
-        @assign call.ty = ty
-        call
-      end
-    end
+function setType(@nospecialize(call::Call), @nospecialize(ty::NFType))
+  local callWithNewType = if call isa TYPED_CALL
+    TYPED_CALL(call.fn, ty, call.var, call.arguments, call.attributes)
+  elseif call isa TYPED_ARRAY_CONSTRUCTOR
+    TYPED_ARRAY_CONSTRUCTOR(ty, call.var, call.exp, call.iters)
+  elseif call isa TYPED_REDUCTION
+    TYPED_REDUCTION(call.fn, ty, call.var, call.exp,
+                    call.iters, call.defaultExp, call.foldExp)
   end
-  return call
+  return callWithNewType
 end
 
 function typeOf(call::Call)::NFType
   local ty::NFType
-  @assign ty = begin
+   ty = begin
     @match call begin
       TYPED_CALL(__) => begin
         call.ty
@@ -851,7 +849,6 @@ function typeOf(call::Call)::NFType
 end
 
 function matchTypedNormalCall(call::Call, origin::ORIGIN_Type, info::SourceInfo)::Call
-
   local func::M_Function
   local args::List{Expression}
   local typed_args::List{TypedArg}
@@ -863,10 +860,10 @@ function matchTypedNormalCall(call::Call, origin::ORIGIN_Type, info::SourceInfo)
   local arg_exp::Expression
 
   @match ARG_TYPED_CALL(call_scope = scope) = call
-  @assign matchedFunc = checkMatchingFunctions(call, info)
-  @assign func = matchedFunc.func
-  @assign typed_args = matchedFunc.args
-  @assign args = nil
+   matchedFunc = checkMatchingFunctions(call, info)
+   func = matchedFunc.func
+   typed_args = matchedFunc.args
+   args = nil
   #=  if is impure, make it a parameter expression
   =#
   #=  see https:trac.openmodelica.org/OpenModelica/ticket/5133
@@ -902,7 +899,7 @@ function matchTypedNormalCall(call::Call, origin::ORIGIN_Type, info::SourceInfo)
   #=  treated as implicitly discrete if the arguments are continuous.
   =#
   (ty, _) = evaluateCallType(ty, func, args)
-  @assign call = makeTypedCall(func, args, var, ty)
+  call = makeTypedCall(func, args, var, ty)
   #=  If the matching was a vectorized one then create a map call
   =#
   #=  using the vectorization dim. This means going through each argument
@@ -910,30 +907,21 @@ function matchTypedNormalCall(call::Call, origin::ORIGIN_Type, info::SourceInfo)
   #=  and subscipting it with an iterator for each dim and creating a map call.
   =#
   if isVectorized(matchedFunc)
-    @assign call = vectorizeCall(call, matchedFunc.mk, scope, info)
+     call = vectorizeCall(call, matchedFunc.mk, scope, info)
   end
   return call
 end
 
 function typeMatchNormalCall(call::Call, origin::ORIGIN_Type, info::SourceInfo)::Call
   local argtycall::Call
-  @assign argtycall = typeNormalCall(call, origin, info)
-  @assign call = matchTypedNormalCall(argtycall, origin, info)
+  argtycall = typeNormalCall(call, origin, info)
+  call = matchTypedNormalCall(argtycall, origin, info)
   return call
 end
 
-function unboxArgs(call::Call)::Call
-
-  @assign () = begin
-    @match call begin
-      TYPED_CALL(__) => begin
-        @assign call.arguments =
-          list(unbox(arg) for arg in call.arguments)
-        ()
-      end
-    end
-  end
-  return call
+function unboxArgs(call::TYPED_CALL)
+  local args = list(unbox(arg) for arg in call.arguments)
+  return TYPED_CALL(call.fn, call.ty, call.var, args, call.attributes)
 end
 
 function makeTypedCall(
@@ -944,7 +932,7 @@ function makeTypedCall(
 )::Call
   local call::Call
   local ca::CallAttributes
-  @assign ca = CALL_ATTR(
+   ca = CALL_ATTR(
     isTuple(returnType),
     isBuiltin(fn),
     isImpure(fn),
@@ -952,18 +940,18 @@ function makeTypedCall(
     inlineBuiltin(fn),
     DAE.NO_TAIL(),
   )
-  @assign call = TYPED_CALL(fn, returnType, variability, args, ca)
+   call = TYPED_CALL(fn, returnType, variability, args, ca)
   return call
 end
 
 function typeNormalCall(call::Call, origin::ORIGIN_Type, info::SourceInfo)::Call
 
-  @assign call = begin
+   call = begin
     local fnl::List{M_Function}
     local is_external::Bool
     @match call begin
       UNTYPED_CALL(__) => begin
-        @assign fnl = typeRefCache(call.ref)
+         fnl = typeRefCache(call.ref)
         typeArgs(call, origin, info)
       end
 
@@ -985,14 +973,14 @@ function typeCall(
   @nospecialize(callExp::Expression),
   @nospecialize(origin::ORIGIN_Type),
   @nospecialize(info::SourceInfo),
-  )::Tuple{Expression, NFType, VariabilityType}
+  )
   arg1 = callExp::Expression
   arg2 = origin::ORIGIN_Type
   arg3 = info
   typeCall2(
-    Base.inferencebarrier(arg1),
-    Base.inferencebarrier(arg2),
-    Base.inferencebarrier(arg3),
+    arg1,
+    arg2,
+    arg3,
   )
 end
 
@@ -1000,7 +988,7 @@ function typeCall2(
   @nospecialize(callExp::Expression),
   @nospecialize(origin::ORIGIN_Type),
   @nospecialize(info::SourceInfo),
-  )::Tuple
+  )
   @nospecialize
   local var::VariabilityType
   local ty::NFType
@@ -1034,30 +1022,30 @@ function typeCall2(
       end
 
       UNTYPED_ARRAY_CONSTRUCTOR(__) => begin
-        @assign (ty_call, ty, var) = typeArrayConstructor(call, origin, info)
+        (ty_call, ty, var) = typeArrayConstructor(call, origin, info)
         CALL_EXPRESSION(ty_call)
       end
 
       UNTYPED_REDUCTION(__) => begin
-        @assign (ty_call, ty, var) = typeReduction(call, origin, info)
+        (ty_call, ty, var) = typeReduction(call, origin, info)
         CALL_EXPRESSION(ty_call)
       end
 
       TYPED_CALL(__) => begin
-        @assign ty = call.ty
-        @assign var = call.var
+        ty = call.ty
+        var = call.var
         callExp
       end
 
       TYPED_ARRAY_CONSTRUCTOR(__) => begin
-        @assign ty = call.ty
-        @assign var = call.var
+        ty = call.ty
+        var = call.var
         callExp
       end
 
       TYPED_REDUCTION(__) => begin
-        @assign ty = call.ty
-        @assign var = call.var
+        ty = call.ty
+        var = call.var
         callExp
       end
 
@@ -1081,7 +1069,7 @@ function instantiate(
   info::SourceInfo
 )::Expression
   local callExp::Expression
-  @assign callExp = begin
+   callExp = begin
     @match functionArgs begin
       Absyn.FUNCTIONARGS(__) => begin
         instNormalCall(functionName, functionArgs, scope, info)
@@ -1101,7 +1089,7 @@ end
 function getSpecialReturnType(fn::M_Function, args::List{<:Expression})::NFType
   local ty::NFType
 
-  @assign ty = begin
+   ty = begin
     @match fn.path begin
       Absyn.IDENT("min") => begin
         arrayElementType(typeOf(unbox(listHead(
@@ -1170,27 +1158,24 @@ end
 
 function evaluateCallTypeDimExp(exp::Expression, ptree::ParameterTree)::Expression
   local outExp::Expression
-
-  @assign outExp = begin
+  outExp = begin
     local node::InstNode
     local oexp::Option{Expression}
     local e::Expression
     @match exp begin
       CREF_EXPRESSION(
-        cref = CREF(
+        cref = COMPONENT_REF_CREF(
           node = node,
-          restCref = EMPTY(__),
+          restCref = COMPONENT_REF_EMPTY(__),
         ),
       ) => begin
-        @assign oexp = ParameterTree.getOpt(ptree, name(node))
+        oexp = ParameterTreeImpl.getOpt(ptree, name(node))
         if isSome(oexp)
           @match SOME(outExp) = oexp
         end
-        #=  TODO: Apply subscripts.
-        =#
+        #=  TODO: Apply subscripts. =#
         outExp
       end
-
       _ => begin
         exp
       end
@@ -1200,46 +1185,43 @@ function evaluateCallTypeDimExp(exp::Expression, ptree::ParameterTree)::Expressi
 end
 
 function buildParameterTree(
-  fnArgs::Tuple{<:M_Function, List{<:Expression}},
+  fnArgs::Tuple{M_Function, List{<:Expression}},
   ptree::ParameterTree,
 )::ParameterTree
-
   local fn::M_Function
   local args::List{Expression}
   local arg::Expression
-
-  if !ParameterTree.isEmpty(ptree)
+  if !(ParameterTreeImpl.isEmpty(ptree))
     return ptree
   end
-  @assign (fn, args) = fnArgs
+   (fn, args) = fnArgs
   for i in fn.inputs
     @match _cons(arg, args) = args
-    @assign ptree = ParameterTree.add(ptree, name(i), arg)
+     ptree = ParameterTreeImpl.add(ptree, name(i), arg)
   end
-  #=  TODO: Add local variable bindings.
-  =#
+  #=  TODO: Add local variable bindings. =#
   return ptree
 end
 
 function evaluateCallTypeDim(
   dim::Dimension,
-  fnArgs::Tuple{<:M_Function, List{<:Expression}},
+  fnArgs::Tuple{M_Function, List{<:Expression}},
   ptree::ParameterTree,
 )::Tuple{Dimension, ParameterTree}
-
-  @assign dim = begin
+   dim = begin
     local exp::Expression
     @match dim begin
       DIMENSION_EXP(__) => begin
-        @assign ptree = buildParameterTree(fnArgs, ptree)
-        @assign exp = map(
+        ptree = buildParameterTree(fnArgs, ptree)
+        exp = map(
           dim.exp,
-          (ptree) -> evaluateCallTypeDimExp(ptree = ptree),
+          (expArg) -> evaluateCallTypeDimExp(expArg, ptree),
         )
         ErrorExt.setCheckpoint(getInstanceName())
         try
-          @assign exp = Ceval.evalExp(exp, Ceval.EVALTARGET_IGNORE_ERRORS())
-        catch
+           exp = evalExp(exp, EVALTARGET_IGNORE_ERRORS())
+        catch e
+          @error "DBG: ERROR" e
         end
         ErrorExt.rollBack(getInstanceName())
         fromExp(exp, Variability.CONSTANT)
@@ -1258,22 +1240,20 @@ function evaluateCallType(
   fn::M_Function,
   args::List{<:Expression},
   ptree::ParameterTree = ParameterTreeImpl.EMPTY(),
-)::Tuple{NFType, ParameterTree}
-  @assign ty = begin
+  )::Tuple{NFType, ParameterTree}
+   ty = begin
     local dims::List{Dimension}
     local tys::List{NFType}
     @match ty begin
       TYPE_ARRAY(__) => begin
-        @assign (dims, ptree) =
-          ListUtil.map1Fold(ty.dimensions, evaluateCallTypeDim, (fn, args), ptree)
-        @assign ty.dimensions = dims
-        ty
+        (dims, ptree) = ListUtil.map1Fold(ty.dimensions, evaluateCallTypeDim, (fn, args), ptree)
+        tyDimensions = dims
+        TYPE_ARRAY(ty.elementType, tyDimensions)
       end
       TYPE_TUPLE(__) => begin
-        @assign (tys, ptree) =
-          ListUtil.map2Fold(ty.types, evaluateCallType, fn, args, ptree)
-        @assign ty.types = tys
-        ty
+        (tys, ptree) = ListUtil.map2Fold(ty.types, evaluateCallType, fn, args, ptree)
+        tyTypes = tys
+        TYPE_TUPLE(tyTypes, ty.names)
       end
       _ => begin
         ty
@@ -1288,16 +1268,14 @@ end
      be used where e.g. correct types are required. =#"""
 function devectorizeCall(call::Call)::Call
   local outCall::Call
-
   local exp::Expression
   local iter_exp::Expression
   local iters::List{Tuple{InstNode, Expression}}
   local iter_node::InstNode
-
   @match TYPED_ARRAY_CONSTRUCTOR(exp = exp, iters = iters) = call
   for i in iters
-    @assign (iter_node, iter_exp) = i
-    @assign exp = replaceIterator(exp, iter_node, iter_exp)
+     (iter_node, iter_exp) = i
+     exp = replaceIterator(exp, iter_node, iter_exp)
   end
   @match CALL_EXPRESSION(call = outCall) = exp
   return outCall
@@ -1306,7 +1284,7 @@ end
 function isVectorized(call::Call)::Bool
   local vectorized::Bool
 
-  @assign vectorized = begin
+   vectorized = begin
     @match call begin
       TYPED_ARRAY_CONSTRUCTOR(exp = CALL_EXPRESSION(__)) => begin
         stringGet(name(Util.tuple21(listHead(call.iters))), 1) == 36
@@ -1332,7 +1310,6 @@ function vectorizeCall(
   info::SourceInfo,
 )::Call
   local vectorized_call::Call
-
   local ty::NFType
   local vect_ty::NFType
   local exp::Expression
@@ -1345,45 +1322,45 @@ function vectorizeCall(
   local vect_args::List{Expression}
   local sub::Subscript
   local vect_idxs::List{Int}
-
-  @assign vectorized_call = begin
+  vectorized_call = begin
     @match (base_call, mk) begin
-      (TYPED_CALL(arguments = call_args), VECTORIZED(__)) => begin
-        @assign iters = nil
-        @assign i = 1
+      (TYPED_CALL(arguments = call_args), VECTORIZED_MATCH_KIND(__)) => begin
+         iters = nil
+         i = 1
         for dim in mk.vectDims
           Error.assertion(
-            P_Dimension.Dimension.isKnown(dim, allowExp = true),
+            isKnown(dim, true),
             getInstanceName() + " got unknown dimension for vectorized call",
             info,
           )
-          @assign ty = TYPE_ARRAY(TYPE_INTEGER(), list(dim))
-          @assign exp = RANGE_EXPRESSION(
+          ty = TYPE_ARRAY(TYPE_INTEGER(), list(dim))
+          exp = RANGE_EXPRESSION(
             ty,
             INTEGER_EXPRESSION(1),
             NONE(),
-            P_Dimension.Dimension.sizeExp(dim),
+            sizeExp(dim),
           )
-          @assign iter = fromComponent(
+          iter = fromComponent(
             "i" + intString(i),
             ITERATOR_COMPONENT(TYPE_INTEGER(), Variability.CONSTANT, info),
             scope,
           )
-          @assign iters = _cons((iter, exp), iters)
-          @assign exp = CREF_EXPRESSION(
+          iters = _cons((iter, exp), iters)
+          exp = CREF_EXPRESSION(
             TYPE_INTEGER(),
             makeIterator(iter, TYPE_INTEGER()),
           )
-          @assign sub = SUBSCRIPT_INDEX(exp)
-          @assign call_args = ListUtil.mapIndices(
+          sub = SUBSCRIPT_INDEX(exp)
+          call_args = ListUtil.mapIndices(
             call_args,
             mk.vectorizedArgs,
-            (sub, nil) -> applySubscript(
-              subscript = sub,
-              restSubscripts = nil,
+            (x) -> applySubscript(
+              sub,
+              x,
+              list(),
             ),
           )
-          @assign i = i + 1
+          i = i + 1
         end
         #=  Create the range on which we will iterate to vectorize.
         =#
@@ -1391,10 +1368,9 @@ function vectorizeCall(
         =#
         #=  Now that iterator is ready apply it, as a subscript, to each argument that is supposed to be vectorized
         =#
-        #=  Make a cref expression from the iterator
-        =#
-        @assign vect_ty = liftArrayLeftList(base_call.ty, mk.vectDims)
-        @assign base_call.arguments = call_args
+        #=  Make a cref expression from the iterator =#
+        vect_ty = liftArrayLeftList(base_call.ty, mk.vectDims)
+        base_call = TYPED_CALL(base_call.fn, base_call.ty, base_call.var, call_args, base_call.attributes)
         TYPED_ARRAY_CONSTRUCTOR(
           vect_ty,
           base_call.var,
@@ -1420,8 +1396,8 @@ function iteratorToDAE(iter::Tuple{<:InstNode, Expression})::DAE.ReductionIterat
   local c::Component
   local b::Binding
 
-  @assign (iter_node, iter_range) = iter
-  @assign diter = DAE.REDUCTIONITER(
+   (iter_node, iter_range) = iter
+   diter = DAE.REDUCTIONITER(
     name(iter_node),
     toDAE(iter_range),
     NONE(),
@@ -1430,7 +1406,7 @@ function iteratorToDAE(iter::Tuple{<:InstNode, Expression})::DAE.ReductionIterat
   return diter
 end
 
-function checkMatchingFunctions(call::Call, info::SourceInfo)::MatchedFunction
+function checkMatchingFunctions(call::Call, info::SourceInfo)
   local matchedFunc::MatchedFunction
 
   local matchedFunctions::List{MatchedFunction}
@@ -1442,12 +1418,12 @@ function checkMatchingFunctions(call::Call, info::SourceInfo)::MatchedFunction
   local errors::List{Int}
 
   ErrorExt.setCheckpoint("NFCall:checkMatchingFunctions")
-  @assign matchedFunctions = begin
+  matchedFunctions = begin
     @match call begin
       ARG_TYPED_CALL(ref = COMPONENT_REF_CREF(node = fn_node)) => begin
-        @assign allfuncs = getCachedFuncs(fn_node)
+        allfuncs = getCachedFuncs(fn_node)
         if listLength(allfuncs) > 1
-          @assign allfuncs =
+          allfuncs =
             list(fn for fn in allfuncs if !isDefaultRecordConstructor(fn))
         end
         matchFunctions(allfuncs, call.arguments, call.named_args, info)
@@ -1493,9 +1469,9 @@ function checkMatchingFunctions(call::Call, info::SourceInfo)::MatchedFunction
   =#
   ErrorExt.rollBack("NFCall:checkMatchingFunctions")
   if listLength(matchedFunctions) > 1
-    @assign exactMatches = getExactMatches(matchedFunctions)
+     exactMatches = getExactMatches(matchedFunctions)
     if listEmpty(exactMatches)
-      @assign exactMatches = P_MatchedFunction.getExactVectorizedMatches(matchedFunctions)
+       exactMatches = P_MatchedFunction.getExactVectorizedMatches(matchedFunctions)
     end
     if listLength(exactMatches) > 1
       Error.addSourceMessage(
@@ -1508,23 +1484,35 @@ function checkMatchingFunctions(call::Call, info::SourceInfo)::MatchedFunction
       )
       fail()
     end
-    @assign matchedFunc = listHead(exactMatches)
+     matchedFunc = listHead(exactMatches)
   else
-    @assign matchedFunc = listHead(matchedFunctions)
+     matchedFunc = listHead(matchedFunctions)
   end
   #=  Overwrite the actual function name with the overload name for builtin functions.
   =#
   if isBuiltin(matchedFunc.func)
-    @assign func = matchedFunc.func
-    @assign func.path = nameConsiderBuiltin(func)
-    @assign matchedFunc.func = func
+    func = matchedFunc.func
+    local funcPath = nameConsiderBuiltin(func)
+    func = M_FUNCTION(funcPath,
+               func.node,
+               func.inputs,
+               func.outputs,
+               func.locals,
+               func.slots,
+               func.returnType,
+               func.attributes,
+               func.derivatives,
+               func.status,
+               func.callCounter)
+    #@assign matchedFunc.func = func
+    matchedFunc = MATCHED_FUNC(func, matchedFunc.args, matchedFunc.mk)
   end
   return matchedFunc
 end
 
 function typeArgs(call::Call, origin::ORIGIN_Type, info::SourceInfo)::Call
 
-  @assign call = begin
+   call = begin
     local arg::Expression
     local arg_ty::NFType
     local arg_var::VariabilityType
@@ -1534,20 +1522,20 @@ function typeArgs(call::Call, origin::ORIGIN_Type, info::SourceInfo)::Call
     local next_origin::ORIGIN_Type
     @match call begin
       UNTYPED_CALL(__) => begin
-        @assign typedArgs = nil
-        @assign next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
+         typedArgs = nil
+         next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
         for arg in call.arguments
-          @assign (arg, arg_ty, arg_var) = typeExp(arg, next_origin, info)
-          @assign typedArgs = _cons((arg, arg_ty, arg_var), typedArgs)
+           (arg, arg_ty, arg_var) = typeExp(arg, next_origin, info)
+           typedArgs = _cons((arg, arg_ty, arg_var), typedArgs)
         end
-        @assign typedArgs = listReverse(typedArgs)
-        @assign typedNamedArgs = nil
+         typedArgs = listReverse(typedArgs)
+         typedNamedArgs = nil
         for narg in call.named_args
-          @assign (name, arg) = narg
-          @assign (arg, arg_ty, arg_var) = typeExp(arg, next_origin, info)
-          @assign typedNamedArgs = _cons((name, arg, arg_ty, arg_var), typedNamedArgs)
+           (name, arg) = narg
+           (arg, arg_ty, arg_var) = typeExp(arg, next_origin, info)
+           typedNamedArgs = _cons((name, arg, arg_ty, arg_var), typedNamedArgs)
         end
-        @assign typedNamedArgs = listReverse(typedNamedArgs)
+         typedNamedArgs = listReverse(typedNamedArgs)
         ARG_TYPED_CALL(call.ref, typedArgs, typedNamedArgs, call.call_scope)
       end
     end
@@ -1558,7 +1546,7 @@ end
 function reductionFoldIterator(name::String, ty::NFType)::Expression
   local iterExp::Expression
 
-  @assign iterExp = CREF_EXPRESSION(
+   iterExp = CREF_EXPRESSION(
     ty,
     makeIterator(NAME_NODE(name), ty),
   )
@@ -1579,11 +1567,11 @@ function reductionFoldExpression(
   local fn::M_Function
 
   if isComplex(reductionType)
-    @assign foldExp = begin
+     foldExp = begin
       @match AbsynUtil.pathFirstIdent(P_Function.name(reductionFn)) begin
         "sum" => begin
           @match TYPE_COMPLEX(cls = op_node) = reductionType
-          @assign op_node = lookupElement("'+'", getClass(op_node))
+          @match ENTRY_INFO(op_node, _) = lookupElement("'+'", getClass(op_node))
           instFunctionNode(op_node)
           @match list(fn) = P_Function.typeNodeCache(op_node)
           SOME(CALL_EXPRESSION(makeTypedCall(
@@ -1602,7 +1590,7 @@ function reductionFoldExpression(
       end
     end
   else
-    @assign foldExp = begin
+     foldExp = begin
       @match AbsynUtil.pathFirstIdent(name(reductionFn)) begin
         "sum" => begin
           SOME(BINARY_EXPRESSION(
@@ -1657,9 +1645,9 @@ function reductionDefaultValue(fn::M_Function, ty::NFType)::Option{Expression}
   local defaultValue::Option{Expression}
 
   if isArray(ty)
-    @assign defaultValue = NONE()
+     defaultValue = NONE()
   else
-    @assign defaultValue = begin
+     defaultValue = begin
       @match AbsynUtil.pathFirstIdent(P_Function.name(fn)) begin
         "sum" => begin
           SOME(makeZero(ty))
@@ -1718,28 +1706,28 @@ function typeReduction(
   return (call, ty, variability) = begin
     @match call begin
       UNTYPED_REDUCTION(__) => begin
-        @assign variability = Variability.CONSTANT
-        @assign next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
+         variability = Variability.CONSTANT
+         next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
         for i in call.iters
-          @assign (iter, range) = i
-          @assign (range, _, iter_var) =
+           (iter, range) = i
+           (range, _, iter_var) =
             typeIterator(iter, range, origin, structural = false)
-          @assign variability = Variability.variabilityMax(variability, iter_var)
-          @assign iters = _cons((iter, range), iters)
+           variability = Variability.variabilityMax(variability, iter_var)
+           iters = _cons((iter, range), iters)
         end
-        @assign iters = listReverseInPlace(iters)
+         iters = listReverseInPlace(iters)
         #=  ExpOrigin.FOR is used here as a marker that this expression may contain iterators.
         =#
-        @assign next_origin = intBitOr(next_origin, ORIGIN_FOR)
-        @assign (arg, ty, exp_var) = typeExp(call.exp, next_origin, info)
-        @assign variability = Variability.variabilityMax(variability, exp_var)
+         next_origin = intBitOr(next_origin, ORIGIN_FOR)
+         (arg, ty, exp_var) = typeExp(call.exp, next_origin, info)
+         variability = Variability.variabilityMax(variability, exp_var)
         @match list(fn) = typeRefCache(call.ref)
         TypeCheck.checkReductionType(ty, P_Function.name(fn), call.exp, info)
-        @assign fold_id = Util.getTempVariableIndex()
-        @assign res_id = Util.getTempVariableIndex()
-        @assign default_exp = reductionDefaultValue(fn, ty)
-        @assign fold_exp = reductionFoldExpression(fn, ty, variability, fold_id, res_id)
-        @assign fold_tuple = (fold_exp, fold_id, res_id)
+         fold_id = Util.getTempVariableIndex()
+         res_id = Util.getTempVariableIndex()
+         default_exp = reductionDefaultValue(fn, ty)
+         fold_exp = reductionFoldExpression(fn, ty, variability, fold_id, res_id)
+         fold_tuple = (fold_exp, fold_id, res_id)
         (
           TYPED_REDUCTION(fn, ty, variability, arg, iters, default_exp, fold_tuple),
           ty,
@@ -1844,7 +1832,7 @@ function instIteratorCallArgs(
 )::Tuple{Expression, List{Tuple{InstNode, Expression}}}
   local iters::List{Tuple{InstNode, Expression}}
   local exp::Expression
-  @assign _ = begin
+   _ = begin
     local for_scope::InstNode
     @match args begin
       Absyn.FOR_ITER_FARG(__) => begin
@@ -1862,7 +1850,7 @@ function instIteratorCall(
   functionArgs::Absyn.FunctionArgs,
   scope::InstNode,
   info::SourceInfo,
-)::Expression
+  )::Expression
   local callExp::Expression
   local fn_name::Absyn.ComponentRef
   local fn_ref::ComponentRef
@@ -1872,7 +1860,7 @@ function instIteratorCall(
   #=  The parser turns {exp for i in ...} into $array(exp for i in ...), but we
   =#
   #=  change it to just array here so we can handle array constructors uniformly.=#
-  @assign fn_name = begin
+   fn_name = begin
     @match functionName begin
       Absyn.CREF_IDENT("\$array") => begin
         Absyn.CREF_IDENT("array", nil)
@@ -1894,12 +1882,10 @@ end
 
 function instNamedArg(absynArg::Absyn.NamedArg, scope::InstNode, info::SourceInfo)::NamedArg
   local arg::NamedArg
-
   local name::String
   local exp::Absyn.Exp
-
   @match Absyn.NAMEDARG(argName = name, argValue = exp) = absynArg
-  @assign arg = (name, Inst.instExp(exp, scope, info))
+  arg = (name, instExp(exp, scope, info))
   return arg
 end
 
@@ -1910,15 +1896,15 @@ function instArgs(
 )::Tuple{List{Expression}, List{NamedArg}}
   local namedArgs::List{NamedArg}
   local posArgs::List{Expression}
-  @debug "Calling inst args for $args"
-  @assign (posArgs, namedArgs) = begin
+  #@debug "Calling inst args for $args"
+   (posArgs, namedArgs) = begin
     @match args begin
       Absyn.FUNCTIONARGS(__) => begin
-        @debug "Matched function args"
-        @assign posArgs = list(instExp(a, scope, info) for a in args.args)
-        @debug "Positional arguments done"
-        @assign namedArgs = list(instNamedArg(a, scope, info) for a in args.argNames)
-        @debug "Named arguments done"
+        #@debug "Matched function args"
+         posArgs = list(instExp(a, scope, info) for a in args.args)
+        #@debug "Positional arguments done"
+         namedArgs = list(instNamedArg(a, scope, info) for a in args.argNames)
+        #@debug "Named arguments done"
         (posArgs, namedArgs)
       end
       _ => begin
@@ -1967,7 +1953,7 @@ function instNormalCall(
   =#
   #=  return just the first part of DynamicSelect
   =#
-  @assign callExp = begin
+   callExp = begin
     @match name begin
       "size" => begin
         makeSizeExp(args, named_args, info)
@@ -1984,10 +1970,94 @@ function instNormalCall(
         =#
         #=  Absyn.FOR_ITER_FARG and that is handled in instIteratorCall.
         =#
-        @assign (fn_ref, _, _) = instFunction(functionName, scope, info)
+         (fn_ref, _, _) = instFunction(functionName, scope, info)
         CALL_EXPRESSION(UNTYPED_CALL(fn_ref, args, named_args, scope))
       end
     end
   end
   return callExp
+end
+
+#= New code below =#
+
+function mapFoldExp(call::Call, func::MapFunc, foldArg::ArgT)  where {ArgT}
+  local outCall::Call
+  outCall = begin
+    local args::List{Expression}
+    local nargs::List{NamedArg}
+    local targs::List{TypedArg}
+    local tnargs::List{TypedArg}
+    local s::String
+    local e::Expression
+    local iters::List{Tuple{InstNode, Expression}}
+    local default_exp::Option{Expression}
+    local fold_exp::Tuple{Option{Expression}, String, String}
+    local oe::Option{Expression}
+    @match call begin
+      UNTYPED_CALL(__)  => begin
+        (args, foldArg) = ListUtil.map1Fold(call.arguments, Expression.mapFold, func, foldArg)
+        nargs = nil
+        for arg in call.named_args
+          (s, e) = arg
+          (e, foldArg) = Expression.mapFold(e, func, foldArg)
+          nargs = _cons((s, e), nargs)
+        end
+        UNTYPED_CALL(call.ref, args, listReverse(nargs), call.call_scope)
+      end
+
+      ARG_TYPED_CALL(__)  => begin
+        targs = nil
+        tnargs = nil
+        for arg in call.positional_args
+          (e, foldArg) = Expression.mapFold(arg.value, func, foldArg)
+          arg.value = e
+          targs = _cons(arg, targs)
+        end
+        for arg in call.named_args
+          (e, foldArg) = Expression.mapFold(arg.value, func, foldArg)
+          arg.value = e
+          targs = _cons(arg, targs)
+        end
+        ARG_TYPED_CALL(call.ref, listReverse(targs), listReverse(tnargs), call.call_scope)
+      end
+
+      TYPED_CALL(__)  => begin
+        (args, foldArg) = ListUtil.map1Fold(call.arguments, Expression.mapFold, func, foldArg)
+        TYPED_CALL(call.fn, call.ty, call.var, call.purity, args, call.attributes)
+      end
+
+      UNTYPED_ARRAY_CONSTRUCTOR(__)  => begin
+        (e, foldArg) = Expression.mapFold(call.exp, func, foldArg)
+        (iters, foldArg) = mapFoldIteratorsExp(call.iters, func, foldArg)
+        UNTYPED_ARRAY_CONSTRUCTOR(e, iters)
+      end
+
+      TYPED_ARRAY_CONSTRUCTOR(__)  => begin
+        (e, foldArg) = Expression.mapFold(call.exp, func, foldArg)
+        (iters, foldArg) = mapFoldIteratorsExp(call.iters, func, foldArg)
+        TYPED_ARRAY_CONSTRUCTOR(call.ty, call.var, call.purity, e, iters)
+      end
+
+      UNTYPED_REDUCTION(__)  => begin
+        (e, foldArg) = Expression.mapFold(call.exp, func, foldArg)
+        (iters, foldArg) = mapFoldIteratorsExp(call.iters, func, foldArg)
+        UNTYPED_REDUCTION(call.ref, e, iters)
+      end
+
+      TYPED_REDUCTION(__)  => begin
+        (e, foldArg) = Expression.mapFold(call.exp, func, foldArg)
+        (iters, foldArg) = mapFoldIteratorsExp(call.iters, func, foldArg)
+        (default_exp, foldArg) = Expression.mapFoldOpt(call.defaultExp, func, foldArg)
+        oe = Util.tuple31(call.foldExp)
+        if isSome(oe)
+          (oe, foldArg) = Expression.mapFoldOpt(oe, func, foldArg)
+          fold_exp = Util.applyTuple31(call.foldExp, (oe) -> Util.replace(arg = oe))
+        else
+          fold_exp = call.foldExp
+        end
+        TYPED_REDUCTION(call.fn, call.ty, call.var, call.purity, e, iters, default_exp, fold_exp)
+      end
+    end
+  end
+  (outCall, foldArg)
 end

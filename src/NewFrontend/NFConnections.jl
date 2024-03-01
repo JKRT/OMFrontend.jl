@@ -1,4 +1,3 @@
-
 @UniontypeDecl NFConnections
 
 const BrokenEdges = List
@@ -25,8 +24,9 @@ function makeConnectors(
   local cr::ComponentRef
   local expanded::Bool
 
-  @assign cr = evaluateSubscripts(cref)
-  #= If we are to expand the connectors or not. Let's assume not for now=#  #= Change by John (johti17) 2021-04-26=#
+  cr = evaluateSubscripts(cref)
+  #= If we are to expand the connectors or not. Let's assume we do for now=#
+  #= Change by John (johti17) 2021-04-26=#
   # if !Flags.isSet(Flags.NF_SCALARIZE)
   #   @assign connectors = list(Connector.fromCref(
   #     cr,
@@ -66,7 +66,7 @@ function collect(flatModel::FlatModel)::Tuple{FlatModel, Connections}
   local c1::Connector
   local c2::Connector
   local source::DAE.ElementSource
-  local eql::List{Equation} = nil
+  local eql::Vector{Equation} = Equation[]
   local cl1::List{Connector}
   local cl2::List{Connector}
   local e1::Expression
@@ -75,16 +75,15 @@ function collect(flatModel::FlatModel)::Tuple{FlatModel, Connections}
   local ty2::M_Type
   local b1::Bool
   local b2::Bool
-  #=  Collect all flow variables.
-  =#
+  #=  Collect all flow variables. =#
   for var in flatModel.variables
-    @assign comp = component(node(var.name))
+    comp = component(node(var.name))
     if isFlow(comp)
       c1 = fromFacedCref(
         var.name,
         var.ty,
         Face.INSIDE,
-        #=ElementSource_createElementSource(P_Component.info(comp)),=#
+        #=ElementSource.createElementSource(P_Component.info(comp)),=#
         DAE.emptyElementSource
       )
       @assign conns = addFlow(c1, conns)
@@ -93,7 +92,7 @@ function collect(flatModel::FlatModel)::Tuple{FlatModel, Connections}
   #=  Collect all connects.
   =#
   for eq in flatModel.equations
-    @assign eql = begin
+    eql = begin
       @match eq begin
         EQUATION_CONNECT(
           lhs = CREF_EXPRESSION(ty = ty1, cref = lhs),
@@ -104,47 +103,48 @@ function collect(flatModel::FlatModel)::Tuple{FlatModel, Connections}
             isDeleted(lhs) ||
             isDeleted(rhs)
           )
-            @assign cl1 = makeConnectors(lhs, ty1, source)
-            @assign cl2 = makeConnectors(rhs, ty2, source)
+            cl1 = makeConnectors(lhs, ty1, source)
+            cl2 = makeConnectors(rhs, ty2, source)
             for c1 in cl1
               @match _cons(c2, cl2) = cl2
-              @assign conns =
-                addConnection(CONNECTION(c1, c2), conns)
+              conns = addConnection(CONNECTION(c1, c2), conns)
             end
           end
           eql
         end
 
         _ => begin
-          _cons(eq, eql)
+          push!(eql, eq)
         end
       end
     end
   end
   if !listEmpty(conns.connections)
-    @assign flatModel.equations = listReverseInPlace(eql)
+    @assign flatModel.equations = eql
   end
   return (flatModel, conns)
 end
 
-function addBroken(broken::BrokenEdges, conns::Connections)::Connections
-  @assign conns.broken = broken
+function addBroken(broken::BrokenEdges, conns::Connections)
+  conns = CONNECTIONS(conns.connections, conns.flows, broken)
   return conns
 end
 
-function addFlow(conn::Connector, conns::Connections)::Connections
-  @assign conns.flows = _cons(conn, conns.flows)
+function addFlow(conn::Connector, conns::Connections)
+  local connsFlows = _cons(conn, conns.flows)
+  conns = CONNECTIONS(conns.connections, connsFlows, conns.broken)
   return conns
 end
 
-function addConnection(conn::Connection, conns::Connections)::Connections
-  @assign conns.connections = _cons(conn, conns.connections)
+function addConnection(conn::Connection, conns::Connections)
+  local connsConnections = _cons(conn, conns.connections)
+  conns = CONNECTIONS(connsConnections, conns.flows, conns.broken)
   return conns
 end
 
-function fromConnectionList(connl::List{<:Connection})::Connections
+function fromConnectionList(connl::List{<:Connection})
   local conns::Connections
-  @assign conns = CONNECTIONS(connl, nil, nil)
+  conns = CONNECTIONS(connl, nil, nil)
   return conns
 end
 

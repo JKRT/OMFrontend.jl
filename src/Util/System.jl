@@ -1,4 +1,3 @@
-
 #= /*
 * This file is part of OpenModelica.
 *
@@ -34,7 +33,7 @@ module System
 
 using MetaModelica
 using ExportAll
-  #= Forward declarations for uniontypes until Julia adds support for mutual recursion =#  
+  #= Forward declarations for uniontypes until Julia adds support for mutual recursion =#
   const ForkFunction = Function
 
 
@@ -1121,8 +1120,11 @@ function numProcessors() ::Integer
   result
 end
 
-""" #= Takes a list of inputs and produces a list of Boolean (true if the function call was successful). The function is called by not using forks (experimental version using threads because fork doesn't play nice). Only returns if all functions return. =#"""
-function launchParallelTasks(numThreads::Integer, inData::List{TI}, func::ForkFunction)  where {TI, TO}
+"""
+  Takes a list of inputs and produces a list of Boolean (true if the function call was successful).
+  The function is called by not using forks (experimental version using threads because fork doesn't play nice). Only returns if all functions return.
+"""
+function launchParallelTasks(numThreads::Integer, inData::List{TI}, func::ForkFunction)  where {TI}
   local result::List{TO}
 
   @error "TODO: Defined in the runtime"
@@ -1185,13 +1187,11 @@ function dladdr(symbol::T #= Function pointer =#)  where {T}
   local name::String
   local file::String
   local info::String
-
-  @assign (file, name) = _dladdr(symbol)
-  @assign info = file + ": " + name
+  (file, name) = _dladdr(symbol)
+  info = file + ": " + name
   function _dladdr(symbol::T #= Function pointer =#)  where {T}
     local name::String
     local file::String
-
     @error "TODO: Defined in the runtime"
     (file, name)
   end

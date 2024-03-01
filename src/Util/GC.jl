@@ -194,7 +194,7 @@ function getProfStats()::ProfStats
     return stats
   end
 
-  @assign (
+  (
     heapsize_full,
     free_bytes_full,
     unmapped_bytes,

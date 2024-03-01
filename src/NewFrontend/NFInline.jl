@@ -1,7 +1,7 @@
 #= /*
 * This file is part of OpenModelica.
 *
-* Copyright (c) 1998-2014, Open Source Modelica Consortium (OSMC),
+* Copyright (c) 1998-CurrentYear, Open Source Modelica Consortium (OSMC),
 * c/o Linköpings universitet, Department of Computer and Information Science,
 * SE-58183 Linköping, Sweden.
 *
@@ -29,7 +29,7 @@
 *
 */ =#
 
-
+#= Mostly written manualy (John) to adjust certain things in N.  =#
 function inlineCallExp(callExp::Expression)::Expression
   local result::Expression
   @assign result = begin
@@ -64,53 +64,96 @@ function inlineCallExp(callExp::Expression)::Expression
   return result
 end
 
+
+"""
+  Inline function for nonbuiltin callexps
+  @author johti17
+"""
+function inlineSimpleCall(callExp::Expression)::Expression
+  local result::Expression
+  local call::Call
+  local shouldInline = @match callExp begin
+    CALL_EXPRESSION(c && TYPED_CALL(fn, ty, var, arguments, attributes)) => begin
+      call = c
+      shouldInline = true && !(attributes.builtin || isExternal(c))
+#      println("Inline = $(shouldInline) for: " * toString(c))
+      #= We might want to inline more things, so check arguments anyway =#
+      if !shouldInline
+        local newArgs = list(map(arg, inlineSimpleCall) for arg in arguments)
+        callArguments = newArgs
+        TYPED_CALL(c.fn, c.ty, c.var, callArguments, c.attributes)
+        return CALL_EXPRESSION(call)
+      end
+      shouldInline
+    end
+    _ => false
+  end
+  result = if shouldInline
+    inlineCall(call)
+  else
+    callExp
+  end
+  return result
+end
+
+"""
+  Function to inline calls
+@author johti17
+"""
 function inlineCall(call::Call)::Expression
   local exp::Expression
-  @assign exp = begin
-    local fn::M_Function3
+  exp = begin
+    local fn::M_Function
     local arg::Expression
     local args::List{Expression}
     local inputs::List{InstNode}
     local outputs::List{InstNode}
     local locals::List{InstNode}
-    local body::List{Statement}
+    local body::Vector{Statement}
     local stmt::Statement
     @match call begin
       TYPED_CALL(
-        fn = fn && FUNCTION(inputs = inputs, outputs = outputs, locals = locals),
+        fn = fn && M_FUNCTION(inputs = inputs, outputs = outputs, locals = locals),
         arguments = args,
       ) => begin
-        @assign body = getBody(fn)
-        #=  This function can so far only handle functions with exactly one
-        =#
-        #=  statement and output and no local variables.
-        =#
-        if listLength(body) != 1 || listLength(outputs) != 1 || listLength(locals) > 0
-          @assign exp = CALL_EXPRESSION(call)
-          return
+        #= External functions can't be inlined =#
+        if isExternal(call)
+          exp = CALL_EXPRESSION(call)
+          return exp
+        end
+        body = getBody(fn)
+        #=  This function can so far only handle functions with at most one =#
+        #=  statement and output and no local variables. =#
+        if length(body) > 1 || listLength(outputs) != 1 || listLength(locals) > 0
+          exp = CALL_EXPRESSION(call)
+          return exp
         end
         Error.assertion(
           listLength(inputs) == listLength(args),
           getInstanceName() +
           " got wrong number of arguments for " +
-          AbsynUtil.pathString(P_Function.name(fn)),
+          AbsynUtil.pathString(name(fn)),
           sourceInfo(),
         )
-        @assign stmt = listHead(body)
-        #=  TODO: Instead of repeating this for each input we should probably
+        #=
+        If we have no body there is nothing to inline.
+        This might occur for instance for complex operators that are registered as calls in the frontend
+        -johti17 2023-03-26
         =#
-        #=        just build a lookup tree or hash table and go through the
-        =#
-        #=        statement once.
+        if isempty(body)
+          exp = CALL_EXPRESSION(call)
+          return exp
+        end
+        stmt = body[1]
+        #=
+        TODO: Instead of repeating this for each input we should probably
+          just build a lookup tree or hash table and go through the
+          statement once.
         =#
         for i in inputs
           @match _cons(arg, args) = args
-          @assign stmt = P_Statement.Statement.mapExp(
-            stmt,
-            () -> map(
-              func = (i, arg) -> replaceCrefNode(node = i, value = arg),
-            ),
-          )#= AbsyntoJulia.dumpPattern: UNHANDLED Abyn.Exp  =#
+          stmt = mapExp(stmt,
+                        (exp) -> map(exp, (exp) -> replaceCrefNode(exp, i, arg)))
         end
         getOutputExp(stmt, listHead(outputs), call)
       end
@@ -124,17 +167,15 @@ function inlineCall(call::Call)::Expression
 end
 
 function replaceCrefNode(exp::Expression, node::InstNode, value::Expression)::Expression
-
   local cr_node::InstNode
   local rest_cr::ComponentRef
   local subs::List{Subscript}
   local ty::M_Type
   local repl_ty::M_Type
-
   @assign exp = begin
     @match exp begin
       CREF_EXPRESSION(
-        cref = CREF(
+        cref = COMPONENT_REF_CREF(
           node = cr_node,
           subscripts = subs,
           restCref = rest_cr,
@@ -159,28 +200,26 @@ function replaceCrefNode(exp::Expression, node::InstNode, value::Expression)::Ex
   =#
   #=  Replace expressions in dimensions too.
   =#
-  @assign ty = typeOf(exp)
-  @assign repl_ty =
-    mapDims(ty, (node, value) -> replaceDimExp(node = node, value = value))
+  ty = typeOf(exp)
+  repl_ty =
+    mapDims(ty, (dimArg) -> replaceDimExp(dimArg, node, value))
   if !referenceEq(ty, repl_ty)
-    @assign exp = setType(repl_ty, exp)
+    exp = setType(repl_ty, exp)
   end
   return exp
 end
 
 function replaceDimExp(dim::Dimension, node::InstNode, value::Expression)::Dimension
-
-  @assign dim = begin
+  dim = begin
     local exp::Expression
     @match dim begin
       DIMENSION_EXP(__) => begin
-        @assign exp = map(
+        exp = map(
           dim.exp,
-          (node, value) -> replaceCrefNode(node = node, value = value),
+          (x) -> replaceCrefNode(x, node, value),
         )
         fromExp(exp, dim.var)
       end
-
       _ => begin
         dim
       end
@@ -191,14 +230,13 @@ end
 
 function getOutputExp(stmt::Statement, outputNode::InstNode, call::Call)::Expression
   local exp::Expression
-
-  @assign exp = begin
+  exp = begin
     local cr_node::InstNode
     local rest_cr::ComponentRef
     @match stmt begin
       ALG_ASSIGNMENT(
         lhs = CREF_EXPRESSION(
-          cref = CREF(
+          cref = COMPONENT_REF_CREF(
             node = cr_node,
             subscripts = nil(),
             restCref = rest_cr,
@@ -210,7 +248,6 @@ function getOutputExp(stmt::Statement, outputNode::InstNode, call::Call)::Expres
       )} => begin
         stmt.rhs
       end
-
       _ => begin
         CALL_EXPRESSION(call)
       end

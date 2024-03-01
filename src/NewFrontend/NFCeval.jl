@@ -151,6 +151,19 @@ end
 end
 
 """
+ Attempts to evaluate an expression.
+ Continues if it fails
+"""
+function tryEvalExp(exp::Expression)
+  local outExp = exp
+  try
+    outExp = evalExp(exp)
+  catch
+  end
+  return outExp
+end
+
+"""
   Evaluates an expression.
 """
 function evalExp(
@@ -403,16 +416,11 @@ function evalComponentBinding(
   else
     ORIGIN_CLASS
    end
-  println("EVALUATE:" * toString(cref))
   typeComponentBinding2(node, exp_origin, false)
   comp = component(node)
   binding = getBinding(comp)
-  println(typeof(binding))
-  println(toString((binding)))
-  println(toString("COMPONENT BEING EVALUATED", comp))
-  print("Parent was:")
   parent_cr = rest(cref)
-  println(toString(parent_cr))
+  #println(toString(parent_cr))
   if isUnbound(binding)
     #=
     In some cases we need to construct a binding for the node, for example when
@@ -478,7 +486,6 @@ function evalComponentBinding(
   if evaluated
      exp = subscriptEvaluatedBinding(exp, cref, evalSubscripts)
   end
-  println("DONE")
   return exp
 end
 
@@ -624,17 +631,17 @@ function evalComponentStartBinding(
 
   #=  Only use the start value if the component is a fixed parameter. =#
   var = variability(comp)
-  @info "Component was:" toString("Component", comp)
-  @info "It was named" toString(cref)
-  @info "Variability was" Variability.variabilityAsString(var)
+  #@info "Component was:" toString("Component", comp)
+  #@info "It was named" toString(cref)
+  #@info "Variability was" Variability.variabilityAsString(var)
   local notParamAndNotStructuralParam = (var != Variability.PARAMETER && var != Variability.STRUCTURAL_PARAMETER)
-  @info "notParamAndNotStructuralParam" notParamAndNotStructuralParam
+  #@info "notParamAndNotStructuralParam" notParamAndNotStructuralParam
   if (notParamAndNotStructuralParam) || !getFixedAttribute(comp)
     var != Variability.PARAMETER && var != Variability.STRUCTURAL_PARAMETER
     return outExp
   end
   #=  Look up \"start\" in the class. =#
-  @info "Checking start in the class"
+  #@info "Checking start in the class"
   try
     @match ENTRY_INFO(start_node, isImport) = lookupElement("start", getClass(node))
   catch e
@@ -712,13 +719,13 @@ function makeComponentBinding(
         =#
         #=  if it has one and fetch the binding from it instead.
         =#
-        try
-          exp = makeRecordFieldBindingFromParent(cref, target)
-          CEVAL_BINDING(exp)
-        catch e
-          println(e)
-          throw(e)
-        end
+        #try
+        exp = makeRecordFieldBindingFromParent(cref, target)
+        CEVAL_BINDING(exp)
+        #catch e
+          #println(e)
+          #throw(e)
+        #end
       end
       (
         TYPED_COMPONENT(
@@ -785,9 +792,9 @@ function makeRecordFieldBindingFromParent(
   local parent_cr::ComponentRef
   local parent_ty::M_Type
   parent_cr = rest(cref)
-  println("Make record fieldbinding from Parent")
-  println(toString(cref))
-  println(toString(parent_cr))
+  #println("Make record fieldbinding from Parent")
+  #println(toString(cref))
+  #println(toString(parent_cr))
   parent_ty = nodeType(parent_cr)
   #@match true = isRecord(arrayElementType(parent_ty))
   #= NEW =#

@@ -113,9 +113,9 @@ function instClassInProgramFM2(classPath::Absyn.Path, program::SCode.Program)::T
   =#
   local recompilationEnabled = recompilationDirectiveExists(flat_model.equations)
   local doccs = collectDOCCS(flat_model.equations)
-  for docc in doccs
-    println(toString(docc))
-  end
+  # for docc in doccs
+  #   println(toString(docc))
+  # end
   local modelWithDOCC  = ! isempty(doccs)
   if recompilationEnabled || modelWithDOCC
     @assign flat_model.scodeProgram = SOME(listHead(program))

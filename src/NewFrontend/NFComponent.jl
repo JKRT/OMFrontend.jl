@@ -203,12 +203,12 @@ function getFixedAttribute(component::Component)
   local binding::Binding
   #=  for parameters the default is fixed = true =#
   fixed = isParameter(component) || isStructuralParameter(component)
-  println("Fixed is true?:", fixed)
+  #println("Fixed is true?:", fixed)
   binding = lookupAttributeBinding("fixed", getClass(classInstance(component)))
-  println("binding?", toString(binding))
+  #println("binding?", toString(binding))
   #=  no fixed attribute present =#
   if isUnbound(binding)
-    println("Return fixed ", fixed)
+    #println("Return fixed ", fixed)
     return fixed
   end
   fixed = fixed && isTrue(getBindingExp(getExp(binding)))

@@ -58,7 +58,7 @@ function mapExp(dim::Dimension, func::MapFunc)::Dimension
     local e2::Expression
     @match dim begin
       DIMENSION_UNTYPED(dimension = e1) => begin
-        @assign e2 = map(e1, func)
+        e2 = map(e1, func)
         if referenceEq(e1, e2)
           dim
         else
@@ -71,7 +71,7 @@ function mapExp(dim::Dimension, func::MapFunc)::Dimension
         if referenceEq(e1, e2)
           dim
         else
-          DIMENSION_EXP(e2, dim.var)
+          fromExp(e2, dim.var)
         end
       end
 

@@ -344,9 +344,6 @@ function toFlatString(call::Call)::String
           list(toFlatString(arg) for arg in call.arguments),
           ", ",
         )
-        if nameVar == "Modelica.Mechanics.MultiBody.Frames.Quaternions.nullRotation"
-          println(arg_str)
-        end
         if isBuiltin(call.fn)
           stringAppendList(list(nameVar, "(", arg_str, ")"))
         else

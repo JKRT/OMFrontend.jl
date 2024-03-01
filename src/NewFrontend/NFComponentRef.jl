@@ -976,7 +976,7 @@ function firstName(cref::ComponentRef)::String
 end
 
 function updateNodeType(cref::ComponentRef)
-  local crefRet = if cref isa COMPONENT_REF_CREF
+  local crefRet = if cref isa COMPONENT_REF_CREF && isComponent(cref.node)
     crefTy = getType(cref.node)
     COMPONENT_REF_CREF(cref.node, cref.subscripts, crefTy, cref.origin, restCrefTmp)
   else

@@ -1977,3 +1977,87 @@ function instNormalCall(
   end
   return callExp
 end
+
+#= New code below =#
+
+function mapFoldExp(call::Call, func::MapFunc, foldArg::ArgT)  where {ArgT}
+  local outCall::Call
+  outCall = begin
+    local args::List{Expression}
+    local nargs::List{NamedArg}
+    local targs::List{TypedArg}
+    local tnargs::List{TypedArg}
+    local s::String
+    local e::Expression
+    local iters::List{Tuple{InstNode, Expression}}
+    local default_exp::Option{Expression}
+    local fold_exp::Tuple{Option{Expression}, String, String}
+    local oe::Option{Expression}
+    @match call begin
+      UNTYPED_CALL(__)  => begin
+        (args, foldArg) = ListUtil.map1Fold(call.arguments, Expression.mapFold, func, foldArg)
+        nargs = nil
+        for arg in call.named_args
+          (s, e) = arg
+          (e, foldArg) = Expression.mapFold(e, func, foldArg)
+          nargs = _cons((s, e), nargs)
+        end
+        UNTYPED_CALL(call.ref, args, listReverse(nargs), call.call_scope)
+      end
+
+      ARG_TYPED_CALL(__)  => begin
+        targs = nil
+        tnargs = nil
+        for arg in call.positional_args
+          (e, foldArg) = Expression.mapFold(arg.value, func, foldArg)
+          arg.value = e
+          targs = _cons(arg, targs)
+        end
+        for arg in call.named_args
+          (e, foldArg) = Expression.mapFold(arg.value, func, foldArg)
+          arg.value = e
+          targs = _cons(arg, targs)
+        end
+        ARG_TYPED_CALL(call.ref, listReverse(targs), listReverse(tnargs), call.call_scope)
+      end
+
+      TYPED_CALL(__)  => begin
+        (args, foldArg) = ListUtil.map1Fold(call.arguments, Expression.mapFold, func, foldArg)
+        TYPED_CALL(call.fn, call.ty, call.var, call.purity, args, call.attributes)
+      end
+
+      UNTYPED_ARRAY_CONSTRUCTOR(__)  => begin
+        (e, foldArg) = Expression.mapFold(call.exp, func, foldArg)
+        (iters, foldArg) = mapFoldIteratorsExp(call.iters, func, foldArg)
+        UNTYPED_ARRAY_CONSTRUCTOR(e, iters)
+      end
+
+      TYPED_ARRAY_CONSTRUCTOR(__)  => begin
+        (e, foldArg) = Expression.mapFold(call.exp, func, foldArg)
+        (iters, foldArg) = mapFoldIteratorsExp(call.iters, func, foldArg)
+        TYPED_ARRAY_CONSTRUCTOR(call.ty, call.var, call.purity, e, iters)
+      end
+
+      UNTYPED_REDUCTION(__)  => begin
+        (e, foldArg) = Expression.mapFold(call.exp, func, foldArg)
+        (iters, foldArg) = mapFoldIteratorsExp(call.iters, func, foldArg)
+        UNTYPED_REDUCTION(call.ref, e, iters)
+      end
+
+      TYPED_REDUCTION(__)  => begin
+        (e, foldArg) = Expression.mapFold(call.exp, func, foldArg)
+        (iters, foldArg) = mapFoldIteratorsExp(call.iters, func, foldArg)
+        (default_exp, foldArg) = Expression.mapFoldOpt(call.defaultExp, func, foldArg)
+        oe = Util.tuple31(call.foldExp)
+        if isSome(oe)
+          (oe, foldArg) = Expression.mapFoldOpt(oe, func, foldArg)
+          fold_exp = Util.applyTuple31(call.foldExp, (oe) -> Util.replace(arg = oe))
+        else
+          fold_exp = call.foldExp
+        end
+        TYPED_REDUCTION(call.fn, call.ty, call.var, call.purity, e, iters, default_exp, fold_exp)
+      end
+    end
+  end
+  (outCall, foldArg)
+end

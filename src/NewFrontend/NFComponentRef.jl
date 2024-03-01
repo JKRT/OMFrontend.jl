@@ -1164,8 +1164,6 @@ function nodesIncludingSplitSubs(cref::ComponentRef, accum::List = nil)
   end
 end
 
-
-
 function hasSplitSubscripts(cref::ComponentRef)
   res = @match cref begin
     COMPONENT_REF_CREF(__) => begin
@@ -1189,4 +1187,55 @@ function mapSubscripts(@nospecialize(cref::ComponentRef), func::Function)
     _ => cref
   end
   return res
+end
+
+#= New Code backported =#
+function hasSplitSubscripts(cref::ComponentRef)
+  local res::Bool
+  res = begin
+    @match cref begin
+      COMPONENT_REF_CREF(origin = Origin.CREF)  => begin
+        ListUtil.exist(cref.subscripts, Subscript.isSplitIndex) || hasSplitSubscripts(cref.restCref)
+      end
+      _  => begin
+        false
+      end
+    end
+  end
+  res
+end
+
+function hasNonModelSubscripts(cref::ComponentRef) ::Bool
+  local hasSubscripts::Bool
+  hasSubscripts = begin
+    @match cref begin
+      COMPONENT_REF_CREF(__) where ((isModel(cref.node)))  => begin
+        hasNonModelSubscripts(cref.restCref)
+      end
+      COMPONENT_REF_CREF(__)  => begin
+        ! listEmpty(cref.subscripts) || hasNonModelSubscripts(cref.restCref)
+      end
+      _  => begin
+        false
+      end
+    end
+  end
+  hasSubscripts
+end
+
+function expandSplitSubscripts(cref::ComponentRef)
+  () = begin
+    @match cref begin
+      CREF(origin = Origin.CREF)  => begin
+        cref.subscripts = expandSplitIndices(cref.subscripts, nil)
+        cref.restCref = expandSplitSubscripts(cref.restCref)
+        ()
+      end
+
+      _  => begin
+        ()
+      end
+    end
+  end
+  cref
 end

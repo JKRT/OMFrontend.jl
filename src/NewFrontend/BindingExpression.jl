@@ -5157,6 +5157,11 @@ function applySubscriptRange(subscript::Subscript, exp::Expression) ::Expression
         @match RANGE_EXPRESSION(ty = ty) = exp
         makeArray(liftArrayLeft(ty, fromInteger(listLength(expl))), expl)
       end
+      SUBSCRIPT_SPLIT_INDEX(__) => begin
+        @match RANGE_EXPRESSION(ty) = exp
+        ty = unliftArray(ty)
+        SUBSCRIPTED_EXP_EXPRESSION(exp, list(sub), ty, true #=TODO=#)
+      end
     end
   end
   outExp

@@ -110,42 +110,42 @@ function bindingExpMap(exp::Expression, evalFunc::EvalFunc)
   result
 end
 
-""" #= Constructs an array with the given dimensions by calling the given
-               function on the given expression for each combination of subscripts defined
-               by the dimensions. =#"""
-function vectorize(exp::Expression, dims::List{<:Dimension}, func::FuncT, accumSubs::List{<:Subscript} = nil) ::Expression
+"""
+ Constructs an array with the given dimensions by calling the given
+ function on the given expression for each combination of subscripts defined
+ by the dimensions.
+"""
+function vectorize(exp::Expression, dims::List{<:Dimension}, func::FuncT, accumSubs::List{<:Subscript} = nil)
   local outExp::Expression
-
   local iter::RangeIterator
   local dim::Dimension
   local rest_dims::List{Dimension}
   local expl::List{Expression}
   local e::Expression
-
   if listEmpty(dims)
      outExp = func(exp, listReverse(accumSubs))
   else
-     expl = nil
+    expl = nil
     @match _cons(dim, rest_dims) = dims
-     iter = P_RangeIterator.RangeIterator.fromDim(dim)
-    while P_RangeIterator.RangeIterator.hasNext(iter)
-       (iter, e) = P_RangeIterator.RangeIterator.next(iter)
-       e = vectorize(exp, rest_dims, func, _cons(SUBSCRIPT_INDEX(e), accumSubs))
-       expl = _cons(e, expl)
+    iter = fromDim(dim)
+    while hasNext(iter)
+      (iter, e) = next(iter)
+      e = vectorize(exp, rest_dims, func, _cons(SUBSCRIPT_INDEX(e), accumSubs))
+      expl = _cons(e, expl)
     end
-     outExp = makeExpArray(listReverseInPlace(expl))
+    outExp = makeExpArray(listReverseInPlace(expl))
   end
   outExp
 end
 
 """ #= Calculates the expression type and binding type of an expression given the
                number of dimensions it's been propagated through. =#"""
-function bindingExpType(exp::Expression, propagatedDimCount::Int) ::Tuple{M_Type, M_Type}
+function bindingExpType(exp::Expression, propagatedDimCount::Int)
   local bindingType::M_Type
   local expType::M_Type
   expType = typeOf(exp)
   bindingType = if propagatedDimCount > 0
-    Type.unliftArrayN(propagatedDimCount, expType)
+    unliftArrayN(propagatedDimCount, expType)
   else
     expType
   end
@@ -231,6 +231,20 @@ function nthEnumLiteral(ty::M_Type, n::Int) ::Expression
   exp
 end
 
+"""
+Replaces split indices in a subscripted expression with : subscripts,
+except for indices that reference nodes in the given list.
+"""
+function expandNonListedSplitIndices(exp::Expression, indicesToKeep::List{InstNode}, outExp::Expression)
+  outExp = @match exp begin
+    SUBSCRIPTED_EXP(split = true) => begin
+      applySubscripts(Subscript.expandSplitIndices(exp.subscripts, indicesToKeep), exp.exp);
+    end
+    _ => exp
+  end
+  return outExp
+end
+
 function retype(exp::Expression)
   exp = @match exp begin
     RANGE_EXPRESSION(__)  => begin
@@ -273,7 +287,7 @@ function splitRecordCref(exp::Expression) ::Expression
       end
       ARRAY_EXPRESSION(__)  => begin
         local outExpElements = list(splitRecordCref(e) for e in outExp.elements)
-        ARRAY_EXPRRESION(outExp.ty, outExpElements, outExp.literal)
+        ARRAY_EXPRESSION(outExp.ty, outExpElements, outExp.literal)
       end
       _  => begin
         exp
@@ -4557,11 +4571,19 @@ function toFlatString(@nospecialize(exp::Expression)) ::String
       end
 
       ARRAY_EXPRESSION(__)  => begin
-        "{" +  stringDelimitList(list(toFlatString(e) for e in exp.elements), ", ") + "}"
+        if !isempty(exp.elements)
+          "{" +  stringDelimitList(list(toFlatString(e) for e in exp.elements), ", ") + "}"
+        else
+          "{/* Empty array expression*/}"
+        end
       end
 
       MATRIX_EXPRESSION(__)  => begin
-        "[" + stringDelimitList(list(stringDelimitList(list(toFlatString(e) for e in el), ", ") for el in exp.elements), "; ") + "]"
+        if !isempty(exp.elements)
+           "[" + stringDelimitList(list(stringDelimitList(list(toFlatString(e) for e in el), ", ") for el in exp.elements), "; ") + "]"
+         else
+           "/*[Empty matrix expression*/]"
+         end
       end
 
       RANGE_EXPRESSION(__)  => begin
@@ -4663,7 +4685,7 @@ function toFlatString(@nospecialize(exp::Expression)) ::String
   str
 end
 
-function toString(exp::Expression) ::String
+function toString(exp::Expression)
   local str::String
   local t::M_Type
   local clk::ClockKind
@@ -4702,11 +4724,19 @@ function toString(exp::Expression) ::String
       end
 
       ARRAY_EXPRESSION(__)  => begin
-        "{" +  stringDelimitList(list(toString(e) for e in exp.elements), ", ") + "}"
+        if !isempty(exp.elements)
+          "{" +  stringDelimitList(list(toString(e) for e in exp.elements), ", ") + "}"
+        else
+          "{/*Empty Array Expression */}"
+        end
       end
 
       MATRIX_EXPRESSION(__)  => begin
-        "[" + stringDelimitList(list(stringDelimitList(list(toString(e) for e in el), ", ") for el in exp.elements), "; ") + "]"
+        if !isempty(exp.elements)
+          "[" + stringDelimitList(list(stringDelimitList(list(toString(e) for e in el), ", ") for el in exp.elements), "; ") + "]"
+        else
+          "*/ Empty Matrix Expression */"
+        end
       end
 
       RANGE_EXPRESSION(__)  => begin
@@ -5127,6 +5157,11 @@ function applySubscriptRange(subscript::Subscript, exp::Expression) ::Expression
         @match RANGE_EXPRESSION(ty = ty) = exp
         makeArray(liftArrayLeft(ty, fromInteger(listLength(expl))), expl)
       end
+      SUBSCRIPT_SPLIT_INDEX(__) => begin
+        @match RANGE_EXPRESSION(ty) = exp
+        ty = unliftArray(ty)
+        SUBSCRIPTED_EXP_EXPRESSION(exp, list(sub), ty, true #=TODO=#)
+      end
     end
   end
   outExp
@@ -5358,7 +5393,7 @@ function makeExpArray(elements::List{<:Expression}, isLiteral::Bool = false) ::E
   local ty::M_Type
   ty = typeOf(listHead(elements))
   ty = liftArrayLeft(ty, fromInteger(listLength(elements)))
-  exp = makeArray(ty, elements, isLiteral)
+  exp = makeArray(ty, elements, literal = isLiteral)
   exp
 end
 
@@ -5378,57 +5413,64 @@ function makeRealMatrix(values::List{<:List{<:AbstractFloat}}) ::Expression
   exp
 end
 
-function makeRealArray(values::List{<:AbstractFloat}) ::Expression
+function makeRealArray(values::List{AbstractFloat})
   local exp::Expression
    exp = makeArray(TYPE_ARRAY(TYPE_REAL(), list(fromInteger(listLength(values)))), list(REAL_EXPRESSION(v) for v in values); literal = true)
   exp
 end
 
-function makeIntegerArray(values::List{<:Int}) ::Expression
+function makeIntegerArray(values::List{Int})
   local exp::Expression
-   exp = makeArray(TYPE_ARRAY(TYPE_INTEGER(),
-                                     list(fromInteger(listLength(values)))), list(INTEGER_EXPRESSION(v) for v in values)
-                          ; literal = true)
+  exp = makeArray(TYPE_ARRAY(TYPE_INTEGER(),
+                             list(fromInteger(listLength(values)))), list(INTEGER_EXPRESSION(v) for v in values)
+                   ; literal = true)
   exp
 end
 
-function makeEmptyArray(ty::M_Type) ::Expression
+function makeEmptyArray(ty::M_Type)
   local outExp::Expression
    outExp = ARRAY_EXPRESSION(ty, nil, true)
   outExp
 end
 
-function makeArray(ty::NFType, expl::List{<:Expression}; literal::Bool = false)
+function makeExpArray(ty::NFType, expl::List{Expression}; literal::Bool = false)
   local outExp::Expression
    outExp = ARRAY_EXPRESSION(ty, expl, literal)
   outExp
 end
 
-function stringValue(exp::Expression) ::String
+"""
+Generic make array function
+"""
+function makeArray(ty::NFType, expl::List; literal::Bool = false)
+  local outExp::Expression
+  ARRAY_EXPRESSION(ty, expl, literal)
+end
+
+function stringValue(exp::Expression)
   local value::String
-  @match STRING_EXPRESSION(value = value) = exp
+  @match STRING_EXPRESSION(value = value) = ARRAY_EXPRESSION(ty, nil, literal)
   value
 end
 
-function makeInteger(value::Int) ::Expression
+function makeInteger(value::Int)
   local exp::Expression = INTEGER_EXPRESSION(value)
   exp
 end
 
-function integerValue(exp::Expression) ::Int
+function integerValue(exp::Expression)
   local value::Int
   @match INTEGER_EXPRESSION(value = value) = exp
   value
 end
 
-function makeReal(value::AbstractFloat) ::Expression
+function makeReal(value::AbstractFloat)
   local exp::Expression = REAL_EXPRESSION(value)
   exp
 end
 
-function realValue(exp::Expression) ::AbstractFloat
+function realValue(exp::Expression)
   local value::AbstractFloat
-
    value = begin
     @match exp begin
       REAL_EXPRESSION(__)  => begin
@@ -6651,13 +6693,11 @@ end
 
 function toFlatString(binding::Binding, prefix::String = "")
   local string::String
-
    string = begin
     @match binding begin
       UNBOUND(__) => begin
         ""
       end
-
       RAW_BINDING(__) => begin
         prefix + Dump.printExpStr(binding.bindingExp)
       end

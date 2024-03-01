@@ -23,6 +23,17 @@ mutable struct SUBSCRIPT_RAW_SUBSCRIPT <: NFSubscript
   subscript::Absyn.Subscript
 end
 
+
+mutable struct SUBSCRIPT_SPLIT_INDEX <: NFSubscript
+  node:: InstNode
+  dimIndex::Int
+end
+
+mutable struct SUBSCRIPT_SPLIT_PROXY <: NFSubscript
+  origin::InstNode
+  parent::InstNode
+end
+
 function toInteger(subscript::Subscript)::Int
   local int::Int
 
@@ -495,7 +506,6 @@ end
 
 function toStringList(subscripts::List{<:Subscript})::String
   local string::String
-
    string = ListUtil.toString(subscripts, toString, "", "[", ", ", "]", false)
   return string
 end

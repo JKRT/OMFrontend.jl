@@ -181,16 +181,16 @@ end
 
 
 
-function simplifySubscripts(cref::ComponentRef)::ComponentRef
+function simplifySubscripts(cref::ComponentRef; trim = false)::ComponentRef
   cref = begin
     local subs::List{Subscript}
     @match cref begin
       COMPONENT_REF_CREF(subscripts = nil(), origin = Origin.CREF) => begin
-        COMPONENT_REF_CREF(cref.node, cref.subscripts, cref.ty, cref.origin, simplifySubscripts(cref.restCref))
+        COMPONENT_REF_CREF(cref.node, cref.subscripts, cref.ty, cref.origin, simplifySubscripts(cref.restCref, trim = trim))
       end
       COMPONENT_REF_CREF(origin = Origin.CREF) => begin
         subs = list(simplifySubscript(s) for s in cref.subscripts)
-        COMPONENT_REF_CREF(cref.node, subs, cref.ty, cref.origin, simplifySubscripts(cref.restCref))
+        COMPONENT_REF_CREF(cref.node, subs, cref.ty, cref.origin, simplifySubscripts(cref.restCref, trim = trim))
       end
       _ => begin
         cref
@@ -379,14 +379,18 @@ function toFlatString(cref::ComponentRef)::String
   local strl::List{String} = nil
   (cr, subs) = stripSubscripts(cref)
   strl = toFlatString_impl(cr, strl)
-  #= TODO: The moving of the quotes make it work for scalarized models. However, it fails for nonscalarized. =#
-  str = stringAppendList(list(
-    "'",
-    stringDelimitList(strl, "."),
-    "'",
-    toFlatStringList(subs)
-  ))
   #Special case
+  if !Flags.isSet(Flags.NF_SCALARIZE)
+    str = stringAppendList(list(
+      "'",
+      stringDelimitList(strl, "."),
+      "'",
+      toFlatStringList(subs)
+    ))
+  else
+    str = stringAppendList(
+      list("'", stringDelimitList(strl, "."), toFlatStringList(subs), "'",))
+  end
   if str  == "'time'"
     return "time"
   end
@@ -972,7 +976,7 @@ function firstName(cref::ComponentRef)::String
 end
 
 function updateNodeType(cref::ComponentRef)
-  local crefRet = if cref isa COMPONENT_REF_CREF
+  local crefRet = if cref isa COMPONENT_REF_CREF && isComponent(cref.node)
     crefTy = getType(cref.node)
     COMPONENT_REF_CREF(cref.node, cref.subscripts, crefTy, cref.origin, restCrefTmp)
   else
@@ -1140,4 +1144,98 @@ function fromNode(
 )::ComponentRef
   local cref::ComponentRef = COMPONENT_REF_CREF(node, subs, ty, origin, COMPONENT_REF_EMPTY())
   return cref
+end
+
+function nodesIncludingSplitSubs(cref::ComponentRef, accum::List = nil)
+  local tmpNode
+  nodes = @match cref begin
+    COMPONENT_REF_CREF(__) => begin
+      for s in cref.subscripts
+        if isSplitIndex(s)
+          @match SUBSCRIPT_SPLIT_INDEX(tmpNode) = s
+          nodes = tmpNode <| nodes
+        end
+      end
+      nodesIncludingSplitSubs(cref.restCref, cref.node <| nodes);
+    end
+    _ => begin
+      nodes
+    end
+  end
+end
+
+function hasSplitSubscripts(cref::ComponentRef)
+  res = @match cref begin
+    COMPONENT_REF_CREF(__) => begin
+      ListUtil.exist(cref.subscripts, isSplitIndex)
+    end
+    _ => begin
+      false
+    end
+  end
+end
+
+function mapSubscripts(@nospecialize(cref::ComponentRef), func::Function)
+  res = @match cref begin
+    COMPONENT_REF_CREF(__) => begin
+      if !listEmpty(cref.subscripts)
+        @assign cref.subscripts = list(func(s) for s in cref.subscripts)
+      end
+      @assign cref.restCref = mapSubscripts(cref.restCref, func)
+      cref
+    end
+    _ => cref
+  end
+  return res
+end
+
+#= New Code backported =#
+function hasSplitSubscripts(cref::ComponentRef)
+  local res::Bool
+  res = begin
+    @match cref begin
+      COMPONENT_REF_CREF(origin = Origin.CREF)  => begin
+        ListUtil.exist(cref.subscripts, Subscript.isSplitIndex) || hasSplitSubscripts(cref.restCref)
+      end
+      _  => begin
+        false
+      end
+    end
+  end
+  res
+end
+
+function hasNonModelSubscripts(cref::ComponentRef) ::Bool
+  local hasSubscripts::Bool
+  hasSubscripts = begin
+    @match cref begin
+      COMPONENT_REF_CREF(__) where ((isModel(cref.node)))  => begin
+        hasNonModelSubscripts(cref.restCref)
+      end
+      COMPONENT_REF_CREF(__)  => begin
+        ! listEmpty(cref.subscripts) || hasNonModelSubscripts(cref.restCref)
+      end
+      _  => begin
+        false
+      end
+    end
+  end
+  hasSubscripts
+end
+
+function expandSplitSubscripts(cref::ComponentRef)
+  () = begin
+    @match cref begin
+      CREF(origin = Origin.CREF)  => begin
+        cref.subscripts = expandSplitIndices(cref.subscripts, nil)
+        cref.restCref = expandSplitSubscripts(cref.restCref)
+        ()
+      end
+
+      _  => begin
+        ()
+      end
+    end
+  end
+  cref
 end

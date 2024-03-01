@@ -496,7 +496,7 @@ function getTypeAttributes(cls::Class)::List{Modifier}
   return attributes
 end
 
-function getAttributes(cls::Class)::Attributes
+function getAttributes(cls::Class)
   local attr::Attributes
   attr = begin
     @match cls begin

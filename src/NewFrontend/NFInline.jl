@@ -29,7 +29,7 @@
 *
 */ =#
 
-#= Somewhat rewritten by me (John) to adjust certain things in N.  =#
+#= Mostly written manualy (John) to adjust certain things in N.  =#
 function inlineCallExp(callExp::Expression)::Expression
   local result::Expression
   @assign result = begin

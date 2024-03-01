@@ -104,7 +104,7 @@ function toStream(
     @assign s = IOStream_M.append(s, " = ")
     if printBindingType
       @assign s = IOStream_M.append(s, "(")
-      @assign s = IOStream_M.append(s, Type.toString(getType(var.binding)))
+      @assign s = IOStream_M.append(s, toString(getType(var.binding)))
       @assign s = IOStream_M.append(s, ") ")
     end
     @assign s = IOStream_M.append(s, toString(var.binding))

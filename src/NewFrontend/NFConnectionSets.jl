@@ -85,9 +85,9 @@ function fromConnections(connections)
   sets = ListUtil.fold1(connections.connections, addConnection, connections.broken, sets)
   # Add remaining flow variables to the sets, unless disabled by flag.
   # Do this after addConnection if not NF_SCALARIZE to get array dims right.
-  # if ! Flags.isSet(Flags.DISABLE_SINGLE_FLOW_EQ) && ! Flags.isSet(Flags.NF_SCALARIZE) then
-  # sets = ListUtil.fold(connections.flows, addSingleConnector, sets)
-  # end
+  #if ! Flags.isSet(Flags.DISABLE_SINGLE_FLOW_EQ) && ! Flags.isSet(Flags.NF_SCALARIZE) then
+  #sets = ListUtil.fold(connections.flows, addSingleConnector, sets)
+  #end
   #@debug "Sets after from connections $(string(sets))"
   return sets
 end

@@ -669,18 +669,17 @@ function typeDimension2(
       end
 
       DIMENSION_UNKNOWN(__) => begin
-        #=  If the dimension is unknown in a function, keep it unknown.
+        #=
+        If the dimension is unknown in a function, keep it unknown.
+          If the dimension is unknown in a class, try to infer it from the components binding.
         =#
-        #=  If the dimension is unknown in a class, try to infer it from the components binding.
-        =#
-         b = binding
-         parent_dims = 0
+        b = binding
+        parent_dims = 0
         if isUnbound(binding)
            (b, parent_dims) = getRecordElementBinding(component)
           if isUnbound(b)
              parent_dims = 0
-             b =
-              lookupAttributeBinding("start", getClass(component))
+             b = lookupAttributeBinding("start", getClass(component))
           end
         end
         #=  If the component has no binding, try to use its parent's binding
@@ -716,8 +715,7 @@ function typeDimension2(
                 setFlag(origin, ORIGIN_DIMENSION),
                 info,
               )
-              #=  If the deduced dimension is unknown, evaluate the binding and try again.
-              =#
+              #=  If the deduced dimension is unknown, evaluate the binding and try again. =#
               if isUnknown(dim) && !isError(ty_err)
                  exp = if isSome(oexp)
                   Util.getOption(oexp)
@@ -898,10 +896,7 @@ function typeDimensionUntyped(@nospecialize(dimensions::Vector{Dimension}),
     end
   else
     if var <= Variability.STRUCTURAL_PARAMETER
-      exp = evalExp(
-        exp,
-        EVALTARGET_DIMENSION(component, index, exp, info),
-      )
+      exp = tryEvalExp(exp)
     end
   end
   if !arrayAllEqual(exp)
@@ -1220,7 +1215,7 @@ function checkComponentBindingVariability(
 end
 
 function typeBinding(binding::Binding, origin::ORIGIN_Type)::Binding
-   binding = begin
+  binding = begin
     local exp::Expression
     local ty::NFType
     local var::VariabilityType

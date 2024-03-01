@@ -682,17 +682,14 @@ function assignVariable(variable::Expression, value::Expression)
     local val::Expression
     local vals::List{Expression}
     local var_ptr::Pointer{Expression}
-    #=  variable := value
-    =#
+    #=  variable := value =#
     @match (variable, value) begin
       (MUTABLE_EXPRESSION(exp = var_ptr), _) => begin
         P_Pointer.update(var_ptr, assignExp(P_Pointer.access(var_ptr), value))
         ()
       end
-
+      #=  (var1, var2, ...) := (value1, value2, ...) =#
       (TUPLE_EXPRESSION(__), TUPLE_EXPRESSION(elements = vals)) => begin
-        #=  (var1, var2, ...) := (value1, value2, ...)
-        =#
         for var in variable.elements
           @match _cons(val, vals) = vals
           assignVariable(var, val)
@@ -706,8 +703,7 @@ function assignVariable(variable::Expression, value::Expression)
         ),
         _,
       ) => begin
-        #=  variable[subscript1, subscript2, ...] := value
-        =#
+        #=  variable[subscript1, subscript2, ...] := value =#
         assignSubscriptedVariable(var_ptr, variable.subscripts, value)
         ()
       end

@@ -5,23 +5,23 @@ function verify(flatModel::FlatModel)
 #  return execStat(getInstanceName())
 end
 
-function expandCrefSet(crefs::List{<:ComponentRef})::List{ComponentRef}
+function expandCrefSet(crefs::List{<:ComponentRef})
   local outCrefs::List{ComponentRef} = nil
   local exp::Expression
   local expl::List{Expression}
   for cref in crefs
-    @assign exp = fromCref(cref)
-    @assign exp = P_ExpandExp.ExpandExp.expandCref(exp)
+    exp = fromCref(cref)
+    exp = expandCref(exp)
     if isArray(exp)
-      @assign expl = arrayElements(exp)
-      @assign outCrefs =
+      expl = arrayElements(exp)
+      outCrefs =
         listAppend(list(toCref(e) for e in expl), outCrefs)
     else
-      @assign outCrefs = _cons(cref, outCrefs)
+      outCrefs = _cons(cref, outCrefs)
     end
   end
-  @assign outCrefs = ListUtil.sort(outCrefs, isGreater)
-  @assign outCrefs = ListUtil.sortedUnique(outCrefs, isEqual)
+  outCrefs = ListUtil.sort(outCrefs, isGreater)
+  outCrefs = ListUtil.sortedUnique(outCrefs, isEqual)
   return outCrefs
 end
 

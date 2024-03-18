@@ -1072,13 +1072,13 @@ function typeCatCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{
   local tys::List{M_Type}
   local arg::Expression
   local var::VariabilityType
-  local mk::TypeCheck.MatchKind
+  local mk::MatchKindType
   local fn::M_Function
   local n::Int
   @match UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
   assertNoNamedParams("cat", named_args, info)
   if listLength(args) < 2
-    Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), "cat(Integer, Any[:,:], ...) => Any[:]"), info)
+    Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(toString(call), "cat(Integer, Any[:,:], ...) => Any[:]"), info)
   end
   @match _cons(arg, args) = args
   (arg, ty, variability) = typeExp(arg, origin, info)
@@ -1086,7 +1086,7 @@ function typeCatCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{
   if variability > Variability.PARAMETER
     Error.addSourceMessageAndFail(Error.NF_CAT_FIRST_ARG_EVAL, list(toString(arg), variabilityString(variability)), info)
   end
-  @match INTEGER_EXPRESSION(n) = Ceval.evalExp(arg, Ceval.P_EvalTarget.GENERIC(info))
+  @match INTEGER_EXPRESSION(n) = evalExp(arg, EVALTARGET_GENERIC(info))
   res = nil
   tys = nil
   for a in args

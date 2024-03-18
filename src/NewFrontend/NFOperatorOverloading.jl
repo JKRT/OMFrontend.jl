@@ -38,20 +38,19 @@ function instConstructor(path::Absyn.Path, recordNode::InstNode, info::SourceInf
   local ctor_path::Absyn.Path
   local ctor_overloaded::Bool
   local ctor_node::InstNode
-  #=  Check if the operator record has an overloaded constructor declared.
-  =#
+  #=  Check if the operator record has an overloaded constructor declared. =#
   try
-    @assign ctor_ref = lookupFunctionSimple("'constructor'", recordNode)
-    @assign ctor_overloaded = true
+    ctor_ref = lookupFunctionSimple("'constructor'", recordNode)
+    ctor_overloaded = true
   catch
-    @assign ctor_overloaded = false
+    ctor_overloaded = false
   end
   if ctor_overloaded
      (_, ctor_node) = instFunctionRef(ctor_ref, info)
-    @assign ctor_path = scopePath(ctor_node, includeRoot = true)
+    ctor_path = scopePath(ctor_node, includeRoot = true)
     for f in getCachedFuncs(ctor_node)
       checkOperatorConstructorOutput(f, lastBaseClass(recordNode), ctor_path, info)
-      @assign recordNode = cacheAddFunc(recordNode, f, false)
+      recordNode = cacheAddFunc(recordNode, f, false)
     end
   end
   #=  If it has an overloaded constructor, instantiate it and add the

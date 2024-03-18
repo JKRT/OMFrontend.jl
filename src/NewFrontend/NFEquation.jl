@@ -107,6 +107,12 @@ function isMultiLine(@nospecialize(eq::Equation))::Bool
   return singleLine
 end
 
+function toFlatString(eq::Equation; ident = "")
+  local s = IOStream_M.create(getInstanceName(), IOStream_M.LIST())
+  s = toFlatStream(eq, ident, s)
+  return IOStream_M.string(s)
+end
+
 function toFlatStreamList(
   eql::Vector{<:Equation},
   indent::String,
@@ -115,6 +121,10 @@ function toFlatStreamList(
   local multi_line::Bool
   local first::Bool = true
   for eq in eql
+    #=
+    Improve human parsability by separating statements that spans multiple
+    lines (like if-equations) with newlines.
+    =#
      multi_line = isMultiLine(eq)
     if first
        first = false
@@ -125,10 +135,6 @@ function toFlatStreamList(
      s = toFlatStream(eq, indent, s)
      s = IOStream_M.append(s, ";\\n")
   end
-  #=  Improve human parsability by separating statements that spans multiple
-  =#
-  #=  lines (like if-equations) with newlines.
-  =#
   return s
 end
 
@@ -137,22 +143,22 @@ function toFlatStream(@nospecialize(eq::Equation), indent::String, s)
    s = begin
     @match eq begin
       EQUATION_EQUALITY(__) => begin
-         s = IOStream_M.append(s, toFlatString(eq.lhs))
-         s = IOStream_M.append(s, " = ")
-         s = IOStream_M.append(s, toFlatString(eq.rhs))
+        s = IOStream_M.append(s, toFlatString(eq.lhs))
+        s = IOStream_M.append(s, " = /*Equality*/")
+        s = IOStream_M.append(s, toFlatString(eq.rhs))
         s
       end
 
       EQUATION_CREF_EQUALITY(__) => begin
          s = IOStream_M.append(s, toFlatString(eq.lhs))
-         s = IOStream_M.append(s, " = ")
+         s = IOStream_M.append(s, " = /* Cref Equality between $(typeof(eq.lhs.ty)) and $(typeof(eq.rhs.ty))*/")
          s = IOStream_M.append(s, toFlatString(eq.rhs))
         s
       end
 
       EQUATION_ARRAY_EQUALITY(__) => begin
          s = IOStream_M.append(s, toFlatString(eq.lhs))
-         s = IOStream_M.append(s, " = ")
+         s = IOStream_M.append(s, " = /* Array Equality */")
          s = IOStream_M.append(s, toFlatString(eq.rhs))
         s
       end
@@ -168,7 +174,7 @@ function toFlatStream(@nospecialize(eq::Equation), indent::String, s)
 
       EQUATION_FOR(__) => begin
          s = IOStream_M.append(s, "for ")
-         s = IOStream_M.append(s, name(eq.iterator))
+         s = IOStream_M.append(s, toFlatString(eq.iterator))
         if isSome(eq.range)
            s = IOStream_M.append(s, " in ")
            s = IOStream_M.append(
@@ -184,15 +190,15 @@ function toFlatStream(@nospecialize(eq::Equation), indent::String, s)
       end
 
       EQUATION_IF(__) => begin
-         s = IOStream_M.append(s, "if ")
-         s = toFlatStream(listHead(eq.branches), indent, s)
-        for b in listRest(eq.branches)
-           s = IOStream_M.append(s, indent)
-           s = IOStream_M.append(s, "elseif ")
-           s = toFlatStream(b, indent, s)
+        s = IOStream_M.append(s, "if ")
+        s = toFlatStream(eq.branches[1], indent, s)
+        for b in eq.branches[2:end]
+          s = IOStream_M.append(s, indent)
+          s = IOStream_M.append(s, "elseif ")
+          s = toFlatStream(b, indent, s)
         end
-         s = IOStream_M.append(s, indent)
-         s = IOStream_M.append(s, "end if")
+        s = IOStream_M.append(s, indent)
+        s = IOStream_M.append(s, "end if")
         s
       end
 
@@ -615,7 +621,7 @@ function mapExpBranch(branch::Equation_Branch, func::MapExpFn)::Equation_Branch
   return branch
 end
 
-function mapExp(@nospecialize(eq::Equation), func::MapExpFn)::Equation
+function mapExp(@nospecialize(eq::Equation), func::MapExpFn)
   eq = begin
     local e1::Expression
     local e2::Expression
@@ -933,7 +939,7 @@ function makeEquality(
   lhs::Expression,
   rhs::Expression,
   ty::M_Type,
-  src::DAE.ElementSource,
+  src::DAE.SOURCE,
 )::Equation
   local eq::Equation
    eq = EQUATION_EQUALITY(lhs, rhs, ty, src)
@@ -991,4 +997,13 @@ function toStream(branch::Equation_Branch, indent::String, s)
     end
   end
   return s
+end
+
+function makeCrefEquality(lhsCref::ComponentRef,
+                          rhsCref::ComponentRef,
+                          scope::InstNode,
+                          src::DAE.SOURCE)
+  local e1 = fromCref(lhsCref)
+  local e2 = fromCref(rhsCref)
+  return makeEquality(e1, e2, typeOf(e1), src)
 end

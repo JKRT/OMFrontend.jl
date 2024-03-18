@@ -789,10 +789,9 @@ end
 function expandBuiltinDiagonal(arg::Expression)::Tuple{Expression, Bool}
   local expanded::Bool
   local outExp::Expression
-
    (outExp, expanded) = expand(arg)
   if expanded
-    @assign outExp = Ceval.evalBuiltinDiagonal(outExp)
+    outExp = evalBuiltinDiagonal(outExp)
   end
   return (outExp, expanded)
 end
@@ -815,19 +814,19 @@ function expandBuiltinCat(args::List{<:Expression}, call::Call)::Tuple{Expressio
   This relies on the fact that Ceval.evalBuiltinCat doesn't actually do any
   actual constant evaluation, and works on non-constant arrays too as long
   as they're expanded.
-=#
+  =#
   local expanded::Bool
   local exp::Expression
   local expl::List{Expression} = nil
   (expl, expanded) = expandList(listRest(args))
   if expanded
-    exp =
-      evalBuiltinCat(listHead(args), expl, EVALTARGET_IGNORE_ERRORS())
+    exp = evalBuiltinCat(listHead(args), expl, EVALTARGET_IGNORE_ERRORS())
   else
     (exp, _) = expandGeneric(CALL_EXPRESSION(call))
   end
   return (exp, expanded)
 end
+
 
 function expand(
   fn::M_Function,
@@ -836,10 +835,8 @@ function expand(
   )::Tuple{Expression, Bool}
   local expanded::Bool
   local outExp::Expression
-
   local fn_path::Absyn.Path = nameConsiderBuiltin(fn)
-
-   (outExp, expanded) = begin
+  (outExp, expanded) = begin
     @match AbsynUtil.pathFirstIdent(fn_path) begin
       "cat" => begin
         expandBuiltinCat(args, call)
@@ -855,6 +852,10 @@ function expand(
 
       "pre" => begin
         expandBuiltinGeneric(call)
+      end
+
+      "fill" => begin
+        expandBuiltinFill(args)
       end
 
       "previous" => begin
@@ -879,11 +880,21 @@ function expandCall(call::Call, exp::Expression)::Tuple{Expression, Bool}
   (outExp, expanded) = begin
     @matchcontinue call begin
       TYPED_CALL(__) where (isBuiltin(call.fn) && isNotImpure(call.fn))  => begin
-         expand(call.fn, call.arguments, call)
+        expand(call.fn, call.arguments, call)
       end
       TYPED_ARRAY_CONSTRUCTOR(__) => begin
         expandArrayConstructor(call.exp, call.ty, call.iters)
       end
+      # #= Extension by John. Expand more stuff =#
+      # Remove if not in use
+      # TYPED_CALL(__) => begin
+      #   lst = nil
+      #   for arg in call.arguments
+      #     lst = expand(arg)[1] <| nil
+      #   end
+      #   @assign call.arguments = listReverse(lst)
+      #   expandGeneric(exp)
+      # end
       _ => begin
         expandGeneric(exp)
       end
@@ -1159,4 +1170,12 @@ function expand(@nospecialize(exp::Expression))
     end
   end
   return (exp, expanded)
+end
+
+
+function expandBuiltinFill(args::List)
+  local expanded = true
+  local outExp
+  outExp = fillArgs(listHead(args), listRest(args))
+  return (outExp, expanded)
 end

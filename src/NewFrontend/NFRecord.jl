@@ -47,7 +47,7 @@ function instDefaultConstructor(
   local locals::List{InstNode}
   local all_params::List{InstNode}
   local attr::DAE.FunctionAttributes
-  local status::Pointer{Signed} #= TODO: An issue if int is used.=#
+  local status::Pointer #= TODO: An issue if int is used.=#
   local ctor_node::InstNode
   local out_rec::InstNode
   local out_comp::Component
@@ -77,12 +77,11 @@ function instDefaultConstructor(
     EMPTY_BINDING,
     OUTPUT_ATTR,
     NONE(),
-    true, #= Not sure if this change should be made.... =#
+    true, #= Not sure if this change should be made.... Maybe set to true =#
     AbsynUtil.dummyInfo,
   )
   out_rec = fromComponent("out" + name(ctor_node), out_comp, ctor_node)
-  #=  Make a record constructor class and create a node for the constructor.
-  =#
+  #=  Make a record constructor class and create a node for the constructor. =#
   ctor_cls = makeRecordConstructor(all_params, out_rec)
   ctor_node = replaceClass(ctor_cls, ctor_node)
   classApply(ctor_node, setType, TYPE_COMPLEX(ctor_node, COMPLEX_CLASS()))
@@ -106,7 +105,7 @@ function instDefaultConstructor(
     ),
     false,
   )
-  return node
+  @assign node = node
 end
 
 function collectRecordParams(

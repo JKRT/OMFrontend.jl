@@ -300,23 +300,33 @@ function setDimensions(dims::List{<:Dimension}, component::Component)
   return component
 end
 
-function toFlatString(name::String, component::Component)
+function toFlatString(name::String, component::Component; inFunction = false)
   local str::String
-
-   str = begin
+  str = begin
     local def::SCode.Element
     @match component begin
       TYPED_COMPONENT(__) => begin
         toFlatString(component.attributes, component.ty) +
           toFlatString(component.ty) +
-        " '" +
-        name +
-        "'" +
-        toFlatString(component.binding, " = ")
+          " '" +
+          name +
+          "'" +
+          toFlatString(component.binding, " = "; inFunction = inFunction)
       end
 
       TYPE_ATTRIBUTE(__) => begin
-        name + P_Modifier.toFlatString(component.modifier, printName = false)
+        name + toFlatString(component.modifier, printName = false)
+      end
+      ITERATOR_COMPONENT(__) => begin
+        string("'", name, "'")
+      end
+      UNTYPED_COMPONENT(__) => begin
+        toFlatString(component.attributes, TYPE_UNKNOWN()) +
+          "Untyped" +
+          " '" +
+          name +
+          "'" +
+          toFlatString(component.binding, " = "; inFunction = inFunction)
       end
     end
   end
@@ -783,14 +793,15 @@ function hasBinding(component::Component, parent::InstNode = EMPTY_NODE())
   return b
 end
 
-function setBinding(binding::Binding, component::Component)
+function setBinding(@nospecialize(binding::Binding), @nospecialize(component::Component))
   @match component begin
     UNTYPED_COMPONENT(__) => begin
       component.binding = binding
       ()
     end
     TYPED_COMPONENT(__) => begin
-      component.binding = binding
+      #= New instance needed, thereby use of assign=#
+      @assign component.binding = binding
       ()
     end
     TYPE_ATTRIBUTE(__) => begin
@@ -1127,8 +1138,9 @@ function new(definition::SCode.Element)
   COMPONENT_DEF(definition, MODIFIER_NOMOD())
 end
 
-using MetaModelica
-using ExportAll
+function newIterator(iterType::Type, info::SourceInfo)
+  ITERATOR_COMPONENT(iterType, Variability.IMPLICITLY_DISCRETE, info);
+end
 
 function toFlatString(attr::Attributes, ty::M_Type; isTopLevel = true)
   local str::String = ""

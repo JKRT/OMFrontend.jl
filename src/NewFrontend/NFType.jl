@@ -504,7 +504,7 @@ function toFlatString(ty::M_Type)::String
         toString(ty.elementType) +
         "[" +
         stringDelimitList(
-          ListUtil.map(ty.dimensions, toString),
+          ListUtil.map(ty.dimensions, toFlatString),
           ", ",
         ) +
         "]"
@@ -558,6 +558,7 @@ function toFlatString(ty::M_Type)::String
 end
 
 function toFlatDeclarationStream(ty::NFType, s::IOStream_M.IOSTREAM)
+  #println("Type " * toString(ty))
   local index = 0
   @match ty begin
     TYPE_ENUMERATION(__) => begin

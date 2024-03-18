@@ -75,7 +75,7 @@ function inlineSimpleCall(callExp::Expression)::Expression
   local shouldInline = @match callExp begin
     CALL_EXPRESSION(c && TYPED_CALL(fn, ty, var, arguments, attributes)) => begin
       call = c
-      shouldInline = true && !(attributes.builtin || isExternal(c))
+      shouldInline = true && !(attributes.builtin || isExternal(c)) && isSimpleType(ty)
 #      println("Inline = $(shouldInline) for: " * toString(c))
       #= We might want to inline more things, so check arguments anyway =#
       if !shouldInline
@@ -254,4 +254,8 @@ function getOutputExp(stmt::Statement, outputNode::InstNode, call::Call)::Expres
     end
   end
   return exp
+end
+
+function isSimpleType(ty)
+  return ty isa TYPE_INTEGER || ty isa TYPE_REAL || ty isa TYPE_STRING || ty isa TYPE_REAL
 end

@@ -2,6 +2,8 @@ import Absyn
 import SCode
 import DAE
 
+import .InstUtil
+
 """
     Instantiates a class given by its fully qualified path, with the result being the model represented in the DAE format.
 """
@@ -23,7 +25,8 @@ function instClassInProgram(classPath::Absyn.Path, program::SCode.Program)
     Error.clearMessages()
     #=TODO: Add a @static flag later to supress this message. =#
     println("Internal stack trace:")
-    throw(e)
+    @error e
+    #throw(e)
   end
   (dae, daeFuncs) = convert(flat_model, funcs, name, InstNode_info(inst_cls))
   return (dae, daeFuncs)
@@ -46,8 +49,12 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
     println("Internal stack trace:")
     throw(e)
   else
-    print(Error.printMessagesStr(; printErrors = false #= Incase instatiate was successful,
-                                 errors that have been added but have been resolved during instatiation should not be printed.=#))
+    print(Error.printMessagesStr(;
+                                 #=
+                                 Incase instatiate was successful,
+                                 errors that have been added but have been resolved during instatiation
+                                 should not be printed. =#
+                                 printErrors = false))
     Error.clearMessages()
   end
   return (flat_model, funcs, inst_cls)
@@ -70,17 +77,22 @@ function instClassInProgramFM2(classPath::Absyn.Path, program::SCode.Program)::T
   if ! Flags.isSet(Flags.NF_SCALARIZE)
     FlagsUtil.set(Flags.NF_EXPAND_OPERATIONS, false)
     FlagsUtil.set(Flags.NF_EXPAND_FUNC_ARGS, false)
+  else
+    #=
+    Turn on function argument expansion by default
+    so that we do not miss some variables in function calls.
+    =#
+    FlagsUtil.set(Flags.NF_EXPAND_OPERATIONS, true)
+    FlagsUtil.set(Flags.NF_EXPAND_FUNC_ARGS, true)
   end
   #=  make sure we don't expand anything=#
   System.setUsesCardinality(false)
   System.setHasOverconstrainedConnectors(false)
   System.setHasStreamConnectors(false)
-  #=  Create a root node from the given top-level classes.
-  =#
+  #=  Create a root node from the given top-level classes. =#
   top = makeTopNode(program)
   name = AbsynUtil.pathString(classPath)
-  #=  Look up the class to instantiate and mark it as the root class.
-  =#
+  #=  Look up the class to instantiate and mark it as the root class. =#
   cls = lookupClassName(classPath, top, AbsynUtil.dummyInfo, false)
   cls = setNodeType(ROOT_CLASS(EMPTY_NODE()), cls)
   #=  Initialize the storage for automatically generated inner elements. =#
@@ -98,17 +110,18 @@ function instClassInProgramFM2(classPath::Absyn.Path, program::SCode.Program)::T
   #@info "Instantiate Expressions"
   instExpressions(inst_cls)
   # execStat("NFInst.instExpressions(" + name + ")")
-  #=  Mark structural parameters.
-  =#
-  updateImplicitVariability(inst_cls, false #== Flags.isSet(Flags.EVAL_PARAM) ==#)
+  #=  Mark structural parameters. =#
+  updateImplicitVariability(inst_cls, Flags.isSet(Flags.EVAL_PARAM))
   #execStat("NFInst.updateImplicitVariability")
   #=  Type the class. =#
   #"Type the class"
   typeClass(inst_cls, name)
+
   #@info "Flatten the model and evaluate constants in it."
   flat_model = flatten(inst_cls, name)
+  dumpFlatModel(flat_model, name * "afterFlatten")
   #=
-  Check if we are to performance recompilation. If true adds the SCode program to the flat model.
+  Check if we are to perform recompilation. If true adds the SCode program to the flat model.
   Also check if we have a Connections.branch statement in an if-equation
   =#
   local recompilationEnabled = recompilationDirectiveExists(flat_model.equations)
@@ -132,8 +145,6 @@ function instClassInProgramFM2(classPath::Absyn.Path, program::SCode.Program)::T
       for eq in doccs
         equationsWithoutDOCC = ListUtil.deleteMemberF(equationsWithoutDOCC, eq)
       end
-      #@debug length(flat_model.equations)
-      #@debug length(equationsWithoutDOCC)
       #=
       Check if the existing equations in the flat model should be extended.
       =#
@@ -166,12 +177,8 @@ function instClassInProgramFM2(classPath::Absyn.Path, program::SCode.Program)::T
               equationsWithoutDOCC
             end
           end
-          #@debug "Length of the flat model" length(flat_model.equations)
-          #@debug "Length of the flat model without docc" length(equationsWithoutDOCC)
         end
-        #=
-        Add the special equations to the flat model
-        =#
+        #= Add the special equations to the flat model =#
         @assign flat_model.DOCC_equations = arrayList(doccs)
         #= Contains the equations of the system before the virtual connection graph is calculated  =#
         @assign flat_model.unresolvedConnectEquations = equationsWithoutDOCC
@@ -183,8 +190,10 @@ function instClassInProgramFM2(classPath::Absyn.Path, program::SCode.Program)::T
     end
     #= Resolve the connections of the current system. =#
     flat_model = resolveConnections(flat_model, name)
+    dumpFlatModel(flat_model, name * "afterResolveConnections")
     flat_model =  if ! recompilationEnabled
       evaluate(flat_model)
+      dumpFlatModel(flat_model, name * "afterEval")
     else
       flat_model
     end
@@ -193,36 +202,42 @@ function instClassInProgramFM2(classPath::Absyn.Path, program::SCode.Program)::T
   else     #= Regular system without simulaton time reconfigurations =#
     #println("Connection handling...")
     flat_model = resolveConnections(flat_model, name)
+    dumpFlatModel(flat_model, name * "afterResolveConnections")
     flat_model = evaluate(flat_model)
+    dumpFlatModel(flat_model, name * "afterEval")
   end
   #= Do unit checking =#
   #TODO  @assign flat_model = UnitCheck.checkUnits(flat_model)
-  #@debug "Inline trivial calls in the model"
   flat_model = inlineSimpleCalls(flat_model)
+  dumpFlatModel(flat_model, name * "afterInlining")
   #  @info "Apply simplifications to the model"
   flat_model = simplifyFlatModel(flat_model)
+  dumpFlatModel(flat_model, name * "afterSimplify")
   #@debug "Collect a tree of all functions that are still used in the flat model"
   funcs = collectFunctions(flat_model, name)
   #=  Collect package constants that couldn't be substituted with their values =#
   #=  (e.g. because they where used with non-constant subscripts), and add them to the model. =#
   #@debug "Collect package constants"
   flat_model = collectConstants(flat_model, funcs)
-  if Flags.getConfigBool(Flags.FLAT_MODELICA)
-    printFlatString(flat_model, FunctionTreeImpl.listValues(funcs))
-  end
   #= Scalarize array components in the flat model.=#
   if Flags.isSet(Flags.NF_SCALARIZE)
-    #@debug "Scalarization"
     flat_model = scalarize(flat_model, name)
+    dumpFlatModel(flat_model, name * "afterScalarize")
   else
     #=  Remove empty arrays from variables =#
     @assign flat_model.variables = filter( (x) -> !isEmptyArray(x), flat_model.variables)
   end
+  #=
+  In some cases  array variables remain after scalarization.
+  This also seem to occur in the omc.
+  We readd these variables to the model
+  =#
+  InstUtil.restoreMissingArrayVariables!(flat_model)
   #@debug "Verify the model"
   verify(flat_model)
-  if Flags.isSet(Flags.NF_DUMP_FLAT)
-    print("FlatModel:\\n" + toString(flat_model) + "\\n")
-  end
+  dumpFlatModel(flat_model, name * "afterVerify")
+  #= TODO: Expand sliced crefs=#
+  #= TODO: Combine subscripts =#
   return (flat_model, funcs, inst_cls)
 end
 
@@ -1740,7 +1755,7 @@ function checkDeclaredComponentAttributes(attr::Attributes, parentRestriction::R
         assertNotInnerOuter(attr.innerOuter, component, parentRestriction)
         if parentRestriction.isExpandable
           assertNotFlowStream(attr.connectorType, component, parentRestriction)
-          attr.connectorType = intBitOr(attr.connectorType, ConnectorType.POTENTIALLY_PRESENT)
+          @assign attr.connectorType = intBitOr(attr.connectorType, ConnectorType.POTENTIALLY_PRESENT)
         end
         #=  Components of an expandable connector may not have the prefix 'flow'.
         =#
@@ -2213,12 +2228,13 @@ function instRecordConstructor(node::InstNode)
         if SCodeUtil.isOperatorRecord(definition(node))
           instConstructor(scopePath(node, includeRoot = true), node, InstNode_info(node))
         else
-          instDefaultConstructor(scopePath(node, includeRoot = true), node, InstNode_info(node))
+          node = instDefaultConstructor(scopePath(node, includeRoot = true), node, InstNode_info(node))
         end
         ()
       end
     end
   end
+  return node
 end
 
 function instBuiltinAttribute(attribute::Modifier, node::InstNode)
@@ -3372,5 +3388,14 @@ function markImplicitWhenExp_traverser(exp::Expression)
       end
       _  => ()
     end
+  end
+end
+
+"""
+  Dumps the flat model if the correct debug flag is activated.
+"""
+function dumpFlatModel(flatModel, phaseAsStr::String)
+  if Flags.isSet(Flags.NF_DUMP_FLAT)
+    write(string(phaseAsStr, ".mo"), replace(toFlatString(flatModel, nil), "\\n" => "\n"))
   end
 end

@@ -56,15 +56,13 @@ function simplifyTypeAttributes(typeAttributes)
 end
 
 function simplifyTypeAttribute(attribute::Tuple{<:String, Binding})::Tuple{String, Binding}
-
   local name::String
   local binding::Binding
   local sbinding::Binding
-
-   (name, binding) = attribute
-  @assign sbinding = simplifyBinding(binding)
+  (name, binding) = attribute
+  sbinding = simplifyBinding(binding)
   if !referenceEq(binding, sbinding)
-    @assign attribute = (name, sbinding)
+    attribute = (name, sbinding)
   end
   return attribute
 end
@@ -83,7 +81,6 @@ function simplifyDimension(dim::Dimension)::Dimension
           fromExp(e, dim.var)
         end
       end
-
       _ => begin
         dim
       end
@@ -125,12 +122,25 @@ function simplifyEquation(@nospecialize(eq::Equation), equations::Vector{Equatio
 
       EQUATION_ARRAY_EQUALITY(__) => begin
         @assign ty = mapDims(eq.ty, simplifyDimension)
-        if !Type.isEmptyArray(ty)
-          rhs = removeEmptyFunctionArguments(simplify(eq.rhs))
+        if !isEmptyArray(ty)
+          rhs = simplify(eq.rhs)
+          rhs = removeEmptyFunctionArguments(rhs)
           push!(equations,
                 EQUATION_ARRAY_EQUALITY(eq.lhs, rhs, ty, eq.source))
         end
         equations
+      end
+
+      EQUATION_FOR(SOME(e)) => begin
+        body = simplifyEquations(eq.body)
+        if ! containsExpList(body, (x) -> containsIterator(x, eq.iterator))
+          # Remove the surrounding loop if the equations inside aren't using the iterator.
+          equations = ArrayUtil.append_reverse(body, equations)
+        else
+          @assign eq.range = simplifyOpt(eq.range)
+          @assign eq.body = body
+          push!(equations, eq)
+        end
       end
 
       EQUATION_IF(__) => begin
@@ -362,7 +372,7 @@ function removeEmptyTupleElements(exp::Expression)
   local rExp
   rExp = @match exp begin
     TUPLE_EXPRESSION(ty = TYPE_TUPLE(types = tyl)) => begin
-      local expElements = list(@do_threaded_for if Type.isEmptyArray(t)
+      local expElements = list(@do_threaded_for if isEmptyArray(t)
                                  CREF_EXPRESSION(t, WILD())
                                else
                                  e
@@ -376,29 +386,21 @@ function removeEmptyTupleElements(exp::Expression)
   return rExp
 end
 
-function removeEmptyFunctionArguments(@nospecialize(exp::Expression), isArg::Bool = false)::Expression
+function removeEmptyFunctionArguments(@nospecialize(exp::Expression), isArg = false)
   local outExp::Expression
   local is_arg::Bool
   if isArg
-     () = begin
-      @match exp begin
-        CREF_EXPRESSION(__) where {(isEmptyArray(exp.ty))} => begin
-          @assign outExp =
-            fillType(exp.ty, INTEGER_EXPRESSION(0))
-          return
-          ()
-        end
-        _ => begin
-          ()
-        end
+    @match exp begin
+      CREF_EXPRESSION(__) where {isEmptyArray(exp.ty)} => begin
+        outExp = fillType(exp.ty, INTEGER_EXPRESSION(0))
+      end
+      _ => begin
+        ()
       end
     end
   end
-  @assign is_arg = isArg || isCall(exp)
-  @assign outExp = mapShallow(
-    exp,
-    (x, y = is_arg) -> removeEmptyFunctionArguments(x, y)
-  )
+  is_arg = isArg || isCall(exp)
+  outExp = mapShallow(exp, (x) -> removeEmptyFunctionArguments(x, is_arg))
   return outExp
 end
 

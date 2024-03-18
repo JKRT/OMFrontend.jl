@@ -188,7 +188,7 @@ function fromExpOpt(optExp::Option{<:Expression})::ExpressionIterator
   return iterator
 end
 
-function fromExpToExpressionIterator(exp::Expression)::ExpressionIterator
+function fromExpToExpressionIterator(exp::Expression)
   local iterator::ExpressionIterator
   iterator = begin
     local arr::List{Expression}
@@ -197,7 +197,7 @@ function fromExpToExpressionIterator(exp::Expression)::ExpressionIterator
     local expanded::Bool
     @match exp begin
       ARRAY_EXPRESSION(__) => begin
-        @match (ARRAY_EXPRESSION(elements = arr), expanded) = expand(exp)
+        (e, expanded) = expand(exp)
         if !expanded
           Error.assertion(
             false,
@@ -208,10 +208,10 @@ function fromExpToExpressionIterator(exp::Expression)::ExpressionIterator
             sourceInfo(),
           )
         end
-         (arr, slice) = nextArraySlice(arr)
+        (arr, slice) = nextArraySlice(e.elements)
         EXPRESSION_ARRAY_ITERATOR(arr, slice)
+        #makeArrayIterator(e)
       end
-
       CREF_EXPRESSION(__) => begin
         (e, _) = expandCref(exp)
         iterator = begin
@@ -219,7 +219,6 @@ function fromExpToExpressionIterator(exp::Expression)::ExpressionIterator
             ARRAY_EXPRESSION(__) => begin
               fromExpToExpressionIterator(e)
             end
-
             _ => begin
               EXPRESSION_SCALAR_ITERATOR(e)
             end
@@ -227,18 +226,56 @@ function fromExpToExpressionIterator(exp::Expression)::ExpressionIterator
         end
         iterator
       end
-
       _ => begin
-        (e,_) = expand(exp)
-        if referenceEq(e, exp)
-          EXPRESSION_SCALAR_ITERATOR(exp)
+        (e, expanded) = expand(exp)
+        if expanded
+          if referenceEq(e, exp)
+            EXPRESSION_SCALAR_ITERATOR(exp)
+          else
+            fromExpToExpressionIterator(e)
+          end
         else
-          fromExpToExpressionIterator(e)
+          EXPRESSION_NONE_ITERATOR()
         end
       end
     end
   end
   return iterator
+end
+
+"""
+John March 2024
+"""
+function makeArrayIterator(exp::Expression)
+  arrays = flattenArray(exp, nil)
+  if listEmpty(arrays)
+    iterator = EXPRESSION_ARRAY_ITERATOR(nil, 1, arrays)
+  else
+    iterator = EXPRESSION_ARRAY_ITERATOR(arrays, 1, listRest(arrays))
+  end
+end
+
+"""
+  John March 2024
+"""
+function flattenArray(exp::Expression, arrays::List{List})
+  arrays = flattenArray_impl(exp, nil)
+  arrays = listReverseInPlace(arrays)
+  while ! (listEmpty(arrays) && isempty(listHead(arrays)))
+    arrays = listRest(arrays)
+  end
+  return arrays
+end
+
+function flattenArray_impl(exp::Expression, arrays::List{List})
+  if isVector(exp.ty)
+    arrays = arrayElements(exp) <| arrays
+  else
+    for e in arrayElements(exp)
+      arrays = flattenArray_impl(e, arrays)
+    end
+  end
+  return arrays
 end
 
 """
@@ -276,4 +313,35 @@ function nextArraySlice(
     end
   end
   return (arrayArg, slice)
+end
+
+
+function toString(@nospecialize(iterator::NFExpressionIterator))
+  local buffer = IOBuffer()
+  println(buffer, "$(typeof(iterator)):")
+  @match iterator begin
+    EXPRESSION_ARRAY_ITERATOR(__) => begin
+      println(buffer, toString(iterator.array))
+      println(buffer, toString(iterator.slice))
+    end
+
+    EXPRESSION_SCALAR_ITERATOR(__) => begin
+      println(buffer, toString(iterator.exp))
+    end
+
+    EXPRESSION_EACH_ITERATOR(__) => begin
+      println(buffer, toString(iterator.exp))
+    end
+
+    EXPRESSION_NONE_ITERATOR(__) => begin
+      println(buffer, "NONE_ITERATOR")
+    end
+
+    EXPRESSION_REPEAT_ITERATOR(__) => begin
+      println(buffer, toString(iterator.current))
+      println(buffer, toString(iterator.all))
+    end
+  end
+  println(buffer, "end typeof(iterator):")
+  return String(take!(buffer))
 end

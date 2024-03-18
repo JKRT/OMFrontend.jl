@@ -97,6 +97,14 @@ function toFlatStream(cls::Class, clsNode::InstNode, s)
         s = IOStream_M.append(s, name)
         s = IOStream_M.append(s, "'\\n")
         for comp in getComponents(cls.elements)
+          if cls.restriction isa RESTRICTION_RECORD
+            #= No input allowed in comp. They are added by mistake I think earlier in the print process =#
+            compComp = component(comp)
+            if compComp.attributes.direction != Direction.NONE
+              @assign compComp.attributes.direction = Direction.NONE
+              updateComponent!(compComp, comp)
+            end
+          end
           s = IOStream_M.append(s, "  ")
           s = IOStream_M.append(s, toFlatString(comp))
           s = IOStream_M.append(s, ";\\n")
@@ -858,11 +866,9 @@ function initExpandedClass(cls::Class)::Class
   return cls
 end
 
-function makeRecordConstructor(fields::List{<:InstNode}, out::InstNode)::Class
+function makeRecordConstructor(fields::List{<:InstNode}, out::InstNode)
   local cls::Class
-
   local tree::ClassTree
-
   tree = fromRecordConstructor(fields, out)
   cls = INSTANCED_CLASS(
     TYPE_UNKNOWN(),

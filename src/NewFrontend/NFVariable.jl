@@ -24,6 +24,8 @@ function toFlatStream(var::Variable,
   s = IOStream_M.append(s, indent)
   if var.visibility == Visibility.PROTECTED
     s = IOStream_M.append(s, "protected ")
+  else
+    s = IOStream_M.append(s, "public ")
   end
   s = IOStream_M.append(s, toFlatString(var.attributes, var.ty; isTopLevel = isSimple(var.name)))
   s = IOStream_M.append(s, toFlatString(var.ty))
@@ -45,7 +47,7 @@ function toFlatStream(var::Variable,
           b,
         ))))
       if var_dims > binding_dims
-        s = append(s, "each ")
+        s = IOStream_M.append(s, "each ")
       end
       s = IOStream_M.append(s, Util.tuple21(a))
       s = IOStream_M.append(s, " = ")
@@ -185,6 +187,34 @@ function Variable_fromCref(cref::ComponentRef)::Variable
   attr = getAttributes(comp)
   cmt = comment(comp)
   infoVar = InstNode_info(nodeVar)
-  variable = VARIABLE(cref, ty, binding, vis, attr, nil, cmt, infoVar)
+  variable = VARIABLE(cref, ty, binding, vis, attr, Tuple{String, Binding}[], cmt, infoVar)
   return variable
+end
+
+function Variable_fromCrefNoBinding(cref::ComponentRef)::Variable
+  local variable::Variable
+  local nodeVar::InstNode
+  local comp::Component
+  local ty::M_Type
+  local binding::Binding
+  local vis::VisibilityType
+  local attr::Attributes
+  local cmt::Option{SCode.Comment}
+  local infoVar::SourceInfo
+  nodeVar = node(cref)
+  comp = component(nodeVar)
+  ty = getSubscriptedType(cref)
+  binding = getBinding(comp)
+  vis = visibility(nodeVar)
+  attr = getAttributes(comp)
+  cmt = comment(comp)
+  infoVar = InstNode_info(nodeVar)
+  variable = VARIABLE(cref, ty, EMPTY_BINDING, vis, attr, Tuple{String, Binding}[], cmt, infoVar)
+  return variable
+end
+
+function toFlatString(var::Variable; ident = "")
+  local s = IOStream_M.create(getInstanceName(), IOStream_M.LIST())
+  s = toFlatStream(var, ident, false, s)
+  return IOStream_M.string(s)
 end

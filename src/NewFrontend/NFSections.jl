@@ -273,8 +273,7 @@ function prependAlgorithm(
   return sections
 end
 
-
-function toFlatStream(sections, scopeName::Absyn.Path, s::IOStream_M.IOSTREAM)
+function toFlatStream(sections, scopeName::Absyn.Path, s::IOStream_M.IOSTREAM; inFunction = false)
   local ann::SCode.Annotation;
   local mod::SCode.Mod, modLib::SCode.Mod
   local modInc::SCode.Mod, modLibDir::SCode.Mod, modIncDir::SCode.Mod
@@ -282,7 +281,7 @@ function toFlatStream(sections, scopeName::Absyn.Path, s::IOStream_M.IOSTREAM)
     SECTIONS() => begin
       for alg in sections.algorithms
         s = IOStream_M.append(s, "algorithm\n")
-        s = toFlatStreamList(alg.statements, "  ", s)
+        s = toFlatStreamList(alg.statements, "  ", s; inFunction = inFunction)
       end
       s
     end
@@ -303,7 +302,6 @@ function toFlatStream(sections, scopeName::Absyn.Path, s::IOStream_M.IOSTREAM)
         s = IOStream_M.append(s, ")")
       end
       if isSome(sections.ann)
-#        print("Hello!\n")
         @match SOME(ann) = sections.ann
         mod = ann.modification
         modLib = SCodeUtil.filterSubMods(mod, (x) -> SCodeUtil.filterGivenSubModNames(x;namesToKeep=list("Library")))
@@ -357,11 +355,11 @@ function prependEquation(
         sections
       end
 
-      EMPTY(__) => begin
+      SECTIONS_EMPTY(__) => begin
         if isInitial
           SECTIONS(Equation[], Equation[eq], Algorithm[], Algorithm[])
         else
-          SECTIONS(list(eq), Equation[], Algorithm[], Algorithm[])
+          SECTIONS([eq], Equation[], Algorithm[], Algorithm[])
         end
       end
 

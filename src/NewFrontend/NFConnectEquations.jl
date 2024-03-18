@@ -63,9 +63,6 @@ function generateEquations(sets::Vector{<:List{<:Connector}})
         ListUtil.toString(set, toString, "", "{", ", ", "}", true),
         sourceInfo()
       )
-      # @error "Got connection set with invalid type: " + toString(cty) + ", " +  ListUtil.toString(set, toString, "", "{", ", ", "}", true)
-      # # )
-      # fail()
     end
     equations = vcat(listArray(set_eql), equations)
   end
@@ -214,17 +211,15 @@ end
    will be X = Y.A and X = Z.B. =#"""
 function generatePotentialEquations(elements::List{<:Connector})::List{Equation}
   local equations::List{Equation}
-
   local c1::Connector
-
-  @assign c1 = listHead(elements)
+  c1 = listHead(elements)
   if variability(c1) > Variability.PARAMETER
-    @assign equations = list(
+    equations = list(
       makeEqualityEquation(c1.name, c1.source, c2.name, c2.source)
       for c2 in listRest(elements)
     )
   else
-    @assign equations = list(
+    equations = list(
       makeEqualityAssert(c1.name, c1.source, c2.name, c2.source)
       for c2 in listRest(elements)
     )
@@ -241,11 +236,10 @@ function makeEqualityEquation(
   local equalityEq::Equation
 
   local source::DAE.ElementSource
-
-  @assign source = DAE.emptyElementSource #ElementSource.mergeSources(lhsSource, rhsSource) TODO
+  source = DAE.emptyElementSource #ElementSource.mergeSources(lhsSource, rhsSource) TODO
   #= source := ElementSource.addElementSourceConnect(source, (lhsCref, rhsCref));
   =#
-  @assign equalityEq = EQUATION_CREF_EQUALITY(lhsCref, rhsCref, source)
+  equalityEq = makeCrefEquality(lhsCref, rhsCref, EMPTY_NODE(), source)
   return equalityEq
 end
 
@@ -303,8 +297,16 @@ function generateFlowEquations(elements::List{<:Connector})::List{Equation}
   local c_rest::List{Connector}
   local src::DAE.ElementSource
   local sum::Expression
+  local iterators::List{InstNode} = nil
   @match _cons(c, c_rest) = elements
   src = c.source
+  #= Handle arrays =#
+  if isArray(c)
+    (iterators, ranges, subs) = makeIterators(c.name, arrayDims(c.ty))
+    subs = listReverseInPlace(subs)
+    @match c <| c_rest = list(addSubscripts(subs, e) for e in elements)
+  end
+
   if listEmpty(c_rest)
     sum = fromCref(c.name)
   else
@@ -318,15 +320,94 @@ function generateFlowEquations(elements::List{<:Connector})::List{Equation}
       src = DAE.emptyElementSource #ElementSource.mergeSources(src, e.source) TODO
     end
   end
-  equations = list(EQUATION_EQUALITY(sum, REAL_EXPRESSION(0.0), c.ty, src))
+  equations = list(EQUATION_EQUALITY(sum, REAL_EXPRESSION(0.0), arrayElementType(c.ty), src))
+  while ! listEmpty(iterators)
+    local forEq = EQUATION_FOR(listHead(iterators),
+                               SOME(listHead(ranges)),
+                               listArray(equations),
+                               #= TODO: Investigate EMPTY_NODE(), John 2024 march=#
+                               src)
+    #= Unroll the for loop using flattenEquation if we are scalarizing the model =#
+    equations = if Flags.isSet(Flags.NF_SCALARIZE)
+      arrayList(unrollFlowForLoop(forEq, COMPONENT_REF_EMPTY(), Equation[]))
+    else
+      list(forEq)
+    end
+    #equations = list(forEq)
+    iterators = listRest(iterators)
+    ranges = listRest(ranges)
+  end
+
   return equations
 end
+
+"""
+   Unrolls an equational for-loop for flow equations.
+   This is special since it forces the iterator replacements.
+   It differs from the normal unroll procedure in that it replaces all \$1 call with the correct value.
+"""
+function unrollFlowForLoop(forLoop::EQUATION_FOR,
+                           prefix::ComponentRef,
+                           equations::Vector{Equation})
+  local iter::InstNode
+  local body::Vector{Equation}
+  local unrolled_body::Vector{Equation}
+  local range::Expression
+  local range_iter::RangeIterator
+  local val::Expression
+  @match EQUATION_FOR(iterator = iter, range = SOME(range), body = body) = forLoop
+  range = flattenExp(range, prefix)
+  range = evalExp(range, EVALTARGET_RANGE(Equation_info(forLoop)))
+  range_iter = RangeIterator_fromExp(range)
+  while hasNext(range_iter)
+    (range_iter, val) = next(range_iter)
+    unrolled_body = Equation[]
+    for eq in body
+      teq = mapExp(eq, (exp) -> replaceFlowIterator(exp, forLoop.iterator, val))
+      push!(unrolled_body, teq)
+    end
+    equations = vcat(unrolled_body, equations)
+  end
+  return equations
+end
+
+
+"""
+Replaces flow iterators.
+Note, this assumes that the encompassing for loop is constructed in a certain way.
+@author johti17
+"""
+function replaceFlowIterator(exp::Expression,
+                             iterator::InstNode,
+                             iteratorValue::Expression)
+  local res = if exp isa CREF_EXPRESSION
+    @assign exp.cref.subscripts = list(SUBSCRIPT_INDEX(iteratorValue))
+    exp
+  elseif exp isa BINARY_EXPRESSION
+    expExp1 = replaceFlowIterator(exp.exp1,
+                                  iterator,
+                                  iteratorValue)
+    expExp2 = replaceFlowIterator(exp.exp2,
+                                  iterator,
+                                  iteratorValue)
+    BINARY_EXPRESSION(expExp1, exp.operator, expExp2)
+  elseif exp isa UNARY_EXPRESSION
+    expExp= replaceFlowIterator(exp.exp,
+                                iterator,
+                                iteratorValue)
+    UNARY_EXPRESSION(exp.operator, expExp)
+  else
+    exp
+  end
+  return res
+end
+
+
 
 """ #= Creates an expression from a connector element, which is the element itself
    if it's an inside connector, or the element negated if it's outside. =#"""
 function makeFlowExp(element::Connector)::Expression
   local exp::Expression
-
   local face::FaceType
 
   @assign exp = fromCref(element.name)

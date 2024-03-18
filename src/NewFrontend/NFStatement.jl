@@ -91,11 +91,7 @@ function isMultiLine(stmt::Statement)::Bool
   return multiLine
 end
 
-function toFlatStreamList(
-  stmtl::Vector{Statement},
-  indent::String,
-  s,
-)
+function toFlatStreamList(stmtl::Vector{Statement}, indent::String, s; inFunction = false)
   local prev_multi_line::Bool = false
   local multi_line::Bool
   local first::Bool = true
@@ -107,111 +103,108 @@ function toFlatStreamList(
       s = IOStream_M.append(s, "\\n")
     end
     prev_multi_line = multi_line
-    s = toFlatStream(stmt, indent, s)
+    s = toFlatStream(stmt, indent, s; inFunction = inFunction)
     s = IOStream_M.append(s, ";\\n")
   end
   return s
 end
 
-function toFlatStream(stmt::Statement,
-  indent::String,
-  s,
-)
+function toFlatStream(stmt::Statement, indent::String, s; inFunction = false)
   local str::String
-  @assign s = IOStream_M.append(s, indent)
-  @assign s = begin
+  s = IOStream_M.append(s, indent)
+  s = begin
     @match stmt begin
       ALG_ASSIGNMENT(__) => begin
-        @assign s = IOStream_M.append(s, toFlatString(stmt.lhs))
-        @assign s = IOStream_M.append(s, " := ")
-        @assign s = IOStream_M.append(s, toFlatString(stmt.rhs))
+        s = IOStream_M.append(s, toFlatString(stmt.lhs; inFunction = inFunction))
+        s = IOStream_M.append(s, " := ")
+        s = IOStream_M.append(s, toFlatString(stmt.rhs; inFunction = inFunction))
         s
       end
 
       ALG_FUNCTION_ARRAY_INIT(__) => begin
-        @assign s = IOStream_M.append(s, "array init")
-        @assign s = IOStream_M.append(s, stmt.name)
+        s = IOStream_M.append(s, "array init")
+        s = IOStream_M.append(s, stmt.name)
         s
       end
 
       ALG_FOR(__) => begin
-        @assign s = IOStream_M.append(s, "for ")
-        @assign s = IOStream_M.append(s, name(stmt.iterator))
+        s = IOStream_M.append(s, "for ")
+        s = IOStream_M.append(s, name(stmt.iterator))
         if isSome(stmt.range)
-          @assign s = IOStream_M.append(s, " in ")
-          @assign s = IOStream_M.append(
+          s = IOStream_M.append(s, " in ")
+          s = IOStream_M.append(
             s,
-            toFlatString(Util.getOption(stmt.range)),
+            toFlatString(Util.getOption(stmt.range); inFunction = true),
           )
         end
-        @assign s = IOStream_M.append(s, " loop\\n")
-        @assign s = toFlatStreamList(stmt.body, indent + "  ", s)
-        @assign s = IOStream_M.append(s, indent)
-        @assign s = IOStream_M.append(s, "end for")
+        s = IOStream_M.append(s, " loop\\n")
+        s = toFlatStreamList(stmt.body, indent + "  ", s; inFunction = inFunction)
+        s = IOStream_M.append(s, indent)
+        s = IOStream_M.append(s, "end for")
         s
       end
 
       ALG_IF(__) => begin
-        @assign str = "if "
+        str = "if "
         for b in stmt.branches
-          @assign s = IOStream_M.append(s, str)
-          @assign s =
-            IOStream_M.append(s, toFlatString(Util.tuple21(b)))
-          @assign s = IOStream_M.append(s, " then\\n")
-          @assign s = toFlatStreamList(Util.tuple22(b), indent + "  ", s)
-          @assign s = IOStream_M.append(s, indent)
-          @assign str = "elseif "
+          s = IOStream_M.append(s, str)
+          s =
+            IOStream_M.append(s, toFlatString(Util.tuple21(b); inFunction = inFunction))
+          s = IOStream_M.append(s, " then\\n")
+          s = toFlatStreamList(Util.tuple22(b), indent + "  ", s; inFunction = inFunction)
+          s = IOStream_M.append(s, indent)
+          str = "elseif "
         end
-        @assign s = IOStream_M.append(s, "end if")
+        s = IOStream_M.append(s, "end if")
         s
       end
 
       ALG_WHEN(__) => begin
-        @assign str = "when "
+        str = "when "
         for b in stmt.branches
-          @assign s = IOStream_M.append(s, str)
-          @assign s =
-            IOStream_M.append(s, toFlatString(Util.tuple21(b)))
-          @assign s = IOStream_M.append(s, " then\\n")
-          @assign s = toFlatStreamList(Util.tuple22(b), indent + "  ", s)
-          @assign s = IOStream_M.append(s, indent)
-          @assign str = "elsewhen "
+          s = IOStream_M.append(s, str)
+          s =
+            IOStream_M.append(s, toFlatString(Util.tuple21(b)); inFunction = inFunction)
+          s = IOStream_M.append(s, " then\\n")
+          s = toFlatStreamList(Util.tuple22(b), indent + "  ", s; inFunction = inFunction)
+          s = IOStream_M.append(s, indent)
+          str = "elsewhen "
         end
-        @assign s = IOStream_M.append(s, "end when")
+        s = IOStream_M.append(s, "end when")
         s
       end
 
       ALG_ASSERT(__) => begin
-        @assign s = IOStream_M.append(s, "assert(")
-        @assign s =
+        s = IOStream_M.append(s, "assert(")
+        s =
           IOStream_M.append(s, toFlatString(stmt.condition))
-        @assign s = IOStream_M.append(s, ", ")
-        @assign s = IOStream_M.append(s, toFlatString(stmt.message))
-        @assign s = IOStream_M.append(s, ", ")
-        @assign s = IOStream_M.append(s, toFlatString(stmt.level))
-        @assign s = IOStream_M.append(s, ")")
+        s = IOStream_M.append(s, ", ")
+        s = IOStream_M.append(s, toFlatString(stmt.message; inFunction = inFunction))
+        s = IOStream_M.append(s, ", ")
+        s = IOStream_M.append(s, toFlatString(stmt.level; inFunction = inFunction))
+        s = IOStream_M.append(s, ")")
         s
       end
 
       ALG_TERMINATE(__) => begin
-        @assign s = IOStream_M.append(s, "terminate(")
-        @assign s = IOStream_M.append(s, toFlatString(stmt.message))
-        @assign s = IOStream_M.append(s, ")")
+        s = IOStream_M.append(s, "terminate(")
+        s = IOStream_M.append(s, toFlatString(stmt.message; inFunction = inFunction))
+        s = IOStream_M.append(s, ")")
         s
       end
 
       ALG_NORETCALL(__) => begin
-        IOStream_M.append(s, toFlatString(stmt.exp))
+        IOStream_M.append(s, toFlatString(stmt.exp; inFunction = inFunction))
       end
 
       ALG_WHILE(__) => begin
-        @assign s = IOStream_M.append(s, "while ")
-        @assign s =
+        s = IOStream_M.append(s, "while ")
+        s =
           IOStream_M.append(s, toFlatString(stmt.condition))
-        @assign s = IOStream_M.append(s, " then\\n")
-        @assign s = toFlatStreamList(stmt.body, indent + "  ", s)
-        @assign s = IOStream_M.append(s, indent)
-        @assign s = IOStream_M.append(s, "end while")
+        s = IOStream_M.append(s, " then\\n")
+        s = toFlatStreamList(stmt.body, indent + "  ", s; inFunction = inFunction)
+        s = IOStream_M.append(s, indent)
+        s = IOStream_M.append(s, "end while")
         s
       end
 
@@ -267,9 +260,9 @@ function toStream(stmt::Statement, indent::String, s)
   @assign s = begin
     @match stmt begin
       ALG_ASSIGNMENT(__) => begin
-        s = IOStream_M.append(s, toString(stmt.lhs))
+        s = IOStream_M.append(s, toString(stmt.lhs); inFunction = inFunction)
         s = IOStream_M.append(s, " := ")
-        s = IOStream_M.append(s, toString(stmt.rhs))
+        s = IOStream_M.append(s, toString(stmt.rhs); inFunction = inFunction)
         s
       end
 
@@ -286,11 +279,11 @@ function toStream(stmt::Statement, indent::String, s)
           s = IOStream_M.append(s, " in ")
           s = IOStream_M.append(
             s,
-            toString(Util.getOption(stmt.range)),
+            toString(Util.getOption(stmt.range); inFunction = inFunction),
           )
         end
         s = IOStream_M.append(s, " loop\\n")
-        s = toStreamList(stmt.body, indent + "  ", s)
+        s = toStreamList(stmt.body, indent + "  ", s; inFunction = inFunction)
         s = IOStream_M.append(s, indent)
         s = IOStream_M.append(s, "end for")
         s
@@ -301,7 +294,7 @@ function toStream(stmt::Statement, indent::String, s)
         for b in stmt.branches
           s = IOStream_M.append(s, str)
           s =
-            IOStream_M.append(s, toString(Util.tuple21(b)))
+            IOStream_M.append(s, toString(Util.tuple21(b); inFunction = inFunction))
           s = IOStream_M.append(s, " then\\n")
           s = toStreamList(Util.tuple22(b), indent + "  ", s)
           s = IOStream_M.append(s, indent)

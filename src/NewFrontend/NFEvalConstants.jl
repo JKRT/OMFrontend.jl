@@ -187,7 +187,7 @@ function evaluateEquation(@nospecialize(eq::Equation), constVariability::Variabi
       EQUATION_FOR(__) => begin
         local eqRange = Util.applyOption(
           eq.range,
-          (constVariability) -> evaluateExp(constVariability = constVariability),
+          (x) -> evaluateExp(x, constVariability),
         )
         local eqBody = evaluateEquations(eq.body, constVariability)
         EQUATION_FOR(eq.iterator, eqRange, eqBody, eq.source)

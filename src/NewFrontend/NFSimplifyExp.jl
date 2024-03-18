@@ -1,5 +1,5 @@
 function simplify(@nospecialize(exp::Expression))
-  exp = begin
+  local tmp::Expression = begin
     @match exp begin
       CREF_EXPRESSION(__) => begin
         local expCref = simplifySubscripts(exp.cref)
@@ -17,7 +17,10 @@ function simplify(@nospecialize(exp::Expression))
       end
 
       RECORD_EXPRESSION(__) => begin
-        exp.elements = Expression[simplify(e) for e in exp.elements]
+        #println("Record expression")
+        #println(toString(exp))
+        #exp.elements = Expression[simplify(e) for e in exp.elements]
+        simplifyRecord(exp)
         exp
       end
 
@@ -30,7 +33,8 @@ function simplify(@nospecialize(exp::Expression))
       end
 
       BINARY_EXPRESSION(__) => begin
-        simplifyBinary(exp)
+        seb = simplifyBinary(exp)
+        seb
       end
 
       UNARY_EXPRESSION(__) => begin
@@ -81,7 +85,7 @@ function simplify(@nospecialize(exp::Expression))
       end
     end
   end
-  return exp
+  return tmp
 end
 
 function simplifyOpt(exp::Option{<:Expression})
@@ -148,13 +152,12 @@ function simplifyCall(callExp::Expression)
       TYPED_CALL(arguments = args) where {(!isExternal(call))} => begin
         if Flags.isSet(Flags.NF_EXPAND_FUNC_ARGS)
           args = list(if hasArrayCall(arg)
-            arg
-          else
-            P_ExpandExp.ExpandExp.expand(arg)
-          end for arg in args)
+                        arg
+                      else
+                        Base.first(expand(arg))
+                      end for arg in args)
         end
-        #=  HACK, TODO, FIXME! handle DynamicSelect properly in OMEdit, then disable this stuff!
-        =#
+        #=  HACK, TODO, FIXME! handle DynamicSelect properly in OMEdit, then disable this stuff! =#
         if Flags.isSet(Flags.NF_API) && !Flags.isSet(Flags.NF_API_DYNAMIC_SELECT)
           if stringEq(
             "DynamicSelect",
@@ -172,11 +175,14 @@ function simplifyCall(callExp::Expression)
         #=  Use Ceval for builtin pure functions with literal arguments.
         =#
         if builtin
-          if is_pure && ListUtil.all(args, isLiteral)
+          local scalarize = Flags.isSet(Flags.NF_SCALARIZE)
+          if (is_pure && ListUtil.all(args, isLiteral)) && (scalarize && isScalar(call.ty))
             try
-              callExp = Ceval.evalCall(call, P_EvalTarget.IGNORE_ERRORS())
+              callExp = evalCall(call, EVALTARGET_IGNORE_ERRORS())
               callExp = stripBindingInfo(callExp)
-            catch
+            catch e
+              @info "DBG print to remove $e"
+              callExp = CALL_EXPRESSION(call)
             end
           else
             if Flags.isSet(Flags.NF_SCALARIZE)
@@ -341,14 +347,13 @@ function simplifyArrayConstructor(call::Call)
   iters = list((Util.tuple21(i), simplify(Util.tuple22(i))) for i in iters)
   outExp = begin
     @matchcontinue iters begin
-      (iter, e) <| nil() => begin
-        @match TYPE_ARRAY(dimensions = dim <| nil) = typeOf(e)
+      (iter, e) <| T where{T isa Nil} => begin
+        @match TYPE_ARRAY(dimensions = dim <| T) where {T isa Nil} = typeOf(e)
         dim_size = size(dim)
         if dim_size == 0
           outExp = makeEmptyArray(ty)
         elseif dim_size == 1
-          @match (ARRAY_EXPRESSION(elements = list(e)), _) =
-            expand(e)
+          @match (ARRAY_EXPRESSION(elements = list(e)), _) = expand(e)
           exp = replaceIterator(exp, iter, e)
           exp = makeArray(ty, list(exp))
           outExp = simplify(exp)
@@ -361,9 +366,8 @@ function simplifyArrayConstructor(call::Call)
         =#
         outExp
       end
-
       _ => begin
-         exp = simplify(exp)
+        exp = simplify(exp)
         CALL_EXPRESSION(TYPED_ARRAY_CONSTRUCTOR(ty, var, exp, iters))
       end
     end
@@ -422,13 +426,12 @@ function simplifyBinary(binaryExp::Expression)
   local se2::Expression
   local op::Operator
   @match BINARY_EXPRESSION(e1, op, e2) = binaryExp
-   se1 = simplify(e1)
-   se2 = simplify(e2)
-   binaryExp = simplifyBinaryOp(se1, op, se2)
-#  if Flags.isSet(Flags.NF_EXPAND_OPERATIONS) && TODO: John
-#     !hasArrayCall(binaryExp)
-#    @assign binaryExp = P_ExpandExp.ExpandExp.expand(binaryExp)
-#  end
+  se1 = simplify(e1)
+  se2 = simplify(e2)
+  binaryExp = simplifyBinaryOp(se1, op, se2)
+  if Flags.isSet(Flags.NF_EXPAND_OPERATIONS) && !hasArrayCall(binaryExp)
+    (binaryExp, _) = expand(binaryExp)
+  end
   return binaryExp
 end
 
@@ -596,18 +599,15 @@ function simplifyBinaryPow(exp1::Expression, op::Operator, exp2::Expression)
 end
 
 function simplifyUnary(unaryExp::Expression)
-
   local e::Expression
   local se::Expression
   local op::Operator
-
   @match UNARY_EXPRESSION(op, e) = unaryExp
    se = simplify(e)
    unaryExp = simplifyUnaryOp(se, op)
-#  if Flags.isSet(Flags.NF_EXPAND_OPERATIONS) && TODO John
-#     !hasArrayCall(unaryExp)
-#     unaryExp = P_ExpandExp.ExpandExp.expand(unaryExp)
-#  end
+  if Flags.isSet(Flags.NF_EXPAND_OPERATIONS) && !hasArrayCall(unaryExp)
+    (unaryExp, _) = expand(unaryExp)
+ end
   return unaryExp
 end
 
@@ -765,7 +765,6 @@ function simplifyLogicUnary(unaryExp::Expression)
 end
 
 function simplifyRelation(relationExp::Expression)
-
   local e1::Expression
   local e2::Expression
   local se1::Expression
@@ -838,16 +837,27 @@ function simplifyCast(exp::Expression, ty::NFType)
   return castExp
 end
 
-function simplifySubscriptedExp(subscriptedExp::Expression)
+function simplifySubscriptedExp(subscriptedExp::Expression; split = false)
   local e::Expression
   local subs::List{Subscript}
   local ty::NFType
   @match SUBSCRIPTED_EXP_EXPRESSION(e, subs, ty) = subscriptedExp
   subscriptedExp = simplify(e)
-  subscriptedExp = applySubscripts(
-    list(simplifySubscript(s) for s in subs),
-    subscriptedExp
-  )
+  subs = simplifyList(subs, arrayDims(typeOf(e)))
+  cond = ! listEmpty(subs) && isArray(subscriptedExp) && ! isEmptyArray(subscriptedExp) &&
+    ArrayUtil.allEqual(listArray(arrayElements(subscriptedExp)), isEqual)
+  if !split && !(ListUtil.all(subs, isLiteral))
+    while cond
+      @match h <| subs = subs
+      subscriptedExp = listGet(arrayElements(subscriptedExp), 1)
+      cond = ! listEmpty(subs) && isArray(subscriptedExp) && ! isEmptyArray(subscriptedExp) &&
+        ArrayUtil.allEqual(listArray(arrayElements(subscriptedExp)), isEqual)
+    end
+    if listEmpty(subs)
+      return subscriptedExp
+    end
+  end
+  subscriptedExp = applySubscripts(subs, subscriptedExp)
   return subscriptedExp
 end
 
@@ -859,4 +869,21 @@ function simplifyTupleElement(tupleExp::Expression)
   e = simplify(e)
   tupleExp = tupleElement(e, ty, index)
   return tupleExp
+end
+
+
+function simplifyRecord(recordExpr::RECORD_EXPRESSION)
+  local args = if Flags.isSet(Flags.NF_EXPAND_FUNC_ARGS)
+    Expression[if hasArrayCall(arg)
+                 arg
+               else
+                 Base.first(expand(arg))
+               end for arg in recordExpr.elements]
+
+  else
+    recordExpr.elements
+  end
+  #= TODO, possible use apply here. =#
+  recordExpr.elements = Expression[simplify(e) for e in args]
+  return recordExpr
 end

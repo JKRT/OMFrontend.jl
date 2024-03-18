@@ -379,7 +379,7 @@ function assertState(
   endState::LookupState,
   expectedState::LookupState,
   node::InstNode,
-  name::LookupStateName,
+  lookupName::LookupStateName,
   info::SourceInfo,
 )
   return  () = begin
@@ -447,14 +447,14 @@ function assertState(
       (LOOKUP_STATE_COMP_CLASS(__), LOOKUP_STATE_FUNC(__)) => begin
         #=  Found a class via a component, but expected a function.
         =#
-        printFoundWrongTypeError(endState, expectedState, name, info)
+        printFoundWrongTypeError(endState, expectedState, lookupName, info)
         fail()
       end
 
       (LOOKUP_STATE_COMP_FUNC(__), _) => begin
         #=  Found a function via a component, but didn't expect a function.
         =#
-        @assign name_str = P_LookupStateName.toString(name)
+        @assign name_str = toString(lookupName)
         Error.addSourceMessage(Error.FOUND_FUNC_NAME_VIA_COMP_NONCALL, list(name_str), info)
         fail()
       end
@@ -466,7 +466,7 @@ function assertState(
         =#
         Error.addSourceMessage(
           Error.FOUND_CLASS_NAME_VIA_COMPONENT,
-          list(P_LookupStateName.toString(name)),
+          list(P_LookupStateName.toString(lookupName)),
           info,
         )
         fail()
@@ -489,7 +489,7 @@ function assertState(
         @assign name_str = name(node)
         Error.addSourceMessage(
           Error.CLASS_IN_COMPOSITE_COMP_NAME,
-          list(name_str, P_LookupStateName.toString(name)),
+          list(name_str, P_LookupStateName.toString(lookupName)),
           info,
         )
         fail()
@@ -501,7 +501,7 @@ function assertState(
         @assign name_str = name(node)
         Error.addSourceMessage(
           Error.LOOKUP_CLASS_VIA_COMP_COMP,
-          list(name_str, P_LookupStateName.toString(name)),
+          list(name_str, toString(lookupName)),
           info,
         )
         fail()
@@ -513,7 +513,7 @@ function assertState(
         @assign name_str = name(node)
         Error.addSourceMessage(
           Error.CLASS_IN_COMPOSITE_COMP_NAME,
-          list(name_str, P_LookupStateName.toString(name)),
+          list(name_str, toString(lookupName)),
           info,
         )
         fail()
@@ -525,7 +525,7 @@ function assertState(
         @assign name_str = name(node)
         Error.addSourceMessage(
           Error.LOOKUP_CLASS_VIA_COMP_COMP,
-          list(name_str, P_LookupStateName.toString(name)),
+          list(name_str, toString(lookupName)),
           info,
         )
         fail()
@@ -536,10 +536,9 @@ function assertState(
         =#
         #=  identifier, e.g. A.B.C where B or C are imported names.
         =#
-        @assign name_str = name(node)
+        name_str = name(node)
         Error.addSourceMessage(
-          Error.IMPORT_IN_COMPOSITE_NAME,
-          list(name_str, P_LookupStateName.toString(name)),
+          Error.IMPORT_IN_COMPOSITE_NAME, list(name_str, toString(lookupName)),
           info,
         )
         fail()
@@ -550,7 +549,7 @@ function assertState(
       end
 
       _ => begin
-        printFoundWrongTypeError(endState, expectedState, name, info)
+        printFoundWrongTypeError(endState, expectedState, lookupName, info)
         fail()
       end
     end
@@ -676,14 +675,14 @@ end
 function assertClass(
   endState::LookupState,
   node::InstNode,
-  name::Absyn.Path,
+  namePath::Absyn.Path,
   info::SourceInfo
 )
   return assertState(
     endState,
     LOOKUP_STATE_CLASS(),
     node,
-    LOOKUP_STATE_NAME_PATH(name),
+    LOOKUP_STATE_NAME_PATH(namePath),
     info
   )
 end

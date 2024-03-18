@@ -444,19 +444,19 @@ function flattenSimpleComponent(
   =#
   #=  move the binding into an equation. This avoids having to scalarize the binding.
   =#
-  # if !Flags.isSet(Flags.NF_API)
-  #   if isArray(ty) && isBound(binding) && var >= Variability.DISCRETE
-  #     @assign name = prefixCref(comp_node, ty, nil, prefix)
-  #     @assign eq = EQUATION_ARRAY_EQUALITY(
-  #       CREF_EXPRESSION(ty, name),
-  #       getTypedExp(binding),
-  #       ty,
-  #       ElementSource.createElementSource(info),
-  #     )
-  #     @assign sections = prependEquation(eq, sections)
-  #     @assign binding = EMPTY_BINDING
-  #   end
-  # end
+  if !Flags.isSet(Flags.NF_API)
+    if isArray(ty) && isBound(binding) && var >= Variability.DISCRETE
+      name = prefixCref(comp_node, ty, nil, prefix)
+      eq = EQUATION_ARRAY_EQUALITY(
+        CREF_EXPRESSION(ty, name),
+        getTypedExp(binding),
+        ty,
+        ElementSource.createElementSource(info),
+      )
+      sections = prependEquation(eq, sections)
+      binding = EMPTY_BINDING
+    end
+  end
   name = prefixScope(comp_node, ty, nil, prefix)
   ty_attrs = [flattenTypeAttribute(m, name) for m in typeAttrs]
   #=  Set fixed = true for parameters that are part of a record instance whose
@@ -656,41 +656,42 @@ function flattenArray(
       prefix,
       visibility,
       binding,
-      nil,
-      SECTIONS(nil, nil, nil, nil),
+      Variable[],
+      SECTIONS(Equation[], Equation[], Algorithm[], Algorithm[]),
+      nil #= No structural submodels =#
     )
     for v in vrs
       @assign v.ty = liftArrayLeftList(v.ty, dimensions)
-      @assign vars = _cons(v, vars)
+      vars = push!(vars, v)
     end
      () = begin
       @match sects begin
-        P_Sections.Sections.SECTIONS(__) => begin
+        SECTIONS(__) => begin
           #=  add dimensions to the types
           =#
           #=  vectorize equations
           =#
-          for eqn in listReverse(sects.equations)
-            @assign sections = P_Sections.Sections.prependEquation(
+          for eqn in sects.equations #listReverse(sects.equations)
+            sections = prependEquation(
               vectorizeEquation(eqn, dimensions, prefix),
               sections,
             )
           end
-          for eqn in listReverse(sects.initialEquations)
-            @assign sections = P_Sections.Sections.prependEquation(
+          for eqn in sects.initialEquations #listReverse(sects.initialEquations)
+            sections = prependEquation(
               vectorizeEquation(eqn, dimensions, prefix),
               sections,
               true,
             )
           end
-          for alg in listReverse(sects.algorithms)
-            @assign sections = P_Sections.Sections.prependAlgorithm(
+          for alg in sects.initialEquations #listReverse(sects.algorithms)
+            sections = prependAlgorithm(
               vectorizeAlgorithm(alg, dimensions, prefix),
               sections,
             )
           end
-          for alg in listReverse(sects.initialAlgorithms)
-            @assign sections = P_Sections.Sections.prependAlgorithm(
+          for alg in sects.initialAlgorithms #listReverse(sects.initialAlgorithms)
+            sections = prependAlgorithm(
               vectorizeAlgorithm(alg, dimensions, prefix),
               sections,
               true,
@@ -740,7 +741,7 @@ function vectorizeEquation(
   prefix::ComponentRef,
 )::Equation
   local veqn::Equation
-  @assign veqn = begin
+  veqn = begin
     local prefix_node::InstNode
     local iter::InstNode
     local stop::Int
@@ -762,16 +763,16 @@ function vectorizeEquation(
         =#
         #=  wrap general equation into for loop
         =#
-        @assign iter = begin
+        iter = begin
           @match node(prefix) begin
             prefix_node && COMPONENT_NODE(__) => begin
               COMPONENT_NODE(
                 "i",
                 prefix_node.visibility,
-                P_Pointer.create(ITERATOR(
+                P_Pointer.create(ITERATOR_COMPONENT(
                   TYPE_INTEGER(),
                   Variability.IMPLICITLY_DISCRETE,
-                  P_Component.info(Pointer.access(prefix_node.component)),
+                  Component_info(P_Pointer.access(prefix_node.component)),
                 )),
                 prefix_node.parent,
                 NORMAL_COMP(),
@@ -779,27 +780,25 @@ function vectorizeEquation(
             end
           end
         end
-        @match list(P_Dimension.Dimension.INTEGER_EXPRESSION(size = stop)) = dimensions
-        @assign range = RANGE_EXPRESSION(
+        @match DIMENSION_INTEGER(size = stop) <| rest = dimensions
+        range = RANGE_EXPRESSION(
           TYPE_ARRAY(TYPE_INTEGER(), dimensions),
           INTEGER_EXPRESSION(1),
           NONE(),
           INTEGER_EXPRESSION(stop),
         )
-        @assign veqn = mapExp(
-          eqn,
-          (
-            x = prefix,
-            y = SUBSCRIPT_INDEX(CREF_EXPRESSION(TYPE_INTEGER(), makeIterator(iter, TYPE_INTEGER()))),
-          )
-          -> addIterator(x, y)),
+        local subscript = SUBSCRIPT_INDEX(CREF_EXPRESSION(TYPE_INTEGER(),
+                                                          makeIterator(iter,
+                                                                       TYPE_INTEGER())))
+        local mappedEq = mapExp(eqn, (x) -> addIterator(x, prefix, subscript))
         EQUATION_FOR(
           iter,
           SOME(range),
-          list(veqn),
+          Equation[mappedEq],
           source(eqn),
         )
       end
+      veqn
     end
   end
   return veqn
@@ -856,23 +855,47 @@ function vectorizeAlgorithm(
           NONE(),
           INTEGER_EXPRESSION(stop),
         )
-        #@debug "Manually check this error. It has to do with higher order functions in the translation"
-        @assign body = mapExpList(
+        #@info "Manually check this error. It has to do with higher order functions in the translation"
+        local subscript = SUBSCRIPT_INDEX(
+          CREF_EXPRESSION(TYPE_INTEGER(),
+                          makeIterator(iter, TYPE_INTEGER())))
+        body = mapExpList(
           alg.statements,
-          (x) -> addIterator(
-            x,
-            subscript = SUBSCRIPT_INDEX(CREF_EXPRESSION(
-              TYPE_INTEGER(),
-              makeIterator(iter, TYPE_INTEGER()),
-            ))))
+          (x) -> addIterator(x, prefix, subscript))
         ALGORITHM(
-          list(P_Statement.Statement.FOR(iter, SOME(range), body, alg.source)),
+          list(ALG_FOR(iter, SOME(range), body, alg.source)),
           alg.source,
         )
       end
     end
   end
   return valg
+end
+
+function makeIterators(prefix::ComponentRef,
+                       dimensions::List{Dimension})
+  #Outputs
+  local iterators::List{InstNode} = nil
+  local ranges::List{Expression} = nil
+  local subscripts::List{Subscript} = nil
+  #Locals
+  local iter_comp::Component
+  local prefix_node::InstNode
+  local iter::COMPONENT_NODE
+  local range::Expression
+  local index = 1
+  local sub::Subscript
+  prefix_node = node(prefix)
+  for dim in dimensions
+    iter = newIndexedIterator(index, TYPE_INTEGER(), InstNode_info(prefix_node))
+    iterators = iter <| iterators
+    index = index + 1
+    range = makeRange(INTEGER_EXPRESSION(1), NONE(), sizeExp(dim))
+    ranges = range <| ranges;
+    sub = SUBSCRIPT_INDEX(CREF_EXPRESSION(TYPE_INTEGER(), makeIterator(iter, TYPE_INTEGER())));
+    subscripts = sub <| subscripts;
+  end
+  return (iterators,ranges,subscripts)
 end
 
 function addIterator(
@@ -882,7 +905,7 @@ function addIterator(
 )::Expression
   exp = map(
     exp,
-    (prefix, subscript) -> addIterator_traverse(prefix = prefix, subscript = subscript),
+    (exp) -> addIterator_traverse(exp, prefix, subscript),
   )
   return exp
 end
@@ -891,19 +914,17 @@ function addIterator_traverse(
   exp::Expression,
   prefix::ComponentRef,
   subscript::Subscript,
-)::Expression
-
+  )::Expression
   local restString::String
   local prefixString::String = toString(prefix)
   local prefixLength::Int = stringLength(prefixString)
-
-  @assign exp = begin
+  exp = begin
     local restCref::ComponentRef
     @match exp begin
       CREF_EXPRESSION(
-        cref = CREF(restCref = restCref),
+        cref = COMPONENT_REF_CREF(restCref = restCref),
       ) => begin
-        @assign restString = toString(restCref)
+        restString = toString(restCref)
         if prefixLength <= stringLength(restString) &&
            prefixString == substring(restString, 1, prefixLength)
           @assign exp.cref =
@@ -1105,12 +1126,12 @@ function flattenBindingExp2(
   return outExp
 end
 
-function flattenExp(exp::Expression, prefix::ComponentRef)::Expression
+function flattenExp(exp::Expression, prefix::ComponentRef)
   exp = map(exp, (x) -> flattenExp_traverse(x, prefix))
   return exp
 end
 
-function flattenExp_traverse(exp::Expression, prefix::ComponentRef)::Expression
+function flattenExp_traverse(exp::Expression, prefix::ComponentRef)
   exp = begin
     @match exp begin
       CREF_EXPRESSION(__) => begin
@@ -1171,7 +1192,7 @@ function flattenEquation(
   @nospecialize(eq::Equation),
   @nospecialize(prefix::ComponentRef),
   inEquations::Vector{Equation},
-)
+  )
   equations = begin
     local e1::Expression
     local e2::Expression
@@ -1378,15 +1399,13 @@ function unrollForLoop(
   local range::Expression
   local range_iter::RangeIterator
   local val::Expression
-  @match EQUATION_FOR(iterator = iter, range = SOME(range), body = body) =
-    forLoop
+  @match EQUATION_FOR(iterator = iter, range = SOME(range), body = body) = forLoop
   #=
   Unroll the loop by replacing the iterator with each of its values
   in the for loop body.
   =#
   range = flattenExp(range, prefix)
-  range =
-    evalExp(range, EVALTARGET_RANGE(Equation_info(forLoop)))
+  range = evalExp(range, EVALTARGET_RANGE(Equation_info(forLoop)))
   range_iter = RangeIterator_fromExp(range)
   while hasNext(range_iter)
     (range_iter, val) = next(range_iter)
@@ -1404,23 +1423,20 @@ function splitForLoop(
   forLoop::Equation,
   prefix::ComponentRef,
   equations::List{<:Equation},
-)::Vector{Equation}
-
+  )::Vector{Equation}
   local iter::InstNode
   local range::Option{Expression}
   local body::Vector{Equation}
   local connects::Vector{Equation}
   local non_connects::Vector{Equation}
   local src::DAE.ElementSource
-
   @match EQUATION_FOR(iter, range, body, src) = forLoop
   (connects, non_connects) = splitForLoop2(body)
   if !listEmpty(connects)
     equations = unrollForLoop(EQUATION_FOR(iter, range, connects, src), prefix, equations)
   end
   if !listEmpty(non_connects)
-    @assign equations =
-      _cons(EQUATION_FOR(iter, range, non_connects, src), equations)
+    equations = _cons(EQUATION_FOR(iter, range, non_connects, src), equations)
   end
   return equations
 end

@@ -19,7 +19,6 @@ struct M_FUNCTION <: M_Function
   callCounter::Pointer
 end
 
-
 @Uniontype MatchedFunction begin
   @Record MATCHED_FUNC begin
     func::M_FUNCTION
@@ -27,7 +26,6 @@ end
     mk::FunctionMatchKind
   end
 end
-
 
 const SlotType = (() -> begin #= Enumeration =#
   POSITIONAL = 1  #= Only accepts positional arguments. =#
@@ -492,7 +490,7 @@ end
 
 function isDefaultRecordConstructor(fn::M_FUNCTION)::Bool
   local isConstructor::Bool
-  @assign isConstructor = begin
+  isConstructor = begin
     @match restriction(getClass(fn.node)) begin
       RESTRICTION_RECORD_CONSTRUCTOR(__) => begin
         true
@@ -1619,48 +1617,53 @@ function toFlatStreamHelper(fn::M_FUNCTION, s, fn_name)
     s = IOStream_M.append(s, "\\n")
     for i in fn.inputs
       s = IOStream_M.append(s, "  ")
-      s = IOStream_M.append(s, toFlatString(i))
+      s = IOStream_M.append(s, toFlatString(i; inFunction = true))
       s = IOStream_M.append(s, ";\\n")
     end
     for o in fn.outputs
       s = IOStream_M.append(s, "  ")
-      s = IOStream_M.append(s, toFlatString(o))
+      s = IOStream_M.append(s, toFlatString(o; inFunction = true))
       s = IOStream_M.append(s, ";\\n")
     end
     if !listEmpty(fn.locals)
       s = IOStream_M.append(s, "protected\\n")
       for l in fn.locals
         s = IOStream_M.append(s, "  ")
-        s = IOStream_M.append(s, toFlatString(l))
+        s = IOStream_M.append(s, toFlatString(l; inFunction = true))
         s = IOStream_M.append(s, ";\\n")
       end
     end
-  # #= Annotation handling =#
-        cmt = Util.getOptionOrDefault(SCodeUtil.getElementComment(definition(fn.node)), SCode.COMMENT(NONE(), NONE()));
-  s = toFlatStream(getSections(fn.node), fn.path, s)
+  #= Annotation handling =#
+  cmt = Util.getOptionOrDefault(SCodeUtil.getElementComment(definition(fn.node)),
+                                SCode.COMMENT(NONE(), NONE()));
+  s = toFlatStream(getSections(fn.node), fn.path, s; inFunction = true)
   local annMod = if isSome(cmt.annotation_)
-    @match SOME(SCode.ANNOTATION(annMod)) = cmt.annotation_;
+    @match SOME(SCode.ANNOTATION(annMod)) = cmt.annotation_
     annMod
   else
-    annMod = SCode.NOMOD();
+    annMod = SCode.NOMOD()
   end
   #Generate derivative/inverse annotations from the instantiated model. Paths have changed.
   annMod = SCodeUtil.filterSubMods(annMod, (mod) -> SCodeUtil.removeGivenSubModNames(mod; namesToRemove=list("derivative", "inverse")))
+  for derivative in listReverse(fn.derivatives)
+    annMod = SCodeUtil.prependSubModToMod(toSubMod(derivative), annMod)
+  end
+
   # #= End of annotation handling=#
-    if isExternal(fn)
-      s = IOStream_M.append(s, "/* Externally defined function*/")
-#      s = IOStream_M.append(s, )
-      s = IOStream_M.append(s, "\nend ")
-      s = IOStream_M.append(s, fn_name)
-      return s
-    end
-  #   fn_body = getBody(fn)
+  if isExternal(fn)
+    s = IOStream_M.append(s, "/* Externally defined function*/")
+    # s = IOStream_M.append(s, )
+    s = IOStream_M.append(s, "\nend ")
+    s = IOStream_M.append(s, fn_name)
+    return s
+  end
+  #fn_body = getBody(fn)
   #if !listEmpty(fn_body)
   #s = IOStream_M.append(s, "algorithm\\n")
   #s = toFlatStreamList(fn_body, "  ", s)
   #end
-    s = IOStream_M.append(s, "\nend ")
-    s = IOStream_M.append(s, fn_name)
+  s = IOStream_M.append(s, "\nend ")
+  s = IOStream_M.append(s, fn_name)
 end
 
 function paramTypeString(param::InstNode)::String

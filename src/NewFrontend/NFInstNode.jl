@@ -1,7 +1,7 @@
 #= /*
 * This file is part of OpenModelica.
 *
-* Copyright (c) 1998-2014, Open Source Modelica Consortium (OSMC),
+* Copyright (c) 1998-CurrentYear, Open Source Modelica Consortium (OSMC),
 * c/o Linköpings universitet, Department of Computer and Information Science,
 * SE-58183 Linköping, Sweden.
 *
@@ -651,12 +651,12 @@ function toFlatStream(node::InstNode, s)
   s
 end
 
-function toFlatString(node::InstNode)
+function toFlatString(node::InstNode; inFunction = false)
   local name::String
    name = begin
     @match node begin
       COMPONENT_NODE(__)  => begin
-        toFlatString(node.name, P_Pointer.access(node.component))
+        toFlatString(node.name, P_Pointer.access(node.component); inFunction = inFunction)
       end
       CLASS_NODE(__)  => begin
         toFlatString(P_Pointer.access(node.cls), node)
@@ -1115,7 +1115,7 @@ function isInput(node::InstNode)
    isInput = begin
     @match node begin
       COMPONENT_NODE(__)  => begin
-        P_Component.isInput(P_Pointer.access(node.component))
+        isInput(P_Pointer.access(node.component))
       end
 
       _  => begin
@@ -2218,4 +2218,13 @@ function new(definition::SCode.Element, parent::InstNode)
     end
   end
   node
+end
+
+function newIterator(name::String, ty::NFType, info::SourceInfo)
+  local iterator = fromComponent(name, newIterator(ty, info), EMPTY_NODE())
+  return iterator
+end
+
+function newIndexedIterator(index::Int, ty::NFType, info)
+  newIterator("\$i" + String(index), ty, info);
 end

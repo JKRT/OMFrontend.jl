@@ -1696,7 +1696,7 @@ function evalUnaryMinus(exp1::Expression)::Expression
       end
 
       ARRAY_EXPRESSION(__) => begin
-         exp1.elements = list(evalUnaryMinus(e) for e in exp1.elements)
+        @assign exp1.elements = list(evalUnaryMinus(e) for e in exp1.elements)
         exp1
       end
 
@@ -2819,6 +2819,7 @@ function evalBuiltinCat(
   local ty::M_Type
   local es::List{Expression}
   local dims::List{Int}
+  #print("Calling evalbuiltincat!\n")
   @match INTEGER_EXPRESSION(n) = argN
   ty = typeOf(listHead(args))
   nd = dimensionCount(ty)
@@ -2851,6 +2852,7 @@ function evalBuiltinCat(
       list(fromInteger(d) for d in dims),
     )
   end
+  #println("Result:\n" * toString(result))
   return result
 end
 
@@ -2931,17 +2933,15 @@ function evalBuiltinDiagonal(arg::Expression)::Expression
   local i::Int = 1
   local e_lit::Bool
   local arg_lit::Bool = true
-
    result = begin
     @match arg begin
       ARRAY_EXPRESSION(elements = nil()) => begin
         arg
       end
-
       ARRAY_EXPRESSION(elements = elems) => begin
          n = listLength(elems)
-         elem_ty = typeOf(listHead(elems))
-         row_ty = liftArrayLeft(elem_ty, P_Dimension.Dimension.fromInteger(n))
+        elem_ty = typeOf(listHead(elems))
+        row_ty = liftArrayLeft(elem_ty, fromInteger(n))
          zero = makeZero(elem_ty)
         for e in listReverse(elems)
            row = nil
@@ -2956,15 +2956,14 @@ function evalBuiltinDiagonal(arg::Expression)::Expression
           end
            i = i + 1
            rows =
-            _cons(makeArray(row_ty, row, e_lit), rows)
+            _cons(makeArray(row_ty, row; literal = e_lit), rows)
         end
         makeArray(
-          liftArrayLeft(row_ty, P_Dimension.Dimension.fromInteger(n)),
-          rows,
-          arg_lit,
+          liftArrayLeft(row_ty, fromInteger(n)),
+          rows;
+          literal = arg_lit,
         )
       end
-
       _ => begin
         printWrongArgsError(getInstanceName(), list(arg), sourceInfo())
         fail()
@@ -4784,68 +4783,38 @@ end
   @author johti17
 """
 function evalCat(dim::Int, exps::List{Expression}, getArrayContents::Function, toString::Function)::Tuple{List{Expression}, List{Int}}
-  local arr::List{Expression}
-  local arrs::List{List{Expression}} = nil
-  local dims::List{Int} = nil
-  local lastDims::List{Int} = nil
-  local firstDims::List{Int} = nil
-  local reverseDims::List{Int} = nil
-  local dimsLst::List{List{Int}} = nil;
-  local j::Int, k::Int, l::Int, thisDim::Int, lastDim::Int
-  #= Outputs =#
-  local outExps::List{Expression} = nil
-  local outDims::List{Int} = nil
-  @assert dim >= 1 "Invalid dimension for" * toString(exps)
-  @assert false == listEmpty(exps) "Internal error: Empty dimension passed to evalCat"
-  if 1 == dim
-    #outExps = listAppend(getArrayContents(e) for e in listReverse(exps))#TODO investigate this
-    #outExps = arrayList(Base.collect(Iterators.flatten(getArrayContents(e) for e in listReverse(exps))))
-    for e in listReverse(exps)
-      arrConts = getArrayContents(e)
-      outExps = listHead(arrConts) <| outExps
+
+  if dim > 1
+    local jlmatrix = modelicaMatrixToJuliaMatrix(exps)::Matrix{ARRAY_EXPRESSION}
+    local matrixCat = Base.cat(jlmatrix; dims = dim)
+    local outExps = jlMatrixToModelicaArrayExpLists(matrixCat)
+    #= Convert the outExps to a flat array =#
+    local outDims = list(length(outExps), length(listHead(outExps).elements))
+    local outExpsAsList = arrayList(Base.map((x) -> x.elements, outExps))
+    local outExpFlat = nil
+    for lst in outExpsAsList
+      for e in lst
+        outExpFlat = e <| outExpFlat
+      end
     end
-    outDims = list(listLength(outExps));
-    return (outExps, outDims)
-  end
-  for e in listReverse(exps)
-    (arr, dims) = evalCatGetFlatArray(e, dim, getArrayContents, toString)
-    arrs = arr <| arrs
-    dimsLst = dims <| dimsLst
-  end
-  for i in 1:(dim - 1)
-    j = minimum(listHead(d) for d in dimsLst);
-    if j != maximum(listHead(d) for d in dimsLst)
-      @error "Uneven dimension error for" * toString(exps)
-      fail()
+    outExpFlat = listReverse(outExpFlat)
+    local outDims = list(length(outExps), length(listHead(outExps).elements))
+  else
+    local outExpsAsList = arrayList(Base.map(x-> x.elements, exps))
+    local outExpFlat = nil
+    for lst in outExpsAsList
+      #println(lst)
+      for arrs in lst
+        for e in arrs.elements
+          outExpFlat = e <| outExpFlat
+        end
+      end
     end
-    firstDims = j <| firstDims
-    dimsLst = list(listRest(d) for d in dimsLst)
+    outExpFlat = listReverse(outExpFlat)
+    #println(toString(outExpsAsList))
+    local outDims = list(length(outExpFlat))
   end
-    reverseDims = firstDims
-    firstDims = listReverse(firstDims)
-    lastDims = list(listHead(d) for d in dimsLst)
-    lastDim = sum(d for d in lastDims)
-    reverseDims = lastDim <| reverseDims
-  # Fill in the elements of the new array in the new order; this uses
-  # an array structure for random access
-  local arrSiz = lastDim*Base.reduce(*, list(d for d in firstDims))
-  arrInitVal = listHead(listHead(arrs))
-  local expArr::Vector{Expression} = arrayCreate(arrSiz, arrInitVal)
-  k = 1
-  for exps in arrs
-    thisDim = listHead(lastDims)
-    lastDims = listRest(lastDims)
-    l = 0
-    for e in exps
-      arrayUpdate(expArr, k+mod(l, thisDim)+(lastDim * div(l, thisDim)), e)
-      l = l+1
-    end
-    k = k + thisDim
-  end
-  #= Convert the flat array structure to a tree array structure with the correct dimension =#
-  outExps = arrayList(expArr)
-  outDims = listReverse(reverseDims)
-  return (outExps, outDims)
+  return (outExpFlat, outDims)
 end
 
 """

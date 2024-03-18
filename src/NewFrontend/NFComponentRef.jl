@@ -34,7 +34,7 @@ function isComplexArray2(cref::ComponentRef)::Bool
     @match cref begin
       COMPONENT_REF_CREF(
         ty = TYPE_ARRAY(__),
-      ) where {(isArray(Type.subscript(cref.ty, cref.subscripts)))} => begin
+      ) where {(isArray(subscript(cref.ty, cref.subscripts)))} => begin
         true
       end
 
@@ -108,6 +108,24 @@ function toListReverse(
   return accum
 end
 toListReverse(cref::ComponentRef, accum::List{<:ComponentRef} = nil) = accum
+
+
+"""
+```
+function getOriginCref(cref::ComponentRef)
+```
+Returns the top component of a reference.
+Hence if the component reference is A.B.C.it will return A.
+@author: johti17
+"""
+function getOriginCref(cref::ComponentRef)
+  local res = toListReverse(cref, nil)
+  if res isa Nil
+    return res
+  else
+    return listHead(res)
+  end
+end
 
 function toString(crefLst::List{ComponentRef})
   local buffer = IOBuffer()
@@ -185,11 +203,15 @@ function simplifySubscripts(cref::ComponentRef; trim = false)::ComponentRef
   cref = begin
     local subs::List{Subscript}
     @match cref begin
-      COMPONENT_REF_CREF(subscripts = nil(), origin = Origin.CREF) => begin
-        COMPONENT_REF_CREF(cref.node, cref.subscripts, cref.ty, cref.origin, simplifySubscripts(cref.restCref, trim = trim))
+      COMPONENT_REF_CREF(subscripts, Origin.CREF) where listEmpty(subscripts) => begin
+        COMPONENT_REF_CREF(cref.node,
+                           cref.subscripts,
+                           cref.ty,
+                           cref.origin,
+                           simplifySubscripts(cref.restCref, trim = trim))
       end
       COMPONENT_REF_CREF(origin = Origin.CREF) => begin
-        subs = list(simplifySubscript(s) for s in cref.subscripts)
+        subs =  simplifyList(cref.subscripts, arrayDims(cref.ty))
         COMPONENT_REF_CREF(cref.node, subs, cref.ty, cref.origin, simplifySubscripts(cref.restCref, trim = trim))
       end
       _ => begin
@@ -372,15 +394,26 @@ function toFlatString_impl(cref::ComponentRef, strl::List{<:String})::List{Strin
   return strl
 end
 
-function toFlatString(cref::ComponentRef)::String
+function toFlatString(cref::ComponentRef; inFunction = false)
   local str::String
   local cr::ComponentRef
   local subs::List{Subscript}
   local strl::List{String} = nil
   (cr, subs) = stripSubscripts(cref)
   strl = toFlatString_impl(cr, strl)
-  #Special case
-  if !Flags.isSet(Flags.NF_SCALARIZE)
+  #=
+  Special Case. If we scalarize, we do not want to quote in the same way.
+  Otherwise we will refer to components that do not exist in the flat model.
+  =#
+  local sc = if cref isa COMPONENT_REF_CREF
+    local crOrigin = getOriginCref(cref)
+    local parentCref = cref.restCref
+    local parentIsRecord = isRecord(getComponentType(parentCref))
+    local crefIsRecord = isRecord(getComponentType(cref))
+    local sourceIsRecord = isRecord(getComponentType(crOrigin))
+    inFunction || sourceIsRecord || crefIsRecord  || parentIsRecord
+  end
+  if !Flags.isSet(Flags.NF_SCALARIZE) || sc
     str = stringAppendList(list(
       "'",
       stringDelimitList(strl, "."),
@@ -389,7 +422,9 @@ function toFlatString(cref::ComponentRef)::String
     ))
   else
     str = stringAppendList(
-      list("'", stringDelimitList(strl, "."), toFlatStringList(subs), "'",))
+      list(stringDelimitList(strl, "."), toFlatStringList(subs)))
+    #= Since we are scalarizing here we assume the entire thing needs to be quoted. =#
+    str = string("'", replace(str, "'" => ""), "'")
   end
   if str  == "'time'"
     return "time"
@@ -448,7 +483,7 @@ end
 
 
 function toString(cref::ComponentRef)
-  local str = stringDelimitList(toString_impl(cref, nil), "_")
+  local str = stringDelimitList(toString_impl(cref, nil), ".") #TODO Revert to underscore again.
   return str
 end
 
@@ -1222,4 +1257,62 @@ function expandSplitSubscripts(cref::ComponentRef)
     end
   end
   cref
+end
+
+
+"""
+```
+function isModel(cref::ComponentRef)
+```
+Returns true if a component ref refers to a model.
+@author:johti17
+"""
+function isModel(cref::ComponentRef)
+  res = @match cref begin
+    COMPONENT_REF_CREF(node,_,_,_,_) where{node isa COMPONENT_NODE || node isa CLASS_NODE} => begin
+      println(typeof(node))
+      local cls = getClass(node)
+      local restriction = restriction(cls)
+      restriction isa RESTRICTION_MODEL
+    end
+    _ => begin
+      println(typeof(cref.node))
+      println(typeof(cref.ty))
+      false
+    end
+  end
+end
+
+function mergeSubscripts(subscripts::List{Subscript}, cref::ComponentRef; applyToScope = false, backend = false)
+  (new_subscripts, cref) = mergeSubscripts2(subscripts, cref, applyToScope = applyToScope, backend = backend)
+  if ! listEmpty(new_subscripts)
+    Error.assertion(false, getInstanceName() + " failed because the subscripts "
+                    + toString(subscripts, toString) + " could not be fully merged onto "
+                    + toString(old_cref) + ".\nResult: " + toString(cref)
+                    + " with leftover: " + List.toString(new_subscripts, Subscript.toString) + ".",
+                    sourceInfo())
+    fail()
+  end
+  return cref
+end
+
+
+function mergeSubscripts2(subscripts::List{Subscript},
+                          cref::ComponentRef;
+                          applyToScope = false,
+                          backend = false)
+  local rest_cref::ComponentRef
+  local cref_subs::List{Subscript}
+  (subscripts, cref) = @match cref begin
+    COMPONENT_REF_CREF(subscripts = cref_subs) where{applyToScope || cref.origin == Origin.CREF} => begin
+      (subscripts, rest_cref) = mergeSubscripts2(subscripts, cref.restCref,
+                                                 applyToScope = applyToScope, backend = backend)
+      if ! listEmpty(subscripts)
+        (cref_subs, subscripts) =
+          mergeList(subscripts, cref_subs, dimensionCount(cref.ty))
+      end
+      (subscripts, COMPONENT_REF_CREF(cref.node, cref_subs, cref.ty, cref.origin, rest_cref))
+    end
+    _ => (subscripts, cref);
+  end
 end

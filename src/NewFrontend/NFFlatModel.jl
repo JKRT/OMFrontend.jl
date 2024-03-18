@@ -65,13 +65,13 @@ valueStr = (vs) -> begin
   return toString(vs)
 end
 
-addConflictDefault = addConflictKeep
+addConflictDefault = addConflictReplace
 #= John 2023-04-03:
   Default(Julia) string compare does not give the right result.
   MetaModelica string comp is used instead.
 =#
 keyCompare = (inKey1::Key, inKey2::Key) -> begin
-  return stringCompare(keyStr(inKey1), keyStr(inKey2))
+  return AbsynUtil.pathCompareNoQual(inKey1, inKey2)
 end
 
 @exportAll()
@@ -124,6 +124,7 @@ function reconstructRecordInstance(
     comment(record_comp),
     InstNode_info(record_node),
   )
+  #println("Record var:" * toString(recordVar))
   return recordVar
 end
 
@@ -145,6 +146,7 @@ function reconstructRecordInstances(variables::Vector{Variable})
         (record_vars, rest_vars) = ListUtil.split(rest_vars, field_count - 1)
         record_vars = _cons(var, record_vars)
         var = reconstructRecordInstance(parent_cr, record_vars)
+        #println(toString(var))
       end
     end
     outVariables = _cons(var, outVariables)
@@ -300,7 +302,7 @@ function collectEqBranchFlatTypes(
     @match branch begin
       EQUATION_BRANCH(__) => begin
         types = collectExpFlatTypes(branch.condition, types)
-        types = ListUtil.fold(branch.body, collectEquationFlatTypes, types)
+        types = ArrayUtil.fold(branch.body, collectEquationFlatTypes, types)
         ()
       end
       _ => begin
@@ -316,53 +318,53 @@ function collectEquationFlatTypes(eq::Equation, types::TypeTree)::TypeTree
   () = begin
     @match eq begin
       EQUATION_EQUALITY(__) => begin
-        @assign types = collectExpFlatTypes(eq.lhs, types)
-        @assign types = collectExpFlatTypes(eq.rhs, types)
-        @assign types = collectFlatType(eq.ty, types)
+        types = collectExpFlatTypes(eq.lhs, types)
+        types = collectExpFlatTypes(eq.rhs, types)
+        types = collectFlatType(eq.ty, types)
         ()
       end
 
       EQUATION_ARRAY_EQUALITY(__) => begin
-        @assign types = collectExpFlatTypes(eq.lhs, types)
-        @assign types = collectExpFlatTypes(eq.rhs, types)
-        @assign types = collectFlatType(eq.ty, types)
+        types = collectExpFlatTypes(eq.lhs, types)
+        types = collectExpFlatTypes(eq.rhs, types)
+        types = collectFlatType(eq.ty, types)
         ()
       end
 
       EQUATION_FOR(__) => begin
-        @assign types = ListUtil.fold(eq.body, collectEquationFlatTypes, types)
+        types = ArrayUtil.fold(eq.body, collectEquationFlatTypes, types)
         ()
       end
 
       EQUATION_IF(__) => begin
-        @assign types = ListUtil.fold(eq.branches, collectEqBranchFlatTypes, types)
+        types = ArrayUtil.fold(eq.branches, collectEqBranchFlatTypes, types)
         ()
       end
 
       EQUATION_WHEN(__) => begin
-        @assign types = ListUtil.fold(eq.branches, collectEqBranchFlatTypes, types)
+        types = ArrayUtil.fold(eq.branches, collectEqBranchFlatTypes, types)
         ()
       end
 
       EQUATION_ASSERT(__) => begin
-        @assign types = collectExpFlatTypes(eq.condition, types)
-        @assign types = collectExpFlatTypes(eq.message, types)
-        @assign types = collectExpFlatTypes(eq.level, types)
+        types = collectExpFlatTypes(eq.condition, types)
+        types = collectExpFlatTypes(eq.message, types)
+        types = collectExpFlatTypes(eq.level, types)
         ()
       end
 
       EQUATION_TERMINATE(__) => begin
-        @assign types = collectExpFlatTypes(eq.message, types)
+        types = collectExpFlatTypes(eq.message, types)
         ()
       end
 
       EQUATION_REINIT(__) => begin
-        @assign types = collectExpFlatTypes(eq.reinitExp, types)
+        types = collectExpFlatTypes(eq.reinitExp, types)
         ()
       end
 
       EQUATION_NORETCALL(__) => begin
-        @assign types = collectExpFlatTypes(eq.exp, types)
+        types = collectExpFlatTypes(eq.exp, types)
         ()
       end
 
@@ -432,27 +434,48 @@ function collectFlatTypes(flatModel::FlatModel, functions::List{<:M_Function})
   types = ArrayUtil.fold(flatModel.initialAlgorithms, collectAlgorithmFlatTypes, types)
   types = ListUtil.fold(functions, collectFunctionFlatTypes, types)
   #println(TypeTreeImpl.printTreeStr(types))
-  return types
+  local typeLst = TypeTreeImpl.listValues(types)
+  return typeLst
 end
 
 function toFlatStream(flatModel::FlatModel, functions::List, printBindingTypes::Bool = false, s = Nothing)
   local str::String
   local flat_model::FlatModel = flatModel
   s = IOStream_M.append(s, "model '" + flat_model.name + "'\\n")
-  @assign flat_model.variables = reconstructRecordInstances(flat_model.variables)
+  vars = reconstructRecordInstances(flat_model.variables)
+  #=
+  Sometimes, we get duplicate elements when we collect record elements.
+  Make sure that we do not get duplicated record instances.
+  =#
+  if Flags.isSet(Flags.NF_SCALARIZE)
+    unique!((x) -> x.name, vars)
+  end
+  @assign flat_model.variables = vars
   for fn in functions
     if !isDefaultRecordConstructor(fn)
       s = toFlatStream(fn, s)
       s = IOStream_M.append(s, ";\\n\\n")
     end
   end
-  for ty in TypeTreeImpl.listValues(collectFlatTypes(flat_model, functions))
+  # WIP
+  # for fn in functions
+  #   if isDefaultRecordConstructor(fn)
+  #     println("!isDefaultRecordConstructor:" * AbsynUtil.pathString(fn.path))
+  #     s = IOStream_M.append(s, "//Automatically Generated Generated Record Constructors \\n\\n")
+  #     s = toFlatStream(fn, s)
+  #     s = IOStream_M.append(s, ";\\n\\n")
+  #     s = IOStream_M.append(s, "//End of Automatically Generated Record Constructors \\n\\n")
+  #   end
+  # end
+
+  for ty in collectFlatTypes(flat_model, functions)
     s = toFlatDeclarationStream(ty, s)
     s = IOStream_M.append(s, ";\\n\\n")
   end
+
   for v in flat_model.variables
-    @assign s = toFlatStream(v, "  ", printBindingTypes, s)
-    @assign s = IOStream_M.append(s, ";\\n")
+    s = toFlatStream(v, "  ", printBindingTypes, s)
+    s = IOStream_M.append(s, ";\\n")
   end
   if !isempty(flat_model.initialEquations)
     s = IOStream_M.append(s, "initial equation\\n")
@@ -465,7 +488,7 @@ function toFlatStream(flatModel::FlatModel, functions::List, printBindingTypes::
   for alg in flat_model.initialAlgorithms
     if !listEmpty(alg.statements)
       s = IOStream_M.append(s, "initial algorithm\\n")
-      s = ALG_toFlatStreamList(alg.statements, "  ", s)
+      s = toFlatStreamList(alg.statements, "  ", s)
     end
   end
   for alg in flat_model.algorithms

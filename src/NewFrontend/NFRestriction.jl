@@ -40,7 +40,7 @@
   end
 end
 
-Restriction = NFRestriction
+const Restriction = NFRestriction
 
 function toString(res::Restriction)::String
   local str::String

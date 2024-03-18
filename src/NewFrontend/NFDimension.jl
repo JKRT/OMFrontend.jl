@@ -215,6 +215,43 @@ function toString(dim::Dimension)::String
   return str
 end
 
+"""
+Same as toString for now
+"""
+function toFlatString(dim::Dimension)::String
+  local str::String
+
+  @assign str = begin
+    local ty::M_Type
+    @match dim begin
+      DIMENSION_INTEGER(__) => begin
+        string(dim.size)
+      end
+
+      DIMENSION_BOOLEAN(__) => begin
+        "Boolean"
+      end
+
+      DIMENSION_ENUM(enumType = ty && TYPE_ENUMERATION(__)) => begin
+        AbsynUtil.pathString(ty.typePath)
+      end
+
+      DIMENSION_EXP(__) => begin
+        toFlatString(dim.exp)
+      end
+
+      DIMENSION_UNKNOWN(__) => begin
+        ":"
+      end
+
+      DIMENSION_UNTYPED(__) => begin
+        toString(dim.dimension)
+      end
+    end
+  end
+  return str
+end
+
 """ #= Returns the expected type of a subscript for the given dimension. =#"""
 function subscriptType(dim::Dimension)::M_Type
   local ty::M_Type
@@ -533,3 +570,5 @@ function fromExp(exp::Expression, var::VariabilityType)::Dimension
   end
   return dim
 end
+
+#= Backported =#

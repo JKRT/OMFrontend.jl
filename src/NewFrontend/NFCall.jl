@@ -327,21 +327,19 @@ function typedString(call::Call)::String
   return str
 end
 
-function toFlatString(call::Call)::String
+function toFlatString(call::Call; inFunction = false)
   local str::String
   local nameVar::String
   local arg_str::String
   local c::String
   local argexp::Expression
   local iters::List{InstNode}
-
    str = begin
     @match call begin
       TYPED_CALL(__) => begin
         nameVar = AbsynUtil.pathString(name(call.fn))
-        #@info "Printing $nameVar to a string"
         arg_str = stringDelimitList(
-          list(toFlatString(arg) for arg in call.arguments),
+          list(toFlatString(arg; inFunction = inFunction) for arg in call.arguments),
           ", ",
         )
         if isBuiltin(call.fn)
@@ -353,15 +351,15 @@ function toFlatString(call::Call)::String
 
       TYPED_ARRAY_CONSTRUCTOR(__) => begin
         if isVectorized(call)
-           str = toFlatString(devectorizeCall(call))
+           str = toFlatString(devectorizeCall(call); inFunction = inFunction)
         else
-           nameVar = AbsynUtil.pathString(P_Function.name(NFBuiltinFuncs.ARRAY_FUNC))
-           arg_str = toFlatString(call.exp)
+          nameVar = AbsynUtil.pathString(name(NFBuiltinFuncs.ARRAY_FUNC))
+           arg_str = toFlatString(call.exp; inFunction = inFunction)
            c = stringDelimitList(
             list(
-              name(Util.tuple21(iter)) +
+              toFlatString(Util.tuple21(iter); inFunction = inFunction) +
               " in " +
-              toFlatString(Util.tuple22(iter))
+              toFlatString(Util.tuple22(iter); inFunction = inFunction)
               for iter in call.iters
             ),
             ", ",
@@ -379,12 +377,12 @@ function toFlatString(call::Call)::String
 
       TYPED_REDUCTION(__) => begin
          nameVar = AbsynUtil.pathString(P_Function.name(call.fn))
-         arg_str = toFlatString(call.exp)
+         arg_str = toFlatString(call.exp; inFunction = inFunction)
          c = stringDelimitList(
           list(
-            name(Util.tuple21(iter)) +
+            toFlatString(Util.tuple21(iter); inFunction = inFunction) +
             " in " +
-            toFlatString(Util.tuple22(iter))
+            toFlatString(Util.tuple22(iter); inFunction = inFunction)
             for iter in call.iters
           ),
           ", ",
@@ -402,7 +400,6 @@ end
 
 function toString(call::Call)::String
   local str::String
-
   local nameStr::String
   local arg_str::String
   local c::String
@@ -709,7 +706,7 @@ function compare(call1::Call, call2::Call)::Int
       end
 
       (TYPED_CALL(__), TYPED_CALL(__)) => begin
-        AbsynUtil.pathCompare(P_Function.name(call1.fn), P_Function.name(call2.fn))
+        AbsynUtil.pathCompare(name(call1.fn), name(call2.fn))
       end
 
       (UNTYPED_CALL(__), TYPED_CALL(__)) => begin

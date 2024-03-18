@@ -1,7 +1,8 @@
 function addBindingExpParent(@nospecialize(parent::InstNode),
                              @nospecialize(exp::Expression))
   local modifiedExp = if exp isa BINDING_EXP
-    BINDING_EXP(exp.exp, expType, parents, exp.isEach)
+    #= Check this. =#
+    BINDING_EXP(exp.exp, exp.expType, exp.bindingType, parents, exp.isEach)
   else
     exp
   end
@@ -383,8 +384,8 @@ function recordElement(elementName::String, recordExp::Expression) ::Expression
       end
 
       BINDING_EXP(__)  => begin
-        local f = @closure (elementName) -> recordElement(elementName = elementName)
-        bindingExpMap(recordExp, f(elementName))
+        local f = @closure (x) -> recordElement(elementName, x)
+        bindingExpMap(recordExp, f)
       end
 
       SUBSCRIPTED_EXP_EXPRESSION(__)  => begin
@@ -1155,6 +1156,21 @@ function fillType(ty::M_Type, fillExp::Expression) ::Expression
     exp = makeArray(arr_ty, expl, literal = isLiteral(exp))
   end
   exp
+end
+
+function fillArgs(fillExp::Expression, dims::List{Expression})
+  local dimSize
+  local arr::List{Expression}
+  local result = fillExp
+  local arrTy = typeOf(result)
+  local literal::Bool = isLiteral(fillExp)
+  for d in listReverse(dims)
+    dimSize = toInteger(d)
+    arr = list(result for e in 1:dimSize)
+    arrTy = liftArrayLeft(arrTy, fromInteger(dimSize))
+    result = makeArray(arrTy, arr, literal = literal)
+  end
+  return result
 end
 
 function isRecordOrRecordArray(exp::Expression) ::Bool
@@ -4443,24 +4459,22 @@ function priority(exp::Expression, lhs::Bool) ::Int
   priorityVar
 end
 
-""" #= Helper function to toString, prints an operator and adds parentheses as needed. =#"""
-function operandFlatString(operand::Expression, operator::Expression, lhs::Bool) ::String
+"""  Helper function to toString, prints an operator and adds parentheses as needed. """
+function operandFlatString(operand::Expression, operator::Expression, lhs::Bool; inFunction = false)
   local str::String
-
   local operand_prio::Int
   local operator_prio::Int
   local parenthesize::Bool = false
-
-   str = toFlatString(operand)
-   operand_prio = priority(operand, lhs)
+  str = toFlatString(operand; inFunction = inFunction)
+  operand_prio = priority(operand, lhs)
   if operand_prio == 4
-     parenthesize = true
+    parenthesize = true
   else
-     operator_prio = priority(operator, lhs)
+    operator_prio = priority(operator, lhs)
     if operand_prio > operator_prio
-       parenthesize = true
+      parenthesize = true
     elseif operand_prio == operator_prio
-       parenthesize = if lhs
+      parenthesize = if lhs
         isNonAssociativeExp(operand)
       else
         ! isAssociativeExp(operand)
@@ -4468,7 +4482,7 @@ function operandFlatString(operand::Expression, operator::Expression, lhs::Bool)
     end
   end
   if parenthesize
-     str = "(" + str + ")"
+    str = "(" + str + ")"
   end
   str
 end
@@ -4503,7 +4517,7 @@ function operandString(operand::Expression, operator::Expression, lhs::Bool) ::S
   str
 end
 
-function toFlatSubscriptedString(exp::Expression, subs::List{<:Subscript}) ::String
+function toFlatSubscriptedString(exp::Expression, subs::List{<:Subscript}; inFunction = false)
   local str::String
   local exp_ty::M_Type
   local sub_tyl::List{M_Type}
@@ -4516,10 +4530,10 @@ function toFlatSubscriptedString(exp::Expression, subs::List{<:Subscript}) ::Str
   name = subscriptedTypeName(exp_ty, sub_tyl)
   strl = list(")")
   for s in subs
-    strl = _cons(toFlatString(s), strl)
+    strl = _cons(toFlatString(s; inFunction = inFunction), strl)
     strl = _cons(",", strl)
   end
-  strl = _cons(toFlatString(exp), strl)
+  strl = _cons(toFlatString(exp; inFunction = inFunction), strl)
   strl = _cons("'(", strl)
   strl = _cons(name, strl)
   strl = _cons("'", strl)
@@ -4528,11 +4542,11 @@ function toFlatSubscriptedString(exp::Expression, subs::List{<:Subscript}) ::Str
 end
 
 
-function toFlatString(exp::BINDING_EXP)
-  toFlatString(exp.exp)
+function toFlatString(exp::BINDING_EXP; inFunction = false)
+  toFlatString(exp.exp; inFunction = inFunction)
 end
 
-function toFlatString(@nospecialize(exp::Expression)) ::String
+function toFlatString(@nospecialize(exp::Expression); inFunction = false)
   local str::String
   local t::M_Type
   local clk::ClockKind
@@ -4559,11 +4573,11 @@ function toFlatString(@nospecialize(exp::Expression)) ::String
       end
 
       CLKCONST_EXPRESSION(clk)  => begin
-        P_ClockKind.toString(clk)
+        toFlatString(clk)
       end
 
       CREF_EXPRESSION(__)  => begin
-        toFlatString(exp.cref)
+        toFlatString(exp.cref; inFunction = inFunction)
       end
 
       TYPENAME_EXPRESSION(__)  => begin
@@ -4572,7 +4586,8 @@ function toFlatString(@nospecialize(exp::Expression)) ::String
 
       ARRAY_EXPRESSION(__)  => begin
         if !isempty(exp.elements)
-          "{" +  stringDelimitList(list(toFlatString(e) for e in exp.elements), ", ") + "}"
+          "{" +  stringDelimitList(list(toFlatString(e; inFunction = inFunction)
+                                        for e in exp.elements), ", ") + "}"
         else
           "{/* Empty array expression*/}"
         end
@@ -4580,38 +4595,74 @@ function toFlatString(@nospecialize(exp::Expression)) ::String
 
       MATRIX_EXPRESSION(__)  => begin
         if !isempty(exp.elements)
-           "[" + stringDelimitList(list(stringDelimitList(list(toFlatString(e) for e in el), ", ") for el in exp.elements), "; ") + "]"
+          local inner = stringDelimitList(list(toFlatString(e; inFunction = inFunction) for e in el), ", ")
+          local delimList =  stringDelimitList(list(inner for el in exp.elements), "; ")
+          string("[",
+                 delimList
+                 ,  "]")
          else
            "/*[Empty matrix expression*/]"
          end
       end
 
       RANGE_EXPRESSION(__)  => begin
-        operandFlatString(exp.start, exp, false) + (if isSome(exp.step)
-                                                    ":" + operandFlatString(Util.getOption(exp.step), exp, false)
-                                                    else
-                                                    ""
-                                                    end) + ":" + operandFlatString(exp.stop, exp, false)
+        res = string(operandFlatString(exp.start, exp, false; inFunction = inFunction),
+                     (if isSome(exp.step)
+                        ":" + operandFlatString(Util.getOption(exp.step), exp, false; inFunction = inFunction)
+                      else
+                        ""
+                      end) + ":" + operandFlatString(exp.stop, exp, false; inFunction = inFunction))
+        res
       end
 
       TUPLE_EXPRESSION(__)  => begin
-        "(" + stringDelimitList(list(toFlatString(e) for e in exp.elements), ", ") + ")"
+        "(" + stringDelimitList(list(toFlatString(e; inFunction = inFunction) for e in exp.elements), ", ") + ")"
       end
 
       RECORD_EXPRESSION(__)  => begin
-        ListUtil.toString(arrayList(exp.elements), toFlatString, "'" + AbsynUtil.pathString(exp.path), "'(", ", ", ")", true)
+        #println("Hello there:" * AbsynUtil.pathString(exp.path))
+        local absynCref = AbsynUtil.pathToCref(exp.path)
+        local cref = fromAbsynCref(absynCref)
+        #println(absynCref)
+        #println(typeof(exp.ty.cls))
+        local rewrite = if exp.ty isa TYPE_COMPLEX && exp.ty.cls isa CLASS_NODE
+          local originCref = getOriginCref(cref)
+          # println("***")
+          # println(toString(originCref))
+          # println(name(parent(exp.ty.cls)))
+          # println("***")
+          #=
+          True if the parents differ.
+          In this case one extra level has been generated for the records.
+          This special case probably need to be adjusted if the code is run without scalarization.
+          =#
+          toString(originCref) != name(parent(exp.ty.cls))
+          false
+        else
+          false
+        end
+        local flatStringCall = x -> toFlatString(x, inFunction = inFunction)
+        if rewrite
+          ListUtil.toString(arrayList(exp.elements), flatStringCall,
+                            "'" + AbsynUtil.pathString(exp.path.path) + "'", "(", ", ", ")", true)
+        else
+          ListUtil.toString(arrayList(exp.elements),flatStringCall,
+                            "'" + AbsynUtil.pathString(exp.path), "'(", ", ", ")", true)
+        end
+
       end
 
       CALL_EXPRESSION(__)  => begin
-        toFlatString(exp.call)
+        toFlatString(exp.call; inFunction = inFunction)
       end
 
       SIZE_EXPRESSION(__)  => begin
-        "size(" + toFlatString(exp.exp) + (if isSome(exp.dimIndex)
-                                           ", " + toFlatString(Util.getOption(exp.dimIndex))
-                                           else
-                                           ""
-                                           end) + ")"
+        string("size(", toFlatString(exp.exp; inFunction = inFunction)
+               ,(if isSome(exp.dimIndex)
+                   ", " + toFlatString(Util.getOption(exp.dimIndex); inFunction = inFunction)
+                 else
+                   ""
+                 end), ")")
       end
 
       END_EXPRESSION(__)  => begin
@@ -4619,55 +4670,59 @@ function toFlatString(@nospecialize(exp::Expression)) ::String
       end
 
       BINARY_EXPRESSION(__)  => begin
-        operandFlatString(exp.exp1, exp, true) + symbol(exp.operator) + operandFlatString(exp.exp2, exp, false)
+        string(operandFlatString(exp.exp1, exp, true; inFunction = inFunction),
+               symbol(exp.operator),
+               operandFlatString(exp.exp2, exp, false; inFunction = inFunction))
       end
 
       UNARY_EXPRESSION(__)  => begin
-        symbol(exp.operator, "") + operandFlatString(exp.exp, exp, false)
+        symbol(exp.operator, "") + operandFlatString(exp.exp, exp, false; inFunction = inFunction)
       end
 
       LBINARY_EXPRESSION(__)  => begin
-        operandFlatString(exp.exp1, exp, true) + symbol(exp.operator) + operandFlatString(exp.exp2, exp, false)
+        string(operandFlatString(exp.exp1, exp, true; inFunction = inFunction),
+               symbol(exp.operator)
+               ,operandFlatString(exp.exp2, exp, false; inFunction = inFunction))
       end
 
       LUNARY_EXPRESSION(__)  => begin
-        symbol(exp.operator, "") + " " + operandFlatString(exp.exp, exp, false)
+        symbol(exp.operator, "") + " " + operandFlatString(exp.exp, exp, false; inFunction = inFunction)
       end
 
       RELATION_EXPRESSION(__)  => begin
-        operandFlatString(exp.exp1, exp, true) + symbol(exp.operator) + operandFlatString(exp.exp2, exp, false)
+        operandFlatString(exp.exp1, exp, true; inFunction = inFunction) + symbol(exp.operator) + operandFlatString(exp.exp2, exp, false; inFunction = inFunction)
       end
 
       IF_EXPRESSION(__)  => begin
-        "if " + toFlatString(exp.condition) + " then " + toFlatString(exp.trueBranch) + " else " + toFlatString(exp.falseBranch)
+        "if " + toFlatString(exp.condition; inFunction = inFunction) + " then " + toFlatString(exp.trueBranch; inFunction = inFunction) + " else " + toFlatString(exp.falseBranch; inFunction = inFunction)
       end
 
       UNBOX_EXPRESSION(__)  => begin
-        "UNBOX_EXPRESSION(" + toFlatString(exp.exp) + ")"
+        "UNBOX_EXPRESSION(" + toFlatString(exp.exp; inFunction = inFunction) + ")"
       end
 
       BOX_EXPRESSION(__)  => begin
-        "BOX_EXPRESSION(" + toFlatString(exp.exp) + ")"
+        "BOX_EXPRESSION(" + toFlatString(exp.exp; inFunction = inFunction) + ")"
       end
 
       CAST_EXPRESSION(__)  => begin
-        toFlatString(exp.exp)
+        toFlatString(exp.exp; inFunction = inFunction)
       end
 
       SUBSCRIPTED_EXP_EXPRESSION(__)  => begin
-        toFlatSubscriptedString(exp.exp, exp.subscripts)
+        toFlatSubscriptedString(exp.exp, exp.subscripts; inFunction = inFunction)
       end
 
       TUPLE_ELEMENT_EXPRESSION(__)  => begin
-        toFlatString(exp.tupleExp) + "[" + intString(exp.index) + "]"
+        toFlatString(exp.tupleExp; inFunction = inFunction) + "[" + intString(exp.index; inFunction = inFunction) + "]"
       end
 
       RECORD_ELEMENT_EXPRESSION(__)  => begin
-        toFlatString(exp.recordExp) + "[field: " + exp.fieldName + "]"
+        toFlatString(exp.recordExp; inFunction = inFunction) + "[field: " + exp.fieldName + "]"
       end
 
       MUTABLE_EXPRESSION(__)  => begin
-        toFlatString(P_Pointer.access(exp.exp))
+        toFlatString(P_Pointer.access(exp.exp); inFunction = inFunction)
       end
 
       EMPTY(__)  => begin
@@ -4675,7 +4730,7 @@ function toFlatString(@nospecialize(exp::Expression)) ::String
       end
 
       PARTIAL_FUNCTION_APPLICATION_EXPRESSION(__)  => begin
-        "function " + toFlatString(exp.fn) + "(" + stringDelimitList(List(@do_threaded_for n + " = " + toFlatString(a) (a, n) (exp.args, exp.argNames)), ", ") + ")"
+        "function " + toFlatString(exp.fn; inFunction = inFunction) + "(" + stringDelimitList(List(@do_threaded_for n + " = " + toFlatString(a; inFunction = inFunction) (a, n) (exp.args, exp.argNames)), ", ") + ")"
       end
       _  => begin
         anyString(exp)
@@ -4741,10 +4796,10 @@ function toString(exp::Expression)
 
       RANGE_EXPRESSION(__)  => begin
         operandString(exp.start, exp, false) + (if isSome(exp.step)
-                                                ":" + operandString(Util.getOption(exp.step), exp, false)
-                                                else
-                                                ""
-                                                end) + ":" + operandString(exp.stop, exp, false)
+                                                        ":" + operandString(Util.getOption(exp.step), exp, false)
+                                                      else
+                                                        ""
+                                                      end) + ":" + operandString(exp.stop, exp, false)
       end
 
       TUPLE_EXPRESSION(__)  => begin
@@ -5125,7 +5180,9 @@ function applyIndexSubscriptRange(rangeExp::Expression, index::Subscript) ::Expr
      outExp = applyIndexSubscriptRange2(start_exp, step_exp, stop_exp, toInteger(index_exp))
   else
     @match RANGE_EXPRESSION(ty = ty) = rangeExp
-     outExp = SUBSCRIPTED_EXP_EXPRESSION(rangeExp, list(index), ty)
+    local subs = list(index)
+    local ty = subscript(ty, list(index))
+    outExp = SUBSCRIPTED_EXP_EXPRESSION(rangeExp, subs, ty)
   end
   outExp
 end
@@ -5380,6 +5437,11 @@ function makeRecord(recordName::Absyn.Path, @nospecialize(recordType::M_Type), f
   local exp::Expression
   exp = RECORD_EXPRESSION(recordName, recordType, fields)
   exp
+end
+
+function makeRange(start::Expression, step::Option{T}, stop::Expression) where {T}
+  local rangeTy = getRangeType(start, step, stop, typeOf(start), AbsynUtil.dummyInfo)
+  return RANGE_EXPRESSION(rangeTy, start, step, stop)
 end
 
 """
@@ -6691,7 +6753,7 @@ function isEqual(binding1::Binding, binding2::Binding)
   return equal
 end
 
-function toFlatString(binding::Binding, prefix::String = "")
+function toFlatString(binding::Binding, prefix::String = ""; inFunction = false)
   local string::String
    string = begin
     @match binding begin
@@ -6703,23 +6765,23 @@ function toFlatString(binding::Binding, prefix::String = "")
       end
 
       UNTYPED_BINDING(__) => begin
-        prefix + toFlatString(binding.bindingExp)
+        prefix + toFlatString(binding.bindingExp; inFunction = inFunction)
       end
 
       TYPED_BINDING(__) => begin
-        prefix + toFlatString(binding.bindingExp)
+        prefix + toFlatString(binding.bindingExp; inFunction = inFunction)
       end
 
       FLAT_BINDING(__) => begin
-        prefix + toFlatString(binding.bindingExp)
+        prefix + toFlatString(binding.bindingExp; inFunction = inFunction)
       end
 
       CEVAL_BINDING(__) => begin
-        prefix + toFlatString(binding.bindingExp)
+        prefix + toFlatString(binding.bindingExp; inFunction = inFunction)
       end
 
       INVALID_BINDING(__) => begin
-        toFlatString(binding.binding, prefix)
+        toFlatString(binding.binding, prefix; inFunction = inFunction)
       end
     end
   end
@@ -7145,7 +7207,6 @@ end
 
 function getTypedExp(binding::Binding)
   local exp::Expression
-
    exp = begin
     @match binding begin
       TYPED_BINDING(__) => begin
@@ -7279,4 +7340,62 @@ function fromAbsyn(
     end
   end
   return binding
+end
+
+
+"""
+@author johti17
+"""
+function modelicaListOfListToJuliaMatrix(modelicaLstLst::List{Cons{T}}) where {T}
+  local matrix = Vector{T}[]
+  for lst in modelicaLstLst
+    push!(matrix, listArray(lst))
+  end
+  #= Convert to matrix =#
+  return hcat(matrix...)
+end
+
+
+"""
+@author johti17
+"""
+function modelicaMatrixToJuliaMatrix(modelicaMatrix::MATRIX_EXPRESSION)
+  local jlMatrix = modelicaListOfListToJuliaMatrix(modelicaMatrix.elements)
+  return jlMatrix
+end
+
+"""
+@author johti17.
+Same as modelicaMatrixToJuliaMatrix, but for matrices represented as a List of Array Expressions.
+"""
+function modelicaMatrixToJuliaMatrix(lst::Cons{Expression})
+  local matrix = Vector{Expression}[]
+  #= Convert the list of array expressions into a list of list. =#
+  for exp in lst
+    @assert exp isa ARRAY_EXPRESSION "The expressions in the list must be of type array expressions. The expression was: $(T)"
+    push!(matrix, listArray(exp.elements))
+  end
+  local jlMatrix::Matrix{ARRAY_EXPRESSION} = hcat(matrix...)
+  return Base.permutedims(jlMatrix)
+end
+
+"""
+  Converts a Matrix of expressions to a list of array expressions.
+"""
+function jlMatrixToModelicaArrayExpLists(jlMatrix::Matrix{ARRAY_EXPRESSION})
+  (ncols, nrows) = Base.size(jlMatrix)
+  arrayExps::Vector{Expression} = Expression[]
+  local lstLst::List{Expression} = nil
+  for col in eachcol(jlMatrix)
+    for (i,e) in enumerate(col)
+      push!(arrayExps, e)
+    end
+    (combinedElements) = Base.reduce(vcat,
+                            Base.map(x -> listArray(x.elements), arrayExps))
+    lstLst = ARRAY_EXPRESSION(arrayExps[1].ty, arrayList(combinedElements), arrayExps[1].literal) <| lstLst
+    arrayExps = Expression[]
+  end
+  lstLst = listReverse(lstLst)
+  #println("List list:\n" * toString(lstLst))
+  return lstLst
 end

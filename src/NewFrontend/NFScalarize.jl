@@ -34,6 +34,7 @@ function scalarize(flatModel::FlatModel, name::String)::FlatModel
   for v in flatModel.variables
     scalarizeVariable(v, vars)
   end
+  #println(replace(toFlatString(flatModel, nil, true), "\\n" => "\n"))
   @assign flatModel.variables = vars
   @assign flatModel.equations = mapExpList(flatModel.equations, expandComplexCref)
   @assign flatModel.equations = scalarizeEquations(flatModel.equations)
@@ -129,9 +130,8 @@ function scalarizeVariable(var::Variable, vars::Vector{Variable})
   return vars
 end
 
-function scalarizeTypeAttributes(
-  attrs::Vector{Tuple{String, Binding}},
-)
+function scalarizeTypeAttributes(attrs::Vector{Tuple{String, Binding}},
+  )
   local iters::Vector{ExpressionIterator}
   local names::Vector{String} = String[]
   local len::Int
@@ -143,7 +143,7 @@ function scalarizeTypeAttributes(
   i = len
   for attr in attrs
     (name, binding) = attr
-    push!(names, name)
+    pushfirst!(names, name)
     iters[i] = fromBinding(binding)
     i = i - 1
   end
@@ -218,40 +218,85 @@ function scalarizeEquation(@nospecialize(eq::Equation), equations::Vector{Equati
     local eql::List{Equation}
     @match eq begin
       EQUATION_EQUALITY(
-        lhs = lhs,
-        rhs = rhs,
-        ty = ty,
-        source = src,
-      ) where {(isArray(ty))} => begin
-        if hasArrayCall(lhs) ||
-           hasArrayCall(rhs)
-          equations =
-            push!(equations, EQUATION_ARRAY_EQUALITY(lhs, rhs, ty, src))
-        else
-          lhs_iter = fromExpToExpressionIterator(lhs)
-          rhs_iter = fromExpToExpressionIterator(rhs)
-          ty = arrayElementType(ty)
-          while hasNext(lhs_iter)
-            if !hasNext(rhs_iter)
-              Error.addInternalError(
-                getInstanceName() +
-                " could not expand rhs " +
-                toString(eq.rhs),
-                ElementSource_getInfo(src),
-              )
-            end
-            (lhs_iter, lhs) = next(lhs_iter)
-            (rhs_iter, rhs) = next(rhs_iter)
-            equations =
-              push!(equations, EQUATION_EQUALITY(lhs, rhs, ty, src))
-          end
-        end
-        equations
-      end
+        lhs,
+        rhs,
+        ty,
+        src,
+      ) where{isArray(ty)} => begin
 
-      EQUATION_ARRAY_EQUALITY(__) => begin
-        push!(equations, EQUATION_ARRAY_EQUALITY(eq.lhs, eq.rhs, eq.ty, eq.source))
+        local lhs = eq.lhs
+      if hasArrayCall(lhs) || hasArrayCall(rhs)
+        # println("Pushing array eq " * toString(EQUATION_ARRAY_EQUALITY(lhs, rhs, ty, src)))
+        equations =
+          push!(equations, EQUATION_ARRAY_EQUALITY(lhs, rhs, ty, src))
+      else
+        #println("BEFORE " * toString(eq))
+        lhs_iter = fromExpToExpressionIterator(lhs)
+        rhs_iter = fromExpToExpressionIterator(rhs)
+        ty = arrayElementType(ty)
+        while hasNext(lhs_iter)
+          if !hasNext(rhs_iter)
+            local msg = string(" could not expand rhs " + toString(rhs) * " to match " * toString(lhs),
+                               " rhs type was: $(toString(ty)) & lhs type was: $(toString(ty))")
+            println(toString(lhs_iter))
+            println(toString(rhs_iter))
+            Error.addInternalError(
+              getInstanceName() +
+                msg,
+              src.info,
+            )
+            fail()
+          end
+          (lhs_iter, lhs) = next(lhs_iter)
+          (rhs_iter, rhs) = next(rhs_iter)
+          #println("After " * toString(lhs))
+          equations =
+            push!(equations, EQUATION_EQUALITY(lhs, rhs, ty, src))
+        end
       end
+      equations
+      end
+      EQUATION_ARRAY_EQUALITY(
+        CREF_EXPRESSION(__),
+        rhs,
+        ty,
+        src) where{isArray(ty) && (isArray(eq.rhs) || isArray(eq.lhs))} => begin
+          local lhs = eq.lhs
+          if hasArrayCall(lhs) || hasArrayCall(rhs)
+            # println("Pushing array eq " * toString(EQUATION_ARRAY_EQUALITY(lhs, rhs, ty, src)))
+            equations =
+              push!(equations, EQUATION_ARRAY_EQUALITY(lhs, rhs, ty, src))
+          else
+            #println("BEFORE " * toString(eq))
+            lhs_iter = fromExpToExpressionIterator(lhs)
+            rhs_iter = fromExpToExpressionIterator(rhs)
+            ty = arrayElementType(ty)
+            while hasNext(lhs_iter)
+              if !hasNext(rhs_iter)
+                local msg =   string(" could not expand rhs " + toString(eq.rhs) * " to match " * toString(eq.lhs),
+                                     " rhs type was: $(toString(rhs.ty)) & lhs type was: $(toString(lhs.ty)). Full Equation: $(toString(eq))")
+                Error.addInternalError(
+                  getInstanceName() +
+                    msg,
+                  src.info,
+                )
+                fail()
+              end
+              (lhs_iter, lhs) = next(lhs_iter)
+              (rhs_iter, rhs) = next(rhs_iter)
+              #println("After " * toString(lhs))
+              equations =
+                push!(equations, EQUATION_EQUALITY(lhs, rhs, ty, src))
+            end
+          end
+          equations
+
+        end
+
+    EQUATION_ARRAY_EQUALITY(__) => begin
+      #println("Was  array equality " * toString(eq))
+      push!(equations, EQUATION_ARRAY_EQUALITY(eq.lhs, eq.rhs, eq.ty, eq.source))
+    end
 
       EQUATION_CONNECT(__) => begin
         equations
@@ -415,7 +460,7 @@ function scalarizeWhenStatement(
     (cond, body) = b
     body = scalarizeStatements(body)
     if isArray(typeOf(cond))
-      cond = expand(cond)
+      (cond, _) = expand(cond)
     end
     push!(bl, (cond, body))
   end

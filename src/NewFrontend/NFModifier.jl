@@ -121,21 +121,21 @@ end
 
 function toFlatString(mod::Modifier, printName::Bool = true)
   local string::String
-  @assign string = begin
+  string = begin
     local submods::List{Modifier}
     local subs_str::String
     local binding_str::String
     local binding_sep::String
     @match mod begin
       MODIFIER_MODIFIER(__) => begin
-        @assign submods = ModTable.listValues(mod.subModifiers)
+        submods = ModTable.listValues(mod.subModifiers)
         if !listEmpty(submods)
-          @assign subs_str =
+          subs_str =
             "(" + stringDelimitList(list(toFlatString(s) for s in submods), ", ") + ")"
-          @assign binding_sep = " = "
+          binding_sep = " = "
         else
-          @assign subs_str = ""
-          @assign binding_sep = if printName
+          subs_str = ""
+          binding_sep = if printName
             " = "
           else
             "= "

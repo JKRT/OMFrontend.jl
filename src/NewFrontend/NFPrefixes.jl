@@ -137,7 +137,7 @@ function isExpandable(cty::Int)::Bool
 end
 
 function setExpandable(cty::Int)::Int
-  @assign cty = intBitOr(cty, EXPANDABLE)
+  @assign cty = intBitOr(cty, ConnectorType.EXPANDABLE)
   return cty
 end
 

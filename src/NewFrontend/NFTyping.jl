@@ -918,19 +918,17 @@ end
 
 """ #= Tries to fetch the binding for a given record field by using the binding of
    the record instance. =#"""
-function getRecordElementBinding(component::InstNode)::Tuple{Binding, Int}
+function getRecordElementBinding(componentVar::InstNode)::Tuple{Binding, Int}
   local parentDims::Int = 0
   local binding::Binding
-
   local parent::InstNode
   local comp::Component
   local exp::Expression
   local parent_binding::Binding
-
-   parent = derivedParent(component)
+   parent = derivedParent(componentVar)
   if isComponent(parent)
-     comp = component(parent)
-     parent_binding = getBinding(comp)
+    comp = component(parent)
+    parent_binding = getBinding(comp)
     if isUnbound(parent_binding)
        (binding, parentDims) = getRecordElementBinding(parent)
     else
@@ -941,7 +939,7 @@ function getRecordElementBinding(component::InstNode)::Tuple{Binding, Int}
     end
      parentDims = parentDims + dimensionCount(comp)
     if isBound(binding)
-       binding = recordFieldBinding(component, binding)
+       binding = recordFieldBinding(componentVar, binding)
     end
   else
      binding = EMPTY_BINDING
@@ -3699,7 +3697,7 @@ function typeEqualityEquation(
       Error.EQUATION_TYPE_MISMATCH_ERROR,
       list(
         toString(e1) + " = " + toString(e2),
-        Type.toString(ty1) + " = " + Type.toString(ty2),
+        toString(ty1) + " = " + toString(ty2),
       ),
       info,
     )
@@ -3790,8 +3788,8 @@ function typeIfEquation(
     end
     ErrorExt.delCheckpoint(getInstanceName())
   end
-  #=  Do branch selection anyway if -d=-nfScalarize is set, otherwise turning of =#
-  #=  scalarization breaks currently.
+  #=  Do branch selection anyway if -d=-nfScalarize is set, otherwise turning of
+    scalarization breaks currently.
   =#
   if !Flags.isSet(Flags.NF_SCALARIZE)
     bl = bl2
@@ -3802,7 +3800,7 @@ function typeIfEquation(
           EQUATION_BRANCH(
             __,
           ) where {(b.conditionVar <= Variability.STRUCTURAL_PARAMETER)} => begin
-            b.condition = evalExp(b.condition)
+            @assign b.condition = evalExp(b.condition)
             if isFalse(b.condition)
               bl2
             else

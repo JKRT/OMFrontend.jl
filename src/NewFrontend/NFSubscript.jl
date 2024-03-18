@@ -47,9 +47,8 @@ function toInteger(subscript::Subscript)::Int
   return int
 end
 
-function toExp(subscript::Subscript)::Expression
+function toExp(subscript::Subscript)
   local exp::Expression
-
    exp = begin
     @match subscript begin
       SUBSCRIPT_UNTYPED(__) => begin
@@ -91,6 +90,18 @@ function fromExp(exp::Expression)::Subscript
     end
   end
   return subscript
+end
+
+"""
+Backported function
+"""
+function fromTypedExp(exp::Expression)
+  res = if isArray(typeOf(exp))
+    SUBSCRIPT_SLICE(exp)
+  else
+    SUBSCRIPT_INDEX(exp)
+  end
+  return res
 end
 
 function isValidIndexType(ty::NFType)::Bool
@@ -383,11 +394,11 @@ function scalarize(subscript::Subscript, dimension::Dimension)::List{Subscript}
       end
 
       SUBSCRIPT_SLICE(__) => begin
-        List(
+        list(
           SUBSCRIPT_INDEX(e)
           for
           e in
-          arrayElements(P_ExpandExp.ExpandExp.expand(subscript.slice))
+            arrayElements(expand(subscript.slice))
         )
       end
 
@@ -421,7 +432,28 @@ function toDimension(subscript::Subscript)::Dimension
   return dimension
 end
 
-function simplifySubscript(subscript::Subscript)::Subscript
+# function simplifySubscript(subscript::Subscript)::Subscript
+#   local outSubscript::Subscript
+#   outSubscript = begin
+#     @match subscript begin
+#       SUBSCRIPT_INDEX(__) => begin
+#         SUBSCRIPT_INDEX(simplify(subscript.index))
+#       end
+#       SUBSCRIPT_SLICE(__) => begin
+#         SUBSCRIPT_SLICE(simplify(subscript.slice))
+#       end
+#       _ => begin
+#         subscript
+#       end
+#     end
+#   end
+#   return outSubscript
+# end
+
+"""
+  New variant of simplify with two arguments
+"""
+function simplify(subscript::Subscript, dimension::Dimension)
   local outSubscript::Subscript
   outSubscript = begin
     @match subscript begin
@@ -429,7 +461,7 @@ function simplifySubscript(subscript::Subscript)::Subscript
         SUBSCRIPT_INDEX(simplify(subscript.index))
       end
       SUBSCRIPT_SLICE(__) => begin
-        SUBSCRIPT_SLICE(simplify(subscript.slice))
+        simplifySlice(subscript.slice, dimension)
       end
       _ => begin
         subscript
@@ -438,6 +470,38 @@ function simplifySubscript(subscript::Subscript)::Subscript
   end
   return outSubscript
 end
+
+#= TODO implement simplify slice / John 2024=#
+function simplifySlice(slice::Expression, dimension::Dimension)
+  exp = simplify(slice)
+  outSubscript = @match exp begin
+    RANGE_EXPRESSION(__) where{isNone(exp.step) || isOne(Util.getOption(exp.step)) && expIsLowerBound(exp.start) && expIsUpperBound(exp.stop, dimension)} => begin
+      SUBSCRIPT_WHOLE()
+    end
+    _ => SUBSCRIPT_SLICE(exp)
+  end
+  return outSubscript
+end
+
+function simplifyList(subscripts::List, dimensions::List ; trim = false)
+  local outSubscripts::List = nil
+  if listEmpty(dimensions)
+    outSubscripts = list(simplify(s, DIMENSION_UNKNOWN()) for s in subscripts)
+  else
+    rest_d = ListUtil.lastN(dimensions, listLength(subscripts))
+    for s in subscripts
+      @match d <| rest_d = rest_d;
+      outSubscripts = simplify(s, d) <| outSubscripts
+    end
+    if trim
+      outSubscripts = listReverseInPlace(ListUtil.trim(outSubscripts, isWhole))
+    else
+      outSubscripts = listReverseInPlace(outSubscripts)
+    end
+  end
+  return outSubscripts
+end
+
 
 function eval(
   subscript::Subscript,
@@ -467,7 +531,7 @@ function toFlatStringList(subscripts::List{<:Subscript})::String
   return string
 end
 
-function toFlatString(subscript::Subscript)::String
+function toFlatString(subscript::Subscript; inFunction = false)
   local string::String
 
    string = begin
@@ -477,15 +541,15 @@ function toFlatString(subscript::Subscript)::String
       end
 
       SUBSCRIPT_UNTYPED(__) => begin
-        toFlatString(subscript.exp)
+        toFlatString(subscript.exp; inFunction = inFunction)
       end
 
       SUBSCRIPT_INDEX(__) => begin
-        toFlatString(subscript.index)
+        toFlatString(subscript.index; inFunction = inFunction)
       end
 
       SUBSCRIPT_SLICE(__) => begin
-        toFlatString(subscript.slice)
+        toFlatString(subscript.slice; inFunction = inFunction)
       end
 
       SUBSCRIPT_EXPANDED_SLICE(__) => begin
@@ -617,7 +681,7 @@ function mapFoldExpShallow(subscript::Subscript, func::MapFunc, arg::ArgT) where
         if referenceEq(subscript.index, exp)
           subscript
         else
-          SUBSCRIPT_INDEX(exp)
+          fromTypedExp(exp)
         end
       end
       SUBSCRIPT_SLICE(__) => begin
@@ -625,7 +689,7 @@ function mapFoldExpShallow(subscript::Subscript, func::MapFunc, arg::ArgT) where
         if referenceEq(subscript.slice, exp)
           subscript
         else
-          SUBSCRIPT_SLICE(exp)
+          fromTypedExp(exp)
         end
       end
       _ => begin
@@ -657,7 +721,7 @@ function mapFoldExp(subscript::Subscript, func::MapFunc, arg::ArgT) where {ArgT}
         if referenceEq(subscript.index, exp)
           subscript
         else
-          SUBSCRIPT_INDEX(exp)
+          fromTypedExp(exp)
         end
       end
 
@@ -666,7 +730,7 @@ function mapFoldExp(subscript::Subscript, func::MapFunc, arg::ArgT) where {ArgT}
         if referenceEq(subscript.slice, exp)
           subscript
         else
-          SUBSCRIPT_SLICE(exp)
+          fromTypedExp(exp)
         end
       end
 
@@ -724,7 +788,7 @@ function mapShallowExp(subscript::Subscript, func::MapFunc)::Subscript
         if referenceEq(e1, e2)
           subscript
         else
-          SUBSCRIPT_INDEX(e2)
+          fromTypedExp(e2)
         end
       end
 
@@ -733,7 +797,7 @@ function mapShallowExp(subscript::Subscript, func::MapFunc)::Subscript
         if referenceEq(e1, e2)
           subscript
         else
-          SUBSCRIPT_SLICE(e2)
+          fromTypedExp(e2)
         end
       end
 
@@ -766,7 +830,7 @@ function mapExp(subscript::Subscript, func::MapFunc)::Subscript
         if referenceEq(e1, e2)
           subscript
         else
-          SUBSCRIPT_INDEX(e2)
+          fromTypedExp(e2)
         end
       end
 
@@ -775,7 +839,7 @@ function mapExp(subscript::Subscript, func::MapFunc)::Subscript
         if referenceEq(e1, e2)
           subscript
         else
-          SUBSCRIPT_SLICE(e2)
+          fromTypedExp(e2)
         end
       end
 
@@ -1110,4 +1174,24 @@ function makeIndex(exp::Expression)::Subscript
     fail()
   end
   return subscript
+end
+
+function isLiteral(sub::Subscript)
+  local literal::Bool
+  literal = @match sub begin
+    SUBSCRIPT_UNTYPED(__) => isLiteral(sub.exp)
+    SUBSCRIPT_INDEX(__) => isLiteral(sub.index)
+    SUBSCRIPT_SLICE(__) => isLiteral(sub.slice)
+    SUBSCRIPT_WHOLE(__) => true
+    _ => false
+  end
+  return literal
+end
+
+function isSplit(sub::Subscript)
+  res = @match sub begin
+    SPLIT_PROXY(__) => true
+    SPLIT_INDEX(__) => true
+  end
+  return res
 end

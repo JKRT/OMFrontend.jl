@@ -1,4 +1,4 @@
-Face = (() -> begin #= Enumeration =#
+const Face = (() -> begin #= Enumeration =#
   INSIDE = 1
   OUTSIDE = 2
   () -> (INSIDE; OUTSIDE)
@@ -16,7 +16,7 @@ const FaceType = Int
 end
 const Connector = NFConnector
 
-ScalarizeSetting = (() -> begin #= Enumeration =#
+const ScalarizeSetting = (() -> begin #= Enumeration =#
                     NONE = 1  #= a[2].b[2] => {a[2].b[2]} =#
                     PREFIX = 2  #= a[2].b[2] => {a[1].b[2], a[2].b[2]} =#
                     ALL = 3  #= a[2].b[2] => {a[1].b[1], a[1].b[2], a[2].b[1], a[2].b[2]} =#
@@ -237,6 +237,12 @@ function splitImpl2(
   return conns
 end
 
+function addSubscripts(subscripts::List{Subscript}, conn::Connector)
+  @assign conn.name = mergeSubscripts(subscripts, conn.name; applyToScope = true)
+  @assign conn.ty = subscript(conn.ty, subscripts)
+  return conn
+end
+
 function splitImpl(
   name::ComponentRef,
   ty::NFType,
@@ -343,4 +349,9 @@ function crefFace(cref::ComponentRef)::FaceType
   #=  Otherwise, check first part of the cref.
   =#
   return face
+end
+
+
+function isArray(conn::Connector)
+  return isArray(conn.ty)
 end

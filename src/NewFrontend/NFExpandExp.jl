@@ -356,26 +356,25 @@ function expandBinaryMatrixVector(exp::Expression)::Tuple{Expression, Bool}
   local n::Dimension
 
   @match BINARY_EXPRESSION(exp1 = exp1, exp2 = exp2) = exp
-   (exp1, expanded) = expand(exp1)
+  (exp1, expanded) = expand(exp1)
   if expanded
     @match ARRAY_EXPRESSION(TYPE_ARRAY(ty, _cons(n, T)), expl) = exp1
-    @assign ty = TYPE_ARRAY(ty, list(n))
+    ty = TYPE_ARRAY(ty, list(n))
     if listEmpty(expl)
-      @assign outExp = makeZero(ty)
+      outExp = makeZero(ty)
     else
-       (exp2, expanded) = expand(exp2)
+      (exp2, expanded) = expand(exp2)
       if expanded
-        @assign expl = list(makeScalarProduct(e1, exp2) for e1 in expl)
-        @assign outExp = makeArray(ty, expl)
+        #=  c[i] = a[i, :] * b for i in 1:n =#
+        expl = list(makeScalarProduct(e1, exp2) for e1 in expl)
+        outExp = makeArray(ty, expl)
       else
-        @assign outExp = exp
+        outExp = exp
       end
     end
   else
-    @assign outExp = exp
+    outExp = exp
   end
-  #=  c[i] = a[i, :] * b for i in 1:n
-  =#
   return (outExp, expanded)
 end
 

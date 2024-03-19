@@ -61,6 +61,11 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
 end
 
 
+"""
+Helper function called by instClassInProgram.
+The main work is done here. The function dumpFlatModel will dump the flat model at intermediate stages
+if the Flags.NF_DUMP_FLAT flag is set to true.
+"""
 function instClassInProgramFM2(classPath::Absyn.Path, program::SCode.Program)::Tuple
   local top::InstNode
   local cls::InstNode

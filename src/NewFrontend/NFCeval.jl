@@ -2840,12 +2840,30 @@ function evalBuiltinCat(
   elseif sz == 1
     result = listHead(es)
   else
+    # print("\nBEFORE EVAL CAT {");
+    # for e in es
+    #   print(toString(e));
+    #   print(",");
+    # end
+    #   print("}\n");
     (es, dims) = evalCat(
       n,
       es,
       arrayElements,
       toString,
     )
+    # print("\nEVAL CAT {");
+    # for e in es
+    #   print(toString(e));
+    #   print(",");
+    # end
+    # print("}\n");
+    # print("\nDimensions {")
+    # for d in dims
+    #   print(String(d))
+    #   print(",")
+    # end
+    # print("}\n")
     result = arrayFromList(
       es,
       typeOf(listHead(es)),
@@ -4805,9 +4823,7 @@ function evalCat(dim::Int, exps::List{Expression}, getArrayContents::Function, t
     for lst in outExpsAsList
       #println(lst)
       for arrs in lst
-        for e in arrs.elements
-          outExpFlat = e <| outExpFlat
-        end
+        outExpFlat = arrs <| outExpFlat
       end
     end
     outExpFlat = listReverse(outExpFlat)

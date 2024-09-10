@@ -22,7 +22,7 @@ TODO:
   Cache for NFModelicaBuiltin.
   This cache is initialized when the module is loaded.
 """
-const NFModelicaBuiltinCache = Dict()
+const NFModelicaBuiltinCache = Dict{String, Any}()
 
 """
   This cache contains various instantiated libraries for later use.
@@ -41,6 +41,15 @@ function __init__()
   packagePath = dirname(realpath(Base.find_package("OMFrontend")))
   packagePath *= "/.."
   pathToTest = packagePath * "/test/Models/HelloWorld.mo"
+  
+  # 初始化 NFModelicaBuiltinCache
+  if !haskey(NFModelicaBuiltinCache, "NFModelicaBuiltin")
+    pathToLib = packagePath * "/lib/NFModelicaBuiltin.mo"
+    p = OMParser.parseFile(pathToLib, 2) # 2 for MetaModelica
+    s = Main.AbsynToSCode.translateAbsyn2SCode(p)
+    NFModelicaBuiltinCache["NFModelicaBuiltin"] = s
+  end
+  
   p = OMParser.parseFile(pathToTest, 1)
   s = Main.AbsynToSCode.translateAbsyn2SCode(p)
   Main.Global.initialize()

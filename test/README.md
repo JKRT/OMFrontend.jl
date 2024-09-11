@@ -20,15 +20,21 @@ For instance:
 ```
 @testset "Analog.Sources" begin
   prefix = "Modelica.Electrical.Analog.Sources"
-  @test typeof(flattenModelInMSL_TST("$(prefix).SignalVoltage")[1]) == OMFrontend.Main.FLAT_MODEL
-  @test typeof(flattenModelInMSL_TST("$(prefix).ConstantVoltage")[1]) == OMFrontend.Main.FLAT_MODEL
-  @test typeof(flattenModelInMSL_TST("$(prefix).SineVoltage")[1]) == OMFrontend.Main.FLAT_MODEL
-  #Broken @test typeof(flattenModelInMSL_TST("$(prefix).StepVoltage")[1]) == OMFrontend.Main.FLAT_MODEL
+  @test typeof(flattenModelInMSL_TST("$(prefix).SignalVoltage")[1]) == OMFrontend.Frontend.FLAT_MODEL
+  @test typeof(flattenModelInMSL_TST("$(prefix).ConstantVoltage")[1]) == OMFrontend.Frontend.FLAT_MODEL
+  @test typeof(flattenModelInMSL_TST("$(prefix).SineVoltage")[1]) == OMFrontend.Frontend.FLAT_MODEL
+  #Broken @test typeof(flattenModelInMSL_TST("$(prefix).StepVoltage")[1]) == OMFrontend.Frontend.FLAT_MODEL
 end
 ```
 
 In the cose above say that the testsuite get's stuck on SineVoltage.
 To run this faster, just cancel the current run of the test and run SineVoltage outside (With the prefix defined):
 ```
-  typeof(flattenModelInMSL_TST("$(prefix).SineVoltage")[1]) == OMFrontend.Main.FLAT_MODEL
+  typeof(flattenModelInMSL_TST("$(prefix).SineVoltage")[1]) == OMFrontend.Frontend.FLAT_MODEL
 ```
+
+
+## Adding tests
+There are various tests in this package.
+If you have a small model or would like to add a new feature you can do so by adding a test similar to how it is done in `equationTests.jl`.
+See that file for more information on how you may add a new test to the testsuite.

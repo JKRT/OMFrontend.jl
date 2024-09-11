@@ -2,6 +2,8 @@
 # OMFrontend.jl
 Experimental implementation of NF. That is a Modelica frontend in Julia.
 For the entire suite of software components that make up this compiler see [OpenModelica.jl](https://github.com/JKRT/OM.jl)
+In general the API for this package is low-level.
+For a more high level use cases, see the other package OM.jl.
 
 ## Notes regarding the first public release
 This should be considered an alpha.

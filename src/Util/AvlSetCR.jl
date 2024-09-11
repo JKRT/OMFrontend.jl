@@ -33,11 +33,11 @@ using ExportAll
 * See the full OSMC Public License conditions for more details.
 *
 */ =#
-import Main.BaseAvlSet
+import Frontend.BaseAvlSet
 using BaseAvlSet #= Modelica extend clause =#
 
 import DAE
-import .Main.ComponentReference
+import .Frontend.ComponentReference
 Key = DAE.ComponentRef
 
 @exportAll()

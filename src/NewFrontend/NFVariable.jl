@@ -158,9 +158,8 @@ function isEmptyArray(variable::Variable)::Bool
   return isEmpty
 end
 
-function variability(variable::Variable)::VariabilityType
-  local variability::VariabilityType = variable.attributes.variability
-  return variability
+function variability(variable::Variable)
+  return variable.attributes.variability
 end
 
 function isStructural(variable::Variable)::Bool

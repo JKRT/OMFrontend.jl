@@ -34,7 +34,7 @@ function elaborate(
     ListUtil.mapFold(undeclared_conns, addUndeclaredConnectorToSets, csets)
   #=  Extract the sets of connected connectors.
   =#
-  csets_array = ConnectionSets.extractSets(csets)
+  (csets_array, _) = ConnectionSets.extractSets(csets)
   #= for set in csets_array loop
   =#
   #=   print(\"Expandable connection set:\\n\");
@@ -49,14 +49,14 @@ function elaborate(
   =#
   #=  created variables to the flat model.
   =#
-  @assign vars = flatModel.variables
+  vars = arrayList(flatModel.variables) #TODO: Change the submodule so they are always vectors
   for set in csets_array
-    @assign vars = elaborateExpandableSet(set, vars)
+    vars = elaborateExpandableSet(set, vars)
   end
   #=  Update the connections and put them back in the list of connections.
   =#
-  @assign conns = ListUtil.fold(undeclared_conns, updateUndeclaredConnection, conns)
-  @assign conns = ListUtil.fold(expandable_conns, updateExpandableConnection, conns)
+  conns = ListUtil.fold(undeclared_conns, updateUndeclaredConnection, conns)
+  conns = ListUtil.fold(expandable_conns, updateExpandableConnection, conns)
   @assign connections.connections = conns
   #=  Update the attributes of potentially present variables so that they have
   =#
@@ -64,8 +64,8 @@ function elaborate(
   =#
   #=  if they've been marked as present.
   =#
-  @assign vars = list(updatePotentiallyPresentVariable(v) for v in vars)
-  @assign flatModel.variables = vars
+  vars = list(updatePotentiallyPresentVariable(v) for v in vars)
+  @assign flatModel.variables = listArray(vars)
   return (flatModel, connections)
 end
 
@@ -74,7 +74,7 @@ module ExpandableSet
 using MetaModelica
 using ExportAll
 
-import ..Main.NFConnector
+import ..Frontend.NFConnector
 
 const Value = Int
 const Key = NFConnector
@@ -173,12 +173,10 @@ function addExpandableConnectorsToSets(
   conns::List{<:Connection},
   csets::ConnectionSets.Sets,
 )::ConnectionSets.Sets
-
   local c1::Connector
   local c2::Connector
-
   for conn in conns
-    @match P_Connection.Connection.CONNECTION(lhs = c1, rhs = c2) = conn
+    @match CONNECTION(lhs = c1, rhs = c2) = conn
     @assign csets = addConnectionToSets(c1, c2, csets)
     @assign csets = addNestedExpandableConnectorsToSets(c1, c2, csets)
   end
@@ -202,7 +200,7 @@ function addNestedExpandableConnectorsToSets(
   end
   for ec1 in ecl1
      (ecl2, oec) =
-      ListUtil.deleteMemberOnTrue(ec1, ecl2, Connector.isNodeNameEqual)
+      ListUtil.deleteMemberOnTrue(ec1, ecl2, isNodeNameEqual)
     if isSome(oec)
       @assign csets = addConnectionToSets(ec1, Util.getOption(oec), csets)
     end
@@ -218,12 +216,12 @@ function getExpandableConnectorsInConnector(c1::Connector)::List{Connector}
   local name::ComponentRef
   local ty::M_Type
 
-  @assign ecl = begin
+  ecl = begin
     @match c1 begin
-      Connector.CONNECTOR(
+      CONNECTOR(
         name = par_name,
         ty = TYPE_COMPLEX(
-          complexTy = ComplexType.EXPANDABLE_CONNECTOR(expandableConnectors = nodes),
+          complexTy = COMPLEX_EXPANDABLE_CONNECTOR(expandableConnectors = nodes),
         ),
       ) => begin
         @assign ecl = nil
@@ -231,10 +229,10 @@ function getExpandableConnectorsInConnector(c1::Connector)::List{Connector}
           @assign ty = getType(n)
           @assign name = prefixCref(n, ty, nil, par_name)
           @assign ecl = _cons(
-            Connector.fromCref(
+            fromCref(
               name,
               ty,
-              ElementSource.createElementSource(info(n)),
+              ElementSource.createElementSource(InstNode_info(n)),
             ),
             ecl,
           )
@@ -260,19 +258,19 @@ function addUndeclaredConnectorToSets(
   local c::Connector
   local ec::Connector
 
-  @match P_Connection.Connection.CONNECTION(lhs = c1, rhs = c2) = conn
+  @match CONNECTION(lhs = c1, rhs = c2) = conn
   #=  Figure out which connector to add, and create a virtual connector if necessary.
   =#
-  if ConnectorType.isUndeclared(c1.cty)
-    if ConnectorType.isVirtual(c1.cty)
+  if isUndeclared(c1.cty)
+    if isVirtual(c1.cty)
       @assign c1 = makeVirtualConnector(c1, c2)
-      @assign conn = P_Connection.Connection.CONNECTION(c1, c2)
+      @assign conn = CONNECTION(c1, c2)
     end
     @assign c = c1
   else
-    if ConnectorType.isVirtual(c2.cty)
+    if isVirtual(c2.cty)
       @assign c2 = makeVirtualConnector(c2, c1)
-      @assign conn = P_Connection.Connection.CONNECTION(c1, c2)
+      @assign conn = CONNECTION(c1, c2)
     end
     @assign c = c2
   end
@@ -280,7 +278,7 @@ function addUndeclaredConnectorToSets(
   =#
   #=  connector it should be added to. The type here is wrong, but it doesn't matter.
   =#
-  @assign ec = Connector.CONNECTOR(
+  @assign ec = CONNECTOR(
     rest(c.name),
     c.ty,
     c.face,
@@ -307,9 +305,9 @@ function addConnectionToSets(
   =#
   #=  we make sure the face of all the connectors we add is the same.
   =#
-  @assign csets = ConnectionSets.merge(
-    Connector.setOutside(c1),
-    Connector.setOutside(c2),
+  csets = ConnectionSets.merge(
+    setOutside(c1),
+    setOutside(c2),
     csets,
   )
   return csets

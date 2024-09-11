@@ -3,21 +3,21 @@ module AbsynDumpTpl
 using MetaModelica
 using ExportAll
 
-import Main.Tpl
+import Frontend.Tpl
 
 import Absyn
 
-import .Main.AbsynUtil
+import .Frontend.AbsynUtil
 
-import .Main.Util
+import .Frontend.Util
 
-import .Main.Config
+import .Frontend.Config
 
-import .Main.Dump
+import .Frontend.Dump
 
-import .Main.System
+import .Frontend.System
 
-import .Main.Flags
+import .Frontend.Flags
 
 function lm_9(
   in_txt::Tpl.Text,

@@ -50,9 +50,9 @@ keyEqual   - A comparison function between two keys, returns true if equal.
 
 import DAE
 
-import Main.BaseHashTable
+import Frontend.BaseHashTable
 
-import Main.Types
+import Frontend.Types
 
 Key = DAE.Type
 

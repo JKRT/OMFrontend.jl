@@ -414,7 +414,7 @@ function toDAE(ty::NFType; makeTypeVars::Bool = true)::DAE.Type
 
       TYPE_UNKNOWN(__) => begin
         DAE.T_UNKNOWN_DEFAULT
-      end
+       end
 
       TYPE_COMPLEX(__) => begin
         if makeTypeVars
@@ -565,9 +565,10 @@ function toFlatDeclarationStream(ty::NFType, s::IOStream_M.IOSTREAM)
       s = IOStream_M.append(s, "type '")
       s = IOStream_M.append(s, AbsynUtil.pathString(ty.typePath))
       s = IOStream_M.append(s, "' = enumeration(")
-      if ! listEmpty(ty.literals)
-        s = IOStream_M.append(s, listHead(ty.literals))
-        for l in listRest(ty.literals)
+      local tmpLits = ty.literals
+      if ! listEmpty(tmpLits)
+        s = IOStream_M.append(s, listHead(tmpLits))
+        for l in listRest(tmpLits)
           s = IOStream_M.append(s, ", ")
           s = IOStream_M.append(s, l)
         end
@@ -1301,14 +1302,12 @@ end
 
 function isSingleElementArray(ty::M_Type)::Bool
   local isSingleElement::Bool
-
   @assign isSingleElement = begin
     local d::Dimension
     @match ty begin
       TYPE_ARRAY(dimensions = d <| nil()) => begin
-        P_Dimension.Dimension.isKnown(d) && P_Dimension.Dimension.size(d) == 1
+        isKnown(d) && size(d) == 1
       end
-
       _ => begin
         false
       end

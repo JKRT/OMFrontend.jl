@@ -155,7 +155,7 @@ function flagNotSet(origin::M_Type_Int, flag::M_Type_Int)::Bool
   return notSet
 end
 
-function typeClass(@nospecialize(cls::InstNode), @nospecialize(name::String))
+@nospecializeinfer function typeClass(@nospecialize(cls::InstNode), @nospecialize(name::String))
   typeClassType(cls, EMPTY_BINDING, ORIGIN_CLASS, cls)
   typeComponents(cls, ORIGIN_CLASS)
 #  execStat("NFtypeComponents(" + name + ")")
@@ -166,7 +166,7 @@ function typeClass(@nospecialize(cls::InstNode), @nospecialize(name::String))
   return
 end
 
-function typeComponents(@nospecialize(cls::InstNode), origin::ORIGIN_Type)
+@nospecializeinfer function typeComponents(@nospecialize(cls::InstNode), @nospecialize(origin::ORIGIN_Type))
   local c::Class = getClass(cls)
   local c2::Class
   local cls_tree::ClassTree
@@ -266,12 +266,12 @@ function typeStructor(node::InstNode)
   end
 end
 
-function typeClassType(
+@nospecializeinfer function typeClassType(
   @nospecialize(clsNode::InstNode),
   @nospecialize(componentBinding::Binding),
   origin::ORIGIN_Type,
   @nospecialize(instanceNode::InstNode),
-)::NFType
+  )::NFType
   local ty::NFType
   local cls::Class
   local ty_cls::Class
@@ -513,7 +513,7 @@ function checkConnectorType(node::InstNode)::Bool
   return isConnector
 end
 
-function typeIterator(
+@nospecializeinfer function typeIterator(
   @nospecialize(iterator::InstNode),
   @nospecialize(range::RANGE_EXPRESSION),
   @nospecialize(origin::ORIGIN_Type),
@@ -529,7 +529,7 @@ function typeIterator(
   )
 end
 
-function typeIterator2(
+@nospecializeinfer function typeIterator2(
   @nospecialize(iterator::Any),
   @nospecialize(range::RANGE_EXPRESSION),
   @nospecialize(origin::ORIGIN_Type),
@@ -575,7 +575,7 @@ function typeDimensions(
   return dimensions
 end
 
-function typeDimension(
+@nospecializeinfer function typeDimension(
   dimensions::Vector{Dimension},
   index::Int,
   component::InstNode,
@@ -593,7 +593,7 @@ function typeDimension(
   ))
 end
 
-function typeDimension2(
+@nospecializeinfer function typeDimension2(
   @nospecialize(dimensions::Vector{Dimension}),
   index::Int,
   @nospecialize(component::InstNode),
@@ -834,7 +834,7 @@ function verifyDimension(dimension::Dimension, component::InstNode, info::Source
 end
 
 
-function typeDimensionUntyped(@nospecialize(dimensions::Vector{Dimension}),
+@nospecializeinfer function typeDimensionUntyped(@nospecialize(dimensions::Vector{Dimension}),
                               @nospecialize(dimension::DIMENSION_UNTYPED),
                               @nospecialize(index::Int),
                               @nospecialize(component::InstNode),
@@ -997,17 +997,16 @@ function typeBindings2(cls::InstNode,
   end
 end
 
-function typeComponentBinding(
-  @nospecialize(inComponent::InstNode),
-  origin::ORIGIN_Type)
+@nospecializeinfer function typeComponentBinding(@nospecialize(inComponent::InstNode),
+                                                 origin::ORIGIN_Type)
   typeComponentBinding2(inComponent, origin, true)
 end
 
-function typeComponentBinding2(
+@nospecializeinfer function typeComponentBinding2(
   @nospecialize(inComponent::InstNode),
   origin::ORIGIN_Type,
   typeChildren::Bool,
-)
+  )
   local node::InstNode = resolveOuter(inComponent)
   local c::Component
   local binding::Binding
@@ -1401,7 +1400,7 @@ end
    Types an untyped expression, returning the typed expression itself along with
    its type and variability.
 """
-function typeExp(
+@nospecializeinfer function typeExp(
   @nospecialize(exp::Expression),
   @nospecialize(origin::ORIGIN_Type),
   @nospecialize(info::SourceInfo)
@@ -1410,7 +1409,7 @@ function typeExp(
   return typeExp2(exp, origin, info)
 end
 
-function typeExp2(
+@nospecializeinfer function typeExp2(
   @nospecialize(exp::Expression),
   @nospecialize(origin::ORIGIN_Type),
   @nospecialize(info::SourceInfo)
@@ -1578,7 +1577,7 @@ function typeBinaryExpression(
 end
 
 
-function typeLBinaryExpression(
+@nospecializeinfer function typeLBinaryExpression(
   @nospecialize(exp::Expression),
   @nospecialize(origin::ORIGIN_Type),
   @nospecialize(info::SourceInfo),)::Tuple{Expression, NFType, VariabilityType}
@@ -1600,7 +1599,7 @@ function typeLBinaryExpression(
 end
 
 
-function typeUnaryExpression(
+@nospecializeinfer function typeUnaryExpression(
   @nospecialize(exp::Expression),
   @nospecialize(origin::ORIGIN_Type),
   @nospecialize(info::SourceInfo),)::Tuple{Expression, NFType, VariabilityType}
@@ -1611,7 +1610,7 @@ function typeUnaryExpression(
   (exp, ty, var1)
 end
 
-function typeExpl(
+@nospecializeinfer function typeExpl(
   @nospecialize(expl::List{<:Expression}),
   @nospecialize(origin::ORIGIN_Type),
   @nospecialize(info::SourceInfo),
@@ -2368,9 +2367,9 @@ function typeMatrixComma(
 end
 
 
-function typeRange(
-  rangeExp::RANGE_EXPRESSION,
-  origin::ORIGIN_Type,
+@nospecializeinfer function typeRange(
+  @nospecialize(rangeExp::RANGE_EXPRESSION),
+  @nospecialize(origin::ORIGIN_Type),
   @nospecialize(info::SourceInfo),
   )
   typeRange2(
@@ -2379,7 +2378,7 @@ function typeRange(
     info)
 end
 
-function typeRange2(
+@nospecializeinfer function typeRange2(
   @nospecialize(rangeExp::Expression),
   @nospecialize(origin::ORIGIN_Type),
   @nospecialize(info::SourceInfo),)
@@ -3211,8 +3210,8 @@ function typeEquation2(@nospecialize(eq::Equation), origin::ORIGIN_Type)::Equati
       end
 
       EQUATION_TERMINATE(__) => begin
-         info = DAE.emptyElementSource
-         e1 = typeOperatorArg(
+        info = AbsynUtil.dummyInfo #DAE.emptyElementSource
+        e1 = typeOperatorArg(
           eq.message,
           TYPE_STRING(),
           origin,
@@ -3906,7 +3905,7 @@ function typeOperatorArg(
   argName::String,
   argIndex::Int,
   info::SourceInfo,
-)
+  )
   local ty::NFType
   local mk::MatchKindType
   (arg, ty, _) = typeExp(arg, origin, info)
@@ -3919,8 +3918,8 @@ function typeOperatorArg(
         operatorName,
         argName,
         toString(arg),
-        Type.toString(ty),
-        Type.toString(expectedType),
+        toString(ty),
+        toString(expectedType),
       ),
       info,
     )

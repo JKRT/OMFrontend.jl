@@ -42,14 +42,14 @@ function __init__()
   packagePath *= "/.."
   pathToTest = packagePath * "/test/Models/HelloWorld.mo"
   p = OMParser.parseFile(pathToTest, 1)
-  s = Main.AbsynToSCode.translateAbsyn2SCode(p)
-  Main.Global.initialize()
+  s = Frontend.AbsynToSCode.translateAbsyn2SCode(p)
+  Frontend.Global.initialize()
   # make sure we have all the flags loaded!
-  Main.FlagsUtil.loadFlags()
+  Frontend.FlagsUtil.loadFlags()
   builtinSCode = NFModelicaBuiltinCache["NFModelicaBuiltin"]
   program = listAppend(builtinSCode, s)
-  path = Main.AbsynUtil.stringPath("HelloWorld")
-  res1 = Main.instClassInProgram(path, program)
+  path = Frontend.AbsynUtil.stringPath("HelloWorld")
+  res1 = Frontend.instClassInProgram(path, program)
   return nothing
 end
 
@@ -66,7 +66,7 @@ end
   Translate the Syntax tree to the SCode intermediate representation
 """
 function translateToSCode(inProgram::Absyn.Program)::SCode.Program
-  return Main.AbsynToSCode.translateAbsyn2SCode(inProgram)
+  return Frontend.AbsynToSCode.translateAbsyn2SCode(inProgram)
 end
 
 """
@@ -76,13 +76,13 @@ end
 """
 function instantiateSCodeToDAE(elementToInstantiate::String, inProgram::SCode.Program)
   # initialize globals
-  Main.Global.initialize()
+  Frontend.Global.initialize()
   # make sure we have all the flags loaded!
-  #Main.Flags.new(Flags.emptyFlags)
+  #Frontend.Flags.new(Flags.emptyFlags)
   local builtinSCode = NFModelicaBuiltinCache["NFModelicaBuiltin"]
   local program = listAppend(builtinSCode, inProgram)
-  local path = Main.AbsynUtil.stringPath(elementToInstantiate)
-  Main.instClassInProgram(path, program)
+  local path = Frontend.AbsynUtil.stringPath(elementToInstantiate)
+  Frontend.instClassInProgram(path, program)
 end
 
 """
@@ -93,14 +93,14 @@ end
 function instantiateSCodeToFM(elementToInstantiate::String,
                               inProgram::SCode.Program; scalarize = true)
   # initialize globals
-  Main.Global.initialize()
+  Frontend.Global.initialize()
   # make sure we have all the flags loaded!
-  #  Main.Flags.new(Flags.emptyFlags)
-  Main.FlagsUtil.set(Main.Flags.NF_SCALARIZE, scalarize)
+  #  Frontend.Flags.new(Flags.emptyFlags)
+  Frontend.FlagsUtil.set(Frontend.Flags.NF_SCALARIZE, scalarize)
   local builtinSCode = NFModelicaBuiltinCache["NFModelicaBuiltin"]
   local program = listReverse(listAppend(builtinSCode, inProgram))
-  local path = Main.AbsynUtil.stringPath(elementToInstantiate)
-  (flat_model, funcs, inst_cls) = Main.instClassInProgramFM(path, program)
+  local path = Frontend.AbsynUtil.stringPath(elementToInstantiate)
+  (flat_model, funcs, inst_cls) = Frontend.instClassInProgramFM(path, program)
   return (flat_model, funcs)
 end
 
@@ -120,8 +120,8 @@ end
   ```toString(model::FlatModel)```
     Converts the flat model representation to a Julia String, the extra \\n are replaced with \n
 """
-function toString(model::Main.FlatModel)
-  local res = Main.toString(model)
+function toString(model::Frontend.FlatModel)
+  local res = Frontend.toString(model)
   local res = replace(res, "\\n" => "\n")
   return res
 end
@@ -129,34 +129,40 @@ end
 """
   Overload the Julia to string function
 """
-function Base.string(model::Main.FlatModel)
-  return toString(model::Main.FlatModel)
+function Base.string(model::Frontend.FlatModel)
+  return toString(model::Frontend.FlatModel)
 end
 
 """
   Converts a function tree to a string
 """
-function Base.string(ft::Main.FunctionTreeImpl.Tree)
-  local fLst = OMFrontend.Main.FunctionTreeImpl.toList(ft)
+function Base.string(ft::Frontend.FunctionTreeImpl.Tree)
+  local fLst = OMFrontend.Frontend.FunctionTreeImpl.toList(ft)
   local buffer = IOBuffer()
   for (_, v) in fLst
-    println(buffer, OMFrontend.Main.toFlatString(v))
+    println(buffer, OMFrontend.Frontend.toFlatString(v))
   end
   return replace(String(take!(buffer)), "\\n" => "\n")
 end
 
 function toFlatModelica(fm, fLst; printBindingTypes = false)
-  return replace(Main.toFlatString(fm, fLst, printBindingTypes), "\\n" => "\n")
+  return replace(Frontend.toFlatString(fm, fLst, printBindingTypes), "\\n" => "\n")
 end
 
-function toFlatModelica(flatModelicaAndFunctionTree::Tuple; printBindingTypes = false)
+function toFlatModelica(flatModelicaAndFunctionTree::Tuple;
+                        printBindingTypes = false)
   local fLst = cacheToFunctionList(last(flatModelicaAndFunctionTree))
   local fm = first(flatModelicaAndFunctionTree)
-  return replace(Main.toFlatString(fm, fLst, printBindingTypes), "\\n" => "\n")
+  return replace(Frontend.toFlatString(fm, fLst, printBindingTypes), "\\n" => "\n")
 end
 
-function writeFlatModelicaToFile(fm, fLst; printBindingtypes = false, fileName)
-  local fmStr = toFlatModelica(fm, fLst; printBindingTypes = printBindingtypes)
+function writeFlatModelicaToFile(fm, fLst;
+                                 printBindingtypes = false,
+                                 fileName,
+                                 )
+  local fmStr = toFlatModelica(fm, fLst;
+                               printBindingTypes = printBindingtypes,
+                               )
   write(fileName, fmStr)
   close(fileName)
 end
@@ -165,7 +171,7 @@ end
   Converts the function cache represented as a tree where the path is the key into a list of functions
 """
 function cacheToFunctionList(cache)
-  fLst = OMFrontend.Main.FunctionTreeImpl.toList(cache)
+  fLst = OMFrontend.Frontend.FunctionTreeImpl.toList(cache)
   fv = map(fLst) do kv
     last(kv)
   end
@@ -182,31 +188,31 @@ function exportSCodeRepresentationToFile(fileName::String, contents::List{SCode.
   close(fdesc)
 end
 
-#=
-  This is done during precompilation of the package
-  to cache precompile versions of many methods.
-=#
-if ccall(:jl_generating_output, Cint, ()) == 1
-  let
-    #= Step one. Load the built in library =#
-    @info "Precompiling builtin libraries..."
-    if ! haskey(NFModelicaBuiltinCache, "NFModelicaBuiltin")
-      #= Locate the external libraries =#
-      packagePath = dirname(realpath(Base.find_package("OMFrontend")))
-      packagePath *= "/.."
-      pathToLib = packagePath * "/lib/NFModelicaBuiltin.mo"
-      #= The external C stuff can be a bit flaky.. =#
-      GC.enable(false)
-      p = parseFile(pathToLib, 2 #== MetaModelica ==#)
-      s = translateToSCode(p)
-      NFModelicaBuiltinCache["NFModelicaBuiltin"] = s
-      #=Enable GC again.=#
-      GC.enable(true)
-    end
-    @info "Builtin libraries successfully precompiled!"
-    @info "Initial compiler module interfaces are compiled!"
-  end
-end
+# #=
+#   This is done during precompilation of the package
+#   to cache precompile versions of many methods.
+# =#
+# if ccall(:jl_generating_output, Cint, ()) == 1
+#   let
+#     #= Step one. Load the built in library =#
+#     @info "Precompiling builtin libraries..."
+#     if ! haskey(NFModelicaBuiltinCache, "NFModelicaBuiltin")
+#       #= Locate the external libraries =#
+#       packagePath = dirname(realpath(Base.find_package("OMFrontend")))
+#       packagePath *= "/.."
+#       pathToLib = packagePath * "/lib/NFModelicaBuiltin.mo"
+#       #= The external C stuff can be a bit flaky.. =#
+#       GC.enable(false)
+#       p = parseFile(pathToLib, 2 #== MetaModelica ==#)
+#       s = translateToSCode(p)
+#       NFModelicaBuiltinCache["NFModelicaBuiltin"] = s
+#       #=Enable GC again.=#
+#       GC.enable(true)
+#     end
+#     @info "Builtin libraries successfully precompiled!"
+#     @info "Initial compiler module interfaces are compiled!"
+#   end
+#end
 
 function initLoadMSL(;MSL_Version = "MSL:3.2.3")
   # For printing
@@ -225,7 +231,9 @@ See the keyword argument for specifying MSL version.
 Valid versions are 3.2.3 and 4.0.0.
 """
 function flattenModelWithMSL(modelName::String,
-                             fileName::String; MSL_Version = "MSL:3.2.3")
+                             fileName::String;
+                             MSL_Version = "MSL:3.2.3",
+                             scalarize = true)
   if !haskey(LIBRARY_CACHE, MSL_Version)
     initLoadMSL(MSL_Version = MSL_Version)
   end
@@ -239,7 +247,7 @@ function flattenModelWithMSL(modelName::String,
   #program = listReverse(listAppend(sCodeProgram, builtin))
   program = listAppend(sCodeProgram, lib)
   println("Attempting to instantiate..." * modelName)
-  (FM, cache) = instantiateSCodeToFM(modelName, program)
+  (FM, cache) = instantiateSCodeToFM(modelName, program; scalarize = scalarize)
 end
 
 """
@@ -247,10 +255,10 @@ end
 
 Returns the flat representation of a modelica model along with the functions used and define by the model.
 """
-function flattenModel(modelName::String, fileName::String)
+function flattenModel(modelName::String, fileName::String; scalarize = true)
   local absynProgram = parseFile(fileName)
   local sCodeProgram = translateToSCode(absynProgram)
-  (FM, cache) = instantiateSCodeToFM(modelName, sCodeProgram)
+  (FM, cache) = instantiateSCodeToFM(modelName, sCodeProgram; scalarize = scalarize)
 end
 
 """
@@ -268,7 +276,7 @@ function loadMSL(; MSL_Version)
   MSL_Version = replace(MSL_Version, ":" => "_")
   if ! haskey(LIBRARY_CACHE, MSL_Version)
     #= Initialize various global variables =#
-    Main.Global.initialize()
+    Frontend.Global.initialize()
     #= Find the MSL =#
     try
       local packagePath = dirname(realpath(Base.find_package("OMFrontend")))
@@ -285,21 +293,21 @@ function loadMSL(; MSL_Version)
   end
 end
 
-Base.show(io::IO, ::MIME"text/plain", fm::OMFrontend.Main.FLAT_MODEL) = begin
+Base.show(io::IO, ::MIME"text/plain", fm::OMFrontend.Frontend.FLAT_MODEL) = begin
   print(io, "Flat Model:\n", string(fm))
 end
 
-Base.show(io::IO, ::MIME"text/plain", t::Tuple{OMFrontend.Main.FLAT_MODEL, OMFrontend.Main.FunctionTreeImpl.EMPTY}) = begin
+Base.show(io::IO, ::MIME"text/plain", t::Tuple{OMFrontend.Frontend.FLAT_MODEL, OMFrontend.Frontend.FunctionTreeImpl.EMPTY}) = begin
   print(io, "Flat Model:\n", string(first(t)))
   print(io, "\n(No Functions)\n")
 end
 
-Base.show(io::IO, ::MIME"text/plain", t::Tuple{OMFrontend.Main.FLAT_MODEL, OMFrontend.Main.FunctionTreeImpl.LEAF}) = begin
+Base.show(io::IO, ::MIME"text/plain", t::Tuple{OMFrontend.Frontend.FLAT_MODEL, OMFrontend.Frontend.FunctionTreeImpl.LEAF}) = begin
   print(io, "Flat Model:\n", string(first(t)))
   print(io, "\nFunctions:\n", string(last(t)))
 end
 
-Base.show(io::IO, ::MIME"text/plain", t::Tuple{OMFrontend.Main.FLAT_MODEL, OMFrontend.Main.FunctionTreeImpl.NODE}) = begin
+Base.show(io::IO, ::MIME"text/plain", t::Tuple{OMFrontend.Frontend.FLAT_MODEL, OMFrontend.Frontend.FunctionTreeImpl.NODE}) = begin
   print(io, "Flat Model:\n", string(first(t)))
   print(io, "\nFunctions:\n", string(last(t)))
 end

@@ -34,7 +34,7 @@ using ExportAll
 *
 */ =#
 
-import .Main.Print
+import .Frontend.Print
 
 """ #= used for debug printing. =#"""
 function trace(s::String)

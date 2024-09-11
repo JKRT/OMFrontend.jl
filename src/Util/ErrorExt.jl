@@ -217,9 +217,8 @@ end
 
 """ #= Returns all error messages since the last checkpoint and pops them from the message queue. =#"""
 function getCheckpointMessages()::List{ErrorTypes.TotalMessage}
-  local res::List{ErrorTypes.TotalMessage}
-
-  @warn "TODO: Defined in the runtime"
+  local res::List{ErrorTypes.TotalMessage} = nil
+  @warn "TODO: getCheckpointMessages not defined in the runtime"
   return res
 end
 

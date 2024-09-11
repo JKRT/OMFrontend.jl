@@ -483,7 +483,9 @@ end
 
 
 function toString(cref::ComponentRef)
-  local str = stringDelimitList(toString_impl(cref, nil), ".") #TODO Revert to underscore again.
+  # TODO Revert to underscore again?
+  # NOTE: Maybe it is better to do underscore conversion at a later stage.
+  local str = stringDelimitList(toString_impl(cref, nil), ".")
   return str
 end
 

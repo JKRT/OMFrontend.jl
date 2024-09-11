@@ -33,13 +33,13 @@ module NFHashTableCG
 
 using MetaModelica
 using ExportAll
-using ..Main
+using ..Frontend
 
-import ..Main.NFComponentRef
-import ..Main.BaseHashTable
-import ..Main.hash
-import ..Main.isEqual
-import ..Main.toString
+import ..Frontend.NFComponentRef
+import ..Frontend.BaseHashTable
+import ..Frontend.hash
+import ..Frontend.isEqual
+import ..Frontend.toString
 
 const FuncHashCref = Function
 const FuncCrefEqual = Function
@@ -86,7 +86,7 @@ function emptyHashTableSized(size::Int)::HashTable
   local hashTable::HashTable
   isEq = (cref1, cref2) -> isEqual(cref1::ComponentRef, cref2::ComponentRef)
   h = (cref, mod) -> hash(cref::ComponentRef, mod::Int)
-  ts = (cref) -> Main.toString(cref::ComponentRef)
+  ts = (cref) -> Frontend.toString(cref::ComponentRef)
   hashTable = BaseHashTable.emptyHashTableWork(
     size,
     (

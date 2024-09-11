@@ -637,7 +637,6 @@ function evalComponentStartBinding(
   local notParamAndNotStructuralParam = (var != Variability.PARAMETER && var != Variability.STRUCTURAL_PARAMETER)
   #@info "notParamAndNotStructuralParam" notParamAndNotStructuralParam
   if (notParamAndNotStructuralParam) || !getFixedAttribute(comp)
-    var != Variability.PARAMETER && var != Variability.STRUCTURAL_PARAMETER
     return outExp
   end
   #=  Look up \"start\" in the class. =#
@@ -653,14 +652,11 @@ function evalComponentStartBinding(
   other element named start in the class.
   =#
   start_comp = component(start_node)
-  @info "start comp" toString("start_comp", start_comp)
   if !isTypeAttribute(start_comp)
     return outExp
   end
   #=  Try to evaluate the binding if one exists. =#
   binding = getBinding(start_comp)
-  @info "binding" toString(binding)
-  @info "typeof binding" typeof(binding)
   outExp = begin
     @match binding begin
       #=
@@ -703,7 +699,6 @@ function makeComponentBinding(
   target::EvalTarget,
 )::Binding
   local binding::Binding
-
   local tree::ClassTree
   local comps::Vector{InstNode}
   local fields::List{Expression}
@@ -742,7 +737,7 @@ function makeComponentBinding(
           BINDING_EXP(exp, exp_ty, exp_ty, list(node), true)
         binding = CEVAL_BINDING(exp)
         if !hasSubscripts(cref)
-          updateComponent!(P_Component.setBinding(binding, component), node)
+          updateComponent!(setBinding(binding, component), node)
         end
         binding
       end

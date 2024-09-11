@@ -58,10 +58,10 @@ connectTsts = [ctst1,
 incorrectTsts = [ctst3, ctst10, ctst11]
 #= Add new tests here=#
 tst = [tank, heattank, heatTankExpanded, multipleinheritanceconnect, resistorCircuit0, resistorCircuit1, simpleCircuit]
-equationTests = [circle, arrayfancy, ifEquationDer]
+equationTests = [circle, arrayfancy, ifEquationDer, testArrayEq]
 
-function runConnectTests(tests)
-  @testset "Connector test. Testing the handling of connectors" begin
+function runConnectTests(tests, testSetDesc)
+  @testset "$testSetDesc" begin
     for mf in tests
       try
         #= Get the flat model =#
@@ -87,7 +87,7 @@ function runConnectTests(tests)
   end
 end
 
-runConnectTests(connectTsts)
-runConnectTests(tst)
-runConnectTests(equationTests)
+runConnectTests(connectTsts, "Connector test. Testing the handling of connectors")
+runConnectTests(tst, "Trying various simple Modelica models")
+runConnectTests(equationTests, "Trying slightly more advanced models, containing equational loops etc.")
 #= End Connector tests =#

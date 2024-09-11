@@ -877,7 +877,7 @@ function Equation_info(@nospecialize(eq::Equation))::SourceInfo
   return info
 end
 
-function source(@nospecialize(eq::Equation))::DAE.ElementSource
+@nospecializeinfer function source(@nospecialize(eq::Equation))::DAE.ElementSource
   local sourceVar::DAE.ElementSource
    sourceVar = begin
     @match eq begin

@@ -814,7 +814,6 @@ function convertIfEquation(
   source::DAE.ElementSource;
   isInitial::Bool,
 )::DAE.Element
-  @info "Converting if equation"
   local ifEquation::DAE.Element
   local conds::List{Expression} = nil
   local branches::List{List{Equation}} = nil

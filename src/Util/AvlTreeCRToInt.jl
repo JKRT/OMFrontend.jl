@@ -3,10 +3,10 @@ module AvlTreeCRToInt
 using MetaModelica
 using ExportAll
 
-import .Main.BaseAvlTree
+import .Frontend.BaseAvlTree
 import DAE
 
-import .Main.ComponentReference
+import .Frontend.ComponentReference
 
 using BaseAvlTree #= Modelica extend clause =#
 

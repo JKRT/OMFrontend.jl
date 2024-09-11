@@ -3,7 +3,7 @@ module ModTable
 import ..Modifier
 using MetaModelica
 using ExportAll
-using ..Main
+using ..Frontend
 
 const Key = String
 const Value = Modifier

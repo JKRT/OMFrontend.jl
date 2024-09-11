@@ -2,7 +2,7 @@
   Main module.
   This module provides the entry to the translated code and associated tweaks and quirks.
 """
-module Main
+module Frontend
 
 #= Import the parser for precompilation=#
 import OMParser
@@ -15,13 +15,15 @@ import DAE
 import ListUtil
 import SCode
 import PrecompileTools
+import Base.@nospecializeinfer
 
 
+#= Utility functions. =#
 function toString(vec::Vector{T}) where {T}
   buffer = IOBuffer()
   println(buffer, "[")
   for v in vec
-    print(buffer, toString(v))
+    print(buffer, toString(v), ",")
   end
   println(buffer, "]")
   String(take!(buffer))
@@ -92,6 +94,7 @@ include("./NewFrontend/NFScalarize.jl")
 include("./NewFrontend/NFClass.jl")
 include("./NewFrontend/NFExpressionIterator.jl")
 include("./NewFrontend/NFComponentRef.jl")
+include("./NewFrontend/NFInstUtil.jl")
 include("./NewFrontend/NFInst.jl")
 include("./NewFrontend/NFAlgorithm.jl")
 include("./NewFrontend/NFStatement.jl")

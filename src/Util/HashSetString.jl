@@ -46,9 +46,9 @@ keyEqual   - A comparison function between two keys, returns true if equal.
 */ =#
 #= /* HashSet instance specific code */ =#
 
-import Main.BaseHashSet
+import Frontend.BaseHashSet
 
-import Main.Util
+import Frontend.Util
 
 Key = String
 
@@ -56,7 +56,7 @@ HashSetCrefFunctionsType = Tuple
 
 HashSet = Tuple
 
-""" #= 
+""" #=
   Returns an empty HashSet.
   Using the default bucketsize..
  =#"""

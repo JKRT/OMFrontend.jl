@@ -2,8 +2,8 @@ module ParameterTreeImpl
 
 using MetaModelica
 using ExportAll
-import ..Main.Expression
-import ..Main.toString
+import ..Frontend.Expression
+import ..Frontend.toString
 
 #= Modelica extend clause =#
 const Key = String

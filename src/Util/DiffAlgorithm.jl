@@ -57,10 +57,10 @@ FunEquals = Function
 * See the full OSMC Public License conditions for more details.
 *
 */ =#
-import Main.Print
+import Frontend.Print
 
 import ListUtil
-import Main.System
+import Frontend.System
 
 Diff = (() -> begin #= Enumeration =#
   Add = 1

@@ -34,7 +34,7 @@ using ExportAll
 *
 */ =#
 
-import Main.FMI
+import Frontend.FMI
 
 function initializeFMIImport(
   inFileName::String,

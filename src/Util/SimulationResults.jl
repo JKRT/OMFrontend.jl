@@ -33,10 +33,10 @@ using ExportAll
 * See the full OSMC Public License conditions for more details.
 *
 */ =#
-import Main.Values
+import Frontend.Values
 
 import ListUtil
-import Main.ValuesUtil
+import Frontend.ValuesUtil
 
 function val(filename::String, varname::String, timeStamp::AbstractFloat)::AbstractFloat
   local val::AbstractFloat

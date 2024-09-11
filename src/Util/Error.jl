@@ -44,12 +44,12 @@ using ..ErrorTypes
 
 
 #=
-import Main.ErrorExt
-import Main.Flags
-import Main.Global
-import Main.System
-import Main.Testsuite
-import Main.Util
+import Frontend.ErrorExt
+import Frontend.Flags
+import Frontend.Global
+import Frontend.System
+import Frontend.Testsuite
+import Frontend.Util
 =#
 
 const LOOKUP_ERROR =

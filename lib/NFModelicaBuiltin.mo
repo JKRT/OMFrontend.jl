@@ -66,7 +66,7 @@ annotation(__OpenModelica_builtin=true, __OpenModelica_Impure=true, Documentatio
 </html>"));
 end terminal;
 
-type AssertionLevel = enumeration(error, warning) annotation(__OpenModelica_builtin=true,
+type AssertionLevel = enumeration(warning, error) annotation(__OpenModelica_builtin=true,
   Documentation(info="<html>Used by <a href=\"modelica://assert\">assert()</a></html>"));
 
 function assert "Check an assertion condition"
@@ -520,15 +520,15 @@ function sample = $overload(OMC_NO_CLOCK.sample, OMC_CLOCK.sample)
 </html>"));
 
 package OMC_NO_CLOCK
-	impure function sample "Overloaded operator to either trigger time events or to convert between continuous-time and clocked-time representation"
-	  parameter input Real start;
-	  parameter input Real interval;
-	  output Boolean b;
-	  external "builtin";
-	  annotation(Documentation(info="<html>
-	  See <a href=\"modelica://ModelicaReference.Operators.'sample()'\">sample()</a>
-	</html>"));
-	end sample;
+        impure function sample "Overloaded operator to either trigger time events or to convert between continuous-time and clocked-time representation"
+          parameter input Real start;
+          parameter input Real interval;
+          output Boolean b;
+          external "builtin";
+          annotation(Documentation(info="<html>
+          See <a href=\"modelica://ModelicaReference.Operators.'sample()'\">sample()</a>
+        </html>"));
+        end sample;
 end OMC_NO_CLOCK;
 
 package OMC_CLOCK

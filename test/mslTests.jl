@@ -27,7 +27,7 @@ end
   include("continuous.jl")
   include("sources.jl")
   @testset "Discrete" begin
-    #@test typeof(flattenModelInMSL_TST("Modelica.Blocks.Discrete.Sampler")[1]) == OMFrontend.Main.FLAT_MODEL
+    #@test typeof(flattenModelInMSL_TST("Modelica.Blocks.Discrete.Sampler")[1]) == OMFrontend.Frontend.FLAT_MODEL
   end
   @testset "Math" begin
     include("math.jl")

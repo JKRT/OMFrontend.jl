@@ -34,6 +34,8 @@ function scalarize(flatModel::FlatModel, name::String)::FlatModel
   for v in flatModel.variables
     scalarizeVariable(v, vars)
   end
+  #println("Vars after scalarize")
+  #println(toString(vars))
   #println(replace(toFlatString(flatModel, nil, true), "\\n" => "\n"))
   @assign flatModel.variables = vars
   @assign flatModel.equations = mapExpList(flatModel.equations, expandComplexCref)
@@ -44,11 +46,15 @@ function scalarize(flatModel::FlatModel, name::String)::FlatModel
     Algorithm[scalarizeAlgorithm(a) for a in flatModel.algorithms]
   @assign flatModel.initialAlgorithms =
     Algorithm[scalarizeAlgorithm(a) for a in flatModel.initialAlgorithms]
+
+  #println(replace(toString(flatModel), "\\n" => "\n"))
+  #println(replace(toFlatString(flatModel, nil), "\\n" => "\n"))
   #execStat(getInstanceName() + "(" + name + ")")
   return flatModel
 end
 
 function scalarizeVariable(var::Variable, vars::Vector{Variable})
+  #@info "Scalarize var" toString(var)
   local name::ComponentRef
   local binding::Binding
   local ty::M_Type
@@ -64,7 +70,9 @@ function scalarizeVariable(var::Variable, vars::Vector{Variable})
   local ty_attr_names::Vector{String}
   local ty_attr_iters::Vector{ExpressionIterator}
   local bind_var::VariabilityType
-  if isArray(var.ty)
+  local parentCr = rest(var.name)
+  local parentIsRecordAndParam =  ! (parentCr isa COMPONENT_REF_EMPTY) && isRecord(rest(var.name).ty)# && (variability(var) <= Variability.PARAMETER)
+  if isArray(var.ty) && !parentIsRecordAndParam
     try
       @match VARIABLE(
         name,
@@ -82,25 +90,35 @@ function scalarizeVariable(var::Variable, vars::Vector{Variable})
       end
       ty = arrayElementType(ty)
       (ty_attr_names, ty_attr_iters) = scalarizeTypeAttributes(ty_attr)
+      #= Addition by me //John =#
       if isBound(binding)
+        #        @info "bound" toString(binding)
         binding_iter = fromExpToExpressionIterator(expandComplexCref(getTypedExp(binding,)))
         bind_var = variability(binding)
+        #= Some other checks in omc currently... =#
         for cr in crefs
+          #@info "Looping..."
           if hasNext(binding_iter)
+            #@info "Had next"
             (binding_iter, exp) = next(binding_iter)
             binding = FLAT_BINDING(exp, bind_var)
             ty_attr = nextTypeAttributes(ty_attr_names, ty_attr_iters)
-            vars = push!(
+            push!(
               vars,
               VARIABLE(cr, ty, binding, vis, attr, ty_attr, cmt, info)
             )
+          else #= Did not have a next =#
+            # push!(
+            #   vars,
+            #   VARIABLE(cr, ty, binding, vis, attr, ty_attr, cmt, info)
+            # )
           end
         end
       else
         for cr in crefs
           ty_attr = nextTypeAttributes(ty_attr_names, ty_attr_iters)
-          vars = push!(vars,
-                       VARIABLE(cr, ty, binding, vis, attr, ty_attr, cmt, info))
+          push!(vars,
+                VARIABLE(cr, ty, binding, vis, attr, ty_attr, cmt, info))
         end
       end
     catch e
@@ -116,6 +134,7 @@ function scalarizeVariable(var::Variable, vars::Vector{Variable})
       throw(e)
     end
   else
+    #@info "Not array."
     local res
     #try
     res = mapExp(var.binding, expandComplexCref_traverser)
@@ -127,6 +146,7 @@ function scalarizeVariable(var::Variable, vars::Vector{Variable})
     #println(res)
     #fail()
   end
+  #@info "Scalarize var res:" toString(vars)
   return vars
 end
 
@@ -263,9 +283,8 @@ function scalarizeEquation(@nospecialize(eq::Equation), equations::Vector{Equati
         src) where{isArray(ty) && (isArray(eq.rhs) || isArray(eq.lhs))} => begin
           local lhs = eq.lhs
           if hasArrayCall(lhs) || hasArrayCall(rhs)
-            # println("Pushing array eq " * toString(EQUATION_ARRAY_EQUALITY(lhs, rhs, ty, src)))
-            equations =
-              push!(equations, EQUATION_ARRAY_EQUALITY(lhs, rhs, ty, src))
+            #println("Pushing array eq " * toString(EQUATION_ARRAY_EQUALITY(lhs, rhs, ty, src)))
+            equations = push!(equations, EQUATION_ARRAY_EQUALITY(lhs, rhs, ty, src))
           else
             #println("BEFORE " * toString(eq))
             lhs_iter = fromExpToExpressionIterator(lhs)
@@ -284,9 +303,9 @@ function scalarizeEquation(@nospecialize(eq::Equation), equations::Vector{Equati
               end
               (lhs_iter, lhs) = next(lhs_iter)
               (rhs_iter, rhs) = next(rhs_iter)
-              #println("After " * toString(lhs))
-              equations =
-                push!(equations, EQUATION_EQUALITY(lhs, rhs, ty, src))
+              local arrEq = EQUATION_EQUALITY(lhs, rhs, ty, src)
+              #println("After " * toString(arrEq))
+              equations = push!(equations, arrEq)
             end
           end
           equations
@@ -294,8 +313,8 @@ function scalarizeEquation(@nospecialize(eq::Equation), equations::Vector{Equati
         end
 
     EQUATION_ARRAY_EQUALITY(__) => begin
-      #println("Was  array equality " * toString(eq))
-      push!(equations, EQUATION_ARRAY_EQUALITY(eq.lhs, eq.rhs, eq.ty, eq.source))
+      local aeq = EQUATION_ARRAY_EQUALITY(eq.lhs, eq.rhs, eq.ty, eq.source)
+      push!(equations, aeq)
     end
 
       EQUATION_CONNECT(__) => begin

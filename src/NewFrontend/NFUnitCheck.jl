@@ -10,7 +10,7 @@ end
 
 module FunctionUnitCache
 
-import ..Main. Functionargs
+import ..Frontend. Functionargs
 
 using MetaModelica
 using ExportAll

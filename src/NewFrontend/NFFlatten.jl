@@ -2,10 +2,10 @@ module FunctionTreeImpl
   using MetaModelica
   using ExportAll
   import ..Absyn
-  import ..Main.M_Function
-  import ..Main.toString
-  import ..Main.toFlatString
-  import ..Main.AbsynUtil
+  import ..Frontend.M_Function
+  import ..Frontend.toString
+  import ..Frontend.toFlatString
+  import ..Frontend.AbsynUtil
   const Key = Absyn.Path
   const Value = M_Function
   include("../Util/baseAvlTreeCode.jl")
@@ -414,7 +414,6 @@ function flattenSimpleComponent(
   vars::Vector{Variable},
   sections::Sections,
 )
-
   local comp_node::InstNode = n
   local name::ComponentRef
   local binding::Binding
@@ -453,15 +452,16 @@ function flattenSimpleComponent(
         ty,
         ElementSource.createElementSource(info),
       )
+      #@info "Typed binding:" toString(getTypedExp(binding))
       sections = prependEquation(eq, sections)
       binding = EMPTY_BINDING
     end
   end
   name = prefixScope(comp_node, ty, nil, prefix)
   ty_attrs = [flattenTypeAttribute(m, name) for m in typeAttrs]
-  #=  Set fixed = true for parameters that are part of a record instance whose
-  =#
-  #=  binding couldn't be split and was moved to an initial equation.
+  #=
+  Set fixed = true for parameters that are part of a record instance whose
+  binding couldn't be split and was moved to an initial equation.
   =#
   if unfix
     ty_attrs = ArrayUtil.removeOnTrue("fixed", isTypeAttributeNamed, ty_attrs)
@@ -541,6 +541,7 @@ function getRecordBindings(binding::Binding, comps::Vector{<:InstNode})::List{Bi
       end
     end
   end
+  #@info "Returning record bindings..." toString(recordBindings)
   return recordBindings
 end
 
@@ -760,8 +761,7 @@ function vectorizeEquation(
       end
       _ => begin
         #=  convert simple equality of crefs to array equality
-        =#
-        #=  wrap general equation into for loop
+        wrap general equation into for loop
         =#
         iter = begin
           @match node(prefix) begin
@@ -960,7 +960,7 @@ function subscriptBindingOpt(
                         b.variability,
                         b.eachType,
                         b.evaluated,
-                        isFlattened,
+                        true,#isFlattened,
                         b.info)
           SOME(b)
         end
@@ -1205,11 +1205,10 @@ function flattenEquation(
         push!(inEquations, EQUATION_EQUALITY(e1, e2, eq.ty, eq.source))
       end
       EQUATION_FOR(__) => begin
-        #Currently we unroll everything by default -John Tinnerholm 2021-05-04
         eql = if Flags.isSet(Flags.NF_SCALARIZE)
            unrollForLoop(eq, prefix, inEquations)
         else
-          splitForLoop(eq, prefix, equations)
+          splitForLoop(eq, prefix, inEquations)
         end
         eql
       end
@@ -1422,7 +1421,7 @@ end
 function splitForLoop(
   forLoop::Equation,
   prefix::ComponentRef,
-  equations::List{<:Equation},
+  equations::Vector{<:Equation},
   )::Vector{Equation}
   local iter::InstNode
   local range::Option{Expression}

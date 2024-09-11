@@ -1,9 +1,10 @@
 module InstUtil
 
-import ..Main.Expression
-import ..Main.FlatModel
-import ..Main.mapExp
+import ..Frontend.Expression
+import ..Frontend.FlatModel
+import ..Frontend.map
 
+using ..Frontend
 using MetaModelica
 
 """
@@ -21,48 +22,45 @@ restoreMissingArrayVariables!(flatModel::FlatModel)
   Hence, we know the size and the component of the particular vector.
   For each such array variable appearing in an equation
   we create the variable and an additional equation.
-If the NF_SCALARIZE is not set the function will do nothing.
+If the NF_SCALARIZE flag is set to false the function will do nothing.
 """
 function restoreMissingArrayVariables!(flatModel::FlatModel)
-  if false #Flags.isSet(Flags.NF_SCALARIZE)
-    function collectArrayVariable(exp::Expression)
-
+  local arrayVariableSet = Dict{String, ComponentRef}()
+  if Flags.isSet(Flags.NF_SCALARIZE)
+    function collectArrayVariable2(exp::Expression)
+      local outExp = @match exp begin
+        CREF_EXPRESSION(ty, cref) where {ty isa TYPE_ARRAY} =>  begin
+          local parentCref = cref.restCref
+          local parentIsRecord = isRecord(getComponentType(parentCref))
+          if !(parentIsRecord)
+            arrayVariableSet[toFlatString(cref)] = cref
+          end
+          #@info "before expansion" toString(exp)
+          (expArr, _) = expand(exp)
+          #@info "after expansion" toString(expArr)
+          expArr
+        end
+        _ => begin
+          exp
+        end
+      end
+      return outExp
     end
 
-    #= Get all Equations of the ARRAY_EQUALITY type =#
-     local arrayEqs = filter((x) -> x isa EQUATION_ARRAY_EQUALITY, flat_model.equations)
-    #= Debugging info =#
-    str = ""
-    for eq in arrayEqs
-      str *= string(toFlatString(eq), "\n")
+    function collectArrayVariable(e::Expression)
+      exp = map(e, collectArrayVariable2)
+      return exp
     end
-    write("allArrayEq.log", replace(str, "\\n" => "\n"))
     #=
     Traverse all expressions in the array equations to find component references of type array
     =#
-    for aeq in arrayEqs
-      mapExp(aeq, collectArrayVariable)
+    mapExpList!(flatModel.initialEquations, collectArrayVariable)
+    mapExpList!(flatModel.equations, collectArrayVariable)
+    newVars = VARIABLE[]
+    for v in values(arrayVariableSet)
+      push!(newVars, Variable_fromCrefNoBinding(v))
     end
-
-
-  #   arrayEqsExpanded = Base.map(x -> mapExp(x, (y) -> Base.first(expand(y))), arrayEqs)
-  #   str= Base.reduce(*, Base.map(x->toFlatString(x) * "\n", arrayEqsExpanded))
-  #   write("allArrayEqExpanded.log", replace(str, "\\n" => "\n"))
-  #   local arrVars = Variable[]
-  #   for eq in arrayEqs
-  #     @assert eq.lhs isa CREF_EXPRESSION
-  #     push!(arrVars, Variable_fromCrefNoBinding(eq.lhs.cref))
-  #   end
-  #   arrVarsStr = Base.map(x->toFlatString(x) * "\n", arrVars)
-  #   str = Base.reduce(*, arrVarsStr)
-  #   write("variablesToAdd.log", str)
-  #   @assign flat_model.variables = vcat(flat_model.variables, arrVars)
-  #   #filter!((x) -> !(x isa EQUATION_ARRAY_EQUALITY), flat_model.equations)
-  #   #@assign flat_model.equations = vcat(flat_model.equations, arrayEqsExpanded)
-  #   dumpFlatModel(flat_model, name * "afterAddingArrayVarsBack")
+    #append!(flatModel.variables, newVars)
    end
 end
-
-
-
 end #= InstUtil =#

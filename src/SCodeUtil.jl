@@ -42,8 +42,8 @@ const TraverseFunc = Function
 import SCode
 import Absyn
 
-import ..Main.AbsynUtil
-import ..Main.Util
+import ..Frontend.AbsynUtil
+import ..Frontend.Util
 import ListUtil
 
 const Argument = Any
@@ -3444,6 +3444,25 @@ function getStatementInfo(inStatement::SCode.Statement)::SourceInfo
     end
   end
   return outInfo
+end
+
+function prependSubModToMod(subMod::SCode.SubMod, mod::SCode.Mod)
+  mod = begin
+    @match mod begin
+      SCode.NOMOD(__)  => begin
+        SCode.MOD(SCode.NOT_FINAL(),
+                  SCode.NOT_EACH(),
+                  list(subMod),
+                  NONE(),
+                  Error.dummyInfo)
+      end
+      SCode.MOD(__)  => begin
+        @assign mod.subModLst = _cons(subMod, mod.subModLst)
+        mod
+      end
+    end
+  end
+  mod
 end
 
 """ #= Adds a given element to a class definition. Only implemented for PARTS. =#"""

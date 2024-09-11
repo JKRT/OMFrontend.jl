@@ -33,11 +33,11 @@ module NFHashTable
 
 using MetaModelica
 using ExportAll
-using ..Main
+using ..Frontend
 
-import ..Main.NFComponentRef
-import  ..Main.BaseHashTable
-import ..Main.toString
+import ..Frontend.NFComponentRef
+import  ..Frontend.BaseHashTable
+import ..Frontend.toString
 
 const ComponentRef = NFComponentRef
 
@@ -83,7 +83,7 @@ function emptyHashTableSized(size::Int)::HashTable
   local hashTable::HashTable
   isEq = (cref1, cref2) -> isEqual(cref1::ComponentRef, cref2::ComponentRef)
   h = (cref, mod) -> hash(cref::ComponentRef, mod::Int)
-  ts = (cref) -> Main.toString(cref::ComponentRef)
+  ts = (cref) -> Frontend.toString(cref::ComponentRef)
   hashTable = BaseHashTable.emptyHashTableWork(
     size,
     (

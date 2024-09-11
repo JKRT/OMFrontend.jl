@@ -1,4 +1,4 @@
-function simplify(@nospecialize(exp::Expression))
+@nospecializeinfer function simplify(@nospecialize(exp::Expression))
   local tmp::Expression = begin
     @match exp begin
       CREF_EXPRESSION(__) => begin
@@ -141,7 +141,7 @@ function simplifyRange(range::Expression)
   return exp
 end
 
-function simplifyCall(callExp::Expression)
+function simplifyCall(@nospecialize(callExp::Expression))
   local call::Call
   local args::List{Expression}
   local builtin::Bool
@@ -181,7 +181,7 @@ function simplifyCall(callExp::Expression)
               callExp = evalCall(call, EVALTARGET_IGNORE_ERRORS())
               callExp = stripBindingInfo(callExp)
             catch e
-              @info "DBG print to remove $e"
+              #@info "DBG print to remove $e"
               callExp = CALL_EXPRESSION(call)
             end
           else
@@ -873,17 +873,17 @@ end
 
 
 function simplifyRecord(recordExpr::RECORD_EXPRESSION)
-  local args = if Flags.isSet(Flags.NF_EXPAND_FUNC_ARGS)
-    Expression[if hasArrayCall(arg)
-                 arg
-               else
-                 Base.first(expand(arg))
-               end for arg in recordExpr.elements]
+  # local args = if Flags.isSet(Flags.NF_EXPAND_FUNC_ARGS)
+  #   Expression[if hasArrayCall(arg)
+  #                arg
+  #              else
+  #                Base.first(expand(arg))
+  #              end for arg in recordExpr.elements]
 
-  else
-    recordExpr.elements
-  end
-  #= TODO, possible use apply here. =#
-  recordExpr.elements = Expression[simplify(e) for e in args]
+  # else
+  #   recordExpr.elements
+  # end
+  # #= TODO, possible use apply here. =#
+  # recordExpr.elements = Expression[simplify(e) for e in args]
   return recordExpr
 end

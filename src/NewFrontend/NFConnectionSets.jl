@@ -16,13 +16,13 @@ import Base.length
 import ..NFConnector
 import ..CONNECTOR
 import ..NFConnections
-import ..Main.CONNECTION
-import ..Main.split
-import ..Main.toString
-import ..Main.toDebugString
-import ..Main.isEqual
-import ..Main.name
-import ..Main.isPrefix
+import ..Frontend.CONNECTION
+import ..Frontend.split
+import ..Frontend.toString
+import ..Frontend.toDebugString
+import ..Frontend.isEqual
+import ..Frontend.name
+import ..Frontend.isPrefix
 
 const Connector = NFConnector
 const Connections = NFConnections

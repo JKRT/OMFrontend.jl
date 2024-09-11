@@ -201,6 +201,9 @@ function delete(inStream::IOSTREAM)
         IOStreamExt.deleteBuffer(bufferID)
         ()
       end
+      _ => begin
+        ()
+      end
     end
   end
 end

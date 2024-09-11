@@ -2,7 +2,7 @@
 
 module ConnectorType
 
-import ..Main.NFType
+import ..Frontend.NFType
 
 const TYPE = Int
 
@@ -151,10 +151,9 @@ function isUndeclared(cty::Int)::Bool
 end
 
 function isVirtual(cty::Int)::Bool
-  local isVirtual::Bool
-
-  @assign isVirtual = intBitAnd(cty, VIRTUAL) > 0
-  return isVirtual
+  local isV::Bool
+  isV = intBitAnd(cty, ConnectorType.VIRTUAL) > 0
+  return isV
 end
 
 function isPotentiallyPresent(cty::Int)::Bool

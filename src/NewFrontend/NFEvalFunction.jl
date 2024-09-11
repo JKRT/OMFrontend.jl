@@ -37,9 +37,9 @@ module ReplTree
 using MetaModelica
 using ExportAll
 
-import ..Main.NFExpression
-import ..Main.InstNode
-import ..Main.refCompare
+import ..Frontend.NFExpression
+import ..Frontend.InstNode
+import ..Frontend.refCompare
 
 const Expression = NFExpression
 const Key = InstNode

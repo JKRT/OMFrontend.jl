@@ -47,7 +47,7 @@ using ExportAll
 import ..Absyn.Path
 import ..AbsynUtil
 import ..BaseAvlTree
-import ..Main.M_Type
+import ..Frontend.M_Type
 import ..Type
 import Absyn
 import ..toString
@@ -79,6 +79,37 @@ end
 
 const TypeTree = TypeTreeImpl.Tree
 
+"""
+Not currently in use.
+Added by me to treat parameters in a slightly other way
+"""
+function reconstructRecordInstanceForParameterRecord(
+  recordName::ComponentRef,
+  variables::List{<:Variable},
+  fieldCount::Int
+  )
+  local recordVar::Variable
+  local record_node::InstNode
+  local record_comp::Component
+  local record_ty::M_Type
+  record_node = node(recordName)
+  record_comp = component(record_node)
+  record_ty = nodeType(recordName)
+  record_binding = EMPTY_BINDING
+  recordVar = VARIABLE(
+    recordName,
+    record_ty,
+    record_binding,
+    visibility(record_node),
+    getAttributes(record_comp),
+    Tuple{String, Binding}[],
+    comment(record_comp),
+    InstNode_info(record_node),
+  )
+  println("Record var:" * toString(recordVar))
+  return recordVar
+end
+
 function reconstructRecordInstance(
   recordName::ComponentRef,
   variables::List{<:Variable},
@@ -95,6 +126,7 @@ function reconstructRecordInstance(
   record_ty = nodeType(recordName)
   field_exps = nil
   for v in variables
+    #= Handling regular variables =#
     if hasExp(v.binding)
       field_exps = _cons(getExp(v.binding), field_exps)
     else
@@ -124,12 +156,11 @@ function reconstructRecordInstance(
     comment(record_comp),
     InstNode_info(record_node),
   )
-  #println("Record var:" * toString(recordVar))
   return recordVar
 end
 
 function reconstructRecordInstances(variables::Vector{Variable})
-  local outVariables::List{Variable} = nil
+  local outVariables::Vector{Variable} = Variable[]
   local rest_vars::List{Variable} = arrayList(variables)
   local record_vars::List{Variable}
   local var::Variable
@@ -145,14 +176,18 @@ function reconstructRecordInstances(variables::Vector{Variable})
         field_count = listLength(recordFields(parent_ty))
         (record_vars, rest_vars) = ListUtil.split(rest_vars, field_count - 1)
         record_vars = _cons(var, record_vars)
-        var = reconstructRecordInstance(parent_cr, record_vars)
-        #println(toString(var))
+        #=TODO: Maybe treat parameters more special in the future... =#
+        if variability(var) <= Variability.PARAMETER && Flags.isSet(Flags.NF_SCALARIZE)
+          var = reconstructRecordInstance(parent_cr, record_vars)
+        else
+          var = reconstructRecordInstance(parent_cr, record_vars)
+        end
       end
+      #record_vars = nil;
     end
-    outVariables = _cons(var, outVariables)
+    outVariables = push!(outVariables, var)
   end
-  outVariables = listReverseInPlace(outVariables)
-  return listArray(outVariables)
+  return outVariables
 end
 
 function collectSubscriptedFlatType(
@@ -377,9 +412,8 @@ function collectEquationFlatTypes(eq::Equation, types::TypeTree)::TypeTree
 end
 
 function collectBindingFlatTypes(binding::Binding, types::TypeTree)::TypeTree
-
   if isExplicitlyBound(binding)
-    @assign types = collectExpFlatTypes(getTypedExp(binding), types)
+    types = collectExpFlatTypes(getTypedExp(binding), types)
   end
   return types
 end
@@ -443,6 +477,7 @@ function toFlatStream(flatModel::FlatModel, functions::List, printBindingTypes::
   local flat_model::FlatModel = flatModel
   s = IOStream_M.append(s, "model '" + flat_model.name + "'\\n")
   vars = reconstructRecordInstances(flat_model.variables)
+  #vars = flatModel.variables
   #=
   Sometimes, we get duplicate elements when we collect record elements.
   Make sure that we do not get duplicated record instances.
@@ -509,8 +544,8 @@ function printFlatString(
   printBindingTypes::Bool = false,
 )
   local s
-  @assign s = IOStream_M.create(getInstanceName(), IOStream.IOStreamType.LIST())
-  @assign s = toFlatStream(flatModel, functions, printBindingTypes, s)
+  s = IOStream_M.create(getInstanceName(), IOStream.IOStreamType.LIST())
+  s = toFlatStream(flatModel, functions, printBindingTypes, s)
   return IOStream_M.print(s, IOStream_M.stdOutput)
 end
 
@@ -519,6 +554,7 @@ function toFlatString(
   functions::List,
   printBindingTypes::Bool = false,
   )
+  #@info replace(toString(flatModel), "\\n" => "\n")
   local str::String
   local s::IOStream_M.IOSTREAM
   s = IOStream_M.create(getInstanceName(), IOStream_M.LIST())

@@ -182,7 +182,7 @@ function evaluateEquation(@nospecialize(eq::Equation), constVariability::Variabi
       EQUATION_ARRAY_EQUALITY(__) => begin
         local ty = mapDims(eq.ty, evaluateDimension)
         local e2 = evaluateExp(eq.rhs, constVariability)
-        EQUATION_ARRAY_EQUALITY(eq.lhs, e2, ty, eq.source)
+        local aeq = EQUATION_ARRAY_EQUALITY(eq.lhs, e2, ty, eq.source)
       end
       EQUATION_FOR(__) => begin
         local eqRange = Util.applyOption(

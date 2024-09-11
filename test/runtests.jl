@@ -63,7 +63,7 @@ end
     include("useOfMSLTests.jl")
   end
 
-  @testset "Testing OCC connectors" begin
+  @testset "Testing OC-Connectors" begin
     include("dynamicOverconstrainedConnectorTests.jl")
   end
 

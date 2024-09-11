@@ -3,13 +3,13 @@ module ExecStat
 using MetaModelica
 using ExportAll
 
-import Main.ClockIndexes
-import Main.Error
-import Main.GC
-import Main.Global
-import Main.Flags
-import Main.System
-import Main.StringUtil
+import Frontend.ClockIndexes
+import Frontend.Error
+import Frontend.GC
+import Frontend.Global
+import Frontend.Flags
+import Frontend.System
+import Frontend.StringUtil
 
 function execStatReset()
   System.realtimeTick(ClockIndexes.RT_CLOCK_EXECSTAT)

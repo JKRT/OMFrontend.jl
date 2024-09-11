@@ -108,7 +108,7 @@ end
 
 module NodeTree
 
-import ..Main.InstNode
+import ..Frontend.InstNode
 
 using MetaModelica
 using ExportAll

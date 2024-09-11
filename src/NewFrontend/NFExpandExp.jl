@@ -884,16 +884,6 @@ function expandCall(call::Call, exp::Expression)::Tuple{Expression, Bool}
       TYPED_ARRAY_CONSTRUCTOR(__) => begin
         expandArrayConstructor(call.exp, call.ty, call.iters)
       end
-      # #= Extension by John. Expand more stuff =#
-      # Remove if not in use
-      # TYPED_CALL(__) => begin
-      #   lst = nil
-      #   for arg in call.arguments
-      #     lst = expand(arg)[1] <| nil
-      #   end
-      #   @assign call.arguments = listReverse(lst)
-      #   expandGeneric(exp)
-      # end
       _ => begin
         expandGeneric(exp)
       end

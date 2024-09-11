@@ -42,11 +42,11 @@ import Absyn
 import SCode
 import ListUtil
 
-import ..Main.AbsynUtil
+import ..Frontend.AbsynUtil
 import ..SCodeUtil
-#import ..Main.Dump
-#import ..Main.SCodeDumpTpl
-#import ..Main.Tpl
+#import ..Frontend.Dump
+#import ..Frontend.SCodeDumpTpl
+#import ..Frontend.Tpl
 
 @Uniontype SCodeDumpOptions begin
   @Record OPTIONS begin

@@ -40,19 +40,19 @@ FuncExpStr = Function
 *
 */ =#
 
-import Main.BaseHashTable
+import Frontend.BaseHashTable
 
 import DAE
 
-import Main.ComponentReference
+import Frontend.ComponentReference
 
-import Main.HashSet
+import Frontend.HashSet
 
-import Main.BaseHashSet
+import Frontend.BaseHashSet
 
 import ListUtil
 
-import Main.InstStateMachineUtil
+import Frontend.InstStateMachineUtil
 
 Key = DAE.ComponentRef
 
@@ -62,7 +62,7 @@ HashTableCrefFunctionsType = Tuple
 
 HashTable = Tuple
 
-""" #= 
+""" #=
   Returns an empty HashTable.
   Using the default bucketsize..
  =#"""

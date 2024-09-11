@@ -3,11 +3,11 @@ module SCodeDumpTpl
 using MetaModelica
 using ExportAll
 
-import Main.Tpl
+import Frontend.Tpl
 
 import Absyn
 
-import Main.Dump
+import Frontend.Dump
 
 import SCode
 
@@ -21,7 +21,7 @@ import ..Util
 
 import ..Error
 
-import Main.AbsynDumpTpl
+import Frontend.AbsynDumpTpl
 
 function dumpProgram(
   txt::Tpl.Text,

@@ -275,10 +275,11 @@ function splitRecordCref(exp::Expression) ::Expression
     @match outExp begin
       CREF_EXPRESSION(ty = TYPE_COMPLEX(cls = cls), cref = cr)  => begin
         local comps::Vector{InstNode} = getComponents(classTree(getClass(cls)))
+        #@info "Components...." toString(comps)
         local compsLen::Int = arrayLength(comps)
         local fields::Vector{Expression} = Vector{Expression}(undef, compsLen)
         local j::Int = 1
-        for i in compsLen:(-1):1
+        for i in 1:compsLen#:(-1):1
           ty = getType(comps[i])
           field_cr = prefixCref(comps[i], ty, nil, cr)
           fields[j] = CREF_EXPRESSION(ty, field_cr) #_cons(CREF_EXPRESSION(ty, field_cr), fields)
@@ -295,6 +296,7 @@ function splitRecordCref(exp::Expression) ::Expression
       end
     end
   end
+  #@info "Out Components" toString(outExp)
   outExp
 end
 
@@ -1890,9 +1892,7 @@ function containsOpt(exp::Option{<:Expression}, func::ContainsPred) ::Bool
   res
 end
 
-
-
-function mapFoldCrefShallow(cref::ComponentRef, func::MapFunc, arg::ArgT)  where {ArgT}
+function mapFoldCrefShallow(cref::ComponentRef, @nospecialize(func::Function), arg::ArgT)  where {ArgT}
   local outCref::ComponentRef
   outCref = begin
     local subs::List{Subscript}
@@ -1911,7 +1911,7 @@ function mapFoldCrefShallow(cref::ComponentRef, func::MapFunc, arg::ArgT)  where
   (outCref, arg)
 end
 
-function mapFoldCallIteratorsShallow(iters::List{Tuple{InstNode, Expression}}, func::MapFunc, arg::ArgT)  where {ArgT}
+function mapFoldCallIteratorsShallow(iters::List{Tuple{InstNode, Expression}}, @nospecialize(func::Function), arg::ArgT)  where {ArgT}
 
   local outIters::List{Tuple{InstNode, Expression}} = nil
 
@@ -1932,7 +1932,7 @@ function mapFoldCallIteratorsShallow(iters::List{Tuple{InstNode, Expression}}, f
   (outIters, arg)
 end
 
-function mapFoldCallShallow(@nospecialize(call::Call), func::MapFunc, foldArg::ArgT)  where {ArgT}
+function mapFoldCallShallow(@nospecialize(call::Call), @nospecialize(func::Function), foldArg::ArgT)  where {ArgT}
   local outCall::Call
   outCall = begin
     local args::List{Expression}
@@ -2016,7 +2016,7 @@ function mapFoldCallShallow(@nospecialize(call::Call), func::MapFunc, foldArg::A
   (outCall, foldArg)
 end
 
-function mapFoldOptShallow(exp::Option{Expression}, func::MapFunc, arg::ArgT)  where {ArgT}
+function mapFoldOptShallow(exp::Option{Expression}, @nospecialize(func::Function), arg::ArgT)  where {ArgT}
 
   local outExp::Option{Expression}
 
@@ -2042,7 +2042,7 @@ function mapFoldOptShallow(exp::Option{Expression}, func::MapFunc, arg::ArgT)  w
   (outExp, arg)
 end
 
-function mapFoldClockShallow(clockExp::Expression, func::MapFunc, arg::ArgT)  where {ArgT}
+function mapFoldClockShallow(clockExp::Expression, @nospecialize(func::Function), arg::ArgT)  where {ArgT}
 
   local outExp::Expression
 
@@ -2102,7 +2102,7 @@ function mapFoldClockShallow(clockExp::Expression, func::MapFunc, arg::ArgT)  wh
   (outExp, arg)
 end
 
-function mapFoldShallow(@nospecialize(exp::Expression), func::MapFunc, arg::ArgT)  where {ArgT}
+function mapFoldShallow(@nospecialize(exp::Expression), @nospecialize(func::Function), arg::ArgT)  where {ArgT}
   local outExp::Expression
   outExp = begin
     local e1::Expression
@@ -2304,7 +2304,7 @@ function mapFoldShallow(@nospecialize(exp::Expression), func::MapFunc, arg::ArgT
   (outExp, arg)
 end
 
-function mapFoldCref(cref::ComponentRef, func::MapFunc, arg::ArgT)  where {ArgT}
+function mapFoldCref(cref::ComponentRef, @nospecialize(func::Function), arg::ArgT)  where {ArgT}
 
   local outCref::ComponentRef
 
@@ -2326,7 +2326,7 @@ function mapFoldCref(cref::ComponentRef, func::MapFunc, arg::ArgT)  where {ArgT}
   (outCref, arg)
 end
 
-function mapFoldCallIterators(iters::List{Tuple{InstNode, Expression}}, func::MapFunc, arg::ArgT)  where {ArgT}
+function mapFoldCallIterators(iters::List{Tuple{InstNode, Expression}}, @nospecialize(func::Function), arg::ArgT)  where {ArgT}
 
   local outIters::List{Tuple{InstNode, Expression}} = nil
 
@@ -2347,7 +2347,7 @@ function mapFoldCallIterators(iters::List{Tuple{InstNode, Expression}}, func::Ma
   (outIters, arg)
 end
 
-function mapFoldCall(call::Call, func::MapFunc, foldArg::ArgT)  where {ArgT}
+function mapFoldCall(call::Call, @nospecialize(func::Function), foldArg::ArgT)  where {ArgT}
 
   local outCall::Call
 
@@ -2430,7 +2430,7 @@ function mapFoldCall(call::Call, func::MapFunc, foldArg::ArgT)  where {ArgT}
   (outCall, foldArg)
 end
 
-function mapFoldOpt(exp::Option{Expression}, func::MapFunc, arg::ArgT)  where {ArgT}
+function mapFoldOpt(exp::Option{Expression}, @nospecialize(func::Function), arg::ArgT)  where {ArgT}
 
   local outExp::Option{Expression}
 
@@ -2451,7 +2451,7 @@ function mapFoldOpt(exp::Option{Expression}, func::MapFunc, arg::ArgT)  where {A
   (outExp, arg)
 end
 
-function mapFold(@nospecialize(exp::Expression), @nospecialize(func::MapFunc), @nospecialize(arg::ArgT))  where {ArgT}
+@nospecializeinfer function mapFold(@nospecialize(exp::Expression), @nospecialize(func::Function), @nospecialize(arg::ArgT))  where {ArgT}
   local outExp::Expression
   outExp = begin
     local e1::Expression
@@ -3257,18 +3257,18 @@ function foldList(expl::Union{List{Expression}, Vector{Expression}}, func::FoldF
   result
 end
 
-function mapArrayElements(exp::ARRAY_EXPRESSION, func::MapFunc)
+function mapArrayElements(exp::ARRAY_EXPRESSION, @nospecialize(func::Function))
   local expElements = list(mapArrayElements(e, func) for e in exp.elements)
   ARRAY_EXPRESSION(exp.ty, expElements, exp.literal)
 end
 
 """  Applies the given function to each scalar elements of an array. """
-function mapArrayElements(exp::Expression, func::MapFunc)
+function mapArrayElements(exp::Expression, @nospecialize(func::Function))
   local outExp = func(exp)
   return outExp
 end
 
-function mapCallShallowIterators(iters::List{<:Tuple{<:InstNode, Expression}}, func::MapFunc) ::List{Tuple{InstNode, Expression}}
+function mapCallShallowIterators(iters::List{<:Tuple{<:InstNode, Expression}}, @nospecialize(func::Function)) ::List{Tuple{InstNode, Expression}}
   local outIters::List{Tuple{InstNode, Expression}} = nil
   local node::InstNode
   local exp::Expression
@@ -3286,7 +3286,7 @@ function mapCallShallowIterators(iters::List{<:Tuple{<:InstNode, Expression}}, f
   outIters
 end
 
-function mapCallShallow(call::Call, func::MapFunc)
+function mapCallShallow(call::Call, @nospecialize(func::Function))
   local outCall::Call
   outCall = begin
     local args::List{Expression}
@@ -3360,7 +3360,7 @@ function mapCallShallow(call::Call, func::MapFunc)
   outCall
 end
 
-function mapCrefShallow(cref::ComponentRef, func::MapFunc) ::ComponentRef
+function mapCrefShallow(cref::ComponentRef, @nospecialize(func::Function)) ::ComponentRef
   local outCref::ComponentRef
 
    outCref = begin
@@ -3381,7 +3381,7 @@ function mapCrefShallow(cref::ComponentRef, func::MapFunc) ::ComponentRef
   outCref
 end
 
-function mapShallowOpt(exp::Option{<:Expression}, func::MapFunc) ::Option{Expression}
+function mapShallowOpt(exp::Option{<:Expression}, @nospecialize(func::Function)) ::Option{Expression}
   local outExp::Option{Expression}
 
   local e::Expression
@@ -3400,7 +3400,7 @@ function mapShallowOpt(exp::Option{<:Expression}, func::MapFunc) ::Option{Expres
   outExp
 end
 
-function mapShallow(@nospecialize(exp::Expression), func::MapFunc)
+function mapShallow(@nospecialize(exp::Expression), @nospecialize(func::Function))
   local outExp::Expression
   outExp = begin
     local e1::Expression
@@ -3645,7 +3645,7 @@ function mapShallow(@nospecialize(exp::Expression), func::MapFunc)
   outExp
 end
 
-function mapCref(cref::ComponentRef, func::MapFunc) ::ComponentRef
+function mapCref(cref::ComponentRef, @nospecialize(func::Function)) ::ComponentRef
   local outCref::ComponentRef
   outCref = begin
     local subs::List{Subscript}
@@ -3664,7 +3664,7 @@ function mapCref(cref::ComponentRef, func::MapFunc) ::ComponentRef
   outCref
 end
 
-function mapCallIterators(iters::List{<:Tuple{<:InstNode, Expression}}, func::MapFunc) ::List{Tuple{InstNode, Expression}}
+function mapCallIterators(iters::List{<:Tuple{<:InstNode, Expression}}, @nospecialize(func::Function)) ::List{Tuple{InstNode, Expression}}
   local outIters::List{Tuple{InstNode, Expression}} = nil
 
   local node::InstNode
@@ -3684,7 +3684,7 @@ function mapCallIterators(iters::List{<:Tuple{<:InstNode, Expression}}, func::Ma
   outIters
 end
 
-function mapCall(call::Call, func::MapFunc) ::Call
+function mapCall(call::Call, @nospecialize(func::Function)) ::Call
   local outCall::Call
   outCall = begin
     local args::List{Expression}
@@ -3761,7 +3761,7 @@ function mapCall(call::Call, func::MapFunc) ::Call
   outCall
 end
 
-function mapOpt(exp::Option{<:Expression}, func::MapFunc) ::Option{Expression}
+function mapOpt(exp::Option{<:Expression}, @nospecialize(func::Function)) ::Option{Expression}
   local outExp::Option{Expression}
 
   local e::Expression
@@ -3780,7 +3780,17 @@ function mapOpt(exp::Option{<:Expression}, func::MapFunc) ::Option{Expression}
   outExp
 end
 
-function map(exp::Expression, func::MapFunc) ::Expression
+"""
+```
+map(@nospecialize(exp::Expression), @nospecialize(func::Function))
+```
+Applies the function `func`, to the expression `exp`.
+This function traverse the expression and creates new nodes when needed.
+
+The function passed to this function is expected to take an expression as the argument and return
+one expression.
+"""
+@nospecializeinfer function map(@nospecialize(exp::Expression), @nospecialize(func::MapFunc))
   local outExp::Expression
    outExp = begin
     local e1::Expression
@@ -4023,6 +4033,11 @@ function map(exp::Expression, func::MapFunc) ::Expression
   outExp
 end
 
+#= Adding an alias for map. For some reason Julia struggles to find it in certain situations. =#
+function mapExpAlias(@nospecialize(exp::Expression), func::Function)
+  return map(exp, func)
+end
+
 function dimensionCount(@nospecialize(exp::Expression))
   local dimCount::Int
    dimCount = begin
@@ -4032,11 +4047,11 @@ function dimensionCount(@nospecialize(exp::Expression))
       end
 
       ARRAY_EXPRESSION(__)  => begin
-        Type.dimensionCount(exp.ty)
+        dimensionCount(exp.ty)
       end
 
       RANGE_EXPRESSION(__)  => begin
-        Type.dimensionCount(exp.ty)
+        dimensionCount(exp.ty)
       end
 
       SIZE_EXPRESSION(dimIndex = NONE())  => begin
@@ -4546,7 +4561,7 @@ function toFlatString(exp::BINDING_EXP; inFunction = false)
   toFlatString(exp.exp; inFunction = inFunction)
 end
 
-function toFlatString(@nospecialize(exp::Expression); inFunction = false)
+@nospecializeinfer function toFlatString(@nospecialize(exp::Expression); inFunction = false)
   local str::String
   local t::M_Type
   local clk::ClockKind
@@ -4620,7 +4635,6 @@ function toFlatString(@nospecialize(exp::Expression); inFunction = false)
       end
 
       RECORD_EXPRESSION(__)  => begin
-        #println("Hello there:" * AbsynUtil.pathString(exp.path))
         local absynCref = AbsynUtil.pathToCref(exp.path)
         local cref = fromAbsynCref(absynCref)
         #println(absynCref)
@@ -4676,7 +4690,7 @@ function toFlatString(@nospecialize(exp::Expression); inFunction = false)
       end
 
       UNARY_EXPRESSION(__)  => begin
-        symbol(exp.operator, "") + operandFlatString(exp.exp, exp, false; inFunction = inFunction)
+        "(" + symbol(exp.operator, "") + operandFlatString(exp.exp, exp, false; inFunction = inFunction) + ")"
       end
 
       LBINARY_EXPRESSION(__)  => begin
@@ -7055,6 +7069,7 @@ function recordFieldBinding(fieldNode::InstNode, recordBinding::Binding)
     @match fieldBinding begin
       UNTYPED_BINDING(__) => begin
         fieldBinding.bindingExp = recordElement(field_name, fieldBinding.bindingExp)
+        @info "exp in recordFieldBinding" toString(fieldBinding)
         fieldBinding
       end
 
@@ -7164,9 +7179,8 @@ function getExp(binding::Binding)
   return exp
 end
 
-function hasExp(binding::Binding)
+@nospecialized function hasExp(binding::Binding)
   local hasExp::Bool
-
    hasExp = begin
     @match binding begin
       UNTYPED_BINDING(__) => begin

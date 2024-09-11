@@ -32,11 +32,11 @@ module NFHashTable3
 
 using MetaModelica
 using ExportAll
-using ..Main
+using ..Frontend
 
-import ..Main.NFComponentRef
-import ..Main.BaseHashTable
-import ..Main.toString
+import ..Frontend.NFComponentRef
+import ..Frontend.BaseHashTable
+import ..Frontend.toString
 
 import ArrayUtil
 import ListUtil

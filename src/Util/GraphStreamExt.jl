@@ -34,7 +34,7 @@ using ExportAll
 *
 */ =#
 
-import Main.Values
+import Frontend.Values
 
 function newStream(streamName::String, host::String, port::Integer, debug::Bool)
   return @error "TODO: Defined in the runtime"

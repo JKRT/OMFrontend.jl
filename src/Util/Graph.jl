@@ -89,7 +89,7 @@ EqualFunc = Function
 *
 */ =#
 
-import Main.Error
+import Frontend.Error
 
 import ListUtil
 

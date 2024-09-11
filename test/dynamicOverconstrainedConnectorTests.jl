@@ -29,19 +29,33 @@ end
   @test_pass_if_not_throws("DynamicOverconstrainedConnectors.System4", "./Models/DynamicOverconstrainedConnectors.mo")
 end
 
+function test_and_pretty_print(ref, modelName, modelFile)
+  local flattenedModel = OMFrontend.flattenModelWithMSL(modelName, modelFile)[1]
+  local res = OMFrontend.toString(flattenedModel)
+  @test true == begin
+    if ref == res
+      true
+    else
+      @info "Got:"
+      print(res)
+      @info "Reference was:"
+      print(res)
+      false
+    end
+  end
+end
+
 #= Regression test. Tests the generated code against reference models =#
 @testset "Test if the flat Modelica model is equal to the reference models" begin
   local modelFile = "./Models/DynamicOverconstrainedConnectors.mo"
-  @test OCC_ReferenceModels.ACPort == OMFrontend.toString(OMFrontend.flattenModelWithMSL("DynamicOverconstrainedConnectors.ACPort", modelFile)[1]);
-  @test OCC_ReferenceModels.Load == OMFrontend.toString(OMFrontend.flattenModelWithMSL("DynamicOverconstrainedConnectors.Load", modelFile)[1]);
-  @test OCC_ReferenceModels.Generator == OMFrontend.toString(OMFrontend.flattenModelWithMSL("DynamicOverconstrainedConnectors.Generator", modelFile)[1]);
-  @test OCC_ReferenceModels.TransmissionLine == OMFrontend.toString(OMFrontend.flattenModelWithMSL("DynamicOverconstrainedConnectors.TransmissionLine", modelFile)[1]);
-  @test OCC_ReferenceModels.System1 == OMFrontend.toString(OMFrontend.flattenModelWithMSL("DynamicOverconstrainedConnectors.System1", modelFile)[1]);
-  @test OCC_ReferenceModels.System2 == OMFrontend.toString(OMFrontend.flattenModelWithMSL("DynamicOverconstrainedConnectors.System2", modelFile)[1]);
-  @test OCC_ReferenceModels.System3 == OMFrontend.toString(OMFrontend.flattenModelWithMSL("DynamicOverconstrainedConnectors.System3", modelFile)[1]);
-  @test OCC_ReferenceModels.System4 == OMFrontend.toString(OMFrontend.flattenModelWithMSL("DynamicOverconstrainedConnectors.System4", modelFile)[1]);
+  test_and_pretty_print(OCC_ReferenceModels.ACPort, "DynamicOverconstrainedConnectors.ACPort", modelFile)
+  test_and_pretty_print(OCC_ReferenceModels.Load, "DynamicOverconstrainedConnectors.Load", modelFile)
+  test_and_pretty_print(OCC_ReferenceModels.Generator, "DynamicOverconstrainedConnectors.Generator", modelFile)
+  test_and_pretty_print(OCC_ReferenceModels.TransmissionLine, "DynamicOverconstrainedConnectors.TransmissionLine", modelFile)
+  test_and_pretty_print(OCC_ReferenceModels.System1, "DynamicOverconstrainedConnectors.System1", modelFile)
+  test_and_pretty_print(OCC_ReferenceModels.System2, "DynamicOverconstrainedConnectors.System2", modelFile)
+  test_and_pretty_print(OCC_ReferenceModels.System3, "DynamicOverconstrainedConnectors.System3", modelFile)
+  test_and_pretty_print(OCC_ReferenceModels.System4, "DynamicOverconstrainedConnectors.System4", modelFile)
 end
 
-#= Check the resulting flat code. =#
-@testset "Check the resulting flat code" begin
-end
+#@macroexpand @test_and_pretty_print OCC_ReferenceModels.ACPort == OMFrontend.toString(OMFrontend.flattenModelWithMSL("DynamicOverconstrainedConnectors.ACPor", modelFile)[1]);

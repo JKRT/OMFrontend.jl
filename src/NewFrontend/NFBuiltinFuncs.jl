@@ -36,7 +36,7 @@ import Absyn
 import DAE
 import SCode
 
-using ..Main
+using ..Frontend
 using MetaModelica
 using ExportAll
 using MetaModelica.Dangerous

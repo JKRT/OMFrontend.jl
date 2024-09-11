@@ -100,57 +100,57 @@ const CLOCK =
 @exportAll()
 end
 
-import ..Main.C_FUNCTION
-import ..Main.Visibility
-import ..Main.VisibilityType
+import ..Frontend.C_FUNCTION
+import ..Frontend.Visibility
+import ..Frontend.VisibilityType
 import ..P_Pointer
-import ..Main.DEFAULT_PREFIXES
-import ..Main.TYPE_POLYMORPHIC
-import ..Main.CLASS_TREE_EMPTY_TREE
-import ..Main.MODIFIER_NOMOD
-import ..Main.RESTRICTION_TYPE
-#import ..Main.EMPTY_NODE_CACHE
-import ..Main.EMPTY_NODE
-import ..Main.BUILTIN_CLASS
-import ..Main.PARTIAL_BUILTIN
-import ..Main.CLASS_NODE
-import ..Main.RESTRICTION_TYPE
+import ..Frontend.DEFAULT_PREFIXES
+import ..Frontend.TYPE_POLYMORPHIC
+import ..Frontend.CLASS_TREE_EMPTY_TREE
+import ..Frontend.MODIFIER_NOMOD
+import ..Frontend.RESTRICTION_TYPE
+#import ..Frontend.EMPTY_NODE_CACHE
+import ..Frontend.EMPTY_NODE
+import ..Frontend.BUILTIN_CLASS
+import ..Frontend.PARTIAL_BUILTIN
+import ..Frontend.CLASS_NODE
+import ..Frontend.RESTRICTION_TYPE
 
 #= Types =#
-import ..Main.TYPE_STRING
-import ..Main.TYPE_ATTRIBUTE
-import ..Main.TYPE_ENUMERATION
-import ..Main.TYPE_INTEGER
-import ..Main.TYPE_REAL
-import ..Main.TYPE_BOOLEAN
-import ..Main.CachedData
-import ..Main.InstNode
+import ..Frontend.TYPE_STRING
+import ..Frontend.TYPE_ATTRIBUTE
+import ..Frontend.TYPE_ENUMERATION
+import ..Frontend.TYPE_INTEGER
+import ..Frontend.TYPE_REAL
+import ..Frontend.TYPE_BOOLEAN
+import ..Frontend.CachedData
+import ..Frontend.InstNode
 
 #= Modules =#
 import ..LookupTree
 
-import ..Main.NORMAL_COMP
-import ..Main.COMPONENT_NODE
-#import ..Main.STATESELECT_TYPE
+import ..Frontend.NORMAL_COMP
+import ..Frontend.COMPONENT_NODE
+#import ..Frontend.STATESELECT_TYPE
 
 import ..DuplicateTree
 
-import ..Main.CLASS_TREE_FLAT_TREE
-import ..Main.ClassTree
+import ..Frontend.CLASS_TREE_FLAT_TREE
+import ..Frontend.ClassTree
 
-import ..Main.Origin
-import ..Main.COMPONENT_REF_EMPTY
-import ..Main.COMPONENT_REF_CREF
-import ..Main.ComponentRef
-import ..Main.TYPE_ENUMERATION_ANY
-import ..Main.RESTRICTION_ENUMERATION
-import ..Main.ENUM_LITERAL_EXPRESSION
-import ..Main.Expression
-import ..Main.TYPE_CLOCK
-import ..Main.RESTRICTION_CLOCK
-import ..Main.TYPED_COMPONENT
-import ..Main.EMPTY_BINDING
-import ..Main.INPUT_ATTR
+import ..Frontend.Origin
+import ..Frontend.COMPONENT_REF_EMPTY
+import ..Frontend.COMPONENT_REF_CREF
+import ..Frontend.ComponentRef
+import ..Frontend.TYPE_ENUMERATION_ANY
+import ..Frontend.RESTRICTION_ENUMERATION
+import ..Frontend.ENUM_LITERAL_EXPRESSION
+import ..Frontend.Expression
+import ..Frontend.TYPE_CLOCK
+import ..Frontend.RESTRICTION_CLOCK
+import ..Frontend.TYPED_COMPONENT
+import ..Frontend.EMPTY_BINDING
+import ..Frontend.INPUT_ATTR
 
 const EMPTY_NODE_CACHE::Vector{CachedData} = listArrayLiteral(list(C_FUNCTION(nil, true, true)))
 #=  InstNodes for the builtin types. These have empty class trees to prevent
@@ -703,17 +703,16 @@ const ENUM_NODE =
 
 const ASSERTIONLEVEL_TYPE =
   TYPE_ENUMERATION(Absyn.IDENT("AssertionLevel"),
-                   list("error", "warning"))
-
-const ASSERTIONLEVEL_ERROR::ENUM_LITERAL_EXPRESSION =
-  ENUM_LITERAL_EXPRESSION{TYPE_ENUMERATION, String, Int}(ASSERTIONLEVEL_TYPE
-                          , "error"
-                          , 1)
+                   list("warning", "error"))
 
 const ASSERTIONLEVEL_WARNING::ENUM_LITERAL_EXPRESSION =
   ENUM_LITERAL_EXPRESSION{TYPE_ENUMERATION, String, Int}(ASSERTIONLEVEL_TYPE
-                                                         ,"error"
-                                                         ,2)
+                                                         ,"warning"
+                                                         ,1)
+const ASSERTIONLEVEL_ERROR::ENUM_LITERAL_EXPRESSION =
+  ENUM_LITERAL_EXPRESSION{TYPE_ENUMERATION, String, Int}(ASSERTIONLEVEL_TYPE
+                                                         , "error"
+                                                         , 2)
 
 const CLOCK_LOOKUP_TREE =
   LookupTree.NODE(

@@ -1148,7 +1148,7 @@ function getMemorySize() ::AbstractFloat
   memory
 end
 
-""" #= this needs to be called first in Main.mo =#"""
+""" #= this needs to be called first in Frontend.mo =#"""
 function initGarbageCollector()
   @error "TODO: Defined in the runtime"
 end

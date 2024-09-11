@@ -1,8 +1,30 @@
 #=
-  Some routine to cache more naitve code for this package.
+  Some routine to cache more naitive code for this package.
   Not meant to be used by users.
 =#
+
+PrecompileTools.@recompile_invalidations begin
+    using ..Frontend
+end
+
 PrecompileTools.@compile_workload begin
+
+  @info "Precompiling builtin libraries..."
+  if ! haskey(NFModelicaBuiltinCache, "NFModelicaBuiltin")
+    #= Locate the external libraries =#
+    packagePath = dirname(realpath(Base.find_package("OMFrontend")))
+    packagePath *= "/.."
+    pathToLib = packagePath * "/lib/NFModelicaBuiltin.mo"
+    #= The external C stuff can be a bit flaky.. =#
+    GC.enable(false)
+    p = parseFile(pathToLib, 2 #== MetaModelica ==#)
+    s = translateToSCode(p)
+    NFModelicaBuiltinCache["NFModelicaBuiltin"] = s
+    #=Enable GC again.=#
+    GC.enable(true)
+  end
+  @info "Builtin libraries successfully precompiled!"
+  @info "Initial compiler module interfaces are compiled!"
   #= Make sure that we load the bultin scode=#
   packagePath = dirname(realpath(Base.find_package("OMFrontend")))
   packagePath *= "/.."
@@ -10,7 +32,7 @@ PrecompileTools.@compile_workload begin
   #= The external C stuff can be a bit flaky.. =#
   GC.enable(false)
   p = OMParser.parseFile(pathToLib, 2 #== MetaModelica ==#)
-  builtinSCode = Main.AbsynToSCode.translateAbsyn2SCode(p)
+  builtinSCode = Frontend.AbsynToSCode.translateAbsyn2SCode(p)
   GC.enable(true)
   #= End preamble =#
   #= Load the Modelica Standard Library =#
@@ -25,51 +47,76 @@ PrecompileTools.@compile_workload begin
   packagePath *= "/.."
   pathToTest = packagePath * "/test/Models/HelloWorld.mo"
   p = OMParser.parseFile(pathToTest, 1)
-  s = Main.AbsynToSCode.translateAbsyn2SCode(p)
+  s = Frontend.AbsynToSCode.translateAbsyn2SCode(p)
   @info "Compiling core modules. This might take awhile.."
-  Main.Global.initialize()
+  Frontend.Global.initialize()
   # make sure we have all the flags loaded!
-  Main.FlagsUtil.loadFlags()
+  Frontend.FlagsUtil.loadFlags()
   program = listAppend(builtinSCode, s)
-  path = Main.AbsynUtil.stringPath("HelloWorld")
+  path = Frontend.AbsynUtil.stringPath("HelloWorld")
   @info "Timings concerning compiling core modules for instantiation:"
-  @time res1 = Main.instClassInProgram(path, program)
+  @time res1 = Frontend.instClassInProgram(path, program)
   #=
   For other developers reading this.
   Comment out below if you are using revise and want to have faster feedback when changing different datatypes.
   -John 2023-06-22
   =#
-  # @info "Testing to load  a large MSL model"
-  # function flattenModelInMSL_TST(modelName::String; MSL_V)
-  #   if !haskey(OMFrontend.LIBRARY_CACHE, MSL_V)
-  #     OMFrontend.initLoadMSL(MSL_Version= MSL_V)
-  #   end
-  #   local libraryAsScoded = OMFrontend.LIBRARY_CACHE[MSL_V]
-  #   (FM, cache) = OMFrontend.instantiateSCodeToFM(modelName, libraryAsScoded)
-  # end
-  # precompile_prefix = "Modelica.Electrical.Analog.Examples"
-  # precompile_model_names = [
-  #   "IdealTriacCircuit",
-  #   "NandGate",
-  #   "AmplifierWithOpAmpDetailed",
-  #   "SimpleTriacCircuit"
-  # ]
-  # for p in precompile_model_names
-  #   @info "Translating:" p
-  #   @time flattenModelInMSL_TST(string(precompile_prefix, ".", p); MSL_V = "MSL_4_0_0")
-  # end
-  # precompile_libraryAsScode = OMFrontend.LIBRARY_CACHE["MSL_4_0_0"]
-  # precompile_prefix = "Modelica.Mechanics.Rotational.Examples"
-  # precompile_model_names = [
-  #   "RollingWheel",
-  #   "OneWayClutch",
-  #   "SimpleGearShift"
-  # ]
-  # @info "Time spent precompiing MSL models in: $(precompile_prefix)"
-  # for p in precompile_model_names
-  #   @info "Translating:" string(precompile_prefix, ".", p)
-  #   @time flattenModelInMSL_TST(string(precompile_prefix, ".", p); MSL_V = "MSL_4_0_0")
-  # end
-  # @info "Core compiler modules are successfully precompiled!"
-  # @info "Compiler modules are successfully precompiled!"
+  @info "Testing to load MSL models"
+  function flattenModelInMSL_TST(modelName::String; MSL_V)
+    if !haskey(OMFrontend.LIBRARY_CACHE, MSL_V)
+      OMFrontend.initLoadMSL(MSL_Version= MSL_V)
+    end
+    local libraryAsScoded = OMFrontend.LIBRARY_CACHE[MSL_V]
+    (FM, cache) = OMFrontend.instantiateSCodeToFM(modelName, libraryAsScoded)
+  end
+  precompile_prefix = "Modelica.Electrical.Analog.Examples"
+  precompile_model_names = [
+    "IdealTriacCircuit",
+    "NandGate",
+    "AmplifierWithOpAmpDetailed",
+    "SimpleTriacCircuit"
+  ]
+  for p in precompile_model_names
+    @info "Translating: $(p)"
+    @time flattenModelInMSL_TST(string(precompile_prefix, ".", p); MSL_V = "MSL_4_0_0")
+  end
+  precompile_libraryAsScode = OMFrontend.LIBRARY_CACHE["MSL_4_0_0"]
+  precompile_prefix = "Modelica.Mechanics.Rotational.Examples"
+  precompile_model_names = [
+    "RollingWheel",
+    "OneWayClutch",
+    "SimpleGearShift"
+  ]
+  @info "Time spent precompiling MSL models in: $(precompile_prefix)"
+  for p in precompile_model_names
+    @info "Translating: $(string(precompile_prefix, ".", p))"
+    @time flattenModelInMSL_TST(string(precompile_prefix, ".", p); MSL_V = "MSL_4_0_0")
+  end
+
+  precompile_prefix = "Modelica.Mechanics.MultiBody.Examples.Elementary"
+  @info "Checking MSL Examples in $(precompile_prefix)"
+  precompile_model_names = [
+    "DoublePendulum",
+    "DoublePendulumInitTip",
+    "ForceAndTorque",
+    "FreeBody"
+  ]
+  for p in precompile_model_names
+    @info "Translating: $(string(precompile_prefix, ".", p))"
+    @time flattenModelInMSL_TST(string(precompile_prefix, ".", p); MSL_V = "MSL_4_0_0")
+  end
+
+  precompile_prefix = "Modelica.Mechanics.MultiBody.Examples.Loops"
+  @info "Checking MSL Examples in $(precompile_prefix)"
+  precompile_model_names = [
+    "Engine1a",
+    "Engine1b",
+    "Engine1b_analytic",
+  ]
+  for p in precompile_model_names
+    @info "Translating: $(string(precompile_prefix, ".", p))"
+    @time flattenModelInMSL_TST(string(precompile_prefix, ".", p); MSL_V = "MSL_4_0_0")
+  end
+  @info "Core compiler modules are successfully precompiled!"
+  @info "Compiler modules are successfully precompiled!"
 end

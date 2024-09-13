@@ -39,7 +39,7 @@ function test_and_pretty_print(ref, modelName, modelFile)
       @info "Got:"
       print(res)
       @info "Reference was:"
-      print(res)
+      print(ref)
       false
     end
   end

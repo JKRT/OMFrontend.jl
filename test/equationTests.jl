@@ -1,9 +1,7 @@
 #=
-This file defines the test cases
-for the equation tests.
+This file defines the test cases for the equation tests.
 Tests here are typicaly small tests that are easy to debug, but tests semi advance features of the compiler.
-
-To add a test add a reference string, a model to the ./Equation folder and the name of the model
+To add a test add a reference string, a model to the ./Equation folder and the name of the model.
 =#
 circleReference = "class Circle
   Real x_out;

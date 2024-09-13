@@ -3,10 +3,10 @@ Frontend verification tests.
 Author: johti17@liu.se
 =#
 
-include("connect.jl")
-import ..ConnectTests
 #= Include tests for equations =#
 include("equationTests.jl")
+include("connect.jl")
+import ..ConnectTests
 
 #= The set of basic connect tests=#
 ctst1 = (ConnectTests.Connect1, "Connect1", "./Connectors/Connect1.mo")
@@ -88,6 +88,6 @@ function runConnectTests(tests, testSetDesc)
 end
 
 runConnectTests(connectTsts, "Connector test. Testing the handling of connectors")
-runConnectTests(tst, "Trying various simple Modelica models")
+runConnectTests(tst, "Trying simple Modelica models using connectors")
 runConnectTests(equationTests, "Trying slightly more advanced models, containing equational loops etc.")
 #= End Connector tests =#

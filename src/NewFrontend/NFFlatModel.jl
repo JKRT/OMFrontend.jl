@@ -554,7 +554,6 @@ function toFlatString(
   functions::List,
   printBindingTypes::Bool = false,
   )
-  #@info replace(toString(flatModel), "\\n" => "\n")
   local str::String
   local s::IOStream_M.IOSTREAM
   s = IOStream_M.create(getInstanceName(), IOStream_M.LIST())

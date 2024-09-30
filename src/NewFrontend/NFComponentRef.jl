@@ -422,7 +422,7 @@ function toFlatString(cref::ComponentRef; inFunction = false)
     ))
   else
     str = stringAppendList(
-      list(stringDelimitList(strl, "."), toFlatStringList(subs)))
+    list(stringDelimitList(strl, "."), toFlatStringList(subs)))
     #= Since we are scalarizing here we assume the entire thing needs to be quoted. =#
     str = string("'", replace(str, "'" => ""), "'")
   end
@@ -1261,7 +1261,6 @@ function expandSplitSubscripts(cref::ComponentRef)
   cref
 end
 
-
 """
 ```
 function isModel(cref::ComponentRef)
@@ -1297,7 +1296,6 @@ function mergeSubscripts(subscripts::List{Subscript}, cref::ComponentRef; applyT
   end
   return cref
 end
-
 
 function mergeSubscripts2(subscripts::List{Subscript},
                           cref::ComponentRef;

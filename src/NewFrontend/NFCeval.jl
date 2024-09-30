@@ -657,6 +657,8 @@ function evalComponentStartBinding(
   end
   #=  Try to evaluate the binding if one exists. =#
   binding = getBinding(start_comp)
+  @info "binding" toString(binding)
+  @info "typeof binding" typeof(binding)
   outExp = begin
     @match binding begin
       #=

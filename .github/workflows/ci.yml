@@ -37,7 +37,7 @@ jobs:
       - uses: actions/cache@v1
         env:
           cache-name: cache-artifacts
-        with:3
+        with:
           path: ~/.julia/artifacts
           key: ${{ runner.os }}-test-${{ env.cache-name }}-v${{ hashFiles('**/Project.toml') }}
           restore-keys: |

@@ -175,7 +175,7 @@ end
   local de::InstNode
 
   return  () = begin
-    @unsafematch c begin
+    @match c begin
       INSTANCED_CLASS(restriction = RESTRICTION_TYPE(__)) => begin
         ()
       end
@@ -185,7 +185,7 @@ end
           typeComponent(c, origin)
         end
          () = begin
-          @unsafematch c.ty begin
+          @match c.ty begin
             TYPE_COMPLEX(complexTy = COMPLEX_RECORD(constructor = con)) => begin
               typeStructor(con)
               ()

@@ -5654,7 +5654,7 @@ function typeCastOpt(exp::Option{<:Expression}, ty::M_Type) ::Option{Expression}
 end
 
 function setType(@nospecialize(ty::NFType), @nospecialize(exp::Expression))
-  retExp = @unsafematch exp begin
+  retExp = @match exp begin
     ENUM_LITERAL_EXPRESSION(__)  => begin
       ENUM_LITERAL_EXPRESSION(ty, exp.name, exp.index)
     end
@@ -5730,7 +5730,7 @@ end
 function typeOf(@nospecialize(exp::Expression))
   local ty::M_Type
   ty = begin
-    @unsafematch exp begin
+    @match exp begin
       INTEGER_EXPRESSION(__)  => begin
         TYPE_INTEGER()
       end
@@ -5956,7 +5956,7 @@ function compare(exp1::Expression, exp2::Expression) ::Int
     local clk1::ClockKind
     local clk2::ClockKind
     local me::Pointer{Expression}
-    @unsafematch exp1 begin
+    @match exp1 begin
       INTEGER_EXPRESSION(__)  => begin
         @match INTEGER_EXPRESSION(value = i) = exp2
         Util.intCompare(exp1.value, i)
@@ -7180,27 +7180,16 @@ function getExp(binding::Binding)
 end
 
 @nospecialized function hasExp(binding::Binding)
-  local hasExp::Bool
-   hasExp = begin
+  local hExp::Bool
+   hExp = begin
     @match binding begin
-      UNTYPED_BINDING(__) => begin
-        true
-      end
-
-      TYPED_BINDING(__) => begin
-        true
-      end
-
-      FLAT_BINDING(__) => begin
-        true
-      end
-
-      _ => begin
-        false
-      end
+      UNTYPED_BINDING(__) => true
+      TYPED_BINDING(__) => true
+      FLAT_BINDING(__) => true
+      _ => false
     end
   end
-  return hasExp
+  return hExp
 end
 
 function setTypedExp(exp::Expression, binding::Binding)

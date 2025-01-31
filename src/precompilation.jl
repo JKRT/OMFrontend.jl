@@ -3,29 +3,36 @@
   Not meant to be used by users.
 =#
 
-PrecompileTools.@recompile_invalidations begin
-    using ..Frontend
-end
+# PrecompileTools.@recompile_invalidations begin
+#     using ..Frontend
+# end
 
 PrecompileTools.@compile_workload begin
+
+  @assert VERSION.minor == 10 "Only Julia 1.10.x are currently supported"
 
   @info "Precompiling builtin libraries..."
   if ! haskey(NFModelicaBuiltinCache, "NFModelicaBuiltin")
     #= Locate the external libraries =#
+    @info "Locating external libraries.."
     packagePath = dirname(realpath(Base.find_package("OMFrontend")))
     packagePath *= "/.."
     pathToLib = packagePath * "/lib/NFModelicaBuiltin.mo"
     #= The external C stuff can be a bit flaky.. =#
     GC.enable(false)
     p = parseFile(pathToLib, 2 #== MetaModelica ==#)
+    @info "Translating builtin library to SCode.."
+    s = translateToSCode(Absyn.PROGRAM(nil, Absyn.TOP()))
     s = translateToSCode(p)
+    @info "SCode translation done. Saving the library in the cache."
     NFModelicaBuiltinCache["NFModelicaBuiltin"] = s
+    @info "Builtin Library Loaded!"
     #=Enable GC again.=#
     GC.enable(true)
   end
   @info "Builtin libraries successfully precompiled!"
   @info "Initial compiler module interfaces are compiled!"
-  #= Make sure that we load the bultin scode=#
+  #= Make sure that we load the builtin scode=#
   packagePath = dirname(realpath(Base.find_package("OMFrontend")))
   packagePath *= "/.."
   pathToLib = packagePath * "/lib/NFModelicaBuiltin.mo"

@@ -58,7 +58,7 @@ const ASSERTION_LEVEL_ERROR =
   be moved into Parser.parse since you have to modify the tree every
   single time you translate...
 """
-function translateAbsyn2SCode(inProgram::Absyn.Program)::SCode.Program
+function translateAbsyn2SCode(inProgram::Absyn.Program)
   local outProgram::SCode.Program
    outProgram = begin
     local spInitial::SCode.Program
@@ -73,7 +73,7 @@ function translateAbsyn2SCode(inProgram::Absyn.Program)::SCode.Program
         System.setHasExpandableConnectors(false)
         System.setHasOverconstrainedConnectors(false)
         System.setHasStreamConnectors(false)
-        @assign sp = list(translateClass(c) for c in inClasses)
+        sp = list(translateClass(c) for c in inClasses)
         sp
       end
     end
@@ -81,7 +81,7 @@ function translateAbsyn2SCode(inProgram::Absyn.Program)::SCode.Program
   return outProgram
 end
 
-function translateClass(inClass::Absyn.Class)::SCode.Element
+function translateClass(inClass::Absyn.Class)
   local outClass::SCode.Element
    outClass = translateClass2(inClass, 0)
   return outClass
@@ -144,7 +144,8 @@ function translateClass2(inClass::Absyn.Class, inNumMessages::Int)::SCode.Elemen
       end
 
       (Absyn.CLASS(name = n, info = file_info), _) => begin
-        #                    n = "AbsynToSCode.translateClass2 failed: " + n
+        n = "AbsynToSCode.translateClass2 failed: " + n
+        @error n
         fail()
       end
     end

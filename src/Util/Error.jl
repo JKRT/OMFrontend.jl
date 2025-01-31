@@ -4417,30 +4417,27 @@ function updateCurrentComponent(
   local astr::Array{String}
   local ainfo::Array{SourceInfo}
   local afunc::Array{prefixToStr}
-
   @assign tpl = getGlobalRoot(Global.currentInstVar)
-  return @assign _ = begin
-    @match tpl begin
-      NONE() => begin
-        setGlobalRoot(
-          Global.currentInstVar,
-          SOME((
-            arrayCreate(1, cpre),
-            arrayCreate(1, component),
-            arrayCreate(1, info),
-            arrayCreate(1, func),
-          )),
-        )
-        ()
-      end
+  @match tpl begin
+    NONE() => begin
+      setGlobalRoot(
+        Global.currentInstVar,
+        SOME((
+          arrayCreate(1, cpre),
+          arrayCreate(1, component),
+          arrayCreate(1, info),
+          arrayCreate(1, func),
+        )),
+      )
+      ()
+    end
 
-      SOME((apre, astr, ainfo, afunc)) => begin
-        arrayUpdate(apre, 1, cpre)
-        arrayUpdate(astr, 1, component)
-        arrayUpdate(ainfo, 1, info)
-        arrayUpdate(afunc, 1, func)
-        ()
-      end
+    SOME((apre, astr, ainfo, afunc)) => begin
+      arrayUpdate(apre, 1, cpre)
+      arrayUpdate(astr, 1, component)
+      arrayUpdate(ainfo, 1, info)
+      arrayUpdate(afunc, 1, func)
+      ()
     end
   end
 end
@@ -4579,7 +4576,7 @@ function addMessageOrSourceMessage(
   inMessageTokens::ErrorTypes.MessageTokens,
   inInfoOpt::Option{<:SourceInfo},
 )
-  return @assign _ = begin
+  begin
     local info::SourceInfo
     #=  we DON'T have an info, add message
     =#
@@ -4595,8 +4592,7 @@ function addMessageOrSourceMessage(
       end
     end
   end
-  #=  we have an info, add source message
-  =#
+  #=  we have an info, add source message =#
 end
 
 function addTotalMessage(message::ErrorTypes.TotalMessage)
@@ -4732,44 +4728,42 @@ function getMessagesStrSeverity(inSeverity::ErrorTypes.Severity)::String
 end
 
 
-""" #=
+"""
   Used to make compiler-internal assertions. These messages are not meant
-  to be shown to a user, but rather to show internal error messages. =#"""
+  to be shown to a user, but rather to show internal error messages.
+"""
 function assertion(b::Bool, message::String, info::SourceInfo)
-  return @assign _ = begin
-    @match (b, message, info) begin
-      (true, _, _) => begin
-        ()
-      end
-      _ => begin
-        addSourceMessage(INTERNAL_ERROR, list(message), info)
-        fail()
-      end
+  @match (b, message, info) begin
+    (true, _, _) => begin
+      ()
+    end
+    _ => begin
+      addSourceMessage(INTERNAL_ERROR, list(message), info)
+      fail()
     end
   end
 end
 
-""" #=
+"""
   Used to make assertions. These messages are meant to be shown to a user when
   the condition is true. If the Error-level of the message is Error, this function
-  fails. =#"""
+  fails.
+"""
 function assertionOrAddSourceMessage(
   inCond::Bool,
   inErrorMsg::ErrorTypes.Message,
   inMessageTokens::ErrorTypes.MessageTokens,
   inInfo::SourceInfo,
-)
-  return @assign _ = begin
-    @match (inCond, inErrorMsg, inMessageTokens, inInfo) begin
-      (true, _, _, _) => begin
-        ()
-      end
+  )
+  @match (inCond, inErrorMsg, inMessageTokens, inInfo) begin
+    (true, _, _, _) => begin
+      ()
+    end
 
-      _ => begin
-        addSourceMessage(inErrorMsg, inMessageTokens, inInfo)
-        failOnErrorMsg(inErrorMsg)
-        ()
-      end
+    _ => begin
+      addSourceMessage(inErrorMsg, inMessageTokens, inInfo)
+      failOnErrorMsg(inErrorMsg)
+      ()
     end
   end
 end

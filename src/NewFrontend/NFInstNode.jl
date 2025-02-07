@@ -670,8 +670,8 @@ function toFlatString(node::InstNode; inFunction = false)
 end
 
 function toString(node::InstNode)
-  local name::String
-   name = begin
+  local n::String
+   n = begin
     @match node begin
       COMPONENT_NODE(__)  => begin
         toString(node.name, P_Pointer.access(node.component))
@@ -685,7 +685,7 @@ function toString(node::InstNode)
       end
     end
   end
-  name
+  n
 end
 
 function checkIdentical(node1::InstNode, node2::InstNode)

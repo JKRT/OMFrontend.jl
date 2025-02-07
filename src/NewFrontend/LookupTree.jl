@@ -17,8 +17,12 @@ struct CLASS{T<:Number} <: Entry
   index::T
 end
 
+struct FAILED_LOOKUP <: Entry
+end
+
 const Key = String
 const Value = Entry
+const FAILURE = FAILED_LOOKUP()
 
 #= Modelica extend clause =#
 const valueStr = Function
@@ -31,7 +35,7 @@ const MapFunc = Function
 abstract type Tree end
 
 mutable struct NODE{T0 <: Key, T1 <: Value, T2 <: Integer} <:Tree
-  key::T0 #= The key of the node. =#
+  const key::T0 #= The key of the node. =#
   value::T1
   height::T2 #= Height of tree, used for balancing =#
   left::Tree #= Left subtree. =#
@@ -283,10 +287,8 @@ end
 
 #= Default conflict resolving function for add. =#
  """ #= Conflict resolving function for add which fails on conflict. =#"""
-function addConflictFail(newValue::Value, oldValue::Value, key::Key)::Value
-  local value::Value
+function addConflictFail(newValue::Value, oldValue::Value, key::Key)
   fail()
-  return value
 end
 
 addConflictDefault::Function = addConflictFail
@@ -311,7 +313,6 @@ function add(
   conflictFunc::ConflictFunc = addConflictDefault,
 )::Tree
   local tree = inTree::Tree
-
    tree = begin
     local key::Key
     local value::Value
@@ -389,31 +390,34 @@ end
 """
 Fetches a value from the tree given a key, or fails if no value is associated with the key.
 """
-function get(tree::Tree, key::Key)
-  local value::Value
-  local k::Key
+@noinline function get(tree::Tree, key::Key)
   #@info "Calling get in lookup tree with tree and key. Key was: $key"
-  if tree isa EMPTY
-    fail()
+  local k = tree.key::Key
+  local kc = keyCompare(key, k)::Int
+  #local isNode = tree isa Node
+  if kc == 0
+    return tree.value
   end
-  k = if tree isa NODE || tree isa LEAF
-    tree.key
-  end
-  value = begin
-    local kc = keyCompare(key, k)
+  local value = begin
     #@info "Key status code was:$kc"
-    if kc == 0
-      tree.value
-    elseif kc == 1 && tree isa NODE
-      get(tree.right, key)
+    if kc == 1 && tree isa NODE
+      local tR = tree.right
+      get(tR, key)
     elseif kc == -1 && tree isa NODE
-      get(tree.left, key)
+      local tL = tree.left
+      get(tL, key)
     else
-      #@info "Failing type of tree was: $(typeof(tree)) value was $(tree.value)"
-      fail()
+      return FAILURE
     end
   end
   return value
+end
+
+"""
+Get on empty is always fail
+"""
+@noinline function get(tree::EMPTY, key::String)
+  return FAILURE
 end
 
 """ #= Fetches a value from the tree given a key, or returns NONE if no value is
@@ -507,6 +511,26 @@ function toList(
     end
   end
   return lst
+end
+
+function toVector(inTree::Tree)
+  local vec = Pair[]
+  local key::Key
+  local value::Value
+  @match inTree begin
+    NODE(key = key, value = value) => begin
+      push!(vec, toVector(inTree.right)...)
+      push!(vec, key=>value)
+      push!(vec, toVector(inTree.left)...)
+    end
+    LEAF(key = key, value = value) => begin
+      push!(vec, key=>value)
+    end
+    _ => begin
+      vec
+    end
+  end
+  return vec
 end
 
 """ #= Constructs a list of all the values in the tree. =#"""
@@ -985,7 +1009,7 @@ function rotateRight(inNode::Tree)::Tree
   return outNode
 end
 
-keyCompare = (inKey1::String, inKey2::String) -> begin
+function keyCompare(inKey1::String, inKey2::String)
   res = stringCompare(inKey1, inKey2)
   return res
 end

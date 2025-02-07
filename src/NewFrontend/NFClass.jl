@@ -63,7 +63,6 @@ mutable struct PARTIAL_CLASS <: Class
   prefixes
 end
 
-
 struct NOT_INSTANTIATED <: Class
 end
 
@@ -747,7 +746,7 @@ function classTree(cls::Class)::ClassTree
         classTree(getClass(cls.baseClass))
       end
       _ => begin
-        EMPTY_TREE()
+        CLASS_TREE_EMPTY_TREE() #EMPTY_TREE()
       end
     end
   end
@@ -814,11 +813,11 @@ function lookupComponentIndex(name::String, cls::Class)::Int
   return index
 end
 
-function lookupElement(name::String, cls::Class)#::Tuple{InstNode, Bool}
+function lookupElement(name::String, cls::Class)
   local isImport::Bool
   local node::InstNode
-  @match ENTRY_INFO(node, isImport) = lookupElement(name, classTree(cls))
-  return ENTRY_INFO(node, isImport) #Adjust later
+  local entryInfo = lookupElement(name, classTree(cls))
+  return entryInfo
 end
 
 function setSections(sections::Sections, cls::Class)::Class

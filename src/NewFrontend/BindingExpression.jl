@@ -342,9 +342,10 @@ function nthRecordElement(index::Int, recordExp::Expression) ::Expression
   outExp
 end
 
-""" #= Returns the field with the given name in a record expression. If the
-               expression is an array it will return the equivalent of calling the
-               function on each element of the array. =#"""
+"""  Returns the field with the given name in a record expression. If the
+     expression is an array it will return the equivalent of calling the
+     function on each element of the array.
+"""
 function recordElement(elementName::String, recordExp::Expression) ::Expression
   local outExp::Expression
   outExp = begin
@@ -364,7 +365,9 @@ function recordElement(elementName::String, recordExp::Expression) ::Expression
 
       CREF_EXPRESSION(ty = TYPE_COMPLEX(cls = node))  => begin
         cls_tree = classTree(getClass(node))
-        @match ENTRY_INFO(node, false) = lookupElement(elementName, cls_tree)
+        local entryInfo  = lookupElement(elementName, cls_tree)
+        node = entryInfo.node
+        @assert entryInfo.isImport == false "Entry info was not an import."
         ty = getType(node)
         cref = prefixCref(node, ty, nil, recordExp.cref)
         ty = liftArrayLeftList(ty, arrayDims(recordExp.ty))

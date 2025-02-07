@@ -1,6 +1,3 @@
-include("LookupTree.jl")
-include("DuplicateTree.jl")
-
 import .DuplicateTree
 
 abstract type ClassTree end
@@ -428,9 +425,7 @@ end
 
 function lookupComponentIndex(name::String, tree::ClassTree)::Int
   local index::Int
-
-  @match LookupTree.COMPONENT(index = index) =
-    LookupTree.get(lookupTree(tree), name)
+  @match LookupTree.COMPONENT(index = index) = LookupTree.get(lookupTree(tree), name)
   return index
 end
 
@@ -451,25 +446,31 @@ end
 function lookupElementPtr(name::String, tree::ClassTree)::Pointer{InstNode}
   local element::Pointer{InstNode}
   local entry::LookupTree.Entry
-
   entry = LookupTree.get(lookupTree(tree), name)
   element = resolveEntryPtr(entry, tree)
   return element
 end
 
 """  Returns the class or component with the given name in the class tree. """
-function lookupElement(name::String, tree::ClassTree)#::Tuple{InstNode, Bool}
+function lookupElement(name::String, classTree::ClassTree)
   local isImport::Bool
   local element::InstNode
   local entry::LookupTree.Entry
   #@info "Looking up element $name in class tree!"
   #@info "Fetching from tree. Soon to report entry"
   #@info "Structure of the tree" LookupTree.printTreeStr(tree.tree)
-  lTree = lookupTree(tree)
+  lTree = lookupTree(classTree)
   entry = LookupTree.get(lTree, name)
-  res = resolveEntry(entry, tree)
+  res = resolveEntry(entry, classTree)
   #@info "Entry lookup complete"
   return res
+end
+
+"""
+Lookup in an empty tree yields a empty node.
+"""
+function lookupElement(name::String, classTree::CLASS_TREE_EMPTY_TREE)
+  return ENTRY_INFO(EMPTY_NODE(), false)
 end
 
 function flattenLookupTree2(
@@ -2019,27 +2020,23 @@ end
 
 """ #= Resolves a lookup tree entry to an inst node. =#"""
 function resolveEntry(entry::LookupTree.Entry, tree::ClassTree)
-  local isImport::Bool
+  local isImported::Bool = false
   local element::InstNode
-  element = begin
-    @match entry begin
-      LookupTree.CLASS(__) => begin
-        isImport = false
-        resolveClass(entry.index, tree)
-      end
-
-      LookupTree.COMPONENT(__) => begin
-        isImport = false
-        resolveComponent(entry.index, tree)
-      end
-
-      LookupTree.IMPORT(__) => begin
-        isImport = true
-        resolveImport(entry.index, tree)
-      end
+  (isImported, element) =  @match entry begin
+    LookupTree.CLASS(__) => begin
+      (false, resolveClass(entry.index, tree))
+    end
+    LookupTree.COMPONENT(__) => begin
+      (false, resolveComponent(entry.index, tree))
+    end
+    LookupTree.IMPORT(__) => begin
+      (true, resolveImport(entry.index, tree))
+    end
+    _ #= Else we did not find anything...=# => begin
+      (false, EMPTY_NODE())
     end
   end
-  return ENTRY_INFO(element, isImport)
+  return ENTRY_INFO(element, isImported)
 end
 
 function addDuplicateConflict(

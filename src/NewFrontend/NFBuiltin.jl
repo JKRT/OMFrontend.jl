@@ -842,5 +842,36 @@ function makeBuiltinLookupTree(
   return print("\\n")
 end
 
+const BUILTIN_DICT = Dict{String, CLASS_NODE}(
+  "Real" => NFBuiltin.REAL_NODE,
+  "Integer" => NFBuiltin.INTEGER_NODE,
+  "Boolean" => NFBuiltin.BOOLEAN_NODE,
+  "String" => NFBuiltin.STRING_NODE,
+  "Clock" => NFBuiltin.CLOCK_NODE,
+  "polymorphic" => NFBuiltin.POLYMORPHIC_NODE)
+
+import ..LOOKUP_STATE_PREDEF_CLASS
+import ..LOOKUP_STATE_PREDEF_COMP
+import ..LOOKUP_STATE_FUNC
+
+import ..NFBuiltinFuncs
+
+const BUILTIN_CREF_DICT = Dict{String, Tuple}(
+  "time"  =>
+    (NFBuiltin.TIME, NFBuiltin.TIME_CREF, LOOKUP_STATE_PREDEF_COMP())
+  ,
+  "Boolean"  =>
+    (NFBuiltin.BOOLEAN_NODE, NFBuiltin.BOOLEAN_CREF, LOOKUP_STATE_PREDEF_CLASS())
+  ,
+  "Integer"  =>
+    (NFBuiltinFuncs.INTEGER_NODE, NFBuiltinFuncs.INTEGER_CREF, LOOKUP_STATE_FUNC())
+  ,
+  "String"  =>
+    (NFBuiltinFuncs.STRING_NODE, NFBuiltinFuncs.STRING_CREF, LOOKUP_STATE_FUNC())
+  ,
+  #=Shoulld have a check to see if synchronos features are to be available or not. =#
+  "Clock"   =>
+    (NFBuiltinFuncs.CLOCK_NODE, NFBuiltinFuncs.CLOCK_CREF, LOOKUP_STATE_FUNC()))
+
 @exportAll()
 end

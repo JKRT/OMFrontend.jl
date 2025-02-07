@@ -3,6 +3,7 @@ import SCode
 import DAE
 
 import .InstUtil
+import .ExecStat
 
 """
     Instantiates a class given by its fully qualified path, with the result being the model represented in the DAE format.
@@ -75,25 +76,7 @@ function instClassInProgramFM2(classPath::Absyn.Path, program::SCode.Program)::T
   local funcs::FunctionTree
   #= Add the program currently being translated into the SCode cache. =#
   local currentProgram = listHead(program)
-  #=  gather here all the flags to disable expansion
-  =#
-  #=  and scalarization if -d=-nfScalarize is on
-  =#
-  if ! Flags.isSet(Flags.NF_SCALARIZE)
-    FlagsUtil.set(Flags.NF_EXPAND_OPERATIONS, false)
-    FlagsUtil.set(Flags.NF_EXPAND_FUNC_ARGS, false)
-  else
-    #=
-    Turn on function argument expansion by default
-    so that we do not miss some variables in function calls.
-    =#
-    FlagsUtil.set(Flags.NF_EXPAND_OPERATIONS, true)
-    FlagsUtil.set(Flags.NF_EXPAND_FUNC_ARGS, true)
-  end
-  #=  make sure we don't expand anything=#
-  System.setUsesCardinality(false)
-  System.setHasOverconstrainedConnectors(false)
-  System.setHasStreamConnectors(false)
+  setSettingForInst()
   #=  Create a root node from the given top-level classes. =#
   top = makeTopNode(program)
   name = AbsynUtil.pathString(classPath)
@@ -102,27 +85,22 @@ function instClassInProgramFM2(classPath::Absyn.Path, program::SCode.Program)::T
   cls = setNodeType(ROOT_CLASS(EMPTY_NODE()), cls)
   #=  Initialize the storage for automatically generated inner elements. =#
   top = setInnerOuterCache(top, C_TOP_SCOPE(NodeTree.new(), cls))
-  #@info "Instantiate"
   inst_cls = instantiateN1(cls, EMPTY_NODE())
-  #@info "Instantiate generate inners"
+  ExecStat.execStat("Instantiation")
   insertGeneratedInners(inst_cls, top)
-  #execStat("NFInst.instantiate(" + name + ")")
   #=
   Instantiate expressions (i.e. anything that can contains crefs, like
   bindings, dimensions, etc). This is done as a separate step after
   instantiation to make sure that lookup is able to find the correct nodes.
   =#
-  #@info "Instantiate Expressions"
   instExpressions(inst_cls)
-  # execStat("NFInst.instExpressions(" + name + ")")
+  ExecStat.execStat("NFInst.instExpressions(" + name + ")")
   #=  Mark structural parameters. =#
   updateImplicitVariability(inst_cls, Flags.isSet(Flags.EVAL_PARAM))
-  #execStat("NFInst.updateImplicitVariability")
+  ExecStat.execStat("NFInst.updateImplicitVariability")
   #=  Type the class. =#
   #"Type the class"
   typeClass(inst_cls, name)
-
-  #@info "Flatten the model and evaluate constants in it."
   flat_model = flatten(inst_cls, name)
   dumpFlatModel(flat_model, name * "afterFlatten")
   #=
@@ -131,9 +109,6 @@ function instClassInProgramFM2(classPath::Absyn.Path, program::SCode.Program)::T
   =#
   local recompilationEnabled = recompilationDirectiveExists(flat_model.equations)
   local doccs = collectDOCCS(flat_model.equations)
-  # for docc in doccs
-  #   println(toString(docc))
-  # end
   local modelWithDOCC  = ! isempty(doccs)
   if recompilationEnabled || modelWithDOCC
     @assign flat_model.scodeProgram = SOME(listHead(program))
@@ -202,10 +177,7 @@ function instClassInProgramFM2(classPath::Absyn.Path, program::SCode.Program)::T
     else
       flat_model
     end
-    #println("\n************* AFTER RESOLVE *************\n")
-    #println(replace(toString(flat_model), "\\n" => "\n"))
-  else     #= Regular system without simulaton time reconfigurations =#
-    #println("Connection handling...")
+  else #= Regular system without simulaton time reconfigurations =#
     flat_model = resolveConnections(flat_model, name)
     dumpFlatModel(flat_model, name * "afterResolveConnections")
     flat_model = evaluate(flat_model)
@@ -215,14 +187,11 @@ function instClassInProgramFM2(classPath::Absyn.Path, program::SCode.Program)::T
   #TODO  @assign flat_model = UnitCheck.checkUnits(flat_model)
   flat_model = inlineSimpleCalls(flat_model)
   dumpFlatModel(flat_model, name * "afterInlining")
-  #  @info "Apply simplifications to the model"
   flat_model = simplifyFlatModel(flat_model)
   dumpFlatModel(flat_model, name * "afterSimplify")
-  #@debug "Collect a tree of all functions that are still used in the flat model"
   funcs = collectFunctions(flat_model, name)
   #=  Collect package constants that couldn't be substituted with their values =#
   #=  (e.g. because they where used with non-constant subscripts), and add them to the model. =#
-  #@debug "Collect package constants"
   flat_model = collectConstants(flat_model, funcs)
   #= Scalarize array components in the flat model.=#
   if Flags.isSet(Flags.NF_SCALARIZE)
@@ -238,12 +207,33 @@ function instClassInProgramFM2(classPath::Absyn.Path, program::SCode.Program)::T
   We readd these variables to the model
   =#
   InstUtil.restoreMissingArrayVariables!(flat_model)
-  #@debug "Verify the model"
   verify(flat_model)
   dumpFlatModel(flat_model, name * "afterVerify")
   #= TODO: Expand sliced crefs=#
   #= TODO: Combine subscripts =#
   return (flat_model, funcs, inst_cls)
+end
+
+function setSettingForInst()
+  #=
+  Gather here all the flags to disable expansion
+  and scalarization if -d=-nfScalarize is on
+  =#
+  if ! Flags.isSet(Flags.NF_SCALARIZE)
+    FlagsUtil.set(Flags.NF_EXPAND_OPERATIONS, false)
+    FlagsUtil.set(Flags.NF_EXPAND_FUNC_ARGS, false)
+  else
+    #=
+    Turn on function argument expansion by default
+    so that we do not miss some variables in function calls.
+    =#
+    FlagsUtil.set(Flags.NF_EXPAND_OPERATIONS, true)
+    FlagsUtil.set(Flags.NF_EXPAND_FUNC_ARGS, true)
+  end
+  #=  make sure we don't expand anything=#
+  System.setUsesCardinality(false)
+  System.setHasOverconstrainedConnectors(false)
+  System.setHasStreamConnectors(false)
 end
 
 """
@@ -3401,6 +3391,7 @@ end
 """
 function dumpFlatModel(flatModel, phaseAsStr::String)
   if Flags.isSet(Flags.NF_DUMP_FLAT)
+    @info "Dumping the system..."
     write(string(phaseAsStr, ".mo"), replace(toFlatString(flatModel, nil), "\\n" => "\n"))
   end
 end

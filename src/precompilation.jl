@@ -9,7 +9,7 @@
 
 PrecompileTools.@compile_workload begin
 
-  @assert VERSION.minor == 10 "Only Julia 1.10.x are currently supported"
+  @warn VERSION.minor == 10 "Only tested on Julia versions 1.10.x..."
 
   @info "Precompiling builtin libraries..."
   if ! haskey(NFModelicaBuiltinCache, "NFModelicaBuiltin")

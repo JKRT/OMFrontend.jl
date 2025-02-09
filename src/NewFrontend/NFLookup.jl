@@ -542,6 +542,10 @@ function lookupSimpleCref(crefName::String, subs::List{<:Absyn.Subscript}, scope
         end
         #@debug "Not inner outer. Checking state"
         state = nodeState(node)
+        if state isa LOOKUP_STATE_ERROR
+          foundScope = parentScope(foundScope)
+          continue
+        end
         #@debug "State checked. Checking fromAbsyn"
         cref = fromAbsyn(node, subs)
         #@debug "After from absyn. Returning..."

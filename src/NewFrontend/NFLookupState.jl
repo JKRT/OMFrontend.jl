@@ -239,8 +239,10 @@ function nodeState(node::InstNode)::LookupState
   local state::LookupState
   if isComponent(node) || isName(node)
     state = LOOKUP_STATE_COMP()
-  else
+  elseif node isa CLASS_NODE || node isa COMPONENT_NODE
     state = elementState(definition(node))
+  else
+    state = LOOKUP_STATE_ERROR(LOOKUP_STATE_BEGIN()) #fail()
   end
   return state
 end

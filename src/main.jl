@@ -5,8 +5,8 @@
 module Frontend
 
 #= Import the parser for precompilation=#
-import OMParser
 #= We also use it at the top level =#
+import OMParser
 using MetaModelica
 using ExportAll
 import Absyn
@@ -63,6 +63,7 @@ include("./Util/Util.jl")
 include("./Util/StringUtil.jl")
 include("./Util/Flags.jl")
 include("./Util/FlagsUtil.jl")
+include("./Util/ExecStat.jl")
 include("./Util/IOStreamExt.jl")
 include("./Util/IOStream.jl")
 include("./AbsynUtil.jl")
@@ -123,11 +124,15 @@ include("./NewFrontend/NFConvertDAE.jl")
 
 include("./NewFrontend/NFRestriction.jl")
 
-
 include("./NewFrontend/NFImport.jl")
 
 include("./NewFrontend/NFModifier.jl")
 
+#= Add the trees =#
+include("./NewFrontend/LookupTree.jl")
+include("./NewFrontend/DuplicateTree.jl")
+include("./NewFrontend/JLookupTree.jl")
+import .JLookupTree
 include("./NewFrontend/NFClassTree.jl")
 
 include("./NewFrontend/NFLookup.jl")
@@ -142,6 +147,7 @@ include("./NewFrontend/NFHashTableCG.jl")
 include("./NewFrontend/NFOCConnectionGraph.jl")
 #= End =#
 @exportAll
+include("./NewFrontend/NFBuiltinFuncs.jl")
 include("./NewFrontend/NFBuiltin.jl")
 #import ..NFBuiltin
 include("./NewFrontend/BindingExpression.jl")
@@ -174,7 +180,6 @@ include("./NewFrontend/NFPackage.jl")
 include("./NewFrontend/NFVerifyModel.jl")
 include("./NewFrontend/NFInline.jl")
 #=  Builtin functions =#
-include("./NewFrontend/NFBuiltinFuncs.jl")
 include("./NewFrontend/NFRangeIterator.jl")
 
 end

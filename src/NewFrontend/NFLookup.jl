@@ -469,57 +469,24 @@ function lookupLocalNames(name::Absyn.Path, scope::InstNode, nodes::List{<:InstN
   (nodes, state)
 end
 
-function lookupSimpleBuiltinName(name::String)
+@noinline function lookupSimpleBuiltinName(name::String)
   local builtin::InstNode
-  #@debug "Calling lookupSimpleBuiltinName with $name"
-  @assign builtin = begin
-    @match name begin
-      "Real"  => begin
-        NFBuiltin.REAL_NODE
-      end
-      "Integer"  => begin
-        NFBuiltin.INTEGER_NODE
-      end
-      "Boolean"  => begin
-        NFBuiltin.BOOLEAN_NODE
-      end
-      "String"  => begin
-        NFBuiltin.STRING_NODE
-      end
-      "Clock"  => begin
-        NFBuiltin.CLOCK_NODE
-      end
-      "polymorphic"  => begin
-        NFBuiltin.POLYMORPHIC_NODE
-      end
-    end
+  if  name in keys(NFBuiltin.BUILTIN_DICT)
+    return builtin = NFBuiltin.BUILTIN_DICT[name]
+  else
+    return nothing
   end
-  builtin
 end
 
 function lookupSimpleBuiltinCref(name::String, subs::List{T}) where {T}
   local state::LookupState
   local cref::ComponentRef
   local node::InstNode
-  #@debug "Looking up $name in lookupSimpleBuiltinCref"
-  (node, cref, state) = begin
-    @match name begin
-      "time"  => begin
-        (NFBuiltin.TIME, NFBuiltin.TIME_CREF, LOOKUP_STATE_PREDEF_COMP())
-      end
-      "Boolean"  => begin
-        (NFBuiltin.BOOLEAN_NODE, NFBuiltin.BOOLEAN_CREF, LOOKUP_STATE_PREDEF_CLASS())
-      end
-      "Integer"  => begin
-        (NFBuiltinFuncs.INTEGER_NODE, NFBuiltinFuncs.INTEGER_CREF, LOOKUP_STATE_FUNC())
-      end
-      "String"  => begin
-        (NFBuiltinFuncs.STRING_NODE, NFBuiltinFuncs.STRING_CREF, LOOKUP_STATE_FUNC())
-      end
-      "Clock" where (Config.synchronousFeaturesAllowed())  => begin
-        (NFBuiltinFuncs.CLOCK_NODE, NFBuiltinFuncs.CLOCK_CREF, LOOKUP_STATE_FUNC())
-      end
-    end
+  #@info "Looking up $name in lookupSimpleBuiltinCref"
+  if name in keys(NFBuiltin.BUILTIN_CREF_DICT)
+    (node, cref, state) = NFBuiltin.BUILTIN_CREF_DICT[name]
+  else
+    return nothing
   end
   if ! listEmpty(subs)
     cref = setSubscripts(list(SUBSCRIPT_RAW_SUBSCRIPT(s) for s in subs), cref)
@@ -534,10 +501,11 @@ function lookupSimpleCref(crefName::String, subs::List{<:Absyn.Subscript}, scope
   local cref::ComponentRef
   local node::InstNode
   local is_import::Bool
-  try
-    (node, cref, state) = lookupSimpleBuiltinCref(crefName, subs)
+  res = lookupSimpleBuiltinCref(crefName, subs)
+  if res !== nothing
+    (node, cref, state) = res
     foundScope = topScope(foundScope)
-  catch e
+  else
     #@info "Searching for scope in lookupSimplecref.. with $(typeof(scope)). We are searching for $crefName"
     #@error "Another DBG error message: $(e)"
     for i in 1:Global.recursionDepthLimit

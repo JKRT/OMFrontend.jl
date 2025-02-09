@@ -1,8 +1,3 @@
-module ClockIndexes
-
-using MetaModelica
-using ExportAll
-
 #= /*
 * This file is part of OpenModelica.
 *
@@ -33,6 +28,11 @@ using ExportAll
 * See the full OSMC Public License conditions for more details.
 *
 */ =#
+module ClockIndexes
+
+using MetaModelica
+using ExportAll
+
 
 const RT_CLOCK_SIMULATE_TOTAL = 8::Integer
 

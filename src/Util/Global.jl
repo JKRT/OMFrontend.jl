@@ -1,9 +1,3 @@
-module Global
-
-using MetaModelica
-using ExportAll
-import ..System
-
 #= /*
 * This file is part of OpenModelica.
 *
@@ -34,6 +28,13 @@ import ..System
 * See the full OSMC Public License conditions for more details.
 *
 */ =#
+module Global
+
+using MetaModelica
+using ExportAll
+import ..System
+
+
 const recursionDepthLimit = 256::Integer
 const maxFunctionFileLength = 50::Integer
 #=  Thread-local roots

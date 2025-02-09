@@ -510,13 +510,16 @@ function lookupSimpleCref(crefName::String, subs::List{<:Absyn.Subscript}, scope
     foundScope = topScope(foundScope)
   else
     #@info "Searching for scope in lookupSimplecref.. with $(typeof(scope)). We are searching for $crefName"
-    #@error "Another DBG error message: $(e)"
     for i in 1:Global.recursionDepthLimit
       try
         #@info "Searching..."
         @match foundScope begin
           IMPLICIT_SCOPE(__)  => begin
-            node = lookupIterator(crefName, foundScope.locals)
+            node = lookupIteratorNoFail(crefName, foundScope.locals)
+            if node isa EMPTY_NODE
+              foundScope = parentScope(foundScope)
+              continue
+            end
             is_import = false
           end
           CLASS_NODE(__)  => begin
@@ -606,6 +609,17 @@ function lookupIterator(iteratorName::String, iterators::Vector{<:InstNode})
   end
   fail()
 #  throw("Iterator lookup error") #Addition by me, John May 2021
+end
+
+function lookupIteratorNoFail(iteratorName::String, iterators::Vector{<:InstNode})
+  local it::InstNode
+  for i in iterators
+    if iteratorName == name(i)
+      it = i
+      return it
+    end
+  end
+  return EMPTY_NODE()
 end
 
 function lookupCrefInNode(cref::Absyn.ComponentRef #=modification-040321=#, node::InstNode, foundCref::ComponentRef, foundScope::InstNode, state::LookupState)

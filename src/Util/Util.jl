@@ -832,13 +832,14 @@ end
 """ #= Compares two integers and return -1 if the first is smallest, 1 if the second
    is smallest, or 0 if they are equal. =#"""
 function intCompare(inN::Int, inM::Int)::Int
-  local outResult::Int = if inN == inM
-    0
-  elseif (inN > inM)
-    1
-  else
-    -1
-  end
+  local outResult::Int =
+    if inN == inM
+      0
+    elseif (inN > inM)
+      1
+    else
+      -1
+    end
   return outResult
 end
 

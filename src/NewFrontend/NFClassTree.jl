@@ -431,12 +431,20 @@ end
 
 function lookupElementsPtr(name::String, tree::ClassTree)::List{Pointer{InstNode}}
   local elements::List{Pointer{InstNode}}
-
   local dup_entry::DuplicateTree.Entry
-
+  #=
+  TODO: Check if it possible not to use exception here in order to speed it up
+  -John 2025
+  =#
   try
-    dup_entry = DuplicateTree.get(getDuplicates(tree), name)
-    elements = resolveDuplicateEntriesPtr(dup_entry, tree)
+    local duplicates = getDuplicates(tree)
+    if duplicates isa DuplicateTree.EMPTY
+      elements = list(lookupElementPtr(name, tree))
+      return elements
+    else
+      dup_entry = DuplicateTree.get(duplicates, name)
+      elements = resolveDuplicateEntriesPtr(dup_entry, tree)
+    end
   catch
     elements = list(lookupElementPtr(name, tree))
   end

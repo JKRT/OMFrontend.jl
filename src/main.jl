@@ -132,7 +132,7 @@ include("./NewFrontend/NFModifier.jl")
 include("./NewFrontend/LookupTree.jl")
 include("./NewFrontend/DuplicateTree.jl")
 include("./NewFrontend/JLookupTree.jl")
-import .JLookupTree
+
 include("./NewFrontend/NFClassTree.jl")
 
 include("./NewFrontend/NFLookup.jl")

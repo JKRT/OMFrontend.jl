@@ -15,8 +15,11 @@ import OMFrontend
 
 #= Utility functions =#
 function flatten(modelName::String, modelFile::String)
+  @info "Parsing..."
   @time p = OMFrontend.parseFile(modelFile)
+  @info "SCode Translation..."
   @time scodeProgram = OMFrontend.translateToSCode(p)
+  @info "Generating the DAE..."
   @time (dae, cache) = OMFrontend.instantiateSCodeToDAE(modelName, scodeProgram)
 end
 

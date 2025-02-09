@@ -432,6 +432,7 @@ function augmentExpandableConnector(
     @assign node = node(elem_name)
     try
       @match ENTRY_INFO(comp_node, isImport) = lookupElement(name(node), cls_tree)
+      @assert comp_node !== EMPTY_NODE
     catch
       @assign comp_node = EMPTY_NODE()
     end

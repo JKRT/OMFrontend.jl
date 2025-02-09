@@ -462,7 +462,7 @@ function lookupElement(name::String, classTree::ClassTree)
   lTree = lookupTree(classTree)
   entry = LookupTree.get(lTree, name)
   if entry == LookupTree.FAILURE
-    fail()
+    return ENTRY_INFO(EMPTY_NODE(), false)
   end
   res = resolveEntry(entry, classTree)
   #@info "Entry lookup complete"
@@ -473,8 +473,8 @@ end
 Lookup in an empty tree yields a empty node.
 """
 function lookupElement(name::String, classTree::CLASS_TREE_EMPTY_TREE)
-  fail()
-  #return ENTRY_INFO(EMPTY_NODE(), false)
+  #fail()
+  return ENTRY_INFO(EMPTY_NODE(), false)
 end
 
 function flattenLookupTree2(

@@ -1,5 +1,8 @@
-#= Test for the multibody components =#
+#=
+Test for the multibody components
+=#
 @testset "Modelica.Mechanics.MultiBody.Parts" begin
+  @info "Modelica.Mechanics.MultiBody.Parts"
   prefix = "Modelica.Mechanics.MultiBody.Parts"
   @test typeof(flattenModelInMSL_TST("$(prefix).Fixed")[1]) == OMFrontend.Frontend.FLAT_MODEL
   @test typeof(flattenModelInMSL_TST("$(prefix).FixedTranslation")[1]) == OMFrontend.Frontend.FLAT_MODEL
@@ -41,6 +44,7 @@ end #= Modelica.Mechanics.MultiBody.Examples.Elementary=#
 
 @testset "Testing to Flatten Modelica.Mechanics.MultiBody.Examples.Loops.Utilities" begin
   prefix = "Modelica.Mechanics.MultiBody.Examples.Loops.Utilities"
+  @info "Testing to flatten $prefix"
   @test typeof(flattenModelInMSL_TST("$(prefix).Cylinder")[1]) == OMFrontend.Frontend.FLAT_MODEL
 end
 #=

@@ -1398,17 +1398,14 @@ end
 
 function definition(node::InstNode)
   local def::SCode.Element
-  def = begin
-    @match node begin
-      CLASS_NODE(__)  => begin
-        node.definition
-      end
-      COMPONENT_NODE(__)  => begin
-        definition(P_Pointer.access(node.component))
-      end
-    end
+  def = if node isa CLASS_NODE
+    node.definition
+  elseif node isa COMPONENT_NODE
+    definition(P_Pointer.access(node.component))
+  else
+    fail()
   end
-  def
+  return def
 end
 
 function setNodeType(@nospecialize(nodeType::InstNodeType),

@@ -165,7 +165,7 @@ function hasOperator(name::String, cls::Class)::Bool
   local op_cls::Class
   if isOperatorRecord(restriction(cls))
     try
-     @match ENTRY_INFO(op_node) = lookupElement(name, cls)
+      @match ENTRY_INFO(op_node, _) = lookupElement(name, cls)
       @assign hasOperator = SCodeUtil.isOperator(definition(op_node))
     catch
       @assign hasOperator = false
@@ -274,12 +274,11 @@ end
 
 function isOverdetermined(cls::Class)::Bool
   local isOverdetermined::Bool
-
-  try
-    lookupElement("equalityConstraint", cls)
+  local res = lookupElement("equalityConstraint", cls)
+  if res.node !== EMPTY_NODE()
     System.setHasOverconstrainedConnectors(true)
     isOverdetermined = true
-  catch
+  else
     isOverdetermined = false
   end
   #=  set the external flag that signals the presence of expandable connectors in the model

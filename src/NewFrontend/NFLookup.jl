@@ -274,8 +274,34 @@ function lookupInner(outerNode::InstNode, scope::InstNode)
   innerNode
 end
 
-""" #= Looks up a name in the given scope, without continuing the search in any
-                 enclosing scopes if the name isn't found. =#"""
+"""
+  Attempts to lookup a simple name in some module.
+"""
+function lookupSimpleName(nameStr::String, scope::InstNode)
+  local node::InstNode
+  local cur_scope::InstNode = scope
+  for i in 1:Global.recursionDepthLimit
+    (node, _) = lookupLocalSimpleName(nameStr, cur_scope)
+    #@info "The node $nameStr is resolved in some scope"
+    if node !== EMPTY_NODE()
+      return node
+    end
+    #@error "DBG error with $(e)"
+    if nameStr == name(cur_scope) && isClass(cur_scope)
+      node = cur_scope
+      return node
+    end
+    cur_scope = parentScope(cur_scope)
+  end
+  @error "Failed to lookup simple name for $nameStr in scope:$scope"
+  fail()
+end
+
+
+"""
+    Looks up a name in the given scope, without continuing the search in any
+  enclosing scopes if the name isn't found.
+"""
 function lookupLocalSimpleName(n::String, scope::InstNode)
   local isImport::Bool = false
   local node::InstNode
@@ -286,29 +312,6 @@ function lookupLocalSimpleName(n::String, scope::InstNode)
   return (node, isImport)
 end
 
-"""
-  Attempts to lookup a simple name in some module.
-"""
-function lookupSimpleName(nameStr::String, scope::InstNode)
-  local node::InstNode
-  local cur_scope::InstNode = scope
-  for i in 1:Global.recursionDepthLimit
-    try
-      (node, _) = lookupLocalSimpleName(nameStr, cur_scope)
-      #@info "The node $nameStr is resolved in some scope"
-      return node
-    catch e
-      #@error "DBG error with $(e)"
-      if nameStr == name(cur_scope) && isClass(cur_scope)
-        node = cur_scope
-        return node
-      end
-      cur_scope = parentScope(cur_scope)
-    end
-  end
-  @error "Failed to lookup simple name for $nameStr in scope:$scope"
-  fail()
-end
 
 function lookupNameWithError(name::Absyn.Path, scope::InstNode, info::SourceInfo, errorType, checkAccessViolations::Bool = true)
   local state::LookupState
@@ -374,14 +377,14 @@ function lookupNames(name::Absyn.Path, scope::InstNode) ::Tuple{List{InstNode}, 
   (nodes, state)
 end
 
-""" #= Looks up the first part of a name. =#"""
+""" Looks up the first part of a name. """
 function lookupFirstIdent(name::String, scope::InstNode) ::Tuple{InstNode, LookupState}
   local state::LookupState
-  local node::InstNode
-  try
-    node = lookupSimpleBuiltinName(name)
+  local node::Union{InstNode,Nothing}
+  node = lookupSimpleBuiltinName(name)
+  if node !== nothing
     state = LOOKUP_STATE_PREDEF_CLASS()
-  catch e
+  else
     node = lookupSimpleName(name, scope)
     state = nodeState(node)
   end

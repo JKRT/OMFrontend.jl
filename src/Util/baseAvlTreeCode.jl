@@ -508,14 +508,12 @@ end
 function get(tree::Tree, key::Key)
   local value::Value
   local k::Key
-  if tree isa EMPTY
-    fail()
-  end
-  k = if tree isa NODE || tree isa LEAF
-    tree.key
+  k = tree.key
+  local kc = keyCompare(key, k)
+  if kc == 0
+    return tree.value
   end
   value = begin
-    local kc = keyCompare(key, k)
     if kc == 0
       tree.value
     elseif kc == 1 && tree isa NODE
@@ -527,6 +525,13 @@ function get(tree::Tree, key::Key)
     end
   end
   return value
+end
+
+"""
+Get on an empty tree results in failure...
+"""
+@noinline function get(tree::EMPTY, key::Key)
+  fail()
 end
 
 """ #= Fetches a value from the tree given a key, or returns NONE if no value is

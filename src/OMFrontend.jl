@@ -188,38 +188,12 @@ function exportSCodeRepresentationToFile(fileName::String, contents::List{SCode.
   close(fdesc)
 end
 
-# #=
-#   This is done during precompilation of the package
-#   to cache precompile versions of many methods.
-# =#
-# if ccall(:jl_generating_output, Cint, ()) == 1
-#   let
-#     #= Step one. Load the built in library =#
-#     @info "Precompiling builtin libraries..."
-#     if ! haskey(NFModelicaBuiltinCache, "NFModelicaBuiltin")
-#       #= Locate the external libraries =#
-#       packagePath = dirname(realpath(Base.find_package("OMFrontend")))
-#       packagePath *= "/.."
-#       pathToLib = packagePath * "/lib/NFModelicaBuiltin.mo"
-#       #= The external C stuff can be a bit flaky.. =#
-#       GC.enable(false)
-#       p = parseFile(pathToLib, 2 #== MetaModelica ==#)
-#       s = translateToSCode(p)
-#       NFModelicaBuiltinCache["NFModelicaBuiltin"] = s
-#       #=Enable GC again.=#
-#       GC.enable(true)
-#     end
-#     @info "Builtin libraries successfully precompiled!"
-#     @info "Initial compiler module interfaces are compiled!"
-#   end
-#end
-
 function initLoadMSL(;MSL_Version = "MSL:3.2.3")
   # For printing
   @info "Loading MSL\n\t Version: $(MSL_Version)"
   MSL_Version = replace(MSL_Version, "." => "_")
   MSL_Version = replace(MSL_Version, ":" => "_")
-  @time loadMSL(MSL_Version = MSL_Version)
+  @time return loadMSL(MSL_Version = MSL_Version)
   @info "MSL successfully Loaded"
 end
 
@@ -286,6 +260,7 @@ function loadMSL(; MSL_Version)
       #= Translate it to SCode =#
       local scodeMSL = OMFrontend.translateToSCode(p)
       global LIBRARY_CACHE[MSL_Version] = scodeMSL
+      return scodeMSL
     catch e
       @info "Failed loading the Modelica Standard Library. Valid versions are 3.2.3 and 4.0.0"
       @info "Continue instantiating the model until the next error."

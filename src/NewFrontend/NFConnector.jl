@@ -148,20 +148,18 @@ function fromExp(
   source::DAE.ElementSource,
   conns::List{<:Connector} = nil
 )::List{Connector}
-
-  @assign conns = begin
+  conns = begin
     @match exp begin
       CREF_EXPRESSION(__) => begin
         _cons(fromCref(exp.cref, exp.ty, source), conns)
       end
-
       ARRAY_EXPRESSION(__) => begin
-        for e in listReverse(exp.elements)
-          @assign conns = fromExp(e, source, conns)
+        #= Lets do it in reverse order to keep the test output the same. =#
+        for i in reverse(1:length(exp.elements))
+          conns = fromExp(exp.elements[i], source, conns)
         end
         conns
       end
-
       _ => begin
         Error.assertion(
           false,

@@ -810,7 +810,7 @@ function assignVariableExt(variable::Expression, value::Expression)
       ) => begin
         makeArray(
           Type.unliftArray(value.ty),
-          list(arrayScalarElement(e) for e in value.elements),
+          Expression[arrayScalarElement(e) for e in value.elements],
           literal = true,
         )
       end

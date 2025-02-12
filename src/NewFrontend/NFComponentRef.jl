@@ -751,7 +751,7 @@ end
 
 """ Sets the subscripts of each part of a cref to the corresponding list of subscripts. """
 function setSubscriptsList(
-  subscripts,#::List{<:List{<:Subscript}},
+  subscripts::List,#{List{Subscript}},#::List{<:List{<:Subscript}},
   cref::ComponentRef,
 )::ComponentRef
   cref = begin
@@ -771,6 +771,28 @@ function setSubscriptsList(
   end
   return cref
 end
+
+
+function setSubscriptsListV(subscripts::Vector{List{Subscript}}
+                            ,cref::ComponentRef)
+  cref = begin
+    local subs::Vector{Subscript}
+    local rest_subs::Vector{Vector{Subscript}}
+    local rest_cref::ComponentRef
+    @match (subscripts, cref) begin
+      ([subs, rest_subs...], COMPONENT_REF_CREF(__)) => begin
+        rest_cref = setSubscriptsListV(rest_subs, cref.restCref)
+        COMPONENT_REF_CREF(cref.node, subs, cref.ty, cref.origin, rest_cref)
+      end
+
+      (nil(), _) => begin
+        cref
+      end
+    end
+  end
+  return cref
+end
+
 
 function setSubscripts(subscripts::List{<:Subscript}, @nospecialize(cref::ComponentRef))
   local tmpCref = if cref isa COMPONENT_REF_CREF

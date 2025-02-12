@@ -281,8 +281,7 @@ function isOverdetermined(cls::Class)::Bool
   else
     isOverdetermined = false
   end
-  #=  set the external flag that signals the presence of expandable connectors in the model
-  =#
+  #=  set the external flag that signals the presence of expandable connectors in the model =#
   return isOverdetermined
 end
 

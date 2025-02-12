@@ -1892,15 +1892,17 @@ function instArgs(
   info::SourceInfo
 )::Tuple{List{Expression}, List{NamedArg}}
   local namedArgs::List{NamedArg}
-  local posArgs::List{Expression}
+  local posArgs::List{Expression} = nil
   #@debug "Calling inst args for $args"
    (posArgs, namedArgs) = begin
     @match args begin
       Absyn.FUNCTIONARGS(__) => begin
         #@debug "Matched function args"
-         posArgs = list(instExp(a, scope, info) for a in args.args)
+        local arr1 = Expression[instExp(a, scope, info) for a in args.args]
+        posArgs = arrayList(arr1)
         #@debug "Positional arguments done"
-         namedArgs = list(instNamedArg(a, scope, info) for a in args.argNames)
+        local arr2 = NamedArg[instNamedArg(a, scope, info) for a in args.argNames]
+        namedArgs = arrayList(arr2)#list(instNamedArg(a, scope, info) for a in args.argNames)
         #@debug "Named arguments done"
         (posArgs, namedArgs)
       end

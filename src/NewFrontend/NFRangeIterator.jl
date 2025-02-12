@@ -203,7 +203,7 @@ function RangeIterator_fromExp(exp::Expression)::RangeIterator
     local values::List{Expression}
     @match exp begin
       ARRAY_EXPRESSION(__) => begin
-        RANGEITERATOR_ARRAY_RANGE(exp.elements)
+        RANGEITERATOR_ARRAY_RANGE(arrayList(exp.elements))
       end
 
       RANGE_EXPRESSION(

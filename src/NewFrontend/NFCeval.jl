@@ -657,8 +657,6 @@ function evalComponentStartBinding(
   end
   #=  Try to evaluate the binding if one exists. =#
   binding = getBinding(start_comp)
-  @info "binding" toString(binding)
-  @info "typeof binding" typeof(binding)
   outExp = begin
     @match binding begin
       #=
@@ -1242,7 +1240,7 @@ function evalBinarySub(exp1::Expression, exp2::Expression)::Expression
       (
         ARRAY_EXPRESSION(__),
         ARRAY_EXPRESSION(__),
-      ) where {(listLength(exp1.elements) == listLength(exp2.elements))} => begin
+      ) where {(length(exp1.elements) == length(exp2.elements))} => begin
         makeArray(
           exp1.ty,
           list(@do_threaded_for evalBinarySub(e1, e2) (e1, e2) (
@@ -1437,7 +1435,7 @@ function evalBinaryArrayScalar(
       ARRAY_EXPRESSION(__) => begin
         ARRAY_EXPRESSION(
           arrayExp.ty,
-          list(evalBinaryArrayScalar(e, scalarExp, opFunc) for e in arrayExp.elements),
+          listArray(list(evalBinaryArrayScalar(e, scalarExp, opFunc) for e in arrayExp.elements)),
           true,
         )
       end
@@ -1516,9 +1514,9 @@ function evalBinaryScalarProduct(exp1::Expression, exp2::Expression)::Expression
       (
         ARRAY_EXPRESSION(ty = TYPE_ARRAY(elem_ty)),
         ARRAY_EXPRESSION(__),
-      ) where {(listLength(exp1.elements) == listLength(exp2.elements))} => begin
+      ) where {(length(exp1.elements) == length(exp2.elements))} => begin
          exp = makeZero(elem_ty)
-         rest_e2 = exp2.elements
+         rest_e2 = arrayList(exp2.elements)
         for e1 in exp1.elements
           @match _cons(e2, rest_e2) = rest_e2
            exp = evalBinaryAdd(exp, evalBinaryMul(e1, e2))
@@ -2667,7 +2665,9 @@ function evalNormalCallExp(callExp::Expression)::Expression
 end
 
 function evalNormalCall(fn::M_Function, args::List{Expression})::Expression
+  #@info "Evaluating..."  string(toFlatString(fn))
   local result::Expression = evaluate(fn, args)
+  #@info "Result was:" string(toFlatString(result))
   return result
 end
 

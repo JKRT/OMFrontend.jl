@@ -1553,7 +1553,8 @@ function resolveConnections(flatModel::FlatModel, name::String)::FlatModel
   conn_eql = generateEquations(csets_array) #=In NFConnectEquations=#
   #=  append the equalityConstraint call equations for the broken connects =#
   if System.getHasOverconstrainedConnectors()
-    conn_eql = vcat(conn_eql, listArray(ListUtil.flatten(ListUtil.map(broken, Util.tuple33))))
+    local flatBrokenEQL = listArray(ListUtil.flatten(ListUtil.map(broken, Util.tuple33)))
+    conn_eql = vcat(conn_eql, flatBrokenEQL)
   end
   #=  add the equations to the flat model=#
   @assign flatModel.equations = vcat(conn_eql, flatModel.equations)

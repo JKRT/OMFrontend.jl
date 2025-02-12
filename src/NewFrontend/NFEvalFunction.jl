@@ -40,6 +40,7 @@ using ExportAll
 import ..Frontend.NFExpression
 import ..Frontend.InstNode
 import ..Frontend.refCompare
+import ..Frontend.toString
 
 const Expression = NFExpression
 const Key = InstNode
@@ -47,13 +48,13 @@ const Value = Expression
 
 include("../Util/baseAvlTreeCode.jl")
 
-# function keyStr(inKey)
-#   name(inKey)
-# end
+function keyStr(inKey)
+  toString(inKey)
+end
 
-# function valueStr(inValue)
-#   toString(inValue);
-# end
+function valueStr(inValue)
+  toString(inValue);
+end
 
 keyCompare = (inKey1::InstNode, inKey2::InstNode) -> begin
   refCompare(inKey1, inKey2)
@@ -263,7 +264,11 @@ function createReplacements(fn::M_Function, args::List{<:Expression})::ReplTree.
   =#
   #=  be mutable to allow assigning to them.
   =#
+  #@info "Outputs was..." typeof(fn.outputs)
+  #@info "REPL TREE BEFORE:" ReplTree.printTreeStr(repl)
   @assign repl = ListUtil.fold(fn.outputs, addMutableReplacement, repl)
+  #@info "Done..."
+  #@info "REPL TREE:" ReplTree.printTreeStr(repl)
   @assign repl = ListUtil.fold(fn.locals, addMutableReplacement, repl)
   #=  Apply the replacements to the replacements themselves. This is done after
   =#
@@ -286,9 +291,7 @@ end
 
 function getBindingExp(node::InstNode, repl::ReplTree.Tree)::Expression
   local bindingExp::Expression
-
   local binding::Binding
-
   @assign binding = getBinding(component(node))
   if isBound(binding)
     @assign bindingExp = getBindingExp(getExp(binding))
@@ -303,22 +306,27 @@ function buildBinding(node::InstNode, repl::ReplTree.Tree)::Expression
   local ty::M_Type
   ty = getType(node)
   ty = mapDims(ty, (expArg) -> applyReplacementsDim(repl, expArg))
+  #@info "Our node is a " toString(ty) typeof(ty)
   result = begin
     @match ty begin
       TYPE_ARRAY(__) where {(hasKnownSize(ty))} => begin
+        #@info "Filling it beause it is an array"
         fillType(
           ty,
           EMPTY_EXPRESSION(arrayElementType(ty)),
         )
       end
       TYPE_COMPLEX(__) => begin
+        #@info "It is a complex. Make a record"
         buildRecordBinding(node, repl)
       end
       _ => begin
+        #@info "Is empty..."
         EMPTY_EXPRESSION(ty)
       end
     end
   end
+  #@info "Done buildbinding..." string(dump(result; maxdepth=5))
   return result
 end
 
@@ -761,14 +769,11 @@ function assignArrayElement(
         SUBSCRIPT_INDEX(sub) <| rest_subs,
       ) where {(isScalarLiteral(sub))} => begin
         idx = toInteger(sub)
+        arrayExpElements = arrayExp.elements
         if listEmpty(rest_subs)
-         arrayExpElements = ListUtil.set(arrayExp.elements, idx, value)
+          arrayExpElements[idx] = value # arrayExp.elements[idx] = value #ListUtil.set(arrayExp.elements, idx, value)
         else
-          arrayExpElements = ListUtil.set(
-            arrayExp.elements,
-            idx,
-            assignArrayElement(listGet(arrayExp.elements, idx), rest_subs, value),
-          )
+          arrayExpElements[idx] = assignArrayElement(arrayExp.elements[idx], rest_subs, value) #Recheck this John
         end
         ARRAY_EXPRESSION(arrayExp.ty, arrayExpElements, arrayExp.literal)
       end

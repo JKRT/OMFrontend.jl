@@ -110,6 +110,7 @@ function simplifyBranch(b)
 end
 
 function simplifyEquation(@nospecialize(eq::Equation), equations::Vector{Equation})
+  #@info "Called simplify equation for" toString(eq)
   equations = begin
     local e::Expression
     local lhs::Expression
@@ -188,9 +189,12 @@ function simplifyEqualityEquation(eq::EQUATION_EQUALITY, equations::Vector{Equat
   local rhs::Expression
   local ty::M_Type
   local src::DAE.ElementSource
+  #@info "Simplify equality equation..." toString(eq)
   if typeof(eq.rhs) == ARRAY_EXPRESSION
     if isEmptyArray(eq.rhs)
       return equations
+    else
+      global EQ_ARRAY = eq
     end
   end
   @match EQUATION_EQUALITY(lhs = lhs, rhs = rhs, ty = ty, source = src) = eq

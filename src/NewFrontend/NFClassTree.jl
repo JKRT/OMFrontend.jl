@@ -317,22 +317,54 @@ function applyComponents(tree::ClassTree, func::FuncT)
   end
 end
 
-function applyLocalComponents(tree::CLASS_TREE_INSTANTIATED_TREE, func::Function)
+function applyLocalComponents(tree::CLASS_TREE_INSTANTIATED_TREE,
+                              attributes::Attributes,
+                              useBinding::Bool,
+                              instLevel::Int)
   for i in tree.localComponents
-    local arg = P_Pointer.access(@inbounds tree.components[i])
+    local comp::Pointer{InstNode} = @inbounds tree.components[i]
+    local arg = P_Pointer.access(comp)::InstNode
+    instComponent(
+      arg,
+      attributes,
+      MODIFIER_NOMOD(),
+      useBinding,
+      instLevel,
+      NONE()
+    )#func(arg)
+  end
+  return nothing
+end
+
+function applyLocalComponents(tree::CLASS_TREE_INSTANTIATED_TREE,
+                              func::Function)
+  for i in tree.localComponents
+    local comp::Pointer{InstNode} = @inbounds tree.components[i]
+    local arg = P_Pointer.access(comp)::InstNode
     func(arg)
   end
   return nothing
 end
 
-function applyLocalComponents(tree::CLASS_TREE_PARTIAL_TREE, func::Function)
+function applyLocalComponents(tree::Union{CLASS_TREE_PARTIAL_TREE,
+                                          CLASS_TREE_EXPANDED_TREE},
+                              attributes::Attributes,
+                              useBinding::Bool,
+                              instLevel::Int)
   for c in tree.components
-    func(c)
+    instComponent(
+      arg,
+      attributes,
+      MODIFIER_NOMOD(),
+      useBinding,
+      instLevel,
+      NONE()
+    ) #func(c)
   end
   return nothing
 end
 
-function applyLocalComponents(tree::CLASS_TREE_EXPANDED_TREE, func::Function)
+function applyLocalComponents(tree::Union{CLASS_TREE_PARTIAL_TREE,CLASS_TREE_EXPANDED_TREE}, func::Function)
   for c in tree.components
     func(c)
   end
@@ -370,6 +402,19 @@ function mapExtends(tree::ClassTree, func::FuncT)
   for i in 1:length(exts)
     @inbounds res = exts[i]
     @inbounds exts[i] = func(res)
+  end
+  return
+end
+
+function mapExtends(tree::ClassTree, attributes::Attributes, useBinding::Bool, visibility, instLevel::Int)
+  local exts::Vector{InstNode} = getExtends(tree)
+  for i in 1:length(exts)
+    @inbounds res = exts[i]
+    @inbounds exts[i] = instExtends(res,
+                                    attributes,
+                                    useBinding,
+                                    ExtendsVisibility.PUBLIC,
+                                    instLevel + 1)
   end
   return
 end

@@ -152,7 +152,7 @@ end
 
 struct ARRAY_EXPRESSION <: NFExpression
   ty::NFType
-  elements::List{Expression}
+  elements::Vector{Expression}
   literal #= True if the array is known to only contain literal expressions. =#::Bool
 end
 

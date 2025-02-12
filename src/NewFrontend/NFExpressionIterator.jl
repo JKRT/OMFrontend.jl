@@ -208,7 +208,7 @@ function fromExpToExpressionIterator(exp::Expression)
             sourceInfo(),
           )
         end
-        (arr, slice) = nextArraySlice(e.elements)
+        (arr, slice) = nextArraySlice(arrayList(e.elements))
         EXPRESSION_ARRAY_ITERATOR(arr, slice)
         #makeArrayIterator(e)
       end
@@ -295,12 +295,12 @@ function nextArraySlice(
     (arrayArg, slice) = begin
       @match e begin
         ARRAY_EXPRESSION(__) => begin
-          (arr, slice) = nextArraySlice(e.elements)
+          (arr, slice) = nextArraySlice(arrayList(e.elements))
           if listEmpty(arr)
             arrayArg = listRest(arrayArg)
           else
             local eElements = arr
-            e = ARRAY_EXPRESSION(e.ty, eElements, e.literal)
+            e = ARRAY_EXPRESSION(e.ty, listArray(eElements), e.literal)
             arrayArg = _cons(e, listRest(arrayArg))
           end
           (arrayArg, slice)

@@ -202,7 +202,6 @@ end
 #= Enables a debug flag. =#
 function enableDebug(inFlag::Flags.DebugFlag) ::Bool
   local outOldValue::Bool
-
   outOldValue = set(inFlag, true)
   outOldValue
 end

@@ -1263,21 +1263,19 @@ function evalConnectionsOperatorsHelper(exp::Expression, rooted::NFHashTable.Has
             end
 
             ConnectionsOperator.UNIQUE_ROOT_INDICES  => begin
-              #=  deal with Connections.uniqueRootIndices, TODO! FIXME! actually implement this
-              =#
+              #=  deal with Connections.uniqueRootIndices, TODO! FIXME! actually implement this =#
               @assign res = begin
                 @match call.arguments begin
                   uroots && ARRAY_EXPRESSION(elements = lst) <| nodes <| message <|  nil()  => begin
                     if Flags.isSet(Flags.CGRAPH)
                       print("- NFOCConnectionGraph.evalConnectionsOperatorsHelper: Connections.uniqueRootsIndicies(" + toString(uroots) + "," + toString(nodes) + "," + toString(message) + ")\\n")
                     end
-                    @assign lst = ListUtil.fill(INTEGER_EXPRESSION(1), listLength(lst))
-                    makeArray(TYPE_INTEGER(), lst)
+                    arr = ListUtil.fill(INTEGER_EXPRESSION(1), length(lst))
+                    res = makeArray(TYPE_INTEGER(), arr)
                   end
                 end
               end
-              #=  TODO! FIXME! actually implement this correctly
-              =#
+              #=  TODO! FIXME! actually implement this correctly =#
               res
             end
 

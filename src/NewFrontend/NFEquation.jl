@@ -204,8 +204,8 @@ function toFlatStream(@nospecialize(eq::Equation), indent::String, s)
 
       EQUATION_WHEN(__) => begin
          s = IOStream_M.append(s, "when ")
-         s = toFlatStream(listHead(eq.branches), indent, s)
-        for b in listRest(eq.branches)
+         s = toFlatStream(eq.branches[1], indent, s)
+        for b in eq.branches[2:end]
            s = IOStream_M.append(s, indent)
            s = IOStream_M.append(s, "elsewhen ")
            s = toFlatStream(b, indent, s)

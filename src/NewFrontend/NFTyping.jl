@@ -1449,7 +1449,13 @@ end
         end
         (exp, exp.ty, Variability.CONSTANT)
       end
-      ARRAY_EXPRESSION(__) => typeArray(exp.elements, origin, info)
+      ARRAY_EXPRESSION(__) => begin
+        #@info "With List.."
+        #@time arr = typeArray(exp.elements, origin, info)
+        #@info "With Array...."
+        arr2 = typeArray(exp.elements, origin, info)
+        arr2
+      end
       MATRIX_EXPRESSION(__) => typeMatrix(exp.elements, origin, info)
       RANGE_EXPRESSION(__) => typeRange(exp, origin, info)
       TUPLE_EXPRESSION(__) => typeTuple(exp.elements, origin, info)
@@ -2170,7 +2176,7 @@ function typeSubscript(
 end
 
 function typeArray(
-  elements::List{<:Expression},
+  elements::List{Expression},
   origin::ORIGIN_Type,
   info::SourceInfo,
 )::Tuple{Expression, NFType, VariabilityType}
@@ -2205,10 +2211,9 @@ function typeArray(
      tys = _cons(ty2, tys)
      n = n + 1
   end
-  #=  Try the other way around to get the super-type of the array
-  =#
-  #=  Give the actual error-messages here after we got the super-type of the array
-  =#
+  #=  Try the other way around to get the super-type of the array =#
+  #=
+  Give the actual error-messages here after we got the super-type of the array =#
   for e in expl
     @match _cons(ty2, tys) = tys
      (exp, _, mk) = matchTypes(ty2, ty1, e)
@@ -2230,10 +2235,75 @@ function typeArray(
       end
     end
   end
-  #=  forget errors when handling annotations
-  =#
+  #=  forget errors when handling annotations =#
   arrayType = liftArrayLeft(ty1, fromExpList(expl2))
   arrayExp = makeArray(arrayType, expl2)
+  return (arrayExp, arrayType, variability)
+end
+
+
+function typeArray(
+  elements::Vector{Expression},
+  origin::ORIGIN_Type,
+  info::SourceInfo,
+)::Tuple{Expression, NFType, VariabilityType}
+  local variability::VariabilityType = Variability.CONSTANT
+  local arrayType::NFType = TYPE_UNKNOWN()
+  local arrayExp::Expression
+  local exp::Expression
+  local expV::Vector{Expression} = Vector{Expression}(undef, length(elements))
+  local expV2::Vector{Expression} = Vector{Expression}(undef, length(elements))
+  local var::VariabilityType
+  local ty1::NFType = TYPE_UNKNOWN()
+  local ty2::NFType
+  local ty3::NFType
+  local tys::Vector{NFType} = Vector{NFType}(undef, length(elements))
+  local mk::MatchKindType
+  local n::Int = 1
+  local next_origin::ORIGIN_Type
+  next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
+  for e in elements
+     (exp, ty2, var) = typeExp(e, next_origin, info)
+     variability = variabilityMax(var, variability)
+     (_, ty3, mk) = matchTypes(ty2, ty1, exp, allowUnknown = true)
+    if isIncompatibleMatch(mk)
+       (_, ty3, mk) = matchTypes(ty1, ty2, exp, allowUnknown = false)
+      if isCompatibleMatch(mk)
+         ty1 = ty3
+      end
+    else
+       ty1 = ty3
+    end
+    expV[n] = exp
+    tys[n] = ty2
+    n += 1
+  end
+  n = n - 1
+  for n in reverse(1:n)
+    local e = expV[n]
+    ty2 = tys[n]
+    (exp, _, mk) = matchTypes(ty2, ty1, e)
+    expV[n] = exp
+    if true ## !Config.getGraphicsExpMode()
+      if isIncompatibleMatch(mk)
+        @info "Incompat types"
+        Error.addSourceMessage(
+          Error.NF_ARRAY_TYPE_MISMATCH,
+          list(
+            String(n),
+            toString(exp),
+            Type.toString(ty2),
+            Type.toString(ty1),
+          ),
+          info,
+        )
+        fail()
+      end
+    end
+  end
+  #=  forget errors when handling annotations =#
+  arrayType = liftArrayLeft(ty1, fromExpList(expV))
+  arrayExp = makeArray(arrayType, expV)
   return (arrayExp, arrayType, variability)
 end
 

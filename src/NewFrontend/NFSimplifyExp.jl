@@ -8,7 +8,7 @@
       end
 
       ARRAY_EXPRESSION(__) => begin
-        expElements = list(simplify(e) for e in exp.elements)
+        expElements = Expression[simplify(e) for e in exp.elements]
         ARRAY_EXPRESSION(exp.ty, expElements, exp.literal)
       end
 
@@ -321,7 +321,7 @@ function simplifyTranspose(arg::Expression, call::Call)
     @match e begin
       ARRAY_EXPRESSION(
         __,
-      ) where {(ListUtil.all(e.elements, isArray))} => begin
+      ) where {(ArrayUtil.all(e.elements, isArray))} => begin
         transposeArray(e)
       end
       _ => begin
@@ -355,7 +355,7 @@ function simplifyArrayConstructor(call::Call)
         elseif dim_size == 1
           @match (ARRAY_EXPRESSION(elements = list(e)), _) = expand(e)
           exp = replaceIterator(exp, iter, e)
-          exp = makeArray(ty, list(exp))
+          exp = makeArray(ty, Expression[exp])
           outExp = simplify(exp)
         else
           fail()
@@ -407,7 +407,7 @@ function simplifySize(sizeExp::Expression)
               TYPE_INTEGER(),
               list(P_Dimension.Dimension.fromInteger(listLength(dims))),
             ),
-            list(P_Dimension.Dimension.sizeExp(d) for d in dims),
+            Expression[sizeExp(d) for d in dims],
           )
         else
            exp = sizeExp
@@ -689,7 +689,7 @@ function simplifyLogicBinaryAnd(
             exp1.elements,
             exp2.elements,
           ))
-        makeArray(typeOf(op), expl)
+        makeArray(typeOf(op), listArray(expl))
       end
 
       _ => begin
@@ -738,7 +738,7 @@ function simplifyLogicBinaryOr(exp1::Expression, op::Operator, exp2::Expression)
             exp1.elements,
             exp2.elements,
           ))
-        makeArray(typeOf(op), expl)
+        makeArray(typeOf(op), listArray(expl))
       end
 
       _ => begin
@@ -825,7 +825,7 @@ function simplifyCast(exp::Expression, ty::NFType)
       (TYPE_ARRAY(elementType = TYPE_REAL(__)), ARRAY_EXPRESSION(__)) =>
         begin
           ety = unliftArray(ty)
-          expElements = list(simplifyCast(e, ety) for e in exp.elements)
+          expElements = Expression[simplifyCast(e, ety) for e in exp.elements]
           expTy = setArrayElementType(exp.ty, arrayElementType(ty))
           ARRAY_EXPRESSION(expTy, expElements, exp.literal)
         end
@@ -845,13 +845,13 @@ function simplifySubscriptedExp(subscriptedExp::Expression; split = false)
   subscriptedExp = simplify(e)
   subs = simplifyList(subs, arrayDims(typeOf(e)))
   cond = ! listEmpty(subs) && isArray(subscriptedExp) && ! isEmptyArray(subscriptedExp) &&
-    ArrayUtil.allEqual(listArray(arrayElements(subscriptedExp)), isEqual)
+    ArrayUtil.allEqual(arrayElements(subscriptedExp), isEqual)
   if !split && !(ListUtil.all(subs, isLiteral))
     while cond
       @match h <| subs = subs
-      subscriptedExp = listGet(arrayElements(subscriptedExp), 1)
+      subscriptedExp = arrayGet(arrayElements(subscriptedExp), 1)
       cond = ! listEmpty(subs) && isArray(subscriptedExp) && ! isEmptyArray(subscriptedExp) &&
-        ArrayUtil.allEqual(listArray(arrayElements(subscriptedExp)), isEqual)
+        ArrayUtil.allEqual(arrayElements(subscriptedExp), isEqual)
     end
     if listEmpty(subs)
       return subscriptedExp

@@ -378,8 +378,8 @@ function merge(outerMod::Modifier, innerMod::Modifier, name::String = "")
   return mergedMod
 end
 
-function setBinding(binding::Binding, modifier::MODIFIER_MODIFIER)
-      MODIFIER_MODIFIER(
+function setBinding(binding::Binding, mod::MODIFIER_MODIFIER)
+  local modifier = MODIFIER_MODIFIER(
         mod.name,
         mod.finalPrefix,
         mod.eachPrefix,

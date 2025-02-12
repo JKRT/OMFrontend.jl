@@ -475,12 +475,12 @@ function checkOverloadedBinaryArrayAddSub2(
             )
             @assign expl = _cons(e, expl)
           end
-          @assign expl = listReverseInPlace(expl)
+          expl = listReverseInPlace(expl)
         end
         #=  If the arrays are empty, match against the element types to get the expected return type.
         =#
-        @assign outType = setArrayElementType(type1, ty)
-        @assign outExp = makeArray(outType, expl)
+        outType = setArrayElementType(type1, ty)
+        outExp = makeArray(outType, listArray(expl))
         (outExp, outType)
       end
 
@@ -670,12 +670,12 @@ function checkOverloadedBinaryScalarArray2(
           )
         end
         @assign outType = setArrayElementType(exp2.ty, outType)
-        (makeArray(outType, nil), outType)
+        (makeArray(outType, Expression[]), outType)
       end
 
       ARRAY_EXPRESSION(elements = expl) => begin
         @assign ty = Type.unliftArray(type2)
-        @assign expl = list(
+        @assign expl = Expression[
           checkOverloadedBinaryScalarArray2(
             exp1,
             type1,
@@ -687,8 +687,8 @@ function checkOverloadedBinaryScalarArray2(
             candidates,
             info,
           ) for e in expl
-        )
-        @assign outType = setArrayElementType(
+        ]
+        outType = setArrayElementType(
           exp2.ty,
           typeOf(listHead(expl)),
         )
@@ -784,12 +784,12 @@ function checkOverloadedBinaryArrayScalar2(
           )
         end
         @assign outType = setArrayElementType(exp1.ty, outType)
-        (makeArray(outType, nil), outType)
+        (makeArray(outType, Expression[]), outType)
       end
 
       ARRAY_EXPRESSION(elements = expl) => begin
-        @assign ty = Type.unliftArray(type1)
-        @assign expl = list(
+        ty = Type.unliftArray(type1)
+        expl = Expression[
           checkOverloadedBinaryArrayScalar2(
             e,
             ty,
@@ -801,8 +801,8 @@ function checkOverloadedBinaryArrayScalar2(
             candidates,
             info,
           ) for e in expl
-        )
-        @assign outType = setArrayElementType(
+        ]
+        outType = setArrayElementType(
           exp1.ty,
           typeOf(listHead(expl)),
         )

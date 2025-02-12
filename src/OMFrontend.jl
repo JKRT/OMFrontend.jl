@@ -54,6 +54,10 @@ function __init__()
 end
 
 include("main.jl")
+#=Internal modules=#
+import .Frontend.Flags
+import .Frontend.FlagsUtil
+
 
 """
 Parse a file, returns the syntax tree.
@@ -266,6 +270,33 @@ function loadMSL(; MSL_Version)
       @info "Continue instantiating the model until the next error."
     end
   end
+end
+
+
+"""
+```
+enableDumpDebug()
+```
+Enable staged dumping of the flat model between different compiler phases.
+NOTE this will generate files on your local drive if enabled.
+
+To disable see ```disableDumpDebug()```
+"""
+function enableDumpDebug()
+  status = FlagsUtil.enableDebug(Flags.NF_DUMP_FLAT)
+  @info "Enabled Flags.NF_DUMP_FLAT. Old status was $(status)"
+end
+
+"""
+```
+disableDumpDebug()
+```
+Disables staged dumping of the flat  model between different compiler phases.
+
+"""
+function disableDumpDebug()
+  status = FlagsUtil.disableDebug(Flags.NF_DUMP_FLAT)
+  @info "Disabled Flags.NF_DUMP_FLAT. Old status was $(status)"
 end
 
 Base.show(io::IO, ::MIME"text/plain", fm::OMFrontend.Frontend.FLAT_MODEL) = begin

@@ -6,7 +6,8 @@ import .InstUtil
 import .ExecStat
 
 """
-    Instantiates a class given by its fully qualified path, with the result being the model represented in the DAE format.
+    Instantiates a class given by its fully qualified path.
+    The result is the model represented in the DAE format, see DAE.jl.
 """
 function instClassInProgram(classPath::Absyn.Path, program::SCode.Program)
   local daeFuncs::DAE.FunctionTree
@@ -102,7 +103,7 @@ function instClassInProgramFM2(classPath::Absyn.Path, program::SCode.Program)::T
   #"Type the class"
   typeClass(inst_cls, name)
   flat_model = flatten(inst_cls, name)
-  dumpFlatModel(flat_model, name * "afterFlatten")
+  dumpFlatModel(flat_model, string(name, "_", "afterFlatten"))
   #=
   Check if we are to perform recompilation. If true adds the SCode program to the flat model.
   Also check if we have a Connections.branch statement in an if-equation
@@ -170,7 +171,7 @@ function instClassInProgramFM2(classPath::Absyn.Path, program::SCode.Program)::T
     end
     #= Resolve the connections of the current system. =#
     flat_model = resolveConnections(flat_model, name)
-    dumpFlatModel(flat_model, name * "afterResolveConnections")
+    dumpFlatModel(flat_model, string(name, "_", "afterResolveConnections"))
     flat_model =  if ! recompilationEnabled
       evaluate(flat_model)
       dumpFlatModel(flat_model, name * "afterEval")
@@ -179,16 +180,16 @@ function instClassInProgramFM2(classPath::Absyn.Path, program::SCode.Program)::T
     end
   else #= Regular system without simulaton time reconfigurations =#
     flat_model = resolveConnections(flat_model, name)
-    dumpFlatModel(flat_model, name * "afterResolveConnections")
+    dumpFlatModel(flat_model, string(name, "_", "afterResolveConnections"))
     flat_model = evaluate(flat_model)
     dumpFlatModel(flat_model, name * "afterEval")
   end
   #= Do unit checking =#
   #TODO  @assign flat_model = UnitCheck.checkUnits(flat_model)
   flat_model = inlineSimpleCalls(flat_model)
-  dumpFlatModel(flat_model, name * "afterInlining")
+  dumpFlatModel(flat_model, string(name, "_", "afterInlining"))
   flat_model = simplifyFlatModel(flat_model)
-  dumpFlatModel(flat_model, name * "afterSimplify")
+  dumpFlatModel(flat_model, string(name, "_", "afterSimplify"))
   funcs = collectFunctions(flat_model, name)
   #=  Collect package constants that couldn't be substituted with their values =#
   #=  (e.g. because they where used with non-constant subscripts), and add them to the model. =#
@@ -196,7 +197,7 @@ function instClassInProgramFM2(classPath::Absyn.Path, program::SCode.Program)::T
   #= Scalarize array components in the flat model.=#
   if Flags.isSet(Flags.NF_SCALARIZE)
     flat_model = scalarize(flat_model, name)
-    dumpFlatModel(flat_model, name * "afterScalarize")
+    dumpFlatModel(flat_model, string(name, "_", "afterScalarize"))
   else
     #=  Remove empty arrays from variables =#
     @assign flat_model.variables = filter( (x) -> !isEmptyArray(x), flat_model.variables)
@@ -208,7 +209,7 @@ function instClassInProgramFM2(classPath::Absyn.Path, program::SCode.Program)::T
   =#
   InstUtil.restoreMissingArrayVariables!(flat_model)
   verify(flat_model)
-  dumpFlatModel(flat_model, name * "afterVerify")
+  dumpFlatModel(flat_model, string(name, "_", "afterVerify"))
   #= TODO: Expand sliced crefs=#
   #= TODO: Combine subscripts =#
   return (flat_model, funcs, inst_cls)
@@ -922,28 +923,8 @@ function instClassDef(cls::EXPANDED_CLASS,
   =#
   redeclareClasses(cls_tree)
   #=  Instantiate the extends nodes. =#
-
-  function instExtendsMapFunc(@nospecialize(node::InstNode))
-    instExtends(node,
-                attributes,
-                useBinding,
-                ExtendsVisibility.PUBLIC,
-                instLevel + 1)
-  end
-
-  mapExtends(cls_tree, instExtendsMapFunc)
-  #=  Instantiate local components. =#
-  function applyComponentMapFunc(@nospecialize(node::InstNode))
-    instComponent(
-      node,
-      attributes,
-      MODIFIER_NOMOD(),
-      useBinding,
-      instLevel + 1,
-      NONE()
-    )
-  end
-  applyLocalComponents(cls_tree, applyComponentMapFunc)
+  mapExtends(cls_tree, attributes, useBinding, ExtendsVisibility.PUBLIC, instLevel + 1)
+  applyLocalComponents(cls_tree, attributes, useBinding, instLevel + 1)
   #=  Remove duplicate elements. =#
   cls_tree = replaceDuplicates(cls_tree)
   checkDuplicates(cls_tree)
@@ -1972,7 +1953,7 @@ function isDiscreteClass(clsNode::InstNode) ::Bool
   discrete
 end
 
-function instTypeSpec(@nospecialize(typeSpec::Absyn.TypeSpec),
+function instTypeSpec(typeSpec::Absyn.TPATH,
                       @nospecialize(modifier::Modifier),
                       @nospecialize(attributes::Attributes),
                       @nospecialize(useBinding::Bool),
@@ -1982,24 +1963,28 @@ function instTypeSpec(@nospecialize(typeSpec::Absyn.TypeSpec),
                       instLevel::Int)
   local outAttributes::Attributes
   local node::InstNode
-  @match typeSpec begin
-    Absyn.TPATH(__)  => begin
-      node = lookupClassName(typeSpec.path, scope, info)
-      if instLevel >= 100
-        checkRecursiveDefinition(node, parent, limitReached = true)
-      end
-      node = expand(node)
-      (node, outAttributes) = instClass(node, modifier, attributes, useBinding, instLevel, parent)
-      node
-    end
-
-    Absyn.TCOMPLEX(__)  => begin
-      @error("NFInst.instTypeSpec: TCOMPLEX not implemented.\\n")
-      fail()
-    end
+  node = lookupClassName(typeSpec.path, scope, info)
+  if instLevel >= 100
+    checkRecursiveDefinition(node, parent, limitReached = true)
   end
-  (node, outAttributes)
+  node = expand(node)
+  (node, outAttributes) = instClass(node, modifier, attributes, useBinding, instLevel, parent)
+  return (node, outAttributes)
 end
+
+
+function instTypeSpec(typeSpec::Absyn.TCOMPLEX,
+                      @nospecialize(modifier::Modifier),
+                      @nospecialize(attributes::Attributes),
+                      useBinding::Bool,
+                      @nospecialize(scope::InstNode),
+                      @nospecialize(parent::InstNode),
+                      @nospecialize(info::SourceInfo),
+                      instLevel::Int)
+  @error("NFInst.instTypeSpec: $(typeof(typeSpec)) not implemented.\\n")
+  fail()
+end
+
 
 """ #= Prints an error if a component causes a loop in the instance tree, for
              example because it has the same type as one of its parents. If the depth
@@ -2376,8 +2361,8 @@ function instExp(absynExp::Absyn.Exp, scope::InstNode, info::SourceInfo) ::Expre
       end
 
       Absyn.ARRAY(__)  => begin
-         expl = list(instExp(e, scope, info) for e in absynExp.arrayExp)
-        makeArray(TYPE_UNKNOWN(), expl)
+        expV = Expression[instExp(e, scope, info) for e in absynExp.arrayExp]
+        makeArray(TYPE_UNKNOWN(), expV)
       end
 
       Absyn.MATRIX(__)  => begin
@@ -3391,7 +3376,7 @@ end
 """
 function dumpFlatModel(flatModel, phaseAsStr::String)
   if Flags.isSet(Flags.NF_DUMP_FLAT)
-    @info "Dumping the system..."
+    @info "Dumping the system... at phase: $(phaseAsStr)"
     write(string(phaseAsStr, ".mo"), replace(toFlatString(flatModel, nil), "\\n" => "\n"))
   end
 end

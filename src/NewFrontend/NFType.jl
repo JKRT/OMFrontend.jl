@@ -1318,13 +1318,11 @@ end
 
 function isEmptyArray(ty::M_Type)::Bool
   local isEmpty::Bool
-
-  @assign isEmpty = begin
+  isEmpty = begin
     @match ty begin
       TYPE_ARRAY(__) => begin
         ListUtil.exist(ty.dimensions, isZero)
       end
-
       _ => begin
         false
       end

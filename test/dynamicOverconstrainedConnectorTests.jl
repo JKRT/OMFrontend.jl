@@ -30,8 +30,8 @@ end
 end
 
 function test_and_pretty_print(ref, modelName, modelFile)
-  local flattenedModel = OMFrontend.flattenModelWithMSL(modelName, modelFile)[1]
-  local res = OMFrontend.toString(flattenedModel)
+  local flattenedModel = OMFrontend.flattenModelWithMSL(modelName, modelFile)
+  local res = OMFrontend.toFlatModelica(flattenedModel[1], nil)
   @test true == begin
     if ref == res
       true
@@ -45,7 +45,7 @@ function test_and_pretty_print(ref, modelName, modelFile)
   end
 end
 
-#= Regression test. Tests the generated code against reference models =#
+# #= Regression test. Tests the generated code against reference models =#
 @testset "Test if the flat Modelica model is equal to the reference models" begin
   local modelFile = "./Models/DynamicOverconstrainedConnectors.mo"
   test_and_pretty_print(OCC_ReferenceModels.ACPort, "DynamicOverconstrainedConnectors.ACPort", modelFile)
@@ -57,5 +57,3 @@ end
   test_and_pretty_print(OCC_ReferenceModels.System3, "DynamicOverconstrainedConnectors.System3", modelFile)
   test_and_pretty_print(OCC_ReferenceModels.System4, "DynamicOverconstrainedConnectors.System4", modelFile)
 end
-
-#@macroexpand @test_and_pretty_print OCC_ReferenceModels.ACPort == OMFrontend.toString(OMFrontend.flattenModelWithMSL("DynamicOverconstrainedConnectors.ACPor", modelFile)[1]);

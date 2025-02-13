@@ -259,15 +259,15 @@ function makeArrayExp(posArgs::List{<:Expression}, namedArgs::List{<:NamedArg}, 
   arrayExp
 end
 
-function makeCatExp(n::Int, args::Vector{Expression}, tys::List{<:M_Type}, variability::VariabilityType, info::SourceInfo) ::Tuple{Expression, M_Type}
+function makeCatExp(n::Int, args::Vector{Expression}, tys::Vector{M_Type}, variability::VariabilityType, info::SourceInfo) ::Tuple{Expression, M_Type}
   local ty::M_Type
   local callExp::Expression
 
   local arg2::Expression
-  local args2::List{Expression} = nil
-  local res::List{Expression} = nil
-  local tys2::List{M_Type} = tys
-  local tys3::List{M_Type}
+  local args2::Vector{Expression} = Expression[]
+  local res::Vector{Expression}
+  local tys2::Vector{M_Type} = tys
+  local tys3::Vector{M_Type}
   local dimsLst::List{List{Dimension}} = nil
   local dims::List{Dimension}
   local resTy::M_Type = TYPE_UNKNOWN()
@@ -283,8 +283,8 @@ function makeCatExp(n::Int, args::Vector{Expression}, tys::List{<:M_Type}, varia
   #Error.assertion(, getInstanceName() + " got wrong input sizes", sourceInfo())
   #=  First: Get the number of dimensions and the element type
   =#
-  for arg in args
-    @match _cons(ty, tys2) = tys2
+  for (i,arg) in enumerate(args)
+    ty = tys2[i]
     dimsLst = _cons(arrayDims(ty), dimsLst)
     if resTy isa TYPE_UNKNOWN
       resTy = arrayElementType(ty)
@@ -308,22 +308,23 @@ function makeCatExp(n::Int, args::Vector{Expression}, tys::List{<:M_Type}, varia
     Error.addSourceMessageAndFail(Error.NF_CAT_WRONG_DIMENSION, list(String(maxn), String(n)), info)
   end
   tys2 = tys
-  tys3 = nil
-  args2 = nil
+  tys3 = M_Type[]
+  args2 = Expression[]
   pos = length(args) + 2
   #=  Second: Try to match the element type of all the arguments
   =#
-  for arg in args
-    ty = listHead(tys2)
-    tys2 = listRest(tys2)
+  for (i,arg) in enumerate(args)
+    ty = tys2[i]
     pos = pos - 1
     ty2 = setArrayElementType(ty, resTy)
      (arg2, ty1, mk) = matchTypes(ty, ty2, arg, allowUnknown = true)
     if isIncompatibleMatch(mk)
       Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list(String(pos), "cat", "arg", toString(arg), Type.toString(ty), Type.toString(ty2)), info)
     end
-    args2 = _cons(arg2, args2)
-    tys3 = _cons(ty1, tys3)
+    #args2 = _cons(arg2, args2)
+    #tys3 = _cons(ty1, tys3)
+    push!(args2, arg2)
+    push!(tys3, ty1)
   end
   #=  Third: We now have matched the element types of all arguments
   =#
@@ -331,8 +332,8 @@ function makeCatExp(n::Int, args::Vector{Expression}, tys::List{<:M_Type}, varia
   =#
   resTy = TYPE_UNKNOWN()
   tys2 = tys3
-  for arg in args2
-    @match _cons(ty, tys2) = tys2
+  for (i,arg) in enumerate(args2)
+    ty = tys2[i]
     if resTy isa TYPE_UNKNOWN
       resTy = ty
     else
@@ -357,23 +358,23 @@ function makeCatExp(n::Int, args::Vector{Expression}, tys::List{<:M_Type}, varia
   =#
   resTy = TYPE_ARRAY(arrayElementType(resTy), ListUtil.set(arrayDims(resTy), n, sumDim))
   tys2 = tys3
-  tys3 = nil
-  res = nil
+  tys3 = M_Type[]
+  res = Expression[]
   pos = length(args) + 2
-  for arg in args2
-    @match _cons(ty, tys2) = tys2
+  for (i,arg) in enumerate(args2)
+    ty  = tys2[i]
     pos = pos - 1
      (arg2, ty1, mk) = matchTypes(ty, resTyToMatch, arg, allowUnknown = true)
     if isIncompatibleMatch(mk)
       Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list(String(pos), "cat", "arg", toString(arg), Type.toString(ty), Type.toString(resTyToMatch)), info)
     end
-    res = _cons(arg2, res)
-    tys3 = _cons(ty1, tys3)
+    push!(res, arg2)
+    push!(tys3, ty1)
   end
   #=  We have all except dimension n having equal sizes; with matching types
   =#
   ty = resTy
-  callExp = CALL_EXPRESSION(makeTypedCall(NFBuiltinFuncs.CAT, _cons(INTEGER_EXPRESSION(n), res), variability, resTy))
+  callExp = CALL_EXPRESSION(makeTypedCall(NFBuiltinFuncs.CAT, _cons(INTEGER_EXPRESSION(n), arrayList(res)), variability, resTy))
   (callExp, ty)
 end
 
@@ -1095,7 +1096,7 @@ function typeCatCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{
     res = _cons(arg, res)
     tys = _cons(ty, tys)
   end
-  (callExp, ty) = makeCatExp(n, reverse!(listArray(res)), listReverse(tys), variability, info)
+  (callExp, ty) = makeCatExp(n, reverse!(listArray(res)), reverse!(listArray(tys)), variability, info)
   (callExp, ty, variability)
 end
 

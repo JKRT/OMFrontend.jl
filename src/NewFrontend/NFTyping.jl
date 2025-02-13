@@ -2341,7 +2341,7 @@ function typeMatrix(
       res[i] = e2
     end
      (arrayExp, arrayType) =
-      makeCatExp(1, res, arrayList(tys), variability, info)
+      makeCatExp(1, res, tys, variability, info)
   else
      (arrayExp, arrayType, variability) =
       typeMatrixComma(elements[1], next_origin, info)
@@ -2369,7 +2369,7 @@ function typeMatrixComma(
   local ty2::NFType
   local ty3::NFType
   local tys::List{NFType} = nil
-  local tys2::List{NFType}
+  local tys2::Vector{NFType} = Vector{NFType}(undef, length(elements))
   local n::Int = 2
   local pos::Int
   local mk::MatchKindType
@@ -2395,8 +2395,7 @@ function typeMatrixComma(
        variability = variabilityMax(variability, var)
        n = max(n, dimensionCount(ty))
     end
-     tys2 = nil
-     pos = n + 1
+    pos = n + 1
     for (i,e) in enumerate(expl)
       @match _cons(ty1, tys) = tys
        pos = pos - 1
@@ -2420,7 +2419,7 @@ function typeMatrixComma(
         )
       end
        res[i] = e
-       tys2 = _cons(ty3, tys2)
+       tys2[i] = ty3
     end
     (arrayExp, arrayType) = makeCatExp(2, res, tys2, variability, info)
   else

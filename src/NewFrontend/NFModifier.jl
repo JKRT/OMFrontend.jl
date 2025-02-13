@@ -33,7 +33,7 @@ struct MODIFIER_REDECLARE{  T0 <: SCode.Final,
   mod::T3
 end
 
-struct MODIFIER_MODIFIER{ T0 <: String,
+mutable struct MODIFIER_MODIFIER{ T0 <: String,
                           T1 <: SCode.Final,
                           T2 <: SCode.Each,
                           T4 <: ModTable.Tree,
@@ -379,14 +379,16 @@ function merge(outerMod::Modifier, innerMod::Modifier, name::String = "")
 end
 
 function setBinding(binding::Binding, mod::MODIFIER_MODIFIER)
-  local modifier = MODIFIER_MODIFIER(
-        mod.name,
-        mod.finalPrefix,
-        mod.eachPrefix,
-        binding,
-        mod.subModifiers,
-        mod.info,
-      )
+  # local modifier = MODIFIER_MODIFIER(
+  #       mod.name,
+  #       mod.finalPrefix,
+  #       mod.eachPrefix,
+  #       binding,
+  #       mod.subModifiers,
+  #       mod.info,
+  # )
+  mod.binding = binding
+  modifier = mod
   return modifier
 end
 
@@ -500,7 +502,9 @@ function addParent(parentNode::InstNode, mod::Modifier)
     @match mod begin
       MODIFIER_MODIFIER(binding = binding) => begin
         modBinding = addParent(parentNode, binding)
-        lmod = MODIFIER_MODIFIER(mod.name, mod.finalPrefix, mod.eachPrefix, modBinding, mod.subModifiers, mod.info)
+        #lmod = MODIFIER_MODIFIER(mod.name, mod.finalPrefix, mod.eachPrefix, modBinding, mod.subModifiers, mod.info)
+        mod.binding = modBinding
+        lmod = mod
         map(lmod, (x, y) -> addParent_work(x, parentNode, y))
       end
       _ => begin

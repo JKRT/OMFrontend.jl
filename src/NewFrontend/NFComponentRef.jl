@@ -772,8 +772,12 @@ function setSubscriptsList(
   return cref
 end
 
-
-function setSubscriptsListV(subscripts::Vector{List{Subscript}}
+"""
+Alternate method to
+```setSubscriptsList```
+but uses a vector instead
+"""
+function setSubscriptsListV(subscripts::Vector{Vector{Subscript}}
                             ,cref::ComponentRef)
   cref = begin
     local subs::Vector{Subscript}
@@ -782,10 +786,10 @@ function setSubscriptsListV(subscripts::Vector{List{Subscript}}
     @match (subscripts, cref) begin
       ([subs, rest_subs...], COMPONENT_REF_CREF(__)) => begin
         rest_cref = setSubscriptsListV(rest_subs, cref.restCref)
-        COMPONENT_REF_CREF(cref.node, subs, cref.ty, cref.origin, rest_cref)
+        COMPONENT_REF_CREF(cref.node, arrayList(subs), cref.ty, cref.origin, rest_cref)
       end
 
-      (nil(), _) => begin
+      (_#= Case when it contains an empty list=#, _) => begin
         cref
       end
     end

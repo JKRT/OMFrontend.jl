@@ -541,8 +541,7 @@ function expandBinaryElementWise(exp::Expression)::Tuple{Expression, Bool}
        (exp2, expanded) = expand(exp2)
     end
     if expanded
-      outExp =
-        expandBinaryElementWise2(exp1, op, exp2, simplifyBinaryOp)
+      outExp = expandBinaryElementWise2(exp1, op, exp2, simplifyBinaryOp)
     else
       outExp = exp
     end
@@ -946,10 +945,10 @@ function expandTypename(ty::M_Type)::Expression
 end
 
 function expandCref4(
-  subs::List{<:Subscript},
-  comb::List{<:Subscript}, #== nil,=#
-  accum::List{<:List{<:Subscript}}, #= = nil, =#
-  restSubs::List{<:List{<:Subscript}},
+  subs,#::List{Subscript},
+  comb,#::List{Subscript}, #== nil,=#
+  accum,#::List{List{Subscript}}, #= = nil, =#
+  restSubs,#::List{List{Subscript}},
   cref::ComponentRef,
   crefType::NFType,
 )::Expression
@@ -995,20 +994,35 @@ function expandCref3(
   subs::List{List{Subscript}},
   cref::ComponentRef,
   crefType::M_Type,
-  accum = nil,#:List{<:List{<:Subscript}} = nil,
+  accum = nil,
 )::Expression
   local arrayExp::Expression
   arrayExp = begin
     @match subs begin
       nil() => begin
-        CREF_EXPRESSION(
-          crefType,
-          setSubscriptsList(accum, cref),
-        )
+        if isempty(accum)
+          CREF_EXPRESSION(crefType, cref)
+        else
+          local arrSubs = Vector{Subscript}[listArray(e) for e in accum]
+          #global ARR_SUBS = arrSubs
+          #global LIST_SUBS = accum
+          #global TEST_CREF = cref
+          #@info typeof(arrSubs)
+          local crefR = setSubscriptsListV(arrSubs, cref)
+          #@info "Done..."
+          CREF_EXPRESSION(
+            crefType,
+            crefR,
+          )
+        end
       end
-
       _ => begin
-        expandCref4(listHead(subs), nil, accum, listRest(subs), cref, crefType)
+        expandCref4(listHead(subs),
+                    nil,
+                    accum,
+                    listRest(subs),
+                    cref,
+                    crefType)
       end
     end
   end
@@ -1040,6 +1054,9 @@ function expandCref2(
   return subs
 end
 
+"""
+Expands a component reference
+"""
 function expandCref(crefExp::Expression)::Tuple{Expression, Bool}
   local expanded::Bool
   local arrayExp::Expression
@@ -1052,8 +1069,9 @@ function expandCref(crefExp::Expression)::Tuple{Expression, Bool}
           expanded = true
         elseif hasKnownSize(crefExp.ty)
           subs = expandCref2(crefExp.cref)
-          arrayExp =
-            expandCref3(subs, crefExp.cref, arrayElementType(crefExp.ty))
+          arrayExp = expandCref3(subs,
+                                 crefExp.cref,
+                                 arrayElementType(crefExp.ty))
           expanded = true
         else
           arrayExp = crefExp
@@ -1069,11 +1087,13 @@ function expandCref(crefExp::Expression)::Tuple{Expression, Bool}
   return (arrayExp, expanded)
 end
 
-""" #= Expands a list of Expressions. If abortOnFailure is true the function will
-     stop if it fails to expand an element and the original list will be
-     returned unchanged. If abortOnFailure is false it will instead continue and
-     try to expand the whole list. In both cases the output 'expanded' indicates
-     whether the whole list could be expanded or not. =#"""
+"""
+Expands a list of Expressions. If abortOnFailure is true the function will
+stop if it fails to expand an element and the original list will be
+returned unchanged. If abortOnFailure is false it will instead continue and
+try to expand the whole list. In both cases the output 'expanded' indicates
+whether the whole list could be expanded or not.
+"""
 function expandList(
   expl::List{Expression},
   abortOnFailure::Bool = true,
@@ -1082,7 +1102,6 @@ function expandList(
   local outExpl::List{Expression} = nil
   local res::Bool
   for exp in expl
-    #(exp, res) = expand(exp)
     @match (exp, res) = expand(exp)
     expanded = res && expanded
     if !res && abortOnFailure

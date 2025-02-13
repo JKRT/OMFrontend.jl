@@ -147,7 +147,7 @@ end
 
 struct MATRIX_EXPRESSION <: NFExpression
   #=  Does not have a type since we only keep this operator before type-checking =#
-  elements::List{List{Expression}}
+  elements::Vector{Vector{Expression}}
 end
 
 struct ARRAY_EXPRESSION <: NFExpression

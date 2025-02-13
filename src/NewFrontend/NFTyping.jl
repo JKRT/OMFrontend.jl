@@ -688,8 +688,7 @@ end
         =#
         #=  If the component still doesn't have a binding, try to use the start attribute instead.
         =#
-        #=  TODO: Any attribute should actually be fine to use here.
-        =#
+        #=  TODO: Any attribute should actually be fine to use here. =#
          (dim, ty_err) = begin
           @match b begin
             UNBOUND(__) => begin
@@ -2309,7 +2308,7 @@ end
 
 
 function typeMatrix(
-  @nospecialize(elements::List{<:List{<:Expression}}),
+  @nospecialize(elements::Vector{Vector{Expression}}),
   origin::ORIGIN_Type,
   info::SourceInfo,
 )::Tuple{Expression, NFType, VariabilityType}
@@ -2318,34 +2317,34 @@ function typeMatrix(
   local arrayExp::Expression
 
   local exp::Expression
-  local expl::List{Expression} = nil
-  local res::List{Expression} = nil
+  local expl::Vector{Expression} = Vector{Expression}(undef, length(elements))
+  local res::Vector{Expression} = Vector{Expression}(undef, length(elements))
   local var::VariabilityType
   local ty::NFType = TYPE_UNKNOWN()
-  local tys::List{NFType} = nil
-  local resTys::List{NFType} = nil
+  local tys::Vector{NFType} = Vector{Expression}(undef, length(elements))
+  #local resTys::Vector{NFType} = NFType[]
   local n::Int = 2
   local next_origin::ORIGIN_Type = setFlag(origin, ORIGIN_SUBEXPRESSION)
 
-  if listLength(elements) > 1
-    for el in elements
+  if length(elements) > 1
+    for (i,el) in enumerate(elements)
       (exp, ty, var) = typeMatrixComma(el, next_origin, info)
       variability = variabilityMax(var, variability)
-      expl = _cons(exp, expl)
-      tys = _cons(ty, tys)
+      expl[i] = exp
+      tys[i] = ty
       n = max(n, dimensionCount(ty))
     end
-    for e in expl
-      @match _cons(ty, tys) = tys
-       (e, ty) = promote(e, ty, n)
-       resTys = _cons(ty, resTys)
-       res = _cons(e, res)
+    for (i,e) in enumerate(expl)
+      ty = tys[i]
+      (e2, ty) = promote(e, ty, n)
+      tys[i] = ty #Update the type.
+      res[i] = e2
     end
      (arrayExp, arrayType) =
-      makeCatExp(1, res, resTys, variability, info)
+      makeCatExp(1, res, arrayList(tys), variability, info)
   else
      (arrayExp, arrayType, variability) =
-      typeMatrixComma(listHead(elements), next_origin, info)
+      typeMatrixComma(elements[1], next_origin, info)
     if dimensionCount(arrayType) < 2
        (arrayExp, arrayType) =
         promote(arrayExp, arrayType, n)
@@ -2355,15 +2354,15 @@ function typeMatrix(
 end
 
 function typeMatrixComma(
-  elements::List{<:Expression},
+  elements::Vector{Expression},
   origin::ORIGIN_Type,
   info::SourceInfo)
   local variability::VariabilityType = Variability.CONSTANT
   local arrayType::NFType
   local arrayExp::Expression
   local exp::Expression
-  local expl::List{Expression} = nil
-  local res::List{Expression} = nil
+  local expl::Vector{Expression} = Vector{Expression}(undef, length(elements))
+  local res::Vector{Expression} = Vector{Expression}(undef, length(elements))
   local var::VariabilityType
   local ty::NFType = TYPE_UNKNOWN()
   local ty1::NFType
@@ -2374,16 +2373,11 @@ function typeMatrixComma(
   local n::Int = 2
   local pos::Int
   local mk::MatchKindType
-  # Error.assertion(
-  #   !listEmpty(elements),
-  #   getInstanceName() + " expected non-empty arguments",
-  #   sourceInfo(),
-  # )
-  @assert !listEmpty(elements)
-  if listLength(elements) > 1
-    for e in elements
-       (exp, ty1, var) = typeExp(e, origin, info)
-       expl = _cons(exp, expl)
+  @assert !isempty(elements)
+  if length(elements) > 1
+    for (i,e) in enumerate(elements)
+      (exp, ty1, var) = typeExp(e, origin, info)
+      expl[i] = exp #expl = _cons(exp, expl)
       if isEqual(ty, TYPE_UNKNOWN())
          ty = ty1
       else
@@ -2402,9 +2396,8 @@ function typeMatrixComma(
        n = max(n, dimensionCount(ty))
     end
      tys2 = nil
-     res = nil
      pos = n + 1
-    for e in expl
+    for (i,e) in enumerate(expl)
       @match _cons(ty1, tys) = tys
        pos = pos - 1
       if dimensionCount(ty1) != n
@@ -2426,12 +2419,12 @@ function typeMatrixComma(
           info,
         )
       end
-       res = _cons(e, res)
+       res[i] = e
        tys2 = _cons(ty3, tys2)
     end
-     (arrayExp, arrayType) = makeCatExp(2, res, tys2, variability, info)
+    (arrayExp, arrayType) = makeCatExp(2, res, tys2, variability, info)
   else
-     (arrayExp, arrayType, variability) = typeExp(listHead(elements), origin, info)
+    (arrayExp, arrayType, variability) = typeExp(elements[1], origin, info)
   end
   return (arrayExp, arrayType, variability)
 end

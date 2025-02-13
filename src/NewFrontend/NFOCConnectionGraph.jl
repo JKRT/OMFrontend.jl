@@ -565,8 +565,8 @@ function connectComponents(inPartition::NFHashTableCG.HashTable, inFlatEdge::Fla
       end
 
       (partition, (ref1, ref2, _))  => begin
-        @assign canon1 = canonical(partition, ref1)
-        @assign canon2 = canonical(partition, ref2)
+        canon1 = canonical(partition, ref1)
+        canon2 = canonical(partition, ref2)
         @match (partition, true) = connectCanonicalComponents(partition, canon1, canon2)
         (partition, list(inFlatEdge), nil)
       end
@@ -741,7 +741,7 @@ function addPotentialRootsToTable(inTable::NFHashTableCG.HashTable, inPotentialR
 end
 
 """ #= Adds all connections to graph. =#"""
-function addConnections(inTable::NFHashTableCG.HashTable, inConnections::FlatEdges)::Tuple{NFHashTableCG.HashTable, FlatEdges, FlatEdges}
+function addConnections(inTable::NFHashTableCG.HashTable, inConnections::FlatEdges)#::Tuple{NFHashTableCG.HashTable, FlatEdges, FlatEdges}
   local outBrokenConnections::FlatEdges
   local outConnectedConnections::FlatEdges
   local outTable::NFHashTableCG.HashTable
@@ -755,11 +755,12 @@ function addConnections(inTable::NFHashTableCG.HashTable, inConnections::FlatEdg
     local connected2::FlatEdges
     local connected::FlatEdges
     local e::FlatEdge
-    #=  empty case =#
     @match (inTable, inConnections) begin
+      #=  empty case =#
       (table,  nil())  => begin
         (table, nil, nil)
       end
+      #=  normal case =#
       (table, e <| tail)  => begin
         (table, connected1, broken1) = connectComponents(table, e)
         (table, connected2, broken2) = addConnections(table, tail)
@@ -769,8 +770,46 @@ function addConnections(inTable::NFHashTableCG.HashTable, inConnections::FlatEdg
       end
     end
   end
-  #=  normal case =#
   (outTable, outConnectedConnections, outBrokenConnections)
+end
+
+
+function addConnectionsJ(inTable::NFHashTableCG.HashTable, inConnections::FlatEdges)#::Tuple{NFHashTableCG.HashTable, FlatEdges, FlatEdges}
+  local outBrokenConnections::FlatEdges  = nil
+  local outConnectedConnections::FlatEdges = nil
+  local outTable::NFHashTableCG.HashTable
+  local table::NFHashTableCG.HashTable = inTable
+  local tail::FlatEdges
+  local broken1::FlatEdges
+  local broken2::FlatEdges
+  local broken::FlatEdges
+  local connected1::FlatEdges
+  local connected2::FlatEdges
+  local connected::FlatEdges
+  local e::FlatEdge
+    for ic in inConnections
+      (table, connected1, broken1) = connectComponents(table, ic)
+      outConnectedConnections = listAppend(outConnectedConnections, connected1)
+      outBrokenConnections = listAppend(outBrokenConnections, broken1)
+    end
+    return (table, outConnectedConnections, outBrokenConnections)
+end
+
+
+function addConnectionsJJ(inTable::NFHashTableCG.HashTable, inConnections::FlatEdges)#::Tuple{NFHashTableCG.HashTable, FlatEdges, FlatEdges}
+  local outBrokenConnections::Vector{FlatEdge}  = Vector{FlatEdge}()
+  local outConnectedConnections::Vector{FlatEdge} = Vector{FlatEdge}()
+  local outTable::NFHashTableCG.HashTable
+  local table::NFHashTableCG.HashTable = inTable
+  local broken1::FlatEdges
+  local connected1::FlatEdges
+  local e::FlatEdge
+    for ic in inConnections
+      (table, connected1, broken1) = connectComponents(table, ic)
+      outConnectedConnections = append!(outConnectedConnections, connected1)
+      outBrokenConnections = append!(outBrokenConnections, broken1)
+    end
+    return (table, arrayList(outConnectedConnections), arrayList(outBrokenConnections))
 end
 
 """
@@ -813,7 +852,7 @@ function findResultGraph(inGraph::NFOCConnectionGraph, modelNameQualified::Strin
         if Flags.isSet(Flags.CGRAPH)
           print("Ordered Potential Roots: " + stringDelimitList(ListUtil.map(orderedPotentialRoots, printPotentialRootTuple), ", ") + "\\n")
         end
-         (table, connected, broken) = addConnections(table, connections)
+        (table, connected, broken) = addConnectionsJJ(table, connections)
         @assign dummyRoot = NFBuiltin.TIME_CREF
          (table, finalRoots) = addPotentialRootsToTable(table, orderedPotentialRoots, definiteRoots, dummyRoot)
         @assign brokenConnectsViaGraphViz = generateGraphViz(modelNameQualified, definiteRoots, potentialRoots, uniqueRoots, branches, connections, finalRoots, broken)
@@ -937,10 +976,13 @@ function printPotentialRootTuple(potentialRoot::PotentialRoot) ::String
   outStr
 end
 
-function setRootDistance(finalRoots::List{<:ComponentRef}, table::NFHashTable3.HashTable, distance::Int, nextLevel::List{<:ComponentRef}, irooted::NFHashTable.HashTable) ::NFHashTable.HashTable
+function setRootDistance(finalRoots::List{ComponentRef},
+                         table::NFHashTable3.HashTable,
+                         distance::Int,
+                         nextLevel::List{ComponentRef},
+                         irooted::NFHashTable.HashTable)::NFHashTable.HashTable
   local orooted::NFHashTable.HashTable
-
-  @assign orooted = begin
+  orooted = begin
     local rooted::NFHashTable.HashTable
     local rest::List{ComponentRef}
     local next::List{ComponentRef}
@@ -954,16 +996,14 @@ function setRootDistance(finalRoots::List{<:ComponentRef}, table::NFHashTable3.H
         setRootDistance(nextLevel, table, distance + 1, nil, irooted)
       end
 
-      (cr <| rest, _, _, _, _)  => begin
-        @match false = BaseHashTable.hasKey(cr, irooted)
-        @assign rooted = BaseHashTable.add((cr, distance), irooted)
-        @assign next = BaseHashTable.get(cr, table)
-        @assign next = listAppend(nextLevel, next)
+      (cr <| rest, _, _, _, _) where {BaseHashTable.hasKey(cr, irooted) == false} => begin
+        rooted = BaseHashTable.add((cr, distance), irooted)
+        next = BaseHashTable.get(cr, table)
+        next = listAppend(nextLevel, next)
         setRootDistance(rest, table, distance, next, rooted)
       end
 
-      (cr <| rest, _, _, _, _)  => begin
-        @match false = BaseHashTable.hasKey(cr, irooted)
+      (cr <| rest, _, _, _, _)  where {BaseHashTable.hasKey(cr, irooted) == false} => begin
         @assign rooted = BaseHashTable.add((cr, distance), irooted)
         setRootDistance(rest, table, distance, nextLevel, rooted)
       end
@@ -973,30 +1013,6 @@ function setRootDistance(finalRoots::List{<:ComponentRef}, table::NFHashTable3.H
       end
     end
   end
-  #= print(\"- NFOCConnectionGraph.setRootDistance: Set Distance \" +
-  =#
-  #=    ComponentRef.toString(cr) + \" , \" + intString(distance) + \"\\n\");
-  =#
-  #= print(\"- NFOCConnectionGraph.setRootDistance: add \" +
-  =#
-  #=    stringDelimitList(List.map(next,ComponentRef.toString),\"\\n\") + \" to the queue\\n\");
-  =#
-  #= print(\"- NFOCConnectionGraph.setRootDistance: Set Distance \" +
-  =#
-  #=    ComponentRef.toString(cr) + \" , \" + intString(distance) + \"\\n\");
-  =#
-  #= /*    case(cr::rest,_,_,_,_)
-  equation
-  i = BaseHashTable.get(cr, irooted);
-  print(\"- NFOCConnectionGraph.setRootDistance: found \" +
-  ComponentRef.toString(cr) + \" twice, value is \" + intString(i) + \"\\n\");
-  then
-  setRootDistance(rest,table,distance,nextLevel,irooted);
-  */ =#
-  #= equation
-  =#
-  #=   print(\"- NFOCConnectionGraph.setRootDistance: cannot found \" + ComponentRef.toString(cr) + \"\\n\");
-  =#
   orooted
 end
 

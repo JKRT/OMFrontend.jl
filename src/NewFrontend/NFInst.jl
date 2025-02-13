@@ -2338,7 +2338,7 @@ function instExp(absynExp::Absyn.Exp, scope::InstNode, info::SourceInfo) ::Expre
     local oe::Option{Expression}
     local op::Operator
     local expl::List{Expression}
-    local expll::List{List{Expression}}
+    local expll::Vector{Vector{Expression}}
     @match absynExp begin
       Absyn.INTEGER(__)  => begin
         INTEGER_EXPRESSION(absynExp.value)
@@ -2366,7 +2366,8 @@ function instExp(absynExp::Absyn.Exp, scope::InstNode, info::SourceInfo) ::Expre
       end
 
       Absyn.MATRIX(__)  => begin
-         expll = list(list(instExp(e, scope, info) for e in el) for el in absynExp.matrix)
+        expll = Vector{Expression}[
+          Expression[instExp(e, scope, info) for e in el] for el in absynExp.matrix]
         MATRIX_EXPRESSION(expll)
       end
 

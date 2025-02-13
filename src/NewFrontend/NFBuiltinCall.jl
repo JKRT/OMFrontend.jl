@@ -259,7 +259,7 @@ function makeArrayExp(posArgs::List{<:Expression}, namedArgs::List{<:NamedArg}, 
   arrayExp
 end
 
-function makeCatExp(n::Int, args::List{<:Expression}, tys::List{<:M_Type}, variability::VariabilityType, info::SourceInfo) ::Tuple{Expression, M_Type}
+function makeCatExp(n::Int, args::Vector{Expression}, tys::List{<:M_Type}, variability::VariabilityType, info::SourceInfo) ::Tuple{Expression, M_Type}
   local ty::M_Type
   local callExp::Expression
 
@@ -279,7 +279,7 @@ function makeCatExp(n::Int, args::List{<:Expression}, tys::List{<:M_Type}, varia
   local pos::Int
   local sumDim::Dimension
 
-  @assert listLength(args) == listLength(tys) && listLength(args) >= 1
+  @assert length(args) == length(tys) && length(args) >= 1
   #Error.assertion(, getInstanceName() + " got wrong input sizes", sourceInfo())
   #=  First: Get the number of dimensions and the element type
   =#
@@ -310,7 +310,7 @@ function makeCatExp(n::Int, args::List{<:Expression}, tys::List{<:M_Type}, varia
   tys2 = tys
   tys3 = nil
   args2 = nil
-  pos = listLength(args) + 2
+  pos = length(args) + 2
   #=  Second: Try to match the element type of all the arguments
   =#
   for arg in args
@@ -359,7 +359,7 @@ function makeCatExp(n::Int, args::List{<:Expression}, tys::List{<:M_Type}, varia
   tys2 = tys3
   tys3 = nil
   res = nil
-  pos = listLength(args) + 2
+  pos = length(args) + 2
   for arg in args2
     @match _cons(ty, tys2) = tys2
     pos = pos - 1
@@ -1095,7 +1095,7 @@ function typeCatCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{
     res = _cons(arg, res)
     tys = _cons(ty, tys)
   end
-  (callExp, ty) = makeCatExp(n, listReverse(res), listReverse(tys), variability, info)
+  (callExp, ty) = makeCatExp(n, reverse!(listArray(res)), listReverse(tys), variability, info)
   (callExp, ty, variability)
 end
 

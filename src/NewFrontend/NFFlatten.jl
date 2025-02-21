@@ -556,7 +556,6 @@ function flattenComplexComponent(
   vars::Vector{Variable},
   sections::Sections,
 )::Tuple{Vector{Variable}, Sections}
-  #@debug "FLATTEN COMPLEX COMPONENT: " * toString(node)
   local dims::List{Dimension}
   local name::ComponentRef
   local binding::Binding
@@ -580,13 +579,11 @@ function flattenComplexComponent(
     binding_exp = getTypedExp(binding)
     binding_var = variability(binding)
     comp_var = variability(comp)
-    if comp_var <= Variability.STRUCTURAL_PARAMETER ||
-       binding_var <= Variability.STRUCTURAL_PARAMETER
-      binding_exp =
-        stripBindingInfo(evalExp(binding_exp))
+    if comp_var <= Variability.STRUCTURAL_PARAMETER || binding_var <= Variability.STRUCTURAL_PARAMETER
+      local evaluatedBindingExp = evalExp(binding_exp)
+      binding_exp = stripBindingInfo(evaluatedBindingExp)
     elseif binding_var == Variability.PARAMETER && isFinal(comp)
-        binding_exp =
-          stripBindingInfo(evalExp(binding_exp))
+      binding_exp = stripBindingInfo(evalExp(binding_exp))
     else
       binding_exp = simplify(binding_exp)
     end

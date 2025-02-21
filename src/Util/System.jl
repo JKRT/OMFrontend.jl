@@ -1050,10 +1050,9 @@ end
 
 """ #= Translate a string from msgid to msgstr using the language of the chosen locale =#"""
 function gettext(msgid::String) ::String
-  local msgstr::String
-
-  @error "TODO: Defined in the runtime"
-  msgstr
+  local msgstr::String = msgid
+  @error "TODO: gettext Defined in the runtime"
+  return msgstr
 end
 
 """ #= Takes any boxed input =#"""

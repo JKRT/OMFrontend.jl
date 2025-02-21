@@ -78,7 +78,7 @@ function evaluateCardinality(@nospecialize(arg), table::Table)
   local count::Int
   local argStr = toString(arg)
   count = if argStr in keys(table)
-    table[toString(arg)]
+    table[argStr]
   else
     count = 0
   end

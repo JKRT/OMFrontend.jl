@@ -290,8 +290,10 @@ function next(
   return nextState
 end
 
-""" #= Helper function to assertState, prints out an error when the wrong kind
-     of element was found. =#"""
+"""
+Helper function to assertState, prints out an error when the wrong kind
+of element was found.
+"""
 function printFoundWrongTypeError(
   foundState::LookupState,
   expectedState::LookupState,
@@ -301,10 +303,9 @@ function printFoundWrongTypeError(
   local name_str::String
   local found_str::String
   local expected_str::String
-
-  @assign name_str = P_LookupStateName.toString(name)
-  @assign found_str = lookupStateString(foundState)
-  @assign expected_str = lookupStateString(expectedState)
+  name_str = toString(name)
+  found_str = lookupStateString(foundState)
+  expected_str = lookupStateString(expectedState)
   return Error.addSourceMessage(
     Error.LOOKUP_FOUND_WRONG_TYPE,
     list(name_str, expected_str, found_str),
@@ -315,8 +316,7 @@ end
 """ #= Returns the string representation of a LookupState, with translation. =#"""
 function lookupStateString(state::LookupState)::String
   local str::String
-
-  @assign str = begin
+  str = begin
     @match state begin
       LOOKUP_STATE_BEGIN(__) => begin
         "<begin>"
@@ -355,6 +355,9 @@ function lookupStateString(state::LookupState)::String
 
       LOOKUP_STATE_PREDEF_CLASS(__) => begin
         System.gettext("class")
+      end
+      _ => begin
+        System.gettext("error")
       end
     end
   end

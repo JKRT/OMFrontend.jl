@@ -27,8 +27,8 @@ function instClassInProgram(classPath::Absyn.Path, program::SCode.Program)
     Error.clearMessages()
     #=TODO: Add a @static flag later to supress this message. =#
     println("Internal stack trace:")
-    @error e
-    #throw(e)
+    #@error e
+    throw(e)
   end
   (dae, daeFuncs) = convert(flat_model, funcs, name, InstNode_info(inst_cls))
   return (dae, daeFuncs)

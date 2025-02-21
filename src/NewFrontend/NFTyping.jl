@@ -1468,11 +1468,10 @@ end
       LBINARY_EXPRESSION(__) => typeLBinaryExpression(exp, origin, info)
 
       LUNARY_EXPRESSION(__) => begin
-          next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
-          (e1, ty1, var1) = typeExp(exp.exp, next_origin, info)
-          (exp, ty) =
-           checkLogicalUnaryOperation(e1, ty1, var1, exp.operator, info)
-         (exp, ty, var1)
+        next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
+        @match (e1, ty1, var1) = typeExp(exp.exp, next_origin, info)
+        @match (exp, ty) = checkLogicalUnaryOperation(e1, ty1, var1, exp.operator, info)
+        (exp, ty, var1)
       end
 
       RELATION_EXPRESSION(__) => begin
@@ -1484,7 +1483,7 @@ end
       end
 
       CALL_EXPRESSION(__) => begin
-        (e1, ty, var1) = typeCall(exp, origin, info)
+        @match (e1, ty, var1) = typeCall(exp, origin, info)
         #=
         If the call has multiple outputs and isn't alone on either side of an
         equation/algorithm, select the first output.
@@ -1507,9 +1506,9 @@ end
 
       MUTABLE_EXPRESSION(__) => begin
         #=  Subscripted expressions are assumed to already be typed. =#
-         e1 = P_Pointer.access(exp.exp)
-         (e1, ty, variability) = typeExp(e1, origin, info)
-         exp.exp = P_Pointer.create(e1)
+        e1 = P_Pointer.access(exp.exp)
+        @match (e1, ty, variability) = typeExp(e1, origin, info)
+        exp.exp = P_Pointer.create(e1)
         (exp, ty, variability)
       end
 
@@ -2006,9 +2005,9 @@ function typeCref2(
             ORIGIN_CLASS
           end
         node_ty = Base.inferencebarrier(typeComponent(cref.node, node_origin))
-        (subs, subs_var) =
+        @match (subs, subs_var) =
           typeSubscripts(cref.subscripts, node_ty, cref, origin, info)
-         (rest_cr, rest_var) = typeCref2(cref.restCref, origin, info, false)
+        @match (rest_cr, rest_var) = typeCref2(cref.restCref, origin, info, false)
         subsVariability = variabilityMax(subs_var, rest_var)
         (
           COMPONENT_REF_CREF(cref.node, subs, node_ty, cref.origin, rest_cr),
@@ -2251,7 +2250,7 @@ function typeArray(
   local arrayExp::Expression
   local exp::Expression
   local expV::Vector{Expression} = Vector{Expression}(undef, length(elements))
-  local expV2::Vector{Expression} = Vector{Expression}(undef, length(elements))
+  #local expV2::Vector{Expression} = Vector{Expression}(undef, length(elements))
   local var::VariabilityType
   local ty1::NFType = TYPE_UNKNOWN()
   local ty2::NFType
@@ -2277,12 +2276,11 @@ function typeArray(
     tys[n] = ty2
     n += 1
   end
-  n = n - 1
-  for n in reverse(1:n)
-    local e = expV[n]
-    ty2 = tys[n]
+  for i in 1:length(expV)
+    local e = expV[i]
+    ty2 = tys[i]
     (exp, _, mk) = matchTypes(ty2, ty1, e)
-    expV[n] = exp
+    expV[i] = exp
     if true ## !Config.getGraphicsExpMode()
       if isIncompatibleMatch(mk)
         @info "Incompat types"
@@ -2291,8 +2289,8 @@ function typeArray(
           list(
             String(n),
             toString(exp),
-            Type.toString(ty2),
-            Type.toString(ty1),
+            toString(ty2),
+            toString(ty1),
           ),
           info,
         )
@@ -2756,7 +2754,6 @@ function typeIfExpression(
 )#::Tuple{Expression, NFType, VariabilityType}
   local var::VariabilityType
   local ty::NFType
-
   local cond::Expression
   local tb::Expression
   local fb::Expression
@@ -2770,7 +2767,7 @@ function typeIfExpression(
   local tb_var::VariabilityType
   local fb_var::VariabilityType
   local ty_match::MatchKindType
-
+  #@info "typeIfExpression:" toString(ifExp)
   @match IF_EXPRESSION(condition = cond, trueBranch = tb, falseBranch = fb) =
     ifExp
    next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
@@ -2786,17 +2783,16 @@ function typeIfExpression(
     )
     fail()
   end
-  if cond_var <= Variability.STRUCTURAL_PARAMETER &&
-     !contains(cond, isNonConstantIfCondition)
+  if cond_var <= Variability.STRUCTURAL_PARAMETER && !contains(cond, isNonConstantIfCondition)
     if evaluateCondition(cond, origin, info)
        (ifExp, ty, var) = typeExp(tb, next_origin, info)
     else
        (ifExp, ty, var) = typeExp(fb, next_origin, info)
     end
   else
-     (tb, tb_ty, tb_var) = typeExp(tb, next_origin, info)
-     (fb, fb_ty, fb_var) = typeExp(fb, next_origin, info)
-     (tb2, fb2, ty, ty_match) = matchExpressions(tb, tb_ty, fb, fb_ty)
+    (tb, tb_ty, tb_var) = typeExp(tb, next_origin, info)
+    (fb, fb_ty, fb_var) = typeExp(fb, next_origin, info)
+    (tb2, fb2, ty, ty_match) = matchExpressions(tb, tb_ty, fb, fb_ty)
     if isIncompatibleMatch(ty_match)
       if cond_var <= Variability.PARAMETER
          (ifExp, ty, var) = if evaluateCondition(cond, origin, info)
@@ -2810,9 +2806,9 @@ function typeIfExpression(
           list(
             "",
             toString(tb),
-            Type.toString(tb_ty),
+            toString(tb_ty),
             toString(fb),
-            Type.toString(fb_ty),
+            toString(fb_ty),
           ),
           info,
         )
@@ -2820,8 +2816,7 @@ function typeIfExpression(
       end
     else
        ifExp = IF_EXPRESSION(cond, tb2, fb2)
-       var =
-        variabilityMax(cond_var, variabilityMax(tb_var, fb_var))
+       var = variabilityMax(cond_var, variabilityMax(tb_var, fb_var))
     end
   end
   #=  If the condition is constant, always do branch selection.

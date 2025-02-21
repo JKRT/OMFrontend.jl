@@ -68,30 +68,29 @@ end
 
 function hasInfo(target::EvalTarget)::Bool
   local hasInfo::Bool
-
   hasInfo = begin
     @match target begin
-      DIMENSION(__) => begin
+      EVALTARGET_DIMENSION(__) => begin
         true
       end
 
-      ATTRIBUTE(__) => begin
+      EVALTARGET_ATTRIBUTE(__) => begin
         true
       end
 
-      RANGE(__) => begin
+      EVALTARGET_RANGE(__) => begin
         true
       end
 
-      CONDITION(__) => begin
+      EVALTARGET_CONDITION(__) => begin
         true
       end
 
-      GENERIC(__) => begin
+      EVALTARGET_GENERIC(__) => begin
         true
       end
 
-      STATEMENT(__) => begin
+      EVALTARGET_STATEMENT(__) => begin
         true
       end
 
@@ -169,7 +168,12 @@ end
 function evalExp(
   exp::Expression,
   target::EvalTarget = EVALTARGET_IGNORE_ERRORS(),
-)::Expression
+  )::Expression
+  if Base.contains(toString(exp), "Modelica.Mechanics.MultiBody.Frames.axesRotations(boxBody1.body.sequence_start")
+    @info "evalExp:"
+    println(toString(exp))
+    #fail()
+  end
   exp = getBindingExp(evalExp_impl(exp, target))
   return exp
 end
@@ -2355,11 +2359,13 @@ end
 function evalCall(call::Call, target::EvalTarget)::Expression
   local exp::Expression
   local c::Call = call
+  # @info "evalCall..."
+  # println(replace(toString(call), "\n\n" => "\n"))
   exp = begin
     local args::List{Expression}
     @match c begin
       TYPED_CALL(__) => begin
-        cArgs = list(evalExp_impl(arg, target) for arg in c.arguments)
+        cArgs = Expression[evalExp_impl(arg, target) for arg in c.arguments]
         c = TYPED_CALL(c.fn, c.ty, c.var, cArgs, c.attributes)
         if isBuiltin(c.fn)
           bindingExpMap(
@@ -2392,7 +2398,7 @@ end
 function evalxp(callExp::Expression, target::EvalTarget)::Expression
   local result::Expression
   local fn::M_Function
-  local args::List{Expression}
+  local args::Vector{Expression}
   @match CALL_EXPRESSION(call = TYPED_CALL(fn = fn, arguments = args)) = callExp
   result = eval(fn, args, target)
   return result
@@ -2400,21 +2406,19 @@ end
 
 function eval(
   fn::M_Function,
-  args::List{Expression},
+  args::Vector{Expression},
   target::EvalTarget,
 )::Expression
   local result::Expression
-
   local fn_path::Absyn.Path = nameConsiderBuiltin(fn)
-
    result = begin
     @match AbsynUtil.pathFirstIdent(fn_path) begin
       "abs" => begin
-        evalBuiltinAbs(listHead(args))
+        evalBuiltinAbs(Base.first(args))
       end
 
       "acos" => begin
-        evalBuiltinAcos(listHead(args), target)
+        evalBuiltinAcos(Base.first(args), target)
       end
 
       "array" => begin
@@ -2422,7 +2426,7 @@ function eval(
       end
 
       "asin" => begin
-        evalBuiltinAsin(listHead(args), target)
+        evalBuiltinAsin(Base.first(args), target)
       end
 
       "atan2" => begin
@@ -2430,31 +2434,31 @@ function eval(
       end
 
       "atan" => begin
-        evalBuiltinAtan(listHead(args))
+        evalBuiltinAtan(Base.first(args))
       end
 
       "cat" => begin
-        evalBuiltinCat(listHead(args), listRest(args), target)
+        evalBuiltinCat(Base.first(args), args[2:end]#=TODO: Check if views can be used.=#, target)
       end
 
       "ceil" => begin
-        evalBuiltinCeil(listHead(args))
+        evalBuiltinCeil(Base.first(args))
       end
 
       "cosh" => begin
-        evalBuiltinCosh(listHead(args))
+        evalBuiltinCosh(Base.first(args))
       end
 
       "cos" => begin
-        evalBuiltinCos(listHead(args))
+        evalBuiltinCos(Base.first(args))
       end
 
       "der" => begin
-        evalBuiltinDer(listHead(args))
+        evalBuiltinDer(Base.first(args))
       end
 
       "diagonal" => begin
-        evalBuiltinDiagonal(unbox(listHead(args)))
+        evalBuiltinDiagonal(unbox(Base.first(args)))
       end
 
       "div" => begin
@@ -2462,7 +2466,7 @@ function eval(
       end
 
       "exp" => begin
-        evalBuiltinExp(listHead(args))
+        evalBuiltinExp(Base.first(args))
       end
 
       "fill" => begin
@@ -2470,31 +2474,31 @@ function eval(
       end
 
       "floor" => begin
-        evalBuiltinFloor(listHead(args))
+        evalBuiltinFloor(Base.first(args))
       end
 
       "identity" => begin
-        evalBuiltinIdentity(listHead(args))
+        evalBuiltinIdentity(Base.first(args))
       end
 
       "integer" => begin
-        evalBuiltinInteger(listHead(args))
+        evalBuiltinInteger(Base.first(args))
       end
 
       "Int" => begin
-        evalBuiltinIntegerEnum(listHead(args))
+        evalBuiltinIntegerEnum(Base.first(args))
       end
 
       "log10" => begin
-        evalBuiltinLog10(listHead(args), target)
+        evalBuiltinLog10(Base.first(args), target)
       end
 
       "log" => begin
-        evalBuiltinLog(listHead(args), target)
+        evalBuiltinLog(Base.first(args), target)
       end
 
       "matrix" => begin
-        evalBuiltinMatrix(listHead(args))
+        evalBuiltinMatrix(Base.first(args))
       end
 
       "max" => begin
@@ -2510,7 +2514,7 @@ function eval(
       end
 
       "noEvent" => begin
-        listHead(args)
+        Base.first(args)
       end
 
       "ones" => begin
@@ -2518,7 +2522,7 @@ function eval(
       end
 
       "product" => begin
-        evalBuiltinProduct(listHead(args))
+        evalBuiltinProduct(Base.first(args))
       end
 
       "promote" => begin
@@ -2534,19 +2538,19 @@ function eval(
       end
 
       "sign" => begin
-        evalBuiltinSign(listHead(args))
+        evalBuiltinSign(Base.first(args))
       end
 
       "sinh" => begin
-        evalBuiltinSinh(listHead(args))
+        evalBuiltinSinh(Base.first(args))
       end
 
       "sin" => begin
-        evalBuiltinSin(listHead(args))
+        evalBuiltinSin(Base.first(args))
       end
 
       "skew" => begin
-        evalBuiltinSkew(listHead(args))
+        evalBuiltinSkew(Base.first(args))
       end
 
       "smooth" => begin
@@ -2554,7 +2558,7 @@ function eval(
       end
 
       "sqrt" => begin
-        evalBuiltinSqrt(listHead(args))
+        evalBuiltinSqrt(Base.first(args))
       end
 
       "String" => begin
@@ -2562,27 +2566,27 @@ function eval(
       end
 
       "sum" => begin
-        evalBuiltinSum(listHead(args))
+        evalBuiltinSum(Base.first(args))
       end
 
       "symmetric" => begin
-        evalBuiltinSymmetric(listHead(args))
+        evalBuiltinSymmetric(Base.first(args))
       end
 
       "tanh" => begin
-        evalBuiltinTanh(listHead(args))
+        evalBuiltinTanh(Base.first(args))
       end
 
       "tan" => begin
-        evalBuiltinTan(listHead(args))
+        evalBuiltinTan(Base.first(args))
       end
 
       "transpose" => begin
-        evalBuiltinTranspose(listHead(args))
+        evalBuiltinTranspose(Base.first(args))
       end
 
       "vector" => begin
-        evalBuiltinVector(listHead(args))
+        evalBuiltinVector(Base.first(args))
       end
 
       "zeros" => begin
@@ -2655,18 +2659,16 @@ end
 
 function evalNormalCallExp(callExp::Expression)::Expression
   local result::Expression
-
   local fn::M_Function
-  local args::List{Expression}
-  @match CALL_EXPRESSION(call = TYPED_CALL(fn = fn, arguments = args)) =
-    callExp
+  local args::Vector{Expression}
+  @match CALL_EXPRESSION(call = TYPED_CALL(fn = fn, arguments = args)) = callExp
   result = evalNormalCall(fn, args)
   return result
 end
 
-function evalNormalCall(fn::M_Function, args::List{Expression})::Expression
+function evalNormalCall(fn::M_Function, args::Vector{Expression})::Expression
   #@info "Evaluating..."  string(toFlatString(fn))
-  local result::Expression = evaluate(fn, args)
+  local result::Expression = evaluate(fn, args) #=TODO: Fix the interface here later.=#
   #@info "Result was:" string(toFlatString(result))
   return result
 end
@@ -2725,9 +2727,7 @@ end
 
 function evalBuiltinArray(args::List{Expression})::Expression
   local result::Expression
-
   local ty::M_Type
-
    ty = typeOf(listHead(args))
    ty = liftArrayLeft(ty, P_Dimension.Dimension.fromInteger(listLength(args)))
    result = makeArray(ty, args, literal = true)
@@ -2806,7 +2806,7 @@ end
 
 function evalBuiltinCat(
   argN::Expression,
-  args::List{Expression},
+  args::Vector{Expression},
   target::EvalTarget,
 )::Expression
   local result::Expression
@@ -2814,11 +2814,10 @@ function evalBuiltinCat(
   local nd::Int
   local sz::Int
   local ty::M_Type
-  local es::List{Expression}
+  local es::Vector{Expression}
   local dims::List{Int}
-  #print("Calling evalbuiltincat!\n")
   @match INTEGER_EXPRESSION(n) = argN
-  ty = typeOf(listHead(args))
+  ty = typeOf(Base.first(args))
   nd = dimensionCount(ty)
   if n > nd || n < 1
     if hasInfo(target)
@@ -2830,12 +2829,12 @@ function evalBuiltinCat(
     end
     fail()
   end
-  es = list(e for e in args if !isEmptyArray(e))
-  sz = listLength(es)
+  es = Expression[e for e in args if !isEmptyArray(e)]
+  sz = length(es)
   if sz == 0
-    result = listHead(args)
+    result = Base.first(args)
   elseif sz == 1
-    result = listHead(es)
+    result = Base.first(es)
   else
     # print("\nBEFORE EVAL CAT {");
     # for e in es
@@ -2861,9 +2860,9 @@ function evalBuiltinCat(
     #   print(",")
     # end
     # print("}\n")
-    result = arrayFromList(
+    result = arrayFromVector(
       es,
-      typeOf(listHead(es)),
+      typeOf(Base.first(es)),
       list(fromInteger(d) for d in dims),
     )
   end
@@ -3059,33 +3058,28 @@ function evalBuiltinExp(arg::Expression)::Expression
   return result
 end
 
-function evalBuiltinFill(args::List{Expression})::Expression
+function evalBuiltinFill(args::Vector{Expression})::Expression
   local result::Expression
-
-   result = evalBuiltinFill2(listHead(args), listRest(args))
+  result = evalBuiltinFill2(Base.first(args), args[2:end])
   return result
 end
 
-function evalBuiltinFill2(fillValue::Expression, dims::List{Expression})::Expression
+function evalBuiltinFill2(fillValue::Expression, dims::Vector{Expression})::Expression
   local result::Expression = fillValue
-
   local dim_size::Int
-  local arr::List{Expression}
+  local arr::Vector{Expression}
   local arr_ty::M_Type = typeOf(result)
-
-  for d in listReverse(dims)
+  for d in reverse(dims)
     dim_size = begin
       @match d begin
-        INTEGER_EXPRESSION(value = dim_size) => begin
-          dim_size
-        end
+        INTEGER_EXPRESSION(value = dim_size) => dim_size
         _ => begin
           printWrongArgsError(getInstanceName(), list(d), sourceInfo())
           fail()
         end
       end
     end
-    arr = list(result for e = 1:dim_size)
+    arr = Expression[result for e = 1:dim_size]
     arr_ty = liftArrayLeft(arr_ty, fromInteger(dim_size))
     result = makeArray(
       arr_ty,
@@ -4797,34 +4791,33 @@ end
   Custom reimplementation of evalCat
   @author johti17
 """
-function evalCat(dim::Int, exps::List{Expression}, getArrayContents::Function, toString::Function)::Tuple{List{Expression}, List{Int}}
+function evalCat(dim::Int,
+                 exps::Vector{Expression},
+                 getArrayContents::Function,
+                 toString::Function)::Tuple{Vector{Expression}, List{Int}}
 
   if dim > 1
     local jlmatrix = modelicaMatrixToJuliaMatrix(exps)::Matrix{ARRAY_EXPRESSION}
     local matrixCat = Base.cat(jlmatrix; dims = dim)
-    local outExps = jlMatrixToModelicaArrayExpLists(matrixCat)
+    local outExps = jlMatrixToModelicaArrayExpVector(matrixCat)
     #= Convert the outExps to a flat array =#
-    local outDims = list(length(outExps), length(listHead(outExps).elements))
-    local outExpsAsList = arrayList(Base.map((x) -> x.elements, outExps))
-    local outExpFlat = nil
-    for lst in outExpsAsList
-      for e in lst
-        outExpFlat = e <| outExpFlat
+    local outDims = list(length(outExps), length(Base.first(outExps).elements))
+    local outExpsAsVector = Base.map((x) -> x.elements, outExps)
+    local outExpFlat = Expression[]
+    for vec in outExpsAsVector
+      for e in vec
+        push!(outExpFlat, e)
       end
     end
-    outExpFlat = listReverse(outExpFlat)
-    local outDims = list(length(outExps), length(listHead(outExps).elements))
+    local outDims = list(length(outExps), length(Base.first(outExps).elements))
   else
-    local outExpsAsList = arrayList(Base.map(x-> x.elements, exps))
-    local outExpFlat = nil
-    for lst in outExpsAsList
-      #println(lst)
-      for arrs in lst
-        outExpFlat = arrs <| outExpFlat
+    local outExpsAsVector = Base.map(x-> x.elements, exps)
+    local outExpFlat = Expression[]
+    for vec in outExpsAsVector
+      for arrs in vec
+        push!(outExpFlat, arrs)
       end
     end
-    outExpFlat = listReverse(outExpFlat)
-    #println(toString(outExpsAsList))
     local outDims = list(length(outExpFlat))
   end
   return (outExpFlat, outDims)

@@ -111,7 +111,7 @@ function handleOverconstrainedConnections(flatModel::FlatModel,
   local graph::NFOCConnectionGraph = EMPTY
   local lhs::ComponentRef
   local lhs_crefs::List{ComponentRef}
-  local lst::List{Expression}
+  local lst::Vector{Expression}
   local msg::Expression
   local nameStr::String
   local origin::ORIGIN_Type
@@ -138,15 +138,16 @@ function handleOverconstrainedConnections(flatModel::FlatModel,
     eql = begin
       @match eq begin
         EQUATION_NORETCALL(exp = CALL_EXPRESSION(call && TYPED_CALL(arguments = lst)), source = source)  => begin
+          lst2 = arrayList(lst)
           begin
             @match identifyConnectionsOperator(name(call.fn)) begin
               ConnectionsOperator.ROOT  => begin
-                @match CREF_EXPRESSION(cref = cref) <| nil = lst
+                @match CREF_EXPRESSION(cref = cref) <| nil = lst2
                 graph = addDefiniteRoot(cref, print_trace, graph)
                 eql
               end
               ConnectionsOperator.POTENTIAL_ROOT  => begin
-                @match arg1 <| arg2 <| nil = lst
+                @match arg1 <| arg2 <| nil = lst2
                 @match CREF_EXPRESSION(cref = cref) = arg1
                 @match INTEGER_EXPRESSION(value = priority) = evalExp(arg2)
                 graph = addPotentialRoot(cref, priority, print_trace, graph)
@@ -154,7 +155,7 @@ function handleOverconstrainedConnections(flatModel::FlatModel,
               end
               ConnectionsOperator.UNIQUE_ROOT  => begin
                 graph = begin
-                  @match lst begin
+                  @match lst2 begin
                     root && CREF_EXPRESSION(cref = cref) <|  nil()  => begin
                       addUniqueRoots(root, STRING_EXPRESSION(""), print_trace, graph)
                     end
@@ -167,7 +168,7 @@ function handleOverconstrainedConnections(flatModel::FlatModel,
                 eql
               end
               ConnectionsOperator.BRANCH  => begin
-                @match CREF_EXPRESSION(cref = lhs) <| CREF_EXPRESSION(cref = rhs) <| nil = lst
+                @match CREF_EXPRESSION(cref = lhs) <| CREF_EXPRESSION(cref = rhs) <| nil = lst2
                 graph = addBranch(lhs, rhs, print_trace, graph)
                 eql
               end
@@ -257,11 +258,12 @@ function generateEqualityConstraintEquation(clhs::ComponentRef,
             ty2 = getComponentType(rhsArr)
             fcref_rhs = lookupFunctionSimple("equalityConstraint", classScope(node(lhs)))
             (fcref_rhs, fn_node_rhs, _) = instFunctionRef(fcref_rhs, AbsynUtil.dummyInfo)
-            expRHS = CALL_EXPRESSION(UNTYPED_CALL(fcref_rhs, list(CREF_EXPRESSION(ty1, lhsArr), CREF_EXPRESSION(ty2, rhsArr)), nil, fn_node_rhs))
+            expRHS = CALL_EXPRESSION(UNTYPED_CALL(fcref_rhs, Expression[CREF_EXPRESSION(ty1, lhsArr), CREF_EXPRESSION(ty2, rhsArr)], Expression[], fn_node_rhs))
             (expRHS, ty, var) = typeExp(expRHS, origin, AbsynUtil.dummyInfo #=ElementSource_getInfo(source)=#)
             fcref_lhs = lookupFunctionSimple("fill", topScope(node(clhs)))
             (fcref_lhs, fn_node_lhs, _) = instFunctionRef(fcref_lhs, AbsynUtil.dummyInfo #= ElementSource_getInfo(source)=#)
-            expLHS = CALL_EXPRESSION(UNTYPED_CALL(fcref_lhs, _cons(REAL_EXPRESSION(0.0), ListUtil.map(arrayDims(ty), sizeExp)), nil, fn_node_lhs))
+            local argLst = _cons(REAL_EXPRESSION(0.0), ListUtil.map(arrayDims(ty), sizeExp))
+            expLHS = CALL_EXPRESSION(UNTYPED_CALL(fcref_lhs, listArray(argLst), Expression[], fn_node_lhs))
             (expLHS, ty, var) = typeExp(expLHS, origin, AbsynUtil.dummyInfo#=ElementSource_getInfo(source)=#)
             replaceEq = EQUATION_EQUALITY(expRHS, expLHS, ty, source)
             eqsEqualityConstraint = [replaceEq]

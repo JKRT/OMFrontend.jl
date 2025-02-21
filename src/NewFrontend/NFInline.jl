@@ -79,7 +79,7 @@ function inlineSimpleCall(callExp::Expression)::Expression
 #      println("Inline = $(shouldInline) for: " * toString(c))
       #= We might want to inline more things, so check arguments anyway =#
       if !shouldInline
-        local newArgs = list(map(arg, inlineSimpleCall) for arg in arguments)
+        local newArgs = Expression[map(arg, inlineSimpleCall) for arg in arguments]
         callArguments = newArgs
         TYPED_CALL(c.fn, c.ty, c.var, callArguments, c.attributes)
         return CALL_EXPRESSION(call)
@@ -105,7 +105,7 @@ function inlineCall(call::Call)::Expression
   exp = begin
     local fn::M_Function
     local arg::Expression
-    local args::List{Expression}
+    local args::Vector{Expression}
     local inputs::List{InstNode}
     local outputs::List{InstNode}
     local locals::List{InstNode}
@@ -129,7 +129,7 @@ function inlineCall(call::Call)::Expression
           return exp
         end
         Error.assertion(
-          listLength(inputs) == listLength(args),
+          length(inputs) == length(args),
           getInstanceName() +
           " got wrong number of arguments for " +
           AbsynUtil.pathString(name(fn)),
@@ -151,7 +151,7 @@ function inlineCall(call::Call)::Expression
           statement once.
         =#
         for i in inputs
-          @match _cons(arg, args) = args
+          @match [arg, args...] = args
           stmt = mapExp(stmt,
                         (exp) -> map(exp, (exp) -> replaceCrefNode(exp, i, arg)))
         end

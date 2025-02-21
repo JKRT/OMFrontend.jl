@@ -22,9 +22,29 @@ end
 @Uniontype MatchedFunction begin
   @Record MATCHED_FUNC begin
     func::M_FUNCTION
-    args::List{TypedArg}
+    args::Vector{TypedArg}
     mk::FunctionMatchKind
   end
+end
+
+function toString(args::Vector{TypedArg})
+  buffer = IOBuffer()
+  println(buffer, "TypedArg:")
+  for a in args
+    println(buffer, "(", toString(a[1]), ")")
+  end
+  for a in args
+    println(buffer, "(", toString(a[2]), ")")
+  end
+  for a in args
+    println(buffer, "(", toString(a[3]), ")")
+  end
+  println(buffer, "End of TypedArg")
+  return String(take!(buffer))
+end
+
+function toString(s::Nothing)
+  "nothing"
 end
 
 const SlotType = (() -> begin #= Enumeration =#
@@ -1026,7 +1046,7 @@ end
 function matchFunctionsSilent(
   funcs::List{M_Function},
   args::List{TypedArg},
-  named_args::List{TypedNamedArg},
+  named_args::Vector{TypedNamedArg},
   info::SourceInfo,
   vectorize::Bool = true,
   )
@@ -1039,21 +1059,19 @@ end
 
 function matchFunctions(
   funcs::List{M_Function},
-  args::List{<:TypedArg},
-  named_args::List{<:TypedNamedArg},
+  args::Vector{TypedArg},
+  named_args::Vector{TypedNamedArg},
   info::SourceInfo,
   vectorize::Bool = true,
   )
-  local matchedFunctions::List{MatchedFunction}
-  local m_args::List{TypedArg}
+  local matchedFunctions::Vector{MatchedFunction} = MatchedFunction[]
+  local m_args::Vector{TypedArg}
   local matchKind::FunctionMatchKind
   local matched::Bool
-  matchedFunctions = nil
   for func in funcs
     (m_args, matchKind) = matchFunction(func, args, named_args, info, vectorize)
     if isValid(matchKind)
-      matchedFunctions =
-        _cons(MATCHED_FUNC(func, m_args, matchKind), matchedFunctions)
+      matchedFunctions = push!(matchedFunctions, MATCHED_FUNC(func, m_args, matchKind))
     end
   end
   return matchedFunctions
@@ -1061,26 +1079,24 @@ end
 
 function matchFunction(
   func::M_FUNCTION,
-  args::List{<:TypedArg},
-  named_args::List{<:TypedNamedArg},
+  args::Vector{TypedArg},
+  named_args::Vector{TypedNamedArg},
   info::SourceInfo,
   vectorize::Bool = true,
-)::Tuple{List{TypedArg}, FunctionMatchKind}
+)::Tuple{Vector{TypedArg}, FunctionMatchKind}
   local matchKind::FunctionMatchKind = NO_MATCH
-  local out_args::List{TypedArg}
-
+  local out_args::Vector{TypedArg}
   local slot_matched::Bool
-
-   (out_args, slot_matched) = fillArgs(args, named_args, func, info)
+  (out_args, slot_matched) = fillArgs(args, named_args, func, info)
   if slot_matched
-     (out_args, matchKind) = matchArgs(func, out_args, info, vectorize)
+    @match (out_args, matchKind) = matchArgs(func, out_args, info, vectorize)
   end
   return (out_args, matchKind)
 end
 
 """
 Helper function to matchArgVectorized. Replaces unknown dimensions in the
-list with size(argExp, dimension index), so that vectorized calls involving
+  list with size(argExp, dimension index), so that vectorized calls involving
 unknown dimensions (e.g. in functions) can be handled correctly.
 """
 function fillUnknownVectorizedDims(
@@ -1160,17 +1176,19 @@ end
 
 function matchArgs(
   func::M_FUNCTION,
-  args::List{<:TypedArg},
+  args::Vector{TypedArg},
   info::SourceInfo,
   vectorize::Bool = true,
-)::Tuple{List{TypedArg}, FunctionMatchKind}
+)::Tuple{Vector{TypedArg}, FunctionMatchKind}
   local funcMatchKind::FunctionMatchKind = EXACT_MATCH
-
+  # @info "matched arguments for function"
+  # println(toFlatString(func))
+  # println(toString(args))
   local comp::Component
   local inputs::List{InstNode} = func.inputs
   local input_node::InstNode
   local arg_idx::Int = 1
-  local checked_args::List{TypedArg} = nil
+  local checked_args = Vector{TypedArg}(undef, length(args))
   local arg_exp::Expression
   local arg_ty::M_Type
   local input_ty::M_Type
@@ -1182,8 +1200,8 @@ function matchArgs(
   local matched::Bool
   local vectorized_args::List{Int} = nil
 
-  for arg in args
-     (arg_exp, arg_ty, arg_var) = arg
+  for (i,arg) in enumerate(args)
+    (arg_exp, arg_ty, arg_var) = arg
     @match _cons(input_node, inputs) = inputs
     @assign comp = component(input_node)
     if arg_var > variability(comp)
@@ -1201,7 +1219,7 @@ function matchArgs(
       #@error "Function argument \"$(toString(arg_exp))\" in call to $(AbsynUtil.pathString(name(func))) has variability
       #        $(variabilityString(arg_var)) which is not a $(variabilityString(variability(comp)))"
       #Errors should not be printed yet.
-      @assign funcMatchKind = NO_MATCH
+      funcMatchKind = NO_MATCH
       return (args, funcMatchKind)
     end
     input_ty = getType(comp)
@@ -1242,7 +1260,7 @@ function matchArgs(
     elseif isGenericMatch(mk)
       funcMatchKind = GENERIC_MATCH
     end
-    checked_args = _cons((arg_exp, ty, arg_var), checked_args)
+    checked_args[i] = (arg_exp, ty, arg_var)
     arg_idx = arg_idx + 1
   end
   #=  Check that the variability of the argument and input parameter matches.
@@ -1261,7 +1279,10 @@ function matchArgs(
     funcMatchKind =
       VECTORIZED_MATCH_KIND(vect_dims, listReverse(vectorized_args), funcMatchKind)
   end
-  args = listReverse(checked_args)
+  args = checked_args #=TODO: Same here can maybe be done inline=#
+  # @info "The checked arguments...."
+  # println(toString(args))
+  # println("***********************")
   return (args, funcMatchKind)
 end
 
@@ -1390,41 +1411,30 @@ function fillDefaultSlot(slot::Slot, slots::Vector{<:Slot}, info::SourceInfo)::T
   return outArg
 end
 
-""" #= Collects the arguments from the given slots. =#"""
-function collectArgs(slots::Vector{<:Slot}, info::SourceInfo)::Tuple{List{TypedArg}, Bool}
+""" Collects the arguments from the given slots. """
+function collectArgs(slots::Vector{<:Slot}, info::SourceInfo)::Tuple{Vector{TypedArg}, Bool}
   local matching::Bool = true
-  local args::List{TypedArg} = nil
-
+  local args::Vector{TypedArg} = TypedArg[]
   local default::Option{Expression}
-  local e::Expression
   local arg::Option{TypedArg}
   local a::TypedArg
   local name::String
-
   for s in slots
     @match SLOT(name = name, default = default, arg = arg) = s
-    @assign args = begin
-      @matchcontinue arg begin
-        SOME(a) => begin
-          _cons(a, args)
-        end
-
-        _ => begin
-          _cons(fillDefaultSlot(s, slots, info), args)
-        end
-
-        _ => begin
-          #=  Use the argument from the call if one was given.
-          =#
-          #=  Otherwise, try to fill the slot with its default argument.
-          =#
-          @assign matching = false
-          args
-        end
+    @matchcontinue arg begin
+      #=  Use the argument from the call if one was given. =#
+      SOME(a) => begin
+        push!(args, a)
+      end
+      #= Otherwise, try to fill the slot with its default argument. =#
+      _ => begin
+        push!(args, fillDefaultSlot(s, slots, info))
+      end
+      _ => begin
+        matching = false
       end
     end
   end
-  @assign args = listReverse(args)
   return (args, matching)
 end
 
@@ -1497,34 +1507,34 @@ function fillNamedArg(
   return (slots, matching)
 end
 
-""" #= Matches the given arguments to the slots in a function, and returns the
-     arguments sorted in the order of the function parameters. =#"""
+"""  Matches the given arguments to the slots in a function, and returns the
+     arguments sorted in the order of the function parameters.
+"""
 function fillArgs(
-  posArgs::List{<:TypedArg},
-  namedArgs::List{<:TypedNamedArg},
+  posArgs::Vector{TypedArg},
+  namedArgs::Vector{TypedNamedArg},
   fn::M_FUNCTION,
   info::SourceInfo,
-)::Tuple{List{TypedArg}, Bool}
+)::Tuple{Vector{TypedArg}, Bool}
   local matching::Bool
-  local args::List{TypedArg} = posArgs
-
+  local args::Vector{TypedArg} = posArgs
   local slot::Slot
   local slots::List{Slot}
   local remaining_slots::List{Slot}
-  local filled_named_args::List{TypedArg}
+  local filled_named_args::Vector{TypedArg}
   local slots_arr::Vector{Slot}
   local pos_arg_count::Int
   local slot_count::Int
   local index::Int = 1
 
-  @assign slots = fn.slots
-  @assign pos_arg_count = listLength(posArgs)
-  @assign slot_count = listLength(slots)
+  slots = fn.slots
+  pos_arg_count = length(posArgs)
+  slot_count = listLength(slots)
   if pos_arg_count > slot_count
-    @assign matching = false
+    matching = false
     return (args, matching)
-  elseif pos_arg_count == slot_count && listEmpty(namedArgs)
-    @assign matching = true
+  elseif pos_arg_count == slot_count && isempty(namedArgs)
+    matching = true
     return (args, matching)
   end
   #=  If we have too many positional arguments it can't possibly match.
@@ -1533,26 +1543,26 @@ function fillArgs(
   =#
   #=  arguments we can just return the list of arguments as it is.
   =#
-  @assign slots_arr = listArray(slots)
+  slots_arr = listArray(slots)
   for arg in args
-    @assign slot = slots_arr[index]
+    slot = slots_arr[index]
     if !positional(slot)
-      @assign matching = false
+      matching = false
       return (args, matching)
     end
     @assign slot.arg = SOME(arg)
-    arrayUpdate(slots_arr, index, slot)
-    @assign index = index + 1
+    slots_arr[index] = slot
+    index = index + 1
   end
   #=  Slot doesn't allow positional arguments (used for some builtin functions).
   =#
   for narg in namedArgs
-     (slots_arr, matching) = fillNamedArg(narg, slots_arr, fn, info)
+    (slots_arr, matching) = fillNamedArg(narg, slots_arr, fn, info)
     if !matching
       return (args, matching)
     end
   end
-   (args, matching) = collectArgs(slots_arr, info)
+  (args, matching) = collectArgs(slots_arr, info)
   return (args, matching)
 end
 
@@ -1667,7 +1677,7 @@ function toFlatStreamHelper(fn::M_FUNCTION, s, fn_name)
 end
 
 function paramTypeString(param::InstNode)::String
-  local str::String = Type.toString(getType(param))
+  local str::String = toString(getType(param))
   return str
 end
 

@@ -73,7 +73,7 @@ struct FlowControlStruct{T}
 end
 const FlowControl = FlowControlStruct{Int}(1,2,3,4,5)
 
-function evaluate(fn::M_Function, args::List{<:Expression})::Expression
+function evaluate(fn::M_Function, args::Vector{Expression})::Expression
   local result::Expression
   if isExternal(fn)
     result = evaluateExternal(fn, args)
@@ -83,7 +83,13 @@ function evaluate(fn::M_Function, args::List{<:Expression})::Expression
   return result
 end
 
-function evaluateNormal(fn::M_Function, args::List{<:Expression})::Expression
+function evaluateNormal(fn::M_Function, args::Vector{Expression})::Expression
+  # @info "Function to evaluate"
+  # println(replace(toFlatString(fn), "\\n" => "\n"))
+  # println("*****************")
+  # @info "Arguments are"
+  # println(replace(toString(args), "\\n" => "\n"))
+  # println("*****************")
   local result::Expression
   local fn_body::Vector{Statement}
   local bindings::List{Binding}
@@ -120,9 +126,10 @@ function evaluateNormal(fn::M_Function, args::List{<:Expression})::Expression
     else
       fail()
     end
-  catch
+  catch e #=TODO: REMOVE THE THROW HERE. ADDED TO CATCH RUNTIME TYPE ERRORS!=#
+    @error e.msg
     P_Pointer.update(call_counter, call_count - 1)
-    fail()
+    throw(e) #Should be a fail call instead
   end
   #=  TODO: Also apply replacements to the replacements themselves, i.e. the
           bindings of the function parameters. But they probably need to be
@@ -133,14 +140,14 @@ function evaluateNormal(fn::M_Function, args::List{<:Expression})::Expression
   return result
 end
 
-function evaluateExternal(fn::M_Function, args::List{<:Expression})::Expression
+function evaluateExternal(fn::M_Function, args::Vector{Expression})::Expression
   local result::Expression
 
   local name::String
   local lang::String
   local output_ref::ComponentRef
   local ann::Option{SCode.Annotation}
-  local ext_args::List{Expression}
+  local ext_args::Vector{Expression}
 
   @match SECTIONS_EXTERNAL(
     name = name,
@@ -150,12 +157,12 @@ function evaluateExternal(fn::M_Function, args::List{<:Expression})::Expression
     ann = ann,
   ) = getSections(getClass(fn.node))
   if lang == "builtin"
-    @assign result = Ceval.evalfn( args, EVALTARGET_IGNORE_ERRORS())
+    result = Ceval.evalfn( args, EVALTARGET_IGNORE_ERRORS())
   elseif isKnownExternalFunc(name, ann)
-    @assign result = evaluateKnownExternal(name, args)
+    result = evaluateKnownExternal(name, args)
   else
     try
-      @assign result = evaluateExternal2(name, fn, args, ext_args)
+      result = evaluateExternal2(name, fn, args, ext_args)
     catch
       Error.assertion(
         false,
@@ -195,7 +202,7 @@ end
 function evaluateRecordConstructor(
   fn::M_Function,
   ty::M_Type,
-  args::List{<:Expression};
+  args::Vector{Expression};
   evaluate::Bool = true,
 )::Expression
   local result::Expression
@@ -203,7 +210,7 @@ function evaluateRecordConstructor(
   local arg::Expression
   local repl_exp::Expression
   local fields::List{Field}
-  local rest_args::List{Expression} = args
+  local rest_args::Vector{Expression} = args
   local inputs::List{InstNode} = fn.inputs
   local locals::List{InstNode} = fn.locals
   local node::InstNode
@@ -213,8 +220,8 @@ function evaluateRecordConstructor(
   Add the inputs and local variables to the replacement tree with their
   respective bindings.
   =#
-  for i in inputs
-    @match _cons(arg, rest_args) = rest_args
+  for (j,i) in enumerate(inputs)
+    arg = rest_args[j]
     repl = ReplTree.add(repl, i, arg)
   end
   for l in locals
@@ -245,31 +252,30 @@ function evaluateRecordConstructor(
   return result
 end
 
-function createReplacements(fn::M_Function, args::List{<:Expression})::ReplTree.Tree
+function createReplacements(fn::M_Function, args::Vector{Expression})::ReplTree.Tree
   local repl::ReplTree.Tree
 
   local arg::Expression
-  local rest_args::List{Expression} = args
+  local rest_args::Vector{Expression} = args
 
-  @assign repl = ReplTree.new()
+  repl = ReplTree.new()
   #=  Add inputs to the replacement tree. Since they can't be assigned to the
+    replacements don't need to be mutable.
   =#
-  #=  replacements don't need to be mutable.
-  =#
-  for i in fn.inputs
-    @match _cons(arg, rest_args) = rest_args
-    @assign repl = addInputReplacement(i, arg, repl)
+  for (j,i) in enumerate(fn.inputs)
+    arg = rest_args[j]
+    repl = addInputReplacement(i, arg, repl)
   end
-  #=  Add outputs and local variables to the replacement tree. These do need to
-  =#
-  #=  be mutable to allow assigning to them.
+  #=
+  Add outputs and local variables to the replacement tree. These do need to
+  be mutable to allow assigning to them.
   =#
   #@info "Outputs was..." typeof(fn.outputs)
   #@info "REPL TREE BEFORE:" ReplTree.printTreeStr(repl)
-  @assign repl = ListUtil.fold(fn.outputs, addMutableReplacement, repl)
+  repl = ListUtil.fold(fn.outputs, addMutableReplacement, repl)
   #@info "Done..."
   #@info "REPL TREE:" ReplTree.printTreeStr(repl)
-  @assign repl = ListUtil.fold(fn.locals, addMutableReplacement, repl)
+  repl = ListUtil.fold(fn.locals, addMutableReplacement, repl)
   #=  Apply the replacements to the replacements themselves. This is done after
   =#
   #=  building the tree to make sure all the replacements are available.
@@ -444,13 +450,11 @@ function applyReplacements(repl::ReplTree.Tree, fnBody::Vector{Statement})
 end
 
 function applyReplacements2(repl::ReplTree.Tree, exp::Expression)::Expression
-
-  @assign exp = begin
+  exp = begin
     @match exp begin
       CREF_EXPRESSION(__) => begin
         applyReplacementCref(repl, exp.cref, exp)
       end
-
       _ => begin
         exp
       end
@@ -465,14 +469,11 @@ function applyReplacementCref(
   exp::Expression,
 )::Expression
   local outExp::Expression
-
   local cref_parts::List{ComponentRef}
   local repl_exp::Option{Expression}
   local parent::InstNode
   local nodeVar::InstNode
-
-  #=  Explode the cref into a list of parts in reverse order.
-  =#
+  #=  Explode the cref into a list of parts in reverse order. =#
   @assign cref_parts = toListReverse(cref)
   #=  If the list is empty it's probably an iterator or _, which shouldn't be replaced.
   =#
@@ -527,7 +528,7 @@ function applyReplacementCref(
 end
 
 function optimizeBody(body::Vector{Statement})
-  body = [map(s, optimizeStatement) for s in body]
+  body = Statement[map(s, optimizeStatement) for s in body]
   return body
 end
 

@@ -815,18 +815,18 @@ function expandBuiltinPromote(args::List{<:Expression})::Tuple{Expression, Bool}
   return (exp, expanded)
 end
 
-function expandBuiltinCat(args::List{<:Expression}, call::Call)::Tuple{Expression, Bool}
-#=
+function expandBuiltinCat(args::Vector{Expression}, call::Call)::Tuple{Expression, Bool}
+  #=
   This relies on the fact that Ceval.evalBuiltinCat doesn't actually do any
   actual constant evaluation, and works on non-constant arrays too as long
   as they're expanded.
   =#
   local expanded::Bool
   local exp::Expression
-  local expl::List{Expression} = nil
-  (expl, expanded) = expandList(listRest(args))
+  local expV = Expression[]
+  (expV, expanded) = expandVector(args[2:end]) #TODO: See if view can be used here
   if expanded
-    exp = evalBuiltinCat(listHead(args), expl, EVALTARGET_IGNORE_ERRORS())
+    exp = evalBuiltinCat(Base.first(args), expV, EVALTARGET_IGNORE_ERRORS())
   else
     (exp, _) = expandGeneric(CALL_EXPRESSION(call))
   end
@@ -835,7 +835,7 @@ end
 
 function expand(
   fn::M_Function,
-  args::List{<:Expression},
+  args::Vector{Expression},
   call::Call,
   )::Tuple{Expression, Bool}
   local expanded::Bool

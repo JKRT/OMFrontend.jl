@@ -143,7 +143,7 @@ end
 
 function simplifyCall(@nospecialize(callExp::Expression))
   local call::Call
-  local args::List{Expression}
+  local args::Vector{Expression}
   local builtin::Bool
   local is_pure::Bool
   @match CALL_EXPRESSION(call = call) = callExp
@@ -151,11 +151,11 @@ function simplifyCall(@nospecialize(callExp::Expression))
     @match call begin
       TYPED_CALL(arguments = args) where {(!isExternal(call))} => begin
         if Flags.isSet(Flags.NF_EXPAND_FUNC_ARGS)
-          args = list(if hasArrayCall(arg)
-                        arg
-                      else
-                        Base.first(expand(arg))
-                      end for arg in args)
+          args = Expression[if hasArrayCall(arg)
+                              arg
+                            else
+                              Base.first(expand(arg))
+                            end for arg in args]
         end
         #=  HACK, TODO, FIXME! handle DynamicSelect properly in OMEdit, then disable this stuff! =#
         if Flags.isSet(Flags.NF_API) && !Flags.isSet(Flags.NF_API_DYNAMIC_SELECT)
@@ -167,7 +167,7 @@ function simplifyCall(@nospecialize(callExp::Expression))
             return
           end
         end
-        args = list(simplify(arg) for arg in args)
+        args = Expression[simplify(arg) for arg in args]
         callArgs = args
         call = TYPED_CALL(call.fn, call.ty, call.var, callArgs, call.attributes)
         builtin = isBuiltin(call.fn)
@@ -176,7 +176,7 @@ function simplifyCall(@nospecialize(callExp::Expression))
         =#
         if builtin
           local scalarize = Flags.isSet(Flags.NF_SCALARIZE)
-          if (is_pure && ListUtil.all(args, isLiteral)) && (scalarize && isScalar(call.ty))
+          if (is_pure && ArrayUtil.all(args, isLiteral)) && (scalarize && isScalar(call.ty))
             try
               callExp = evalCall(call, EVALTARGET_IGNORE_ERRORS())
               callExp = stripBindingInfo(callExp)
@@ -186,13 +186,12 @@ function simplifyCall(@nospecialize(callExp::Expression))
             end
           else
             if Flags.isSet(Flags.NF_SCALARIZE)
-              callExp =
-                simplify(nameConsiderBuiltin(call.fn), args, call)
+              callExp = simplify(nameConsiderBuiltin(call.fn), args, call)
             end
           end
         elseif Flags.isSet(Flags.NF_EVAL_CONST_ARG_FUNCS) &&
                is_pure &&
-               ListUtil.all(args, isLiteral)
+               ArrayUtil.all(args, isLiteral)
           callExp = simplifyCall2(call)
         else
           callExp = CALL_EXPRESSION(call)
@@ -247,7 +246,7 @@ end
 
 function simplify(
   name::Absyn.Path,
-  args::List{<:Expression},
+  args::Vector{Expression},
   call::Call,
 )
   local exp::Expression
@@ -258,13 +257,13 @@ function simplify(
         exp
       end
       "sum" => begin
-        simplifySumProduct(listHead(args), call, isSum = true)
+        simplifySumProduct(Base.first(args), call, isSum = true)
       end
       "product" => begin
-        simplifySumProduct(listHead(args), call, isSum = false)
+        simplifySumProduct(Base.first(args), call, isSum = false)
       end
       "transpose" => begin
-        simplifyTranspose(listHead(args), call)
+        simplifyTranspose(Base.first(args), call)
       end
       _ => begin
         CALL_EXPRESSION(call)

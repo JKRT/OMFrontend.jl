@@ -717,7 +717,9 @@ function promote2(exp::Expression, isArray::Bool, dims::Int, types::List{<:M_Typ
         if expanded
            outExp = promote2(outExp, true, dims, types)
         else
-           outExp = CALL_EXPRESSION(makeTypedCall(NFBuiltinFuncs.PROMOTE, list(exp, INTEGER_EXPRESSION(dims)), variability(exp), listHead(types)))
+          outExp = CALL_EXPRESSION(makeTypedCall(NFBuiltinFuncs.PROMOTE,
+                                                 Expression[exp, INTEGER_EXPRESSION(dims)],
+                                                 variability(exp), listHead(types)))
         end
         outExp
       end
@@ -1692,7 +1694,7 @@ function callContains(call::Call, func::ContainsPred) ::Bool
     local e::Expression
     @match call begin
       UNTYPED_CALL(__)  => begin
-         res = listContains(call.arguments, func)
+         res = vectorContains(call.arguments, func)
         if ! res
           for arg in call.named_args
              (_, e) = arg
@@ -1724,7 +1726,7 @@ function callContains(call::Call, func::ContainsPred) ::Bool
       end
 
       TYPED_CALL(__)  => begin
-        listContains(call.arguments, func)
+        vectorContains(call.arguments, func)
       end
 
       UNTYPED_ARRAY_CONSTRUCTOR(__)  => begin
@@ -1935,10 +1937,10 @@ end
 function mapFoldCallShallow(@nospecialize(call::Call), @nospecialize(func::Function), foldArg::ArgT)  where {ArgT}
   local outCall::Call
   outCall = begin
-    local args::List{Expression}
-    local nargs::List{NamedArg}
-    local targs::List{TypedArg}
-    local tnargs::List{TypedNamedArg}
+    local args::Vector{Expression}
+    local nargs::Vector{NamedArg}
+    local targs::Vector{TypedArg}
+    local tnargs::Vector{TypedNamedArg}
     local s::String
     local e::Expression
     local t::M_Type
@@ -1949,40 +1951,40 @@ function mapFoldCallShallow(@nospecialize(call::Call), @nospecialize(func::Funct
     local oe::Option{Expression}
     @match call begin
       UNTYPED_CALL(__)  => begin
-         (args, foldArg) = ListUtil.mapFold(call.arguments, func, foldArg)
-         nargs = nil
-        for arg in call.named_args
-           (s, e) = arg
-           (e, foldArg) = func(e, foldArg)
-           nargs = _cons((s, e), nargs)
+        (args, foldArg) = ArrayUtil.mapFold(call.arguments, func, foldArg)
+        nargs = Vector{NamedArg}(undef, length(call.named_args))
+        for (i,arg) in enumerate(call.named_args)
+          (s, e) = arg
+          (e, foldArg) = func(e, foldArg)
+          nargs[i] = (s, e)
         end
-        UNTYPED_CALL(call.ref, args, listReverse(nargs), call.call_scope)
+        UNTYPED_CALL(call.ref, args, nargs, call.call_scope)
       end
 
       ARG_TYPED_CALL(__)  => begin
-         targs = nil
-         tnargs = nil
-        for arg in call.arguments
+        targs = Vector{TypedArg}(undef, length(call.arguments))
+        tnargs = Vector{TypedNamedArg}(undef, length(tnargs))
+        for (i, arg) in enumerate(call.arguments)
            (e, t, v) = arg
            (e, foldArg) = func(e, foldArg)
-           targs = _cons((e, t, v), targs)
+           targs[i] = (e, t, v)
         end
-        for arg in call.named_args
-           (s, e, t, v) = arg
-           (e, foldArg) = func(e, foldArg)
-           tnargs = _cons((s, e, t, v), tnargs)
+        for (i,arg) in enumerate(call.named_args)
+          (s, e, t, v) = arg
+          (e, foldArg) = func(e, foldArg)
+          tnargs[i] = (s, e, t, v)
         end
-        ARG_TYPED_CALL(call.ref, listReverse(targs), listReverse(tnargs), call.call_scope)
+        ARG_TYPED_CALL(call.ref, targs, tnargs, call.call_scope)
       end
 
       TYPED_CALL(__)  => begin
-         (args, foldArg) = ListUtil.mapFold(call.arguments, func, foldArg)
+        (args, foldArg) = ArrayUtil.mapFold(call.arguments, func, foldArg)
         TYPED_CALL(call.fn, call.ty, call.var, args, call.attributes)
       end
 
       UNTYPED_ARRAY_CONSTRUCTOR(__)  => begin
-         (e, foldArg) = func(call.exp, foldArg)
-         iters = mapFoldCallIteratorsShallow(call.iters, func, foldArg)
+        (e, foldArg) = func(call.exp, foldArg)
+        iters = mapFoldCallIteratorsShallow(call.iters, func, foldArg)
         UNTYPED_ARRAY_CONSTRUCTOR(e, iters)
       end
 
@@ -3329,8 +3331,8 @@ function mapCallShallow(call::Call, @nospecialize(func::Function))
       end
 
       TYPED_CALL(__)  => begin
-        args = list(func(arg) for arg in call.arguments)
-        TYPED_CALL(call.fn, call.ty, call.var, args, call.attributes)
+        vecArgs = Expression[func(arg) for arg in call.arguments] #TODO: Can also maybe be inlined
+        TYPED_CALL(call.fn, call.ty, call.var, vecArgs, call.attributes)
       end
 
       UNTYPED_ARRAY_CONSTRUCTOR(__)  => begin
@@ -3687,10 +3689,10 @@ end
 function mapCall(call::Call, @nospecialize(func::Function)) ::Call
   local outCall::Call
   outCall = begin
-    local args::List{Expression}
-    local nargs::List{P_Function.NamedArg}
-    local targs::List{P_Function.TypedArg}
-    local tnargs::List{P_Function.TypedNamedArg}
+    local args::Vector{Expression}
+    local nargs::Vector{NamedArg}
+    local targs::Vector{TypedArg}
+    local tnargs::Vector{TypedNamedArg}
     local s::String
     local e::Expression
     local t::M_Type
@@ -3700,14 +3702,14 @@ function mapCall(call::Call, @nospecialize(func::Function)) ::Call
     local fold_exp::Tuple{Option{Expression}, String, String}
     @match call begin
       UNTYPED_CALL(__)  => begin
-        args = list(map(arg, func) for arg in call.arguments)
-        nargs = nil
-        for arg in call.named_args
-           (s, e) = arg
+        args = Expression[map(arg, func) for arg in call.arguments] #TODO: Can maybe be done inline
+        nargs = Vector{NamedArgs}(undef, length(call.named_args))
+        for (i,arg) in enumerate(call.named_args)
+          (s, e) = arg
           e = map(e, func)
-          nargs = _cons((s, e), nargs)
+          nargs[i] = (s, e)
         end
-        UNTYPED_CALL(call.ref, args, listReverse(nargs), call.call_scope)
+        UNTYPED_CALL(call.ref, args, nargs, call.call_scope)
       end
 
       ARG_TYPED_CALL(__)  => begin
@@ -3727,7 +3729,7 @@ function mapCall(call::Call, @nospecialize(func::Function)) ::Call
       end
 
       TYPED_CALL(__)  => begin
-        args = list(map(arg, func) for arg in call.arguments)
+        args = Expression[map(arg, func) for arg in call.arguments]
         TYPED_CALL(call.fn, call.ty, call.var, args, call.attributes)
       end
 
@@ -4968,9 +4970,14 @@ function makeEnumLiteral(enumType::M_Type, index::Int) ::Expression
   literal
 end
 
+function arrayFromList(inExps::List{<:Expression}, elemTy::M_Type, inDims::List{<:Dimension}) ::Expression
+  local outExp::Expression
+  outExp = arrayFromList_impl(inExps, elemTy, listReverse(inDims))
+  outExp
+end
+
 function arrayFromList_impl(inExps::List{<:Expression}, elemTy::M_Type, inDims::List{<:Dimension}) ::Expression
   local outExp::Expression
-
   local ldim::Dimension
   local restdims::List{Dimension}
   local ty::M_Type
@@ -4997,11 +5004,39 @@ function arrayFromList_impl(inExps::List{<:Expression}, elemTy::M_Type, inDims::
   outExp
 end
 
-function arrayFromList(inExps::List{<:Expression}, elemTy::M_Type, inDims::List{<:Dimension}) ::Expression
+"""
+Same as arrayFromList but for ```Vector{Expression}```
+"""
+function arrayFromVector(inExps::Vector{Expression}, elemTy::M_Type, inDims::List{<:Dimension})::Expression
   local outExp::Expression
+  outExp = arrayFromVectorImpl(inExps, elemTy, inDims)
+end
 
-   outExp = arrayFromList_impl(inExps, elemTy, listReverse(inDims))
-  outExp
+function arrayFromVectorImpl(inExps::Vector{Expression},
+                             elemTy::M_Type,
+                             inDims::List{<:Dimension})::Expression
+  local outExp::Expression
+  local ldim::Dimension
+  local restdims::List{Dimension}
+  local ty::M_Type
+  local newVec::Vector{Expression}
+  local partexps #=A Vector of Vectors...=#
+  local dimsize::Int
+  Error.assertion(! listEmpty(inDims), "Empty dimension list given in arrayFromList.", sourceInfo())
+  @match _cons(ldim, restdims) = inDims
+  dimsize = size(ldim)
+  ty = liftArrayLeft(elemTy, ldim)
+  if ListUtil.hasOneElement(inDims)
+    Error.assertion(dimsize == length(inExps), "Length mismatch in arrayFromList.", sourceInfo())
+    outExp = makeArray(ty, inExps)
+    return outExp
+  end
+  partexps = ArrayUtil.partition(inExps, dimsize)
+  newVec = Vector{Expression}(undef, length(partexps))
+  for (i,arrexp) in enumerate(partexps)
+    newVec[i] = makeArray(ty, arrexp)
+  end
+  return arrayFromVectorImpl(newVec, ty, restdims)
 end
 
 function replaceIterator2(exp::Expression, iterator::InstNode, iteratorValue::Expression) ::Expression
@@ -5055,8 +5090,7 @@ function makeSubscriptedExp(subscripts::List{<:Subscript}, exp::Expression) ::Ex
   end
   dim_count = dimensionCount(ty)
   (subs, extra_subs) = mergeList(subscripts, subs, dim_count)
-  #=  Check that the expression has enough dimensions to be subscripted.
-  =#
+  #=  Check that the expression has enough dimensions to be subscripted. =#
   if ! listEmpty(extra_subs)
     Error.assertion(false, getInstanceName() + ": too few dimensions in " + toString(exp) + " to apply subscripts " + toStringList(subscripts), sourceInfo())
   end
@@ -5067,11 +5101,9 @@ end
 
 function applySubscriptIf(subscript::Subscript, exp::Expression, restSubscripts::List{<:Subscript}) ::Expression
   local outExp::Expression
-
   local cond::Expression
   local tb::Expression
   local fb::Expression
-
   @match IF_EXPRESSION(cond, tb, fb) = exp
    tb = applySubscript(subscript, tb, restSubscripts)
    fb = applySubscript(subscript, fb, restSubscripts)
@@ -5394,6 +5426,12 @@ end
 """
 function applySubscript(subscript::Subscript, exp::Expression, restSubscripts::List{<:Subscript} = nil) ::Expression
   local outExp::Expression
+  # @info "Apply subscript:"
+  # println("exp:")
+  # println(toString(exp))
+  # println("subscript:")
+  # println(toString(subscript))
+  # println("*******************")
   outExp = begin
     @match exp begin
       CREF_EXPRESSION(__)  => begin
@@ -7397,7 +7435,7 @@ end
 @author johti17.
 Same as modelicaMatrixToJuliaMatrix, but for matrices represented as a List of Array Expressions.
 """
-function modelicaMatrixToJuliaMatrix(lst::Cons{Expression})
+function modelicaMatrixToJuliaMatrix(lst::Union{Cons{Expression},Vector{Expression}})
   local matrix = Vector{Expression}[]
   #= Convert the list of array expressions into a list of list. =#
   for exp in lst
@@ -7410,6 +7448,7 @@ end
 
 """
   Converts a Matrix of expressions to a list of array expressions.
+  @johti17
 """
 function jlMatrixToModelicaArrayExpLists(jlMatrix::Matrix{ARRAY_EXPRESSION})
   (ncols, nrows) = Base.size(jlMatrix)
@@ -7427,4 +7466,28 @@ function jlMatrixToModelicaArrayExpLists(jlMatrix::Matrix{ARRAY_EXPRESSION})
   lstLst = listReverse(lstLst)
   #println("List list:\n" * toString(lstLst))
   return lstLst
+end
+
+"""
+  Converts a Matrix of expressions to a vector of array expressions.
+  @johti17
+"""
+function jlMatrixToModelicaArrayExpVector(jlMatrix::Matrix{ARRAY_EXPRESSION})
+  (ncols, nrows) = Base.size(jlMatrix)
+  arrayExps::Vector{Expression} = Expression[]
+  local arrArr = ARRAY_EXPRESSION[]
+  for col in eachcol(jlMatrix)
+    for (i,e) in enumerate(col)
+      push!(arrayExps, e)
+    end
+    local arrayExpressionType = arrayExps[1].ty
+    local arrayExpressionLiteral = arrayExps[1].literal
+    (combinedElements) = Base.reduce(vcat,
+                                     Base.map(x -> x.elements, arrayExps))
+    push!(arrArr, ARRAY_EXPRESSION(arrayExpressionType,
+                                      combinedElements,
+                                      arrayExpressionLiteral))
+    arrayExps = Expression[]
+  end
+  return arrArr
 end

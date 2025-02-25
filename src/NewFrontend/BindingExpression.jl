@@ -1176,6 +1176,21 @@ function fillArgs(fillExp::Expression, dims::List{Expression})
   return result
 end
 
+function fillArgsDimVec(fillExp::Expression, dims::Vector{Expression})
+  local dimSize
+  local arr::Vector{Expression} = Expression[]
+  local result = fillExp
+  local arrTy = typeOf(result)
+  local literal::Bool = isLiteral(fillExp)
+  for d in dims#listReverse(dims)
+    dimSize = toInteger(d)
+    arr = Expression[result for e in 1:dimSize]
+    arrTy = liftArrayLeft(arrTy, fromInteger(dimSize))
+    result = makeArray(arrTy, arr, literal = literal)
+  end
+  return result
+end
+
 function isRecordOrRecordArray(exp::Expression) ::Bool
   local isRecord::Bool
   isRecord = begin
@@ -3291,10 +3306,10 @@ end
 function mapCallShallow(call::Call, @nospecialize(func::Function))
   local outCall::Call
   outCall = begin
-    local args::List{Expression}
-    local nargs::List{NamedArg}
-    local targs::List{TypedArg}
-    local tnargs::List{TypedNamedArg}
+    local args::Vector{Expression}
+    local nargs::Vector{NamedArg}
+    local targs::Vector{TypedArg}
+    local tnargs::Vector{TypedNamedArg}
     local s::String
     local e::Expression
     local t::M_Type
@@ -3304,30 +3319,15 @@ function mapCallShallow(call::Call, @nospecialize(func::Function))
     local fold_exp::Tuple{Option{Expression}, String, String}
     @match call begin
       UNTYPED_CALL(__)  => begin
-        args = list(func(arg) for arg in call.arguments)
-        nargs = nil
-        for arg in call.named_args
-           (s, e) = arg
-          e = func(e)
-          nargs = _cons((s, e), nargs)
-        end
-        UNTYPED_CALL(call.ref, args, listReverse(nargs), call.call_scope)
+        args = Expression[func(arg) for arg in call.arguments]
+        nargs = NamedArg[(i, func(j)) for (i,j) in call.named_args]
+        UNTYPED_CALL(call.ref, args, nargs, call.call_scope)
       end
 
       ARG_TYPED_CALL(__)  => begin
-        targs = nil
-        tnargs = nil
-        for arg in call.arguments
-           (e, t, v) = arg
-          e = func(e)
-          targs = _cons((e, t, v), targs)
-        end
-        for arg in call.named_args
-           (s, e, t, v) = arg
-          e = func(e)
-          tnargs = _cons((s, e, t, v), tnargs)
-        end
-        ARG_TYPED_CALL(call.ref, listReverse(targs), listReverse(tnargs), call.call_scope)
+        targs = TypedArg[(func(e), t, v) for (e, t, v) in call.arguments]
+        tnargs = TypedNamedArg[(s, func(e), t, v) for (s, e, t, v) in call.named_args]
+        ARG_TYPED_CALL(call.ref, targs, tnargs, call.call_scope)
       end
 
       TYPED_CALL(__)  => begin
@@ -5009,7 +5009,7 @@ Same as arrayFromList but for ```Vector{Expression}```
 """
 function arrayFromVector(inExps::Vector{Expression}, elemTy::M_Type, inDims::List{<:Dimension})::Expression
   local outExp::Expression
-  outExp = arrayFromVectorImpl(inExps, elemTy, inDims)
+  outExp = arrayFromVectorImpl(inExps, elemTy, listReverse(inDims))
 end
 
 function arrayFromVectorImpl(inExps::Vector{Expression},
@@ -5020,7 +5020,7 @@ function arrayFromVectorImpl(inExps::Vector{Expression},
   local restdims::List{Dimension}
   local ty::M_Type
   local newVec::Vector{Expression}
-  local partexps #=A Vector of Vectors...=#
+  local partexps::Vector{Vector{Expression}} #=A Vector of Vectors...=#
   local dimsize::Int
   Error.assertion(! listEmpty(inDims), "Empty dimension list given in arrayFromList.", sourceInfo())
   @match _cons(ldim, restdims) = inDims
@@ -5036,7 +5036,8 @@ function arrayFromVectorImpl(inExps::Vector{Expression},
   for (i,arrexp) in enumerate(partexps)
     newVec[i] = makeArray(ty, arrexp)
   end
-  return arrayFromVectorImpl(newVec, ty, restdims)
+  outExp = arrayFromVectorImpl(newVec, ty, restdims)
+  return outExp
 end
 
 function replaceIterator2(exp::Expression, iterator::InstNode, iteratorValue::Expression) ::Expression

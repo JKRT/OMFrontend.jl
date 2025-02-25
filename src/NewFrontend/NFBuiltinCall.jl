@@ -393,12 +393,12 @@ function typeStringCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tup
   local callExp::Expression
 
   local arg_ty::M_Type
-  local args::List{TypedArg}
-  local named_args::List{TypedNamedArg}
+  local args::Vector{TypedArg}
+  local named_args::Vector{TypedNamedArg}
   local ty_call::Call
   ty_call = @match ARG_TYPED_CALL(_, args, named_args) = typeNormalCall(call, origin, info)
-  @match _cons((_, arg_ty, _), _) = args
-  @assign arg_ty = arrayElementType(arg_ty)
+  @match [(_, arg_ty, _), rest...] = args
+  arg_ty = arrayElementType(arg_ty)
   if isComplex(arg_ty)
      (callExp, outType, var) = typeOverloadedStringCall(arg_ty, args, named_args, ty_call, origin, info)
   else
@@ -642,28 +642,25 @@ function typeEdgeCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple
   local variability::VariabilityType = Variability.DISCRETE
   local ty::M_Type
   local callExp::Expression
-
   local argtycall::Call
   local fn::M_Function
-  local args::List{TypedArg}
+  local args::Vector{TypedArg}
   local arg::TypedArg
   local fn_node::InstNode
   local ca::CallAttributes
-
-  #=  edge may not be used in a function context.
-  =#
+  #=  edge may not be used in a function context. =#
   if flagSet(origin, ORIGIN_FUNCTION)
     Error.addSourceMessage(Error.EXP_INVALID_IN_FUNCTION, list("edge"), info)
     fail()
   end
    argtycall = typeNormalCall(call, origin, info)
-    #  @match (@match ARG_TYPED_CALL(CREF_EXPRESSION(node = fn_node), args, _) = argtycall) = typeNormalCall(call, origin, info)
+  #  @match (@match ARG_TYPED_CALL(CREF_EXPRESSION(node = fn_node), args, _) = argtycall) = typeNormalCall(call, origin, info)
   args = argtycall.arguments
-  @assign argtycall = matchTypedNormalCall(argtycall, origin, info)
-  @assign ty = typeOf(argtycall)
-  @assign callExp = CALL_EXPRESSION(unboxArgs(argtycall))
+  argtycall = matchTypedNormalCall(argtycall, origin, info)
+  ty = typeOf(argtycall)
+  callExp = CALL_EXPRESSION(unboxArgs(argtycall))
     #@match list(arg) = args
-  arg = listHead(args)
+  arg = Base.first(args)
   if ! isCref(Util.tuple31(arg))
     Error.addSourceMessage(Error.ARGUMENT_MUST_BE_VARIABLE, list("First", "edge", "<REMOVE ME>"), info)
     fail()
@@ -688,7 +685,6 @@ function typeMinMaxCall(name::String, call::Call, origin::ORIGIN_Type, info::Sou
   local var1::VariabilityType
   local var2::VariabilityType
   local mk::Int #TypeCheck.MatchKind
-
   @match UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
   assertNoNamedParams(name, named_args, info)
    (args, ty, var) = begin
@@ -697,7 +693,7 @@ function typeMinMaxCall(name::String, call::Call, origin::ORIGIN_Type, info::Sou
         (arg1, ty1, var) = typeExp(arg1, origin, info)
         ty = arrayElementType(ty1)
         if ! (isArray(ty1) && isBasic(ty))
-          Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list("1", name, "", toString(arg1), Type.toString(ty1), "Any[:, ...]"), info)
+          Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list("1", name, "", toString(arg1), toString(ty1), "Any[:, ...]"), info)
         end
         #=  If the argument is an array with a single element we can just
         =#
@@ -714,14 +710,18 @@ function typeMinMaxCall(name::String, call::Call, origin::ORIGIN_Type, info::Sou
         (arg1, ty1, var1) = typeExp(arg1, origin, info)
         (arg2, ty2, var2) = typeExp(arg2, origin, info)
         if ! isBasic(ty1)
-          Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list("1", name, "", toString(arg1), Type.toString(ty1), "Any"), info)
+          Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list("1", name, "", toString(arg1), toString(ty1), "Any"), info)
         end
         if ! isBasic(ty2)
-          Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list("2", name, "", toString(arg2), Type.toString(ty2), "Any"), info)
+          Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list("2", name, "", toString(arg2), toString(ty2), "Any"), info)
         end
         (arg1, arg2, ty, mk) = matchExpressions(arg1, ty1, arg2, ty2)
         if ! isValidArgumentMatch(mk)
-          Error.addSourceMessage(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), name + "(Any[:, ...]) => Any\\n" + name + "(Any, Any) => Any"), info)
+          Error.addSourceMessage(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(toString(call),
+                                                                               name
+                                                                               + "(Any[:, ...]) => Any\n"
+                                                                               + name
+                                                                               + "(Any, Any) => Any"), info)
         end
         (Expression[arg1, arg2], ty, variabilityMax(var1, var2))
       end
@@ -1069,36 +1069,37 @@ function typeCatCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{
   local ty::M_Type
   local callExp::Expression
   local fn_ref::ComponentRef
-  local args::List{Expression}
-  local res::List{Expression}
-  local named_args::List{NamedArg}
-  local tys::List{M_Type}
+  local args::Vector{Expression}
+  local res::Vector{Expression}
+  local named_args::Vector{NamedArg}
+  local tys::Vector{M_Type}
   local arg::Expression
   local var::VariabilityType
   local mk::MatchKindType
   local fn::M_Function
   local n::Int
+  @info "Calling builtin cat"
   @match UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
   assertNoNamedParams("cat", named_args, info)
-  if listLength(args) < 2
+  if length(args) < 2
     Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(toString(call), "cat(Integer, Any[:,:], ...) => Any[:]"), info)
   end
-  @match _cons(arg, args) = args
+  @match [arg, args...] = args
   (arg, ty, variability) = typeExp(arg, origin, info)
   (arg, ty, mk) = matchTypes(ty, TYPE_INTEGER(), arg)
   if variability > Variability.PARAMETER
     Error.addSourceMessageAndFail(Error.NF_CAT_FIRST_ARG_EVAL, list(toString(arg), variabilityString(variability)), info)
   end
   @match INTEGER_EXPRESSION(n) = evalExp(arg, EVALTARGET_GENERIC(info))
-  res = nil
-  tys = nil
+  res = Expression[]
+  tys = M_Type[]
   for a in args
     (arg, ty, var) = typeExp(a, origin, info)
     variability = variabilityMax(var, variability)
-    res = _cons(arg, res)
-    tys = _cons(ty, tys)
+    res = push!(res, arg)
+    tys = push!(tys, ty)
   end
-  (callExp, ty) = makeCatExp(n, reverse!(listArray(res)), reverse!(listArray(tys)), variability, info)
+  (callExp, ty) = makeCatExp(n, res, tys, variability, info)
   (callExp, ty, variability)
 end
 
@@ -1243,18 +1244,18 @@ function typeInitialStructuralStateCall(call::Call, origin::ORIGIN_Type, info::S
   local variabilityType::VariabilityType = Variability.PARAMETER
   #@debug "Typing..."
   @match UNTYPED_CALL(fn_ref, args, namedArgs) = call
-  if listLength(args) != 1
+  if length(args) != 1
     @error "More then one state passed to initialStructuralState" #=TODO add source info..=#
     throw("Error typing!")
   end
   #@debug "Type the head of the list. A model is used as a parameter"
-  @match CREF_EXPRESSION(ty, argCref) = listHead(args)
+  @match CREF_EXPRESSION(ty, argCref) = Base.first(args)
 
   local arg = CREF_EXPRESSION(TYPE_ANY() #= Reference to the model=#,
                         argCref#=Should be complex but use any for now=#)
   local retType = TYPE_NORETCALL()
   local fn = listHead(typeRefCache(fn_ref))
-  local callExp = CALL_EXPRESSION(makeTypedCall(fn, list(arg), variabilityType, retType))
+  local callExp = CALL_EXPRESSION(makeTypedCall(fn, Expression[arg], variabilityType, retType))
   return (callExp, retType, Variability.PARAMETER#=TODO should change this..=#)
 end
 
@@ -1268,14 +1269,14 @@ Extension:
 function typeRecompilationCall(@nospecialize(call::Call), origin::ORIGIN_Type, info::SourceInfo)
   local variabilityType::VariabilityType = Variability.PARAMETER
   @match UNTYPED_CALL(fn_ref, args, namedArgs) = call
-  if listLength(args) != 2
+  if length(args) != 2
     throw("Error typing! expected two arguments to recompilation")
   end
   #=
     We know we are going to change a parameter of the model we currently are operating on.
     Prepare the SCode for this model so that we can use it later.
   =#
-  @match CREF_EXPRESSION(_, argCref1) = listGet(args, 1)
+  @match CREF_EXPRESSION(_, argCref1) = args[1]
   #=
     Change the variability of argCref1
     to avoid further simplifications in the frontend.
@@ -1285,9 +1286,9 @@ function typeRecompilationCall(@nospecialize(call::Call), origin::ORIGIN_Type, i
   local retType = TYPE_NORETCALL()
   local arg1 = CREF_EXPRESSION(TYPE_ANY() #= Reference to the parameter we are changing=#,
                                newCref #= Should be complex but use any for now=#)
-  (arg2, _, _) = typeExp(listGet(args, 2), origin, info)
+  (arg2, _, _) = typeExp(args[2], origin, info)
   fn = listHead(typeRefCache(fn_ref))
-  callExp = CALL_EXPRESSION(makeTypedCall(fn, list(arg1, arg2), variabilityType, retType))
+  callExp = CALL_EXPRESSION(makeTypedCall(fn, Expression[arg1, arg2], variabilityType, retType))
   return (callExp, retType, variabilityType)
 end
 
@@ -1302,22 +1303,22 @@ A structural transistion have three arguments
 function typeStructuralTransition(call::Call, origin::ORIGIN_Type, info::SourceInfo)
   @match UNTYPED_CALL(fn_ref, args, namedArgs) = call
   local variabilityType::VariabilityType = Variability.PARAMETER
-  if listLength(args) != 3
+  if length(args) != 3
     #=TODO add source info..=#
     @error "To few arguments to initialStructuralState. Three arguments are expected."
     throw("Syntax error: To few arguments to initialStructuralState")
   end
-  @match CREF_EXPRESSION(_, argCref1) = listGet(args, 1)
-  @match CREF_EXPRESSION(_, argCref2) = listGet(args, 2)
+  @match CREF_EXPRESSION(_, argCref1) = args[1]
+  @match CREF_EXPRESSION(_, argCref2) = args[2]
   local arg1 = CREF_EXPRESSION(TYPE_ANY() #= Reference to the model=#,
                                argCref1 #=Should be complex but use any for now=#)
   local arg2 = CREF_EXPRESSION(TYPE_ANY() #= Reference to the model=#,
                                argCref2 #=Should be complex but use any for now=#)
   #= The last expression here is a condition=#
-  local (arg3, _, _) = typeExp(listGet(args, 3), origin, info)
+  local (arg3, _, _) = typeExp(args[3], origin, info)
   local retType = TYPE_NORETCALL()
   local fn = listHead(typeRefCache(fn_ref))
-  local callExp = CALL_EXPRESSION(makeTypedCall(fn, list(arg1, arg2, arg3), variabilityType, retType))
+  local callExp = CALL_EXPRESSION(makeTypedCall(fn, Expression[arg1, arg2, arg3], variabilityType, retType))
   return (callExp, retType, Variability.PARAMETER#=TODO should change this..=#)
 end
 

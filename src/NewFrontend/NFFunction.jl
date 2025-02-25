@@ -220,9 +220,8 @@ function getExactVectorizedMatches(
   return outFuncs
 end
 
-function getExactMatches(matchedFunctions::List{<:MatchedFunction})::List{MatchedFunction}
-  local outFuncs::List{MatchedFunction} =
-    list(mf for mf in matchedFunctions if isExact(mf.mk))
+function getExactMatches(matchedFunctions::Vector{MatchedFunction})::Vector{MatchedFunction}
+  local outFuncs::Vector{MatchedFunction} = MatchedFunction[mf for mf in matchedFunctions if isExact(mf.mk)]
   return outFuncs
 end
 
@@ -1045,12 +1044,12 @@ end
 
 function matchFunctionsSilent(
   funcs::List{M_Function},
-  args::List{TypedArg},
+  args::Vector{TypedArg},
   named_args::Vector{TypedNamedArg},
   info::SourceInfo,
   vectorize::Bool = true,
   )
-  local matchedFunctions::List{MatchedFunction}
+  local matchedFunctions::Vector{MatchedFunction}
   ErrorExt.setCheckpoint("NFFunction:matchFunctions")
   matchedFunctions = matchFunctions(funcs, args, named_args, info, vectorize)
   ErrorExt.rollBack("NFFunction:matchFunctions")

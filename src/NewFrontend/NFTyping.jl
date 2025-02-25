@@ -664,7 +664,7 @@ end
         dim
       end
 
-      DIMENSION_UNKNOWN(__) where {(flagSet(origin, ORIGIN_FUNCTION))} => begin
+     DIMENSION_UNKNOWN(__) where {(flagSet(origin, ORIGIN_FUNCTION))} => begin
         dimension
       end
 
@@ -1910,8 +1910,6 @@ function nthDimensionBoundsChecked(
   local dim_size::Int = dimensionCount(ty)
   local index::Int = dimIndex + offset
   if index < 1 || index > dim_size
-    #println(index)
-    ##println(dim_size)
     dim = DIMENSION_UNKNOWN()
     error = OUT_OF_BOUNDS(dim_size - offset)
   else
@@ -1964,7 +1962,7 @@ function typeCref2(
   origin::ORIGIN_Type,
   info::SourceInfo,
   firstPart::Bool = true,
-)::Tuple{ComponentRef, VariabilityType}
+  )::Tuple{ComponentRef, VariabilityType}
   local subsVariability::VariabilityType
    (cref, subsVariability) = begin
     local rest_cr::ComponentRef
@@ -1984,7 +1982,7 @@ function typeCref2(
       COMPONENT_REF_CREF(node = COMPONENT_NODE(__)) => begin
         if hasCondition(component(cref.node)) && (
           flagNotSet(origin, ORIGIN_CONNECT) ||
-          flagSet(origin, ORIGIN_SUBSCRIPT)
+            flagSet(origin, ORIGIN_SUBSCRIPT)
         )
           Error.addStrictMessage(
             Error.CONDITIONAL_COMPONENT_INVALID_CONTEXT,
@@ -2004,7 +2002,7 @@ function typeCref2(
           else
             ORIGIN_CLASS
           end
-        node_ty = Base.inferencebarrier(typeComponent(cref.node, node_origin))
+        node_ty = typeComponent(cref.node, node_origin) #NOTE: Removed barrier here(!)
         @match (subs, subs_var) =
           typeSubscripts(cref.subscripts, node_ty, cref, origin, info)
         @match (rest_cr, rest_var) = typeCref2(cref.restCref, origin, info, false)
@@ -2309,11 +2307,10 @@ function typeMatrix(
   @nospecialize(elements::Vector{Vector{Expression}}),
   origin::ORIGIN_Type,
   info::SourceInfo,
-)::Tuple{Expression, NFType, VariabilityType}
+  )::Tuple{Expression, NFType, VariabilityType}
   local variability::VariabilityType = Variability.CONSTANT
   local arrayType::NFType = TYPE_UNKNOWN()
   local arrayExp::Expression
-
   local exp::Expression
   local expl::Vector{Expression} = Vector{Expression}(undef, length(elements))
   local res::Vector{Expression} = Vector{Expression}(undef, length(elements))
@@ -2583,7 +2580,6 @@ function typeSize(
 )#Should return ::Tuple{Expression, NFType, VariabilityType}
   local variability::VariabilityType
   local sizeType::NFType
-
   local exp::Expression
   local index::Expression
   local exp_ty::NFType
@@ -2602,7 +2598,7 @@ function typeSize(
          (index, index_ty, variability) = typeExp(index, next_origin, info)
         #=  The second argument must be an Integer.
         =#
-         (index, _, ty_match) =
+        (index, _, ty_match) =
           matchTypes(index_ty, TYPE_INTEGER(), index)
         if isIncompatibleMatch(ty_match)
           Error.addSourceMessage(
@@ -2620,10 +2616,10 @@ function typeSize(
           fail()
         end
         if variability <= Variability.STRUCTURAL_PARAMETER &&
-           !containsIterator(index, origin)
+          !containsIterator(index, origin)
           index = evalExp(index, EVALTARGET_IGNORE_ERRORS())
           @match INTEGER_EXPRESSION(iindex) = index
-           (dim, oexp, ty_err) = typeExpDim(exp, iindex, next_origin, info)
+          (dim, oexp, ty_err) = typeExpDim(exp, iindex, next_origin, info)
           checkSizeTypingError(ty_err, exp, iindex, info)
           if isKnown(dim) && evaluate
             exp = sizeExp(dim)
@@ -2635,8 +2631,7 @@ function typeSize(
             end
              exp = SIZE_EXPRESSION(exp, SOME(index))
           end
-          if flagNotSet(origin, ORIGIN_FUNCTION) ||
-            isKnown(dim)
+          if flagNotSet(origin, ORIGIN_FUNCTION) || isKnown(dim)
              variability = Variability.CONSTANT
           else
              variability = Variability.DISCRETE
@@ -2657,12 +2652,12 @@ function typeSize(
       end
 
       SIZE_EXPRESSION(__) => begin
-         (exp, exp_ty, _) = typeExp(sizeExpArg.exp, next_origin, info)
-         sizeType = Type.sizeType(exp_ty)
+        (exp, exp_ty, _) = typeExp(sizeExpArg.exp, next_origin, info)
+         sizeType = sizeType(exp_ty)
         (SIZE_EXPRESSION(exp, NONE()), sizeType, Variability.PARAMETER)
       end
     end
-  end
+   end
   return (sizeExpArg, sizeType, variability)
 end
 
@@ -3370,8 +3365,8 @@ function typeConnect(
     fail()
   end
    next_origin = setFlag(origin, ORIGIN_CONNECT)
-   (lhs, lhs_ty) = typeConnector(lhsConn, next_origin, info)
-   (rhs, rhs_ty) = typeConnector(rhsConn, next_origin, info)
+  (lhs, lhs_ty) = typeConnector(lhsConn, next_origin, info)
+  (rhs, rhs_ty) = typeConnector(rhsConn, next_origin, info)
   #=  Check that the connectors have matching types, but only if they're not expandable.
   =#
   #=  Expandable connectors can only be type checked after they've been augmented during
@@ -3379,8 +3374,8 @@ function typeConnect(
   #=  the connection handling.
   =#
   if !(isExpandableConnector(lhs_ty) || isExpandableConnector(rhs_ty))
-     (lhs, rhs, _, mk) =
-      matchExpressions(lhs, lhs_ty, rhs, rhs_ty, true#=allowUnknown = true=#)
+    (lhs, rhs, _, mk) =
+       matchExpressions(lhs, lhs_ty, rhs, rhs_ty, true#=allowUnknown = true=#)
     if isIncompatibleMatch(mk)
       Error.addSourceMessage(
         Error.INVALID_CONNECTOR_VARIABLE,
@@ -3402,10 +3397,9 @@ function typeConnector(
   connExp::Expression,
   origin::ORIGIN_Type,
   info::SourceInfo,
-)::Tuple{Expression, NFType}
+  )::Tuple{Expression, NFType}
   local ty::NFType
-
-   (connExp, ty, _) = typeExp(connExp, origin, info)
+  (connExp, ty, _) = typeExp(connExp, origin, info)
   checkConnector(connExp, info)
   return (connExp, ty)
 end

@@ -781,11 +781,6 @@ function typeOf(call::Call)::NFType
 end
 
 function matchTypedNormalCall(call::Call, origin::ORIGIN_Type, info::SourceInfo)::Call
-  if Base.contains(toString(call), "Modelica.Mechanics.MultiBody.Frames.axesRotations(boxBody1.body.sequence_start")
-    @info "Start of matchedtypednormalcall"
-    println(toString(call))
-    println("*****************")
-  end
   local func::M_Function
   local args::Vector{Expression}
   local typed_args::Vector{TypedArg}
@@ -843,14 +838,6 @@ function matchTypedNormalCall(call::Call, origin::ORIGIN_Type, info::SourceInfo)
   if isVectorized(matchedFunc)
     call = vectorizeCall(call, matchedFunc.mk, scope, info)
   end
-  if Base.contains(toString(call), "Modelica.Mechanics.MultiBody.Frames.axesRotations(boxBody1.body.sequence_start")
-    @info "Made call"
-    println(toFlatString(call))
-    println(toString(args))
-    println("The typed args was:")
-    println(toString(typed_args))
-    println("*****************")
-  end
   return call
 end
 
@@ -887,11 +874,6 @@ function makeTypedCall(
 end
 
 function typeNormalCall(call::Call, origin::ORIGIN_Type, info::SourceInfo)::Call
-  if Base.contains(toString(call), "Modelica.Mechanics.MultiBody.Frames.axesRotations(boxBody1.body.sequence_start")
-    @info "Start of typeNormalCall"
-    println(toString(call))
-    println("*****************")
-  end
    call = begin
     local fnl::List{M_Function}
     local is_external::Bool
@@ -998,17 +980,6 @@ function typeCall2(
       end
     end
   end
-
-  if Base.contains(toString(outExp), "Modelica.Mechanics.MultiBody.Frames.axesRotations(boxBody1.body.sequence_start")
-    @info "Made callssdsd"
-    println(toString(outExp.call))
-    println(toString(outExp.call.arguments))
-    for a in outExp.call.arguments
-      println(toString(evalExp(a)))
-    end
-    println("*****************")
-  end
-
   return (outExp, ty, var)
 end
 
@@ -1359,7 +1330,7 @@ end
 function checkMatchingFunctions(call::Call, info::SourceInfo)
   local matchedFunc::MatchedFunction
   local matchedFunctions::Vector{MatchedFunction}
-  local exactMatches::List{MatchedFunction}
+  local exactMatches::Vector{MatchedFunction}
   local func::M_Function
   local allfuncs::List{M_Function}
   local fn_node::InstNode
@@ -1400,29 +1371,13 @@ function checkMatchingFunctions(call::Call, info::SourceInfo)
     end
     fail()
   end
-  #=  Don't show error messages for overloaded functions, it leaks
-  =#
-  #=  implementation details and usually doesn't provide any more info than
-  =#
-  #=  what the \"no match found\" error gives anyway.
-  =#
-  #=  Only show the error message for no matching functions if no other error
-  =#
-  #=  was shown.
-  =#
-  #=  functions that for some reason failed to match without giving any error.
-  =#
-  #=  If we have at least one matching function then we discard all error messages
-  =#
-  #=  about matching. We have one matching func if we reach here.
-  =#
   ErrorExt.rollBack("NFCall:checkMatchingFunctions")
   if length(matchedFunctions) > 1
      exactMatches = getExactMatches(matchedFunctions)
-    if listEmpty(exactMatches)
-       exactMatches = P_MatchedFunction.getExactVectorizedMatches(matchedFunctions)
+    if isempty(exactMatches)
+       exactMatches = getExactVectorizedMatches(matchedFunctions)
     end
-    if listLength(exactMatches) > 1
+    if length(exactMatches) > 1
       Error.addSourceMessage(
         Error.AMBIGUOUS_MATCHING_FUNCTIONS_NFINST,
         list(
@@ -1433,7 +1388,7 @@ function checkMatchingFunctions(call::Call, info::SourceInfo)
       )
       fail()
     end
-    matchedFunc = listHead(exactMatches)
+    matchedFunc = Base.first(exactMatches)
   else
     matchedFunc = Base.first(matchedFunctions)
   end

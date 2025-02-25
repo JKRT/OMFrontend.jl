@@ -333,9 +333,8 @@ function toFlatString(name::String, component::Component; inFunction = false)
   return str
 end
 
-function toString(name::String, component::Component)
+function toString(nameStr::String, component::Component)
   local str::String
-
    str = begin
     local def::SCode.Element
     @match component begin
@@ -346,31 +345,34 @@ function toString(name::String, component::Component)
 
       UNTYPED_COMPONENT(__) => begin
         toString(component.attributes, TYPE_UNKNOWN()) +
-        InstNode.name(component.classInst) +
-        " " +
-        name +
-        ListUtil.toString(
-          arrayList(component.dimensions),
-          P_Dimension.Dimension.toString,
-          "",
-          "[",
+          name(component.classInst) +
+          " " +
+          nameStr +
+          ListUtil.toString(
+            arrayList(component.dimensions),
+            toString,
+            "",
+            "[",
           ", ",
-          "]",
-          false,
-        ) +
-        toString(component.binding, " = ")
+            "]",
+            false,
+          ) +
+            toString(component.binding, " = ")
       end
 
       TYPED_COMPONENT(__) => begin
         toString(component.attributes, component.ty) +
-        toString(component.ty) +
-        " " +
-        name +
-        toString(component.binding, " = ")
+          toString(component.ty) +
+          " " +
+          nameStr +
+          toString(component.binding, " = ")
       end
 
       TYPE_ATTRIBUTE(__) => begin
-        name + toString(component.modifier, #= printName =# false)
+        nameStr + toString(component.modifier, #= printName =# false)
+      end
+      _ => begin
+        "UNKNOWN COMPONENT"
       end
     end
   end

@@ -802,13 +802,14 @@ function expandBuiltinDiagonal(arg::Expression)::Tuple{Expression, Bool}
   return (outExp, expanded)
 end
 
-function expandBuiltinPromote(args::List{<:Expression})::Tuple{Expression, Bool}
+function expandBuiltinPromote(args::Vector{Expression})::Tuple{Expression, Bool}
   local expanded::Bool
   local exp::Expression
   local n::Int
   local eexp::Expression
   local nexp::Expression
-  @match _cons(eexp, _cons(nexp, nil)) = args
+  local rems
+  @match [eexp, nexp, rems...] = args
   @match INTEGER_EXPRESSION(value = n) = nexp
   (eexp, expanded) = expand(eexp)
   (exp, _) = promote(eexp, typeOf(eexp), n)
@@ -1203,9 +1204,9 @@ function expand(@nospecialize(exp::Expression))
 end
 
 
-function expandBuiltinFill(args::List)
+function expandBuiltinFill(args::Vector)
   local expanded = true
   local outExp
-  outExp = fillArgs(listHead(args), listRest(args))
+  outExp = fillArgsDimVec(Base.first(args), args[2:end]) #Can probably use view here.
   return (outExp, expanded)
 end

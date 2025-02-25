@@ -111,7 +111,7 @@ function handleOverconstrainedConnections(flatModel::FlatModel,
   local graph::NFOCConnectionGraph = EMPTY
   local lhs::ComponentRef
   local lhs_crefs::List{ComponentRef}
-  local lst::Vector{Expression}
+  local lst
   local msg::Expression
   local nameStr::String
   local origin::ORIGIN_Type
@@ -138,16 +138,16 @@ function handleOverconstrainedConnections(flatModel::FlatModel,
     eql = begin
       @match eq begin
         EQUATION_NORETCALL(exp = CALL_EXPRESSION(call && TYPED_CALL(arguments = lst)), source = source)  => begin
-          lst2 = arrayList(lst)
+          lst = arrayList(lst)
           begin
             @match identifyConnectionsOperator(name(call.fn)) begin
               ConnectionsOperator.ROOT  => begin
-                @match CREF_EXPRESSION(cref = cref) <| nil = lst2
+                @match CREF_EXPRESSION(cref = cref) <| nil = lst
                 graph = addDefiniteRoot(cref, print_trace, graph)
                 eql
               end
               ConnectionsOperator.POTENTIAL_ROOT  => begin
-                @match arg1 <| arg2 <| nil = lst2
+                @match arg1 <| arg2 <| nil = lst
                 @match CREF_EXPRESSION(cref = cref) = arg1
                 @match INTEGER_EXPRESSION(value = priority) = evalExp(arg2)
                 graph = addPotentialRoot(cref, priority, print_trace, graph)
@@ -155,7 +155,7 @@ function handleOverconstrainedConnections(flatModel::FlatModel,
               end
               ConnectionsOperator.UNIQUE_ROOT  => begin
                 graph = begin
-                  @match lst2 begin
+                  @match lst begin
                     root && CREF_EXPRESSION(cref = cref) <|  nil()  => begin
                       addUniqueRoots(root, STRING_EXPRESSION(""), print_trace, graph)
                     end
@@ -168,7 +168,7 @@ function handleOverconstrainedConnections(flatModel::FlatModel,
                 eql
               end
               ConnectionsOperator.BRANCH  => begin
-                @match CREF_EXPRESSION(cref = lhs) <| CREF_EXPRESSION(cref = rhs) <| nil = lst2
+                @match CREF_EXPRESSION(cref = lhs) <| CREF_EXPRESSION(cref = rhs) <| nil = lst
                 graph = addBranch(lhs, rhs, print_trace, graph)
                 eql
               end
@@ -347,9 +347,14 @@ function handleOverconstrainedConnections_dispatch(inGraph::NFOCConnectionGraph,
     @matchcontinue (inGraph, modelNameQualified, inEquations, inInitialEquations) begin
       (graph, _, eqs, ieqs)  => begin
         if Flags.isSet(Flags.CGRAPH)
-          print("Summary: \\n\\t" + "Nr Roots:           " + intString(listLength(getDefiniteRoots(graph))) + "\\n\\t" + "Nr Potential Roots: " + intString(listLength(getPotentialRoots(graph))) + "\\n\\t" + "Nr Unique Roots:    " + intString(listLength(getUniqueRoots(graph))) + "\\n\\t" + "Nr Branches:        " + intString(listLength(getBranches(graph))) + "\\n\\t" + "Nr Connections:     " + intString(listLength(getConnections(graph))) + "\\n")
+          print("Summary: \\n\\t" + "Nr Roots:           "
+                + intString(listLength(getDefiniteRoots(graph))) + "\\n\\t"
+                + "Nr Potential Roots: " + intString(listLength(getPotentialRoots(graph)))
+                + "\\n\\t" + "Nr Unique Roots:    " + intString(listLength(getUniqueRoots(graph)))
+                + "\\n\\t" + "Nr Branches:        " + intString(listLength(getBranches(graph)))
+                + "\\n\\t" + "Nr Connections:     " + intString(listLength(getConnections(graph))) + "\\n")
         end
-         (roots, connected, broken) = findResultGraph(graph, modelNameQualified)
+        (roots, connected, broken) = findResultGraph(graph, modelNameQualified)
         if Flags.isSet(Flags.CGRAPH)
           print("Roots: " + stringDelimitList(ListUtil.map(roots, toString), ", ") + "\\n")
           print("Broken connections: " + stringDelimitList(ListUtil.map1(broken, printConnectionStr, "broken"), ", ") + "\\n")
@@ -1108,8 +1113,8 @@ function evalConnectionsOperators(inRoots::List{<:ComponentRef}, graph::NFOCConn
         outEquations = tmp
       end
     end
-    outEquations
   end
+    return outEquations
 end
 
 """
@@ -1150,11 +1155,6 @@ function findRootEquations(inRoots::List{<:ComponentRef}, graph::NFOCConnectionG
           end
           outEquations = arrayList(rootEqs)
         end
-      println("***START ROOT EQUATIONS***")
-      for i in rootEqs
-        println(toString(i))
-      end
-        println("**************************")
       end
     end
     outEquations
@@ -1188,10 +1188,14 @@ function evaluateOperatorsReturnTrueIfRoot(exp::Expression
   return wasRooted
 end
 
-""" #= Helper function for evaluation of Connections.rooted, Connections.isRoot, Connections.uniqueRootIndices =#"""
-function evalConnectionsOperatorsHelper(exp::Expression, rooted::NFHashTable.HashTable, roots::List{<:ComponentRef}, graph::NFOCConnectionGraph, info::SourceInfo) ::Expression
+"""
+Helper function for evaluation of Connections.rooted, Connections.isRoot, Connections.uniqueRootIndices.
+"""
+function evalConnectionsOperatorsHelper(exp::Expression,
+                                        rooted::NFHashTable.HashTable,
+                                        roots::List{<:ComponentRef},
+                                        graph::NFOCConnectionGraph, info::SourceInfo)::Expression
   local outExp::Expression
-
   @assign outExp = begin
     local uroots::Expression
     local nodes::Expression
@@ -1201,7 +1205,7 @@ function evalConnectionsOperatorsHelper(exp::Expression, rooted::NFHashTable.Has
     local cref1::ComponentRef
     local result::Bool
     local branches::Edges
-    local lst::List{Expression}
+    local lst::Vector{Expression}
     local call::Call
     local str::String
     @match exp begin
@@ -1209,36 +1213,32 @@ function evalConnectionsOperatorsHelper(exp::Expression, rooted::NFHashTable.Has
         begin
           @match identifyConnectionsOperator(name(call.fn)) begin
             ConnectionsOperator.ROOTED  => begin
-              #=  handle rooted - with zero size array or the normal call
-              =#
+              #= handle rooted - with zero size array or the normal call =#
               @assign res = begin
                 @match call.arguments begin
-                  ARRAY_EXPRESSION(elements =  nil()) <|  nil()  => begin
+                  [ARRAY_EXPRESSION(elements)] where{isempty(elements)} => begin
                     if Flags.isSet(Flags.CGRAPH)
                       print("- NFOCConnectionGraph.evalConnectionsOperatorsHelper: " + toString(exp) + " = false\\n")
                     end
                     BOOLEAN_EXPRESSION(false)
                   end
 
-                  CREF_EXPRESSION(cref = cref) <|  nil()  => begin
-                    #=  normal call
-                    =#
-                    #=  find partner in branches
-                    =#
-                    @assign branches = getBranches(graph)
+                  [CREF_EXPRESSION(cref = cref)]  => begin
+                    #= normal call find partner in branches =#
+                    branches = getBranches(graph)
                     try
-                      @assign cref1 = getEdge(cref, branches)
+                      cref1 = getEdge(cref, branches)
                       if Flags.isSet(Flags.CGRAPH)
                         print("- NFOCConnectionGraph.evalConnectionsOperatorsHelper: Found Branche Partner " + toString(cref) + ", " + toString(cref1) + "\\n")
                       end
-                      @assign result = getRooted(cref, cref1, rooted)
+                      result = getRooted(cref, cref1, rooted)
                       if Flags.isSet(Flags.CGRAPH)
                         print("- NFOCConnectionGraph.evalConnectionsOperatorsHelper: " + toString(exp) + " = " + boolString(result) + "\\n")
                       end
                     catch
-                      @assign str = toString(cref)
+                      str = toString(cref)
                       Error.addSourceMessage(Error.OCG_MISSING_BRANCH, list(str, str, str), info)
-                      @assign result = false
+                      result = false
                     end
                     #=  print(\"- NFOCConnectionGraph.evalConnectionsOperatorsHelper: Found Branche Partner \" +
                     =#
@@ -1256,20 +1256,19 @@ function evalConnectionsOperatorsHelper(exp::Expression, rooted::NFHashTable.Has
               end
               res
             end
-
             ConnectionsOperator.IS_ROOT  => begin
               #=  deal with Connections.isRoot - with zero size array and normal =#
               @assign res = begin
                 @match call.arguments begin
-                  ARRAY_EXPRESSION(elements =  nil()) <|  nil()  => begin
+                  [ARRAY_EXPRESSION(elements)] where{isempty(elements)} => begin
                     if Flags.isSet(Flags.CGRAPH)
                       print("- NFOCConnectionGraph.evalConnectionsOperatorsHelper: " + toString(exp) + " = false\\n")
                     end
                     BOOLEAN_EXPRESSION(false)
                   end
 
-                  CREF_EXPRESSION(cref = cref) <|  nil()  => begin
-                    @assign result = ListUtil.isMemberOnTrue(cref, roots, isEqual)
+                  [CREF_EXPRESSION(cref = cref)] => begin
+                    result = ListUtil.isMemberOnTrue(cref, roots, isEqual)
                     if Flags.isSet(Flags.CGRAPH)
                       print("- NFOCConnectionGraph.evalConnectionsOperatorsHelper: " + toString(exp) + " = " + boolString(result) + "\\n")
                     end
@@ -1284,7 +1283,7 @@ function evalConnectionsOperatorsHelper(exp::Expression, rooted::NFHashTable.Has
               #=  deal with Connections.uniqueRootIndices, TODO! FIXME! actually implement this =#
               @assign res = begin
                 @match call.arguments begin
-                  uroots && ARRAY_EXPRESSION(elements = lst) <| nodes <| message <|  nil()  => begin
+                  uroots && [ARRAY_EXPRESSION(elements = lst), nodes,  message] => begin
                     if Flags.isSet(Flags.CGRAPH)
                       print("- NFOCConnectionGraph.evalConnectionsOperatorsHelper: Connections.uniqueRootsIndicies(" + toString(uroots) + "," + toString(nodes) + "," + toString(message) + ")\\n")
                     end
@@ -1296,14 +1295,12 @@ function evalConnectionsOperatorsHelper(exp::Expression, rooted::NFHashTable.Has
               #=  TODO! FIXME! actually implement this correctly =#
               res
             end
-
             _  => begin
               exp
             end
           end
         end
       end
-
       _  => begin
         exp
       end

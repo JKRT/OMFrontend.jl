@@ -162,6 +162,7 @@ function tryEvalExp(exp::Expression)
   return outExp
 end
 
+
 """
   Evaluates an expression.
 """
@@ -169,12 +170,10 @@ function evalExp(
   exp::Expression,
   target::EvalTarget = EVALTARGET_IGNORE_ERRORS(),
   )::Expression
-  if Base.contains(toString(exp), "Modelica.Mechanics.MultiBody.Frames.axesRotations(boxBody1.body.sequence_start")
-    @info "evalExp:"
-    println(toString(exp))
-    #fail()
-  end
-  exp = getBindingExp(evalExp_impl(exp, target))
+  exp = evalExp_impl(exp, target)
+  #println("evalExp_impl:" * toString(exp))
+  exp = getBindingExp(exp)
+  #println("getBindingExp" * toString(exp))
   return exp
 end
 
@@ -2368,10 +2367,11 @@ function evalCall(call::Call, target::EvalTarget)::Expression
         cArgs = Expression[evalExp_impl(arg, target) for arg in c.arguments]
         c = TYPED_CALL(c.fn, c.ty, c.var, cArgs, c.attributes)
         if isBuiltin(c.fn)
-          bindingExpMap(
+          res = bindingExpMap(
             CALL_EXPRESSION(c),
             @closure (x) -> evalxp(x, target)
           )
+          res
         else
           bindingExpMap(
             CALL_EXPRESSION(c),
@@ -2808,7 +2808,7 @@ function evalBuiltinCat(
   argN::Expression,
   args::Vector{Expression},
   target::EvalTarget,
-)::Expression
+  )::Expression
   local result::Expression
   local n::Int
   local nd::Int
@@ -2842,12 +2842,12 @@ function evalBuiltinCat(
     #   print(",");
     # end
     #   print("}\n");
-    (es, dims) = evalCat(
-      n,
-      es,
-      arrayElements,
-      toString,
-    )
+     (es, dims) = evalCat(
+       n,
+       es,
+       arrayElements,
+       toString,
+     )
     # print("\nEVAL CAT {");
     # for e in es
     #   print(toString(e));
@@ -2865,6 +2865,7 @@ function evalBuiltinCat(
       typeOf(Base.first(es)),
       list(fromInteger(d) for d in dims),
     )
+    #    @info "Made array" toString(result)
   end
   #println("Result:\n" * toString(result))
   return result
@@ -2987,17 +2988,15 @@ function evalBuiltinDiagonal(arg::Expression)::Expression
   return result
 end
 
-function evalBuiltinDiv(args::List{Expression}, target::EvalTarget)::Expression
+function evalBuiltinDiv(args::Vector{Expression}, target::EvalTarget)::Expression
   local result::Expression
-
   local rx::AbstractFloat
   local ry::AbstractFloat
   local ix::Int
   local iy::Int
-
    result = begin
     @match args begin
-      INTEGER_EXPRESSION(ix) <| INTEGER_EXPRESSION(iy) <| nil() => begin
+      [INTEGER_EXPRESSION(ix), INTEGER_EXPRESSION(iy)] => begin
         if iy == 0
           if P_EvalTarget.hasInfo(target)
             Error.addSourceMessage(
@@ -3011,10 +3010,10 @@ function evalBuiltinDiv(args::List{Expression}, target::EvalTarget)::Expression
         INTEGER_EXPRESSION(intDiv(ix, iy))
       end
 
-      REAL_EXPRESSION(rx) <| REAL_EXPRESSION(ry) <| nil() =>
+      [REAL_EXPRESSION(rx), REAL_EXPRESSION(ry)] =>
         begin
           if ry == 0.0
-            if P_EvalTarget.hasInfo(target)
+            if hasInfo(target)
               Error.addSourceMessage(
                 Error.DIVISION_BY_ZERO,
                 list(String(rx), String(ry)),
@@ -3289,18 +3288,17 @@ function evalBuiltinMatrix2(arg::Expression, ty::M_Type)::Expression
   return result
 end
 
-function evalBuiltinMax(args::List{Expression}, fn::M_Function)::Expression
+function evalBuiltinMax(args::Vector{Expression}, fn::M_Function)::Expression
   local result::Expression
   local e1::Expression
   local e2::Expression
-  local expl::List{Expression}
   local ty::M_Type
   result = begin
     @match args begin
-      e1 <| e2 <| nil() => begin
+      [e1, e2] => begin
         evalBuiltinMax2(e1, e2)
       end
-      e1 <| nil() && ARRAY_EXPRESSION(ty = ty) <| nil() => begin
+      [e1] && [ARRAY_EXPRESSION(ty = ty)] => begin
         result = fold(
           e1,
           evalBuiltinMax2,
@@ -3309,7 +3307,7 @@ function evalBuiltinMax(args::List{Expression}, fn::M_Function)::Expression
         if isEmpty(result)
           result = CALL_EXPRESSION(makeTypedCall(
             fn,
-            list(makeEmptyArray(ty)),
+            Expression[makeEmptyArray(ty)],
             Variability.CONSTANT,
             arrayElementType(ty),
           ))
@@ -3479,11 +3477,11 @@ function evalBuiltinMin2(exp1::Expression, exp2::Expression)::Expression
   return result
 end
 
-function evalBuiltinMod(args::List{Expression}, target::EvalTarget)::Expression
+function evalBuiltinMod(args::Vector{Expression}, target::EvalTarget)::Expression
   local result::Expression
   local x::Expression
   local y::Expression
-  @match x <| y <| nil = args
+  @match [x, y] = args
   result = begin
     @match (x, y) begin
       (INTEGER_EXPRESSION(__), INTEGER_EXPRESSION(__)) => begin
@@ -4608,7 +4606,7 @@ function evalSize(
   exp::Expression,
   optIndex::Option{Expression},
   target::EvalTarget,
-)::Expression
+  )::Expression
   local outExp::Expression
   local index_exp::Expression
   local index::Int
@@ -4795,7 +4793,6 @@ function evalCat(dim::Int,
                  exps::Vector{Expression},
                  getArrayContents::Function,
                  toString::Function)::Tuple{Vector{Expression}, List{Int}}
-
   if dim > 1
     local jlmatrix = modelicaMatrixToJuliaMatrix(exps)::Matrix{ARRAY_EXPRESSION}
     local matrixCat = Base.cat(jlmatrix; dims = dim)
@@ -4814,8 +4811,8 @@ function evalCat(dim::Int,
     local outExpsAsVector = Base.map(x-> x.elements, exps)
     local outExpFlat = Expression[]
     for vec in outExpsAsVector
-      for arrs in vec
-        push!(outExpFlat, arrs)
+      for arr in vec
+        push!(outExpFlat, arr)
       end
     end
     local outDims = list(length(outExpFlat))

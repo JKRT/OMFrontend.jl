@@ -47,5 +47,21 @@ function traceln(str::String)
   return Print.printErrorBuf("\\n")
 end
 
+"""
+Author:johti17
+Prints a call expression if it contains the supplied string
+"""
+function printExpIfExpContainsStr(exp::Expression, str::String)
+  if Base.contains(toString(outExp), str)
+    @info "Made callssdsd"
+    println(toString(outExp.call))
+    println(toString(outExp.call.arguments))
+    for a in outExp.call.arguments
+      println(toString(evalExp(a)))
+    end
+    println("*****************")
+  end
+end
+
 @exportAll()
 end

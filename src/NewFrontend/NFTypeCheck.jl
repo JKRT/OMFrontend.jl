@@ -205,20 +205,20 @@ function matchOverloadedBinaryOperator(
   local outType::M_Type
   local outExp::Expression
 
-  local args::List{TypedArg}
+  local args::Vector{TypedArg}
   local matchKind::FunctionMatchKind
   local matchedFunc::MatchedFunction
-  local matchedFunctions::List{MatchedFunction}
-  local exactMatches::List{MatchedFunction}
+  local matchedFunctions::Vector{MatchedFunction}
+  local exactMatches::Vector{MatchedFunction}
   local fn::M_Function
   local oop::Op
 
-  @assign args = list((exp1, type1, var1), (exp2, type2, var2))
-  @assign matchedFunctions = matchFunctionsSilent(candidates, args, nil, info)
+  args = TypedArg[(exp1, type1, var1), (exp2, type2, var2)]
+  matchedFunctions = matchFunctionsSilent(candidates, args, TypedNamedArg[], info)
   #=  We only allow exact matches for operator overloading. e.g. no casting or generic matches.
   =#
   @assign exactMatches = getExactMatches(matchedFunctions)
-  if listEmpty(exactMatches)
+  if isempty(exactMatches)
     ErrorExt.setCheckpoint("NFTypeCheck:implicitConstruction")
     try
        (outExp, outType) =
@@ -311,13 +311,13 @@ function matchOverloadedBinaryOperator(
         )
       end
     end
-  elseif listLength(exactMatches) == 1
-    @match _cons(matchedFunc, _) = exactMatches
+  elseif length(exactMatches) == 1
+    @match [matchedFunc, aux...] = exactMatches
     fn = matchedFunc.func
     outType = returnType(fn)
     outExp = CALL_EXPRESSION(makeTypedCall(
       matchedFunc.func,
-      list(Util.tuple31(a) for a in matchedFunc.args),
+      Expression[Util.tuple31(a) for a in matchedFunc.args],
       variabilityMax(var1, var2),
       outType,
     ))
@@ -327,7 +327,7 @@ function matchOverloadedBinaryOperator(
         Error.AMBIGUOUS_MATCHING_OPERATOR_FUNCTIONS_NFINST,
         list(
           toString(BINARY_EXPRESSION(exp1, op, exp2)),
-          P_Function.candidateFuncListString(list(mfn.func for mfn in matchedFunctions)),
+          candidateFuncListString(list(mfn.func for mfn in matchedFunctions)),
         ),
         info,
       )
@@ -2961,17 +2961,17 @@ function getRangeTypeInt(
             var,
           ))
         end
-        @assign dim_exp = BINARY_EXPRESSION(
+        dim_exp = BINARY_EXPRESSION(
           dim_exp,
           makeAdd(TYPE_INTEGER()),
           INTEGER_EXPRESSION(1),
         )
-        @assign dim_exp = CALL_EXPRESSION(makeTypedCall(
+        dim_exp = CALL_EXPRESSION(makeTypedCall(
           NFBuiltinFuncs.MAX_INT,
-          list(dim_exp, INTEGER_EXPRESSION(0)),
+          Expression[dim_exp, INTEGER_EXPRESSION(0)],
           var,
         ))
-        @assign dim_exp = simplify(dim_exp)
+        dim_exp = simplify(dim_exp)
         fromExp(dim_exp, var)
       end
     end
@@ -3015,7 +3015,7 @@ function getRangeTypeReal(
         if start == start + step
           Error.addSourceMessageAndFail(Error.RANGE_TOO_SMALL_STEP, list(String(step)), info)
         end
-        P_Dimension.Dimension.fromInteger(Util.realRangeSize(
+        fromInteger(Util.realRangeSize(
           startExp.value,
           step,
           stopExp.value,
@@ -3023,31 +3023,31 @@ function getRangeTypeReal(
       end
 
       (_, NONE(), _) where {(isEqual(startExp, stopExp))} => begin
-        P_Dimension.Dimension.fromInteger(1)
+        fromInteger(1)
       end
 
       _ => begin
-        @assign dim_exp = BINARY_EXPRESSION(
+        dim_exp = BINARY_EXPRESSION(
           stopExp,
           makeSub(TYPE_REAL()),
           startExp,
         )
-        @assign var = variabilityMax(
+        var = variabilityMax(
           variability(stopExp),
           variability(startExp),
         )
         if isSome(stepExp)
           @match SOME(step_exp) = stepExp
-          @assign var = variabilityMax(
+          var = variabilityMax(
             var,
             variability(step_exp),
           )
-          @assign dim_exp = BINARY_EXPRESSION(
+          dim_exp = BINARY_EXPRESSION(
             dim_exp,
             makeDiv(TYPE_REAL()),
             step_exp,
           )
-          @assign dim_exp = BINARY_EXPRESSION(
+          dim_exp = BINARY_EXPRESSION(
             dim_exp,
             makeAdd(TYPE_REAL()),
             REAL_EXPRESSION(5e-15),
@@ -3055,12 +3055,12 @@ function getRangeTypeReal(
         end
         dim_exp = CALL_EXPRESSION(makeTypedCall(
           NFBuiltinFuncs.FLOOR,
-          list(dim_exp),
+          Expression[dim_exp],
           var,
         ))
         dim_exp = CALL_EXPRESSION(makeTypedCall(
           NFBuiltinFuncs.INTEGER_REAL,
-          list(dim_exp),
+          Expression[dim_exp],
           var,
         ))
         dim_exp = BINARY_EXPRESSION(

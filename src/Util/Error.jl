@@ -449,7 +449,7 @@ const INVALID_CONNECTOR_VARIABLE =
     52,
     ErrorTypes.TRANSLATION(),
     ErrorTypes.ERROR(),
-    Gettext.gettext("The type of variables %s and %s\\nare inconsistent in connect equations."),
+    Gettext.gettext("The type of variables %s and %s\n are inconsistent in connect equations."),
   )::ErrorTypes.Message
 
 const TYPE_ERROR =

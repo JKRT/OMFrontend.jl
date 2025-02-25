@@ -89,7 +89,7 @@ function evaluateOperators(
                 @match name(call.fn) begin
                   Absyn.IDENT("inStream") => begin
                     evaluateInStream(
-                      toCref(listHead(call.arguments)),
+                      toCref(Base.first(call.arguments)),
                       sets,
                       setsArray,
                       ctable,
@@ -98,7 +98,7 @@ function evaluateOperators(
 
                   Absyn.IDENT("actualStream") => begin
                     evaluateActualStream(
-                      toCref(listHead(call.arguments)),
+                      toCref(Base.first(call.arguments)),
                       sets,
                       setsArray,
                       ctable,
@@ -106,7 +106,7 @@ function evaluateOperators(
                   end
 
                   Absyn.IDENT("cardinality") => begin
-                    CardinalityTable.evaluateCardinality(listHead(call.arguments), ctable)
+                    CardinalityTable.evaluateCardinality(Base.first(call.arguments), ctable)
                   end
 
                   _ => begin
@@ -161,7 +161,7 @@ function evaluateOperators(
         begin
           evaluateActualStreamMul(
             exp.exp1,
-            listHead(call.arguments),
+            Base.first(call.arguments),
             exp.operator,
             sets,
             setsArray,
@@ -177,7 +177,7 @@ function evaluateOperators(
         begin
           evaluateActualStreamMul(
             exp.exp2,
-            listHead(call.arguments),
+            Base.first(call.arguments),
             exp.operator,
             sets,
             setsArray,

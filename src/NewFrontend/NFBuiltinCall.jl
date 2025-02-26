@@ -1078,7 +1078,6 @@ function typeCatCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{
   local mk::MatchKindType
   local fn::M_Function
   local n::Int
-  @info "Calling builtin cat"
   @match UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
   assertNoNamedParams("cat", named_args, info)
   if length(args) < 2

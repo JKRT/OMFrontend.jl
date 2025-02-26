@@ -56,14 +56,12 @@ end
 
 mutable struct TYPED_COMPONENT{T0 <: InstNode,
                                T1 <: M_Type,
-                               T2 <: Binding,
-                               T3 <: Binding,
                                T4 <: Attributes,
                                T5 <: SourceInfo} <: Component
   classInst::T0
   ty::T1
-  binding::T2
-  condition::T3
+  binding::Binding
+  condition::Binding
   attributes::T4
   ann::Option{Modifier} #= the annotation from SCode.Comment as a modifier =#
   comment::Option{SCode.Comment}

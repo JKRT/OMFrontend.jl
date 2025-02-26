@@ -1610,11 +1610,13 @@ end
 
 function setParent(@nospecialize(parent::InstNode),
                     node::COMPONENT_NODE)
-  COMPONENT_NODE{String, Int}(node.name,
-                              node.visibility,
-                              node.component,
-                              parent,
-                              node.nodeType)
+  # COMPONENT_NODE{String, Int}(node.name,
+  #                             node.visibility,
+  #                             node.component,
+  #                             parent,
+  #                             node.nodeType)
+  node.parent = parent
+  return node
 end
 
 function setParent(@nospecialize(parent::InstNode),

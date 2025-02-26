@@ -1040,7 +1040,7 @@ end
         #end
         comp_var = checkComponentBindingVariability(nameStr, c, binding, origin)
         if comp_var != attrs.variability
-          @assign attrs.variability = comp_var
+          attrs.variability = comp_var
           c.attributes = attrs
         end
         #str2 = toString(binding)
@@ -1055,18 +1055,14 @@ end
         end
       end
       #        ErrorExt.delCheckpoint(getInstanceName()) TODO
-      c = TYPED_COMPONENT(c.classInst,
-                          c.ty,
-                          binding,
-                          if isBound(c.condition)
-                            typeComponentCondition(c.condition, origin)
-                          else
-                            c.condition
-                          end,
-                          c.attributes,
-                          c.ann,
-                          c.comment,
-                          c.info)
+
+      cCond = if isBound(c.condition)
+        typeComponentCondition(c.condition, origin)
+      else
+        c.condition
+      end
+      c.condition =  cCond
+      c.binding = binding
       updateComponent!(c, node)
       if typeChildren
         typeBindings(c.classInst, inComponent, origin)
@@ -1081,26 +1077,28 @@ end
       checkBindingEach(c.binding)
       if isTyped(c.binding)
         cBinding = matchBinding(c.binding, c.ty, name(inComponent), node)
-        c = TYPED_COMPONENT(c.classInst,
-                            c.ty,
-                            cBinding,
-                            c.condition,
-                            c.attributes,
-                            c.ann,
-                            c.comment,
-                            c.info)
+        # c = TYPED_COMPONENT(c.classInst,
+        #                     c.ty,
+        #                     cBinding,
+        #                     c.condition,
+        #                     c.attributes,
+        #                     c.ann,
+        #                     c.comment,
+        #                     c.info)
+        c.binding = cBinding
       end
 
       if isBound(c.condition)
         local cCond = typeComponentCondition(c.condition, origin)
-        c = TYPED_COMPONENT(c.classInst,
-                            c.ty,
-                            c.binding,
-                            cCond,
-                            c.attributes,
-                            c.ann,
-                            c.comment,
-                            c.info)
+        # c = TYPED_COMPONENT(c.classInst,
+        #                     c.ty,
+        #                     c.binding,
+        #                     cCond,
+        #                     c.attributes,
+        #                     c.ann,
+        #                     c.comment,
+        #                     c.info)
+        c.condition = cCond
         updateComponent!(c, node)
       end
       if typeChildren

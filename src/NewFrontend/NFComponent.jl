@@ -4,8 +4,8 @@ using ExportAll
 abstract type Attributes end
 
 """
-  Attributes is a constant struct.
-  Note, can not be optimized into a mutable type, since DEFAULT attribute is used quite a lot and it would result in errors when doing comparisions by reference for attributes.
+  Mutable variant of attributes.
+  The default attribute is using the immutable struct below.
 """
 struct ATTRIBUTES <: Attributes
   connectorType::Int
@@ -19,6 +19,19 @@ struct ATTRIBUTES <: Attributes
   isStructuralMode::Bool
 end
 
+#= Investigate how we can make the attributes mutable and the immutable mutable=#
+
+struct IMMUTABLE_ATTRIBUTES <: Attributes
+  connectorType::Int
+  parallelism::Int
+  variability::Int
+  direction::Int
+  innerOuter::Int
+  isFinal::Bool
+  isRedeclare::Bool
+  isReplaceable::Replaceable
+  isStructuralMode::Bool
+end
 
 abstract type Component end
 
@@ -45,15 +58,16 @@ mutable struct TYPED_COMPONENT{T0 <: InstNode,
                                T1 <: M_Type,
                                T2 <: Binding,
                                T3 <: Binding,
-                               T4 <: SourceInfo} <: Component
+                               T4 <: Attributes,
+                               T5 <: SourceInfo} <: Component
   classInst::T0
   ty::T1
   binding::T2
   condition::T3
-  attributes::ATTRIBUTES
+  attributes::T4
   ann::Option{Modifier} #= the annotation from SCode.Comment as a modifier =#
   comment::Option{SCode.Comment}
-  info::T4
+  info::T5
 end
 
 mutable struct UNTYPED_COMPONENT <: Component
@@ -72,7 +86,7 @@ mutable struct COMPONENT_DEF <: Component
   modifier::Modifier
 end
 
-const DEFAULT_ATTR::ATTRIBUTES =
+const DEFAULT_ATTR =
   ATTRIBUTES(
     ConnectorType.NON_CONNECTOR,
     Parallelism.NON_PARALLEL,
@@ -84,6 +98,7 @@ const DEFAULT_ATTR::ATTRIBUTES =
     NOT_REPLACEABLE(),
     false,
   )
+
 const INPUT_ATTR::ATTRIBUTES =
   ATTRIBUTES(
     ConnectorType.NON_CONNECTOR,

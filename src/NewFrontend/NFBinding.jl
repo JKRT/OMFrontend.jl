@@ -35,21 +35,21 @@ const VariabilityType = Int
 
 abstract type Binding end
 
-struct INVALID_BINDING <: Binding
+mutable struct INVALID_BINDING <: Binding
   binding::Binding
   errors::List
 end
 
-struct CEVAL_BINDING <: Binding
+mutable struct CEVAL_BINDING <: Binding
   bindingExp::Expression
 end
 
-struct FLAT_BINDING <: Binding
+mutable struct FLAT_BINDING <: Binding
   bindingExp::Expression
   variability::VariabilityType
 end
 
-struct TYPED_BINDING <: Binding
+mutable struct TYPED_BINDING <: Binding
   bindingExp::Expression
   bindingType::NFType
   variability::VariabilityType
@@ -59,7 +59,7 @@ struct TYPED_BINDING <: Binding
   info::SourceInfo
 end
 
-struct UNTYPED_BINDING <: Binding
+mutable struct UNTYPED_BINDING <: Binding
   bindingExp::Expression
   isProcessing::Bool
   scope::InstNode
@@ -67,7 +67,7 @@ struct UNTYPED_BINDING <: Binding
   info::SourceInfo
 end
 
-struct RAW_BINDING <: Binding
+mutable struct RAW_BINDING <: Binding
   bindingExp::Absyn.Exp
   scope::InstNode
   parents::List{InstNode}

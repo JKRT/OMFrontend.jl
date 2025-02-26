@@ -8,7 +8,8 @@
       end
 
       ARRAY_EXPRESSION(__) => begin
-        expElements = Expression[simplify(e) for e in exp.elements]
+        expElements = exp.elements #Expression[simplify(e) for e in exp.elements]
+        Base.map!(simplify, expElements, expElements)
         ARRAY_EXPRESSION(exp.ty, expElements, exp.literal)
       end
 
@@ -129,7 +130,7 @@ function simplifyRange(range::Expression)
      referenceEq(stop_exp1, stop_exp2)
      exp = range
   else
-     ty = TypeCheck.getRangeType(
+     ty = getRangeType(
       start_exp2,
       step_exp2,
       stop_exp2,
@@ -352,7 +353,7 @@ function simplifyArrayConstructor(call::Call)
         if dim_size == 0
           outExp = makeEmptyArray(ty)
         elseif dim_size == 1
-          @match (ARRAY_EXPRESSION(elements = list(e)), _) = expand(e)
+          @match (ARRAY_EXPRESSION(elements = [e]), _) = expand(e)
           exp = replaceIterator(exp, iter, e)
           exp = makeArray(ty, Expression[exp])
           outExp = simplify(exp)

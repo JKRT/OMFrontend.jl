@@ -7,7 +7,7 @@ abstract type Attributes end
   Mutable variant of attributes.
   The default attribute is using the immutable struct below.
 """
-struct ATTRIBUTES <: Attributes
+mutable struct ATTRIBUTES <: Attributes
   connectorType::Int
   parallelism::Int
   variability::Int
@@ -75,7 +75,7 @@ mutable struct UNTYPED_COMPONENT <: Component
   dimensions::Vector{Dimension}
   binding::Binding
   condition::Binding
-  attributes::ATTRIBUTES
+  attributes::Attributes
   comment::Option{SCode.Comment}
   instantiated::Bool
   info::SourceInfo
@@ -87,7 +87,7 @@ mutable struct COMPONENT_DEF <: Component
 end
 
 const DEFAULT_ATTR =
-  ATTRIBUTES(
+  IMMUTABLE_ATTRIBUTES(
     ConnectorType.NON_CONNECTOR,
     Parallelism.NON_PARALLEL,
     Variability.CONTINUOUS,
@@ -99,7 +99,7 @@ const DEFAULT_ATTR =
     false,
   )
 
-const INPUT_ATTR::ATTRIBUTES =
+const INPUT_ATTR =
   ATTRIBUTES(
     ConnectorType.NON_CONNECTOR,
     Parallelism.NON_PARALLEL,
@@ -111,7 +111,7 @@ const INPUT_ATTR::ATTRIBUTES =
     NOT_REPLACEABLE(),
     false,
   )
-const OUTPUT_ATTR::ATTRIBUTES =
+const OUTPUT_ATTR =
   ATTRIBUTES(
     ConnectorType.NON_CONNECTOR,
     Parallelism.NON_PARALLEL,
@@ -123,7 +123,7 @@ const OUTPUT_ATTR::ATTRIBUTES =
     NOT_REPLACEABLE(),
     false,
   )
-const CONSTANT_ATTR::ATTRIBUTES =
+const CONSTANT_ATTR =
   ATTRIBUTES(
     ConnectorType.NON_CONNECTOR,
     Parallelism.NON_PARALLEL,
@@ -135,7 +135,7 @@ const CONSTANT_ATTR::ATTRIBUTES =
     NOT_REPLACEABLE(),
     false,
   )
-const IMPL_DISCRETE_ATTR::ATTRIBUTES =
+const IMPL_DISCRETE_ATTR =
   ATTRIBUTES(
     ConnectorType.NON_CONNECTOR,
     Parallelism.NON_PARALLEL,

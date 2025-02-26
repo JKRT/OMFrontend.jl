@@ -1483,7 +1483,7 @@ function instComponentDef(component::SCode.COMPONENT,
     attr = mergeRedeclaredComponentAttributes(Util.getOption(originalAttr), attr, node)
   end
   if ! attr.isFinal && isFinal(mod)
-    @assign attr.isFinal = true
+    attr.isFinal = true
   end
   #=
   Create the untyped component and update the node with it. We need the
@@ -1731,7 +1731,7 @@ function checkDeclaredComponentAttributes(attr::Attributes, parentRestriction::R
         assertNotInnerOuter(attr.innerOuter, component, parentRestriction)
         if parentRestriction.isExpandable
           assertNotFlowStream(attr.connectorType, component, parentRestriction)
-          @assign attr.connectorType = intBitOr(attr.connectorType, ConnectorType.POTENTIALLY_PRESENT)
+          attr.connectorType = intBitOr(attr.connectorType, ConnectorType.POTENTIALLY_PRESENT)
         end
         #=  Components of an expandable connector may not have the prefix 'flow'.
         =#
@@ -1798,7 +1798,7 @@ function mergeDerivedAttributes(outerAttr::Attributes, innerAttr::Attributes, no
     attr = innerAttr
   else
     #= The present error is here =#
-    @match ATTRIBUTES(cty, par, var, dir, io, fin, redecl, repl, mo) = outerAttr
+    @match ATTRIBUTES(cty, par, var, dir, io, fin, redecl, repl, mo) || IMMUTABLE_ATTRIBUTES(cty, par, var, dir, io, fin, redecl, repl, mo) = outerAttr
     cty = merge(cty, innerAttr.connectorType, node, true)
     var = variabilityMin(var, innerAttr.variability)
     dir = mergeDirection(dir, innerAttr.direction, node, #= allowSame = true=# true)
@@ -1923,7 +1923,7 @@ function updateComponentVariability(attr::Attributes, cls::Class, clsNode::InstN
   if referenceEq(attr, DEFAULT_ATTR) && isDiscreteClass(clsNode)
     attr = IMPL_DISCRETE_ATTR
   elseif var == Variability.CONTINUOUS && isDiscreteClass(clsNode)
-    @assign attr.variability = Variability.IMPLICITLY_DISCRETE
+    attr.variability = Variability.IMPLICITLY_DISCRETE
   end
   attr
 end

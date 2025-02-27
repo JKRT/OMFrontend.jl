@@ -1898,102 +1898,126 @@ function printUnresolvableTypeError(
   return fail()
 end
 
-
 function matchExpressions(
   @nospecialize(exp1::Expression),
   @nospecialize(type1::NFType),
   @nospecialize(exp2::Expression),
   @nospecialize(type2::NFType),
   allowUnknown::Bool = false,
-)::Tuple{Expression, Expression, NFType, MatchKindType}
-  local matchKind::MatchKindType
-  local compatibleType::NFType
+  )
 
   #=  Return true if the references are the same.
   =#
   if referenceEq(type1, type2)
-    @assign compatibleType = type1
-    @assign matchKind = MatchKind.EXACT
+    compatibleType = type1
+    matchKind = MatchKind.EXACT
     return (exp1, exp2, compatibleType, matchKind)
   end
   #=  Check if the types are different kinds of types.
   =#
   if valueConstructor(type1) != valueConstructor(type2)
-     (exp1, exp2, compatibleType, matchKind) =
+    @match (exp1, exp2, compatibleType, matchKind) =
       matchExpressions_cast(exp1, type1, exp2, type2, allowUnknown)
     return (exp1, exp2, compatibleType, matchKind)
   end
-  #=  If the types are not of the same kind we might need to type cast one of
+
+  matchExpressions2(
+    exp1,
+    type1,
+    exp2,
+    type2,
+    allowUnknown)
+end
+
+
+function matchExpressions2(
+  @nospecialize(exp1::Expression),
+  @nospecialize(type1::NFType),
+  @nospecialize(exp2::Expression),
+  @nospecialize(type2::NFType),
+  allowUnknown::Bool = false,
+)::Tuple{Expression, Expression, NFType, MatchKindType}
+  local e1::Expression
+  local e2::Expression
+  local cty::NFType
+  local mk::MatchKindType
+
+  #=
+  If the types are not of the same kind we might need to type cast one of the expressions
+  to make them compatible.
   =#
-  #=  the expressions to make them compatible.
-  =#
-  #=  The types are of the same kind, so we only need to match on one of them.
-  =#
-  @assign matchKind = MatchKind.EXACT
-  @assign compatibleType = begin
+  #=  The types are of the same kind, so we only need to match on one of them. =#
+  mk = MatchKind.EXACT
+  cty = begin
     @match type1 begin
       TYPE_INTEGER(__) => begin
+        @match (e1, e2) = (exp1, exp2)
         type1
       end
 
       TYPE_REAL(__) => begin
+        @match (e1, e2) = (exp1, exp2)
         type1
       end
 
       TYPE_STRING(__) => begin
+        @match (e1, e2) = (exp1, exp2)
         type1
       end
 
       TYPE_BOOLEAN(__) => begin
+        @match (e1, e2) = (exp1, exp2)
         type1
       end
 
       TYPE_CLOCK(__) => begin
+        @match (e1, e2) = (exp1, exp2)
         type1
       end
 
       TYPE_ENUMERATION(__) => begin
-        @assign matchKind = matchEnumerationTypes(type1, type2)
+        mk = matchEnumerationTypes(type1, type2)
+        @match (e1, e2) = (exp1, exp2)
         type1
       end
 
       TYPE_ENUMERATION_ANY(__) => begin
+        @match (e1, e2) = (exp1, exp2)
         type1
       end
 
       TYPE_ARRAY(__) => begin
-         (exp1, exp2, compatibleType, matchKind) =
-          matchArrayExpressions(exp1, type1, exp2, type2, allowUnknown)
-        compatibleType
+        @match (e1, e2, cty, mk) = matchArrayExpressions(exp1, type1, exp2, type2, allowUnknown)
+        cty
       end
 
       TYPE_TUPLE(__) => begin
-         (exp2, compatibleType, matchKind) =
-          matchTupleTypes(type2, type1, exp2, allowUnknown)
-        compatibleType
+        @match (e2, cty, mk) =
+           matchTupleTypes(type2, type1, exp2, allowUnknown)
+        cty
       end
 
       TYPE_UNKNOWN(__) => begin
-        @assign matchKind = if allowUnknown
+        mk = if allowUnknown
           MatchKind.EXACT
         else
           MatchKind.NOT_COMPATIBLE
         end
+        @match (e1, e2) = (exp1, exp2)
         type1
       end
 
       TYPE_COMPLEX(__) => begin
         #=  TODO: This needs more work to handle e.g. type casting of complex expressions.
         =#
-         (exp1, compatibleType, matchKind) =
-          matchComplexTypes(type1, type2, exp1, allowUnknown)
-        compatibleType
+        @match (e1, cty, mk) = matchComplexTypes(type1, type2, exp1, allowUnknown)
+        e2 = exp2
+        cty
       end
 
       TYPE_METABOXED(__) => begin
-         (exp1, exp2, compatibleType, matchKind) =
-          matchBoxedExpressions(exp1, type1, exp2, type2, allowUnknown)
-        compatibleType
+        @match (e1, e2, cty, mk) = matchBoxedExpressions(exp1, type1, exp2, type2, allowUnknown)
+        cty
       end
 
       _ => begin
@@ -2002,7 +2026,7 @@ function matchExpressions(
       end
     end
   end
-  return (exp1, exp2, compatibleType, matchKind)
+  return (e1, e2, cty, mk)
 end
 
 function matchTypes(

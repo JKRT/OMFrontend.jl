@@ -7037,7 +7037,7 @@ function isEach(binding::Binding)
   return isEach
 end
 
-function getType(binding::Binding)
+function getType(@nospecialize(binding::Binding))
   local ty::NFType
    ty = begin
     @match binding begin

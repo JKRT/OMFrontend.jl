@@ -41,7 +41,7 @@ mutable struct MODIFIER_MODIFIER{ T0 <: String,
   name::T0
   finalPrefix::T1
   eachPrefix::T2
-  binding::Binding
+  binding#::Binding
   subModifiers::T4
   info::T5
 end

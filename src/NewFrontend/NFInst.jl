@@ -252,7 +252,7 @@ function instantiateN1(node::InstNode, parentNode::InstNode)
   #@debug "Instantiating!!!! in Inst"
   node = expand(node)
   #@debug "After expansion in inst. Instantiating in class-tree "
-  (node, _) = instClass(node, MODIFIER_NOMOD(), DEFAULT_ATTR, true, 0, parentNode)
+  node = instClass(node, MODIFIER_NOMOD(), DEFAULT_ATTR, true, 0, parentNode)[1]
   return node
 end
 
@@ -260,7 +260,7 @@ function instantiateN1(node::InstNode)
   #@debug "Instantiating!!!! in Inst"
   node = expand(node)
   #@debug "After expansion in inst. Instantiating in class-tree "
-  (node, _) = instClass(node, MODIFIER_NOMOD(), DEFAULT_ATTR, true, 0, EMPTY_NODE())
+  node = instClass(node, MODIFIER_NOMOD(), DEFAULT_ATTR, true, 0, EMPTY_NODE())[1]
   return node
 end
 
@@ -766,7 +766,7 @@ function instClass(node::InstNode, modifier::Modifier, attributes::Attributes = 
     fail()
   end
   #@debug "CALLING INSTCLASSDEF"
-  (attributes, node) = instClassDef(cls, modifier, attributes, useBinding, node, parent, instLevel)
+  @match (attributes, node) = instClassDef(cls, modifier, attributes, useBinding, node, parent, instLevel)
   (node, attributes)
 end
 
@@ -801,7 +801,7 @@ function instClassDef(cls::INSTANCED_CLASS,
   node = replaceClass(NOT_INSTANTIATED(), node)
   node = setNodeType(NORMAL_CLASS(), node)
   node = expand(node)
-  (node, _) = instClass(node, outerMod, attributes, useBinding, instLevel, parentArg)
+  @match (node, _) = instClass(node, outerMod, attributes, useBinding, instLevel, parentArg)
   updateComponentType(parentArg, node)
   return (attributes, node)
 end
@@ -822,7 +822,7 @@ function instClassDef(cls::PARTIAL_BUILTIN,
       nothing
     end
     PARTIAL_BUILTIN(ty = ty, restriction = res)  => begin
-      (node, par) = instantiate(node, parentArg)
+      node = Base.first(instantiate(node, parentArg))
       updateComponentType(parentArg, node)
       cls_tree = classTree(getClass(node))
       mod = fromElement(definition(node), list(node), parent(node))
@@ -844,7 +844,7 @@ function instClassDef(cls::EXPANDED_DERIVED,
                       node::InstNode,
                       parentArg::InstNode,
                       instLevel::Int)
-  (node, par) = instantiate(node, parentArg)
+  @match (node, par,_,_) = instantiate(node, parentArg)
   node = setNodeType(DERIVED_CLASS(nodeType(node)), node)
   @match EXPANDED_DERIVED(baseClass = base_node) = getClass(node)
   #=  Merge outer modifiers and attributes.
@@ -858,7 +858,7 @@ function instClassDef(cls::EXPANDED_DERIVED,
   attributes = mergeDerivedAttributes(attrs, attributes, parentArg)
   #=  Instantiate the base class and update the nodes.
   =#
-  (base_node, attributes) = instClass(base_node, mod, attributes, useBinding, instLevel, par)
+  @match (base_node, attributes) = instClass(base_node, mod, attributes, useBinding, instLevel, par)
   cls = EXPANDED_DERIVED(base_node,
                          cls.modifier,
                          arrayCopy(cls.dims),
@@ -894,7 +894,7 @@ function instClassDef(cls::EXPANDED_CLASS,
   if isBaseClass(node)
     par = parentArg
   else
-    (node, par) = instantiate(node, parentArg)
+    @match (node, par, _, _) = instantiate(node, parentArg)
   end
   updateComponentType(parentArg, node)
   attributes = updateClassConnectorType(res, attributes)
@@ -906,10 +906,10 @@ function instClassDef(cls::EXPANDED_CLASS,
   outer_mod = merge(outerMod, cls.modifier)
   mod = merge(outer_mod, mod)
   #=  Apply the modifiers of extends nodes. =#
-  function modifyExtendsFunc(@nospecialize(node::InstNode))
+  function modifyExtendsFunc(node::InstNode)
     modifyExtends(node, par)
   end
-  function redeclareElementsFunc(@nospecialize(treeArg))
+  function redeclareElementsFunc(treeArg)
     redeclareElements(treeArg, instLevel)
   end
   mapExtends(cls_tree, modifyExtendsFunc)
@@ -1500,7 +1500,7 @@ function instComponentDef(component::SCode.COMPONENT,
                                 SOME(component.comment), false, info)
   updateComponent!(inst_comp, node)
   #=  Instantiate the type of the component. =#
-  (ty_node, ty_attr) = instTypeSpec(component.typeSpec, mod, attr,
+  @match (ty_node, ty_attr) = instTypeSpec(component.typeSpec, mod, attr,
                                     useBinding && ! isBound(bindingVar),
                                     parentNode, node, info, instLevel)
   ty = getClass(ty_node)
@@ -1512,6 +1512,7 @@ function instComponentDef(component::SCode.COMPONENT,
   if ! referenceEq(attr, ty_attr)
     componentApply(node, setAttributes, ty_attr)
   end
+  nothing
 end
 
 function instConstrainingMod(element::SCode.Element, parent::InstNode) ::Modifier
@@ -1968,7 +1969,7 @@ function instTypeSpec(typeSpec::Absyn.TPATH,
     checkRecursiveDefinition(node, parent, limitReached = true)
   end
   node = expand(node)
-  (node, outAttributes) = instClass(node, modifier, attributes, useBinding, instLevel, parent)
+  @match (node, outAttributes) = instClass(node, modifier, attributes, useBinding, instLevel, parent)
   return (node, outAttributes)
 end
 
@@ -2217,32 +2218,35 @@ function instRecordConstructor(node::InstNode)
   return node
 end
 
+
+function instBuiltinAttribute(attribute::MODIFIER_REDECLARE, node::InstNode)
+  #=  Redeclaration of builtin attributes is not allowed. =#
+  Error.addSourceMessage(Error.INVALID_REDECLARE_IN_BASIC_TYPE, list(name(attribute)), Modifier_info(attribute))
+  fail()
+end
+
 function instBuiltinAttribute(attribute::Modifier, node::InstNode)
-# strMod1 = toString(attribute, true)
- #@debug ">instBuiltinAttribute($strMod1)"
-  local bindingVar
-  local outAttr = @match attribute begin
-    MODIFIER_MODIFIER(binding=bindingVar)  => begin
-      bindingVar = addParent(node, bindingVar)
-      attributeBinding = instBinding(bindingVar)
-      MODIFIER_MODIFIER(
-        attribute.name,
-        attribute.finalPrefix,
-        attribute.eachPrefix,
-        attributeBinding,
-        attribute.subModifiers,
-        attribute.info,
-      )
-    end
-    MODIFIER_REDECLARE(__)  => begin
-      #=  Redeclaration of builtin attributes is not allowed. =#
-      Error.addSourceMessage(Error.INVALID_REDECLARE_IN_BASIC_TYPE, list(name(attribute)), Modifier_info(attribute))
-      fail()
-    end
-    _  => begin
-      attribute
-    end
-  end
+  return attribute
+end
+
+function instBuiltinAttribute(attribute::MODIFIER_MODIFIER, node::InstNode)
+  # strMod1 = toString(attribute, true)
+  #@debug ">instBuiltinAttribute($strMod1)"
+  local bindingVar = attribute.binding
+  local outAttr
+  local bv = addParent(node, bindingVar)
+  attributeBinding = instBinding(bv)
+  outAttr = attribute
+  outAttr.binding = attributeBinding
+  # MODIFIER_MODIFIER(
+  #   attribute.name,
+  #   attribute.finalPrefix,
+  #   attribute.eachPrefix,
+  #   attributeBinding,
+  #   attribute.subModifiers,
+  #   attribute.info,
+  #
+
   #strMod2 = toString(attribute, true)
   #@debug "<instBuiltinAttribute($strMod2)"
   return outAttr

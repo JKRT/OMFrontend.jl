@@ -873,28 +873,11 @@ function makeTypedCall(
   return call
 end
 
-function typeNormalCall(call::Call, origin::ORIGIN_Type, info::SourceInfo)::Call
-   call = begin
-    local fnl::List{M_Function}
-    local is_external::Bool
-    @match call begin
-      UNTYPED_CALL(__) => begin
-        fnl = typeRefCache(call.ref)
-        typeArgs(call, origin, info)
-      end
-      _ => begin
-        Error.assertion(
-          false,
-          getInstanceName() + " got invalid function call expression",
-          sourceInfo(),
-        )
-        fail()
-      end
-    end
-  end
+function typeNormalCall(call::UNTYPED_CALL, origin::ORIGIN_Type, info::SourceInfo)::Call
+  local fnl::List{M_Function} = typeRefCache(call.ref)
+  call = typeArgs(call, origin, info)
   return call
 end
-
 
 function typeCall(
   @nospecialize(callExp::Expression),
@@ -912,7 +895,7 @@ function typeCall(
 end
 
 function typeCall2(
-  @nospecialize(callExp::Expression),
+  @nospecialize(callExp::CALL_EXPRESSION),
   @nospecialize(origin::ORIGIN_Type),
   @nospecialize(info::SourceInfo),
   )

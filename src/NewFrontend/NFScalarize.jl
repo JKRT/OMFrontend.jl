@@ -122,29 +122,19 @@ function scalarizeVariable(var::Variable, vars::Vector{Variable})
         end
       end
     catch e
-      # Error.assertion(
-      #   false,
-      #   getInstanceName() +
-      #   " failed on " +
-      #   toString(var, printBindingType = true),
-      #   var.info,
-      #)
-      errorStr = toString(var, "", false)
-      @error "scalarization failed on the following component: " * errorStr e
-      throw(e)
+      Error.assertion(
+        false,
+        getInstanceName() +
+          " failed on " +
+          toString(var, printBindingType = true),
+        var.info,
+      )
     end
   else
-    #@info "Not array."
     local res
-    #try
     res = mapExp(var.binding, expandComplexCref_traverser)
     @assign var.binding = res
     push!(vars, var)
-    #catch e
-    #println(toString(var.binding))
-    #println(typeof(var.binding))
-    #println(res)
-    #fail()
   end
   #@info "Scalarize var res:" toString(vars)
   return vars

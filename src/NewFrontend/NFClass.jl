@@ -483,20 +483,14 @@ end
 
 function getTypeAttributes(cls::Class)::List{Modifier}
   local attributes::List{Modifier} = nil
-
   local comps::Vector{InstNode}
   local mod::Modifier
-
-  try
-    @assign comps = getComponents(classTree(cls))
-    for c in comps
-      @assign mod = getModifier(component(c))
-      if !isEmpty(mod)
-        @assign attributes = _cons(mod, attributes)
-      end
+  comps = getComponents(classTree(cls))
+  for c in comps
+    mod = getModifier(component(c))
+    if !isEmpty(mod)
+      attributes = _cons(mod, attributes)
     end
-  catch e
-    @error "Error: $e"
   end
   return attributes
 end

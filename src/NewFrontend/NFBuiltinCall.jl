@@ -1919,7 +1919,6 @@ function typeDynamicSelectCall(name::String, call::Call, origin::ORIGIN_Type, in
   try
      (arg2, ty2, var2) = typeExp(expDynamic, origin, info)
   catch e
-    @error "DBG error: $e"
     @assign variability = var1
     @assign callExp = arg1
     return (callExp, ty, variability)

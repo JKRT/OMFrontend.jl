@@ -1143,7 +1143,7 @@ end
       # nameStr = name(inComponent)
       #@debug "Typing TA binding ... for component: $nameStr"
       local mod = typeTypeAttribute(c.modifier, c.ty, parent(inComponent), origin)
-      c = TYPE_ATTRIBUTE(c.ty, mod)
+      c.modifier = mod #TYPE_ATTRIBUTE(c.ty, mod)
       updateComponent!(c, node)
       ()
     end
@@ -1318,79 +1318,78 @@ function typeTypeAttribute(
   ty::NFType,
   component::InstNode,
   origin::ORIGIN_Type,
-)::Modifier
-
+  )::Modifier
   local name::String
   local binding::Binding
   local mod_parent::InstNode
-  return begin
-    @match attribute begin
-      MODIFIER_MODIFIER(__) where {(!ModTable.isEmpty(attribute.subModifiers))} => begin
-        #=  Modifier with submodifier, e.g. Real x(start(y = 1)), is an error.
-        =#
-        #=  Print an error for the first submodifier. The builtin attributes
-        =#
-        #=  don't have types as such, so for the error message to make sense we
-        =#
-        #=  join the attribute name and submodifier name together (e.g. start.y).
-        =#
-         name =
-          attribute.name +
-          "." +
-          Util.tuple21(listHead(ModTable.toList(attribute.subModifiers)))
-        Error.addSourceMessage(
-          Error.MISSING_MODIFIED_ELEMENT,
-          list(name, Type.toString(ty)),
-          attribute.info,
-        )
-        fail()
-      end
+  local finalAttribute
+  @match attribute begin
+    MODIFIER_MODIFIER(__) where {(!ModTable.isEmpty(attribute.subModifiers))} => begin
+      #=  Modifier with submodifier, e.g. Real x(start(y = 1)), is an error.
+      =#
+      #=  Print an error for the first submodifier. The builtin attributes
+      =#
+      #=  don't have types as such, so for the error message to make sense we
+      =#
+      #=  join the attribute name and submodifier name together (e.g. start.y).
+      =#
+      name =
+        attribute.name +
+        "." +
+        Util.tuple21(listHead(ModTable.toList(attribute.subModifiers)))
+      Error.addSourceMessage(
+        Error.MISSING_MODIFIED_ELEMENT,
+        list(name, Type.toString(ty)),
+        attribute.info,
+      )
+      fail()
+    end
 
-      MODIFIER_MODIFIER(__) where {(isUnbound(attribute.binding))} => begin
-        #=  Modifier with no binding, e.g. Real x(final start).
-        =#
-        checkBindingEach(attribute.binding)
-        NFModifier.NOMOD()
-      end
+    MODIFIER_MODIFIER(__) where {(isUnbound(attribute.binding))} => begin
+      #=  Modifier with no binding, e.g. Real x(final start).
+      =#
+      checkBindingEach(attribute.binding)
+      finalAttribute = NFModifier.NOMOD()
+    end
 
-      MODIFIER_MODIFIER(name = name, binding = binding) => begin
-        #=  Normal modifier with no submodifiers.
-        =#
-        #=  Type and type check the attribute.
-        =#
-        checkBindingEach(binding)
-        if isBound(binding)
-           binding = typeBinding(binding, origin)
-           binding = matchBinding(binding, ty, name, component)
-          if variability(binding) > Variability.PARAMETER
-            Error.addSourceMessage(
-              Error.HIGHER_VARIABILITY_BINDING,
-              list(
-                name,
-                P_Prefixes.variabilityString(Variability.PARAMETER),
-                "'" + toString(binding) + "'",
-                P_Prefixes.variabilityString(variability(binding)),
-              ),
-              Binding_getInfo(binding),
-            )
-            fail()
-          end
-          attributeBinding = binding
-          attribute = MODIFIER_MODIFIER(
-            attribute.name,
-            attribute.finalPrefix,
-            attribute.eachPrefix,
-            attributeBinding,
-            attribute.subModifiers,
-            attribute.info,
+    MODIFIER_MODIFIER(name = name, binding = binding) => begin
+      #=  Normal modifier with no submodifiers.
+      =#
+      #=  Type and type check the attribute.
+      =#
+      checkBindingEach(binding)
+      if isBound(binding)
+        binding = typeBinding(binding, origin)
+        binding = matchBinding(binding, ty, name, component)
+        if variability(binding) > Variability.PARAMETER
+          Error.addSourceMessage(
+            Error.HIGHER_VARIABILITY_BINDING,
+            list(
+              name,
+              P_Prefixes.variabilityString(Variability.PARAMETER),
+              "'" + toString(binding) + "'",
+              P_Prefixes.variabilityString(variability(binding)),
+            ),
+            Binding_getInfo(binding),
           )
+          fail()
         end
-        #=  Check the variability. All builtin attributes have parameter variability.
-        =#
-        attribute
+        attributeBinding = binding
+        attribute.binding = attributeBinding # MODIFIER_MODIFIER(
+        #   attribute.name,
+        #   attribute.finalPrefix,
+        #   attribute.eachPrefix,
+        #   attributeBinding,
+        #   attribute.subModifiers,
+        #   attribute.info,
+        # )
+        finalAttribute = attribute
       end
+      #=  Check the variability. All builtin attributes have parameter variability.
+      =#
     end
   end
+  return finalAttribute
 end
 
 """

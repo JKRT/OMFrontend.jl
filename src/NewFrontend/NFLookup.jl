@@ -34,11 +34,14 @@ function lookupComponent(cref::Absyn.ComponentRef, scope::InstNode #= The scope 
   local foundCref::ComponentRef
   local state::LookupState
   local nodeVar::InstNode
-  try
-    (foundCref, foundScope, state) = lookupCref(cref, scope)
-    nodeVar = node(foundCref)
-    @match false = isName(nodeVar)
-  catch e
+  @match (foundCref, foundScope, state) = lookupCref(cref, scope)
+  if state isa LOOKUP_STATE_ERROR
+    @error "Failed with $e"
+    throw(e)
+  end
+  nodeVar = node(foundCref)
+  local isNameRes = isName(nodeVar)
+  if isNameRes != false
     @error "Failed with $e"
     #Error.addSourceMessageAndFail(Error.LOOKUP_VARIABLE_ERROR, list(toString(cref), scopeName(scope)), info)
     throw(e)
@@ -51,13 +54,10 @@ end
 function lookupConnector(cref::Absyn.ComponentRef, scope::InstNode #= The scope to look in. =#, info::SourceInfo)
   local foundScope::InstNode #= The scope the cref was found in. =#
   local foundCref::ComponentRef
-
   local state::LookupState
   local nodeVar::InstNode
-
-  try
-     (foundCref, foundScope, state) = lookupCref(cref, scope)
-  catch e
+  (foundCref, foundScope, state) = lookupCref(cref, scope)
+  if state isa LOOKUP_STATE_ERROR
     Error.addSourceMessageAndFail(Error.LOOKUP_VARIABLE_ERROR, list(Dump.printComponentRefStr(cref), scopeName(scope)), info)
   end
   nodeVar = node(foundCref)
@@ -191,13 +191,13 @@ function lookupCref(cref::Absyn.ComponentRef, scope::InstNode #= The scope to lo
    (foundCref, foundScope, state) = begin
     @match cref begin
       Absyn.CREF_IDENT(__)  => begin
-        (_, foundCref, foundScope, state) = lookupSimpleCref(cref.name, cref.subscripts, scope)
+        @match (_, foundCref, foundScope, state) = lookupSimpleCref(cref.name, cref.subscripts, scope)
         (foundCref, foundScope, state)
       end
 
       Absyn.CREF_QUAL(__)  => begin
         (nodeVar, foundCref, foundScope, state) = lookupSimpleCref(cref.name, cref.subscripts, scope)
-        (foundCref, foundScope, state) = lookupCrefInNode(cref.componentRef, nodeVar, foundCref, foundScope, state)
+        @match (foundCref, foundScope, state) = lookupCrefInNode(cref.componentRef, nodeVar, foundCref, foundScope, state)
         (foundCref, foundScope, state)
       end
 
@@ -206,12 +206,15 @@ function lookupCref(cref::Absyn.ComponentRef, scope::InstNode #= The scope to lo
       end
 
       Absyn.WILD(__)  => begin
-        (WILD(), scope, P_LookupState.LOOKUP_STATE_PREDEF_COMP())
+        (WILD(), scope, LOOKUP_STATE_PREDEF_COMP())
       end
 
       Absyn.ALLWILD(__)  => begin
-        (WILD(), scope, P_LookupState.LOOKUP_STATE_PREDEF_COMP())
+        (WILD(), scope, LOOKUP_STATE_PREDEF_COMP())
       end
+     _ => begin
+       (WILD(), scope, LOOKUP_STATE_ERROR(state))
+     end
     end
   end
   (foundCref, foundScope #= The scope where the first part of the cref was found. =#, state)
@@ -237,7 +240,7 @@ function lookupLocalCref(cref::Absyn.ComponentRef, scope::InstNode #= The scope 
          (node, foundScope) = lookupLocalSimpleCref(cref.name, scope)
         state = nodeState(node)
         foundCref = fromAbsyn(node, cref.subscripts)
-        (foundCref, foundScope, state) = lookupCrefInNode(cref.componentRef, node, foundCref, foundScope, state)
+        @match (foundCref, foundScope, state) = lookupCrefInNode(cref.componentRef, node, foundCref, foundScope, state)
         (foundCref, foundScope, state)
       end
 

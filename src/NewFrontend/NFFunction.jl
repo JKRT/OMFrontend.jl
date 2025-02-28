@@ -2119,7 +2119,7 @@ function lookupFunction(
   functionPath = AbsynUtil.crefToPath(functionName)
   #=  Make sure the name is a path.
   =#
-  (functionRef, found_scope) = lookupFunctionName(functionName, scope, info)
+  @match (functionRef, found_scope) = lookupFunctionName(functionName, scope, info)
   #=  If we found a function class we include the root in the prefix, but if we
   =#
   #=  instead found a component (i.e. a functional parameter) we don't.
@@ -2129,7 +2129,7 @@ function lookupFunction(
     found_scope,
     includeRoot = is_class,
   ))
-  @assign functionRef = append(functionRef, prefix)
+  functionRef = appendCref!(functionRef, prefix)
   return functionRef
 end
 
@@ -2141,9 +2141,8 @@ function lookupFunctionSimple(functionName::String, scope::InstNode)::ComponentR
   local prefix::ComponentRef
    (functionRef, found_scope) =
     lookupFunctionNameSilent(Absyn.CREF_IDENT(functionName, nil), scope)
-  @assign prefix =
-    fromNodeList(scopeList(found_scope))
-  @assign functionRef = append(functionRef, prefix)
+  prefix = fromNodeList(scopeList(found_scope))
+  functionRef = appendCref!(functionRef, prefix)
   return functionRef
 end
 

@@ -906,17 +906,14 @@ function instClassDef(cls::EXPANDED_CLASS,
   outer_mod = merge(outerMod, cls.modifier)
   mod = merge(outer_mod, mod)
   #=  Apply the modifiers of extends nodes. =#
-  function modifyExtendsFunc(node::InstNode)
-    modifyExtends(node, par)
-  end
-  function redeclareElementsFunc(treeArg)
-    redeclareElements(treeArg, instLevel)
-  end
-  mapExtends(cls_tree, modifyExtendsFunc)
+  # function redeclareElementsFunc(treeArg)
+  #   redeclareElements(treeArg, instLevel)
+  # end
+  mapExtends(cls_tree, par)
   #=  Apply the modifiers of this scope. =#
   applyModifier(mod, cls_tree, name(node))
   #=  Apply element redeclares. =#
-  mapRedeclareChains(cls_tree, redeclareElementsFunc)
+  mapRedeclareChains(cls_tree, redeclareElements, instLevel)
   #=  Redeclare classes with redeclare modifiers. Redeclared components could
     also be handled here, but since each component is only instantiated once
     it's more efficient to apply the redeclare when instantiating them instead.
@@ -1095,15 +1092,10 @@ function instExtends(node::InstNode,
           end
         end
         noMod = MODIFIER_NOMOD()
-        instExtendsX = @closure (nodeX) -> instExtends(nodeX, attributes, useBinding, vis, instLevel)
-        mapExtends(cls_tree, instExtendsX)
-        instComponentY= @closure (nodeX) -> instComponent(nodeX,
-                                                          attributes,
-                                                          noMod ,
-                                                          useBinding,
-                                                          instLevel,
-                                                          NONE())
-        applyLocalComponents(cls_tree, instComponentY)
+        #instExtendsX = @closure (nodeX) -> instExtends(nodeX, attributes, useBinding, vis, instLevel)
+        mapExtends(cls_tree, attributes, useBinding, vis, instLevel)
+        #instComponentY= @closure (nodeX) -> instComponent(nodeX,)
+        applyLocalComponents(cls_tree, attributes, useBinding, instLevel)
         ()
       end
 
@@ -1441,7 +1433,7 @@ function instComponentDef(component::SCode.COMPONENT,
                           node::InstNode,
                           parentNode::InstNode,
                           instLevel::Int,
-                          originalAttr::Option{<:Attributes} = NONE();
+                          originalAttr = NONE();
                           isRedeclared::Bool = false)
   local info::SourceInfo = component.info
   local decl_mod::Modifier

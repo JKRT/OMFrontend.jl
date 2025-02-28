@@ -3370,8 +3370,8 @@ function mapCrefShallow(cref::ComponentRef, @nospecialize(func::Function)) ::Com
     local rest::ComponentRef
     @match cref begin
       COMPONENT_REF_CREF(origin = Origin.CREF)  => begin
-         subs = list(mapShallowExp(s, func) for s in cref.subscripts)
-         rest = mapCref(cref.restCref, func)
+        subs = list(mapShallowExp(s, func) for s in cref.subscripts)
+        rest = mapCref!(cref.restCref, func)
         COMPONENT_REF_CREF(cref.node, subs, cref.ty, cref.origin, rest)
       end
 
@@ -3382,6 +3382,29 @@ function mapCrefShallow(cref::ComponentRef, @nospecialize(func::Function)) ::Com
   end
   outCref
 end
+
+function mapCrefShallow!(cref::ComponentRef, @nospecialize(func::Function)) ::ComponentRef
+  local outCref::ComponentRef
+   outCref = begin
+    local subs::List{Subscript}
+    local rest::ComponentRef
+    @match cref begin
+      COMPONENT_REF_CREF(origin = Origin.CREF)  => begin
+        subs = list(mapShallowExp(s, func) for s in cref.subscripts)
+        rest = mapCref!(cref.restCref, func)
+        cref.subscripts = subs
+        cref.restCref = rest
+        #COMPONENT_REF_CREF(cref.node, subs, cref.ty, cref.origin, rest)
+        cref
+      end
+      _  => begin
+        cref
+      end
+    end
+  end
+  outCref
+end
+
 
 function mapShallowOpt(exp::Option{<:Expression}, @nospecialize(func::Function)) ::Option{Expression}
   local outExp::Option{Expression}
@@ -3450,7 +3473,7 @@ function mapShallow(@nospecialize(exp::Expression), @nospecialize(func::Function
       end
 
       CREF_EXPRESSION(__)  => begin
-        CREF_EXPRESSION(exp.ty, mapCrefShallow(exp.cref, func))
+        CREF_EXPRESSION(exp.ty, mapCrefShallow!(exp.cref, func))
       end
 
       ARRAY_EXPRESSION(__)  => begin
@@ -3664,6 +3687,31 @@ function mapCref(cref::ComponentRef, @nospecialize(func::Function)) ::ComponentR
     end
   end
   outCref
+end
+
+function mapCref!(cref::ComponentRef, @nospecialize(func::Function)) ::ComponentRef
+  return cref
+end
+
+"""
+@author johti17
+"""
+function mapCref!(cref::COMPONENT_REF_CREF, @nospecialize(func::Function)) ::ComponentRef
+  local outCref::ComponentRef = cref
+  local subs::List{Subscript}
+  local rest::ComponentRef
+  if cref.origin == Origin.CREF
+    return cref
+  end
+  while !(cref isa COMPONENT_REF_CREF) && cref.restCref.origin != Origin.CREF
+    tmp = Subscript[mapExp(s, func) for s in cref.subscripts]
+    subs = arrayList(tmp)
+    rest = cref.restCref
+    cref.restCref = rest
+    cref.subscripts = subs
+    cref = rest
+  end
+  return outCref
 end
 
 function mapCallIterators(iters::List{<:Tuple{<:InstNode, Expression}}, @nospecialize(func::Function)) ::List{Tuple{InstNode, Expression}}

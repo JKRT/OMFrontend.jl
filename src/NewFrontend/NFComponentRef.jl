@@ -20,7 +20,7 @@ struct COMPONENT_REF_STRING{T0 <: String,
   restCref::T1
 end
 
-struct COMPONENT_REF_CREF <: NFComponentRef
+mutable struct COMPONENT_REF_CREF <: NFComponentRef
   node::InstNode
   subscripts::List{Subscript}
   ty::NFType #= The type of the node, without taking subscripts into account. =#
@@ -994,6 +994,15 @@ function append(cref::ComponentRef, restCref::ComponentRef)
   end
   return cref
 end
+
+appendCref!(cref::COMPONENT_REF_EMPTY, restCref::ComponentRef) = restCref
+
+function appendCref!(cref::COMPONENT_REF_CREF, restCref::ComponentRef)
+  local restCrefTmp = append(cref.restCref, restCref)
+  cref.restCref = restCrefTmp
+  return cref
+end
+
 
 function firstNonScope(cref::ComponentRef)::ComponentRef
   local first::ComponentRef

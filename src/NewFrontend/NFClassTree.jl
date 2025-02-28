@@ -397,7 +397,7 @@ end
   Applies a function to each extends node in the class tree, and updates
   the extends array with the returned nodes.
 """
-function mapExtends(tree::ClassTree, func::FuncT)
+function mapExtends(tree::ClassTree, func::Function)
   local exts::Vector{InstNode} = getExtends(tree)
   for i in 1:length(exts)
     @inbounds res = exts[i]
@@ -406,15 +406,24 @@ function mapExtends(tree::ClassTree, func::FuncT)
   return
 end
 
-function mapExtends(tree::ClassTree, attributes::Attributes, useBinding::Bool, visibility, instLevel::Int)
+function mapExtends(tree::CLASS_TREE_INSTANTIATED_TREE, parent::Union{CLASS_NODE, COMPONENT_NODE})
   local exts::Vector{InstNode} = getExtends(tree)
   for i in 1:length(exts)
     @inbounds res = exts[i]
+    @inbounds exts[i] = modifyExtends(res, parent)
+  end
+  return
+end
+
+function mapExtends(tree::ClassTree, attributes::Attributes, useBinding::Bool, visibility, instLevel::Int)
+  local exts::Vector{InstNode} = getExtends(tree)
+  for i in 1:length(exts)
+    @inbounds res = exts[i]::InstNode
     @inbounds exts[i] = instExtends(res,
                                     attributes,
                                     useBinding,
                                     ExtendsVisibility.PUBLIC,
-                                    instLevel + 1)
+                                    instLevel + 1)::InstNode
   end
   return
 end
@@ -743,18 +752,31 @@ function replaceDuplicates(tree::CLASS_TREE_INSTANTIATED_TREE)
 end
 
 function mapRedeclareChains(tree::ClassTree, func::FuncT)
-  return () = begin
-    @match tree begin
-      CLASS_TREE_INSTANTIATED_TREE(__) where {(!DuplicateTree.isEmpty(tree.duplicates))} => begin
-        DuplicateTree.map(
-          tree.duplicates,
-          (name, entry) -> mapRedeclareChain(name, entry, func, tree),
-        )
-        ()
-      end
-      _ => begin
-        ()
-      end
+  @match tree begin
+    CLASS_TREE_INSTANTIATED_TREE(__) where {(!DuplicateTree.isEmpty(tree.duplicates))} => begin
+      DuplicateTree.map(
+        tree.duplicates,
+        (name, entry) -> mapRedeclareChain(name, entry, func, tree),
+      )
+      ()
+    end
+    _ => begin
+      ()
+    end
+  end
+end
+
+function mapRedeclareChains(tree::ClassTree, func::Function, instLevel::Int)
+  @match tree begin
+    CLASS_TREE_INSTANTIATED_TREE(__) where {(!DuplicateTree.isEmpty(tree.duplicates))} => begin
+      DuplicateTree.map(
+        tree.duplicates,
+        (name, entry) -> mapRedeclareChain(name, entry, func, tree),
+      )
+      ()
+    end
+    _ => begin
+      ()
     end
   end
 end

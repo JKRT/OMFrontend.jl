@@ -3007,47 +3007,42 @@ end
 function updateImplicitVariabilityComp(co::InstNode, evalAllParams::Bool)
   local node::InstNode = resolveOuter(co)
   local c::Component = component(node)
-
-   () = begin
-    local bnd::Binding
-    local condition::Binding
-    @match c begin
-      UNTYPED_COMPONENT(binding = bnd, condition = condition)  => begin
-        if isStructuralComponent(c, c.attributes, bnd, node, evalAllParams)
-          markStructuralParamsComp(c, node)
-        end
-        #=  Parameters used in array dimensions are structural.
-        =#
-        for dim in c.dimensions
-          markStructuralParamsDim(dim)
-        end
-        #=  Parameters that determine the size of a component binding are structural.
-        =#
-        if isBound(bnd)
-          markStructuralParamsExpSize(getUntypedExp(bnd))
-        end
-        #=  Parameters used in a component condition are structural.
-        =#
-        if isBound(condition)
-          markStructuralParamsExp(getUntypedExp(condition))
-        end
-        updateImplicitVariability(c.classInst, evalAllParams)
-        ()
+  local bnd::Binding
+  local condition::Binding
+  @match c begin
+    UNTYPED_COMPONENT(binding = bnd, condition = condition)  => begin
+      if isStructuralComponent(c, c.attributes, bnd, node, evalAllParams)
+        markStructuralParamsComp(c, node)
       end
-
-      TYPE_ATTRIBUTE(__) where (listMember(name(co), list("fixed", "stateSelect")))  => begin
-        bnd = binding(c.modifier)
-        if isBound(bnd)
-          markStructuralParamsExp(getUntypedExp(bnd))
-        end
-        ()
+      #=  Parameters used in array dimensions are structural.
+      =#
+      for dim in c.dimensions
+        markStructuralParamsDim(dim)
       end
+      #=  Parameters that determine the size of a component binding are structural.
+      =#
+      if isBound(bnd)
+        markStructuralParamsExpSize(getUntypedExp(bnd))
+      end
+      #=  Parameters used in a component condition are structural.
+      =#
+      if isBound(condition)
+        markStructuralParamsExp(getUntypedExp(condition))
+      end
+      updateImplicitVariability(c.classInst, evalAllParams)
+    end
 
-      _  => begin
-        ()
+    TYPE_ATTRIBUTE(__) where (co.name == "fixed" || co.name == "stateSelect")  => begin
+      bnd = binding(c.modifier)
+      if isBound(bnd)
+        markStructuralParamsExp(getUntypedExp(bnd))
       end
     end
+
+    _  => begin
+    end
   end
+  return nothing
 end
 
 function isStructuralComponent(component::Component, compAttrs::Attributes, compBinding::Binding, compNode::InstNode, evalAllParams::Bool) ::Bool
@@ -3244,20 +3239,19 @@ function markStructuralParamsExpSize(exp::Expression)
   apply(exp, markStructuralParamsExpSize_traverser)
 end
 
-function markStructuralParamsExpSize_traverser(exp::Expression)
-   () = begin
-    local iters::List{Tuple{InstNode, Expression}}
-    @match exp begin
-      CALL_EXPRESSION(call = UNTYPED_ARRAY_CONSTRUCTOR(iters = iters))  => begin
-        for iter in iters
-          markStructuralParamsExp(Util.tuple22(iter))
-        end
-        ()
-      end
 
-      _  => begin
-        ()
+markStructuralParamsExpSize_traverser(exp::Expression) = nothing
+function markStructuralParamsExpSize_traverser(exp::CALL_EXPRESSION)
+  local iters::List{Tuple{InstNode, Expression}}
+  @match exp begin
+    CALL_EXPRESSION(call = UNTYPED_ARRAY_CONSTRUCTOR(iters = iters))  => begin
+      for iter in iters
+        markStructuralParamsExp(Util.tuple22(iter))
       end
+      return nothing
+    end
+    _  => begin
+      return nothing
     end
   end
 end

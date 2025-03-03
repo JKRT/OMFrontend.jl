@@ -23,7 +23,7 @@ abstract type Modifier end
 
 struct MODIFIER_NOMOD <: Modifier end
 
-struct MODIFIER_REDECLARE{  T0 <: SCode.Final,
+mutable struct MODIFIER_REDECLARE{  T0 <: SCode.Final,
                             T1 <: SCode.Each,
                             T2 <: InstNode,
                             T3 <: Modifier} <: Modifier

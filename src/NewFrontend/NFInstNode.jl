@@ -96,6 +96,14 @@ mutable struct COMPONENT_NODE{T0 <: String, T1 <: Integer} <: InstNode
   nodeType::InstNodeType
 end
 
+struct BUILTIN_COMPONENT_NODE{T0 <: String, T1 <: Integer} <: InstNode
+  name::T0
+  visibility::T1
+  component::Pointer{Component}
+  parent #= The instance that this component is part of. =#::InstNode
+  nodeType::InstNodeType
+end
+
 mutable struct CLASS_NODE{T0 <: String, T1 <: Integer} <: InstNode
   name::T0
   definition::SCode.Element
@@ -778,7 +786,7 @@ function addIterator(iterator::InstNode, scope::InstNode)
   scope = begin
     @match scope begin
       IMPLICIT_SCOPE(__)  => begin
-        IMPLICIT_SCOPE(scope, prepend!([iterator], scope.locals))
+        IMPLICIT_SCOPE(scope, pushfirst!(scope.locals, iterator))
       end
     end
   end
@@ -1446,20 +1454,21 @@ function nodeType(node::InstNode)
   nodeType
 end
 
-function replaceClass(cls::Class, node::InstNode)
-  local replacedClass = if node isa CLASS_NODE
-    local classPtr = P_Pointer.create(cls)
-    CLASS_NODE{String, Int}(node.name,
-                            node.definition,
-                            node.visibility,
-                            classPtr,
-                            node.caches,
-                            node.parentScope,
-                            node.nodeType)
-  else
-    node
-  end
+function replaceClass(cls::Class, node::CLASS_NODE)
+  local classPtr = P_Pointer.create(cls)
+  replacedClass = CLASS_NODE{String, Int}(node.name,
+                                          node.definition,
+                                          node.visibility,
+                                          classPtr,
+                                          node.caches,
+                                          node.parentScope,
+                                          node.nodeType)
   return replacedClass
+end
+
+
+function replaceClass(cls::Class, node::InstNode)
+  return node
 end
 
 
@@ -1610,13 +1619,11 @@ end
 
 function setParent(@nospecialize(parent::InstNode),
                     node::COMPONENT_NODE)
-  # COMPONENT_NODE{String, Int}(node.name,
-  #                             node.visibility,
-  #                             node.component,
-  #                             parent,
-  #                             node.nodeType)
-  node.parent = parent
-  return node
+  COMPONENT_NODE{String, Int}(node.name,
+                              node.visibility,
+                              node.component,
+                              parent,
+                              node.nodeType)
 end
 
 function setParent(@nospecialize(parent::InstNode),
@@ -1677,13 +1684,13 @@ end
 function parentScope(@nospecialize(node::InstNode))
   local scope::InstNode
    scope = begin
-    @match node begin
-      CLASS_NODE(nodeType = DERIVED_CLASS(__))  => begin
-        parentScope(lastBaseClass(node))
-      end
-      CLASS_NODE(__)  => begin
-        node.parentScope
-      end
+     @match node begin
+       CLASS_NODE(nodeType = DERIVED_CLASS(__))  => begin
+         parentScope(lastBaseClass(node))
+       end
+       CLASS_NODE(__)  => begin
+         node.parentScope
+       end
 
       COMPONENT_NODE(__)  => begin
         parentScope(classInstance(P_Pointer.access(node.component)))

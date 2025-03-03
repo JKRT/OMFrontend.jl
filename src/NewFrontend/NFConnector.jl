@@ -40,7 +40,7 @@ function split(
   return connl
 end
 
-""" #= Splits a connector into its primitive components. Scalarize everything! =#"""
+""" Splits a connector into its primitive components. Scalarize everything! """
 function split(conn::CONNECTOR)::List{Connector}
   local connl::List{Connector}
   @assign connl = splitImpl(conn.name, conn.ty, conn.face, conn.source, conn.cty, ScalarizeSetting.NONE)
@@ -348,7 +348,6 @@ function crefFace(cref::ComponentRef)::FaceType
   =#
   return face
 end
-
 
 function isArray(conn::Connector)
   return isArray(conn.ty)

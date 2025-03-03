@@ -345,8 +345,7 @@ const REAL_CLASS_TREE =
     listArray(nil),
     DuplicateTree.EMPTY(),
   )::ClassTree
-#=  TODO: #4895: This should be listArrayLiteral too, but causes compilation issues.
-=#
+#=  TODO: #4895: This should be listArrayLiteral too, but causes compilation issues. =#
 const REAL_NODE =
   CLASS_NODE{String, Int}(
     "Real",
@@ -849,6 +848,8 @@ const BUILTIN_DICT = Dict{String, CLASS_NODE}(
   "String" => NFBuiltin.STRING_NODE,
   "Clock" => NFBuiltin.CLOCK_NODE,
   "polymorphic" => NFBuiltin.POLYMORPHIC_NODE)
+
+const BUILTIN_SET = Base.Set([REAL_NODE, INTEGER_NODE, BOOLEAN_NODE, STRING_NODE, CLOCK_NODE, POLYMORPHIC_NODE])
 
 import ..LOOKUP_STATE_PREDEF_CLASS
 import ..LOOKUP_STATE_PREDEF_COMP

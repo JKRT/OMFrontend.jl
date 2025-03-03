@@ -6986,7 +6986,11 @@ function isClassBinding(binding::Binding)
 end
 
 function addParent(@nospecialize(parent::InstNode),
-                    @nospecialize(binding::Binding))
+                   @nospecialize(binding::Binding))
+  if ! (binding isa UNBOUND || binding isa RAW_BINDING)
+    return binding
+  end
+
   local parentLst = _cons(parent, binding.parents)
   local newBinding = if binding isa UNBOUND
     UNBOUND(parentLst,

@@ -34,7 +34,7 @@ abstract type CallAttributes end
 ```CALL_ATTR```
 This struct specifies the attributes for a call.
 """
-struct CALL_ATTR <: CallAttributes
+mutable struct CALL_ATTR <: CallAttributes
   tuple_::Bool #=tuple =#
   builtin::Bool #=builtin Function call =#
   isImpure::Bool #=if the function has prefix *impure* is true, else false =#
@@ -73,7 +73,7 @@ struct UNTYPED_ARRAY_CONSTRUCTOR <: Call
   iters::List{Tuple{InstNode, Expression}}
 end
 
-struct TYPED_CALL <: Call
+mutable struct TYPED_CALL <: Call
   fn::M_Function
   ty::NFType
   var::VariabilityType
@@ -81,14 +81,14 @@ struct TYPED_CALL <: Call
   attributes::CallAttributes
 end
 
-struct ARG_TYPED_CALL <: Call
+mutable struct ARG_TYPED_CALL <: Call
   ref::ComponentRef
   arguments::Vector{TypedArg}
   named_args::Vector{TypedNamedArg}
   call_scope::InstNode
 end
 
-struct UNTYPED_CALL <: Call
+mutable struct UNTYPED_CALL <: Call
   ref::ComponentRef
   arguments::Vector{Expression}
   named_args::Vector{NamedArg}
@@ -912,7 +912,7 @@ function typeCall2(
     @match call begin
       UNTYPED_CALL(ref = cref) => begin
         if needSpecialHandling(call)
-          (outExp, ty, var) = typeSpecial(call, origin, info)
+          @match (outExp, ty, var) = typeSpecial(call, origin, info)
         else
           ty_call = typeMatchNormalCall(call, origin, info)
           ty = typeOf(ty_call)
@@ -931,11 +931,11 @@ function typeCall2(
         outExp
       end
       UNTYPED_ARRAY_CONSTRUCTOR(__) => begin
-        (ty_call, ty, var) = typeArrayConstructor(call, origin, info)
+        @match (ty_call, ty, var) = typeArrayConstructor(call, origin, info)
         CALL_EXPRESSION(ty_call)
       end
       UNTYPED_REDUCTION(__) => begin
-        (ty_call, ty, var) = typeReduction(call, origin, info)
+        @match (ty_call, ty, var) = typeReduction(call, origin, info)
         CALL_EXPRESSION(ty_call)
       end
       TYPED_CALL(__) => begin #Double check this...

@@ -356,8 +356,8 @@ function toPath(cref::ComponentRef)::Absyn.Path
 end
 
 function hash(cref::ComponentRef, mod::Int)::Int
-  local hash::Int = stringHashDjb2Mod(toString(cref), mod)
-  return hash
+  local hv::Int = stringHashDjb2Mod(toString(cref), mod)
+  return hv
 end
 
 function listToString(crs::List{<:ComponentRef})::String
@@ -799,10 +799,10 @@ end
 
 
 function setSubscripts(subscripts::List{<:Subscript}, @nospecialize(cref::ComponentRef))
-  local tmpCref = if cref isa COMPONENT_REF_CREF
-    COMPONENT_REF_CREF(cref.node, subscripts, cref.ty, cref.origin, cref.restCref)
+  if cref isa COMPONENT_REF_CREF
+    return COMPONENT_REF_CREF(cref.node, subscripts, cref.ty, cref.origin, cref.restCref)
   else
-    cref
+    return cref
   end
 end
 
@@ -998,7 +998,7 @@ end
 appendCref!(cref::COMPONENT_REF_EMPTY, restCref::ComponentRef) = restCref
 
 function appendCref!(cref::COMPONENT_REF_CREF, restCref::ComponentRef)
-  local restCrefTmp = append(cref.restCref, restCref)
+  local restCrefTmp = appendCref!(cref.restCref, restCref)
   cref.restCref = restCrefTmp
   return cref
 end

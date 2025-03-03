@@ -5,78 +5,75 @@ struct FunctionTypeStruct
 end
 const FunctionType = FunctionTypeStruct(1, 2, 3)
 
-@UniontypeDecl NFType
-@Uniontype NFType begin
-  @Record TYPE_SUBSCRIPTED begin
-    name::String
-    ty::M_Type
-    subs::List{M_Type}
-    subscriptedTy::M_Type
-  end
+abstract type NFType end
 
-  @Record TYPE_ANY begin
-  end
-
-  @Record TYPE_POLYMORPHIC begin
-    name::String
-  end
-
-  @Record TYPE_METABOXED begin
-    ty::M_Type
-  end
-
-  @Record TYPE_FUNCTION begin
-    fn::M_Function
-    #= Specified by the function type struct. =#
-    fnType::Int
-  end
-
-  @Record TYPE_COMPLEX begin
-    cls::InstNode
-    complexTy::ComplexType
-  end
-
-  @Record TYPE_UNKNOWN begin
-  end
-
-  @Record TYPE_NORETCALL begin
-  end
-
-  @Record TYPE_TUPLE begin
-    types::List{M_Type}
-    names::Option{List{String}}
-  end
-
-  @Record TYPE_ARRAY begin
-    elementType::M_Type
-    dimensions::List{Dimension}
-  end
-
-  @Record TYPE_ENUMERATION_ANY begin
-  end
-
-  @Record TYPE_ENUMERATION begin
-    typePath::Absyn.Path
-    literals::List{String}
-  end
-
-  @Record TYPE_CLOCK begin
-  end
-
-  @Record TYPE_BOOLEAN begin
-  end
-
-  @Record TYPE_STRING begin
-  end
-
-  @Record TYPE_REAL begin
-  end
-
-  @Record TYPE_INTEGER begin
-  end
+struct TYPE_SUBSCRIPTED  <: NFType
+  name::String
+  ty::M_Type
+  subs::List{M_Type}
+  subscriptedTy::M_Type
 end
 
+struct TYPE_ANY  <: NFType
+end
 
+struct TYPE_POLYMORPHIC  <: NFType
+  name::String
+end
+
+struct TYPE_METABOXED  <: NFType
+  ty::M_Type
+end
+
+mutable struct TYPE_FUNCTION  <: NFType
+  fn::M_Function
+  #= Specified by the function type struct. =#
+  fnType::Int
+end
+
+struct TYPE_COMPLEX  <: NFType
+  cls::InstNode
+  complexTy::ComplexType
+end
+
+struct TYPE_UNKNOWN  <: NFType
+end
+
+struct TYPE_NORETCALL  <: NFType
+end
+
+struct TYPE_TUPLE  <: NFType
+  types::List{M_Type}
+  names::Option{List{String}}
+end
+
+struct TYPE_ARRAY  <: NFType
+  elementType::M_Type
+  dimensions::List{Dimension}
+end
+
+struct TYPE_ENUMERATION_ANY  <: NFType
+end
+
+mutable struct TYPE_ENUMERATION  <: NFType
+  typePath::Absyn.Path
+  literals::List{String}
+end
+
+struct TYPE_CLOCK  <: NFType
+end
+
+struct TYPE_BOOLEAN  <: NFType
+end
+
+struct TYPE_STRING  <: NFType
+end
+
+struct TYPE_REAL  <: NFType
+end
+
+struct TYPE_INTEGER  <: NFType
+end
 
 function subscriptedTypeName(expType::M_Type, subscriptTypes::List{<:M_Type})::String
   local str::String
@@ -1507,12 +1504,12 @@ function unliftArrayN(N::Int, ty::M_Type)::M_Type
 
   @match TYPE_ARRAY(el_ty, dims) = ty
   for i = 1:N
-    @assign dims = listRest(dims)
+    dims = listRest(dims)
   end
   if listEmpty(dims)
-    @assign ty = el_ty
+    ty = el_ty
   else
-    @assign ty = TYPE_ARRAY(el_ty, dims)
+    ty = TYPE_ARRAY(el_ty, dims)
   end
   return ty
 end

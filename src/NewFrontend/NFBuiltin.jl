@@ -841,6 +841,9 @@ function makeBuiltinLookupTree(
   return print("\\n")
 end
 
+"""
+Contains the builtin class nodes of the compiler.
+"""
 const BUILTIN_DICT = Dict{String, CLASS_NODE}(
   "Real" => NFBuiltin.REAL_NODE,
   "Integer" => NFBuiltin.INTEGER_NODE,
@@ -848,8 +851,6 @@ const BUILTIN_DICT = Dict{String, CLASS_NODE}(
   "String" => NFBuiltin.STRING_NODE,
   "Clock" => NFBuiltin.CLOCK_NODE,
   "polymorphic" => NFBuiltin.POLYMORPHIC_NODE)
-
-const BUILTIN_SET = Base.Set([REAL_NODE, INTEGER_NODE, BOOLEAN_NODE, STRING_NODE, CLOCK_NODE, POLYMORPHIC_NODE])
 
 import ..LOOKUP_STATE_PREDEF_CLASS
 import ..LOOKUP_STATE_PREDEF_COMP

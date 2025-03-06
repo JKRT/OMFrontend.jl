@@ -108,7 +108,7 @@ FuncsTuple = Tuple
 function bucketToValuesSize(szBucket::Integer)::Integer
   local szArr::Integer
 
-  @assign szArr = realInt(realMul(intReal(szBucket), 0.6))
+  szArr = realInt(realMul(intReal(szBucket), 0.6))
   #=  intDiv(szBucket, 10);
   =#
   return szArr
@@ -130,10 +130,10 @@ function emptyHashTableWork(szBucket::Integer, fntpl::FuncsTuple)::HashTable
     # )
     fail()
   end
-  @assign arr = arrayCreate(szBucket, nil)
-  @assign szArr = bucketToValuesSize(szBucket)
-  @assign emptyarr = arrayCreate(szArr, NONE())
-  @assign hashTable = (arr, (0, szArr, emptyarr), szBucket, fntpl)
+  arr = arrayCreate(szBucket, nil)
+  szArr = bucketToValuesSize(szBucket)
+  emptyarr = arrayCreate(szArr, NONE())
+  hashTable = (arr, (0, szArr, emptyarr), szBucket, fntpl)
   return hashTable
 end
 
@@ -226,10 +226,10 @@ function addNoUpdCheck(entry::HashEntry, hashTable::HashTable)::HashTable
     =#
     @matchcontinue (entry, hashTable) begin
       (v && (key, _), (hashvec, varr, bsize, fntpl && (hashFunc, _, _, _))) => begin
-        @assign indx = hashFunc(key, bsize) + 1
-        @assign (varr, newpos) = valueArrayAdd(varr, v)
-        @assign indexes = hashvec[indx]
-        @assign hashvec = arrayUpdate(hashvec, indx, _cons((key, newpos), indexes))
+        indx = hashFunc(key, bsize) + 1
+        (varr, newpos) = valueArrayAdd(varr, v)
+        indexes = hashvec[indx]
+        hashvec = arrayUpdate(hashvec, indx, _cons((key, newpos), indexes))
         (hashvec, varr, bsize, fntpl)
       end
 

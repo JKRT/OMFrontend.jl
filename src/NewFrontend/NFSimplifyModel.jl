@@ -192,8 +192,10 @@ function simplifyEqualityEquation(eq::EQUATION_EQUALITY, equations::Vector{Equat
   #@info "Simplify equality equation..." toString(eq)
   if typeof(eq.rhs) == ARRAY_EXPRESSION
     if isEmptyArray(eq.rhs)
+      @info "Was empty array"
       return equations
     else
+      @info "Was not empty array"
       global EQ_ARRAY = eq
     end
   end

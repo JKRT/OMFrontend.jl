@@ -260,7 +260,7 @@ function makeArrayExp(posArgs::List{<:Expression}, namedArgs::List{<:NamedArg}, 
   arrayExp
 end
 
-function makeCatExp(n::Int, args::Vector{Expression}, tys::Vector{M_Type}, variability::VariabilityType, info::SourceInfo) ::Tuple{Expression, M_Type}
+function makeCatExp(n::Int, args::Vector{Expression}, tys::Vector{M_Type}, variability::VariabilityType, info::SourceInfo)::Tuple{CALL_EXPRESSION, M_Type}
   local ty::M_Type
   local callExp::Expression
 

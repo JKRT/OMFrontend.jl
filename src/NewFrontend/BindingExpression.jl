@@ -2724,289 +2724,222 @@ end
 end
 
 function applyCrefSubscript(subscript::Subscript, func::ApplyFunc)
-   () = begin
     @match subscript begin
       SUBSCRIPT_UNTYPED(__)  => begin
         apply(subscript.exp, func)
-        ()
+        nothing
       end
 
       SUBSCRIPT_INDEX(__)  => begin
         apply(subscript.index, func)
-        ()
+        nothing
       end
 
       SUBSCRIPT_SLICE(__)  => begin
         apply(subscript.slice, func)
-        ()
+        nothing
       end
 
       SUBSCRIPT_WHOLE(__)  => begin
-        ()
+        nothing
       end
     end
-  end
 end
 
 function applyCref(cref::ComponentRef, func::ApplyFunc)
-   () = begin
-    @match cref begin
-      COMPONENT_REF_CREF(origin = Origin.CREF)  => begin
-        for s in cref.subscripts
-          applyCrefSubscript(s, func)
-        end
-        applyCref(cref.restCref, func)
-        ()
+  @match cref begin
+    COMPONENT_REF_CREF(origin = Origin.CREF)  => begin
+      for s in cref.subscripts
+        applyCrefSubscript(s, func)
       end
-
-      _  => begin
-        ()
-      end
+      applyCref(cref.restCref, func)
+      nothing
+    end
+    _  => begin
+      nothing
     end
   end
 end
 
-function applyCall(call::Call, func::ApplyFunc)
-   () = begin
+function applyCall(call::Call, func::ApplyFunc)::Nothing
     local e::Expression
     @match call begin
       UNTYPED_CALL(__)  => begin
         applyList(call.arguments, func)
         for arg in call.named_args
-           (_, e) = arg
+          e = arg[2]
           apply(e, func)
         end
-        ()
+        nothing
       end
 
       ARG_TYPED_CALL(__)  => begin
         for arg in call.arguments
-           (e, _, _) = arg
+          e = first(arg)
           apply(e, func)
         end
         for arg in call.named_args
-           (_, e, _, _) = arg
+          e = arg[2]
           apply(e, func)
         end
-        ()
+        nothing
       end
 
       TYPED_CALL(__)  => begin
         applyList(call.arguments, func)
-        ()
+        nothing
       end
 
       UNTYPED_ARRAY_CONSTRUCTOR(__)  => begin
         apply(call.exp, func)
         for i in call.iters
-          apply(Util.tuple22(i), func)
+          apply(last(i), func)
         end
-        ()
+        nothing
       end
 
       TYPED_ARRAY_CONSTRUCTOR(__)  => begin
         apply(call.exp, func)
         for i in call.iters
-          apply(Util.tuple22(i), func)
+          apply(last(i), func)
         end
-        ()
+        nothing
       end
 
       UNTYPED_REDUCTION(__)  => begin
         apply(call.exp, func)
         for i in call.iters
-          apply(Util.tuple22(i), func)
+          apply(last(i), func)
         end
-        ()
+        nothing
       end
 
       TYPED_REDUCTION(__)  => begin
         apply(call.exp, func)
         for i in call.iters
-          apply(Util.tuple22(i), func)
+          apply(last(i), func)
         end
         Util.applyOption(call.defaultExp, func)
         Util.applyOption(Util.tuple31(call.foldExp), func)
-        ()
+        nothing
       end
     end
-  end
 end
 
-function apply(@nospecialize(exp::Expression), func::ApplyFunc)
-   () = begin
-    local e::Expression
-    local e1::Expression
-    local e2::Expression
-    @match exp begin
-      CLKCONST_EXPRESSION(INTEGER_CLOCK(e1, e2))  => begin
-        apply(e1, func)
-        apply(e2, func)
-        ()
+function apply(@nospecialize(exp::Expression), func::ApplyFunc)::Nothing
+  local e::Expression
+  local e1::Expression
+  local e2::Expression
+  @match exp begin
+    CLKCONST_EXPRESSION(INTEGER_CLOCK(e1, e2))  => begin
+      apply(e1, func)
+      apply(e2, func)
+    end
+    CLKCONST_EXPRESSION(REAL_CLOCK(e1))  => begin
+      apply(e1, func)
+    end
+    CLKCONST_EXPRESSION(BOOLEAN_CLOCK(e1, e2))  => begin
+      apply(e1, func)
+      apply(e2, func)
+    end
+    CLKCONST_EXPRESSION(SOLVER_CLOCK(e1, e2))  => begin
+      apply(e1, func)
+      apply(e2, func)
+    end
+    CREF_EXPRESSION(__)  => begin
+      applyCref(exp.cref, func)
+    end
+    ARRAY_EXPRESSION(__)  => begin
+      applyList(exp.elements, func)
+    end
+    MATRIX_EXPRESSION(__)  => begin
+      for row in exp.elements
+        applyList(row, func)
       end
-
-      CLKCONST_EXPRESSION(REAL_CLOCK(e1))  => begin
-        apply(e1, func)
-        ()
+    end
+    RANGE_EXPRESSION(step = SOME(e))  => begin
+      apply(exp.start, func)
+      apply(e, func)
+      apply(exp.stop, func)
+    end
+    RANGE_EXPRESSION(__)  => begin
+      apply(exp.start, func)
+      apply(exp.stop, func)
+    end
+    TUPLE_EXPRESSION(__)  => begin
+      applyList(exp.elements, func)
+    end
+    RECORD_EXPRESSION(__)  => begin
+      applyList(exp.elements, func)
+    end
+    CALL_EXPRESSION(__)  => begin
+      applyCall(exp.call, func)
+    end
+    SIZE_EXPRESSION(dimIndex = SOME(e))  => begin
+      apply(exp.exp, func)
+      apply(e, func)
+    end
+    SIZE_EXPRESSION(__)  => begin
+      apply(exp.exp, func)
+    end
+    BINARY_EXPRESSION(__)  => begin
+      apply(exp.exp1, func)
+      apply(exp.exp2, func)
+    end
+    UNARY_EXPRESSION(__)  => begin
+      apply(exp.exp, func)
+    end
+    LBINARY_EXPRESSION(__)  => begin
+      apply(exp.exp1, func)
+      apply(exp.exp2, func)
+    end
+    LUNARY_EXPRESSION(__)  => begin
+      apply(exp.exp, func)
+    end
+    RELATION_EXPRESSION(__)  => begin
+      apply(exp.exp1, func)
+      apply(exp.exp2, func)
+    end
+    IF_EXPRESSION(__)  => begin
+      apply(exp.condition, func)
+      apply(exp.trueBranch, func)
+      apply(exp.falseBranch, func)
+    end
+    CAST_EXPRESSION(__)  => begin
+      apply(exp.exp, func)
+    end
+    UNBOX_EXPRESSION(__)  => begin
+      apply(exp.exp, func)
+    end
+    SUBSCRIPTED_EXP_EXPRESSION(__)  => begin
+      apply(exp.exp, func)
+      for s in exp.subscripts
+        applyExp(s, func)
       end
-
-      CLKCONST_EXPRESSION(BOOLEAN_CLOCK(e1, e2))  => begin
-        apply(e1, func)
-        apply(e2, func)
-        ()
-      end
-
-      CLKCONST_EXPRESSION(SOLVER_CLOCK(e1, e2))  => begin
-        apply(e1, func)
-        apply(e2, func)
-        ()
-      end
-
-      CREF_EXPRESSION(__)  => begin
-        applyCref(exp.cref, func)
-        ()
-      end
-
-      ARRAY_EXPRESSION(__)  => begin
-        applyList(exp.elements, func)
-        ()
-      end
-
-      MATRIX_EXPRESSION(__)  => begin
-        for row in exp.elements
-          applyList(row, func)
-        end
-        ()
-      end
-
-      RANGE_EXPRESSION(step = SOME(e))  => begin
-        apply(exp.start, func)
-        apply(e, func)
-        apply(exp.stop, func)
-        ()
-      end
-
-      RANGE_EXPRESSION(__)  => begin
-        apply(exp.start, func)
-        apply(exp.stop, func)
-        ()
-      end
-
-      TUPLE_EXPRESSION(__)  => begin
-        applyList(exp.elements, func)
-        ()
-      end
-
-      RECORD_EXPRESSION(__)  => begin
-        applyList(exp.elements, func)
-        ()
-      end
-
-      CALL_EXPRESSION(__)  => begin
-        applyCall(exp.call, func)
-        ()
-      end
-
-      SIZE_EXPRESSION(dimIndex = SOME(e))  => begin
-        apply(exp.exp, func)
-        apply(e, func)
-        ()
-      end
-
-      SIZE_EXPRESSION(__)  => begin
-        apply(exp.exp, func)
-        ()
-      end
-
-      BINARY_EXPRESSION(__)  => begin
-        apply(exp.exp1, func)
-        apply(exp.exp2, func)
-        ()
-      end
-
-      UNARY_EXPRESSION(__)  => begin
-        apply(exp.exp, func)
-        ()
-      end
-
-      LBINARY_EXPRESSION(__)  => begin
-        apply(exp.exp1, func)
-        apply(exp.exp2, func)
-        ()
-      end
-
-      LUNARY_EXPRESSION(__)  => begin
-        apply(exp.exp, func)
-        ()
-      end
-
-      RELATION_EXPRESSION(__)  => begin
-        apply(exp.exp1, func)
-        apply(exp.exp2, func)
-        ()
-      end
-
-      IF_EXPRESSION(__)  => begin
-        apply(exp.condition, func)
-        apply(exp.trueBranch, func)
-        apply(exp.falseBranch, func)
-        ()
-      end
-
-      CAST_EXPRESSION(__)  => begin
-        apply(exp.exp, func)
-        ()
-      end
-
-      UNBOX_EXPRESSION(__)  => begin
-        apply(exp.exp, func)
-        ()
-      end
-
-      SUBSCRIPTED_EXP_EXPRESSION(__)  => begin
-        apply(exp.exp, func)
-        for s in exp.subscripts
-          applyExp(s, func)
-        end
-        ()
-      end
-
-      TUPLE_ELEMENT_EXPRESSION(__)  => begin
-        apply(exp.tupleExp, func)
-        ()
-      end
-
-      RECORD_ELEMENT_EXPRESSION(__)  => begin
-        apply(exp.recordExp, func)
-        ()
-      end
-
-      BOX_EXPRESSION(__)  => begin
-        apply(exp.exp, func)
-        ()
-      end
-
-      MUTABLE_EXPRESSION(__)  => begin
-        apply(P_Pointer.access(exp.exp), func)
-        ()
-      end
-
-      PARTIAL_FUNCTION_APPLICATION_EXPRESSION(__)  => begin
-        applyList(exp.args, func)
-        ()
-      end
-
-      BINDING_EXP(__)  => begin
-        apply(exp.exp, func)
-        ()
-      end
-
-      _  => begin
-        ()
-      end
+    end
+    TUPLE_ELEMENT_EXPRESSION(__)  => begin
+      apply(exp.tupleExp, func)
+    end
+    RECORD_ELEMENT_EXPRESSION(__)  => begin
+      apply(exp.recordExp, func)
+    end
+    BOX_EXPRESSION(__)  => begin
+      apply(exp.exp, func)
+    end
+    MUTABLE_EXPRESSION(__)  => begin
+      apply(P_Pointer.access(exp.exp), func)
+    end
+    PARTIAL_FUNCTION_APPLICATION_EXPRESSION(__)  => begin
+      applyList(exp.args, func)
+    end
+    BINDING_EXP(__)  => begin
+      apply(exp.exp, func)
+    end
+    _  => begin
     end
   end
   func(exp)
+  return nothing
 end
 
 function applyList(expl::Union{List{<:Expression},Vector{Expression}}, func::ApplyFunc)
@@ -3064,7 +2997,7 @@ function foldCall(call::Call, func::FoldFunc, foldArg::ArgT) where {ArgT}
       UNTYPED_ARRAY_CONSTRUCTOR(__)  => begin
          foldArg = fold(call.exp, func, foldArg)
         for i in call.iters
-           foldArg = fold(Util.tuple22(i), func, foldArg)
+           foldArg = fold(last(i), func, foldArg)
         end
         ()
       end
@@ -3072,7 +3005,7 @@ function foldCall(call::Call, func::FoldFunc, foldArg::ArgT) where {ArgT}
       TYPED_ARRAY_CONSTRUCTOR(__)  => begin
          foldArg = fold(call.exp, func, foldArg)
         for i in call.iters
-           foldArg = fold(Util.tuple22(i), func, foldArg)
+           foldArg = fold(last(i), func, foldArg)
         end
         ()
       end
@@ -3080,7 +3013,7 @@ function foldCall(call::Call, func::FoldFunc, foldArg::ArgT) where {ArgT}
       UNTYPED_REDUCTION(__)  => begin
          foldArg = fold(call.exp, func, foldArg)
         for i in call.iters
-           foldArg = fold(Util.tuple22(i), func, foldArg)
+           foldArg = fold(last(i), func, foldArg)
         end
         ()
       end
@@ -3088,7 +3021,7 @@ function foldCall(call::Call, func::FoldFunc, foldArg::ArgT) where {ArgT}
       TYPED_REDUCTION(__)  => begin
          foldArg = fold(call.exp, func, foldArg)
         for i in call.iters
-           foldArg = fold(Util.tuple22(i), func, foldArg)
+           foldArg = fold(last(i), func, foldArg)
         end
          foldArg = foldOpt(call.defaultExp, func, foldArg)
          foldArg = foldOpt(Util.tuple31(call.foldExp), func, foldArg)
@@ -3266,7 +3199,7 @@ function foldOpt(exp::Option{Expression}, func::FoldFunc, arg::ArgT)  where {Arg
   result
 end
 
-function foldList(expl::Union{List{Expression}, Vector{Expression}}, func::FoldFunc, arg)
+function foldList(expl::Union{List{T}, Vector{T}}, func::FoldFunc, arg) where T
   local result = arg
   for e in expl
     result = fold(e, func, result)

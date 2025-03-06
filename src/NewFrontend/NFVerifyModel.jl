@@ -124,8 +124,8 @@ function whenEquationBranchCrefs(eql::Union{List{<:Equation}, Vector{<:Equation}
       end
     end
   end
-  @assign crefs = ListUtil.sort(crefs, isGreater)
-  @assign crefs = ListUtil.sortedUnique(crefs, isEqual)
+  crefs = ListUtil.sort(crefs, isGreater)
+  crefs = ListUtil.sortedUnique(crefs, isEqual)
   return crefs
 end
 

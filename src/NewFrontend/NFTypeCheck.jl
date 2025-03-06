@@ -2581,7 +2581,7 @@ function matchArrayTypes(
   arrayType2::NFType,
   expression::Expression,
   allowUnknown::Bool,
-)::Tuple{Expression, NFType, MatchKindType}
+)::Tuple{Expression, TYPE_ARRAY, Int}
   local matchKind::MatchKindType
   local compatibleType::NFType
 
@@ -2592,13 +2592,11 @@ function matchArrayTypes(
 
   @match TYPE_ARRAY(elementType = ety1, dimensions = dims1) = arrayType1
   @match TYPE_ARRAY(elementType = ety2, dimensions = dims2) = arrayType2
-  #=  Check that the element types are compatible.
-  =#
+  #=  Check that the element types are compatible. =#
    (expression, compatibleType, matchKind) =
     matchTypes(ety1, ety2, expression; allowUnknown = allowUnknown)
-  #=  If the element types are compatible, check the dimensions too.
-  =#
-   (compatibleType, matchKind) =
+  #=  If the element types are compatible, check the dimensions too. =#
+  (compatibleType, matchKind) =
     matchArrayDims(dims1, dims2, compatibleType, matchKind, allowUnknown)
   return (expression, compatibleType, matchKind)
 end
@@ -2609,35 +2607,38 @@ function matchArrayDims(
   ty::NFType,
   matchKind::MatchKindType,
   allowUnknown::Bool,
-)::Tuple{NFType, MatchKindType}
+)::Tuple{TYPE_ARRAY, Int}
 
   local rest_dims2::List{Dimension} = dims2
-  local cdims::List{Dimension} = nil
   local dim2::Dimension
   local compat::Bool
 
   if !isCompatibleMatch(matchKind)
     return (ty, matchKind)
   end
-  #=  The array types must have the same number of dimensions.
-  =#
-  if listLength(dims1) != listLength(dims2)
-    @assign matchKind = MatchKind.NOT_COMPATIBLE
-    return (ty, matchKind)
+  #=  The array types must have the same number of dimensions. =#
+  if length(dims1) != length(dims2)
+    matchKind = MatchKind.NOT_COMPATIBLE
+    return (ty, matchKind::Int)
   end
-  #=  The dimensions of both array types must be compatible.
+  local dims1V = listArray(dims1)
+  local dims2V = listArray(dims2)
+  #=
+  The dimensions of both array types must be compatible.
+  We do not preallocate the array here since we might need to break before that.
   =#
-  for dim1 in dims1
-    @match _cons(dim2, rest_dims2) = rest_dims2
-     (dim1, compat) = matchDimensions(dim1, dim2, allowUnknown)
+  local cDims = Dimension[]
+  for (i, dim1) in enumerate(dims1V)
+    #@match _cons(dim2, rest_dims2) = rest_dims2
+    (dim1, compat) = matchDimensions(dim1, dims2V[i], allowUnknown)
     if !compat
-      @assign matchKind = MatchKind.NOT_COMPATIBLE
+      matchKind = MatchKind.NOT_COMPATIBLE
       break
     end
-    @assign cdims = _cons(dim1, cdims)
+    push!(cDims, dim1)
   end
-  @assign ty = TYPE_ARRAY(ty, listReverseInPlace(cdims))
-  return (ty, matchKind)
+  ty = TYPE_ARRAY(ty, arrayList(cDims))
+  return (ty, matchKind::Int)
 end
 
 function matchDimensions(
@@ -3249,13 +3250,14 @@ function matchBinding(
       UNBOUND(__) => begin
         ()
       end
-      _ => begin
-        Error.assertion(
-          false,
-          getInstanceName() + " got untyped binding " + toString(binding),
-          sourceInfo(),
-        )
-        fail()
+       _ => begin
+         binding = BINDING_ERROR()
+        # Error.assertion(
+        #   false,
+        #   getInstanceName() + " got untyped binding " + toString(binding),
+        #   sourceInfo(),
+        # )
+        # fail()
       end
     end
   end

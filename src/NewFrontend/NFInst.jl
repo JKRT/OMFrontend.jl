@@ -97,7 +97,7 @@ function instClassInProgramFM2(classPath::Absyn.Path, program::SCode.Program)::T
   instExpressions(inst_cls)
   ExecStat.execStat("NFInst.instExpressions(" + name + ")")
   #=  Mark structural parameters. =#
-  updateImplicitVariability(inst_cls, Flags.isSet(Flags.EVAL_PARAM))
+  updateImplicitVariability(inst_cls, Flags.isSet(Flags.EVAL_PARAM)::Bool)
   ExecStat.execStat("NFInst.updateImplicitVariability")
   #=  Type the class. =#
   #"Type the class"
@@ -875,7 +875,7 @@ function instClassDef(cls::EXPANDED_CLASS,
                       outerMod::Modifier,
                       attributes::Attributes,
                       useBinding::Bool,
-                      node::InstNode,
+                      node::CLASS_NODE,
                       parentArg::InstNode,
                       instLevel::Int)
   local par::InstNode
@@ -894,7 +894,7 @@ function instClassDef(cls::EXPANDED_CLASS,
   if isBaseClass(node)
     par = parentArg
   else
-    @match (node, par, _, _) = instantiate(node, parentArg)
+    (node::CLASS_NODE, par, _, _) = instantiate(node::CLASS_NODE, parentArg)
   end
   updateComponentType(parentArg, node)
   attributes = updateClassConnectorType(res, attributes)
@@ -1063,60 +1063,51 @@ const ExtendsVisibilityType = Int
 
 
 
-function instExtends(node::InstNode,
+function instExtends(node::CLASS_NODE,
                      attributes::Attributes,
                      useBinding::Bool,
                      visibility::ExtendsVisibilityType,
-                     instLevel::Int)
+                     instLevel::Int)::CLASS_NODE
   local cls::Class
   local inst_cls::Class
   local cls_tree::ClassTree
   local vis::ExtendsVisibilityType = visibility
   cls = getClass(node)
-  () = begin
-    @match cls begin
-      EXPANDED_CLASS(elements = cls_tree && CLASS_TREE_INSTANTIATED_TREE(__))  => begin
-        if vis == ExtendsVisibility.PUBLIC && isProtectedBaseClass(node) || vis == ExtendsVisibility.DERIVED_PROTECTED
-          vis = ExtendsVisibility.PROTECTED
+  @match cls begin
+    EXPANDED_CLASS(elements = cls_tree && CLASS_TREE_INSTANTIATED_TREE(__))  => begin
+      if vis == ExtendsVisibility.PUBLIC && isProtectedBaseClass(node) || vis == ExtendsVisibility.DERIVED_PROTECTED
+        vis = ExtendsVisibility.PROTECTED
+      end
+      #=  Protect components and classes if the extends is protected, except
+      =#
+      #=  if they've already been protected by an extends higher up.
+      =#
+      if vis == ExtendsVisibility.PROTECTED && visibility != ExtendsVisibility.PROTECTED
+        for c in cls_tree.classes
+          P_Pointer.update(c, protectClass(P_Pointer.access(c)))
         end
-        #=  Protect components and classes if the extends is protected, except
-        =#
-        #=  if they've already been protected by an extends higher up.
-        =#
-        if vis == ExtendsVisibility.PROTECTED && visibility != ExtendsVisibility.PROTECTED
-          for c in cls_tree.classes
-            P_Pointer.update(c, protectClass(P_Pointer.access(c)))
-          end
-          for c in cls_tree.components
-            P_Pointer.update(c, protectComponent(P_Pointer.access(c)))
-          end
+        for c in cls_tree.components
+          P_Pointer.update(c, protectComponent(P_Pointer.access(c)))
         end
-        noMod = MODIFIER_NOMOD()
-        #instExtendsX = @closure (nodeX) -> instExtends(nodeX, attributes, useBinding, vis, instLevel)
-        mapExtends(cls_tree, attributes, useBinding, vis, instLevel)
-        #instComponentY= @closure (nodeX) -> instComponent(nodeX,)
-        applyLocalComponents(cls_tree, attributes, useBinding, instLevel)
-        ()
       end
-
-      EXPANDED_DERIVED(__)  => begin
-        if vis == ExtendsVisibility.PUBLIC && isProtectedBaseClass(node)
-          vis = ExtendsVisibility.DERIVED_PROTECTED
-        end
-        cls.baseClass = instExtends(cls.baseClass, attributes, useBinding, vis, instLevel)
-        node = updateClass(cls, node)
-        ()
+      noMod = MODIFIER_NOMOD()
+      #instExtendsX = @closure (nodeX) -> instExtends(nodeX, attributes, useBinding, vis, instLevel)
+      mapExtends(cls_tree, attributes, useBinding, vis, instLevel)
+      #instComponentY= @closure (nodeX) -> instComponent(nodeX,)
+      applyLocalComponents(cls_tree, attributes, useBinding, instLevel)
+    end
+    EXPANDED_DERIVED(__)  => begin
+      if vis == ExtendsVisibility.PUBLIC && isProtectedBaseClass(node)
+        vis = ExtendsVisibility.DERIVED_PROTECTED
       end
-
-      PARTIAL_BUILTIN(__)  => begin
-        inst_cls = INSTANCED_BUILTIN(cls.ty, cls.elements, cls.restriction)
-        node = updateClass(inst_cls, node)
-        ()
-      end
-
-      _  => begin
-        ()
-      end
+      cls.baseClass = instExtends(cls.baseClass, attributes, useBinding, vis, instLevel)::CLASS_NODE
+      node = updateClass(cls, node)
+    end
+    PARTIAL_BUILTIN(__)  => begin
+      inst_cls = INSTANCED_BUILTIN(cls.ty, cls.elements, cls.restriction)
+      node = updateClass(inst_cls, node)
+    end
+    _  => begin
     end
   end
   node
@@ -1378,9 +1369,9 @@ function instComponent(node::InstNode,
                        innerMod::Modifier,
                        useBinding::Bool,
                        instLevel::Int,
-                       originalAttr = NONE())
-  local comp::Component
-  local def::SCode.Element
+                       originalAttr = NONE())::Nothing
+  local comp::COMPONENT_DEF
+  local def::SCode.COMPONENT
   local comp_node::InstNode
   local rdcl_node::InstNode
   local outer_mod::Modifier
@@ -1400,7 +1391,7 @@ function instComponent(node::InstNode,
   @match COMPONENT_DEF(definition = def, modifier = outer_mod) = comp
   if isRedeclare(outer_mod)
     checkOuterComponentMod(outer_mod, def, comp_node)
-    instComponentDef(def, MODIFIER_NOMOD(), MODIFIER_NOMOD(),
+    instComponentDef(def::SCode.COMPONENT, MODIFIER_NOMOD(), MODIFIER_NOMOD(),
                      DEFAULT_ATTR, useBinding, comp_node, parentNode,
                      instLevel, originalAttr; isRedeclared = true)
     @match MODIFIER_REDECLARE(element = rdcl_node, mod = outer_mod) = outer_mod
@@ -1413,7 +1404,7 @@ function instComponent(node::InstNode,
     setModifier(outer_mod, rdcl_node)
     redeclareComponent(rdcl_node, node, MODIFIER_NOMOD(), cc_mod, attributes, node, instLevel)
   else
-    instComponentDef(def,
+    instComponentDef(def::SCode.COMPONENT,
                      outer_mod,
                      cc_mod,
                      attributes,
@@ -1423,6 +1414,7 @@ function instComponent(node::InstNode,
                      instLevel,
                      originalAttr)
   end
+  return nothing
 end
 
 function instComponentDef(component::SCode.COMPONENT,
@@ -1434,7 +1426,7 @@ function instComponentDef(component::SCode.COMPONENT,
                           parentNode::InstNode,
                           instLevel::Int,
                           originalAttr = NONE();
-                          isRedeclared::Bool = false)
+                          isRedeclared::Bool = false)::Nothing
   local info::SourceInfo = component.info
   local decl_mod::Modifier
   local mod::Modifier
@@ -1458,7 +1450,7 @@ function instComponentDef(component::SCode.COMPONENT,
   mod = merge(outerMod, mod)
   mod = addParent(node, mod)
   checkOuterComponentMod(mod, component, node)
-  dims = Dimension[DIMENSION_RAW_DIM(d) for d in component.attributes.arrayDims]
+  dims = DIMENSION_RAW_DIM[DIMENSION_RAW_DIM(d) for d in component.attributes.arrayDims]
   bindingVar = if useBinding
     binding(mod)
   else
@@ -1987,8 +1979,9 @@ end
 function checkRecursiveDefinition(componentType::InstNode, component::InstNode, limitReached::Bool)
   local parentVar::InstNode = parent(component)
   local parent_type::InstNode
-  #=  Functions can contain instances of a parent, e.g. in equalityConstraint
-    functions, so skip this check for functions.
+  #=
+  Functions can contain instances of a parent, e.g. in equalityConstraint
+  functions, so skip this check for functions.
   =#
   if ! isFunction(getClass(parentVar))
     while ! isEmpty(parentVar)
@@ -2000,11 +1993,11 @@ function checkRecursiveDefinition(componentType::InstNode, component::InstNode, 
       parentVar = parent(parentVar)
     end
   end
+  #=  If we couldn't determine the exact cause of the recursion, print a generic error. =#
   if limitReached
     Error.addSourceMessage(Error.INST_RECURSION_LIMIT_REACHED, list(AbsynUtil.pathString(scopePath(component))), InstNode_info(component))
     fail()
   end
-  #=  If we couldn't determine the exact cause of the recursion, print a generic error. =#
 end
 
 function instDimension(dimension::Dimension, scope::InstNode, info::SourceInfo) ::Dimension
@@ -2969,43 +2962,51 @@ function insertGeneratedInners(node::InstNode, topScope::InstNode)
   end
 end
 
-function updateImplicitVariability(node::InstNode, evalAllParams::Bool)
+function updateImplicitVariability(node::InstNode, evalAllParams::Bool)::Nothing
   local cls::Class = getClass(node)
   local cls_tree::ClassTree
-   () = begin
-    @match cls begin
-      INSTANCED_CLASS(elements = cls_tree && CLASS_TREE_FLAT_TREE(__))  => begin
-        for c in cls_tree.components
-          updateImplicitVariabilityComp(c, evalAllParams)
-        end
-        apply(cls.sections, (inWhen = false) -> updateImplicitVariabilityEq(inWhen), updateImplicitVariabilityAlg)
-        ()
-      end
+  updateImplicitVariabilityCls(cls, evalAllParams)::Nothing
+end
 
-      EXPANDED_DERIVED(__)  => begin
-        for dim in cls.dims
-          markStructuralParamsDim(dim)
-        end
-        updateImplicitVariability(cls.baseClass, evalAllParams)
-        ()
-      end
-
-      INSTANCED_BUILTIN(elements = cls_tree && CLASS_TREE_FLAT_TREE(__))  => begin
-        for c in cls_tree.components
-          updateImplicitVariabilityComp(c, evalAllParams)
-        end
-        ()
-      end
-
-      _  => begin
-        ()
-      end
+@noinline function updateImplicitVariabilityCls(cls::Class, evalAllParams::Bool)::Nothing
+  if cls isa INSTANCED_CLASS && cls.elements isa CLASS_TREE_FLAT_TREE
+    local components = cls.elements.components::Vector{InstNode}
+    local len = length(components)
+    local i = 1
+    while i ≤ len
+      local c::COMPONENT_NODE = resolveOuter(components[i])
+      updateImplicitVariabilityComp(c, evalAllParams::Bool)::Nothing
+      i += 1
     end
+    apply(cls.sections, updateImplicitVariabilityEq, updateImplicitVariabilityAlg)::Nothing
+    return nothing
+  elseif cls isa EXPANDED_DERIVED
+    for dim in cls.dims
+      markStructuralParamsDim(dim)
+    end
+    updateImplicitVariability(cls.baseClass, evalAllParams)::Nothing
+    return nothing
+  elseif cls isa INSTANCED_BUILTIN && cls.elements isa CLASS_TREE_FLAT_TREE
+    local components = cls.elements.components
+    local len = length(components)
+    local i = 1
+    while i ≤ len
+      local c::COMPONENT_NODE = resolveOuter(components[i])
+      updateImplicitVariabilityComp(c, evalAllParams)::Nothing
+      i += 1
+    end
+    return nothing
+  else
+    return nothing
   end
 end
 
-function updateImplicitVariabilityComp(co::InstNode, evalAllParams::Bool)
+function updateImplicitVariabilityComp(co::INNER_OUTER_NODE, evalAllParams::Bool)::Nothing
   local node::InstNode = resolveOuter(co)
+  updateImplicitVariabilityComp(node, evalAllParams::Bool)::Nothing
+end
+
+@noinline function updateImplicitVariabilityComp(node::COMPONENT_NODE, evalAllParams::Bool)::Nothing
   local c::Component = component(node)
   local bnd::Binding
   local condition::Binding
@@ -3029,20 +3030,25 @@ function updateImplicitVariabilityComp(co::InstNode, evalAllParams::Bool)
       if isBound(condition)
         markStructuralParamsExp(getUntypedExp(condition))
       end
-      updateImplicitVariability(c.classInst, evalAllParams)
+      local classInst = c.classInst
+      return updateImplicitVariability(classInst, evalAllParams)::Nothing
     end
 
-    TYPE_ATTRIBUTE(__) where (co.name == "fixed" || co.name == "stateSelect")  => begin
+    TYPE_ATTRIBUTE(__)  => begin
+      if node.name != "fixed" || node.name != "stateSelect"
+        return nothing
+      end
       bnd = binding(c.modifier)
       if isBound(bnd)
         markStructuralParamsExp(getUntypedExp(bnd))
       end
+      return nothing
     end
 
     _  => begin
+      return nothing
     end
   end
-  return nothing
 end
 
 function isStructuralComponent(component::Component, compAttrs::Attributes, compBinding::Binding, compNode::InstNode, evalAllParams::Bool) ::Bool
@@ -3177,54 +3183,45 @@ function getRecordFieldBinding(comp::Component, node::InstNode) ::Binding
   binding
 end
 
-function markStructuralParamsDim(dimension::Dimension)
-   () = begin
-    @match dimension begin
-      DIMENSION_UNTYPED(__)  => begin
-        markStructuralParamsExp(dimension.dimension)
-        ()
-      end
-
-      DIMENSION_EXP(__)  => begin
-        markStructuralParamsExp(dimension.exp)
-        ()
-      end
-
-      _  => begin
-        ()
-      end
+function markStructuralParamsDim(dimension::Dimension)::Nothing
+  @match dimension begin
+    DIMENSION_UNTYPED(__)  => begin
+      markStructuralParamsExp(dimension.dimension)
+    end
+    DIMENSION_EXP(__)  => begin
+      markStructuralParamsExp(dimension.exp)
+    end
+    _  => begin
     end
   end
+  return nothing
 end
 
-function markStructuralParamsExp(exp::Expression)
+function markStructuralParamsExp(exp::Expression)::Nothing
   apply(exp, markStructuralParamsExp_traverser)
 end
 
-function markStructuralParamsExp_traverser(exp::Expression)
-   () = begin
-    local node::InstNode
-    local comp::Component
-    local binding::Option{Expression}
-    @match exp begin
-      CREF_EXPRESSION(cref = COMPONENT_REF_CREF(node = node, origin = Origin.CREF))  => begin
-        if isComponent(node)
-          @assign comp = component(node)
-          if variability(comp) == Variability.PARAMETER
-            markStructuralParamsComp(comp, node)
-          end
+function markStructuralParamsExp_traverser(exp::Expression)::Nothing
+  local node::InstNode
+  local comp::Component
+  local binding::Option{Expression}
+  @match exp begin
+    CREF_EXPRESSION(cref = COMPONENT_REF_CREF(node = node, origin = Origin.CREF))  => begin
+      if isComponent(node)
+        comp = component(node)
+        if variability(comp) == Variability.PARAMETER
+          markStructuralParamsComp(comp, node)
         end
-        ()
       end
-
-      _  => begin
-        ()
-      end
+      return nothing
+    end
+    _  => begin
+      return nothing
     end
   end
 end
 
-function markStructuralParamsComp(component::Component, node::InstNode)
+function markStructuralParamsComp(component::Component, node::InstNode)::Nothing
   local comp::Component
   local binding::Option{Expression}
   comp = setVariability(Variability.STRUCTURAL_PARAMETER, component)
@@ -3233,6 +3230,7 @@ function markStructuralParamsComp(component::Component, node::InstNode)
   if isSome(binding)
     markStructuralParamsExp(Util.getOption(binding))
   end
+  return nothing
 end
 
 function markStructuralParamsExpSize(exp::Expression)
@@ -3246,7 +3244,7 @@ function markStructuralParamsExpSize_traverser(exp::CALL_EXPRESSION)
   @match exp begin
     CALL_EXPRESSION(call = UNTYPED_ARRAY_CONSTRUCTOR(iters = iters))  => begin
       for iter in iters
-        markStructuralParamsExp(Util.tuple22(iter))
+        markStructuralParamsExp(last(iter))
       end
       return nothing
     end
@@ -3256,61 +3254,55 @@ function markStructuralParamsExpSize_traverser(exp::CALL_EXPRESSION)
   end
 end
 
-function updateImplicitVariabilityEql(eql::Vector{Equation}, inWhen::Bool = false)
+function updateImplicitVariabilityEql(eql::Vector{Equation}, inWhen::Bool = false)::Nothing
   for eq in eql
     updateImplicitVariabilityEq(eq, inWhen)
   end
 end
 
-function updateImplicitVariabilityEq(@nospecialize(eq::Equation), inWhen::Bool = false)
-  () = begin
-    local exp::Expression
-    local eql::Vector{Equation}
-    @match eq begin
-      EQUATION_EQUALITY(__)  => begin
-        if inWhen
-          markImplicitWhenExp(eq.lhs)
-        end
-        ()
+function updateImplicitVariabilityEq(@nospecialize(eq::Equation), inWhen::Bool = false)::Nothing
+  local exp::Expression
+  local eql::Vector{Equation}
+  @match eq begin
+    EQUATION_EQUALITY(__)  => begin
+      if inWhen
+        markImplicitWhenExp(eq.lhs)
       end
-      EQUATION_CONNECT(__)  => begin
-        fold(eq.lhs, markStructuralParamsSubs, 0)
-        fold(eq.rhs, markStructuralParamsSubs, 0)
-        ()
-      end
-      EQUATION_FOR(__)  => begin
-        updateImplicitVariabilityEql(eq.body, inWhen)
-        ()
-      end
-      EQUATION_IF(__)  => begin
-        for branch in eq.branches
-          () = begin
-            @match branch begin
-                EQUATION_BRANCH(__)  => begin
-                  updateImplicitVariabilityEql(branch.body, inWhen)
-                ()
-              end
-            end
+      nothing
+    end
+    EQUATION_CONNECT(__)  => begin
+      fold(eq.lhs, markStructuralParamsSubs, 0)
+      fold(eq.rhs, markStructuralParamsSubs, 0)
+      nothing
+    end
+    EQUATION_FOR(__)  => begin
+      updateImplicitVariabilityEql(eq.body, inWhen)
+      nothing
+    end
+    EQUATION_IF(__)  => begin
+      for branch in eq.branches
+        @match branch begin
+          EQUATION_BRANCH(__)  => begin
+            updateImplicitVariabilityEql(branch.body, inWhen)
+            nothing
           end
         end
-        ()
       end
-      EQUATION_WHEN(__)  => begin
-        for branch in eq.branches
-          () = begin
-            @match branch begin
-              EQUATION_BRANCH(__)  => begin
-                updateImplicitVariabilityEql(branch.body, #= inWhen =# true)
-                ()
-              end
-            end
+      nothing
+    end
+    EQUATION_WHEN(__)  => begin
+      for branch in eq.branches
+        @match branch begin
+          EQUATION_BRANCH(__)  => begin
+            updateImplicitVariabilityEql(branch.body, #= inWhen =# true)
+            nothing
           end
         end
-        ()
       end
-      _  => begin
-        ()
-      end
+      nothing
+    end
+    _  => begin
+      nothing
     end
   end
 end

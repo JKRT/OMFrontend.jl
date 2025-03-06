@@ -428,14 +428,9 @@ function augmentExpandableConnector(
   #=  Go through the union of elements the expandable connector should have.
   =#
   for c in expandableSet
-    @assign elem_name = Connector.name(c)
-    @assign node = node(elem_name)
-    try
-      @match ENTRY_INFO(comp_node, isImport) = lookupElement(name(node), cls_tree)
-      @assert comp_node !== EMPTY_NODE
-    catch
-      @assign comp_node = EMPTY_NODE()
-    end
+    elem_name = Connector.name(c)
+    node = node(elem_name)
+    @match ENTRY_INFO(comp_node, isImport) = lookupElement(name(node), cls_tree)
     if isEmpty(comp_node)
       @assign nodes = _cons(node, nodes)
       @assign ty = c.ty

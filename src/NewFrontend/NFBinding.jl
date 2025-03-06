@@ -81,6 +81,9 @@ struct UNBOUND <: Binding
   info::SourceInfo
 end
 
+struct BINDING_ERROR <: Binding
+end
+
 const EMPTY_BINDING::UNBOUND = UNBOUND(nil, false, AbsynUtil.dummyInfo)
 
 struct EachTypeStruct{T <: Int}

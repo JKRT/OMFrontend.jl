@@ -25,7 +25,7 @@ TODO:
 const NFModelicaBuiltinCache = Dict()
 
 """
-  This cache contains various instantiated libraries for later use.
+  This cache contains other libraries for later use.
 """
 const LIBRARY_CACHE = Dict()
 

@@ -45,7 +45,7 @@ end
 
 abstract type Call end
 
-struct TYPED_REDUCTION <: Call
+mutable struct TYPED_REDUCTION <: Call
   fn::M_Function
   ty::NFType
   var::VariabilityType
@@ -55,25 +55,25 @@ struct TYPED_REDUCTION <: Call
   foldExp::Tuple{Option{Expression}, String, String}
 end
 
-struct UNTYPED_REDUCTION <: Call
+mutable struct UNTYPED_REDUCTION <: Call
   ref::ComponentRef
   exp::Expression
   iters::List{Tuple{InstNode, Expression}}
 end
 
-struct TYPED_ARRAY_CONSTRUCTOR <: Call
+mutable struct TYPED_ARRAY_CONSTRUCTOR <: Call
   ty::NFType
   var::VariabilityType
   exp::Expression
   iters::List{Tuple{InstNode, Expression}}
 end
 
-struct UNTYPED_ARRAY_CONSTRUCTOR <: Call
+mutable struct UNTYPED_ARRAY_CONSTRUCTOR <: Call
   exp::Expression
   iters::List{Tuple{InstNode, Expression}}
 end
 
-mutable struct TYPED_CALL <: Call
+struct TYPED_CALL <: Call
   fn::M_Function
   ty::NFType
   var::VariabilityType
@@ -81,14 +81,14 @@ mutable struct TYPED_CALL <: Call
   attributes::CallAttributes
 end
 
-mutable struct ARG_TYPED_CALL <: Call
+struct ARG_TYPED_CALL <: Call
   ref::ComponentRef
   arguments::Vector{TypedArg}
   named_args::Vector{TypedNamedArg}
   call_scope::InstNode
 end
 
-mutable struct UNTYPED_CALL <: Call
+struct UNTYPED_CALL <: Call
   ref::ComponentRef
   arguments::Vector{Expression}
   named_args::Vector{NamedArg}

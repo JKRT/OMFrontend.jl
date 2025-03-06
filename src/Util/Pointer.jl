@@ -4,8 +4,8 @@ const Pointer = Ref
 using MetaModelica
 using ExportAll
 
-function access(MutableType::Pointer)
-  local res = MutableType.x
+function access(MutableType::Pointer{T}) where {T}
+  local res::T = MutableType.x
   return res
 end
 

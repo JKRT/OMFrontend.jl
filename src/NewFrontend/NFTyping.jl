@@ -138,7 +138,7 @@ function isSingleExpression(origin::M_Type_Int)::Bool
 end
 
 function setFlag(origin::Int, flag::Int)::Int
-  local newOrigin
+  local newOrigin::Int
    newOrigin = intBitOr(origin, flag)
   return newOrigin
 end
@@ -166,82 +166,69 @@ end
   return
 end
 
-@nospecializeinfer function typeComponents(@nospecialize(cls::InstNode), @nospecialize(origin::ORIGIN_Type))
+function typeComponents(cls::InstNode, origin::ORIGIN_Type)::Nothing
   local c::Class = getClass(cls)
   local c2::Class
   local cls_tree::ClassTree
   local ext_node::InstNode
   local con::InstNode
   local de::InstNode
+  @match c begin
+    INSTANCED_CLASS(restriction = RESTRICTION_TYPE(__)) => begin
+    end
 
-  return  () = begin
-    @match c begin
-      INSTANCED_CLASS(restriction = RESTRICTION_TYPE(__)) => begin
-        ()
+    INSTANCED_CLASS(elements = cls_tree && CLASS_TREE_FLAT_TREE(__)) => begin
+      for c in cls_tree.components
+        typeComponent(c, origin)
       end
-
-      INSTANCED_CLASS(elements = cls_tree && CLASS_TREE_FLAT_TREE(__)) => begin
-        for c in cls_tree.components
-          typeComponent(c, origin)
+      @match c.ty begin
+        TYPE_COMPLEX(complexTy = COMPLEX_RECORD(constructor = con)) => begin
+          typeStructor(con)
         end
-         () = begin
-          @match c.ty begin
-            TYPE_COMPLEX(complexTy = COMPLEX_RECORD(constructor = con)) => begin
-              typeStructor(con)
-              ()
-            end
-
-            _ => begin
-              ()
-            end
-          end
+        _ => begin
         end
-        ()
-      end
-
-      TYPED_DERIVED(ty = TYPE_ARRAY(__)) => begin
-        #=  For derived types with dimensions we keep them as they are, because we
-        =#
-        #=  need to preserve the dimensions.
-        =#
-        typeComponents(c.baseClass, origin)
-        ()
-      end
-
-      TYPED_DERIVED(__) => begin
-        #=  Derived types without dimensions can be collapsed.
-        =#
-        typeComponents(c.baseClass, origin)
-         c2 = getClass(c.baseClass)
-         c2 = setRestriction(c.restriction, c2)
-        updateClass(c2, cls)
-        ()
-      end
-
-      INSTANCED_BUILTIN(
-        ty = TYPE_COMPLEX(
-          complexTy = COMPLEX_EXTERNAL_OBJECT(constructor = con, destructor = de),
-        ),
-      ) => begin
-        typeStructor(con)
-        typeStructor(de)
-        ()
-      end
-
-      INSTANCED_BUILTIN(__) => begin
-        ()
-      end
-
-      _ => begin
-        Error.assertion(
-          false,
-          getInstanceName() + " got uninstantiated class " + name(cls),
-          sourceInfo(),
-        )
-        fail()
       end
     end
+
+    TYPED_DERIVED(ty = TYPE_ARRAY(__)) => begin
+      #=  For derived types with dimensions we keep them as they are, because we
+      =#
+      #=  need to preserve the dimensions.
+      =#
+      typeComponents(c.baseClass, origin)
+    end
+
+    TYPED_DERIVED(__) => begin
+      #=  Derived types without dimensions can be collapsed.
+      =#
+      typeComponents(c.baseClass, origin)
+      c2 = getClass(c.baseClass)
+      c2 = setRestriction(c.restriction, c2)
+      updateClass(c2, cls)
+    end
+
+    INSTANCED_BUILTIN(
+      ty = TYPE_COMPLEX(
+        complexTy = COMPLEX_EXTERNAL_OBJECT(constructor = con, destructor = de),
+      ),
+    ) => begin
+      typeStructor(con)
+      typeStructor(de)
+    end
+
+    INSTANCED_BUILTIN(__) => begin
+    end
+
+    _ => begin
+      Error.assertion(
+        false,
+        getInstanceName() + " got uninstantiated class " + name(cls),
+        sourceInfo(),
+      )
+      fail()
+    end
   end
+  return nothing
 end
 
 function typeStructor(node::InstNode)
@@ -437,7 +424,7 @@ function makeRecordType(constructor::InstNode)::ComplexType
   return recordTy
 end
 
-function typeComponent(@nospecialize(inComponent::InstNode), origin::ORIGIN_Type)::NFType
+function typeComponent(inComponent::InstNode, origin::ORIGIN_Type)::NFType
   local ty::NFType
   local node::InstNode = resolveOuter(inComponent)
   local c::Component = component(node)
@@ -959,207 +946,207 @@ function typeBindings2(cls::InstNode,
   local cls_tree::ClassTree
   local node::InstNode
   c = getClass(cls)
-  return () = begin
-    @match c begin
-      INSTANCED_CLASS(elements = cls_tree && CLASS_TREE_FLAT_TREE(__)) => begin
-        for c in cls_tree.components
-          typeComponentBinding(c, origin)
-        end
-        ()
-      end
-
-      INSTANCED_BUILTIN(elements = cls_tree && CLASS_TREE_FLAT_TREE(__)) => begin
-        for c in cls_tree.components
-          typeComponentBinding(c, origin)
-        end
-        ()
-      end
-
-      INSTANCED_BUILTIN(__) => begin
-        ()
-      end
-
-      TYPED_DERIVED(__) => begin
-        typeBindings(c.baseClass, component, origin)
-        ()
-      end
-
-      _ => begin
-        Error.assertion(
-          false,
-          getInstanceName() + " got uninstantiated class " + name(cls),
-          sourceInfo(),
-        )
-        fail()
-      end
-    end
-  end
-end
-
-@nospecializeinfer function typeComponentBinding(@nospecialize(inComponent::InstNode),
-                                                 origin::ORIGIN_Type)
-  typeComponentBinding2(inComponent, origin, true)
-end
-
-@nospecializeinfer function typeComponentBinding2(
-  @nospecialize(inComponent::InstNode),
-  origin::ORIGIN_Type,
-  typeChildren::Bool,
-  )
-  local node::InstNode = resolveOuter(inComponent)
-  local c::Component
-  local binding::Binding
-  local cls::InstNode
-  local matchKind::MatchKindType
-  local nameStr::String
-  local comp_var::VariabilityType
-  local comp_eff_var::VariabilityType
-  local bind_var::VariabilityType
-  local bind_eff_var::VariabilityType
-  local attrs::Attributes
-  c = component(node)
   @match c begin
-    TYPED_COMPONENT(
-      binding = UNTYPED_BINDING(__),
-      attributes = attrs,
-    ) => begin
-      nameStr = name(inComponent)
-      binding = c.binding
-      #ErrorExt.setCheckpoint(getInstanceName())
-      #@debug "ErrorExt.setCheckpoint(getInstanceName())"
-      try
-        #@debug "Typing TC/UB ... for component: $nameStr"
-        checkBindingEach(c.binding)
-        #@debug "Typing binding ... check each"
-        binding = typeBinding(binding, setFlag(origin, ORIGIN_BINDING))
-        #@debug "Typing binding ... after typeBinding"
-        #str = toString(binding)
-        #@debug "Typed binding: $str"
-        #if !(Config.getGraphicsExpMode() && stringEq(nameStr, "graphics")) TODO
-        binding = matchBinding(binding, c.ty, nameStr, node)
-        #end
-        comp_var = checkComponentBindingVariability(nameStr, c, binding, origin)
-        if comp_var != attrs.variability
-          attrs.variability = comp_var
-          c.attributes = attrs
-        end
-        #str2 = toString(binding)
-        #@debug "Typed binding 2: $str2"
-      catch e
-        if isBound(c.condition)
-          binding = INVALID_BINDING(binding, ErrorExt.getCheckpointMessages())
-        else
-          #            ErrorExt.delCheckpoint(getInstanceName())
-          @error "Error in type component binding $e"
-          fail()
-        end
+    INSTANCED_CLASS(elements = cls_tree && CLASS_TREE_FLAT_TREE(__)) => begin
+      local components = cls_tree.components::Vector{InstNode}
+      local len = length(components)
+      for i in 1:len
+        local c = @inbounds components[i]
+        typeComponentBinding(c, origin, true)
       end
-      #        ErrorExt.delCheckpoint(getInstanceName()) TODO
-
-      cCond = if isBound(c.condition)
-        typeComponentCondition(c.condition, origin)
-      else
-        c.condition
-      end
-      c.condition =  cCond
-      c.binding = binding
-      updateComponent!(c, node)
-      if typeChildren
-        typeBindings(c.classInst, inComponent, origin)
-      end
-      ()
+      return nothing
     end
 
-    TYPED_COMPONENT(__) => begin
-      #=  A component without a binding, or with a binding that's already been typed. =#
-      # nameStr = name(inComponent)
-      #@debug "Typing TC/TB binding ... for component: $nameStr"
-      checkBindingEach(c.binding)
-      if isTyped(c.binding)
-        cBinding = matchBinding(c.binding, c.ty, name(inComponent), node)
-        # c = TYPED_COMPONENT(c.classInst,
-        #                     c.ty,
-        #                     cBinding,
-        #                     c.condition,
-        #                     c.attributes,
-        #                     c.ann,
-        #                     c.comment,
-        #                     c.info)
-        c.binding = cBinding
+    INSTANCED_BUILTIN(elements = cls_tree && CLASS_TREE_FLAT_TREE(__)) => begin
+      local components = cls_tree.components::Vector{InstNode}
+      local len = length(components)
+      for i in 1:len
+        typeComponentBinding(components[i], origin)
       end
-
-      if isBound(c.condition)
-        local cCond = typeComponentCondition(c.condition, origin)
-        # c = TYPED_COMPONENT(c.classInst,
-        #                     c.ty,
-        #                     c.binding,
-        #                     cCond,
-        #                     c.attributes,
-        #                     c.ann,
-        #                     c.comment,
-        #                     c.info)
-        c.condition = cCond
-        updateComponent!(c, node)
-      end
-      if typeChildren
-        typeBindings(c.classInst, inComponent, origin)
-      end
-      ()
+      return nothing
     end
 
-    UNTYPED_COMPONENT(
-      binding = UNTYPED_BINDING(__),
-      attributes = attrs,
-    ) => begin
-      #=  An untyped component with a binding. This might happen when typing a
-      =#
-      #=  dimension and having to evaluate the binding of a not yet typed
-      =#
-      #=  component. Type only the binding and let the case above handle the rest.
-      =#
-      nameStr = name(inComponent)
-      #@debug "Typing UC/UB binding ... for component: $nameStr"
-      checkBindingEach(c.binding)
-      binding = typeBinding(c.binding, setFlag(origin, ORIGIN_BINDING))
-      comp_var = checkComponentBindingVariability(nameStr, c, binding, origin)
-      if comp_var != attrs.variability
-        attrs.variability = comp_var
-        c.attributes = attrs
-      end
-      c.binding = binding
-      updateComponent!(c, node)
-      ()
+    INSTANCED_BUILTIN(__) => begin
+      return nothing
     end
 
-    ENUM_LITERAL_COMPONENT(__) => begin
-      ()
+    TYPED_DERIVED(__) => begin
+      typeBindings(c.baseClass, component, origin)
+      return nothing
     end
-
-    TYPE_ATTRIBUTE(modifier = MODIFIER_NOMOD(__)) => begin
-      ()
-    end
-
-    TYPE_ATTRIBUTE(__) => begin
-      # nameStr = name(inComponent)
-      #@debug "Typing TA binding ... for component: $nameStr"
-      local mod = typeTypeAttribute(c.modifier, c.ty, parent(inComponent), origin)
-      c.modifier = mod #TYPE_ATTRIBUTE(c.ty, mod)
-      updateComponent!(c, node)
-      ()
-    end
-
     _ => begin
-
-      #        Error.assertion( TODO
-      #          false,
-      #          getInstanceName() + " got invalid node " + name(node),
-      #          sourceInfo(),
-      #        )
-      @error getInstanceName() * "got invalid node" * name(node)
+      Error.assertion(
+        false,
+        getInstanceName() + " got uninstantiated class " + name(cls),
+        sourceInfo(),
+      )
       fail()
     end
   end
 end
+
+@noinline function typeComponentBinding(inComponent::InstNode, origin::ORIGIN_Type)
+  local n = resolveOuter(inComponent)
+  local c = component(n)
+  typeComponentBinding2(inComponent, n, c, origin, true)
+  return nothing
+end
+
+@noinline  function typeComponentBinding(inComponent::InstNode,
+                                         origin::ORIGIN_Type,
+                                         typeChildren::Bool)
+  local n = resolveOuter(inComponent)
+  local c = component(n)
+  typeComponentBinding2(inComponent, n, c, origin, typeChildren)
+  return nothing
+end
+
+
+
+function typeComponentBinding2(
+  inComponent::Union{INNER_OUTER_NODE,COMPONENT_NODE},
+  node::COMPONENT_NODE,
+  c::TYPED_COMPONENT,
+  origin::ORIGIN_Type,
+  typeChildren::Bool,
+  )
+  local binding::Binding
+  local nameStr::String
+  local comp_var::VariabilityType
+  if c.binding isa UNTYPED_BINDING
+    nameStr = inComponent.name
+    binding = c.binding
+    #ErrorExt.setCheckpoint(getInstanceName())
+    checkBindingEach(c.binding)
+    binding = typeBinding(binding, setFlag(origin, ORIGIN_BINDING))
+    handleBindingError(binding)
+    #if !(Config.getGraphicsExpMode() && stringEq(nameStr, "graphics")) TODO
+    binding = matchBinding(binding, c.ty, nameStr, node)
+    handleBindingError(binding)
+    #end
+    comp_var = checkComponentBindingVariability(nameStr, c, binding, origin)
+    if comp_var == 404
+      handleBindingError(binding)
+    end
+    attrs = c.attributes
+    if comp_var != attrs.variability
+      attrs.variability = comp_var
+      c.attributes = attrs
+    end
+    #str2 = toString(binding)
+    #@debug "Typed binding 2: $str2"
+    #        ErrorExt.delCheckpoint(getInstanceName()) TODO
+
+    cCond = if isBound(c.condition)
+      typeComponentCondition(c.condition, origin)
+    else
+      c.condition
+    end
+    c.condition =  cCond
+    c.binding = binding
+    updateComponent!(c, node)
+    if typeChildren
+      typeBindings(c.classInst, inComponent, origin)
+    end
+    return ()
+  end
+  #=  Second case: A component without a binding, or with a binding that's already been typed. =#
+  checkBindingEach(c.binding)
+  if isTyped(c.binding)
+    cBinding = matchBinding(c.binding, c.ty, name(inComponent), node)
+    # c = TYPED_COMPONENT(c.classInst,
+    #                     c.ty,
+    #                     cBinding,
+    #                     c.condition,
+    #                     c.attributes,
+    #                     c.ann,
+    #                     c.comment,
+    #                     c.info)
+    c.binding = cBinding
+  end
+
+  if isBound(c.condition)
+    local cCond = typeComponentCondition(c.condition, origin)
+    # c = TYPED_COMPONENT(c.classInst,
+    #                     c.ty,
+    #                     c.binding,
+    #                     cCond,
+    #                     c.attributes,
+    #                     c.ann,
+    #                     c.comment,
+    #                     c.info)
+    c.condition = cCond
+    updateComponent!(c, node)
+  end
+  if typeChildren
+    typeBindings(c.classInst, inComponent, origin)
+  end
+  return ()
+end
+
+function handleBindingError(binding)
+  if binding isa BINDING_ERROR
+    if isBound(c.condition)
+      binding = INVALID_BINDING(binding, ErrorExt.getCheckpointMessages())
+    else
+      fail()
+    end
+  end
+end
+function typeComponentBinding2(
+  @nospecialize(inComponent::InstNode),
+  @nospecialize(node::InstNode),
+  c::TYPE_ATTRIBUTE,
+  origin::ORIGIN_Type,
+  typeChildren::Bool,
+  )
+  if c.modifier isa MODIFIER_NOMOD
+    return ()
+  else
+    local mod = typeTypeAttribute(c.modifier, c.ty, parent(inComponent), origin)
+    c.modifier = mod #TYPE_ATTRIBUTE(c.ty, mod)
+    updateComponent!(c, node)
+    return ()
+  end
+end
+
+function typeComponentBinding2(
+  @nospecialize(inComponent::InstNode),
+  @nospecialize(node::InstNode),
+  c::UNTYPED_COMPONENT,
+  origin::ORIGIN_Type,
+  typeChildren::Bool,
+  )
+  if ! (c.binding isa UNTYPED_BINDING)
+    return ()
+  end
+  #=  An untyped component with a binding. This might happen when typing a
+  =#
+  #=  dimension and having to evaluate the binding of a not yet typed
+  =#
+  #=  component. Type only the binding and let the case above handle the rest.
+  =#
+  local nameStr = name(inComponent)
+  #@debug "Typing UC/UB binding ... for component: $nameStr"
+  checkBindingEach(c.binding)
+  local binding = typeBinding(c.binding, setFlag(origin, ORIGIN_BINDING))
+  local comp_var = checkComponentBindingVariability(nameStr, c, binding, origin)
+  if comp_var != attrs.variability
+    attrs.variability = comp_var
+    c.attributes = attrs
+  end
+  c.binding = binding
+  updateComponent!(c, node)
+  return ()
+end
+
+typeComponentBinding2(
+  @nospecialize(inComponent::InstNode),
+  @nospecialize(node::InstNode),
+  c::ENUM_LITERAL_COMPONENT,
+  origin::ORIGIN_Type,
+  typeChildren::Bool,
+) = ()
 
 function checkComponentBindingVariability(
   name::String,
@@ -1189,7 +1176,7 @@ function checkComponentBindingVariability(
       ),
       Binding_getInfo(binding),
     )
-    fail()
+    return 404
   end
   #=  Mark parameters that have a structural cref as binding as also
   =#
@@ -1207,8 +1194,10 @@ function checkComponentBindingVariability(
   end
   return var
 end
-
-function typeBinding(binding::Binding, origin::ORIGIN_Type)::Binding
+typeBinding(binding::UNBOUND, origin::Int) = binding
+typeBinding(binding::TYPED_BINDING, origin::Int) = binding
+typeBinding(binding, origin) = BINDING_ERROR()
+function typeBinding(binding::UNTYPED_BINDING, origin::Int)::TYPED_BINDING
   binding = begin
     local exp::Expression
     local ty::NFType
@@ -1227,24 +1216,6 @@ function typeBinding(binding::Binding, origin::ORIGIN_Type)::Binding
           each_ty = EachType.NOT_EACH
         end
         TYPED_BINDING(exp, ty, var, each_ty, false, false, binding.info)
-      end
-
-      TYPED_BINDING(__) => begin
-        binding
-      end
-
-      UNBOUND(__) => begin
-        binding
-      end
-
-      _ => begin
-        # Error.assertion(
-        #   false,
-        #   getInstanceName() + " got uninstantiated binding",
-        #   sourceInfo(),
-        # )
-        @error "Uninstantiated binding!"
-        fail()
       end
     end
   end
@@ -1396,22 +1367,20 @@ end
    Types an untyped expression, returning the typed expression itself along with
    its type and variability.
 """
-@nospecializeinfer function typeExp(
-  @nospecialize(exp::Expression),
-  @nospecialize(origin::ORIGIN_Type),
-  @nospecialize(info::SourceInfo)
+function typeExp(
+  exp::Expression,
+  origin::ORIGIN_Type,
+  info::SourceInfo
   )::Tuple
   #= Stop excessive type inference =#
   return typeExp2(exp, origin, info)
 end
 
-@nospecializeinfer function typeExp2(
-  @nospecialize(exp::Expression),
-  @nospecialize(origin::ORIGIN_Type),
-  @nospecialize(info::SourceInfo)
+function typeExp2(
+  exp::Expression,
+  origin::ORIGIN_Type,
+  info::SourceInfo
   )::Tuple{Expression, NFType, VariabilityType}
-  #= The methods called below should not be specialized =#
-  @nospecialize
   local variability::VariabilityType
   local ty::NFType
   (exp, ty, variability) = begin
@@ -1516,7 +1485,7 @@ end
       BINDING_EXP(__) => typeBindingExp(exp, origin, info)
 
       _ => begin
-        @error "Attempted to type"
+        #@error "Attempted to type"
         fail()
       end
     end
@@ -1637,7 +1606,7 @@ function typeBindingExp(
   exp::BINDING_EXP,
   origin::ORIGIN_Type,
   info::SourceInfo,
-  )
+  )::Tuple{BINDING_EXP, NFType, Int}
   local variability::VariabilityType
   local ty::NFType
   local outExp::Expression
@@ -1917,10 +1886,10 @@ function nthDimensionBoundsChecked(
 end
 
 function typeCrefExp(
-  @nospecialize(cref::ComponentRef),
+  cref::ComponentRef,
   o::ORIGIN_Type,
   info::SourceInfo,
-)::Tuple{Expression, NFType, VariabilityType}
+)::Tuple{CREF_EXPRESSION, NFType, VariabilityType}
   local variability::VariabilityType
   local ty::NFType
   local exp::Expression
@@ -1935,7 +1904,7 @@ function typeCrefExp(
 end
 
 function typeCref(
-  @nospecialize(cref::ComponentRef),
+  cref::ComponentRef,
   origin::ORIGIN_Type,
   info::SourceInfo
 )::Tuple{ComponentRef, NFType, VariabilityType, VariabilityType}
@@ -1948,18 +1917,25 @@ function typeCref(
     Error.addSourceMessage(Error.EXP_INVALID_IN_FUNCTION, list("time"), info)
     fail()
   end
-  (cref, subsVariability) = Base.inferencebarrier(typeCref2(cref, origin, info))
+  (cref, subsVariability) = typeCref2(cref, origin, info)
   ty = getSubscriptedType(cref)
   nodeVariabilityType = nodeVariability(cref)
   return (cref, ty, nodeVariabilityType, subsVariability)
 end
 
-function typeCref2(
+typeCref2(
   cref::ComponentRef,
   origin::ORIGIN_Type,
   info::SourceInfo,
   firstPart::Bool = true,
-  )::Tuple{ComponentRef, VariabilityType}
+) =  (cref, Variability.CONSTANT)
+
+function typeCref2(
+  cref::COMPONENT_REF_CREF,
+  origin::ORIGIN_Type,
+  info::SourceInfo,
+  firstPart::Bool = true,
+  )::Tuple{COMPONENT_REF_CREF, VariabilityType}
   local subsVariability::VariabilityType
    (cref, subsVariability) = begin
     local rest_cr::ComponentRef
@@ -1972,7 +1948,8 @@ function typeCref2(
     @match cref begin
       COMPONENT_REF_CREF(origin = Origin.SCOPE) => begin
         local crefTy = getType(cref.node)
-        cref = COMPONENT_REF_CREF(cref.node, cref.subscripts, crefTy, cref.origin, cref.restCref)
+        #cref = COMPONENT_REF_CREF(cref.node, cref.subscripts, crefTy, cref.origin, cref.restCref)
+        cref.ty = crefTy
         (cref, Variability.CONSTANT)
       end
 
@@ -2004,8 +1981,11 @@ function typeCref2(
           typeSubscripts(cref.subscripts, node_ty, cref, origin, info)
         @match (rest_cr, rest_var) = typeCref2(cref.restCref, origin, info, false)
         subsVariability = variabilityMax(subs_var, rest_var)
+        cref.subscripts = subs
+        cref.ty = node_ty
+        cref.restCref = rest_cr
         (
-          COMPONENT_REF_CREF(cref.node, subs, node_ty, cref.origin, rest_cr),
+          cref,#COMPONENT_REF_CREF(cref.node, subs, node_ty, cref.origin, rest_cr),
           subsVariability,
         )
       end
@@ -2013,16 +1993,18 @@ function typeCref2(
       COMPONENT_REF_CREF(
         node = CLASS_NODE(__),
       ) where {(firstPart && isFunction(cref.node))} => begin
-        @match _cons(fn, _) = P_Function.typeNodeCache(cref.node)
+        @match _cons(fn, _) = typeNodeCache(cref.node)
         local crefTy = Type.FUNCTION(fn, FunctionType.FUNCTION_REFERENCE)
         local crefRestCref = typeCref2(cref.restCref, origin, info, false)
-        cref = COMPONENT_REF_CREF(cref.node, cref.subscripts, crefTy, cref.origin, crefRestCref)
+        #cref = COMPONENT_REF_CREF(cref.node, cref.subscripts, crefTy, cref.origin, crefRestCref)
+        cref.ty = crefTy
+        cref.restCref = crefRestCref
         (cref, Variability.CONTINUOUS)
       end
 
       COMPONENT_REF_CREF(node = CLASS_NODE(__)) => begin
         local crefTy = getType(cref.node)
-        cref = COMPONENT_REF_CREF(cref.node, cref.subscripts, crefTy, cref.origin, cref.restCref)
+        cref.ty = crefTy # COMPONENT_REF_CREF(cref.node, cref.subscripts, crefTy, cref.origin, cref.restCref)
         (cref, Variability.CONSTANT)
       end
 
@@ -2301,7 +2283,7 @@ end
 
 
 function typeMatrix(
-  @nospecialize(elements::Vector{Vector{Expression}}),
+  elements::Vector{Vector{Expression}},
   origin::ORIGIN_Type,
   info::SourceInfo,
   )::Tuple{Expression, NFType, VariabilityType}
@@ -2506,7 +2488,7 @@ function typeTuple(
   elements::List{<:Expression},
   origin::ORIGIN_Type,
   info::SourceInfo,
-)::Tuple{Expression, NFType, Variability}
+)::Tuple{TUPLE_EXPRESSION, NFType, Variability}
   local variability::VariabilityType
   local tupleType::NFType
   local tupleExp::Expression
@@ -2533,7 +2515,7 @@ function typeTuple(
     fail()
   end
    next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
-   (expl, tyl, valr) = typeExpl(elements, next_origin, info)
+  @match (expl, tyl, valr) = typeExpl(elements, next_origin, info)
    tupleType = TYPE_TUPLE
    tupleExp = TUPLE_EXPRESSION(tupleType, expl)
    variability = if listEmpty(valr)
@@ -2743,7 +2725,7 @@ function typeIfExpression(
   ifExp::Expression,
   origin::ORIGIN_Type,
   info::SourceInfo,
-)#::Tuple{Expression, NFType, VariabilityType}
+)::Tuple{Expression, NFType, VariabilityType}
   local var::VariabilityType
   local ty::NFType
   local cond::Expression
@@ -3197,11 +3179,11 @@ function typeComponentSections(c::InstNode, origin::ORIGIN_Type)
   end
 end
 
-function typeEquation(@nospecialize(eq::Equation), @nospecialize(origin::ORIGIN_Type))::Equation
-  typeEquation2(eq::Equation, origin::ORIGIN_Type)::Equation
+function typeEquation(eq::Equation, origin::ORIGIN_Type)::Equation
+  typeEquation2(eq::Equation, origin::ORIGIN_Type)
 end
 
-function typeEquation2(@nospecialize(eq::Equation), origin::ORIGIN_Type)::Equation
+function typeEquation2(eq::Equation, origin::ORIGIN_Type)::Equation
    eq = begin
     local cond::Expression
     local e1::Expression
@@ -3329,7 +3311,7 @@ function typeConnect(
   rhsConn::Expression,
   origin::ORIGIN_Type,
   source::DAE.ElementSource,
-)::Equation
+)::EQUATION_CONNECT
   local connEq::Equation
 
   local lhs::Expression
@@ -3713,7 +3695,7 @@ function typeEqualityEquation(
   rhsExp::Expression,
   origin::ORIGIN_Type,
   source::DAE.ElementSource,
-)::Equation
+  )::EQUATION_EQUALITY
   local eq::Equation
   local info::SourceInfo = sourceInfo()
   local e1::Expression
@@ -3793,7 +3775,7 @@ function typeIfEquation(
   branches::Vector{Equation_Branch},
   origin::ORIGIN_Type,
   source::DAE.ElementSource,
-)::Equation
+)::EQUATION_IF
   local ifEq::Equation
   local cond::Expression
   local eql::Vector{Equation}

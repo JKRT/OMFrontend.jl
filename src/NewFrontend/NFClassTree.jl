@@ -4,7 +4,7 @@ abstract type ClassTree end
 
 struct CLASS_TREE_EMPTY_TREE <: ClassTree end
 
-struct CLASS_TREE_FLAT_TREE <: ClassTree
+mutable struct CLASS_TREE_FLAT_TREE <: ClassTree
   tree::LookupTree.Tree
   classes::Vector{InstNode}
   components::Vector{InstNode}
@@ -12,7 +12,7 @@ struct CLASS_TREE_FLAT_TREE <: ClassTree
   duplicates::DuplicateTree.Tree
 end
 
-struct CLASS_TREE_INSTANTIATED_TREE <: ClassTree
+mutable struct CLASS_TREE_INSTANTIATED_TREE <: ClassTree
   tree::LookupTree.Tree
   classes::Vector{Pointer{InstNode}}
   components::Vector{Pointer{InstNode}}
@@ -22,7 +22,7 @@ struct CLASS_TREE_INSTANTIATED_TREE <: ClassTree
   duplicates::DuplicateTree.Tree
 end
 
-struct CLASS_TREE_EXPANDED_TREE <: ClassTree
+mutable struct CLASS_TREE_EXPANDED_TREE <: ClassTree
   tree::LookupTree.Tree
   classes::Vector{InstNode}
   components::Vector{InstNode}
@@ -31,7 +31,7 @@ struct CLASS_TREE_EXPANDED_TREE <: ClassTree
   duplicates::DuplicateTree.Tree
 end
 
-struct CLASS_TREE_PARTIAL_TREE <: ClassTree
+mutable struct CLASS_TREE_PARTIAL_TREE <: ClassTree
   tree::LookupTree.Tree
   classes::Vector{InstNode}
   components::Vector{InstNode}
@@ -124,17 +124,16 @@ end
 function getRedeclaredNode(name::String, tree::ClassTree)::InstNode
   local node::InstNode
   local entry::DuplicateTree.Entry
-  try
-    entry = DuplicateTree.get(getDuplicates(tree), name)
-    entry = listHead(entry.children)
-    if isSome(entry.node)
-      @match SOME(node) = entry.node
-    else
-      entry = resolveEntry(entry.entry, tree)
-      node = entry.node
+  entry = DuplicateTree.get(getDuplicates(tree), name)
+  entry = listHead(entry.children)
+  if isSome(entry.node)
+    @match SOME(node) = entry.node
+  else
+    entry = resolveEntry(entry.entry, tree)
+    if entry isa EMPTY_NODE
+      Error.assertion(false, getInstanceName() + " failed on " + name, sourceInfo())
     end
-  catch
-    Error.assertion(false, getInstanceName() + " failed on " + name, sourceInfo())
+    node = entry.node
   end
   return node
 end
@@ -321,24 +320,25 @@ function applyLocalComponents(tree::CLASS_TREE_INSTANTIATED_TREE,
                               attributes::Attributes,
                               useBinding::Bool,
                               instLevel::Int)
+
   for i in tree.localComponents
     local comp::Pointer{InstNode} = @inbounds tree.components[i]
     local arg = P_Pointer.access(comp)::InstNode
     instComponent(
-      arg,
+      arg::Union{COMPONENT_NODE, INNER_OUTER_NODE},
       attributes,
       MODIFIER_NOMOD(),
       useBinding,
       instLevel,
       NONE()
-    )#func(arg)
+    )
   end
   return nothing
 end
 
 function applyLocalComponents(tree::CLASS_TREE_INSTANTIATED_TREE,
                               func::Function)
-  for i in tree.localComponents
+  for i::Int in tree.localComponents
     local comp::Pointer{InstNode} = @inbounds tree.components[i]
     local arg = P_Pointer.access(comp)::InstNode
     func(arg)
@@ -415,17 +415,17 @@ function mapExtends(tree::CLASS_TREE_INSTANTIATED_TREE, parent::Union{CLASS_NODE
   return
 end
 
-function mapExtends(tree::ClassTree, attributes::Attributes, useBinding::Bool, visibility, instLevel::Int)
-  local exts::Vector{InstNode} = getExtends(tree)
+function mapExtends(tree::ClassTree, attributes::Attributes, useBinding::Bool, visibility, instLevel::Int)::Nothing
+  local exts::Vector{CLASS_NODE} = getExtends(tree)
   for i in 1:length(exts)
-    @inbounds res = exts[i]::InstNode
-    @inbounds exts[i] = instExtends(res,
+    @inbounds res = exts[i]::CLASS_NODE
+    @inbounds exts[i] = instExtends(res::CLASS_NODE,
                                     attributes,
                                     useBinding,
                                     ExtendsVisibility.PUBLIC,
-                                    instLevel + 1)::InstNode
+                                    instLevel + 1)::CLASS_NODE
   end
-  return
+  return nothing
 end
 
 function applyExtends(tree::ClassTree, func::FuncT)
@@ -840,10 +840,10 @@ end
        case, so setting the instance to an empty node is interpreted by this
        function to mean that the instance should be set to the cloned clsNode. =#"""
 function instantiate(
-  clsNode::InstNode,
-  instance::InstNode = EMPTY_NODE(),
+  clsNode::CLS_NODE_TYPE,
+  instance::InstNode,
   scope::InstNode = EMPTY_NODE(),
-)::Tuple{InstNode, InstNode, Int, Int}
+  )::Tuple{CLS_NODE_TYPE, InstNode, Int, Int} where {CLS_NODE_TYPE}
   local compCount::Int = 0
   local classCount::Int = 0
   local cls::Class
@@ -857,7 +857,6 @@ function instantiate(
   local clss::Vector{Pointer{InstNode}}
   local comps::Vector{Pointer{InstNode}}
   local ext_clss::Vector{Pointer{InstNode}}
-  local local_comps::Vector{Int} = Int[]
   local cls_idx::Int = 1
   local comp_idx::Int = 1
   local cls_count::Int
@@ -870,7 +869,7 @@ function instantiate(
   local comp::Component
   local ext_def::SCode.Element
   local is_typish::Bool
-#@debug "Instantiating in class tree"
+  #@debug "Instantiating in class tree"
   #=  TODO: If we don't have any extends we could probably generate a flat
   =#
   #=  tree directly and skip a lot of this.
@@ -879,196 +878,180 @@ function instantiate(
   =#
   cls = getClass(clsNode)
   clsNode = replaceClass(cls, clsNode)
-  () = begin
-    @match cls begin
-      EXPANDED_CLASS(elements = CLASS_TREE_INSTANTIATED_TREE(__)) => begin
-        ()
-      end
-      EXPANDED_CLASS(__) => begin
-        #=  If the instance is an empty node, use the cloned clsNode as the instance.
-        =#
-        if isEmpty(instance)
-          instance = clsNode
-          parent_scope = parent(clsNode)
-        else
-          parent_scope = instance
-          inst_scope = scope
-        end
-        inst_scope = if isEmpty(scope)
-          instance
-        else
-          scope
-        end
-        #=  Fetch the elements from the class tree.
-        =#
-        @match CLASS_TREE_EXPANDED_TREE(ltree, old_clss, old_comps, exts, imps, dups) = cls.elements
-        #=  Count the number of local classes and components we have.
-        =#
-        classCount = arrayLength(old_clss)
-        #=  The component array contains placeholders for extends, so the length of the
-        =#
-        #=  extends array needs to be subtracted here to get the number of components.
-        =#
-        compCount = arrayLength(old_comps) - arrayLength(exts)
-        #=  Make a new extends array, and recursively instantiate the extends nodes.
-        =#
-        exts = arrayCopy(exts)
-        for i = 1:arrayLength(exts)
-          node = exts[i]
-          @match BASE_CLASS(definition = ext_def) = nodeType(node)
-          node =
-            setNodeType(BASE_CLASS(instance, ext_def), node)
-          (node, _, cls_count, comp_count) =
-            instantiate(node, EMPTY_NODE(), inst_scope)
-          exts[i] = node
-          classCount = cls_count + classCount
-          compCount = comp_count + compCount
-        end
-        #=  Update the parent of the extends to be the new instance.
-        =#
-        #=  Instantiate the class tree of the extends.
-        =#
-        #=  Add the inherited elements to the class/component counts.
-        =#
-        #=  Create new arrays that can hold both local and inherited elements.
-        =#
-        comps =
-          arrayCreateNoInit(compCount, P_Pointer.create(EMPTY_NODE()))
-        #= /*dummy*/ =#
-        clss =
-          arrayCreateNoInit(classCount, P_Pointer.create(EMPTY_NODE()))
-        #= /*dummy*/ =#
-        #=  Copy the local classes into the new class array, and set the
-        =#
-        #=  class we're instantiating to be their parent.
-        =#
-        is_typish =
-          isType(cls.restriction) ||
-          isOperatorRecord(cls.restriction) ||
-          isOperator(cls.restriction)
-        for c in old_clss
-          if is_typish
-            c = setParent(clsNode, c)
-          else
-            c = clone(c)
-            c = setParent(instance, c)
-          end
-          if isOuter(c)
-            checkOuterClass(c)
-            c = linkInnerOuter(c, parent_scope)
-          end
-          arrayUpdateNoBoundsChecking(clss, cls_idx, P_Pointer.create(c))
-          cls_idx = cls_idx + 1
-        end
-        for ext in exts
-          () = begin
-            @match classTree(getClass(ext)) begin
-              CLASS_TREE_INSTANTIATED_TREE(classes = ext_clss) => begin
-                cls_count = arrayLength(ext_clss)
-                if cls_count > 0
-                  ArrayUtil.copyRange(ext_clss, clss, 1, cls_count, cls_idx)
-                  cls_idx = cls_idx + cls_count
-                end
-                ()
-              end
-
-              _ => begin
-                ()
-              end
-            end
-          end
-        end
-        #=  Copy both local and inherited components into the new array. =#
-        for c in old_comps
-          () = begin
-            @match c begin
-              COMPONENT_NODE(__) => begin
-                #=  Set the component's parent and create a unique instance for it. =#
-                node = setParent(instance, c)
-                comp = component(node)
-                node = replaceComponent(comp, node)
-                #=
-                  If the component is outer, link it with the corresponding inner component.
-                =#
-                if isOuter(comp)
-                  node = linkInnerOuter(node, inst_scope)
-                end
-                #=  Add the node to the component array. =#
-                arrayUpdateNoBoundsChecking(comps, comp_idx, P_Pointer.create(node))
-                local_comps = prepend!([comp_idx], local_comps)
-                comp_idx = comp_idx + 1
-                ()
-              end
-              REF_NODE(__) => begin
-                comp_idx = instExtendsComps(exts[c.index], comps, comp_idx)
-                ()
-              end
-            end
-          end
-        end
-        #=  Sanity check.
-        =#
-        if comp_idx != compCount + 1
-          Error.assertion(
-            false,
-            getInstanceName() + " miscounted components in " + name(clsNode),
-            sourceInfo(),
-          )
-        end
-        if cls_idx != classCount + 1
-          Error.assertion(
-            false,
-            getInstanceName() + " miscounted classes in " + name(clsNode),
-            sourceInfo(),
-          )
-        end
-        #=  Create a new class tree and update the class in the node.
-        =#
-        cls = EXPANDED_CLASS(CLASS_TREE_INSTANTIATED_TREE(ltree, clss, comps, local_comps, exts, imps, dups),
-                             cls.modifier,
-                             cls.prefixes,
-                             cls.restriction)
-        ()
-      end
-      EXPANDED_DERIVED(baseClass = node) => begin
-        node = setNodeType(
-          BASE_CLASS(clsNode, definition(node)),
-          node,
-        )
-        @match (node, instance, classCount, compCount) = instantiate(node, instance, scope)
-        cls = EXPANDED_DERIVED(node, cls.modifier, cls.dims, cls.prefixes, cls.attributes, cls.restriction)
-        ()
-      end
-      PARTIAL_BUILTIN(elements = tree && CLASS_TREE_FLAT_TREE(components = old_comps)) =>
-        begin
-          instance = if isEmpty(instance)
-            clsNode
-          else
-            instance
-          end
-          old_comps = arrayCopy(old_comps)
-          for i = 1:arrayLength(old_comps)
-            node = old_comps[i]
-            node = setParent(instance, node)
-            old_comps[i] =
-              replaceComponent(component(node), node)
-          end
-          tree = CLASS_TREE_FLAT_TREE(tree.tree, tree.classes, old_comps, tree.imports, tree.duplicates)
-          cls = PARTIAL_BUILTIN(cls.ty, tree, cls.modifier, cls.prefixes, cls.restriction)
-          compCount = length(old_comps)
-          ()
-        end
-      PARTIAL_BUILTIN(__) => begin
-        ()
-      end
-      _ => begin
-        ###Error.assertion(false, getInstanceName() + " got invalid class", sourceInfo())
-        str = clsNode.name
-        @error "Got an invalid class $cls for $(str)"
-        fail()
-      end
+  @match cls begin
+    EXPANDED_CLASS(elements = CLASS_TREE_INSTANTIATED_TREE(__)) => begin
     end
-end
+    EXPANDED_CLASS(__) => begin
+      #=  If the instance is an empty node, use the cloned clsNode as the instance.
+      =#
+      if isEmpty(instance)
+        instance = clsNode
+        parent_scope = parent(clsNode)
+      else
+        parent_scope = instance
+        inst_scope = scope
+      end
+      inst_scope = if isEmpty(scope)
+        instance
+      else
+        scope
+      end
+      #=  Fetch the elements from the class tree.
+      =#
+      @match CLASS_TREE_EXPANDED_TREE(ltree, old_clss, old_comps, exts, imps, dups) = cls.elements
+      #=  Count the number of local classes and components we have.
+      =#
+      classCount = arrayLength(old_clss)
+      #=  The component array contains placeholders for extends, so the length of the
+      =#
+      #=  extends array needs to be subtracted here to get the number of components.
+      =#
+      compCount = arrayLength(old_comps) - arrayLength(exts)
+      #=  Make a new extends array, and recursively instantiate the extends nodes.
+      =#
+      exts = arrayCopy(exts)
+      for i = 1:arrayLength(exts)
+        node = exts[i]
+        @match BASE_CLASS(definition = ext_def) = nodeType(node)
+        node =
+          setNodeType(BASE_CLASS(instance, ext_def), node)
+        (node, tmp, cls_count, comp_count) = instantiate(node, EMPTY_NODE(), inst_scope)
+        exts[i] = node
+        classCount = cls_count + classCount
+        compCount = comp_count + compCount
+      end
+      #=  Update the parent of the extends to be the new instance.
+      =#
+      #=  Instantiate the class tree of the extends.
+      =#
+      #=  Add the inherited elements to the class/component counts.
+      =#
+      #=  Create new arrays that can hold both local and inherited elements.
+      =#
+      comps =
+        arrayCreateNoInit(compCount, P_Pointer.create(EMPTY_NODE()))
+      #= /*dummy*/ =#
+      clss =
+        arrayCreateNoInit(classCount, P_Pointer.create(EMPTY_NODE()))
+      #= /*dummy*/ =#
+      #=  Copy the local classes into the new class array, and set the
+      =#
+      #=  class we're instantiating to be their parent.
+      =#
+      is_typish =
+        isType(cls.restriction) ||
+        isOperatorRecord(cls.restriction) ||
+        isOperator(cls.restriction)
+      for c in old_clss
+        if is_typish
+          c = setParent(clsNode, c)
+        else
+          c = clone(c)
+          c = setParent(instance, c)
+        end
+        if isOuter(c)
+          checkOuterClass(c)
+          c = linkInnerOuter(c, parent_scope)
+        end
+        arrayUpdateNoBoundsChecking(clss, cls_idx, P_Pointer.create(c))
+        cls_idx = cls_idx + 1
+      end
+      for ext in exts
+        @match classTree(getClass(ext)) begin
+          CLASS_TREE_INSTANTIATED_TREE(classes = ext_clss) => begin
+            cls_count = arrayLength(ext_clss)
+            if cls_count > 0
+              ArrayUtil.copyRange(ext_clss, clss, 1, cls_count, cls_idx)
+              cls_idx = cls_idx + cls_count
+            end
+          end
+          _ => begin
+          end
+        end
+      end
+      #=  Copy both local and inherited components into the new array. =#
+      local local_comps::Vector{Int} = Int[]
+      for c in old_comps
+          @match c begin
+            COMPONENT_NODE(__) => begin
+              #=  Set the component's parent and create a unique instance for it. =#
+              node = setParent(instance, c)
+              comp = component(node)
+              node = replaceComponent(comp, node)
+              #=
+              If the component is outer, link it with the corresponding inner component.
+              =#
+              if isOuter(comp)
+                node = linkInnerOuter(node, inst_scope)
+              end
+              #=  Add the node to the component array. =#
+              comps[comp_idx] = P_Pointer.create(node)
+              local_comps = pushfirst!(local_comps, comp_idx)
+              comp_idx = comp_idx + 1
+            end
+            REF_NODE(__) => begin
+              comp_idx = instExtendsComps(exts[c.index], comps, comp_idx)
+            end
+          end
+      end
+      #=  Sanity check.
+      =#
+      if comp_idx != compCount + 1
+        Error.assertion(
+          false,
+          getInstanceName() + " miscounted components in " + name(clsNode),
+          sourceInfo(),
+        )
+      end
+      if cls_idx != classCount + 1
+        Error.assertion(
+          false,
+          getInstanceName() + " miscounted classes in " + name(clsNode),
+          sourceInfo(),
+        )
+      end
+      #=  Create a new class tree and update the class in the node.
+      =#
+      local newClassTree = CLASS_TREE_INSTANTIATED_TREE(ltree, clss, comps, local_comps, exts, imps, dups)
+      cls = EXPANDED_CLASS(newClassTree,
+                           cls.modifier,
+                           cls.prefixes,
+                           cls.restriction)
+    end
+    EXPANDED_DERIVED(baseClass = node) => begin
+      node = setNodeType(
+        BASE_CLASS(clsNode, definition(node)),
+        node,
+      )
+      @match (node, instance, classCount, compCount) = instantiate(node, instance, scope)
+      cls = EXPANDED_DERIVED(node, cls.modifier, cls.dims, cls.prefixes, cls.attributes, cls.restriction)
+    end
+    PARTIAL_BUILTIN(elements = tree && CLASS_TREE_FLAT_TREE(components = old_comps)) =>
+      begin
+        instance = if isEmpty(instance)
+          clsNode
+        else
+          instance
+        end
+        old_comps = arrayCopy(old_comps)
+        for i = 1:arrayLength(old_comps)
+          node = old_comps[i]
+          node = setParent(instance, node)
+          old_comps[i] = replaceComponent(component(node), node)
+        end
+        tree = CLASS_TREE_FLAT_TREE(tree.tree, tree.classes, old_comps, tree.imports, tree.duplicates)
+        cls = PARTIAL_BUILTIN(cls.ty, tree, cls.modifier, cls.prefixes, cls.restriction)
+        compCount = length(old_comps)
+      end
+    PARTIAL_BUILTIN(__) => begin
+    end
+    _ => begin
+      ###Error.assertion(false, getInstanceName() + " got invalid class", sourceInfo())
+      str = clsNode.name
+      @error "Got an invalid class $cls for $(str)"
+      fail()
+    end
+  end
   updateClass(cls, clsNode)
   return (clsNode, instance, classCount, compCount)
 end
@@ -1153,8 +1136,8 @@ function addElementsToFlatTree(elements::List{<:InstNode}, tree::ClassTree)::Cla
   local ltree::LookupTree.Tree
   local cls_arr::Vector{InstNode}
   local comp_arr::Vector{InstNode}
-  local cls_lst::List{InstNode} = nil
-  local comp_lst::List{InstNode} = nil
+  local cls_lst::Vector{InstNode}
+  local comp_lst::Vector{InstNode}
   local imports::Vector{Import}
   local duplicates::DuplicateTree.Tree
   local cls_idx::Int
@@ -1167,16 +1150,20 @@ function addElementsToFlatTree(elements::List{<:InstNode}, tree::ClassTree)::Cla
     if isComponent(e)
       comp_idx = comp_idx + 1
       lentry = LookupTree.COMPONENT(comp_idx)
-      comp_lst = _cons(e, comp_lst)
+      comp_lst = push!(comp_lst, e)
     else
       cls_idx = cls_idx + 1
       lentry = LookupTree.CLASS(cls_idx)
-      cls_lst = _cons(e, cls_lst)
+      cls_lst = push!(cls_lst, e)
     end
     ltree = addLocalElement(name(e), lentry, tree, ltree)
   end
-  cls_arr = ArrayUtil.appendList(cls_arr, listReverseInPlace(cls_lst))
-  comp_arr = ArrayUtil.appendList(comp_arr, listReverseInPlace(comp_lst))
+  for e in cls_lst
+    push!(cls_arr, e)
+  end
+  for c in comp_lst
+    push!(comp_lst, c)
+  end
   tree = CLASS_TREE_FLAT_TREE(ltree, cls_arr, comp_arr, imports, duplicates)
   return tree
 end
@@ -1883,8 +1870,7 @@ function expandExtends(
       end
 
       _ => begin
-        return
-        (tree, DuplicateTree.new())
+        return (tree, DuplicateTree.new())
       end
     end
   end
@@ -2005,17 +1991,16 @@ function resolveImport(index::Int, tree::ClassTree)::InstNode
   local changed::Bool
   imports = tree.imports
   #=  Imports are resolved on demand, i.e. here. =#
-  (element, changed, imp) = resolve(imports[index])
+  @match (element, changed, imp) = resolve(imports[index])
   #=  Save the import if it wasn't already resolved. =#
   if changed
-    arrayUpdate(imports, index, imp)
+    imports[index] = imp
   end
   return element
 end
 
 function resolveComponent(index::Int, tree::ClassTree)::InstNode
   local element::InstNode
-
   element = begin
     @match tree begin
       CLASS_TREE_INSTANTIATED_TREE(__) => begin
@@ -2023,37 +2008,16 @@ function resolveComponent(index::Int, tree::ClassTree)::InstNode
       end
 
       CLASS_TREE_FLAT_TREE(__) => begin
-        arrayGet(tree.components, index)
+        tree.components[index]
       end
     end
   end
   return element
 end
 
-function resolveClass(index::Int, tree::ClassTree)::InstNode
-  local element::InstNode
-  element = begin
-    @match tree begin
-      CLASS_TREE_PARTIAL_TREE(__) => begin
-        arrayGet(tree.classes, index)
-      end
 
-      CLASS_TREE_EXPANDED_TREE(__) => begin
-        arrayGet(tree.classes, index)
-      end
-
-      CLASS_TREE_INSTANTIATED_TREE(__) => begin
-        P_Pointer.access(arrayGet(tree.classes, index))
-      end
-
-      CLASS_TREE_FLAT_TREE(__) => begin
-        arrayGet(tree.classes, index)
-      end
-    end
-  end
-  #@debug "Returning element in resolveClass"
-  return element
-end
+resolveClass(index::Int, tree::CLASS_TREE_INSTANTIATED_TREE) = P_Pointer.access(tree.classes[index])
+resolveClass(index::Int, tree::ClassTree) = tree.classes[index]
 
 function resolveDuplicateEntriesPtr(
   entry::DuplicateTree.Entry,
@@ -2101,18 +2065,20 @@ end
 function resolveEntry(entry::LookupTree.Entry, tree::ClassTree)
   local isImported::Bool = false
   local element::InstNode
-  (isImported, element) =  @match entry begin
+  element =  @match entry begin
     LookupTree.CLASS(__) => begin
-      (false, resolveClass(entry.index, tree))
+      resolveClass(entry.index, tree)
     end
     LookupTree.COMPONENT(__) => begin
-      (false, resolveComponent(entry.index, tree))
+      resolveComponent(entry.index, tree)
     end
     LookupTree.IMPORT(__) => begin
-      (true, resolveImport(entry.index, tree))
+      isImported = true
+      resolveImport(entry.index, tree)
     end
     _ #= Else we did not find anything...=# => begin
-      fail() #(false, EMPTY_NODE())
+      isImported = false
+      EMPTY_NODE()
     end
   end
   return ENTRY_INFO(element, isImported)

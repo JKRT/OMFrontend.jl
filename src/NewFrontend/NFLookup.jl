@@ -284,7 +284,7 @@ function lookupSimpleName(nameStr::String, scope::InstNode)
   local node::InstNode
   local cur_scope::InstNode = scope
   for i in 1:Global.recursionDepthLimit
-    (node, _) = lookupLocalSimpleName(nameStr, cur_scope)
+    @match ENTRY_INFO(node, _) = lookupLocalSimpleName(nameStr, cur_scope)
     #@info "The node $nameStr is resolved in some scope"
     if node !== EMPTY_NODE()
       return node
@@ -309,10 +309,10 @@ function lookupLocalSimpleName(n::String, scope::InstNode)
   local isImport::Bool = false
   local node::InstNode
   ##@info "Looking up simple name $n"
-  @match ENTRY_INFO(node, isImport) = lookupElement(n, getClass(scope))
+  entryInfo = @match ENTRY_INFO(node, isImport) = lookupElement(n, getClass(scope))
   ##@info "We lookup an element"
   node = resolveInner(node)
-  return (node, isImport)
+  return entryInfo#(node, isImport)
 end
 
 
@@ -410,7 +410,7 @@ function lookupLocalName(name::Absyn.Path, node::InstNode, state::LookupState, c
    () = begin
     @match name begin
       Absyn.IDENT(__)  => begin
-         (node, is_import) = lookupLocalSimpleName(name.name, node)
+        @match ENTRY_INFO(node, is_import) = lookupLocalSimpleName(name.name, node)
         #@debug "HERE WE ARE!"
         if is_import
           state = LOOKUP_STATE_ERROR(LOOKUP_STATE_IMPORT())
@@ -421,7 +421,7 @@ function lookupLocalName(name::Absyn.Path, node::InstNode, state::LookupState, c
       end
 
       Absyn.QUALIFIED(__)  => begin
-         (node, is_import) = lookupLocalSimpleName(name.name, node)
+        @match ENTRY_INFO(node, is_import) = lookupLocalSimpleName(name.name, node)
         if is_import
           state = LOOKUP_STATE_ERROR(LOOKUP_STATE_IMPORT())
         else
@@ -454,14 +454,14 @@ function lookupLocalNames(name::Absyn.Path, scope::InstNode, nodes::List{<:InstN
    (nodes, state) = begin
     @match name begin
       Absyn.IDENT(__)  => begin
-        (node, _) = lookupLocalSimpleName(name.name, node)
+        @match ENTRY_INFO(node, _) = lookupLocalSimpleName(name.name, node)
         #@debug "Here we are!"
         state = next(node, state)
         (_cons(node, nodes), state)
       end
 
       Absyn.QUALIFIED(__)  => begin
-        (node, _) = lookupLocalSimpleName(name.name, node)
+        @match ENTRY_INFO(node, _) = lookupLocalSimpleName(name.name, node)
         state = next(node, state)
         lookupLocalNames(name.path, node, _cons(node, nodes), state)
       end

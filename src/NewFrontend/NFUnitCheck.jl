@@ -401,7 +401,7 @@ function foldEquation2(
       end
 
       EQUATION_ARRAY_EQUALITY(__) => begin
-        @assign temp = BINARY_EXPRESSION(
+        temp = BINARY_EXPRESSION(
           eq.rhs,
           makeSub(TYPE_REAL()),
           eq.lhs,

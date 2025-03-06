@@ -487,7 +487,7 @@ function mergeModifier(mod::Modifier, node::InstNode)
         ()
       end
 
-      COMPONENT_NODE(__)  => begin
+      COMPONENT_NODE(__) => begin
         Pointer.update(node.component, P_Component.mergeModifier(mod, P_Pointer.access(node.component)))
         ()
       end
@@ -499,27 +499,6 @@ function mergeModifier(mod::Modifier, node::InstNode)
   end
   node
 end
-
-# function getModifier(node::InstNode)
-#   local mod::Modifier
-
-#    mod = begin
-#     @match node begin
-#       CLASS_NODE(__)  => begin
-#         getModifier(P_Pointer.access(node.cls))
-#       end
-
-#       COMPONENT_NODE(__)  => begin
-#         getModifier(P_Pointer.access(node.component))
-#       end
-
-#       _  => begin
-#         MODIFIER_NOMOD()
-#       end
-#     end
-#   end
-#   mod
-# end
 
 
 function getModifier(node::InstNode)
@@ -975,22 +954,8 @@ function cacheInitFunc(node::InstNode)
   node
 end
 
-function resolveOuter(node::InstNode)
-  local outerNode::InstNode
-
-   outerNode = begin
-    @match node begin
-      INNER_OUTER_NODE(__)  => begin
-        node.outerNode
-      end
-
-      _  => begin
-        node
-      end
-    end
-  end
-  outerNode
-end
+resolveOuter(node::INNER_OUTER_NODE) = node.outerNode
+resolveOuter(node::InstNode) = node
 
 function resolveInner(node::InstNode)
   local innerNode::InstNode
@@ -1467,10 +1432,7 @@ function replaceClass(cls::Class, node::CLASS_NODE)
 end
 
 
-function replaceClass(cls::Class, node::InstNode)
-  return node
-end
-
+replaceClass(cls::Class, node::InstNode) = node
 
 function replaceComponent(component::Component, node::InstNode)
   local replacedNode =  if node isa COMPONENT_NODE
@@ -1500,7 +1462,6 @@ end
 
 function component(node::InstNode)
   local component::Component
-
    component = begin
     @match node begin
       COMPONENT_NODE(__)  => begin
@@ -1525,13 +1486,11 @@ end
 
 function getDerivedNode(node::InstNode)
   local derived::InstNode
-
    derived = begin
     @match node begin
       CLASS_NODE(nodeType = BASE_CLASS(parent = derived))  => begin
         getDerivedNode(derived)
       end
-
       _  => begin
         node
       end
@@ -1540,35 +1499,13 @@ function getDerivedNode(node::InstNode)
   derived
 end
 
-# function getDerivedClass(node::InstNode)
-#   local cls::Class
-
-#    cls = begin
-#     @match node begin
-#       CLASS_NODE(__)  => begin
-#         getClass(getDerivedNode(node))
-#       end
-
-#       COMPONENT_NODE(__)  => begin
-#         getClass(getDerivedNode(P_Component.classInstance(P_Pointer.access(node.component))))
-#       end
-#     end
-#   end
-#   cls
-# end
-
-
-function getDerivedClass(node::InstNode)
+function getDerivedClass(node::Union{CLASS_NODE, COMPONENT_NODE})
    cls =  if cls isa CLASS_NODE
      getClass(getDerivedNode(node))
-   elseif cls isa COMPONENT_NODE
-     getClass(getDerivedNode(P_Component.classInstance(P_Pointer.access(node.component))))
    else
-     fail()
+     getClass(getDerivedNode(P_Component.classInstance(P_Pointer.access(node.component))))
    end
-  cls
 end
-
 
 function getClass(node::InstNode)
   cls = if node isa CLASS_NODE

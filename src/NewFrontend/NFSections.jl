@@ -50,27 +50,25 @@ function apply(
   algFn::AlgorithmFn,
   ieqFn::EquationFn = eqFn,
   ialgFn::AlgorithmFn = algFn,
-)
-  return  () = begin
-    @match sections begin
-      SECTIONS(__) => begin
-        for eq in sections.equations
-          eqFn(eq)
-        end
-        for ieq in sections.initialEquations
-          ieqFn(ieq)
-        end
-        for alg in sections.algorithms
-          algFn(alg)
-        end
-        for ialg in sections.initialAlgorithms
-          ialgFn(ialg)
-        end
-        ()
+  )::Nothing
+  @match sections begin
+    SECTIONS(__) => begin
+      for eq in sections.equations
+        eqFn(eq)
       end
-      _ => begin
-        ()
+      for ieq in sections.initialEquations
+        ieqFn(ieq)
       end
+      for alg in sections.algorithms
+        algFn(alg)
+      end
+      for ialg in sections.initialAlgorithms
+        ialgFn(ialg)
+      end
+      nothing
+    end
+    _ => begin
+      nothing
     end
   end
 end

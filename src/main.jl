@@ -88,18 +88,19 @@ include("./NewFrontend/NFRecord.jl")
 include("./NewFrontend/NFOperatorOverloading.jl")
 include("./NewFrontend/NFCeval.jl")
 include("./NewFrontend/NFDimension.jl")
+include("./NewFrontend/NFComponentRef.jl")
+include("./NewFrontend/NFBinding.jl")
 include("./NewFrontend/NFTyping.jl")
 
 include("./NewFrontend/NFScalarize.jl")
 
 include("./NewFrontend/NFClass.jl")
 include("./NewFrontend/NFExpressionIterator.jl")
-include("./NewFrontend/NFComponentRef.jl")
 include("./NewFrontend/NFInstUtil.jl")
+include("./NewFrontend/NFModifier.jl")
 include("./NewFrontend/NFInst.jl")
 include("./NewFrontend/NFAlgorithm.jl")
 include("./NewFrontend/NFStatement.jl")
-include("./NewFrontend/NFBinding.jl")
 include("./NewFrontend/NFVariable.jl")
 include("./NewFrontend/NFFlatModel.jl")
 include("./NewFrontend/NFConnector.jl")
@@ -126,7 +127,7 @@ include("./NewFrontend/NFRestriction.jl")
 
 include("./NewFrontend/NFImport.jl")
 
-include("./NewFrontend/NFModifier.jl")
+
 
 #= Add the trees =#
 include("./NewFrontend/LookupTree.jl")

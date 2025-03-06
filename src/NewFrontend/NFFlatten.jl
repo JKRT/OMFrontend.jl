@@ -762,7 +762,7 @@ function vectorizeEquation(
         =#
         iter = begin
           @match node(prefix) begin
-            prefix_node && COMPONENT_NODE(__) => begin
+            prefix_node && COMPONENT_NODE(__)=> begin
               COMPONENT_NODE(
                 "i",
                 prefix_node.visibility,

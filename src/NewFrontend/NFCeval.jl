@@ -283,7 +283,7 @@ function evalExp_impl(exp::Expression, target::EvalTarget)::Expression
       end
 
       BINDING_EXP(__) => begin
-         exp.exp = evalExp_impl(exp.exp, target)
+        @assign exp.exp = evalExp_impl(exp.exp, target)
         exp
       end
 
@@ -419,7 +419,7 @@ function evalComponentBinding(
   else
     ORIGIN_CLASS
    end
-  typeComponentBinding2(node, exp_origin, false)
+  typeComponentBinding(node, exp_origin, false)
   comp = component(node)
   binding = getBinding(comp)
   parent_cr = rest(cref)

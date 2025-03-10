@@ -614,6 +614,21 @@ function fromVector(
   return tree
 end
 
+function fromVector(
+  inValues::Vector{Value},
+  inKeys::Vector{Key},
+  conflictFunc::Function = addConflictDefault,
+  )::Tree #= Used to resolve conflicts. =#
+  local tree::Tree = EMPTY()
+  local key::Key
+  local value::Value
+  for i in 1:length(inValues)
+     tree = add(tree, inKeys[i], inValues[i], conflictFunc)
+  end
+  return tree
+end
+
+
 
 """ #= Converts the tree to a flat list of key-value tuples. =#"""
 function toList(

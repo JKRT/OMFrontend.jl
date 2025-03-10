@@ -528,7 +528,7 @@ end
 
 function makeMutable(exp::Expression)
   local outExp::Expression
-   outExp = MUTABLE_EXPRESSION(P_Pointer.create(exp))
+   outExp = MUTABLE_EXPRESSION(P_Pointer.create(exp, Expression))
   outExp
 end
 
@@ -3358,7 +3358,7 @@ function mapShallowOpt(exp::Option{<:Expression}, @nospecialize(func::Function))
   outExp
 end
 
-function mapShallow(@nospecialize(exp::Expression), @nospecialize(func::Function))
+function mapShallow(@nospecialize(exp::Expression), func::Function)
   local outExp::Expression
   outExp = begin
     local e1::Expression
@@ -3406,11 +3406,19 @@ function mapShallow(@nospecialize(exp::Expression), @nospecialize(func::Function
       end
 
       CREF_EXPRESSION(__)  => begin
-        CREF_EXPRESSION(exp.ty, mapCrefShallow!(exp.cref, func))
+        mapCrefShallow!(exp.cref, func)
+        #CREF_EXPRESSION(exp.ty, )
+        exp
       end
 
       ARRAY_EXPRESSION(__)  => begin
-        ARRAY_EXPRESSION(exp.ty, Expression[func(e) for e in exp.elements], exp.literal)
+        local elems = exp.elements::Vector{Expression}
+        for i in 1:length(elems)
+          local e = elems[i]
+          elems[i] = func(e)::Expression
+        end
+        #ARRAY_EXPRESSION(exp.ty, Expression[func(e) for e in exp.elements], exp.literal)
+        exp
       end
 
       MATRIX_EXPRESSION(__)  => begin

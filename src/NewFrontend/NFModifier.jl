@@ -643,51 +643,55 @@ function stripSCodeMod(elem::SCode.Element)
   return (retElem, mod)
 end
 
-function create(mod::SCode.Mod,
+create(mod::SCode.NOMOD,
+       name::String,
+       modScope::ModifierScope,
+       parents::List{<:InstNode},
+       scope::InstNode) = MODIFIER_NOMOD()
+
+
+
+function create(mod::SCode.SCode.REDECL,
                 name::String,
                 modScope::ModifierScope,
                 parents::List{<:InstNode},
-                scope::InstNode)
-  local newMod::Modifier
-  newMod = begin
-    local submodV::Vector{Tuple{String, Modifier}}
-    local submod_table::ModTable.Tree
-    local binding::Binding
-    local elem::SCode.Element
-    local smod::SCode.Mod
-    local is_each::Bool
-    local node::InstNode
-    local pars::List{InstNode}
-    @match mod begin
-      SCode.NOMOD(__) => begin
-        MODIFIER_NOMOD()
-      end
-      SCode.MOD(__) => begin
-        is_each = SCodeUtil.eachBool(mod.eachPrefix)
-        binding = fromAbsyn(mod.binding, is_each, parents, scope, mod.info)
-        pars = if is_each
-          nil
-        else
-          parents
-        end
-        submodV = Tuple{String, Modifier}[tuple(m.ident, createSubMod(m, modScope, pars, scope)) for m in mod.subModLst]
-        submod_table = ModTable.fromVector(
-          submodV,
-          (modScope, nil) -> mergeLocal(scope = modScope, prefix = nil),
-        )
-        MODIFIER_MODIFIER(name, mod.finalPrefix, mod.eachPrefix, binding, submod_table, mod.info)
-      end
-
-      SCode.REDECL(element = elem) => begin
-        node = new(elem, scope)
-        if isClass(node)
-          partialInstClass(node)
-        end
-        MODIFIER_REDECLARE(mod.finalPrefix, mod.eachPrefix, node, MODIFIER_NOMOD())
-      end
-    end
+                scope::InstNode)::MODIFIER_REDECLARE
+  local elem = mod.element
+  node = new(elem, scope)
+  if isClass(node)
+    partialInstClass(node)
   end
-  return newMod
+  MODIFIER_REDECLARE(mod.finalPrefix, mod.eachPrefix, node, MODIFIER_NOMOD())
+end
+
+function create(mod::SCode.MOD,
+                name::String,
+                modScope::ModifierScope,
+                parents::List{<:InstNode},
+                scope::InstNode)::MODIFIER_MODIFIER
+  local submodV::Vector{Modifier}
+  local submod_table::ModTable.Tree
+  local binding::Binding
+  local elem::SCode.Element
+  local smod::SCode.Mod
+  local is_each::Bool
+  local node::InstNode
+  local pars::List{InstNode}
+  is_each = SCodeUtil.eachBool(mod.eachPrefix)
+  binding = fromAbsyn(mod.binding, is_each, parents, scope, mod.info)
+  pars = if is_each
+    nil
+  else
+    parents
+  end
+  local submodV = Modifier[createSubMod(m, modScope, pars, scope) for m in mod.subModLst]
+  local submodK = String[m.ident for m in mod.subModLst]
+  submod_table = ModTable.fromVector(
+    submodV,
+    submodK,
+    (modScope) -> mergeLocal(scope = modScope, prefix = nil),
+  )
+  MODIFIER_MODIFIER(name, mod.finalPrefix, mod.eachPrefix, binding, submod_table, mod.info)
 end
 
 """ #= Merges two modifiers in the same scope, i.e. like a(x(y = 1), x(z = 2)).

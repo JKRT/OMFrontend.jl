@@ -191,12 +191,9 @@ function simplifyEqualityEquation(eq::EQUATION_EQUALITY, equations::Vector{Equat
   local src::DAE.ElementSource
   #@info "Simplify equality equation..." toString(eq)
   if typeof(eq.rhs) == ARRAY_EXPRESSION
+    #= If it is an empty array we have no eq to compute. =#
     if isEmptyArray(eq.rhs)
-      @info "Was empty array"
       return equations
-    else
-      @info "Was not empty array"
-      global EQ_ARRAY = eq
     end
   end
   @match EQUATION_EQUALITY(lhs = lhs, rhs = rhs, ty = ty, source = src) = eq

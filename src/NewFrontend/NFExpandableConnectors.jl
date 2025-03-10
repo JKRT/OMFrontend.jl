@@ -479,7 +479,7 @@ function augmentExpandableConnector(
   @assign ty = TYPE_COMPLEX(cls_node, complex_ty)
   @assign cls = setType(ty, cls)
   updateClass(cls, cls_node)
-  componentApply(exp_node, P_Component.setType, ty)
+  componentApply(exp_node, setType, ty)
   return vars
 end
 

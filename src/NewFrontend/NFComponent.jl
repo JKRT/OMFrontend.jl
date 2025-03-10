@@ -800,11 +800,11 @@ function hasBinding(component::Component, parent::InstNode = EMPTY_NODE())
    children = getComponents(classTree(cls))
   for c in children
     if isComponent(c) && !hasBinding(component(c))
-       b = false
+      b = false
       return b
     end
   end
-   b = true
+  b = true
   return b
 end
 
@@ -929,7 +929,6 @@ end
 
 function isTyped(component::Component)
   local isTyped::Bool
-
    isTyped = begin    @match component begin
       TYPED_COMPONENT(__) => begin
         true
@@ -1114,21 +1113,8 @@ function Component_info(component::Component)
   return info
 end
 
-function isDefinition(component::Component)
-  local isDefinition::Bool
-  isDefinition = begin
-    @match component begin
-      COMPONENT_DEF(__) => begin
-        true
-      end
-
-      _ => begin
-        false
-      end
-    end
-  end
-  return isDefinition
-end
+isDefinition(component::COMPONENT_DEF) = true
+isDefinition(component::Component) = false
 
 function definition(component::Component)
   local def::SCode.Element

@@ -252,7 +252,7 @@ function instantiateN1(node::InstNode, parentNode::InstNode)
   #@debug "Instantiating!!!! in Inst"
   node = expand(node)
   #@debug "After expansion in inst. Instantiating in class-tree "
-  node = instClass(node, MODIFIER_NOMOD(), DEFAULT_ATTR, true, 0, parentNode)[1]
+  @match (_, node) = instClass(node, MODIFIER_NOMOD(), DEFAULT_ATTR, true, 0, parentNode)
   return node
 end
 
@@ -260,7 +260,7 @@ function instantiateN1(node::InstNode)
   #@debug "Instantiating!!!! in Inst"
   node = expand(node)
   #@debug "After expansion in inst. Instantiating in class-tree "
-  node = instClass(node, MODIFIER_NOMOD(), DEFAULT_ATTR, true, 0, EMPTY_NODE())[1]
+  @match (_, node) = instClass(node, MODIFIER_NOMOD(), DEFAULT_ATTR, true, 0, EMPTY_NODE())
   return node
 end
 
@@ -752,7 +752,7 @@ function instDerivedAttributes(scodeAttr::SCode.Attributes) ::Attributes
   attributes
 end
 
-function instClass(node::InstNode, modifier::Modifier, attributes::Attributes = DEFAULT_ATTR, useBinding::Bool = false, instLevel::Int = 0, parent = EMPTY_NODE())#::Tuple{InstNode, Attributes}
+function instClass(node::InstNode, modifier::Modifier, attributes::Attributes = DEFAULT_ATTR, useBinding::Bool = false, instLevel::Int = 0, parent = EMPTY_NODE())::Tuple{Attributes, CLASS_NODE}
   local cls::Class
   local outer_mod::Modifier
   #@debug "INST CLASS CALLED. CALLING GETCLASS ON NODE."
@@ -765,9 +765,7 @@ function instClass(node::InstNode, modifier::Modifier, attributes::Attributes = 
     Error.addSourceMessage(Error.MISSING_REDECLARE_IN_CLASS_MOD, list(name(node)), Binding_getInfo(binding(outer_mod)))
     fail()
   end
-  #@debug "CALLING INSTCLASSDEF"
-  @match (attributes, node) = instClassDef(cls, modifier, attributes, useBinding, node, parent, instLevel)
-  (node, attributes)
+  instClassDef(cls, modifier, attributes, useBinding, node, parent, instLevel)
 end
 
 #= On failure call the generic function. =#
@@ -782,7 +780,7 @@ function instClassDef(cls::INSTANCED_CLASS,
                       useBinding::Bool,
                       node::InstNode,
                       parentArg::InstNode,
-                      instLevel::Int)
+                      instLevel::Int)::Tuple{Attributes, CLASS_NODE}
   local par::InstNode
   local base_node::InstNode
   local inst_cls::Class
@@ -801,7 +799,7 @@ function instClassDef(cls::INSTANCED_CLASS,
   node = replaceClass(NOT_INSTANTIATED(), node)
   node = setNodeType(NORMAL_CLASS(), node)
   node = expand(node)
-  @match (node, _) = instClass(node, outerMod, attributes, useBinding, instLevel, parentArg)
+  @match (_, node) = instClass(node, outerMod, attributes, useBinding, instLevel, parentArg)
   updateComponentType(parentArg, node)
   return (attributes, node)
 end
@@ -810,19 +808,18 @@ function instClassDef(cls::PARTIAL_BUILTIN,
                       outerMod::Modifier,
                       attributes::Attributes,
                       useBinding::Bool,
-                      node::InstNode,
+                      node::CLASS_NODE,
                       parentArg::InstNode,
-                      instLevel::Int)
+                      instLevel::Int)::Tuple{Attributes, CLASS_NODE}
   @match cls begin
     PARTIAL_BUILTIN(restriction = RESTRICTION_EXTERNAL_OBJECT(__))  => begin
       inst_cls = INSTANCED_BUILTIN(cls.ty, cls.elements, cls.restriction)
       node = replaceClass(inst_cls, node)
       updateComponentType(parentArg, node)
       instExternalObjectStructors(cls.ty, parentArg)
-      nothing
     end
     PARTIAL_BUILTIN(ty = ty, restriction = res)  => begin
-      node = Base.first(instantiate(node, parentArg))
+      @match (node, _, _, _) = instantiate(node, parentArg)
       updateComponentType(parentArg, node)
       cls_tree = classTree(getClass(node))
       mod = fromElement(definition(node), list(node), parent(node))
@@ -831,7 +828,6 @@ function instClassDef(cls::PARTIAL_BUILTIN,
       applyModifier(mod, cls_tree, name(node))
       inst_cls = INSTANCED_BUILTIN(ty, cls_tree, res)
       node = updateClass(inst_cls, node)
-      nothing
     end
   end
   return (attributes, node)
@@ -843,7 +839,7 @@ function instClassDef(cls::EXPANDED_DERIVED,
                       useBinding::Bool,
                       node::InstNode,
                       parentArg::InstNode,
-                      instLevel::Int)
+                      instLevel::Int)::Tuple{Attributes, CLASS_NODE}
   @match (node, par,_,_) = instantiate(node, parentArg)
   node = setNodeType(DERIVED_CLASS(nodeType(node)), node)
   @match EXPANDED_DERIVED(baseClass = base_node) = getClass(node)
@@ -858,7 +854,7 @@ function instClassDef(cls::EXPANDED_DERIVED,
   attributes = mergeDerivedAttributes(attrs, attributes, parentArg)
   #=  Instantiate the base class and update the nodes.
   =#
-  @match (base_node, attributes) = instClass(base_node, mod, attributes, useBinding, instLevel, par)
+  @match (attributes, base_node) = instClass(base_node, mod, attributes, useBinding, instLevel, par)
   cls = EXPANDED_DERIVED(base_node,
                          cls.modifier,
                          arrayCopy(cls.dims),
@@ -877,7 +873,7 @@ function instClassDef(cls::EXPANDED_CLASS,
                       useBinding::Bool,
                       node::CLASS_NODE,
                       parentArg::InstNode,
-                      instLevel::Int)
+                      instLevel::Int)::Tuple{Attributes, CLASS_NODE}
   local par::InstNode
   local base_node::InstNode
   local inst_cls::Class
@@ -930,7 +926,7 @@ function instClassDef(cls::EXPANDED_CLASS,
 end
 
 """ #= Sets the class instance of a component node. =#"""
-function updateComponentType(component::InstNode, cls::InstNode) ::InstNode
+function updateComponentType(component::T0, cls::T1)::T0 where {T0, T1}
   if isComponent(component)
     component = componentApply(component, setClassInstance, cls)
   end
@@ -1091,9 +1087,7 @@ function instExtends(node::CLASS_NODE,
         end
       end
       noMod = MODIFIER_NOMOD()
-      #instExtendsX = @closure (nodeX) -> instExtends(nodeX, attributes, useBinding, vis, instLevel)
       mapExtends(cls_tree, attributes, useBinding, vis, instLevel)
-      #instComponentY= @closure (nodeX) -> instComponent(nodeX,)
       applyLocalComponents(cls_tree, attributes, useBinding, instLevel)
     end
     EXPANDED_DERIVED(__)  => begin
@@ -1226,7 +1220,7 @@ function redeclareElements(chain::List, instLevel::Int)
   end
 end
 
-function redeclareClassElement(redeclareCls::Pointer, replaceableCls::Pointer)::Pointer
+function redeclareClassElement(redeclareCls::Pointer{InstNode}, replaceableCls::Pointer{InstNode})::Pointer{InstNode}
   local outCls::Pointer{InstNode}
   local rdcl_node::InstNode
   local repl_node::InstNode
@@ -1237,12 +1231,12 @@ function redeclareClassElement(redeclareCls::Pointer, replaceableCls::Pointer)::
   outCls
 end
 
-function redeclareComponentElement(redeclareComp::Pointer{<:InstNode}, replaceableComp::Pointer{<:InstNode}, instLevel::Int) ::Pointer{InstNode}
+function redeclareComponentElement(redeclareComp::Pointer{InstNode}, replaceableComp::Pointer{InstNode}, instLevel::Int) ::Pointer{InstNode}
   local outComp::Pointer{InstNode}
   local rdcl_node::InstNode
   local repl_node::InstNode
-   rdcl_node = P_Pointer.access(redeclareComp)
-   repl_node = P_Pointer.access(replaceableComp)
+  rdcl_node = P_Pointer.access(redeclareComp)
+  repl_node = P_Pointer.access(replaceableComp)
   instComponent(repl_node, DEFAULT_ATTR, MODIFIER_NOMOD(), true, instLevel)
   redeclareComponent(rdcl_node, repl_node, MODIFIER_NOMOD(), MODIFIER_NOMOD(), DEFAULT_ATTR, rdcl_node, instLevel)
    outComp = P_Pointer.create(rdcl_node)
@@ -1393,7 +1387,7 @@ function instComponent(node::InstNode,
     checkOuterComponentMod(outer_mod, def, comp_node)
     instComponentDef(def::SCode.COMPONENT, MODIFIER_NOMOD(), MODIFIER_NOMOD(),
                      DEFAULT_ATTR, useBinding, comp_node, parentNode,
-                     instLevel, originalAttr; isRedeclared = true)
+                     instLevel, originalAttr, #=isRedeclared =# true)::Nothing
     @match MODIFIER_REDECLARE(element = rdcl_node, mod = outer_mod) = outer_mod
     cc_smod = SCodeUtil.getConstrainingMod(def)
     if ! SCodeUtil.isEmptyMod(cc_smod)
@@ -1409,10 +1403,10 @@ function instComponent(node::InstNode,
                      cc_mod,
                      attributes,
                      useBinding,
-                     comp_node,
+                     comp_node::COMPONENT_NODE,
                      parentNode,
                      instLevel,
-                     originalAttr)
+                     originalAttr)::Nothing
   end
   return nothing
 end
@@ -1422,26 +1416,19 @@ function instComponentDef(component::SCode.COMPONENT,
                           innerMod::Modifier,
                           attributes::Attributes,
                           useBinding::Bool,
-                          node::InstNode,
+                          node::COMPONENT_NODE,
                           parentNode::InstNode,
                           instLevel::Int,
-                          originalAttr = NONE();
+                          originalAttr = NONE(),
                           isRedeclared::Bool = false)::Nothing
-  local info::SourceInfo = component.info
   local decl_mod::Modifier
   local mod::Modifier
   local cc_mod::Modifier
-  local dims::Vector{Dimension}
   local ty_dims::List
   local bindingVar::Binding
-  local condition::Binding
   local attr::Attributes
   local ty_attr::Attributes
-  local inst_comp::Component
-  local ty_node::InstNode
-  local ty::Class
-  local in_function::Bool
-  local parent_res::Restriction
+  local ty_node::CLASS_NODE
   local res::Restriction
   decl_mod = fromElement(component, nil, parentNode)
   cc_mod = instConstrainingMod(component, parentNode)
@@ -1450,16 +1437,16 @@ function instComponentDef(component::SCode.COMPONENT,
   mod = merge(outerMod, mod)
   mod = addParent(node, mod)
   checkOuterComponentMod(mod, component, node)
-  dims = DIMENSION_RAW_DIM[DIMENSION_RAW_DIM(d) for d in component.attributes.arrayDims]
+  local dims = DIMENSION_RAW_DIM[DIMENSION_RAW_DIM(d) for d in component.attributes.arrayDims]
   bindingVar = if useBinding
     binding(mod)
   else
     EMPTY_BINDING
   end
-  condition = fromAbsyn(component.condition, false, list(node), parentNode, info)
+  local condition = fromAbsyn(component.condition, false, list(node), parentNode, component.info)
   #=  Instantiate the component's attributes, and merge them with the =#
   #=  attributes of the component's parent (e.g. constant SomeComplexClass c). =#
-  parent_res = restriction(getClass(parentNode))
+  local parent_res = restriction(getClass(parentNode))
   attr = instComponentAttributes(component.attributes, component.prefixes)
   attr = checkDeclaredComponentAttributes(attr, parent_res, node)
   attr = mergeComponentAttributes(attributes, attr, node, parent_res)
@@ -1476,18 +1463,19 @@ function instComponentDef(component::SCode.COMPONENT,
   is created by instClass. To break the circle we leave the class node
   empty here, and let instClass set it for us instead.
   =#
-  inst_comp = UNTYPED_COMPONENT(EMPTY_NODE(),
-                                dims,
-                                bindingVar,
-                                condition,
-                                attr,
-                                SOME(component.comment), false, info)
+  local inst_comp = UNTYPED_COMPONENT(EMPTY_NODE(),
+                                      dims,
+                                      bindingVar,
+                                      condition,
+                                      attr,
+                                      SOME(component.comment),
+                                      false,
+                                      component.info)
   updateComponent!(inst_comp, node)
   #=  Instantiate the type of the component. =#
-  @match (ty_node, ty_attr) = instTypeSpec(component.typeSpec, mod, attr,
-                                    useBinding && ! isBound(bindingVar),
-                                    parentNode, node, info, instLevel)
-  ty = getClass(ty_node)
+  local typeSpecCond = useBinding && ! isBound(bindingVar)
+  @match (ty_attr, ty_node) = instTypeSpec(component.typeSpec, mod, attr,typeSpecCond, parentNode, node, component.info, instLevel)
+  local ty = getClass(ty_node)
   #=  Update the component's variability based on its type (e.g. Integer is discrete). =#
   ty_attr = updateComponentVariability(ty_attr, ty, ty_node)
   #=  Update the component's connector type now that we have its type. =#
@@ -1939,22 +1927,19 @@ function isDiscreteClass(clsNode::InstNode) ::Bool
 end
 
 function instTypeSpec(typeSpec::Absyn.TPATH,
-                      @nospecialize(modifier::Modifier),
-                      @nospecialize(attributes::Attributes),
-                      @nospecialize(useBinding::Bool),
-                      @nospecialize(scope::InstNode),
-                      @nospecialize(parent::InstNode),
-                      @nospecialize(info::SourceInfo),
-                      instLevel::Int)
-  local outAttributes::Attributes
-  local node::InstNode
-  node = lookupClassName(typeSpec.path, scope, info)
+                      modifier::Modifier,
+                      attributes::Attributes,
+                      useBinding::Bool,
+                      scope::InstNode,
+                      parent::InstNode,
+                      info::SourceInfo,
+                      instLevel::Int)::Tuple{Attributes, CLASS_NODE}
+  local node::InstNode = lookupClassName(typeSpec.path, scope, info)
   if instLevel >= 100
     checkRecursiveDefinition(node, parent, limitReached = true)
   end
   node = expand(node)
-  @match (node, outAttributes) = instClass(node, modifier, attributes, useBinding, instLevel, parent)
-  return (node, outAttributes)
+  instClass(node, modifier, attributes, useBinding, instLevel, parent)
 end
 
 
@@ -2076,7 +2061,7 @@ function instExpressions(@nospecialize(node::InstNode),
         end
         #=  Instantiate expressions in the local components.
         =#
-        applyLocalComponents(cls_tree, instComponentExpressions)
+        applyLocalComponentsWithInstComponentExpressions(cls_tree)
         #=  Flatten the class tree so we don't need to deal with extends anymore.
         =#
         local elements = flatten(cls_tree)

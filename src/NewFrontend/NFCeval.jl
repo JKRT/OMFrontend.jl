@@ -4455,7 +4455,7 @@ function createIterationRanges(
 
   for i in iterators
      (node, range) = i
-     iter = P_Pointer.create(INTEGER_EXPRESSION(0))
+     iter = P_Pointer.create(INTEGER_EXPRESSION(0), Expression)
      exp = replaceIterator(
       exp,
       node,

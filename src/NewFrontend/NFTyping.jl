@@ -155,7 +155,7 @@ function flagNotSet(origin::M_Type_Int, flag::M_Type_Int)::Bool
   return notSet
 end
 
-@nospecializeinfer function typeClass(@nospecialize(cls::InstNode), @nospecialize(name::String))
+function typeClass(cls::InstNode, name::String)
   typeClassType(cls, EMPTY_BINDING, ORIGIN_CLASS, cls)
   typeComponents(cls, ORIGIN_CLASS)
 #  execStat("NFtypeComponents(" + name + ")")
@@ -562,7 +562,7 @@ function typeDimensions(
   return dimensions
 end
 
-@nospecializeinfer function typeDimension(
+function typeDimension(
   dimensions::Vector{Dimension},
   index::Int,
   component::InstNode,
@@ -570,24 +570,24 @@ end
   origin::ORIGIN_Type,
   info::SourceInfo,
   )::Dimension
-  Base.inferencebarrier(typeDimension2(
+  typeDimension2(
     dimensions::Vector{Dimension},
     index::Int,
     component::InstNode,
     binding::Binding,
     origin::ORIGIN_Type,
     info::SourceInfo,
-  ))
+  )
 end
 
-@nospecializeinfer function typeDimension2(
-  @nospecialize(dimensions::Vector{Dimension}),
+function typeDimension2(
+  dimensions::Vector{Dimension},
   index::Int,
-  @nospecialize(component::InstNode),
-  @nospecialize(binding::Binding),
+  component::InstNode,
+  binding::Binding,
   origin::ORIGIN_Type,
   info::SourceInfo,
-)::Dimension
+  )::Dimension
   local dimension::Dimension = dimensions[index]
 
    dimension = begin
@@ -1094,31 +1094,31 @@ function handleBindingError(binding)
   end
 end
 function typeComponentBinding2(
-  @nospecialize(inComponent::InstNode),
-  @nospecialize(node::InstNode),
+  inComponent::InstNode,
+  node::InstNode,
   c::TYPE_ATTRIBUTE,
   origin::ORIGIN_Type,
   typeChildren::Bool,
   )
   if c.modifier isa MODIFIER_NOMOD
-    return ()
+    return
   else
     local mod = typeTypeAttribute(c.modifier, c.ty, parent(inComponent), origin)
     c.modifier = mod #TYPE_ATTRIBUTE(c.ty, mod)
     updateComponent!(c, node)
-    return ()
+    return
   end
 end
 
 function typeComponentBinding2(
-  @nospecialize(inComponent::InstNode),
-  @nospecialize(node::InstNode),
+  inComponent::InstNode,
+  node::InstNode,
   c::UNTYPED_COMPONENT,
   origin::ORIGIN_Type,
   typeChildren::Bool,
   )
   if ! (c.binding isa UNTYPED_BINDING)
-    return ()
+    return
   end
   #=  An untyped component with a binding. This might happen when typing a
   =#
@@ -1137,16 +1137,16 @@ function typeComponentBinding2(
   end
   c.binding = binding
   updateComponent!(c, node)
-  return ()
+  return
 end
 
 typeComponentBinding2(
-  @nospecialize(inComponent::InstNode),
-  @nospecialize(node::InstNode),
+  inComponent::InstNode,
+  node::InstNode,
   c::ENUM_LITERAL_COMPONENT,
   origin::ORIGIN_Type,
   typeChildren::Bool,
-) = ()
+) = nothing
 
 function checkComponentBindingVariability(
   name::String,
@@ -2327,6 +2327,8 @@ function typeMatrix(
   return (arrayExp, arrayType, variability)
 end
 
+const INTEGER_EXPRESSION_0 = INTEGER_EXPRESSION(0)
+
 function typeMatrixComma(
   elements::Vector{Expression},
   origin::ORIGIN_Type,
@@ -2356,11 +2358,11 @@ function typeMatrixComma(
          ty = ty1
       else
          (_, _, ty2, mk) = matchExpressions(
-          INTEGER_EXPRESSION(0),
-          arrayElementType(ty1),
-          INTEGER_EXPRESSION(0),
-          arrayElementType(ty),
-        )
+           INTEGER_EXPRESSION_0,
+           arrayElementType(ty1),
+           INTEGER_EXPRESSION_0,
+           arrayElementType(ty),
+         )
         if isCompatibleMatch(mk)
            ty = ty2
         end
@@ -3502,7 +3504,7 @@ function typeStatements(alg::Vector{Statement}, origin::ORIGIN_Type)
   return alg
 end
 
-function typeStatement(@nospecialize(st::Statement), origin::ORIGIN_Type)
+function typeStatement(st::Statement, origin::ORIGIN_Type)
   st = begin
     local cond::Expression
     local e1::Expression
@@ -3849,7 +3851,7 @@ function typeIfEquation(
   return ifEq
 end
 
-function isNonConstantIfCondition(@nospecialize(exp::Expression))::Bool
+function isNonConstantIfCondition(exp::Expression)::Bool
   local isConstant::Bool
   isConstant = begin
     local fn::M_Function
@@ -3886,7 +3888,7 @@ function typeWhenEquation(
   branches::Vector{Equation_Branch},
   origin::ORIGIN_Type,
   source::DAE.ElementSource,
-)::Equation
+)::EQUATION_WHEN
   local whenEq::Equation
   local next_origin::ORIGIN_Type = setFlag(origin, ORIGIN_WHEN)
   local accum_branches::Vector{Equation_Branch} = Equation_Branch[]

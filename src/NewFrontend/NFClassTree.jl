@@ -73,11 +73,8 @@ function getComponents(tree::ClassTree)
   return comps
 end
 
-function getExtends(tree::ClassTree)
-  local exts::Vector{InstNode}
-  exts = tree.exts
-  return exts
-end
+getExtends(tree::ClassTree) = tree.exts
+
 
 function getClasses(tree::ClassTree)
   local clss::Vector{InstNode} = tree.classes
@@ -278,40 +275,33 @@ function foldComponents(tree::ClassTree, func::FuncT, arg::ArgT) where {ArgT}
   return arg
 end
 
-function applyComponents(tree::ClassTree, func::FuncT)
-  return () = begin
-    @match tree begin
-      CLASS_TREE_PARTIAL_TREE(__) => begin
-        for c in tree.components
-          func(c)
-        end
-        ()
+function applyComponents(tree::ClassTree, func::Function)::Nothing
+  @match tree begin
+    CLASS_TREE_PARTIAL_TREE(__) => begin
+      for c in tree.components
+        func(c)
       end
+    end
 
-      CLASS_TREE_EXPANDED_TREE(__) => begin
-        for c in tree.components
-          func(c)
-        end
-        ()
+    CLASS_TREE_EXPANDED_TREE(__) => begin
+      for c in tree.components
+        func(c)
       end
+    end
 
-      CLASS_TREE_INSTANTIATED_TREE(__) => begin
-        for c in tree.components
-          func(P_Pointer.access(c))
-        end
-        ()
+    CLASS_TREE_INSTANTIATED_TREE(__) => begin
+      for c in tree.components
+        func(P_Pointer.access(c))
       end
+    end
 
-      CLASS_TREE_FLAT_TREE(__) => begin
-        for c in tree.components
-          func(c)
-        end
-        ()
+    CLASS_TREE_FLAT_TREE(__) => begin
+      for c in tree.components
+        func(c)
       end
+    end
 
-      _ => begin
-        ()
-      end
+    _ => begin
     end
   end
 end
@@ -319,29 +309,53 @@ end
 function applyLocalComponents(tree::CLASS_TREE_INSTANTIATED_TREE,
                               attributes::Attributes,
                               useBinding::Bool,
-                              instLevel::Int)
-
+                              instLevel::Int)::Nothing
+  local components = tree.localComponents
+  local componentNodes = COMPONENT_NODE[]
+  local componentInnerOuterNodes = INNER_OUTER_NODE[]
   for i in tree.localComponents
-    local comp::Pointer{InstNode} = @inbounds tree.components[i]
-    local arg = P_Pointer.access(comp)::InstNode
+    local arg = P_Pointer.access(@inbounds tree.components[i]::Pointer{InstNode})
+    if arg isa COMPONENT_NODE
+      push!(componentNodes, arg)
+    else
+      push!(componentInnerOuterNodes, arg)
+    end
+  end
+  for arg in componentNodes
+    comp = component(arg)
+    if ! isDefinition(comp)
+      checkRecursiveDefinition(classInstance(comp), comp_node, false)
+      return
+    end
     instComponent(
-      arg::Union{COMPONENT_NODE, INNER_OUTER_NODE},
+      arg::COMPONENT_NODE,
+      attributes,
+      MODIFIER_NOMOD(),
+      useBinding::Bool,
+      instLevel::Int,
+      NONE()
+    )::Nothing
+  end
+  for arg in componentInnerOuterNodes
+    instComponent(
+      arg::INNER_OUTER_NODE,
       attributes,
       MODIFIER_NOMOD(),
       useBinding,
       instLevel,
       NONE()
-    )
+    )::Nothing
   end
+
   return nothing
 end
 
-function applyLocalComponents(tree::CLASS_TREE_INSTANTIATED_TREE,
-                              func::Function)
-  for i::Int in tree.localComponents
+function applyLocalComponentsWithInstComponentExpressions(tree::CLASS_TREE_INSTANTIATED_TREE)
+  for i in tree.localComponents
     local comp::Pointer{InstNode} = @inbounds tree.components[i]
-    local arg = P_Pointer.access(comp)::InstNode
-    func(arg)
+    local arg = P_Pointer.access(comp)
+    instComponentExpressions(arg)
+    #fail()
   end
   return nothing
 end
@@ -353,7 +367,7 @@ function applyLocalComponents(tree::Union{CLASS_TREE_PARTIAL_TREE,
                               instLevel::Int)
   for c in tree.components
     instComponent(
-      arg,
+      c,
       attributes,
       MODIFIER_NOMOD(),
       useBinding,
@@ -418,7 +432,7 @@ end
 function mapExtends(tree::ClassTree, attributes::Attributes, useBinding::Bool, visibility, instLevel::Int)::Nothing
   local exts::Vector{CLASS_NODE} = getExtends(tree)
   for i in 1:length(exts)
-    @inbounds res = exts[i]::CLASS_NODE
+    local res::CLASS_NODE = @inbounds exts[i]
     @inbounds exts[i] = instExtends(res::CLASS_NODE,
                                     attributes,
                                     useBinding,
@@ -929,10 +943,10 @@ function instantiate(
       #=  Create new arrays that can hold both local and inherited elements.
       =#
       comps =
-        arrayCreateNoInit(compCount, P_Pointer.create(EMPTY_NODE()))
+        arrayCreateNoInit(compCount, P_Pointer.create(EMPTY_NODE(), InstNode))
       #= /*dummy*/ =#
       clss =
-        arrayCreateNoInit(classCount, P_Pointer.create(EMPTY_NODE()))
+        arrayCreateNoInit(classCount, P_Pointer.create(EMPTY_NODE(), InstNode))
       #= /*dummy*/ =#
       #=  Copy the local classes into the new class array, and set the
       =#
@@ -953,7 +967,7 @@ function instantiate(
           checkOuterClass(c)
           c = linkInnerOuter(c, parent_scope)
         end
-        arrayUpdateNoBoundsChecking(clss, cls_idx, P_Pointer.create(c))
+        @inbounds clss[cls_idx] = P_Pointer.create(c, InstNode)
         cls_idx = cls_idx + 1
       end
       for ext in exts
@@ -985,7 +999,7 @@ function instantiate(
                 node = linkInnerOuter(node, inst_scope)
               end
               #=  Add the node to the component array. =#
-              comps[comp_idx] = P_Pointer.create(node)
+              comps[comp_idx] = P_Pointer.create(node, InstNode)
               local_comps = pushfirst!(local_comps, comp_idx)
               comp_idx = comp_idx + 1
             end
@@ -1072,7 +1086,7 @@ function expand(tree::ClassTree)::ClassTree
   local cls_idx::Int
   local comp_idx::Int = 1
   local dups::DuplicateTree.Tree
-  local dups_ptr::Pointer
+  local dups_ptr::Pointer{DuplicateTree.Tree}
 
   @match CLASS_TREE_PARTIAL_TREE(ltree, clss, comps, exts, imps, dups) = tree
   cls_idx = arrayLength(clss) + 1
@@ -1115,7 +1129,7 @@ function expand(tree::ClassTree)::ClassTree
       end
     end
   end
-  dups_ptr = P_Pointer.create(dups)
+  dups_ptr = P_Pointer.create(dups, DuplicateTree.Tree)
   #=  Add the names of inherited components and classes to the lookup tree. =#
   if !listEmpty(ext_idxs)
     ext_idxs = listReverseInPlace(ext_idxs)
@@ -2375,7 +2389,7 @@ function instExtendsComps(
         comp_count = arrayLength(ext_comps)
         if comp_count > 0
           for i = index:(index + comp_count - 1)
-            arrayUpdate(comps, i, P_Pointer.create(ext_comps[i]))
+            arrayUpdate(comps, i, P_Pointer.create(ext_comps[i], InstNode))
           end
           index = index + comp_count
         end

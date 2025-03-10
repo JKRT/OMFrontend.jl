@@ -1288,13 +1288,10 @@ function scopeList(node::InstNode; includeRoot::Bool = false #= Whether to inclu
   scopes
 end
 
-function componentApply(node::InstNode, func::FuncType, arg::ArgT)  where {ArgT}
-   () = begin
-    @match node begin
-      COMPONENT_NODE(__)  => begin
-        P_Pointer.update(node.component, func(arg, P_Pointer.access(node.component)))
-        ()
-      end
+function componentApply(node::T, func::Function, arg::ArgT)::T  where {T <: InstNode, ArgT}
+  @match node begin
+    COMPONENT_NODE(__)  => begin
+      P_Pointer.update(node.component, func(arg::ArgT, P_Pointer.access(node.component)))
     end
   end
   node
@@ -1420,7 +1417,7 @@ function nodeType(node::InstNode)
 end
 
 function replaceClass(cls::Class, node::CLASS_NODE)
-  local classPtr = P_Pointer.create(cls)
+  local classPtr::Pointer{Class} = P_Pointer.create(cls, Class)
   replacedClass = CLASS_NODE{String, Int}(node.name,
                                           node.definition,
                                           node.visibility,
@@ -1436,7 +1433,7 @@ replaceClass(cls::Class, node::InstNode) = node
 
 function replaceComponent(component::Component, node::InstNode)
   local replacedNode =  if node isa COMPONENT_NODE
-    local componentPointer = P_Pointer.create(component)
+    local componentPointer = P_Pointer.create(component, Component)::Pointer{Component}
     COMPONENT_NODE{String, Int}(node.name,
                                 node.visibility,
                                 componentPointer,
@@ -1544,7 +1541,7 @@ function setOrphanParent(parent::InstNode, node::COMPONENT_NODE)
 end
 
 function setParent(@nospecialize(parent::InstNode),
-                    node::CLASS_NODE)
+                   node::CLASS_NODE)::CLASS_NODE
   CLASS_NODE{String, Int}(node.name,
                           node.definition,
                           node.visibility,
@@ -1555,7 +1552,7 @@ function setParent(@nospecialize(parent::InstNode),
 end
 
 function setParent(@nospecialize(parent::InstNode),
-                    node::COMPONENT_NODE)
+                    node::COMPONENT_NODE)::COMPONENT_NODE
   COMPONENT_NODE{String, Int}(node.name,
                               node.visibility,
                               node.component,

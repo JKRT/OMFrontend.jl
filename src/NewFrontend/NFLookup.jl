@@ -285,19 +285,18 @@ function lookupSimpleName(nameStr::String, scope::InstNode)
   local cur_scope::InstNode = scope
   for i in 1:Global.recursionDepthLimit
     @match ENTRY_INFO(node, _) = lookupLocalSimpleName(nameStr, cur_scope)
-    #@info "The node $nameStr is resolved in some scope"
     if node !== EMPTY_NODE()
       return node
     end
-    #@error "DBG error with $(e)"
     if nameStr == name(cur_scope) && isClass(cur_scope)
       node = cur_scope
       return node
     end
     cur_scope = parentScope(cur_scope)
   end
-  @error "Failed to lookup simple name for $nameStr in scope:$scope"
-  fail()
+  #@error "Failed to lookup simple name for $nameStr in scope:$scope"
+  Error.addSourceMessage(Error.LOOKUP_VARIABLE_ERROR, list(nameStr, scopeName(scope)), info)
+  return EMPTY_NODE
 end
 
 
@@ -319,9 +318,8 @@ end
 function lookupNameWithError(name::Absyn.Path, scope::InstNode, info::SourceInfo, errorType, checkAccessViolations::Bool = true)
   local state::LookupState
   local node::InstNode
-  try
-    (node, state) = lookupName(name, scope, checkAccessViolations)
-  catch e
+  (node, state) = lookupName(name, scope, checkAccessViolations)
+  if node isa EMPTY_NODE
     Error.addSourceMessage(Error.LOOKUP_ERROR, list(AbsynUtil.pathString(name), scopeName(scope)), info)
     #@error "Lookup error for path: $(AbsynUtil.pathString(name)) in the scope $(scopeName(scope))
     #with the following error: $(e)"
@@ -360,7 +358,7 @@ function lookupNames(name::Absyn.Path, scope::InstNode) ::Tuple{List{InstNode}, 
     #=  Simple name, look it up in the given scope. =#
     @match name begin
       Absyn.IDENT(__)  => begin
-         (node, state) = lookupFirstIdent(name.name, scope)
+        (node, state) = lookupFirstIdent(name.name, scope)
         (list(node), state)
       end
       Absyn.QUALIFIED(__)  => begin
@@ -394,8 +392,10 @@ function lookupFirstIdent(name::String, scope::InstNode) ::Tuple{InstNode, Looku
   (node, state)
 end
 
-""" #= Looks up a path in the given scope, without continuing the search in any
-                 enclosing scopes if the path isn't found. =#"""
+"""
+ Looks up a path in the given scope, without continuing the search in any
+ enclosing scopes if the path isn't found.
+"""
 function lookupLocalName(name::Absyn.Path, node::InstNode, state::LookupState, checkAccessViolations::Bool = true, selfReference::Bool = false)
   local is_import::Bool
   if ! isClass(node)
@@ -407,34 +407,30 @@ function lookupLocalName(name::Absyn.Path, node::InstNode, state::LookupState, c
   end
   #=  Look up the path in the scope.
   =#
-   () = begin
-    @match name begin
-      Absyn.IDENT(__)  => begin
-        @match ENTRY_INFO(node, is_import) = lookupLocalSimpleName(name.name, node)
-        #@debug "HERE WE ARE!"
-        if is_import
-          state = LOOKUP_STATE_ERROR(LOOKUP_STATE_IMPORT())
-        else
-          state = next(node, state, checkAccessViolations)
-        end
-        ()
+  @match name begin
+    Absyn.IDENT(__)  => begin
+      @match ENTRY_INFO(node, is_import) = lookupLocalSimpleName(name.name, node)
+      #@debug "HERE WE ARE!"
+      if is_import
+        state = LOOKUP_STATE_ERROR(LOOKUP_STATE_IMPORT())
+      else
+        state = next(node, state, checkAccessViolations)
       end
+    end
 
-      Absyn.QUALIFIED(__)  => begin
-        @match ENTRY_INFO(node, is_import) = lookupLocalSimpleName(name.name, node)
-        if is_import
-          state = LOOKUP_STATE_ERROR(LOOKUP_STATE_IMPORT())
-        else
-          state = next(node, state, checkAccessViolations)
-          (node, state) = lookupLocalName(name.path, node, state, checkAccessViolations)
-        end
-        ()
+    Absyn.QUALIFIED(__)  => begin
+      @match ENTRY_INFO(node, is_import) = lookupLocalSimpleName(name.name, node)
+      if is_import
+        state = LOOKUP_STATE_ERROR(LOOKUP_STATE_IMPORT())
+      else
+        state = next(node, state, checkAccessViolations)
+        (node, state) = lookupLocalName(name.path, node, state, checkAccessViolations)
       end
-
-      _  => begin
-        #Error.assertion(false, getInstanceName() + " was called with an invalid path.", sourceInfo())
-        fail()
-      end
+    end
+    _  => begin
+      #Error.assertion(false, getInstanceName() + " was called with an invalid path.", sourceInfo())
+      node = EMPTY_NODE()
+      state = LOOKUP_STATE_ERROR(state)
     end
   end
   (node, state)
@@ -646,16 +642,21 @@ function lookupCrefInNode(cref::Absyn.ComponentRef #=modification-040321=#, node
   end
   name = AbsynUtil.crefFirstIdent(cref)
   cls = getClass(scope)
-  try
-    @match ENTRY_INFO(n, is_import) = lookupElement(name, cls)
-  catch e
-    @match true = isComponent(node)
-    @match true = isExpandableConnectorClass(cls)
+  @match ENTRY_INFO(n, is_import) = lookupElement(name, cls)
+  if n isa EMPTY_NODE
+    local wasComponent = isComponent(node)
+    if !wasComponent
+      fail()
+    end
+    local wasExpandableConnectorClass = isExpandableConnectorClass(cls)
+    if !wasExpandableConnectorClass
+      fail()
+    end
     foundCref = fromAbsynCref(cref, foundCref)
     return (foundCref, foundScope, state)
   end
   if is_import
-    state = P_LookupState.ERROR(P_LookupState.IMPORT())
+    state = LOOKUP_STATE_ERROR(LOOKUP_STATE_IMPORT())
     foundCref = fromAbsyn(n, nil, foundCref)
     return (foundCref, foundScope, state)
   end

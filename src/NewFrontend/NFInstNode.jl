@@ -1204,6 +1204,57 @@ function scopePath(node::InstNode; includeRoot::Bool = false #= Whether to inclu
   path
 end
 
+function scopeListClass!(clsNode::InstNode,
+                         ty::InstNodeType,
+                         includeRoot::Bool,
+                         accumScopes::List{InstNode})
+  local scopes::List{InstNode}
+  #local accumScopes::List{InstNode} = nil
+  while true
+    @match ty begin
+      NORMAL_CLASS(__)  => begin
+        accumScopes = scopeList!(parent(clsNode), includeRoot, Cons{InstNode}(clsNode, accumScopes))
+        break
+      end
+      BASE_CLASS(__)  => begin
+        accumScopes = scopeList!(ty.parent, includeRoot, accumScopes)
+        break
+      end
+      DERIVED_CLASS(__)  => begin
+        #accumScopes = scopeListClass!(clsNode, ty.ty, includeRoot, accumScopes)
+        ty = ty.ty
+        continue
+      end
+      BUILTIN_CLASS(__)  => begin
+        accumScopes = Cons{InstNode}(clsNode, accumScopes)
+        break
+      end
+      TOP_SCOPE(__)  => begin
+        break
+      end
+      ROOT_CLASS(__)  => begin
+        accumScopes = if includeRoot
+          accumScopes = scopeList!(parent(clsNode),
+                                   includeRoot, Cons{InstNode}(clsNode, accumScopes))
+        else
+          accumScopes
+        end
+        break
+      end
+      REDECLARED_CLASS(__)  => begin
+        accumScopes = scopeList!(ty.parent, includeRoot, Cons{InstNode}(getDerivedNode(clsNode), accumScopes))
+        break
+      end
+      _  => begin
+        Error.assertion(false, getInstanceName() + " got unknown node type", sourceInfo())
+        fail()
+      end
+    end
+  end
+  scopes = accumScopes
+  return scopes
+end
+
 function scopeListClass(clsNode::InstNode, ty::InstNodeType, includeRoot::Bool, accumScopes::List{<:InstNode} = nil)
   local scopes::List{InstNode}
 
@@ -1286,6 +1337,42 @@ function scopeList(node::InstNode; includeRoot::Bool = false #= Whether to inclu
     end
   end
   scopes
+end
+
+"""
+    Iterative implementation of ```scopeList```
+    """
+function scopeList!(@nospecialize(node::InstNode), includeRoot::Bool = false, accumScopes::List{InstNode} = nil)
+  local parent::InstNode
+  if node isa CLASS_NODE
+    accumScopes = scopeListClass!(node, node.nodeType, includeRoot, accumScopes)
+    return accumScopes
+  end
+  if node isa COMPONENT_NODE && node.parent isa EMPTY_NODE
+    return nil
+  end
+  local scopes::Cons{InstNode}
+  while true
+    @match node begin
+      COMPONENT_NODE(nodeType = REDECLARED_COMP(parent = parent))  => begin
+        node = parent
+        accumScopes = Cons{InstNode}(node, accumScopes)
+      end
+      COMPONENT_NODE(__)  => begin
+        accumScopes = Cons{InstNode}(node, accumScopes)
+        node = node.parent
+      end
+      IMPLICIT_SCOPE(__)  => begin
+        accumScopes = Cons{InstNode}(node, accumScopes)
+        node = node.parentScope
+      end
+      _  => begin
+        break
+      end
+    end
+  end
+  scopes = accumScopes
+  return scopes
 end
 
 function componentApply(node::T, func::Function, arg::ArgT)::T  where {T <: InstNode, ArgT}

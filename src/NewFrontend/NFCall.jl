@@ -880,14 +880,19 @@ function typeNormalCall(call::UNTYPED_CALL, origin::ORIGIN_Type, info::SourceInf
 end
 
 function typeCall(
-  @nospecialize(callExp::Expression),
-  @nospecialize(origin::ORIGIN_Type),
-  @nospecialize(info::SourceInfo),
-  )
-  arg1 = callExp::Expression
-  arg2 = origin::ORIGIN_Type
+  callExp::Expression,
+  origin::ORIGIN_Type,
+  info::SourceInfo,
+  )::Tuple{Expression, NFType, Int64}
+  arg1 = callExp
+  arg2 = origin
   arg3 = info
-  typeCall2(
+  if arg1 isa TYPED_ARRAY_CONSTRUCTOR || arg1 isa TYPED_REDUCTION || arg1 isa TYPED_CALL
+    ty = call.ty
+    var = call.var
+    return (callExp, call.ty, call.var)
+  end
+  return typeCall2(
     arg1,
     arg2,
     arg3,
@@ -895,11 +900,10 @@ function typeCall(
 end
 
 function typeCall2(
-  @nospecialize(callExp::CALL_EXPRESSION),
-  @nospecialize(origin::ORIGIN_Type),
-  @nospecialize(info::SourceInfo),
-  )
-  @nospecialize
+  callExp::CALL_EXPRESSION,
+  origin::ORIGIN_Type,
+  info::SourceInfo,
+  )::Tuple{Expression, NFType, Int64}
   local var::VariabilityType
   local ty::NFType
   local outExp::Expression
@@ -925,7 +929,7 @@ function typeCall2(
             else
               outExp = CALL_EXPRESSION(ty_call)
             end
-            outExp = inlineCallExp(outExp)
+            outExp = inlineCallExp(outExp::CALL_EXPRESSION)
           end
         end
         outExp
@@ -937,21 +941,6 @@ function typeCall2(
       UNTYPED_REDUCTION(__) => begin
         @match (ty_call, ty, var) = typeReduction(call, origin, info)
         CALL_EXPRESSION(ty_call)
-      end
-      TYPED_CALL(__) => begin #Double check this...
-        ty = call.ty
-        var = call.var
-        callExp
-      end
-      TYPED_ARRAY_CONSTRUCTOR(__) => begin
-        ty = call.ty
-        var = call.var
-        callExp
-      end
-      TYPED_REDUCTION(__) => begin
-        ty = call.ty
-        var = call.var
-        callExp
       end
       _ => begin
         Error.assertion(

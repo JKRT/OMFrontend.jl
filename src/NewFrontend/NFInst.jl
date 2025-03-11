@@ -890,7 +890,7 @@ function instClassDef(cls::EXPANDED_CLASS,
   if isBaseClass(node)
     par = parentArg
   else
-    (node::CLASS_NODE, par, _, _) = instantiate(node::CLASS_NODE, parentArg)
+    @match (node::CLASS_NODE, par, _, _) = instantiate(node::CLASS_NODE, parentArg)
   end
   updateComponentType(parentArg, node)
   attributes = updateClassConnectorType(res, attributes)
@@ -902,12 +902,9 @@ function instClassDef(cls::EXPANDED_CLASS,
   outer_mod = merge(outerMod, cls.modifier)
   mod = merge(outer_mod, mod)
   #=  Apply the modifiers of extends nodes. =#
-  # function redeclareElementsFunc(treeArg)
-  #   redeclareElements(treeArg, instLevel)
-  # end
-  mapExtends(cls_tree, par)
+  @noinline mapExtends(cls_tree, par)
   #=  Apply the modifiers of this scope. =#
-  applyModifier(mod, cls_tree, name(node))
+  @noinline applyModifier(mod, cls_tree, name(node))
   #=  Apply element redeclares. =#
   mapRedeclareChains(cls_tree, redeclareElements, instLevel)
   #=  Redeclare classes with redeclare modifiers. Redeclared components could
@@ -917,7 +914,7 @@ function instClassDef(cls::EXPANDED_CLASS,
   redeclareClasses(cls_tree)
   #=  Instantiate the extends nodes. =#
   mapExtends(cls_tree, attributes, useBinding, ExtendsVisibility.PUBLIC, instLevel + 1)
-  applyLocalComponents(cls_tree, attributes, useBinding, instLevel + 1)
+  @noinline applyLocalComponents(cls_tree, attributes, useBinding, instLevel + 1)
   #=  Remove duplicate elements. =#
   cls_tree = replaceDuplicates(cls_tree)
   checkDuplicates(cls_tree)
@@ -1059,7 +1056,7 @@ const ExtendsVisibilityType = Int
 
 
 
-function instExtends(node::CLASS_NODE,
+@noinline function instExtends(node::CLASS_NODE,
                      attributes::Attributes,
                      useBinding::Bool,
                      visibility::ExtendsVisibilityType,
@@ -1087,8 +1084,8 @@ function instExtends(node::CLASS_NODE,
         end
       end
       noMod = MODIFIER_NOMOD()
-      mapExtends(cls_tree, attributes, useBinding, vis, instLevel)
-      applyLocalComponents(cls_tree, attributes, useBinding, instLevel)
+      mapExtends(cls_tree::CLASS_TREE_INSTANTIATED_TREE, attributes, useBinding, vis, instLevel)
+      @noinline applyLocalComponents(cls_tree::CLASS_TREE_INSTANTIATED_TREE, attributes, useBinding::Bool, instLevel::Int)
     end
     EXPANDED_DERIVED(__)  => begin
       if vis == ExtendsVisibility.PUBLIC && isProtectedBaseClass(node)
@@ -1106,6 +1103,7 @@ function instExtends(node::CLASS_NODE,
   end
   node
 end
+
 
 """
 Applies a modifier in the given scope, by splitting the modifier and merging
@@ -2303,7 +2301,7 @@ function instExpOpt(absynExp::Option{<:Absyn.Exp}, scope::InstNode, info::Source
   exp
 end
 
-function instExp(absynExp::Absyn.Exp, scope::InstNode, info::SourceInfo) ::Expression
+function instExp(absynExp::Absyn.Exp, scope::InstNode, info::SourceInfo)::Expression
   local exp::Expression
   exp = begin
     local e1::Expression
@@ -2335,7 +2333,7 @@ function instExp(absynExp::Absyn.Exp, scope::InstNode, info::SourceInfo) ::Expre
       end
 
       Absyn.ARRAY(__)  => begin
-        expV = Expression[instExp(e, scope, info) for e in absynExp.arrayExp]
+        local expV = Expression[instExp(e, scope, info) for e in absynExp.arrayExp]
         makeArray(TYPE_UNKNOWN(), expV)
       end
 
@@ -2358,9 +2356,9 @@ function instExp(absynExp::Absyn.Exp, scope::InstNode, info::SourceInfo) ::Expre
       end
 
       Absyn.BINARY(__)  => begin
-         e1 = instExp(absynExp.exp1, scope, info)
-         e2 = instExp(absynExp.exp2, scope, info)
-         op = fromAbsyn(absynExp.op)
+        e1 = instExp(absynExp.exp1, scope, info)
+        e2 = instExp(absynExp.exp2, scope, info)
+        op = fromAbsyn(absynExp.op)
         BINARY_EXPRESSION(e1, op, e2)
       end
 
@@ -2493,11 +2491,15 @@ function instCrefComponent(cref::ComponentRef, node::InstNode, scope::InstNode, 
         fail()
       end
       _  => begin
-         prefixed_cref = fromNodeList(scopeList(scope))
-         prefixed_cref = if isEmpty(prefixed_cref)
+        #@info "slst 1"
+        #local sLst = scopeList(scope)
+        #@info "slst 2"
+        local sLst2 = scopeList!(scope)
+        prefixed_cref = fromNodeList(sLst2)
+        prefixed_cref = if isEmpty(prefixed_cref)
           cref
         else
-          append(cref, prefixed_cref)
+          appendCref!(cref, prefixed_cref)
         end
         CREF_EXPRESSION(TYPE_UNKNOWN(), prefixed_cref)
       end

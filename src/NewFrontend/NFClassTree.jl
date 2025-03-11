@@ -360,7 +360,7 @@ function applyLocalComponentsWithInstComponentExpressions(tree::CLASS_TREE_INSTA
   return nothing
 end
 
-function applyLocalComponents(tree::Union{CLASS_TREE_PARTIAL_TREE,
+@noinline function applyLocalComponents(tree::Union{CLASS_TREE_PARTIAL_TREE,
                                           CLASS_TREE_EXPANDED_TREE},
                               attributes::Attributes,
                               useBinding::Bool,
@@ -379,6 +379,7 @@ function applyLocalComponents(tree::Union{CLASS_TREE_PARTIAL_TREE,
 end
 
 function applyLocalComponents(tree::Union{CLASS_TREE_PARTIAL_TREE,CLASS_TREE_EXPANDED_TREE}, func::Function)
+  fail()
   for c in tree.components
     func(c)
   end
@@ -387,10 +388,10 @@ end
 
 """ #= Applies a mutating function to each extends node in the class tree.
        A given argument is also folded and returned. =#"""
-function mapFoldExtends(tree::ClassTree, func::Function, arg::ArgT) where {ArgT}
+@noinline function mapFoldExtends(tree::ClassTree, func::Function, arg::ArgT) where {ArgT}
   local exts::Vector{InstNode} = getExtends(tree)
   local ext::InstNode
-  for (i, _) in enumerate(exts)
+  for i in 1:length(exts)
     (ext, arg) = func(arrayGetNoBoundsChecking(exts, i), arg)
     arrayUpdateNoBoundsChecking(exts, i, ext)
   end
@@ -411,7 +412,7 @@ end
   Applies a function to each extends node in the class tree, and updates
   the extends array with the returned nodes.
 """
-function mapExtends(tree::ClassTree, func::Function)
+@noinline function mapExtends(tree::ClassTree, func::Function)
   local exts::Vector{InstNode} = getExtends(tree)
   for i in 1:length(exts)
     @inbounds res = exts[i]
@@ -420,19 +421,19 @@ function mapExtends(tree::ClassTree, func::Function)
   return
 end
 
-function mapExtends(tree::CLASS_TREE_INSTANTIATED_TREE, parent::Union{CLASS_NODE, COMPONENT_NODE})
-  local exts::Vector{InstNode} = getExtends(tree)
+@noinline function mapExtends(tree::CLASS_TREE_INSTANTIATED_TREE, parent::Union{CLASS_NODE, COMPONENT_NODE})
+  local exts::Vector{InstNode} = getExtends(tree::CLASS_TREE_INSTANTIATED_TREE)
   for i in 1:length(exts)
-    @inbounds res = exts[i]
-    @inbounds exts[i] = modifyExtends(res, parent)
+    @inbounds res = exts[i]::CLASS_NODE
+    @inbounds exts[i] = modifyExtends(res::CLASS_NODE, parent)::CLASS_NODE
   end
   return
 end
 
-function mapExtends(tree::ClassTree, attributes::Attributes, useBinding::Bool, visibility, instLevel::Int)::Nothing
-  local exts::Vector{CLASS_NODE} = getExtends(tree)
+@noinline function mapExtends(tree::ClassTree, attributes::Attributes, useBinding::Bool, visibility, instLevel::Int)::Nothing
+  local exts::Vector{InstNode} = getExtends(tree)
   for i in 1:length(exts)
-    local res::CLASS_NODE = @inbounds exts[i]
+    local res = @inbounds exts[i]::CLASS_NODE
     @inbounds exts[i] = instExtends(res::CLASS_NODE,
                                     attributes,
                                     useBinding,

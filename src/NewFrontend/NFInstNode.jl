@@ -1520,6 +1520,7 @@ end
 replaceClass(cls::Class, node::InstNode) = node
 
 const COMPONENT_PTR_CACHE = Set{Pointer}()
+const REPLACED_COMPONENT_NODE_CACHE = Set{COMPONENT_NODE}()
 """
 Creates a new component that contains a pointer to the supplied component.
 """
@@ -1532,11 +1533,18 @@ function replaceComponent(component::Component, node::InstNode)
     else
       node.component
     end
-    local tmp = COMPONENT_NODE{String, Int}(node.name,
-                                            node.visibility,
-                                            componentPointer,
-                                            node.parent,
-                                            node.nodeType)
+    local tmp = if node in REPLACED_COMPONENT_NODE_CACHE
+      node.component = componentPointer
+      node
+    else
+      local tmp2 = COMPONENT_NODE{String, Int}(node.name,
+                                               node.visibility,
+                                               componentPointer,
+                                               node.parent,
+                                               node.nodeType)
+      push!(REPLACED_COMPONENT_NODE_CACHE,  tmp2)
+      tmp2
+    end
     tmp
   else
     node
@@ -1658,6 +1666,7 @@ Reset the component node cache.
 function resetComponentNodeCaches()
   Base.empty!(COMPONENT_NODE_CACHE)
   Base.empty!(COMPONENT_PTR_CACHE)
+  Base.empty!(REPLACED_COMPONENT_NODE_CACHE)
 end
 
 function setParent(parent::InstNode,

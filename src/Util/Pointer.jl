@@ -9,8 +9,8 @@ function access(MutableType::Pointer{T}) where {T}
   return res
 end
 
-function update(MutableType::Pointer{T}, data)::Pointer{T} where T
-  MutableType.x = data
+function update(MutableType::Pointer{T}, data)::Pointer{T} where {T}
+  MutableType.x = data::T
   return MutableType
 end
 

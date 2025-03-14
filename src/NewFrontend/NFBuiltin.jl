@@ -101,6 +101,7 @@ const CLOCK =
 end
 
 import ..Frontend.C_FUNCTION
+import ..Frontend.M_FUNCTION
 import ..Frontend.Visibility
 import ..Frontend.VisibilityType
 import ..P_Pointer
@@ -152,7 +153,7 @@ import ..Frontend.TYPED_COMPONENT
 import ..Frontend.EMPTY_BINDING
 import ..Frontend.INPUT_ATTR
 
-const EMPTY_NODE_CACHE::Vector{CachedData} = listArrayLiteral(list(C_FUNCTION(nil, true, true)))
+const EMPTY_NODE_CACHE::Vector{CachedData} = CachedData[C_FUNCTION(M_FUNCTION[], true, true)]
 #=  InstNodes for the builtin types. These have empty class trees to prevent
 =#
 #=  access to the attributes via dot notation (which is not needed for

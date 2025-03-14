@@ -17,6 +17,7 @@ import SCode
 import PrecompileTools
 import Base.@nospecializeinfer
 
+using MetaModelica:FunctionWrappers
 
 #= Utility functions. =#
 function toString(vec::Vector{T}) where {T}
@@ -82,6 +83,23 @@ include("./NewFrontend/NFComplexType.jl")
 include("./NewFrontend/NFPrefixes.jl")
 include("./NewFrontend/NFComponent.jl")
 include("./NewFrontend/NFEquation.jl")
+
+#= Declare the signature for a M_Function early.. =#
+abstract type M_Function end
+struct M_FUNCTION <: M_Function
+  path::Absyn.Path
+  node::InstNode
+  inputs::List{InstNode}
+  outputs::List{InstNode}
+  locals::List{InstNode}
+  slots::List{Slot}
+  returnType::NFType
+  attributes::DAE.FunctionAttributes
+  derivatives::List{FunctionDerivative}
+  status::Pointer
+  callCounter::Pointer
+end
+
 include("./NewFrontend/NFInstNode.jl")
 include("./NewFrontend/NFSections.jl")
 include("./NewFrontend/NFRecord.jl")

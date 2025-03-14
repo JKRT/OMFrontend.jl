@@ -139,13 +139,13 @@ end
 
 function setFlag(origin::Int, flag::Int)::Int
   local newOrigin::Int
-   newOrigin = intBitOr(origin, flag)
+   newOrigin = origin | flag
   return newOrigin
 end
 
 function flagSet(origin::M_Type_Int, flag::M_Type_Int)::Bool
   local set::Bool
-   set = intBitAnd(origin, flag) > 0
+   set = (origin & flag) > 0
   return set
 end
 
@@ -233,14 +233,14 @@ end
 
 function typeStructor(node::InstNode)
   local cache::CachedData
-  local fnl::List{M_Function}
+  local fnl::Vector{M_Function}
   cache = getFuncCache(node)
   @match cache begin
     C_FUNCTION(funcs = fnl, typed = false) => begin
-      fnl = list(typeFunction(fn) for fn in fnl)
-      fnl = list(
+      fnl = M_FUNCTION[typeFunction(fn) for fn in fnl]
+      fnl = M_FUNCTION[
         patchOperatorRecordConstructorBinding(fn) for fn in fnl
-          )
+          ]
       setFuncCache(
         node,
         C_FUNCTION(fnl, true, cache.specialBuiltin),
@@ -402,16 +402,17 @@ end
 function makeRecordType(constructor::InstNode)::ComplexType
   local recordTy::ComplexType
   local cache::CachedData
-  local fn::M_Function
+  local fn::M_FUNCTION
   local fields::List{Field}
   cache = getFuncCache(constructor)
   recordTy = begin
     @match cache begin
-      C_FUNCTION(funcs = fn <| _) => begin
+      C_FUNCTION(funcs = [fn, args...]) => begin
         fields = collectRecordFields(fn.node)
         COMPLEX_RECORD(constructor, fields)
       end
       _ => begin
+        @error "Error in match" typeof(cache)
         Error.assertion(
           false,
           getInstanceName() + " got record type without constructor",
@@ -1009,8 +1010,8 @@ function typeComponentBinding2(
   c::TYPED_COMPONENT,
   origin::ORIGIN_Type,
   typeChildren::Bool,
-  )
-  local binding::Binding
+  )::Nothing
+  local binding::UNTYPED_BINDING
   local nameStr::String
   local comp_var::VariabilityType
   if c.binding isa UNTYPED_BINDING
@@ -1018,13 +1019,14 @@ function typeComponentBinding2(
     binding = c.binding
     #ErrorExt.setCheckpoint(getInstanceName())
     checkBindingEach(c.binding)
-    binding = typeBinding(binding, setFlag(origin, ORIGIN_BINDING))
+    local originFlag = setFlag(origin, ORIGIN_BINDING)
+    local typedBinding::TYPED_BINDING = typeBinding(binding, originFlag)::TYPED_BINDING
     handleBindingError(binding)
     #if !(Config.getGraphicsExpMode() && stringEq(nameStr, "graphics")) TODO
-    binding = matchBinding(binding, c.ty, nameStr, node)
-    handleBindingError(binding)
+    typedBinding = matchBinding(typedBinding, c.ty, nameStr, node)::TYPED_BINDING
+    handleBindingError(typedBinding)
     #end
-    comp_var = checkComponentBindingVariability(nameStr, c, binding, origin)
+    comp_var = checkComponentBindingVariability(nameStr, c, typedBinding, origin)
     if comp_var == 404
       handleBindingError(binding)
     end
@@ -1043,12 +1045,12 @@ function typeComponentBinding2(
       c.condition
     end
     c.condition =  cCond
-    c.binding = binding
+    c.binding = typedBinding
     updateComponent!(c, node)
     if typeChildren
       typeBindings(c.classInst, inComponent, origin)
     end
-    return ()
+    return nothing
   end
   #=  Second case: A component without a binding, or with a binding that's already been typed. =#
   checkBindingEach(c.binding)
@@ -1081,7 +1083,7 @@ function typeComponentBinding2(
   if typeChildren
     typeBindings(c.classInst, inComponent, origin)
   end
-  return ()
+  return nothing
 end
 
 function handleBindingError(binding)
@@ -1093,6 +1095,7 @@ function handleBindingError(binding)
     end
   end
 end
+
 function typeComponentBinding2(
   inComponent::InstNode,
   node::InstNode,
@@ -1126,7 +1129,7 @@ function typeComponentBinding2(
   =#
   #=  component. Type only the binding and let the case above handle the rest.
   =#
-  local nameStr = name(inComponent)
+  local nameStr = name(inComponent)::String
   #@debug "Typing UC/UB binding ... for component: $nameStr"
   checkBindingEach(c.binding)
   local binding = typeBinding(c.binding, setFlag(origin, ORIGIN_BINDING))
@@ -1197,26 +1200,25 @@ end
 typeBinding(binding::UNBOUND, origin::Int) = binding
 typeBinding(binding::TYPED_BINDING, origin::Int) = binding
 typeBinding(binding, origin) = BINDING_ERROR()
-function typeBinding(binding::UNTYPED_BINDING, origin::Int)::TYPED_BINDING
-  binding = begin
-    local exp::Expression
-    local ty::NFType
-    local var::VariabilityType
-    local info::SourceInfo
-    local each_ty::EachTypeType
-    @match binding begin
-      UNTYPED_BINDING(bindingExp = exp) => begin
-        info = Binding_getInfo(binding)
-        (exp, ty, var) = typeExp(exp, origin, info)
-        if binding.isEach
-          each_ty = EachType.EACH
-        elseif isClassBinding(binding)
-          each_ty = EachType.REPEAT
-        else
-          each_ty = EachType.NOT_EACH
-        end
-        TYPED_BINDING(exp, ty, var, each_ty, false, false, binding.info)
+function typeBinding(inBinding::UNTYPED_BINDING, origin::Int)::TYPED_BINDING
+  local exp::Expression
+  local ty::NFType
+  local var::VariabilityType
+  local info::SourceInfo
+  local each_ty::Int
+  local binding::TYPED_BINDING
+  @match inBinding begin
+    UNTYPED_BINDING(bindingExp = exp) => begin
+      info = Binding_getInfo(inBinding)
+      @match (exp, ty, var) = typeExp(exp, origin, info)
+      if inBinding.isEach
+        each_ty = EachType.EACH::Int
+      elseif isClassBinding(inBinding)
+        each_ty = EachType.REPEAT::Int
+      else
+        each_ty = EachType.NOT_EACH::Int
       end
+      binding = TYPED_BINDING(exp, ty, var, each_ty, false, false, inBinding.info)
     end
   end
   return binding
@@ -1239,49 +1241,54 @@ function checkBindingEach(binding::Binding)
   end
 end
 
-function typeComponentCondition(@nospecialize(condition::Binding), origin::ORIGIN_Type)::Binding
-   condition = begin
-    local exp::Expression
-    local ty::NFType
-    local var::VariabilityType
-    local info::SourceInfo
-    local mk::MatchKindType
-    @match condition begin
-      UNTYPED_BINDING(bindingExp = exp) => begin
-         info = Binding_getInfo(condition)
-         (exp, ty, var) =
-          typeExp(exp, setFlag(origin, ORIGIN_CONDITION), info)
-         (exp, _, mk) = matchTypes(ty, TYPE_BOOLEAN(), exp)
-        if isIncompatibleMatch(mk)
-          # Error.addSourceMessage(
-          #   Error.IF_CONDITION_TYPE_ERROR,
-          #   list(toString(exp), Type.toString(ty)),
-          #   info,
-          # )
-          @error "If condition error expected $(toString(exp)) had $(toString(ty))"
-          fail()
-        end
-        if var > Variability.PARAMETER
-          Error.addSourceMessage(
-            Error.COMPONENT_CONDITION_VARIABILITY,
-            list(toString(exp)),
-            info,
-          )
-          fail()
-        end
-        TYPED_BINDING(
-          exp,
-          ty,
-          var,
-          EachType.NOT_EACH,
-          false,
-          false,
+"""
+If the condition already is typed we return it.
+"""
+function typeComponentCondition(condition::TYPED_BINDING, origin::Int)::TYPED_BINDING
+  return condition
+end
+
+function typeComponentCondition(condition::UNTYPED_BINDING, origin::Int)::TYPED_BINDING
+  local exp::Expression
+  local ty::NFType
+  local var::VariabilityType
+  local info::SOURCEINFO
+  local mk::MatchKindType
+  local outCondition::TYPED_BINDING
+  @match condition begin
+    UNTYPED_BINDING(bindingExp = exp) => begin
+      info = Binding_getInfo(condition)
+      @match (exp, ty, var) = typeExp(exp, setFlag(origin, ORIGIN_CONDITION), info)
+      @match (exp, _, mk) = matchTypes(ty, TYPE_BOOLEAN(), exp)
+      if isIncompatibleMatch(mk)
+        Error.addSourceMessage(
+          Error.IF_CONDITION_TYPE_ERROR,
+          list(toString(exp), Type.toString(ty)),
           info,
         )
+        #@error "If condition error expected $(toString(exp)) had $(toString(ty))"
+        fail()
       end
+      if var > Variability.PARAMETER
+        Error.addSourceMessage(
+          Error.COMPONENT_CONDITION_VARIABILITY,
+          list(toString(exp)),
+          info,
+        )
+        fail()
+      end
+      outCondition = TYPED_BINDING(
+        exp,
+        ty,
+        var,
+        EachType.NOT_EACH,
+        false,
+        false,
+        info,
+      )
     end
   end
-  return condition
+  return outCondition
 end
 
 function typeTypeAttribute(
@@ -1485,7 +1492,7 @@ function typeExp2(
       BINDING_EXP(__) => typeBindingExp(exp, origin, info)
 
       _ => begin
-        #@error "Attempted to type"
+        @error "Unable to type" typeof(exp) toString(exp)
         fail()
       end
     end
@@ -1501,9 +1508,9 @@ function typeExp2(
 end
 
 function typeRelationExpression(exp::RELATION_EXPRESSION, origin::ORIGIN_Type, info::SourceInfo)
-  next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
-  (e1, ty1, var1) = typeExp(exp.exp1, next_origin, info)
-  (e2, ty2, var2) = typeExp(exp.exp2, next_origin, info)
+  local next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)::Int
+  @match (e1, ty1, var1) = typeExp(exp.exp1, next_origin, info)
+  @match (e2, ty2, var2) = typeExp(exp.exp2, next_origin, info)
   (exp, ty) = checkRelationOperation(
     e1,
     ty1,
@@ -1609,19 +1616,17 @@ function typeBindingExp(
   )::Tuple{BINDING_EXP, NFType, Int}
   local variability::VariabilityType
   local ty::NFType
-  local outExp::Expression
+  local outExp::BINDING_EXP
   local e::Expression
   local parents::List{InstNode}
   local is_each::Bool
   local exp_ty::NFType
-  local parent_dims::Int
-
   @match BINDING_EXP(e, _, _, parents, is_each) = exp
-  (e, exp_ty, variability) = typeExp(e, origin, info)
-  parent_dims = 0
+  @match (e, exp_ty, variability) = typeExp(e, origin, info)
+  local parent_dims::Int = 0
   if !is_each
     for p in listRest(parents)
-      parent_dims = parent_dims + dimensionCount(getType(p))
+      parent_dims = parent_dims + dimensionCount(getType(p))::Int
     end
   end
   if parent_dims == 0
@@ -1631,12 +1636,26 @@ function typeBindingExp(
       ty = unliftArrayN(parent_dims, exp_ty)
     end
   end
-  #=  If the binding has too few dimensions we can't unlift it, but matchBinding
+  #=
+  If the binding has too few dimensions we can't unlift it, but matchBinding
+  can report the error better so we silently ignore it here.
   =#
-  #=  can report the error better so we silently ignore it here.
-  =#
-  outExp = BINDING_EXP(e, exp_ty, ty, parents, is_each)
+  #outExp = BINDING_EXP(e, exp_ty, ty, parents, is_each)
+  outExp =  updateBindingExp!(exp, e, exp_ty, ty, parents, is_each)
   return (outExp, ty, variability)
+end
+
+"""
+Updates and mutates a given binding exp.
+"""
+function updateBindingExp!(bindingExp::BINDING_EXP, exp, expType, bindingType, parents, isEach)::BINDING_EXP
+  #= Mutate binding exp=#
+  bindingExp.exp = exp
+  bindingExp.expType = expType
+  bindingExp.bindingType = bindingType
+  bindingExp.parents = parents
+  bindingExp.isEach = isEach
+  return bindingExp
 end
 
 """
@@ -2134,7 +2153,7 @@ function typeSubscript(
   ety = subscriptType(dimension)
   #=  We can have both : subscripts and : dimensions here, so we need to allow unknowns.
   =#
-  (_, _, mk) = matchTypes(ty, ety, EMPTY_EXPRESSION(ty), allowUnknown = true)
+  (_, _, mk) = matchTypes(ty, ety, EMPTY_EXPRESSION(ty), #=allowUnknown=# true)
   if isIncompatibleMatch(mk)
     Error.addSourceMessage(
       Error.SUBSCRIPT_TYPE_MISMATCH,
@@ -2154,10 +2173,10 @@ function typeArray(
   elements::List{Expression},
   origin::ORIGIN_Type,
   info::SourceInfo,
-)::Tuple{Expression, NFType, VariabilityType}
+  )::Tuple{Expression, NFType, VariabilityType}
   local variability::VariabilityType = Variability.CONSTANT
   local arrayType::NFType = TYPE_UNKNOWN()
-  local arrayExp::Expression
+  local arrayExp::ARRAY_EXPRESSION
   local exp::Expression
   local expl::List{Expression} = nil
   local expl2::List{Expression} = nil
@@ -2173,9 +2192,9 @@ function typeArray(
   for e in elements
      (exp, ty2, var) = typeExp(e, next_origin, info)
      variability = variabilityMax(var, variability)
-     (_, ty3, mk) = matchTypes(ty2, ty1, exp, allowUnknown = true)
+     (_, ty3, mk) = matchTypes(ty2, ty1, exp, #=allowUnknown=# true)
     if isIncompatibleMatch(mk)
-       (_, ty3, mk) = matchTypes(ty1, ty2, exp, allowUnknown = false)
+       (_, ty3, mk) = matchTypes(ty1, ty2, exp, #=allowUnknown=# false)
       if isCompatibleMatch(mk)
          ty1 = ty3
       end
@@ -2218,49 +2237,46 @@ end
 
 
 function typeArray(
-  elements::Vector{Expression},
+  elements::Vector{T},
   origin::ORIGIN_Type,
   info::SourceInfo,
-)::Tuple{Expression, NFType, VariabilityType}
+)::Tuple{ARRAY_EXPRESSION, NFType, VariabilityType} where {T <: Expression}
   local variability::VariabilityType = Variability.CONSTANT
   local arrayType::NFType = TYPE_UNKNOWN()
   local arrayExp::Expression
-  local exp::Expression
-  local expV::Vector{Expression} = Vector{Expression}(undef, length(elements))
-  #local expV2::Vector{Expression} = Vector{Expression}(undef, length(elements))
+  local numberOfElements = length(elements)::Int
+  local expV::Vector{T} = Vector{T}(undef, numberOfElements)
   local var::VariabilityType
   local ty1::NFType = TYPE_UNKNOWN()
   local ty2::NFType
   local ty3::NFType
-  local tys::Vector{NFType} = Vector{NFType}(undef, length(elements))
+  local tys::Vector{NFType} = Vector{NFType}(undef, numberOfElements)
   local mk::MatchKindType
-  local n::Int = 1
   local next_origin::ORIGIN_Type
   next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
-  for e in elements
-     (exp, ty2, var) = typeExp(e, next_origin, info)
-     variability = variabilityMax(var, variability)
-     (_, ty3, mk) = matchTypes(ty2, ty1, exp, allowUnknown = true)
+  for i in 1:numberOfElements
+    local e = elements[i]::T
+    @match (exp, ty2, var) = typeExp(e, next_origin, info)
+    variability = variabilityMax(var, variability)
+    (_, ty3, mk) = matchTypes(ty2, ty1, exp, #=allowUnknown =# true)
     if isIncompatibleMatch(mk)
-       (_, ty3, mk) = matchTypes(ty1, ty2, exp, allowUnknown = false)
+      (_, ty3, mk) = matchTypes(ty1, ty2, exp, #=allowUnknown =# false)
       if isCompatibleMatch(mk)
-         ty1 = ty3
+        ty1 = ty3
       end
     else
-       ty1 = ty3
+      ty1 = ty3
     end
-    expV[n] = exp
-    tys[n] = ty2
-    n += 1
+    elements[i] = exp::T
+    tys[i] = ty2
   end
-  for i in 1:length(expV)
-    local e = expV[i]
+  for i in 1:numberOfElements
+    local e = elements[i]::T
     ty2 = tys[i]
     (exp, _, mk) = matchTypes(ty2, ty1, e)
-    expV[i] = exp
+    elements[i] = exp
     if true ## !Config.getGraphicsExpMode()
       if isIncompatibleMatch(mk)
-        @info "Incompat types"
         Error.addSourceMessage(
           Error.NF_ARRAY_TYPE_MISMATCH,
           list(
@@ -2276,8 +2292,8 @@ function typeArray(
     end
   end
   #=  forget errors when handling annotations =#
-  arrayType = liftArrayLeft(ty1, fromExpList(expV))
-  arrayExp = makeArray(arrayType, expV)
+  arrayType = liftArrayLeft(ty1, fromExpList(elements))
+  arrayExp = makeArray(arrayType, elements)::ARRAY_EXPRESSION
   return (arrayExp, arrayType, variability)
 end
 
@@ -3096,7 +3112,7 @@ function makeDefaultExternalCall(extDecl::Sections, fnNode::InstNode)::Sections
         end
         #=  Fetch the cached function.
         =#
-        @match C_FUNCTION(funcs = list(fn)) = getFuncCache(fnNode)
+        @match C_FUNCTION(funcs = [fn]) = getFuncCache(fnNode)
         #=  Check whether we have a single output or not.
         =#
          single_output = listLength(fn.outputs) == 1
@@ -3531,7 +3547,7 @@ function typeStatement(st::Statement, origin::ORIGIN_Type)
         #=
           TODO: Should probably only be allowUnknown = true if in a function.
         =#
-        (e2, ty3, mk) = matchTypes(ty2, ty1, e2, allowUnknown = true)
+        (e2, ty3, mk) = matchTypes(ty2, ty1, e2, #=allowUnknown=# true)
         if isIncompatibleMatch(mk)
           Error.addSourceMessage(
             Error.ASSIGN_TYPE_MISMATCH_ERROR,

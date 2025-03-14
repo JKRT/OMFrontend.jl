@@ -138,7 +138,7 @@ end
     rootClass::InstNode
   end
   @Record C_FUNCTION begin
-    funcs::List{M_Function}
+    funcs::Vector{M_FUNCTION}
     typed::Bool
     specialBuiltin::Bool
   end
@@ -176,8 +176,8 @@ function getPackageCache(in_caches::Vector{<:CachedData})
   out_cache
 end
 
-function setFuncCache(in_caches::Vector{<:CachedData}, in_cache::CachedData)
-  arrayUpdate(in_caches, 1, in_cache)
+function setFuncCache(in_caches::Vector{<:CachedData}, in_cache::C_FUNCTION)
+  local in_caches[1] = in_cache
 end
 
 function getFuncCache(in_caches::Vector{<:CachedData})
@@ -192,11 +192,12 @@ function addFunc(fn::M_Function, specialBuiltin::Bool, caches::Vector{<:CachedDa
    func_cache = begin
     @match func_cache begin
       C_NO_CACHE(__)  => begin
-        C_FUNCTION(list(fn), false, specialBuiltin)
+        C_FUNCTION(M_Function[fn], false, specialBuiltin)
       end
 
       C_FUNCTION(__)  => begin
-        C_FUNCTION(listAppend(func_cache.funcs, list(fn)), false, func_cache.specialBuiltin || specialBuiltin)
+        C_FUNCTION(Base.append!(func_cache.funcs, M_FUNCTION[fn]),
+                   false, func_cache.specialBuiltin || specialBuiltin)
       end
 
       _  => begin
@@ -206,7 +207,7 @@ function addFunc(fn::M_Function, specialBuiltin::Bool, caches::Vector{<:CachedDa
         fail()
       end
     end
-  end
+   end
   setFuncCache(caches, func_cache)
 end
 
@@ -216,7 +217,7 @@ function initFunc(caches::Vector{<:CachedData})
    func_cache = begin
     @match func_cache begin
       C_NO_CACHE(__)  => begin
-        C_FUNCTION(nil, false, false)
+        C_FUNCTION(M_FUNCTION[], false, false)
       end
       C_FUNCTION(__)  => begin
         func_cache
@@ -1518,14 +1519,25 @@ end
 
 replaceClass(cls::Class, node::InstNode) = node
 
+const COMPONENT_PTR_CACHE = Set{Pointer}()
+"""
+Creates a new component that contains a pointer to the supplied component.
+"""
 function replaceComponent(component::Component, node::InstNode)
   local replacedNode =  if node isa COMPONENT_NODE
-    local componentPointer = P_Pointer.create(component, Component)::Pointer{Component}
-    COMPONENT_NODE{String, Int}(node.name,
-                                node.visibility,
-                                componentPointer,
-                                node.parent,
-                                node.nodeType)
+    local componentPointer = if ! (node.component in COMPONENT_PTR_CACHE)
+      local tmpPtr = Pointer{Component}(component)
+      push!(COMPONENT_PTR_CACHE, tmpPtr)
+      tmpPtr
+    else
+      node.component
+    end
+    local tmp = COMPONENT_NODE{String, Int}(node.name,
+                                            node.visibility,
+                                            componentPointer,
+                                            node.parent,
+                                            node.nodeType)
+    tmp
   else
     node
   end
@@ -1638,13 +1650,30 @@ function setParent(@nospecialize(parent::InstNode),
                           node.nodeType)
 end
 
-function setParent(@nospecialize(parent::InstNode),
-                    node::COMPONENT_NODE)::COMPONENT_NODE
-  COMPONENT_NODE{String, Int}(node.name,
-                              node.visibility,
-                              node.component,
-                              parent,
-                              node.nodeType)
+const COMPONENT_NODE_CACHE = Dict{String, InstNode}()
+
+"""
+Reset the component node cache.
+"""
+function resetComponentNodeCaches()
+  Base.empty!(COMPONENT_NODE_CACHE)
+  Base.empty!(COMPONENT_PTR_CACHE)
+end
+
+function setParent(parent::InstNode,
+                   node::COMPONENT_NODE)::COMPONENT_NODE
+  if !(node.name in keys(COMPONENT_NODE_CACHE))
+    outNode = COMPONENT_NODE{String, Int}(node.name,
+                                          node.visibility,
+                                          node.component,
+                                          parent,
+                                          node.nodeType)
+    COMPONENT_NODE_CACHE[node.name] = outNode
+  else
+    node.parent = parent
+    outNode = node
+  end
+  return outNode
 end
 
 function setParent(@nospecialize(parent::InstNode),
@@ -2194,7 +2223,7 @@ end
 function fromComponent(name::String, component::Component, parent::InstNode)
   local node::InstNode
 
-   node = COMPONENT_NODE(name, Visibility.PUBLIC, P_Pointer.create(component), parent, NORMAL_COMP())
+   node = COMPONENT_NODE(name, Visibility.PUBLIC, Pointer{Component}(component), parent, NORMAL_COMP())
   node
 end
 

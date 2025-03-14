@@ -28,8 +28,10 @@ function instClassInProgram(classPath::Absyn.Path, program::SCode.Program)
     #=TODO: Add a @static flag later to supress this message. =#
     println("Internal stack trace:")
     #@error e
+    resetComponentNodeCaches()
     throw(e)
   end
+  resetComponentNodeCaches()
   (dae, daeFuncs) = convert(flat_model, funcs, name, InstNode_info(inst_cls))
   return (dae, daeFuncs)
 end
@@ -1362,7 +1364,7 @@ function instComponent(node::InstNode,
                        useBinding::Bool,
                        instLevel::Int,
                        originalAttr = NONE())::Nothing
-  local comp::COMPONENT_DEF
+  local comp::Component
   local def::SCode.COMPONENT
   local comp_node::InstNode
   local rdcl_node::InstNode

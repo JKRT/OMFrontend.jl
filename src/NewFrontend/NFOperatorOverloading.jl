@@ -70,9 +70,8 @@ function instOperatorFunctions(node::InstNode, info::SourceInfo)::InstNode
   local tree::ClassTree
   local mclss::Vector{InstNode}
   local path::Absyn.Path
-  local allfuncs::List{M_Function} = nil
-  local funcs::List{M_Function}
-
+  local allfuncs::Vector{M_FUNCTION} = M_FUNCTION[]
+  local funcs::Vector{M_FUNCTION}
   checkOperatorRestrictions(node)
   @assign tree = classTree(getClass(node))
    () = begin
@@ -80,15 +79,15 @@ function instOperatorFunctions(node::InstNode, info::SourceInfo)::InstNode
       CLASS_TREE_FLAT_TREE(classes = mclss) => begin
         for op in mclss
           instFunctionNode(op)
-          @assign funcs = getCachedFuncs(op)
-          @assign allfuncs = listAppend(funcs, allfuncs)
+          funcs = getCachedFuncs(op)
+          allfuncs = Base.append!(allfuncs, funcs)
         end
         #= path := InstNode.scopePath(op, includeRoot = true);
         =#
         #= Function.instFunction2(path, op, info);
         =#
         for f in allfuncs
-          @assign node = cacheAddFunc(node, f, false)
+          node = cacheAddFunc(node, f, false)
         end
         ()
       end
@@ -117,31 +116,30 @@ function checkOperatorRestrictions(operatorNode::InstNode)
   end
 end
 
-function lookupOperatorFunctionsInType(operatorName::String, ty::M_Type)::List{M_Function}
-  local functions::List{M_Function}
+function lookupOperatorFunctionsInType(operatorName::String, ty::M_Type)::Vector{M_FUNCTION}
+  local functions::Vector{M_Function}
   local node::InstNode
   local fn_ref::ComponentRef
   local is_defined::Bool
-  @assign functions = begin
+  functions = begin
     @match arrayElementType(ty) begin
       TYPE_COMPLEX(cls = node) => begin
         try
-          @assign fn_ref = lookupFunctionSimple(operatorName, node)
-          @assign is_defined = true
+          fn_ref = lookupFunctionSimple(operatorName, node)
+          is_defined = true
         catch e
-          @assign is_defined = false
+          is_defined = false
         end
         if is_defined
           (fn_ref, _, _) = instFunctionRef(fn_ref, InstNode_info(node))
-          @assign functions = typeRefCache(fn_ref)
+          functions = typeRefCache(fn_ref)
         else
-          @assign functions = nil
+          functions = M_FUNCTION[]
         end
         functions
       end
-
       _ => begin
-        nil
+        M_FUNCTION[]
       end
     end
   end

@@ -78,48 +78,43 @@ function checkBinaryOperation(
       checkBinaryOperationBoxed(exp1, type1, var1, operator, exp2, type2, var2, info)
   else
      (binaryExp, resultType) = begin
-      @match operator.op begin
-        Op.ADD => begin
-          checkBinaryOperationAdd(exp1, type1, exp2, type2, info)
-        end
-
-        Op.SUB => begin
-          checkBinaryOperationSub(exp1, type1, exp2, type2, info)
-        end
-
-        Op.MUL => begin
-          checkBinaryOperationMul(exp1, type1, exp2, type2, info)
-        end
-
-        Op.DIV => begin
-          checkBinaryOperationDiv(exp1, type1, exp2, type2, info, false)
-        end
-
-        Op.POW => begin
-          checkBinaryOperationPow(exp1, type1, exp2, type2, info)
-        end
-
-        Op.ADD_EW => begin
-          checkBinaryOperationEW(exp1, type1, exp2, type2, Op.ADD, info)
-        end
-
-        Op.SUB_EW => begin
-          checkBinaryOperationEW(exp1, type1, exp2, type2, Op.SUB, info)
-        end
-
-        Op.MUL_EW => begin
-          checkBinaryOperationEW(exp1, type1, exp2, type2, Op.MUL, info)
-        end
-
-        Op.DIV_EW => begin
-          checkBinaryOperationDiv(exp1, type1, exp2, type2, info, isElementWise = true)
-        end
-
-        Op.POW_EW => begin
-          checkBinaryOperationPowEW(exp1, type1, exp2, type2, info)
-        end
-      end
-    end
+       @match operator.op begin
+         Op.ADD => begin
+           checkBinaryOperationAdd(exp1, type1, exp2, type2, info)
+         end
+         Op.SUB => begin
+           checkBinaryOperationSub(exp1, type1, exp2, type2, info)
+         end
+         Op.MUL => begin
+           checkBinaryOperationMul(exp1, type1, exp2, type2, info)
+         end
+         Op.DIV => begin
+           checkBinaryOperationDiv(exp1, type1, exp2, type2, info, false)
+         end
+         Op.POW => begin
+           checkBinaryOperationPow(exp1, type1, exp2, type2, info)
+         end
+         Op.ADD_EW => begin
+           checkBinaryOperationEW(exp1, type1, exp2, type2, Op.ADD, info)
+         end
+         Op.SUB_EW => begin
+           checkBinaryOperationEW(exp1, type1, exp2, type2, Op.SUB, info)
+         end
+         Op.MUL_EW => begin
+           checkBinaryOperationEW(exp1, type1, exp2, type2, Op.MUL, info)
+         end
+         Op.DIV_EW => begin
+           checkBinaryOperationDiv(exp1, type1, exp2, type2, info, isElementWise = true)
+         end
+         Op.POW_EW => begin
+           checkBinaryOperationPowEW(exp1, type1, exp2, type2, info)
+         end
+         _ =>  begin
+           @error "checkBinaryOperation" typeof(operator.op) toString(operator.op)
+           fail()
+         end
+       end
+     end
   end
   return (binaryExp, resultType)
 end
@@ -138,7 +133,7 @@ function checkOverloadedBinaryOperator(
   local outExp::Expression
 
   local op_str::String
-  local candidates::List{M_Function}
+  local candidates::Vector{M_Function}
   local ety1::M_Type
   local ety2::M_Type
 
@@ -149,13 +144,13 @@ function checkOverloadedBinaryOperator(
   #=  Only collect operators from both types if they're not the same type.
   =#
   if !isEqual(ety1, ety2)
-    candidates = listAppend(
+    candidates = Base.append!(
       lookupOperatorFunctionsInType(op_str, ety2),
       candidates,
     )
   end
   #=  Give up if no operator functions could be found. =#
-  if listEmpty(candidates)
+  if isempty(candidates)
     printUnresolvableTypeError(
       BINARY_EXPRESSION(exp1, op, exp2),
       list(type1, type2),
@@ -198,7 +193,7 @@ function matchOverloadedBinaryOperator(
   exp2::Expression,
   type2::M_Type,
   var2::VariabilityType,
-  candidates::List{<:M_Function},
+  candidates::Vector{M_Function},
   info::SourceInfo,
   showErrors::Bool = true,
 )::Tuple{Expression, M_Type}
@@ -369,7 +364,7 @@ function checkOverloadedBinaryArrayAddSub(
   exp2::Expression,
   type2::M_Type,
   var2::VariabilityType,
-  candidates::List{M_Function},
+  candidates::Vector{M_Function},
   info::SourceInfo,
 )::Tuple{Expression, M_Type}
   local outType::M_Type
@@ -413,7 +408,7 @@ function checkOverloadedBinaryArrayAddSub2(
   exp2::Expression,
   type2::M_Type,
   var2::VariabilityType,
-  candidates::List{M_Function},
+  candidates::Vector{M_Function},
   info::SourceInfo,
 )::Tuple{Expression, M_Type}
   local outType::M_Type
@@ -510,7 +505,7 @@ function checkOverloadedBinaryArrayMul(
   exp2::Expression,
   type2::M_Type,
   var2::VariabilityType,
-  candidates::List{M_Function},
+  candidates::Vector{M_Function},
   info::SourceInfo,
 )::Tuple{Expression, M_Type}
   local outType::M_Type
@@ -608,7 +603,7 @@ function checkOverloadedBinaryScalarArray(
   exp2::Expression,
   type2::M_Type,
   var2::VariabilityType,
-  candidates::List{M_Function},
+  candidates::Vector{M_Function},
   info::SourceInfo,
 )::Tuple{Expression, M_Type}
   local outType::M_Type
@@ -636,7 +631,7 @@ function checkOverloadedBinaryScalarArray2(
   exp2::Expression,
   type2::M_Type,
   var2::VariabilityType,
-  candidates::List{M_Function},
+  candidates::Vector{M_Function},
   info::SourceInfo,
 )::Tuple{Expression, M_Type}
   local outType::M_Type
@@ -721,7 +716,7 @@ function checkOverloadedBinaryArrayScalar(
   exp2::Expression,
   type2::M_Type,
   var2::VariabilityType,
-  candidates::List{M_Function},
+  candidates::Vector{M_Function},
   info::SourceInfo,
 )::Tuple{Expression, M_Type}
   local outType::M_Type
@@ -749,7 +744,7 @@ function checkOverloadedBinaryArrayScalar2(
   exp2::Expression,
   type2::M_Type,
   var2::VariabilityType,
-  candidates::List{M_Function},
+  candidates::Vector{M_Function},
   info::SourceInfo,
 )::Tuple{Expression, M_Type}
   local outType::M_Type
@@ -835,7 +830,7 @@ function checkOverloadedBinaryArrayDiv(
   exp2::Expression,
   type2::M_Type,
   var2::VariabilityType,
-  candidates::List{M_Function},
+  candidates::Vector{M_Function},
   info::SourceInfo,
 )::Tuple{Expression, M_Type}
   local outType::M_Type
@@ -871,7 +866,7 @@ function checkOverloadedBinaryArrayEW(
   exp2::Expression,
   type2::M_Type,
   var2::VariabilityType,
-  candidates::List{M_Function},
+  candidates::Vector{M_Function},
   info::SourceInfo,
 )::Tuple{Expression, M_Type}
   local outType::M_Type
@@ -917,7 +912,7 @@ function checkOverloadedBinaryArrayEW2(
   exp2::Expression,
   type2::M_Type,
   var2::VariabilityType,
-  candidates::List{M_Function},
+  candidates::Vector{M_Function},
   info::SourceInfo,
 )::Tuple{Expression, M_Type}
   local outType::M_Type
@@ -1025,7 +1020,7 @@ function checkOverloadedBinaryArrayEW2(
 end
 
 function implicitConstructAndMatch(
-  candidates::List{Function},
+  candidates::Vector{Function},
   inExp1::Expression,
   inType1::M_Type,
   op::Operator,
@@ -1381,12 +1376,12 @@ function checkBinaryOperationDiv(
   local mk::MatchKindType
   local valid::Bool
   local op::Operator
-   (e1, ty1, mk) =
-    matchTypes(type1, setArrayElementType(type1, TYPE_REAL()), exp1; allowUnknown = true)
-  @assign valid = isCompatibleMatch(mk)
+  (e1, ty1, mk) =
+    matchTypes(type1, setArrayElementType(type1, TYPE_REAL()), exp1, #=allowUnknown=# true)
+  valid = isCompatibleMatch(mk)
    (e2, ty2, mk) =
-    matchTypes(type2, setArrayElementType(type2, TYPE_REAL()), exp2; allowUnknown = true)
-  @assign valid = valid && isCompatibleMatch(mk)
+    matchTypes(type2, setArrayElementType(type2, TYPE_REAL()), exp2, #=allowUnknown=# true)
+  valid = valid && isCompatibleMatch(mk)
   #=  Division is always element-wise, the only difference between / and ./ is
   =#
   #=  which operands they accept.
@@ -1452,18 +1447,17 @@ function checkBinaryOperationPow(
   local valid::Bool
   local op::Operator
 
-  #=  The first operand of ^ should be Real.
-  =#
-   (e1, resultType, mk) =
-    matchTypes(type1, setArrayElementType(type1, TYPE_REAL()), exp1; allowUnknown = true)
-  @assign valid = isCompatibleMatch(mk)
+  #=  The first operand of ^ should be Real. =#
+  (e1, resultType, mk) =
+    matchTypes(type1, setArrayElementType(type1, TYPE_REAL()), exp1, #=allowUnknown=# true)
+  valid = isCompatibleMatch(mk)
   if isArray(resultType)
-    @assign valid = valid && Type.isSquareMatrix(resultType)
-    @assign valid = valid && isInteger(type2)
-    @assign op = OPERATOR(resultType, Op.POW_MATRIX)
-    @assign e2 = exp2
+    valid = valid && Type.isSquareMatrix(resultType)
+    valid = valid && isInteger(type2)
+    op = OPERATOR(resultType, Op.POW_MATRIX)
+    e2 = exp2
   else
-     (e2, _, mk) = matchTypes(type2, TYPE_REAL(), exp2; allowUnknown = true)
+    (e2, _, mk) = matchTypes(type2, TYPE_REAL(), exp2, #=allowUnknown=# true)
     @assign valid = valid && isCompatibleMatch(mk)
     @assign op = OPERATOR(resultType, Op.POW)
   end
@@ -1501,10 +1495,10 @@ function checkBinaryOperationPowEW(
   #=  are compatible with ecah other we check if each type is compatible with Real.
   =#
    (e1, ty1, mk) =
-    matchTypes(type1, setArrayElementType(type1, TYPE_REAL()), exp1, allowUnknown = true)
+    matchTypes(type1, setArrayElementType(type1, TYPE_REAL()), exp1, #=allowUnknown=# true)
   @assign valid = isCompatibleMatch(mk)
    (e2, ty2, mk) =
-    matchTypes(type2, setArrayElementType(type2, TYPE_REAL()), exp2, allowUnknown = true)
+    matchTypes(type2, setArrayElementType(type2, TYPE_REAL()), exp2, #=allowUnknown=# true)
   @assign valid = valid && isCompatibleMatch(mk)
    (resultType, op) = begin
     @match (isArray(ty1), isArray(ty2)) begin
@@ -1684,7 +1678,7 @@ function checkOverloadedUnaryOperator(
   local node1::InstNode
   local fn_node::InstNode
   local fn_ref::ComponentRef
-  local candidates::List{M_Function}
+  local candidates::Vector{M_Function}
   local matched::Bool
   local args::List{TypedArg}
   local matchKind::FunctionMatchKind
@@ -2030,17 +2024,17 @@ function matchExpressions2(
 end
 
 function matchTypes(
-  actualType::NFType,
-  expectedType::NFType,
-  expression::Expression;
+  actualType::T1,
+  expectedType::T2,
+  expression::T3,
   allowUnknown::Bool = false,
-)::Tuple{Expression, NFType, MatchKindType}
+  )::Tuple{Expression, NFType, Int} where {T1 <: NFType, T2 <: NFType, T3 <: Expression}
   local matchKind::MatchKindType
   local compatibleType::NFType
   #=  Return true if the references are the same. =#
   if referenceEq(actualType, expectedType)
-    @assign compatibleType = actualType
-    @assign matchKind = MatchKind.EXACT
+    compatibleType = actualType
+    matchKind = MatchKind.EXACT
     return (expression, compatibleType, matchKind)
   end
   #=  Check if the types are different kinds of types. =#
@@ -2055,8 +2049,8 @@ function matchTypes(
   =#
   #=  The types are of the same kind, so we only need to match on one of them.
   =#
-  @assign matchKind = MatchKind.EXACT
-  @assign compatibleType = begin
+  matchKind = MatchKind.EXACT
+  compatibleType = begin
     @match actualType begin
       TYPE_INTEGER(__) => begin
         actualType
@@ -2100,7 +2094,7 @@ function matchTypes(
       end
 
       TYPE_UNKNOWN(__) => begin
-        @assign matchKind = if allowUnknown
+        matchKind = if allowUnknown
           MatchKind.EXACT
         else
           MatchKind.NOT_COMPATIBLE
@@ -2201,7 +2195,7 @@ function matchExpressions_cast(
         =#
         exp2 = tupleElement(exp2, compatibleType, 1)
         (exp2, compatibleType, matchKind) =
-          matchTypes(compatibleType, type1, exp2, allowUnknown = allowUnknown)
+          matchTypes(compatibleType, type1, exp2, allowUnknown)
         if isCompatibleMatch(matchKind)
           @assign matchKind = MatchKind.CAST
         end
@@ -2236,13 +2230,13 @@ function matchExpressions_cast(
       end
 
       (_, TYPE_METABOXED(__)) => begin
-         (exp1, exp2, compatibleType, matchKind) = matchExpressions(
+        (exp1, exp2, compatibleType, matchKind) = matchExpressions(
           exp1,
           type1,
           unbox(exp2),
           type2.ty,
           allowUnknown,
-        )
+         )
         (compatibleType, matchKind)
       end
 
@@ -2420,8 +2414,8 @@ function matchComponentList(
         @assign matchKind = MatchKind.NOT_COMPATIBLE
         return matchKind
       end
-       (_, _, matchKind) =
-        matchTypes(getType(c1), getType(c2), dummy; allowUnknown = allowUnknown)
+      (_, _, matchKind) =
+        matchTypes(getType(c1), getType(c2), dummy, #=allowUnknown=# allowUnknown)
       if matchKind == MatchKind.NOT_COMPATIBLE
         return matchKind
       end
@@ -2593,8 +2587,8 @@ function matchArrayTypes(
   @match TYPE_ARRAY(elementType = ety1, dimensions = dims1) = arrayType1
   @match TYPE_ARRAY(elementType = ety2, dimensions = dims2) = arrayType2
   #=  Check that the element types are compatible. =#
-   (expression, compatibleType, matchKind) =
-    matchTypes(ety1, ety2, expression; allowUnknown = allowUnknown)
+  (expression, compatibleType, matchKind) =
+    matchTypes(ety1, ety2, expression, allowUnknown)
   #=  If the element types are compatible, check the dimensions too. =#
   (compatibleType, matchKind) =
     matchArrayDims(dims1, dims2, compatibleType, matchKind, allowUnknown)
@@ -3229,7 +3223,7 @@ function matchBinding(
             end
           end
         end
-        (exp, ty, ty_match) = matchTypes(exp_ty, comp_ty, exp, allowUnknown = true)
+        (exp, ty, ty_match) = matchTypes(exp_ty, comp_ty, exp, #=allowUnknown=# true)
         if !isValidAssignmentMatch(ty_match)
           printBindingTypeError(name, binding, comp_ty, exp_ty, component)
           fail()

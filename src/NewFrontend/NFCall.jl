@@ -638,7 +638,7 @@ function isImpure(call::Call)::Bool
   impure = begin
     @match call begin
       UNTYPED_CALL(__) => begin
-        isImpure(listHead(getRefCache(call.ref)))
+        isImpure(Base.first(getRefCache(call.ref)))
       end
       TYPED_CALL(__) => begin
         isImpure(call.fn) || isOMImpure(call.fn)
@@ -874,7 +874,7 @@ function makeTypedCall(
 end
 
 function typeNormalCall(call::UNTYPED_CALL, origin::ORIGIN_Type, info::SourceInfo)::Call
-  local fnl::List{M_Function} = typeRefCache(call.ref)
+  local fnl::Vector{M_FUNCTION} = typeRefCache(call.ref)
   call = typeArgs(call, origin, info)
   return call
 end
@@ -887,7 +887,8 @@ function typeCall(
   arg1 = callExp
   arg2 = origin
   arg3 = info
-  if arg1 isa TYPED_ARRAY_CONSTRUCTOR || arg1 isa TYPED_REDUCTION || arg1 isa TYPED_CALL
+  @match CALL_EXPRESSION(call = call) = callExp
+  if call isa TYPED_ARRAY_CONSTRUCTOR || call isa TYPED_REDUCTION || call isa TYPED_CALL
     ty = call.ty
     var = call.var
     return (callExp, call.ty, call.var)
@@ -945,7 +946,7 @@ function typeCall2(
       _ => begin
         Error.assertion(
           false,
-          getInstanceName() + ": " + toString(callExp),
+          "Typing call" + ": " + toString(callExp) + ". Internal type: $(typeof(call))",
           sourceInfo(),
         )
         fail()
@@ -1304,7 +1305,7 @@ function checkMatchingFunctions(call::Call, info::SourceInfo)
   local matchedFunctions::Vector{MatchedFunction}
   local exactMatches::Vector{MatchedFunction}
   local func::M_Function
-  local allfuncs::List{M_Function}
+  local allfuncs::Vector{M_Function}
   local fn_node::InstNode
   local numerr::Int = 0 # TODO Error.getNumErrorMessages()
   local errors::List{Int}
@@ -1314,9 +1315,8 @@ function checkMatchingFunctions(call::Call, info::SourceInfo)
     @match call begin
       ARG_TYPED_CALL(ref = COMPONENT_REF_CREF(node = fn_node)) => begin
         allfuncs = getCachedFuncs(fn_node)
-        if listLength(allfuncs) > 1
-          allfuncs =
-            list(fn for fn in allfuncs if !isDefaultRecordConstructor(fn))
+        if length(allfuncs) > 1
+          allfuncs = M_FUNCTION[fn for fn in allfuncs if !isDefaultRecordConstructor(fn)]
         end
         matchFunctions(allfuncs, call.arguments, call.named_args, info)
       end
@@ -1327,7 +1327,7 @@ function checkMatchingFunctions(call::Call, info::SourceInfo)
       ErrorExt.rollBack("NFCall:checkMatchingFunctions")
       Error.addSourceMessage(
         Error.NO_MATCHING_FUNCTION_FOUND_NFINST,
-        list(typedString(call), P_Function.candidateFuncListString(allfuncs)),
+        list(typedString(call), candidateFuncListString(allfuncs)),
         info,
       )
     elseif numerr == 0 #Error.getNumErrorMessages() TODO
@@ -1400,14 +1400,13 @@ function typeArgs(call::Call, origin::ORIGIN_Type, info::SourceInfo)::Call
         typedArgs = Vector{TypedArg}(undef, length(call.arguments))
         next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
         for (i, arg) in enumerate(call.arguments)
-           (arg, arg_ty, arg_var) = typeExp(arg, next_origin, info)
-           typedArgs[i] = (arg, arg_ty, arg_var)
+          typedArgs[i] = typeExp(arg, next_origin, info)
         end
         typedNamedArgs = Vector{TypedNamedArg}(undef, length(call.named_args))
         for (i,narg) in enumerate(call.named_args)
-          (name, arg) = narg
-          (arg, arg_ty, arg_var) = typeExp(arg, next_origin, info)
-          typedNamedArgs[i] = (name, arg, arg_ty, arg_var)
+          #(name, arg) = narg
+          typedNamedArgs[i] = (narg[1], typeExp(narg[2], next_origin, info)...)#::Tuple{Expression, NFType, Int}
+          # = T#(name, arg, arg_ty, arg_var)
         end
         ARG_TYPED_CALL(call.ref, typedArgs, typedNamedArgs, call.call_scope)
       end

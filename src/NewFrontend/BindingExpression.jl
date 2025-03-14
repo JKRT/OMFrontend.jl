@@ -5552,8 +5552,18 @@ end
 """
 Generic make array function for vectors
 """
-function makeArray(ty::NFType, expV::Vector; literal::Bool = false)
+function makeArray(ty::NFType, expV::Vector{T}; literal::Bool = false) where {T}
   ARRAY_EXPRESSION(ty, expV, literal)
+end
+
+function updateArray!(arrayExpr::ARRAY_EXPRESSION;
+                      ty::NFType = arrayExpr.ty,
+                      elements::Vector{T}  = arrayExpr.elements,
+                      literal::Bool = false) where {T}
+  arrayExpr.elements = elements
+  arrayExpr.ty = ty
+  arrayExpr.literal = literal
+  arrayExpr
 end
 
 

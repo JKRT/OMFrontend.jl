@@ -210,7 +210,7 @@ const INTEGER_NODE =
       RESTRICTION_FUNCTION(),
     )),
     listArrayLiteral(list(
-      C_FUNCTION(list(INTEGER_FUNCTION), true, false),
+      C_FUNCTION(M_FUNCTION[INTEGER_FUNCTION], true, false),
       C_NO_CACHE(),
       C_NO_CACHE(),
     )),
@@ -454,7 +454,7 @@ const STRING_NODE =
     )),
     listArrayLiteral(list(
       C_FUNCTION(
-        list(STRING_ENUM, STRING_INT, STRING_BOOL, STRING_REAL, STRING_REAL_FORMAT),
+        M_FUNCTION[STRING_ENUM, STRING_INT, STRING_BOOL, STRING_REAL, STRING_REAL_FORMAT],
         true,
         true,
       ),
@@ -860,7 +860,7 @@ const CLOCK_NODE =
     )),
     listArrayLiteral(list(
       C_FUNCTION(
-        list(CLOCK_INFERED, CLOCK_INT, CLOCK_REAL, CLOCK_BOOL, CLOCK_SOLVER),
+        M_FUNCTION[CLOCK_INFERED, CLOCK_INT, CLOCK_REAL, CLOCK_BOOL, CLOCK_SOLVER],
         true,
         true,
       ),

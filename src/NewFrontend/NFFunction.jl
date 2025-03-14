@@ -1,23 +1,6 @@
-const NamedArg = Tuple
-const TypedArg = Tuple
-const TypedNamedArg = Tuple
-
-#= Forward declarations for uniontypes until Julia adds support for mutual recursion =#
-abstract type M_Function end
-
-struct M_FUNCTION <: M_Function
-  path::Absyn.Path
-  node::InstNode
-  inputs::List{InstNode}
-  outputs::List{InstNode}
-  locals::List{InstNode}
-  slots::List{Slot}
-  returnType::NFType
-  attributes::DAE.FunctionAttributes
-  derivatives::List{FunctionDerivative}
-  status::Pointer
-  callCounter::Pointer
-end
+const NamedArg = Tuple{String,B} where {B <: Expression}
+const TypedArg = Tuple{A,B,C} where {A,B,C}
+const TypedNamedArg = Tuple{String, ExpT, TypeT, VariabilityT} where {ExpT <: Expression, TypeT <: M_Type, VariabilityT <: Int}
 
 @Uniontype MatchedFunction begin
   @Record MATCHED_FUNC begin
@@ -292,7 +275,7 @@ function foldExpParameter(node::InstNode, foldFn::FoldFunc, arg::ArgT) where {Ar
         ()
       end
     end
-  end
+   end
   return arg
 end
 
@@ -302,7 +285,7 @@ function foldExp(
   arg::ArgT,
   mapParameters::Bool = true,
   mapBody::Bool = true,
-) where {ArgT}
+  ) where {ArgT}
 
   local cls::Class
 
@@ -366,7 +349,7 @@ function mapExp(
   mapFn::MapFunc,
   mapParameters::Bool = true,
   mapBody::Bool = true,
-)::M_FUNCTION
+  )::M_FUNCTION
   local cls::Class
   local ctree::ClassTree
   local comps::Vector{InstNode}
@@ -442,10 +425,10 @@ function makeDAEType(fn::M_FUNCTION, boxTypes::Bool = false)::DAE.Type
     @assign pname = name(param)
     @assign ty = getType(comp)
     @assign ptype = toDAE(if boxTypes
-      Type.box(ty)
-    else
-      ty
-    end)
+                            Type.box(ty)
+                          else
+                            ty
+                          end)
     @assign pconst = P_Prefixes.variabilityToDAEConst(variability(comp))
     @assign ppar = P_Prefixes.parallelismToDAE(P_Component.parallelism(comp))
     @assign pdefault = Util.applyOption(
@@ -490,7 +473,7 @@ function toDAE(fn::M_FUNCTION, def::DAE.FunctionDefinition)::DAE.P_Function
     def,
     list(
       P_FunctionDerivative.FunctionDerivative.toDAE(fn_der) for fn_der in fn.derivatives
-    ),
+        ),
   )
   @assign daeFn = DAE.FUNCTION(
     fn.path,
@@ -598,10 +581,10 @@ function isSubscriptableBuiltin(fn::M_FUNCTION)::Bool
 end
 
 """
-  This function checks if a function is a special builtin function
-  and needs to be handled in a different way.
-  Examples of such functions is der
-"""
+    This function checks if a function is a special builtin function
+    and needs to be handled in a different way.
+    Examples of such functions is der
+  """
 function isSpecialBuiltin(fn::M_FUNCTION)::Bool
   local special::Bool
   local path::Absyn.Path
@@ -978,17 +961,19 @@ function typeFunction(fn::M_FUNCTION)
 end
 
 function getRefCache(fnRef::ComponentRef)
-  local functions::List{M_Function}
+  local functions::Vector{M_Function}
   local fn_node::InstNode
   fn_node = classScope(node(fnRef))
   @match C_FUNCTION(funcs = functions) = getFuncCache(fn_node)
   return functions
 end
 
-""" #= Returns the function(s) in the cache of the given node, and types them if
-     they are not already typed. =#"""
-function typeNodeCache(@nospecialize(functionNode::InstNode))::List{M_Function}
-  local functions::List{M_Function}
+"""
+ Returns the function(s) in the cache of the given node, and types them if
+ they are not already typed.
+"""
+function typeNodeCache(@nospecialize(functionNode::InstNode))::Vector{M_FUNCTION}
+  local functions::Vector{M_FUNCTION}
   local fn_node::InstNode
   local typed::Bool
   local special::Bool
@@ -997,19 +982,25 @@ function typeNodeCache(@nospecialize(functionNode::InstNode))::List{M_Function}
   @match C_FUNCTION(functions, typed, special) = getFuncCache(fn_node)
   #=  Type the function(s) if not already done. =#
   if !typed
-    functions = list(typeFunctionSignature(f) for f in functions)
-    setFuncCache(fn_node, C_FUNCTION(functions, true, special))
-    functions = list(typeFunctionBody(f) for f in functions)
-    setFuncCache(fn_node, C_FUNCTION(functions, true, special))
+    functions = M_FUNCTION[typeFunctionSignature(f) for f in functions]
+    local cache = C_FUNCTION(functions, true, special)
+    setFuncCache(fn_node, cache)
+    for i in 1:length(functions)
+      cache.funcs[i] = typeFunctionBody(functions[i])
+    end
+    #functions = M_FUNCTION[typeFunctionBody(f) for f in functions]
+    setFuncCache(fn_node, cache)
   end
   return functions
 end
 
-""" #= Returns the function(s) referenced by the given cref, and types them if
-     they are not already typed. =#"""
-function typeRefCache(@nospecialize(functionRef::ComponentRef))::List{M_Function}
-  local functions::List{M_Function}
-  @assign functions = begin
+"""
+ Returns the function(s) referenced by the given cref, and types them if
+ they are not already typed.
+"""
+function typeRefCache(@nospecialize(functionRef::ComponentRef))::Vector{M_FUNCTION}
+  local functions::Vector{M_FUNCTION}
+  functions = begin
     @match functionRef begin
       COMPONENT_REF_CREF(__) => begin
         typeNodeCache(functionRef.node)
@@ -1043,21 +1034,21 @@ function isTyped(fn::M_FUNCTION)::Bool
 end
 
 function matchFunctionsSilent(
-  funcs::List{M_Function},
+  funcs::Vector{M_Function},
   args::Vector{TypedArg},
   named_args::Vector{TypedNamedArg},
   info::SourceInfo,
   vectorize::Bool = true,
   )
   local matchedFunctions::Vector{MatchedFunction}
-  ErrorExt.setCheckpoint("NFFunction:matchFunctions")
+  #ErrorExt.setCheckpoint("NFFunction:matchFunctions")
   matchedFunctions = matchFunctions(funcs, args, named_args, info, vectorize)
-  ErrorExt.rollBack("NFFunction:matchFunctions")
+  #ErrorExt.rollBack("NFFunction:matchFunctions")
   return matchedFunctions
 end
 
 function matchFunctions(
-  funcs::List{M_Function},
+  funcs::Vector{M_Function},
   args::Vector{TypedArg},
   named_args::Vector{TypedNamedArg},
   info::SourceInfo,
@@ -1168,8 +1159,8 @@ function matchArgVectorized(
   #=  the dimensions to vectorize over has been removed from the argument's type.
   =#
   @assign rest_ty = liftArrayLeftList(arrayElementType(argTy), rest_dims)
-   (argExp, argTy, matchKind) =
-    matchTypes(rest_ty, inputTy, argExp, allowUnknown = false)
+  (argExp, argTy, matchKind) =
+    matchTypes(rest_ty, inputTy, argExp, #=allowUnknown=# false)
   return (argExp, argTy, vectArg, vectDims, matchKind)
 end
 
@@ -1223,7 +1214,7 @@ function matchArgs(
     end
     input_ty = getType(comp)
     (arg_exp, ty, mk) =
-      matchTypes(arg_ty, input_ty, arg_exp, allowUnknown = true)
+      matchTypes(arg_ty, input_ty, arg_exp, #=allowUnknown=# true)
     matched = isValidArgumentMatch(mk)
     if !matched && vectorize
       (arg_exp, ty, vect_arg, vect_dims, mk) =
@@ -1724,7 +1715,7 @@ function callString(
   return str
 end
 
-function candidateFuncListString(fns::List{<:M_FUNCTION})::String
+function candidateFuncListString(fns::List{M_Function})::String
   local s::String =
     stringDelimitList(list(signatureString(fn, true) for fn in fns), "\\n  ")
   return s
@@ -1919,7 +1910,7 @@ function mapCachedFuncs(inNode::InstNode, mapFn::MapFn)
   cache = begin
     @match cache begin
       C_FUNCTION(__) => begin
-        cacheFuncs = list(mapFn(fn) for fn in cache.funcs)
+        cacheFuncs = M_FUNCTION[mapFn(fn) for fn in cache.funcs]
         cache = C_FUNCTION(cacheFuncs, cache.typed, cache.specialBuiltin)
         cache
       end
@@ -1933,7 +1924,7 @@ function mapCachedFuncs(inNode::InstNode, mapFn::MapFn)
 end
 
 function getCachedFuncs(inNode::InstNode)
-  local outFuncs::List{M_Function}
+  local outFuncs::Vector{M_FUNCTION}
   local cache::CachedData
   cache = getFuncCache(classScope(inNode))
   outFuncs = begin
@@ -2486,21 +2477,21 @@ function hasOMPure(cmt::SCode.Comment)::Bool
   return res
 end
 
-function makeSlot(@nospecialize(componentArg::InstNode), @nospecialize(index::Int))::Slot
+function makeSlot(@nospecialize(componentArg::InstNode), index::Int)::SLOT
   local slot::Slot
   local comp::Component
   local default::Option{Expression}
   local nameVar::String
   try
-    @assign comp = component(componentArg)
-    @assign default = typedExp(getImplicitBinding(comp))
-    @assign nameVar = name(componentArg)
+    comp = component(componentArg)
+    default = typedExp(getImplicitBinding(comp))
+    nameVar = name(componentArg)
     if stringGet(nameVar, 1) == 36
       if stringLength(nameVar) > 4 && substring(nameVar, 1, 4) == "in_"
-        @assign nameVar = substring(nameVar, 5, stringLength(nameVar))
+        nameVar = substring(nameVar, 5, stringLength(nameVar))
       end
     end
-    @assign slot = SLOT(
+    slot = SLOT(
       name(componentArg),
       SlotType.GENERIC,
       default,
@@ -2523,10 +2514,10 @@ function makeSlots(@nospecialize(inputs::List{<:InstNode}))::List{Slot}
   local slots::List{Slot} = nil
   local index::Int = 1
   for i in inputs
-    @assign slots = _cons(makeSlot(i, index), slots)
-    @assign index = index + 1
+    slots = _cons(makeSlot(i, index), slots)
+    index = index + 1
   end
-  @assign slots = listReverseInPlace(slots)
+  slots = listReverseInPlace(slots)
   return slots
 end
 

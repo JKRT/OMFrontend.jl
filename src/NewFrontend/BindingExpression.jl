@@ -3826,7 +3826,7 @@ one expression.
         end
       end
       CREF_EXPRESSION(__)  => begin
-        CREF_EXPRESSION(exp.ty, mapCref(exp.cref, func))
+        CREF_EXPRESSION(exp.ty, mapCref!(exp.cref, func))
       end
 
       ARRAY_EXPRESSION(__)  => begin
@@ -6936,18 +6936,19 @@ function isClassBinding(binding::Binding)
   return false
 end
 
-function addParent(@nospecialize(parent::InstNode),
-                   @nospecialize(binding::Binding))
+function addParent(parent::InstNode,
+                   binding::Binding)
   if ! (binding isa UNBOUND || binding isa RAW_BINDING)
     return binding
   end
 
-  local parentLst = _cons(parent, binding.parents)
+  local parentLst = Cons{InstNode}(parent, binding.parents)
   local newBinding = if binding isa UNBOUND
     UNBOUND(parentLst,
             binding.isEach,
             binding.info)
   elseif binding isa RAW_BINDING
+    #binding.parents = parentLst
     RAW_BINDING(binding.bindingExp,
                 binding.scope,
                 parentLst,

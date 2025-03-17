@@ -1017,16 +1017,12 @@ function modifyExtends(extendsNode::InstNode, scope::InstNode)
   ext_mod = fromElement(elem, nil, scope)
   ext_mod = merge(getModifier(extendsNode), ext_mod)
   if ! isBuiltin(cls)
-    #= Added by johti17 to mimic function inheritance =#
-    local func = function modifyExtends2(x; scope = extendsNode)
-      modifyExtends(x, scope)
-    end
-    mapExtends(cls_tree, @closure (x) -> func(x, scope = extendsNode))
-     () = begin
+    mapExtendsWithExtendsNode(cls_tree, extendsNode)
+    () = begin
       @match elem begin
         SCode.EXTENDS(__)  => begin
           #=  TODO: Lookup the base class and merge its modifier. =#
-          @match _cons(ext_node, _) = lookupBaseClassName(elem.baseClassPath, scope, elem.info)
+          ext_node = listHead(lookupBaseClassName(elem.baseClassPath, scope, elem.info))
           #=  Finding a different element than before expanding extends
           =#
           #=  (probably an inherited element) is an error.
@@ -1681,7 +1677,7 @@ function mergeComponentAttributes(outerAttr::Attributes, innerAttr::Attributes, 
   else
     cty = merge(outerAttr.connectorType, innerAttr.connectorType, node)
     par = mergeParallelism(outerAttr.parallelism, innerAttr.parallelism, node)
-     var = variabilityMin(outerAttr.variability, innerAttr.variability)
+    var = variabilityMin(outerAttr.variability, innerAttr.variability)
     if isFunction(parentRestriction)
       dir = innerAttr.direction
     else
@@ -1690,6 +1686,16 @@ function mergeComponentAttributes(outerAttr::Attributes, innerAttr::Attributes, 
     fin = outerAttr.isFinal || innerAttr.isFinal
     redecl = innerAttr.isRedeclare
     repl = innerAttr.isReplaceable
+    # outerAttr.connectorType = cty
+    # outerAttr.parallelism = par
+    # outerAttr.variability = var
+    # outerAttr.direction = dir
+    # outerAttr.innerOuter = innerAttr.innerOuter
+    # outerAttr.isFinal = fin
+    # outerAttr.isRedeclare = redecl
+    # outerAttr.isReplaceable = repl
+    # outerAttr.isStructuralMode = innerAttr.isStructuralMode
+    # attr = outerAttr
     attr = ATTRIBUTES(cty, par, var, dir, innerAttr.innerOuter, fin, redecl, repl,innerAttr.isStructuralMode #= TODO: VSS Unsure if this should propagate like this=#)
   end
   attr
@@ -2222,12 +2228,27 @@ function instBuiltinAttribute(attribute::MODIFIER_MODIFIER, node::InstNode)
   return outAttr
 end
 
-function instComponentExpressions(componentArg::InstNode)
+function instComponentExpressions(componentArg::InstNode)::Nothing
   local node::InstNode = resolveOuter(componentArg)
   local c::Component = component(node)
   local dims::Vector{Dimension}
   @match c begin
-    UNTYPED_COMPONENT(dimensions = dims, instantiated = false)  => begin
+    UNTYPED_COMPONENT(dimensions = dims, instantiated = false) where c.binding isa UNBOUND  => begin
+      c.binding = instBinding(c.binding)::UNBOUND
+      c.condition = instBinding(c.condition)
+      instExpressions(c.classInst, node)
+      for i in 1:arrayLength(dims)
+        @inbounds dims[i] = instDimension(dims[i], parent(node), c.info)
+      end
+      #=  This is to avoid instantiating the same component multiple times,
+      =#
+      #=  which can otherwise happen with duplicate components at this stage.
+      =#
+      c.instantiated = true
+      updateComponent!(c, node)
+    end
+
+    UNTYPED_COMPONENT(dimensions = dims, instantiated = false) => begin
       c.binding = instBinding(c.binding)
       c.condition = instBinding(c.condition)
       instExpressions(c.classInst, node)
@@ -2240,25 +2261,25 @@ function instComponentExpressions(componentArg::InstNode)
       =#
       c.instantiated = true
       updateComponent!(c, node)
-      ()
+      nothing
     end
 
     UNTYPED_COMPONENT(__)  => begin
-      ()
+      nothing
     end
 
     ENUM_LITERAL_COMPONENT(__)  => begin
-      ()
+      nothing
     end
 
     TYPE_ATTRIBUTE(modifier = MODIFIER_NOMOD(__))  => begin
-      ()
+      nothing
     end
 
     TYPE_ATTRIBUTE(__)  => begin
       c.modifier = instBuiltinAttribute(c.modifier, componentArg)
       updateComponent!(c, node)
-      ()
+      nothing
     end
     _  => begin
       #@error "Relaxed instantation for: " + name(componentArg)
@@ -2266,7 +2287,7 @@ function instComponentExpressions(componentArg::InstNode)
       fail()
     end
   end
-  return ()
+  return nothing
 end
 
 function instBinding(bindingVar::Binding)
@@ -2860,7 +2881,7 @@ function instConnectorCref(absynCref::Absyn.ComponentRef, scope::InstNode, info:
   local found_scope::InstNode
    (cref, found_scope) = lookupConnector(absynCref, scope, info)
   cref = instCrefSubscripts(cref, scope, info)
-  prefix = fromNodeList(scopeList(found_scope))
+  prefix = fromNodeList(scopeList!(found_scope))
   if ! isEmpty(prefix)
     cref = append(cref, prefix)
   end

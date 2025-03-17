@@ -75,7 +75,7 @@ mutable struct RAW_BINDING <: Binding
   info::SourceInfo
 end
 
-struct UNBOUND <: Binding
+mutable struct UNBOUND <: Binding
   parents::List{InstNode}
   isEach::Bool
   info::SourceInfo

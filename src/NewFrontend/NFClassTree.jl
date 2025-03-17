@@ -324,7 +324,7 @@ function applyLocalComponents(tree::CLASS_TREE_INSTANTIATED_TREE,
   for arg in componentNodes
     comp = component(arg)
     if ! isDefinition(comp)
-      checkRecursiveDefinition(classInstance(comp), comp_node, false)
+      checkRecursiveDefinition(classInstance(comp), arg, false)
       return
     end
     instComponent(
@@ -420,6 +420,17 @@ end
   end
   return
 end
+
+
+@noinline function mapExtendsWithExtendsNode(tree::ClassTree, extendsNode::InstNode)
+  local exts::Vector{InstNode} = getExtends(tree)
+  for i in 1:length(exts)
+    @inbounds res = exts[i]
+    @inbounds exts[i] = modifyExtends(res, extendsNode)
+  end
+  return
+end
+
 
 @noinline function mapExtends(tree::CLASS_TREE_INSTANTIATED_TREE, parent::Union{CLASS_NODE, COMPONENT_NODE})
   local exts::Vector{InstNode} = getExtends(tree::CLASS_TREE_INSTANTIATED_TREE)
@@ -541,9 +552,8 @@ function lookupElement(name::String, classTree::ClassTree)
   if entry == LookupTree.FAILURE
     return ENTRY_INFO(EMPTY_NODE(), false)
   end
-  res = resolveEntry(entry, classTree)
+  return resolveEntry(entry, classTree)
   #@info "Entry lookup complete"
-  return res
 end
 
 """

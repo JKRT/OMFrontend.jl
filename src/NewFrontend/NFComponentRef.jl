@@ -1,10 +1,11 @@
-const Origin = (() -> begin #= Enumeration =#
-  CREF = 1  #= From an Absyn cref. =#
-  SCOPE = 2  #= From prefixing the cref with its scope. =#
-  ITERATOR = 3  #= From an iterator. =#
-  () -> (CREF; SCOPE; ITERATOR)  #= From an iterator. =#
-end)()
 const OriginType = Int
+struct ORIGIN_STRUCT
+  CREF::Int64
+  SCOPE::Int64
+  ITERATOR::Int64
+end
+
+const Origin::ORIGIN_STRUCT = ORIGIN_STRUCT(1,2,3)
 
 abstract type NFComponentRef end
 
@@ -775,7 +776,8 @@ end
 """
 Alternate method to
 ```setSubscriptsList```
-but uses a vector instead
+but uses a vector instead.
+Note can not be made mutable, because then critical crefs will be overwritten(!)
 """
 function setSubscriptsListV(subscripts::Vector{Vector{Subscript}}
                             ,cref::ComponentRef)

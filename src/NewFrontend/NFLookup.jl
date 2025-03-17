@@ -18,9 +18,8 @@ end
 function lookupBaseClassName(name::Absyn.Path, scope::InstNode, info::SourceInfo)
   local nodes::List{InstNode}
   local state::LookupState
-  try
-     (nodes, state) = lookupNames(name, scope)
-  catch e
+  (nodes, state) = lookupNames(name, scope)
+  if state isa LOOKUP_STATE_ERROR
     Error.addSourceMessage(Error.LOOKUP_BASECLASS_ERROR, list(AbsynUtil.pathString(name), scopeName(scope)), info)
     throw(e)
   end
@@ -359,16 +358,15 @@ function lookupNames(name::Absyn.Path, scope::InstNode) ::Tuple{List{InstNode}, 
     @match name begin
       Absyn.IDENT(__)  => begin
         (node, state) = lookupFirstIdent(name.name, scope)
-        (list(node), state)
+        return (Cons{InstNode}(node, nil), state)
       end
       Absyn.QUALIFIED(__)  => begin
-         (node, state) = lookupFirstIdent(name.name, scope)
-
-        lookupLocalNames(name.path, node, list(node), state, refEqual(node, scope))
+        (node, state) = lookupFirstIdent(name.name, scope)
+        return lookupLocalNames(name.path, node, Cons{InstNode}(node, nil), state, refEqual(node, scope))
       end
 
       Absyn.FULLYQUALIFIED(__)  => begin
-        lookupNames(name.path, topScope(scope))
+        return lookupNames(name.path, topScope(scope))
       end
     end
   end
@@ -438,14 +436,14 @@ end
 
 """ #= Looks up a path in the given scope, without continuing the search in any
                  enclosing scopes if the path isn't found. =#"""
-function lookupLocalNames(name::Absyn.Path, scope::InstNode, nodes::List{<:InstNode}, state::LookupState, selfReference::Bool = false)
+function lookupLocalNames(name::Absyn.Path, scope::InstNode, nodes::List{InstNode}, state::LookupState, selfReference::Bool = false)
   local node::InstNode = scope
   if ! isClass(scope)
-    @assign state = LOOKUP_STATE_COMP_CLASS()
+    state = LOOKUP_STATE_COMP_CLASS()
     return (nodes, state)
   end
   if ! selfReference
-    @assign node = instPackage(node)
+    node = instPackage(node)
   end
    (nodes, state) = begin
     @match name begin

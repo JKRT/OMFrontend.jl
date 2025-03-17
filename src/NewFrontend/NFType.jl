@@ -47,7 +47,7 @@ struct TYPE_TUPLE  <: NFType
   names::Option{List{String}}
 end
 
-struct TYPE_ARRAY  <: NFType
+mutable struct TYPE_ARRAY  <: NFType
   elementType::M_Type
   dimensions::List{Dimension}
 end
@@ -927,7 +927,7 @@ type. Otherwise it just returns the given element type.
 """
 function setArrayElementType(arrayTy::M_Type, elementTy::NFType)::NFType
   local ty::NFType
-  @assign ty = begin
+ ty = begin
     @match arrayTy begin
       TYPE_ARRAY(__) => begin
         liftArrayLeftList(elementTy, arrayTy.dimensions)
@@ -1573,17 +1573,13 @@ end
   Adds an array dimension to a type on the left side, e.g.
   listArrayLeft(Real[2, 3], [4]) => Real[4, 2, 3].
 """
-function liftArrayLeft(ty::M_Type, dim::Dimension)::M_Type
-
-  @assign ty = begin
-    @match ty begin
-      TYPE_ARRAY(__) => begin
-        TYPE_ARRAY(ty.elementType, _cons(dim, ty.dimensions))
-      end
-      _ => begin
-        TYPE_ARRAY(ty, list(dim))
-      end
+function liftArrayLeft(ty::M_Type, dim::Dimension)::TYPE_ARRAY
+  @match ty begin
+    TYPE_ARRAY(__) => begin
+      return TYPE_ARRAY(ty.elementType, _cons(dim, ty.dimensions))
+    end
+    _ => begin
+      return TYPE_ARRAY(ty, list(dim))
     end
   end
-  return ty
 end

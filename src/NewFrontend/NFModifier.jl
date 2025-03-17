@@ -505,7 +505,7 @@ function addParent(parentNode::InstNode, mod::Modifier)
         #lmod = MODIFIER_MODIFIER(mod.name, mod.finalPrefix, mod.eachPrefix, modBinding, mod.subModifiers, mod.info)
         mod.binding = modBinding
         lmod = mod
-        map(lmod, (x, y) -> addParent_work(x, parentNode, y))
+        map(lmod, @closure (x, y) -> addParent_work(x, parentNode, y))
       end
       _ => begin
         mod

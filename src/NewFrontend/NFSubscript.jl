@@ -817,7 +817,7 @@ function mapExp(subscript::Subscript, func::MapFunc)::Subscript
     local e2::Expression
     @match subscript begin
       SUBSCRIPT_UNTYPED(exp = e1) => begin
-         e2 = map(e1, func)
+        e2 = map(e1, func)
         if referenceEq(e1, e2)
           subscript
         else
@@ -826,7 +826,7 @@ function mapExp(subscript::Subscript, func::MapFunc)::Subscript
       end
 
       SUBSCRIPT_INDEX(index = e1) => begin
-         e2 = map(e1, func)
+        e2 = map(e1, func)
         if referenceEq(e1, e2)
           subscript
         else

@@ -122,22 +122,22 @@ function setConnector(cty::Int)::Int
   return cty
 end
 
-""" #= Returns treu if the connector type has the connector, expandable, or
-     potentially present bits set, otherwise false. =#"""
+"""  Returns true if the connector type has the connector, expandable, or
+     potentially present bits set, otherwise false. """
 function isConnectorType(cty::Int)::Bool
   local isConnector::Bool
-  @assign isConnector = intBitAnd(cty, ConnectorType.CONNECTOR_MASK) > 0
+  isConnector = cty & ConnectorType.CONNECTOR_MASK > 0
   return isConnector
 end
 
 function isExpandable(cty::Int)::Bool
   local isExpandable::Bool
-  @assign isExpandable = intBitAnd(cty, ConnectorType.EXPANDABLE) > 0
+  isExpandable = intBitAnd(cty, ConnectorType.EXPANDABLE) > 0
   return isExpandable
 end
 
 function setExpandable(cty::Int)::Int
-  @assign cty = intBitOr(cty, ConnectorType.EXPANDABLE)
+  cty = intBitOr(cty, ConnectorType.EXPANDABLE)
   return cty
 end
 

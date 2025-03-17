@@ -2116,9 +2116,9 @@ function lookupFunction(
   #=  instead found a component (i.e. a functional parameter) we don't.
   =#
   is_class = isClass(node(functionRef))
-  prefix = fromNodeList(scopeList(
+  prefix = fromNodeList(scopeList!(
     found_scope,
-    includeRoot = is_class,
+    #=includeRoot=# is_class,
   ))
   functionRef = appendCref!(functionRef, prefix)
   return functionRef
@@ -2132,7 +2132,7 @@ function lookupFunctionSimple(functionName::String, scope::InstNode)::ComponentR
   local prefix::ComponentRef
    (functionRef, found_scope) =
     lookupFunctionNameSilent(Absyn.CREF_IDENT(functionName, nil), scope)
-  prefix = fromNodeList(scopeList(found_scope))
+  prefix = fromNodeList(scopeList!(found_scope))
   functionRef = appendCref!(functionRef, prefix)
   return functionRef
 end
@@ -2147,7 +2147,7 @@ function new(path::Absyn.Path, node::InstNode)::M_FUNCTION
   local attr::DAE.FunctionAttributes
   local status::FunctionStatusType
 
-   (inputs, outputs, locals) = collectParams(node)
+  (inputs, outputs, locals) = collectParams(node)
   @assign attr = makeAttributes(node, inputs, outputs)
   #=  Make sure builtin functions aren't added to the function tree.
   =#
@@ -2263,12 +2263,12 @@ end
 function checkParamTypes2(params::List{<:InstNode})
   local ty::M_Type
   return for p in params
-    @assign ty = getType(p)
+    ty = getType(p)
     if !isValidParamType(ty)
       Error.addSourceMessage(
         Error.INVALID_FUNCTION_VAR_TYPE,
-        list(Type.toString(ty), name(p)),
-        info(p),
+        list(toString(ty), name(p)),
+        InstNode_info(p),
       )
       fail()
     end

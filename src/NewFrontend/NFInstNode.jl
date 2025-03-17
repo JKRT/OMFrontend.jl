@@ -1342,7 +1342,7 @@ end
 
 """
     Iterative implementation of ```scopeList```
-    """
+"""
 function scopeList!(@nospecialize(node::InstNode), includeRoot::Bool = false, accumScopes::List{InstNode} = nil)
   local parent::InstNode
   if node isa CLASS_NODE
@@ -1466,6 +1466,7 @@ function definition(node::InstNode)
   return def
 end
 
+const CLASS_NODE_CACHE = Set{CLASS_NODE}()
 function setNodeType(@nospecialize(nodeType::InstNodeType),
                      @nospecialize(node::InstNode))
 
@@ -1476,13 +1477,14 @@ function setNodeType(@nospecialize(nodeType::InstNodeType),
                                 node.parent,
                                 nodeType)
   elseif node isa CLASS_NODE
-    CLASS_NODE{String, Int}(node.name,
-                            node.definition,
-                            node.visibility,
-                            node.cls,
-                            node.caches,
-                            node.parentScope,
-                            nodeType)
+    tmp = CLASS_NODE{String, Int}(node.name,
+                                  node.definition,
+                                  node.visibility,
+                                  node.cls,
+                                  node.caches,
+                                  node.parentScope,
+                                  nodeType)
+    tmp
   else
     node
   end
@@ -1504,15 +1506,19 @@ function nodeType(node::InstNode)
   nodeType
 end
 
+#= TODO: Investigate how to integrate these... =#
+const REPLACED_CLASS_CACHE = Set{CLASS_NODE}()
+const REPLACED_CLASS_PTR_CACHE = Set{Pointer}()
 function replaceClass(cls::Class, node::CLASS_NODE)
-  local classPtr::Pointer{Class} = P_Pointer.create(cls, Class)
-  replacedClass = CLASS_NODE{String, Int}(node.name,
-                                          node.definition,
-                                          node.visibility,
-                                          classPtr,
-                                          node.caches,
-                                          node.parentScope,
-                                          node.nodeType)
+  local classPtr::Pointer{Class} = Pointer{Class}(cls)
+  replacedClass =
+    CLASS_NODE{String, Int}(node.name,
+                            node.definition,
+                            node.visibility,
+                            classPtr,
+                            node.caches,
+                            node.parentScope,
+                            node.nodeType)
   return replacedClass
 end
 
@@ -1526,15 +1532,15 @@ Creates a new component that contains a pointer to the supplied component.
 """
 function replaceComponent(component::Component, node::InstNode)
   local replacedNode =  if node isa COMPONENT_NODE
-    local componentPointer = if ! (node.component in COMPONENT_PTR_CACHE)
+    local componentPointer::Pointer{Component} = if ! (node.component in COMPONENT_PTR_CACHE)
       local tmpPtr = Pointer{Component}(component)
       push!(COMPONENT_PTR_CACHE, tmpPtr)
-      tmpPtr
+      tmpPtr::Pointer{Component}
     else
-      node.component
+      node.component::Pointer{Component}
     end
     local tmp = if node in REPLACED_COMPONENT_NODE_CACHE
-      node.component = componentPointer
+      node.component = componentPointer::Pointer{Component}
       node
     else
       local tmp2 = COMPONENT_NODE{String, Int}(node.name,
@@ -1647,15 +1653,23 @@ function setOrphanParent(parent::InstNode, node::COMPONENT_NODE)
   end
 end
 
+const CLASS_NODE_PARENT_CACHE = Set{CLASS_NODE}()
 function setParent(@nospecialize(parent::InstNode),
                    node::CLASS_NODE)::CLASS_NODE
-  CLASS_NODE{String, Int}(node.name,
-                          node.definition,
-                          node.visibility,
-                          node.cls,
-                          node.caches,
-                          parent,
-                          node.nodeType)
+  if node in CLASS_NODE_PARENT_CACHE
+    node.parentScope = parent
+    node
+  else
+    local tmp = CLASS_NODE{String, Int}(node.name,
+                                        node.definition,
+                                        node.visibility,
+                                        node.cls,
+                                        node.caches,
+                                        parent,
+                                        node.nodeType)
+    push!(CLASS_NODE_PARENT_CACHE, tmp)
+    tmp
+  end
 end
 
 const COMPONENT_NODE_CACHE = Dict{String, InstNode}()
@@ -1667,6 +1681,10 @@ function resetComponentNodeCaches()
   Base.empty!(COMPONENT_NODE_CACHE)
   Base.empty!(COMPONENT_PTR_CACHE)
   Base.empty!(REPLACED_COMPONENT_NODE_CACHE)
+  Base.empty!(REPLACED_CLASS_PTR_CACHE)
+  Base.empty!(REPLACED_CLASS_CACHE)
+  Base.empty!(CLASS_NODE_PARENT_CACHE)
+  Base.empty!(CLASS_NODE_CACHE)
 end
 
 function setParent(parent::InstNode,

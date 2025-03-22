@@ -433,22 +433,21 @@ function toFlatString(cref::ComponentRef; inFunction = false)
   return str
 end
 
-function toString_impl(cref::ComponentRef, strl::List{<:String})
+function toString_impl(cref::ComponentRef, strl::List{String})
   strl = begin
     local str::String
     @match cref begin
       COMPONENT_REF_CREF(__) => begin
-         str =
-          name(cref.node) + toStringList(cref.subscripts)
-        toString_impl(cref.restCref, _cons(str, strl))
+        str = string(name(cref.node), toStringList(cref.subscripts))
+        toString_impl(cref.restCref, Cons{String}(str, strl))
       end
 
       COMPONENT_REF_WILD(__) => begin
-        _cons("_", strl)
+        Cons{String}("_", strl)
       end
 
       COMPONENT_REF_STRING(__) => begin
-        toString_impl(cref.restCref, _cons(cref.name, strl))
+        toString_impl(cref.restCref, Cons{String}(cref.name, strl))
       end
 
       _ => begin

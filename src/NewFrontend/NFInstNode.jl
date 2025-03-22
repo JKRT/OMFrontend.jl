@@ -83,20 +83,12 @@ mutable struct REF_NODE{T <: Int} <: InstNode
   index::T
 end
 
-mutable struct INNER_OUTER_NODE <: InstNode
+struct INNER_OUTER_NODE <: InstNode
   innerNode::InstNode
   outerNode::InstNode
 end
 
 mutable struct COMPONENT_NODE{T0 <: String, T1 <: Integer} <: InstNode
-  name::T0
-  visibility::T1
-  component::Pointer{Component}
-  parent #= The instance that this component is part of. =#::InstNode
-  nodeType::InstNodeType
-end
-
-struct BUILTIN_COMPONENT_NODE{T0 <: String, T1 <: Integer} <: InstNode
   name::T0
   visibility::T1
   component::Pointer{Component}
@@ -1530,14 +1522,14 @@ const REPLACED_COMPONENT_NODE_CACHE = Set{COMPONENT_NODE}()
 """
 Creates a new component that contains a pointer to the supplied component.
 """
-function replaceComponent(component::Component, node::InstNode)
+function replaceComponent(component::Component, node::COMPONENT_NODE)
   local replacedNode =  if node isa COMPONENT_NODE
     local componentPointer::Pointer{Component} = if ! (node.component in COMPONENT_PTR_CACHE)
       local tmpPtr = Pointer{Component}(component)
-      push!(COMPONENT_PTR_CACHE, tmpPtr)
+      #push!(COMPONENT_PTR_CACHE, tmpPtr)
       tmpPtr::Pointer{Component}
     else
-      node.component::Pointer{Component}
+      node.component.x = component #::Pointer{Component}
     end
     local tmp = if node in REPLACED_COMPONENT_NODE_CACHE
       node.component = componentPointer::Pointer{Component}
@@ -1548,7 +1540,7 @@ function replaceComponent(component::Component, node::InstNode)
                                                componentPointer,
                                                node.parent,
                                                node.nodeType)
-      push!(REPLACED_COMPONENT_NODE_CACHE,  tmp2)
+      #push!(REPLACED_COMPONENT_NODE_CACHE,  tmp2)
       tmp2
     end
     tmp
@@ -1667,12 +1659,12 @@ function setParent(@nospecialize(parent::InstNode),
                                         node.caches,
                                         parent,
                                         node.nodeType)
-    push!(CLASS_NODE_PARENT_CACHE, tmp)
+    #push!(CLASS_NODE_PARENT_CACHE, tmp)
     tmp
   end
 end
 
-const COMPONENT_NODE_CACHE = Dict{String, InstNode}()
+const COMPONENT_NODE_CACHE = Set{InstNode}()
 
 """
 Reset the component node cache.
@@ -1689,13 +1681,13 @@ end
 
 function setParent(parent::InstNode,
                    node::COMPONENT_NODE)::COMPONENT_NODE
-  if !(node.name in keys(COMPONENT_NODE_CACHE))
+  if !(node in COMPONENT_NODE_CACHE)
     outNode = COMPONENT_NODE{String, Int}(node.name,
                                           node.visibility,
                                           node.component,
                                           parent,
                                           node.nodeType)
-    COMPONENT_NODE_CACHE[node.name] = outNode
+    push!(COMPONENT_NODE_CACHE, outNode)
   else
     node.parent = parent
     outNode = node

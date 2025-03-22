@@ -451,13 +451,13 @@ function lookupLocalNames(name::Absyn.Path, scope::InstNode, nodes::List{InstNod
         @match ENTRY_INFO(node, _) = lookupLocalSimpleName(name.name, node)
         #@debug "Here we are!"
         state = next(node, state)
-        (_cons(node, nodes), state)
+        (Cons{InstNode}(node, nodes), state)
       end
 
       Absyn.QUALIFIED(__)  => begin
         @match ENTRY_INFO(node, _) = lookupLocalSimpleName(name.name, node)
         state = next(node, state)
-        lookupLocalNames(name.path, node, _cons(node, nodes), state)
+        lookupLocalNames(name.path, node, Cons{InstNode}(node, nodes), state)
       end
 
       _  => begin
@@ -701,7 +701,7 @@ end
 
 """
   Generates an inner element given an outer one, or returns the already
-generated inner element if one has already been generated.
+  generated inner element if one has already been generated.
 """
 function generateInner(outerNode::InstNode, topScope::InstNode)
   local innerNode::InstNode

@@ -306,11 +306,12 @@ function printFoundWrongTypeError(
   name_str = toString(name)
   found_str = lookupStateString(foundState)
   expected_str = lookupStateString(expectedState)
-  return Error.addSourceMessage(
+  Error.addSourceMessage(
     Error.LOOKUP_FOUND_WRONG_TYPE,
     list(name_str, expected_str, found_str),
     info,
   )
+  fail()
 end
 
 """ #= Returns the string representation of a LookupState, with translation. =#"""

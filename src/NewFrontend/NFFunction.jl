@@ -2120,7 +2120,7 @@ function lookupFunction(
     found_scope,
     #=includeRoot=# is_class,
   ))
-  functionRef = appendCref!(functionRef, prefix)
+  functionRef = append(functionRef, prefix)
   return functionRef
 end
 
@@ -2132,8 +2132,8 @@ function lookupFunctionSimple(functionName::String, scope::InstNode)::ComponentR
   local prefix::ComponentRef
    (functionRef, found_scope) =
     lookupFunctionNameSilent(Absyn.CREF_IDENT(functionName, nil), scope)
-  prefix = fromNodeList(scopeList!(found_scope))
-  functionRef = appendCref!(functionRef, prefix)
+  prefix = fromNodeList(scopeList(found_scope))
+  functionRef = append(functionRef, prefix)
   return functionRef
 end
 

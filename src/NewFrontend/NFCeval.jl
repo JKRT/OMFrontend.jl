@@ -1694,7 +1694,7 @@ function evalUnaryMinus(exp1::Expression)::Expression
       end
 
       ARRAY_EXPRESSION(__) => begin
-        @assign exp1.elements = list(evalUnaryMinus(e) for e in exp1.elements)
+        @assign exp1.elements = Expression[evalUnaryMinus(e) for e in exp1.elements]
         exp1
       end
 

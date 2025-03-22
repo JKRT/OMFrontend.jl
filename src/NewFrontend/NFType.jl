@@ -883,24 +883,20 @@ function copyDims(srcType::M_Type, dstType::M_Type)::M_Type
 end
 
 function arrayDims(ty::NFType)::List{Dimension}
-  local dims::List{Dimension}
-  @assign dims = begin
-    @match ty begin
-      TYPE_ARRAY(__) => begin
-        ty.dimensions
-      end
-      TYPE_FUNCTION(__) => begin
-        arrayDims(returnType(ty.fn))
-      end
-      TYPE_METABOXED(__) => begin
-        arrayDims(ty.ty)
-      end
-      _ => begin
-        nil
-      end
+  @match ty begin
+    TYPE_ARRAY(__) => begin
+      ty.dimensions
+    end
+    TYPE_FUNCTION(__) => begin
+      arrayDims(returnType(ty.fn))
+    end
+    TYPE_METABOXED(__) => begin
+      arrayDims(ty.ty)
+    end
+    _ => begin
+      nil
     end
   end
-  return dims
 end
 
 function elementType(ty::NFType)::NFType

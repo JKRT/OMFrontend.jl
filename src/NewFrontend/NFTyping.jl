@@ -468,10 +468,10 @@ function typeComponent(inComponent::InstNode, origin::ORIGIN_Type)::NFType
 end
 
 function checkComponentStreamAttribute(
-  cty::Int,
+  cty::Int8,
   ty::NFType,
   component::InstNode,
-)
+  )
   local ety::NFType
 
   return if isFlowOrStream(cty)
@@ -1640,8 +1640,8 @@ function typeBindingExp(
   If the binding has too few dimensions we can't unlift it, but matchBinding
   can report the error better so we silently ignore it here.
   =#
-  #outExp = BINDING_EXP(e, exp_ty, ty, parents, is_each)
-  outExp =  updateBindingExp!(exp, e, exp_ty, ty, parents, is_each)
+  outExp = BINDING_EXP(e, exp_ty, ty, parents, is_each)
+  #outExp =  updateBindingExp!(exp, e, exp_ty, ty, parents, is_each)
   return (outExp, ty, variability)
 end
 
@@ -2000,9 +2000,9 @@ function typeCref2(
           typeSubscripts(cref.subscripts, node_ty, cref, origin, info)
         @match (rest_cr, rest_var) = typeCref2(cref.restCref, origin, info, false)
         subsVariability = variabilityMax(subs_var, rest_var)
-        cref.subscripts = subs
-        cref.ty = node_ty
-        cref.restCref = rest_cr
+        @assign cref.subscripts = subs
+        @assign cref.ty = node_ty
+        @assign cref.restCref = rest_cr
         (
           cref,#COMPONENT_REF_CREF(cref.node, subs, node_ty, cref.origin, rest_cr),
           subsVariability,

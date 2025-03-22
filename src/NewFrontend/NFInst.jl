@@ -207,9 +207,11 @@ function instClassInProgramFM2(classPath::Absyn.Path, program::SCode.Program)::T
   #=
   In some cases  array variables remain after scalarization.
   This also seem to occur in the omc.
-  We readd these variables to the model
+  We readd these variables to the model.
+  (If Scalarize is set to false this function does nothing).
   =#
   InstUtil.restoreMissingArrayVariables!(flat_model)
+  InstUtil.adjustIncorrectVariablePaths!(flat_model)
   verify(flat_model)
   dumpFlatModel(flat_model, string(name, "_", "afterVerify"))
   #= TODO: Expand sliced crefs=#
@@ -1763,11 +1765,11 @@ end
 
 function mergeDerivedAttributes(outerAttr::Attributes, innerAttr::Attributes, node::InstNode) ::Attributes
   local attr::Attributes
-  local cty::Int#ConnectorType.TYPE
+  local cty::ConnectorType.TYPE
   local par::ParallelismType
   local var::VariabilityType
   local dir::DirectionType
-  local io::Int
+  local io::Int8
   local fin::Bool
   local redecl::Bool
   local repl#::Replaceable type conversion work with this change?
@@ -2517,12 +2519,12 @@ function instCrefComponent(cref::ComponentRef, node::InstNode, scope::InstNode, 
         #@info "slst 1"
         #local sLst = scopeList(scope)
         #@info "slst 2"
-        local sLst2 = scopeList!(scope)
+        local sLst2 = scopeList(scope)
         prefixed_cref = fromNodeList(sLst2)
         prefixed_cref = if isEmpty(prefixed_cref)
           cref
         else
-          appendCref!(cref, prefixed_cref)
+          append(cref, prefixed_cref)
         end
         CREF_EXPRESSION(TYPE_UNKNOWN(), prefixed_cref)
       end

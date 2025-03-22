@@ -4,24 +4,24 @@ struct RANGEITERATOR_INVALID_RANGE{T0 <: Expression} <: NFRangeIterator
   exp::T0
 end
 
-mutable struct RANGEITERATOR_ARRAY_RANGE <: NFRangeIterator
+struct RANGEITERATOR_ARRAY_RANGE <: NFRangeIterator
   values::List{Expression}
 end
 
-mutable struct RANGEITERATOR_REAL_RANGE{T0 <: AbstractFloat, T1 <: Integer} <: NFRangeIterator
+struct RANGEITERATOR_REAL_RANGE{T0 <: AbstractFloat, T1 <: Integer} <: NFRangeIterator
   start::T0
   stepsize::T0
   current::T1
   steps::T1
 end
 
-mutable struct RANGEITERATOR_INT_STEP_RANGE{T0 <: Integer} <: NFRangeIterator
+struct RANGEITERATOR_INT_STEP_RANGE{T0 <: Integer} <: NFRangeIterator
   current::T0
   stepsize::T0
   last::T0
 end
 
-mutable struct RANGEITERATOR_INT_RANGE{T0 <: Integer} <: NFRangeIterator
+struct RANGEITERATOR_INT_RANGE{T0 <: Integer} <: NFRangeIterator
   current::T0
   last::T0
 end
@@ -39,14 +39,12 @@ function fold(iterator::RangeIterator, func::FuncT, arg::ArgT) where {ArgT}
 end
 
 function map(iterator::RangeIterator, func::FuncT)
-  local lst::List = nil
-
+  local lst::List{Subscript} = nil
   local iter::RangeIterator = iterator
   local exp::Expression
-
   while hasNext(iter)
-     (iter, exp) = next(iter)
-    lst = _cons(func(exp), lst)
+    (iter, exp) = next(iter)
+    lst = Cons{Subscript}(func(exp), lst)
   end
   lst = listReverse(lst)
   return lst
@@ -109,13 +107,13 @@ function next(iterator::RangeIterator)::Tuple{RangeIterator, Expression}
     @match iterator begin
       RANGEITERATOR_INT_RANGE(__) => begin
         nextExp = INTEGER_EXPRESSION(iterator.current)
-        iterator.current = iterator.current + 1
+        @assign iterator.current = iterator.current + 1
         nextExp
       end
 
       RANGEITERATOR_INT_STEP_RANGE(__) => begin
         nextExp = INTEGER_EXPRESSION(iterator.current)
-        iterator.current = iterator.current + iterator.stepsize
+        @assign iterator.current = iterator.current + iterator.stepsize
         nextExp
       end
 
@@ -123,13 +121,13 @@ function next(iterator::RangeIterator)::Tuple{RangeIterator, Expression}
         nextExp = REAL_EXPRESSION(
           iterator.start + iterator.stepsize * iterator.current,
         )
-        iterator.current = iterator.current + 1
+        @assign iterator.current = iterator.current + 1
         nextExp
       end
 
       RANGEITERATOR_ARRAY_RANGE(__) => begin
         nextExp = listHead(iterator.values)
-        iterator.values = listRest(iterator.values)
+        @assign iterator.values = listRest(iterator.values)
         nextExp
       end
 

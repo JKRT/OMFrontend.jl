@@ -3,19 +3,19 @@ const Subscript = NFSubscript
 
 struct SUBSCRIPT_WHOLE <: NFSubscript end
 
-mutable struct SUBSCRIPT_EXPANDED_SLICE <: NFSubscript
+struct SUBSCRIPT_EXPANDED_SLICE <: NFSubscript
    indices::List{Subscript}
 end
 
-mutable struct SUBSCRIPT_SLICE{T <: Expression} <: NFSubscript
+struct SUBSCRIPT_SLICE{T <: Expression} <: NFSubscript
   slice::T
 end
 
-mutable struct SUBSCRIPT_INDEX{T <: Expression} <: NFSubscript
+struct SUBSCRIPT_INDEX{T <: Expression} <: NFSubscript
   index::T
 end
 
-mutable struct SUBSCRIPT_UNTYPED{T <: Expression} <: NFSubscript
+struct SUBSCRIPT_UNTYPED{T <: Expression} <: NFSubscript
   exp::T
 end
 
@@ -24,12 +24,12 @@ mutable struct SUBSCRIPT_RAW_SUBSCRIPT <: NFSubscript
 end
 
 
-mutable struct SUBSCRIPT_SPLIT_INDEX <: NFSubscript
+struct SUBSCRIPT_SPLIT_INDEX <: NFSubscript
   node:: InstNode
   dimIndex::Int
 end
 
-mutable struct SUBSCRIPT_SPLIT_PROXY <: NFSubscript
+struct SUBSCRIPT_SPLIT_PROXY <: NFSubscript
   origin::InstNode
   parent::InstNode
 end
@@ -279,18 +279,18 @@ function expandList(
   local rest_dims::List{Dimension} = dimensions
   local sub::Subscript
   for s in subscripts
-    @match _cons(dim, rest_dims) = rest_dims
-    (sub, _) = expand(s, dim)
-    outSubscripts = _cons(sub, outSubscripts)
+    @match Cons{Dimension}(dim, rest_dims) = rest_dims
+    @match (sub, _) = expand(s, dim)
+    outSubscripts = Cons{Subscript}(sub, outSubscripts)
   end
   for d in rest_dims
     sub = SUBSCRIPT_EXPANDED_SLICE(map(
       fromDim(d),
       makeIndex,
     ))
-    outSubscripts = _cons(sub, outSubscripts)
+    outSubscripts = Cons{Subscript}(sub, outSubscripts)
   end
-  outSubscripts = listReverse(outSubscripts)
+  outSubscripts = listReverseInPlace(outSubscripts)
   return outSubscripts
 end
 

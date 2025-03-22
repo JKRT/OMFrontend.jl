@@ -3304,7 +3304,7 @@ function mapCrefShallow(cref::ComponentRef, @nospecialize(func::Function)) ::Com
     @match cref begin
       COMPONENT_REF_CREF(origin = Origin.CREF)  => begin
         subs = list(mapShallowExp(s, func) for s in cref.subscripts)
-        rest = mapCref!(cref.restCref, func)
+        rest = mapCref(cref.restCref, func)
         COMPONENT_REF_CREF(cref.node, subs, cref.ty, cref.origin, rest)
       end
 
@@ -3325,10 +3325,10 @@ function mapCrefShallow!(cref::ComponentRef, @nospecialize(func::Function)) ::Co
       COMPONENT_REF_CREF(origin = Origin.CREF)  => begin
         subs = list(mapShallowExp(s, func) for s in cref.subscripts)
         rest = mapCref!(cref.restCref, func)
-        cref.subscripts = subs
-        cref.restCref = rest
-        #COMPONENT_REF_CREF(cref.node, subs, cref.ty, cref.origin, rest)
-        cref
+        #cref.subscripts = subs
+        #cref.restCref = rest
+        COMPONENT_REF_CREF(cref.node, subs, cref.ty, cref.origin, rest)
+        #cref
       end
       _  => begin
         cref
@@ -3406,7 +3406,7 @@ function mapShallow(@nospecialize(exp::Expression), func::Function)
       end
 
       CREF_EXPRESSION(__)  => begin
-        mapCrefShallow!(exp.cref, func)
+        mapCrefShallow(exp.cref, func)
         #CREF_EXPRESSION(exp.ty, )
         exp
       end
@@ -3826,7 +3826,7 @@ one expression.
         end
       end
       CREF_EXPRESSION(__)  => begin
-        CREF_EXPRESSION(exp.ty, mapCref!(exp.cref, func))
+        CREF_EXPRESSION(exp.ty, mapCref(exp.cref, func))
       end
 
       ARRAY_EXPRESSION(__)  => begin
@@ -4552,7 +4552,7 @@ function toFlatString(exp::BINDING_EXP; inFunction = false)
   toFlatString(exp.exp; inFunction = inFunction)
 end
 
-@nospecializeinfer function toFlatString(@nospecialize(exp::Expression); inFunction = false)
+@nospecializeinfer function toFlatString(exp::Expression; inFunction = false)
   local str::String
   local t::M_Type
   local clk::ClockKind
@@ -4583,6 +4583,13 @@ end
       end
 
       CREF_EXPRESSION(__)  => begin
+        # #@info "cref expr to string..."
+        # res = toFlatString(exp.cref; inFunction = inFunction)
+        # #@info res
+        # if Base.contains(res, "defaultWidthFraction")
+        #   @info "It contained it..." res toString(exp.cref)
+        #   dump(exp.cref; maxdepth=3)
+        # end
         toFlatString(exp.cref; inFunction = inFunction)
       end
 
@@ -4745,7 +4752,7 @@ end
   str
 end
 
-function toString(exp::Expression)
+function toString(@nospecialize(exp::Expression))
   local str::String
   local t::M_Type
   local clk::ClockKind
@@ -5030,11 +5037,11 @@ function arrayFromVectorImpl(inExps::Vector{Expression},
 end
 
 function replaceIterator2(exp::Expression, iterator::InstNode, iteratorValue::Expression) ::Expression
-  exp = begin
+  newExp = begin
     local node::InstNode
     @match exp begin
-      CREF_EXPRESSION(cref = COMPONENT_REF_CREF(node = node))  => begin
-        if refEqual(iterator, node)
+      CREF_EXPRESSION(__)  where {exp.cref isa COMPONENT_REF_CREF}=> begin
+        if nameEqual(iterator, exp.cref.node)
           iteratorValue
         else
           exp
@@ -5045,13 +5052,16 @@ function replaceIterator2(exp::Expression, iterator::InstNode, iteratorValue::Ex
       end
     end
   end
-  exp
+  newExp
 end
 
-function replaceIterator(@nospecialize(exp::Expression),
-                         @nospecialize(iterator::InstNode),
-                         @nospecialize(iteratorValue::Expression))
-  map(exp, (x) -> replaceIterator2(x,  iterator, iteratorValue))
+function replaceIterator(exp::Expression,
+                         iterator::InstNode,
+                         iteratorValue::Expression)
+  local expExp = exp
+  res = map(expExp, (x) -> replaceIterator2(x,  iterator, iteratorValue))
+  #@info toString(expExp)
+  return res
 end
 
 function makeSubscriptedExp(subscripts::List{<:Subscript}, exp::Expression) ::Expression

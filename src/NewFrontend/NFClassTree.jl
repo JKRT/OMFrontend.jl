@@ -865,10 +865,10 @@ end
        case, so setting the instance to an empty node is interpreted by this
        function to mean that the instance should be set to the cloned clsNode. =#"""
 function instantiate(
-  clsNode::CLS_NODE_TYPE,
+  clsNode::CLASS_NODE,
   instance::InstNode,
   scope::InstNode = EMPTY_NODE(),
-  )::Tuple{CLS_NODE_TYPE, InstNode, Int, Int} where {CLS_NODE_TYPE}
+  )::Tuple{CLASS_NODE, InstNode, Int, Int} #where {CLS_NODE}
   local compCount::Int = 0
   local classCount::Int = 0
   local cls::Class
@@ -934,7 +934,7 @@ function instantiate(
       compCount = arrayLength(old_comps) - arrayLength(exts)
       #=  Make a new extends array, and recursively instantiate the extends nodes.
       =#
-      exts = arrayCopy(exts)
+      exts = copy(exts)
       for i = 1:arrayLength(exts)
         node = exts[i]
         @match BASE_CLASS(definition = ext_def) = nodeType(node)
@@ -1618,8 +1618,8 @@ end
 
 function enumerateDuplicates4(
   entry::LookupTree.Entry,
-  classes::List{<:Int},
-  components::List{<:Int},
+  classes::List{Int},
+  components::List{Int},
 )::Tuple{List{Int}, List{Int}}
 
   () = begin
@@ -1631,7 +1631,7 @@ function enumerateDuplicates4(
       end
 
       LookupTree.COMPONENT(__) => begin
-        components = _cons(entry.index, components)
+        components = Cons{Int}(entry.index, components)
         ()
       end
     end
@@ -1641,8 +1641,8 @@ end
 
 function enumerateDuplicates3(
   entry::DuplicateTree.Entry,
-  classes::List{<:Int},
-  components::List{<:Int},
+  classes::List{Int},
+  components::List{Int},
 )::Tuple{List{Int}, List{Int}}
 
   (classes, components) = enumerateDuplicates4(entry.entry, classes, components)
@@ -1655,8 +1655,8 @@ end
 function enumerateDuplicates2(
   name::String,
   entry::DuplicateTree.Entry,
-  classes::List{<:Int},
-  components::List{<:Int},
+  classes::List{Int},
+  components::List{Int},
 )::Tuple{List{Int}, List{Int}}
 
   for c in entry.children

@@ -8,8 +8,8 @@
       end
 
       ARRAY_EXPRESSION(__) => begin
-        expElements = exp.elements #Expression[simplify(e) for e in exp.elements]
-        Base.map!(simplify, expElements, expElements)
+        expElements = Expression[simplify(e) for e in exp.elements]
+        #Base.map!(simplify, expElements, expElements)
         ARRAY_EXPRESSION(exp.ty, expElements, exp.literal)
       end
 

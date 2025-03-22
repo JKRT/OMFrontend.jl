@@ -962,12 +962,13 @@ function expandCref4(
   arrayExp = begin
     @match subs begin
       nil() => begin
-        expandCref3(restSubs, cref, crefType, _cons(listReverse(comb), accum))
+        expandCref3(restSubs, cref, crefType,
+                    Cons{List{Subscript}}(listReverseInPlace(comb), accum))
       end
 
       SUBSCRIPT_EXPANDED_SLICE(indices = slice) <| rest => begin
         expl = Expression[
-          expandCref4(rest, _cons(idx, comb), accum, restSubs, cref, crefType)
+          expandCref4(rest, Cons{Subscript}(idx, comb), accum, restSubs, cref, crefType)
           for idx in slice
         ]
         arr_ty = liftArrayLeft(
@@ -979,7 +980,7 @@ function expandCref4(
       _ => begin
         expandCref4(
           listRest(subs),
-          _cons(listHead(subs), comb),
+          Cons{Subscript}(listHead(subs), comb),
           accum,
           restSubs,
           cref,
@@ -1044,7 +1045,7 @@ function expandCref2(
         if listEmpty(cr_subs) && !listEmpty(dims)
           nil
         else
-          expandCref2(cref.restCref, _cons(cr_subs, subs))
+          expandCref2(cref.restCref, Cons{List{Subscript}}(cr_subs, subs))
         end
       end
       _ => begin
@@ -1069,19 +1070,18 @@ function expandCref(crefExp::Expression)::Tuple{Expression, Bool}
           arrayExp = makeEmptyArray(crefExp.ty)
           expanded = true
         elseif hasKnownSize(crefExp.ty)
-          subs = expandCref2(crefExp.cref)
-          arrayExp = expandCref3(subs,
-                                 crefExp.cref,
-                                 arrayElementType(crefExp.ty))
-          expanded = true
+          return(expandCref3(expandCref2(crefExp.cref),
+                             crefExp.cref,
+                             arrayElementType(crefExp.ty)),
+                 true)
         else
-          arrayExp = crefExp
-          expanded = false
+
+          return (crefExp, false)
         end
         (arrayExp, expanded)
       end
       _ => begin
-        (crefExp, false)
+        return (crefExp, false)
       end
     end
   end
@@ -1109,7 +1109,7 @@ function expandList(
       outExpl = expl
       return (outExpl, expanded)
     end
-    outExpl = _cons(exp, outExpl)
+    outExpl = Cons{Expression}(exp, outExpl)
   end
   outExpl = listReverseInPlace(outExpl)
   return (outExpl, expanded)

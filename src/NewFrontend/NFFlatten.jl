@@ -1203,7 +1203,8 @@ function flattenEquation(
       end
       EQUATION_FOR(__) => begin
         eql = if Flags.isSet(Flags.NF_SCALARIZE)
-           unrollForLoop(eq, prefix, inEquations)
+          #splitForLoop(eq, prefix, inEquations)
+          unrollForLoop(eq, prefix, inEquations)
         else
           splitForLoop(eq, prefix, inEquations)
         end
@@ -1405,12 +1406,17 @@ function unrollForLoop(
   range_iter = RangeIterator_fromExp(range)
   while hasNext(range_iter)
     (range_iter, val) = next(range_iter)
-    unrolled_body = mapExpList(
-      body,
-      (expArg) -> replaceIterator(expArg, iter, val),
-    )
+    #=
+    Unroll.
+    Note that this function will call mapExp for several elements in the compiler(!)
+    =#
+    unrolled_body =
+      mapExpList(
+        body,
+        (expArg) -> replaceIterator(expArg, iter, val),
+      )
     unrolled_body = flattenEquations(unrolled_body, prefix)
-    equations = vcat(unrolled_body, equations)
+    equations = append!(equations, unrolled_body)
   end
   return equations
 end
@@ -1418,7 +1424,7 @@ end
 function splitForLoop(
   forLoop::Equation,
   prefix::ComponentRef,
-  equations::Vector{<:Equation},
+  equations::Vector{Equation},
   )::Vector{Equation}
   local iter::InstNode
   local range::Option{Expression}
@@ -1428,45 +1434,43 @@ function splitForLoop(
   local src::DAE.ElementSource
   @match EQUATION_FOR(iter, range, body, src) = forLoop
   (connects, non_connects) = splitForLoop2(body)
-  if !listEmpty(connects)
+  if !isempty(connects)
     equations = unrollForLoop(EQUATION_FOR(iter, range, connects, src), prefix, equations)
   end
-  if !listEmpty(non_connects)
-    equations = _cons(EQUATION_FOR(iter, range, non_connects, src), equations)
+  if !isempty(non_connects)
+    equations = push!(equations, EQUATION_FOR(iter, range, non_connects, src))
   end
   return equations
 end
 
-function splitForLoop2(forBody::List{<:Equation})::Tuple{Vector{Equation}, Vector{Equation}}
-  local nonConnects::Vector{Equation} = nil
-  local connects::Vector{Equation} = nil
+function splitForLoop2(forBody::Vector{Equation})::Tuple{Vector{Equation}, Vector{Equation}}
+  local nonConnects::Vector{Equation} = Equation[]
+  local connects::Vector{Equation} =  Equation[]
   local conns::Vector{Equation}
   local nconns::Vector{Equation}
   for eq in forBody
     () = begin
       @match eq begin
         EQUATION_CONNECT(__) => begin
-          connects = _cons(eq, connects)
+          connects = push!(connects, eq)
           ()
         end
         EQUATION_FOR(__) => begin
           (conns, nconns) = splitForLoop2(eq.body)
-          if !listEmpty(conns)
-            connects = _cons(
-              EQUATION_FOR(eq.iterator, eq.range, conns, eq.source),
-              connects,
-            )
+          if !isempty(conns)
+            connects = push!(connects,
+                             EQUATION_FOR(eq.iterator, eq.range, conns, eq.source),
+                             )
           end
-          if !listEmpty(nconns)
-            nonConnects = _cons(
-              EQUATION_FOR(eq.iterator, eq.range, nconns, eq.source),
-              nonConnects,
-            )
+          if !isempty(nconns)
+            nonConnects = push!(nonConnects,
+                                EQUATION_FOR(eq.iterator, eq.range, nconns, eq.source),
+                                )
           end
           ()
         end
         _ => begin
-          nonConnects = _cons(eq, nonConnects)
+          nonConnects = push!(nonConnects, eq)
           ()
         end
       end

@@ -57,7 +57,7 @@ function valueStr(inValue)
 end
 
 keyCompare = (inKey1::InstNode, inKey2::InstNode) -> begin
-  refCompare(inKey1, inKey2)
+  stringCompare(toString(inKey1), toString(inKey2))
 end
 
 @exportAll()

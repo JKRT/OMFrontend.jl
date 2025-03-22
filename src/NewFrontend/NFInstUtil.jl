@@ -63,4 +63,15 @@ function restoreMissingArrayVariables!(flatModel::FlatModel)
     #append!(flatModel.variables, newVars)
    end
 end
+
+function adjustIncorrectVariablePaths!(flat_model)
+  #= Get all variables =#
+  local variables = flat_model.variables
+  #=
+  Get all component references in the model.
+  =#
+
+end
+
+
 end #= InstUtil =#

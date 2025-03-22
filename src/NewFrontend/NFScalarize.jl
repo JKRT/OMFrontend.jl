@@ -236,7 +236,6 @@ function scalarizeEquation(@nospecialize(eq::Equation), equations::Vector{Equati
 
         local lhs = eq.lhs
       if hasArrayCall(lhs) || hasArrayCall(rhs)
-        # println("Pushing array eq " * toString(EQUATION_ARRAY_EQUALITY(lhs, rhs, ty, src)))
         equations =
           push!(equations, EQUATION_ARRAY_EQUALITY(lhs, rhs, ty, src))
       else
@@ -273,10 +272,9 @@ function scalarizeEquation(@nospecialize(eq::Equation), equations::Vector{Equati
         src) where{isArray(ty) && (isArray(eq.rhs) || isArray(eq.lhs))} => begin
           local lhs = eq.lhs
           if hasArrayCall(lhs) || hasArrayCall(rhs)
-            #println("Pushing array eq " * toString(EQUATION_ARRAY_EQUALITY(lhs, rhs, ty, src)))
+            @info "Ignoring...." toString(rhs)
             equations = push!(equations, EQUATION_ARRAY_EQUALITY(lhs, rhs, ty, src))
           else
-            #println("BEFORE " * toString(eq))
             lhs_iter = fromExpToExpressionIterator(lhs)
             rhs_iter = fromExpToExpressionIterator(rhs)
             ty = arrayElementType(ty)
@@ -302,10 +300,17 @@ function scalarizeEquation(@nospecialize(eq::Equation), equations::Vector{Equati
 
         end
 
-    EQUATION_ARRAY_EQUALITY(__) => begin
-      local aeq = EQUATION_ARRAY_EQUALITY(eq.lhs, eq.rhs, eq.ty, eq.source)
-      push!(equations, aeq)
-    end
+
+      EQUATION_ARRAY_EQUALITY(CREF_EXPRESSION(__), CALL_EXPRESSION(call), TYPE_ARRAY(__))  where {call isa TYPED_ARRAY_CONSTRUCTOR}=> begin
+        local newExp = tryEvalExp(eq.rhs)
+        local aeq = EQUATION_ARRAY_EQUALITY(eq.lhs, newExp, eq.ty, eq.source)
+        push!(equations, aeq)
+      end
+
+      EQUATION_ARRAY_EQUALITY(__) => begin
+        local aeq = EQUATION_ARRAY_EQUALITY(eq.lhs, eq.rhs, eq.ty, eq.source)
+        push!(equations, aeq)
+      end
 
       EQUATION_CONNECT(__) => begin
         equations

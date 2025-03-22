@@ -8,11 +8,11 @@ abstract type Attributes end
   The default attribute is using the immutable struct below.
 """
 mutable struct ATTRIBUTES <: Attributes
-  connectorType::Int
-  parallelism::Int
-  variability::Int
-  direction::Int
-  innerOuter::Int
+  connectorType::Int8
+  parallelism::Int8
+  variability::Int8
+  direction::Int8
+  innerOuter::Int8
   isFinal::Bool
   isRedeclare::Bool
   isReplaceable::Replaceable
@@ -22,11 +22,11 @@ end
 #= Investigate how we can make the attributes mutable and the immutable mutable=#
 
 struct IMMUTABLE_ATTRIBUTES <: Attributes
-  connectorType::Int
-  parallelism::Int
-  variability::Int
-  direction::Int
-  innerOuter::Int
+  connectorType::Int8
+  parallelism::Int8
+  variability::Int8
+  direction::Int8
+  innerOuter::Int8
   isFinal::Bool
   isRedeclare::Bool
   isReplaceable::Replaceable
@@ -600,7 +600,7 @@ function isConst(component::Component)
   return isConst
 end
 
-function setVariability(variability::Int, component::Component)
+function setVariability(variability::VariabilityType, component::Component)
     local attr::Attributes
   @match component begin
     UNTYPED_COMPONENT(attributes = attr) || TYPED_COMPONENT(attributes = attr) => begin

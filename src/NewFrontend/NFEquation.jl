@@ -630,11 +630,12 @@ function mapExp(@nospecialize(eq::Equation), func::MapExpFn)
       EQUATION_EQUALITY(__) => begin
         e1 = func(eq.lhs)
         e2 = func(eq.rhs)
-        if referenceEq(e1, eq.lhs) && referenceEq(e2, eq.rhs)
+        res = if referenceEq(e1, eq.lhs) && referenceEq(e2, eq.rhs)
           eq
         else
           EQUATION_EQUALITY(e1, e2, eq.ty, eq.source)
         end
+        res
       end
 
       EQUATION_ARRAY_EQUALITY(__) => begin
@@ -657,13 +658,11 @@ function mapExp(@nospecialize(eq::Equation), func::MapExpFn)
         end
       end
 
-       EQUATION_FOR(__) => begin
-         #@assign eq.body = Equation[mapExp(e, func) for e in eq.body]
-         for (i, e) in enumerate(eq.body)
-           @inbounds eq.body[i] = mapExp(e, func)
-         end
-         @assign eq.range = Util.applyOption(eq.range, func)
-        eq
+      EQUATION_FOR(__) => begin
+        #= NOTE needs to create a new element =#
+         eqBody = Equation[mapExp(e, func) for e in eq.body]
+         eqRange = Util.applyOption(eq.range, func)
+         EQUATION_FOR(eq.iterator, eqRange, eqBody, eq.source)
       end
 
       EQUATION_IF(__) || EQUATION_WHEN(__) => begin
@@ -738,6 +737,7 @@ function mapExpList(eql::Vector{Equation}, func::MapExpFn)
   local eqV = Equation[mapExp(eq, func) for eq in eql]
   return eqV
 end
+
 
 """
   Map a list of equations with a least one element

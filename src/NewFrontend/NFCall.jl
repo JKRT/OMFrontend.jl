@@ -701,7 +701,7 @@ function compare(call1::Call, call2::Call)::Int
     end
   end
   if comp == 0
-     comp = compareList(arguments(call1), arguments(call2))
+    comp = compareVector(arguments(call1), arguments(call2))
   end
   return comp
 end
@@ -1652,9 +1652,9 @@ function typeArrayConstructor(
           end
           dims = listAppend(arrayDims(iter_ty), dims)
           variability = variabilityMax(variability, iter_var)
-          iters = _cons((iter, range), iters)
+          iters = Cons{Tuple{InstNode, Expression}}((iter, range), iters)
         end
-        iters = listReverseInPlace(iters)
+        MetaModelica.Dangerous.listReverseInPlace2(iters)
         #=  ExpOrigin.FOR is used here as a marker that this expression may contain iterators.
         =#
         next_origin = intBitOr(next_origin, ORIGIN_FOR)

@@ -286,7 +286,7 @@ function makeCatExp(n::Int, args::Vector{Expression}, tys::Vector{M_Type}, varia
   =#
   for (i,arg) in enumerate(args)
     ty = tys2[i]
-    dimsLst = _cons(arrayDims(ty), dimsLst)
+    dimsLst = Cons{List{Dimension}}(arrayDims(ty), dimsLst)
     if resTy isa TYPE_UNKNOWN
       resTy = arrayElementType(ty)
     else

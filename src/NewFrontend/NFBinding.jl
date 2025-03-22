@@ -29,7 +29,7 @@
 *
 =#
 
-const VariabilityType = Int
+const VariabilityType = Int8
 
 @UniontypeDecl Binding
 

@@ -51,6 +51,7 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
     Error.clearMessages()
     #=TODO: Add a @static flag later to supress this message. =#
     println("Internal stack trace:")
+    resetComponentNodeCaches()
     throw(e)
   else
     print(Error.printMessagesStr(;
@@ -61,6 +62,7 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
                                  printErrors = false))
     Error.clearMessages()
   end
+  resetComponentNodeCaches()
   return (flat_model, funcs, inst_cls)
 end
 

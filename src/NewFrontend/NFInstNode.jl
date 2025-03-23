@@ -1517,37 +1517,20 @@ end
 
 replaceClass(cls::Class, node::InstNode) = node
 
-const COMPONENT_PTR_CACHE = Set{Pointer}()
-const REPLACED_COMPONENT_NODE_CACHE = Set{COMPONENT_NODE}()
+const COMPONENT_PTR_CACHE = IdDict{Component, Pointer}()
+const REPLACED_COMPONENT_NODE_CACHE = IdSet{COMPONENT_NODE}()
+
 """
 Creates a new component that contains a pointer to the supplied component.
 """
 function replaceComponent(component::Component, node::COMPONENT_NODE)
-  local replacedNode =  if node isa COMPONENT_NODE
-    local componentPointer::Pointer{Component} = if ! (node.component in COMPONENT_PTR_CACHE)
-      local tmpPtr = Pointer{Component}(component)
-      #push!(COMPONENT_PTR_CACHE, tmpPtr)
-      tmpPtr::Pointer{Component}
-    else
-      node.component.x = component #::Pointer{Component}
-    end
-    local tmp = if node in REPLACED_COMPONENT_NODE_CACHE
-      node.component = componentPointer::Pointer{Component}
-      node
-    else
-      local tmp2 = COMPONENT_NODE{String, Int}(node.name,
-                                               node.visibility,
-                                               componentPointer,
-                                               node.parent,
-                                               node.nodeType)
-      #push!(REPLACED_COMPONENT_NODE_CACHE,  tmp2)
-      tmp2
-    end
-    tmp
-  else
-    node
-  end
-  return replacedNode
+  local componentPointer = Pointer{Component}(component)
+  node = COMPONENT_NODE{String, Int}(node.name,
+                                     node.visibility,
+                                     componentPointer,
+                                     node.parent,
+                                     node.nodeType)
+  return node
 end
 
 function updateComponent!(component::Component, node::InstNode)
@@ -1649,7 +1632,9 @@ const CLASS_NODE_PARENT_CACHE = Set{CLASS_NODE}()
 function setParent(@nospecialize(parent::InstNode),
                    node::CLASS_NODE)::CLASS_NODE
   if node in CLASS_NODE_PARENT_CACHE
-    node.parentScope = parent
+    if node.parentScope !== parent
+      node.parentScope = parent
+    end
     node
   else
     local tmp = CLASS_NODE{String, Int}(node.name,
@@ -1659,12 +1644,12 @@ function setParent(@nospecialize(parent::InstNode),
                                         node.caches,
                                         parent,
                                         node.nodeType)
-    #push!(CLASS_NODE_PARENT_CACHE, tmp)
+    push!(CLASS_NODE_PARENT_CACHE, tmp)
     tmp
   end
 end
 
-const COMPONENT_NODE_CACHE = Set{InstNode}()
+const COMPONENT_NODE_CACHE = IdSet{InstNode}()
 
 """
 Reset the component node cache.
@@ -1681,18 +1666,14 @@ end
 
 function setParent(parent::InstNode,
                    node::COMPONENT_NODE)::COMPONENT_NODE
-  if !(node in COMPONENT_NODE_CACHE)
-    outNode = COMPONENT_NODE{String, Int}(node.name,
-                                          node.visibility,
-                                          node.component,
-                                          parent,
-                                          node.nodeType)
-    push!(COMPONENT_NODE_CACHE, outNode)
-  else
-    node.parent = parent
-    outNode = node
+  if parent !== node.parent
+    return COMPONENT_NODE{String, Int}(node.name,
+                                       node.visibility,
+                                       node.component,
+                                       parent,
+                                       node.nodeType)
   end
-  return outNode
+  return node
 end
 
 function setParent(@nospecialize(parent::InstNode),

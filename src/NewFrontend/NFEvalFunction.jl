@@ -41,6 +41,7 @@ import ..Frontend.NFExpression
 import ..Frontend.InstNode
 import ..Frontend.refCompare
 import ..Frontend.toString
+import ..Frontend.Util
 
 const Expression = NFExpression
 const Key = InstNode
@@ -57,7 +58,7 @@ function valueStr(inValue)
 end
 
 keyCompare = (inKey1::InstNode, inKey2::InstNode) -> begin
-  stringCompare(toString(inKey1), toString(inKey2))
+  refCompare(inKey1, inKey2)
 end
 
 @exportAll()

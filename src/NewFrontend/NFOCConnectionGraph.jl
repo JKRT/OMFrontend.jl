@@ -859,7 +859,7 @@ function findResultGraph(inGraph::NFOCConnectionGraph, modelNameQualified::Strin
         if Flags.isSet(Flags.CGRAPH)
           print("Ordered Potential Roots: " + stringDelimitList(ListUtil.map(orderedPotentialRoots, printPotentialRootTuple), ", ") + "\\n")
         end
-        (table, connected, broken) = addConnectionsJJ(table, connections)
+        (table, connected, broken) = addConnections(table, connections)
         @assign dummyRoot = NFBuiltin.TIME_CREF
          (table, finalRoots) = addPotentialRootsToTable(table, orderedPotentialRoots, definiteRoots, dummyRoot)
         @assign brokenConnectsViaGraphViz = generateGraphViz(modelNameQualified, definiteRoots, potentialRoots, uniqueRoots, branches, connections, finalRoots, broken)

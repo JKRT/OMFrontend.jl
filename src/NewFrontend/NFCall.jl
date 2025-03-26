@@ -1654,7 +1654,7 @@ function typeArrayConstructor(
           variability = variabilityMax(variability, iter_var)
           iters = Cons{Tuple{InstNode, Expression}}((iter, range), iters)
         end
-        MetaModelica.Dangerous.listReverseInPlace2(iters)
+        iters = listReverseInPlace(iters)
         #=  ExpOrigin.FOR is used here as a marker that this expression may contain iterators.
         =#
         next_origin = intBitOr(next_origin, ORIGIN_FOR)

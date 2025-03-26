@@ -1254,7 +1254,7 @@ function scopeListClass(clsNode::InstNode, ty::InstNodeType, includeRoot::Bool, 
    scopes = begin
     @match ty begin
       NORMAL_CLASS(__)  => begin
-        scopeList(parent(clsNode), includeRoot, _cons(clsNode, accumScopes))
+        scopeList(parent(clsNode), includeRoot, Cons{InstNode}(clsNode, accumScopes))
       end
 
       BASE_CLASS(__)  => begin
@@ -1266,7 +1266,7 @@ function scopeListClass(clsNode::InstNode, ty::InstNodeType, includeRoot::Bool, 
       end
 
       BUILTIN_CLASS(__)  => begin
-        _cons(clsNode, accumScopes)
+        Cons{InstNode}(clsNode, accumScopes)
       end
 
       TOP_SCOPE(__)  => begin
@@ -1275,14 +1275,14 @@ function scopeListClass(clsNode::InstNode, ty::InstNodeType, includeRoot::Bool, 
 
       ROOT_CLASS(__)  => begin
         if includeRoot
-          scopeList(parent(clsNode), includeRoot, _cons(clsNode, accumScopes))
+          scopeList(parent(clsNode), includeRoot, Cons{InstNode}(clsNode, accumScopes))
         else
           accumScopes
         end
       end
 
       REDECLARED_CLASS(__)  => begin
-        scopeList(ty.parent, includeRoot, _cons(getDerivedNode(clsNode), accumScopes))
+        scopeList(ty.parent, includeRoot, Cons{InstNode}(getDerivedNode(clsNode), accumScopes))
       end
 
       _  => begin
@@ -1313,11 +1313,11 @@ function scopeList(node::InstNode; includeRoot::Bool = false #= Whether to inclu
       end
 
       COMPONENT_NODE(nodeType = REDECLARED_COMP(parent = parent))  => begin
-        scopeList(parent, includeRoot, _cons(node, accumScopes))
+        scopeList(parent, includeRoot, Cons{InstNode}(node, accumScopes))
       end
 
       COMPONENT_NODE(__)  => begin
-        scopeList(node.parent, includeRoot, _cons(node, accumScopes))
+        scopeList(node.parent, includeRoot, Cons{InstNode}(node, accumScopes))
       end
 
       IMPLICIT_SCOPE(__)  => begin
@@ -1525,11 +1525,17 @@ Creates a new component that contains a pointer to the supplied component.
 """
 function replaceComponent(component::Component, node::COMPONENT_NODE)
   local componentPointer = Pointer{Component}(component)
-  node = COMPONENT_NODE{String, Int}(node.name,
-                                     node.visibility,
-                                     componentPointer,
-                                     node.parent,
-                                     node.nodeType)
+  if  node in REPLACED_COMPONENT_NODE_CACHE
+    node.component = componentPointer
+  else
+    tmp = COMPONENT_NODE{String, Int}(node.name,
+                                      node.visibility,
+                                      componentPointer,
+                                      node.parent,
+                                      node.nodeType)
+    push!(COMPONENT_NODE_CACHE, tmp)
+    node = tmp
+  end
   return node
 end
 
@@ -1631,22 +1637,16 @@ end
 const CLASS_NODE_PARENT_CACHE = Set{CLASS_NODE}()
 function setParent(@nospecialize(parent::InstNode),
                    node::CLASS_NODE)::CLASS_NODE
-  if node in CLASS_NODE_PARENT_CACHE
-    if node.parentScope !== parent
-      node.parentScope = parent
-    end
-    node
-  else
-    local tmp = CLASS_NODE{String, Int}(node.name,
-                                        node.definition,
-                                        node.visibility,
-                                        node.cls,
-                                        node.caches,
-                                        parent,
-                                        node.nodeType)
-    push!(CLASS_NODE_PARENT_CACHE, tmp)
-    tmp
+  if node.parentScope === parent
+    return node
   end
+  CLASS_NODE{String, Int}(node.name,
+                          node.definition,
+                          node.visibility,
+                          node.cls,
+                          node.caches,
+                          parent,
+                          node.nodeType)
 end
 
 const COMPONENT_NODE_CACHE = IdSet{InstNode}()

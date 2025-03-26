@@ -3,7 +3,7 @@ using ExportAll
 #= Forward declarations for uniontypes until Julia adds support for mutual recursion =#
 
 @UniontypeDecl NFConnection
-Connection = NFConnection
+const Connection = NFConnection
 
 function toString(conn::Connection)::String
   local str::String
@@ -59,7 +59,7 @@ function split(connection::CONNECTION)::List
     if ! (isDeleted(cl) || isDeleted(cr))
       conns = CONNECTION(cl, cr) <| conns;
     end
-  end            
+  end
   conns = listReverseInPlace(conns);
   return conns
 end

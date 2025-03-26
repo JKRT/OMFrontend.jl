@@ -47,7 +47,6 @@ function split(conn::CONNECTOR)::List{Connector}
   return connl
 end
 
-
 function hash(conn::Connector, mod::Int)::Int
   local hash::Int = hash(conn.name, mod)
   return hash

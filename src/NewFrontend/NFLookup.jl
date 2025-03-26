@@ -10,7 +10,9 @@ const MatchTypeTy = Int
 function lookupClassName(name::Absyn.Path, scope::InstNode, info::SourceInfo, checkAccessViolations::Bool = true)
   local node::InstNode
   local state::LookupState
-  (node, state) = lookupNameWithError(name, scope, info, "error", checkAccessViolations)
+  local LS_REF = Ref{LookupState}(LOOKUP_STATE_BEGIN())
+  node = lookupNameWithError(name, scope, info, "error", LS_REF, checkAccessViolations)
+  state = LS_REF.x
   assertClass(state, node, name, info)
   return node
 end
@@ -18,7 +20,9 @@ end
 function lookupBaseClassName(name::Absyn.Path, scope::InstNode, info::SourceInfo)
   local nodes::List{InstNode}
   local state::LookupState
-  (nodes, state) = lookupNames(name, scope)
+  local LS_REF = Ref{LookupState}(LOOKUP_STATE_BEGIN())
+  nodes = lookupNames(name, scope, LS_REF)
+  state = LS_REF.x
   if state isa LOOKUP_STATE_ERROR
     Error.addSourceMessage(Error.LOOKUP_BASECLASS_ERROR, list(AbsynUtil.pathString(name), scopeName(scope)), info)
     throw(e)
@@ -158,7 +162,9 @@ end
 function lookupImport(name::Absyn.Path, scope::InstNode, info::SourceInfo)
   local element::InstNode
   local state::LookupState
-  (element, state) = lookupNameWithError(name, topScope(scope), info, Error.LOOKUP_IMPORT_ERROR)
+  local LS_REF::Ref{LookupState} = LOOKUP_STATE_BEGIN()
+  element = lookupNameWithError(name, topScope(scope), info, Error.LOOKUP_IMPORT_ERROR, LS_REF)
+  state = LS_REF.x
   assertImport(state, element, name, info)
   element
 end
@@ -314,70 +320,72 @@ function lookupLocalSimpleName(n::String, scope::InstNode)
 end
 
 
-function lookupNameWithError(name::Absyn.Path, scope::InstNode, info::SourceInfo, errorType, checkAccessViolations::Bool = true)
+function lookupNameWithError(name::Absyn.Path, scope::InstNode, info::SourceInfo, errorType, lookupStateRef::Ref{LookupState}, checkAccessViolations::Bool = true)
   local state::LookupState
   local node::InstNode
-  (node, state) = lookupName(name, scope, checkAccessViolations)
+  node = lookupName(name, scope, lookupStateRef, checkAccessViolations)
+  state = lookupStateRef.x
   if node isa EMPTY_NODE
     Error.addSourceMessage(Error.LOOKUP_ERROR, list(AbsynUtil.pathString(name), scopeName(scope)), info)
-    #@error "Lookup error for path: $(AbsynUtil.pathString(name)) in the scope $(scopeName(scope))
-    #with the following error: $(e)"
-    throw(e)
+    @error "Lookup error for path: $(AbsynUtil.pathString(name)) in the scope $(scopeName(scope))"
+    fail()
   end
-  (node, state)
+  node
 end
 
-function lookupName(name::Absyn.Path, scope::InstNode, checkAccessViolations::Bool)
+function lookupName(name::Absyn.Path, scope::InstNode, lookupStateRef::Ref{LookupState}, checkAccessViolations::Bool)
   local state::LookupState
   local node::InstNode
-   (node, state) = begin
+  node = begin
     @match name begin
       Absyn.IDENT(__)  => begin
-        lookupFirstIdent(name.name, scope)
+        lookupFirstIdent(name.name, scope, lookupStateRef)
       end
       Absyn.QUALIFIED(__)  => begin
-         (node, state) = lookupFirstIdent(name.name, scope)
-        lookupLocalName(name.path, node, state, checkAccessViolations, refEqual(node, scope))
+        node = lookupFirstIdent(name.name, scope, lookupStateRef)
+        state = lookupStateRef.x
+        lookupLocalName(name.path, node, state, lookupStateRef, checkAccessViolations, refEqual(node, scope))
       end
       Absyn.FULLYQUALIFIED(__)  => begin
-        lookupName(name.path, topScope(scope), checkAccessViolations)
+        lookupName(name.path, topScope(scope), checkAccessViolations, lookupStateRef)
       end
     end
   end
-  #@debug "Returning in lookup name"
-  (node, state)
+  state = lookupStateRef.x
+  node
 end
 
-function lookupNames(name::Absyn.Path, scope::InstNode) ::Tuple{List{InstNode}, LookupState}
+function lookupNames(name::Absyn.Path, scope::InstNode, lookupStateRef::Ref{LookupState})::List{InstNode}
   #@info "Calling lookupNames with path: $name"
   local state::LookupState
   local nodes::List{InstNode}
-   (nodes, state) = begin
+  nodes = begin
     local node::InstNode
     #=  Simple name, look it up in the given scope. =#
     @match name begin
       Absyn.IDENT(__)  => begin
-        (node, state) = lookupFirstIdent(name.name, scope)
-        return (Cons{InstNode}(node, nil), state)
+        node = lookupFirstIdent(name.name, scope, lookupStateRef)
+        state = lookupStateRef.x
+        return Cons{InstNode}(node, nil)
       end
       Absyn.QUALIFIED(__)  => begin
-        (node, state) = lookupFirstIdent(name.name, scope)
-        return lookupLocalNames(name.path, node, Cons{InstNode}(node, nil), state, refEqual(node, scope))
+        node = lookupFirstIdent(name.name, scope, lookupStateRef)
+        state = lookupStateRef.x
+        return lookupLocalNames(name.path, node, Cons{InstNode}(node, nil), state, lookupStateRef, refEqual(node, scope))
       end
 
       Absyn.FULLYQUALIFIED(__)  => begin
-        return lookupNames(name.path, topScope(scope))
+        return lookupNames(name.path, topScope(scope), lookupStateRef)
       end
     end
   end
-  #=  Fully qualified path, start from top scope.
-  =#
+  #=  Fully qualified path, start from top scope. =#
   #@info "Done looking up names"
-  (nodes, state)
+  nodes
 end
 
 """ Looks up the first part of a name. """
-function lookupFirstIdent(name::String, scope::InstNode) ::Tuple{InstNode, LookupState}
+function lookupFirstIdent(name::String, scope::InstNode, lookupStateRef::Ref{LookupState})::InstNode
   local state::LookupState
   local node::Union{InstNode,Nothing}
   node = lookupSimpleBuiltinName(name)
@@ -387,18 +395,20 @@ function lookupFirstIdent(name::String, scope::InstNode) ::Tuple{InstNode, Looku
     node = lookupSimpleName(name, scope)
     state = nodeState(node)
   end
-  (node, state)
+  lookupStateRef.x = state
+  node
 end
 
 """
  Looks up a path in the given scope, without continuing the search in any
  enclosing scopes if the path isn't found.
 """
-function lookupLocalName(name::Absyn.Path, node::InstNode, state::LookupState, checkAccessViolations::Bool = true, selfReference::Bool = false)
+function lookupLocalName(name::Absyn.Path, node::InstNode, state::LookupState, lookupStateRef::Ref{LookupState}, checkAccessViolations::Bool = true, selfReference::Bool = false)
   local is_import::Bool
   if ! isClass(node)
     state =  LOOKUP_STATE_COMP_CLASS()
-    return (node, state)
+    lookupStateRef.x = state
+    return node
   end
   if ! selfReference
     node = instPackage(node)
@@ -411,8 +421,10 @@ function lookupLocalName(name::Absyn.Path, node::InstNode, state::LookupState, c
       #@debug "HERE WE ARE!"
       if is_import
         state = LOOKUP_STATE_ERROR(LOOKUP_STATE_IMPORT())
+        lookupStateRef.x = state
       else
         state = next(node, state, checkAccessViolations)
+        lookupStateRef.x = state
       end
     end
 
@@ -420,53 +432,59 @@ function lookupLocalName(name::Absyn.Path, node::InstNode, state::LookupState, c
       @match ENTRY_INFO(node, is_import) = lookupLocalSimpleName(name.name, node)
       if is_import
         state = LOOKUP_STATE_ERROR(LOOKUP_STATE_IMPORT())
+        lookupStateRef.x = state
       else
         state = next(node, state, checkAccessViolations)
-        (node, state) = lookupLocalName(name.path, node, state, checkAccessViolations)
+        lookupStateRef.x = state
+        node = lookupLocalName(name.path, node, state, lookupStateRef, checkAccessViolations)
       end
     end
     _  => begin
       #Error.assertion(false, getInstanceName() + " was called with an invalid path.", sourceInfo())
       node = EMPTY_NODE()
       state = LOOKUP_STATE_ERROR(state)
+      lookupStateRef.x = state
     end
   end
-  (node, state)
+  node
 end
 
 """ #= Looks up a path in the given scope, without continuing the search in any
                  enclosing scopes if the path isn't found. =#"""
-function lookupLocalNames(name::Absyn.Path, scope::InstNode, nodes::List{InstNode}, state::LookupState, selfReference::Bool = false)
+function lookupLocalNames(name::Absyn.Path, scope::InstNode, nodes::List{InstNode}, state::LookupState, lookupStateRef::Ref{LookupState}, selfReference::Bool = false)
   local node::InstNode = scope
   if ! isClass(scope)
     state = LOOKUP_STATE_COMP_CLASS()
-    return (nodes, state)
+    lookupStateRef.x = state
+    return nodes
   end
   if ! selfReference
     node = instPackage(node)
   end
-   (nodes, state) = begin
+  nodes = begin
     @match name begin
       Absyn.IDENT(__)  => begin
         @match ENTRY_INFO(node, _) = lookupLocalSimpleName(name.name, node)
         #@debug "Here we are!"
         state = next(node, state)
-        (Cons{InstNode}(node, nodes), state)
+        lookupStateRef.x = state
+        Cons{InstNode}(node, nodes)
       end
 
       Absyn.QUALIFIED(__)  => begin
         @match ENTRY_INFO(node, _) = lookupLocalSimpleName(name.name, node)
         state = next(node, state)
-        lookupLocalNames(name.path, node, Cons{InstNode}(node, nodes), state)
+        lookupStateRef.x = state
+        lookupLocalNames(name.path, node, Cons{InstNode}(node, nodes), state, lookupStateRef)
       end
-
       _  => begin
         #                           Error.assertion(false, getInstanceName() + " was called with an invalid path.", sourceInfo())
         fail()
       end
     end
-  end
-  (nodes, state)
+   end
+  lookupStateRef.x = state
+  nodes
 end
 
 @noinline function lookupSimpleBuiltinName(name::String)

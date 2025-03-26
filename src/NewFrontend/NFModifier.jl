@@ -1,23 +1,4 @@
-module ModTable
-
-import ..Modifier
-using MetaModelica
-using ExportAll
-using ..Frontend
-
-const Key = String
-const Value = Modifier
-#= Modelica extend clause =#
-include("../Util/baseAvlTreeCode.jl")
-
-
-keyCompare = (inKey1::String, inKey2::String) -> begin
-  res = stringCompare(inKey1, inKey2)
-  return res
-end
-
-@exportAll()
-end
+include("NFModTable.jl")
 
 abstract type Modifier end
 
@@ -550,7 +531,7 @@ function fromElement(
   element::SCode.Element,
   parents::List{<:InstNode},
   scope::InstNode,
-  )
+  )::Modifier
   local mod::Modifier
   mod = begin
     local def::SCode.ClassDef
@@ -684,12 +665,20 @@ function create(mod::SCode.MOD,
   else
     parents
   end
-  local submodV = Modifier[createSubMod(m, modScope, pars, scope) for m in mod.subModLst]
-  local submodK = String[m.ident for m in mod.subModLst]
+  local submodV = Vector{Modifier}(undef, length(mod.subModLst))
+  local i = 1
+  local tmp = mod.subModLst::List{SCode.SubMod}
+  while tmp !== nil
+    @match Cons{SCode.SubMod}(m, tmp) = tmp
+    submodV[i] = createSubMod(m::SCode.NAMEMOD, modScope, pars, scope)
+    i += 1
+  end
+  local submodK::Vector{String} = String[m.ident::String for m in mod.subModLst]
   submod_table = ModTable.fromVector(
     submodV,
     submodK,
-    (modScope) -> mergeLocal(scope = modScope, prefix = nil),
+    modScope,
+    nil
   )
   MODIFIER_MODIFIER(name, mod.finalPrefix, mod.eachPrefix, binding, submod_table, mod.info)
 end
@@ -703,9 +692,10 @@ function mergeLocal(
   name::String = "",
   scope::ModifierScope = nothing,
   prefix::Vector{String} = String[],
-  )
+  )::MODIFIER_MODIFIER
   local mod::Modifier
   local comp_name::String
+
   mod = begin
     @match (mod1, mod2) begin
       (MODIFIER_MODIFIER(__), MODIFIER_MODIFIER(binding = UNBOUND(__))) => begin
@@ -717,7 +707,8 @@ function mergeLocal(
         local mod1SubModifiers = ModTable.join(
           mod1.subModifiers,
           mod2.subModifiers,
-          @closure (x) -> mergeLocal(x, scope, prefix))
+          scope,
+          prefix)
         MODIFIER_MODIFIER(mod1.name,
                           mod1.finalPrefix,
                           mod1.eachPrefix,
@@ -734,7 +725,8 @@ function mergeLocal(
         local mod2SubModifiers = ModTable.join(
           mod2.subModifiers,
           mod1.subModifiers,
-          @closure (x) -> mergeLocal(x, scope, prefix))
+          scope,
+          prefix)
         MODIFIER_MODIFIER(mod2.name,
                           mod2.finalPrefix,
                           mod2.eachPrefix,
@@ -786,10 +778,10 @@ function checkFinalOverride(
   end
 end
 
-function createSubMod(subMod::SCode.SubMod,
+function createSubMod(subMod::SCode.NAMEMOD,
                       modScope::ModifierScope,
-                      parents::List{<:InstNode},
+                      parents::List{InstNode},
                       scope::InstNode)
-  local mod::Modifier = create(subMod.mod, subMod.ident, modScope, parents, scope)
+  local mod = create(subMod.mod, subMod.ident, modScope, parents, scope)
   return mod
 end

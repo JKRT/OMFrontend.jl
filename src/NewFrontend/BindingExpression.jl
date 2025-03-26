@@ -3323,7 +3323,8 @@ function mapCrefShallow!(cref::ComponentRef, @nospecialize(func::Function)) ::Co
     local rest::ComponentRef
     @match cref begin
       COMPONENT_REF_CREF(origin = Origin.CREF)  => begin
-        subs = list(mapShallowExp(s, func) for s in cref.subscripts)
+        local subsV = Subscript[mapShallowExp(s, func) for s in cref.subscripts]
+        subs = arrayList(subsV)
         rest = mapCref!(cref.restCref, func)
         #cref.subscripts = subs
         #cref.restCref = rest
@@ -4639,10 +4640,10 @@ end
         #println(typeof(exp.ty.cls))
         local rewrite = if exp.ty isa TYPE_COMPLEX && exp.ty.cls isa CLASS_NODE
           local originCref = getOriginCref(cref)
-          # println("***")
-          # println(toString(originCref))
-          # println(name(parent(exp.ty.cls)))
-          # println("***")
+           #println("***")
+           #println(toString(originCref))
+           #println(name(parent(exp.ty.cls)))
+           #println("***")
           #=
           True if the parents differ.
           In this case one extra level has been generated for the records.
@@ -4655,10 +4656,10 @@ end
         end
         local flatStringCall = x -> toFlatString(x, inFunction = inFunction)
         if rewrite
-          ListUtil.toString(arrayList(exp.elements), flatStringCall,
+          res = ListUtil.toString(arrayList(exp.elements), flatStringCall,
                             "'" + AbsynUtil.pathString(exp.path.path) + "'", "(", ", ", ")", true)
         else
-          ListUtil.toString(arrayList(exp.elements),flatStringCall,
+          res = ListUtil.toString(arrayList(exp.elements),flatStringCall,
                             "'" + AbsynUtil.pathString(exp.path), "'(", ", ", ")", true)
         end
 

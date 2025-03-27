@@ -167,14 +167,14 @@ function mergeList(
   #=  Loop over the remaining subscripts as long as they can be merged.
   =#
   while merged && !listEmpty(remainingSubs)
-    @match _cons(new_sub, remainingSubs) = remainingSubs
+    @match Cons{Subscript}(new_sub, remainingSubs) = remainingSubs
      merged = false
     while !merged
       if listEmpty(rest_old_subs)
-         remainingSubs = _cons(new_sub, remainingSubs)
+         remainingSubs = Cons{Subscript}(new_sub, remainingSubs)
         break
       else
-        @match _cons(old_sub, rest_old_subs) = rest_old_subs
+        @match Cons{Subscript}(old_sub, rest_old_subs) = rest_old_subs
          (merged, outSubs) = begin
           @match old_sub begin
             SUBSCRIPT_SLICE(__) => begin
@@ -189,7 +189,7 @@ function mergeList(
               #=  The old subscript only changes if the new is an index or slice, not :.
               =#
               if !isWhole(new_sub)
-                 outSubs = _cons(
+                 outSubs = Cons{Subscript}(
                   SUBSCRIPT_INDEX(applySubscript(
                     new_sub,
                     old_sub.slice,
@@ -197,17 +197,17 @@ function mergeList(
                   outSubs,
                 )
               else
-                 outSubs = _cons(old_sub, outSubs)
+                 outSubs = Cons{Subscript}(old_sub, outSubs)
               end
               (true, outSubs)
             end
 
             SUBSCRIPT_WHOLE(__) => begin
-              (true, _cons(new_sub, outSubs))
+              (true, Cons{Subscript}(new_sub, outSubs))
             end
 
             _ => begin
-              (false, _cons(old_sub, outSubs))
+              (false, Cons{Subscript}(old_sub, outSubs))
             end
           end
         end
@@ -221,15 +221,15 @@ function mergeList(
   #=  Append any remaining old subscripts.
   =#
   for s in rest_old_subs
-     outSubs = _cons(s, outSubs)
+     outSubs = Cons{Subscript}(s, outSubs)
   end
   #=  Append any remaining new subscripts to the end of the list as long as
   =#
   #=  there are dimensions left to fill.
   =#
   while !listEmpty(remainingSubs) && subs_count < dimensions
-    @match _cons(new_sub, remainingSubs) = remainingSubs
-     outSubs = _cons(new_sub, outSubs)
+    @match Cons{Subscript}(new_sub, remainingSubs) = remainingSubs
+     outSubs = Cons{Subscript}(new_sub, outSubs)
      subs_count = subs_count + 1
   end
    outSubs = listReverseInPlace(outSubs)
@@ -362,13 +362,13 @@ function scalarizeList(
   local subs::List{Subscript}
 
   for s in subscripts
-    @match _cons(dim, rest_dims) = rest_dims
+    @match Cons{Dimension}(dim, rest_dims) = rest_dims
      subs = scalarize(s, dim)
     if listEmpty(subs)
        outSubscripts = nil
       return outSubscripts
     else
-       outSubscripts = _cons(subs, outSubscripts)
+       outSubscripts = Cons{Subscript}(subs, outSubscripts)
     end
   end
   for d in rest_dims
@@ -377,7 +377,7 @@ function scalarizeList(
        outSubscripts = nil
       return outSubscripts
     else
-       outSubscripts = _cons(subs, outSubscripts)
+      outSubscripts = Cons{Cons{Subscript}}(subs, outSubscripts)
     end
   end
    outSubscripts = listReverse(outSubscripts)
@@ -564,13 +564,13 @@ function toFlatString(subscript::Subscript; inFunction = false)
   return string
 end
 
-function toStringList(::Union{Cons{Union{}}, Nil})::String
+function toStringList(::Nil)::String
   ""
 end
 
-function toStringList(subscripts::List{<:Subscript})::String
+function toStringList(subscripts::List{Subscript})::String
   local string::String
-   string = ListUtil.toString(subscripts, toString, "", "[", ", ", "]", false)
+  string = ListUtil.toString(subscripts, toString, "", "[", ", ", "]", false)
   return string
 end
 
@@ -997,7 +997,7 @@ function compareList(
     return comp
   end
   for s1 in subscripts1
-    @match _cons(s2, rest_s2) = rest_s2
+    @match Cons{Subscript}(s2, rest_s2) = rest_s2
      comp = compare(s1, s2)
     if comp != 0
       return comp
@@ -1053,7 +1053,7 @@ function isEqualList(subscripts1::List{<:Subscript}, subscripts2::List{<:Subscri
        eq = false
       return eq
     end
-    @match _cons(s2, rest) = rest
+    @match Cons{Subscript}(s2, rest) = rest
     if !isEqual(s1, s2)
        eq = false
       return eq

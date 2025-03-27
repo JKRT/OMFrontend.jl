@@ -100,11 +100,11 @@ function listKeys(inTree::Tree, lst::List{T} = nil) where {T}
   lst = begin
     @match inTree begin
       LEAF(__) => begin
-        _cons(inTree.key, lst)
+        Cons{Key}(inTree.key, lst)
       end
       NODE(__) => begin
         lst = listKeys(inTree.right, lst)
-        lst = _cons(inTree.key, lst)
+        lst = Cons{Key}(inTree.key, lst)
         lst = listKeys(inTree.left, lst)
       end
       _ => begin
@@ -496,13 +496,13 @@ function toList(
     @match inTree begin
       NODE(key = key, value = value) => begin
         lst = toList(inTree.right, lst)
-        lst = _cons((key, value), lst)
+        lst = Cons{Tuple{Key,Value}}((key, value), lst)
         lst = toList(inTree.left, lst)
         lst
       end
 
       LEAF(key = key, value = value) => begin
-        _cons((key, value), lst)
+        Cons{Tuple{Key,Value}}((key, value), lst)
       end
 
       _ => begin
@@ -540,12 +540,12 @@ function listValues(tree::Tree, lst::List{<:Value} = nil)
     @match tree begin
       NODE(value = value) => begin
         lst = listValues(tree.right, lst)
-        lst = _cons(value, lst)
+        lst = Cons{Value}(value, lst)
         lst = listValues(tree.left, lst)
         lst
       end
       LEAF(value = value) => begin
-        _cons(value, lst)
+        Cons{Value}(value, lst)
       end
       _ => begin
         lst
@@ -844,12 +844,12 @@ function listKeysReverse(inTree::Tree, lst::List{<:Key} = nil)::List{Key}
    lst = begin
     @match inTree begin
       LEAF(__) => begin
-        _cons(inTree.key, lst)
+        Cons{Key}(inTree.key, lst)
       end
 
       NODE(__) => begin
         lst = listKeysReverse(inTree.left, lst)
-        lst = _cons(inTree.key, lst)
+        lst = Cons{Key}(inTree.key, lst)
         lst = listKeysReverse(inTree.right, lst)
         lst
       end
@@ -926,7 +926,7 @@ function intersection(tree1::Tree, tree2::Tree)::Tree
       if listEmpty(keylist2)
         break
       end
-      @match _cons(k2, keylist2) = keylist2
+      @match Cons{Key}(k2, keylist2) = keylist2
     elseif key_comp < 0
       if isPresent(rest1)
         rest1 = add(rest1, k1)
@@ -934,14 +934,14 @@ function intersection(tree1::Tree, tree2::Tree)::Tree
       if listEmpty(keylist1)
         break
       end
-      @match _cons(k1, keylist1) = keylist1
+      @match Cons{Key}(k1, keylist1) = keylist1
     else
       intersect = add(intersect, k1)
       if listEmpty(keylist1) || listEmpty(keylist2)
         break
       end
-      @match _cons(k1, keylist1) = keylist1
-      @match _cons(k2, keylist2) = keylist2
+      @match Cons{Key}(k1, keylist1) = keylist1
+      @match Cons{Key}(k2, keylist2) = keylist2
     end
   end
   #=  equal keys: advance both lists

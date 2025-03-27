@@ -1,5 +1,5 @@
 @UniontypeDecl NFImport
-Import = NFImport
+const Import = NFImport
 
 @Uniontype NFImport begin
   @Record CONFLICTING_IMPORT begin
@@ -16,6 +16,8 @@ Import = NFImport
     imp::Absyn.Import
     scope::InstNode
     info::SourceInfo
+  end
+  @Record EMPTY_IMPORT begin
   end
 end
 
@@ -96,20 +98,23 @@ function instQualified(
   return (outImport, node)
 end
 
-function resolve(imp::Import)::Tuple{InstNode, Bool, Import}
+function resolve(imp::Import, isChangedImportRef::Ref{Bool}, importTyRef::Ref{Import})::InstNode
   local outImport::Import
   local changed::Bool
   local node::InstNode
 
-   (outImport, node, changed) = begin
+  outImport  = begin
     @match imp begin
       UNRESOLVED_IMPORT(__) => begin
-         (outImport, node) = instQualified(imp.imp, imp.scope, imp.info)
-        (outImport, node, true)
+        (outImport, node) = instQualified(imp.imp, imp.scope, imp.info)
+        isChangedImportRef.x = true
+        importTyRef.x = outImport
       end
 
       RESOLVED_IMPORT(__) => begin
-        (imp, imp.node, false)
+        isChangedImportRef.x = false
+        node = imp.node
+        importTyRef.x = imp
       end
 
       CONFLICTING_IMPORT(__) => begin
@@ -118,7 +123,7 @@ function resolve(imp::Import)::Tuple{InstNode, Bool, Import}
       end
     end
   end
-  return (node, changed, outImport)
+  return node
 end
 
 function Import_info(imp::Import)::SourceInfo

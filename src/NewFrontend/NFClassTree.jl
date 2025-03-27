@@ -91,7 +91,7 @@ function enumerateComponents2(
   () = begin
     @match entry begin
       LookupTree.COMPONENT(__) => begin
-        components = _cons(comps[entry.index], components)
+        components = Cons{InstNode}(comps[entry.index], components)
         ()
       end
 
@@ -309,7 +309,8 @@ end
 function applyLocalComponents(tree::CLASS_TREE_INSTANTIATED_TREE,
                               attributes::Attributes,
                               useBinding::Bool,
-                              instLevel::Int)::Nothing
+                              instLevel::Int,
+                              attributeRef::Ref{Attributes})::Nothing
   local components = tree.localComponents
   local componentNodes = COMPONENT_NODE[]
   local componentInnerOuterNodes = INNER_OUTER_NODE[]
@@ -333,6 +334,7 @@ function applyLocalComponents(tree::CLASS_TREE_INSTANTIATED_TREE,
       MODIFIER_NOMOD(),
       useBinding::Bool,
       instLevel::Int,
+      attributeRef,
       NONE()
     )::Nothing
   end
@@ -343,6 +345,7 @@ function applyLocalComponents(tree::CLASS_TREE_INSTANTIATED_TREE,
       MODIFIER_NOMOD(),
       useBinding,
       instLevel,
+      attributeRef,
       NONE()
     )::Nothing
   end
@@ -361,10 +364,12 @@ function applyLocalComponentsWithInstComponentExpressions(tree::CLASS_TREE_INSTA
 end
 
 @noinline function applyLocalComponents(tree::Union{CLASS_TREE_PARTIAL_TREE,
-                                          CLASS_TREE_EXPANDED_TREE},
-                              attributes::Attributes,
-                              useBinding::Bool,
-                              instLevel::Int)
+                                                    CLASS_TREE_EXPANDED_TREE},
+                                        attributes::Attributes,
+                                        useBinding::Bool,
+                                        instLevel::Int,
+                                        attributeRef::Ref{Attributes}
+                                        )
   for c in tree.components
     instComponent(
       c,
@@ -372,7 +377,8 @@ end
       MODIFIER_NOMOD(),
       useBinding,
       instLevel,
-      NONE()
+      NONE(),
+      attributeRef
     ) #func(c)
   end
   return nothing
@@ -441,7 +447,7 @@ end
   return
 end
 
-@noinline function mapExtends(tree::ClassTree, attributes::Attributes, useBinding::Bool, visibility, instLevel::Int)::Nothing
+@noinline function mapExtends(tree::ClassTree, attributes::Attributes, useBinding::Bool, visibility, instLevel::Int, attributeRef::Ref{Attributes})::Nothing
   local exts::Vector{InstNode} = getExtends(tree)
   for i in 1:length(exts)
     local res = @inbounds exts[i]::CLASS_NODE
@@ -449,7 +455,8 @@ end
                                     attributes,
                                     useBinding,
                                     ExtendsVisibility.PUBLIC,
-                                    instLevel + 1)::CLASS_NODE
+                                    instLevel + 1,
+                                    attributeRef)::CLASS_NODE
   end
   return nothing
 end
@@ -616,13 +623,13 @@ function createFlatOffsets(
   local rest_dups::List{Int}
 
   offsets = arrayCreateNoInit(elementCount, 0)
-  @match _cons(dup, rest_dups) = duplicates
+  @match Cons{Int}(dup, rest_dups) = duplicates
   for i = 1:elementCount
     if i == dup
       if listEmpty(rest_dups)
         dup = 0
       else
-        @match _cons(dup, rest_dups) = rest_dups
+        @match Cons{Int}(dup, rest_dups) = rest_dups
       end
       offset = offset + 1
       arrayUpdateNoBoundsChecking(offsets, i, -1)
@@ -1128,7 +1135,7 @@ function expand(tree::ClassTree)::ClassTree
         end
 
         REF_NODE(__) => begin
-          ext_idxs = _cons((cls_idx - 1, comp_idx - 1), ext_idxs)
+          ext_idxs = Cons{Tuple{Int, Int}}((cls_idx - 1, comp_idx - 1), ext_idxs)
           (cls_idx, comp_idx) =
             countInheritedElements(exts[c.index], cls_idx, comp_idx)
           ()
@@ -1145,7 +1152,7 @@ function expand(tree::ClassTree)::ClassTree
   if !listEmpty(ext_idxs)
     ext_idxs = listReverseInPlace(ext_idxs)
     for ext in exts
-      @match _cons((cls_idx, comp_idx), ext_idxs) = ext_idxs
+      @match Cons{Tuple{Int, Int}}((cls_idx, comp_idx), ext_idxs) = ext_idxs
       ltree = expandExtends(ext, ltree, cls_idx, comp_idx, dups_ptr)
     end
   end
@@ -1403,8 +1410,7 @@ function fromSCode(
           =#
           #=  enclosing scopes.
           =#
-          imps =
-            _cons(UNRESOLVED_IMPORT(e.imp, parent, e.info), imps)
+          imps = Cons{Import}(UNRESOLVED_IMPORT(e.imp, parent, e.info), imps)
           ()
         end
       end
@@ -1584,12 +1590,12 @@ function getRedeclareChain(
           end
           fail()
         end
-        getRedeclareChain(listHead(entry.children), tree, _cons(node_ptr, chain))
+        getRedeclareChain(listHead(entry.children), tree, Cons{Pointer{InstNode}}(node_ptr, chain))
       end
 
       DuplicateTree.EntryType.ENTRY => begin
         node_ptr = resolveEntryPtr(entry.entry, tree)
-        _cons(node_ptr, chain)
+        Cons{Pointer{InstNode}}(node_ptr, chain)
       end
 
       _ => begin
@@ -1695,7 +1701,7 @@ function joinDuplicates(
 
   #=  Add the new entry as a child of the old entry.
   =#
-  entryChildren = _cons(newEntry, entry.children)
+  entryChildren = Cons{DuplicateTree.Entry}(newEntry, entry.children)
   return DuplicateTree.ENTRY(oldEntry.entry, oldEntry.node, children, oldEntry.ty)
 end
 
@@ -2016,7 +2022,11 @@ function resolveImport(index::Int, tree::ClassTree)::InstNode
   local changed::Bool
   imports = tree.imports
   #=  Imports are resolved on demand, i.e. here. =#
-  @match (element, changed, imp) = resolve(imports[index])
+  local isChangedImportRef = Ref{Bool}(false)
+  local importTyRef = Ref{Import}(EMPTY_IMPORT())
+  element = resolve(imports[index], isChangedImportRef, importTyRef)
+  changed = isChangedImportRef.x
+  imp = importTyRef.x
   #=  Save the import if it wasn't already resolved. =#
   if changed
     imports[index] = imp
@@ -2053,7 +2063,7 @@ function resolveDuplicateEntriesPtr(
   local node_ptr::Pointer{InstNode}
 
   node_ptr = resolveEntryPtr(entry.entry, tree)
-  elements = _cons(node_ptr, elements)
+  elements = Cons{Pointer{InstNode}}(node_ptr, elements)
   for child in entry.children
     elements = resolveDuplicateEntriesPtr(child, tree, elements)
   end

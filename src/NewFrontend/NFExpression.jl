@@ -20,7 +20,7 @@ end
 
 abstract type NFExpression end
 
-struct BINDING_EXP <: NFExpression #TODO: Revert to mutable. Seems not to be the issue for unrolling...
+mutable struct BINDING_EXP <: NFExpression #TODO: Revert to mutable. Seems not to be the issue for unrolling...
   exp::Expression
   expType #= The actual type of exp. =#::NFType
   bindingType #= The type of the propagated binding. =#::NFType

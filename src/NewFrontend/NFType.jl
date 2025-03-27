@@ -501,14 +501,14 @@ function toFlatString(ty::M_Type)::String
         toString(ty.elementType) +
         "[" +
         stringDelimitList(
-          ListUtil.map(ty.dimensions, toFlatString),
+          ListUtil.map(ty.dimensions, toFlatString, String),
           ", ",
         ) +
         "]"
       end
 
       TYPE_TUPLE(__) => begin
-        "(" + stringDelimitList(ListUtil.map(ty.types, toString), ", ")
+        "(" + stringDelimitList(ListUtil.map(ty.types, toString, String), ", ")
         +")"
       end
 
@@ -656,14 +656,14 @@ function toString(ty::M_Type)::String
         toString(ty.elementType) +
         "[" +
         stringDelimitList(
-          ListUtil.map(ty.dimensions, toString),
+          ListUtil.map(ty.dimensions, toString, String),
           ", ",
         ) +
         "]"
       end
 
       TYPE_TUPLE(__) => begin
-        "(" + stringDelimitList(ListUtil.map(ty.types, toString), ", ")
+        "(" + stringDelimitList(ListUtil.map(ty.types, toString, String), ", ")
         +")"
       end
 

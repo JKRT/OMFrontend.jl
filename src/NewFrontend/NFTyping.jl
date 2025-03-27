@@ -844,10 +844,10 @@ end
   local dim = dimension.dimension
 
   (exp, ty, var) = @match dim begin
-    CREF_EXPRESSION(__) => begin typeCrefExp(
-      dim.cref,
-      Base.inferencebarrier(flag),
-      Base.inferencebarrier(info))
+    CREF_EXPRESSION(__) => begin typeExp(
+      dim,
+      flag,
+      info)
     end
     INTEGER_EXPRESSION(__) || REAL_EXPRESSION(__) || BOOLEAN_EXPRESSION(__) => begin
       (dim, TYPE_INTEGER(), Variability.CONSTANT)
@@ -1210,7 +1210,11 @@ function typeBinding(inBinding::UNTYPED_BINDING, origin::Int)::TYPED_BINDING
   @match inBinding begin
     UNTYPED_BINDING(bindingExp = exp) => begin
       info = Binding_getInfo(inBinding)
-      @match (exp, ty, var) = typeExp(exp, origin, info)
+      local tyRef = Ref{NFType}(TYPE_UNKNOWN())
+      local varTyRef = Ref{VariabilityType}(Variability.CONSTANT)
+      exp = typeExp2(exp, origin, info, tyRef, varTyRef)
+      ty = tyRef.x
+      var = varTyRef.x
       if inBinding.isEach
         each_ty = EachType.EACH::Int
       elseif isClassBinding(inBinding)
@@ -1380,17 +1384,22 @@ function typeExp(
   info::SourceInfo
   )::Tuple
   #= Stop excessive type inference =#
-  return typeExp2(exp, origin, info)
+  local typeRef = Ref{NFType}(TYPE_UNKNOWN())
+  local variabilityTypeRef = Ref{VariabilityType}(Variability.CONSTANT)
+  local typedExp = typeExp2(exp, origin, info, typeRef, variabilityTypeRef)
+  return (typedExp, typeRef.x, variabilityTypeRef.x)
 end
 
 function typeExp2(
   exp::Expression,
   origin::ORIGIN_Type,
-  info::SourceInfo
-  )::Tuple{Expression, NFType, VariabilityType}
+  info::SourceInfo,
+  typeRef::Ref{NFType},
+  variabilityTypeRef::Ref{VariabilityType}
+  )::Expression
   local variability::VariabilityType
   local ty::NFType
-  (exp, ty, variability) = begin
+  exp = begin
     local e1::Expression
     local e2::Expression
     local e3::Expression
@@ -1404,12 +1413,34 @@ function typeExp2(
     local cref::ComponentRef
     local next_origin::ORIGIN_Type
     @match exp begin
-      INTEGER_EXPRESSION(__) => (exp, TYPE_INTEGER(), Variability.CONSTANT)
-      REAL_EXPRESSION(__) => (exp, TYPE_REAL(), Variability.CONSTANT)
-      STRING_EXPRESSION(__) => (exp, TYPE_STRING(), Variability.CONSTANT)
-      BOOLEAN_EXPRESSION(__) => (exp, TYPE_BOOLEAN(), Variability.CONSTANT)
-      ENUM_LITERAL_EXPRESSION(__) => (exp, exp.ty, Variability.CONSTANT)
-      CREF_EXPRESSION(__) => typeCrefExp(exp.cref, origin, info)
+      INTEGER_EXPRESSION(__) => begin
+        typeRef.x = TYPE_INTEGER()
+        variabilityTypeRef.x = Variability.CONSTANT
+        exp
+      end
+      REAL_EXPRESSION(__) => begin
+        typeRef.x = TYPE_REAL()
+        variabilityTypeRef.x = Variability.CONSTANT
+        exp
+      end
+      STRING_EXPRESSION(__) =>  begin
+        typeRef.x = TYPE_STRING()
+        variabilityTypeRef.x = Variability.CONSTANT
+        exp
+      end
+      BOOLEAN_EXPRESSION(__) => begin
+        typeRef.x = TYPE_BOOLEAN()
+        variabilityTypeRef.x = Variability.CONSTANT
+        exp
+      end
+      ENUM_LITERAL_EXPRESSION(__) => begin
+        typeRef.x = exp.ty
+        variabilityTypeRef.x = Variability.CONSTANT
+        exp
+      end
+      CREF_EXPRESSION(__) => begin
+        typeCrefExp(exp.cref, origin, info, typeRef, variabilityTypeRef)
+      end
       TYPENAME_EXPRESSION(__) => begin
         if flagNotSet(origin, ORIGIN_VALID_TYPENAME_SCOPE)
           Error.addSourceMessage(
@@ -1419,40 +1450,54 @@ function typeExp2(
           )
           fail()
         end
-        (exp, exp.ty, Variability.CONSTANT)
+        typeRef.x = exp.ty
+        variabilityTypeRef.x = Variability.CONSTANT
+        exp
       end
       ARRAY_EXPRESSION(__) => begin
         #@info "With List.."
         #@time arr = typeArray(exp.elements, origin, info)
         #@info "With Array...."
-        arr2 = typeArray(exp.elements, origin, info)
-        arr2
+        exp, typeRef.x, variabilityTypeRef.x = typeArray(exp.elements, origin, info);exp
       end
-      MATRIX_EXPRESSION(__) => typeMatrix(exp.elements, origin, info)
-      RANGE_EXPRESSION(__) => typeRange(exp, origin, info)
-      TUPLE_EXPRESSION(__) => typeTuple(exp.elements, origin, info)
-      SIZE_EXPRESSION(__) => typeSize(exp, origin, info)
+      MATRIX_EXPRESSION(__) => begin
+        exp, typeRef.x, variabilityTypeRef.x = typeMatrix(exp.elements, origin, info);exp
+      end
+      RANGE_EXPRESSION(__) => begin
+        exp, typeRef.x, variabilityTypeRef.x = typeRange(exp, origin, info);exp
+      end
+      TUPLE_EXPRESSION(__) => begin
+        exp, typeRef.x, variabilityTypeRef.x = typeTuple(exp.elements, origin, info);exp
+      end
+      SIZE_EXPRESSION(__) => begin
+        exp, typeRef.x, variabilityTypeRef.x = typeSize(exp, origin, info);exp
+      end
       END_EXPRESSION(__) => begin
         Error.addSourceMessage(Error.END_ILLEGAL_USE_ERROR, nil, info)
         fail()
       end
-      BINARY_EXPRESSION(__) => typeBinaryExpression(exp, origin, info)
-      UNARY_EXPRESSION(__) => typeUnaryExpression(exp, origin, info)
-      LBINARY_EXPRESSION(__) => typeLBinaryExpression(exp, origin, info)
-
+      BINARY_EXPRESSION(__) => begin
+        typeBinaryExpressionRef(exp, origin, info, typeRef, variabilityTypeRef)
+      end
+      UNARY_EXPRESSION(__) => begin
+        exp, typeRef.x, variabilityTypeRef.x = typeUnaryExpression(exp, origin, info);exp
+      end
+      LBINARY_EXPRESSION(__) => begin
+        exp, typeRef.x, variabilityTypeRef.x = typeLBinaryExpression(exp, origin, info);exp
+      end
       LUNARY_EXPRESSION(__) => begin
         next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
         @match (e1, ty1, var1) = typeExp(exp.exp, next_origin, info)
         @match (exp, ty) = checkLogicalUnaryOperation(e1, ty1, var1, exp.operator, info)
-        (exp, ty, var1)
+        exp, typeRef.x, variabilityTypeRef.x = exp, ty, var1; exp
       end
 
       RELATION_EXPRESSION(__) => begin
-        typeRelationExpression(exp, origin, info)
+        exp, typeRef.x, variabilityTypeRef.x = typeRelationExpression(exp, origin, info);exp
       end
 
       IF_EXPRESSION(__) => begin
-        typeIfExpression(exp, origin, info)
+        exp, typeRef.x, variabilityTypeRef.x = typeIfExpression(exp, origin, info);exp
       end
 
       CALL_EXPRESSION(__) => begin
@@ -1465,16 +1510,16 @@ function typeExp2(
            ty = firstTupleType(ty)
            e1 = tupleElement(e1, ty, 1)
         end
-        (e1, ty, var1)
+        exp, typeRef.x, variabilityTypeRef.x = e1, ty, var1;exp
       end
 
       CAST_EXPRESSION(__) => begin
-         next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
-        typeExp(exp.exp, next_origin, info)
+        next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
+        exp, typeRef.x, variabilityTypeRef.x = typeExp(exp.exp, next_origin, info);exp
       end
 
       SUBSCRIPTED_EXP_EXPRESSION(__) => begin
-        (exp, exp.ty, variability(exp))
+        exp, typeRef.x, variabilityTypeRef.x = exp, exp.ty, variability(exp);exp
       end
 
       MUTABLE_EXPRESSION(__) => begin
@@ -1482,15 +1527,16 @@ function typeExp2(
         e1 = P_Pointer.access(exp.exp)
         @match (e1, ty, variability) = typeExp(e1, origin, info)
         exp.exp = P_Pointer.create(e1)
-        (exp, ty, variability)
+        exp, typeRef.x, variabilityTypeRef.x = exp, ty, variability;exp
       end
 
       PARTIAL_FUNCTION_APPLICATION_EXPRESSION(__) => begin
-        typePartialApplication(exp, origin, info)
+        exp, typeRef.x, variabilityTypeRef.x = typePartialApplication(exp, origin, info);exp
       end
 
-      BINDING_EXP(__) => typeBindingExp(exp, origin, info)
-
+      BINDING_EXP(__) => begin
+        typeBindingExpRef(exp, origin, info, typeRef, variabilityTypeRef)
+      end
       _ => begin
         @error "Unable to type" typeof(exp) toString(exp)
         fail()
@@ -1500,11 +1546,13 @@ function typeExp2(
   #=
     Expressions inside when-clauses and initial sections are discrete.
   =#
+  variability = variabilityTypeRef.x
   if flagSet(origin, ORIGIN_DISCRETE_SCOPE) &&
      variability == Variability.CONTINUOUS
      variability = Variability.DISCRETE
   end
-  return (exp, ty, variability)
+  variabilityTypeRef.x = variability
+  return exp
 end
 
 function typeRelationExpression(exp::RELATION_EXPRESSION, origin::ORIGIN_Type, info::SourceInfo)
@@ -1536,7 +1584,8 @@ end
 function typeBinaryExpression(
   exp::BINARY_EXPRESSION,
   origin::ORIGIN_Type,
-  info::SourceInfo,)::Tuple{Expression, NFType, VariabilityType}
+  info::SourceInfo
+  )
   next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
   @match (e1, ty1, var1) = typeExp(exp.exp1, next_origin, info)
   @match (e2, ty2, var2) = typeExp(exp.exp2, next_origin, info)
@@ -1552,6 +1601,37 @@ function typeBinaryExpression(
   )
   (exp, ty, variabilityMax(var1, var2))
 end
+
+
+function typeBinaryExpressionRef(
+  exp::BINARY_EXPRESSION,
+  origin::ORIGIN_Type,
+  info::SourceInfo,
+  tyRef::Ref{NFType},
+  variabilityRef::Ref{VariabilityType}
+  )::Expression
+  next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
+  e1 = typeExp2(exp.exp1, next_origin, info, tyRef, variabilityRef)
+  ty1 = tyRef.x
+  var1 = variabilityRef.x
+  e2 = typeExp2(exp.exp2, next_origin, info, tyRef, variabilityRef)
+  ty2 = tyRef.x
+  var2 = variabilityRef.x
+  exp, ty = checkBinaryOperation(
+    e1,
+    ty1,
+    var1,
+    exp.operator,
+    e2,
+    ty2,
+    var2,
+    info,
+  )
+  tyRef.x = ty
+  variabilityRef.x = variabilityMax(var1, var2)
+  return exp
+end
+
 
 
 @nospecializeinfer function typeLBinaryExpression(
@@ -1644,6 +1724,51 @@ function typeBindingExp(
   #outExp =  updateBindingExp!(exp, e, exp_ty, ty, parents, is_each)
   return (outExp, ty, variability)
 end
+
+function typeBindingExpRef(
+  exp::BINDING_EXP,
+  origin::ORIGIN_Type,
+  info::SourceInfo,
+  tyRef::Ref{NFType},
+  variabilityRef::Ref{VariabilityType}
+  )::BINDING_EXP
+  local variability::VariabilityType
+  local ty::NFType
+  local outExp::BINDING_EXP
+  local e::Expression
+  local parents::List{InstNode}
+  local is_each::Bool
+  local exp_ty::NFType
+  @match BINDING_EXP(e, _, _, parents, is_each) = exp
+  e = typeExp2(e, origin, info, tyRef, variabilityRef)
+  exp_ty = tyRef.x
+  variability = variabilityRef.x
+  local parent_dims::Int = 0
+  if !is_each
+    local pLst = listRest(parents)
+    while pLst !== nil
+      @match Cons{InstNode}(p, pLst) = pLst
+      parent_dims = parent_dims + dimensionCount(getType(p))::Int
+    end
+  end
+  if parent_dims == 0
+    ty = exp_ty
+  else
+    if dimensionCount(exp_ty) >= parent_dims
+      ty = unliftArrayN(parent_dims, exp_ty)
+    end
+  end
+  #=
+  If the binding has too few dimensions we can't unlift it, but matchBinding
+  can report the error better so we silently ignore it here.
+  =#
+  #outExp = BINDING_EXP(e, exp_ty, ty, parents, is_each)
+  outExp =  updateBindingExp!(exp, e, exp_ty, ty, parents, is_each)
+  variabilityRef.x = variability
+  tyRef.x = ty
+  return outExp
+end
+
 
 """
 Updates and mutates a given binding exp.
@@ -1805,7 +1930,9 @@ function typeCrefDim2(@nospecialize(cref::ComponentRef),
       whole cref, but doing so might introduce unnecessary cycles.
   =#
   if hasSubscripts(cref)
-    (_, ty) = typeCref(cref, origin, info)
+    local typeRef = Ref{NFType}(TYPE_UNKNOWN())
+    typeCref(cref, origin, info, typeRef, Ref{VariabilityType}(Variability.CONSTANT), Ref{VariabilityType}(Variability.CONSTANT))
+    ty = typeRef.x
     (dim, error) = nthDimensionBoundsChecked(ty, dimIndex)
     return (dim, error)
   end
@@ -1908,7 +2035,9 @@ function typeCrefExp(
   cref::ComponentRef,
   o::ORIGIN_Type,
   info::SourceInfo,
-)::Tuple{CREF_EXPRESSION, NFType, VariabilityType}
+  typeRef::Ref{NFType},
+  nodeVariabilityTypeRef::Ref{VariabilityType},
+)::CREF_EXPRESSION
   local variability::VariabilityType
   local ty::NFType
   local exp::Expression
@@ -1916,17 +2045,48 @@ function typeCrefExp(
   local node_var::VariabilityType
   local subs_var::VariabilityType
   local eval::Bool
-  (cr, ty, node_var, subs_var) = typeCref(cref, o, info)
+  #= Pass typing pointers =#
+  local subsVariabilityTypeRef = Ref{VariabilityType}(Variability.CONSTANT)
+  cr = typeCref(cref, o, info, typeRef, nodeVariabilityTypeRef, subsVariabilityTypeRef)
+  #= Update the types after typing... =#
+  local ty = typeRef.x
+  local node_var = nodeVariabilityTypeRef.x
+  local subs_var = subsVariabilityTypeRef.x
+  #= Make the expression and return the tuple.. =#
   exp = CREF_EXPRESSION(ty, cr)
   variability = variabilityMax(node_var, subs_var)
-  return (exp, ty, variability)
+  return exp #, ty, variability)
 end
 
+"""
+```
+typeCref(
+  cref::ComponentRef,
+  origin::ORIGIN_Type,
+  info::SourceInfo,
+  typeRef::Ref{NFType},
+  nodeVariabilityTypeRef::Ref{VariabilityType},
+  subsVariabilityTypeRef::Ref{VariabilityType}
+  )
+```
+Types a component reference.
+The three ref variables:
+```
+  typeRef::Ref{NFType},
+  nodeVariabilityTypeRef::Ref{VariabilityType},
+  subsVariabilityTypeRef::Ref{VariabilityType}
+```
+will be updated as we traverse the tree structure and can be utilized by the calee to
+retrieve information about the variability type of the node and the subscripts of the component reference.
+"""
 function typeCref(
   cref::ComponentRef,
   origin::ORIGIN_Type,
-  info::SourceInfo
-)::Tuple{ComponentRef, NFType, VariabilityType, VariabilityType}
+  info::SourceInfo,
+  typeRef::Ref{NFType},
+  nodeVariabilityTypeRef::Ref{VariabilityType},
+  subsVariabilityTypeRef::Ref{VariabilityType}
+  )::ComponentRef
   local subsVariability::VariabilityType
   local nodeVariabilityType::VariabilityType
   local ty::NFType
@@ -1936,103 +2096,111 @@ function typeCref(
     Error.addSourceMessage(Error.EXP_INVALID_IN_FUNCTION, list("time"), info)
     fail()
   end
-  (cref, subsVariability) = typeCref2(cref, origin, info)
+  cref = typeCref2(cref, origin, subsVariabilityTypeRef, info)
   ty = getSubscriptedType(cref)
   nodeVariabilityType = nodeVariability(cref)
-  return (cref, ty, nodeVariabilityType, subsVariability)
+  #= Update the remaining pointer variables =#
+  typeRef.x = ty
+  nodeVariabilityTypeRef.x = nodeVariabilityType
+  return cref
 end
 
-typeCref2(
+function typeCref2(
   cref::ComponentRef,
   origin::ORIGIN_Type,
+  variabilityTypeRef::Ref{VariabilityType},
   info::SourceInfo,
   firstPart::Bool = true,
-) =  (cref, Variability.CONSTANT)
+  )
+  variabilityTypeRef.x = Variability.CONSTANT
+  cref
+end
 
 function typeCref2(
   cref::COMPONENT_REF_CREF,
   origin::ORIGIN_Type,
+  variabilityTypeRef::Ref{VariabilityType},
   info::SourceInfo,
   firstPart::Bool = true,
-  )::Tuple{COMPONENT_REF_CREF, VariabilityType}
+  )::COMPONENT_REF_CREF
   local subsVariability::VariabilityType
-   (cref, subsVariability) = begin
-    local rest_cr::ComponentRef
-    local node_ty::NFType
-    local subs::List{Subscript}
-    local subs_var::VariabilityType
-    local rest_var::VariabilityType
-    local node_origin::ORIGIN_Type
-    local fn::M_Function
-    @match cref begin
-      COMPONENT_REF_CREF(origin = Origin.SCOPE) => begin
-        local crefTy = getType(cref.node)
-        #cref = COMPONENT_REF_CREF(cref.node, cref.subscripts, crefTy, cref.origin, cref.restCref)
-        cref.ty = crefTy
-        (cref, Variability.CONSTANT)
-      end
 
-      COMPONENT_REF_CREF(node = COMPONENT_NODE(__)) => begin
-        if hasCondition(component(cref.node)) && (
-          flagNotSet(origin, ORIGIN_CONNECT) ||
-            flagSet(origin, ORIGIN_SUBSCRIPT)
+  local rest_cr::ComponentRef
+  local node_ty::NFType
+  local subs::List{Subscript}
+  local subs_var::VariabilityType
+  local rest_var::VariabilityType
+  local node_origin::ORIGIN_Type
+  local fn::M_Function
+  @match cref begin
+    COMPONENT_REF_CREF(origin = Origin.SCOPE) => begin
+      local crefTy = getType(cref.node)
+      #cref = COMPONENT_REF_CREF(cref.node, cref.subscripts, crefTy, cref.origin, cref.restCref)
+      cref.ty = crefTy
+      variabilityTypeRef.x = Variability.CONSTANT
+    end
+
+    COMPONENT_REF_CREF(node = COMPONENT_NODE(__)) => begin
+      if hasCondition(component(cref.node)) && (
+        flagNotSet(origin, ORIGIN_CONNECT) ||
+          flagSet(origin, ORIGIN_SUBSCRIPT)
         )
-          Error.addStrictMessage(
-            Error.CONDITIONAL_COMPONENT_INVALID_CONTEXT,
-            list(name(cref.node)),
-            info,
-          )
+        Error.addStrictMessage(
+          Error.CONDITIONAL_COMPONENT_INVALID_CONTEXT,
+          list(name(cref.node)),
+          info,
+        )
+      end
+      #=  The origin used when typing a component node depends on where the
+      =#
+      #=  component was declared, not where it's used. This can be different to
+      =#
+      #=  the given origin, e.g. for package constants used in a function.
+      =#
+      node_origin =
+        if isFunction(explicitParent(cref.node))
+          ORIGIN_FUNCTION
+        else
+          ORIGIN_CLASS
         end
-        #=  The origin used when typing a component node depends on where the
-        =#
-        #=  component was declared, not where it's used. This can be different to
-        =#
-        #=  the given origin, e.g. for package constants used in a function.
-        =#
-        node_origin =
-          if isFunction(explicitParent(cref.node))
-            ORIGIN_FUNCTION
-          else
-            ORIGIN_CLASS
-          end
-        node_ty = typeComponent(cref.node, node_origin) #NOTE: Removed barrier here(!)
-        @match (subs, subs_var) =
-          typeSubscripts(cref.subscripts, node_ty, cref, origin, info)
-        @match (rest_cr, rest_var) = typeCref2(cref.restCref, origin, info, false)
-        subsVariability = variabilityMax(subs_var, rest_var)
-        @assign cref.subscripts = subs
-        @assign cref.ty = node_ty
-        @assign cref.restCref = rest_cr
-        (
-          cref,#COMPONENT_REF_CREF(cref.node, subs, node_ty, cref.origin, rest_cr),
-          subsVariability,
-        )
-      end
+      node_ty = typeComponent(cref.node, node_origin) #NOTE: Removed barrier here(!)
+      @match (subs, subs_var) =
+        typeSubscripts(cref.subscripts, node_ty, cref, origin, info)
+      rest_cr = typeCref2(cref.restCref, origin, variabilityTypeRef, info, false)
+      rest_var = variabilityTypeRef.x
+      subsVariability = variabilityMax(subs_var, rest_var)
+      cref.subscripts = subs
+      cref.ty = node_ty
+      cref.restCref = rest_cr
+      variabilityTypeRef.x = subsVariability
+      cref
+    end
 
-      COMPONENT_REF_CREF(
-        node = CLASS_NODE(__),
-      ) where {(firstPart && isFunction(cref.node))} => begin
-        @match _cons(fn, _) = typeNodeCache(cref.node)
-        local crefTy = Type.FUNCTION(fn, FunctionType.FUNCTION_REFERENCE)
-        local crefRestCref = typeCref2(cref.restCref, origin, info, false)
-        #cref = COMPONENT_REF_CREF(cref.node, cref.subscripts, crefTy, cref.origin, crefRestCref)
-        cref.ty = crefTy
-        cref.restCref = crefRestCref
-        (cref, Variability.CONTINUOUS)
-      end
+    COMPONENT_REF_CREF(
+      node = CLASS_NODE(__),
+    ) where {(firstPart && isFunction(cref.node))} => begin
+      @match _cons(fn, _) = typeNodeCache(cref.node)
+      local crefTy = Type.FUNCTION(fn, FunctionType.FUNCTION_REFERENCE)
+      local crefRestCref = typeCref2(cref.restCref, origin, info, false)
+      #cref = COMPONENT_REF_CREF(cref.node, cref.subscripts, crefTy, cref.origin, crefRestCref)
+      cref.ty = crefTy
+      cref.restCref = crefRestCref
+      variabilityTypeRef.x = Variability.CONTINUOUS
+      cref
+    end
 
-      COMPONENT_REF_CREF(node = CLASS_NODE(__)) => begin
-        local crefTy = getType(cref.node)
-        cref.ty = crefTy # COMPONENT_REF_CREF(cref.node, cref.subscripts, crefTy, cref.origin, cref.restCref)
-        (cref, Variability.CONSTANT)
-      end
-
-      _ => begin
-        (cref, Variability.CONSTANT)
-      end
+    COMPONENT_REF_CREF(node = CLASS_NODE(__)) => begin
+      local crefTy = getType(cref.node)
+      cref.ty = crefTy # COMPONENT_REF_CREF(cref.node, cref.subscripts, crefTy, cref.origin, cref.restCref)
+      variabilityTypeRef.x = Variability.CONSTANT
+      cref
+    end
+    _ => begin
+      variabilityTypeRef.x = Variability.CONSTANT
+      cref
     end
   end
-  return (cref, subsVariability)
+  return cref
 end
 
 function typeSubscripts(
@@ -2254,13 +2422,17 @@ function typeArray(
   local mk::MatchKindType
   local next_origin::ORIGIN_Type
   next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
+  local tyRef = Ref{NFType}(TYPE_UNKNOWN())
+  local varTyRef = Ref{VariabilityType}(Variability.CONSTANT)
   for i in 1:numberOfElements
     local e = elements[i]::T
-    @match (exp, ty2, var) = typeExp(e, next_origin, info)
+    exp = typeExp2(e, next_origin, info, tyRef, varTyRef)
+    ty2 = tyRef.x
+    var = varTyRef.x
     variability = variabilityMax(var, variability)
-    (_, ty3, mk) = matchTypes(ty2, ty1, exp, #=allowUnknown =# true)
+    @match (_, ty3, mk) = matchTypes(ty2, ty1, exp, #=allowUnknown =# true)
     if isIncompatibleMatch(mk)
-      (_, ty3, mk) = matchTypes(ty1, ty2, exp, #=allowUnknown =# false)
+      @match (_, ty3, mk) = matchTypes(ty1, ty2, exp, #=allowUnknown =# false)
       if isCompatibleMatch(mk)
         ty1 = ty3
       end
@@ -2273,7 +2445,7 @@ function typeArray(
   for i in 1:numberOfElements
     local e = elements[i]::T
     ty2 = tys[i]
-    (exp, _, mk) = matchTypes(ty2, ty1, e)
+    @match (exp, _, mk) = matchTypes(ty2, ty1, e)
     elements[i] = exp
     if true ## !Config.getGraphicsExpMode()
       if isIncompatibleMatch(mk)
@@ -2367,9 +2539,13 @@ function typeMatrixComma(
   local mk::MatchKindType
   @assert !isempty(elements)
   if length(elements) > 1
+    local varTyRef = Ref{VariabilityType}(Variability.CONSTANT)
+    local tyRef = Ref{NFType}(TYPE_UNKNOWN())
     for (i,e) in enumerate(elements)
-      (exp, ty1, var) = typeExp(e, origin, info)
-      expl[i] = exp #expl = _cons(exp, expl)
+      exp = typeExp2(e, origin, info, tyRef, varTyRef)
+      ty1 = tyRef.x
+      var = varTyRef.x
+      expl[i] = exp
       if isEqual(ty, TYPE_UNKNOWN())
          ty = ty1
       else
@@ -2383,13 +2559,13 @@ function typeMatrixComma(
            ty = ty2
         end
       end
-       tys = _cons(ty1, tys)
+       tys = Cons{NFType}(ty1, tys)
        variability = variabilityMax(variability, var)
        n = max(n, dimensionCount(ty))
     end
     pos = n + 1
     for (i,e) in enumerate(expl)
-      @match _cons(ty1, tys) = tys
+      @match Cons{NFType}(ty1, tys) = tys
        pos = pos - 1
       if dimensionCount(ty1) != n
          (e, ty1) = promote(e, ty1, n)
@@ -2990,10 +3166,15 @@ function typeFunctionSections(classNode::InstNode, origin::ORIGIN_Type)
 
             SECTIONS_EXTERNAL(explicit = true) => begin
               info = InstNode_info(classNode)
-               sections.args =
+              sections.args =
                 list(typeExternalArg(arg, info, classNode) for arg in sections.args)
-              (res,_,_) = typeCref(sections.outputRef, origin, info)
-               sections.outputRef = res
+              res  = typeCref(sections.outputRef,
+                              origin,
+                              info,
+                              Ref{NFType}(TYPE_UNKNOWN()),
+                              Ref{VariabilityType}(Variability.CONSTANT),
+                              Ref{VariabilityType}(Variability.CONSTANT))
+              sections.outputRef = res
               sections
             end
 
@@ -3153,9 +3334,9 @@ function makeDefaultExternalCall(extDecl::Sections, fnNode::InstNode)::Sections
                 ty,
                 fromNode(c, ty),
               )
-               args = _cons(exp, args)
+               args = Cons{Expression}(exp, args)
               for i = 1:Type.dimensionCount(ty)
-                 args = _cons(
+                 args = Cons{Expression}(
                   SIZE_EXPRESSION(
                     exp,
                     SOME(INTEGER_EXPRESSION(i)),

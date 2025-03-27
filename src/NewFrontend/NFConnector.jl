@@ -150,7 +150,7 @@ function fromExp(
   conns = begin
     @match exp begin
       CREF_EXPRESSION(__) => begin
-        _cons(fromCref(exp.cref, exp.ty, source), conns)
+        Cons{Connector}(fromCref(exp.cref, exp.ty, source), conns)
       end
       ARRAY_EXPRESSION(__) => begin
         #= Lets do it in reverse order to keep the test output the same. =#
@@ -263,7 +263,7 @@ function splitImpl(
       end
 
       TYPE_COMPLEX(complexTy = COMPLEX_EXTERNAL_OBJECT(__)) => begin
-        _cons(CONNECTOR(name, liftArrayLeftList(ty, dims), face, cty, source), conns)
+        Cons{Connector}(CONNECTOR(name, liftArrayLeftList(ty, dims), face, cty, source), conns)
       end
 
       TYPE_COMPLEX(__) => begin
@@ -312,7 +312,7 @@ function splitImpl(
       end
 
       _ => begin
-        _cons(CONNECTOR(name, liftArrayLeftList(ty, dims), face, cty, source), conns)
+        Cons{Connector}(CONNECTOR(name, liftArrayLeftList(ty, dims), face, cty, source), conns)
       end
     end
   end

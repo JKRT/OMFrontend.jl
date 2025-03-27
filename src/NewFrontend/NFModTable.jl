@@ -774,12 +774,12 @@ function listValues(tree::Tree, lst::List{T} = nil) where {T <: Value}
     @match tree begin
       NODE(value = value) => begin
         lst = listValues(tree.right, lst)
-        lst = _cons(value, lst)
+        lst = Cons{Value}(value, lst)
         lst = listValues(tree.left, lst)
         lst
       end
       LEAF(value = value) => begin
-        _cons(value, lst)
+        Cons{Value}(value, lst)
       end
       _ => begin
         lst

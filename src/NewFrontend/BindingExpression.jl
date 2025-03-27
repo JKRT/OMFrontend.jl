@@ -127,12 +127,12 @@ function vectorize(exp::Expression, dims::List{<:Dimension}, func::FuncT, accumS
      outExp = func(exp, listReverse(accumSubs))
   else
     expl = nil
-    @match _cons(dim, rest_dims) = dims
+    @match Cons{Dimensions}(dim, rest_dims) = dims
     iter = fromDim(dim)
     while hasNext(iter)
       (iter, e) = next(iter)
       e = vectorize(exp, rest_dims, func, _cons(SUBSCRIPT_INDEX(e), accumSubs))
-      expl = _cons(e, expl)
+      expl = Cons{Expression}(e, expl)
     end
     outExp = makeExpArray(listReverseInPlace(expl))
   end
@@ -739,16 +739,11 @@ function promote2(exp::Expression, isArray::Bool, dims::Int, types::List{<:M_Typ
 end
 
 function promote(e::Expression, ty::M_Type, n::Int) ::Tuple{Expression, M_Type}
-
-
-
   local dims::List{Dimension}
   local ety::M_Type
   local tys::List{M_Type} = nil
   local is_array::Bool
-
-  #=  Construct the dimensions that needs to be added.
-  =#
+  #=  Construct the dimensions that needs to be added. =#
    dims = list(fromInteger(1) for i in dimensionCount(ty):n - 1)
   if ! listEmpty(dims)
      dims = listAppend(arrayDims(ty), dims)
@@ -756,18 +751,15 @@ function promote(e::Expression, ty::M_Type, n::Int) ::Tuple{Expression, M_Type}
      ety = arrayElementType(ty)
      ty = liftArrayLeftList(ety, dims)
     while ! listEmpty(dims)
-       tys = _cons(liftArrayLeftList(ety, dims), tys)
+       tys = Cons{NFType}(liftArrayLeftList(ety, dims), tys)
        dims = listRest(dims)
     end
      e = promote2(e, is_array, n, listReverse(tys))
   end
-  #=  Concatenate the existing dimensions and the added ones.
-  =#
-  #=  Construct the result type.
-  =#
+  #=  Concatenate the existing dimensions and the added ones. =#
+  #=  Construct the result type. =#
   #=  Construct the expression types, to avoid having to create a new type
-  =#
-  #=  for each subexpression that will be created.
+      for each subexpression that will be created.
   =#
   (e, ty)
 end
@@ -787,13 +779,13 @@ function makeIdentityMatrix(n::Int, elementType::M_Type) ::Expression
   for i in 1:n
      row = nil
     for j in 2:i
-       row = _cons(zero, row)
+       row = Cons{Expression}(zero, row)
     end
-     row = _cons(one, row)
+     row = Cons{Expression}(one, row)
     for j in i:n - 1
-       row = _cons(zero, row)
+       row = Cons{Expression}(zero, row)
     end
-     rows = _cons(makeArray(row_ty, row, literal = true), rows)
+     rows = Cons{Expression}(makeArray(row_ty, row, literal = true), rows)
   end
    matrix = makeArray(liftArrayLeft(row_ty, fromInteger(n)), rows, literal = true)
   matrix
@@ -811,14 +803,14 @@ function transposeArray(arrayExp::Expression) ::Expression
   local matrix::Vector{Vector{Expression}}
   local literal::Bool
 
-  @match ARRAY_EXPRESSION(TYPE_ARRAY(ty, _cons(dim1, _cons(dim2, rest_dims))), expl, literal) = arrayExp
+  @match ARRAY_EXPRESSION(TYPE_ARRAY(ty, Cons{Dimension}(dim1, Cons{Dimension}(dim2, rest_dims))), expl, literal) = arrayExp
   if ! isempty(expl)
-    row_ty = TYPE_ARRAY(ty, _cons(dim1, rest_dims))
+    row_ty = TYPE_ARRAY(ty, Cons{Dimension}(dim1, rest_dims))
     matrix = Vector{Expression}[e.elements  for e in expl]
     matrix = ArrayUtil.transposeArray(matrix)
     expl = Expression[makeArray(row_ty, row, literal = literal) for row in matrix]
   end
-  outExp = makeArray(TYPE_ARRAY(ty, _cons(dim2, _cons(dim1, rest_dims))), expl, literal = literal)
+  outExp = makeArray(TYPE_ARRAY(ty, Cons{Dimension}(dim2, Cons{Dimension}(dim1, rest_dims))), expl, literal = literal)
   outExp
 end
 
@@ -863,8 +855,6 @@ function arrayScalarElement(arrayExp::Expression) ::Expression
 end
 
 function arrayScalarElements_impl(exp::Expression, elements::List{<:Expression}) ::List{Expression}
-
-
    elements = begin
     @match exp begin
       ARRAY_EXPRESSION(__)  => begin
@@ -873,9 +863,8 @@ function arrayScalarElements_impl(exp::Expression, elements::List{<:Expression})
         end
         elements
       end
-
       _  => begin
-        _cons(exp, elements)
+        Cons{Expression}(exp, elements)
       end
     end
   end
@@ -1120,7 +1109,7 @@ function liftArrayList(dims::List{<:Dimension}, exp::Expression) ::Tuple{Express
   for dim in listReverse(dims)
     expl = nil
     for i in 1:size(dim)
-      expl = _cons(exp, expl)
+      expl = Cons{Expression}(exp, expl)
     end
     arrayType = liftArrayLeft(arrayType, dim)
     exp = makeArray(arrayType, expl, literal = is_literal)
@@ -5411,13 +5400,11 @@ end
 
 function applySubscriptCref(subscript::Subscript, cref::ComponentRef, restSubscripts::List{<:Subscript}) ::Expression
   local outExp::Expression
-
   local cr::ComponentRef
   local ty::M_Type
-
-   cr = applySubscripts(_cons(subscript, restSubscripts), cref)
-   ty = getSubscriptedType(cr)
-   outExp = CREF_EXPRESSION(ty, cr)
+  cr = applySubscripts(Cons{Subscript}(subscript, restSubscripts), cref)
+  ty = getSubscriptedType(cr)
+  outExp = CREF_EXPRESSION(ty, cr)
   outExp
 end
 
@@ -5460,7 +5447,7 @@ function applySubscript(subscript::Subscript, exp::Expression, restSubscripts::L
         bindingExpMap(exp, (expArg) -> applySubscript(subscript, expArg, restSubscripts))
       end
       _  => begin
-        makeSubscriptedExp(_cons(subscript, restSubscripts), exp)
+        makeSubscriptedExp(Cons{Subscript}(subscript, restSubscripts), exp)
       end
     end
   end
@@ -5936,8 +5923,8 @@ function compareList(expl1::List{<:Expression}, expl2::List{<:Expression}) ::Int
     return comp
   end
   for e1 in expl1
-    @match _cons(e2, rest_expl2) = rest_expl2
-     comp = compare(e1, e2)
+    @match Cons{Expression}(e2, rest_expl2) = rest_expl2
+    comp = compare(e1, e2)
     if comp != 0
       return comp
     end
@@ -6939,7 +6926,9 @@ function propagatedDimCount(binding::Binding)
 end
 
 function isClassBinding(binding::Binding)
-  for parent in parents(binding)
+  local pars::List{InstNode} = parents(binding)
+  while pars !== nil
+    @match Cons{InstNode}(parent, pars) = pars
     if isClass(parent)
       return true
     end

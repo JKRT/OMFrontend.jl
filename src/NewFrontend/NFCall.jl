@@ -1399,8 +1399,11 @@ function typeArgs(call::Call, origin::ORIGIN_Type, info::SourceInfo)::Call
       UNTYPED_CALL(__) => begin
         typedArgs = Vector{TypedArg}(undef, length(call.arguments))
         next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
+        local tyRef = Ref{NFType}(TYPE_UNKNOWN())
+        local varRef = Ref{VariabilityType}(Variability.CONSTANT)
         for (i, arg) in enumerate(call.arguments)
-          typedArgs[i] = typeExp(arg, next_origin, info)
+          e = typeExp2(arg, next_origin, info, tyRef, varRef)
+          typedArgs[i] = (e, tyRef.x, varRef.x)
         end
         typedNamedArgs = Vector{TypedNamedArg}(undef, length(call.named_args))
         for (i,narg) in enumerate(call.named_args)
@@ -1584,21 +1587,21 @@ function typeReduction(
            (range, _, iter_var) =
             typeIterator(iter, range, origin, structural = false)
            variability = Variability.variabilityMax(variability, iter_var)
-           iters = _cons((iter, range), iters)
+           iters = Cons{Tuple{InstNode, Expression}}((iter, range), iters)
         end
          iters = listReverseInPlace(iters)
         #=  ExpOrigin.FOR is used here as a marker that this expression may contain iterators.
         =#
-         next_origin = intBitOr(next_origin, ORIGIN_FOR)
-         (arg, ty, exp_var) = typeExp(call.exp, next_origin, info)
-         variability = Variability.variabilityMax(variability, exp_var)
+        next_origin = intBitOr(next_origin, ORIGIN_FOR)
+        (arg, ty, exp_var) = typeExp(call.exp, next_origin, info)
+        variability = Variability.variabilityMax(variability, exp_var)
         @match list(fn) = typeRefCache(call.ref)
-        TypeCheck.checkReductionType(ty, P_Function.name(fn), call.exp, info)
-         fold_id = Util.getTempVariableIndex()
-         res_id = Util.getTempVariableIndex()
-         default_exp = reductionDefaultValue(fn, ty)
-         fold_exp = reductionFoldExpression(fn, ty, variability, fold_id, res_id)
-         fold_tuple = (fold_exp, fold_id, res_id)
+        checkReductionType(ty, name(fn), call.exp, info)
+        fold_id = Util.getTempVariableIndex()
+        res_id = Util.getTempVariableIndex()
+        default_exp = reductionDefaultValue(fn, ty)
+        fold_exp = reductionFoldExpression(fn, ty, variability, fold_id, res_id)
+        fold_tuple = (fold_exp, fold_id, res_id)
         (
           TYPED_REDUCTION(fn, ty, variability, arg, iters, default_exp, fold_tuple),
           ty,
@@ -1690,7 +1693,7 @@ function instIterators(
   for i in inIters
     range = instExp(Util.getOption(i.range), outScope, info)
     (outScope, iter) = addIteratorToScope(i.name, outScope, info)
-    outIters = _cons((iter, range), outIters)
+    outIters = Cons{Tuple{InstNode, Expression}}((iter, range), outIters)
   end
   outIters = listReverse(outIters)
   return (outScope, outIters)

@@ -533,52 +533,49 @@ function fromElement(
   scope::InstNode,
   )::Modifier
   local mod::Modifier
-  mod = begin
     local def::SCode.ClassDef
     local smod::SCode.Mod
-    @match element begin
-      SCode.EXTENDS(__) => begin
-        create(
-          element.modifications,
-          "",
-          SCOPE_EXTENDS(element.baseClassPath),
-          parents,
-          scope,
-        )
-      end
+  @match element begin
+    SCode.EXTENDS(__) => begin
+      create(
+        element.modifications,
+        "",
+        SCOPE_EXTENDS(element.baseClassPath),
+        parents,
+        scope,
+      )
+    end
 
-      SCode.COMPONENT(__) => begin
-        smod =
-          patchElementModFinal(element.prefixes, element.info, element.modifications)
-        create(smod, element.name, SCOPE_COMPONENT(element.name), parents, scope)
-      end
+    SCode.COMPONENT(__) => begin
+      smod =
+        patchElementModFinal(element.prefixes, element.info, element.modifications)
+      create(smod, element.name, SCOPE_COMPONENT(element.name), parents, scope)
+    end
 
-      SCode.CLASS(classDef = def && SCode.DERIVED(__)) => begin
-        create(
-          def.modifications,
-          element.name,
-          SCOPE_CLASS(element.name),
-          parents,
-          scope,
-        )
-      end
+    SCode.CLASS(classDef = def) where {def isa SCode.DERIVED} => begin
+      create(
+        def.modifications,
+        element.name,
+        SCOPE_CLASS(element.name),
+        parents,
+        scope,
+      )
+    end
 
-      SCode.CLASS(classDef = def && SCode.CLASS_EXTENDS(__)) => begin
-        create(
-          def.modifications,
-          element.name,
-          SCOPE_CLASS(element.name),
-          parents,
-          scope,
-        )
-      end
+    SCode.CLASS(classDef = def && SCode.CLASS_EXTENDS(__)) => begin
+      create(
+        def.modifications,
+        element.name,
+        SCOPE_CLASS(element.name),
+        parents,
+        scope,
+      )
+    end
 
-      _ => begin
-        MODIFIER_NOMOD()
-      end
+    _ => begin
+      MODIFIER_NOMOD()
     end
   end
-  return mod
 end
 
 function stripSCodeMod(elem::SCode.Element)

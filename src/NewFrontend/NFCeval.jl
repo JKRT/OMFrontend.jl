@@ -844,7 +844,7 @@ function makeRecordBindingExp(
     if variability(component(c)) <= Variability.PARAMETER
        arg = evalExp_impl(arg, EVALTARGET_IGNORE_ERRORS())
     end
-     args = _cons(arg, args)
+     args = Cons{Expression}(arg, args)
   end
    exp =
     makeRecord(scopePath(recordNode), recordType, args)
@@ -4436,7 +4436,7 @@ function evalArrayConstructor2(
   for r in ranges
      ty =
       liftArrayLeftList(ty, arrayDims(typeOf(r)))
-     types = _cons(ty, types)
+     types = Cons{NFType}(ty, types)
   end
    result = evalArrayConstructor3(e, ranges, iters, types)
   return result

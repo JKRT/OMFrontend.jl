@@ -106,7 +106,7 @@ function collect(flatModel::FlatModel)::Tuple{FlatModel, Connections}
             cl1 = makeConnectors(lhs, ty1, source)
             cl2 = makeConnectors(rhs, ty2, source)
             for c1 in cl1
-              @match _cons(c2, cl2) = cl2
+              @match Cons{Connector}(c2, cl2) = cl2
               conns = addConnection(CONNECTION(c1, c2), conns)
             end
           end
@@ -131,13 +131,13 @@ function addBroken(broken::BrokenEdges, conns::Connections)
 end
 
 function addFlow(conn::Connector, conns::Connections)
-  local connsFlows = _cons(conn, conns.flows)
+  local connsFlows = Cons{Connector}(conn, conns.flows)
   conns = CONNECTIONS(conns.connections, connsFlows, conns.broken)
   return conns
 end
 
 function addConnection(conn::Connection, conns::Connections)
-  local connsConnections = _cons(conn, conns.connections)
+  local connsConnections = Cons{Connection}(conn, conns.connections)
   conns = CONNECTIONS(connsConnections, conns.flows, conns.broken)
   return conns
 end

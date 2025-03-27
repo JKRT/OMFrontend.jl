@@ -1525,17 +1525,11 @@ Creates a new component that contains a pointer to the supplied component.
 """
 function replaceComponent(component::Component, node::COMPONENT_NODE)
   local componentPointer = Pointer{Component}(component)
-  if  node in REPLACED_COMPONENT_NODE_CACHE
-    node.component = componentPointer
-  else
-    tmp = COMPONENT_NODE{String, Int}(node.name,
-                                      node.visibility,
-                                      componentPointer,
-                                      node.parent,
-                                      node.nodeType)
-    push!(COMPONENT_NODE_CACHE, tmp)
-    node = tmp
-  end
+  return COMPONENT_NODE{String, Int}(node.name,
+                                     node.visibility,
+                                     componentPointer,
+                                     node.parent,
+                                     node.nodeType)
   return node
 end
 
@@ -1667,11 +1661,12 @@ end
 function setParent(parent::InstNode,
                    node::COMPONENT_NODE)::COMPONENT_NODE
   if parent !== node.parent
-    return COMPONENT_NODE{String, Int}(node.name,
-                                       node.visibility,
-                                       node.component,
-                                       parent,
-                                       node.nodeType)
+    tmp = COMPONENT_NODE{String, Int}(node.name,
+                                      node.visibility,
+                                      node.component,
+                                      parent,
+                                      node.nodeType)
+    node = tmp
   end
   return node
 end

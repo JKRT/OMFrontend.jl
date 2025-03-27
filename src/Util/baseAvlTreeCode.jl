@@ -97,12 +97,12 @@ function listKeys(inTree::Tree, lst::List{<:Key} = nil)
    lst = begin
     @match inTree begin
       LEAF(__) => begin
-        _cons(inTree.key, lst)
+        Cons{Key}(inTree.key, lst)
       end
 
       NODE(__) => begin
         lst = listKeys(inTree.right, lst)
-        lst = _cons(inTree.key, lst)
+        lst = Cons{Key}(inTree.key, lst)
         lst = listKeys(inTree.left, lst)
         lst
       end
@@ -121,12 +121,12 @@ function listKeysReverse(inTree::Tree, lst::List{<:Key} = nil)
    lst = begin
     @match inTree begin
       LEAF(__) => begin
-        _cons(inTree.key, lst)
+        Cons{Key}(inTree.key, lst)
       end
 
       NODE(__) => begin
         lst = listKeysReverse(inTree.left, lst)
-        lst = _cons(inTree.key, lst)
+        lst = Cons{Key}(inTree.key, lst)
         lst = listKeysReverse(inTree.right, lst)
         lst
       end
@@ -641,12 +641,12 @@ function toList(
     @match inTree begin
       NODE(key = key, value = value) => begin
          lst = toList(inTree.right, lst)
-         lst = _cons((key, value), lst)
+         lst = Cons{Tuple{Key, Value}}((key, value), lst)
          lst = toList(inTree.left, lst)
         lst
       end
       LEAF(key = key, value = value) => begin
-        _cons((key, value), lst)
+        Cons{Tuple{Key, Value}}((key, value), lst)
       end
       _ => begin
         lst
@@ -691,12 +691,12 @@ function listValues(tree::Tree, lst::List{T} = nil) where {T <: Value}
     @match tree begin
       NODE(value = value) => begin
         lst = listValues(tree.right, lst)
-        lst = _cons(value, lst)
+        lst = Cons{Value}(value, lst)
         lst = listValues(tree.left, lst)
         lst
       end
       LEAF(value = value) => begin
-        _cons(value, lst)
+        Cons{Value}(value, lst)
       end
       _ => begin
         lst

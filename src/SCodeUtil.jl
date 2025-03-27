@@ -3581,38 +3581,15 @@ function visibilityEqual(
   return outEqual
 end
 
-function eachBool(inEach::SCode.Each)::Bool
-  local bEach::Bool
+eachBool(inEach::SCode.EACH) = true
+eachBool(inEach::SCode.NOT_EACH) = false
 
-  @assign bEach = begin
-    @match inEach begin
-      SCode.EACH(__) => begin
-        true
-      end
-
-      SCode.NOT_EACH(__) => begin
-        false
-      end
-    end
+function boolEach(inBoolEach::Bool)
+  if inBoolEach
+    return SCode.EACH()
+  else
+    return SCode.NOT_EACH()
   end
-  return bEach
-end
-
-function boolEach(inBoolEach::Bool)::SCode.Each
-  local outEach::SCode.Each
-
-  @assign outEach = begin
-    @match inBoolEach begin
-      true => begin
-        SCode.EACH()
-      end
-
-      false => begin
-        SCode.NOT_EACH()
-      end
-    end
-  end
-  return outEach
 end
 
 function prefixesRedeclare(inPrefixes::SCode.Prefixes)::SCode.Redeclare

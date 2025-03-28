@@ -2860,11 +2860,13 @@ function evalBuiltinCat(
     #   print(",")
     # end
     # print("}\n")
-    result = arrayFromVector(
-      es,
-      typeOf(Base.first(es)),
-      list(fromInteger(d) for d in dims),
-    )
+    argL::List{Dimension} = nil
+    tmp = listReverse(dims)
+    while tmp !== nil
+      @match Cons{Int}(d, tmp) = tmp
+      argL = Cons{Dimension}(fromInteger(d), argL)
+    end
+    result = arrayFromVector(es, typeOf(Base.first(es)), argL)
     #    @info "Made array" toString(result)
   end
   #println("Result:\n" * toString(result))
@@ -3227,7 +3229,6 @@ end
 
 function evalBuiltinMatrix(arg::Expression)::Expression
   local result::Expression
-
    result = begin
     local dim_count::Int
     local expl::List{Expression}

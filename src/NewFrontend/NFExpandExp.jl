@@ -680,8 +680,8 @@ function expandArrayConstructor2(
   if listEmpty(ranges)
     (result,_) = expand(simplify(exp))
   else
-    @match _cons(range, ranges_rest) = ranges
-    @match _cons(iter, iters_rest) = iterators
+    @match Cons{Expression}(range, ranges_rest) = ranges
+    @match Cons{Pointer{Expression}}(iter, iters_rest) = iterators
     range_iter = fromExpToExpressionIterator(range)
     el_ty = unliftArray(ty)
     while hasNext(range_iter)
@@ -728,9 +728,9 @@ function expandArrayConstructor(
       node,
       MUTABLE_EXPRESSION(iter),
     )
-    @assign iters = _cons(iter, iters)
+    iters = Cons{Pointer{Expression}}(iter, iters)
     @match (range, true) = expand(range)
-    @assign ranges = _cons(range, ranges)
+    ranges = Cons{Expression}(range, ranges)
   end
   @assign result = expandArrayConstructor2(e, ty, ranges, iters)
   return (result, expanded)
@@ -774,7 +774,7 @@ function expandBuiltinGeneric(call::Call)::Tuple{Expression, Bool}
   local arg::Expression
   local args::List{Expression}
   local expl::List{Expression}
-  @match TYPED_CALL(fn, ty, var, _cons(arg, T), attr) = call
+  @match TYPED_CALL(fn, ty, var, Cons{Expression}(arg, T), attr) = call
   ty = arrayElementType(ty)
   @match (arg, true) = expand(arg)
   outExp = expandBuiltinGeneric2(arg, fn, ty, var, attr)

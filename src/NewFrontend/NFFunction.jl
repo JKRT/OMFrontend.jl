@@ -235,10 +235,10 @@ function getLocalArguments(fn::M_FUNCTION)::List{Expression}
       #   getInstanceName() + " got local component without binding",
       #   sourceInfo(),
       # )
-      @assign localArgs = _cons(getExp(binding), localArgs)
+      localArgs = Cons{Expression}(getExp(binding), localArgs)
     end
   end
-  @assign localArgs = listReverseInPlace(localArgs)
+  localArgs = listReverseInPlace(localArgs)
   return localArgs
 end
 

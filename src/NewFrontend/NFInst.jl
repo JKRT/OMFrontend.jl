@@ -715,7 +715,7 @@ function expandClassDerived(element::SCode.Element, definition::SCode.ClassDef, 
   @match SCode.DERIVED(typeSpec = ty, attributes = sattrs) = definition
   #=  Look up the class that's being derived from and expand it.
   =#
-  @match _cons(ext_node, _) = lookupBaseClassName(AbsynUtil.typeSpecPath(ty), parent(node), info)
+  @match Cons{InstNode}(ext_node, _) = lookupBaseClassName(AbsynUtil.typeSpecPath(ty), parent(node), info)
   #=  Check that the class isn't extending itself, i.e. class A = A.
   =#
   if referenceEq(ext_node, node)
@@ -2038,8 +2038,8 @@ function instDimension(dimension::Dimension, scope::InstNode, info::SourceInfo) 
 end
 
 function instExpressions(@nospecialize(node::InstNode),
-                         @nospecialize(scope::InstNode = node),
-                         @nospecialize(sections::Sections = SECTIONS_EMPTY()))
+                         scope::InstNode = node,
+                         sections::Sections = SECTIONS_EMPTY())
   local cls::Class = getClass(node)
   local inst_cls::Class
   local local_comps::Vector{InstNode}
@@ -2050,89 +2050,87 @@ function instExpressions(@nospecialize(node::InstNode),
   local dim_scope::InstNode
   local info::SourceInfo
   local ty::NFType
-   () = begin
-    @match cls begin
-      EXPANDED_CLASS(elements = cls_tree, restriction = RESTRICTION_TYPE(__))  => begin
-        #=  Long class declaration of a type.
-        =#
-        #=  Instantiate expressions in the extends nodes.
-        =#
-        exts = getExtends(cls_tree)
-        for ext in exts
-          instExpressions(ext, ext, sections)
-        end
-        #=  A type must extend a basic type.
-        =#
-        if arrayLength(exts) == 1
-          ty = TYPE_COMPLEX(node, COMPLEX_EXTENDS_TYPE(exts[1]))
-        elseif SCodeUtil.hasBooleanNamedAnnotationInClass(definition(node), "__OpenModelica_builtinType")
-          ty = TYPE_COMPLEX(node, COMPLEX_CLASS())
-        else
-          Error.addSourceMessage(Error.MISSING_TYPE_BASETYPE, list(name(node)), infoInstNode_info(node))
-          fail()
-        end
-        cls_tree = flatten(cls_tree)
-        inst_cls = INSTANCED_CLASS(ty, cls_tree, SECTIONS_EMPTY(), cls.restriction)
-        updateClass(inst_cls, node)
-        ()
+  @match cls begin
+    EXPANDED_CLASS(elements = cls_tree, restriction = RESTRICTION_TYPE(__))  => begin
+      #=  Long class declaration of a type.
+      =#
+      #=  Instantiate expressions in the extends nodes.
+      =#
+      exts = getExtends(cls_tree)
+      for ext in exts
+        instExpressions(ext, ext, sections)
       end
-
-      EXPANDED_CLASS(elements = cls_tree)  => begin
-        #=  Instantiate expressions in the extends nodes.
-        =#
-        for ext in getExtends(cls_tree)
-          sections = instExpressions(ext, ext, sections)
-        end
-        #=  Instantiate expressions in the local components.
-        =#
-        applyLocalComponentsWithInstComponentExpressions(cls_tree)
-        #=  Flatten the class tree so we don't need to deal with extends anymore.
-        =#
-        local elements = flatten(cls_tree)
-        cls = EXPANDED_CLASS(elements, cls.modifier, cls.prefixes, cls.restriction)
-        updateClass(cls, node)
-        #=  Instantiate local equation/algorithm sections.
-        =#
-        sections = instSections(node, scope, sections, isFunction(cls.restriction))
-        ty = makeComplexType(cls.restriction, node, cls)
-        inst_cls = INSTANCED_CLASS(ty, cls.elements, sections, cls.restriction)
-        updateClass(inst_cls, node)
-        instComplexType(ty)
-        ()
-      end
-
-      EXPANDED_DERIVED(dims = dims)  => begin
-        sections = instExpressions(cls.baseClass, scope, sections)
-        dim_scope = parent(node)
-        info = InstNode_info(node)
-        for i in 1:arrayLength(dims)
-          dims[i] = instDimension(dims[i], dim_scope, info)
-        end
-        if isRecord(cls.restriction)
-          instRecordConstructor(node)
-        end
-        ()
-      end
-
-      INSTANCED_BUILTIN(elements = CLASS_TREE_FLAT_TREE(components = local_comps))  => begin
-        for comp in local_comps
-          instComponentExpressions(comp)
-        end
-        ()
-      end
-
-      INSTANCED_BUILTIN(__)  => begin
-        ()
-      end
-
-      INSTANCED_CLASS(__)  => begin
-        ()
-      end
-
-      _  => begin
-        Error.assertion(false, getInstanceName() + " got invalid class", sourceInfo())
+      #=  A type must extend a basic type.
+      =#
+      if arrayLength(exts) == 1
+        ty = TYPE_COMPLEX(node, COMPLEX_EXTENDS_TYPE(exts[1]))
+      elseif SCodeUtil.hasBooleanNamedAnnotationInClass(definition(node), "__OpenModelica_builtinType")
+        ty = TYPE_COMPLEX(node, COMPLEX_CLASS())
+      else
+        Error.addSourceMessage(Error.MISSING_TYPE_BASETYPE, list(name(node)), infoInstNode_info(node))
         fail()
       end
+      cls_tree = flatten(cls_tree)
+      inst_cls = INSTANCED_CLASS(ty, cls_tree, SECTIONS_EMPTY(), cls.restriction)
+      updateClass(inst_cls, node)
+      ()
+    end
+
+    EXPANDED_CLASS(elements = cls_tree)  => begin
+      #=  Instantiate expressions in the extends nodes.
+      =#
+      for ext in getExtends(cls_tree)
+        sections = instExpressions(ext, ext, sections)
+      end
+      #=  Instantiate expressions in the local components.
+      =#
+      applyLocalComponentsWithInstComponentExpressions(cls_tree)
+      #=  Flatten the class tree so we don't need to deal with extends anymore.
+      =#
+      local elements = flatten(cls_tree)
+      cls = EXPANDED_CLASS(elements, cls.modifier, cls.prefixes, cls.restriction)
+      updateClass(cls, node)
+      #=  Instantiate local equation/algorithm sections.
+      =#
+      sections = instSections(node, scope, sections, isFunction(cls.restriction))
+      ty = makeComplexType(cls.restriction, node, cls)
+      inst_cls = INSTANCED_CLASS(ty, cls.elements, sections, cls.restriction)
+      updateClass(inst_cls, node)
+      instComplexType(ty)
+      ()
+    end
+
+    EXPANDED_DERIVED(dims = dims)  => begin
+      sections = instExpressions(cls.baseClass, scope, sections)
+      dim_scope = parent(node)
+      info = InstNode_info(node)
+      for i in 1:arrayLength(dims)
+        dims[i] = instDimension(dims[i], dim_scope, info)
+      end
+      if isRecord(cls.restriction)
+        instRecordConstructor(node)
+      end
+      ()
+    end
+
+    INSTANCED_BUILTIN(elements = CLASS_TREE_FLAT_TREE(components = local_comps))  => begin
+      for comp in local_comps
+        instComponentExpressions(comp)
+      end
+      ()
+    end
+
+    INSTANCED_BUILTIN(__)  => begin
+      ()
+    end
+
+    INSTANCED_CLASS(__)  => begin
+      ()
+    end
+
+    _  => begin
+      Error.assertion(false, getInstanceName() + " got invalid class", sourceInfo())
+      fail()
     end
   end
   sections
@@ -2545,7 +2543,7 @@ function instCrefComponent(cref::ComponentRef, node::InstNode, scope::InstNode, 
         prefixed_cref = if isEmpty(prefixed_cref)
           cref
         else
-          append(cref, prefixed_cref)
+          appendCref!(cref, prefixed_cref)
         end
         CREF_EXPRESSION(TYPE_UNKNOWN(), prefixed_cref)
       end
@@ -2830,7 +2828,7 @@ function instEEquation(@nospecialize(scodeEq::SCode.EEquation), @nospecialize(sc
         branches = Equation_Branch[]
         for branch in scodeEq.thenBranch
           eql = instEEquations(branch, scope, next_origin)
-          @match _cons(exp1, expl) = expl
+          @match Cons{Expression}(exp1, expl) = expl
           push!(branches, makeBranch(exp1, eql))
         end
         #=  Instantiate the else-branch, if there is one, and make it a branch

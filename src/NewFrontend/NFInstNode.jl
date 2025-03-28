@@ -318,7 +318,7 @@ function getComments(node::InstNode, accumCmts::List{<:SCode.Comment} = nil)
     local cls::Class
     @match node begin
       CLASS_NODE(definition = SCode.CLASS(cmt = cmt))  => begin
-        _cons(cmt, getDerivedComments(P_Pointer.access(node.cls), accumCmts))
+        Cons{SCode.Comment}(cmt, getDerivedComments(P_Pointer.access(node.cls), accumCmts))
       end
       _  => begin
         accumCmts
@@ -1294,11 +1294,11 @@ function scopeListClass(clsNode::InstNode, ty::InstNodeType, includeRoot::Bool, 
   scopes
 end
 
-function scopeList(node::InstNode, includeRoot::Bool, accumScopes::List{<:InstNode} = nil)
+function scopeList(@nospecialize(node::InstNode), includeRoot::Bool, accumScopes::List{<:InstNode} = nil)
   scopeList(node, includeRoot = includeRoot, accumScopes = accumScopes)
 end
 
-function scopeList(node::InstNode; includeRoot::Bool = false #= Whether to include the root class name or not. =#, accumScopes::List{<:InstNode} = nil)
+function scopeList(@nospecialize(node::InstNode); includeRoot::Bool = false #= Whether to include the root class name or not. =#, accumScopes::List{<:InstNode} = nil)
   local scopes::List{InstNode}
 
    scopes = begin

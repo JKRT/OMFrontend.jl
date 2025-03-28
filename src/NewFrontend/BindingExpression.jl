@@ -121,20 +121,26 @@ function vectorize(exp::Expression, dims::List{<:Dimension}, func::FuncT, accumS
   local iter::RangeIterator
   local dim::Dimension
   local rest_dims::List{Dimension}
-  local expl::List{Expression}
+  local expl::Vector{Expression}
   local e::Expression
   if listEmpty(dims)
-     outExp = func(exp, listReverse(accumSubs))
+    local tmp = accumSubs
+    accumSubs = nil
+    while tmp !== nil
+      @match Cons{Subscript}(t, tmp) = tmp
+      accumSumbs = Cons{Subscript}{t, accumSubs}
+    end
+     outExp = func(exp, accumSubs)
   else
-    expl = nil
+    expl = Expression[]
     @match Cons{Dimensions}(dim, rest_dims) = dims
     iter = fromDim(dim)
     while hasNext(iter)
       (iter, e) = next(iter)
-      e = vectorize(exp, rest_dims, func, _cons(SUBSCRIPT_INDEX(e), accumSubs))
-      expl = Cons{Expression}(e, expl)
+      e = vectorize(exp, rest_dims, func, Cons{Subscript}(SUBSCRIPT_INDEX(e), accumSubs))
+      push!(expl, e)
     end
-    outExp = makeExpArray(listReverseInPlace(expl))
+    outExp = makeExpArray(expl)
   end
   outExp
 end
@@ -1106,7 +1112,14 @@ function liftArrayList(dims::List{<:Dimension}, exp::Expression) ::Tuple{Express
   local arrayType::M_Type = typeOf(exp)
   local expl::List{Expression}
   local is_literal::Bool = isLiteral(exp)
-  for dim in listReverse(dims)
+  tmp = dims
+  dims = nil
+  while tmp !== nil
+    @match Cons{Dimension}(d, tmp) =tmp
+    dims = Cons{Dimension}{d, dims}
+  end
+  while dims !== nil
+    @match Cons{Dimension}(d, dims) = dims
     expl = nil
     for i in 1:size(dim)
       expl = Cons{Expression}(exp, expl)
@@ -1928,7 +1941,7 @@ function mapFoldCallIteratorsShallow(iters::List{Tuple{InstNode, Expression}}, @
   for i in iters
      (node, exp) = i
      (new_exp, arg) = func(exp, arg)
-     outIters = _cons(if referenceEq(new_exp, exp)
+     outIters = Cons{Tuple{InstNode, Expression}}(if referenceEq(new_exp, exp)
                                i
                              else
                                (node, new_exp)
@@ -2343,7 +2356,7 @@ function mapFoldCallIterators(iters::List{Tuple{InstNode, Expression}}, @nospeci
   for i in iters
      (node, exp) = i
      (new_exp, arg) = mapFold(exp, func, arg)
-     outIters = _cons(if referenceEq(new_exp, exp)
+     outIters = Cons{Tuple{InstNode, Expression}}(if referenceEq(new_exp, exp)
                              i
                              else
                              (node, new_exp)
@@ -2377,7 +2390,7 @@ function mapFoldCall(call::Call, @nospecialize(func::Function), foldArg::ArgT)  
         for arg in call.named_args
            (s, e) = arg
            (e, foldArg) = mapFold(e, func, foldArg)
-           nargs = _cons((s, e), nargs)
+           nargs = Cons{NamedArg}((s, e), nargs)
         end
         UNTYPED_CALL(call.ref, args, listReverse(nargs), call.call_scope)
       end
@@ -2388,23 +2401,23 @@ function mapFoldCall(call::Call, @nospecialize(func::Function), foldArg::ArgT)  
         for arg in call.arguments
            (e, t, v) = arg
            (e, foldArg) = mapFold(e, func, foldArg)
-           targs = _cons((e, t, v), targs)
+           targs = Cons{TypedArg}((e, t, v), targs)
         end
         for arg in call.named_args
            (s, e, t, v) = arg
            (e, foldArg) = mapFold(e, func, foldArg)
-           tnargs = _cons((s, e, t, v), tnargs)
+           tnargs = Cons{TypedNamedArg}((s, e, t, v), tnargs)
         end
         ARG_TYPED_CALL(call.ref, listReverse(targs), listReverse(tnargs), call.call_scope)
       end
 
       TYPED_CALL(__)  => begin
-         (args, foldArg) = ListUtil.map1Fold(call.arguments, mapFold, func, foldArg)
+        (args, foldArg) = ListUtil.map1Fold(call.arguments, mapFold, func, foldArg)
         TYPED_CALL(call.fn, call.ty, call.var, args, call.attributes)
       end
 
       UNTYPED_ARRAY_CONSTRUCTOR(__)  => begin
-         (e, foldArg) = mapFold(call.exp, func, foldArg)
+        (e, foldArg) = mapFold(call.exp, func, foldArg)
         UNTYPED_ARRAY_CONSTRUCTOR(e, call.iters)
       end
 
@@ -3215,7 +3228,7 @@ function mapCallShallowIterators(iters::List{<:Tuple{<:InstNode, Expression}}, @
   for i in iters
      (node, exp) = i
     new_exp = func(exp)
-    outIters = _cons(if referenceEq(new_exp, exp)
+    outIters = Cons{Tuple{InstNode, Expression}}(if referenceEq(new_exp, exp)
                              i
                              else
                              (node, new_exp)
@@ -3292,7 +3305,16 @@ function mapCrefShallow(cref::ComponentRef, @nospecialize(func::Function)) ::Com
     local rest::ComponentRef
     @match cref begin
       COMPONENT_REF_CREF(origin = Origin.CREF)  => begin
-        subs = list(mapShallowExp(s, func) for s in cref.subscripts)
+        #subs = list(mapShallowExp(s, func) for s in cref.subscripts)
+        #= New body... =#
+        subs = cref.subscripts #list(mapExp(s, func) for s in cref.subscripts)
+        tmp = listReverse(subs)
+        nSubs::List{Subscript} = nil
+        while tmp !== nil
+          @match Cons{Subscript}(s, tmp) = tmp
+          nSubs = Cons{Subscript}(mapShallowExp(s, func), nSubs)
+        end
+
         rest = mapCref(cref.restCref, func)
         COMPONENT_REF_CREF(cref.node, subs, cref.ty, cref.origin, rest)
       end
@@ -3608,9 +3630,15 @@ function mapCref(cref::ComponentRef, @nospecialize(func::Function)) ::ComponentR
     local rest::ComponentRef
     @match cref begin
       COMPONENT_REF_CREF(origin = Origin.CREF)  => begin
-        subs = list(mapExp(s, func) for s in cref.subscripts)
+        subs = cref.subscripts #list(mapExp(s, func) for s in cref.subscripts)
+        tmp = listReverse(subs)
+        nSubs::List{Subscript} = nil
+        while tmp !== nil
+          @match Cons{Subscript}(s, tmp) = tmp
+          nSubs = Cons{Subscript}(mapExp(s, func), nSubs)
+        end
         rest = mapCref(cref.restCref, func)
-        COMPONENT_REF_CREF(cref.node, subs, cref.ty, cref.origin, rest)
+        COMPONENT_REF_CREF(cref.node, nSubs, cref.ty, cref.origin, rest)
       end
       _  => begin
         cref
@@ -3655,7 +3683,7 @@ function mapCallIterators(iters::List{<:Tuple{<:InstNode, Expression}}, @nospeci
   for i in iters
      (node, exp) = i
      new_exp = map(exp, func)
-     outIters = _cons(if referenceEq(new_exp, exp)
+     outIters = Cons{Tuple{InstNode, Expression}}(if referenceEq(new_exp, exp)
                              i
                              else
                              (node, new_exp)
@@ -3697,14 +3725,14 @@ function mapCall(call::Call, @nospecialize(func::Function)) ::Call
         for arg in call.arguments
            (e, t, v) = arg
           e = map(e, func)
-          targs = _cons((e, t, v), targs)
+          targs = Cons{TypedArg}((e, t, v), targs)
         end
         for arg in call.named_args
            (s, e, t, v) = arg
           e = map(e, func)
-          tnargs = _cons((s, e, t, v), tnargs)
+          tnargs = Cons{TypedNamedArg}((s, e, t, v), tnargs)
         end
-      ARG_TYPED_CALL(call.ref, listReverse(targs), listReverse(tnargs), call.call_scope)
+        ARG_TYPED_CALL(call.ref, listReverseInPlace(targs), listReverseInPlace(tnargs), call.call_scope)
       end
 
       TYPED_CALL(__)  => begin
@@ -4195,7 +4223,7 @@ function toDAE(exp::Expression)
     local dae1::DAE.Exp
     local dae2::DAE.Exp
     local names::List{String}
-    local fn::P_Function.P_Function
+    local fn::M_Function
     @match exp begin
       INTEGER_EXPRESSION(__)  => begin
         DAE.ICONST(exp.value)
@@ -4324,7 +4352,7 @@ function toDAE(exp::Expression)
       end
 
       PARTIAL_FUNCTION_APPLICATION_EXPRESSION(__)  => begin
-        @match _cons(fn, _) = typeRefCache(exp.fn)
+        @match Cons{M_Function}(fn, _) = typeRefCache(exp.fn)
         DAE.PARTEVALFUNCTION(P_Function.nameConsiderBuiltin(fn), list(toDAE(arg) for arg in exp.args), toDAE(exp.ty), toDAE(TYPE_FUNCTION(fn, FunctionTYPE_FUNCTIONAL_VARIABLE)))
       end
 
@@ -4983,7 +5011,7 @@ function arrayFromList_impl(inExps::List{<:Expression}, elemTy::M_Type, inDims::
   partexps = ListUtil.partition(inExps, dimsize)
   newlst = nil
   for arrexp in partexps
-    newlst = _cons(makeArray(ty, arrexp), newlst)
+    newlst = Cons{Expression}(makeArray(ty, arrexp), newlst)
   end
   newlst = listReverse(newlst)
   outExp = arrayFromList_impl(newlst, ty, restdims)
@@ -4993,14 +5021,14 @@ end
 """
 Same as arrayFromList but for ```Vector{Expression}```
 """
-function arrayFromVector(inExps::Vector{Expression}, elemTy::M_Type, inDims::List{<:Dimension})::Expression
+function arrayFromVector(inExps::Vector{Expression}, elemTy::M_Type, inDims::List{Dimension})::Expression
   local outExp::Expression
   outExp = arrayFromVectorImpl(inExps, elemTy, listReverse(inDims))
 end
 
 function arrayFromVectorImpl(inExps::Vector{Expression},
                              elemTy::M_Type,
-                             inDims::List{<:Dimension})::Expression
+                             inDims::List{Dimension})::Expression
   local outExp::Expression
   local ldim::Dimension
   local restdims::List{Dimension}
@@ -5009,7 +5037,7 @@ function arrayFromVectorImpl(inExps::Vector{Expression},
   local partexps::Vector{Vector{Expression}} #=A Vector of Vectors...=#
   local dimsize::Int
   Error.assertion(! listEmpty(inDims), "Empty dimension list given in arrayFromList.", sourceInfo())
-  @match _cons(ldim, restdims) = inDims
+  @match Cons{Dimension}(ldim, restdims) = inDims
   dimsize = size(ldim)
   ty = liftArrayLeft(elemTy, ldim)
   if ListUtil.hasOneElement(inDims)
@@ -5127,7 +5155,7 @@ function applySubscriptArrayConstructor(subscript::Subscript, call::Call, restSu
   if isIndex(subscript) && listEmpty(restSubscripts)
      outExp = applyIndexSubscriptArrayConstructor(call, subscript)
   else
-     outExp = makeSubscriptedExp(_cons(subscript, restSubscripts), CALL_EXPRESSION(call))
+     outExp = makeSubscriptedExp(Cons{Subscript}(subscript, restSubscripts), CALL_EXPRESSION(call))
   end
   #=  TODO: Handle slicing and multiple subscripts better.
   =#
@@ -5153,7 +5181,7 @@ function applySubscriptCall(subscript::Subscript, exp::Expression, restSubscript
       end
 
       _  => begin
-        makeSubscriptedExp(_cons(subscript, restSubscripts), exp)
+        makeSubscriptedExp(Cons{Subscript}(subscript, restSubscripts), exp)
       end
     end
   end
@@ -5269,7 +5297,7 @@ function applyIndexExpArray(exp::Expression, index::Expression, restSubscripts::
   elseif isBindingExp(index)
      outExp = bindingExpMap(index, (exp, restSubscripts) -> applyIndexExpArray(exp = exp, restSubscripts = restSubscripts))
   else
-     outExp = makeSubscriptedExp(_cons(SUBSCRIPT_INDEX(index), restSubscripts), exp)
+     outExp = makeSubscriptedExp(Cons{Subscript}(SUBSCRIPT_INDEX(index), restSubscripts), exp)
   end
   outExp
 end
@@ -5300,7 +5328,7 @@ function applySubscriptArray(subscript::Subscript, exp::Expression, restSubscrip
       end
 
       SUBSCRIPT_SLICE(__)  => begin
-        makeSubscriptedExp(_cons(subscript, restSubscripts), exp)
+        makeSubscriptedExp(Cons{Subscript}(subscript, restSubscripts), exp)
       end
 
       SUBSCRIPT_WHOLE(__)  => begin
@@ -5308,7 +5336,7 @@ function applySubscriptArray(subscript::Subscript, exp::Expression, restSubscrip
            outExp = exp
         else
           @match ARRAY_EXPRESSION(ty = ty, elements = expl, literal = literal) = exp
-          @match _cons(s, rest_subs) = restSubscripts
+          @match Cons{Subscript}(s, rest_subs) = restSubscripts
           expl = Expression[applySubscript(s, e, rest_subs) for e in expl]
           el_count = listLength(expl)
           ty = if el_count > 0

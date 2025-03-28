@@ -717,7 +717,7 @@ function subscriptsN(cref::ComponentRef, n::Int)::List{List{Subscript}}
       break
     end
     @match COMPONENT_REF_CREF(subscripts = subs, restCref = rest) = rest
-    subscripts = _cons(subs, subscripts)
+    subscripts = Cons{Subscript}(subs, subscripts)
   end
   return subscripts
 end
@@ -733,13 +733,13 @@ end
      Ex: a[1, 2].b[4].c[6, 3] => {{6,3}, {4}, {1,2}} =#"""
 function subscriptsAll(
   cref::ComponentRef,
-  accumSubs::List#={<:List{<:Subscript}}=# = nil,
-)::List{List{Subscript}}
+  accumSubs::Union{Cons{List{Subscript}}, Nil}= nil,
+  )::List{List{Subscript}}
   local subscripts::List{List{Subscript}}
   subscripts = begin
     @match cref begin
       COMPONENT_REF_CREF(__) => begin
-        subscriptsAll(cref.restCref, _cons(cref.subscripts, accumSubs))
+        subscriptsAll(cref.restCref, Cons{List{Subscript}}(cref.subscripts, accumSubs))
       end
       _ => begin
         accumSubs
@@ -751,22 +751,19 @@ end
 
 """ Sets the subscripts of each part of a cref to the corresponding list of subscripts. """
 function setSubscriptsList(
-  subscripts::List,#{List{Subscript}},#::List{<:List{<:Subscript}},
+  subscripts::List{List{Subscript}},#::List{<:List{<:Subscript}},
   cref::ComponentRef,
 )::ComponentRef
-  cref = begin
     local subs::List{Subscript}
     local rest_subs::List{List{Subscript}}
     local rest_cref::ComponentRef
-    @match (subscripts, cref) begin
-      (subs <| rest_subs, COMPONENT_REF_CREF(__)) => begin
-        rest_cref = setSubscriptsList(rest_subs, cref.restCref)
-        COMPONENT_REF_CREF(cref.node, subs, cref.ty, cref.origin, rest_cref)
-      end
-
-      (nil(), _) => begin
-        cref
-      end
+  @match subscripts begin
+    Cons{Subscript}(subs, rest_subs) where {cref isa COMPONENT_REF_CREF} => begin
+      rest_cref = setSubscriptsList(rest_subs, cref.restCref)
+      return COMPONENT_REF_CREF(cref.node, subs, cref.ty, cref.origin, rest_cref)
+    end
+    Nil => begin
+      cref
     end
   end
   return cref

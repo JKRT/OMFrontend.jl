@@ -293,7 +293,7 @@ function simplifySumProduct(arg::Expression, call::Call, isSum::Bool)
         makeOne(ty)
       end
     else
-      @match _cons(exp, args) = args
+      @match Cons{Expression}(exp, args) = args
        op = if isSum
         makeAdd(ty)
       else

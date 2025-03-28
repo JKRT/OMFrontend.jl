@@ -17,7 +17,7 @@ function expandCrefSet(crefs::List{<:ComponentRef})
       outCrefs =
         listAppend(list(toCref(e) for e in expl), outCrefs)
     else
-      outCrefs = _cons(cref, outCrefs)
+      outCrefs = Cons{ComponentRef}(cref, outCrefs)
     end
   end
   outCrefs = ListUtil.sort(outCrefs, isGreater)
@@ -84,7 +84,7 @@ function whenEquationEqualityCrefs(
   @assign crefs = begin
     @match lhsExp begin
       CREF_EXPRESSION(__) => begin
-        _cons(lhsExp.cref, crefs)
+        Cons{ComponentRef}(lhsExp.cref, crefs)
       end
 
       TUPLE_EXPRESSION(__) => begin
@@ -106,7 +106,7 @@ function whenEquationBranchCrefs(eql::Union{List{<:Equation}, Vector{<:Equation}
           whenEquationEqualityCrefs(eq.lhs, crefs)
         end
         EQUATION_CREF_EQUALITY(__) => begin
-          _cons(eq.lhs, crefs)
+          Cons{ComponentRef}(eq.lhs, crefs)
         end
         EQUATION_ARRAY_EQUALITY(__) => begin
           whenEquationEqualityCrefs(eq.lhs, crefs)

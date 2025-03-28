@@ -322,7 +322,7 @@ function subscript(ty::M_Type, subs::List{<:Subscript})::M_Type
   end
   @assign dims = arrayDims(ty)
   for sub in subs
-    @match _cons(dim, dims) = dims
+    @match Cons{Dimension}(dim, dims) = dims
     @assign subbed_dims = begin
       @match sub begin
         SUBSCRIPT_INDEX(__) => begin
@@ -330,11 +330,11 @@ function subscript(ty::M_Type, subs::List{<:Subscript})::M_Type
         end
 
         SUBSCRIPT_SLICE(__) => begin
-          _cons(toDimension(sub), subbed_dims)
+          Cons{Dimension}(toDimension(sub), subbed_dims)
         end
 
         SUBSCRIPT_WHOLE(__) => begin
-          _cons(dim, subbed_dims)
+          Cons{Dimension}(dim, subbed_dims)
         end
       end
     end
@@ -1515,7 +1515,7 @@ function unliftArray(ty::M_Type)::M_Type
   local el_ty::M_Type
   local dims::List{Dimension}
 
-  @match TYPE_ARRAY(el_ty, _cons(_, dims)) = ty
+  @match TYPE_ARRAY(el_ty, Cons{Dimension}(_, dims)) = ty
   if listEmpty(dims)
     @assign ty = el_ty
   else
@@ -1572,7 +1572,7 @@ end
 function liftArrayLeft(ty::M_Type, dim::Dimension)::TYPE_ARRAY
   @match ty begin
     TYPE_ARRAY(__) => begin
-      return TYPE_ARRAY(ty.elementType, _cons(dim, ty.dimensions))
+      return TYPE_ARRAY(ty.elementType, Cons{Dimension}(dim, ty.dimensions))
     end
     _ => begin
       return TYPE_ARRAY(ty, list(dim))

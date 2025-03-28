@@ -456,7 +456,7 @@ function checkOverloadedBinaryArrayAddSub2(
           @assign ty1 = Type.unliftArray(type1)
           @assign ty2 = Type.unliftArray(type2)
           for e1 in expl1
-            @match _cons(e2, expl2) = expl2
+            @match Cons(e2, expl2) = expl2
              (e, ty) = checkOverloadedBinaryArrayAddSub2(
               e1,
               ty1,
@@ -1153,17 +1153,22 @@ function implicitConstructAndMatch2(
      (e2, ty, var) = P_Call.typeCall(e2, 0, paramInfo1)
      (_, _, mk) = matchTypes(paramType2, ty, e2, false)
     if mk == MatchKind.EXACT
-      @assign matchedFns = _cons((fn, if reverseArgs
-        list(e2, e1)
-      else
-        list(e1, e2)
-      end, var), matchedFns)
-      @assign matched = true
+      matchedFns = List{Tuple{M_Function, List{Expression}, VariabilityType}}(
+        (fn,
+         if reverseArgs
+           Cons{Expression}(e2, e1)
+         else
+           Cons{Expression}(e1, e2)
+         end,
+         var),
+        matchedFns)
+      #= Set matched to true =#
+      matched = true
     else
-      @assign matched = false
+      matched = false
     end
   else
-    @assign matched = false
+    matched = false
   end
   return (matchedFns, matched)
 end
@@ -1709,9 +1714,9 @@ function checkOverloadedUnaryOperator(
     fail()
   end
   if listLength(exactMatches) == 1
-    @match _cons(matchedFunc, _) = exactMatches
-    @assign outType = returnType(matchedFunc.func)
-    @assign outExp = CALL_EXPRESSION(P_Call.makeTypedCall(
+    @match Cons(matchedFunc, _) = exactMatches
+    outType = returnType(matchedFunc.func)
+    outExp = CALL_EXPRESSION(P_Call.makeTypedCall(
       matchedFunc.func,
       list(Util.tuple31(a) for a in matchedFunc.args),
       var,
@@ -3196,63 +3201,64 @@ function matchBinding(
   componentType::NFType,
   name::String,
   component::InstNode,
-)::Binding
-   () = begin
-    local ty_match::MatchKindType
-    local exp::Expression
-    local ty::NFType
-    local exp_ty::NFType
-    local comp_ty::NFType
-    local dims::List{List{Dimension}}
-     @match binding begin
-      TYPED_BINDING(bindingExp = exp) => begin
-         (exp_ty, comp_ty) = begin
-          @match exp begin
-            BINDING_EXP(
-              __,
-            ) where {(binding.eachType == EachType.NOT_EACH)} => begin
-              dims = list(arrayDims(getType(p)) for p in listRest(exp.parents))
-              (
-                exp.expType,
-                liftArrayLeftList(componentType, ListUtil.flattenReverse(dims)),
-              )
+  )::Binding
+  local ty_match::MatchKindType
+  local exp::Expression
+  local ty::NFType
+  local exp_ty::NFType
+  local comp_ty::NFType
+  local dims::List{List{Dimension}}
+  @match binding begin
+    TYPED_BINDING(bindingExp = exp) => begin
+        @match exp begin
+          BINDING_EXP(
+            __,
+          ) where {(binding.eachType == EachType.NOT_EACH)} => begin
+            @match Cons(_, restDims) = exp.parents
+            dims = nil
+            while restDims !== nil
+              @match Cons(p, restDims) = restDims
+              dims = Cons{List{Dimension}}(arrayDims(getType(p)), dims)
             end
+            dims = listReverse(dims)
+            comp_ty = liftArrayLeftList(componentType, ListUtil.flattenReverse(dims))
+            exp_ty = exp.expType
+          end
 
-            _ => begin
-              (binding.bindingType, componentType)
-            end
+          _ => begin
+            comp_ty = componentType
+            exp_ty = binding.bindingType
           end
         end
-        (exp, ty, ty_match) = matchTypes(exp_ty, comp_ty, exp, #=allowUnknown=# true)
-        if !isValidAssignmentMatch(ty_match)
-          printBindingTypeError(name, binding, comp_ty, exp_ty, component)
-          fail()
-        elseif isCastMatch(ty_match)
-          binding = TYPED_BINDING(
-            exp,
-            ty,
-            binding.variability,
-            binding.eachType,
-            binding.evaluated,
-            binding.isFlattened,
-            binding.info,
-          )
-        end
-        ()
+      @match exp, ty, ty_match = matchTypes(exp_ty, comp_ty, exp, #=allowUnknown=# true)
+      if !isValidAssignmentMatch(ty_match)
+        printBindingTypeError(name, binding, comp_ty, exp_ty, component)
+        fail()
+      elseif isCastMatch(ty_match)
+        binding = TYPED_BINDING(
+          exp,
+          ty,
+          binding.variability,
+          binding.eachType,
+          binding.evaluated,
+          binding.isFlattened,
+          binding.info,
+        )
       end
+      ()
+    end
 
-      UNBOUND(__) => begin
-        ()
-      end
-       _ => begin
-         binding = BINDING_ERROR()
-        # Error.assertion(
-        #   false,
-        #   getInstanceName() + " got untyped binding " + toString(binding),
-        #   sourceInfo(),
-        # )
-        # fail()
-      end
+    UNBOUND(__) => begin
+      ()
+    end
+    _ => begin
+      binding = BINDING_ERROR()
+      # Error.assertion(
+      #   false,
+      #   getInstanceName() + " got untyped binding " + toString(binding),
+      #   sourceInfo(),
+      # )
+      # fail()
     end
   end
   return binding

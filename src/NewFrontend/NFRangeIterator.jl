@@ -46,7 +46,12 @@ function map(iterator::RangeIterator, func::FuncT)
     (iter, exp) = next(iter)
     lst = Cons{Subscript}(func(exp), lst)
   end
-  lst = listReverse(lst)
+  tmp = lst
+  lst = nil
+  while tmp !== nil
+    @match Cons{Subscript}(s, tmp) = tmp
+    lst = Cons{Subscript}(s, lst)
+  end
   return lst
 end
 

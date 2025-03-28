@@ -1787,7 +1787,7 @@ function addInheritedElementConflict(
     if !DuplicateTree.idExistsInEntry(newEntry, dup_entry)
       if ty == DuplicateTree.EntryType.REDECLARE
         entry = newEntry
-        local dup_entryChildren = _cons(DuplicateTree.newEntry(newEntry), dup_entry.children)
+        local dup_entryChildren = Cons{DuplicateTree.Entry}(DuplicateTree.newEntry(newEntry), dup_entry.children)
         dup_entry = DuplicateTree.DUPLICATE_TREE_ENTRY(dup_entry.entry, dup_entry.node, dup_entryChildren, dup_entry.ty)
       else
         if new_id < old_id
@@ -1795,12 +1795,12 @@ function addInheritedElementConflict(
           dup_entry = DuplicateTree.Entry.ENTRY(
             newEntry,
             NONE(),
-            _cons(DuplicateTree.newEntry(oldEntry), dup_entry.children),
+            Cons{DuplicateTree.ENTRY}(DuplicateTree.newEntry(oldEntry), dup_entry.children),
             dup_entry.ty,
           )
         else
           entry = oldEntry
-          local dup_entryChildren = _cons(DuplicateTree.newEntry(newEntry), dup_entry.children)
+          local dup_entryChildren = Cons{DuplicateTree.ENTRY}(DuplicateTree.newEntry(newEntry), dup_entry.children)
           dup_entry = DuplicateTree.DUPLICATE_TREE_ENTRY(dup_entry.entry, dup_entry.node, dup_entryChildren, dup_entry.ty)
         end
       end

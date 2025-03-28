@@ -125,7 +125,7 @@ function collectRecordParams(
         for i = arrayLength(comps):(-1):1
           comp = comps[i]
           (inputs, locals) = collectRecordParam(comp, inputs, locals)
-          allParams = _cons(comp, allParams)
+          allParams = Cons{InstNode}(comp, allParams)
         end
         ()
       end
@@ -133,7 +133,7 @@ function collectRecordParams(
         for i = arrayLength(pcomps):(-1):1
           comp = P_Pointer.access(pcomps[i])
           (inputs, locals) = collectRecordParam(comp, inputs, locals)
-          allParams = _cons(comp, allParams)
+          allParams = Cons{InstNode}(comp, allParams)
         end
         ()
       end

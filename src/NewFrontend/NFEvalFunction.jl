@@ -393,7 +393,7 @@ function buildRecordBinding(recordNode::InstNode, repl::ReplTree.Tree)::Expressi
           for i = arrayLength(comps):(-1):1
             exp = makeMutable(getBindingExp(comps[i], repl))
             local_repl = ReplTree.add(local_repl, comps[i], exp)
-            bindings = _cons(exp, bindings)
+            bindings = Cons{Expression}(exp, bindings)
           end
           #=  Add the expression to both the replacement tree and the list of bindings.
           =#
@@ -572,7 +572,7 @@ function createResult(repl::ReplTree.Tree, outputs::List{<:InstNode})::Expressio
     for o in outputs
       e = evalExp(ReplTree.get(repl, o))
       assertAssignedOutput(o, e)
-      expl = _cons(e, expl)
+      expl = Cons{Expression}(e, expl)
     end
     expl = listReverseInPlace(expl)
     types = list(typeOf(e) for e in expl)

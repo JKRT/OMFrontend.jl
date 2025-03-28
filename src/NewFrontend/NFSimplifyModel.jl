@@ -362,7 +362,6 @@ function simplifyTupleElement(
     @match _cons(rhs, rest_rhs) = rest_rhs
     @match _cons(ety, rest_ty) = rest_ty
     if !isWildCref(lhs)
-      #@assign statements = _cons(makeFn(lhs, rhs, ety, src), statements)
       push!(statements, makeFn(lhs, rhs, ety, src))
     end
   end

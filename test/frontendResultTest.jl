@@ -6,6 +6,7 @@ Author: johti17@liu.se
 #= Include tests for equations =#
 include("equationTests.jl")
 include("connect.jl")
+include("arrayTests.jl")
 import ..ConnectTests
 
 #= The set of basic connect tests=#
@@ -57,10 +58,20 @@ connectTsts = [ctst1,
 #= Tests that should throw errors =#
 incorrectTsts = [ctst3, ctst10, ctst11]
 #= Add new tests here=#
-tst = [tank, heattank, heatTankExpanded, multipleinheritanceconnect, resistorCircuit0, resistorCircuit1, simpleCircuit]
-equationTests = [circle, arrayfancy, ifEquationDer, testArrayEq]
+tst = [tank,
+       heattank,
+       heatTankExpanded,
+       multipleinheritanceconnect,
+       resistorCircuit0,
+       resistorCircuit1,
+       simpleCircuit]
 
-function runConnectTests(tests, testSetDesc)
+equationTests = [circle,
+                 arrayfancy,
+                 ifEquationDer,
+                 testArrayEq]
+
+function runTestsDefinedInVector(tests::Vector, testSetDesc)
   @testset "$testSetDesc" begin
     for mf in tests
       try
@@ -87,7 +98,8 @@ function runConnectTests(tests, testSetDesc)
   end
 end
 
-runConnectTests(connectTsts, "Connector test. Testing the handling of connectors")
-runConnectTests(tst, "Trying simple Modelica models using connectors")
-runConnectTests(equationTests, "Trying slightly more advanced models, containing equational loops etc.")
+runTestsDefinedInVector(connectTsts, "Connector test. Testing the handling of connectors")
+runTestsDefinedInVector(tst, "Trying simple Modelica models using connectors")
+runTestsDefinedInVector(equationTests, "Trying slightly more advanced models, containing equational loops etc.")
+runTestsDefinedInVector(arrayTests0, "Testing scalarization of equational loops and vector of records..")
 #= End Connector tests =#

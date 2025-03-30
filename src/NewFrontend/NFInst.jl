@@ -2058,8 +2058,8 @@ function instExpressions(@nospecialize(node::InstNode),
       =#
       exts = getExtends(cls_tree)
       for ext in exts
-        instExpressions(ext, ext, sections)
-      end
+         instExpressions(ext, ext, sections)
+       end
       #=  A type must extend a basic type.
       =#
       if arrayLength(exts) == 1

@@ -43,6 +43,8 @@ import ..SCodeUtil
 import ..Util
 import ..System
 
+using Distributed
+
 const ASSERTION_LEVEL_ERROR =
   Absyn.CREF(Absyn.CREF_FULLYQUALIFIED(Absyn.CREF_QUAL(
     "AssertionLevel",
@@ -74,7 +76,6 @@ function translateAbsyn2SCode(inProgram::Absyn.Program)
         System.setHasOverconstrainedConnectors(false)
         System.setHasStreamConnectors(false)
         sp = list(translateClass(c) for c in inClasses)
-        sp
       end
     end
   end

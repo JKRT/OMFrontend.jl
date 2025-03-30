@@ -8,19 +8,16 @@
 # end
 
 PrecompileTools.@compile_workload begin
-
-  @warn VERSION.minor == 10 "Only tested on Julia versions 1.10.x..."
-
   @info "Precompiling builtin libraries..."
+  @info "NOTE: This version of OMFrontend only supports Julia versions greater than 1.10"
   if ! haskey(NFModelicaBuiltinCache, "NFModelicaBuiltin")
-    #= Locate the external libraries =#
     @info "Locating external libraries.."
     packagePath = dirname(realpath(Base.find_package("OMFrontend")))
     packagePath *= "/.."
     pathToLib = packagePath * "/lib/NFModelicaBuiltin.mo"
     #= The external C stuff can be a bit flaky.. =#
     GC.enable(false)
-    p = parseFile(pathToLib, 2 #== MetaModelica ==#)
+    p = parseFile(pathToLib, 2 #= MetaModelica =#)
     @info "Translating builtin library to SCode.."
     s = translateToSCode(Absyn.PROGRAM(nil, Absyn.TOP()))
     s = translateToSCode(p)
@@ -32,13 +29,13 @@ PrecompileTools.@compile_workload begin
   end
   @info "Builtin libraries successfully precompiled!"
   @info "Initial compiler module interfaces are compiled!"
-  #= Make sure that we load the builtin scode=#
+  #= Make sure that we load the builtin scode =#
   packagePath = dirname(realpath(Base.find_package("OMFrontend")))
   packagePath *= "/.."
   pathToLib = packagePath * "/lib/NFModelicaBuiltin.mo"
   #= The external C stuff can be a bit flaky.. =#
   GC.enable(false)
-  p = OMParser.parseFile(pathToLib, 2 #== MetaModelica ==#)
+  p = OMParser.parseFile(pathToLib, 2 #= MetaModelica=#)
   builtinSCode = Frontend.AbsynToSCode.translateAbsyn2SCode(p)
   GC.enable(true)
   #= End preamble =#
@@ -119,6 +116,7 @@ PrecompileTools.@compile_workload begin
     "Engine1a",
     "Engine1b",
     "Engine1b_analytic",
+    "EngineV6"
   ]
   for p in precompile_model_names
     @info "Translating: $(string(precompile_prefix, ".", p))"

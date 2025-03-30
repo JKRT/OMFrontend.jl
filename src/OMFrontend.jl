@@ -163,12 +163,14 @@ end
 function writeFlatModelicaToFile(fm, fLst;
                                  printBindingtypes = false,
                                  fileName,
-                                 )
+                                 removeQuotes::Bool)
   local fmStr = toFlatModelica(fm, fLst;
-                               printBindingTypes = printBindingtypes,
-                               )
-  write(fileName, fmStr)
-  close(fileName)
+                               printBindingTypes = printBindingtypes,)
+  fmStr = if removeQuotes
+    removeQuotesFromFlatModelica(fmStr)
+  end
+  f = write(fileName, fmStr)
+  #close(f)
 end
 
 """
@@ -316,6 +318,47 @@ end
 Base.show(io::IO, ::MIME"text/plain", t::Tuple{OMFrontend.Frontend.FLAT_MODEL, OMFrontend.Frontend.FunctionTreeImpl.NODE}) = begin
   print(io, "Flat Model:\n", string(first(t)))
   print(io, "\nFunctions:\n", string(last(t)))
+end
+
+"""
+```
+removeQuotesFromFlatModelica(flatModelicaStr::String)
+```
+This function postprocesses a flat modelica model represented as a string.
+It does so by removing quoted variables and expressions where possible.
+This function should be used on models that has ascii characters only.
+This can be useful if you wish to remove redundant clutter from flat models.
+
+  NOTE: Not exhaustively tested for all models.
+"""
+function removeQuotesFromFlatModelica(fmStr::String)
+  local buffer::IOBuffer = IOBuffer()
+  if ! isascii(fmStr)
+    @info "The model contains characters not in the ascii character encoding format.\nThe string was not modified."
+    return fmStr
+  end
+  local strs = split(fmStr, "\n")
+  for str in strs
+    local matchedStr::Option{RegexMatch}
+    local replaced = false
+    local mstr = str
+    if (contains(mstr, "'"))
+      matchedStrings = eachmatch(r"'[^']*'",  mstr)
+      for matchedString in matchedStrings
+        local underscoresReplaced = replace(matchedString.match, "." => "_")
+        if ! contains(matchedString.match, "[")
+          strWithQuotesAndUnderscoresReplaced = replace(underscoresReplaced, "'" => "")
+          mstr = replace(mstr, matchedString.match => strWithQuotesAndUnderscoresReplaced)
+        else
+          mstr = replace(mstr, matchedString.match => underscoresReplaced)
+        end
+      end
+      println(buffer, mstr)
+    else
+      println(buffer, mstr)
+    end
+  end
+  return String(take!(buffer))
 end
 
 include("precompilation.jl")

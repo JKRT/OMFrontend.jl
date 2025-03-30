@@ -338,6 +338,7 @@ function applyLocalComponents(tree::CLASS_TREE_INSTANTIATED_TREE,
       NONE()
     )::Nothing
   end
+
   for arg in componentInnerOuterNodes
     instComponent(
       arg::INNER_OUTER_NODE,
@@ -362,6 +363,8 @@ function applyLocalComponentsWithInstComponentExpressions(tree::CLASS_TREE_INSTA
   end
   return nothing
 end
+
+using Distributed
 
 @noinline function applyLocalComponents(tree::Union{CLASS_TREE_PARTIAL_TREE,
                                                     CLASS_TREE_EXPANDED_TREE},
@@ -397,7 +400,8 @@ end
 @noinline function mapFoldExtends(tree::ClassTree, func::Function, arg::ArgT) where {ArgT}
   local exts::Vector{InstNode} = getExtends(tree)
   local ext::InstNode
-  for i in 1:length(exts)
+  local N = length(exts)
+  for i in 1:N
     (ext, arg) = func(arrayGetNoBoundsChecking(exts, i), arg)
     arrayUpdateNoBoundsChecking(exts, i, ext)
   end

@@ -312,7 +312,7 @@ function applyLocalComponents(tree::CLASS_TREE_INSTANTIATED_TREE,
                               instLevel::Int,
                               attributeRef::Ref{Attributes})::Nothing
   local components = tree.localComponents
-  local componentNodes = COMPONENT_NODE[]
+  local componentNodes = COMPONENT_NODE{String, Int8}[]
   local componentInnerOuterNodes = INNER_OUTER_NODE[]
   for i in tree.localComponents
     local arg = P_Pointer.access(@inbounds tree.components[i]::Pointer{InstNode})
@@ -329,7 +329,7 @@ function applyLocalComponents(tree::CLASS_TREE_INSTANTIATED_TREE,
       return
     end
     instComponent(
-      arg::COMPONENT_NODE,
+      arg::COMPONENT_NODE{String, Int8},
       attributes,
       MODIFIER_NOMOD(),
       useBinding::Bool,
@@ -442,7 +442,16 @@ end
 end
 
 
-@noinline function mapExtends(tree::CLASS_TREE_INSTANTIATED_TREE, parent::Union{CLASS_NODE, COMPONENT_NODE})
+@noinline function mapExtends(tree::CLASS_TREE_INSTANTIATED_TREE, parent::CLASS_NODE)
+  local exts::Vector{InstNode} = getExtends(tree::CLASS_TREE_INSTANTIATED_TREE)
+  for i in 1:length(exts)
+    @inbounds res = exts[i]::CLASS_NODE
+    @inbounds exts[i] = modifyExtends(res::CLASS_NODE, parent)::CLASS_NODE
+  end
+  return
+end
+
+@noinline function mapExtends(tree::CLASS_TREE_INSTANTIATED_TREE, parent::COMPONENT_NODE{String, Int8})
   local exts::Vector{InstNode} = getExtends(tree::CLASS_TREE_INSTANTIATED_TREE)
   for i in 1:length(exts)
     @inbounds res = exts[i]::CLASS_NODE
@@ -1059,7 +1068,8 @@ function instantiate(
         BASE_CLASS(clsNode, definition(node)),
         node,
       )
-      @match (node, instance, classCount, compCount) = instantiate(node, instance, scope)
+      tmp = instantiate(node, instance, scope)
+      (node, instance, classCount, compCount) = tmp
       cls = EXPANDED_DERIVED(node, cls.modifier, cls.dims, cls.prefixes, cls.attributes, cls.restriction)
     end
     PARTIAL_BUILTIN(elements = tree && CLASS_TREE_FLAT_TREE(components = old_comps)) =>
@@ -1172,8 +1182,6 @@ function addElementsToFlatTree(elements::List{<:InstNode}, tree::ClassTree)::Cla
   local ltree::LookupTree.Tree
   local cls_arr::Vector{InstNode}
   local comp_arr::Vector{InstNode}
-  local cls_lst::Vector{InstNode}
-  local comp_lst::Vector{InstNode}
   local imports::Vector{Import}
   local duplicates::DuplicateTree.Tree
   local cls_idx::Int
@@ -1186,19 +1194,19 @@ function addElementsToFlatTree(elements::List{<:InstNode}, tree::ClassTree)::Cla
     if isComponent(e)
       comp_idx = comp_idx + 1
       lentry = LookupTree.COMPONENT(comp_idx)
-      comp_lst = push!(comp_lst, e)
+      push!(comp_arr, e)
     else
       cls_idx = cls_idx + 1
       lentry = LookupTree.CLASS(cls_idx)
-      cls_lst = push!(cls_lst, e)
+      push!(cls_arr, e)
     end
     ltree = addLocalElement(name(e), lentry, tree, ltree)
   end
-  for e in cls_lst
+  for e in cls_arr
     push!(cls_arr, e)
   end
-  for c in comp_lst
-    push!(comp_lst, c)
+  for c in comp_arr
+    push!(comp_arr, c)
   end
   tree = CLASS_TREE_FLAT_TREE(ltree, cls_arr, comp_arr, imports, duplicates)
   return tree

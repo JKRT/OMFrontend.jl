@@ -84,6 +84,9 @@ mutable struct COMPONENT_DEF <: Component
   modifier::Modifier
 end
 
+struct EMPTY_COMPONENT <: Component
+end
+
 const DEFAULT_ATTR =
   IMMUTABLE_ATTRIBUTES(
     ConnectorType.NON_CONNECTOR,

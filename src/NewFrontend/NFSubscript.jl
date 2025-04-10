@@ -113,13 +113,13 @@ function first(dim::Dimension)::Subscript
   local sub::Subscript
    sub = begin
     @match dim begin
-      INTEGER_EXPRESSION(__) => begin
+      DIMENSION_INTEGER(__) => begin
         SUBSCRIPT_INDEX(INTEGER_EXPRESSION(1))
       end
-      BOOLEAN(__) => begin
+      DIMENSION_BOOLEAN(__) => begin
         SUBSCRIPT_INDEX(BOOLEAN_EXPRESSION(false))
       end
-      ENUM(__) => begin
+      DIMENSION_ENUM(__) => begin
         SUBSCRIPT_INDEX(nthEnumLiteral(dim.enumType, 1))
       end
     end
@@ -699,6 +699,51 @@ function mapFoldExpShallow(subscript::Subscript, func::MapFunc, arg::ArgT) where
   end
   return (outSubscript, arg)
 end
+
+
+"""
+```
+mapFoldExpShallowO1
+```
+Same as ```mapFoldExpShallow``` but returns only one argument.
+"""
+function mapFoldExpShallowO1(subscript::Subscript, func::MapFunc, arg::ArgT) where {ArgT}
+  local outSubscript::Subscript
+  outSubscript = begin
+    local exp::Expression
+    @match subscript begin
+      SUBSCRIPT_UNTYPED(__) => begin
+        exp = func(subscript.exp, arg)
+        if referenceEq(subscript.exp, exp)
+          subscript
+        else
+          SUBSCRIPT_UNTYPED(exp)
+        end
+      end
+      SUBSCRIPT_INDEX(__) => begin
+        exp = func(subscript.index, arg) #MetaModelica bug? Should be arg I think -John March 30 2023
+        if referenceEq(subscript.index, exp)
+          subscript
+        else
+          fromTypedExp(exp)
+        end
+      end
+      SUBSCRIPT_SLICE(__) => begin
+        exp = func(subscript.slice, arg)
+        if referenceEq(subscript.slice, exp)
+          subscript
+        else
+          fromTypedExp(exp)
+        end
+      end
+      _ => begin
+        subscript
+      end
+    end
+  end
+  return outSubscript
+end
+
 
 function mapFoldExp(subscript::Subscript, func::MapFunc, arg::ArgT) where {ArgT}
 

@@ -259,10 +259,12 @@ function loadMSL(; MSL_Version)
     Frontend.Global.initialize()
     #= Find the MSL =#
     try
+      @info "Loading MSL.."
       local packagePath = dirname(realpath(Base.find_package("OMFrontend")))
       local packagePath *= "/.."
       local pathToLib = packagePath * string("/lib/Modelica/", MSL_Version, ".mo")
-      local p = parseFile(pathToLib)
+      @info "Initial parsing of the MSL..."
+      @time local p = parseFile(pathToLib)
       #= Translate it to SCode =#
       local scodeMSL = OMFrontend.translateToSCode(p)
       global LIBRARY_CACHE[MSL_Version] = scodeMSL
@@ -271,7 +273,7 @@ function loadMSL(; MSL_Version)
       @info "Failed loading the Modelica Standard Library. Valid versions are 3.2.3 and 4.0.0"
       @info "Continue instantiating the model until the next error."
     end
-  end
+end
 end
 
 

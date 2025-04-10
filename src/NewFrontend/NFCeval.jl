@@ -325,7 +325,7 @@ function evalExpPartial(
   exp::Expression,
   target::EvalTarget = EVALTARGET_IGNORE_ERRORS(),
   evaluated::Bool = true,
-)::Tuple{Expression, Bool}
+  )::Tuple{Expression, Bool}
   local outEvaluated::Bool #= True if the whole expression is evaluated, otherwise false. =#
   local outExp::Expression
   local e::Expression
@@ -333,12 +333,15 @@ function evalExpPartial(
   local e2::Expression
   local eval1::Bool
   local eval2::Bool
-  local f = @closure (expArg, boolArg) -> evalExpPartial(expArg, target, boolArg)
-  (e, outEvaluated) = mapFoldShallow(
+  local outEvaluatedRef::Ref{Bool} = Ref{Bool}(true)
+  local f = @closure (expArg, boolArg) -> evalExpPartialRef(expArg, outEvaluatedRef, target)
+  e = mapFoldShallowRef(
     exp,
     f,
     true,
+    outEvaluatedRef
   )
+  outEvaluated = outEvaluatedRef.x
   outExp = begin
     @match e begin
       CREF_EXPRESSION(__) => begin
@@ -375,6 +378,53 @@ function evalExpPartial(
   end
    outEvaluated = evaluated && outEvaluated
   return (outExp, outEvaluated) #= True if the whole expression is evaluated, otherwise false. =#
+end
+
+
+function evalExpPartialRef(
+  exp::Expression,
+  outEvaluatedRef::Ref{Bool},
+  target::EvalTarget = EVALTARGET_IGNORE_ERRORS())::Expression
+  local outEvaluated::Bool #= True if the whole expression is evaluated, otherwise false. =#
+  local outExp::Expression
+  local e::Expression
+  local e1::Expression
+  local e2::Expression
+  local eval1::Bool
+  local eval2::Bool
+  local f = @closure (expArg, z #=We ignore Z=#) -> evalExpPartialRef(expArg, outEvaluatedRef, target)
+  e = mapFoldShallowRef(exp, f, true, outEvaluatedRef)
+  outEvaluated = outEvaluatedRef.x
+  local evaluated = true
+  outExp = begin
+    @match e begin
+      CREF_EXPRESSION(__) => begin
+        if isIterator(e.cref)
+          outExp = e
+          outEvaluated = false
+        else
+          outExp = evalCref(e.cref, e, target, evalSubscripts = false)
+        end
+        outExp
+      end
+
+      MUTABLE_EXPRESSION(__) => begin
+        outEvaluated = false
+        e
+      end
+
+      _ => begin
+        if outEvaluated
+          evalExp(e, target)
+        else
+          e
+        end
+      end
+    end
+  end
+  outEvaluated = evaluated && outEvaluated
+  outEvaluatedRef.x = outEvaluated
+  return outExp
 end
 
 function evalCref(cref::ComponentRef,

@@ -55,15 +55,37 @@ mutable struct TYPED_REDUCTION <: Call
   foldExp::Tuple{Option{Expression}, String, String}
 end
 
-mutable struct UNTYPED_REDUCTION <: Call
-  ref::ComponentRef
+mutable struct TYPED_ARRAY_CONSTRUCTOR <: Call
+  ty::NFType
+  var::VariabilityType
   exp::Expression
   iters::List{Tuple{InstNode, Expression}}
 end
 
-mutable struct TYPED_ARRAY_CONSTRUCTOR <: Call
+mutable struct TYPED_CALL <: Call
+  fn::M_Function
   ty::NFType
   var::VariabilityType
+  arguments::Vector{Expression}
+  attributes::CallAttributes
+end
+
+mutable struct ARG_TYPED_CALL <: Call
+  ref::ComponentRef
+  arguments::Vector{TypedArg}
+  named_args::Vector{TypedNamedArg}
+  call_scope::InstNode
+end
+
+mutable struct UNTYPED_CALL <: Call
+  ref::ComponentRef
+  arguments::Vector{Expression}
+  named_args::Vector{NamedArg}
+  call_scope::InstNode
+end
+
+mutable struct UNTYPED_REDUCTION <: Call
+  ref::ComponentRef
   exp::Expression
   iters::List{Tuple{InstNode, Expression}}
 end
@@ -73,27 +95,6 @@ mutable struct UNTYPED_ARRAY_CONSTRUCTOR <: Call
   iters::List{Tuple{InstNode, Expression}}
 end
 
-struct TYPED_CALL <: Call
-  fn::M_Function
-  ty::NFType
-  var::VariabilityType
-  arguments::Vector{Expression}
-  attributes::CallAttributes
-end
-
-struct ARG_TYPED_CALL <: Call
-  ref::ComponentRef
-  arguments::Vector{TypedArg}
-  named_args::Vector{TypedNamedArg}
-  call_scope::InstNode
-end
-
-struct UNTYPED_CALL <: Call
-  ref::ComponentRef
-  arguments::Vector{Expression}
-  named_args::Vector{NamedArg}
-  call_scope::InstNode
-end
 
 @UniontypeDecl CallAttributes
 
@@ -888,7 +889,7 @@ function typeCall(
   arg2 = origin
   arg3 = info
   @match CALL_EXPRESSION(call = call) = callExp
-  if call isa TYPED_ARRAY_CONSTRUCTOR || call isa TYPED_REDUCTION || call isa TYPED_CALL
+  if call isa TYPED_ARRAY_CONSTRUCTOR || call isa TYPED_REDUCTION || call isa TYPED_CALL || call isa ARG_TYPED_CALL
     ty = call.ty
     var = call.var
     return (callExp, call.ty, call.var)
@@ -1323,7 +1324,7 @@ function checkMatchingFunctions(call::Call, info::SourceInfo)
     end
   end
   if isempty(matchedFunctions)
-    if listLength(allfuncs) > 1
+    if length(allfuncs) > 1
       ErrorExt.rollBack("NFCall:checkMatchingFunctions")
       Error.addSourceMessage(
         Error.NO_MATCHING_FUNCTION_FOUND_NFINST,

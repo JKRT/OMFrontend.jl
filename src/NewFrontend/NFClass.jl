@@ -164,14 +164,14 @@ function hasOperator(name::String, cls::Class)::Bool
   local op_node::InstNode
   local op_cls::Class
   if isOperatorRecord(restriction(cls))
-    try
-      @match ENTRY_INFO(op_node, _) = lookupElement(name, cls)
-      @assign hasOperator = SCodeUtil.isOperator(definition(op_node))
-    catch
-      @assign hasOperator = false
+    @match ENTRY_INFO(op_node, _) = lookupElement(name, cls)
+    if op_node isa EMPTY_NODE
+      hasOperator = false
+    else
+      hasOperator = SCodeUtil.isOperator(definition(op_node))
     end
   else
-    @assign hasOperator = false
+    hasOperator = false
   end
   return hasOperator
 end

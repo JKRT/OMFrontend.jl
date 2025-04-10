@@ -125,8 +125,8 @@ function typeComponentBindingRef(inComponent::InstNode,
 end
 
 function typeComponentBindingRef2(
-  inComponent::Union{INNER_OUTER_NODE,COMPONENT_NODE},
-  node::COMPONENT_NODE,
+  inComponent::Union{INNER_OUTER_NODE,COMPONENT_NODE{String, Int8}},
+  node::COMPONENT_NODE{String, Int8},
   c::TYPED_COMPONENT,
   origin::ORIGIN_Type,
   typeChildren::Bool,
@@ -142,7 +142,7 @@ function typeComponentBindingRef2(
     #ErrorExt.setCheckpoint(getInstanceName())
     checkBindingEach(c.binding)
     local originFlag = setFlag(origin, ORIGIN_BINDING)
-    local typedBinding::TYPED_BINDING = typeBinding(binding, originFlag,tyRef, varRef)::TYPED_BINDING
+    local typedBinding::TYPED_BINDING = typeBinding(binding, originFlag, tyRef, varRef)::TYPED_BINDING
     handleBindingError(binding)
     #if !(Config.getGraphicsExpMode() && stringEq(nameStr, "graphics")) TODO
     typedBinding = matchBinding(typedBinding, c.ty, nameStr, node)::TYPED_BINDING
@@ -305,7 +305,7 @@ typeComponentBindingRef2(
 
 function typeComponentBinding2(
   inComponent::Union{INNER_OUTER_NODE,COMPONENT_NODE},
-  node::COMPONENT_NODE,
+  node::COMPONENT_NODE{String, Int8},
   c::TYPED_COMPONENT,
   origin::ORIGIN_Type,
   typeChildren::Bool,

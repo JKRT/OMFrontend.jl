@@ -43,10 +43,20 @@ end
 function split(connection::CONNECTION)::List
   local connectionLstRight = split(connection.rhs)
   local connectionLstLeft = split(connection.lhs)
-  if listLength(connectionLstLeft) != listLength(connectionLstRight) then
-    #Error.assertion(false, getInstanceName() + " got unbalanced connection " + toString(conn) + " (lhs: " +
-    #                    String(listLength(cls)) + ", rhs: " + String(listLength(crs)) + ")", sourceInfo());
-    @error "Got unbalanced equation between $(connectionLstRight) and $(connectionLstLeft)"
+  if listLength(connectionLstLeft) != listLength(connectionLstRight)
+    local str = "\nLeft:\n"
+    for lL in connectionLstLeft
+      str *= toString(lL) * "\n"
+    end
+    str =  str * "\nRight:\n"
+    for lR in connectionLstRight
+      str *= toString(lR) * "\n"
+    end
+    @info str
+
+    Error.assertion(false, getInstanceName() + " got unbalanced connection " + toString(connection) + " (lhs: " +
+      String(listLength(connectionLstLeft)) + ", rhs: " + String(listLength(connectionLstRight)) + ")", sourceInfo());
+
     fail();
   end
   local conns = nil

@@ -96,10 +96,10 @@ mutable struct COMPONENT_NODE{T0 <: String, T1 <: Integer} <: InstNode
   nodeType::InstNodeType
 end
 
-mutable struct CLASS_NODE{T0 <: String, T1 <: Integer} <: InstNode
-  name::T0
+mutable struct CLASS_NODE <: InstNode
+  name::String
   definition::SCode.Element
-  visibility::T1
+  visibility::VisibilityType
   cls::Pointer{Class}
   caches::Vector{<:Any}
   parentScope::InstNode
@@ -124,22 +124,26 @@ end
 @exportAll()
 end
 
-@Uniontype CachedData begin
-  @Record C_TOP_SCOPE begin
-    addedInner::NodeTree.Tree
-    rootClass::InstNode
-  end
-  @Record C_FUNCTION begin
-    funcs::Vector{M_FUNCTION}
-    typed::Bool
-    specialBuiltin::Bool
-  end
-  @Record C_PACKAGE begin
-    instance::InstNode
-  end
-  @Record C_NO_CACHE begin
-  end
+abstract type CachedData end
+
+struct C_TOP_SCOPE <: CachedData
+  addedInner::NodeTree.Tree
+  rootClass::InstNode
 end
+
+mutable struct C_FUNCTION <: CachedData
+  funcs::Vector{M_FUNCTION}
+  typed::Bool
+  specialBuiltin::Bool
+end
+
+struct C_PACKAGE <: CachedData
+  instance::InstNode
+end
+
+struct C_NO_CACHE <: CachedData
+end
+
 
 const NUMBER_OF_CACHES::Int = 3
 
@@ -328,21 +332,23 @@ function getComments(node::InstNode, accumCmts::List{<:SCode.Comment} = nil)
   cmts
 end
 
+#= !NB should be assign here! =#
 function clone(@nospecialize(node::InstNode))
   local cls::Class
   local clonedNode::InstNode
   clonedNode = if node isa CLASS_NODE
     cls = P_Pointer.access(node.cls)
     cls = classTreeApply(cls, clone)
-    #= !NB should be assign here! =#
     local nodeClassPtr = P_Pointer.create(cls)
-    CLASS_NODE{String, Int}(node.name,
+    CLASS_NODE(node.name,
                             node.definition,
                             node.visibility,
                             nodeClassPtr,
                             empty(),
                             node.parentScope,
                             node.nodeType)
+  else
+    node
   end
   return clonedNode
 end
@@ -1458,18 +1464,18 @@ function definition(node::InstNode)
   return def
 end
 
-const CLASS_NODE_CACHE = Set{CLASS_NODE}()
+
 function setNodeType(@nospecialize(nodeType::InstNodeType),
                      @nospecialize(node::InstNode))
 
   local newNode = if node isa COMPONENT_NODE
-    COMPONENT_NODE{String, Int}(node.name,
+    COMPONENT_NODE{String, Int8}(node.name,
                                 node.visibility,
                                 node.component,
                                 node.parent,
                                 nodeType)
   elseif node isa CLASS_NODE
-    tmp = CLASS_NODE{String, Int}(node.name,
+    tmp = CLASS_NODE(node.name,
                                   node.definition,
                                   node.visibility,
                                   node.cls,
@@ -1499,12 +1505,10 @@ function nodeType(node::InstNode)
 end
 
 #= TODO: Investigate how to integrate these... =#
-const REPLACED_CLASS_CACHE = Set{CLASS_NODE}()
-const REPLACED_CLASS_PTR_CACHE = Set{Pointer}()
 function replaceClass(cls::Class, node::CLASS_NODE)
   local classPtr::Pointer{Class} = Pointer{Class}(cls)
   replacedClass =
-    CLASS_NODE{String, Int}(node.name,
+    CLASS_NODE(node.name,
                             node.definition,
                             node.visibility,
                             classPtr,
@@ -1517,19 +1521,22 @@ end
 
 replaceClass(cls::Class, node::InstNode) = node
 
-const COMPONENT_PTR_CACHE = IdDict{Component, Pointer}()
-const REPLACED_COMPONENT_NODE_CACHE = IdSet{COMPONENT_NODE}()
 
 """
 Creates a new component that contains a pointer to the supplied component.
 """
-function replaceComponent(component::Component, node::COMPONENT_NODE)
+function replaceComponent(component::Component, node::COMPONENT_NODE{String, Int8})::COMPONENT_NODE{String, VisibilityType}
   local componentPointer = Pointer{Component}(component)
-  return COMPONENT_NODE{String, Int}(node.name,
-                                     node.visibility,
-                                     componentPointer,
-                                     node.parent,
-                                     node.nodeType)
+  # return COMPONENT_NODE{String, Int}(node.name,
+  #                                    node.visibility,
+  #                                    componentPointer,
+  #                                    node.parent,
+  #                                    node.nodeType)
+  node = newComponent(node.name,
+                      node.visibility,
+                      componentPointer,
+                      node.parent,
+                      node.nodeType)
   return node
 end
 
@@ -1604,7 +1611,7 @@ end
 
 function setOrphanParent(parent::InstNode, node::CLASS_NODE)
   if node.parentScope isa EMPTY_NODE
-    CLASS_NODE{String, Int}(node.name,
+    CLASS_NODE(node.name,
                             node.definition,
                             node.visibility,
                             node.cls,
@@ -1616,63 +1623,42 @@ function setOrphanParent(parent::InstNode, node::CLASS_NODE)
   end
 end
 
-function setOrphanParent(parent::InstNode, node::COMPONENT_NODE)
+function setOrphanParent(parent::InstNode, node::COMPONENT_NODE{String, Int8})
   if node.parent isa EMPTY_NODE
-    COMPONENT_NODE{String, Int}(node.name,
-                                node.visibility,
-                                node.component,
-                                parent,
-                                node.nodeType)
+    COMPONENT_NODE{String, Int8}(node.name,
+                                 node.visibility,
+                                 node.component,
+                                 parent,
+                                 node.nodeType)
   else
     node
   end
 end
 
-const CLASS_NODE_PARENT_CACHE = Set{CLASS_NODE}()
 function setParent(@nospecialize(parent::InstNode),
                    node::CLASS_NODE)::CLASS_NODE
   if node.parentScope === parent
     return node
   end
-  CLASS_NODE{String, Int}(node.name,
-                          node.definition,
-                          node.visibility,
-                          node.cls,
-                          node.caches,
-                          parent,
-                          node.nodeType)
-end
-
-const COMPONENT_NODE_CACHE = IdSet{InstNode}()
-
-"""
-Reset the component node cache.
-"""
-function resetComponentNodeCaches()
-  Base.empty!(COMPONENT_NODE_CACHE)
-  Base.empty!(COMPONENT_PTR_CACHE)
-  Base.empty!(REPLACED_COMPONENT_NODE_CACHE)
-  Base.empty!(REPLACED_CLASS_PTR_CACHE)
-  Base.empty!(REPLACED_CLASS_CACHE)
-  Base.empty!(CLASS_NODE_PARENT_CACHE)
-  Base.empty!(CLASS_NODE_CACHE)
+  CLASS_NODE(node.name,
+             node.definition,
+             node.visibility,
+             node.cls,
+             node.caches,
+             parent,
+             node.nodeType)
 end
 
 function setParent(parent::InstNode,
-                   node::COMPONENT_NODE)::COMPONENT_NODE
+                   node::COMPONENT_NODE{String, VisibilityType})::COMPONENT_NODE{String, VisibilityType}
   if parent !== node.parent
-    tmp = COMPONENT_NODE{String, Int}(node.name,
-                                      node.visibility,
-                                      node.component,
-                                      parent,
-                                      node.nodeType)
+    tmp = newComponent(node.name, node.visibility, node.component, parent, node.nodeType)
     node = tmp
   end
   return node
 end
 
-function setParent(@nospecialize(parent::InstNode),
-                    node::IMPLICIT_SCOPE)
+function setParent(@nospecialize(parent::InstNode), node::IMPLICIT_SCOPE)
   IMPLICIT_SCOPE(parent, node.locals)
 end
 
@@ -2238,13 +2224,30 @@ end
 
 function newComponent(definition::SCode.Element, parent::InstNode = EMPTY_NODE())
   local node::InstNode
-
   local name::String
   local vis::SCode.Visibility
-
   @match SCode.COMPONENT(name = name, prefixes = SCode.PREFIXES(visibility = vis)) = definition
-   node = COMPONENT_NODE(name, visibilityFromSCode(vis), P_Pointer.create(new(definition)), parent, NORMAL_COMP())
+   node = COMPONENT_NODE{String, Int8}(name, visibilityFromSCode(vis), P_Pointer.create(new(definition)), parent, NORMAL_COMP())
   node
+end
+
+"""
+  Constructor to create a new component by via the component buffer.
+"""
+function newComponentC(name::String, visibility::VisibilityType, component::Component, parent::InstNode, nodeType::InstNodeType)
+  local r = Frontend.MemoryUtil.getNewComponent()::COMPONENT_NODE{String, VisibilityType}
+  local cPtr::Ref{Component} = r.component
+  cPtr.x = component
+  r.name = name
+  r.visibility = visibility
+  r.parent = parent
+  r.nodeType = nodeType
+  return r
+end
+
+
+function newComponent(name::String, visibility::VisibilityType, component::Ref{Component}, parent::InstNode, nodeType::InstNodeType)
+  COMPONENT_NODE{String, Int8}(name, visibility, component, parent, nodeType)
 end
 
 function newClass(definition::SCode.Element, parent::InstNode, nodeType::InstNodeType = NORMAL_CLASS())

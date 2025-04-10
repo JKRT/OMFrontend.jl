@@ -2088,7 +2088,7 @@ function matchTypes(
 
       TYPE_ARRAY(__) => begin
          (expression, compatibleType, matchKind) =
-          matchArrayTypes(actualType, expectedType, expression, allowUnknown)
+           matchArrayTypes(actualType, expectedType, expression, allowUnknown)
         compatibleType
       end
 
@@ -2140,6 +2140,255 @@ function matchTypes(
   end
   return (expression, compatibleType, matchKind)
 end
+
+
+function matchTypesRef(
+  actualType::T1,
+  expectedType::T2,
+  expression::T3,
+  refTyExp::Ref{NFType},
+  refMatchKind::Ref{MatchKindType},
+  allowUnknown::Bool = false,
+  )::Expression where {T1 <: NFType, T2 <: NFType, T3 <: Expression}
+  local matchKind::MatchKindType
+  local compatibleType::NFType
+  #=  Return true if the references are the same. =#
+  if referenceEq(actualType, expectedType)
+    compatibleType = actualType
+    matchKind = MatchKind.EXACT
+    refTyExp.x = compatibleType
+    refMatchKind.x = matchKind
+    return expression
+  end
+  #=  Check if the types are different kinds of types. =#
+  if valueConstructor(actualType) != valueConstructor(expectedType)
+    expression = matchTypes_castRef(actualType, expectedType, expression, refTyExp, refMatchKind, allowUnknown)
+    return expression
+  end
+  #=  If the types are not of the same kind we might need to type cast the
+  =#
+  #=  expression to make it compatible.
+  =#
+  #=  The types are of the same kind, so we only need to match on one of them.
+  =#
+  matchKind = MatchKind.EXACT
+  compatibleType = begin
+    @match actualType begin
+      TYPE_INTEGER(__) => begin
+        actualType
+      end
+
+      TYPE_REAL(__) => begin
+        actualType
+      end
+
+      TYPE_STRING(__) => begin
+        actualType
+      end
+
+      TYPE_BOOLEAN(__) => begin
+        actualType
+      end
+
+      TYPE_CLOCK(__) => begin
+        actualType
+      end
+
+      TYPE_ENUMERATION(__) => begin
+        @assign matchKind = matchEnumerationTypes(actualType, expectedType)
+        actualType
+      end
+
+      TYPE_ENUMERATION_ANY(__) => begin
+        actualType
+      end
+
+      TYPE_ARRAY(__) => begin
+        #(expression, compatibleType, matchKind) = matchArrayTypes(actualType, expectedType, expression, allowUnknown)
+        expression = matchArrayTypesRef(actualType, expectedType, expression, refTyExp, refMatchKind, allowUnknown)
+        compatibleType = refTyExp.x
+        matchKind = refMatchKind.x
+        compatibleType
+      end
+
+      TYPE_TUPLE(__) => begin
+         (expression, compatibleType, matchKind) =
+          matchTupleTypes(actualType, expectedType, expression, allowUnknown)
+        compatibleType
+      end
+
+      TYPE_UNKNOWN(__) => begin
+        matchKind = if allowUnknown
+          MatchKind.EXACT
+        else
+          MatchKind.NOT_COMPATIBLE
+        end
+        actualType
+      end
+
+      TYPE_COMPLEX(__) => begin
+         (expression, compatibleType, matchKind) =
+          matchComplexTypes(actualType, expectedType, expression, allowUnknown)
+        compatibleType
+      end
+
+      TYPE_FUNCTION(__) => begin
+         (expression, compatibleType, matchKind) =
+          matchFunctionTypes(actualType, expectedType, expression, allowUnknown)
+        compatibleType
+      end
+
+      TYPE_METABOXED(__) => begin
+         (expression, compatibleType, matchKind) = matchTypes(
+          actualType.ty,
+          Type.unbox(expectedType),
+          unbox(expression),
+          allowUnknown,
+        )
+        expression = box(expression)
+        compatibleType = box(compatibleType)
+        compatibleType
+      end
+
+      _ => begin
+        #Error.assertion(false, getInstanceName() + " got unknown type.", sourceInfo())
+        @error "Got unknown type"
+        fail()
+      end
+    end
+  end
+  refTyExp.x = compatibleType
+  refMatchKind.x = matchKind
+  return expression
+end
+
+function matchTypes_castRef(
+  actualType::NFType,
+  expectedType::NFType,
+  expression::Expression,
+  refTyExp::Ref{NFType},
+  refMatchKind::Ref{MatchKindType},
+  allowUnknown::Bool = false,
+  )::Expression
+  local matchKind::MatchKindType
+  local compatibleType::NFType
+  matchKind = begin
+    @match (actualType, expectedType) begin
+      (TYPE_INTEGER(__), TYPE_REAL(__)) => begin
+        #=  Integer can be cast to Real.
+        =#
+        expression = typeCast(expression, expectedType)
+        refTyExp.x = expectedType
+        MatchKind.CAST
+      end
+
+      (TYPE_ENUMERATION(__), TYPE_ENUMERATION_ANY(__)) => begin
+        refTyExp.x = actualType
+        MatchKind.CAST
+      end
+
+      (TYPE_TUPLE(types = _ <| _), _) => begin
+        (expression, compatibleType, matchKind) =
+          matchTypes(listHead(actualType.types), expectedType, expression, allowUnknown)
+        if isCompatibleMatch(matchKind)
+          expression = begin
+            @match expression begin
+              TUPLE_EXPRESSION(__) => begin
+                listHead(expression.elements)
+              end
+
+              _ => begin
+                TUPLE_ELEMENT_EXPRESSION(
+                  expression,
+                  1,
+                  setArrayElementType(
+                    typeOf(expression),
+                    compatibleType,
+                  ),
+                )
+              end
+            end
+          end
+          matchKind = MatchKind.CAST
+        end
+        refTyExp.x = compatibleType
+        matchKind
+      end
+
+      (TYPE_UNKNOWN(__), _) => begin
+        refTyExp.x = expectedType
+        if allowUnknown
+          MatchKind.UNKNOWN_ACTUAL
+        else
+          MatchKind.NOT_COMPATIBLE
+        end
+      end
+
+      (_, TYPE_UNKNOWN(__)) => begin
+        refTyExp.x = actualType
+        if allowUnknown
+          MatchKind.UNKNOWN_EXPECTED
+        else
+           MatchKind.NOT_COMPATIBLE
+        end
+      end
+
+      (TYPE_METABOXED(__), _) => begin
+        #=  Allow unknown types in some cases, e.g. () has type METALIST(UNKNOWN)
+        =#
+        expression = unbox(expression)
+        (expression, compatibleType, matchKind) = matchTypes(actualType.ty, expectedType, expression, allowUnknown)
+        refTyExp.x = compatibleType
+        if isCompatibleMatch(matchKind)
+           MatchKind.CAST
+         else
+           matchKind
+         end
+      end
+
+      (_, TYPE_METABOXED(__)) => begin
+        (expression, compatibleType, matchKind) =
+          matchTypes(actualType, expectedType.ty, expression, allowUnknown)
+        expression = box(expression)
+        compatibleType = Type.box(compatibleType)
+        refTyExp.x = compatibleType
+        if isCompatibleMatch(matchKind)
+          MatchKind.CAST
+         else
+          matchKind
+        end
+      end
+
+      (_, TYPE_POLYMORPHIC(__)) => begin
+        expression = BOX_EXPRESSION(expression)
+        refTyExp.x = TYPE_METABOXED(actualType)
+        MatchKind.GENERIC
+      end
+
+      (TYPE_POLYMORPHIC(__), _) => begin
+        refTyExp.x = expectedType
+        MatchKind.GENERIC
+      end
+
+      (_, TYPE_ANY(__)) => begin
+        refTyExp.x = expectedType
+        MatchKind.EXACT
+      end
+
+      _ => begin
+        refTyExp.x =TYPE_UNKNOWN()
+        MatchKind.NOT_COMPATIBLE
+      end
+    end
+  end
+  #=
+  Expected type is any, any actual type matches.
+  Anything else is not compatible.
+  =#
+  refMatchKind.x = matchKind
+  return expression
+end
+
 
 function matchExpressions_cast(
   exp1::Expression,
@@ -2600,6 +2849,83 @@ function matchArrayTypes(
   return (expression, compatibleType, matchKind)
 end
 
+
+function matchArrayTypesRef(
+  arrayType1::NFType,
+  arrayType2::NFType,
+  expression::Expression,
+  refTyExp::Ref{NFType},
+  refMatchKind::Ref{MatchKindType},
+  allowUnknown::Bool,
+)::Expression
+  local matchKind::MatchKindType
+  local compatibleType::NFType
+  local ety1::NFType
+  local ety2::NFType
+  local dims1::List{Dimension}
+  local dims2::List{Dimension}
+  @match TYPE_ARRAY(elementType = ety1, dimensions = dims1) = arrayType1
+  @match TYPE_ARRAY(elementType = ety2, dimensions = dims2) = arrayType2
+  #=  Check that the element types are compatible. =#
+  expression = matchTypesRef(ety1, ety2, expression, refTyExp, refMatchKind, allowUnknown)
+  compatibleType = refTyExp.x
+  matchKind = refMatchKind.x
+  #=  If the element types are compatible, check the dimensions too. =#
+  #(compatibleType, matchKind) =
+  matchArrayDimsRef(dims1, dims2, compatibleType, matchKind, refTyExp, refMatchKind, allowUnknown)
+  #(compatibleType, matchKind) = matchArrayDims(dims1, dims2, compatibleType, matchKind, allowUnknown)
+  #refTyExp.x = compatibleType
+  #refMatchKind.x = matchKind
+  return expression
+end
+
+function matchArrayDimsRef(
+  dims1::List{Dimension},
+  dims2::List{Dimension},
+  ty::NFType,
+  matchKind::MatchKindType,
+  refTyExp,
+  refMatchKind,
+  allowUnknown::Bool,
+  )::Nothing
+  local rest_dims2::List{Dimension} = dims2
+  local dim2::Dimension
+  local compat::Bool
+  if !isCompatibleMatch(matchKind)
+    refTyExp.x = ty
+    refMatchKind.x = matchKind
+    return #(ty, matchKind)
+  end
+  #=  The array types must have the same number of dimensions. =#
+  if length(dims1) != length(dims2)
+    matchKind = MatchKind.NOT_COMPATIBLE
+    refTyExp.x = ty
+    refMatchKind.x = matchKind
+    return #(ty, matchKind::Int)
+  end
+  local dims1V = dims1
+  local dims2V = dims2
+  #=
+  The dimensions of both array types must be compatible.
+  We do not preallocate the array here since we might need to break before that.
+  =#
+  local cDims::List{Dimension} = nil
+  for dim1 in dims1V
+    @match Cons{Dimension}(dim2, rest_dims2) = rest_dims2
+    @match (dim1, compat) = matchDimensions(dim1, dim2, allowUnknown)
+    if !compat
+      matchKind = MatchKind.NOT_COMPATIBLE
+      break
+    end
+    cDims = Cons{Dimension}(dim1, cDims)
+  end
+  ty = TYPE_ARRAY(ty, listReverse(cDims))
+  refTyExp.x = ty
+  refMatchKind.x = matchKind
+  return
+end
+
+
 function matchArrayDims(
   dims1::List{<:Dimension},
   dims2::List{<:Dimension},
@@ -2607,11 +2933,9 @@ function matchArrayDims(
   matchKind::MatchKindType,
   allowUnknown::Bool,
 )::Tuple{TYPE_ARRAY, Int}
-
   local rest_dims2::List{Dimension} = dims2
   local dim2::Dimension
   local compat::Bool
-
   if !isCompatibleMatch(matchKind)
     return (ty, matchKind)
   end
@@ -2627,9 +2951,11 @@ function matchArrayDims(
   We do not preallocate the array here since we might need to break before that.
   =#
   local cDims = Dimension[]
+  local refComp = Ref{Bool}(false)
   for (i, dim1) in enumerate(dims1V)
     #@match _cons(dim2, rest_dims2) = rest_dims2
-    (dim1, compat) = matchDimensions(dim1, dims2V[i], allowUnknown)
+    dim1 = matchDimensionsRef(dim1, dims2V[i], refComp, allowUnknown)
+    compat = refComp.x
     if !compat
       matchKind = MatchKind.NOT_COMPATIBLE
       break
@@ -2665,6 +2991,35 @@ function matchDimensions(
   end
   return (compatibleDim, compatible)
 end
+
+function matchDimensionsRef(
+  dim1::Dimension,
+  dim2::Dimension,
+  isComp::Ref{Bool},
+  allowUnknown::Bool,
+  )::Dimension
+  local compatible::Bool
+  local compatibleDim::Dimension
+
+  if isEqual(dim1, dim2)
+    compatibleDim = dim1
+    compatible = true
+  else
+    if !isKnown(dim1)
+      compatibleDim = dim2
+      compatible = true
+    elseif !isKnown(dim2)
+      compatibleDim = dim1
+      compatible = true
+    else
+      compatibleDim = dim1
+      compatible = false
+    end
+  end
+  isComp.x = compatible
+  return compatibleDim
+end
+
 
 function matchTupleTypes(
   tupleType1::NFType,
@@ -2757,7 +3112,7 @@ function matchTypes_cast(
         #=  try to use the first type in the tuple.
         =#
          (expression, compatibleType, matchKind) =
-          matchTypes(listHead(actualType.types), expectedType, expression, allowUnknown)
+           matchTypes(listHead(actualType.types), expectedType, expression, allowUnknown)
         if isCompatibleMatch(matchKind)
           @assign expression = begin
             @match expression begin
@@ -3230,7 +3585,11 @@ function matchBinding(
             exp_ty = binding.bindingType
           end
         end
-      @match exp, ty, ty_match = matchTypes(exp_ty, comp_ty, exp, #=allowUnknown=# true)
+      local tyRef = Ref{NFType}(TYPE_UNKNOWN())
+      local mkRef = Ref{MatchKindType}(MatchKind.NOT_COMPATIBLE)
+      exp = matchTypesRef(exp_ty, comp_ty, exp, tyRef, mkRef, #=allowUnknown=# true)
+      ty = tyRef.x
+      ty_match = mkRef.x
       if !isValidAssignmentMatch(ty_match)
         printBindingTypeError(name, binding, comp_ty, exp_ty, component)
         fail()
@@ -3253,12 +3612,6 @@ function matchBinding(
     end
     _ => begin
       binding = BINDING_ERROR()
-      # Error.assertion(
-      #   false,
-      #   getInstanceName() + " got untyped binding " + toString(binding),
-      #   sourceInfo(),
-      # )
-      # fail()
     end
   end
   return binding

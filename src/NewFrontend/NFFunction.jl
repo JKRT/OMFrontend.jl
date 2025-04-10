@@ -979,16 +979,22 @@ function typeNodeCache(@nospecialize(functionNode::InstNode))::Vector{M_FUNCTION
   local special::Bool
   local name::String
   fn_node = classScope(functionNode)
-  @match C_FUNCTION(functions, typed, special) = getFuncCache(fn_node)
+  #@match C_FUNCTION(functions, typed, special) = getFuncCache(fn_node)
+  local cache = getFuncCache(fn_node)
+  typed = cache.typed
+  functions = cache.funcs
   #=  Type the function(s) if not already done. =#
   if !typed
-    functions = M_FUNCTION[typeFunctionSignature(f) for f in functions]
-    local cache = C_FUNCTION(functions, true, special)
+    #functions = M_FUNCTION[typeFunctionSignature(f) for f in functions]
+    for i in 1:length(functions)
+      functions[i] = typeFunctionSignature(functions[i]) #TODO Investigate if this approch works
+    end
+    #@time local cache = C_FUNCTION(functions, true, special)
+    cache.typed = true
     setFuncCache(fn_node, cache)
     for i in 1:length(functions)
       cache.funcs[i] = typeFunctionBody(functions[i])
     end
-    #functions = M_FUNCTION[typeFunctionBody(f) for f in functions]
     setFuncCache(fn_node, cache)
   end
   return functions
@@ -1721,6 +1727,10 @@ function candidateFuncListString(fns::List{M_Function})::String
   return s
 end
 
+function candidateFuncListString(fns::Vector{M_Function})
+  local s::String = stringDelimitList(list(signatureString(fn, true) for fn in fns), "\\n  ")
+  return s
+end
 
 """ #= Constructs a signature string for a function, e.g. Real func(Real x, Real y) =#"""
 function signatureString(fn::M_FUNCTION, printTypes::Bool = true)::String

@@ -697,7 +697,6 @@ end
 
 function promote2(exp::Expression, isArray::Bool, dims::Int, types::List{<:M_Type}) ::Expression
   local outExp::Expression
-
    outExp = begin
     local ty::M_Type
     local rest_ty::List{M_Type}
@@ -729,13 +728,11 @@ function promote2(exp::Expression, isArray::Bool, dims::Int, types::List{<:M_Typ
         end
         outExp
       end
-
       _  => begin
-        #=  A scalar expression, promote it as many times as the number of types given.
-        =#
+        #=  A scalar expression, promote it as many times as the number of types given. =#
          outExp = exp
         for ty in listReverse(types)
-           outExp = makeArray(ty, Expression[outExp])
+          outExp = makeArray(ty, Expression[outExp])
         end
         outExp
       end
@@ -768,6 +765,33 @@ function promote(e::Expression, ty::M_Type, n::Int) ::Tuple{Expression, M_Type}
       for each subexpression that will be created.
   =#
   (e, ty)
+end
+
+function promoteRef(e::Expression, ty::M_Type, n::Int, tyRef::Ref{NFType})::Expression
+  local dims::List{Dimension}
+  local ety::M_Type
+  local tys::List{M_Type} = nil
+  local is_array::Bool
+  #=  Construct the dimensions that needs to be added. =#
+   dims = list(fromInteger(1) for i in dimensionCount(ty):n - 1)
+  if ! listEmpty(dims)
+     dims = listAppend(arrayDims(ty), dims)
+     is_array = isArray(ty)
+     ety = arrayElementType(ty)
+     ty = liftArrayLeftList(ety, dims)
+    while ! listEmpty(dims)
+       tys = Cons{NFType}(liftArrayLeftList(ety, dims), tys)
+       dims = listRest(dims)
+    end
+     e = promote2(e, is_array, n, listReverse(tys))
+  end
+  #=  Concatenate the existing dimensions and the added ones. =#
+  #=  Construct the result type. =#
+  #=  Construct the expression types, to avoid having to create a new type
+      for each subexpression that will be created.
+  =#
+  tyRef.x = ty
+  e
 end
 
 function makeIdentityMatrix(n::Int, elementType::M_Type) ::Expression
@@ -1918,7 +1942,7 @@ function mapFoldCrefShallow(cref::ComponentRef, @nospecialize(func::Function), a
     local rest::ComponentRef
     @match cref begin
       COMPONENT_REF_CREF(origin = Origin.CREF)  => begin
-        (subs, arg) = ListUtil.map1Fold(cref.subscripts, mapFoldExpShallow, func, arg)
+        (subs, arg) = ListUtil.map1Fold(cref.subscripts, mapFoldExpShallow, func, arg, Subscript)
         (rest, arg) = mapFoldCrefShallow(cref.restCref, func, arg)
         COMPONENT_REF_CREF(cref.node, subs, cref.ty, cref.origin, rest)
       end
@@ -2165,7 +2189,7 @@ function mapFoldShallow(@nospecialize(exp::Expression), @nospecialize(func::Func
       end
 
       TUPLE_EXPRESSION(__)  => begin
-         (expl, arg) = ListUtil.mapFold(exp.elements, func, arg)
+         (expl, arg) = ListUtil.mapFold(exp.elements, func, arg, List{Expression})
         TUPLE_EXPRESSION(exp.ty, expl)
       end
 
@@ -2332,7 +2356,7 @@ function mapFoldCref(cref::ComponentRef, @nospecialize(func::Function), arg::Arg
     local rest::ComponentRef
     @match cref begin
       COMPONENT_REF_CREF(origin = Origin.CREF)  => begin
-         (subs, arg) = ListUtil.map1Fold(cref.subscripts, mapFoldExp, func, arg)
+         (subs, arg) = ListUtil.map1Fold(cref.subscripts, mapFoldExp, func, arg, Subscript)
          (rest, arg) = mapFoldCref(cref.restCref, func, arg)
         COMPONENT_REF_CREF(cref.node, subs, cref.ty, cref.origin, rest)
       end
@@ -2385,7 +2409,7 @@ function mapFoldCall(call::Call, @nospecialize(func::Function), foldArg::ArgT)  
     local oe::Option{Expression}
     @match call begin
       UNTYPED_CALL(__)  => begin
-         (args, foldArg) = ListUtil.map1Fold(call.arguments, mapFold, func, foldArg)
+        (args, foldArg) = ListUtil.map1Fold(call.arguments, mapFold, func, foldArg, Expression)
          nargs = nil
         for arg in call.named_args
            (s, e) = arg
@@ -2412,7 +2436,7 @@ function mapFoldCall(call::Call, @nospecialize(func::Function), foldArg::ArgT)  
       end
 
       TYPED_CALL(__)  => begin
-        (args, foldArg) = ListUtil.map1Fold(call.arguments, mapFold, func, foldArg)
+        (args, foldArg) = ListUtil.map1Fold(call.arguments, mapFold, func, foldArg, Expression)
         TYPED_CALL(call.fn, call.ty, call.var, args, call.attributes)
       end
 
@@ -2531,7 +2555,7 @@ end
       end
 
       ARRAY_EXPRESSION(__)  => begin
-        (expl, arg) = ListUtil.map1Fold(exp.elements, mapFold, func, arg)
+        (expl, arg) = ArrayUtil.map1Fold(exp.elements, mapFold, func, arg, Expression)
         ARRAY_EXPRESSION(exp.ty, expl, exp.literal)
       end
 

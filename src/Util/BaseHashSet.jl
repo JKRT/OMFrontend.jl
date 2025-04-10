@@ -72,7 +72,7 @@ import ArrayUtil
 =#
 #=       971 977 983 991 997 1013 2053 3023 4013 4999 5051 5087 24971
 =#
-#= 
+#=
 =#
 #=  You can also use Util.nextPrime if you know exactly how large the hash set
 =#
@@ -91,11 +91,11 @@ const hugeBucketSize = 536870879::Integer #= 2^29 - 33 is prime :) =#
 
 const defaultBucketSize = avgBucketSize::Integer
 
-Key = Any
-HashSet = Tuple
-HashVector = Array
-ValueArray = Tuple
-FuncsTuple = Tuple
+const Key = Any
+const HashSet = Tuple
+const HashVector = Array
+const ValueArray = Tuple
+const FuncsTuple = Tuple
 
 """ #= calculate the values array size based on the bucket size =#"""
 function bucketToValuesSize(szBucket::Integer)::Integer
@@ -123,7 +123,7 @@ function emptyHashSetWork(szBucket::Integer, fntpl::FuncsTuple)::HashSet
   return hashSet
 end
 
-""" #= 
+""" #=
   Add a Key to hashset.
   If the Key already exists, nothing happen.
  =#"""
@@ -264,7 +264,7 @@ function addUnique(key::Key, hashSet::HashSet)::HashSet
   return outHashSet
 end
 
-""" #= 
+""" #=
   delete the Key from the HashSet.
   Note: This function does not delete from the index table, only from the tuple<Integer,Integer,array<Option<Key>>>.
   This means that a lot of deletions will not make the HashSet more compact, it will still contain
@@ -346,8 +346,7 @@ end
 function get1(key::Key, hashSet::HashSet)::Tuple{Option{Key}, Integer}
   local indx::Integer
   local okey::Option{Key}
-
-  @assign (okey, indx) = begin
+  (okey, indx) = begin
     local hashindx::Integer
     local bsize::Integer
     local n::Integer
@@ -360,10 +359,10 @@ function get1(key::Key, hashSet::HashSet)::Tuple{Option{Key}, Integer}
     local b::Bool
     @match (key, hashSet) begin
       (_, (hashvec, varr, bsize, _, (hashFunc, keyEqual, _))) => begin
-        @assign hashindx = hashFunc(key, bsize)
-        @assign indexes = hashvec[hashindx + 1]
-        @assign (indx, b) = get2(key, indexes, keyEqual)
-        @assign k = if b
+        hashindx = hashFunc(key, bsize)
+        indexes = hashvec[hashindx + 1]
+        (indx, b) = get2(key, indexes, keyEqual)
+        k = if b
           valueArrayNthT(varr, indx)
         else
           NONE()
@@ -382,17 +381,15 @@ function get2(
   keyEqual::FuncEq,
 )::Tuple{Integer, Bool}
   local found::Bool = true
-  local index::Integer
-
+  local index::Integer = 0
   local key2::Key
-
   for t in keyIndices
-    @assign (key2, index) = t
+    (key2, index) = t
     if keyEqual(key, key2)
       return (index, found)
     end
   end
-  @assign found = false
+  found = false
   return (index, found)
 end
 
@@ -483,7 +480,7 @@ function valueArrayAdd(valueArray::ValueArray, entry::Key)::ValueArray
     local rexpandsize::AbstractFloat
     @matchcontinue (valueArray, entry) begin
       ((n, size, arr), _) => begin
-        if !n < size
+        if ! (n < size)
           fail() #= Have space to add array elt. =#
         end #= Have space to add array elt. =#
         @assign n_1 = n + 1
@@ -526,7 +523,7 @@ function valueArraySetnth(valueArray::ValueArray, pos::Integer, entry::Key)::Val
     local size::Integer
     @matchcontinue (valueArray, pos, entry) begin
       ((n, size, arr), _, _) => begin
-        if !pos < size
+        if ! (pos < size)
           fail()
         end
         @assign arr_1 = arrayUpdate(arr, pos + 1, SOME(entry))
@@ -602,7 +599,7 @@ function valueArrayNthT(valueArray::ValueArray, pos::Integer)::Option{Key}
     local arr::Array{Option{Key}}
     @match (valueArray, pos) begin
       ((n, _, arr), _) => begin
-        if !pos <= n
+        if ! (pos <= n)
           fail()
         end
         arr[pos + 1]

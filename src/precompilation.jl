@@ -3,9 +3,9 @@
   Not meant to be used by users.
 =#
 
-# PrecompileTools.@recompile_invalidations begin
-#     using ..Frontend
-# end
+PrecompileTools.@recompile_invalidations begin
+     using ..Frontend
+end
 
 PrecompileTools.@compile_workload begin
   @info "Precompiling builtin libraries..."
@@ -24,6 +24,10 @@ PrecompileTools.@compile_workload begin
     @info "SCode translation done. Saving the library in the cache."
     NFModelicaBuiltinCache["NFModelicaBuiltin"] = s
     @info "Builtin Library Loaded!"
+
+    @info "initialize cache"
+    Frontend.MemoryUtil.initialize(400)
+
     #=Enable GC again.=#
     GC.enable(true)
   end
@@ -124,4 +128,5 @@ PrecompileTools.@compile_workload begin
   end
   @info "Core compiler modules are successfully precompiled!"
   @info "Compiler modules are successfully precompiled!"
+  #@info "Initializing initial memory buffers..."
 end

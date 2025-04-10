@@ -1048,7 +1048,7 @@ end
 function updateNodeType(cref::ComponentRef)
   local crefRet = if cref isa COMPONENT_REF_CREF && isComponent(cref.node)
     crefTy = getType(cref.node)
-    COMPONENT_REF_CREF(cref.node, cref.subscripts, crefTy, cref.origin, restCrefTmp)
+    COMPONENT_REF_CREF(cref.node, cref.subscripts, crefTy, cref.origin, cref.restCref)
   else
     cref
   end

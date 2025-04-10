@@ -67,7 +67,7 @@ const INT_COMPONENT =
     AbsynUtil.dummyInfo,
   )::Component
 const INT_PARAM =
-  COMPONENT_NODE(
+  COMPONENT_NODE{String, Int8}(
     "i",
     Visibility.PUBLIC,
     P_Pointer.createImmutable(INT_COMPONENT),
@@ -88,7 +88,7 @@ const REAL_COMPONENT =
     AbsynUtil.dummyInfo,
   )::Component
 const REAL_PARAM =
-  COMPONENT_NODE(
+  COMPONENT_NODE{String, Int8}(
     "r",
     Visibility.PUBLIC,
     P_Pointer.createImmutable(REAL_COMPONENT),
@@ -109,7 +109,7 @@ const BOOL_COMPONENT =
     AbsynUtil.dummyInfo,
   )::Component
 const BOOL_PARAM =
-  COMPONENT_NODE(
+  COMPONENT_NODE{String, Int8}(
     "b",
     Visibility.PUBLIC,
     P_Pointer.createImmutable(BOOL_COMPONENT),
@@ -130,7 +130,7 @@ const STRING_COMPONENT =
     AbsynUtil.dummyInfo,
   )::Component
 const STRING_PARAM =
-  COMPONENT_NODE(
+  COMPONENT_NODE{String, Int8}(
     "s",
     Visibility.PUBLIC,
     P_Pointer.createImmutable(STRING_COMPONENT),
@@ -151,7 +151,7 @@ const ENUM_COMPONENT =
     AbsynUtil.dummyInfo,
   )::Component
 const ENUM_PARAM =
-  COMPONENT_NODE(
+  COMPONENT_NODE{String, Int8}(
     "e",
     Visibility.PUBLIC,
     P_Pointer.createImmutable(ENUM_COMPONENT),
@@ -698,7 +698,7 @@ const CLOCK_COMPONENT =
     AbsynUtil.dummyInfo,
   )::Component
 const CLOCK_PARAM =
-  COMPONENT_NODE(
+  COMPONENT_NODE{String, Int8}(
     "s",
     Visibility.PUBLIC,
     P_Pointer.createImmutable(CLOCK_COMPONENT),

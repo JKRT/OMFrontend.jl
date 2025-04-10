@@ -349,11 +349,11 @@ function add(
         elseif key_comp == 1
            outTree = NODE(tree.key, tree.value, 2, EMPTY(), LEAF(inKey, inValue))
         else
-           value = conflictFunc(inValue, tree.value, key)
-           if !referenceEq(tree.value, value)
-             tree.value = value
-           end
-           outTree = tree
+          value = conflictFunc(inValue, tree.value, key)
+          if !referenceEq(tree.value, value)
+            tree.value = value
+          end
+          outTree = tree
         end
         if key_comp == 0
            outTree

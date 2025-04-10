@@ -127,9 +127,9 @@ function evaluateNormal(fn::M_Function, args::Vector{Expression})::Expression
     else
       fail()
     end
-  catch e #=TODO: REMOVE THE THROW HERE. ADDED TO CATCH RUNTIME TYPE ERRORS!=#
+  catch
     P_Pointer.update(call_counter, call_count - 1)
-    throw(e) #Should be a fail call instead
+    fail()
   end
   #=  TODO: Also apply replacements to the replacements themselves, i.e. the
           bindings of the function parameters. But they probably need to be

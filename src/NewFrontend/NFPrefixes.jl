@@ -112,8 +112,7 @@ end
 """ #= Returns true if the connector type has the connector bit set, otherwise false. =#"""
 function isConnector(cty::Int)::Bool
   local isConnector::Bool
-
-  @assign isConnector = intBitAnd(cty, ConnectorType.CONNECTOR) > 0
+  isConnector = intBitAnd(cty::Int8, ConnectorType.CONNECTOR::Int8) > 0
   return isConnector
 end
 
@@ -599,7 +598,7 @@ function unparseVariability(var::VariabilityType, ty::NFType)::String
   return str
 end
 
-function variabilityMax(var1, var2)
+function variabilityMax(var1::Int8, var2::Int8)::Int8
   local var = if var1 > var2
     var1
   else
@@ -608,7 +607,7 @@ function variabilityMax(var1, var2)
   return var
 end
 
-function variabilityMin(var1, var2)
+function variabilityMin(var1::Int8, var2::Int8)::Int8
   local var = if var1 > var2
     var2
   else

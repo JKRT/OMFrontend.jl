@@ -28,10 +28,8 @@ function instClassInProgram(classPath::Absyn.Path, program::SCode.Program)
     #=TODO: Add a @static flag later to supress this message. =#
     println("Internal stack trace:")
     #@error e
-    resetComponentNodeCaches()
     throw(e)
   end
-  resetComponentNodeCaches()
   (dae, daeFuncs) = convert(flat_model, funcs, name, InstNode_info(inst_cls))
   return (dae, daeFuncs)
 end
@@ -51,7 +49,6 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
     Error.clearMessages()
     #=TODO: Add a @static flag later to supress this message. =#
     println("Internal stack trace:")
-    resetComponentNodeCaches()
     throw(e)
   else
     print(Error.printMessagesStr(;
@@ -62,7 +59,6 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
                                  printErrors = false))
     Error.clearMessages()
   end
-  resetComponentNodeCaches()
   return (flat_model, funcs, inst_cls)
 end
 
@@ -771,7 +767,7 @@ function instClass(node::InstNode, modifier::Modifier, attributes::Attributes, a
     Error.addSourceMessage(Error.MISSING_REDECLARE_IN_CLASS_MOD, list(name(node)), Binding_getInfo(binding(outer_mod)))
     fail()
   end
-  instClassDef(cls, modifier, attributes, useBinding, node, parent, instLevel, attributeRef)
+  return instClassDef(cls, modifier, attributes, useBinding, node, parent, instLevel, attributeRef)::CLASS_NODE
 end
 
 #= On failure call the generic function. =#
@@ -1376,7 +1372,7 @@ function instComponent(node::InstNode,
                        originalAttr = NONE())::Nothing
   local comp::Component
   local def::SCode.COMPONENT
-  local comp_node::InstNode
+  local comp_node::COMPONENT_NODE{String, Int8}
   local rdcl_node::InstNode
   local outer_mod::Modifier
   local cc_mod::Modifier = innerMod
@@ -2999,13 +2995,13 @@ function updateImplicitVariability(node::InstNode, evalAllParams::Bool)::Nothing
   updateImplicitVariabilityCls(cls, evalAllParams)::Nothing
 end
 
-@noinline function updateImplicitVariabilityCls(cls::Class, evalAllParams::Bool)::Nothing
+function updateImplicitVariabilityCls(cls::Class, evalAllParams::Bool)::Nothing
   if cls isa INSTANCED_CLASS && cls.elements isa CLASS_TREE_FLAT_TREE
     local components = cls.elements.components::Vector{InstNode}
     local len = length(components)
     local i = 1
     while i ≤ len
-      local c::COMPONENT_NODE = resolveOuter(components[i])
+      local c::COMPONENT_NODE{String, Int8} = resolveOuter(components[i])
       updateImplicitVariabilityComp(c, evalAllParams::Bool)::Nothing
       i += 1
     end
@@ -3022,7 +3018,7 @@ end
     local len = length(components)
     local i = 1
     while i ≤ len
-      local c::COMPONENT_NODE = resolveOuter(components[i])
+      local c::COMPONENT_NODE{String, Int8} = resolveOuter(components[i])
       updateImplicitVariabilityComp(c, evalAllParams)::Nothing
       i += 1
     end
@@ -3037,7 +3033,7 @@ function updateImplicitVariabilityComp(co::INNER_OUTER_NODE, evalAllParams::Bool
   updateImplicitVariabilityComp(node, evalAllParams::Bool)::Nothing
 end
 
-@noinline function updateImplicitVariabilityComp(node::COMPONENT_NODE, evalAllParams::Bool)::Nothing
+@noinline function updateImplicitVariabilityComp(node::COMPONENT_NODE{String, Int8}, evalAllParams::Bool)::Nothing
   local c::Component = component(node)
   local bnd::Binding
   local condition::Binding

@@ -1217,10 +1217,15 @@ function typeExp2(
         #@info "With List.."
         #@time arr = typeArray(exp.elements, origin, info)
         #@info "With Array...."
-        exp, typeRef.x, variabilityTypeRef.x = typeArray(exp.elements, origin, info);exp
+        #exp, typeRef.x, variabilityTypeRef.x = typeArray(exp.elements, origin, info);exp
+        exp = typeArrayRef(exp.elements, origin, info, typeRef, variabilityTypeRef)
+        #typeRef.x = exp.ty
+        #variabilityTypeRef.x
+        exp
       end
       MATRIX_EXPRESSION(__) => begin
-        exp, typeRef.x, variabilityTypeRef.x = typeMatrix(exp.elements, origin, info);exp
+        exp = typeMatrixRef(exp.elements, origin, info, typeRef, variabilityTypeRef)#;exp
+        #exp, typeRef.x, variabilityTypeRef.x = typeMatrix(exp.elements, origin, info);exp
       end
       RANGE_EXPRESSION(__) => begin
         exp, typeRef.x, variabilityTypeRef.x = typeRange(exp, origin, info);exp
@@ -2002,78 +2007,13 @@ function typeSubscript(
   return (outSubscript, variabilityVar)
 end
 
-function typeArray(
-  elements::List{Expression},
-  origin::ORIGIN_Type,
-  info::SourceInfo,
-  )::Tuple{Expression, NFType, VariabilityType}
-  local variability::VariabilityType = Variability.CONSTANT
-  local arrayType::NFType = TYPE_UNKNOWN()
-  local arrayExp::ARRAY_EXPRESSION
-  local exp::Expression
-  local expl::List{Expression} = nil
-  local expl2::List{Expression} = nil
-  local var::VariabilityType
-  local ty1::NFType = TYPE_UNKNOWN()
-  local ty2::NFType
-  local ty3::NFType
-  local tys::List{NFType} = nil
-  local mk::MatchKindType
-  local n::Int = 1
-  local next_origin::ORIGIN_Type
-  next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
-  for e in elements
-     (exp, ty2, var) = typeExp(e, next_origin, info)
-     variability = variabilityMax(var, variability)
-     (_, ty3, mk) = matchTypes(ty2, ty1, exp, #=allowUnknown=# true)
-    if isIncompatibleMatch(mk)
-       (_, ty3, mk) = matchTypes(ty1, ty2, exp, #=allowUnknown=# false)
-      if isCompatibleMatch(mk)
-         ty1 = ty3
-      end
-    else
-       ty1 = ty3
-    end
-     expl = _cons(exp, expl)
-     tys = _cons(ty2, tys)
-     n = n + 1
-  end
-  #=  Try the other way around to get the super-type of the array =#
-  #=
-  Give the actual error-messages here after we got the super-type of the array =#
-  for e in expl
-    @match _cons(ty2, tys) = tys
-     (exp, _, mk) = matchTypes(ty2, ty1, e)
-     expl2 = _cons(exp, expl2)
-     n = n - 1
-    if true ## !Config.getGraphicsExpMode()
-      if isIncompatibleMatch(mk)
-        Error.addSourceMessage(
-          Error.NF_ARRAY_TYPE_MISMATCH,
-          list(
-            String(n),
-            toString(exp),
-            Type.toString(ty2),
-            Type.toString(ty1),
-          ),
-          info,
-        )
-        fail()
-      end
-    end
-  end
-  #=  forget errors when handling annotations =#
-  arrayType = liftArrayLeft(ty1, fromExpList(expl2))
-  arrayExp = makeArray(arrayType, expl2)
-  return (arrayExp, arrayType, variability)
-end
 
 
 function typeArray(
   elements::Vector{T},
   origin::ORIGIN_Type,
   info::SourceInfo,
-)::Tuple{ARRAY_EXPRESSION, NFType, VariabilityType} where {T <: Expression}
+  )::Tuple{ARRAY_EXPRESSION, NFType, VariabilityType} where {T <: Expression}
   local variability::VariabilityType = Variability.CONSTANT
   local arrayType::NFType = TYPE_UNKNOWN()
   local arrayExp::Expression
@@ -2089,15 +2029,21 @@ function typeArray(
   next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
   local tyRef = Ref{NFType}(TYPE_UNKNOWN())
   local varTyRef = Ref{VariabilityType}(Variability.CONSTANT)
+  local mkRef = Ref{MatchKindType}(MatchKind.NOT_COMPATIBLE)
+
   for i in 1:numberOfElements
     local e = elements[i]::T
     exp = typeExp2(e, next_origin, info, tyRef, varTyRef)
     ty2 = tyRef.x
     var = varTyRef.x
     variability = variabilityMax(var, variability)
-    @match (_, ty3, mk) = matchTypes(ty2, ty1, exp, #=allowUnknown =# true)
+    matchTypesRef(ty2, ty1, exp, tyRef, mkRef, #=allowUnknown =# true) #@match (_, ty3, mk)
+    ty3 = tyRef.x
+    mk = mkRef.x
     if isIncompatibleMatch(mk)
-      @match (_, ty3, mk) = matchTypes(ty1, ty2, exp, #=allowUnknown =# false)
+      matchTypesRef(ty1, ty2, exp, tyRef, mkRef, #=allowUnknown =# false)
+      ty3 = tyRef.x
+      mk = mkRef.x
       if isCompatibleMatch(mk)
         ty1 = ty3
       end
@@ -2110,7 +2056,8 @@ function typeArray(
   for i in 1:numberOfElements
     local e = elements[i]::T
     ty2 = tys[i]
-    @match (exp, _, mk) = matchTypes(ty2, ty1, e)
+    exp = matchTypesRef(ty2, ty1, e, tyRef, mkRef, #=allowUnknown =# true)
+    mk = mkRef.x
     elements[i] = exp
     if true ## !Config.getGraphicsExpMode()
       if isIncompatibleMatch(mk)
@@ -2134,6 +2081,145 @@ function typeArray(
   return (arrayExp, arrayType, variability)
 end
 
+function typeArrayRef(
+  elements::Vector{T},
+  origin::ORIGIN_Type,
+  info::SourceInfo,
+  arrayTypeRef::Ref{NFType},
+  variabilityTypeRef::Ref{VariabilityType}
+  )::ARRAY_EXPRESSION where {T <: Expression}
+  local variability::VariabilityType = Variability.CONSTANT
+  local arrayType::NFType = TYPE_UNKNOWN()
+  local arrayExp::Expression
+  local numberOfElements = length(elements)::Int
+  local expV::Vector{T} = Vector{T}(undef, numberOfElements)
+  local var::VariabilityType
+  local ty1::NFType = TYPE_UNKNOWN()
+  local ty2::NFType
+  local ty3::NFType
+  local tys::Vector{NFType} = Vector{NFType}(undef, numberOfElements)
+  local mk::MatchKindType
+  local next_origin::ORIGIN_Type
+  next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
+  local tyRef = Ref{NFType}(TYPE_UNKNOWN())
+  local varTyRef = Ref{VariabilityType}(Variability.CONSTANT)
+  local mkRef = Ref{MatchKindType}(MatchKind.NOT_COMPATIBLE)
+
+  for i in 1:numberOfElements
+    local e::T = elements[i]::T
+    exp = typeExp2(e, next_origin, info, tyRef, varTyRef)
+    ty2 = tyRef.x
+    var = varTyRef.x
+    variability = variabilityMax(var::Int8, variability::Int8)
+    matchTypesRef(ty2, ty1, exp, tyRef, mkRef, #=allowUnknown =# true) #@match (_, ty3, mk)
+    ty3 = tyRef.x
+    mk = mkRef.x
+    if isIncompatibleMatch(mk)
+      matchTypesRef(ty1, ty2, exp, tyRef, mkRef, #=allowUnknown =# false)
+      ty3 = tyRef.x
+      mk = mkRef.x
+      if isCompatibleMatch(mk)
+        ty1 = ty3
+      end
+    else
+      ty1 = ty3
+    end
+    elements[i] = exp::T
+    tys[i] = ty2
+  end
+  for i in 1:numberOfElements
+    local e = elements[i]::T
+    ty2 = tys[i]
+    exp = matchTypesRef(ty2, ty1, e, tyRef, mkRef, #=allowUnknown =# true)
+    mk = mkRef.x
+    elements[i] = exp
+    if true ## !Config.getGraphicsExpMode()
+      if isIncompatibleMatch(mk)
+        Error.addSourceMessage(
+          Error.NF_ARRAY_TYPE_MISMATCH,
+          list(
+            String(n),
+            toString(exp),
+            toString(ty2),
+            toString(ty1),
+          ),
+          info,
+        )
+        fail()
+      end
+    end
+  end
+  #=  forget errors when handling annotations =#
+  arrayType = liftArrayLeft(ty1, fromExpList(elements))
+  arrayExp = makeArray(arrayType, elements)::ARRAY_EXPRESSION
+  arrayTypeRef.x = arrayType
+  variabilityTypeRef.x = variability
+  return arrayExp
+end
+
+
+function typeMatrixRef(
+  elements::Vector{Vector{Expression}},
+  origin::ORIGIN_Type,
+  info::SourceInfo,
+  arrayTypeRef::Ref{NFType},
+  variabilityTypeRef::Ref{VariabilityType}
+  )::Expression
+  local variability::VariabilityType = Variability.CONSTANT
+  local arrayType::NFType = TYPE_UNKNOWN()
+  local arrayExp::Expression
+  local exp::Expression
+  local expl::Vector{Expression} = Vector{Expression}(undef, length(elements))
+  local res::Vector{Expression} = Vector{Expression}(undef, length(elements))
+  local var::VariabilityType
+  local ty::NFType = TYPE_UNKNOWN()
+  local tys::Vector{NFType} = Vector{Expression}(undef, length(elements))
+  #local resTys::Vector{NFType} = NFType[]
+  local n::Int = 2
+  local next_origin::ORIGIN_Type = setFlag(origin, ORIGIN_SUBEXPRESSION)
+  local tyRef::Ref{NFType} = Ref{NFType}(TYPE_UNKNOWN())
+
+  if length(elements) > 1
+    local i::Int = 1
+    for el in elements
+      exp = typeMatrixCommaRef(el, next_origin, info , arrayTypeRef, variabilityTypeRef)
+      ty = arrayTypeRef.x
+      var = variabilityTypeRef.x
+      variability = variabilityMax(var, variability)
+      expl[i] = exp
+      tys[i] = ty
+      n = max(n, dimensionCount(ty))
+      i += 1
+    end
+    i = 1
+    for e in expl
+      ty = tys[i]
+      e2 = promoteRef(e, ty, n, tyRef)
+      tys[i] = tyRef.x #Update the type.
+      res[i] = e2
+      i += 1
+    end
+    arrayExp = makeCatExpRef(1, res, tys, variability, info, arrayTypeRef)
+    arrayType = arrayTypeRef.x
+  else
+    arrayExp = typeMatrixCommaRef(elements[1],
+                                   next_origin,
+                                   info,
+                                   arrayTypeRef,
+                                   variabilityTypeRef)
+
+    arrayType = arrayTypeRef.x
+    variability = variabilityTypeRef.x
+    if dimensionCount(arrayType) < 2
+      arrayExp = promoteRef(arrayExp, arrayType, n, arrayTypeRef)
+    end
+    variabilityTypeRef.x = variability
+    return arrayExp
+  end
+  arrayTypeRef.x = arrayType
+  variabilityTypeRef.x = variability
+  return arrayExp
+end
 
 function typeMatrix(
   elements::Vector{Vector{Expression}},
@@ -2205,6 +2291,7 @@ function typeMatrixComma(
   @assert !isempty(elements)
   if length(elements) > 1
     local varTyRef = Ref{VariabilityType}(Variability.CONSTANT)
+    local refMatchKind = Ref{MatchKindType}(MatchKind.NOT_COMPATIBLE)
     local tyRef = Ref{NFType}(TYPE_UNKNOWN())
     for (i,e) in enumerate(elements)
       exp = typeExp2(e, origin, info, tyRef, varTyRef)
@@ -2229,14 +2316,17 @@ function typeMatrixComma(
        n = max(n, dimensionCount(ty))
     end
     pos = n + 1
-    for (i,e) in enumerate(expl)
+    local i = 1
+    for e in expl
       @match Cons{NFType}(ty1, tys) = tys
        pos = pos - 1
       if dimensionCount(ty1) != n
          (e, ty1) = promote(e, ty1, n)
       end
        ty2 = setArrayElementType(ty1, ty)
-       (e, ty3, mk) = matchTypes(ty1, ty2, e)
+      e = matchTypesRef(ty1, ty2, e, tyRef, refMatchKind)
+      ty3 = tyRef.x
+      mk = refMatchKind.x
       if isIncompatibleMatch(mk)
         Error.addSourceMessageAndFail(
           Error.ARG_TYPE_MISMATCH,
@@ -2251,15 +2341,23 @@ function typeMatrixComma(
           info,
         )
       end
-       res[i] = e
-       tys2[i] = ty3
+      res[i] = e
+      tys2[i] = ty3
+      i += 1
     end
     (arrayExp, arrayType) = makeCatExp(2, res, tys2, variability, info)
   else
-    (arrayExp, arrayType, variability) = typeExp(elements[1], origin, info)
+    local varTyRef = Ref{VariabilityType}(Variability.CONSTANT)
+    local tyRef = Ref{NFType}(TYPE_UNKNOWN())
+    arrayExp = typeExp2(elements[1], origin, info, tyRef, varTyRef)
+    arrayType = tyRef.x
+    variability = varTyRef.x
   end
   return (arrayExp, arrayType, variability)
 end
+
+include("TypeRef.jl")
+
 
 
 @nospecializeinfer function typeRange(

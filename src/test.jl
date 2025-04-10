@@ -4,27 +4,28 @@ import OMFrontend
 OMFrontend.Frontend.FlagsUtil.set(OMFrontend.Frontend.Flags.NF_SCALARIZE, true)
 #import OM
 #using OMFrontend
+using BenchmarkTools
+begin
+  packagePath = dirname(realpath(Base.find_package("OMFrontend")))
+  packagePath *= "/.."
+  pathToTest = packagePath * "/test/Models/HelloWorld.mo"
+  p = OMParser.parseFile(pathToTest, 1)
+  s = OMFrontend.Frontend.AbsynToSCode.translateAbsyn2SCode(p)
 
-packagePath = dirname(realpath(Base.find_package("OMFrontend")))
-packagePath *= "/.."
-pathToTest = packagePath * "/test/Models/HelloWorld.mo"
-p = OMParser.parseFile(pathToTest, 1)
-s = OMFrontend.Frontend.AbsynToSCode.translateAbsyn2SCode(p)
+  packagePath = dirname(realpath(Base.find_package("OMFrontend")))
+  packagePath *= "/.."
+  pathToLib = packagePath * "/lib/NFModelicaBuiltin.mo"
+  #= The external C stuff can be a bit flaky.. =#
+  GC.enable(false)
+  p = OMParser.parseFile(pathToLib, 2 #== MetaModelica ==#)
+  builtinSCode = OMFrontend.Frontend.AbsynToSCode.translateAbsyn2SCode(p)
 
-
-packagePath = dirname(realpath(Base.find_package("OMFrontend")))
-packagePath *= "/.."
-pathToLib = packagePath * "/lib/NFModelicaBuiltin.mo"
-#= The external C stuff can be a bit flaky.. =#
-GC.enable(false)
-p = OMParser.parseFile(pathToLib, 2 #== MetaModelica ==#)
-builtinSCode = OMFrontend.Frontend.AbsynToSCode.translateAbsyn2SCode(p)
-
-program = listAppend(builtinSCode, s)
-path = OMFrontend.Frontend.AbsynUtil.stringPath("HelloWorld")
-@info "Timings concerning compiling core modules for instantiation:"
-@time res1 = OMFrontend.Frontend.instClassInProgram(path, program)
-GC.enable(true)
+  program = listAppend(builtinSCode, s)
+  path = OMFrontend.Frontend.AbsynUtil.stringPath("HelloWorld")
+  @info "Timings concerning compiling core modules for instantiation:"
+  @time res1 = OMFrontend.Frontend.instClassInProgram(path, program)
+  GC.enable(true)
+end;
 
 function flattenModelInMSL_TST(modelName::String; MSL_V = "MSL_4_0_0", scalarize = true)
   local mslSCode
@@ -32,7 +33,7 @@ function flattenModelInMSL_TST(modelName::String; MSL_V = "MSL_4_0_0", scalarize
     mslSCode = OMFrontend.initLoadMSL(MSL_Version= MSL_V)
     return (FM, cache) = OMFrontend.instantiateSCodeToFM(modelName, mslSCode; scalarize = scalarize)
   end
-  local mslSCode= OMFrontend.LIBRARY_CACHE[MSL_V]
+  local mslSCode = OMFrontend.LIBRARY_CACHE[MSL_V]
   return (FM, cache) = OMFrontend.instantiateSCodeToFM(modelName, mslSCode; scalarize=scalarize)
 end
 
@@ -124,9 +125,11 @@ precompile_model_names = [
 
 @info "Precompiling...."
 for p in precompile_model_names
-    @info "Translating: $(p)"
+  @info "Translating: $(p)"
+  #@time OMFrontend.Frontend.MemoryUtil.initialize(400000)
+  @info "Running"
   @time flattenModelInMSL_TST(string(precompile_prefix, ".", p); MSL_V = "MSL_4_0_0")
-    @info "Done!"
+  @info "Done!"
   end
 @info "Done"
 
@@ -142,10 +145,15 @@ precompile_model_names = [
 ]
 for p in precompile_model_names
   @info "Translating: $(p)"
-  @time flattenModelInMSL_TST(string(precompile_prefix, ".", p); MSL_V = "MSL_4_0_0")
+  name = string(precompile_prefix, ".", p)
+  #@time OMFrontend.Frontend.MemoryUtil.initialize(400000)
+  GC.gc()
+  @time flattenModelInMSL_TST(name; MSL_V = "MSL_4_0_0")
   @info "Done!"
 end
 @info "Done"
+
+#OMFrontend.Frontend.MemoryUtil.initialize(400000)
 
 import Profile
 using Profile, PProf
@@ -252,17 +260,25 @@ function profileMemEngine()
   end
 
   Profile.Allocs.clear()
-  Profile.init(10000001, 0.0001)
-  #PProf.Allocs.pprof()
-  @info "Running profile HTML"
+  Profile.init(10000001, 0.001)
   @profilehtml begin
     for p in precompile_model_names
       @info "Translating: $(p)"
-      Profile.Allocs.@profile sample_rate=0.01 flattenModelInMSL_TST(string(precompile_prefix, ".", p); MSL_V = "MSL_4_0_0")
+      @time flattenModelInMSL_TST(string(precompile_prefix, ".", p); MSL_V = "MSL_4_0_0")
       @info "Done!"
     end
-    PProf.Allocs.pprof()
   end
+
+  Profile.Allocs.clear()
+  Profile.init(10000001, 0.0001)
+  #PProf.Allocs.pprof()
+  @info "Profiling memory..."
+  for p in precompile_model_names
+    @info "Translating: $(p)"
+    Profile.Allocs.@profile sample_rate=0.1 flattenModelInMSL_TST(string(precompile_prefix, ".", p); MSL_V = "MSL_4_0_0")
+    @info "Done!"
+  end
+  PProf.Allocs.pprof()
 end
 
 

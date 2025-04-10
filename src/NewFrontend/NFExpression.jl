@@ -160,7 +160,7 @@ struct TYPENAME_EXPRESSION <: NFExpression
   ty::NFType
 end
 
-struct CREF_EXPRESSION <: NFExpression
+mutable struct CREF_EXPRESSION <: NFExpression
   ty::NFType
   cref::ComponentRef
 end

@@ -161,7 +161,7 @@ const EMPTY_NODE_CACHE::Vector{CachedData} = CachedData[C_FUNCTION(M_FUNCTION[],
 #=  modifiers and illegal in other cases).
 =#
 const POLYMORPHIC_NODE =
-  CLASS_NODE{String, Int}(
+  CLASS_NODE(
     "polymorphic",
     Elements.ANY,
     Visibility.PUBLIC,
@@ -242,7 +242,7 @@ const REAL_CLASS_TREE =
     REAL_LOOKUP_TREE,
     listArrayLiteral(nil),
     listArrayLiteral(list(
-      COMPONENT_NODE(
+      COMPONENT_NODE{String, Int8}(
         "quantity",
         Visibility.PUBLIC,
         P_Pointer.createImmutable(TYPE_ATTRIBUTE(
@@ -252,7 +252,7 @@ const REAL_CLASS_TREE =
         EMPTY_NODE(),
         NORMAL_COMP(),
       ),
-      COMPONENT_NODE(
+      COMPONENT_NODE{String, Int8}(
         "unit",
         Visibility.PUBLIC,
         P_Pointer.createImmutable(TYPE_ATTRIBUTE(
@@ -262,7 +262,7 @@ const REAL_CLASS_TREE =
         EMPTY_NODE(),
         NORMAL_COMP(),
       ),
-      COMPONENT_NODE(
+      COMPONENT_NODE{String, Int8}(
         "displayUnit",
         Visibility.PUBLIC,
         P_Pointer.createImmutable(TYPE_ATTRIBUTE(
@@ -272,7 +272,7 @@ const REAL_CLASS_TREE =
         EMPTY_NODE(),
         NORMAL_COMP(),
       ),
-      COMPONENT_NODE(
+      COMPONENT_NODE{String, Int8}(
         "min",
         Visibility.PUBLIC,
         P_Pointer.createImmutable(TYPE_ATTRIBUTE(
@@ -282,7 +282,7 @@ const REAL_CLASS_TREE =
         EMPTY_NODE(),
         NORMAL_COMP(),
       ),
-      COMPONENT_NODE(
+      COMPONENT_NODE{String, Int8}(
         "max",
         Visibility.PUBLIC,
         P_Pointer.createImmutable(TYPE_ATTRIBUTE(
@@ -292,7 +292,7 @@ const REAL_CLASS_TREE =
         EMPTY_NODE(),
         NORMAL_COMP(),
       ),
-      COMPONENT_NODE(
+      COMPONENT_NODE{String, Int8}(
         "start",
         Visibility.PUBLIC,
         P_Pointer.createImmutable(TYPE_ATTRIBUTE(
@@ -302,7 +302,7 @@ const REAL_CLASS_TREE =
         EMPTY_NODE(),
         NORMAL_COMP(),
       ),
-      COMPONENT_NODE(
+      COMPONENT_NODE{String, Int8}(
         "fixed",
         Visibility.PUBLIC,
         P_Pointer.createImmutable(TYPE_ATTRIBUTE(
@@ -312,7 +312,7 @@ const REAL_CLASS_TREE =
         EMPTY_NODE(),
         NORMAL_COMP(),
       ),
-      COMPONENT_NODE(
+      COMPONENT_NODE{String, Int8}(
         "nominal",
         Visibility.PUBLIC,
         P_Pointer.createImmutable(TYPE_ATTRIBUTE(
@@ -322,7 +322,7 @@ const REAL_CLASS_TREE =
         EMPTY_NODE(),
         NORMAL_COMP(),
       ),
-      COMPONENT_NODE(
+      COMPONENT_NODE{String, Int8}(
         "unbounded",
         Visibility.PUBLIC,
         P_Pointer.createImmutable(TYPE_ATTRIBUTE(
@@ -332,7 +332,7 @@ const REAL_CLASS_TREE =
         EMPTY_NODE(),
         NORMAL_COMP(),
       ),
-      COMPONENT_NODE(
+      COMPONENT_NODE{String, Int8}(
         "stateSelect",
         Visibility.PUBLIC,
         P_Pointer.createImmutable(TYPE_ATTRIBUTE(
@@ -348,7 +348,7 @@ const REAL_CLASS_TREE =
   )::ClassTree
 #=  TODO: #4895: This should be listArrayLiteral too, but causes compilation issues. =#
 const REAL_NODE =
-  CLASS_NODE{String, Int}(
+  CLASS_NODE(
     "Real",
     Elements.REAL,
     Visibility.PUBLIC,
@@ -396,7 +396,7 @@ const INTEGER_CLASS_TREE =
     INTEGER_LOOKUP_TREE,
     listArrayLiteral(nil),
     listArrayLiteral(list(
-      COMPONENT_NODE(
+      COMPONENT_NODE{String, Int8}(
         "quantity",
         Visibility.PUBLIC,
         P_Pointer.createImmutable(TYPE_ATTRIBUTE(
@@ -406,7 +406,7 @@ const INTEGER_CLASS_TREE =
         EMPTY_NODE(),
         NORMAL_COMP(),
       ),
-      COMPONENT_NODE(
+      COMPONENT_NODE{String, Int8}(
         "min",
         Visibility.PUBLIC,
         P_Pointer.createImmutable(TYPE_ATTRIBUTE(
@@ -416,7 +416,7 @@ const INTEGER_CLASS_TREE =
         EMPTY_NODE(),
         NORMAL_COMP(),
       ),
-      COMPONENT_NODE(
+      COMPONENT_NODE{String, Int8}(
         "max",
         Visibility.PUBLIC,
         P_Pointer.createImmutable(TYPE_ATTRIBUTE(
@@ -426,7 +426,7 @@ const INTEGER_CLASS_TREE =
         EMPTY_NODE(),
         NORMAL_COMP(),
       ),
-      COMPONENT_NODE(
+      COMPONENT_NODE{String, Int8}(
         "start",
         Visibility.PUBLIC,
         P_Pointer.createImmutable(TYPE_ATTRIBUTE(
@@ -436,7 +436,7 @@ const INTEGER_CLASS_TREE =
         EMPTY_NODE(),
         NORMAL_COMP(),
       ),
-      COMPONENT_NODE(
+      COMPONENT_NODE{String, Int8}(
         "fixed",
         Visibility.PUBLIC,
         P_Pointer.createImmutable(TYPE_ATTRIBUTE(
@@ -488,7 +488,7 @@ const BOOLEAN_CLASS_TREE =
     BOOLEAN_LOOKUP_TREE,
     listArrayLiteral(nil),
     listArrayLiteral(list(
-      COMPONENT_NODE(
+      COMPONENT_NODE{String, Int8}(
         "quantity",
         Visibility.PUBLIC,
         P_Pointer.createImmutable(TYPE_ATTRIBUTE(
@@ -498,7 +498,7 @@ const BOOLEAN_CLASS_TREE =
         EMPTY_NODE(),
         NORMAL_COMP(),
       ),
-      COMPONENT_NODE(
+      COMPONENT_NODE{String, Int8}(
         "start",
         Visibility.PUBLIC,
         P_Pointer.createImmutable(TYPE_ATTRIBUTE(
@@ -508,7 +508,7 @@ const BOOLEAN_CLASS_TREE =
         EMPTY_NODE(),
         NORMAL_COMP(),
       ),
-      COMPONENT_NODE(
+      COMPONENT_NODE{String, Int8}(
         "fixed",
         Visibility.PUBLIC,
         P_Pointer.createImmutable(TYPE_ATTRIBUTE(
@@ -572,7 +572,7 @@ const STRING_CLASS_TREE =
     STRING_LOOKUP_TREE,
     listArrayLiteral(nil),
     listArrayLiteral(list(
-      COMPONENT_NODE(
+      COMPONENT_NODE{String, Int8}(
         "quantity",
         Visibility.PUBLIC,
         P_Pointer.createImmutable(TYPE_ATTRIBUTE(
@@ -582,7 +582,7 @@ const STRING_CLASS_TREE =
         EMPTY_NODE(),
         NORMAL_COMP(),
       ),
-      COMPONENT_NODE(
+      COMPONENT_NODE{String, Int8}(
         "start",
         Visibility.PUBLIC,
         P_Pointer.createImmutable(TYPE_ATTRIBUTE(
@@ -592,7 +592,7 @@ const STRING_CLASS_TREE =
         EMPTY_NODE(),
         NORMAL_COMP(),
       ),
-      COMPONENT_NODE(
+      COMPONENT_NODE{String, Int8}(
         "fixed",
         Visibility.PUBLIC,
         P_Pointer.createImmutable(TYPE_ATTRIBUTE(
@@ -733,7 +733,7 @@ const CLOCK_CLASS_TREE =
     CLOCK_LOOKUP_TREE,
     listArrayLiteral(nil),
     listArrayLiteral(list(
-      COMPONENT_NODE(
+      COMPONENT_NODE{String, Int8}(
         "quantity",
         Visibility.PUBLIC,
         P_Pointer.createImmutable(TYPE_ATTRIBUTE(
@@ -743,7 +743,7 @@ const CLOCK_CLASS_TREE =
         EMPTY_NODE(),
         NORMAL_COMP(),
       ),
-      COMPONENT_NODE(
+      COMPONENT_NODE{String, Int8}(
         "start",
         Visibility.PUBLIC,
         P_Pointer.createImmutable(TYPE_ATTRIBUTE(
@@ -753,7 +753,7 @@ const CLOCK_CLASS_TREE =
         EMPTY_NODE(),
         NORMAL_COMP(),
       ),
-      COMPONENT_NODE(
+      COMPONENT_NODE{String, Int8}(
         "fixed",
         Visibility.PUBLIC,
         P_Pointer.createImmutable(TYPE_ATTRIBUTE(
@@ -793,7 +793,7 @@ const CLOCK_CREF =
     COMPONENT_REF_EMPTY(),
   )::ComponentRef
 const TIME =
-  COMPONENT_NODE(
+  COMPONENT_NODE{String, Int8}(
     "time",
     Visibility.PUBLIC,
     P_Pointer.createImmutable(TYPED_COMPONENT(

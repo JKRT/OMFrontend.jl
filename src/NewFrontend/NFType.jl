@@ -1272,6 +1272,16 @@ function isComplex(ty::M_Type)::Bool
   return isComplex
 end
 
+function complexNode(ty)
+  local node::InstNode
+  @match TYPE_COMPLEX(cls = node) = ty
+  return node
+end
+
+function complexComponents(ty)
+  getComponents(classTree(getClass(complexNode(ty))))
+end
+
 function isEnumeration(ty::M_Type)::Bool
   local isEnum::Bool
 

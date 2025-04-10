@@ -260,7 +260,10 @@ function makeArrayExp(posArgs::List{<:Expression}, namedArgs::List{<:NamedArg}, 
   arrayExp
 end
 
-function makeCatExp(n::Int, args::Vector{Expression}, tys::Vector{M_Type}, variability::VariabilityType, info::SourceInfo)::Tuple{CALL_EXPRESSION, M_Type}
+function makeCatExp(n::Int,
+                    args::Vector{Expression},
+                    tys::Vector{M_Type},
+                    variability::VariabilityType, info::SourceInfo)::Tuple{CALL_EXPRESSION, M_Type}
   local ty::M_Type
   local callExp::Expression
 
@@ -280,6 +283,9 @@ function makeCatExp(n::Int, args::Vector{Expression}, tys::Vector{M_Type}, varia
   local pos::Int
   local sumDim::Dimension
 
+  local INT_EXPR_ZERO = INTEGER_EXPRESSION(0)
+  local tyRef = Ref{NFType}(TYPE_UNKNOWN())
+  local mkRef = Ref{MatchKindType}(MatchKind.NOT_COMPATIBLE)
   @assert length(args) == length(tys) && length(args) >= 1
   #Error.assertion(, getInstanceName() + " got wrong input sizes", sourceInfo())
   #=  First: Get the number of dimensions and the element type
@@ -290,19 +296,23 @@ function makeCatExp(n::Int, args::Vector{Expression}, tys::Vector{M_Type}, varia
     if resTy isa TYPE_UNKNOWN
       resTy = arrayElementType(ty)
     else
-       (_, _, ty1, mk) = matchExpressions(INTEGER_EXPRESSION(0), arrayElementType(ty), INTEGER_EXPRESSION(0), resTy)
+       (_, _, ty1, mk) = matchExpressions(INT_EXPR_ZERO, arrayElementType(ty), INT_EXPR_ZERO, resTy)
       if isCompatibleMatch(mk)
         resTy = ty1
       end
     end
   end
-  maxn = max([listLength(d) for d in dimsLst]...)
-  # for L in dimsLst
-  #   for d in L
-  #     println(toString(d))
-  #   end
-  # end
-  if maxn != min([listLength(d) for d in dimsLst]...)
+  local mLst::List{Int} = nil
+  maxn = 0
+  for d in dimsLst
+    maxn = max(maxn, listLength(d))
+  end
+  local minN = 99999999999999 #Some huge number. Note Could cause a bug (In theory..).
+  mLst = nil
+  for d in dimsLst
+    minN = min(minN, listLength(d))
+  end
+  if maxn != minN
     Error.addSourceMessageAndFail(Error.NF_DIFFERENT_NUM_DIM_IN_ARGUMENTS, list(stringDelimitList(list(String(listLength(d)) for d in dimsLst), ", "), "cat"), info)
   end
   if n < 1 || n > maxn
@@ -314,11 +324,14 @@ function makeCatExp(n::Int, args::Vector{Expression}, tys::Vector{M_Type}, varia
   pos = length(args) + 2
   #=  Second: Try to match the element type of all the arguments
   =#
-  for (i,arg) in enumerate(args)
+  local i = 1
+  for arg in args
     ty = tys2[i]
     pos = pos - 1
     ty2 = setArrayElementType(ty, resTy)
-    (arg2, ty1, mk) = matchTypes(ty, ty2, arg, #=allowUnknown =# true)
+    arg2 = matchTypesRef(ty, ty2, arg,tyRef, mkRef, #=allowUnknown =# true)
+    mk = mkRef.x
+    ty1 = tyRef.x
     if isIncompatibleMatch(mk)
       Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list(String(pos), "cat", "arg", toString(arg), Type.toString(ty), Type.toString(ty2)), info)
     end
@@ -326,6 +339,7 @@ function makeCatExp(n::Int, args::Vector{Expression}, tys::Vector{M_Type}, varia
     #tys3 = _cons(ty1, tys3)
     push!(args2, arg2)
     push!(tys3, ty1)
+    i += 1
   end
   #=  Third: We now have matched the element types of all arguments
   =#
@@ -338,7 +352,7 @@ function makeCatExp(n::Int, args::Vector{Expression}, tys::Vector{M_Type}, varia
     if resTy isa TYPE_UNKNOWN
       resTy = ty
     else
-       (_, _, ty1, mk) = matchExpressions(INTEGER_EXPRESSION(0), ty, INTEGER_EXPRESSION(0), resTy)
+      (_, _, ty1, mk) = matchExpressions(INT_EXPR_ZERO, ty, INT_EXPR_ZERO, resTy)
       if isCompatibleMatch(mk)
         resTy = ty1
       end
@@ -350,7 +364,8 @@ function makeCatExp(n::Int, args::Vector{Expression}, tys::Vector{M_Type}, varia
   =#
   dims = arrayDims(resTy)
   resTyToMatch = TYPE_ARRAY(arrayElementType(resTy), ListUtil.set(dims, n, DIMENSION_UNKNOWN()))
-  dims = list(listGet(lst, n) for lst in dimsLst)
+  #dims = list(listGet(lst, n) for lst in dimsLst)
+  dims = List{Dimension}(listGet(lst, n) for lst in dimsLst)
   sumDim = fromInteger(0)
   for d in dims
     sumDim = add(sumDim, d)
@@ -362,15 +377,19 @@ function makeCatExp(n::Int, args::Vector{Expression}, tys::Vector{M_Type}, varia
   tys3 = M_Type[]
   res = Expression[]
   pos = length(args) + 2
-  for (i,arg) in enumerate(args2)
+  i = 1
+  for arg in args2
     ty  = tys2[i]
     pos = pos - 1
-    (arg2, ty1, mk) = matchTypes(ty, resTyToMatch, arg, #=allowUnknown=# true)
+    arg2 = matchTypesRef(ty, resTyToMatch, arg, tyRef, mkRef, #=allowUnknown=# true)
+    ty1 = tyRef.x
+    mk = mkRef.x
     if isIncompatibleMatch(mk)
       Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list(String(pos), "cat", "arg", toString(arg), Type.toString(ty), Type.toString(resTyToMatch)), info)
     end
     push!(res, arg2)
     push!(tys3, ty1)
+    i += 1
   end
   #=  We have all except dimension n having equal sizes; with matching types
   =#
@@ -379,6 +398,156 @@ function makeCatExp(n::Int, args::Vector{Expression}, tys::Vector{M_Type}, varia
   callExp = CALL_EXPRESSION(makeTypedCall(NFBuiltinFuncs.CAT, res, variability, resTy))
   (callExp, ty)
 end
+
+
+"""
+```
+makeCatExpRef(n::Int,
+                       args::Vector{Expression},
+                       tys::Vector{M_Type},
+                       variability::VariabilityType,
+                       info::SourceInfo,
+                       tyRef::Ref{NFType},)::CALL_EXPRESSION
+```
+Same as makeCatExp. Updates the tyValue in place instead of using Julia MRV.
+"""
+function makeCatExpRef(n::Int,
+                       args::Vector{Expression},
+                       tys::Vector{NFType},
+                       variability::VariabilityType,
+                       info::SourceInfo,
+                       tyRef::Ref{NFType})::CALL_EXPRESSION
+  local ty::M_Type
+  local callExp::Expression
+  local arg2::Expression
+  local args2::Vector{Expression} = Expression[]
+  local res::Vector{Expression}
+  local tys2::Vector{M_Type} = tys
+  local tys3::Vector{M_Type}
+  local dimsLst::List{List{Dimension}} = nil
+  local dims::List{Dimension}
+  local resTy::M_Type = TYPE_UNKNOWN()
+  local ty1::M_Type
+  local ty2::M_Type
+  local resTyToMatch::M_Type
+  local mk::MatchKindType
+  local maxn::Int
+  local pos::Int
+  local sumDim::Dimension
+
+  local INT_EXPR_ZERO = INTEGER_EXPRESSION(0)
+  #local tyRef = Ref{NFType}(TYPE_UNKNOWN())
+  local mkRef = Ref{MatchKindType}(MatchKind.NOT_COMPATIBLE)
+  @assert length(args) == length(tys) && length(args) >= 1
+  #=
+  First: Get the number of dimensions and the element type
+  =#
+  for (i,arg) in enumerate(args)
+    ty = tys2[i]
+    dimsLst = Cons{List{Dimension}}(arrayDims(ty), dimsLst)
+    if resTy isa TYPE_UNKNOWN
+      resTy = arrayElementType(ty)
+    else
+       (_, _, ty1, mk) = matchExpressions(INT_EXPR_ZERO, arrayElementType(ty), INT_EXPR_ZERO, resTy)
+      if isCompatibleMatch(mk)
+        resTy = ty1
+      end
+    end
+  end
+  local mLst::List{Int} = nil
+  maxn = 0
+  for d in dimsLst
+    maxn = max(maxn, listLength(d))
+  end
+  local minN = 99999999999999 #Some huge number. Note Could cause a bug (In theory..).
+  mLst = nil
+  for d in dimsLst
+    minN = min(minN, listLength(d))
+  end
+  if maxn != minN
+    Error.addSourceMessageAndFail(Error.NF_DIFFERENT_NUM_DIM_IN_ARGUMENTS, list(stringDelimitList(list(String(listLength(d)) for d in dimsLst), ", "), "cat"), info)
+  end
+  if n < 1 || n > maxn
+    Error.addSourceMessageAndFail(Error.NF_CAT_WRONG_DIMENSION, list(String(maxn), String(n)), info)
+  end
+  tys2 = tys
+  tys3 = M_Type[]
+  args2 = Expression[]
+  pos = length(args) + 2
+  #=  Second: Try to match the element type of all the arguments =#
+  local i = 1
+  for arg in args
+    ty = tys2[i]
+    pos = pos - 1
+    ty2 = setArrayElementType(ty, resTy)
+    arg2 = matchTypesRef(ty, ty2, arg,tyRef, mkRef, #=allowUnknown =# true)
+    mk = mkRef.x
+    ty1 = tyRef.x
+    if isIncompatibleMatch(mk)
+      Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list(String(pos), "cat", "arg", toString(arg), Type.toString(ty), Type.toString(ty2)), info)
+    end
+    push!(args2, arg2)
+    push!(tys3, ty1)
+    i += 1
+  end
+  #=  Third: We now have matched the element types of all arguments
+           Try to match the dimensions as well
+  =#
+  resTy = TYPE_UNKNOWN()
+  tys2 = tys3
+  for (i,arg) in enumerate(args2)
+    ty = tys2[i]
+    if resTy isa TYPE_UNKNOWN
+      resTy = ty
+    else
+      (_, _, ty1, mk) = matchExpressions(INT_EXPR_ZERO, ty, INT_EXPR_ZERO, resTy)
+      if isCompatibleMatch(mk)
+        resTy = ty1
+      end
+    end
+  end
+  #=  Got the supertype of the dimensions; trying to match all arguments
+  =#
+  #=  with the concatenated dimension set to unknown.
+  =#
+  dims = arrayDims(resTy)
+  resTyToMatch = TYPE_ARRAY(arrayElementType(resTy), ListUtil.set(dims, n, DIMENSION_UNKNOWN()))
+  #dims = list(listGet(lst, n) for lst in dimsLst)
+  dims = List{Dimension}(listGet(lst, n) for lst in dimsLst)
+  sumDim = fromInteger(0)
+  for d in dims
+    sumDim = add(sumDim, d)
+  end
+  #=  Create the concatenated dimension
+  =#
+  resTy = TYPE_ARRAY(arrayElementType(resTy), ListUtil.set(arrayDims(resTy), n, sumDim))
+  tys2 = tys3
+  tys3 = M_Type[]
+  res = Expression[]
+  pos = length(args) + 2
+  i = 1
+  for arg in args2
+    ty  = tys2[i]
+    pos = pos - 1
+    arg2 = matchTypesRef(ty, resTyToMatch, arg, tyRef, mkRef, #=allowUnknown=# true)
+    ty1 = tyRef.x
+    mk = mkRef.x
+    if isIncompatibleMatch(mk)
+      Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list(String(pos), "cat", "arg", toString(arg), Type.toString(ty), Type.toString(resTyToMatch)), info)
+    end
+    push!(res, arg2)
+    push!(tys3, ty1)
+    i += 1
+  end
+  #=  We have all except dimension n having equal sizes; with matching types
+  =#
+  ty = resTy
+  res = pushfirst!(res, INTEGER_EXPRESSION(n))
+  callExp = CALL_EXPRESSION(makeTypedCall(NFBuiltinFuncs.CAT, res, variability, resTy))
+  tyRef.x = ty
+  callExp
+end
+
 
 function assertNoNamedParams(fnName::String, namedArgs::Vector{NamedArg}, info::SourceInfo)
   if ! isempty(namedArgs)
@@ -701,7 +870,7 @@ function typeMinMaxCall(name::String, call::Call, origin::ORIGIN_Type, info::Sou
         =#
         if isSingleElementArray(ty1)
           callExp = applySubscript(first(listHead(arrayDims(ty1))), arg1)
-          return (Expression[arg1], ty, var)
+          return (callExp, ty, var)
         end
         (Expression[arg1], ty, var)
       end

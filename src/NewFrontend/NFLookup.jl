@@ -361,7 +361,7 @@ function lookupNameWithError(name::Absyn.Path, scope::InstNode, info::SourceInfo
   state = lookupStateRef.x
   if node isa EMPTY_NODE
     Error.addSourceMessage(Error.LOOKUP_ERROR, list(AbsynUtil.pathString(name), scopeName(scope)), info)
-    @error "Lookup error for path: $(AbsynUtil.pathString(name)) in the scope $(scopeName(scope))"
+    #@error "Lookup error for path: $(AbsynUtil.pathString(name)) in the scope $(scopeName(scope))"
     fail()
   end
   node

@@ -54,9 +54,12 @@ include("./Util/Error.jl")
 import .P_Pointer
 const Pointer = P_Pointer.Pointer
 include("./Util/Mutable.jl")
+#= Include various utility structures =#
 include("./Util/BaseAvlSet.jl")
 include("./Util/BaseAvlTree.jl")
 include("./Util/BaseHashTable.jl")
+include("./Util/BaseHashSet.jl")
+
 include("./Util/Global.jl")
 include("./Util/Settings.jl")
 include("./Util/Print.jl")
@@ -170,6 +173,7 @@ include("./NewFrontend/NFBuiltinFuncs.jl")
 include("./NewFrontend/NFBuiltin.jl")
 #import ..NFBuiltin
 include("./NewFrontend/BindingExpression.jl")
+include("./NewFrontend/BindingExpression!.jl")
 
 include("./NewFrontend/NFEvalFunction.jl")
 
@@ -200,5 +204,9 @@ include("./NewFrontend/NFVerifyModel.jl")
 include("./NewFrontend/NFInline.jl")
 #=  Builtin functions =#
 include("./NewFrontend/NFRangeIterator.jl")
+
+
+#= Custom memory...=#
+include("./Util/Memory.jl")
 
 end

@@ -203,7 +203,7 @@ function evalExp_impl(exp::Expression, target::EvalTarget)::Expression
         else
           makeArray(
             exp.ty,
-            list(evalExp_impl(e, target) for e in exp.elements),
+            Expression[evalExp_impl(e, target) for e in exp.elements],
             literal = true,
           )
         end
@@ -847,7 +847,7 @@ function makeRecordFieldBindingFromParent(
   #@match true = isRecord(arrayElementType(parent_ty))
   #= NEW =#
   parent = node(parent_cr)
-  typeComponentBinding2(parent, ORIGIN_CLASS, #= typeChildren =# false);
+  typeComponentBinding(parent, ORIGIN_CLASS, #= typeChildren =# false);
   comp = component(parent)
   binding = getBinding(comp)
   subs = getSubscripts(parent_cr)
@@ -876,28 +876,25 @@ function makeRecordBindingExp(
   local exp::Expression
   local tree::ClassTree
   local comps::Vector{InstNode}
-  local args::List{Expression}
+  local args::Vector{Expression} = Expression[]
   local fields::List{Record.P_Field}
   local ty::M_Type
   local c::InstNode
   local cr::ComponentRef
   local arg::Expression
-   tree = classTree(getClass(typeNode))
-   comps = getComponents(tree)
-   args = nil
-  for i = arrayLength(comps):(-1):1
-     c = comps[i]
-     ty = getType(c)
-     cr =
-      CREF(c, nil, ty, P_NFComponentRef.Origin.CREF, cref)
-     arg = CREF_EXPRESSION(ty, cr)
+  tree = classTree(getClass(typeNode))
+  comps = getComponents(tree)
+  for i = 1:arrayLength(comps)
+    c = comps[i]
+    ty = getType(c)
+    cr = COMPONENT_REF_CREF(c, nil, ty, Origin.CREF, cref)
+    arg = CREF_EXPRESSION(ty, cr)
     if variability(component(c)) <= Variability.PARAMETER
-       arg = evalExp_impl(arg, EVALTARGET_IGNORE_ERRORS())
+      arg = evalExp_impl(arg, EVALTARGET_IGNORE_ERRORS())
     end
-     args = Cons{Expression}(arg, args)
+    args = push!(args, arg) #Cons{Expression}(arg, args)
   end
-   exp =
-    makeRecord(scopePath(recordNode), recordType, args)
+   exp = makeRecord(scopePath(recordNode), recordType, args)
   return exp
 end
 
@@ -970,7 +967,7 @@ function evalRangeExp(rangeExp::Expression)::Expression
   local step::Expression
   local stop::Expression
   local opt_step::Option{Expression}
-  local expl::List{Expression}
+  local expl::Vector{Expression}
   local ty::M_Type
   local literals::List{String}
   local istep::Int
@@ -988,9 +985,7 @@ function evalRangeExp(rangeExp::Expression)::Expression
         ) => begin
           #=  The compiler decided to randomly dislike using step.value here, hence istep.
           =#
-           expl = list(
-            INTEGER_EXPRESSION(i) for i = (start.value):istep:(stop.value)
-          )
+           expl = INTEGER_EXPRESSION[INTEGER_EXPRESSION(i) for i = (start.value):istep:(stop.value)]
           (TYPE_INTEGER(), expl)
         end
 
@@ -1015,7 +1010,7 @@ function evalRangeExp(rangeExp::Expression)::Expression
         (INTEGER_EXPRESSION(__), INTEGER_EXPRESSION(__)) =>
           begin
              expl =
-              list(INTEGER_EXPRESSION(i) for i = (start.value):(stop.value))
+               INTEGER_EXPRESSION[INTEGER_EXPRESSION(i) for i = (start.value):(stop.value)]
             (TYPE_INTEGER(), expl)
           end
 
@@ -1027,7 +1022,7 @@ function evalRangeExp(rangeExp::Expression)::Expression
         (BOOLEAN_EXPRESSION(__), BOOLEAN_EXPRESSION(__)) =>
           begin
              expl =
-              list(BOOLEAN_EXPRESSION(b) for b = (start.value):(stop.value))
+              INTEGER_EXPRESSION[BOOLEAN_EXPRESSION(b) for b = (start.value):(stop.value)]
             (TYPE_BOOLEAN(), expl)
           end
 
@@ -1035,10 +1030,8 @@ function evalRangeExp(rangeExp::Expression)::Expression
           ENUM_LITERAL_EXPRESSION(ty = ty && TYPE_ENUMERATION(__)),
           ENUM_LITERAL_EXPRESSION(__),
         ) => begin
-           expl = list(
-            ENUM_LITERAL_EXPRESSION(ty, listGet(ty.literals, i), i)
-            for i = (start.index):(stop.index)
-          )
+          expl =
+            ENUM_LITERAL_EXPRESSION[ENUM_LITERAL_EXPRESSION(ty, listGet(ty.literals, i), i) for i = (start.index):(stop.index)]
           (ty, expl)
         end
 
@@ -1047,40 +1040,39 @@ function evalRangeExp(rangeExp::Expression)::Expression
           fail()
         end
       end
-    end
+     end
   end
   exp = makeArray(
-    TYPE_ARRAY(ty, list(fromInteger(listLength(expl)))), expl
+    TYPE_ARRAY(ty, list(fromInteger(length(expl)))), expl
     ;literal = true,
   )
   return exp
 end
 
 function evalRangeReal(
-  start::AbstractFloat,
-  step::AbstractFloat,
-  stop::AbstractFloat,
-)::List{Expression}
-  local result::List{Expression}
-
+  start::Float64,
+  step::Float64,
+  stop::Float64,
+)::Vector{REAL_EXPRESSION}
+  local result::Vector{Expression}
   local steps::Int
-
-   steps = Util.realRangeSize(start, step, stop)
+  steps = Util.realRangeSize(start, step, stop)
   #=  Real ranges are tricky, make sure that start and stop are reproduced
   =#
   #=  exactly if they are part of the range.
   =#
   if steps == 0
-     result = nil
+     result = REAL_EXPRESSION[]
   elseif steps == 1
-     result = list(REAL_EXPRESSION(start))
+    result = REAL_EXPRESSION[REAL_EXPRESSION(start)]
   else
-     result = list(REAL_EXPRESSION(stop))
+     result = REAL_EXPRESSION[REAL_EXPRESSION(stop)]
     for i = (steps - 2):(-1):1
-       result = _cons(REAL_EXPRESSION(start + i * step), result)
+      result = REAL_EXPRESSION[REAL_EXPRESSION(start + i * step), result]
     end
-     result = _cons(REAL_EXPRESSION(start), result)
+    result = REAL_EXPRESSION[REAL_EXPRESSION(start), result]
   end
+  reverse!(result)
   return result
 end
 
@@ -1294,12 +1286,14 @@ function evalBinarySub(exp1::Expression, exp2::Expression)::Expression
         ARRAY_EXPRESSION(__),
         ARRAY_EXPRESSION(__),
       ) where {(length(exp1.elements) == length(exp2.elements))} => begin
+        local tmp = @do_threaded_for evalBinarySub(e1, e2) (e1, e2) (
+          exp1.elements,
+          exp2.elements,
+        )
+        local arr = Expression[tmp...]
         makeArray(
           exp1.ty,
-          list(@do_threaded_for evalBinarySub(e1, e2) (e1, e2) (
-            exp1.elements,
-            exp2.elements,
-          )),
+          arr,
           literal = true,
         )
       end
@@ -4528,7 +4522,7 @@ function evalArrayConstructor3(
   local range::Expression
   local e::Expression
   local ranges_rest::List{Expression}
-  local expl::List{Expression} = nil
+  local expV::Vector{Expression} = Expression[]
   local iter::Pointer{Expression}
   local iters_rest::List{Pointer{Expression}}
   local range_iter::ExpressionIterator
@@ -4545,11 +4539,9 @@ function evalArrayConstructor3(
     while hasNext(range_iter)
       (range_iter, value) = next(range_iter)
       P_Pointer.update(iter, value)
-      expl =
-        _cons(evalArrayConstructor3(exp, ranges_rest, iters_rest, rest_ty), expl)
+      push!(expV, evalArrayConstructor3(exp, ranges_rest, iters_rest, rest_ty))#expl = _cons(evalArrayConstructor3(exp, ranges_rest, iters_rest, rest_ty), expl)
     end
-    result =
-      makeArray(ty, listReverseInPlace(expl), literal = true)
+    result = makeArray(ty, expV, literal = true)
   end
   return result
 end

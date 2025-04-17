@@ -1098,7 +1098,7 @@ function Component_info(component::Component)
         component.info
       end
 
-      ITERATOR(__) => begin
+      ITERATOR_COMPONENT(__) => begin
         component.info
       end
 

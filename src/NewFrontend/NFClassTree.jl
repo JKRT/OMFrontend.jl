@@ -306,6 +306,8 @@ function applyComponents(tree::ClassTree, func::Function)::Nothing
   end
 end
 
+using Distributed
+
 function applyLocalComponents(tree::CLASS_TREE_INSTANTIATED_TREE,
                               attributes::Attributes,
                               useBinding::Bool,
@@ -328,6 +330,9 @@ function applyLocalComponents(tree::CLASS_TREE_INSTANTIATED_TREE,
       checkRecursiveDefinition(classInstance(comp), arg, false)
       return
     end
+  end
+
+  for arg in componentNodes
     instComponent(
       arg::COMPONENT_NODE{String, Int8},
       attributes,
@@ -350,7 +355,6 @@ function applyLocalComponents(tree::CLASS_TREE_INSTANTIATED_TREE,
       NONE()
     )::Nothing
   end
-
   return nothing
 end
 
@@ -366,7 +370,7 @@ end
 
 using Distributed
 
-@noinline function applyLocalComponents(tree::Union{CLASS_TREE_PARTIAL_TREE,
+function applyLocalComponents(tree::Union{CLASS_TREE_PARTIAL_TREE,
                                                     CLASS_TREE_EXPANDED_TREE},
                                         attributes::Attributes,
                                         useBinding::Bool,
@@ -397,7 +401,7 @@ end
 
 """ #= Applies a mutating function to each extends node in the class tree.
        A given argument is also folded and returned. =#"""
-@noinline function mapFoldExtends(tree::ClassTree, func::Function, arg::ArgT) where {ArgT}
+function mapFoldExtends(tree::ClassTree, func::Function, arg::ArgT) where {ArgT}
   local exts::Vector{InstNode} = getExtends(tree)
   local ext::InstNode
   local N = length(exts)
@@ -422,7 +426,7 @@ end
   Applies a function to each extends node in the class tree, and updates
   the extends array with the returned nodes.
 """
-@noinline function mapExtends(tree::ClassTree, func::Function)
+function mapExtends(tree::ClassTree, func::Function)
   local exts::Vector{InstNode} = getExtends(tree)
   for i in 1:length(exts)
     @inbounds res = exts[i]
@@ -432,7 +436,7 @@ end
 end
 
 
-@noinline function mapExtendsWithExtendsNode(tree::ClassTree, extendsNode::InstNode)
+function mapExtendsWithExtendsNode(tree::ClassTree, extendsNode::InstNode)
   local exts::Vector{InstNode} = getExtends(tree)
   for i in 1:length(exts)
     @inbounds res = exts[i]
@@ -442,7 +446,7 @@ end
 end
 
 
-@noinline function mapExtends(tree::CLASS_TREE_INSTANTIATED_TREE, parent::CLASS_NODE)
+function mapExtends(tree::CLASS_TREE_INSTANTIATED_TREE, parent::CLASS_NODE)
   local exts::Vector{InstNode} = getExtends(tree::CLASS_TREE_INSTANTIATED_TREE)
   for i in 1:length(exts)
     @inbounds res = exts[i]::CLASS_NODE
@@ -451,7 +455,7 @@ end
   return
 end
 
-@noinline function mapExtends(tree::CLASS_TREE_INSTANTIATED_TREE, parent::COMPONENT_NODE{String, Int8})
+function mapExtends(tree::CLASS_TREE_INSTANTIATED_TREE, parent::COMPONENT_NODE{String, Int8})
   local exts::Vector{InstNode} = getExtends(tree::CLASS_TREE_INSTANTIATED_TREE)
   for i in 1:length(exts)
     @inbounds res = exts[i]::CLASS_NODE
@@ -460,7 +464,7 @@ end
   return
 end
 
-@noinline function mapExtends(tree::ClassTree, attributes::Attributes, useBinding::Bool, visibility, instLevel::Int, attributeRef::Ref{Attributes})::Nothing
+function mapExtends(tree::ClassTree, attributes::Attributes, useBinding::Bool, visibility, instLevel::Int, attributeRef::Ref{Attributes})::Nothing
   local exts::Vector{InstNode} = getExtends(tree)
   for i in 1:length(exts)
     local res = @inbounds exts[i]::CLASS_NODE
@@ -482,9 +486,7 @@ function applyExtends(tree::ClassTree, func::FuncT)
 end
 
 function foldClasses(tree::ClassTree, func::FuncT, arg::ArgT) where {ArgT}
-
   local clss::Vector{InstNode} = getClasses(tree)
-
   for cls in clss
     arg = func(cls, arg)
   end
@@ -1807,12 +1809,12 @@ function addInheritedElementConflict(
           dup_entry = DuplicateTree.Entry.ENTRY(
             newEntry,
             NONE(),
-            Cons{DuplicateTree.ENTRY}(DuplicateTree.newEntry(oldEntry), dup_entry.children),
+            Cons{DuplicateTree.Entry}(DuplicateTree.newEntry(oldEntry), dup_entry.children),
             dup_entry.ty,
           )
         else
           entry = oldEntry
-          local dup_entryChildren = Cons{DuplicateTree.ENTRY}(DuplicateTree.newEntry(newEntry), dup_entry.children)
+          local dup_entryChildren = Cons{DuplicateTree.Entry}(DuplicateTree.newEntry(newEntry), dup_entry.children)
           dup_entry = DuplicateTree.DUPLICATE_TREE_ENTRY(dup_entry.entry, dup_entry.node, dup_entryChildren, dup_entry.ty)
         end
       end
@@ -1821,14 +1823,14 @@ function addInheritedElementConflict(
     elseif !DuplicateTree.idExistsInEntry(oldEntry, dup_entry)
       if ty == DuplicateTree.EntryType.REDECLARE || new_id < old_id
         entry = newEntry
-        local dup_entryChildren = _cons(DuplicateTree.newEntry(oldEntry), dup_entry.children)
+        local dup_entryChildren = Cons{DuplicateTree.Entry}(DuplicateTree.newEntry(oldEntry), dup_entry.children)
         dup_entry = DuplicateTree.DUPLICATE_TREE_ENTRY(dup_entry.entry, dup_entry.node, dup_entryChildren, dup_entry.ty)
       else
         entry = newEntry
         dup_entry = DuplicateTree.Entry.ENTRY(
           newEntry,
           NONE(),
-          _cons(DuplicateTree.newEntry(oldEntry), dup_entry.children),
+          Cons{DuplicateTree.Entry}(DuplicateTree.newEntry(oldEntry), dup_entry.children),
           dup_entry.ty,
         )
       end

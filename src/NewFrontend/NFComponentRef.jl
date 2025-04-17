@@ -367,14 +367,14 @@ function listToString(crs::List{<:ComponentRef})::String
   return str
 end
 
+const SPECIAL_SYMBOLS = Dict{String, String}("+" => "ADD", "*" => "MUL", "/" => "DIV", "-" => "SUB")
+
 function toFlatString_impl(cref::ComponentRef, strl::List{<:String})::List{String}
   strl = begin
     local str::String
     @match cref begin
       COMPONENT_REF_CREF(__) => begin
-        str =
-          name(cref.node) +
-          toFlatStringList(cref.subscripts)
+        str = string(name(cref.node), toFlatStringList(cref.subscripts))
         if isRecord(cref.ty) && !listEmpty(strl)
           strl = _cons("'" + listHead(strl), listRest(strl))
           str = str + "'"
@@ -392,6 +392,10 @@ function toFlatString_impl(cref::ComponentRef, strl::List{<:String})::List{Strin
       end
     end
   end
+  #= Replace odd symbols... =#
+  # for ss in keys(SPECIAL_SYMBOLS)
+  #   replace(strl,  ss => SPECIAL_SYMBOLS[ss])
+  # end
   return strl
 end
 

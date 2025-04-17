@@ -55,49 +55,49 @@ import ..Frontend.NORMAL_CLASS
 # end
 
 #= Sketch2.. Bad but maybe gc does not steal my pointes this way TODO =#
-COMPONENT_NODE_BUFFER::Memory{COMPONENT_NODE{String, Int8}}= Memory{COMPONENT_NODE{String,Int}}(undef, 400)
-const CUR_POS::Ref{Int} = Ref{Int}(1)
-const LAST_POS::Ref{Int} = Ref{Int}(400)
+#COMPONENT_NODE_BUFFER::Memory{COMPONENT_NODE{String, Int8}}= Memory{COMPONENT_NODE{String,Int}}(undef, 400)
+# const CUR_POS::Ref{Int} = Ref{Int}(1)
+# const LAST_POS::Ref{Int} = Ref{Int}(400)
 
-"""
-  Initialize the component buffer with N possible components.
-"""
-function initialize(N::Int = 400)::Nothing
-  #resize!([6, 5, 4, 3, 2, 1], COMPONENT_NODE_BUFFER)
-  #@info "Initializing the component cache..."
-  global CUR_POS.x = 1
-  global LAST_POS.x = N
-   for i in 1:N
-     COMPONENT_NODE_BUFFER[i] = COMPONENT_NODE{String, Int8}("d", 0, Ref{Component}(EMPTY_COMPONENT()), EMPTY_NODE(), NORMAL_CLASS())
-   end
-  nothing
-end
+# """
+#   Initialize the component buffer with N possible components.
+# """
+# function initialize(N::Int = 400)::Nothing
+#   #resize!([6, 5, 4, 3, 2, 1], COMPONENT_NODE_BUFFER)
+#   #@info "Initializing the component cache..."
+#   global CUR_POS.x = 1
+#   global LAST_POS.x = N
+#    for i in 1:N
+#      COMPONENT_NODE_BUFFER[i] = COMPONENT_NODE{String, Int8}("d", 0, Ref{Component}(EMPTY_COMPONENT()), EMPTY_NODE(), NORMAL_CLASS())
+#    end
+#   nothing
+# end
 
-"""
-  Returns a unique component from the cache.
-  If there are no components available double the size of the cache and return the next.
-"""
-function getNewComponent()::COMPONENT_NODE
-  if CUR_POS.x <= LAST_POS.x
-    comp = @inbounds COMPONENT_NODE_BUFFER[CUR_POS.x]
-    global CUR_POS.x += 1
-    return comp
-  else
-    @info "Resize cache..."
-    local newSize::Int = LAST_POS.x * 2
-    COMPONENT_NODE_BUFFER = Memory{COMPONENT_NODE{String,Int}}(undef, newSize)
-    global LAST_POS.x = newSize
-    for i in CUR_POS.x:LAST_POS.x
-      COMPONENT_NODE_BUFFER[i] = COMPONENT_NODE{String, Int8}(string("d", newSize),
-                                                              0,
-                                                              Ref{Component}(EMPTY_COMPONENT()),
-                                                              EMPTY_NODE(),
-                                                              NORMAL_CLASS())
-    end
-    comp = COMPONENT_NODE_BUFFER[CUR_POS.x]
-    global CUR_POS.x = CUR_POS.x + 1
-    return comp
-  end
-end
+# """
+#   Returns a unique component from the cache.
+#   If there are no components available double the size of the cache and return the next.
+# """
+# function getNewComponent()::COMPONENT_NODE
+#   if CUR_POS.x <= LAST_POS.x
+#     comp = @inbounds COMPONENT_NODE_BUFFER[CUR_POS.x]
+#     global CUR_POS.x += 1
+#     return comp
+#   else
+#     @info "Resize cache..."
+#     local newSize::Int = LAST_POS.x * 2
+#     COMPONENT_NODE_BUFFER = Memory{COMPONENT_NODE{String,Int}}(undef, newSize)
+#     global LAST_POS.x = newSize
+#     for i in CUR_POS.x:LAST_POS.x
+#       COMPONENT_NODE_BUFFER[i] = COMPONENT_NODE{String, Int8}(string("d", newSize),
+#                                                               0,
+#                                                               Ref{Component}(EMPTY_COMPONENT()),
+#                                                               EMPTY_NODE(),
+#                                                               NORMAL_CLASS())
+#     end
+#     comp = COMPONENT_NODE_BUFFER[CUR_POS.x]
+#     global CUR_POS.x = CUR_POS.x + 1
+#     return comp
+#   end
+# end
 
 end

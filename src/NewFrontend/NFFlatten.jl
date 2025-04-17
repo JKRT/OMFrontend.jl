@@ -682,7 +682,7 @@ function flattenArray(
               true,
             )
           end
-          for alg in sects.initialEquations #listReverse(sects.algorithms)
+          for alg in sects.algorithms #listReverse(sects.algorithms)
             sections = prependAlgorithm(
               vectorizeAlgorithm(alg, dimensions, prefix),
               sections,
@@ -803,7 +803,7 @@ end
 
 function vectorizeAlgorithm(
   alg::Algorithm,
-  dimensions::List{<:Dimension},
+  dimensions::List{Dimension},
   prefix::ComponentRef
 )::Algorithm
   local valg::Algorithm
@@ -1211,8 +1211,11 @@ function flattenEquation(
         eql
       end
       EQUATION_CONNECT(__) => begin
+        #@info "eq.lhs" toString(eq.lhs)
+        #@info "eq.rhs" toString(eq.rhs)
         e1 = flattenExp(eq.lhs, prefix)
         e2 = flattenExp(eq.rhs, prefix)
+        #@info "Flatten" toString(EQUATION_CONNECT(e1, e2, eq.source))
         push!(inEquations, EQUATION_CONNECT(e1, e2, eq.source))
       end
       EQUATION_IF(__) => begin

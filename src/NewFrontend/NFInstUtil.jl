@@ -35,9 +35,7 @@ function restoreMissingArrayVariables!(flatModel::FlatModel)
           if !(parentIsRecord)
             arrayVariableSet[toFlatString(cref)] = cref
           end
-          #@info "before expansion" toString(exp)
           (expArr, _) = expand(exp)
-          #@info "after expansion" toString(expArr)
           expArr
         end
         _ => begin

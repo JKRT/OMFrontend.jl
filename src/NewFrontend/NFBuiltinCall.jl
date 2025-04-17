@@ -912,8 +912,8 @@ function typeSumCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{
   local callExp::Expression
 
   local fn_ref::ComponentRef
-  local args::List{Expression}
-  local named_args::List{NamedArg}
+  local args::Vector{Expression}
+  local named_args::Vector{NamedArg}
   local arg::Expression
   local fn::M_Function
   local expanded::Bool
@@ -921,13 +921,13 @@ function typeSumCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{
 
   @match UNTYPED_CALL(ref = fn_ref, arguments = args, named_args = named_args) = call
   assertNoNamedParams("sum", named_args, info)
-  if listLength(args) != 1
+  if length(args) != 1
     Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), "sum(Any[:, ...]) => Any"), info)
   end
-   (arg, ty, variability) = typeExp(listHead(args), origin, info)
-  @assign ty = arrayElementType(ty)
+  (arg, ty, variability) = typeExp(Base.first(args), origin, info)
+  ty = arrayElementType(ty)
   fn = Base.first(typeRefCache(fn_ref))
-  @assign callExp = CALL_EXPRESSION(makeTypedCall(fn, list(arg), variability, ty))
+  callExp = CALL_EXPRESSION(makeTypedCall(fn, Expression[arg], variability, ty))
   (callExp, ty, variability)
 end
 

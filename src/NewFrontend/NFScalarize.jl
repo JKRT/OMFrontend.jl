@@ -34,9 +34,6 @@ function scalarize(flatModel::FlatModel, name::String)::FlatModel
   for v in flatModel.variables
     scalarizeVariable(v, vars)
   end
-  #println("Vars after scalarize")
-  #println(toString(vars))
-  #println(replace(toFlatString(flatModel, nil, true), "\\n" => "\n"))
   @assign flatModel.variables = vars
   @assign flatModel.equations = mapExpList(flatModel.equations, expandComplexCref)
   @assign flatModel.equations = scalarizeEquations(flatModel.equations)
@@ -46,15 +43,11 @@ function scalarize(flatModel::FlatModel, name::String)::FlatModel
     Algorithm[scalarizeAlgorithm(a) for a in flatModel.algorithms]
   @assign flatModel.initialAlgorithms =
     Algorithm[scalarizeAlgorithm(a) for a in flatModel.initialAlgorithms]
-
-  #println(replace(toString(flatModel), "\\n" => "\n"))
-  #println(replace(toFlatString(flatModel, nil), "\\n" => "\n"))
   #execStat(getInstanceName() + "(" + name + ")")
   return flatModel
 end
 
 function scalarizeVariable(var::Variable, vars::Vector{Variable})
-  #@info "Scalarize var" toString(var)
   local name::ComponentRef
   local binding::Binding
   local ty::M_Type
@@ -93,7 +86,7 @@ function scalarizeVariable(var::Variable, vars::Vector{Variable})
       #= Addition by me //John =#
       if isBound(binding)
         #        @info "bound" toString(binding)
-        binding_iter = fromExpToExpressionIterator(expandComplexCref(getTypedExp(binding,)))
+        binding_iter = fromExpToExpressionIterator(expandComplexCref(getTypedExp(binding)))
         bind_var = variability(binding)
         #= Some other checks in omc currently... =#
         for cr in crefs
@@ -182,27 +175,24 @@ function expandComplexCref(exp::Expression)
   return exp
 end
 
+
 function expandComplexCref_traverser(exp::Expression)
-  () = begin
-    @match exp begin
-      CREF_EXPRESSION(ty = TYPE_ARRAY(__)) => begin
-        #=  Expand crefs where any of the prefix nodes are arrays. For example if
-        =#
-        #=  b in a.b.c is SomeType[2] we expand it into {a.b[1].c, a.b[2].c}.
-        =#
-        #=  TODO: This is only done due to backend issues and shouldn't be
-        =#
-        #=        necessary.
-        =#
-        if isComplexArray(exp.cref)
-          exp = expand(exp)
-        end
-        ()
+  @match exp begin
+    CREF_EXPRESSION(ty = TYPE_ARRAY(__)) => begin
+      #=  Expand crefs where any of the prefix nodes are arrays. For example if
+      =#
+      #=  b in a.b.c is SomeType[2] we expand it into {a.b[1].c, a.b[2].c}.
+      =#
+      #=  TODO: This is only done due to backend issues and shouldn't be
+      =#
+      #=        necessary.
+      =#
+      if isComplexArray(exp.cref)
+        @match (exp, _) = expand(exp)
       end
 
-      _ => begin
-        ()
-      end
+    end
+    _ => begin
     end
   end
   return exp
@@ -247,8 +237,8 @@ function scalarizeEquation(@nospecialize(eq::Equation), equations::Vector{Equati
           if !hasNext(rhs_iter)
             local msg = string(" could not expand rhs " + toString(rhs) * " to match " * toString(lhs),
                                " rhs type was: $(toString(ty)) & lhs type was: $(toString(ty))")
-            println(toString(lhs_iter))
-            println(toString(rhs_iter))
+            #println(toString(lhs_iter))
+            #println(toString(rhs_iter))
             Error.addInternalError(
               getInstanceName() +
                 msg,
@@ -292,14 +282,12 @@ function scalarizeEquation(@nospecialize(eq::Equation), equations::Vector{Equati
               (lhs_iter, lhs) = next(lhs_iter)
               (rhs_iter, rhs) = next(rhs_iter)
               local arrEq = EQUATION_EQUALITY(lhs, rhs, ty, src)
-              #println("After " * toString(arrEq))
               equations = push!(equations, arrEq)
             end
           end
           equations
 
         end
-
 
       EQUATION_ARRAY_EQUALITY(CREF_EXPRESSION(__), CALL_EXPRESSION(call), TYPE_ARRAY(__))  where {call isa TYPED_ARRAY_CONSTRUCTOR}=> begin
         local newExp = tryEvalExp(eq.rhs)

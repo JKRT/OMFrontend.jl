@@ -149,8 +149,12 @@ function Base.string(ft::Frontend.FunctionTreeImpl.Tree)
   return replace(String(take!(buffer)), "\\n" => "\n")
 end
 
-function toFlatModelica(fm, fLst; printBindingTypes = false)
+function toFlatModelica(fm, fLst::List; printBindingTypes = false)
   return replace(Frontend.toFlatString(fm, fLst, printBindingTypes), "\\n" => "\n")
+end
+
+function toFlatModelica(fm, fLst::Frontend.FunctionTreeImpl.NODE; printBindingTypes = false)
+  return replace(Frontend.toFlatString(fm, cacheToFunctionList(fLst), printBindingTypes), "\\n" => "\n")
 end
 
 function toFlatModelica(flatModelicaAndFunctionTree::Tuple;
@@ -164,10 +168,13 @@ function writeFlatModelicaToFile(fm, fLst;
                                  printBindingtypes = false,
                                  fileName,
                                  removeQuotes::Bool)
-  local fmStr = toFlatModelica(fm, fLst;
+  local fmStr = toFlatModelica(fm,
+                               fLst;
                                printBindingTypes = printBindingtypes,)
   fmStr = if removeQuotes
     removeQuotesFromFlatModelica(fmStr)
+  else
+    fmStr
   end
   f = write(fileName, fmStr)
   #close(f)
@@ -226,7 +233,7 @@ function flattenModelWithMSL(modelName::String,
   builtin = NFModelicaBuiltinCache["NFModelicaBuiltin"]
   #program = listReverse(listAppend(sCodeProgram, builtin))
   program = listAppend(sCodeProgram, lib)
-  println("Attempting to instantiate..." * modelName)
+  #println("Attempting to instantiate..." * modelName)
   (FM, cache) = instantiateSCodeToFM(modelName, program; scalarize = scalarize)
 end
 
@@ -334,6 +341,15 @@ This can be useful if you wish to remove redundant clutter from flat models.
   NOTE: Not exhaustively tested for all models.
 """
 function removeQuotesFromFlatModelica(fmStr::String)
+
+  local specialSymbols = ["'+'", "'*'", "'/'", "'-'", "'constructor'"]
+
+  function shouldBeQuoted(matchedString)
+    local reg = r"\["
+    local reg2 = r"\*|\+|-"
+    contains(matchedString.match, reg) || contains(matchedString.match, reg2)
+  end
+
   local buffer::IOBuffer = IOBuffer()
   if ! isascii(fmStr)
     @info "The model contains characters not in the ascii character encoding format.\nThe string was not modified."
@@ -345,14 +361,20 @@ function removeQuotesFromFlatModelica(fmStr::String)
     local replaced = false
     local mstr = str
     if (contains(mstr, "'"))
-      matchedStrings = eachmatch(r"'[^']*'",  mstr)
+      local reg = r"'[^']*'"
+      matchedStrings = eachmatch(reg,  mstr)
+
       for matchedString in matchedStrings
         local underscoresReplaced = replace(matchedString.match, "." => "_")
-        if ! contains(matchedString.match, "[")
+        if ! (contains(matchedString.match, r"\[")  || contains(matchedString.match, r"\+|\*|\-"))
           strWithQuotesAndUnderscoresReplaced = replace(underscoresReplaced, "'" => "")
           mstr = replace(mstr, matchedString.match => strWithQuotesAndUnderscoresReplaced)
         else
-          mstr = replace(mstr, matchedString.match => underscoresReplaced)
+          println("Should be quoted", matchedString)
+          #= Bad code...=#
+          for ss in specialSymbols
+            mstr = replace(mstr, ss => replace(ss, "'"=> ""))
+          end
         end
       end
       println(buffer, mstr)
@@ -360,6 +382,7 @@ function removeQuotesFromFlatModelica(fmStr::String)
       println(buffer, mstr)
     end
   end
+
   return String(take!(buffer))
 end
 

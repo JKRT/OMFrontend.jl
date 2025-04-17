@@ -258,10 +258,10 @@ function simplify(
         exp
       end
       "sum" => begin
-        simplifySumProduct(Base.first(args), call, isSum = true)
+        simplifySumProduct(Base.first(args), call, #=isSum=# true)
       end
       "product" => begin
-        simplifySumProduct(Base.first(args), call, isSum = false)
+        simplifySumProduct(Base.first(args), call, #=isSum=# false)
       end
       "transpose" => begin
         simplifyTranspose(Base.first(args), call)
@@ -278,29 +278,29 @@ function simplifySumProduct(arg::Expression, call::Call, isSum::Bool)
   local exp::Expression
 
   local expanded::Bool
-  local args::List{Expression}
+  local args::Vector{Expression}
   local ty::M_Type
   local op::Operator
 
-   (exp, expanded) = P_ExpandExp.ExpandExp.expand(arg)
+  (exp, expanded) = expand(arg)
   if expanded
-     args = arrayScalarElements(exp)
-     ty = arrayElementType(typeOf(arg))
-    if listEmpty(args)
-       exp = if isSum
+    args = listArray(arrayScalarElements(exp))
+    ty = arrayElementType(typeOf(arg))
+    if isempty(args)
+      exp = if isSum
         makeZero(ty)
       else
         makeOne(ty)
       end
     else
-      @match Cons{Expression}(exp, args) = args
+      @match [exp, args...] = args
        op = if isSum
         makeAdd(ty)
       else
         makeMul(ty)
       end
       for e in args
-         exp = BINARY_EXPRESSION(exp, op, e)
+        exp = BINARY_EXPRESSION(exp, op, e)
       end
     end
   else

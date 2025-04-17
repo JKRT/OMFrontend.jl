@@ -901,6 +901,9 @@ function arrayScalarElements_impl(exp::Expression, elements::List{<:Expression})
   elements
 end
 
+"""
+TODO: Rewrite so it uses vectors...
+"""
 function arrayScalarElements(exp::Expression) ::List{Expression}
   local elements::List{Expression}
    elements = listReverseInPlace(arrayScalarElements_impl(exp, nil))
@@ -4061,7 +4064,7 @@ one expression.
         exp
       end
     end
-  end
+   end
   outExp = func(outExp)
   outExp
 end
@@ -4626,12 +4629,18 @@ end
 
       CREF_EXPRESSION(__)  => begin
         # #@info "cref expr to string..."
-        # res = toFlatString(exp.cref; inFunction = inFunction)
-        # #@info res
-        # if Base.contains(res, "defaultWidthFraction")
-        #   @info "It contained it..." res toString(exp.cref)
-        #   dump(exp.cref; maxdepth=3)
-        # end
+        res = toFlatString(exp.cref; inFunction = inFunction)
+        #=
+        There is a current bug that if we have scalarized the model,
+        the subscript for parameters are not always set correctly for cref expressions.
+        Here we check if it is scalarized
+        =#
+        if Base.contains(res, "load.V_nom")
+          @info "It contained it..."  toString(exp.cref)
+          #global TMP = getOriginCref(exp.cref)
+          dims = TMP.ty.dimensions
+          println(dims)
+        end
         toFlatString(exp.cref; inFunction = inFunction)
       end
 
@@ -4663,7 +4672,7 @@ end
       RANGE_EXPRESSION(__)  => begin
         res = string(operandFlatString(exp.start, exp, false; inFunction = inFunction),
                      (if isSome(exp.step)
-                        ":" + operandFlatString(Util.getOption(exp.step), exp, false; inFunction = inFunction)
+                        ":" + operandFlatString(Util.getOption(exp.step), exp, false; inFunction = inFuntion)
                       else
                         ""
                       end) + ":" + operandFlatString(exp.stop, exp, false; inFunction = inFunction))
@@ -5595,7 +5604,9 @@ end
 Generic make array function
 """
 function makeArray(ty::NFType, expl::List; literal::Bool = false)
-  #@warn "Called make array with old interface"
+  # @warn "Called make array with old interface"
+  # st = stacktrace()
+  # println(st[3])  # 2 because 1 is the current function itself
   ARRAY_EXPRESSION(ty, listArray(expl), literal)
 end
 

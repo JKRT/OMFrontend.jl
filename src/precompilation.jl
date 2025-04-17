@@ -1,13 +1,10 @@
+using PrecompileTools
 #=
-  Some routine to cache more naitive code for this package.
-  Not meant to be used by users.
+Some routine to cache more native code for this package.
+Not meant to be used by users.
+The functionality of this file is called during the precompilation phase.
 =#
-
-PrecompileTools.@recompile_invalidations begin
-     using ..Frontend
-end
-
-PrecompileTools.@compile_workload begin
+function workload()
   @info "Precompiling builtin libraries..."
   @info "NOTE: This version of OMFrontend only supports Julia versions greater than 1.10"
   if ! haskey(NFModelicaBuiltinCache, "NFModelicaBuiltin")
@@ -25,8 +22,8 @@ PrecompileTools.@compile_workload begin
     NFModelicaBuiltinCache["NFModelicaBuiltin"] = s
     @info "Builtin Library Loaded!"
 
-    @info "initialize cache"
-    Frontend.MemoryUtil.initialize(400)
+    #@info "initialize cache" #Not in use at the moment...
+    #Frontend.MemoryUtil.initialize(400)
 
     #=Enable GC again.=#
     GC.enable(true)
@@ -130,3 +127,11 @@ PrecompileTools.@compile_workload begin
   @info "Compiler modules are successfully precompiled!"
   #@info "Initializing initial memory buffers..."
 end
+
+PrecompileTools.@compile_workload begin
+  workload()
+end
+
+# @recompile_invalidations begin
+#   workload()
+# end

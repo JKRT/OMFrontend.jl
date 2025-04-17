@@ -94,7 +94,7 @@ function toStream(
       end
       b = Util.tuple22(a)
       if isEach(b)
-        s = append(s, "each ")
+        s = IOStream_M.append(s, "each ")
       end
       s = IOStream_M.append(s, Util.tuple21(a))
       s = IOStream_M.append(s, " = ")
@@ -217,3 +217,6 @@ function toFlatString(var::Variable; ident = "")
   s = toFlatStream(var, ident, false, s)
   return IOStream_M.string(s)
 end
+
+
+Base.:(==)(a::Variable, b::Variable) = toString(a) == toString(b)

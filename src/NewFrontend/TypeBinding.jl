@@ -487,10 +487,10 @@ Updates and mutates a given binding exp.
 """
 function updateBindingExp!(bindingExp::BINDING_EXP, exp, expType, bindingType, parents, isEach)::BINDING_EXP
   #= Mutate binding exp=#
-  bindingExp.exp = exp
-  bindingExp.expType = expType
-  bindingExp.bindingType = bindingType
-  bindingExp.parents = parents
-  bindingExp.isEach = isEach
-  return bindingExp
+  # bindingExp.exp = exp
+  # bindingExp.expType = expType
+  # bindingExp.bindingType = bindingType
+  # bindingExp.parents = parents
+  # bindingExp.isEach = isEach
+  return BINDING_EXP(exp, expType, bindingType, parents, isEach)#bindingExp
 end

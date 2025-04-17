@@ -2246,7 +2246,11 @@ function newComponentC(name::String, visibility::VisibilityType, component::Comp
 end
 
 
-function newComponent(name::String, visibility::VisibilityType, component::Ref{Component}, parent::InstNode, nodeType::InstNodeType)
+function newComponent(name::String,
+                      visibility::VisibilityType,
+                      component::Ref{Component},
+                      parent::InstNode,
+                      nodeType::InstNodeType)::COMPONENT_NODE{String, VisibilityType}
   COMPONENT_NODE{String, Int8}(name, visibility, component, parent, nodeType)
 end
 

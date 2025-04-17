@@ -483,7 +483,7 @@ function toFlatStream(flatModel::FlatModel, functions::List, printBindingTypes::
   Make sure that we do not get duplicated record instances.
   =#
   if Flags.isSet(Flags.NF_SCALARIZE)
-    unique!((x) -> x.name, vars)
+    unique!((x) -> toString(x.name), vars)
   end
   @assign flat_model.variables = vars
   for fn in functions

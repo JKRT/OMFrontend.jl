@@ -215,7 +215,6 @@ function scalarizeEquation(@nospecialize(eq::Equation), equations::Vector{Equati
     local ty::M_Type
     local src::DAE.ElementSource
     local info::SourceInfo
-    local eql::List{Equation}
     @match eq begin
       EQUATION_EQUALITY(
         lhs,
@@ -232,6 +231,8 @@ function scalarizeEquation(@nospecialize(eq::Equation), equations::Vector{Equati
         #println("BEFORE " * toString(eq))
         lhs_iter = fromExpToExpressionIterator(lhs)
         rhs_iter = fromExpToExpressionIterator(rhs)
+        #println(toString(lhs_iter))
+        #println(toString(rhs_iter))
         ty = arrayElementType(ty)
         while hasNext(lhs_iter)
           if !hasNext(rhs_iter)
@@ -262,7 +263,6 @@ function scalarizeEquation(@nospecialize(eq::Equation), equations::Vector{Equati
         src) where{isArray(ty) && (isArray(eq.rhs) || isArray(eq.lhs))} => begin
           local lhs = eq.lhs
           if hasArrayCall(lhs) || hasArrayCall(rhs)
-            @info "Ignoring...." toString(rhs)
             equations = push!(equations, EQUATION_ARRAY_EQUALITY(lhs, rhs, ty, src))
           else
             lhs_iter = fromExpToExpressionIterator(lhs)

@@ -2059,6 +2059,9 @@ function resolveComponent(index::Int, tree::ClassTree)::InstNode
       CLASS_TREE_FLAT_TREE(__) => begin
         tree.components[index]
       end
+      CLASS_TREE_EXPANDED_TREE(__) => begin
+        tree.components[index]
+      end
     end
   end
   return element

@@ -5,7 +5,7 @@
 module Frontend
 
 #= Import the parser for precompilation=#
-#= We also use it at the top level =#
+#= We also use it at the top level(!) =#
 import OMParser
 using MetaModelica
 using ExportAll
@@ -16,6 +16,8 @@ import ListUtil
 import SCode
 import PrecompileTools
 import Base.@nospecializeinfer
+#= Import the execstat macro from the enclosing module..=#
+import ..@EXECSTAT
 
 using MetaModelica:FunctionWrappers
 

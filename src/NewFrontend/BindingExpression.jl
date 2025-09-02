@@ -5091,8 +5091,8 @@ function replaceIterator2(exp::Expression, iterator::InstNode, iteratorValue::Ex
   newExp = begin
     local node::InstNode
     @match exp begin
-      CREF_EXPRESSION(__)  where {exp.cref isa COMPONENT_REF_CREF}=> begin
-        if nameEqual(iterator, exp.cref.node)
+      CREF_EXPRESSION(cref = COMPONENT_REF_CREF(node = node))  where {exp.cref isa COMPONENT_REF_CREF && isSimple(exp.cref)} => begin
+        if nameEqual(iterator, node)
           iteratorValue
         else
           exp
@@ -5109,9 +5109,7 @@ end
 function replaceIterator(exp::Expression,
                          iterator::InstNode,
                          iteratorValue::Expression)
-  local expExp = exp
-  res = map(expExp, (x) -> replaceIterator2(x,  iterator, iteratorValue))
-  #@info toString(expExp)
+  res = map(exp, @closure (x) -> replaceIterator2(x,  iterator, iteratorValue))
   return res
 end
 

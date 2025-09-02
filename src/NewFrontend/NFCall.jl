@@ -1820,9 +1820,8 @@ function instNormalCall(
       end
       return callExp
     else
-      @error "Failed with the following error. The full trace is supressed. The error is related to $(e.f)"
+      @error "Failed with error instantiating $(name). The full trace is supressed. The error is related to $(e)"
       showerror(stderr, e, backtrace()[1:10])
-      println()
       fail()
     end
   end

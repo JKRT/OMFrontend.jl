@@ -551,7 +551,7 @@ end
 
 function assertNoNamedParams(fnName::String, namedArgs::Vector{NamedArg}, info::SourceInfo)
   if ! isempty(namedArgs)
-    Error.addSourceMessage(Error.NO_SUCH_PARAMETER, list(fnName, Util.tuple21(listHead(namedArgs))), info)
+    Error.addSourceMessage(Error.NO_SUCH_PARAMETER, list(fnName, Util.tuple21(namedArgs[1])), info)
     fail()
   end
 end
@@ -1450,7 +1450,11 @@ function typeRecompilationCall(@nospecialize(call::Call), origin::ORIGIN_Type, i
     to avoid further simplifications in the frontend.
     We do this by creating a new component reference that is not pointing to a node.
   =#
-  local newCref = COMPONENT_REF_STRING(name(argCref1.node), argCref1.restCref)
+  local newCref = COMPONENT_REF_CREF(argCref1.node,
+                                     argCref1.subscripts,
+                                     argCref1.ty,
+                                     argCref1.origin,
+                                     argCref1.restCref)
   local retType = TYPE_NORETCALL()
   local arg1 = CREF_EXPRESSION(TYPE_ANY() #= Reference to the parameter we are changing=#,
                                newCref #= Should be complex but use any for now=#)

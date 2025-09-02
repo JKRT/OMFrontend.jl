@@ -69,9 +69,9 @@ The main work is done here. The function dumpFlatModel will dump the flat model 
 if the Flags.NF_DUMP_FLAT flag is set to true.
 """
 function instClassInProgramFM2(classPath::Absyn.Path, program::SCode.Program)::Tuple
-  local top::InstNode
-  local cls::InstNode
-  local inst_cls::InstNode
+  local top::CLASS_NODE
+  local cls::CLASS_NODE
+  local inst_cls::CLASS_NODE
   local name::String
   local flat_model::FlatModel
   local funcs::FunctionTree
@@ -86,7 +86,7 @@ function instClassInProgramFM2(classPath::Absyn.Path, program::SCode.Program)::T
   cls = setNodeType(ROOT_CLASS(EMPTY_NODE()), cls)
   #=  Initialize the storage for automatically generated inner elements. =#
   top = setInnerOuterCache(top, C_TOP_SCOPE(NodeTree.new(), cls))
-  @time inst_cls = instantiateN1(cls, EMPTY_NODE())
+  @EXECSTAT "instantiate" inst_cls = instantiateN1(cls, EMPTY_NODE())
   ExecStat.execStat("Instantiation")
   insertGeneratedInners(inst_cls, top)
   #=
@@ -94,15 +94,15 @@ function instClassInProgramFM2(classPath::Absyn.Path, program::SCode.Program)::T
   bindings, dimensions, etc). This is done as a separate step after
   instantiation to make sure that lookup is able to find the correct nodes.
   =#
-  @time instExpressions(inst_cls)
+  @EXECSTAT "instExpressions" instExpressions(inst_cls)
   ExecStat.execStat("NFInst.instExpressions(" + name + ")")
   #=  Mark structural parameters. =#
   updateImplicitVariability(inst_cls, Flags.isSet(Flags.EVAL_PARAM)::Bool)
   ExecStat.execStat("NFInst.updateImplicitVariability")
   #=  Type the class. =#
   #"Type the class"
-  typeClass(inst_cls, name)
-  @time flat_model = flatten(inst_cls, name)
+  @EXECSTAT "typeClass:" typeClass(inst_cls, name)
+  @EXECSTAT "flatten" flat_model = flatten(inst_cls, name)
   dumpFlatModel(flat_model, string(name, "_", "afterFlatten"))
   #=
   Check if we are to perform recompilation. If true adds the SCode program to the flat model.
@@ -170,7 +170,7 @@ function instClassInProgramFM2(classPath::Absyn.Path, program::SCode.Program)::T
       =#
     end
     #= Resolve the connections of the current system. =#
-    @time flat_model = resolveConnections(flat_model, name)
+    flat_model = resolveConnections(flat_model, name)
     dumpFlatModel(flat_model, string(name, "_", "afterResolveConnections"))
     flat_model =  if ! recompilationEnabled
       evaluate(flat_model)
@@ -179,24 +179,24 @@ function instClassInProgramFM2(classPath::Absyn.Path, program::SCode.Program)::T
       flat_model
     end
   else #= Regular system without simulaton time reconfigurations =#
-    @time flat_model = resolveConnections(flat_model, name)
+    @EXECSTAT "resolveConnections" flat_model = resolveConnections(flat_model, name)
     dumpFlatModel(flat_model, string(name, "_", "afterResolveConnections"))
-    @time flat_model = evaluate(flat_model)
+    @EXECSTAT "evaluate" flat_model = evaluate(flat_model)
     dumpFlatModel(flat_model, name * "afterEval")
   end
   #= Do unit checking =#
   #TODO  @assign flat_model = UnitCheck.checkUnits(flat_model)
-  @time flat_model = inlineSimpleCalls(flat_model)
+  flat_model = inlineSimpleCalls(flat_model)
   dumpFlatModel(flat_model, string(name, "_", "afterInlining"))
-  @time flat_model = simplifyFlatModel(flat_model)
+  @EXECSTAT "Simplify" flat_model = simplifyFlatModel(flat_model)
   dumpFlatModel(flat_model, string(name, "_", "afterSimplify"))
-  funcs = collectFunctions(flat_model, name)
+  @EXECSTAT "collectFunctions" funcs = collectFunctions(flat_model, name)
   #=  Collect package constants that couldn't be substituted with their values =#
   #=  (e.g. because they where used with non-constant subscripts), and add them to the model. =#
-  flat_model = collectConstants(flat_model, funcs)
+  @EXECSTAT "collectConstants" flat_model = collectConstants(flat_model, funcs)
   #= Scalarize array components in the flat model.=#
   if Flags.isSet(Flags.NF_SCALARIZE)
-    flat_model = scalarize(flat_model, name)
+    @EXECSTAT "scalarize" flat_model = scalarize(flat_model, name)
     dumpFlatModel(flat_model, string(name, "_", "afterScalarize"))
   else
     #=  Remove empty arrays from variables =#
@@ -210,7 +210,7 @@ function instClassInProgramFM2(classPath::Absyn.Path, program::SCode.Program)::T
   =#
   InstUtil.restoreMissingArrayVariables!(flat_model)
   InstUtil.adjustIncorrectVariablePaths!(flat_model)
-  @time verify(flat_model)
+  @EXECSTAT "verify" verify(flat_model)
   dumpFlatModel(flat_model, string(name, "_", "afterVerify"))
   #= TODO: Expand sliced crefs=#
   #= TODO: Combine subscripts =#
@@ -453,12 +453,12 @@ function expandClassParts(def::SCode.Element, node::InstNode, info::SourceInfo) 
   local builtin_ext::InstNode
   local prefs::Prefixes
   local res::Restriction
-   cls = getClass(node)
+  cls = getClass(node)
   #=  Change the class to an empty expanded class, to avoid instantiation loops. =#
-   cls = initExpandedClass(cls)
+  cls = initExpandedClass(cls)
    node = updateClass(cls, node)
   @match EXPANDED_CLASS(elements = cls_tree, modifier = mod, prefixes = prefs) = cls
-   builtin_ext = mapFoldExtends(cls_tree, expandExtends, EMPTY_NODE())
+  builtin_ext = mapFoldExtends(cls_tree, expandExtends, EMPTY_NODE())
   if name(builtin_ext) == "ExternalObject"
      node = expandExternalObject(cls_tree, node)
   else
@@ -979,36 +979,41 @@ end
   returned. Otherwise the node is fully instantiated, the instance is added to
   the node's cache, and the instantiated node is returned.
 """
-function instPackage(node::InstNode) ::InstNode
+function instPackage(node::InstNode)::CLASS_NODE
   local cache::CachedData
   local inst::InstNode
-   cache = getPackageCache(node)
-   node = begin
-    @match cache begin
-      C_PACKAGE(__)  => begin
-        cache.instance
-      end
-      C_NO_CACHE(__)  => begin
-        #=  Cache the package node itself first, to avoid instantiation loops if
-        =#
-        #=  the package uses itself somehow.
-        =#
-        setPackageCache(node, C_PACKAGE(node))
-        #=  Instantiate the node.=#
-        inst = instantiateN1(node, EMPTY_NODE()) #=Wrong function call was generated here...=#
-        #=  Cache the instantiated node and instantiate expressions in it too.
-        =#
-        setPackageCache(node, C_PACKAGE(inst))
-        instExpressions(inst)
-        inst
-      end
-      _  => begin
-        Error.assertion(false, getInstanceName() + " got invalid instance cache", sourceInfo())
-        fail()
-      end
-    end
+  local state::Int
+  cache = getPackageCache(node)
+  if cache isa C_PACKAGE
+    inst = cache.instance
+    state = cache.state.x
+    return inst
+  else
+    inst = node
+    state = CACHE_STATE_NOT_INSTANTIATED
   end
-  node
+  if state == CACHE_STATE_INSTANTIATED
+    return node
+  end
+  if state == CACHE_STATE_PROCESSING
+    return node
+  end
+    #=  Cache the package node itself first, to avoid instantiation loops if
+    =#
+    #=  the package uses itself somehow.
+    =#
+
+  node = setPackageCache(node, C_PACKAGE(node, CACHE_STATE_PROCESSING))
+  #=  Instantiate the node.=#
+  inst = instantiateN1(node, EMPTY_NODE()) #=Wrong function call was generated here...=#
+  node = setPackageCache(node, C_PACKAGE(inst, CACHE_STATE_PARTIALLY_INSTANTIATED))
+  #=  Cache the instantiated node and instantiate expressions in it too. =#
+  instExpressions(inst)
+  node = setPackageCache(node, C_PACKAGE(inst, CACHE_STATE_INSTANTIATED))
+  node = inst
+
+    #end
+  return node
 end
 
 function modifyExtends(extendsNode::InstNode, scope::InstNode)
@@ -2035,6 +2040,8 @@ function instDimension(dimension::Dimension, scope::InstNode, info::SourceInfo) 
   dimension
 end
 
+const BUILTIN_PREFIX = "__OpenModelica_builtinType"
+
 function instExpressions(node::InstNode,
                          scope::InstNode = node,
                          sections::Sections = SECTIONS_EMPTY())
@@ -2062,7 +2069,7 @@ function instExpressions(node::InstNode,
       =#
       if arrayLength(exts) == 1
         ty = TYPE_COMPLEX(node, COMPLEX_EXTENDS_TYPE(exts[1]))
-      elseif SCodeUtil.hasBooleanNamedAnnotationInClass(definition(node), "__OpenModelica_builtinType")
+      elseif SCodeUtil.hasBooleanNamedAnnotationInClass(definition(node), BUILTIN_PREFIX)
         ty = TYPE_COMPLEX(node, COMPLEX_CLASS())
       else
         Error.addSourceMessage(Error.MISSING_TYPE_BASETYPE, list(name(node)), infoInstNode_info(node))
@@ -2454,6 +2461,7 @@ function instExp(absynExp::Absyn.Exp, scope::InstNode, info::SourceInfo)::Expres
       end
     end
   end
+  #@info "Calling instExp result was" toString(exp)
   exp
 end
 
@@ -2482,7 +2490,9 @@ function instCref(absynCref::Absyn.ComponentRef, scope::InstNode, info::SourceIn
       end
     end
   end
-   cref = instCrefSubscripts(cref, scope, info)
+  #@info "Calling instExpCref0 result was" toString(cref)
+  cref = instCrefSubscripts(cref, scope, info)
+  #@info "Calling instExpCref00 result was" toString(cref)
    crefExp = begin
     @match cref begin
       COMPONENT_REF_CREF(__)  => begin
@@ -2509,7 +2519,8 @@ function instCref(absynCref::Absyn.ComponentRef, scope::InstNode, info::SourceIn
         CREF_EXPRESSION(TYPE_UNKNOWN(), cref)
       end
     end
-  end
+   end
+  #@info "Calling instExpCref result was" toString(crefExp)
   crefExp
 end
 

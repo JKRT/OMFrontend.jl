@@ -298,7 +298,6 @@ end
 
 function scalarize(cref::ComponentRef)::List{ComponentRef}
   local crefs::List{ComponentRef}
-
    crefs = begin
     local dims::List{Dimension}
     local subs::List{List{Subscript}}
@@ -404,6 +403,7 @@ function toFlatString(cref::ComponentRef; inFunction = false)
   local cr::ComponentRef
   local subs::List{Subscript}
   local strl::List{String} = nil
+  subs2 = getSubscripts(cref)
   (cr, subs) = stripSubscripts(cref)
   strl = toFlatString_impl(cr, strl)
   #=
@@ -703,7 +703,7 @@ function transferSubscripts(srcCref::ComponentRef, dstCref::ComponentRef)::Compo
       end
 
       _ => begin
-        Error.assertion(false, getInstanceName() + " failed", sourceInfo())
+        Error.assertion(false, string("Transfer of subscripts between ", string(toString(srcCref), " and ", toString(dstCref), " failed ")), sourceInfo())
         fail()
       end
     end

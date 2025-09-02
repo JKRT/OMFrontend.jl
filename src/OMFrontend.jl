@@ -3,6 +3,7 @@
 """
 module OMFrontend
 
+
 using MetaModelica
 
 import Absyn
@@ -10,6 +11,9 @@ import SCode
 import OMParser
 import PrecompileTools
 import Distributed
+
+#= This file defines additional utility macros.. =#
+include("util.jl")
 
 #=
 TODO:
@@ -25,9 +29,9 @@ TODO:
 const NFModelicaBuiltinCache = Dict()
 
 """
-  This cache contains other libraries for later use.
+  This cache contains libraries for later use.
 """
-const LIBRARY_CACHE = Dict()
+const LIBRARY_CACHE = Dict{String, SCode.Program}()
 
 """
   This function "precompiles" some of the runtime Modelica libraries.
@@ -127,6 +131,15 @@ end
 function toString(model::Frontend.FlatModel)
   local res = Frontend.toString(model)
   local res = replace(res, "\\n" => "\n")
+  return res
+end
+
+function toString(fmFuncs::Tuple)
+  local model = first(fmFuncs)
+  local funcs = last(fmFuncs)
+  local res = Frontend.toString(model)
+  res *= string(funcs)
+  res = replace(res, "\\n" => "\n")
   return res
 end
 
@@ -370,7 +383,6 @@ function removeQuotesFromFlatModelica(fmStr::String)
           strWithQuotesAndUnderscoresReplaced = replace(underscoresReplaced, "'" => "")
           mstr = replace(mstr, matchedString.match => strWithQuotesAndUnderscoresReplaced)
         else
-          println("Should be quoted", matchedString)
           #= Bad code...=#
           for ss in specialSymbols
             mstr = replace(mstr, ss => replace(ss, "'"=> ""))

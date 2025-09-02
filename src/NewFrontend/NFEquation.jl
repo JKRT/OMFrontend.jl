@@ -412,6 +412,10 @@ function toString(@nospecialize(eq::Equation), indent::String = "")::String
   return str
 end
 
+function replaceIteratorList(eql::Vector{Equation}, iterator::InstNode, value::Expression)::Vector{Equation}
+  mapExpList(eql, @closure (expArg) -> replaceIterator(expArg, iterator, value))
+end
+
 function isConnect(@nospecialize(eq::Equation))::Bool
   local isConnect::Bool
   isConnect = begin
@@ -621,7 +625,7 @@ function mapExpBranch(branch::Equation_Branch, func::MapExpFn)::Equation_Branch
   return branch
 end
 
-function mapExp(@nospecialize(eq::Equation), func::MapExpFn)
+function mapExp(eq::T, func::MapExpFn) where {T <: Equation}
   eq = begin
     local e1::Expression
     local e2::Expression
@@ -665,11 +669,14 @@ function mapExp(@nospecialize(eq::Equation), func::MapExpFn)
          EQUATION_FOR(eq.iterator, eqRange, eqBody, eq.source)
       end
 
-      EQUATION_IF(__) || EQUATION_WHEN(__) => begin
-         #@assign eq.branches = Equation_Branch[mapExpBranch(b, func) for b in eq.branches]
-        for (i, b) in enumerate(eq.branches)
-          @inbounds eq.branches[i] = mapExpBranch(b, func)
-        end
+      EQUATION_IF(__) => begin
+        #= We need to create a new instance here for the logic to work=#
+        @assign eq.branches = Equation_Branch[mapExpBranch(b, func) for b in eq.branches]
+        eq
+      end
+
+      EQUATION_WHEN(__) => begin
+        @assign eq.branches = Equation_Branch[mapExpBranch(b, func) for b in eq.branches]
         eq
       end
 

@@ -82,7 +82,7 @@ function next(iterator::ExpressionIterator)::Tuple{ExpressionIterator, Expressio
     local next::Expression
     @match iterator begin
       EXPRESSION_ARRAY_ITERATOR(__) => begin
-        @match _cons(next, rest) = iterator.slice
+        @match Cons{Expression}(next, rest) = iterator.slice
         if listEmpty(rest)
           (arr, rest) = nextArraySlice(iterator.array)
           iterator = EXPRESSION_ARRAY_ITERATOR(arr, rest)
@@ -301,7 +301,7 @@ function nextArraySlice(
           else
             local eElements = arr
             e = ARRAY_EXPRESSION(e.ty, listArray(eElements), e.literal)
-            arrayArg = _cons(e, listRest(arrayArg))
+            arrayArg = Cons{Expression}(e, listRest(arrayArg))
           end
           (arrayArg, slice)
         end

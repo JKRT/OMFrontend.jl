@@ -114,7 +114,7 @@ function flattenClass(
   structuralSubModels::List{FLAT_MODEL},
   #= End extension =#
   )
-  #@debug "CALLING flattenClass"
+  #@info "CALLING flattenClass"
   local comps::Vector{InstNode}
   local bindings::List{Binding}
   local b::Binding
@@ -135,6 +135,7 @@ function flattenClass(
                 sourceInfo(),
               )
               for c in comps
+                #@info "Calling flatten component" toString(c)
                 (vars, sections) = flattenComponent(
                   c,
                   prefix,
@@ -148,6 +149,7 @@ function flattenClass(
               end
             else
               for c in comps
+                #@info "Calling flatten component" toString(c)
                 (vars, sections, structuralSubModels) =
                   flattenComponent(c, prefix, visibility, binding,
                                    vars, sections, structuralSubModels)
@@ -155,6 +157,7 @@ function flattenClass(
             end
           else
             for c in comps
+              #@info "Calling flatten component" toString(c)
               (vars, sections, structuralSubModels) =
                 flattenComponent(c, prefix, visibility, NONE(),
                                  vars, sections, structuralSubModels)
@@ -207,7 +210,7 @@ function flattenComponent(
   #= Passed from the top level class. =#
   structuralSubModels::List{FLAT_MODEL}
 )
-  #@debug "FLATTEN COMPONENT: " * toString(inComponent)
+  #@info "FLATTEN COMPONENT: " * toString(inComponent)
   local comp_node::InstNode
   local c::Component
   local ty::M_Type
@@ -432,6 +435,7 @@ function flattenSimpleComponent(
   cmt = comp.comment
   info = comp.info
   var = comp_attr.variability
+  #@info "Flatten simple... $(toString(n))"
   if isSome(outerBinding)
     @match SOME(binding) = outerBinding
     unfix = isUnbound(binding) && var == Variability.PARAMETER
@@ -458,7 +462,7 @@ function flattenSimpleComponent(
     end
   end
   name = prefixScope(comp_node, ty, nil, prefix)
-  ty_attrs = [flattenTypeAttribute(m, name) for m in typeAttrs]
+  ty_attrs = Tuple{String, Binding}[flattenTypeAttribute(m, name) for m in typeAttrs]
   #=
   Set fixed = true for parameters that are part of a record instance whose
   binding couldn't be split and was moved to an initial equation.
@@ -714,7 +718,7 @@ function flattenArray(
       nil,
     )
   else
-    @match _cons(dim, rest_dims) = dimensions
+    @match Cons{Dimension}(dim, rest_dims) = dimensions
     range_iter = fromDim(dim)
     while hasNext(range_iter)
       (range_iter, sub_exp) = next(range_iter)
@@ -726,7 +730,7 @@ function flattenArray(
         binding,
         vars,
         sections,
-        _cons(SUBSCRIPT_INDEX(sub_exp), subscripts),
+        Cons{SUBSCRIPT_INDEX}(SUBSCRIPT_INDEX(sub_exp), subscripts),
       )
     end
   end
@@ -1067,7 +1071,8 @@ function flattenBindingExp(
             outExp = flattenBindingExp2(outExp, prefix, parents)
           end
         end
-        flattenExp(outExp, prefix)
+        e = flattenExp(outExp, prefix)
+        e
       end
       _ => begin
         exp
@@ -1133,8 +1138,7 @@ function flattenExp_traverse(exp::Expression, prefix::ComponentRef)
     @match exp begin
       CREF_EXPRESSION(__) => begin
         expCref = transferSubscripts(prefix, exp.cref)
-        CREF_EXPRESSION(exp.ty, expCref)
-        exp
+        exp =CREF_EXPRESSION(exp.ty, expCref)
       end
 
       BINDING_EXP(__) => begin
@@ -1388,11 +1392,7 @@ end
 """
  Unrolls an equational for-loop.
 """
-function unrollForLoop(
-  forLoop::EQUATION_FOR,
-  prefix::ComponentRef,
-  equations::Vector{Equation},
-)
+function unrollForLoop(forLoop::EQUATION_FOR, prefix::ComponentRef, equations::Vector{Equation})
   local iter::InstNode
   local body::Vector{Equation}
   local unrolled_body::Vector{Equation}
@@ -1404,6 +1404,10 @@ function unrollForLoop(
   Unroll the loop by replacing the iterator with each of its values
   in the for loop body.
   =#
+  # local body = Equation[]
+  # for i in oldbody
+  #   body[i] = oldbody[i]
+  # end
   range = flattenExp(range, prefix)
   range = evalExp(range, EVALTARGET_RANGE(Equation_info(forLoop)))
   range_iter = RangeIterator_fromExp(range)
@@ -1413,11 +1417,7 @@ function unrollForLoop(
     Unroll.
     Note that this function will call mapExp for several elements in the compiler(!)
     =#
-    unrolled_body =
-      mapExpList(
-        body,
-        (expArg) -> replaceIterator(expArg, iter, val),
-      )
+    unrolled_body = replaceIteratorList(body, iter, val)
     unrolled_body = flattenEquations(unrolled_body, prefix)
     equations = append!(equations, unrolled_body)
   end

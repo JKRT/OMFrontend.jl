@@ -76,12 +76,15 @@ function runTestsDefinedInVector(tests::Vector, testSetDesc)
     for mf in tests
       try
         #= Get the flat model =#
+        @info "Testing $(mf[2])"
         res = flattenFM(mf[2], mf[3])
         #= Convert the flat model to a string =#
         res = OMFrontend.toString(first(res))
         comp = res == mf[1]
         if comp
           @test true == comp
+          @info "Success!"
+          println()
         else
           @error "Reference file mismatch for test: $(mf[2])"
           @info "The result was:"
@@ -91,7 +94,7 @@ function runTestsDefinedInVector(tests::Vector, testSetDesc)
           @test true == comp
         end
       catch e
-        @error "An exception was thrown: $(e) for test: $(mf[2])"
+        @error "An exception was thrown for test: $(mf[2])"
         throw("")
       end
     end

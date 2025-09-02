@@ -1,6 +1,5 @@
 using MetaModelica
 using ExportAll
-#= Forward declarations for uniontypes until Julia adds support for mutual recursion =#
 const MakeFn = Function
 
 function expandGeneric2(
@@ -40,6 +39,7 @@ function expandGeneric(exp::Expression)::Tuple{Expression, Bool}
   local ty::M_Type
   local dims::List{Dimension}
   local subs::List{List{Subscript}}
+#  @info "expandGeneric with" toString(exp)
   ty = typeOf(exp)
   if isArray(ty)
     expanded = hasKnownSize(ty)
@@ -1137,7 +1137,6 @@ end
 
 function expand(@nospecialize(exp::Expression))
   local expanded::Bool
-
    (exp, expanded) = begin
     local expl::List{Expression}
     @match exp begin

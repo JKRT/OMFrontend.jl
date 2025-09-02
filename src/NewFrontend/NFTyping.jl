@@ -1917,7 +1917,7 @@ function typeSubscripts(
     variability = variabilityMax(variability, var)
     i = i + 1
     if var == Variability.PARAMETER
-      Inst.markStructuralParamsSub(sub)
+      markStructuralParamsSub(sub)
     end
   end
   #=  Mark parameter subscripts as structural so that they're evaluated.

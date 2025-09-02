@@ -123,6 +123,11 @@ end
 
 @exportAll()
 end
+const CACHE_STATE_NOT_INSTANTIATED = -1
+const CACHE_STATE_PROCESSING = 0
+const CACHE_STATE_EXPANDED = 1
+const CACHE_STATE_PARTIALLY_INSTANTIATED = 2
+const CACHE_STATE_INSTANTIATED = 3
 
 abstract type CachedData end
 
@@ -139,6 +144,7 @@ end
 
 struct C_PACKAGE <: CachedData
   instance::InstNode
+  state::Ref{Int}
 end
 
 struct C_NO_CACHE <: CachedData
@@ -163,8 +169,8 @@ function clearPackageCache(in_caches::Vector{<:CachedData})
 end
 
 function setPackageCache(in_caches::Vector{<:CachedData}, in_cache::CachedData)
-  local out_caches::Vector{CachedData} = arrayUpdate(in_caches, 2, in_cache)
-  out_caches
+  in_caches[2] = in_cache
+  in_caches
 end
 
 function getPackageCache(in_caches::Vector{<:CachedData})
@@ -192,8 +198,7 @@ function addFunc(fn::M_Function, specialBuiltin::Bool, caches::Vector{<:CachedDa
       end
 
       C_FUNCTION(__)  => begin
-        C_FUNCTION(Base.append!(func_cache.funcs, M_FUNCTION[fn]),
-                   false, func_cache.specialBuiltin || specialBuiltin)
+        C_FUNCTION(Base.append!(func_cache.funcs, M_FUNCTION[fn]), false, func_cache.specialBuiltin || specialBuiltin)
       end
 
       _  => begin

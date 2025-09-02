@@ -39,15 +39,14 @@ function lookupComponent(cref::Absyn.ComponentRef, scope::InstNode #= The scope 
   local foundScope = scopeRef.x
   local state = stateRef.x
   if state isa LOOKUP_STATE_ERROR
-    @error "Failed with $e"
-    throw(e)
+    @error "Failed to lookup" toString(scope)
   end
   nodeVar = node(foundCref)
   local isNameRes = isName(nodeVar)
   if isNameRes != false
-    @error "Failed with $e"
-    #Error.addSourceMessageAndFail(Error.LOOKUP_VARIABLE_ERROR, list(toString(cref), scopeName(scope)), info)
-    throw(e)
+    #@error "Failed with $e"
+    Error.addSourceMessageAndFail(Error.LOOKUP_VARIABLE_ERROR, list(toString(cref), scopeName(scope)), info)
+    fail()
   end
   state = fixTypenameState(nodeVar, state)
   assertComponent(state, nodeVar, cref, info)
@@ -565,9 +564,10 @@ function lookupSimpleCref(crefName::String,
     scopeRef.x = foundScope
   else
     #@info "Searching for scope in lookupSimplecref.. with $(typeof(scope)). We are searching for $crefName"
+    #= Optimizing this should improve performance a bit... =#
     for i in 1:Global.recursionDepthLimit
       try
-        #@info "Searching..."
+        #@info "Searching for $(crefName)..."
         @match foundScope begin
           IMPLICIT_SCOPE(__)  => begin
             node = lookupIteratorNoFail(crefName, foundScope.locals)

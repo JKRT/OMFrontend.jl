@@ -209,7 +209,7 @@ function flattenComponent(
   sections::Sections,
   #= Passed from the top level class. =#
   structuralSubModels::List{FLAT_MODEL}
-)
+  )
   #@info "FLATTEN COMPONENT: " * toString(inComponent)
   local comp_node::InstNode
   local c::Component

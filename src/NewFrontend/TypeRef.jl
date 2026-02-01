@@ -70,8 +70,8 @@ function typeMatrixCommaRef(
             "matrix constructor ",
             "arg",
             toString(e),
-            Type.toString(ty1),
-            Type.toString(ty2),
+            toString(ty1),
+            toString(ty2),
           ),
           info,
         )

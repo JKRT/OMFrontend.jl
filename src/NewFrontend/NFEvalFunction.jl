@@ -449,7 +449,7 @@ function applyReplacements(repl::ReplTree.Tree, fnBody::Vector{Statement})
   return fnBody
 end
 
-function applyReplacements2(repl::ReplTree.Tree, exp::Expression)::Expression
+function applyReplacements2(repl::ReplTree.Tree, @nospecialize(exp::Expression))::Expression
   exp = begin
     @match exp begin
       CREF_EXPRESSION(__) => begin
@@ -581,7 +581,7 @@ function createResult(repl::ReplTree.Tree, outputs::List{<:InstNode})::Expressio
   return exp
 end
 
-function assertAssignedOutput(outputNode::InstNode, value::Expression)
+function assertAssignedOutput(outputNode::InstNode, @nospecialize(value::Expression))
   return  () = begin
     @match value begin
       EMPTY_EXPRESSION(__) => begin
@@ -685,7 +685,7 @@ function evaluateAssignment(
   return ctrl
 end
 
-function assignVariable(variable::Expression, value::Expression)
+function assignVariable(@nospecialize(variable::Expression), @nospecialize(value::Expression))
   return  () = begin
     local var::Expression
     local val::Expression
@@ -747,7 +747,7 @@ function assignSubscriptedVariable(
 )
   local subs::List{Subscript}
 
-  @assign subs = list(eval(s) for s in subscripts)
+  @assign subs = list(evalSubscript(s) for s in subscripts)
   return P_Pointer.update(variable, assignArrayElement(P_Pointer.access(variable), subs, value))
 end
 
@@ -834,7 +834,7 @@ function assignArrayElement(
   return result
 end
 
-function assignExp(lhs::Expression, rhs::Expression)::Expression
+function assignExp(@nospecialize(lhs::Expression), @nospecialize(rhs::Expression))::Expression
   local result::Expression
   result = begin
     @match lhs begin
@@ -852,7 +852,7 @@ function assignExp(lhs::Expression, rhs::Expression)::Expression
   return result
 end
 
-function assignRecord(lhs::Expression, rhs::Expression)::Expression
+function assignRecord(@nospecialize(lhs::Expression), @nospecialize(rhs::Expression))::Expression
   local result::Expression
   result = begin
     local elems::Vector{Expression}
@@ -960,7 +960,7 @@ end
 """
 Evaluates assert statments
 """
-function evaluateAssert(condition::Expression, assertStmt::Statement)::FlowControlType
+function evaluateAssert(@nospecialize(condition::Expression), assertStmt::Statement)::FlowControlType
   local ctrl::FlowControlType = FlowControl.NEXT
   local cond::Expression
   local msg::Expression
@@ -1016,7 +1016,7 @@ function evaluateAssert(condition::Expression, assertStmt::Statement)::FlowContr
   return ctrl
 end
 
-function evaluateNoRetCall(callExp::Expression, source::DAE.ElementSource)::FlowControlType
+function evaluateNoRetCall(@nospecialize(callExp::Expression), source::DAE.ElementSource)::FlowControlType
   local ctrl::FlowControlType = FlowControl.NEXT
 
   Ceval.evalExp(callExp, EVALTARGET_STATEMENT(source))

@@ -377,9 +377,9 @@ Replaces flow iterators.
 Note, this assumes that the encompassing for loop is constructed in a certain way.
 @author johti17
 """
-function replaceFlowIterator(exp::Expression,
+function replaceFlowIterator(@nospecialize(exp::Expression),
                              iterator::InstNode,
-                             iteratorValue::Expression)
+                             @nospecialize(iteratorValue::Expression))
   local res = if exp isa CREF_EXPRESSION
     @assign exp.cref.subscripts = list(SUBSCRIPT_INDEX(iteratorValue))
     exp
@@ -639,7 +639,7 @@ end
 """ #= Helper function to streamSumEquationExp. Returns the expression
     max(flow_exp, eps) * inStream(stream_exp)
    given a stream set element. =#"""
-function sumOutside1(element::Connector, flowThreshold::Expression)::Expression
+function sumOutside1(element::Connector, @nospecialize(flowThreshold::Expression))::Expression
   local exp::Expression
 
   local stream_exp::Expression
@@ -657,7 +657,7 @@ end
 """ #= Helper function to streamSumEquationExp. Returns the expression
     max(-flow_exp, eps) * stream_exp
    given a stream set element. =#"""
-function sumInside1(element::Connector, flowThreshold::Expression)::Expression
+function sumInside1(element::Connector, @nospecialize(flowThreshold::Expression))::Expression
   local exp::Expression
 
   local stream_exp::Expression
@@ -678,7 +678,7 @@ end
 """ #= Helper function to streamSumEquationExp. Returns the expression
     max(flow_exp, eps)
    given a stream set element. =#"""
-function sumOutside2(element::Connector, flowThreshold::Expression)::Expression
+function sumOutside2(element::Connector, @nospecialize(flowThreshold::Expression))::Expression
   local exp::Expression
 
   local flow_exp::Expression
@@ -691,7 +691,7 @@ end
 """ #= Helper function to streamSumEquationExp. Returns the expression
     max(-flow_exp, eps)
    given a stream set element. =#"""
-function sumInside2(element::Connector, flowThreshold::Expression)::Expression
+function sumInside2(element::Connector, @nospecialize(flowThreshold::Expression))::Expression
   local exp::Expression
 
   local flow_exp::Expression
@@ -704,7 +704,7 @@ function sumInside2(element::Connector, flowThreshold::Expression)::Expression
 end
 
 """ #= Creates an inStream call expression. =#"""
-function makeInStreamCall(streamExp::Expression)::Expression
+function makeInStreamCall(@nospecialize(streamExp::Expression))::Expression
   local inStreamCall::Expression
 
   @assign inStreamCall = CALL_EXPRESSION(P_Call.makeTypedCall(
@@ -754,7 +754,7 @@ function makePositiveMaxCall(
   return positiveMaxCall
 end
 
-function isStreamCall(exp::Expression)::Bool
+function isStreamCall(@nospecialize(exp::Expression))::Bool
   local streamCall::Bool
   streamCall = begin
     @match exp begin
@@ -1168,7 +1168,7 @@ function evaluateFlowDirection(flowCref::ComponentRef)::Int
 end
 
 """ Creates a smooth(order, arg) call. """
-function makeSmoothCall(arg::Expression, order::Int)::Expression
+function makeSmoothCall(@nospecialize(arg::Expression), order::Int)::Expression
   local callExp::Expression
 
   @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(

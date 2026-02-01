@@ -82,4 +82,32 @@ for i in 1:2 loop
 end for;
 end LoopUnrolling3;
 
+model LoopUnrolling4
+  parameter Integer N = 4;
+  Real ARR[N];
+equation
+  for i in 1:N loop
+    if i == 3 then
+      ARR[i] = 0.0;
+    else
+      ARR[i] = 1.0;
+    end if;
+  end for;
+end LoopUnrolling4;
+
+model LoopUnrolling5
+  parameter Integer N = 4;
+  Real ARR[N, N];
+equation
+  for i in 1:N loop
+    for j in 1:N loop
+      if i == j then
+        ARR[i, j] = 0.0;
+      else
+        ARR[i, j] = 1.0;
+      end if;
+    end for;
+  end for;
+end LoopUnrolling5;
+
 end TestMisc;

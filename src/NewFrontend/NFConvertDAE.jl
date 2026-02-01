@@ -38,14 +38,14 @@ function convertVariables(
   elements::List{<:DAE.Element},
 )::List{DAE.Element}
 #  local settings::VariableConversionSettings
-  @assign settings = VARIABLE_CONVERSION_SETTINGS(
-     true, #Flags.getConfigBool(Flags.USE_LOCAL_DIRECTION),
+  settings = VARIABLE_CONVERSION_SETTINGS(
+    true, #Flags.getConfigBool(Flags.USE_LOCAL_DIRECTION),
     false,
     true# addTypeToSource = Flags.isSet(Flags.INFO_XML_OPERATIONS) ||
     #                   Flags.isSet(Flags.VISUAL_XML),
   )
   for var in reverse(variables)
-    @assign elements = _cons(convertVariable(var, settings), elements)
+    elements = _cons(convertVariable(var, settings), elements)
   end
   return elements
 end
@@ -85,16 +85,20 @@ function makeDAEVar(
 
   local dcref::DAE.ComponentRef
   local dty::DAE.Type
+  local ddims::List{DAE.Dimension}
   local source::DAE.ElementSource
   local dir::DirectionType
 
-  @assign dcref = toDAE(cref)
-  @assign dty = toDAE(if settings.isFunctionParameter
-    arrayElementType(ty)
+  dcref = toDAE(cref)
+  #= For function parameters, store element type in ty and dimensions in dims =#
+  if settings.isFunctionParameter
+    ddims = list(toDAE(d) for d in arrayDims(ty))
+    dty = toDAE(arrayElementType(ty))
   else
-    ty
-  end)
-  @assign source = DAE.emptyElementSource #ElementSource.createElementSource(info)
+    ddims = nil
+    dty = toDAE(ty)
+  end
+  source = DAE.emptyElementSource #ElementSource.createElementSource(info)
   if settings.addTypeToSource
     @assign source = addComponentTypeToSource(cref, source)
   end
@@ -118,7 +122,7 @@ function makeDAEVar(
           visibilityToDAE(vis),
           dty,
           binding,
-          nil,#crefDims(dcref) TODO
+          ddims,
           toDAE(attr.connectorType),
           source,
           vattr,
@@ -136,7 +140,7 @@ function makeDAEVar(
           P_Prefixes.visibilityToDAE(vis),
           dty,
           binding,
-          nil,
+          ddims,
           DAE.ConnectorType.NON_CONNECTOR(),
           source,
           vattr,
@@ -191,10 +195,10 @@ function getComponentDirection(dir::DirectionType, cref::ComponentRef)::Directio
 end
 
 function convertVarAttributes(
-  attrs::Vector{Tuple{String, Binding}},
-  ty::NFType,
-  compAttrs::Attributes,
-)::Option{DAE.VariableAttributes}
+    attrs::Vector{Tuple{String, Binding}},
+    ty::NFType,
+    compAttrs::Attributes,
+    )::Option{DAE.VariableAttributes}
   local attributes::Option{DAE.VariableAttributes}
   local is_final::Bool
   local is_final_opt::Option{Bool}
@@ -202,7 +206,8 @@ function convertVarAttributes(
   local is_array::Bool = false
   is_final =
     compAttrs.isFinal || compAttrs.variability == Variability.STRUCTURAL_PARAMETER
-  if isempty(attrs) && !is_final
+  #= Real types require SOME(VAR_ATTR_REAL(...)) for backend initialization =#
+  if isempty(attrs) && !is_final && !isa(arrayElementType(ty), TYPE_REAL)
     attributes = NONE()
     return attributes
   end
@@ -520,6 +525,64 @@ function convertStringVarAttributes(
   return attributes
 end
 
+function convertStringVarAttributes(
+  attrs::Vector{<:Tuple{<:String, Binding}},
+  isFinal::Option{<:Bool},
+)::Option{DAE.VariableAttributes}
+  local attributes::Option{DAE.VariableAttributes}
+
+  local name::String
+  local b::Binding
+  local quantity::Option{DAE.Exp} = NONE()
+  local start::Option{DAE.Exp} = NONE()
+  local fixed::Option{DAE.Exp} = NONE()
+
+  for attr in attrs
+     (name, b) = attr
+     () = begin
+      @match name begin
+        "quantity" => begin
+          quantity = convertVarAttribute(b)
+          ()
+        end
+
+        "start" => begin
+          start = convertVarAttribute(b)
+          ()
+        end
+
+        "fixed" => begin
+          fixed = convertVarAttribute(b)
+          ()
+        end
+
+        _ => begin
+          #=  The attributes should already be type checked, so we shouldn't get any
+          =#
+          #=  unknown attributes here.
+          =#
+          Error.assertion(
+            false,
+            getInstanceName() + " got unknown type attribute " + name,
+            sourceInfo(),
+          )
+          fail()
+        end
+      end
+    end
+  end
+  attributes = SOME(DAE.VAR_ATTR_STRING(
+    quantity,
+    start,
+    fixed,
+    NONE(),
+    NONE(),
+    isFinal,
+    NONE(),
+  ))
+  return attributes
+end
+
 function convertEnumVarAttributes(
   attrs::List{<:Tuple{<:String, Binding}},
   isFinal::Option{<:Bool},
@@ -592,6 +655,78 @@ function convertEnumVarAttributes(
   return attributes
 end
 
+function convertEnumVarAttributes(
+  attrs::Vector{<:Tuple{<:String, Binding}},
+  isFinal::Option{<:Bool},
+)::Option{DAE.VariableAttributes}
+  local attributes::Option{DAE.VariableAttributes}
+
+  local name::String
+  local b::Binding
+  local quantity::Option{DAE.Exp} = NONE()
+  local min::Option{DAE.Exp} = NONE()
+  local max::Option{DAE.Exp} = NONE()
+  local start::Option{DAE.Exp} = NONE()
+  local fixed::Option{DAE.Exp} = NONE()
+
+  for attr in attrs
+     (name, b) = attr
+     () = begin
+      @match name begin
+        "fixed" => begin
+          fixed = convertVarAttribute(b)
+          ()
+        end
+
+        "max" => begin
+          max = convertVarAttribute(b)
+          ()
+        end
+
+        "min" => begin
+          min = convertVarAttribute(b)
+          ()
+        end
+
+        "quantity" => begin
+          quantity = convertVarAttribute(b)
+          ()
+        end
+
+        "start" => begin
+          start = convertVarAttribute(b)
+          ()
+        end
+
+        _ => begin
+          #=  The attributes should already be type checked, so we shouldn't get any
+          =#
+          #=  unknown attributes here.
+          =#
+          Error.assertion(
+            false,
+            getInstanceName() + " got unknown type attribute " + name,
+            sourceInfo(),
+          )
+          fail()
+        end
+      end
+    end
+  end
+  attributes = SOME(DAE.VAR_ATTR_ENUMERATION(
+    quantity,
+    min,
+    max,
+    start,
+    fixed,
+    NONE(),
+    NONE(),
+    isFinal,
+    NONE(),
+  ))
+  return attributes
+end
+
 function convertVarAttribute(binding::Binding)::Option{DAE.Exp}
   local attribute::Option{DAE.Exp} =
     SOME(toDAE(getTypedExp(binding)))
@@ -612,7 +747,7 @@ function convertStateSelectAttribute(binding::Binding)::Option{DAE.StateSelect}
         exp.name
       end
 
-      CREF_EXPRESSION(cref = CREF(node = node)) => begin
+      CREF_EXPRESSION(cref = COMPONENT_REF_CREF(node = node)) => begin
         name(node)
       end
 
@@ -635,26 +770,26 @@ end
 function lookupStateSelectMember(name::String)::DAE.StateSelect
   local stateSelect::DAE.StateSelect
 
-  @assign stateSelect = begin
+  stateSelect = begin
     @match name begin
       "never" => begin
-        DAE.StateSelect.NEVER()
+        DAE.NEVER()
       end
 
       "avoid" => begin
-        DAE.StateSelect.AVOID()
+        DAE.AVOID()
       end
 
       "default" => begin
-        DAE.StateSelect.DEFAULT()
+        DAE.DEFAULT()
       end
 
       "prefer" => begin
-        DAE.StateSelect.PREFER()
+        DAE.PREFER()
       end
 
       "always" => begin
-        DAE.StateSelect.ALWAYS()
+        DAE.ALWAYS()
       end
 
       _ => begin
@@ -698,7 +833,7 @@ function convertEquation(eq::Equation, elements::List{<:DAE.Element})::List{DAE.
         @assign e2 = toDAE(eq.rhs)
         _cons(
           if isComplex(eq.ty)
-            DAE.Element.COMPLEX_EQUATION(e1, e2, eq.source)
+            DAE.COMPLEX_EQUATION(e1, e2, eq.source)
           elseif (isArray(eq.ty))
             DAE.Element.ARRAY_EQUATION(
               list(toDAE(d) for d in arrayDims(eq.ty)),
@@ -725,9 +860,9 @@ function convertEquation(eq::Equation, elements::List{<:DAE.Element})::List{DAE.
       end
 
       EQUATION_ARRAY_EQUALITY(__) => begin
-        @assign e1 = toDAE(eq.lhs)
-        @assign e2 = toDAE(eq.rhs)
-        @assign dims = list(toDAE(d) for d in arrayDims(eq.ty))
+        e1 = toDAE(eq.lhs)
+        e2 = toDAE(eq.rhs)
+        dims = list(toDAE(d) for d in arrayDims(eq.ty))
         _cons(DAE.ARRAY_EQUATION(dims, e1, e2, eq.source), elements)
       end
 
@@ -1118,9 +1253,7 @@ function convertAssignment(stmt::Statement)::DAE.Statement
   return daeStmt
 end
 
-function convertForStatement(forStmt::Statement)::DAE.P_Statement.Statement
-  local forDAE::DAE.P_Statement.Statement
-
+function convertForStatement(forStmt::Statement)::DAE.Statement
   local iterator::InstNode
   local ty::M_Type
   local range::Expression
@@ -1128,15 +1261,15 @@ function convertForStatement(forStmt::Statement)::DAE.P_Statement.Statement
   local dbody::List{DAE.Statement}
   local source::DAE.ElementSource
 
-  @match P_Statement.Statement.FOR(
+  @match ALG_FOR(
     iterator = iterator,
     range = SOME(range),
     body = body,
     source = source,
   ) = forStmt
-  @assign dbody = convertStatements(body)
+  dbody = convertStatements(body)
   @match ITERATOR_COMPONENT(ty = ty) = component(iterator)
-  @assign forDAE = DAE.P_Statement.Statement.STMT_FOR(
+  return DAE.STMT_FOR(
     toDAE(ty),
     isArray(ty),
     name(iterator),
@@ -1145,7 +1278,6 @@ function convertForStatement(forStmt::Statement)::DAE.P_Statement.Statement
     dbody,
     source,
   )
-  return forDAE
 end
 
 function convertIfStatement(
@@ -1174,6 +1306,30 @@ function convertIfStatement(
   @match DAE.ELSEIF(dcond, dstmts, else_stmt) = else_stmt
   ifStatement = DAE.STMT_IF(dcond, dstmts, else_stmt, source)
   return ifStatement
+end
+
+function convertIfStatement(
+  ifBranches::Vector{<:Tuple{<:Expression, <:Union{Vector{<:Statement}, List{<:Statement}}}},
+  source::DAE.ElementSource,
+)::DAE.Statement
+  local cond::Expression
+  local dcond::DAE.Exp
+  local dstmts::List{DAE.Statement}
+  local first::Bool = true
+  local else_stmt::DAE.Else = DAE.NOELSE()
+  for b in reverse(ifBranches)
+    (cond, stmts) = b
+    dcond = toDAE(cond)
+    dstmts = stmts isa Vector ? convertStatements(stmts) : convertStatements(Base.collect(stmts))
+    if first && isTrue(cond)
+      else_stmt = DAE.ELSE(dstmts)
+    else
+      else_stmt = DAE.ELSEIF(dcond, dstmts, else_stmt)
+    end
+    first = false
+  end
+  @match DAE.ELSEIF(dcond, dstmts, else_stmt) = else_stmt
+  return DAE.STMT_IF(dcond, dstmts, else_stmt, source)
 end
 
 function convertWhenStatement(
@@ -1316,7 +1472,7 @@ function convertFunctionParam(node::InstNode)::DAE.Element
   local attr::Attributes
   local ty::M_Type
   local bindingV::Option{DAE.Exp}
-  local ty_attr::List{Tuple{String, Binding}}
+  local ty_attr::Vector{Tuple{String, Binding}}
   comp = component(node)
   element = begin
     @match comp begin
@@ -1324,7 +1480,7 @@ function convertFunctionParam(node::InstNode)::DAE.Element
         cref = fromNode(node, ty)
         bindingV = toDAEExp(comp.binding)
         cls = getClass(comp.classInst)
-        ty_attr = list((name(m), binding(m)) for m in getTypeAttributes(cls))
+        ty_attr = Tuple{String, Binding}[(name(m), binding(m)) for m in getTypeAttributes(cls)]
         var_attr = convertVarAttributes(ty_attr, ty, attr)
         makeDAEVar(
           cref,
@@ -1375,7 +1531,7 @@ function convertExternalDecl(
   return funcDef
 end
 
-function convertExternalDeclArg(exp::Expression)::DAE.ExtArg
+function convertExternalDeclArg(@nospecialize(exp::Expression))::DAE.ExtArg
   local arg::DAE.ExtArg
   @assign arg = begin
     local dir::Absyn.Direction
@@ -1504,7 +1660,7 @@ function makeTypeRecordVar(componentArg::InstNode)::DAE.Var
     toDAE(attr, vis),
     toDAE(ty),
     toDAE(binding),
-    bind_from_outside,
+    #bind_from_outside,
     NONE(),
   )
   return typeVar
@@ -1515,12 +1671,12 @@ function stripScopePrefixFromDim(dim::Dimension)::Dimension
   return dim
 end
 
-function stripScopePrefixExp(exp::Expression)::Expression
+function stripScopePrefixExp(@nospecialize(exp::Expression))::Expression
   @assign exp = map(exp, stripScopePrefixCrefExp)
   return exp
 end
 
-function stripScopePrefixCrefExp(exp::Expression)::Expression
+function stripScopePrefixCrefExp(@nospecialize(exp::Expression))::Expression
    () = begin
     @match exp begin
       CREF_EXPRESSION(__) => begin

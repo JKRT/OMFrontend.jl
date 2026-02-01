@@ -1610,7 +1610,7 @@ function getClass(node::InstNode)
   elseif  node isa COMPONENT_NODE
     getClass(classInstance(P_Pointer.access(node.component)))
   else
-    fail()
+    return node#fail()
   end
 end
 
@@ -1719,14 +1719,14 @@ end
 """
 function parentScope(@nospecialize(node::InstNode))
   local scope::InstNode
-   scope = begin
-     @match node begin
-       CLASS_NODE(nodeType = DERIVED_CLASS(__))  => begin
-         parentScope(lastBaseClass(node))
-       end
-       CLASS_NODE(__)  => begin
-         node.parentScope
-       end
+  scope = begin
+    @match node begin
+      CLASS_NODE(nodeType = DERIVED_CLASS(__))  => begin
+        parentScope(lastBaseClass(node))
+      end
+      CLASS_NODE(__)  => begin
+        node.parentScope
+      end
 
       COMPONENT_NODE(__)  => begin
         parentScope(classInstance(P_Pointer.access(node.component)))

@@ -680,12 +680,12 @@ function Lapack_dorgqr(args::List{<:Expression})
   return assignVariable(info, makeInteger(INFO))
 end
 
-function evaluateExtIntArg(arg::Expression)::Int
+function evaluateExtIntArg(@nospecialize(arg::Expression))::Int
   local value::Int = getExtIntValue(Ceval.evalExp(arg))
   return value
 end
 
-function getExtIntValue(exp::Expression)::Int
+function getExtIntValue(@nospecialize(exp::Expression))::Int
   local value::Int
 
   @assign value = begin
@@ -702,12 +702,12 @@ function getExtIntValue(exp::Expression)::Int
   return value
 end
 
-function evaluateExtRealArg(arg::Expression)::AbstractFloat
+function evaluateExtRealArg(@nospecialize(arg::Expression))::AbstractFloat
   local value::AbstractFloat = getExtRealValue(Ceval.evalExp(arg))
   return value
 end
 
-function getExtRealValue(exp::Expression)::AbstractFloat
+function getExtRealValue(@nospecialize(exp::Expression))::AbstractFloat
   local value::AbstractFloat
 
   @assign value = begin
@@ -724,12 +724,12 @@ function getExtRealValue(exp::Expression)::AbstractFloat
   return value
 end
 
-function evaluateExtStringArg(arg::Expression)::String
+function evaluateExtStringArg(@nospecialize(arg::Expression))::String
   local value::String = getExtStringValue(Ceval.evalExp(arg))
   return value
 end
 
-function getExtStringValue(exp::Expression)::String
+function getExtStringValue(@nospecialize(exp::Expression))::String
   local value::String
 
   @assign value = begin
@@ -746,7 +746,7 @@ function getExtStringValue(exp::Expression)::String
   return value
 end
 
-function evaluateExtIntArrayArg(arg::Expression)::List{Int}
+function evaluateExtIntArrayArg(@nospecialize(arg::Expression))::List{Int}
   local value::List{Int}
 
   local expl::List{Expression}
@@ -756,7 +756,7 @@ function evaluateExtIntArrayArg(arg::Expression)::List{Int}
   return value
 end
 
-function evaluateExtRealArrayArg(arg::Expression)::List{AbstractFloat}
+function evaluateExtRealArrayArg(@nospecialize(arg::Expression))::List{AbstractFloat}
   local value::List{AbstractFloat}
 
   local expl::List{Expression}
@@ -766,7 +766,7 @@ function evaluateExtRealArrayArg(arg::Expression)::List{AbstractFloat}
   return value
 end
 
-function evaluateExtRealMatrixArg(arg::Expression)::List{List{AbstractFloat}}
+function evaluateExtRealMatrixArg(@nospecialize(arg::Expression))::List{List{AbstractFloat}}
   local value::List{List{AbstractFloat}}
 
   local expl::List{Expression}
@@ -778,7 +778,7 @@ function evaluateExtRealMatrixArg(arg::Expression)::List{List{AbstractFloat}}
   #=  matrices, so if the argument is a vector we convert it into a matrix.
   =#
   @assign value = begin
-    @match Type.dimensionCount(ty) begin
+    @match dimensionCount(ty) begin
       1 => begin
         list(list(getExtRealValue(e)) for e in expl)
       end
@@ -799,7 +799,7 @@ end
    to be converted back into a vector before assigning the variable. Otherwise
    this function just calls assignVariable, so it's only needed for matrix
    arguments. =#"""
-function assignVariableExt(variable::Expression, value::Expression)
+function assignVariableExt(@nospecialize(variable::Expression), @nospecialize(value::Expression))
   local exp::Expression
 
   @assign exp = begin
@@ -809,7 +809,7 @@ function assignVariableExt(variable::Expression, value::Expression)
         ARRAY_EXPRESSION(ty = TYPE_ARRAY(dimensions = _ <| _ <| nil())),
       ) => begin
         makeArray(
-          Type.unliftArray(value.ty),
+          unliftArray(value.ty),
           Expression[arrayScalarElement(e) for e in value.elements],
           literal = true,
         )

@@ -72,7 +72,7 @@ function evaluateTypeAttribute(
   return attribute
 end
 
-function evaluateExp(exp::Expression, constVariability::VariabilityType)::Expression
+function evaluateExp(@nospecialize(exp::Expression), constVariability::VariabilityType)::Expression
   local outExp::Expression
   (outExp, _) = evaluateExpTraverser(exp, constVariability, false)
   return outExp
@@ -360,7 +360,7 @@ function evaluateFunction(func::M_Function)::M_Function
   return func
 end
 
-function evaluateFuncExp(exp::Expression, fnNode::InstNode)::Expression
+function evaluateFuncExp(@nospecialize(exp::Expression), fnNode::InstNode)::Expression
   local outExp::Expression
   (outExp, _) = evaluateFuncExpTraverser(exp, fnNode, false)
   return outExp

@@ -86,7 +86,7 @@ struct EQUATION_BRANCH <: Equation_Branch
 end
 
 
-function isMultiLine(@nospecialize(eq::Equation))::Bool
+@nospecializeinfer function isMultiLine(@nospecialize(eq::Equation))::Bool
   local singleLine::Bool
    singleLine = begin
     @match eq begin
@@ -138,7 +138,7 @@ function toFlatStreamList(
   return s
 end
 
-function toFlatStream(@nospecialize(eq::Equation), indent::String, s)
+@nospecializeinfer function toFlatStream(@nospecialize(eq::Equation), indent::String, s)
    s = IOStream_M.append(s, indent)
    s = begin
     @match eq begin
@@ -276,7 +276,7 @@ function toStreamList(
   return s
 end
 
-function toStream(@nospecialize(eq::Equation), indent::String, s)
+@nospecializeinfer function toStream(@nospecialize(eq::Equation), indent::String, s)
    s = IOStream_M.append(s, indent)
    s = begin
     @match eq begin
@@ -402,7 +402,7 @@ function toStringList(eql::List{<:Equation}, indent::String = "")::String
   return str
 end
 
-function toString(@nospecialize(eq::Equation), indent::String = "")::String
+@nospecializeinfer function toString(@nospecialize(eq::Equation), indent::String = "")::String
   local str::String
   local s
   s = IOStream_M.create(getInstanceName(), IOStream_M.LIST())
@@ -412,7 +412,7 @@ function toString(@nospecialize(eq::Equation), indent::String = "")::String
   return str
 end
 
-function replaceIteratorList(eql::Vector{Equation}, iterator::InstNode, value::Expression)::Vector{Equation}
+function replaceIteratorList(eql::Vector{Equation}, iterator::InstNode, @nospecialize(value::Expression))::Vector{Equation}
   mapExpList(eql, @closure (expArg) -> replaceIterator(expArg, iterator, value))
 end
 
@@ -442,7 +442,7 @@ function containsList(eql::Vector{Equation}, func::PredFn)::Bool
   return res
 end
 
-function contains(@nospecialize(eq::Equation), func::PredFn)::Bool
+@nospecializeinfer function contains(@nospecialize(eq::Equation), func::PredFn)::Bool
   local res::Bool
   if func(eq)
     res = true
@@ -502,7 +502,7 @@ function contains(@nospecialize(eq::Equation), func::PredFn)::Bool
   return res
 end
 
-function foldExp(@nospecialize(eq::Equation), func::FoldFunc, arg::ArgT) where {ArgT}
+@nospecializeinfer function foldExp(@nospecialize(eq::Equation), func::FoldFunc, arg::ArgT) where {ArgT}
    () = begin
     @match eq begin
       EQUATION_EQUALITY(__) => begin
@@ -776,7 +776,7 @@ map(@nospecialize(eq::Equation), func::MapFn)
 ```
 Applies the function `func` to `eq`
 """
-function map(@nospecialize(eq::Equation), func::MapFn)
+@nospecializeinfer function map(@nospecialize(eq::Equation), func::MapFn)
   function f(b::Equation_Branch)
     @match b begin
       EQUATION_BRANCH(__) => begin
@@ -815,7 +815,7 @@ function map(@nospecialize(eq::Equation), func::MapFn)
 end
 
 
-function apply(@nospecialize(eq::Equation), func::ApplyFn)
+@nospecializeinfer function apply(@nospecialize(eq::Equation), func::ApplyFn)
    () = begin
     @match eq begin
       FOR(__) => begin
@@ -879,7 +879,7 @@ function applyList(eql::Vector{Equation}, func::ApplyFn)
   end
 end
 
-function Equation_info(@nospecialize(eq::Equation))::SourceInfo
+@nospecializeinfer function Equation_info(@nospecialize(eq::Equation))::SourceInfo
   local info::SourceInfo = sourceInfo() #DAE.ElementSource_getInfo(source(eq))
   return info
 end

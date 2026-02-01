@@ -286,7 +286,7 @@ function isOne(dim::Dimension)::Bool
         dim.size == 1
       end
       DIMENSION_ENUM(__) => begin
-        Type.enumSize(dim.enumType) == 1
+        enumSize(dim.enumType) == 1
       end
 
       _ => begin
@@ -305,7 +305,7 @@ function isZero(dim::Dimension)::Bool
         dim.size == 0
       end
       DIMENSION_ENUM(__) => begin
-        Type.enumSize(dim.enumType) == 0
+        enumSize(dim.enumType) == 0
       end
       _ => begin
         false
@@ -533,7 +533,7 @@ function fromInteger(n::Int, var::VariabilityType = Variability.CONSTANT)::Dimen
   return dim
 end
 
-function fromExp(exp::Expression, var::VariabilityType)::Dimension
+function fromExp(@nospecialize(exp::Expression), var::VariabilityType)::Dimension
   local dim::Dimension
   @assign dim = begin
     local cls::Class

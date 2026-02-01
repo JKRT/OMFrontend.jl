@@ -186,7 +186,7 @@ function evaluateSubscripts(cref::ComponentRef)::ComponentRef
       end
 
       COMPONENT_REF_CREF(origin = Origin.CREF) => begin
-        subs = list(eval(s) for s in cref.subscripts)
+        subs = list(evalSubscript(s) for s in cref.subscripts)
         COMPONENT_REF_CREF(cref.node, subs, cref.ty, cref.origin, evaluateSubscripts(cref.restCref))
       end
 
@@ -1143,7 +1143,7 @@ function makeIterator(node::InstNode, ty::NFType)::ComponentRef
   return cref
 end
 
-function fromBuiltin(node::InstNode, ty::M_Type)::ComponentRef
+function fromBuiltin(node::InstNode, @nospecialize(ty::M_Type))::ComponentRef
   local cref::ComponentRef = COMPONENT_REF_CREF(node, nil, ty, Origin.SCOPE, COMPONENT_REF_EMPTY())
   return cref
 end
@@ -1202,7 +1202,7 @@ end
 
 function prefixCref(
   node::InstNode,
-  ty::M_Type,
+  @nospecialize(ty::M_Type),
   subs::List{<:Subscript},
   restCref::ComponentRef,
   )::ComponentRef

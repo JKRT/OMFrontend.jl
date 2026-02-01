@@ -1,4 +1,3 @@
-ComplexType = NFComplexType
 @Uniontype NFComplexType begin
 @Record COMPLEX_CLASS begin
 end

@@ -350,8 +350,8 @@ function checkBinaryOperationBoxed(
   local ty1::M_Type
   local ty2::M_Type
 
-   (e1, ty1) = matchTypes(type1, Type.unbox(type1), exp1)
-   (e2, ty2) = matchTypes(type2, Type.unbox(type2), exp2)
+   (e1, ty1) = matchTypes(type1, unbox(type1), exp1)
+   (e2, ty2) = matchTypes(type2, unbox(type2), exp2)
    (outExp, outType) = checkBinaryOperation(e1, ty1, var1, op, e2, ty2, var2, info)
   return (outExp, outType)
 end
@@ -453,8 +453,8 @@ function checkOverloadedBinaryArrayAddSub2(
             )
           end
         else
-          @assign ty1 = Type.unliftArray(type1)
-          @assign ty2 = Type.unliftArray(type2)
+          @assign ty1 = unliftArray(type1)
+          @assign ty2 = unliftArray(type2)
           for e1 in expl1
             @match Cons(e2, expl2) = expl2
              (e, ty) = checkOverloadedBinaryArrayAddSub2(
@@ -644,7 +644,7 @@ function checkOverloadedBinaryScalarArray2(
     @match exp2 begin
       ARRAY_EXPRESSION(elements = nil()) => begin
         try
-          @assign ty = Type.unliftArray(type2)
+          @assign ty = unliftArray(type2)
            (_, outType) = matchOverloadedBinaryOperator(
             exp1,
             type1,
@@ -669,7 +669,7 @@ function checkOverloadedBinaryScalarArray2(
       end
 
       ARRAY_EXPRESSION(elements = expl) => begin
-        @assign ty = Type.unliftArray(type2)
+        @assign ty = unliftArray(type2)
         @assign expl = Expression[
           checkOverloadedBinaryScalarArray2(
             exp1,
@@ -758,7 +758,7 @@ function checkOverloadedBinaryArrayScalar2(
     @match exp1 begin
       ARRAY_EXPRESSION(elements = nil()) => begin
         try
-          @assign ty = Type.unliftArray(type1)
+          @assign ty = unliftArray(type1)
            (_, outType) = matchOverloadedBinaryOperator(
             EMPTY(type1),
             ty,
@@ -783,7 +783,7 @@ function checkOverloadedBinaryArrayScalar2(
       end
 
       ARRAY_EXPRESSION(elements = expl) => begin
-        ty = Type.unliftArray(type1)
+        ty = unliftArray(type1)
         expl = Expression[
           checkOverloadedBinaryArrayScalar2(
             e,
@@ -836,7 +836,7 @@ function checkOverloadedBinaryArrayDiv(
   local outType::M_Type
   local outExp::Expression
 
-  if isArray(type1) && Type.isScalar(type2)
+  if isArray(type1) && isScalar(type2)
      (outExp, outType) = checkOverloadedBinaryArrayScalar(
       exp1,
       type1,
@@ -956,8 +956,8 @@ function checkOverloadedBinaryArrayEW2(
         )
       end
     elseif is_array1 && is_array2
-      @assign ty1 = Type.unliftArray(type1)
-      @assign ty2 = Type.unliftArray(type2)
+      @assign ty1 = unliftArray(type1)
+      @assign ty2 = unliftArray(type2)
       @assign expl1 = arrayElements(exp1)
       @assign expl2 = arrayElements(exp2)
       for e in expl1
@@ -967,7 +967,7 @@ function checkOverloadedBinaryArrayEW2(
         @assign expl = _cons(e, expl)
       end
     elseif is_array1
-      @assign ty1 = Type.unliftArray(type1)
+      @assign ty1 = unliftArray(type1)
       @assign expl1 = arrayElements(exp1)
       for e in expl1
          (e, ty) = checkOverloadedBinaryArrayEW2(
@@ -984,7 +984,7 @@ function checkOverloadedBinaryArrayEW2(
         @assign expl = _cons(e, expl)
       end
     elseif is_array2
-      @assign ty2 = Type.unliftArray(type2)
+      @assign ty2 = unliftArray(type2)
       @assign expl2 = arrayElements(exp2)
       for e in expl2
          (e, ty) = checkOverloadedBinaryArrayEW2(
@@ -1257,11 +1257,11 @@ function checkBinaryOperationSub(
   return (binaryExp, resultType)
 end
 
-function checkBinaryOperationMul(
-  exp1::Expression,
-  type1::M_Type,
-  exp2::Expression,
-  type2::M_Type,
+@nospecializeinfer function checkBinaryOperationMul(
+  @nospecialize(exp1::Expression),
+  @nospecialize(type1::M_Type),
+  @nospecialize(exp2::Expression),
+  @nospecialize(type2::M_Type),
   info::SourceInfo,
 )::Tuple{Expression, NFType}
   local resultType::NFType
@@ -1457,7 +1457,7 @@ function checkBinaryOperationPow(
     matchTypes(type1, setArrayElementType(type1, TYPE_REAL()), exp1, #=allowUnknown=# true)
   valid = isCompatibleMatch(mk)
   if isArray(resultType)
-    valid = valid && Type.isSquareMatrix(resultType)
+    valid = valid && isSquareMatrix(resultType)
     valid = valid && isInteger(type2)
     op = OPERATOR(resultType, Op.POW_MATRIX)
     e2 = exp2
@@ -1897,7 +1897,7 @@ function printUnresolvableTypeError(
   return fail()
 end
 
-function matchExpressions(
+@nospecializeinfer function matchExpressions(
   @nospecialize(exp1::Expression),
   @nospecialize(type1::NFType),
   @nospecialize(exp2::Expression),
@@ -2028,10 +2028,10 @@ function matchExpressions2(
   return (e1, e2, cty, mk)
 end
 
-function matchTypes(
-  actualType::T1,
-  expectedType::T2,
-  expression::T3,
+@nospecializeinfer function matchTypes(
+  @nospecialize(actualType::T1),
+  @nospecialize(expectedType::T2),
+  @nospecialize(expression::T3),
   allowUnknown::Bool = false,
   )::Tuple{Expression, NFType, Int} where {T1 <: NFType, T2 <: NFType, T3 <: Expression}
   local matchKind::MatchKindType
@@ -2122,12 +2122,12 @@ function matchTypes(
       TYPE_METABOXED(__) => begin
          (expression, compatibleType, matchKind) = matchTypes(
           actualType.ty,
-          Type.unbox(expectedType),
+          unbox(expectedType),
           unbox(expression),
           allowUnknown,
         )
         @assign expression = box(expression)
-        @assign compatibleType = Type.box(compatibleType)
+        @assign compatibleType = box(compatibleType)
         compatibleType
       end
 
@@ -2241,7 +2241,7 @@ function matchTypesRef(
       TYPE_METABOXED(__) => begin
          (expression, compatibleType, matchKind) = matchTypes(
           actualType.ty,
-          Type.unbox(expectedType),
+          unbox(expectedType),
           unbox(expression),
           allowUnknown,
         )
@@ -2350,7 +2350,7 @@ function matchTypes_castRef(
         (expression, compatibleType, matchKind) =
           matchTypes(actualType, expectedType.ty, expression, allowUnknown)
         expression = box(expression)
-        compatibleType = Type.box(compatibleType)
+        compatibleType = box(compatibleType)
         refTyExp.x = compatibleType
         if isCompatibleMatch(matchKind)
           MatchKind.CAST
@@ -2496,12 +2496,12 @@ function matchExpressions_cast(
 
       (_, TYPE_POLYMORPHIC(__)) => begin
         @assign exp1 = box(exp1)
-        (Type.box(type1), MatchKind.GENERIC)
+        (box(type1), MatchKind.GENERIC)
       end
 
       (TYPE_POLYMORPHIC(__), _) => begin
         @assign exp2 = box(exp2)
-        (Type.box(type2), MatchKind.GENERIC)
+        (box(type2), MatchKind.GENERIC)
       end
 
       _ => begin
@@ -2769,8 +2769,8 @@ function matchFunctionParameters(
       break
     end
      (_, _, mk) = matchTypes(
-      Type.unbox(getType(p1)),
-      Type.unbox(getType(p2)),
+      unbox(getType(p1)),
+      unbox(getType(p2)),
       dummy,
       allowUnknown,
     )
@@ -3042,7 +3042,7 @@ function matchTupleTypes(
   end
   for ty2 in tyl2
     @match _cons(ty1, tyl1) = tyl1
-    if Type.isUnknown(ty2)
+    if isUnknown(ty2)
       continue
     end
      (_, _, matchKind) = matchTypes(ty1, ty2, expression, allowUnknown)
@@ -3071,12 +3071,12 @@ function matchBoxedExpressions(
   @assign e1 = unbox(exp1)
   @assign e2 = unbox(exp2)
    (e1, e2, compatibleType, matchKind) =
-    matchExpressions(e1, Type.unbox(type1), e2, Type.unbox(type2), allowUnknown)
+    matchExpressions(e1, unbox(type1), e2, unbox(type2), allowUnknown)
   if isCastMatch(matchKind)
     @assign exp1 = box(e1)
     @assign exp2 = box(e2)
   end
-  @assign compatibleType = Type.box(compatibleType)
+  @assign compatibleType = box(compatibleType)
   return (exp1, exp2, compatibleType, matchKind)
 end
 
@@ -3170,7 +3170,7 @@ function matchTypes_cast(
          (expression, compatibleType, matchKind) =
           matchTypes(actualType, expectedType.ty, expression, allowUnknown)
         @assign expression = box(expression)
-        @assign compatibleType = Type.box(compatibleType)
+        @assign compatibleType = box(compatibleType)
         (compatibleType, if isCompatibleMatch(matchKind)
           MatchKind.CAST
         else
@@ -3235,7 +3235,7 @@ function getRangeType(
         if isSome(stepExp)
           Error.addSourceMessageAndFail(
             Error.RANGE_INVALID_STEP,
-            list(Type.toString(rangeElemType)),
+            list(toString(rangeElemType)),
             info,
           )
         end
@@ -3246,7 +3246,7 @@ function getRangeType(
         if isSome(stepExp)
           Error.addSourceMessageAndFail(
             Error.RANGE_INVALID_STEP,
-            list(Type.toString(rangeElemType)),
+            list(toString(rangeElemType)),
             info,
           )
         end
@@ -3256,7 +3256,7 @@ function getRangeType(
       _ => begin
         Error.addSourceMessage(
           Error.RANGE_INVALID_TYPE,
-          list(Type.toString(rangeElemType)),
+          list(toString(rangeElemType)),
           info,
         )
         fail()
@@ -3455,7 +3455,7 @@ function getRangeTypeReal(
   return dim
 end
 
-function getRangeTypeBool(startExp::Expression, stopExp::Expression)::Dimension
+@nospecializeinfer function getRangeTypeBool(@nospecialize(startExp::Expression), @nospecialize(stopExp::Expression))::Dimension
   local dim::Dimension
   @assign dim = begin
     local sz::Int
@@ -3508,7 +3508,7 @@ function getRangeTypeBool(startExp::Expression, stopExp::Expression)::Dimension
   return dim
 end
 
-function getRangeTypeEnum(startExp::Expression, stopExp::Expression)::Dimension
+@nospecializeinfer function getRangeTypeEnum(@nospecialize(startExp::Expression), @nospecialize(stopExp::Expression))::Dimension
   local dim::Dimension
 
   @assign dim = begin
@@ -3663,8 +3663,8 @@ function printBindingTypeError(
           list(
             name,
             toString(binding),
-            Type.toString(componentType),
-            Type.toString(bindingType),
+            toString(componentType),
+            toString(bindingType),
           ),
           list(binding_info, comp_info),
         )
@@ -3677,7 +3677,7 @@ end
 
 """ #= Checks that an expression used as a dimension has a valid type for a
    dimension, otherwise prints an error and fails. =#"""
-function checkDimensionType(exp::Expression, ty::NFType, info::SourceInfo)
+@nospecializeinfer function checkDimensionType(@nospecialize(exp::Expression), @nospecialize(ty::NFType), info::SourceInfo)
   return if !isInteger(ty)
      () = begin
       @match exp begin
@@ -3694,7 +3694,7 @@ function checkDimensionType(exp::Expression, ty::NFType, info::SourceInfo)
         _ => begin
           Error.addSourceMessage(
             Error.INVALID_DIMENSION_TYPE,
-            list(toString(exp), Type.toString(ty)),
+            list(toString(exp), toString(ty)),
             info,
           )
           fail()
@@ -3704,7 +3704,7 @@ function checkDimensionType(exp::Expression, ty::NFType, info::SourceInfo)
   end
 end
 
-function checkReductionType(ty::NFType, name::Absyn.Path, exp::Expression, info::SourceInfo)
+@nospecializeinfer function checkReductionType(@nospecialize(ty::NFType), name::Absyn.Path, @nospecialize(exp::Expression), info::SourceInfo)
   local ety::NFType
   local err::String
   @assign err = begin
@@ -3811,7 +3811,7 @@ function checkReductionType(ty::NFType, name::Absyn.Path, exp::Expression, info:
       Error.INVALID_REDUCTION_TYPE,
       list(
         toString(exp),
-        Type.toString(ty),
+        toString(ty),
         AbsynUtil.pathString(name),
         err,
       ),
@@ -3820,7 +3820,7 @@ function checkReductionType(ty::NFType, name::Absyn.Path, exp::Expression, info:
   end
 end
 
-function checkSumComplexType(ty::NFType, exp::Expression, info::SourceInfo)::Bool
+@nospecializeinfer function checkSumComplexType(@nospecialize(ty::NFType), @nospecialize(exp::Expression), info::SourceInfo)::Bool
   local valid::Bool = true
   local cls_node::InstNode
   local op_node::InstNode
@@ -3831,7 +3831,7 @@ function checkSumComplexType(ty::NFType, exp::Expression, info::SourceInfo)::Boo
     if !hasOperator(op, cls)
       Error.addSourceMessage(
         Error.OPERATOR_RECORD_MISSING_OPERATOR,
-        list(Type.toString(ty), toString(exp), "sum", op),
+        list(toString(ty), toString(exp), "sum", op),
         info,
       )
       @assign valid = false

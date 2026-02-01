@@ -69,58 +69,58 @@ end
 # @info "Done"
 
 
-precompile_prefix = "Modelica.Mechanics.Rotational.Components"
-precompile_model_names = [
-    "Spring",
-    "Fixed",
-    "Inertia",
-    "Disc",
-    "Damper",
-    "SpringDamper",
-    "ElastoBacklash",
-    "ElastoBacklash2",
-    "BearingFriction",
-    "Brake",
-    "Clutch",
-    "OneWayClutch",
-    "IdealGear",
-    "LossyGear",
-    "IdealPlanetary",
-    "Gearbox",
-    "IdealGearR2T",
-    "IdealRollingWheel"
-]
-@info "Precompiling...."
-for p in precompile_model_names
-    @info "Translating: $(p)"
-    @time flattenModelInMSL_TST(string(precompile_prefix, ".", p); MSL_V = "MSL_4_0_0")
-    @info "Done!"
-  end
-@info "Done"
+# precompile_prefix = "Modelica.Mechanics.Rotational.Components"
+# precompile_model_names = [
+#     "Spring",
+#     "Fixed",
+#     "Inertia",
+#     "Disc",
+#     "Damper",
+#     "SpringDamper",
+#     "ElastoBacklash",
+#     "ElastoBacklash2",
+#     "BearingFriction",
+#     "Brake",
+#     "Clutch",
+#     "OneWayClutch",
+#     "IdealGear",
+#     "LossyGear",
+#     "IdealPlanetary",
+#     "Gearbox",
+#     "IdealGearR2T",
+#     "IdealRollingWheel"
+# ]
+# @info "Precompiling...."
+# for p in precompile_model_names
+#     @info "Translating: $(p)"
+#     @time flattenModelInMSL_TST(string(precompile_prefix, ".", p); MSL_V = "MSL_4_0_0")
+#     @info "Done!"
+#   end
+# @info "Done"
 
 precompile_prefix = "Modelica.Mechanics.MultiBody.Examples.Elementary"
 precompile_model_names = [
-  "DoublePendulum",
-  "DoublePendulumInitTip",
-  "ForceAndTorque",
-  "FreeBody",
-  "InitSpringConstant",
-  "LineForceWithTwoMasses",
   "Pendulum",
-  "PendulumWithSpringDamper",
-  "PointGravity",
-  "PointGravityWithPointMasses",
-  "PointGravityWithPointMasses2",
-  "SpringDamperSystem",
-  "SpringMassSystem",
-  "SpringWithMass",
-  "ThreeSprings",
-  "RollingWheel",
-   "RollingWheelSetDriving",
-  "RollingWheelSetPulling",
-  "HeatLosses",
-  "UserDefinedGravityField",
-  "Surfaces"
+  "DoublePendulum",
+  # "DoublePendulumInitTip",
+  # "ForceAndTorque",
+  # "FreeBody",
+  # "InitSpringConstant",
+  # "LineForceWithTwoMasses",
+  # "PendulumWithSpringDamper",
+  # "PointGravity",
+  # "PointGravityWithPointMasses",
+  # "PointGravityWithPointMasses2",
+  # "SpringDamperSystem",
+  # "SpringMassSystem",
+  # "SpringWithMass",
+  # "ThreeSprings",
+  # "RollingWheel",
+  #  "RollingWheelSetDriving",
+  # "RollingWheelSetPulling",
+  # "HeatLosses",
+  # "UserDefinedGravityField",
+  # "Surfaces"
 ]
 
 @info "Precompiling...."

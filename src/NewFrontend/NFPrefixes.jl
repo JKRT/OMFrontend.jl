@@ -433,26 +433,26 @@ end
 function variabilityToSCode(var)::SCode.Variability
   local scodeVar::SCode.Variability
 
-  @assign scodeVar = begin
+  scodeVar = begin
     @match var begin
       Variability.CONSTANT => begin
-        SCode.Variability.CONST()
+        SCode.CONST()
       end
 
       Variability.STRUCTURAL_PARAMETER => begin
-        SCode.Variability.PARAM()
+        SCode.PARAM()
       end
 
       Variability.PARAMETER => begin
-        SCode.Variability.PARAM()
+        SCode.PARAM()
       end
 
       Variability.NON_STRUCTURAL_PARAMETER => begin
-        SCode.Variability.PARAM()
+        SCode.PARAM()
       end
 
       Variability.DISCRETE => begin
-        SCode.Variability.DISCRETE()
+        SCode.DISCRETE()
       end
 
       _ => begin

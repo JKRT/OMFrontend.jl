@@ -1635,9 +1635,7 @@ end
 """ #= Create an iterator or the like with a unique name =#"""
 function getTempVariableIndex()::String
   local name::String
-
-   name =
-    stringAppend("tmpVar", intString(System.tmpTickIndex(Global.tmpVariableIndex)))
+  name = stringAppend("tmpVar", intString(System.tmpTickIndex(Global.tmpVariableIndex)))
   return name
 end
 

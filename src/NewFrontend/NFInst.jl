@@ -952,7 +952,7 @@ function updateClassConnectorType(res::Restriction, attrs::Attributes) ::Attribu
 end
 
 """ #= Instantiates the constructor and destructor for an ExternalObject class. =#"""
-function instExternalObjectStructors(ty::M_Type, parentNode::InstNode)
+function instExternalObjectStructors(@nospecialize(ty::M_Type), parentNode::InstNode)
   local constructor::InstNode
   local destructor::InstNode
   local par::InstNode
@@ -2161,7 +2161,7 @@ function makeRecordComplexType(node::InstNode, cls::Class) ::ComplexType
   local ty::ComplexType
 
   local cls_node::InstNode
-  local fields::List{Record.P_Field}
+  local fields::List{Field}
 
   cls_node = if SCodeUtil.isOperatorRecord(definition(node))
     classScope(node)
@@ -2345,7 +2345,7 @@ function instExpOpt(absynExp::Option{<:Absyn.Exp}, scope::InstNode, info::Source
   exp
 end
 
-function instExp(absynExp::Absyn.Exp, scope::InstNode, info::SourceInfo)::Expression
+@nospecializeinfer function instExp(@nospecialize(absynExp::Absyn.Exp), scope::InstNode, info::SourceInfo)::Expression
   local exp::Expression
   exp = begin
     local e1::Expression
@@ -3157,7 +3157,7 @@ function isComponentBindingNotFixed(component::Component, node::InstNode, requir
   isNotFixed
 end
 
-function isExpressionNotFixed(exp::Expression; requireFinal::Bool = false, maxDepth::Int = 4) ::Bool
+function isExpressionNotFixed(@nospecialize(exp::Expression); requireFinal::Bool = false, maxDepth::Int = 4) ::Bool
   local isNotFixed::Bool
 
   @assign isNotFixed = begin
@@ -3237,11 +3237,11 @@ function markStructuralParamsDim(dimension::Dimension)::Nothing
   return nothing
 end
 
-function markStructuralParamsExp(exp::Expression)::Nothing
+function markStructuralParamsExp(@nospecialize(exp::Expression))::Nothing
   apply(exp, markStructuralParamsExp_traverser)
 end
 
-function markStructuralParamsExp_traverser(exp::Expression)::Nothing
+function markStructuralParamsExp_traverser(@nospecialize(exp::Expression))::Nothing
   local node::InstNode
   local comp::Component
   local binding::Option{Expression}
@@ -3273,7 +3273,7 @@ function markStructuralParamsComp(component::Component, node::InstNode)::Nothing
   return nothing
 end
 
-function markStructuralParamsExpSize(exp::Expression)
+function markStructuralParamsExpSize(@nospecialize(exp::Expression))
   apply(exp, markStructuralParamsExpSize_traverser)
 end
 
@@ -3370,11 +3370,11 @@ function markStructuralParamsSub(sub::Subscript, dummy::Int = 0) ::Int
   dummy
 end
 
-function markImplicitWhenExp(exp::Expression)
+function markImplicitWhenExp(@nospecialize(exp::Expression))
     apply(exp, markImplicitWhenExp_traverser)
 end
 
-function markImplicitWhenExp_traverser(exp::Expression)
+function markImplicitWhenExp_traverser(@nospecialize(exp::Expression))
    () = begin
     local node::InstNode
     local comp::Component

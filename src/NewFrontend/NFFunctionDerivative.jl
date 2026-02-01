@@ -1,5 +1,4 @@
 @UniontypeDecl NFFunctionDerivative
-FunctionDerivative = NFFunctionDerivative
 
 Condition = (() -> begin #= Enumeration =#
   ZERO_DERIVATIVE = 1
@@ -82,7 +81,7 @@ function typeDerivative(fnDer::FunctionDerivative)
         "order",
         toString(order),
         "Int",
-        Type.toString(order_ty),
+        toString(order_ty),
       ),
       infoVar,
     )

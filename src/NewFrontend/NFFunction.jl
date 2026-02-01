@@ -257,7 +257,7 @@ function foldExpParameter(node::InstNode, foldFn::FoldFunc, arg::ArgT) where {Ar
    () = begin
     @match comp begin
       TYPED_COMPONENT(__) => begin
-        @assign arg = Type.foldDims(
+        @assign arg = foldDims(
           comp.ty,
           (foldFn) -> P_Dimension.Dimension.foldExp(func = foldFn),
           arg,
@@ -425,7 +425,7 @@ function makeDAEType(fn::M_FUNCTION, boxTypes::Bool = false)::DAE.Type
     @assign pname = name(param)
     @assign ty = getType(comp)
     @assign ptype = toDAE(if boxTypes
-                            Type.box(ty)
+                            box(ty)
                           else
                             ty
                           end)
@@ -440,7 +440,7 @@ function makeDAEType(fn::M_FUNCTION, boxTypes::Bool = false)::DAE.Type
   end
   @assign params = listReverse(params)
   @assign ty = if boxTypes
-    Type.box(fn.returnType)
+    box(fn.returnType)
   else
     fn.returnType
   end
@@ -810,8 +810,8 @@ function applyPartialApplicationArg(
             AbsynUtil.pathString(name(fn)),
             argName,
             toString(argExp),
-            Type.toString(argType),
-            Type.toString(getType(i)),
+            toString(argType),
+            toString(getType(i)),
           ),
           info,
         )
@@ -895,7 +895,7 @@ function boxFunctionParameter(component::InstNode)
   local comp::Component
 
   @assign comp = component(component)
-  @assign comp = P_Component.setType(Type.box(getType(comp)), comp)
+  @assign comp = P_Component.setType(box(getType(comp)), comp)
   return updateComponent!(comp, component)
 end
 
@@ -1689,7 +1689,7 @@ function typeString(fn::M_FUNCTION)::String
     AbsynUtil.pathString(name(fn)) + "<function>",
     "(",
     ", ",
-    ") => " + Type.toString(fn.returnType),
+    ") => " + toString(fn.returnType),
     true,
   )
   return str
@@ -2550,7 +2550,7 @@ function paramDirection(@nospecialize(componentArg::InstNode))::DirectionType
   if isFlowOrStream(cty)
     Error.addSourceMessage(
       Error.INNER_OUTER_FORMAL_PARAMETER,
-      list(ConnectorType.toString(cty), name(componentArg)),
+      list(ConnectortoString(cty), name(componentArg)),
       info(componentArg),
     )
     fail()

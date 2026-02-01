@@ -29,9 +29,6 @@
 *
 */ =#
 import Absyn
-M_Type = NFType
-ComponentRef = NFComponentRef
-Expression = NFExpression
 
 function instConstructor(path::Absyn.Path, recordNode::InstNode, info::SourceInfo)::InstNode
   local ctor_ref::ComponentRef

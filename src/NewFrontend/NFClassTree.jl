@@ -68,6 +68,10 @@ function isEmptyTree(tree::ClassTree)
   end
 end
 
+function getComponents(tree::CLASS_TREE_EMPTY_TREE)
+  return InstNode[]
+end
+
 function getComponents(tree::ClassTree)
   local comps::Vector{InstNode} = tree.components
   return comps

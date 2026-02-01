@@ -224,7 +224,7 @@ function foldInputFields(
   local rest_args::List{T} = args
   for field in fields
     @match _cons(arg, rest_args) = rest_args
-    if P_Field.isInput(field)
+    if isInput(field)
       @assign foldArg = func(arg, foldArg)
     end
   end

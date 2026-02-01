@@ -105,6 +105,7 @@ function initialize()
   setGlobalRoot(currentInstVar, NONE())
   setGlobalRoot(interactiveCache, NONE())
   setGlobalRoot(instNFInstCacheIndex, nil)
+  setGlobalRoot(tmpVariableIndex, 0)
   return setGlobalRoot(instNFNodeCacheIndex, nil)
 end
 

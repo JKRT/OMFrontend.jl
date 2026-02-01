@@ -320,7 +320,7 @@ end
           )
           fail()
         end
-         ty = TYPE_FUNCTION(fn, FunctionType.FUNCTIONAL_PARAMETER)
+         ty = TYPE_FUNCTION(fn, FunctionTYPE_FUNCTIONAL_PARAMETER)
         cls.ty = ty
         updateClass(cls, clsNode)
         ty
@@ -484,7 +484,7 @@ function checkComponentStreamAttribute(
     if !(isReal(ety) || isComplex(ety))
       Error.addSourceMessageAndFail(
         Error.NON_REAL_FLOW_OR_STREAM,
-        list(ConnectorType.toString(cty), name(component)),
+        list(ConnectortoString(cty), name(component)),
         InstNode_info(component),
       )
     end
@@ -544,7 +544,7 @@ end
   if !isVector(ty)
     Error.addSourceMessageAndFail(
         Error.FOR_EXPRESSION_ERROR,
-      list(toString(exp), Type.toString(ty)),
+      list(toString(exp), toString(ty)),
       info,
     )
   end
@@ -987,7 +987,7 @@ function checkComponentBindingVariability(
   return var
 end
 
-function checkBindingEach(binding::Binding)
+@nospecializeinfer function checkBindingEach(@nospecialize(binding::Binding))
   local parentBindings
   if isEach(binding)
     parentBindings = listRest(parents(binding))
@@ -1026,7 +1026,7 @@ function typeComponentCondition(condition::UNTYPED_BINDING, origin::Int)::TYPED_
       if isIncompatibleMatch(mk)
         Error.addSourceMessage(
           Error.IF_CONDITION_TYPE_ERROR,
-          list(toString(exp), Type.toString(ty)),
+          list(toString(exp), toString(ty)),
           info,
         )
         #@error "If condition error expected $(toString(exp)) had $(toString(ty))"
@@ -1080,7 +1080,7 @@ function typeTypeAttribute(
         Util.tuple21(listHead(ModTable.toList(attribute.subModifiers)))
       Error.addSourceMessage(
         Error.MISSING_MODIFIED_ELEMENT,
-        list(name, Type.toString(ty)),
+        list(name, toString(ty)),
         attribute.info,
       )
       fail()
@@ -1137,8 +1137,8 @@ end
    Types an untyped expression, returning the typed expression itself along with
    its type and variability.
 """
-function typeExp(
-  exp::Expression,
+@nospecializeinfer function typeExp(
+  @nospecialize(exp::Expression),
   origin::ORIGIN_Type,
   info::SourceInfo
   )::Tuple
@@ -1149,8 +1149,8 @@ function typeExp(
   return (typedExp, typeRef.x, variabilityTypeRef.x)
 end
 
-function typeExp2(
-  exp::Expression,
+@nospecializeinfer function typeExp2(
+  @nospecialize(exp::Expression),
   origin::ORIGIN_Type,
   info::SourceInfo,
   typeRef::Ref{NFType},
@@ -1204,7 +1204,7 @@ function typeExp2(
         if flagNotSet(origin, ORIGIN_VALID_TYPENAME_SCOPE)
           Error.addSourceMessage(
             Error.INVALID_TYPENAME_USE,
-            list(Type.typenameString(arrayElementType(exp.ty))),
+            list(typenameString(arrayElementType(exp.ty))),
             info,
           )
           fail()
@@ -1345,8 +1345,8 @@ function typeRelationExpression(exp::RELATION_EXPRESSION, origin::ORIGIN_Type, i
   (exp, ty, variability)
 end
 
-function typeBinaryExpression(
-  exp::BINARY_EXPRESSION,
+@nospecializeinfer function typeBinaryExpression(
+  @nospecialize(exp::BINARY_EXPRESSION),
   origin::ORIGIN_Type,
   info::SourceInfo
   )
@@ -1367,8 +1367,8 @@ function typeBinaryExpression(
 end
 
 
-function typeBinaryExpressionRef(
-  exp::BINARY_EXPRESSION,
+@nospecializeinfer function typeBinaryExpressionRef(
+  @nospecialize(exp::BINARY_EXPRESSION),
   origin::ORIGIN_Type,
   info::SourceInfo,
   tyRef::Ref{NFType},
@@ -1701,8 +1701,8 @@ function nthDimensionBoundsChecked(
   return (dim, error)
 end
 
-function typeCrefExp(
-  cref::ComponentRef,
+@nospecializeinfer function typeCrefExp(
+  @nospecialize(cref::ComponentRef),
   o::ORIGIN_Type,
   info::SourceInfo,
   typeRef::Ref{NFType},
@@ -1749,8 +1749,8 @@ The three ref variables:
 will be updated as we traverse the tree structure and can be utilized by the calee to
 retrieve information about the variability type of the node and the subscripts of the component reference.
 """
-function typeCref(
-  cref::ComponentRef,
+@nospecializeinfer function typeCref(
+  @nospecialize(cref::ComponentRef),
   origin::ORIGIN_Type,
   info::SourceInfo,
   typeRef::Ref{NFType},
@@ -1775,8 +1775,8 @@ function typeCref(
   return cref
 end
 
-function typeCref2(
-  cref::ComponentRef,
+@nospecializeinfer function typeCref2(
+  @nospecialize(cref::ComponentRef),
   origin::ORIGIN_Type,
   variabilityTypeRef::Ref{VariabilityType},
   info::SourceInfo,
@@ -1786,8 +1786,8 @@ function typeCref2(
   cref
 end
 
-function typeCref2(
-  cref::COMPONENT_REF_CREF,
+@nospecializeinfer function typeCref2(
+  @nospecialize(cref::COMPONENT_REF_CREF),
   origin::ORIGIN_Type,
   variabilityTypeRef::Ref{VariabilityType},
   info::SourceInfo,
@@ -1850,7 +1850,7 @@ function typeCref2(
       node = CLASS_NODE(__),
     ) where {(firstPart && isFunction(cref.node))} => begin
       @match Cons{M_Function}(fn, _) = typeNodeCache(cref.node)
-      local crefTy = Type.FUNCTION(fn, FunctionType.FUNCTION_REFERENCE)
+      local crefTy = TYPE_FUNCTION(fn, FunctionTYPE_FUNCTION_REFERENCE)
       local crefRestCref = typeCref2(cref.restCref, origin, info, false)
       #cref = COMPONENT_REF_CREF(cref.node, cref.subscripts, crefTy, cref.origin, crefRestCref)
       cref.ty = crefTy
@@ -1930,10 +1930,10 @@ function typeSubscripts(
   return (typedSubs, variability)
 end
 
-function typeSubscript(
-  subscript::Subscript,
-  dimension::Dimension,
-  cref::ComponentRef,
+@nospecializeinfer function typeSubscript(
+  @nospecialize(subscript::Subscript),
+  @nospecialize(dimension::Dimension),
+  @nospecialize(cref::ComponentRef),
   index::Int,
   origin::ORIGIN_Type,
   info::SourceInfo,
@@ -1970,7 +1970,7 @@ function typeSubscript(
 
       SUBSCRIPT_SLICE(slice = e) => begin
         (
-          Type.unliftArray(typeOf(e)),
+          unliftArray(typeOf(e)),
           variability(e)
         )
       end
@@ -1997,8 +1997,8 @@ function typeSubscript(
       Error.SUBSCRIPT_TYPE_MISMATCH,
       list(
         toString(subscript),
-        Type.toString(ty),
-        Type.toString(ety),
+        toString(ty),
+        toString(ety),
       ),
       info,
     )
@@ -2335,8 +2335,8 @@ function typeMatrixComma(
             "matrix constructor ",
             "arg",
             toString(e),
-            Type.toString(ty1),
-            Type.toString(ty2),
+            toString(ty1),
+            toString(ty2),
           ),
           info,
         )
@@ -2441,8 +2441,8 @@ end
   return (rangeExp, rangeType, variability)
 end
 
-function typeTuple(
-  elements::List{<:Expression},
+@nospecializeinfer function typeTuple(
+  @nospecialize(elements::List{<:Expression}),
   origin::ORIGIN_Type,
   info::SourceInfo,
 )::Tuple{TUPLE_EXPRESSION, NFType, Variability}
@@ -2494,9 +2494,9 @@ function printRangeTypeError(
     Error.RANGE_TYPE_MISMATCH,
     list(
       toString(exp1),
-      Type.toString(ty1),
+      toString(ty1),
       toString(exp2),
-      Type.toString(ty2),
+      toString(ty2),
     ),
     info,
   )
@@ -2508,8 +2508,8 @@ end
    evaluated if the dimension is known and the index is a parameter expression,
    otherwise a typed size expression is returned.
 """
-function typeSize(
-  sizeExpArg::Expression,
+@nospecializeinfer function typeSize(
+  @nospecialize(sizeExpArg::Expression),
   origin::ORIGIN_Type,
   info::SourceInfo,
   evaluate::Bool = true,
@@ -2678,8 +2678,8 @@ function evaluateEnd(
   return outExp
 end
 
-function typeIfExpression(
-  ifExp::Expression,
+@nospecializeinfer function typeIfExpression(
+  @nospecialize(ifExp::Expression),
   origin::ORIGIN_Type,
   info::SourceInfo,
 )::Tuple{Expression, NFType, VariabilityType}
@@ -2709,7 +2709,7 @@ function typeIfExpression(
   if isIncompatibleMatch(ty_match)
     Error.addSourceMessage(
       Error.IF_CONDITION_TYPE_ERROR,
-      list(toString(cond), Type.toString(cond_ty)),
+      list(toString(cond), toString(cond_ty)),
       info,
     )
     fail()
@@ -2975,7 +2975,7 @@ function typeFunctionSections(classNode::InstNode, origin::ORIGIN_Type)
   end
 end
 
-function typeExternalArg(arg::Expression, info::SourceInfo, node::InstNode)::Expression
+@nospecializeinfer function typeExternalArg(@nospecialize(arg::Expression), info::SourceInfo, node::InstNode)::Expression
   local outArg::Expression
 
   local ty::NFType
@@ -3012,7 +3012,7 @@ function typeExternalArg(arg::Expression, info::SourceInfo, node::InstNode)::Exp
               =#
               #=  The only other kind of expression that's allowed is scalar constants.
               =#
-              if Type.isScalarBuiltin(ty) && var == Variability.CONSTANT
+              if isScalarBuiltin(ty) && var == Variability.CONSTANT
                  outArg = Ceval.evalExp(outArg, Ceval.P_EvalTarget.GENERIC(info))
               else
                 Error.addSourceMessage(
@@ -3098,7 +3098,7 @@ function makeDefaultExternalCall(extDecl::Sections, fnNode::InstNode)::Sections
                 fromNode(c, ty),
               )
                args = Cons{Expression}(exp, args)
-              for i = 1:Type.dimensionCount(ty)
+              for i = 1:dimensionCount(ty)
                  args = Cons{Expression}(
                   SIZE_EXPRESSION(
                     exp,
@@ -3141,11 +3141,11 @@ function typeComponentSections(c::InstNode, origin::ORIGIN_Type)
   end
 end
 
-function typeEquation(eq::Equation, origin::ORIGIN_Type)::Equation
+@nospecializeinfer function typeEquation(@nospecialize(eq::Equation), origin::ORIGIN_Type)::Equation
   typeEquation2(eq::Equation, origin::ORIGIN_Type)
 end
 
-function typeEquation2(eq::Equation, origin::ORIGIN_Type)::Equation
+@nospecializeinfer function typeEquation2(@nospecialize(eq::Equation), origin::ORIGIN_Type)::Equation
    eq = begin
     local cond::Expression
     local e1::Expression
@@ -3268,9 +3268,9 @@ function typeEquationAssert(eq::EQUATION_ASSERT, origin::ORIGIN_Type)
   return EQUATION_ASSERT(e1, e2, e3, eq.source)
 end
 
-function typeConnect(
-  lhsConn::Expression,
-  rhsConn::Expression,
+@nospecializeinfer function typeConnect(
+  @nospecialize(lhsConn::Expression),
+  @nospecialize(rhsConn::Expression),
   origin::ORIGIN_Type,
   source::DAE.ElementSource,
 )::EQUATION_CONNECT
@@ -3334,8 +3334,8 @@ function typeConnect(
   return connEq
 end
 
-function typeConnector(
-  connExp::Expression,
+@nospecializeinfer function typeConnector(
+  @nospecialize(connExp::Expression),
   origin::ORIGIN_Type,
   info::SourceInfo,
   )::Tuple{Expression, NFType}
@@ -3345,7 +3345,7 @@ function typeConnector(
   return (connExp, ty)
 end
 
-function checkConnector(connExp::Expression, info::SourceInfo)
+@nospecializeinfer function checkConnector(@nospecialize(connExp::Expression), info::SourceInfo)
   local cr::ComponentRef
   local subs::List{Subscript}
 
@@ -3426,7 +3426,7 @@ function checkConnectorForm(cref::ComponentRef, isConnectorBool::Bool = true)::B
   return valid
 end
 
-function checkLhsInWhen(@nospecialize(exp::Expression))::Bool
+@nospecializeinfer function checkLhsInWhen(@nospecialize(exp::Expression))::Bool
   local isValid::Bool
 
    isValid = begin
@@ -3464,7 +3464,7 @@ function typeStatements(alg::Vector{Statement}, origin::ORIGIN_Type)
   return alg
 end
 
-function typeStatement(st::Statement, origin::ORIGIN_Type)
+@nospecializeinfer function typeStatement(@nospecialize(st::Statement), origin::ORIGIN_Type)
   st = begin
     local cond::Expression
     local e1::Expression
@@ -3498,8 +3498,8 @@ function typeStatement(st::Statement, origin::ORIGIN_Type)
             list(
               toString(e1),
               toString(e2),
-              Type.toString(ty1),
-              Type.toString(ty2),
+              toString(ty1),
+              toString(ty2),
             ),
             info,
           )
@@ -3652,9 +3652,9 @@ function typeStatement(st::Statement, origin::ORIGIN_Type)
   return st
 end
 
-function typeEqualityEquation(
-  lhsExp::Expression,
-  rhsExp::Expression,
+@nospecializeinfer function typeEqualityEquation(
+  @nospecialize(lhsExp::Expression),
+  @nospecialize(rhsExp::Expression),
   origin::ORIGIN_Type,
   source::DAE.ElementSource,
   )::EQUATION_EQUALITY
@@ -3698,8 +3698,8 @@ function typeEqualityEquation(
   return eq
 end
 
-function typeCondition(
-  condition::Expression,
+@nospecializeinfer function typeCondition(
+  @nospecialize(condition::Expression),
   origin::ORIGIN_Type,
   source::DAE.ElementSource,
   errorMsg;
@@ -3723,7 +3723,7 @@ function typeCondition(
   if !(isBoolean(ety) || allowClock && isClock(ety))
     # Error.addSourceMessage(
     #   errorMsg,
-    #   list(toString(condition), Type.toString(ty)),
+    #   list(toString(condition), toString(ty)),
     #   info,
     # )
     @error "Error in  condition with the type $(ty)"
@@ -3733,8 +3733,8 @@ function typeCondition(
   return (condition, ty, variability)
 end
 
-function typeIfEquation(
-  branches::Vector{Equation_Branch},
+@nospecializeinfer function typeIfEquation(
+  @nospecialize(branches::Vector{Equation_Branch}),
   origin::ORIGIN_Type,
   source::DAE.ElementSource,
 )::EQUATION_IF
@@ -3811,7 +3811,7 @@ function typeIfEquation(
   return ifEq
 end
 
-function isNonConstantIfCondition(exp::Expression)::Bool
+@nospecializeinfer function isNonConstantIfCondition(@nospecialize(exp::Expression))::Bool
   local isConstant::Bool
   isConstant = begin
     local fn::M_Function
@@ -3844,8 +3844,8 @@ function isNonConstantIfCondition(exp::Expression)::Bool
   return isConstant
 end
 
-function typeWhenEquation(
-  branches::Vector{Equation_Branch},
+@nospecializeinfer function typeWhenEquation(
+  @nospecialize(branches::Vector{Equation_Branch}),
   origin::ORIGIN_Type,
   source::DAE.ElementSource,
 )::EQUATION_WHEN

@@ -1048,7 +1048,8 @@ function printHelp(inTopics::List{<:String}) ::String
       end
 
       str <|  nil()  => begin
-        @match (@match Flags.CONFIG_FLAG(name = name, description = desc) = config_flag) = ListUtil.getMemberOnTrue(str, allConfigFlags, matchConfigFlag)
+        config_flag = ListUtil.getMemberOnTrue(str, allConfigFlags, matchConfigFlag)
+        @match Flags.CONFIG_FLAG(name = name, description = desc) = config_flag
         str1 = "-" + name
         str2 = stringAppendList(StringUtil.wordWrap(Gettext.translateContent(desc), System.getTerminalWidth(), "\\n"))
         str = printFlagValidOptionsDesc(config_flag)

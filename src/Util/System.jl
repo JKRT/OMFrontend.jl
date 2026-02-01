@@ -614,16 +614,21 @@ function tmpTick() ::Integer
   tickNo
 end
 
-""" #= resets the tick so it restarts on start =#"""
+"""
+Resets the tick so it restarts on start
+"""
 function tmpTickReset(start::Integer)
-  @error "TODO: Defined in the runtime"
+  setGlobalRoot(Global.tmpTickIndex, start)
 end
 
-""" #= returns a tick that can be reset. TODO: remove me when bootstrapped (default argument index=0) =#"""
-function tmpTickIndex(index::Integer) ::Integer
-  local tickNo::Integer
+"""
+Returns a tick that can be reset.
+"""
+function tmpTickIndex(index::Int)::Int
+  local tickNo::Int = getGlobalRoot(index)
+  setGlobalRoot(index, tickNo + 1)
   @error "TODO: Defined in the runtime"
-  tickNo
+  return tickNo
 end
 
 """ #= returns a tick that can be reset and reserves N values in it.

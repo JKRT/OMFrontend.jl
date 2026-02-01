@@ -1,4 +1,4 @@
-function needSpecialHandling(call::Call) ::Bool
+function needSpecialHandling(@nospecialize(call::Call)) ::Bool
   local special::Bool
   ##@debug "Calling needSpecialHandling with: " * toString(call)
   () = begin
@@ -17,7 +17,7 @@ function needSpecialHandling(call::Call) ::Bool
   special
 end
 
-function typeSpecial(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
+@nospecializeinfer function typeSpecial(@nospecialize(call::Call), origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
   local variability::VariabilityType
   local ty::M_Type
   local callExp::Expression
@@ -333,7 +333,7 @@ function makeCatExp(n::Int,
     mk = mkRef.x
     ty1 = tyRef.x
     if isIncompatibleMatch(mk)
-      Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list(String(pos), "cat", "arg", toString(arg), Type.toString(ty), Type.toString(ty2)), info)
+      Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list(String(pos), "cat", "arg", toString(arg), toString(ty), toString(ty2)), info)
     end
     #args2 = _cons(arg2, args2)
     #tys3 = _cons(ty1, tys3)
@@ -385,7 +385,7 @@ function makeCatExp(n::Int,
     ty1 = tyRef.x
     mk = mkRef.x
     if isIncompatibleMatch(mk)
-      Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list(String(pos), "cat", "arg", toString(arg), Type.toString(ty), Type.toString(resTyToMatch)), info)
+      Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list(String(pos), "cat", "arg", toString(arg), toString(ty), toString(resTyToMatch)), info)
     end
     push!(res, arg2)
     push!(tys3, ty1)
@@ -484,7 +484,7 @@ function makeCatExpRef(n::Int,
     mk = mkRef.x
     ty1 = tyRef.x
     if isIncompatibleMatch(mk)
-      Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list(String(pos), "cat", "arg", toString(arg), Type.toString(ty), Type.toString(ty2)), info)
+      Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list(String(pos), "cat", "arg", toString(arg), toString(ty), toString(ty2)), info)
     end
     push!(args2, arg2)
     push!(tys3, ty1)
@@ -533,7 +533,7 @@ function makeCatExpRef(n::Int,
     ty1 = tyRef.x
     mk = mkRef.x
     if isIncompatibleMatch(mk)
-      Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list(String(pos), "cat", "arg", toString(arg), Type.toString(ty), Type.toString(resTyToMatch)), info)
+      Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list(String(pos), "cat", "arg", toString(arg), toString(ty), toString(resTyToMatch)), info)
     end
     push!(res, arg2)
     push!(tys3, ty1)
@@ -556,7 +556,7 @@ function assertNoNamedParams(fnName::String, namedArgs::Vector{NamedArg}, info::
   end
 end
 
-function typeStringCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
+function typeStringCall(@nospecialize(call::Call), origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
   local var::VariabilityType
   local outType::M_Type
   local callExp::Expression
@@ -576,7 +576,7 @@ function typeStringCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tup
   (callExp, outType, var)
 end
 
-function typeBuiltinStringCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
+function typeBuiltinStringCall(@nospecialize(call::Call), origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
   local var::VariabilityType
   local ty::M_Type
   local callExp::Expression
@@ -590,7 +590,7 @@ function typeBuiltinStringCall(call::Call, origin::ORIGIN_Type, info::SourceInfo
   (callExp, ty, var)
 end
 
-function typeOverloadedStringCall(overloadedType::M_Type, args::List{<:TypedArg}, namedArgs::List{<:TypedNamedArg}, call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
+function typeOverloadedStringCall(@nospecialize(overloadedType::M_Type), args::List{<:TypedArg}, namedArgs::List{<:TypedNamedArg}, @nospecialize(call::Call), origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
   local var::VariabilityType = Variability.CONSTANT
   local outType::M_Type
   local callExp::Expression
@@ -645,7 +645,7 @@ end
   Types a function call that can be typed normally, but which always has
   discrete variability regardless of the variability of the arguments.
 """
-function typeDiscreteCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
+function typeDiscreteCall(@nospecialize(call::Call), origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
   local var::VariabilityType = Variability.DISCRETE
   local ty::M_Type
   local callExp::Expression
@@ -660,7 +660,7 @@ function typeDiscreteCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::T
   (callExp, ty, var)
 end
 
-function typeNdimsCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
+function typeNdimsCall(@nospecialize(call::Call), origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
   local variability::VariabilityType = Variability.PARAMETER
   local ty::M_Type = TYPE_INTEGER()
   local callExp::Expression
@@ -680,11 +680,11 @@ function typeNdimsCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tupl
   #=  so we might as well evaluate the ndims call here.
   =#
    (_, arg_ty, _) = typeExp(listHead(args), origin, info)
-  @assign callExp = INTEGER_EXPRESSION(Type.dimensionCount(arg_ty))
+  @assign callExp = INTEGER_EXPRESSION(dimensionCount(arg_ty))
   (callExp, ty, variability)
 end
 
-function typePreCall(call::Call, origin::ORIGIN_Type, info::SourceInfo)::Tuple{Expression, NFType, VariabilityType}
+function typePreCall(@nospecialize(call::Call), origin::ORIGIN_Type, info::SourceInfo)::Tuple{Expression, NFType, VariabilityType}
   local variability::VariabilityType
   local ty::M_Type
   local callExp::Expression
@@ -692,7 +692,7 @@ function typePreCall(call::Call, origin::ORIGIN_Type, info::SourceInfo)::Tuple{E
   (callExp, ty, variability)
 end
 
-function typeChangeCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, NFType, VariabilityType}
+function typeChangeCall(@nospecialize(call::Call), origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, NFType, VariabilityType}
   local variability::VariabilityType
   local ty::M_Type
   local callExp::Expression
@@ -738,7 +738,7 @@ function typePreChangeCall(@nospecialize(name::String), @nospecialize(call::Call
   (callExp, ty, variability)
 end
 
-function typeDerCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, NFType, VariabilityType}
+function typeDerCall(@nospecialize(call::Call), origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, NFType, VariabilityType}
   local variability::VariabilityType
   local ty::M_Type
   local callExp::Expression
@@ -768,14 +768,14 @@ function typeDerCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{
     ty = setArrayElementType(ty, TYPE_REAL())
     arg = typeCast(arg, TYPE_REAL())
   elseif ! isReal(ety)
-    Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list("1", toString(fn_ref), "", toString(arg), Type.toString(ty), "Real"), info)
+    Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list("1", toString(fn_ref), "", toString(arg), toString(ty), "Real"), info)
   end
   fn = Base.first(typeRefCache(fn_ref))
   callExp = CALL_EXPRESSION(makeTypedCall(fn, Expression[arg], variability, ty))
   (callExp, ty, variability)
 end
 
-function typeDiagonalCall(call::Call, origin::ORIGIN_Type, info::SourceInfo)::Tuple{Expression, M_Type, VariabilityType}
+function typeDiagonalCall(@nospecialize(call::Call), origin::ORIGIN_Type, info::SourceInfo)::Tuple{Expression, M_Type, VariabilityType}
   local variability::VariabilityType
   local ty::M_Type
   local callExp::Expression
@@ -797,7 +797,7 @@ function typeDiagonalCall(call::Call, origin::ORIGIN_Type, info::SourceInfo)::Tu
         TYPE_ARRAY(ty.elementType, list(dim, dim))
       end
       _  => begin
-        Error.addSourceMessage(Error.ARG_TYPE_MISMATCH, list("1", toString(fn_ref), "", toString(arg), Type.toString(ty), "Any[:]"), info)
+        Error.addSourceMessage(Error.ARG_TYPE_MISMATCH, list("1", toString(fn_ref), "", toString(arg), toString(ty), "Any[:]"), info)
         fail()
       end
     end
@@ -807,7 +807,7 @@ function typeDiagonalCall(call::Call, origin::ORIGIN_Type, info::SourceInfo)::Tu
   (callExp, ty, variability)
 end
 
-function typeEdgeCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, NFType, VariabilityType}
+function typeEdgeCall(@nospecialize(call::Call), origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, NFType, VariabilityType}
   local variability::VariabilityType = Variability.DISCRETE
   local ty::M_Type
   local callExp::Expression
@@ -837,7 +837,7 @@ function typeEdgeCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple
   (callExp, ty, variability)
 end
 
-function typeMinMaxCall(name::String, call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
+function typeMinMaxCall(name::String, @nospecialize(call::Call), origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
   local var::VariabilityType
   local ty::M_Type
   local callExp::Expression
@@ -906,7 +906,7 @@ function typeMinMaxCall(name::String, call::Call, origin::ORIGIN_Type, info::Sou
   (callExp, ty, var)
 end
 
-function typeSumCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
+function typeSumCall(@nospecialize(call::Call), origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
   local variability::VariabilityType
   local ty::M_Type
   local callExp::Expression
@@ -931,7 +931,7 @@ function typeSumCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{
   (callExp, ty, variability)
 end
 
-function typeProductCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
+function typeProductCall(@nospecialize(call::Call), origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
   local variability::VariabilityType
   local ty::M_Type
   local callExp::Expression
@@ -957,7 +957,7 @@ function typeProductCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tu
   (callExp, ty, variability)
 end
 
-function typeSmoothCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
+function typeSmoothCall(@nospecialize(call::Call), origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
   local variability::VariabilityType
   local ty::M_Type
   local callExp::Expression
@@ -984,7 +984,7 @@ function typeSmoothCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tup
   #=  First argument must be Integer.
   =#
   if ! isInteger(ty1)
-    Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list("1", toString(fn_ref), "", toString(arg1), Type.toString(ty1), "Integer"), info)
+    Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list("1", toString(fn_ref), "", toString(arg1), toString(ty1), "Integer"), info)
   end
   #=  First argument must be a parameter expression.
   =#
@@ -999,14 +999,14 @@ function typeSmoothCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tup
   =#
   (arg2, ty, mk) = matchTypes(ty2, setArrayElementType(ty2, TYPE_REAL()), arg2, #= allowUnknown=# true)
   if ! isValidArgumentMatch(mk)
-    Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list("2", toString(fn_ref), "", toString(arg2), Type.toString(ty2), "Real\\n  Real[:, ...]\\n  Real record\\n  Real record[:, ...]"), info)
+    Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list("2", toString(fn_ref), "", toString(arg2), toString(ty2), "Real\\n  Real[:, ...]\\n  Real record\\n  Real record[:, ...]"), info)
   end
   @match [fn] = typeRefCache(fn_ref)
   callExp = CALL_EXPRESSION(makeTypedCall(fn, Expression[arg1, arg2], var, ty))
   (callExp, ty, variability)
 end
 
-function typeFillCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
+function typeFillCall(@nospecialize(call::Call), origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
   local variability::VariabilityType
   local ty::M_Type
   local callExp::Expression
@@ -1029,8 +1029,8 @@ function typeFillCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple
 end
 
 function typeFillCall2(fnRef::ComponentRef,
-                       fillType::M_Type,
-                       fillArg::Expression,
+                       @nospecialize(fillType::M_Type),
+                       @nospecialize(fillArg::Expression),
                        dimensionArgs::Vector{Expression},
                        origin::ORIGIN_Type, info::SourceInfo)::Tuple{Expression, M_Type, VariabilityType}
   local variability::VariabilityType = Variability.CONSTANT
@@ -1057,7 +1057,7 @@ function typeFillCall2(fnRef::ComponentRef,
       evaluated = false
     end
     if ! isInteger(arg_ty)
-      Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list(intString(listLength(ty_args) + 1), toString(fnRef), "", toString(arg), Type.toString(arg_ty), "Integer"), info)
+      Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list(intString(listLength(ty_args) + 1), toString(fnRef), "", toString(arg), toString(arg_ty), "Integer"), info)
     end
     variability = variabilityMax(variability, arg_var)
     push!(ty_args, arg)
@@ -1075,7 +1075,7 @@ function typeFillCall2(fnRef::ComponentRef,
   (callExp, ty, variability)
 end
 
-function typeZerosOnesCall(name::String, call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
+function typeZerosOnesCall(name::String, @nospecialize(call::Call), origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
   local variability::VariabilityType
   local ty::M_Type
   local callExp::Expression
@@ -1103,7 +1103,7 @@ function typeZerosOnesCall(name::String, call::Call, origin::ORIGIN_Type, info::
   (callExp, ty, variability)
 end
 
-function typeScalarCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
+function typeScalarCall(@nospecialize(call::Call), origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
   local variability::VariabilityType
   local ty::M_Type
   local callExp::Expression
@@ -1125,7 +1125,7 @@ function typeScalarCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tup
   =#
   for dim in arrayDims(ty)
     if P_Dimension.Dimension.isKnown(dim) && ! P_Dimension.Dimension.size(dim) == 1
-      Error.addSourceMessageAndFail(Error.INVALID_ARRAY_DIM_IN_SCALAR_OP, list(Type.toString(ty)), info)
+      Error.addSourceMessageAndFail(Error.INVALID_ARRAY_DIM_IN_SCALAR_OP, list(toString(ty)), info)
     end
   end
    (arg, expanded) = P_ExpandExp.ExpandExp.expand(arg)
@@ -1143,7 +1143,7 @@ function typeScalarCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tup
   (callExp, ty, variability)
 end
 
-function typeVectorCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
+function typeVectorCall(@nospecialize(call::Call), origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
   local variability::VariabilityType
   local ty::M_Type
   local callExp::Expression
@@ -1169,7 +1169,7 @@ function typeVectorCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tup
   for dim in arrayDims(ty)
     if ! isKnown(dim) || size(dim) > 1
       if dim_found
-        Error.addSourceMessageAndFail(Error.NF_VECTOR_INVALID_DIMENSIONS, list(Type.toString(ty), P_Call.toString(call)), info)
+        Error.addSourceMessageAndFail(Error.NF_VECTOR_INVALID_DIMENSIONS, list(toString(ty), P_Call.toString(call)), info)
       else
         vector_dim = dim
         dim_found = true
@@ -1182,7 +1182,7 @@ function typeVectorCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tup
   (callExp, ty, variability)
 end
 
-function typeMatrixCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
+function typeMatrixCall(@nospecialize(call::Call), origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
   local variability::VariabilityType
   local ty::M_Type
   local callExp::Expression
@@ -1233,7 +1233,7 @@ function typeMatrixCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tup
   return (callExp, ty, variability)
 end
 
-function typeCatCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
+function typeCatCall(@nospecialize(call::Call), origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
   local variability::VariabilityType
   local ty::M_Type
   local callExp::Expression
@@ -1271,7 +1271,7 @@ function typeCatCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{
   (callExp, ty, variability)
 end
 
-function typeSymmetricCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
+function typeSymmetricCall(@nospecialize(call::Call), origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
   local variability::VariabilityType
   local ty::M_Type
   local callExp::Expression
@@ -1288,15 +1288,15 @@ function typeSymmetricCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::
     Error.addSourceMessageAndFail(Error.NO_MATCHING_FUNCTION_FOUND_NFINST, list(P_Call.toString(call), "symmetric(Any[n, n]) => Any[n, n]"), info)
   end
    (arg, ty, variability) = typeExp(listHead(args), origin, info)
-  if ! Type.isSquareMatrix(ty)
-    Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list("1", toString(fn_ref), "", toString(arg), Type.toString(ty), "Any[n, n]"), info)
+  if ! isSquareMatrix(ty)
+    Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list("1", toString(fn_ref), "", toString(arg), toString(ty), "Any[n, n]"), info)
   end
   @match [fn] = typeRefCache(fn_ref)
   @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(fn, list(arg), variability, ty))
   (callExp, ty, variability)
 end
 
-function typeTransposeCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
+function typeTransposeCall(@nospecialize(call::Call), origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
   local variability::VariabilityType
   local ty::M_Type
   local callExp::Expression
@@ -1322,7 +1322,7 @@ function typeTransposeCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::
         TYPE_ARRAY(ty.elementType, _cons(dim2, _cons(dim1, rest_dims)))
       end
       _  => begin
-        Error.addSourceMessage(Error.ARG_TYPE_MISMATCH, list("1", toString(fn_ref), "", toString(arg), Type.toString(ty), "Any[:, :, ...]"), info)
+        Error.addSourceMessage(Error.ARG_TYPE_MISMATCH, list("1", toString(fn_ref), "", toString(arg), toString(ty), "Any[:, :, ...]"), info)
         fail()
       end
     end
@@ -1332,7 +1332,7 @@ function typeTransposeCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::
   (callExp, ty, variability)
 end
 
-function typeCardinalityCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
+function typeCardinalityCall(@nospecialize(call::Call), origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
   local var::VariabilityType = Variability.PARAMETER
   local ty::M_Type
   local callExp::Expression
@@ -1375,7 +1375,7 @@ function typeCardinalityCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) 
   return (callExp, ty, var)
 end
 
-function typeBranchCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
+function typeBranchCall(@nospecialize(call::Call), origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
   local var::VariabilityType = Variability.PARAMETER
   local ty::M_Type
   local callExp::Expression
@@ -1408,7 +1408,7 @@ end
 Author: johti17
 Extension. Types an initialStructuralState call.
 """
-function typeInitialStructuralStateCall(call::Call, origin::ORIGIN_Type, info::SourceInfo)
+function typeInitialStructuralStateCall(@nospecialize(call::Call), origin::ORIGIN_Type, info::SourceInfo)
   local variabilityType::VariabilityType = Variability.PARAMETER
   #@debug "Typing..."
   @match UNTYPED_CALL(fn_ref, args, namedArgs) = call
@@ -1472,7 +1472,7 @@ A structural transistion have three arguments
 2. Our next state. That is the model we transistion to.
 3. A condition. That is the when event at which the transistion occurs.
 """
-function typeStructuralTransition(call::Call, origin::ORIGIN_Type, info::SourceInfo)
+function typeStructuralTransition(@nospecialize(call::Call), origin::ORIGIN_Type, info::SourceInfo)
   @match UNTYPED_CALL(fn_ref, args, namedArgs) = call
   local variabilityType::VariabilityType = Variability.PARAMETER
   if length(args) != 3
@@ -1494,7 +1494,7 @@ function typeStructuralTransition(call::Call, origin::ORIGIN_Type, info::SourceI
   return (callExp, retType, Variability.PARAMETER#=TODO should change this..=#)
 end
 
-function typeIsRootCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
+function typeIsRootCall(@nospecialize(call::Call), origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
   local var::VariabilityType = Variability.PARAMETER
   local ty::M_Type
   local callExp::Expression
@@ -1519,7 +1519,7 @@ function typeIsRootCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tup
   (callExp, ty, var)
 end
 
-function typePotentialRootCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
+function typePotentialRootCall(@nospecialize(call::Call), origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
   local var::VariabilityType = Variability.PARAMETER
   local ty::M_Type
   local callExp::Expression
@@ -1567,7 +1567,7 @@ function typePotentialRootCall(call::Call, origin::ORIGIN_Type, info::SourceInfo
   (callExp, ty, var)
 end
 
-function typeRootCall(call::Call, origin::ORIGIN_Type, info::SourceInfo)::Tuple{Expression, M_Type, VariabilityType}
+function typeRootCall(@nospecialize(call::Call), origin::ORIGIN_Type, info::SourceInfo)::Tuple{Expression, M_Type, VariabilityType}
   local var::VariabilityType = Variability.PARAMETER
   local ty::M_Type
   local callExp::Expression
@@ -1592,7 +1592,7 @@ function typeRootCall(call::Call, origin::ORIGIN_Type, info::SourceInfo)::Tuple{
   return (callExp, ty, var)
 end
 
-function typeRootedCall(call::Call, origin::ORIGIN_Type, info::SourceInfo)::Tuple{Expression, M_Type, VariabilityType}
+function typeRootedCall(@nospecialize(call::Call), origin::ORIGIN_Type, info::SourceInfo)::Tuple{Expression, M_Type, VariabilityType}
   local var::VariabilityType = Variability.PARAMETER
   local ty::M_Type
   local callExp::Expression
@@ -1621,7 +1621,7 @@ function typeRootedCall(call::Call, origin::ORIGIN_Type, info::SourceInfo)::Tupl
 end
 
 """ #= see also typeUniqueRootIndicesCall =#"""
-function typeUniqueRootCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
+function typeUniqueRootCall(@nospecialize(call::Call), origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
   local var::VariabilityType = Variability.PARAMETER
   local ty::M_Type
   local callExp::Expression
@@ -1658,8 +1658,8 @@ function typeUniqueRootCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) :
   if args_len == 2
     @assign arg2 = listHead(args)
      (arg2, ty) = typeExp(arg2, origin, info)
-    if ! Type.isString(ty)
-      Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list("2", toString(fn_ref), "", toString(arg2), Type.toString(ty), "String"), info)
+    if ! isString(ty)
+      Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list("2", toString(fn_ref), "", toString(arg2), toString(ty), "String"), info)
     end
   else
     @assign arg2 = STRING_EXPRESSION("")
@@ -1677,7 +1677,7 @@ end
               and
               http:www.ep.liu.se/ecp/043/041/ecp09430108.pdf
               for a specification of this operator =#"""
-                function typeUniqueRootIndicesCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
+                function typeUniqueRootIndicesCall(@nospecialize(call::Call), origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
                   local var::VariabilityType = Variability.PARAMETER
                   local ty::M_Type
                   local callExp::Expression
@@ -1720,15 +1720,15 @@ end
                   if args_len == 3
                     @assign arg3 = listHead(args)
                      (arg3, ty3) = typeExp(arg3, origin, info)
-                    if ! Type.isString(ty3)
-                      Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list("3", toString(fn_ref), "", toString(arg2), Type.toString(ty3), "String"), info)
+                    if ! isString(ty3)
+                      Error.addSourceMessageAndFail(Error.ARG_TYPE_MISMATCH, list("3", toString(fn_ref), "", toString(arg2), toString(ty3), "String"), info)
                     end
                   else
                     @assign arg2 = STRING_EXPRESSION("")
                   end
                   fn = Base.first(typeRefCache(fn_ref))
                   assert(listLength(arrayDims(ty1)) == listLength(arrayDims(ty2)), "the first two parameters need to have the same size")
-                  @assign ty = TYPE_ARRAY(Type.TYPE_INTEGER(), arrayDims(ty1))
+                  @assign ty = TYPE_ARRAY(TYPE_INTEGER(), arrayDims(ty1))
                   @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(fn, list(arg1, arg2), var, ty))
                   (callExp, ty, var)
                 end
@@ -1736,7 +1736,7 @@ end
 """
   This function checks the arguments to connectors
 """
-function checkConnectionsArgument(arg::Expression, ty::M_Type, fnRef::ComponentRef, argIndex::Int, info::SourceInfo)
+function checkConnectionsArgument(@nospecialize(arg::Expression), @nospecialize(ty::M_Type), fnRef::ComponentRef, argIndex::Int, info::SourceInfo)
    () = begin
     local ty2::M_Type
     local node::InstNode
@@ -1804,14 +1804,14 @@ function checkConnectionsArgument(arg::Expression, ty::M_Type, fnRef::ComponentR
       end
 
       _  => begin
-        Error.addSourceMessage(Error.ARG_TYPE_MISMATCH, list(String(argIndex), toString(fnRef), "", toString(arg), Type.toString(ty), "overconstrained type/record"), info)
+        Error.addSourceMessage(Error.ARG_TYPE_MISMATCH, list(String(argIndex), toString(fnRef), "", toString(arg), toString(ty), "overconstrained type/record"), info)
         fail()
       end
     end
   end
 end
 
-function typeNoEventCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
+function typeNoEventCall(@nospecialize(call::Call), origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
   local variability::VariabilityType
   local ty::M_Type
   local callExp::Expression
@@ -1836,7 +1836,7 @@ function typeNoEventCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tu
   (callExp, ty, variability)
 end
 
-function typeGetInstanceName(call::Call) ::Tuple{Expression, M_Type, Variability}
+function typeGetInstanceName(@nospecialize(call::Call)) ::Tuple{Expression, M_Type, Variability}
   local var::VariabilityType = Variability.CONSTANT
   local ty::M_Type = TYPE_STRING()
   local result::Expression
@@ -1846,7 +1846,7 @@ function typeGetInstanceName(call::Call) ::Tuple{Expression, M_Type, Variability
   (result, ty, var)
 end
 
-function typeClockCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
+function typeClockCall(@nospecialize(call::Call), origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
   local var::VariabilityType = Variability.PARAMETER
   local outType::M_Type = TYPE_CLOCK()
   local callExp::Expression
@@ -1904,7 +1904,7 @@ function typeClockCall(call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tupl
   (callExp, outType, var)
 end
 
-function typeSampleCall(call::Call, origin::ORIGIN_Type, info::SourceInfo)::Tuple{Expression, M_Type, VariabilityType}
+function typeSampleCall(@nospecialize(call::Call), origin::ORIGIN_Type, info::SourceInfo)::Tuple{Expression, M_Type, VariabilityType}
   local var::VariabilityType
   local outType::M_Type
   local callExp::Expression
@@ -1993,7 +1993,7 @@ function typeSampleCall(call::Call, origin::ORIGIN_Type, info::SourceInfo)::Tupl
   (callExp, outType, var)
 end
 
-function typeActualInStreamCall(name::String, call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
+function typeActualInStreamCall(name::String, @nospecialize(call::Call), origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
   local variability::VariabilityType = Variability.DISCRETE
   local ty::M_Type
   local callExp::Expression
@@ -2019,7 +2019,7 @@ function typeActualInStreamCall(name::String, call::Call, origin::ORIGIN_Type, i
   (callExp, ty, Variability.CONTINUOUS)
 end
 
-function typeActualInStreamCall2(name::String, fn::M_Function, arg::Expression, var::VariabilityType, info::SourceInfo) ::Expression
+function typeActualInStreamCall2(name::String, fn::M_Function, @nospecialize(arg::Expression), var::VariabilityType, info::SourceInfo) ::Expression
   local callExp::Expression
 
   @assign callExp = begin
@@ -2057,7 +2057,7 @@ function typeActualInStreamCall2(name::String, fn::M_Function, arg::Expression, 
   callExp
 end
 
-function typeDynamicSelectCall(name::String, call::Call, origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
+function typeDynamicSelectCall(name::String, @nospecialize(call::Call), origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, Variability}
   local variability::VariabilityType = Variability.CONTINUOUS
   local ty::M_Type
   local callExp::Expression

@@ -254,18 +254,19 @@ function addUnique(entry::HashEntry, hashTable::HashTable)::HashTable
   local hashvec::HashVector
   local key::Key
   local fntpl::FuncsTuple
-  local hashFunc::FuncHash
+  local hashFunc::Function
 
   #=  Adding when not existing previously
   =#
-  @assign (key, _) = entry
-  @match (hashvec, varr, bsize, (@match (hashFunc, _, _, _) = fntpl)) = hashTable
+  (key, _) = entry
+  @match (hashvec, varr, bsize, fntpl) = hashTable
+  @match (hashFunc, _, _, _) = fntpl
   @shouldFail @assign _ = get(key, hashTable)
-  @assign indx = hashFunc(key, bsize) + 1
-  @assign (varr, newpos) = valueArrayAdd(varr, entry)
-  @assign indexes = hashvec[indx]
-  @assign hashvec = arrayUpdate(hashvec, indx, _cons((key, newpos), indexes))
-  @assign outHashTable = (hashvec, varr, bsize, fntpl)
+  indx = hashFunc(key, bsize) + 1
+  (varr, newpos) = valueArrayAdd(varr, entry)
+  indexes = hashvec[indx]
+  hashvec = arrayUpdate(hashvec, indx, _cons((key, newpos), indexes))
+  outHashTable = (hashvec, varr, bsize, fntpl)
   return outHashTable
 end
 
@@ -703,7 +704,8 @@ function clear(ht::HashTable)::HashTable
   local key::Key
   local vae::Array{Option{HashEntry}}
 
-  @match (hv, (vs, ve, vae), bs, (@match (hashFunc, _, _, _) = ft)) = ht
+  @match (hv, (vs, ve, vae), bs, ft) = ht
+  @match (hashFunc, _, _, _) = ft
   for i = 1:vs
     @assign _ = begin
       @match arrayGet(vae, i) begin
@@ -739,7 +741,8 @@ function clearAssumeNoDelete(ht::HashTable)
   local workaroundForBug::Bool = true #= TODO: Make it impossible to update a value by not updating n (fully mutable HT instead of this hybrid) =#
   local debug::Bool = false
 
-  @match (hv, (vs, ve, vae), bs, (@match (hashFunc, _, _, _) = ft)) = ht
+  @match (hv, (vs, ve, vae), bs, ft) = ht
+  @match (hashFunc, _, _, _) = ft
   for i = 1:ve
     @assign _ = begin
       @match arrayGet(vae, i) begin

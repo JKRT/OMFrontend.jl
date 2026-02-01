@@ -957,7 +957,7 @@ function isTyped(component::Component)
   return isTyped
 end
 
-function setType(ty::M_Type, component::Component)
+function setType(@nospecialize(ty::M_Type), component::Component)
 
    component = begin
     @match component begin
@@ -1129,7 +1129,7 @@ function definition(component::Component)
   return def
 end
 
-function newEnum(enumType::M_Type, literalName::String, literalIndex::Int)
+function newEnum(@nospecialize(enumType::M_Type), literalName::String, literalIndex::Int)
   local component::Component
   component =
     ENUM_LITERAL_COMPONENT{ENUM_LITERAL_EXPRESSION}(ENUM_LITERAL_EXPRESSION{TYPE_ENUMERATION, String, Int64}(enumType,
@@ -1146,7 +1146,7 @@ function newIterator(iterType::Type, info::SourceInfo)
   ITERATOR_COMPONENT(iterType, Variability.IMPLICITLY_DISCRETE, info);
 end
 
-function toFlatString(attr::Attributes, ty::M_Type; isTopLevel = true)
+function toFlatString(attr::Attributes, @nospecialize(ty::M_Type); isTopLevel = true)
   local str::String = ""
   if attr.isFinal
     str = str * "final "
@@ -1158,7 +1158,7 @@ function toFlatString(attr::Attributes, ty::M_Type; isTopLevel = true)
   return str
 end
 
-function toString(attr::Attributes, ty::M_Type)
+function toString(attr::Attributes, @nospecialize(ty::M_Type))
   local str::String
   str =
     (

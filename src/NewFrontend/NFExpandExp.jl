@@ -33,7 +33,7 @@ function expandGeneric2(
   return outExp
 end
 
-function expandGeneric(exp::Expression)::Tuple{Expression, Bool}
+function expandGeneric(@nospecialize(exp::Expression))::Tuple{Expression, Bool}
   local expanded::Bool
   local outExp::Expression
   local ty::M_Type
@@ -64,7 +64,7 @@ function expandGeneric(exp::Expression)::Tuple{Expression, Bool}
   return (outExp, expanded)
 end
 
-function expandCast(exp::Expression, ty::M_Type)::Tuple{Expression, Bool}
+function expandCast(@nospecialize(exp::Expression), @nospecialize(ty::M_Type))::Tuple{Expression, Bool}
   local expanded::Bool
   local outExp::Expression
 
@@ -77,12 +77,12 @@ function expandCast(exp::Expression, ty::M_Type)::Tuple{Expression, Bool}
   return (outExp, expanded)
 end
 
-function makeLogicalUnaryOp(exp1::Expression, op::Operator)::Expression
+function makeLogicalUnaryOp(@nospecialize(exp1::Expression), op::Operator)::Expression
   local exp::Expression = LUNARY_EXPRESSION(op, exp1)
   return exp
 end
 
-function expandLogicalUnary(exp::Expression, op::Operator)::Tuple{Expression, Bool}
+function expandLogicalUnary(@nospecialize(exp::Expression), op::Operator)::Tuple{Expression, Bool}
   local expanded::Bool
   local outExp::Expression
 
@@ -101,7 +101,7 @@ function expandLogicalUnary(exp::Expression, op::Operator)::Tuple{Expression, Bo
   return (outExp, expanded)
 end
 
-function makeLBinaryOp(exp1::Expression, op::Operator, exp2::Expression)::Expression
+function makeLBinaryOp(@nospecialize(exp1::Expression), op::Operator, @nospecialize(exp2::Expression))::Expression
   local exp::Expression
 
   if isScalarLiteral(exp1) &&
@@ -113,7 +113,7 @@ function makeLBinaryOp(exp1::Expression, op::Operator, exp2::Expression)::Expres
   return exp
 end
 
-function expandLogicalBinary(exp::Expression)::Tuple{Expression, Bool}
+function expandLogicalBinary(@nospecialize(exp::Expression))::Tuple{Expression, Bool}
   local expanded::Bool
   local outExp::Expression
 
@@ -139,7 +139,7 @@ function expandLogicalBinary(exp::Expression)::Tuple{Expression, Bool}
   return (outExp, expanded)
 end
 
-function expandUnary(exp::Expression, op::Operator)::Tuple{Expression, Bool}
+function expandUnary(@nospecialize(exp::Expression), op::Operator)::Tuple{Expression, Bool}
   local expanded::Bool
   local outExp::Expression
   local scalar_op::Operator
@@ -154,7 +154,7 @@ function expandUnary(exp::Expression, op::Operator)::Tuple{Expression, Bool}
   return (outExp, expanded)
 end
 
-function expandBinaryPowMatrix2(matrix::Expression, n::Int)::Expression
+function expandBinaryPowMatrix2(@nospecialize(matrix::Expression), n::Int)::Expression
   local exp::Expression
   @assign exp = begin
     @match n begin
@@ -186,7 +186,7 @@ function expandBinaryPowMatrix2(matrix::Expression, n::Int)::Expression
   return exp
 end
 
-function expandBinaryPowMatrix(exp::Expression)::Tuple{Expression, Bool}
+function expandBinaryPowMatrix(@nospecialize(exp::Expression))::Tuple{Expression, Bool}
   local expanded::Bool
   local outExp::Expression
 
@@ -237,7 +237,7 @@ function makeBinaryMatrixProduct2(
   return outRow
 end
 
-function makeBinaryMatrixProduct(exp1::Expression, exp2::Expression)::Expression
+function makeBinaryMatrixProduct(@nospecialize(exp1::Expression), @nospecialize(exp2::Expression))::Expression
   local exp::Expression
 
   local expl1::Vector{Expression}
@@ -278,7 +278,7 @@ function makeBinaryMatrixProduct(exp1::Expression, exp2::Expression)::Expression
 end
 
 """  Expands a matrix*matrix expression, c[n, p] = a[n, m] * b[m, p]. """
-function expandBinaryMatrixProduct(exp::Expression)::Tuple{Expression, Bool}
+function expandBinaryMatrixProduct(@nospecialize(exp::Expression))::Tuple{Expression, Bool}
   local expanded::Bool
   local outExp::Expression
 
@@ -298,7 +298,7 @@ function expandBinaryMatrixProduct(exp::Expression)::Tuple{Expression, Bool}
   return (outExp, expanded)
 end
 
-function makeScalarProduct(exp1::Expression, exp2::Expression)::Expression
+function makeScalarProduct(@nospecialize(exp1::Expression), @nospecialize(exp2::Expression))::Expression
   local exp::Expression
 
   local expV1::Vector{Expression}
@@ -330,7 +330,7 @@ function makeScalarProduct(exp1::Expression, exp2::Expression)::Expression
 end
 
 """ #= Expands a vector*vector expression, c = a[n] * b[n]. =#"""
-function expandBinaryDotProduct(exp::Expression)::Tuple{Expression, Bool}
+function expandBinaryDotProduct(@nospecialize(exp::Expression))::Tuple{Expression, Bool}
   local expanded::Bool
   local outExp::Expression
 
@@ -351,7 +351,7 @@ function expandBinaryDotProduct(exp::Expression)::Tuple{Expression, Bool}
 end
 
 """ Expands a matrix*vector expression, c[n] = a[n, m] * b[m]. """
-function expandBinaryMatrixVector(exp::Expression)::Tuple{Expression, Bool}
+function expandBinaryMatrixVector(@nospecialize(exp::Expression))::Tuple{Expression, Bool}
   local expanded::Bool
   local outExp::Expression
 
@@ -389,7 +389,7 @@ function expandBinaryMatrixVector(exp::Expression)::Tuple{Expression, Bool}
 end
 
 """ #= Expands a vector*matrix expression, c[m] = a[n] * b[n, m]. =#"""
-function expandBinaryVectorMatrix(exp::Expression)::Tuple{Expression, Bool}
+function expandBinaryVectorMatrix(@nospecialize(exp::Expression))::Tuple{Expression, Bool}
   local expanded::Bool
   local outExp::Expression
 
@@ -528,7 +528,7 @@ function expandBinaryElementWise2(
   return exp
 end
 
-function expandBinaryElementWise(exp::Expression)::Tuple{Expression, Bool}
+function expandBinaryElementWise(@nospecialize(exp::Expression))::Tuple{Expression, Bool}
   local expanded::Bool
   local outExp::Expression
   local exp1::Expression
@@ -552,7 +552,7 @@ function expandBinaryElementWise(exp::Expression)::Tuple{Expression, Bool}
   return (outExp, expanded)
 end
 
-function expandBinary(exp::Expression, op::Operator)::Tuple{Expression, Bool}
+function expandBinary(@nospecialize(exp::Expression), op::Operator)::Tuple{Expression, Bool}
   local expanded::Bool
   local outExp::Expression
 
@@ -629,7 +629,7 @@ function expandBinary(exp::Expression, op::Operator)::Tuple{Expression, Bool}
   return (outExp, expanded)
 end
 
-function expandSize(exp::Expression)::Tuple{Expression, Bool}
+function expandSize(@nospecialize(exp::Expression))::Tuple{Expression, Bool}
   local expanded::Bool = true
   local outExp::Expression
 
@@ -641,7 +641,7 @@ function expandSize(exp::Expression)::Tuple{Expression, Bool}
     @match exp begin
       SIZE_EXPRESSION(exp = e, dimIndex = NONE()) => begin
         @assign ty = typeOf(e)
-        @assign dims = Type.dimensionCount(ty)
+        @assign dims = dimensionCount(ty)
         @assign expl = List(
           SIZE_EXPRESSION(e, SOME(INTEGER_EXPRESSION(i)))
           for i = 1:dims
@@ -764,7 +764,7 @@ function expandBuiltinGeneric2(
   return exp
 end
 
-function expandBuiltinGeneric(call::Call)::Tuple{Expression, Bool}
+function expandBuiltinGeneric(@nospecialize(call::Call))::Tuple{Expression, Bool}
   local expanded::Bool = true
   local outExp::Expression
   local fn::M_Function
@@ -781,7 +781,7 @@ function expandBuiltinGeneric(call::Call)::Tuple{Expression, Bool}
   return (outExp, expanded)
 end
 
-function expandBuiltinTranspose(arg::Expression)::Tuple{Expression, Bool}
+function expandBuiltinTranspose(@nospecialize(arg::Expression))::Tuple{Expression, Bool}
   local expanded::Bool
   local outExp::Expression
 
@@ -792,7 +792,7 @@ function expandBuiltinTranspose(arg::Expression)::Tuple{Expression, Bool}
   return (outExp, expanded)
 end
 
-function expandBuiltinDiagonal(arg::Expression)::Tuple{Expression, Bool}
+@nospecializeinfer function expandBuiltinDiagonal(@nospecialize(arg::Expression))::Tuple{Expression, Bool}
   local expanded::Bool
   local outExp::Expression
    (outExp, expanded) = expand(arg)
@@ -880,7 +880,7 @@ function expand(
   return (outExp, expanded)
 end
 
-function expandCall(call::Call, exp::Expression)::Tuple{Expression, Bool}
+@nospecializeinfer function expandCall(@nospecialize(call::Call), @nospecialize(exp::Expression))::Tuple{Expression, Bool}
   local expanded::Bool
   local outExp::Expression
   (outExp, expanded) = begin
@@ -899,7 +899,7 @@ function expandCall(call::Call, exp::Expression)::Tuple{Expression, Bool}
   return (outExp, expanded)
 end
 
-function expandRange(exp::Expression)::Tuple{Expression, Bool}
+@nospecializeinfer function expandRange(@nospecialize(exp::Expression))::Tuple{Expression, Bool}
   local expanded::Bool
   local outExp::Expression
   local range_iter::RangeIterator
@@ -1059,7 +1059,7 @@ end
 """
 Expands a component reference
 """
-function expandCref(crefExp::Expression)::Tuple{Expression, Bool}
+@nospecializeinfer function expandCref(@nospecialize(crefExp::Expression))::Tuple{Expression, Bool}
   local expanded::Bool
   local arrayExp::Expression
   local subs::List{List{Subscript}}
@@ -1135,7 +1135,7 @@ function expandVector(
   return (outExpl, expanded)
 end
 
-function expand(@nospecialize(exp::Expression))
+@nospecializeinfer function expand(@nospecialize(exp::Expression))
   local expanded::Bool
    (exp, expanded) = begin
     local expl::List{Expression}

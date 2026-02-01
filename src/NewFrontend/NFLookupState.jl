@@ -108,9 +108,9 @@ end
     and components, e.g. Real, time, etc., which are handled as special cases in
     lookupName and bypasses this state machine.
      =#"""
-function next2(
-  elementState::LookupState,
-  currentState::LookupState,
+@nospecializeinfer function next2(
+  @nospecialize(elementState::LookupState),
+  @nospecialize(currentState::LookupState),
   node::InstNode,
 )::LookupState
   local nextState::LookupState
@@ -381,11 +381,11 @@ function isError(state::LookupState)::Bool
   return isError
 end
 
-function assertState(
-  endState::LookupState,
-  expectedState::LookupState,
+@nospecializeinfer function assertState(
+  @nospecialize(endState::LookupState),
+  @nospecialize(expectedState::LookupState),
   node::InstNode,
-  lookupName::LookupStateName,
+  @nospecialize(lookupName::LookupStateName),
   info::SourceInfo,
 )
   return  () = begin

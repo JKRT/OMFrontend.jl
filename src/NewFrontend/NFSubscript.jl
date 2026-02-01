@@ -503,7 +503,7 @@ function simplifyList(subscripts::List, dimensions::List ; trim = false)
 end
 
 
-function eval(
+function evalSubscript(
   subscript::Subscript,
   target::EvalTarget = EVALTARGET_IGNORE_ERRORS(),
 )::Subscript

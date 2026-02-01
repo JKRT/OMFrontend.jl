@@ -153,7 +153,7 @@ end
  Attempts to evaluate an expression.
  Continues if it fails
 """
-function tryEvalExp(exp::Expression)
+@nospecializeinfer function tryEvalExp(@nospecialize(exp::Expression))
   local outExp = exp
   try
     outExp = evalExp(exp)
@@ -166,8 +166,8 @@ end
 """
   Evaluates an expression.
 """
-function evalExp(
-  exp::Expression,
+@nospecializeinfer function evalExp(
+  @nospecialize(exp::Expression),
   target::EvalTarget = EVALTARGET_IGNORE_ERRORS(),
   )::Expression
   exp = evalExp_impl(exp, target)
@@ -177,7 +177,7 @@ function evalExp(
   return exp
 end
 
-function evalExp_impl(exp::Expression, target::EvalTarget)::Expression
+@nospecializeinfer function evalExp_impl(@nospecialize(exp::Expression), target::EvalTarget)::Expression
   exp = begin
     local c::InstNode
     local binding::Binding
@@ -427,7 +427,7 @@ function evalExpPartialRef(
   return outExp
 end
 
-function evalCref(cref::ComponentRef,
+function evalCref(@nospecialize(cref::ComponentRef),
                   defaultExp::Expression,
                   target::EvalTarget;
                   evalSubscripts::Bool = true)
@@ -542,7 +542,7 @@ function evalComponentBinding(
   return exp
 end
 
-function flattenBindingExp(exp::Expression)::Expression
+function flattenBindingExp(@nospecialize(exp::Expression))::Expression
   local outExp::Expression
    outExp = begin
     @match exp begin
@@ -572,7 +572,7 @@ function subscriptEvaluatedBinding(
   subs = getSubscripts(cref)
   (cr, _) = stripSubscripts(cref)
   if evalSubscripts
-    subs = list(eval(s) for s in subs)
+    subs = list(evalSubscript(s) for s in subs)
   end
   #=  The rest of the cref contributes subscripts based on where the expressions
   =#
@@ -627,7 +627,7 @@ function subscriptEvaluatedBinding2(
                cr_node = node(cr)
             end
             if evalSubscripts
-              subs = list(eval(s) for s in subs)
+              subs = list(evalSubscript(s) for s in subs)
             end
             accum_subs = listAppend(subs, accum_subs)
           end
@@ -877,7 +877,7 @@ function makeRecordBindingExp(
   local tree::ClassTree
   local comps::Vector{InstNode}
   local args::Vector{Expression} = Expression[]
-  local fields::List{Record.P_Field}
+  local fields::List{Field}
   local ty::M_Type
   local c::InstNode
   local cr::ComponentRef
@@ -898,7 +898,7 @@ function makeRecordBindingExp(
   return exp
 end
 
-function splitRecordArrayExp(exp::Expression)::Expression
+function splitRecordArrayExp(@nospecialize(exp::Expression))::Expression
 
   local path::Absyn.Path
   local ty::M_Type
@@ -910,7 +910,7 @@ function splitRecordArrayExp(exp::Expression)::Expression
   return exp
 end
 
-function evalTypename(ty::M_Type, originExp::Expression, target::EvalTarget)::Expression
+function evalTypename(@nospecialize(ty::M_Type), @nospecialize(originExp::Expression), target::EvalTarget)::Expression
   local exp::Expression
 
   #=  Only expand the typename into an array if it's used as a range, and keep
@@ -925,7 +925,7 @@ function evalTypename(ty::M_Type, originExp::Expression, target::EvalTarget)::Ex
   return exp
 end
 
-function evalRange(rangeExp::Expression, target::EvalTarget)::Expression
+function evalRange(@nospecialize(rangeExp::Expression), target::EvalTarget)::Expression
   local result::Expression
 
   local ty::M_Type
@@ -960,7 +960,7 @@ function evalRange(rangeExp::Expression, target::EvalTarget)::Expression
   return result
 end
 
-function evalRangeExp(rangeExp::Expression)::Expression
+function evalRangeExp(@nospecialize(rangeExp::Expression))::Expression
   local exp::Expression
 
   local start::Expression
@@ -1076,7 +1076,7 @@ function evalRangeReal(
   return result
 end
 
-function printFailedEvalError(name::String, exp::Expression, info::SourceInfo)
+function printFailedEvalError(name::String, @nospecialize(exp::Expression), info::SourceInfo)
   return Error.addInternalError(
     name + " failed to evaluate ‘" + toString(exp) + "‘",
     info,
@@ -1109,7 +1109,7 @@ function evalBinaryOp(
   return exp
 end
 
-function evalBinaryExp(binaryExp::Expression, target::EvalTarget)::Expression
+function evalBinaryExp(@nospecialize(binaryExp::Expression), target::EvalTarget)::Expression
   local result::Expression
   local e1::Expression
   local e2::Expression
@@ -1224,7 +1224,7 @@ function evalBinaryOp_dispatch(
   return exp
 end
 
-function evalBinaryAdd(exp1::Expression, exp2::Expression)::Expression
+function evalBinaryAdd(@nospecialize(exp1::Expression), @nospecialize(exp2::Expression))::Expression
   local exp::Expression
 
    exp = begin
@@ -1269,7 +1269,7 @@ function evalBinaryAdd(exp1::Expression, exp2::Expression)::Expression
   return exp
 end
 
-function evalBinarySub(exp1::Expression, exp2::Expression)::Expression
+function evalBinarySub(@nospecialize(exp1::Expression), @nospecialize(exp2::Expression))::Expression
   local exp::Expression
 
    exp = begin
@@ -1312,7 +1312,7 @@ function evalBinarySub(exp1::Expression, exp2::Expression)::Expression
   return exp
 end
 
-function evalBinaryMul(exp1::Expression, exp2::Expression)::Expression
+function evalBinaryMul(@nospecialize(exp1::Expression), @nospecialize(exp2::Expression))::Expression
   local exp::Expression
 
    exp = begin
@@ -1353,7 +1353,7 @@ function evalBinaryMul(exp1::Expression, exp2::Expression)::Expression
   return exp
 end
 
-function evalBinaryDiv(exp1::Expression, exp2::Expression, target::EvalTarget)::Expression
+function evalBinaryDiv(@nospecialize(exp1::Expression), @nospecialize(exp2::Expression), target::EvalTarget)::Expression
   local exp::Expression
 
    exp = begin
@@ -1411,7 +1411,7 @@ function evalBinaryDiv(exp1::Expression, exp2::Expression, target::EvalTarget)::
   return exp
 end
 
-function evalBinaryPow(exp1::Expression, exp2::Expression)::Expression
+function evalBinaryPow(@nospecialize(exp1::Expression), @nospecialize(exp2::Expression))::Expression
   local exp::Expression
 
    exp = begin
@@ -1494,7 +1494,7 @@ function evalBinaryArrayScalar(
   return exp
 end
 
-function evalBinaryMulVectorMatrix(vectorExp::Expression, matrixExp::Expression)::Expression
+function evalBinaryMulVectorMatrix(@nospecialize(vectorExp::Expression), @nospecialize(matrixExp::Expression))::Expression
   local exp::Expression
 
   local expl::List{Expression}
@@ -1522,7 +1522,7 @@ function evalBinaryMulVectorMatrix(vectorExp::Expression, matrixExp::Expression)
   return exp
 end
 
-function evalBinaryMulMatrixVector(matrixExp::Expression, vectorExp::Expression)::Expression
+function evalBinaryMulMatrixVector(@nospecialize(matrixExp::Expression), @nospecialize(vectorExp::Expression))::Expression
   local exp::Expression
 
   local expl::List{Expression}
@@ -1550,7 +1550,7 @@ function evalBinaryMulMatrixVector(matrixExp::Expression, vectorExp::Expression)
   return exp
 end
 
-function evalBinaryScalarProduct(exp1::Expression, exp2::Expression)::Expression
+function evalBinaryScalarProduct(@nospecialize(exp1::Expression), @nospecialize(exp2::Expression))::Expression
   local exp::Expression
 
    exp = begin
@@ -1585,7 +1585,7 @@ function evalBinaryScalarProduct(exp1::Expression, exp2::Expression)::Expression
   return exp
 end
 
-function evalBinaryMatrixProduct(exp1::Expression, exp2::Expression)::Expression
+function evalBinaryMatrixProduct(@nospecialize(exp1::Expression), @nospecialize(exp2::Expression))::Expression
   local exp::Expression
 
   local e2::Expression
@@ -1635,7 +1635,7 @@ function evalBinaryMatrixProduct(exp1::Expression, exp2::Expression)::Expression
   return exp
 end
 
-function evalBinaryPowMatrix(matrixExp::Expression, nExp::Expression)::Expression
+function evalBinaryPowMatrix(@nospecialize(matrixExp::Expression), @nospecialize(nExp::Expression))::Expression
   local exp::Expression
 
   local n::Int
@@ -1666,7 +1666,7 @@ function evalBinaryPowMatrix(matrixExp::Expression, nExp::Expression)::Expressio
   return exp
 end
 
-function evalBinaryPowMatrix2(matrix::Expression, n::Int)::Expression
+function evalBinaryPowMatrix2(@nospecialize(matrix::Expression), n::Int)::Expression
   local exp::Expression
 
    exp = begin
@@ -1701,7 +1701,7 @@ function evalBinaryPowMatrix2(matrix::Expression, n::Int)::Expression
   return exp
 end
 
-function evalUnaryOp(exp1::Expression, op::Operator)::Expression
+function evalUnaryOp(@nospecialize(exp1::Expression), op::Operator)::Expression
   local exp::Expression
 
    exp = begin
@@ -1724,7 +1724,7 @@ function evalUnaryOp(exp1::Expression, op::Operator)::Expression
   return exp
 end
 
-function evalUnaryMinus(exp1::Expression)::Expression
+function evalUnaryMinus(@nospecialize(exp1::Expression))::Expression
   local exp::Expression
 
    exp = begin
@@ -1782,7 +1782,7 @@ function evalLogicBinaryOp(
   return exp
 end
 
-function evalLogicBinaryExp(binaryExp::Expression, target::EvalTarget)::Expression
+function evalLogicBinaryExp(@nospecialize(binaryExp::Expression), target::EvalTarget)::Expression
   local result::Expression
 
   local e1::Expression
@@ -1918,7 +1918,7 @@ function evalLogicBinaryOr(
   return exp
 end
 
-function evalLogicUnaryOp(exp1::Expression, op::Operator)::Expression
+function evalLogicUnaryOp(@nospecialize(exp1::Expression), op::Operator)::Expression
   local exp::Expression
 
    exp = begin
@@ -1941,7 +1941,7 @@ function evalLogicUnaryOp(exp1::Expression, op::Operator)::Expression
   return exp
 end
 
-function evalLogicUnaryNot(exp1::Expression)::Expression
+function evalLogicUnaryNot(@nospecialize(exp1::Expression))::Expression
   local exp::Expression
 
    exp = begin
@@ -1967,7 +1967,7 @@ function evalLogicUnaryNot(exp1::Expression)::Expression
   return exp
 end
 
-function evalRelationOp(exp1::Expression, op::Operator, exp2::Expression)::Expression
+function evalRelationOp(@nospecialize(exp1::Expression), op::Operator, @nospecialize(exp2::Expression))::Expression
   local exp::Expression
 
   local max_prop_exp::Expression
@@ -1988,7 +1988,7 @@ function evalRelationOp(exp1::Expression, op::Operator, exp2::Expression)::Expre
   return exp
 end
 
-function evalRelationExp(relationExp::Expression)::Expression
+function evalRelationExp(@nospecialize(relationExp::Expression))::Expression
   local result::Expression
 
   local e1::Expression
@@ -2054,7 +2054,7 @@ function evalRelationOp_dispatch(
   return exp
 end
 
-function evalRelationLess(exp1::Expression, exp2::Expression)::Bool
+function evalRelationLess(@nospecialize(exp1::Expression), @nospecialize(exp2::Expression))::Bool
   local res::Bool
 
    res = begin
@@ -2099,7 +2099,7 @@ function evalRelationLess(exp1::Expression, exp2::Expression)::Bool
   return res
 end
 
-function evalRelationLessEq(exp1::Expression, exp2::Expression)::Bool
+function evalRelationLessEq(@nospecialize(exp1::Expression), @nospecialize(exp2::Expression))::Bool
   local res::Bool
 
    res = begin
@@ -2144,7 +2144,7 @@ function evalRelationLessEq(exp1::Expression, exp2::Expression)::Bool
   return res
 end
 
-function evalRelationGreater(exp1::Expression, exp2::Expression)::Bool
+function evalRelationGreater(@nospecialize(exp1::Expression), @nospecialize(exp2::Expression))::Bool
   local res::Bool
 
    res = begin
@@ -2189,7 +2189,7 @@ function evalRelationGreater(exp1::Expression, exp2::Expression)::Bool
   return res
 end
 
-function evalRelationGreaterEq(exp1::Expression, exp2::Expression)::Bool
+function evalRelationGreaterEq(@nospecialize(exp1::Expression), @nospecialize(exp2::Expression))::Bool
   local res::Bool
 
    res = begin
@@ -2234,7 +2234,7 @@ function evalRelationGreaterEq(exp1::Expression, exp2::Expression)::Bool
   return res
 end
 
-function evalRelationEqual(exp1::Expression, exp2::Expression)::Bool
+function evalRelationEqual(@nospecialize(exp1::Expression), @nospecialize(exp2::Expression))::Bool
   local res::Bool
 
    res = begin
@@ -2279,7 +2279,7 @@ function evalRelationEqual(exp1::Expression, exp2::Expression)::Bool
   return res
 end
 
-function evalRelationNotEqual(exp1::Expression, exp2::Expression)::Bool
+function evalRelationNotEqual(@nospecialize(exp1::Expression), @nospecialize(exp2::Expression))::Bool
   local res::Bool
 
    res = begin
@@ -2324,7 +2324,7 @@ function evalRelationNotEqual(exp1::Expression, exp2::Expression)::Bool
   return res
 end
 
-function evalIfExp(ifExp::Expression, target::EvalTarget)::Expression
+function evalIfExp(@nospecialize(ifExp::Expression), target::EvalTarget)::Expression
   local result::Expression
 
   local cond::Expression
@@ -2342,7 +2342,7 @@ function evalIfExp(ifExp::Expression, target::EvalTarget)::Expression
   return result
 end
 
-function evalIfExp2(ifExp::Expression, target::EvalTarget)::Expression
+function evalIfExp2(@nospecialize(ifExp::Expression), target::EvalTarget)::Expression
   local result::Expression
   local cond::Expression
   local btrue::Expression
@@ -2375,7 +2375,7 @@ function evalIfExp2(ifExp::Expression, target::EvalTarget)::Expression
   return result
 end
 
-function evalCast(castExp::Expression, castTy::M_Type)::Expression
+function evalCast(@nospecialize(castExp::Expression), @nospecialize(castTy::M_Type))::Expression
   local exp::Expression
 
    exp = typeCast(castExp, castTy)
@@ -2399,7 +2399,7 @@ function evalCast(castExp::Expression, castTy::M_Type)::Expression
   return exp
 end
 
-function evalCall(call::Call, target::EvalTarget)::Expression
+@nospecializeinfer function evalCall(@nospecialize(call::Call), target::EvalTarget)::Expression
   local exp::Expression
   local c::Call = call
   # @info "evalCall..."
@@ -2439,16 +2439,16 @@ function evalCall(call::Call, target::EvalTarget)::Expression
 end
 
 #Note was originally called evalBuiltinCallExp, but the translator seems to have butchered the name for this function..
-function evalxp(callExp::Expression, target::EvalTarget)::Expression
+function evalxp(@nospecialize(callExp::Expression), target::EvalTarget)::Expression
   local result::Expression
   local fn::M_Function
   local args::Vector{Expression}
   @match CALL_EXPRESSION(call = TYPED_CALL(fn = fn, arguments = args)) = callExp
-  result = eval(fn, args, target)
+  result = ceval(fn, args, target)
   return result
 end
 
-function eval(
+function ceval(
   fn::M_Function,
   args::Vector{Expression},
   target::EvalTarget,
@@ -2701,7 +2701,7 @@ function eval(
   return result
 end
 
-function evalNormalCallExp(callExp::Expression)::Expression
+function evalNormalCallExp(@nospecialize(callExp::Expression))::Expression
   local result::Expression
   local fn::M_Function
   local args::Vector{Expression}
@@ -2717,7 +2717,7 @@ function evalNormalCall(fn::M_Function, args::Vector{Expression})::Expression
   return result
 end
 
-function evalBuiltinAbs(arg::Expression)::Expression
+function evalBuiltinAbs(@nospecialize(arg::Expression))::Expression
   local result::Expression
 
    result = begin
@@ -2739,7 +2739,7 @@ function evalBuiltinAbs(arg::Expression)::Expression
   return result
 end
 
-function evalBuiltinAcos(arg::Expression, target::EvalTarget)::Expression
+function evalBuiltinAcos(@nospecialize(arg::Expression), target::EvalTarget)::Expression
   local result::Expression
 
   local x::AbstractFloat
@@ -2778,7 +2778,7 @@ function evalBuiltinArray(args::List{Expression})::Expression
   return result
 end
 
-function evalBuiltinAsin(arg::Expression, target::EvalTarget)::Expression
+function evalBuiltinAsin(@nospecialize(arg::Expression), target::EvalTarget)::Expression
   local result::Expression
 
   local x::AbstractFloat
@@ -2830,7 +2830,7 @@ function evalBuiltinAtan2(args::List{Expression})::Expression
   return result
 end
 
-function evalBuiltinAtan(arg::Expression)::Expression
+function evalBuiltinAtan(@nospecialize(arg::Expression))::Expression
   local result::Expression
 
    result = begin
@@ -2917,7 +2917,7 @@ function evalBuiltinCat(
   return result
 end
 
-function evalBuiltinCeil(arg::Expression)::Expression
+function evalBuiltinCeil(@nospecialize(arg::Expression))::Expression
   local result::Expression
 
    result = begin
@@ -2935,7 +2935,7 @@ function evalBuiltinCeil(arg::Expression)::Expression
   return result
 end
 
-function evalBuiltinCosh(arg::Expression)::Expression
+function evalBuiltinCosh(@nospecialize(arg::Expression))::Expression
   local result::Expression
 
    result = begin
@@ -2953,7 +2953,7 @@ function evalBuiltinCosh(arg::Expression)::Expression
   return result
 end
 
-function evalBuiltinCos(arg::Expression)::Expression
+function evalBuiltinCos(@nospecialize(arg::Expression))::Expression
   local result::Expression
 
    result = begin
@@ -2971,7 +2971,7 @@ function evalBuiltinCos(arg::Expression)::Expression
   return result
 end
 
-function evalBuiltinDer(arg::Expression)::Expression
+function evalBuiltinDer(@nospecialize(arg::Expression))::Expression
   local result::Expression
 
    result = fillType(
@@ -2981,7 +2981,7 @@ function evalBuiltinDer(arg::Expression)::Expression
   return result
 end
 
-function evalBuiltinDiagonal(arg::Expression)::Expression
+function evalBuiltinDiagonal(@nospecialize(arg::Expression))::Expression
   local result::Expression
 
   local elem_ty::M_Type
@@ -3085,7 +3085,7 @@ function evalBuiltinDiv(args::Vector{Expression}, target::EvalTarget)::Expressio
   return result
 end
 
-function evalBuiltinExp(arg::Expression)::Expression
+function evalBuiltinExp(@nospecialize(arg::Expression))::Expression
   local result::Expression
 
    result = begin
@@ -3109,7 +3109,7 @@ function evalBuiltinFill(args::Vector{Expression})::Expression
   return result
 end
 
-function evalBuiltinFill2(fillValue::Expression, dims::Vector{Expression})::Expression
+function evalBuiltinFill2(@nospecialize(fillValue::Expression), dims::Vector{Expression})::Expression
   local result::Expression = fillValue
   local dim_size::Int
   local arr::Vector{Expression}
@@ -3135,7 +3135,7 @@ function evalBuiltinFill2(fillValue::Expression, dims::Vector{Expression})::Expr
   return result
 end
 
-function evalBuiltinFloor(arg::Expression)::Expression
+function evalBuiltinFloor(@nospecialize(arg::Expression))::Expression
   local result::Expression
 
    result = begin
@@ -3153,7 +3153,7 @@ function evalBuiltinFloor(arg::Expression)::Expression
   return result
 end
 
-function evalBuiltinIdentity(arg::Expression)::Expression
+function evalBuiltinIdentity(@nospecialize(arg::Expression))::Expression
   local result::Expression
 
    result = begin
@@ -3171,7 +3171,7 @@ function evalBuiltinIdentity(arg::Expression)::Expression
   return result
 end
 
-function evalBuiltinInteger(arg::Expression)::Expression
+function evalBuiltinInteger(@nospecialize(arg::Expression))::Expression
   local result::Expression
 
    result = begin
@@ -3193,7 +3193,7 @@ function evalBuiltinInteger(arg::Expression)::Expression
   return result
 end
 
-function evalBuiltinIntegerEnum(arg::Expression)::Expression
+function evalBuiltinIntegerEnum(@nospecialize(arg::Expression))::Expression
   local result::Expression
 
    result = begin
@@ -3211,7 +3211,7 @@ function evalBuiltinIntegerEnum(arg::Expression)::Expression
   return result
 end
 
-function evalBuiltinLog10(arg::Expression, target::EvalTarget)::Expression
+function evalBuiltinLog10(@nospecialize(arg::Expression), target::EvalTarget)::Expression
   local result::Expression
 
   local x::AbstractFloat
@@ -3241,7 +3241,7 @@ function evalBuiltinLog10(arg::Expression, target::EvalTarget)::Expression
   return result
 end
 
-function evalBuiltinLog(arg::Expression, target::EvalTarget)::Expression
+function evalBuiltinLog(@nospecialize(arg::Expression), target::EvalTarget)::Expression
   local result::Expression
 
   local x::AbstractFloat
@@ -3271,7 +3271,7 @@ function evalBuiltinLog(arg::Expression, target::EvalTarget)::Expression
   return result
 end
 
-function evalBuiltinMatrix(arg::Expression)::Expression
+function evalBuiltinMatrix(@nospecialize(arg::Expression))::Expression
   local result::Expression
    result = begin
     local dim_count::Int
@@ -3281,7 +3281,7 @@ function evalBuiltinMatrix(arg::Expression)::Expression
     local ty::M_Type
     @match arg begin
       ARRAY_EXPRESSION(ty = ty) => begin
-         dim_count = Type.dimensionCount(ty)
+         dim_count = dimensionCount(ty)
         if dim_count < 2
            result = promote(arg, ty, 2)
         elseif dim_count == 2
@@ -3298,7 +3298,7 @@ function evalBuiltinMatrix(arg::Expression)::Expression
 
       _ => begin
          ty = typeOf(arg)
-        if Type.isScalar(ty)
+        if isScalar(ty)
            result = promote(arg, ty, 2)
         else
           printWrongArgsError(getInstanceName(), list(arg), sourceInfo())
@@ -3311,7 +3311,7 @@ function evalBuiltinMatrix(arg::Expression)::Expression
   return result
 end
 
-function evalBuiltinMatrix2(arg::Expression, ty::M_Type)::Expression
+function evalBuiltinMatrix2(@nospecialize(arg::Expression), @nospecialize(ty::M_Type))::Expression
   local result::Expression
 
    result = begin
@@ -3368,7 +3368,7 @@ function evalBuiltinMax(args::Vector{Expression}, fn::M_Function)::Expression
   return result
 end
 
-function evalBuiltinMax2(exp1::Expression, exp2::Expression)::Expression
+function evalBuiltinMax2(@nospecialize(exp1::Expression), @nospecialize(exp2::Expression))::Expression
   local result::Expression
 
    result = begin
@@ -3465,7 +3465,7 @@ function evalBuiltinMin(args::List{Expression}, fn::M_Function)::Expression
   return result
 end
 
-function evalBuiltinMin2(exp1::Expression, exp2::Expression)::Expression
+function evalBuiltinMin2(@nospecialize(exp1::Expression), @nospecialize(exp2::Expression))::Expression
   local result::Expression
 
    result = begin
@@ -3573,7 +3573,7 @@ function evalBuiltinOnes(args::List{Expression})::Expression
   return result
 end
 
-function evalBuiltinProduct(arg::Expression)::Expression
+function evalBuiltinProduct(@nospecialize(arg::Expression))::Expression
   local result::Expression
 
    result = begin
@@ -3614,7 +3614,7 @@ function evalBuiltinProduct(arg::Expression)::Expression
   return result
 end
 
-function evalBuiltinProductInt(exp::Expression, result::Int)::Int
+function evalBuiltinProductInt(@nospecialize(exp::Expression), result::Int)::Int
 
    result = begin
     @match exp begin
@@ -3634,7 +3634,7 @@ function evalBuiltinProductInt(exp::Expression, result::Int)::Int
   return result
 end
 
-function evalBuiltinProductReal(exp::Expression, result::AbstractFloat)::AbstractFloat
+function evalBuiltinProductReal(@nospecialize(exp::Expression), result::AbstractFloat)::AbstractFloat
 
    result = begin
     @match exp begin
@@ -3654,7 +3654,7 @@ function evalBuiltinProductReal(exp::Expression, result::AbstractFloat)::Abstrac
   return result
 end
 
-function evalBuiltinPromote(arg::Expression, argN::Expression)::Expression
+function evalBuiltinPromote(@nospecialize(arg::Expression), @nospecialize(argN::Expression))::Expression
   local result::Expression
   local n::Int
   if isInteger(argN)
@@ -3730,7 +3730,7 @@ function evalBuiltinScalar(args::List{Expression})::Expression
   return result
 end
 
-function evalBuiltinSign(arg::Expression)::Expression
+function evalBuiltinSign(@nospecialize(arg::Expression))::Expression
   local result::Expression
   result = begin
     @match arg begin
@@ -3767,7 +3767,7 @@ function evalBuiltinSign(arg::Expression)::Expression
   return result
 end
 
-function evalBuiltinSinh(arg::Expression)::Expression
+function evalBuiltinSinh(@nospecialize(arg::Expression))::Expression
   local result::Expression
 
    result = begin
@@ -3785,7 +3785,7 @@ function evalBuiltinSinh(arg::Expression)::Expression
   return result
 end
 
-function evalBuiltinSin(arg::Expression)::Expression
+function evalBuiltinSin(@nospecialize(arg::Expression))::Expression
   local result::Expression
 
    result = begin
@@ -3803,7 +3803,7 @@ function evalBuiltinSin(arg::Expression)::Expression
   return result
 end
 
-function evalBuiltinSkew(arg::Expression)::Expression
+function evalBuiltinSkew(@nospecialize(arg::Expression))::Expression
   local result::Expression
 
   local x1::Expression
@@ -3852,7 +3852,7 @@ function evalBuiltinSkew(arg::Expression)::Expression
   return result
 end
 
-function evalBuiltinSqrt(arg::Expression)::Expression
+function evalBuiltinSqrt(@nospecialize(arg::Expression))::Expression
   local result::Expression
 
    result = begin
@@ -3949,7 +3949,7 @@ function evalBuiltinString(args::List{Expression})::Expression
   return result
 end
 
-function evalBuiltinSum(arg::Expression)::Expression
+function evalBuiltinSum(@nospecialize(arg::Expression))::Expression
   local result::Expression
 
    result = begin
@@ -3990,7 +3990,7 @@ function evalBuiltinSum(arg::Expression)::Expression
   return result
 end
 
-function evalBuiltinSumInt(exp::Expression, result::Int)::Int
+function evalBuiltinSumInt(@nospecialize(exp::Expression), result::Int)::Int
 
    result = begin
     @match exp begin
@@ -4010,7 +4010,7 @@ function evalBuiltinSumInt(exp::Expression, result::Int)::Int
   return result
 end
 
-function evalBuiltinSumReal(exp::Expression, result::AbstractFloat)::AbstractFloat
+function evalBuiltinSumReal(@nospecialize(exp::Expression), result::AbstractFloat)::AbstractFloat
 
    result = begin
     @match exp begin
@@ -4030,7 +4030,7 @@ function evalBuiltinSumReal(exp::Expression, result::AbstractFloat)::AbstractFlo
   return result
 end
 
-function evalBuiltinSymmetric(arg::Expression)::Expression
+function evalBuiltinSymmetric(@nospecialize(arg::Expression))::Expression
   local result::Expression
 
   local mat::Vector{Array{Expression}}
@@ -4041,13 +4041,13 @@ function evalBuiltinSymmetric(arg::Expression)::Expression
 
    result = begin
     @match arg begin
-      ARRAY_EXPRESSION(__) where {(Type.isMatrix(arg.ty))} => begin
+      ARRAY_EXPRESSION(__) where {(isMatrix(arg.ty))} => begin
          mat = listArray(List(
           listArray(arrayElements(row))
           for row in arrayElements(arg)
         ))
          n = arrayLength(mat)
-         row_ty = Type.unliftArray(arg.ty)
+         row_ty = unliftArray(arg.ty)
         for i = n:(-1):1
            expl = nil
           for j = n:(-1):1
@@ -4074,7 +4074,7 @@ function evalBuiltinSymmetric(arg::Expression)::Expression
   return result
 end
 
-function evalBuiltinTanh(arg::Expression)::Expression
+function evalBuiltinTanh(@nospecialize(arg::Expression))::Expression
   local result::Expression
 
    result = begin
@@ -4092,7 +4092,7 @@ function evalBuiltinTanh(arg::Expression)::Expression
   return result
 end
 
-function evalBuiltinTan(arg::Expression)::Expression
+function evalBuiltinTan(@nospecialize(arg::Expression))::Expression
   local result::Expression
 
    result = begin
@@ -4110,7 +4110,7 @@ function evalBuiltinTan(arg::Expression)::Expression
   return result
 end
 
-function evalBuiltinTranspose(arg::Expression)::Expression
+function evalBuiltinTranspose(@nospecialize(arg::Expression))::Expression
   local result::Expression
   local dim1::Dimension
   local dim2::Dimension
@@ -4143,7 +4143,7 @@ function evalBuiltinTranspose(arg::Expression)::Expression
   return result
 end
 
-function evalBuiltinVector(arg::Expression)::Expression
+function evalBuiltinVector(@nospecialize(arg::Expression))::Expression
   local result::Expression
 
   local expl::List{Expression}
@@ -4158,7 +4158,7 @@ function evalBuiltinVector(arg::Expression)::Expression
   return result
 end
 
-function evalBuiltinVector2(exp::Expression, expl::List{Expression})::List{Expression}
+function evalBuiltinVector2(@nospecialize(exp::Expression), expl::List{Expression})::List{Expression}
 
    expl = begin
     @match exp begin
@@ -4737,7 +4737,7 @@ function evalRecordElement2(exp::RECORD_EXPRESSION, index::Int)
   exp.elements[index]
 end
 
-function printUnboundError(component::Component, target::EvalTarget, exp::Expression)
+function printUnboundError(component::Component, target::EvalTarget, @nospecialize(exp::Expression))
   return  () = begin
     @match target begin
       EVALTARGET_IGNORE_ERRORS(__) => begin
@@ -4867,7 +4867,7 @@ end
 Custom reimplementation of evalCatGetFlatArray
 @author johti17
 """
-function evalCatGetFlatArray(e::Expression, dim::Int, getArrayContents::Function, toString::Function)::Tuple{List{Expression}, List{Int}}
+function evalCatGetFlatArray(@nospecialize(e::Expression), dim::Int, getArrayContents::Function, toString::Function)::Tuple{List{Expression}, List{Int}}
   local arr::List
   local dims::List
   local i::Int

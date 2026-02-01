@@ -1,5 +1,5 @@
 """
-  An experimental Modelica frontend written in the Julia Language
+  A  Modelica frontend in Julia.
 """
 module OMFrontend
 
@@ -44,6 +44,13 @@ by a lot.
 function __init__()
   packagePath = dirname(realpath(Base.find_package("OMFrontend")))
   packagePath *= "/.."
+  # Load builtin library if not already in cache (e.g. when precompile workload is disabled)
+  if !haskey(NFModelicaBuiltinCache, "NFModelicaBuiltin")
+    pathToLib = packagePath * "/lib/NFModelicaBuiltin.mo"
+    builtinProg = OMParser.parseFile(pathToLib, 2)
+    builtinSCode = Frontend.AbsynToSCode.translateAbsyn2SCode(builtinProg)
+    NFModelicaBuiltinCache["NFModelicaBuiltin"] = builtinSCode
+  end
   pathToTest = packagePath * "/test/Models/HelloWorld.mo"
   p = OMParser.parseFile(pathToTest, 1)
   s = Frontend.AbsynToSCode.translateAbsyn2SCode(p)
@@ -293,7 +300,7 @@ function loadMSL(; MSL_Version)
       @info "Failed loading the Modelica Standard Library. Valid versions are 3.2.3 and 4.0.0"
       @info "Continue instantiating the model until the next error."
     end
-end
+  end
 end
 
 

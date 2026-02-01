@@ -345,9 +345,10 @@ end
 function lookupLocalSimpleName(n::String, scope::InstNode)
   local isImport::Bool = false
   local node::InstNode
-  ##@info "Looking up simple name $n"
+  if scope isa EMPTY_NODE
+    throw("Lookup Error: Attempted to lookup '$n'. However, it was not found in the given scope.")
+  end
   entryInfo = @match ENTRY_INFO(node, isImport) = lookupElement(n, getClass(scope))
-  ##@info "We lookup an element"
   node = resolveInner(node)
   return entryInfo#(node, isImport)
 end
@@ -589,7 +590,18 @@ function lookupSimpleCref(crefName::String,
           INNER_OUTER_NODE(__)  => begin
             @match ENTRY_INFO(node, is_import) = lookupElement(crefName, getClass(foundScope.innerNode))
           end
+          #= In this case we did not find the scope! =#
+          EMPTY_NODE(__) => begin
+            #print()
+            msg = ErrorTypes.MESSAGE(
+              555,
+              ErrorTypes.SCRIPTING(),
+              ErrorTypes.WARNING(),
+              Gettext.gettext("LookupSimpleCref: Reached empty node while looking for $crefName\n"),
+            )::ErrorTypes.Message
+            Error.addSourceMessageAndFail(msg, list(crefName),sourceInfo())
           end
+        end
         #@debug "Checking imports and other things.."
         if is_import
           foundScope = parent(node)

@@ -258,6 +258,23 @@ function flattenModelWithMSL(modelName::String,
 end
 
 """
+`function flattenModelWithMSL(modelName::String; MSL_Version = "MSL:3.2.3", scalarize = true)`
+
+Flatten an MSL model by name.
+"""
+function flattenModelWithMSL(modelName::String;
+                             MSL_Version = "MSL:3.2.3",
+                             scalarize = true)
+  if !haskey(LIBRARY_CACHE, MSL_Version)
+    initLoadMSL(MSL_Version = MSL_Version)
+  end
+  MSL_Version = replace(MSL_Version, "." => "_")
+  MSL_Version = replace(MSL_Version, ":" => "_")
+  local lib = LIBRARY_CACHE[MSL_Version]
+  (FM, cache) = instantiateSCodeToFM(modelName, lib; scalarize = scalarize)
+end
+
+"""
 `flattenModel(modelName::String, fileName::String)`
 
 Returns the flat representation of a modelica model along with the functions used and define by the model.

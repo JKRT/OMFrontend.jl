@@ -277,7 +277,7 @@ function collectStatementFlatTypes(stmt::Statement, types::TypeTree)::TypeTree
         ()
       end
       ALG_FOR(__) => begin
-         types = ListUtil.fold(stmt.body, collectStatementFlatTypes, types)
+         types = ArrayUtil.fold(stmt.body, collectStatementFlatTypes, types)
          types = collectExpFlatTypes(Util.getOption(stmt.range), types)
         ()
       end

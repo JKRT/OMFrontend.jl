@@ -320,6 +320,287 @@ function loadMSL(; MSL_Version)
   end
 end
 
+"""
+    loadLibrary(libraryPath::String; name::Union{String, Nothing} = nothing)
+
+Load an arbitrary Modelica library from a single `.mo` file into the library
+cache. Returns the cache key (a string) that can be passed to `translate` or
+`simulate` via the `libraries` keyword argument.
+
+If `name` is not provided, the cache key is derived from the top-level class
+name in the parsed file.
+
+# Example
+```julia
+key = OMFrontend.loadLibrary("/path/to/MyLib.mo")
+# key == "MyLib"
+```
+"""
+function loadLibrary(libraryPath::String; name::Union{String, Nothing} = nothing)
+  Frontend.Global.initialize()
+  @info "Loading library from $libraryPath..."
+  local p = parseFile(libraryPath)
+  local scodeProg = translateToSCode(p)
+  local cacheKey = if name !== nothing
+    name
+  else
+    local firstClass = listHead(scodeProg)
+    firstClass.name
+  end
+  LIBRARY_CACHE[cacheKey] = scodeProg
+  @info "Loaded library '$cacheKey' from $libraryPath"
+  return cacheKey
+end
+
+"""
+    loadPackageDirectory(dirPath::String; name=nothing) -> String
+
+Load a Modelica library organized as a directory tree with `package.mo` files.
+Each `.mo` file is parsed individually and merged into a single SCode program
+based on its `within` clause.
+
+Returns the cache key (a string) for use in `translate`/`simulate` via the
+`libraries` keyword argument.
+
+# Directory structure
+```
+MyLibrary/
+  package.mo          # top-level package declaration
+  package.order       # optional: class ordering (one name per line)
+  SomeModel.mo        # "within MyLibrary; model SomeModel ..."
+  SubPackage/
+    package.mo        # "within MyLibrary; package SubPackage ..."
+    AnotherModel.mo   # "within MyLibrary.SubPackage; model AnotherModel ..."
+```
+
+# Example
+```julia
+key = OMFrontend.loadPackageDirectory("/path/to/MyLibrary")
+# key == "MyLibrary"
+```
+"""
+function loadPackageDirectory(dirPath::String; name::Union{String, Nothing} = nothing)
+  Frontend.Global.initialize()
+  dirPath = String(rstrip(dirPath, '/'))
+  local rootFile = joinpath(dirPath, "package.mo")
+  if !isfile(rootFile)
+    error("No package.mo found in '$dirPath'. Not a valid Modelica package directory.")
+  end
+  @info "Loading directory-based package from $dirPath..."
+
+  #= Step 1: Parse root package.mo =#
+  local rootAbsyn = parseFile(rootFile)
+  local rootSCode = translateToSCode(rootAbsyn)
+  local rootClass = listHead(rootSCode)
+
+  #= Step 2: Collect all child .mo files (excluding root package.mo) =#
+  local childFiles = _collectMoFiles(dirPath)
+  @info "Found $(length(childFiles)) child file(s) in package"
+
+  #= Step 3: Parse each child, extract within path and SCode class =#
+  local children = Tuple{String, SCode.Element}[]
+  for moFile in childFiles
+    local absynProg = parseFile(moFile)
+    local withinPath = _extractWithinPath(absynProg)
+    local scodeProg = translateToSCode(absynProg)
+    for cls in scodeProg
+      push!(children, (withinPath, cls))
+    end
+  end
+
+  #= Step 4: Insert all children into the root package tree =#
+  local mergedClass = rootClass
+  local rootName = rootClass.name
+  for (withinPath, child) in children
+    mergedClass = _insertIntoPackage(mergedClass, child, withinPath, rootName)
+  end
+
+  #= Step 5: Cache the result =#
+  local cacheKey = name !== nothing ? name : rootName
+  LIBRARY_CACHE[cacheKey] = list(mergedClass)
+  @info "Loaded directory package '$cacheKey' from $dirPath ($(length(children)) classes)"
+  return cacheKey
+end
+
+"""
+    _collectMoFiles(dirPath) -> Vector{String}
+
+Recursively collect `.mo` files in a package directory, respecting `package.order`.
+Sub-package `package.mo` files are included before their children.
+The root `package.mo` is excluded (handled separately by the caller).
+"""
+function _collectMoFiles(dirPath::AbstractString)::Vector{String}
+  local files = String[]
+  local order = _readPackageOrder(dirPath)
+  local entries = readdir(dirPath; join=false)
+
+  #= Determine processing order =#
+  local ordered::Vector{String}
+  if order !== nothing
+    #= Use package.order: process listed entries first, then any unlisted ones =#
+    local remaining = filter(n -> !(n in order), entries)
+    sort!(remaining)
+    ordered = vcat(order, remaining)
+  else
+    ordered = sort(entries)
+  end
+
+  for entry in ordered
+    local fullPath = joinpath(dirPath, entry)
+    if isdir(fullPath) && isfile(joinpath(fullPath, "package.mo"))
+      #= Sub-package: add its package.mo first, then recurse =#
+      push!(files, joinpath(fullPath, "package.mo"))
+      append!(files, _collectMoFiles(fullPath))
+    elseif isfile(fullPath) && endswith(entry, ".mo") && entry != "package.mo"
+      push!(files, fullPath)
+    end
+  end
+  return files
+end
+
+"""
+    _readPackageOrder(dirPath) -> Union{Vector{String}, Nothing}
+
+Read the `package.order` file if it exists. Returns a list of class/entry names
+(one per line, comments and blank lines stripped), or nothing if no file exists.
+"""
+function _readPackageOrder(dirPath::AbstractString)::Union{Vector{String}, Nothing}
+  local orderFile = joinpath(dirPath, "package.order")
+  if !isfile(orderFile)
+    return nothing
+  end
+  local rawLines = readlines(orderFile)
+  local lines = String[]
+  for line in rawLines
+    local stripped = strip(line)
+    if !isempty(stripped) && !startswith(stripped, "//")
+      push!(lines, String(stripped))
+    end
+  end
+  return lines
+end
+
+"""
+    _extractWithinPath(prog::Absyn.Program) -> String
+
+Extract the `within` clause from an Absyn.Program and convert to a dot-separated
+path string. Returns "" for top-level (no within clause).
+"""
+function _extractWithinPath(prog::Absyn.Program)::String
+  @match Absyn.PROGRAM(within_ = w) = prog
+  return begin
+    @match w begin
+      Absyn.TOP() => ""
+      Absyn.WITHIN(path) => _absynPathToString(path)
+    end
+  end
+end
+
+function _absynPathToString(path::Absyn.Path)::String
+  @match path begin
+    Absyn.IDENT(name) => name
+    Absyn.QUALIFIED(name, rest) => string(name, ".", _absynPathToString(rest))
+    Absyn.FULLYQUALIFIED(p) => _absynPathToString(p)
+  end
+end
+
+"""
+    _insertIntoPackage(pkg, child, withinPath, currentPath) -> SCode.Element
+
+Insert a child SCode.Element into the correct location in the package tree.
+`withinPath` is the dot-separated path from the child's `within` clause.
+`currentPath` is the dot-separated path of the current package being examined.
+"""
+function _insertIntoPackage(pkg::SCode.Element, child::SCode.Element,
+                            withinPath::String, currentPath::String)::SCode.Element
+  #= Does this child belong directly in this package? =#
+  if withinPath == currentPath
+    @match SCode.CLASS(classDef = SCode.PARTS(elementLst = els)) = pkg
+    local newEls = listAppend(els, list(child))
+    return _rebuildClassWithElements(pkg, newEls)
+  end
+
+  #= Otherwise, find the sub-package to recurse into =#
+  local prefix = currentPath * "."
+  if !startswith(withinPath, prefix)
+    @warn "Cannot insert class: within path '$withinPath' does not match current path '$currentPath'"
+    return pkg
+  end
+  local suffix = withinPath[length(prefix)+1:end]
+  local nextSegment = String(split(suffix, ".")[1])
+
+  #= Find and update the sub-package in elementLst =#
+  @match SCode.CLASS(classDef = SCode.PARTS(elementLst = els)) = pkg
+  local newEls = nil
+  local found = false
+  for el in els
+    if isa(el, SCode.CLASS) && el.name == nextSegment
+      local updatedSub = _insertIntoPackage(el, child, withinPath,
+                                            string(currentPath, ".", nextSegment))
+      newEls = Cons(updatedSub, newEls)
+      found = true
+    else
+      newEls = Cons(el, newEls)
+    end
+  end
+  newEls = listReverse(newEls)
+  if !found
+    @warn "Sub-package '$nextSegment' not found in '$currentPath' for within path '$withinPath'"
+  end
+  return _rebuildClassWithElements(pkg, newEls)
+end
+
+"""
+    _rebuildClassWithElements(cls, newEls) -> SCode.Element
+
+Reconstruct an SCode.CLASS with a new elementLst, preserving all other fields.
+"""
+function _rebuildClassWithElements(cls::SCode.Element, newEls)::SCode.Element
+  @match SCode.CLASS(name, prefixes, encap, partial_, restriction,
+                     SCode.PARTS(_, normalEqs, initEqs, normalAlgs,
+                                 initAlgs, constraints, clsattrs, extDecl),
+                     cmt, info) = cls
+  local newDef = SCode.PARTS(newEls, normalEqs, initEqs, normalAlgs,
+                             initAlgs, constraints, clsattrs, extDecl)
+  return SCode.CLASS(name, prefixes, encap, partial_, restriction, newDef, cmt, info)
+end
+
+"""
+    flattenModelWithLibraries(modelName, fileName; libraries, MSL, MSL_Version, scalarize)
+
+Flatten a Modelica model combining it with one or more pre-loaded libraries.
+Libraries are looked up in `LIBRARY_CACHE` by their cache keys. If MSL is
+requested, it is appended last (lowest priority for name resolution).
+
+Ordering in the combined program (leftmost = highest priority):
+1. User model code
+2. User libraries (in order of `libraries` vector)
+3. MSL (if `MSL=true`)
+"""
+function flattenModelWithLibraries(modelName::String,
+                                   fileName::String;
+                                   libraries::Vector{String} = String[],
+                                   MSL::Bool = false,
+                                   MSL_Version::String = "MSL:3.2.3",
+                                   scalarize::Bool = true)
+  local absynProgram = parseFile(fileName)
+  local combined = translateToSCode(absynProgram)
+  for libKey in libraries
+    if !haskey(LIBRARY_CACHE, libKey)
+      error("Library '$libKey' not loaded. Call OM.loadLibrary first.")
+    end
+    combined = listAppend(combined, LIBRARY_CACHE[libKey])
+  end
+  if MSL
+    if !haskey(LIBRARY_CACHE, MSL_Version)
+      initLoadMSL(MSL_Version = MSL_Version)
+    end
+    local mslKey = replace(replace(MSL_Version, "." => "_"), ":" => "_")
+    combined = listAppend(combined, LIBRARY_CACHE[mslKey])
+  end
+  (FM, cache) = instantiateSCodeToFM(modelName, combined; scalarize = scalarize)
+end
+
 
 """
 ```

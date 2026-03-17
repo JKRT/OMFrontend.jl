@@ -117,8 +117,7 @@ function workload()
   precompile_model_names = [
     "Engine1a",
     "Engine1b",
-    "Engine1b_analytic",
-    "EngineV6"
+    "Engine1b_analytic"
   ]
   for p in precompile_model_names
     @info "Translating: $(string(precompile_prefix, ".", p))"

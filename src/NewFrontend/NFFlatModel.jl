@@ -166,24 +166,34 @@ function reconstructRecordInstances(variables::Vector{Variable})
   local var::Variable
   local parent_cr::ComponentRef
   local parent_ty::M_Type
-  local field_count::Int
   while !listEmpty(rest_vars)
     @match _cons(var, rest_vars) = rest_vars
     parent_cr = rest(var.name)
     if !isEmpty(parent_cr)
       parent_ty = nodeType(parent_cr)
       if isRecord(parent_ty)
-        field_count = listLength(recordFields(parent_ty))
-        (record_vars, rest_vars) = ListUtil.split(rest_vars, field_count - 1)
+        #= Count consecutive siblings sharing the same parent CREF.
+           After scalarization, array record fields expand to more variables
+           than the raw field count from the record type definition. =#
+        local sibling_count = 0
+        local scan = rest_vars
+        while !listEmpty(scan)
+          local next_var = listHead(scan)
+          local next_parent = rest(next_var.name)
+          if isEmpty(next_parent) || !isEqual(next_parent, parent_cr)
+            break
+          end
+          sibling_count += 1
+          scan = listRest(scan)
+        end
+        (record_vars, rest_vars) = ListUtil.split(rest_vars, sibling_count)
         record_vars = _cons(var, record_vars)
-        #=TODO: Maybe treat parameters more special in the future... =#
         if variability(var) <= Variability.PARAMETER && Flags.isSet(Flags.NF_SCALARIZE)
           var = reconstructRecordInstance(parent_cr, record_vars)
         else
           var = reconstructRecordInstance(parent_cr, record_vars)
         end
       end
-      #record_vars = nil;
     end
     outVariables = push!(outVariables, var)
   end

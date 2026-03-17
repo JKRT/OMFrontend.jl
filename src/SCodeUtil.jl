@@ -7559,5 +7559,263 @@ function mergeSCodeMods(inModOuter::SCode.Mod, inModInner::SCode.Mod)::SCode.Mod
   return outMod
 end
 
+#= Functions needed by translated NFFrontEnd =#
+
+"""Check if the named annotation is present and has value false."""
+function optCommentHasBooleanNamedAnnotationFalse(
+  comm::Option,
+  annotationName::String,
+)::Bool
+  local outB::Bool
+  outB = begin
+    local ann::SCode.Annotation
+    local submods::List{SCode.SubMod}
+    @match comm begin
+      SOME(SCode.COMMENT(annotation_ = SOME(ann))) => begin
+        @match SCode.ANNOTATION(modification = SCode.MOD(subModLst = submods)) = ann
+        ListUtil.exist1(submods, hasBooleanNamedAnnotationFalse2, annotationName)
+      end
+      _ => false
+    end
+  end
+  return outB
+end
+
+function hasBooleanNamedAnnotationFalse2(inSubMod::SCode.SubMod, inName::String)::Bool
+  local outIsMatch::Bool
+  outIsMatch = begin
+    local id::String
+    @match inSubMod begin
+      SCode.NAMEMOD(ident = id, mod = SCode.MOD(binding = SOME(Absyn.BOOL(value = false)))) => begin
+        stringEq(id, inName)
+      end
+      _ => false
+    end
+  end
+  return outIsMatch
+end
+
+"""Look up an annotation by name, returning its modifier or NOMOD."""
+function lookupAnnotation(ann::SCode.Annotation, name::String)::SCode.Mod
+  local mod::SCode.Mod
+  mod = begin
+    local submods::List{SCode.SubMod}
+    @match ann begin
+      SCode.ANNOTATION(modification = SCode.MOD(subModLst = submods)) => begin
+        for sm in submods
+          @match SCode.NAMEMOD(ident = id, mod = m) = sm
+          if id == name
+            return m
+          end
+        end
+        SCode.NOMOD()
+      end
+      _ => SCode.NOMOD()
+    end
+  end
+  return mod
+end
+
+"""Look up all annotations with the given name, returning a list of modifiers."""
+function lookupAnnotations(ann::SCode.Annotation, name::String)::List{SCode.Mod}
+  local mods::List{SCode.Mod} = nil
+  @match SCode.ANNOTATION(modification = SCode.MOD(subModLst = submods)) = ann
+  for sm in submods
+    @match SCode.NAMEMOD(ident = id, mod = m) = sm
+    if id == name
+      mods = Cons(m, mods)
+    end
+  end
+  mods = listReverse(mods)
+  return mods
+end
+
+"""Look up an annotation on an SCode element (CLASS or COMPONENT)."""
+function lookupElementAnnotation(elem::SCode.Element, name::String)::SCode.Mod
+  local mod::SCode.Mod
+  mod = begin
+    local ann::SCode.Annotation
+    @match elem begin
+      SCode.CLASS(cmt = SCode.COMMENT(annotation_ = SOME(ann))) => lookupAnnotation(ann, name)
+      SCode.COMPONENT(comment = SCode.COMMENT(annotation_ = SOME(ann))) => lookupAnnotation(ann, name)
+      _ => SCode.NOMOD()
+    end
+  end
+  return mod
+end
+
+"""Look up the binding of an annotation on an SCode element."""
+function lookupElementAnnotationBinding(elem::SCode.Element, name::String)::Option{Absyn.Exp}
+  local binding::Option{Absyn.Exp}
+  local mod::SCode.Mod = lookupElementAnnotation(elem, name)
+  binding = @match mod begin
+    SCode.MOD(binding = b) => b
+    _ => nothing
+  end
+  return binding
+end
+
+"""Look up a boolean annotation modifier on an SCode element."""
+function lookupBooleanAnnotationMod(elem::SCode.Element, name::String)::Bool
+  local b::Bool
+  local mod::SCode.Mod = lookupElementAnnotation(elem, name)
+  b = @match mod begin
+    SCode.MOD(binding = SOME(Absyn.BOOL(value = v))) => v
+    _ => false
+  end
+  return b
+end
+
+"""Look up a sub-modifier by name inside a modifier."""
+function lookupModInMod(name::String, mod::SCode.Mod)::SCode.Mod
+  local outMod::SCode.Mod
+  outMod = begin
+    local submods::List{SCode.SubMod}
+    @match mod begin
+      SCode.MOD(subModLst = submods) => begin
+        for sm in submods
+          @match SCode.NAMEMOD(ident = id, mod = m) = sm
+          if id == name
+            return m
+          end
+        end
+        SCode.NOMOD()
+      end
+      _ => SCode.NOMOD()
+    end
+  end
+  return outMod
+end
+
+"""Check if a class definition has equation or algorithm sections."""
+function classDefHasSections(classDef::SCode.ClassDef)::Bool
+  local hasSections::Bool
+  hasSections = @match classDef begin
+    SCode.PARTS() => begin
+      !(listEmpty(classDef.normalEquationLst) &&
+        listEmpty(classDef.initialEquationLst) &&
+        listEmpty(classDef.normalAlgorithmLst) &&
+        listEmpty(classDef.initialAlgorithmLst))
+    end
+    _ => false
+  end
+  return hasSections
+end
+
+"""Get the class body (ClassDef) from a CLASS element."""
+function getClassBody(elem::SCode.Element)::SCode.ClassDef
+  local classDef::SCode.ClassDef
+  @match SCode.CLASS(classDef = classDef) = elem
+  return classDef
+end
+
+"""Check if an algorithm section is non-empty."""
+function isNonEmptyAlgorithm(alg::SCode.AlgorithmSection)::Bool
+  local nonEmpty::Bool
+  nonEmpty = @match alg begin
+    SCode.ALGORITHM(statements = stmts) => !listEmpty(stmts)
+    _ => false
+  end
+  return nonEmpty
+end
+
+"""Check if an element has a named external call."""
+function hasNamedExternalCall(elem::SCode.Element, name::String)::Bool
+  local found::Bool
+  found = begin
+    @match elem begin
+      SCode.CLASS(classDef = SCode.PARTS(externalDecl = SOME(SCode.EXTERNALDECL(funcName = SOME(fname))))) => begin
+        fname == name
+      end
+      _ => false
+    end
+  end
+  return found
+end
+
+"""Extract the annotation from an optional comment."""
+function optCommentAnnotation(comment::Option)::Option{SCode.Annotation}
+  local ann::Option{SCode.Annotation}
+  ann = @match comment begin
+    SOME(SCode.COMMENT(annotation_ = a)) => a
+    _ => nothing
+  end
+  return ann
+end
+
+"""Append an annotation to an optional comment."""
+function appendAnnotationToCommentOption(
+  inAnnotation::SCode.Annotation,
+  inComment::Option,
+)::Option{SCode.Comment}
+  local outComment::Option{SCode.Comment}
+  outComment = @match inComment begin
+    SOME(cmt) => SOME(appendAnnotationToComment(inAnnotation, cmt))
+    _ => SOME(SCode.COMMENT(SOME(inAnnotation), nothing))
+  end
+  return outComment
+end
+
+"""Extract SourceInfo from an SCode equation."""
+function getEquationInfo(eq::SCode.EEquation)::SourceInfo
+  local info::SourceInfo
+  info = @match eq begin
+    SCode.EQ_IF(info = i) => i
+    SCode.EQ_EQUALS(info = i) => i
+    SCode.EQ_PDE(info = i) => i
+    SCode.EQ_CONNECT(info = i) => i
+    SCode.EQ_FOR(info = i) => i
+    SCode.EQ_WHEN(info = i) => i
+    SCode.EQ_ASSERT(info = i) => i
+    SCode.EQ_TERMINATE(info = i) => i
+    SCode.EQ_REINIT(info = i) => i
+    SCode.EQ_NORETCALL(info = i) => i
+    _ => AbsynUtil.dummyInfo
+  end
+  return info
+end
+
+"""Map a function over the statements of an algorithm section."""
+function mapAlgorithmStatements(
+  alg::SCode.AlgorithmSection,
+  func,
+)::SCode.AlgorithmSection
+  local outAlg::SCode.AlgorithmSection
+  outAlg = @match alg begin
+    SCode.ALGORITHM(statements = stmts) => begin
+      SCode.ALGORITHM(list(func(s) for s in stmts))
+    end
+  end
+  return outAlg
+end
+
+"""Map a function over expressions in an equation list."""
+function mapEquationsList(
+  eqs::List{SCode.Equation},
+  func,
+)::List{SCode.Equation}
+  return list(mapEquation(eq, func) for eq in eqs)
+end
+
+function mapEquation(eq::SCode.Equation, func)::SCode.Equation
+  @match SCode.EQUATION(eEquation = eeq) = eq
+  return SCode.EQUATION(mapEEquation(eeq, func))
+end
+
+"""Map a function over expressions in an EEquation. Stub - returns unchanged."""
+function mapEEquation(eq::SCode.EEquation, func)::SCode.EEquation
+  return eq
+end
+
+"""Map a function over expressions in equations. Stub - returns unchanged."""
+function mapEquationExps(eq::SCode.EEquation, func)::SCode.EEquation
+  return eq
+end
+
+"""Map a function over expressions in statements. Stub - returns unchanged."""
+function mapStatementExps(stmt::SCode.Statement, func)::SCode.Statement
+  return stmt
+end
+
 @exportAll()
 end

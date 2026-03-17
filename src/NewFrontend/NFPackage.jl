@@ -85,13 +85,15 @@ function collectExpConstants_traverser(@nospecialize(exp::Expression), @nospecia
   local cref::ComponentRef
    () = begin
     @match exp begin
-      CREF_EXPRESSION(cref = cref && CREF_EXPRESSION(__)) =>
+      CREF_EXPRESSION(cref = cref && COMPONENT_REF_CREF(__)) =>
         begin
           if isPackageConstant(cref)
             typeComponentBinding(cref.node, ORIGIN_CLASS)
-            @assign constants = Constants.add(
+            @assign constants = ConstantsSetImpl.add(
               constants,
               stripSubscriptsAll(cref),
+              0,
+              ConstantsSetImpl.addConflictKeep,
             )
             @assign constants = collectBindingConstants(
               getBinding(component(node(

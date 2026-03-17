@@ -56,6 +56,12 @@ include("./Util/Error.jl")
 import .P_Pointer
 const Pointer = P_Pointer.Pointer
 include("./Util/Mutable.jl")
+include("./Util/UnorderedMap.jl")
+import .P_UnorderedMap
+const UnorderedMap = P_UnorderedMap
+include("./Util/UnorderedSet.jl")
+import .P_UnorderedSet
+const UnorderedSet = P_UnorderedSet
 #= Include various utility structures =#
 include("./Util/BaseAvlSet.jl")
 include("./Util/BaseAvlTree.jl")

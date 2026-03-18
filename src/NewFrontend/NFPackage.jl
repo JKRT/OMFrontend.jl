@@ -210,7 +210,7 @@ function replaceExpConstants_traverser(exp::Expression)::Expression
       CREF_EXPRESSION(cref = cref && CREF(__)) =>
         begin
           if isPackageConstant(cref)
-            Ceval.evalExp(exp, Ceval.EVALTARGET_IGNORE_ERRORS())
+            evalExp(exp, EVALTARGET_IGNORE_ERRORS())
           else
             exp
           end
@@ -245,7 +245,7 @@ function replaceFuncConstants(name::Absyn.Path, func::M_Function)::M_Function
           @assign binding = getBinding(comp)
           @assign eval_binding = replaceBindingConstants(binding)
           if !referenceEq(binding, eval_binding)
-            @assign comp = P_Component.setBinding(eval_binding, comp)
+            @assign comp = setBinding(eval_binding, comp)
             updateComponent!(comp, c)
           end
         end

@@ -106,7 +106,7 @@ function makeLBinaryOp(@nospecialize(exp1::Expression), op::Operator, @nospecial
 
   if isScalarLiteral(exp1) &&
      isScalarLiteral(exp2)
-    @assign exp = Ceval.evalLogicBinaryOp(exp1, op, exp2)
+    @assign exp = evalLogicBinaryOp(exp1, op, exp2)
   else
     @assign exp = LBINARY_EXPRESSION(exp1, op, exp2)
   end
@@ -202,7 +202,7 @@ function expandBinaryPowMatrix(@nospecialize(exp::Expression))::Tuple{Expression
         #=  a ^ 0 = identity(size(a, 1))
         =#
         @assign n =
-          P_Dimension.Dimension.size(listHead(arrayDims(typeOf(
+          size(listHead(arrayDims(typeOf(
             op,
           ))))
         (makeIdentityMatrix(n, TYPE_REAL()), true)
@@ -647,7 +647,7 @@ function expandSize(@nospecialize(exp::Expression))::Tuple{Expression, Bool}
           for i = 1:dims
         )
         makeArray(
-          TYPE_ARRAY(ty, list(P_Dimension.Dimension.fromInteger(dims))),
+          TYPE_ARRAY(ty, list(fromInteger(dims))),
           expl,
         )
       end

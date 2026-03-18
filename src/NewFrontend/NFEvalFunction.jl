@@ -157,7 +157,8 @@ function evaluateExternal(fn::M_Function, args::Vector{Expression})::Expression
     ann = ann,
   ) = getSections(getClass(fn.node))
   if lang == "builtin"
-    result = Ceval.evalfn( args, EVALTARGET_IGNORE_ERRORS())
+    #= TODO: evalfn does not exist yet. This path is for builtin external functions. =#
+    error("evalfn not implemented for builtin external function: " * name)
   elseif isKnownExternalFunc(name, ann)
     result = evaluateKnownExternal(name, args)
   else
@@ -1019,7 +1020,7 @@ end
 function evaluateNoRetCall(@nospecialize(callExp::Expression), source::DAE.ElementSource)::FlowControlType
   local ctrl::FlowControlType = FlowControl.NEXT
 
-  Ceval.evalExp(callExp, EVALTARGET_STATEMENT(source))
+  evalExp(callExp, EVALTARGET_STATEMENT(source))
   return ctrl
 end
 
@@ -1034,7 +1035,7 @@ function evaluateWhile(
   local limit::Int = Flags.getConfigInt(Flags.EVAL_LOOP_LIMIT)
   local target::EvalTarget = EVALTARGET_STATEMENT(source)
 
-  while isTrue(Ceval.evalExp(condition, target))
+  while isTrue(evalExp(condition, target))
     @assign ctrl = evaluateStatements(body)
     if ctrl != FlowControl.NEXT
       if ctrl == FlowControl.BREAK
@@ -1291,7 +1292,7 @@ function evaluateKnownExternal(name::String, args::List{<:Expression})::Expressi
       ) => begin
         @assign dims = ModelicaExternalC.ModelicaIO_readMatrixSizes(s1, s2)
         ARRAY_EXPRESSION(
-          TYPE_ARRAY(TYPE_INTEGER(), list(P_Dimension.Dimension.fromInteger(2))),
+          TYPE_ARRAY(TYPE_INTEGER(), list(fromInteger(2))),
           list(
             INTEGER_EXPRESSION(dims[1]),
             INTEGER_EXPRESSION(dims[2]),
@@ -1347,7 +1348,7 @@ function evaluateOpenModelicaRegex(args::List{<:Expression})::Expression
          (n, strs) = System.regex(str, re, i, extended, insensitive)
         @assign expl = list(STRING_EXPRESSION(s) for s in strs)
         @assign strs_ty =
-          TYPE_ARRAY(TYPE_STRING(), list(P_Dimension.Dimension.fromInteger(i)))
+          TYPE_ARRAY(TYPE_STRING(), list(fromInteger(i)))
         @assign strs_exp = makeArray(strs_ty, expl, true)
         TUPLE_EXPRESSION(
           TYPE_TUPLE(list(TYPE_INTEGER(), strs_ty), NONE()),
@@ -1399,7 +1400,7 @@ function evaluateModelicaIO_readRealMatrix(
     ncol,
     verboseRead,
   )
-  @assign ty = TYPE_ARRAY(TYPE_REAL(), list(P_Dimension.Dimension.fromInteger(ncol)))
+  @assign ty = TYPE_ARRAY(TYPE_REAL(), list(fromInteger(ncol)))
   for r = 1:nrow
     @assign row = nil
     for c = 1:ncol
@@ -1407,7 +1408,7 @@ function evaluateModelicaIO_readRealMatrix(
     end
     @assign rows = _cons(ARRAY_EXPRESSION(ty, row, literal = true), rows)
   end
-  @assign ty = liftArrayLeft(ty, P_Dimension.Dimension.fromInteger(nrow))
+  @assign ty = liftArrayLeft(ty, fromInteger(nrow))
   @assign result = ARRAY_EXPRESSION(ty, rows, literal = true)
   return result
 end

@@ -384,8 +384,8 @@ function checkOverloadedBinaryArrayAddSub(
       info,
     )
   end
-  @assign e1 = P_ExpandExp.ExpandExp.expand(e1)
-  @assign e2 = P_ExpandExp.ExpandExp.expand(e2)
+  @assign e1 = expand(e1)
+  @assign e2 = expand(e2)
    (outExp, outType) = checkOverloadedBinaryArrayAddSub2(
     e1,
     type1,
@@ -614,7 +614,7 @@ function checkOverloadedBinaryScalarArray(
     type1,
     var1,
     op,
-    P_ExpandExp.ExpandExp.expand(exp2),
+    expand(exp2),
     type2,
     var2,
     candidates,
@@ -723,7 +723,7 @@ function checkOverloadedBinaryArrayScalar(
   local outExp::Expression
 
    (outExp, outType) = checkOverloadedBinaryArrayScalar2(
-    P_ExpandExp.ExpandExp.expand(exp1),
+    expand(exp1),
     type1,
     var1,
     op,
@@ -897,8 +897,8 @@ function checkOverloadedBinaryArrayEW(
       info,
     )
   end
-  @assign e1 = P_ExpandExp.ExpandExp.expand(exp1)
-  @assign e2 = P_ExpandExp.ExpandExp.expand(exp2)
+  @assign e1 = expand(exp1)
+  @assign e2 = expand(exp2)
    (outExp, outType) =
     checkOverloadedBinaryArrayEW2(e1, type1, var1, op, e2, type2, var2, candidates, info)
   return (outExp, outType)
@@ -1098,7 +1098,7 @@ function implicitConstructAndMatch(
   if listLength(matchedfuncs) == 1
     @match _cons((operfn, list(exp1, exp2), var), _) = matchedfuncs
     @assign outType = returnType(operfn)
-    @assign outExp = CALL_EXPRESSION(P_Call.makeTypedCall(
+    @assign outExp = CALL_EXPRESSION(makeTypedCall(
       operfn,
       list(exp1, exp2),
       var,
@@ -1150,7 +1150,7 @@ function implicitConstructAndMatch2(
       P_Function.instFunction(Absyn.CREF_IDENT("'constructor'", nil), scope, paramInfo2)
     @assign e2 =
       CALL_EXPRESSION(NFCall.UNTYPED_CALL(fn_ref, list(exp2), nil, scope))
-     (e2, ty, var) = P_Call.typeCall(e2, 0, paramInfo1)
+     (e2, ty, var) = typeCall(e2, 0, paramInfo1)
      (_, _, mk) = matchTypes(paramType2, ty, e2, false)
     if mk == MatchKind.EXACT
       matchedFns = List{Tuple{M_Function, List{Expression}, VariabilityType}}(
@@ -1716,7 +1716,7 @@ function checkOverloadedUnaryOperator(
   if listLength(exactMatches) == 1
     @match Cons(matchedFunc, _) = exactMatches
     outType = returnType(matchedFunc.func)
-    outExp = CALL_EXPRESSION(P_Call.makeTypedCall(
+    outExp = CALL_EXPRESSION(makeTypedCall(
       matchedFunc.func,
       list(Util.tuple31(a) for a in matchedFunc.args),
       var,
@@ -2622,7 +2622,7 @@ function matchComplexTypes(
           for i = 1:arrayLength(comps1)
             @assign comp1 = component(comps1[i])
             @assign comp2 = component(comps2[i])
-            if P_Component.isTyped(comp2)
+            if isTyped(comp2)
                (_, _, mk) = matchTypes(
                 getType(comp1),
                 getType(comp2),
@@ -3295,7 +3295,7 @@ function getRangeTypeInt(
         if step == 0
           Error.addSourceMessageAndFail(Error.RANGE_TOO_SMALL_STEP, list(String(step)), info)
         end
-        P_Dimension.Dimension.fromInteger(max(
+        fromInteger(max(
           intDiv(stopExp.value - startExp.value, step) + 1,
           0,
         ))
@@ -3309,7 +3309,7 @@ function getRangeTypeInt(
       end
 
       (_, NONE(), _) where {(isEqual(startExp, stopExp))} => begin
-        P_Dimension.Dimension.fromInteger(1)
+        fromInteger(1)
       end
 
       _ => begin
@@ -3334,7 +3334,7 @@ function getRangeTypeInt(
             var,
             variability(step_exp),
           )
-          @assign dim_exp = CALL_EXPRESSION(P_Call.makeTypedCall(
+          @assign dim_exp = CALL_EXPRESSION(makeTypedCall(
             NFBuiltinFuncs.DIV_INT,
             list(dim_exp, step_exp),
             var,
@@ -3375,7 +3375,7 @@ function getRangeTypeReal(
     @match (startExp, stepExp, stopExp) begin
       (REAL_EXPRESSION(__), NONE(), REAL_EXPRESSION(__)) =>
         begin
-          P_Dimension.Dimension.fromInteger(Util.realRangeSize(
+          fromInteger(Util.realRangeSize(
             startExp.value,
             1.0,
             stopExp.value,
@@ -3470,12 +3470,12 @@ end
         else
           0
         end
-        P_Dimension.Dimension.fromInteger(sz)
+        fromInteger(sz)
       end
 
       _ => begin
         if isEqual(startExp, stopExp)
-          @assign dim = P_Dimension.Dimension.fromInteger(1)
+          @assign dim = fromInteger(1)
         else
           @assign var = variabilityMax(
             variability(startExp),
@@ -3516,7 +3516,7 @@ end
     local var::VariabilityType
     @match (startExp, stopExp) begin
       (ENUM_LITERAL_EXPRESSION(__), ENUM_LITERAL_EXPRESSION(__)) => begin
-        P_Dimension.Dimension.fromInteger(max(stopExp.index - startExp.index + 1, 0))
+        fromInteger(max(stopExp.index - startExp.index + 1, 0))
       end
 
       (ENUM_LITERAL_EXPRESSION(index = 1), _) => begin
@@ -3525,7 +3525,7 @@ end
 
       _ => begin
         if isEqual(startExp, stopExp)
-          @assign dim = P_Dimension.Dimension.fromInteger(1)
+          @assign dim = fromInteger(1)
         else
           @assign var = variabilityMax(
             variability(startExp),
@@ -3652,8 +3652,8 @@ function printBindingTypeError(
           list(
             name,
             toString(binding),
-            P_Dimension.Dimension.toStringList(arrayDims(componentType)),
-            P_Dimension.Dimension.toStringList(arrayDims(bindingType)),
+            toStringList(arrayDims(componentType)),
+            toStringList(arrayDims(bindingType)),
           ),
           list(binding_info, comp_info),
         )

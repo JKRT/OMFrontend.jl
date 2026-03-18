@@ -2579,10 +2579,10 @@ function instCrefTypename(cref::ComponentRef, node::InstNode, info::SourceInfo):
    ty = begin
     @match ty begin
       TYPE_BOOLEAN(__)  => begin
-        TYPE_ARRAY(ty, list(P_Dimension.Dimension.BOOLEAN()))
+        TYPE_ARRAY(ty, list(DIMENSION_BOOLEAN()))
       end
       TYPE_ENUMERATION(__)  => begin
-        TYPE_ARRAY(ty, list(P_Dimension.Dimension.ENUM(ty)))
+        TYPE_ARRAY(ty, list(DIMENSION_ENUM(ty)))
       end
       _  => begin
         #Error.assertion(false, getInstanceName() + " got unknown class node " + name(node), sourceInfo())

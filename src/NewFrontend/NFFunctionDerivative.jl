@@ -92,9 +92,9 @@ function typeDerivative(fnDer::FunctionDerivative)
       Error.HIGHER_VARIABILITY_BINDING,
       list(
         "order",
-        P_Prefixes.variabilityString(Variability.CONSTANT),
+        variabilityString(Variability.CONSTANT),
         toString(order),
-        P_Prefixes.variabilityString(var),
+        variabilityString(var),
       ),
       infoVar,
     )

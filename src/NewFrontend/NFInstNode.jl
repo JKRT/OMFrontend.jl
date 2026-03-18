@@ -274,7 +274,7 @@ function isModel(node::InstNode)
         isModel(restriction(P_Pointer.access(node.cls)))
       end
       COMPONENT_NODE(__)  => begin
-        isModel(P_Component.classInstance(P_Pointer.access(node.component)))
+        isModel(classInstance(P_Pointer.access(node.component)))
       end
       _  => begin
         false
@@ -492,7 +492,7 @@ function mergeModifier(mod::Modifier, node::InstNode)
       end
 
       COMPONENT_NODE(__) => begin
-        Pointer.update(node.component, P_Component.mergeModifier(mod, P_Pointer.access(node.component)))
+        Pointer.update(node.component, mergeModifier(mod, P_Pointer.access(node.component)))
         ()
       end
 
@@ -1025,7 +1025,7 @@ function isOuter(node::InstNode)
    isOuter = begin
     @match node begin
       COMPONENT_NODE(__)  => begin
-        P_Component.isOuter(P_Pointer.access(node.component))
+        isOuter(P_Pointer.access(node.component))
       end
 
       CLASS_NODE(__)  => begin
@@ -1050,7 +1050,7 @@ function isInner(node::InstNode)
    isInner = begin
     @match node begin
       COMPONENT_NODE(__)  => begin
-        P_Component.isInner(P_Pointer.access(node.component))
+        isInner(P_Pointer.access(node.component))
       end
 
       CLASS_NODE(__)  => begin
@@ -1075,7 +1075,7 @@ function isOutput(node::InstNode)
    isOutput = begin
     @match node begin
       COMPONENT_NODE(__)  => begin
-        P_Component.isOutput(P_Pointer.access(node.component))
+        isOutput(P_Pointer.access(node.component))
       end
 
       _  => begin
@@ -1600,7 +1600,7 @@ function getDerivedClass(node::Union{CLASS_NODE, COMPONENT_NODE})
    cls =  if cls isa CLASS_NODE
      getClass(getDerivedNode(node))
    else
-     getClass(getDerivedNode(P_Component.classInstance(P_Pointer.access(node.component))))
+     getClass(getDerivedNode(classInstance(P_Pointer.access(node.component))))
    end
 end
 

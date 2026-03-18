@@ -266,9 +266,9 @@ function makeEqualityAssert(
   if isReal(ty)
     @assign exp =
       BINARY_EXPRESSION(lhs_exp, makeSub(ty), rhs_exp)
-    @assign exp = CALL_EXPRESSION(P_Call.makeTypedCall(
+    @assign exp = CALL_EXPRESSION(makeTypedCall(
       NFBuiltinFuncs.ABS_REAL,
-      list(exp),
+      Expression[exp],
       variability(exp),
     ))
     @assign exp = RELATION_EXPRESSION(
@@ -287,7 +287,7 @@ function makeEqualityAssert(
   #=  For any other type, generate assertion for 'lhs == rhs'.
   =#
   @assign equalityAssert =
-    Equation.ASSERT(exp, EQ_ASSERT_STR, NFBuiltin.ASSERTIONLEVEL_ERROR, source)
+    EQUATION_ASSERT(exp, EQ_ASSERT_STR, NFBuiltin.ASSERTIONLEVEL_ERROR, source)
   return equalityAssert
 end
 
@@ -707,9 +707,9 @@ end
 function makeInStreamCall(@nospecialize(streamExp::Expression))::Expression
   local inStreamCall::Expression
 
-  @assign inStreamCall = CALL_EXPRESSION(P_Call.makeTypedCall(
+  @assign inStreamCall = CALL_EXPRESSION(makeTypedCall(
     NFBuiltinFuncs.IN_STREAM,
-    list(streamExp),
+    Expression[streamExp],
     variability(streamExp),
   ))
   return inStreamCall
@@ -745,9 +745,9 @@ function makePositiveMaxCall(
   else
     @assign flow_threshold = flowThreshold
   end
-  @assign positiveMaxCall = CALL_EXPRESSION(P_Call.makeTypedCall(
+  @assign positiveMaxCall = CALL_EXPRESSION(makeTypedCall(
     NFBuiltinFuncs.POSITIVE_MAX_REAL,
-    list(flowExp, flow_threshold),
+    Expression[flowExp, flow_threshold],
     Connector.variability(element),
   ))
   setGlobalRoot(Global.isInStream, SOME(true))
@@ -799,7 +799,7 @@ function evaluateOperatorReductionExp(
 
   @assign evalExp = begin
     @match exp begin
-      CALL_EXPRESSION(call = call && P_Call.TYPED_REDUCTION(__)) => begin
+      CALL_EXPRESSION(call = call && TYPED_REDUCTION(__)) => begin
         @assign ty = typeOf(call.exp)
         for iter in call.iters
            (iter_node, iter_exp) = iter
@@ -808,7 +808,7 @@ function evaluateOperatorReductionExp(
             print("Iteration range in reduction containing connector operator calls must be a parameter expression.")
             fail()
           end
-          @assign iter_exp = Ceval.evalExp(iter_exp)
+          @assign iter_exp = evalExp(iter_exp)
           @assign ty = liftArrayLeftList(
             ty,
             arrayDims(typeOf(iter_exp)),
@@ -816,10 +816,10 @@ function evaluateOperatorReductionExp(
           @assign iters = _cons((iter_node, iter_exp), iters)
         end
         @assign iters = listReverseInPlace(iters)
-        @assign arg = P_ExpandExp.ExpandExp.expandArrayConstructor(call.exp, ty, iters)
-        CALL_EXPRESSION(P_Call.makeTypedCall(
+        @assign arg = expandArrayConstructor(call.exp, ty, iters)
+        CALL_EXPRESSION(makeTypedCall(
           call.fn,
-          list(arg),
+          Expression[arg],
           call.var,
           call.ty,
         ))
@@ -840,7 +840,7 @@ function evaluateOperatorArrayConstructorExp(
 
   local expanded::Bool
 
-   (evalExp, expanded) = P_ExpandExp.ExpandExp.expand(exp)
+   (evalExp, expanded) = expand(exp)
   if !expanded
     Error.addInternalError(
       getInstanceName() +
@@ -1171,9 +1171,9 @@ end
 function makeSmoothCall(@nospecialize(arg::Expression), order::Int)::Expression
   local callExp::Expression
 
-  @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(
+  @assign callExp = CALL_EXPRESSION(makeTypedCall(
     NFBuiltinFuncs.SMOOTH,
-    list(DAE.INTEGER_EXPRESSION(order), arg),
+    Expression[DAE.INTEGER_EXPRESSION(order), arg],
     variability(arg),
   ))
   return callExp

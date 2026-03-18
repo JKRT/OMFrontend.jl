@@ -149,7 +149,7 @@ function isDeleted(variable::Variable)::Bool
   local node::InstNode
   @assign node = node(variable.name)
   @assign deleted =
-    isComponent(node) && P_Component.isDeleted(component(node))
+    isComponent(node) && isDeleted(component(node))
   return deleted
 end
 

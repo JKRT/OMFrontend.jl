@@ -981,7 +981,7 @@ function toFlatStream(branch::Equation_Branch,
         s = toFlatStreamList(branch.body, indent + "  ", s)
         s
       end
-      INVALID_BRANCH(__) => begin
+      EQUATION_INVALID_BRANCH(__) => begin
         toFlatStream(branch.branch, indent, s)
       end
     end
@@ -998,7 +998,7 @@ function toStream(branch::Equation_Branch, indent::String, s)
         s = toStreamList(branch.body, indent + "  ", s)
         s
       end
-      INVALID_BRANCH(__) => begin
+      EQUATION_INVALID_BRANCH(__) => begin
         toStream(branch.branch, indent, s)
       end
     end

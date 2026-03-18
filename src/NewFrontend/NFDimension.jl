@@ -386,7 +386,7 @@ function isEqualKnown(dim1::Dimension, dim2::Dimension)::Bool
       end
 
       _ => begin
-        P_Dimension.Dimension.size(dim1) == P_Dimension.Dimension.size(dim2)
+        size(dim1) == size(dim2)
       end
     end
   end
@@ -460,7 +460,7 @@ function add(a::Dimension, b::Dimension)::Dimension
         DIMENSION_EXP(
           BINARY_EXPRESSION(
             b.exp,
-            OPERATOR(TYPE_INTEGER(), P_NFOperator.Op.ADD),
+            OPERATOR(TYPE_INTEGER(), Op.ADD),
             INTEGER_EXPRESSION(a.size),
           ),
           b.var,
@@ -471,7 +471,7 @@ function add(a::Dimension, b::Dimension)::Dimension
         DIMENSION_EXP(
           BINARY_EXPRESSION(
             a.exp,
-            OPERATOR(TYPE_INTEGER(), P_NFOperator.Op.ADD),
+            OPERATOR(TYPE_INTEGER(), Op.ADD),
             INTEGER_EXPRESSION(b.size),
           ),
           a.var,
@@ -482,7 +482,7 @@ function add(a::Dimension, b::Dimension)::Dimension
         DIMENSION_EXP(
           BINARY_EXPRESSION(
             a.exp,
-            OPERATOR(TYPE_INTEGER(), P_NFOperator.Op.ADD),
+            OPERATOR(TYPE_INTEGER(), Op.ADD),
             b.exp,
           ),
           variabilityMax(a.var, b.var),

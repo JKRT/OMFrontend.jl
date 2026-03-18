@@ -259,7 +259,7 @@ function foldExpParameter(node::InstNode, foldFn::FoldFunc, arg::ArgT) where {Ar
       TYPED_COMPONENT(__) => begin
         @assign arg = foldDims(
           comp.ty,
-          (foldFn) -> P_Dimension.Dimension.foldExp(func = foldFn),
+          (foldFn) -> foldExp(func = foldFn),
           arg,
         )
         @assign cls = getClass(comp.classInst)
@@ -429,8 +429,8 @@ function makeDAEType(fn::M_FUNCTION, boxTypes::Bool = false)::DAE.Type
                           else
                             ty
                           end)
-    @assign pconst = P_Prefixes.variabilityToDAEConst(variability(comp))
-    @assign ppar = P_Prefixes.parallelismToDAE(P_Component.parallelism(comp))
+    @assign pconst = variabilityToDAEConst(variability(comp))
+    @assign ppar = parallelismToDAE(parallelism(comp))
     @assign pdefault = Util.applyOption(
       typedExp(getBinding(comp)),
       toDAE,
@@ -895,7 +895,7 @@ function boxFunctionParameter(component::InstNode)
   local comp::Component
 
   @assign comp = component(component)
-  @assign comp = P_Component.setType(box(getType(comp)), comp)
+  @assign comp = setType(box(getType(comp)), comp)
   return updateComponent!(comp, component)
 end
 
@@ -1154,8 +1154,8 @@ function matchArgVectorized(
         toString(vectArg),
         "",
         toString(argExp),
-        P_Dimension.Dimension.toStringList(vectDims),
-        P_Dimension.Dimension.toStringList(vect_dims),
+        toStringList(vectDims),
+        toStringList(vect_dims),
       ),
       info,
     )
@@ -1207,8 +1207,8 @@ function matchArgs(
       #     name(input_node),
       #     toString(arg_exp),
       #     AbsynUtil.pathString(P_Function.name(func)),
-      #     P_Prefixes.variabilityString(arg_var),
-      #     P_Prefixes.variabilityString(variability(comp)),
+      #     variabilityString(arg_var),
+      #     variabilityString(variability(comp)),
       #   ),
       #   info,
       # )
@@ -2560,7 +2560,7 @@ function paramDirection(@nospecialize(componentArg::InstNode))::DirectionType
   if io != InnerOuter.NOT_INNER_OUTER
     # Error.addSourceMessage(
     #   Error.INNER_OUTER_FORMAL_PARAMETER,
-    #   list(P_Prefixes.innerOuterString(io), name(componentArg)),
+    #   list(innerOuterString(io), name(componentArg)),
     #   info(component),
     # )
     fail()

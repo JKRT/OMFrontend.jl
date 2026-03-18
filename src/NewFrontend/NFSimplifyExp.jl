@@ -228,7 +228,7 @@ function simplifyCall2(call::Call)
 
   ErrorExt.setCheckpoint(getInstanceName())
   try
-     outExp = Ceval.evalCall(call, P_EvalTarget.IGNORE_ERRORS())
+     outExp = evalCall(call, EVALTARGET_IGNORE_ERRORS())
      outExp = stripBindingInfo(outExp)
     ErrorExt.delCheckpoint(getInstanceName())
   catch
@@ -401,11 +401,11 @@ function simplifySize(sizeExp::Expression)
       end
       SIZE_EXPRESSION(__) => begin
          dims = arrayDims(typeOf(sizeExp.exp))
-        if listUtil.all(dims, (x, y=true) -> P_Dimension.Dimension.isKnown(x, y))
+        if listUtil.all(dims, (x, y=true) -> isKnown(x, y))
            exp = makeArray(
             TYPE_ARRAY(
               TYPE_INTEGER(),
-              list(P_Dimension.Dimension.fromInteger(listLength(dims))),
+              list(fromInteger(listLength(dims))),
             ),
             Expression[sizeExp(d) for d in dims],
           )

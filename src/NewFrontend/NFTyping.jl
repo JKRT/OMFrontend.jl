@@ -733,7 +733,7 @@ function typeDimension2(
               #=  If the deduced dimension is unknown, evaluate the binding and try again.
               =#
               if isUnknown(dim) && !(isError(ty_err))
-                 exp = Ceval.evalExp(
+                 exp = evalExp(
                   b.bindingExp,
                   DIMENSION(component, index, b.bindingExp, info),
                 )
@@ -766,7 +766,7 @@ function typeDimension2(
           @match dim begin
             DIMENSION_EXP(exp = exp) => begin
               markStructuralParamsExp(exp)
-               exp = Ceval.evalExp(
+               exp = evalExp(
                 exp,
                 DIMENSION(component, index, exp, info),
               )
@@ -962,9 +962,9 @@ function checkComponentBindingVariability(
       Error.HIGHER_VARIABILITY_BINDING,
       list(
         name,
-        P_Prefixes.variabilityString(comp_eff_var),
+        variabilityString(comp_eff_var),
         "'" + toString(getBinding(component)) + "'",
-        P_Prefixes.variabilityString(bind_eff_var),
+        variabilityString(bind_eff_var),
       ),
       Binding_getInfo(binding),
     )
@@ -1107,9 +1107,9 @@ function typeTypeAttribute(
             Error.HIGHER_VARIABILITY_BINDING,
             list(
               name,
-              P_Prefixes.variabilityString(Variability.PARAMETER),
+              variabilityString(Variability.PARAMETER),
               "'" + toString(binding) + "'",
-              P_Prefixes.variabilityString(variability(binding)),
+              variabilityString(variability(binding)),
             ),
             Binding_getInfo(binding),
           )
@@ -3013,7 +3013,7 @@ end
               #=  The only other kind of expression that's allowed is scalar constants.
               =#
               if isScalarBuiltin(ty) && var == Variability.CONSTANT
-                 outArg = Ceval.evalExp(outArg, Ceval.P_EvalTarget.GENERIC(info))
+                 outArg = evalExp(outArg, EVALTARGET_GENERIC(info))
               else
                 Error.addSourceMessage(
                   Error.EXTERNAL_ARG_WRONG_EXP,
@@ -3091,8 +3091,8 @@ function makeDefaultExternalCall(extDecl::Sections, fnNode::InstNode)::Sections
            args = nil
           for c in comps
              comp = component(c)
-            if !single_output || P_Component.direction(comp) != Direction.OUTPUT
-               ty = P_Component.getType(comp)
+            if !single_output || direction(comp) != Direction.OUTPUT
+               ty = getType(comp)
                exp = CREF_EXPRESSION(
                 ty,
                 fromNode(c, ty),
@@ -3771,7 +3771,7 @@ end
     catch
       bl2 = push!(
         bl2,
-        INVALID_BRANCH(
+        EQUATION_INVALID_BRANCH(
           makeBranch(cond, eql, var),
           ErrorExt.getCheckpointMessages(),
         ),
@@ -3962,7 +3962,7 @@ function typeReinit(
       Error.REINIT_MUST_BE_VAR,
       list(
         toString(crefExp),
-        P_Prefixes.variabilityString(nodeVariability(cref)),
+        variabilityString(nodeVariability(cref)),
       ),
       info,
     )

@@ -94,7 +94,7 @@ function sizeType(@nospecialize(arrayTy::M_Type))::M_Type
   else
     @assign sizeTy = TYPE_ARRAY(
       TYPE_INTEGER(),
-      list(P_Dimension.Dimension.fromInteger(dimensionCount(arrayTy))),
+      list(fromInteger(dimensionCount(arrayTy))),
     )
   end
   #=  Return unknown type if the type is unknown, to avoid returning Array[0]

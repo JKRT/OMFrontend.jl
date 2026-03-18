@@ -917,8 +917,8 @@ function evalTypename(@nospecialize(ty::M_Type), @nospecialize(originExp::Expres
   =#
   #=  them as typenames when used as e.g. dimensions.
   =#
-   exp = if P_EvalTarget.isRange(target)
-    P_ExpandExp.ExpandExp.expandTypename(ty)
+   exp = if isRange(target)
+    expandTypename(ty)
   else
     originExp
   end
@@ -1244,7 +1244,7 @@ function evalBinaryAdd(@nospecialize(exp1::Expression), @nospecialize(exp2::Expr
       (
         ARRAY_EXPRESSION(__),
         ARRAY_EXPRESSION(__),
-      ) where {(listLength(exp1.elements) == listLength(exp2.elements))} => begin
+      ) where {(length(exp1.elements) == length(exp2.elements))} => begin
         makeArray(
           exp1.ty,
           list(@do_threaded_for evalBinaryAdd(e1, e2) (e1, e2) (
@@ -1325,10 +1325,18 @@ function evalBinaryMul(@nospecialize(exp1::Expression), @nospecialize(exp2::Expr
         REAL_EXPRESSION(exp1.value * exp2.value)
       end
 
+      (INTEGER_EXPRESSION(__), REAL_EXPRESSION(__)) => begin
+        REAL_EXPRESSION(Float64(exp1.value) * exp2.value)
+      end
+
+      (REAL_EXPRESSION(__), INTEGER_EXPRESSION(__)) => begin
+        REAL_EXPRESSION(exp1.value * Float64(exp2.value))
+      end
+
       (
         ARRAY_EXPRESSION(__),
         ARRAY_EXPRESSION(__),
-      ) where {(listLength(exp1.elements) == listLength(exp2.elements))} => begin
+      ) where {(length(exp1.elements) == length(exp2.elements))} => begin
         makeArray(
           exp1.ty,
           list(@do_threaded_for evalBinaryMul(e1, e2) (e1, e2) (
@@ -1359,7 +1367,7 @@ function evalBinaryDiv(@nospecialize(exp1::Expression), @nospecialize(exp2::Expr
    exp = begin
     @match (exp1, exp2) begin
       (_, REAL_EXPRESSION(0.0)) => begin
-        if P_EvalTarget.hasInfo(target)
+        if hasInfo(target)
           Error.addSourceMessage(
             Error.DIVISION_BY_ZERO,
             list(
@@ -1386,7 +1394,7 @@ function evalBinaryDiv(@nospecialize(exp1::Expression), @nospecialize(exp2::Expr
       (
         ARRAY_EXPRESSION(__),
         ARRAY_EXPRESSION(__),
-      ) where {(listLength(exp1.elements) == listLength(exp2.elements))} => begin
+      ) where {(length(exp1.elements) == length(exp2.elements))} => begin
         makeArray(
           exp1.ty,
           list(@do_threaded_for evalBinaryDiv(e1, e2, target) (e1, e2) (
@@ -1423,7 +1431,7 @@ function evalBinaryPow(@nospecialize(exp1::Expression), @nospecialize(exp2::Expr
       (
         ARRAY_EXPRESSION(__),
         ARRAY_EXPRESSION(__),
-      ) where {(listLength(exp1.elements) == listLength(exp2.elements))} => begin
+      ) where {(length(exp1.elements) == length(exp2.elements))} => begin
         makeArray(
           exp1.ty,
           list(@do_threaded_for evalBinaryPow(e1, e2) (e1, e2) (
@@ -1482,7 +1490,7 @@ function evalBinaryArrayScalar(
       ARRAY_EXPRESSION(__) => begin
         ARRAY_EXPRESSION(
           arrayExp.ty,
-          listArray(list(evalBinaryArrayScalar(e, scalarExp, opFunc) for e in arrayExp.elements)),
+          Expression[evalBinaryArrayScalar(e, scalarExp, opFunc) for e in arrayExp.elements],
           true,
         )
       end
@@ -1497,14 +1505,14 @@ end
 function evalBinaryMulVectorMatrix(@nospecialize(vectorExp::Expression), @nospecialize(matrixExp::Expression))::Expression
   local exp::Expression
 
-  local expl::List{Expression}
+  local expl::Vector{Expression}
   local m::Dimension
   local ty::M_Type
 
    exp = begin
     @match transposeArray(matrixExp) begin
       ARRAY_EXPRESSION(TYPE_ARRAY(ty, m <| _ <| nil()), expl) => begin
-         expl = list(evalBinaryScalarProduct(vectorExp, e) for e in expl)
+         expl = Expression[evalBinaryScalarProduct(vectorExp, e) for e in expl]
         makeArray(TYPE_ARRAY(ty, list(m)), expl, literal = true)
       end
 
@@ -1525,14 +1533,14 @@ end
 function evalBinaryMulMatrixVector(@nospecialize(matrixExp::Expression), @nospecialize(vectorExp::Expression))::Expression
   local exp::Expression
 
-  local expl::List{Expression}
+  local expl::Vector{Expression}
   local n::Dimension
   local ty::M_Type
 
    exp = begin
     @match matrixExp begin
       ARRAY_EXPRESSION(TYPE_ARRAY(ty, n <| _ <| nil()), expl) => begin
-         expl = list(evalBinaryScalarProduct(e, vectorExp) for e in expl)
+         expl = Expression[evalBinaryScalarProduct(e, vectorExp) for e in expl]
         makeArray(TYPE_ARRAY(ty, list(n)), expl, literal = true)
       end
 
@@ -1555,17 +1563,13 @@ function evalBinaryScalarProduct(@nospecialize(exp1::Expression), @nospecialize(
 
    exp = begin
     local elem_ty::M_Type
-    local e2::Expression
-    local rest_e2::List{Expression}
     @match (exp1, exp2) begin
       (
         ARRAY_EXPRESSION(ty = TYPE_ARRAY(elem_ty)),
         ARRAY_EXPRESSION(__),
       ) where {(length(exp1.elements) == length(exp2.elements))} => begin
          exp = makeZero(elem_ty)
-         rest_e2 = arrayList(exp2.elements)
-        for e1 in exp1.elements
-          @match _cons(e2, rest_e2) = rest_e2
+        for (e1, e2) in zip(exp1.elements, exp2.elements)
            exp = evalBinaryAdd(exp, evalBinaryMul(e1, e2))
         end
         exp
@@ -1589,8 +1593,8 @@ function evalBinaryMatrixProduct(@nospecialize(exp1::Expression), @nospecialize(
   local exp::Expression
 
   local e2::Expression
-  local expl1::List{Expression}
-  local expl2::List{Expression}
+  local expl1::Vector{Expression}
+  local expl2::Vector{Expression}
   local elem_ty::M_Type
   local row_ty::M_Type
   local mat_ty::M_Type
@@ -1605,17 +1609,17 @@ function evalBinaryMatrixProduct(@nospecialize(exp1::Expression), @nospecialize(
         ARRAY_EXPRESSION(TYPE_ARRAY(_, p <| _ <| nil()), expl2),
       ) => begin
          mat_ty = TYPE_ARRAY(elem_ty, list(n, p))
-        if listEmpty(expl2)
+        if isempty(expl2)
            exp = makeZero(mat_ty)
         else
            row_ty = TYPE_ARRAY(elem_ty, list(p))
-           expl1 = list(
+           expl1 = Expression[
             makeArray(
               row_ty,
-              list(evalBinaryScalarProduct(r, c) for c in expl2),
+              Expression[evalBinaryScalarProduct(r, c) for c in expl2],
               literal = true,
             ) for r in expl1
-          )
+          ]
            exp = makeArray(mat_ty, expl1, literal = true)
         end
         exp
@@ -1644,7 +1648,7 @@ function evalBinaryPowMatrix(@nospecialize(matrixExp::Expression), @nospecialize
     @match (matrixExp, nExp) begin
       (ARRAY_EXPRESSION(__), INTEGER_EXPRESSION(value = 0)) =>
         begin
-           n = P_Dimension.Dimension.size(listHead(arrayDims(matrixExp.ty)))
+           n = size(listHead(arrayDims(matrixExp.ty)))
           makeIdentityMatrix(n, TYPE_REAL())
         end
 
@@ -1834,7 +1838,7 @@ function evalLogicBinaryAnd(
   local exp::Expression
 
    exp = begin
-    local expl::List{Expression}
+    local expl
     @matchcontinue exp1 begin
       BOOLEAN_EXPRESSION(__) => begin
         if exp1.value
@@ -1846,11 +1850,7 @@ function evalLogicBinaryAnd(
 
       ARRAY_EXPRESSION(__) => begin
         @match ARRAY_EXPRESSION(elements = expl) = evalExp_impl(exp2, target)
-         expl =
-          list(@do_threaded_for evalLogicBinaryAnd(e1, e2, target) (e1, e2) (
-            exp1.elements,
-            expl,
-          ))
+         expl = Expression[evalLogicBinaryAnd(e1, e2, target) for (e1, e2) in zip(exp1.elements, expl)]
         makeArray(
           setArrayElementType(exp1.ty, TYPE_BOOLEAN()),
           expl,
@@ -1880,7 +1880,7 @@ function evalLogicBinaryOr(
   local exp::Expression
 
    exp = begin
-    local expl::List{Expression}
+    local expl
     @match exp1 begin
       BOOLEAN_EXPRESSION(__) => begin
         if exp1.value
@@ -1892,11 +1892,7 @@ function evalLogicBinaryOr(
 
       ARRAY_EXPRESSION(__) => begin
         @match ARRAY_EXPRESSION(elements = expl) = evalExp_impl(exp2, target)
-         expl =
-          list(@do_threaded_for evalLogicBinaryOr(e1, e2, target) (e1, e2) (
-            exp1.elements,
-            expl,
-          ))
+         expl = Expression[evalLogicBinaryOr(e1, e2, target) for (e1, e2) in zip(exp1.elements, expl)]
         makeArray(
           setArrayElementType(exp1.ty, TYPE_BOOLEAN()),
           expl,
@@ -2748,7 +2744,7 @@ function evalBuiltinAcos(@nospecialize(arg::Expression), target::EvalTarget)::Ex
     @match arg begin
       REAL_EXPRESSION(value = x) => begin
         if x < (-1.0) || x > 1.0
-          if P_EvalTarget.hasInfo(target)
+          if hasInfo(target)
             Error.addSourceMessage(
               Error.ARGUMENT_OUT_OF_RANGE,
               list(String(x), "acos", "-1 <= x <= 1"),
@@ -2773,7 +2769,7 @@ function evalBuiltinArray(args::List{Expression})::Expression
   local result::Expression
   local ty::M_Type
    ty = typeOf(listHead(args))
-   ty = liftArrayLeft(ty, P_Dimension.Dimension.fromInteger(listLength(args)))
+   ty = liftArrayLeft(ty, fromInteger(listLength(args)))
    result = makeArray(ty, args, literal = true)
   return result
 end
@@ -2787,7 +2783,7 @@ function evalBuiltinAsin(@nospecialize(arg::Expression), target::EvalTarget)::Ex
     @match arg begin
       REAL_EXPRESSION(value = x) => begin
         if x < (-1.0) || x > 1.0
-          if P_EvalTarget.hasInfo(target)
+          if hasInfo(target)
             Error.addSourceMessage(
               Error.ARGUMENT_OUT_OF_RANGE,
               list(String(x), "asin", "-1 <= x <= 1"),
@@ -2987,37 +2983,26 @@ function evalBuiltinDiagonal(@nospecialize(arg::Expression))::Expression
   local elem_ty::M_Type
   local row_ty::M_Type
   local zero::Expression
-  local elems::List{Expression}
-  local row::List{Expression}
-  local rows::List{Expression} = nil
+  local elems::Vector{Expression}
   local n::Int
-  local i::Int = 1
   local e_lit::Bool
   local arg_lit::Bool = true
    result = begin
     @match arg begin
-      ARRAY_EXPRESSION(elements = nil()) => begin
+      ARRAY_EXPRESSION(__) where {isempty(arg.elements)} => begin
         arg
       end
       ARRAY_EXPRESSION(elements = elems) => begin
-         n = listLength(elems)
-        elem_ty = typeOf(listHead(elems))
+         n = length(elems)
+        elem_ty = typeOf(first(elems))
         row_ty = liftArrayLeft(elem_ty, fromInteger(n))
          zero = makeZero(elem_ty)
-        for e in listReverse(elems)
-           row = nil
-          for j = 2:i
-             row = _cons(zero, row)
-          end
-           row = _cons(e, row)
+        local rows = Expression[]
+        for (idx, e) in enumerate(elems)
+          local row = Expression[j == idx ? e : zero for j in 1:n]
            e_lit = isLiteral(e)
            arg_lit = arg_lit && e_lit
-          for j = i:(n - 1)
-             row = _cons(zero, row)
-          end
-           i = i + 1
-           rows =
-            _cons(makeArray(row_ty, row; literal = e_lit), rows)
+          push!(rows, makeArray(row_ty, row; literal = e_lit))
         end
         makeArray(
           liftArrayLeft(row_ty, fromInteger(n)),
@@ -3044,7 +3029,7 @@ function evalBuiltinDiv(args::Vector{Expression}, target::EvalTarget)::Expressio
     @match args begin
       [INTEGER_EXPRESSION(ix), INTEGER_EXPRESSION(iy)] => begin
         if iy == 0
-          if P_EvalTarget.hasInfo(target)
+          if hasInfo(target)
             Error.addSourceMessage(
               Error.DIVISION_BY_ZERO,
               list(String(ix), String(iy)),
@@ -3220,7 +3205,7 @@ function evalBuiltinLog10(@nospecialize(arg::Expression), target::EvalTarget)::E
     @match arg begin
       REAL_EXPRESSION(value = x) => begin
         if x <= 0.0
-          if P_EvalTarget.hasInfo(target)
+          if hasInfo(target)
             Error.addSourceMessage(
               Error.ARGUMENT_OUT_OF_RANGE,
               list(String(x), "log10", "x > 0"),
@@ -3250,7 +3235,7 @@ function evalBuiltinLog(@nospecialize(arg::Expression), target::EvalTarget)::Exp
     @match arg begin
       REAL_EXPRESSION(value = x) => begin
         if x <= 0.0
-          if P_EvalTarget.hasInfo(target)
+          if hasInfo(target)
             Error.addSourceMessage(
               Error.ARGUMENT_OUT_OF_RANGE,
               list(String(x), "log", "x > 0"),
@@ -3275,7 +3260,6 @@ function evalBuiltinMatrix(@nospecialize(arg::Expression))::Expression
   local result::Expression
    result = begin
     local dim_count::Int
-    local expl::List{Expression}
     local dim1::Dimension
     local dim2::Dimension
     local ty::M_Type
@@ -3289,7 +3273,7 @@ function evalBuiltinMatrix(@nospecialize(arg::Expression))::Expression
         else
           @match _cons(dim1, _cons(dim2, _)) = arrayDims(ty)
            ty = liftArrayLeft(arrayElementType(ty), dim2)
-           expl = list(evalBuiltinMatrix2(e, ty) for e in arg.elements)
+          local expl = Expression[evalBuiltinMatrix2(e, ty) for e in arg.elements]
            ty = liftArrayLeft(ty, dim1)
            result = makeArray(ty, expl)
         end
@@ -3446,7 +3430,7 @@ function evalBuiltinMin(args::List{Expression}, fn::M_Function)::Expression
           EMPTY(ty),
         )
         if isEmpty(result)
-           result = CALL_EXPRESSION(P_Call.makeTypedCall(
+           result = CALL_EXPRESSION(makeTypedCall(
             fn,
             list(makeEmptyArray(ty)),
             Variability.CONSTANT,
@@ -3678,7 +3662,7 @@ function evalBuiltinRem(args::List{Expression}, target::EvalTarget)::Expression
     @match (x, y) begin
       (INTEGER_EXPRESSION(__), INTEGER_EXPRESSION(__)) => begin
         if y.value == 0
-          if P_EvalTarget.hasInfo(target)
+          if hasInfo(target)
             Error.addSourceMessage(
               Error.REM_ARG_ZERO,
               list(String(x.value), String(y.value)),
@@ -3692,7 +3676,7 @@ function evalBuiltinRem(args::List{Expression}, target::EvalTarget)::Expression
 
       (REAL_EXPRESSION(__), REAL_EXPRESSION(__)) => begin
         if y.value == 0.0
-          if P_EvalTarget.hasInfo(target)
+          if hasInfo(target)
             Error.addSourceMessage(
               Error.REM_ARG_ZERO,
               list(String(x.value), String(y.value)),
@@ -3820,27 +3804,27 @@ function evalBuiltinSkew(@nospecialize(arg::Expression))::Expression
     @match arg begin
       ARRAY_EXPRESSION(
         ty = ty,
-        elements = x1 <| x2 <| x3 <| nil(),
         literal = literal,
-      ) => begin
+      ) where {length(arg.elements) == 3} => begin
+         x1, x2, x3 = arg.elements[1], arg.elements[2], arg.elements[3]
          zero = makeZero(arrayElementType(ty))
          y1 = makeArray(
           ty,
-          list(zero, negate(x3), x2),
+          Expression[zero, negate(x3), x2],
           literal,
         )
          y2 = makeArray(
           ty,
-          list(x3, zero, negate(x1)),
+          Expression[x3, zero, negate(x1)],
           literal,
         )
          y3 = makeArray(
           ty,
-          list(negate(x2), x1, zero),
+          Expression[negate(x2), x1, zero],
           literal,
         )
-         ty = liftArrayLeft(ty, P_Dimension.Dimension.fromInteger(3))
-        makeArray(ty, list(y1, y2, y3), literal)
+         ty = liftArrayLeft(ty, fromInteger(3))
+        makeArray(ty, Expression[y1, y2, y3], literal)
       end
 
       _ => begin
@@ -4033,36 +4017,24 @@ end
 function evalBuiltinSymmetric(@nospecialize(arg::Expression))::Expression
   local result::Expression
 
-  local mat::Vector{Array{Expression}}
   local n::Int
   local row_ty::M_Type
-  local expl::List{Expression}
-  local accum::List{Expression} = nil
 
    result = begin
     @match arg begin
       ARRAY_EXPRESSION(__) where {(isMatrix(arg.ty))} => begin
-         mat = listArray(List(
-          listArray(arrayElements(row))
-          for row in arrayElements(arg)
-        ))
-         n = arrayLength(mat)
-         row_ty = unliftArray(arg.ty)
-        for i = n:(-1):1
-           expl = nil
-          for j = n:(-1):1
-             expl = _cons(if i > j
-              arrayGet(mat[j], i)
-            else
-              arrayGet(mat[i], j)
-            end, expl)
-          end
-           accum = _cons(
-            makeArray(row_ty, expl, literal = true),
-            accum,
-          )
+        local mat = Vector{Vector{Expression}}(undef, length(arg.elements))
+        for (k, row) in enumerate(arg.elements)
+          mat[k] = arrayElements(row)
         end
-        makeArray(arg.ty, accum, literal = true)
+         n = length(mat)
+         row_ty = unliftArray(arg.ty)
+        local rows = Expression[]
+        for i in 1:n
+          local row_elems = Expression[i > j ? mat[j][i] : mat[i][j] for j in 1:n]
+          push!(rows, makeArray(row_ty, row_elems, literal = true))
+        end
+        makeArray(arg.ty, rows, literal = true)
       end
 
       _ => begin
@@ -4114,25 +4086,22 @@ function evalBuiltinTranspose(@nospecialize(arg::Expression))::Expression
   local result::Expression
   local dim1::Dimension
   local dim2::Dimension
-  local rest_dims::List{Dimension}
   local ty::M_Type
-  local arr::List{Expression}
-  local arrl::List{List{Expression}}
   local literal::Bool
   result = begin
     @match arg begin
       ARRAY_EXPRESSION(
-        ty = TYPE_ARRAY(elementType = ty, dimensions = dim1 <| dim2 <| rest_dims),
-        elements = arr,
+        ty = TYPE_ARRAY(elementType = ty, dimensions = dim1 <| dim2 <| _),
         literal = literal,
       ) => begin
-        arrl = list(arrayElements(e) for e in arr)
-        arrl = ListUtil.transposeList(arrl)
+        local mat = [arrayElements(e) for e in arg.elements]
+        local nrows = length(mat)
+        local ncols = nrows > 0 ? length(mat[1]) : 0
+        local transposed = [Expression[mat[i][j] for i in 1:nrows] for j in 1:ncols]
         ty = liftArrayLeft(ty, dim1)
-        arr =
-          list(makeArray(ty, expl, literal = literal) for expl in arrl)
+        local new_rows = Expression[makeArray(ty, col, literal = literal) for col in transposed]
         ty = liftArrayLeft(ty, dim2)
-        makeArray(ty, arr, literal = literal)
+        makeArray(ty, new_rows, literal = literal)
       end
       _ => begin
         printWrongArgsError(getInstanceName(), list(arg), sourceInfo())
@@ -4152,7 +4121,7 @@ function evalBuiltinVector(@nospecialize(arg::Expression))::Expression
    expl = fold(arg, evalBuiltinVector2, nil)
    ty = liftArrayLeft(
     arrayElementType(typeOf(arg)),
-    P_Dimension.Dimension.fromInteger(listLength(expl)),
+    fromInteger(listLength(expl)),
   )
    result = makeArray(ty, listReverse(expl), literal = true)
   return result
@@ -4875,12 +4844,13 @@ function evalCatGetFlatArray(@nospecialize(e::Expression), dim::Int, getArrayCon
   local outDims::List{Int} = nil
   local outExps::List{Expression} = nil
   if dim == 1
-    outExps = getArrayContents(e)
-    outDims = list(listLength(outExps))
+    local contents = getArrayContents(e)
+    outExps = arrayList(contents)
+    outDims = list(length(contents))
     return (outExps, outDims)
   end
   i = 0
-  for exp in listReverse(getArrayContents(e))
+  for exp in reverse(getArrayContents(e))
     (arr, dims) = evalCatGetFlatArray(exp, dim - 1, getArrayContents::Function, toString::Function)
     if listEmpty(outDims)
       outDims = dims

@@ -152,7 +152,7 @@ function makeRecordExp(clsNode::InstNode)::Expression
     getType(cls, clsNode)
   @assign fields = getComponents(classTree(cls))
   @assign args = List(
-    getExp(P_Component.getImplicitBinding(component(f)))
+    getExp(getImplicitBinding(component(f)))
     for f in fields
   )
   @assign exp = makeRecord(scopePath(ty_node), ty, args)

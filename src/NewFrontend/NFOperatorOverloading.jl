@@ -174,7 +174,7 @@ function patchOperatorRecordConstructorBinding(fn::M_Function)::M_Function
     output_binding,
     (fn) -> patchOperatorRecordConstructorBinding_traverser(constructorFn = fn),
   )
-  @assign output_comp = P_Component.setBinding(output_binding, output_comp)
+  @assign output_comp = setBinding(output_binding, output_comp)
   @assign output_node = updateComponent!(output_comp, output_node)
   return fn
 end
@@ -226,7 +226,7 @@ function patchOperatorRecordConstructorBinding_traverser(
   @assign outExp = begin
     @match exp begin
       CALL_EXPRESSION(
-        call = P_Call.TYPED_CALL(fn = fn, ty = ty, arguments = args),
+        call = TYPED_CALL(fn = fn, ty = ty, arguments = args),
       ) where {(referenceEq(constructorFn.node, fn.node))} => begin
         makeRecord(P_Function.name(constructorFn), ty, args)
       end

@@ -137,7 +137,7 @@ function makeDAEVar(
           DAE.VARIABLE(),
           DAE.VarDirection.BIDIR(),
           DAE.NON_PARALLEL(),
-          P_Prefixes.visibilityToDAE(vis),
+          visibilityToDAE(vis),
           dty,
           binding,
           ddims,
@@ -1541,7 +1541,7 @@ function convertExternalDeclArg(@nospecialize(exp::Expression))::DAE.ExtArg
       CREF_EXPRESSION(cref = cref && COMPONENT_REF_CREF(__)) =>
         begin
           @assign dir =
-            P_Prefixes.directionToAbsyn(P_Component.direction(component(cref.node)))
+            directionToAbsyn(direction(component(cref.node)))
           DAE.ExtArg.EXTARG(
             toDAE(cref),
             dir,
@@ -1580,7 +1580,7 @@ function convertExternalDeclOutput(cref::ComponentRef)::DAE.ExtArg
     @match cref begin
       CREF(__) => begin
         @assign dir =
-          P_Prefixes.directionToAbsyn(P_Component.direction(component(cref.node)))
+          directionToAbsyn(direction(component(cref.node)))
         DAE.ExtArg.EXTARG(toDAE(cref), dir, toDAE(cref.ty))
       end
 
@@ -1623,7 +1623,7 @@ function makeTypeVar(component::InstNode)::DAE.Var
   local attr::Attributes
 
   @assign comp = component(resolveOuter(component))
-  @assign attr = P_Component.getAttributes(comp)
+  @assign attr = getAttributes(comp)
   @assign typeVar = DAE.TYPES_VAR(
     name(component),
     toDAE(attr, visibility(component)),

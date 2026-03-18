@@ -225,7 +225,7 @@ function toFlatStream(stmt::Statement, indent::String, s; inFunction = false)
 end
 
 function toStreamList(
-  stmtl::List{<:Statement},
+  stmtl::Union{List{<:Statement}, Vector{<:Statement}},
   indent::String,
   s,
 )

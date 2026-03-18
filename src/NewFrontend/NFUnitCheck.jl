@@ -338,9 +338,9 @@ function foldEquation2(
       EQUATION_EQUALITY(
         lhs = lhs && TUPLE_EXPRESSION(__),
         rhs = rhs && CALL_EXPRESSION(__),
-      ) where {(!isBuiltin(P_Call.typedFunction(rhs.call)))} => begin
+      ) where {(!isBuiltin(typedFunction(rhs.call)))} => begin
         @assign fn_name =
-          AbsynUtil.pathString(AbsynUtil.makeNotFullyQualified(P_Call.functionName(rhs.call)))
+          AbsynUtil.pathString(AbsynUtil.makeNotFullyQualified(functionName(rhs.call)))
          (_, out_vars, _, out_units) = getCallUnits(fn_name, rhs.call, fnCache)
          (htCr2U, htS2U, htU2S, fnCache, icu1) = foldCallArg1(
           lhs.elements,
@@ -360,9 +360,9 @@ function foldEquation2(
 
       EQUATION_EQUALITY(
         rhs = rhs && CALL_EXPRESSION(__),
-      ) where {(!isBuiltin(P_Call.typedFunction(rhs.call)))} => begin
+      ) where {(!isBuiltin(typedFunction(rhs.call)))} => begin
         @assign fn_name =
-          AbsynUtil.pathString(AbsynUtil.makeNotFullyQualified(P_Call.functionName(rhs.call)))
+          AbsynUtil.pathString(AbsynUtil.makeNotFullyQualified(functionName(rhs.call)))
          (_, out_vars, _, out_units, fnCache) =
           getCallUnits(fn_name, rhs.call, fnCache)
          (unit1, htCr2U, htS2U, htU2S, fnCache, _) =
@@ -918,8 +918,8 @@ function insertUnitInEquationCall(
   local var_names::List{String}
   local unit_names::List{String}
 
-  @assign fn_path = P_Call.functionName(call)
-  @assign call_args = P_Call.arguments(call)
+  @assign fn_path = functionName(call)
+  @assign call_args = arguments(call)
    (unit, inconsistentUnits) = begin
     @matchcontinue fn_path begin
       Absyn.IDENT("pre") => begin
@@ -977,7 +977,7 @@ function insertUnitInEquationCall(
         (op_unit, inconsistentUnits)
       end
 
-      Absyn.IDENT(__) where {(isBuiltin(P_Call.typedFunction(call)))} => begin
+      Absyn.IDENT(__) where {(isBuiltin(typedFunction(call)))} => begin
          (htCr2U, htS2U, htU2S, fnCache, inconsistentUnits) =
           foldCallArg(call_args, htCr2U, htS2U, htU2S, fnCache)
         (Unit.MASTER(nil), inconsistentUnits)
@@ -1039,7 +1039,7 @@ function getCallUnits(
   try
     @assign args = BaseHashTable.get(fnName, fnCache)
   catch
-    @assign args = parseFunctionUnits(fnName, P_Call.typedFunction(call))
+    @assign args = parseFunctionUnits(fnName, typedFunction(call))
     @assign outFnCache = BaseHashTable.addUnique((fnName, args), outFnCache)
   end
   @match Functionargs.FUNCTIONUNITS(_, inputVars, outputVars, inputUnits, outputUnits) =
@@ -1056,9 +1056,9 @@ function parseFunctionUnits(funcName::String, func::M_Function)::Functionargs
   local in_args::List{String}
   local out_args::List{String}
   in_units =
-    list(P_Component.getUnitAttribute(component(p), "NONE") for p in func.inputs)
+    list(getUnitAttribute(component(p), "NONE") for p in func.inputs)
   out_units = List(
-    P_Component.getUnitAttribute(component(p), "NONE") for p in func.outputs
+    getUnitAttribute(component(p), "NONE") for p in func.outputs
   )
   in_args = list(name(p) for p in func.inputs)
   out_args = list(name(p) for p in func.outputs)

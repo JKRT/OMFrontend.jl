@@ -325,7 +325,7 @@ function nthRecordElement(index::Int, @nospecialize(recordExp::Expression)) ::Ex
 
       ARRAY_EXPRESSION(__)  => begin
         expV = Expression[nthRecordElement(index, e) for e in recordExp.elements]
-        makeArray(setArrayElementType(recordExp.ty, typeOf(first(expV))), expl)
+        makeArray(setArrayElementType(recordExp.ty, typeOf(first(expV))), expV)
       end
 
       RECORD_ELEMENT_EXPRESSION(ty = TYPE_ARRAY(elementType = TYPE_COMPLEX(cls = node)))  => begin
@@ -476,7 +476,7 @@ function enumIndexExp(@nospecialize(enumExp::Expression)) ::Expression
       end
 
       _  => begin
-        CALL_EXPRESSION(makeTypedCall(NFBuiltinFuncs.INTEGER_ENUM, list(enumExp), variability(enumExp)))
+        CALL_EXPRESSION(makeTypedCall(NFBuiltinFuncs.INTEGER_ENUM, Expression[enumExp], variability(enumExp)))
       end
     end
   end
@@ -647,7 +647,7 @@ end
       end
 
       RELATION_EXPRESSION(__)  => begin
-        P_Prefixes.variabilityMin(variabilityMax(variability(exp.exp1), variability(exp.exp2)), Variability.DISCRETE)
+        variabilityMin(variabilityMax(variability(exp.exp1), variability(exp.exp2)), Variability.DISCRETE)
       end
 
       IF_EXPRESSION(__)  => begin
@@ -936,7 +936,7 @@ function negate(@nospecialize(exp::Expression)) ::Expression
       end
 
       _  => begin
-        UNARY_EXPRESSION(OPERATOR(typeOf(exp), P_NFOperator.Op.UMINUS), exp)
+        UNARY_EXPRESSION(OPERATOR(typeOf(exp), Op.UMINUS), exp)
       end
     end
   end
@@ -1018,7 +1018,7 @@ function makeMinValue(@nospecialize(ty::M_Type)) ::Expression
    exp = begin
     @match ty begin
       TYPE_REAL(__)  => begin
-        REAL(-System.realMaxLit())
+        REAL_EXPRESSION(-System.realMaxLit())
       end
 
       TYPE_INTEGER(__)  => begin
@@ -1094,12 +1094,12 @@ end
 function makeOperatorRecordZero(recordNode::InstNode) ::Expression
   local zeroExp::Expression
   local op_node::InstNode
-  local fn::P_Function.P_Function
+  local fn::M_FUNCTION
   @match ENTRY_INFO(op_node, _) = lookupElement("'0'", getClass(recordNode))
-  P_Function.instFunctionNode(op_node)
-  @match list(fn) = P_Function.P_Function.typeNodeCache(op_node)
+  instFunctionNode(op_node)
+  @match list(fn) = typeNodeCache(op_node)
   zeroExp = CALL_EXPRESSION(makeTypedCall(fn, nil, Variability.CONSTANT))
-  zeroExp = Ceval.evalExp(zeroExp)
+  zeroExp = evalExp(zeroExp)
   zeroExp
 end
 
@@ -4273,7 +4273,7 @@ end
       end
 
       CLKCONST_EXPRESSION(__)  => begin
-        DAE.CLKCONST_EXPRESSION(P_ClockKind.toDAE(exp.clk))
+        DAE.CLKCONST_EXPRESSION(toDAE(exp.clk))
       end
 
       CREF_EXPRESSION(__)  => begin
@@ -4281,7 +4281,7 @@ end
       end
 
       TYPENAME_EXPRESSION(__)  => begin
-        toDAE(P_ExpandExp.ExpandExp.expandTypename(exp.ty))
+        toDAE(expandTypename(exp.ty))
       end
 
       ARRAY_EXPRESSION(__)  => begin
@@ -4380,11 +4380,15 @@ end
 
       PARTIAL_FUNCTION_APPLICATION_EXPRESSION(__)  => begin
         @match Cons{M_Function}(fn, _) = typeRefCache(exp.fn)
-        DAE.PARTEVALFUNCTION(P_Function.nameConsiderBuiltin(fn), list(toDAE(arg) for arg in exp.args), toDAE(exp.ty), toDAE(TYPE_FUNCTION(fn, FunctionTYPE_FUNCTIONAL_VARIABLE)))
+        DAE.PARTEVALFUNCTION(nameConsiderBuiltin(fn), list(toDAE(arg) for arg in exp.args), toDAE(exp.ty), toDAE(TYPE_FUNCTION(fn, FunctionTYPE_FUNCTIONAL_VARIABLE)))
       end
 
       BINDING_EXP(__)  => begin
         toDAE(exp.exp)
+      end
+
+      MUTABLE_EXPRESSION(__)  => begin
+        toDAE(P_Pointer.access(exp.exp))
       end
 
       _  => begin
@@ -4830,7 +4834,7 @@ end
       end
 
       CLKCONST_EXPRESSION(clk)  => begin
-        P_ClockKind.toString(clk)
+        toString(clk)
       end
 
       CREF_EXPRESSION(__)  => begin
@@ -6309,7 +6313,7 @@ end
 
       CLKCONST_EXPRESSION(clk1)  => begin
         @match CLKCONST_EXPRESSION(clk2) = exp2
-        P_ClockKind.compare(clk1, clk2)
+        compare(clk1, clk2)
       end
 
       PARTIAL_FUNCTION_APPLICATION_EXPRESSION(__)  => begin

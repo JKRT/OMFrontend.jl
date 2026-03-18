@@ -841,7 +841,7 @@ function vectorizeAlgorithm(
                 P_Pointer.create(ITERATOR_COMPONENT(
                   TYPE_INTEGER(),
                   Variability.IMPLICITLY_DISCRETE,
-                  P_Component.info(P_Pointer.access(prefix_node.component)),
+                  info(P_Pointer.access(prefix_node.component)),
                 )),
                 prefix_node.parent,
                 NORMAL_COMP(),

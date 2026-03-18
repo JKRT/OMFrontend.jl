@@ -84,7 +84,11 @@ function workload()
   ]
   for p in precompile_model_names
     @info "Translating: $(p)"
-    @time flattenModelInMSL_TST(string(precompile_prefix, ".", p); MSL_V = "MSL_4_0_0")
+    try
+      @time flattenModelInMSL_TST(string(precompile_prefix, ".", p); MSL_V = "MSL_4_0_0")
+    catch e
+      @warn "Precompilation workload failed for $(p)" exception=(e, catch_backtrace())
+    end
   end
   precompile_libraryAsScode = OMFrontend.LIBRARY_CACHE["MSL_4_0_0"]
   precompile_prefix = "Modelica.Mechanics.Rotational.Examples"
@@ -96,7 +100,11 @@ function workload()
   @info "Time spent precompiling MSL models in: $(precompile_prefix)"
   for p in precompile_model_names
     @info "Translating: $(string(precompile_prefix, ".", p))"
-    @time flattenModelInMSL_TST(string(precompile_prefix, ".", p); MSL_V = "MSL_4_0_0")
+    try
+      @time flattenModelInMSL_TST(string(precompile_prefix, ".", p); MSL_V = "MSL_4_0_0")
+    catch e
+      @warn "Precompilation workload failed for $(p)" exception=(e, catch_backtrace())
+    end
   end
 
   precompile_prefix = "Modelica.Mechanics.MultiBody.Examples.Elementary"
@@ -109,7 +117,11 @@ function workload()
   ]
   for p in precompile_model_names
     @info "Translating: $(string(precompile_prefix, ".", p))"
-    @time flattenModelInMSL_TST(string(precompile_prefix, ".", p); MSL_V = "MSL_4_0_0")
+    try
+      @time flattenModelInMSL_TST(string(precompile_prefix, ".", p); MSL_V = "MSL_4_0_0")
+    catch e
+      @warn "Precompilation workload failed for $(p)" exception=(e, catch_backtrace())
+    end
   end
 
   precompile_prefix = "Modelica.Mechanics.MultiBody.Examples.Loops"
@@ -121,7 +133,11 @@ function workload()
   ]
   for p in precompile_model_names
     @info "Translating: $(string(precompile_prefix, ".", p))"
-    @time flattenModelInMSL_TST(string(precompile_prefix, ".", p); MSL_V = "MSL_4_0_0")
+    try
+      @time flattenModelInMSL_TST(string(precompile_prefix, ".", p); MSL_V = "MSL_4_0_0")
+    catch e
+      @warn "Precompilation workload failed for $(p)" exception=(e, catch_backtrace())
+    end
   end
   @info "Core compiler modules are successfully precompiled!"
   @info "Compiler modules are successfully precompiled!"

@@ -126,6 +126,7 @@ const ORIGIN_ASSERT = intBitLShift(1, 20)::M_Type_Int
 
 const ORIGIN_EQ_SUBEXPRESSION = intBitOr(ORIGIN_EQUATION, ORIGIN_SUBEXPRESSION)::M_Type_Int
 const ORIGIN_VALIDNAME_SCOPE = intBitOr(ORIGIN_ITERATION_RANGE, ORIGIN_DIMENSION)::M_Type_Int
+const ORIGIN_VALID_TYPENAME_SCOPE = ORIGIN_VALIDNAME_SCOPE
 const ORIGIN_DISCRETE_SCOPE = intBitOr(ORIGIN_WHEN, intBitOr(ORIGIN_INITIAL, ORIGIN_FUNCTION))::M_Type_Int
 
 #= Include the code for type binding =#
@@ -311,11 +312,11 @@ end
       ) where {(isComponent(instanceNode))} => begin
         #=  A component of function type, i.e. a functional input parameter.
         =#
-        @match _cons(fn, _) = P_Function.typeNodeCache(clsNode)
-        if !P_Function.isPartial(fn)
+        @match _cons(fn, _) = typeNodeCache(clsNode)
+        if !isPartial(fn)
           Error.addSourceMessage(
             Error.META_FUNCTION_NO_PARTIAL_PREFIX,
-            list(AbsynUtil.pathString(P_Function.name(fn))),
+            list(AbsynUtil.pathString(name(fn))),
             InstNode_info(instanceNode),
           )
           fail()
@@ -622,7 +623,7 @@ function typeDimension2(
       DIMENSION_UNTYPED(isProcessing = true) => begin
         #=  Only give an error if we're not in a function.
         =#
-        if ORIGIN_flagNotSet(origin, ORIGIN_FUNCTION)
+        if flagNotSet(origin, ORIGIN_FUNCTION)
           Error.addSourceMessage(
             Error.CYCLIC_DIMENSIONS,
             list(
@@ -735,7 +736,7 @@ function typeDimension2(
               if isUnknown(dim) && !(isError(ty_err))
                  exp = evalExp(
                   b.bindingExp,
-                  DIMENSION(component, index, b.bindingExp, info),
+                  EVALTARGET_DIMENSION(component, index, b.bindingExp, info),
                 )
                  (dim, ty_err) = nthDimensionBoundsChecked(
                   typeOf(exp),
@@ -768,7 +769,7 @@ function typeDimension2(
               markStructuralParamsExp(exp)
                exp = evalExp(
                 exp,
-                DIMENSION(component, index, exp, info),
+                EVALTARGET_DIMENSION(component, index, exp, info),
               )
               fromExp(exp, dim.var)
             end
@@ -867,8 +868,7 @@ end
       typeSize(dim, flag, info)
     end
     _ => begin
-      @error "Unknown dimension type"
-      fail()
+      typeExp(dim, flag, info)
     end
   end
   checkDimensionType(exp, ty, info)
@@ -998,7 +998,7 @@ end
     end
     Error.addStrictMessage(
       Error.EACH_ON_NON_ARRAY,
-      list(name(listHead(parents))),
+      list(name(listHead(parents(binding)))),
       Binding_getInfo(binding),
     )
   end
@@ -1435,8 +1435,8 @@ end
   @nospecialize(expl::List{<:Expression}),
   @nospecialize(origin::ORIGIN_Type),
   @nospecialize(info::SourceInfo),
-)::Tuple{List{Expression}, List{NFType}, List{Variability}}
-  local varl::List{Variability} = nil
+)::Tuple{List{Expression}, List{NFType}, List{VariabilityType}}
+  local varl::List{VariabilityType} = nil
   local tyl::List{NFType} = nil
   local explTyped::List{Expression} = nil
 
@@ -2445,14 +2445,14 @@ end
   @nospecialize(elements::List{<:Expression}),
   origin::ORIGIN_Type,
   info::SourceInfo,
-)::Tuple{TUPLE_EXPRESSION, NFType, Variability}
+)::Tuple{TUPLE_EXPRESSION, NFType, VariabilityType}
   local variability::VariabilityType
   local tupleType::NFType
   local tupleExp::Expression
 
   local expl::List{Expression}
   local tyl::List{NFType}
-  local valr::List{Variability}
+  local valr::List{VariabilityType}
   local next_origin::ORIGIN_Type
 
   #=  Tuples are only allowed on the lhs side of an equality/assignment,
@@ -2473,7 +2473,7 @@ end
   end
    next_origin = setFlag(origin, ORIGIN_SUBEXPRESSION)
   @match (expl, tyl, valr) = typeExpl(elements, next_origin, info)
-   tupleType = TYPE_TUPLE
+   tupleType = TYPE_TUPLE(tyl, NONE())
    tupleExp = TUPLE_EXPRESSION(tupleType, expl)
    variability = if listEmpty(valr)
     Variability.CONSTANT
@@ -2515,7 +2515,7 @@ end
   evaluate::Bool = true,
 )#Should return ::Tuple{Expression, NFType, VariabilityType}
   local variability::VariabilityType
-  local sizeType::NFType
+  local szType::NFType
   local exp::Expression
   local index::Expression
   local exp_ty::NFType
@@ -2528,7 +2528,7 @@ end
   local oexp::Option{Expression}
   local next_origin::ORIGIN_Type = setFlag(origin, ORIGIN_SUBEXPRESSION)
 
-   (sizeExpArg, sizeType, variability) = begin
+   (sizeExpArg, szType, variability) = begin
     @match sizeExpArg begin
       SIZE_EXPRESSION(exp = exp, dimIndex = SOME(index)) => begin
          (index, index_ty, variability) = typeExp(index, next_origin, info)
@@ -2589,12 +2589,12 @@ end
 
       SIZE_EXPRESSION(__) => begin
         (exp, exp_ty, _) = typeExp(sizeExpArg.exp, next_origin, info)
-         sizeType = sizeType(exp_ty)
-        (SIZE_EXPRESSION(exp, NONE()), sizeType, Variability.PARAMETER)
+         szType = sizeType(exp_ty)
+        (SIZE_EXPRESSION(exp, NONE()), szType, Variability.PARAMETER)
       end
     end
    end
-  return (sizeExpArg, sizeType, variability)
+  return (sizeExpArg, szType, variability)
 end
 
 function checkSizeTypingError(
@@ -3769,11 +3769,12 @@ end
       eql = Equation[typeEquation(e, next_origin) for e in eql]
       push!(bl2, makeBranch(cond, eql, var))
     catch
+      local _msgs = ErrorExt.getCheckpointMessages()
       bl2 = push!(
         bl2,
         EQUATION_INVALID_BRANCH(
           makeBranch(cond, eql, var),
-          ErrorExt.getCheckpointMessages(),
+          _msgs isa Nil ? Any[] : Any[m for m in _msgs],
         ),
       )
     end

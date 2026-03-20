@@ -81,8 +81,8 @@ function mapFoldShallow!(@nospecialize(exp::Expression), @nospecialize(func::Fun
       end
 
       BINARY_EXPRESSION(__)  => begin
-         @match (e1, arg) = func(exp.exp1, arg)
-         @match (e2, arg) = func(exp.exp2, arg)
+         (e1, arg) = func(exp.exp1, arg)
+         (e2, arg) = func(exp.exp2, arg)
         if referenceEq(exp.exp1, e1) && referenceEq(exp.exp2, e2)
           exp
         else
@@ -248,7 +248,7 @@ function mapFoldShallowRef(@nospecialize(exp::Expression), @nospecialize(func::F
         end
       end
       ARRAY_EXPRESSION(__)  => begin
-        expV = ArrayUtil.mapFoldSO(exp.elements, func, arg)
+        expV = ArrayUtil.mapFoldSO(exp.elements, (e, a) -> func(e, a)[1], arg)
         ARRAY_EXPRESSION(exp.ty, expV, exp.literal)
       end
 
@@ -294,8 +294,8 @@ function mapFoldShallowRef(@nospecialize(exp::Expression), @nospecialize(func::F
       end
 
       BINARY_EXPRESSION(__)  => begin
-        e1 = func(exp.exp1, arg)
-        e2 = func(exp.exp2, arg)
+        (e1, arg) = func(exp.exp1, arg)
+        (e2, arg) = func(exp.exp2, arg)
         if referenceEq(exp.exp1, e1) && referenceEq(exp.exp2, e2)
           exp
         else
@@ -375,7 +375,7 @@ function mapFoldShallowRef(@nospecialize(exp::Expression), @nospecialize(func::F
       end
 
       SUBSCRIPTED_EXP_EXPRESSION(__)  => begin
-        e1 = func(exp.exp, arg)
+        (e1, arg) = func(exp.exp, arg)
         subs = ListUtil.mapFoldSO(exp.subscripts, (ss, foldArg) -> mapFoldExpShallowO1(ss, func, foldArg), arg)
         SUBSCRIPTED_EXP_EXPRESSION(e1, subs, exp.ty)
       end
@@ -473,7 +473,7 @@ function mapFoldCallShallowRef(@nospecialize(call::Call), @nospecialize(func::Fu
       end
 
       TYPED_CALL(__)  => begin
-        args = ArrayUtil.mapFoldSO(call.arguments, func, foldArg)
+        args = ArrayUtil.mapFoldSO(call.arguments, (e, a) -> func(e, a)[1], foldArg)
         TYPED_CALL(call.fn, call.ty, call.var, args, call.attributes)
       end
 
@@ -502,7 +502,7 @@ function mapFoldCallShallowRef(@nospecialize(call::Call), @nospecialize(func::Fu
         oe = Util.tuple31(call.foldExp)
         if isSome(oe)
           (oe, foldArg) = mapFoldOptShallow(oe, func, foldArg)
-          fold_exp = Util.applyTuple31(call.foldExp, (oe) -> Util.replace(arg = oe))
+          fold_exp = Util.applyTuple31(call.foldExp, (_) -> oe)
         else
           fold_exp = call.foldExp
         end

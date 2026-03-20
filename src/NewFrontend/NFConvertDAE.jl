@@ -1294,7 +1294,7 @@ function convertIfStatement(
   for b in listReverse(ifBranches)
     (cond, stmts) = b
     dcond = toDAE(cond)
-    dstmts = convertStatements(stmts)
+    dstmts = stmts isa Vector ? convertStatements(stmts) : convertStatements(listArray(stmts))
     if first && isTrue(cond)
       else_stmt = DAE.ELSE(dstmts)
     else
@@ -1320,7 +1320,7 @@ function convertIfStatement(
   for b in reverse(ifBranches)
     (cond, stmts) = b
     dcond = toDAE(cond)
-    dstmts = stmts isa Vector ? convertStatements(stmts) : convertStatements(Base.collect(stmts))
+    dstmts = stmts isa Vector ? convertStatements(stmts) : convertStatements(listArray(stmts))
     if first && isTrue(cond)
       else_stmt = DAE.ELSE(dstmts)
     else
@@ -1380,7 +1380,7 @@ function convertFunctionTree(funcs::FunctionTree)::DAE.FunctionTree
   @assign dfuncs = begin
     local left::DAE.FunctionTree
     local right::DAE.FunctionTree
-    local fn::DAE.P_Function
+    local fn::DAE.Function
     @match funcs begin
       NFFunctionTree.NODE(__) => begin
         @assign fn = convertFunction(funcs.value)
@@ -1401,12 +1401,12 @@ function convertFunctionTree(funcs::FunctionTree)::DAE.FunctionTree
 end
 
 function convertFunction(func::M_Function)::DAE.Function
-  local dfunc::DAE.P_Function
+  local dfunc::DAE.Function
   local cls::Class
   local elems::List{DAE.Element}
   local def::DAE.FunctionDefinition
   local sections::Sections
-  @assign cls = getClass(P_Function.instance(func))
+  @assign cls = getClass(instance(func))
   @assign dfunc = begin
     @match cls begin
       INSTANCED_CLASS(
@@ -1617,16 +1617,16 @@ function makeTypeVars(complexCls::InstNode)::List{DAE.Var}
   return typeVars
 end
 
-function makeTypeVar(component::InstNode)::DAE.Var
+function makeTypeVar(compNode::InstNode)::DAE.Var
   local typeVar::DAE.Var
   local comp::Component
   local attr::Attributes
 
-  @assign comp = component(resolveOuter(component))
+  @assign comp = component(resolveOuter(compNode))
   @assign attr = getAttributes(comp)
   @assign typeVar = DAE.TYPES_VAR(
-    name(component),
-    toDAE(attr, visibility(component)),
+    name(compNode),
+    toDAE(attr, visibility(compNode)),
     toDAE(getType(comp)),
     toDAE(getBinding(comp)),
     false,

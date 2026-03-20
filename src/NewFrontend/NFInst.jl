@@ -1165,7 +1165,7 @@ function applyModifier(modifier::Modifier, cls::ClassTree, clsName::String) ::Cl
               componentApply(node, mergeModifier, mod)
             else
               if isOnlyOuter(node)
-                Error.addSourceMessage(Error.OUTER_ELEMENT_MOD, list(toString(mod, printName = false), name(mod)), info(mod))
+                Error.addSourceMessage(Error.OUTER_ELEMENT_MOD, list(toString(mod, false), name(mod)), info(mod))
                 fail()
               end
               partialInstClass(node)
@@ -1622,7 +1622,7 @@ end
              non-empty modifier. =#"""
 function checkOuterComponentMod(mod::Modifier, component::SCode.Element, node::InstNode)
   if ! isEmpty(mod) && AbsynUtil.isOnlyOuter(SCodeUtil.prefixesInnerOuter(SCodeUtil.elementPrefixes(component)))
-    Error.addSourceMessage(Error.OUTER_ELEMENT_MOD, list(toString(mod, printName = false), name(node)), InstNode_info(node))
+    Error.addSourceMessage(Error.OUTER_ELEMENT_MOD, list(toString(mod, false), name(node)), InstNode_info(node))
     fail()
   end
 end
@@ -2590,7 +2590,7 @@ function instCrefTypename(cref::ComponentRef, node::InstNode, info::SourceInfo):
       end
     end
   end
-   crefExp = Expression.TYPENAME(ty)
+   crefExp = TYPENAME_EXPRESSION(ty)
   crefExp
 end
 
@@ -3131,20 +3131,20 @@ function isBindingNotFixed(binding::Binding, requireFinal::Bool, maxDepth::Int =
   isNotFixed
 end
 
-function isComponentBindingNotFixed(component::Component, node::InstNode, requireFinal::Bool, maxDepth::Int, isRecordB::Bool = false) ::Bool
+function isComponentBindingNotFixed(comp::Component, node::InstNode, requireFinal::Bool, maxDepth::Int, isRecordB::Bool = false) ::Bool
   local isNotFixed::Bool
 
   local binding::Binding
   local parentNode::InstNode
 
-  binding = getBinding(component)
+  binding = getBinding(comp)
   if isUnbound(binding)
     if isRecordB || isRecord(node)
       isNotFixed = false
     else
       parentNode = parent(node)
       if isComponent(parentNode) && isRecord(parentNode)
-        isNotFixed = isComponentBindingNotFixed(component(parent), parentNode, requireFinal, maxDepth, true)
+        isNotFixed = isComponentBindingNotFixed(component(parentNode), parentNode, requireFinal, maxDepth, true)
       else
         isNotFixed = true
       end

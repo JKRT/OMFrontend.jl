@@ -119,7 +119,7 @@ function scalarizeVariable(var::Variable, vars::Vector{Variable})
         false,
         getInstanceName() +
           " failed on " +
-          toString(var, printBindingType = true),
+          toString(var, "", true),
         var.info,
       )
     end

@@ -677,9 +677,10 @@ function containsDOCC(@nospecialize(eq::Equation))::Vector{Equation}
   @match eq begin
     EQUATION_IF(__) => begin
       for branch in eq.branches
-        @assert branch isa EQUATION_BRANCH
-        if branchDirectiveExists(branch.body)
-          push!(doccs, eq)
+        if branch isa EQUATION_BRANCH
+          if branchDirectiveExists(branch.body)
+            push!(doccs, eq)
+          end
         end
       end
     end

@@ -126,7 +126,7 @@ function getRedeclaredNode(name::String, tree::ClassTree)::InstNode
   local node::InstNode
   local entry::DuplicateTree.Entry
   entry = DuplicateTree.get(getDuplicates(tree), name)
-  entry = listHead(entry.children)
+  entry = entry.children[1]
   if isSome(entry.node)
     @match SOME(node) = entry.node
   else
@@ -156,19 +156,10 @@ function checkDuplicates2(
   local dup::InstNode
 
   @match SOME(kept) = entry.node
-  () = begin
-    @match entry.ty begin
-      DuplicateTree.EntryType.REDECLARE => begin
-        ()
-      end
-
-      _ => begin
-        for c in entry.children
-          @match SOME(dup) = c.node
-          checkIdentical(kept, dup)
-        end
-        ()
-      end
+  if entry.ty != DuplicateTree.EntryType.REDECLARE
+    for c in entry.children
+      @match SOME(dup) = c.node
+      checkIdentical(kept, dup)
     end
   end
   return tree
@@ -820,9 +811,10 @@ end
 function mapRedeclareChains(tree::ClassTree, func::Function, instLevel::Int)
   @match tree begin
     CLASS_TREE_INSTANTIATED_TREE(__) where {(!DuplicateTree.isEmpty(tree.duplicates))} => begin
+      local closedFunc = (chain) -> func(chain, instLevel)
       DuplicateTree.map(
         tree.duplicates,
-        (name, entry) -> mapRedeclareChain(name, entry, func, tree),
+        (name, entry) -> mapRedeclareChain(name, entry, closedFunc, tree),
       )
       ()
     end
@@ -1561,21 +1553,16 @@ function replaceDuplicates2(
   local node_ptr::Pointer{InstNode}
   local kept_entry::DuplicateTree.Entry
   node_ptr = resolveEntryPtr(entry.entry, tree)
-    @match entry.ty begin
-      DuplicateTree.EntryType.REDECLARE => begin
+    if entry.ty == DuplicateTree.EntryType.REDECLARE
         kept = P_Pointer.access(resolveEntryPtr(entry.entry, tree))
         entry = replaceDuplicates4(entry, kept)
-      end
-      DuplicateTree.EntryType.DUPLICATE => begin
+    elseif entry.ty == DuplicateTree.EntryType.DUPLICATE
         kept = P_Pointer.access(node_ptr)
         local replacedEntry = DuplicateTree.DUPLICATE_TREE_ENTRY(entry.entry, SOME(kept), entry.children, entry.ty)
         entry = replacedEntry
         local f = @closure c -> replaceDuplicates3(c, kept, tree)
         map!(f, entry.children, entry.children)
-      end
-      _ => begin
-      end
-  end
+    end
   return entry
 end
 
@@ -1585,41 +1572,33 @@ function getRedeclareChain(
   chain::List{<:Pointer{<:InstNode}} = nil,
 )::List{Pointer{InstNode}}
 
-  chain = begin
-    local node_ptr::Pointer{InstNode}
-    local node::InstNode
-    @match entry.ty begin
-      DuplicateTree.EntryType.REDECLARE => begin
-        node_ptr = resolveEntryPtr(entry.entry, tree)
-        if listEmpty(entry.children)
-          node = P_Pointer.access(node_ptr)
-          if SCodeUtil.isClassExtends(definition(node))
-            Error.addSourceMessage(
-              Error.CLASS_EXTENDS_TARGET_NOT_FOUND,
-              list(name(node)),
-              info(node),
-            )
-          else
-            Error.addSourceMessage(
-              Error.REDECLARE_NONEXISTING_ELEMENT,
-              list(name(node)),
-              info(node),
-            )
-          end
-          fail()
+  local node_ptr::Pointer{InstNode}
+  local node::InstNode
+  chain = if entry.ty == DuplicateTree.EntryType.REDECLARE
+      node_ptr = resolveEntryPtr(entry.entry, tree)
+      if isempty(entry.children)
+        node = P_Pointer.access(node_ptr)
+        if SCodeUtil.isClassExtends(definition(node))
+          Error.addSourceMessage(
+            Error.CLASS_EXTENDS_TARGET_NOT_FOUND,
+            list(name(node)),
+            info(node),
+          )
+        else
+          Error.addSourceMessage(
+            Error.REDECLARE_NONEXISTING_ELEMENT,
+            list(name(node)),
+            info(node),
+          )
         end
-        getRedeclareChain(listHead(entry.children), tree, Cons{Pointer{InstNode}}(node_ptr, chain))
+        fail()
       end
-
-      DuplicateTree.EntryType.ENTRY => begin
-        node_ptr = resolveEntryPtr(entry.entry, tree)
-        Cons{Pointer{InstNode}}(node_ptr, chain)
-      end
-
-      _ => begin
-        chain
-      end
-    end
+      getRedeclareChain(entry.children[1], tree, Cons{Pointer{InstNode}}(node_ptr, chain))
+  elseif entry.ty == DuplicateTree.EntryType.ENTRY
+      node_ptr = resolveEntryPtr(entry.entry, tree)
+      Cons{Pointer{InstNode}}(node_ptr, chain)
+  else
+      chain
   end
   return chain
 end
@@ -1719,8 +1698,8 @@ function joinDuplicates(
 
   #=  Add the new entry as a child of the old entry.
   =#
-  entryChildren = Cons{DuplicateTree.Entry}(newEntry, entry.children)
-  return DuplicateTree.ENTRY(oldEntry.entry, oldEntry.node, children, oldEntry.ty)
+  entryChildren = [newEntry ; entry.children]
+  return DuplicateTree.DUPLICATE_TREE_ENTRY(oldEntry.entry, oldEntry.node, entryChildren, oldEntry.ty)
 end
 
 function offsetDuplicate(
@@ -1756,11 +1735,11 @@ function offsetDuplicates(
 )::DuplicateTree.Entry
   local offsetEntry::DuplicateTree.Entry
   local parent::LookupTree.Entry
-  local children::List{DuplicateTree.Entry}
+  local children::Vector{DuplicateTree.Entry}
   parent = offsetDuplicate(entry.entry, classOffset, componentOffset)
   children =
-    list(offsetDuplicates(name, c, classOffset, componentOffset) for c in entry.children)
-  offsetEntry = DuplicateTree.ENTRY(parent, NONE(), children, entry.ty)
+    DuplicateTree.Entry[offsetDuplicates(name, c, classOffset, componentOffset) for c in entry.children]
+  offsetEntry = DuplicateTree.DUPLICATE_TREE_ENTRY(parent, NONE(), children, entry.ty)
   return offsetEntry
 end
 
@@ -1778,7 +1757,7 @@ function addInheritedElementConflict(
   local dup_entry::DuplicateTree.DUPLICATE_TREE_ENTRY
   local new_id::Int = LookupTree.index(newEntry)
   local old_id::Int = LookupTree.index(oldEntry)
-  local ty::DuplicateTree.EntryType
+  local ty::Int
   #=
       Overwrite the existing entry if it's an import. This happens when a
       class both imports and inherits the same name.
@@ -1805,20 +1784,20 @@ function addInheritedElementConflict(
     if !DuplicateTree.idExistsInEntry(newEntry, dup_entry)
       if ty == DuplicateTree.EntryType.REDECLARE
         entry = newEntry
-        local dup_entryChildren = Cons{DuplicateTree.Entry}(DuplicateTree.newEntry(newEntry), dup_entry.children)
+        local dup_entryChildren = [DuplicateTree.newEntry(newEntry) ; dup_entry.children]
         dup_entry = DuplicateTree.DUPLICATE_TREE_ENTRY(dup_entry.entry, dup_entry.node, dup_entryChildren, dup_entry.ty)
       else
         if new_id < old_id
           entry = newEntry
-          dup_entry = DuplicateTree.Entry.ENTRY(
+          dup_entry = DuplicateTree.DUPLICATE_TREE_ENTRY(
             newEntry,
             NONE(),
-            Cons{DuplicateTree.Entry}(DuplicateTree.newEntry(oldEntry), dup_entry.children),
+            [DuplicateTree.newEntry(oldEntry) ; dup_entry.children],
             dup_entry.ty,
           )
         else
           entry = oldEntry
-          local dup_entryChildren = Cons{DuplicateTree.Entry}(DuplicateTree.newEntry(newEntry), dup_entry.children)
+          local dup_entryChildren = [DuplicateTree.newEntry(newEntry) ; dup_entry.children]
           dup_entry = DuplicateTree.DUPLICATE_TREE_ENTRY(dup_entry.entry, dup_entry.node, dup_entryChildren, dup_entry.ty)
         end
       end
@@ -1827,14 +1806,14 @@ function addInheritedElementConflict(
     elseif !DuplicateTree.idExistsInEntry(oldEntry, dup_entry)
       if ty == DuplicateTree.EntryType.REDECLARE || new_id < old_id
         entry = newEntry
-        local dup_entryChildren = Cons{DuplicateTree.Entry}(DuplicateTree.newEntry(oldEntry), dup_entry.children)
+        local dup_entryChildren = [DuplicateTree.newEntry(oldEntry) ; dup_entry.children]
         dup_entry = DuplicateTree.DUPLICATE_TREE_ENTRY(dup_entry.entry, dup_entry.node, dup_entryChildren, dup_entry.ty)
       else
         entry = newEntry
-        dup_entry = DuplicateTree.Entry.ENTRY(
+        dup_entry = DuplicateTree.DUPLICATE_TREE_ENTRY(
           newEntry,
           NONE(),
-          Cons{DuplicateTree.Entry}(DuplicateTree.newEntry(oldEntry), dup_entry.children),
+          [DuplicateTree.newEntry(oldEntry) ; dup_entry.children],
           dup_entry.ty,
         )
       end
@@ -1928,8 +1907,8 @@ function expandExtends(
   if !DuplicateTree.isEmpty(ext_dups)
     dups = DuplicateTree.map(
       ext_dups,
-      (classOffset, componentOffset) ->
-        offsetDuplicates(classOffset = classOffset, componentOffset = componentOffset),
+      (name, entry) ->
+        offsetDuplicates(name, entry, classOffset, componentOffset),
     )
     dups = DuplicateTree.join(P_Pointer.access(duplicates), dups, joinDuplicates)
     P_Pointer.update(duplicates, dups)
@@ -2151,10 +2130,10 @@ function addDuplicateConflict(
   =#
   #=  one found during lookup. So we can ignore it here.
   =#
-  entry = DuplicateTree.ENTRY(
+  entry = DuplicateTree.DUPLICATE_TREE_ENTRY(
     newEntry.entry,
     NONE(),
-    DuplicateTree.Entry[newEntry.children[1], oldEntry.children],
+    [newEntry.children[1] ; oldEntry.children],
     DuplicateTree.EntryType.DUPLICATE,
   )
   return entry
@@ -2260,7 +2239,7 @@ function addImport(
     tree,
     name(imp),
     LookupTree.IMPORT(index),
-    (imports) -> addImportConflict(imports = imports),
+    (newE, oldE, n) -> addImportConflict(newE, oldE, n, imports),
   )
 
   return tree

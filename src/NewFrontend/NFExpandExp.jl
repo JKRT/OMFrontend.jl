@@ -93,7 +93,7 @@ function expandLogicalUnary(@nospecialize(exp::Expression), op::Operator)::Tuple
   if expanded
     @assign outExp = mapArrayElements(
       outExp,
-      (scalar_op) -> makeLogicalUnaryOp(op = scalar_op),
+      (e) -> makeLogicalUnaryOp(e, scalar_op),
     )
   else
     @assign outExp = exp
@@ -933,7 +933,7 @@ function expandTypename(ty::M_Type)::Expression
 
       TYPE_ARRAY(elementType = TYPE_ENUMERATION(__)) => begin
         @assign lits = makeEnumLiterals(ty.elementType)
-        makeArray(ty, lits, true)
+        makeArray(ty, lits; literal=true)
       end
 
       _ => begin

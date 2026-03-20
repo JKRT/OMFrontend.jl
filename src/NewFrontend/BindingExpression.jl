@@ -242,14 +242,45 @@ end
 Replaces split indices in a subscripted expression with : subscripts,
 except for indices that reference nodes in the given list.
 """
-function expandNonListedSplitIndices(@nospecialize(exp::Expression), indicesToKeep::List{InstNode}, @nospecialize(outExp::Expression))
+@nospecializeinfer function expandNonListedSplitIndices(@nospecialize(exp::Expression), @nospecialize(indicesToKeep::Union{List{<:InstNode}, Cons{<:InstNode}}))
+  #= Adapted from OpenModelica: the original SUBSCRIPTED_EXP had a split::Bool
+     field not ported to Julia. Instead we detect split subscripts by checking
+     for SUBSCRIPT_SPLIT_INDEX in the subscript list and replace those whose
+     nodes are NOT in indicesToKeep with SUBSCRIPT_WHOLE. =#
   outExp = @match exp begin
-    SUBSCRIPTED_EXP(split = true) => begin
-      applySubscripts(Subscript.expandSplitIndices(exp.subscripts, indicesToKeep), exp.exp);
+    SUBSCRIPTED_EXP_EXPRESSION(__) => begin
+      local newSubs = Subscript[]
+      local changed = false
+      for sub in exp.subscripts
+        if sub isa SUBSCRIPT_SPLIT_INDEX
+          if !_nodeInList(sub.node, indicesToKeep)
+            push!(newSubs, SUBSCRIPT_WHOLE())
+            changed = true
+          else
+            push!(newSubs, sub)
+          end
+        else
+          push!(newSubs, sub)
+        end
+      end
+      if changed
+        applySubscripts(newSubs, exp.exp)
+      else
+        exp
+      end
     end
     _ => exp
   end
   return outExp
+end
+
+function _nodeInList(@nospecialize(node::InstNode), @nospecialize(lst))
+  for n in lst
+    if n === node
+      return true
+    end
+  end
+  return false
 end
 
 function retype(@nospecialize(exp::Expression))
@@ -334,7 +365,7 @@ function nthRecordElement(index::Int, @nospecialize(recordExp::Expression)) ::Ex
       end
 
       BINDING_EXP(__)  => begin
-        local f = @closure (index) -> nthRecordElement(index = index)
+        local f = @closure (e) -> nthRecordElement(index, e)
         bindingExpMap(recordExp, f)
       end
 
@@ -390,8 +421,8 @@ function recordElement(elementName::String, @nospecialize(recordExp::Expression)
       ARRAY_EXPRESSION(ty = TYPE_ARRAY(elementType = TYPE_COMPLEX(cls = node)))  => begin
         index = lookupComponentIndex(elementName, getClass(node))
         expV = Expression[nthRecordElement(index, e) for e in recordExp.elements]
-        ty = liftArrayLeft(typeOf(listHead(expV)), fromInteger(length(expV)))
-        makeArray(ty, expV, recordExp.literal)
+        ty = liftArrayLeft(typeOf(expV[1]), fromInteger(length(expV)))
+        makeArray(ty, expV; literal=recordExp.literal)
       end
 
       BINDING_EXP(__)  => begin
@@ -404,7 +435,7 @@ function recordElement(elementName::String, @nospecialize(recordExp::Expression)
         SUBSCRIPTED_EXP_EXPRESSION(outExp, recordExp.subscripts, lookupRecordFieldType(elementName, recordExp.ty))
       end
 
-      EMPTY(__)  => begin
+      EMPTY_EXPRESSION(__)  => begin
         fail()
       end
 
@@ -1098,7 +1129,7 @@ function makeOperatorRecordZero(recordNode::InstNode) ::Expression
   @match ENTRY_INFO(op_node, _) = lookupElement("'0'", getClass(recordNode))
   instFunctionNode(op_node)
   @match list(fn) = typeNodeCache(op_node)
-  zeroExp = CALL_EXPRESSION(makeTypedCall(fn, nil, Variability.CONSTANT))
+  zeroExp = CALL_EXPRESSION(makeTypedCall(fn, Expression[], Variability.CONSTANT))
   zeroExp = evalExp(zeroExp)
   zeroExp
 end
@@ -2024,30 +2055,30 @@ end
 
       UNTYPED_ARRAY_CONSTRUCTOR(__)  => begin
         (e, foldArg) = func(call.exp, foldArg)
-        iters = mapFoldCallIteratorsShallow(call.iters, func, foldArg)
+        (iters, foldArg) = mapFoldCallIteratorsShallow(call.iters, func, foldArg)
         UNTYPED_ARRAY_CONSTRUCTOR(e, iters)
       end
 
       TYPED_ARRAY_CONSTRUCTOR(__)  => begin
         (e, foldArg) = func(call.exp, foldArg)
-        (iters,_) = mapFoldCallIteratorsShallow(call.iters, func, foldArg)
+        (iters, foldArg) = mapFoldCallIteratorsShallow(call.iters, func, foldArg)
         TYPED_ARRAY_CONSTRUCTOR(call.ty, call.var, e, iters)
       end
 
       UNTYPED_REDUCTION(__)  => begin
          (e, foldArg) = func(call.exp, foldArg)
-        iters = mapFoldCallIteratorsShallow(call.iters, func, foldArg)
+        (iters, foldArg) = mapFoldCallIteratorsShallow(call.iters, func, foldArg)
         UNTYPED_REDUCTION(call.ref, e, iters)
       end
 
       TYPED_REDUCTION(__)  => begin
         (e, foldArg) = func(call.exp, foldArg)
-        iters = mapFoldCallIteratorsShallow(call.iters, func, foldArg)
+        (iters, foldArg) = mapFoldCallIteratorsShallow(call.iters, func, foldArg)
         (default_exp, foldArg) = mapFoldOptShallow(call.defaultExp, func, foldArg)
         oe = Util.tuple31(call.foldExp)
         if isSome(oe)
           (oe, foldArg) = mapFoldOptShallow(oe, func, foldArg)
-          fold_exp = Util.applyTuple31(call.foldExp, (oe) -> Util.replace(arg = oe))
+          fold_exp = Util.applyTuple31(call.foldExp, (_) -> oe)
         else
           fold_exp = call.foldExp
         end
@@ -2188,7 +2219,7 @@ end
       end
 
       TUPLE_EXPRESSION(__)  => begin
-         (expl, arg) = ListUtil.mapFold(exp.elements, func, arg, List{Expression})
+         (expl, arg) = ListUtil.mapFold(exp.elements, func, arg, Expression)
         TUPLE_EXPRESSION(exp.ty, expl)
       end
 
@@ -2217,8 +2248,8 @@ end
       end
 
       BINARY_EXPRESSION(__)  => begin
-         @match (e1, arg) = func(exp.exp1, arg)
-         @match (e2, arg) = func(exp.exp2, arg)
+         (e1, arg) = func(exp.exp1, arg)
+         (e2, arg) = func(exp.exp2, arg)
         if referenceEq(exp.exp1, e1) && referenceEq(exp.exp2, e2)
           exp
         else
@@ -2461,7 +2492,7 @@ end
         oe = Util.tuple31(call.foldExp)
         if isSome(oe)
            (oe, foldArg) = mapFoldOpt(oe, func, foldArg)
-          fold_exp = Util.applyTuple31(call.foldExp, (oe) -> Util.replace(arg = oe))
+          fold_exp = Util.applyTuple31(call.foldExp, (_) -> oe)
         else
           fold_exp = call.foldExp
         end
@@ -2696,7 +2727,7 @@ end
 
       SUBSCRIPTED_EXP_EXPRESSION(__)  => begin
         (e1, arg) = mapFold(exp.exp, func, arg)
-        (subs, arg) = ListUtil.mapFold(exp.subscripts, (func) -> mapFoldExp(func = func), arg)
+        (subs, arg) = ListUtil.mapFold(exp.subscripts, (sub, a) -> mapFoldExp(sub, func, a), arg)
         SUBSCRIPTED_EXP_EXPRESSION(e1, subs, exp.ty)
       end
 
@@ -3312,7 +3343,7 @@ end
         e = func(call.exp)
         iters = mapCallShallowIterators(call.iters, func)
         default_exp = mapShallowOpt(call.defaultExp, func)
-        fold_exp = Util.applyTuple31(call.foldExp, (func) -> mapShallowOpt(func = func))
+        fold_exp = Util.applyTuple31(call.foldExp, (oe) -> mapShallowOpt(oe, func))
         TYPED_REDUCTION(call.fn, call.ty, call.var, e, iters, default_exp, fold_exp)
       end
     end
@@ -3785,7 +3816,7 @@ end
         e = map(call.exp, func)
         iters = mapCallIterators(call.iters, func)
         default_exp = mapOpt(call.defaultExp, func)
-        fold_exp = Util.applyTuple31(call.foldExp, (func) -> mapOpt(func = func))
+        fold_exp = Util.applyTuple31(call.foldExp, (oe) -> mapOpt(oe, func))
         TYPED_REDUCTION(call.fn, call.ty, call.var, e, iters, default_exp, fold_exp)
       end
     end
@@ -4792,7 +4823,7 @@ end
         toFlatString(P_Pointer.access(exp.exp); inFunction = inFunction)
       end
 
-      EMPTY(__)  => begin
+      EMPTY_EXPRESSION(__)  => begin
         "#EMPTY#"
       end
 
@@ -5344,7 +5375,7 @@ function applyIndexSubscriptArray(@nospecialize(exp::Expression), index::Subscri
   outExp
 end
 
-function applySubscriptArray(subscript::Subscript, @nospecialize(exp::Expression), restSubscripts::List{<:Subscript}) ::Expression
+function applySubscriptArray(inSubscript::Subscript, @nospecialize(exp::Expression), restSubscripts::List{<:Subscript}) ::Expression
   local outExp::Expression
 
   local sub::Subscript
@@ -5355,7 +5386,7 @@ function applySubscriptArray(subscript::Subscript, @nospecialize(exp::Expression
   local el_count::Int
   local literal::Bool
 
-  (sub, _) = expandSlice(subscript)
+  (sub, _) = expandSlice(inSubscript)
    outExp = begin
     @match sub begin
       SUBSCRIPT_INDEX(__)  => begin
@@ -5363,7 +5394,7 @@ function applySubscriptArray(subscript::Subscript, @nospecialize(exp::Expression
       end
 
       SUBSCRIPT_SLICE(__)  => begin
-        makeSubscriptedExp(Cons{Subscript}(subscript, restSubscripts), exp)
+        makeSubscriptedExp(Cons{Subscript}(inSubscript, restSubscripts), exp)
       end
 
       SUBSCRIPT_WHOLE(__)  => begin
@@ -5373,14 +5404,14 @@ function applySubscriptArray(subscript::Subscript, @nospecialize(exp::Expression
           @match ARRAY_EXPRESSION(ty = ty, elements = expl, literal = literal) = exp
           @match Cons{Subscript}(s, rest_subs) = restSubscripts
           expl = Expression[applySubscript(s, e, rest_subs) for e in expl]
-          el_count = listLength(expl)
+          el_count = length(expl)
           ty = if el_count > 0
-            typeOf(listHead(expl))
+            typeOf(expl[1])
           else
             subscript(unliftArray(ty), restSubscripts)
           end
           ty = liftArrayLeft(ty, fromInteger(el_count))
-          outExp = makeArray(ty, expl, literal)
+          outExp = makeArray(ty, expl; literal=literal)
         end
         outExp
       end
@@ -5388,14 +5419,14 @@ function applySubscriptArray(subscript::Subscript, @nospecialize(exp::Expression
       SUBSCRIPT_EXPANDED_SLICE(__)  => begin
         @match ARRAY_EXPRESSION(ty = ty, literal = literal) = exp
         expl = Expression[applyIndexSubscriptArray(exp, i, restSubscripts) for i in sub.indices]
-        el_count = listLength(expl)
+        el_count = length(expl)
         ty = if el_count > 0
-          typeOf(listHead(expl))
+          typeOf(expl[1])
         else
           subscript(unliftArray(ty), restSubscripts)
         end
         ty = liftArrayLeft(ty, fromInteger(el_count))
-        makeArray(ty, expl, literal)
+        makeArray(ty, expl; literal=literal)
       end
     end
   end
@@ -5757,7 +5788,7 @@ end
  end
 
 function typeCastOpt(exp::Option{<:Expression}, @nospecialize(ty::M_Type)) ::Option{Expression}
-  local outExp::Option{Expression} = Util.applyOption(exp, (ty) -> typeCast(ty = ty))
+  local outExp::Option{Expression} = Util.applyOption(exp, (e) -> typeCast(e, ty))
   outExp
 end
 
@@ -6306,8 +6337,8 @@ end
         compare(P_Pointer.access(exp1.exp), P_Pointer.access(me))
       end
 
-      EMPTY(__)  => begin
-        @match EMPTY(ty = ty) = exp2
+      EMPTY_EXPRESSION(__)  => begin
+        @match EMPTY_EXPRESSION(ty = ty) = exp2
         valueCompare(exp1.ty, ty)
       end
 

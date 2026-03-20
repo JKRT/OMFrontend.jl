@@ -260,9 +260,9 @@ function toStream(stmt::Statement, indent::String, s)
   @assign s = begin
     @match stmt begin
       ALG_ASSIGNMENT(__) => begin
-        s = IOStream_M.append(s, toString(stmt.lhs); inFunction = inFunction)
+        s = IOStream_M.append(s, toString(stmt.lhs))
         s = IOStream_M.append(s, " := ")
-        s = IOStream_M.append(s, toString(stmt.rhs); inFunction = inFunction)
+        s = IOStream_M.append(s, toString(stmt.rhs))
         s
       end
 
@@ -279,11 +279,11 @@ function toStream(stmt::Statement, indent::String, s)
           s = IOStream_M.append(s, " in ")
           s = IOStream_M.append(
             s,
-            toString(Util.getOption(stmt.range); inFunction = inFunction),
+            toString(Util.getOption(stmt.range)),
           )
         end
         s = IOStream_M.append(s, " loop\\n")
-        s = toStreamList(stmt.body, indent + "  ", s; inFunction = inFunction)
+        s = toStreamList(stmt.body, indent + "  ", s)
         s = IOStream_M.append(s, indent)
         s = IOStream_M.append(s, "end for")
         s
@@ -294,7 +294,7 @@ function toStream(stmt::Statement, indent::String, s)
         for b in stmt.branches
           s = IOStream_M.append(s, str)
           s =
-            IOStream_M.append(s, toString(Util.tuple21(b); inFunction = inFunction))
+            IOStream_M.append(s, toString(Util.tuple21(b)))
           s = IOStream_M.append(s, " then\\n")
           s = toStreamList(Util.tuple22(b), indent + "  ", s)
           s = IOStream_M.append(s, indent)

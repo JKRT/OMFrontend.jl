@@ -388,18 +388,18 @@ end
         begin
           @match ty.fnType begin
             FunctionTYPE_FUNCTIONAL_PARAMETER => begin
-              P_Function.makeDAEType(ty.fn)
+              makeDAEType(ty.fn)
             end
 
             FunctionTYPE_FUNCTION_REFERENCE => begin
               DAE.T_FUNCTION_REFERENCE_FUNC(
                 isBuiltin(ty.fn),
-                P_Function.makeDAEType(ty.fn),
+                makeDAEType(ty.fn),
               )
             end
 
             FunctionTYPE_FUNCTIONAL_VARIABLE => begin
-              DAE.T_FUNCTION_REFERENCE_VAR(P_Function.makeDAEType(ty.fn, true))
+              DAE.T_FUNCTION_REFERENCE_VAR(makeDAEType(ty.fn, true))
             end
           end
         end
@@ -525,7 +525,7 @@ end
       end
 
       TYPE_FUNCTION(__) => begin
-        P_Function.typeString(ty.fn)
+        typeString(ty.fn)
       end
 
       TYPE_METABOXED(__) => begin
@@ -680,7 +680,7 @@ end
       end
 
       TYPE_FUNCTION(__) => begin
-        P_Function.typeString(ty.fn)
+        typeString(ty.fn)
       end
 
       TYPE_METABOXED(__) => begin
@@ -729,7 +729,7 @@ end
       end
 
       TUPLE(__) => begin
-        ListUtil.fold(ty.types, (func) -> foldDims(func = func), arg)
+        ListUtil.fold(ty.types, (t, acc) -> foldDims(t, func, acc), arg)
       end
 
       TYPE_FUNCTION(__) => begin
@@ -757,7 +757,7 @@ end
     end
     TYPE_TUPLE(__) => begin
       local tyTypes = list(mapDims(t, func) for t in ty.types)
-      TYPE_TUPE(tyTpes, ty.dimensions)
+      TYPE_TUPLE(tyTypes, ty.names)
     end
     TYPE_FUNCTION(fn = fn) => begin
       tyFn = setReturnmapDims(mapDims(returnType(fn), func), fn)
@@ -1064,27 +1064,27 @@ end
         true
       end
 
-      REAL(__) => begin
+      TYPE_REAL(__) => begin
         true
       end
 
-      STRING(__) => begin
+      TYPE_STRING(__) => begin
         true
       end
 
-      BOOLEAN(__) => begin
+      TYPE_BOOLEAN(__) => begin
         true
       end
 
-      CLOCK(__) => begin
+      TYPE_CLOCK(__) => begin
         true
       end
 
-      ENUMERATION(__) => begin
+      TYPE_ENUMERATION(__) => begin
         true
       end
 
-      ENUMERATION_ANY(__) => begin
+      TYPE_ENUMERATION_ANY(__) => begin
         true
       end
 
@@ -1146,19 +1146,19 @@ end
         true
       end
 
-      BOOLEAN(__) => begin
+      TYPE_BOOLEAN(__) => begin
         true
       end
 
-      STRING(__) => begin
+      TYPE_STRING(__) => begin
         true
       end
 
-      ENUMERATION(__) => begin
+      TYPE_ENUMERATION(__) => begin
         true
       end
 
-      CLOCK(__) => begin
+      TYPE_CLOCK(__) => begin
         true
       end
 
@@ -1287,11 +1287,11 @@ function isEnumeration(@nospecialize(ty::M_Type))::Bool
 
   @assign isEnum = begin
     @match ty begin
-      ENUMERATION(__) => begin
+      TYPE_ENUMERATION(__) => begin
         true
       end
 
-      ENUMERATION_ANY(__) => begin
+      TYPE_ENUMERATION_ANY(__) => begin
         true
       end
 
@@ -1442,7 +1442,7 @@ function isString(@nospecialize(ty::M_Type))::Bool
 
   @assign isString = begin
     @match ty begin
-      STRING(__) => begin
+      TYPE_STRING(__) => begin
         true
       end
 

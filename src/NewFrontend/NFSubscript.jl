@@ -34,6 +34,10 @@ struct SUBSCRIPT_SPLIT_PROXY <: NFSubscript
   parent::InstNode
 end
 
+function isSplitIndex(s::Subscript)::Bool
+  return s isa SUBSCRIPT_SPLIT_INDEX
+end
+
 function toInteger(subscript::Subscript)::Int
   local int::Int
 
@@ -677,7 +681,7 @@ function mapFoldExpShallow(subscript::Subscript, func::MapFunc, arg::ArgT) where
         end
       end
       SUBSCRIPT_INDEX(__) => begin
-        (exp, arg) = func(subscript.index, arg) #MetaModelica bug? Should be arg I think -John March 30 2023
+        (exp, arg) = func(subscript.index, arg)
         if referenceEq(subscript.index, exp)
           subscript
         else
@@ -713,7 +717,7 @@ function mapFoldExpShallowO1(subscript::Subscript, func::MapFunc, arg::ArgT) whe
     local exp::Expression
     @match subscript begin
       SUBSCRIPT_UNTYPED(__) => begin
-        exp = func(subscript.exp, arg)
+        (exp, _) = func(subscript.exp, arg)
         if referenceEq(subscript.exp, exp)
           subscript
         else
@@ -721,7 +725,7 @@ function mapFoldExpShallowO1(subscript::Subscript, func::MapFunc, arg::ArgT) whe
         end
       end
       SUBSCRIPT_INDEX(__) => begin
-        exp = func(subscript.index, arg) #MetaModelica bug? Should be arg I think -John March 30 2023
+        (exp, _) = func(subscript.index, arg)
         if referenceEq(subscript.index, exp)
           subscript
         else
@@ -729,7 +733,7 @@ function mapFoldExpShallowO1(subscript::Subscript, func::MapFunc, arg::ArgT) whe
         end
       end
       SUBSCRIPT_SLICE(__) => begin
-        exp = func(subscript.slice, arg)
+        (exp, _) = func(subscript.slice, arg)
         if referenceEq(subscript.slice, exp)
           subscript
         else

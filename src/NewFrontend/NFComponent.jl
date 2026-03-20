@@ -331,7 +331,7 @@ function toFlatString(name::String, component::Component; inFunction = false)
       end
 
       TYPE_ATTRIBUTE(__) => begin
-        name + toFlatString(component.modifier, printName = false)
+        name + toFlatString(component.modifier, false)
       end
       ITERATOR_COMPONENT(__) => begin
         string("'", name, "'")
@@ -385,7 +385,7 @@ function toString(nameStr::String, component::Component)
       end
 
       TYPE_ATTRIBUTE(__) => begin
-        nameStr + toString(component.modifier, #= printName =# false)
+        nameStr + toString(component.modifier, false)
       end
       _ => begin
         "UNKNOWN COMPONENT"

@@ -66,7 +66,7 @@ end
 function idExistsInEntry(id::LookupTree.Entry, entry::Entry)
   local exists::Bool
     exists =
-    LookupTree.isEqual(id, entry.entry) || ArrayUtil.exist(entry.children, (id) -> idExistsInEntry(id = id))
+    LookupTree.isEqual(id, entry.entry) || any((child) -> idExistsInEntry(id, child), entry.children)
   return exists
 end
 

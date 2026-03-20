@@ -25,6 +25,9 @@ const ScalarizeSetting = (() -> begin #= Enumeration =#
 
 const ScalarizeSettingType = Int
 
+#= Wrapper to avoid shadowing by the `scalarize` parameter of ScalarizeSettingType =#
+scalarizeCref(cref::ComponentRef)::List{ComponentRef} = scalarize(cref)
+
 """ #= Splits a connector into its primitive components. =#"""
 function split(
   conn::Connector,
@@ -283,7 +286,7 @@ function splitImpl(
       TYPE_ARRAY(
         elementType = ety && TYPE_COMPLEX(__),
       ) where {(scalarize >= ScalarizeSetting.PREFIX)} => begin
-        for c in scalarize(name)
+        for c in scalarizeCref(name)
           @assign conns = splitImpl(c, ety, face, source, cty, scalarize, conns, dims)
         end
         conns
@@ -291,7 +294,7 @@ function splitImpl(
 
       TYPE_ARRAY(elementType = ety) => begin
         if scalarize == ScalarizeSetting.ALL
-          for c in scalarize(name)
+          for c in scalarizeCref(name)
             @assign conns = splitImpl(c, ety, face, source, cty, scalarize, conns, dims)
           end
         else

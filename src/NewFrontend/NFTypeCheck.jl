@@ -384,8 +384,8 @@ function checkOverloadedBinaryArrayAddSub(
       info,
     )
   end
-  @assign e1 = expand(e1)
-  @assign e2 = expand(e2)
+  (e1, _) = expand(e1)
+  (e2, _) = expand(e2)
    (outExp, outType) = checkOverloadedBinaryArrayAddSub2(
     e1,
     type1,
@@ -685,7 +685,7 @@ function checkOverloadedBinaryScalarArray2(
         ]
         outType = setArrayElementType(
           exp2.ty,
-          typeOf(listHead(expl)),
+          typeOf(expl[1]),
         )
         (makeArray(outType, expl), outType)
       end
@@ -799,7 +799,7 @@ function checkOverloadedBinaryArrayScalar2(
         ]
         outType = setArrayElementType(
           exp1.ty,
-          typeOf(listHead(expl)),
+          typeOf(expl[1]),
         )
         (makeArray(outType, expl), outType)
       end
@@ -897,8 +897,8 @@ function checkOverloadedBinaryArrayEW(
       info,
     )
   end
-  @assign e1 = expand(exp1)
-  @assign e2 = expand(exp2)
+  (e1, _) = expand(exp1)
+  (e2, _) = expand(exp2)
    (outExp, outType) =
     checkOverloadedBinaryArrayEW2(e1, type1, var1, op, e2, type2, var2, candidates, info)
   return (outExp, outType)
@@ -1039,7 +1039,7 @@ function implicitConstructAndMatch(
   local mk2::MatchKindType
   local fn_ref::ComponentRef
   local operfn::M_Function
-  local matchedfuncs::List{Tuple{M_Function, List{Expression}, Variability}} = nil
+  local matchedfuncs::List{Tuple{M_Function, List{Expression}, VariabilityType}} = nil
   local exp1::Expression
   local exp2::Expression
   local ty::M_Type
@@ -1100,7 +1100,7 @@ function implicitConstructAndMatch(
     @assign outType = returnType(operfn)
     @assign outExp = CALL_EXPRESSION(makeTypedCall(
       operfn,
-      list(exp1, exp2),
+      Expression[exp1, exp2],
       var,
       outType,
     ))
@@ -1109,7 +1109,7 @@ function implicitConstructAndMatch(
       Error.AMBIGUOUS_MATCHING_OPERATOR_FUNCTIONS_NFINST,
       list(
         toString(BINARY_EXPRESSION(exp1, op, exp2)),
-        P_Function.candidateFuncListString(list(Util.tuple31(fn) for fn in matchedfuncs)),
+        candidateFuncListString(list(Util.tuple31(fn) for fn in matchedfuncs)),
       ),
       info,
     )
@@ -1147,7 +1147,7 @@ function implicitConstructAndMatch2(
   =#
   if mk == MatchKind.EXACT
     @assign fn_ref =
-      P_Function.instFunction(Absyn.CREF_IDENT("'constructor'", nil), scope, paramInfo2)
+      instFunction(Absyn.CREF_IDENT("'constructor'", nil), scope, paramInfo2)
     @assign e2 =
       CALL_EXPRESSION(NFCall.UNTYPED_CALL(fn_ref, list(exp2), nil, scope))
      (e2, ty, var) = typeCall(e2, 0, paramInfo1)
@@ -1718,7 +1718,7 @@ function checkOverloadedUnaryOperator(
     outType = returnType(matchedFunc.func)
     outExp = CALL_EXPRESSION(makeTypedCall(
       matchedFunc.func,
-      list(Util.tuple31(a) for a in matchedFunc.args),
+      Expression[Util.tuple31(a) for a in matchedFunc.args],
       var,
       outType,
     ))
@@ -1727,7 +1727,7 @@ function checkOverloadedUnaryOperator(
       Error.AMBIGUOUS_MATCHING_OPERATOR_FUNCTIONS_NFINST,
       list(
         toString(UNARY_EXPRESSION(inOp, inExp1)),
-        P_Function.candidateFuncListString(list(mfn.func for mfn in matchedFunctions)),
+        candidateFuncListString(list(mfn.func for mfn in matchedFunctions)),
       ),
       info,
     )
@@ -1993,6 +1993,7 @@ function matchExpressions2(
       TYPE_TUPLE(__) => begin
         @match (e2, cty, mk) =
            matchTupleTypes(type2, type1, exp2, allowUnknown)
+        e1 = exp1
         cty
       end
 
@@ -2019,7 +2020,24 @@ function matchExpressions2(
         cty
       end
 
+      TYPE_FUNCTION(__) => begin
+        @match (e1, cty, mk) = matchFunctionTypes(type1, type2, exp1, allowUnknown)
+        e2 = exp2
+        cty
+      end
+
+      TYPE_ANY(__) => begin
+        @match (e1, e2) = (exp1, exp2)
+        type1
+      end
+
+      TYPE_NORETCALL(__) => begin
+        @match (e1, e2) = (exp1, exp2)
+        type1
+      end
+
       _ => begin
+        @match (e1, e2) = (exp1, exp2)
         Error.assertion(false, getInstanceName() + " got unknown type.", sourceInfo())
         fail()
       end
@@ -2701,10 +2719,10 @@ function matchFunctionTypes(
   local matching::Bool
 
   @match TYPE_FUNCTION(
-    fn = P_Function.FUNCTION(inputs = inputs1, outputs = outputs1, slots = slots1),
+    fn = M_FUNCTION(inputs = inputs1, outputs = outputs1, slots = slots1),
   ) = actualType
   @match TYPE_FUNCTION(
-    fn = P_Function.FUNCTION(inputs = inputs2, outputs = outputs2, slots = slots2),
+    fn = M_FUNCTION(inputs = inputs2, outputs = outputs2, slots = slots2),
   ) = expectedType
   #=  The functions must have the same number of outputs.
   =#
@@ -3336,7 +3354,7 @@ function getRangeTypeInt(
           )
           @assign dim_exp = CALL_EXPRESSION(makeTypedCall(
             NFBuiltinFuncs.DIV_INT,
-            list(dim_exp, step_exp),
+            Expression[dim_exp, step_exp],
             var,
           ))
         end

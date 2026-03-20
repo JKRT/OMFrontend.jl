@@ -1349,7 +1349,7 @@ function evaluateOpenModelicaRegex(args::List{<:Expression})::Expression
         @assign expl = list(STRING_EXPRESSION(s) for s in strs)
         @assign strs_ty =
           TYPE_ARRAY(TYPE_STRING(), list(fromInteger(i)))
-        @assign strs_exp = makeArray(strs_ty, expl, true)
+        @assign strs_exp = makeArray(strs_ty, expl; literal=true)
         TUPLE_EXPRESSION(
           TYPE_TUPLE(list(TYPE_INTEGER(), strs_ty), NONE()),
           list(INTEGER_EXPRESSION(n), strs_exp),
@@ -1426,7 +1426,7 @@ function evaluateExternal2(
 
   @assign repl = createReplacements(fn, args)
   @assign ext_args = list(
-    map(e, (repl) -> applyReplacements2(repl = repl))
+    map(e, (subexp) -> applyReplacements2(repl, subexp))
     for e in extArgs
   )
   evaluateExternal3(name, ext_args)

@@ -873,7 +873,7 @@ function findResultGraph(inGraph::NFOCConnectionGraph, modelNameQualified::Strin
           @assign connections = orderConnectsGuidedByUser(connections, userBrokenTplLst)
           @assign connections = listReverse(connections)
           print("\\nAfer ordering:\\n")
-           (finalRoots, connected, broken) = findResultGraph(GRAPH(false, definiteRoots, potentialRoots, uniqueRoots, branches, connections), modelNameQualified)
+           (finalRoots, connected, broken) = findResultGraph(OCC_GRAPH(false, definiteRoots, potentialRoots, uniqueRoots, branches, connections), modelNameQualified)
         end
         (finalRoots, connected, broken)
       end
@@ -1584,7 +1584,7 @@ function merge(inGraph1::NFOCConnectionGraph, inGraph2::NFOCConnectionGraph) ::N
         @assign uniqueRoots = ListUtil.union(uniqueRoots1, uniqueRoots2)
         @assign branches = ListUtil.union(branches1, branches2)
         @assign connections = ListUtil.union(connections1, connections2)
-        GRAPH(updateGraph, definiteRoots, potentialRoots, uniqueRoots, branches, connections)
+        OCC_GRAPH(updateGraph, definiteRoots, potentialRoots, uniqueRoots, branches, connections)
       end
     end
   end

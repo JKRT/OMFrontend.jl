@@ -39,7 +39,6 @@ function fromSCode(scodeCty::SCode.ConnectorType)::Int
         ConnectorType.FLOW
       end
       SCode.STREAM(__) => begin
-        throw("WRONG!")
         ConnectorType.STREAM
       end
     end

@@ -694,7 +694,7 @@ function checkIdentical(node1::InstNode, node2::InstNode)
         ()
       end
       _  => begin
-        Error.addMultiSourceMessage(Error.DUPLICATE_ELEMENTS_NOT_IDENTICAL, list(toString(n1), toString(n2)), list(info(n1), info(n2)))
+        Error.addMultiSourceMessage(Error.DUPLICATE_ELEMENTS_NOT_IDENTICAL, list(toString(n1), toString(n2)), list(InstNode_info(n1), InstNode_info(n2)))
         fail()
       end
     end

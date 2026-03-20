@@ -261,7 +261,7 @@ function checkProtection(node::InstNode, currentState::LookupState)
           Error.addSourceMessage(
             Error.PROTECTED_ACCESS,
             list(name(node)),
-            info(node),
+            InstNode_info(node),
           )
           fail()
         end

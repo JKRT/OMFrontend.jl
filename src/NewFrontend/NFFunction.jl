@@ -259,13 +259,13 @@ function foldExpParameter(node::InstNode, foldFn::FoldFunc, arg::ArgT) where {Ar
       TYPED_COMPONENT(__) => begin
         @assign arg = foldDims(
           comp.ty,
-          (foldFn) -> foldExp(func = foldFn),
+          (dim, acc) -> foldExp(dim, foldFn, acc),
           arg,
         )
         @assign cls = getClass(comp.classInst)
         @assign arg = foldComponents(
           classTree(cls),
-          (foldFn) -> foldExpParameter(foldFn = foldFn),
+          (node, acc) -> foldExpParameter(node, foldFn, acc),
           arg,
         )
         ()
@@ -293,7 +293,7 @@ function foldExp(
   if mapParameters
     @assign arg = foldComponents(
       classTree(cls),
-      (foldFn) -> foldExpParameter(foldFn = foldFn),
+      (node, acc) -> foldExpParameter(node, foldFn, acc),
       arg,
     )
   end
@@ -448,8 +448,8 @@ function makeDAEType(fn::M_FUNCTION, boxTypes::Bool = false)::DAE.Type
   return outType
 end
 
-function toDAE(fn::M_FUNCTION, def::DAE.FunctionDefinition)::DAE.P_Function
-  local daeFn::DAE.P_Function
+function toDAE(fn::M_FUNCTION, def::DAE.FunctionDefinition)::DAE.Function
+  local daeFn::DAE.Function
 
   local vis::SCode.Visibility
   local par::Bool
@@ -837,7 +837,7 @@ function typePartialApplication(
   exp::Expression,
   origin::ORIGIN_Type,
   info::SourceInfo,
-)::Tuple{Expression, M_Type, Variability}
+)::Tuple{Expression, M_Type, VariabilityType}
   local variability::VariabilityType
   local ty::M_Type
 
@@ -891,12 +891,12 @@ function typePartialApplication(
   return (exp, ty, variability)
 end
 
-function boxFunctionParameter(component::InstNode)
+function boxFunctionParameter(compNode::InstNode)
   local comp::Component
 
-  @assign comp = component(component)
+  @assign comp = component(compNode)
   @assign comp = setType(box(getType(comp)), comp)
-  return updateComponent!(comp, component)
+  return updateComponent!(comp, compNode)
 end
 
 """ #= Types the body of a function, along with any bindings of local variables
@@ -1206,7 +1206,7 @@ function matchArgs(
       #   list(
       #     name(input_node),
       #     toString(arg_exp),
-      #     AbsynUtil.pathString(P_Function.name(func)),
+      #     AbsynUtil.pathString(name(func)),
       #     variabilityString(arg_var),
       #     variabilityString(variability(comp)),
       #   ),
@@ -1721,7 +1721,7 @@ function callString(
   return str
 end
 
-function candidateFuncListString(fns::List{M_Function})::String
+function candidateFuncListString(fns::List{<:M_Function})::String
   local s::String =
     stringDelimitList(list(signatureString(fn, true) for fn in fns), "\\n  ")
   return s
@@ -2701,7 +2701,7 @@ function analyseUnusedParameters(fn::M_FUNCTION)::List{Int}
   @assign inputs = foldExp(fn, analyseUnusedParametersExp, fn.inputs)
   for i in inputs
     @assign index =
-      ListUtil.positionOnTrue(fn.inputs, (i) -> refEqual(node1 = i))
+      ListUtil.positionOnTrue(fn.inputs, (inp) -> refEqual(i, inp))
     @assign unusedInputs = _cons(index, unusedInputs)
   end
   return unusedInputs

@@ -381,7 +381,7 @@ function lookupName(name::Absyn.Path, scope::InstNode, lookupStateRef::Ref{Looku
         lookupLocalName(name.path, node, state, lookupStateRef, checkAccessViolations, refEqual(node, scope))
       end
       Absyn.FULLYQUALIFIED(__)  => begin
-        lookupName(name.path, topScope(scope), checkAccessViolations, lookupStateRef)
+        lookupName(name.path, topScope(scope), lookupStateRef, checkAccessViolations)
       end
     end
   end
@@ -692,6 +692,18 @@ function lookupIteratorNoFail(iteratorName::String, iterators::Vector{<:InstNode
     end
   end
   return EMPTY_NODE()
+end
+
+#= 5-arg convenience overload: wraps Ref pattern and returns tuple =#
+function lookupCrefInNode(cref::Absyn.ComponentRef,
+                          node::InstNode,
+                          foundCref::ComponentRef,
+                          foundScope::InstNode,
+                          state::LookupState)::Tuple{ComponentRef, InstNode, LookupState}
+  local scopeRef = Ref{InstNode}(foundScope)
+  local stateRef = Ref{LookupState}(state)
+  foundCref = lookupCrefInNode(cref, node, foundCref, foundScope, state, scopeRef, stateRef)
+  return (foundCref, scopeRef.x, stateRef.x)
 end
 
 function lookupCrefInNode(cref::Absyn.ComponentRef #=modification-040321=#,

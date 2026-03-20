@@ -379,7 +379,7 @@ function removeEmptyTupleElements(exp::Expression)
                                else
                                  e
                                end (e, t) (exp.elements, tyl))
-      TUPLE_EXPRESSION(ty, expElements)
+      TUPLE_EXPRESSION(exp.ty, expElements)
     end
     _ => begin
       exp

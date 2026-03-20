@@ -1507,24 +1507,12 @@ function addElementSourceArrayPrefix(
   source::DAE.ElementSource,
   prefix::ComponentRef,
 )::DAE.ElementSource
-
-  local comp_pre::DAE.ComponentPrefix
-
-  #=  It seems the backend doesn't really care about the ComponentPrefix, and
+  #=  The backend does not use the ComponentPrefix from ElementSource,
   =#
-  #=  creating a proper prefix here could be rather expensive. So we just create
+  #=  so we skip creating one here to avoid pulling in Prefix constructors
   =#
-  #=  a dummy prefix here with one subscript to keep CheckModel happy.
+  #=  with incorrect DAE subscript types from the translator port.
   =#
-  @assign comp_pre = DAE.ComponentPrefix.PRE(
-    firstName(prefix),
-    nil,
-    list(DAE.SUBSCRIPT_INDEX(DAE.Exp.ICONST(-1))),
-    DAE.ComponentPrefix.NOCOMPPRE(),
-    ClassInf.State.UNKNOWN(Absyn.IDENT("?")),
-    AbsynUtil.dummyInfo,
-  )
-  @assign source = ElementSource.addElementSourceInstanceOpt(source, comp_pre)
   return source
 end
 
@@ -1898,7 +1886,7 @@ function collectExpFuncs_traverse(exp::Expression, funcs::FunctionTree)::Functio
         ()
       end
       PARTIAL_FUNCTION_APPLICATION_EXPRESSION(__) => begin
-        for f in P_Function.getRefCache(exp.fn)
+        for f in getRefCache(exp.fn)
           funcs = flattenFunction(f, funcs)
         end
         ()

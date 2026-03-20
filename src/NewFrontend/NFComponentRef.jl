@@ -1227,13 +1227,13 @@ function nodesIncludingSplitSubs(cref::ComponentRef, accum::List = nil)
       for s in cref.subscripts
         if isSplitIndex(s)
           @match SUBSCRIPT_SPLIT_INDEX(tmpNode) = s
-          nodes = tmpNode <| nodes
+          accum = tmpNode <| accum
         end
       end
-      nodesIncludingSplitSubs(cref.restCref, cref.node <| nodes);
+      nodesIncludingSplitSubs(cref.restCref, cref.node <| accum);
     end
     _ => begin
-      nodes
+      accum
     end
   end
 end

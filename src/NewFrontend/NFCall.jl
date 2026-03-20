@@ -249,7 +249,7 @@ function toDAE(@nospecialize(call::Call))
          (fold_exp, fold_id, res_id) = call.foldExp
         DAE.REDUCTION(
           DAE.REDUCTIONINFO(
-            P_Function.name(call.fn),
+            name(call.fn),
             Absyn.COMBINE(),
             toDAE(call.ty),
             toDAEValueOpt(call.defaultExp),
@@ -313,7 +313,7 @@ function typedString(@nospecialize(call::Call))::String
       end
 
       TYPED_CALL(__) => begin
-         name = AbsynUtil.pathString(P_Function.name(call.fn))
+         name = AbsynUtil.pathString(name(call.fn))
          arg_str = stringDelimitList(
           list(toStringTyped(arg) for arg in call.arguments),
           ", ",
@@ -378,7 +378,7 @@ function toFlatString(@nospecialize(call::Call); inFunction = false)
       end
 
       TYPED_REDUCTION(__) => begin
-         nameVar = AbsynUtil.pathString(P_Function.name(call.fn))
+         nameVar = AbsynUtil.pathString(name(call.fn))
          arg_str = toFlatString(call.exp; inFunction = inFunction)
          c = stringDelimitList(
           list(
@@ -498,7 +498,7 @@ function toString(@nospecialize(call::Call))::String
       end
 
       TYPED_REDUCTION(__) => begin
-nameStr = AbsynUtil.pathString(P_Function.name(call.fn))
+nameStr = AbsynUtil.pathString(name(call.fn))
          arg_str = toString(call.exp)
          c = stringDelimitList(
           list(
@@ -690,7 +690,7 @@ function compare(@nospecialize(call1::Call), @nospecialize(call2::Call))::Int
       (UNTYPED_CALL(__), TYPED_CALL(__)) => begin
         AbsynUtil.pathCompare(
           toPath(call1.ref),
-          P_Function.name(call2.fn),
+          name(call2.fn),
         )
       end
       (TYPED_CALL(__), UNTYPED_CALL(__)) => begin
@@ -1335,7 +1335,7 @@ function checkMatchingFunctions(@nospecialize(call::Call), info::SourceInfo)
       #ErrorExt.rollBack("NFCall:checkMatchingFunctions")
       # Error.addSourceMessage(
       #   Error.NO_MATCHING_FUNCTION_FOUND_NFINST,
-      #   list(typedString(call), P_Function.candidateFuncListString(allfuncs)),
+      #   list(typedString(call), candidateFuncListString(allfuncs)),
       #   info,
       # )
       @error "No matching function found for $(typedString(call)). Candidates where" candidateFuncListString(allfuncs)
@@ -1355,7 +1355,7 @@ function checkMatchingFunctions(@nospecialize(call::Call), info::SourceInfo)
         Error.AMBIGUOUS_MATCHING_FUNCTIONS_NFINST,
         list(
           typedString(call),
-          P_Function.candidateFuncListString(list(mfn.func for mfn in matchedFunctions)),
+          candidateFuncListString(list(mfn.func for mfn in matchedFunctions)),
         ),
         info,
       )
@@ -1444,7 +1444,7 @@ function reductionFoldExpression(
 
   if isComplex(reductionType)
      foldExp = begin
-      @match AbsynUtil.pathFirstIdent(P_Function.name(reductionFn)) begin
+      @match AbsynUtil.pathFirstIdent(name(reductionFn)) begin
         "sum" => begin
           @match TYPE_COMPLEX(cls = op_node) = reductionType
           @match ENTRY_INFO(op_node, _) = lookupElement("'+'", getClass(op_node))
@@ -1523,7 +1523,7 @@ function reductionDefaultValue(fn::M_Function, ty::NFType)::Option{Expression}
      defaultValue = NONE()
   else
      defaultValue = begin
-      @match AbsynUtil.pathFirstIdent(P_Function.name(fn)) begin
+      @match AbsynUtil.pathFirstIdent(name(fn)) begin
         "sum" => begin
           SOME(makeZero(ty))
         end
@@ -1546,7 +1546,7 @@ function reductionDefaultValue(fn::M_Function, ty::NFType)::Option{Expression}
             list(
               getInstanceName() +
               " got unknown reduction name " +
-              AbsynUtil.pathFirstIdent(P_Function.name(fn)),
+              AbsynUtil.pathFirstIdent(name(fn)),
             ),
             sourceInfo(),
           )
@@ -1562,7 +1562,7 @@ function typeReduction(
   call::Call,
   origin::ORIGIN_Type,
   info::SourceInfo,
-)::Tuple{Call, NFType, Variability}
+)::Tuple{Call, NFType, VariabilityType}
   local variability::VariabilityType
   local ty::NFType
   local range::Expression
@@ -1586,8 +1586,8 @@ function typeReduction(
         for i in call.iters
            (iter, range) = i
            (range, _, iter_var) =
-            typeIterator(iter, range, origin, structural = false)
-           variability = Variability.variabilityMax(variability, iter_var)
+            typeIterator(iter, range, origin, false)
+           variability = variabilityMax(variability, iter_var)
            iters = Cons{Tuple{InstNode, Expression}}((iter, range), iters)
         end
          iters = listReverseInPlace(iters)
@@ -1595,8 +1595,8 @@ function typeReduction(
         =#
         next_origin = intBitOr(next_origin, ORIGIN_FOR)
         (arg, ty, exp_var) = typeExp(call.exp, next_origin, info)
-        variability = Variability.variabilityMax(variability, exp_var)
-        @match list(fn) = typeRefCache(call.ref)
+        variability = variabilityMax(variability, exp_var)
+        @match [fn, rst...] = typeRefCache(call.ref)
         checkReductionType(ty, name(fn), call.exp, info)
         fold_id = Util.getTempVariableIndex()
         res_id = Util.getTempVariableIndex()
@@ -1749,7 +1749,7 @@ function instIteratorCall(
   if AbsynUtil.crefFirstIdent(fn_name) == "array"
     callExp = CALL_EXPRESSION(UNTYPED_ARRAY_CONSTRUCTOR(exp, iters))
   else
-    fn_ref = instFunction(fn_name, scope, info)
+    (fn_ref, _, _) = instFunction(fn_name, scope, info)
     callExp = CALL_EXPRESSION(UNTYPED_REDUCTION(fn_ref, exp, iters))
   end
   return callExp
@@ -1927,7 +1927,7 @@ function mapFoldExp(@nospecialize(call::Call), func::MapFunc, foldArg::ArgT)  wh
         oe = Util.tuple31(call.foldExp)
         if isSome(oe)
           (oe, foldArg) = Expression.mapFoldOpt(oe, func, foldArg)
-          fold_exp = Util.applyTuple31(call.foldExp, (oe) -> Util.replace(arg = oe))
+          fold_exp = Util.applyTuple31(call.foldExp, (_) -> oe)
         else
           fold_exp = call.foldExp
         end

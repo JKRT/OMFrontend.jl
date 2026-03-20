@@ -381,7 +381,7 @@ function replaceFlowIterator(@nospecialize(exp::Expression),
                              iterator::InstNode,
                              @nospecialize(iteratorValue::Expression))
   local res = if exp isa CREF_EXPRESSION
-    @assign exp.cref.subscripts = list(SUBSCRIPT_INDEX(iteratorValue))
+    exp = CREF_EXPRESSION(exp.ty, _replaceIteratorInCref(exp.cref, iterator, iteratorValue))
     exp
   elseif exp isa BINARY_EXPRESSION
     expExp1 = replaceFlowIterator(exp.exp1,
@@ -403,6 +403,35 @@ function replaceFlowIterator(@nospecialize(exp::Expression),
 end
 
 
+
+"""
+Walk a COMPONENT_REF_CREF chain and replace any subscript that references
+the given iterator node with a concrete SUBSCRIPT_INDEX(iteratorValue).
+"""
+function _replaceIteratorInCref(cref::ComponentRef, iterator::InstNode,
+                                @nospecialize(iteratorValue::Expression))::ComponentRef
+  if !(cref isa COMPONENT_REF_CREF)
+    return cref
+  end
+  local newSubs = Subscript[]
+  local changed = false
+  for sub in cref.subscripts
+    if sub isa SUBSCRIPT_INDEX && sub.index isa CREF_EXPRESSION
+      subNode = sub.index.cref
+      if subNode isa COMPONENT_REF_CREF && subNode.node === iterator
+        push!(newSubs, SUBSCRIPT_INDEX(iteratorValue))
+        changed = true
+        continue
+      end
+    end
+    push!(newSubs, sub)
+  end
+  local newRestCref = _replaceIteratorInCref(cref.restCref, iterator, iteratorValue)
+  if changed || newRestCref !== cref.restCref
+    return COMPONENT_REF_CREF(cref.node, list(newSubs...), cref.ty, cref.origin, newRestCref)
+  end
+  return cref
+end
 
 """ #= Creates an expression from a connector element, which is the element itself
    if it's an inside connector, or the element negated if it's outside. =#"""

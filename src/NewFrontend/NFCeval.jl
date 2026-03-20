@@ -334,7 +334,7 @@ function evalExpPartial(
   local eval1::Bool
   local eval2::Bool
   local outEvaluatedRef::Ref{Bool} = Ref{Bool}(true)
-  local f = @closure (expArg, boolArg) -> evalExpPartialRef(expArg, outEvaluatedRef, target)
+  local f = @closure (expArg, boolArg) -> (evalExpPartialRef(expArg, outEvaluatedRef, target), boolArg)
   e = mapFoldShallowRef(
     exp,
     f,
@@ -392,7 +392,7 @@ function evalExpPartialRef(
   local e2::Expression
   local eval1::Bool
   local eval2::Bool
-  local f = @closure (expArg, z #=We ignore Z=#) -> evalExpPartialRef(expArg, outEvaluatedRef, target)
+  local f = @closure (expArg, z #=We ignore Z=#) -> (evalExpPartialRef(expArg, outEvaluatedRef, target), z)
   e = mapFoldShallowRef(exp, f, true, outEvaluatedRef)
   outEvaluated = outEvaluatedRef.x
   local evaluated = true
@@ -3432,7 +3432,7 @@ function evalBuiltinMin(args::List{Expression}, fn::M_Function)::Expression
         if isEmpty(result)
            result = CALL_EXPRESSION(makeTypedCall(
             fn,
-            list(makeEmptyArray(ty)),
+            Expression[makeEmptyArray(ty)],
             Variability.CONSTANT,
             arrayElementType(ty),
           ))
@@ -3824,7 +3824,7 @@ function evalBuiltinSkew(@nospecialize(arg::Expression))::Expression
           literal,
         )
          ty = liftArrayLeft(ty, fromInteger(3))
-        makeArray(ty, Expression[y1, y2, y3], literal)
+        makeArray(ty, Expression[y1, y2, y3]; literal=literal)
       end
 
       _ => begin
@@ -4547,7 +4547,7 @@ function evalReduction2(
    (e, ranges, iters) = createIterationRanges(exp, iterators)
    ty = typeOf(e)
    (red_fn, default_exp) = begin
-    @match AbsynUtil.pathString(P_Function.name(fn)) begin
+    @match AbsynUtil.pathString(name(fn)) begin
       "sum" => begin
         (evalBinaryAdd, makeZero(ty))
       end
@@ -4569,7 +4569,7 @@ function evalReduction2(
           false,
           getInstanceName() +
           " got unknown reduction function " +
-          AbsynUtil.pathString(P_Function.name(fn)),
+          AbsynUtil.pathString(name(fn)),
           sourceInfo(),
         )
         fail()
@@ -4683,11 +4683,12 @@ function evalSubscriptedExp(
   return result
 end
 
-function evalRecordElement(exp::RECORD_EXPRESSION, target::EvalTarget)
+function evalRecordElement(exp::RECORD_ELEMENT_EXPRESSION, target::EvalTarget)
   local result::Expression
   local e::Expression
   local index::Int
-  @match RECORD_ELEMENT(recordExp = e, index = index) = exp
+  e = exp.recordExp
+  index = exp.index
   e = evalExp_impl(e, target)
   try
     result =

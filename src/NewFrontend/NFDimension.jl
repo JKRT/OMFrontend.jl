@@ -547,10 +547,10 @@ function fromExp(@nospecialize(exp::Expression), var::VariabilityType)::Dimensio
         begin
           @match ty begin
             TYPE_BOOLEAN(__) => begin
-              BOOLEAN()
+              DIMENSION_BOOLEAN()
             end
             TYPE_ENUMERATION(__) => begin
-              ENUM(ty)
+              DIMENSION_ENUM(ty)
             end
             _ => begin
               Error.assertion(

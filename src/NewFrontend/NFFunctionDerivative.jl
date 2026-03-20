@@ -49,13 +49,13 @@ function toDAE(fnDer::FunctionDerivative)::DAE.FunctionDefinition
 
   @match INTEGER_EXPRESSION(order) = fnDer.order
   @assign derDef = DAE.FunctionDefinition.FUNCTION_DER_MAPPER(
-    P_Function.name(listHead(getCachedFuncs(fnDer.derivedFn))),
-    P_Function.name(listHead(getCachedFuncs(fnDer.derivativeFn))),
+    name(listHead(getCachedFuncs(fnDer.derivedFn))),
+    name(listHead(getCachedFuncs(fnDer.derivativeFn))),
     order,
     list(conditionToDAE(c) for c in fnDer.conditions),
     NONE(),
     list(
-      P_Function.name(listHead(getCachedFuncs(fn)))
+      name(listHead(getCachedFuncs(fn)))
       for fn in fnDer.lowerOrderDerivatives
     ),
   )
@@ -161,7 +161,7 @@ function getInputIndex(nameArg::String, fn::M_Function, info::SourceInfo)::Int
   end
   Error.addSourceMessage(
     Error.INVALID_FUNCTION_DERIVATIVE_INPUT,
-    list(name, AbsynUtil.pathString(P_Function.name(fn))),
+    list(name, AbsynUtil.pathString(name(fn))),
     info,
   )
   fail()
@@ -260,7 +260,7 @@ function instDerivativeMod(
     local conds::List{Tuple{Int, String, ConditionType}}
     @match mod begin
       SCode.MOD(subModLst = attrs, binding = SOME(Absyn.CREF(acref))) => begin
-         (_, der_node) = instFunction(acref, scope, mod.info)
+         (_, der_node, _) = instFunction(acref, scope, mod.info)
         addLowerOrderDerivative(der_node, fnNode)
         (order, conds) = getDerivativeAttributes(attrs, fn, fnNode, mod.info)
         _cons(FUNCTION_DER(der_node, fnNode, order, conds, nil), fnDers)
@@ -271,7 +271,7 @@ function instDerivativeMod(
         =#
         Error.addStrictMessage(
           Error.MISSING_FUNCTION_DERIVATIVE_NAME,
-          list(AbsynUtil.pathString(P_Function.name(fn))),
+          list(AbsynUtil.pathString(name(fn))),
           mod.info,
         )
         fnDers

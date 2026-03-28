@@ -207,9 +207,9 @@ end
 
   @assign fieldType = begin
     @match recordType begin
-      COMPLEX(__) => begin
+      TYPE_COMPLEX(__) => begin
         entryInfo = lookupElement(name, getClass(recordType.cls))
-        getType(entryInfo.node, entryInfo.isImport)
+        getType(entryInfo.node)
       end
 
       TYPE_ARRAY(__) => begin
@@ -387,18 +387,18 @@ end
       TYPE_FUNCTION(__) => begin
         begin
           @match ty.fnType begin
-            FunctionTYPE_FUNCTIONAL_PARAMETER => begin
+            FunctionType.FUNCTIONAL_PARAMETER => begin
               makeDAEType(ty.fn)
             end
 
-            FunctionTYPE_FUNCTION_REFERENCE => begin
+            FunctionType.FUNCTION_REFERENCE => begin
               DAE.T_FUNCTION_REFERENCE_FUNC(
                 isBuiltin(ty.fn),
                 makeDAEType(ty.fn),
               )
             end
 
-            FunctionTYPE_FUNCTIONAL_VARIABLE => begin
+            FunctionType.FUNCTIONAL_VARIABLE => begin
               DAE.T_FUNCTION_REFERENCE_VAR(makeDAEType(ty.fn, true))
             end
           end
@@ -581,10 +581,10 @@ function toFlatDeclarationStream(@nospecialize(ty::NFType), s::IOStream_M.IOSTRE
       s = IOStream_M.append(s, "class ")
       s = IOStream_M.append(s, name)
       s = IOStream_M.append(s, "\n  extends ExternalObject;\n\n")
-      local f = listHead(typeNodeCache(ty.complexTy.constructor))
+      local f = typeNodeCache(ty.complexTy.constructor)[1]
       s = toFlatStream(f, s, overrideName="constructor")
       s = IOStream_M.append(s, ";\n\n")
-      f = listHead(typeNodeCache(ty.complexTy.destructor))
+      f = typeNodeCache(ty.complexTy.destructor)[1]
       s = toFlatStream(f, s, overrideName="destructor")
       s = IOStream_M.append(s, ";\n\nend ")
       s = IOStream_M.append(s, name)
@@ -760,8 +760,8 @@ end
       TYPE_TUPLE(tyTypes, ty.names)
     end
     TYPE_FUNCTION(fn = fn) => begin
-      tyFn = setReturnmapDims(mapDims(returnType(fn), func), fn)
-      TYPE_FUNCTION(fn, tyFn)
+      newFn = setReturnType(mapDims(returnType(fn), func), fn)
+      TYPE_FUNCTION(newFn, ty.fnType)
     end
     TYPE_METABOXED(__) => begin
       tyTy = mapDims(ty.ty, func)

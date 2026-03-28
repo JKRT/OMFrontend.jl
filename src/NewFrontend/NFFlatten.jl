@@ -587,7 +587,16 @@ function flattenComplexComponent(
       local evaluatedBindingExp = evalExp(binding_exp)
       binding_exp = stripBindingInfo(evaluatedBindingExp)
     elseif binding_var == Variability.PARAMETER && isFinal(comp)
-      binding_exp = stripBindingInfo(evalExp(binding_exp))
+      try
+        binding_exp = stripBindingInfo(evalExp(binding_exp))
+      catch
+        #= If constant evaluation fails for a final parameter binding,
+           fall back to simplification. The expression is still valid,
+           just not constant-folded. This handles cases like chained
+           final parameter bindings with function calls. =#
+        Error.clearMessages()
+        binding_exp = simplify(binding_exp)
+      end
     else
       binding_exp = simplify(binding_exp)
     end
@@ -956,7 +965,7 @@ function subscriptBindingOpt(
         TYPED_BINDING(bindingExp = exp, bindingType = ty) => begin
           bindingExp = applySubscripts(subscripts, exp)
           bindingType = arrayElementType(ty)
-          TYPED_BINDING(bindingExp,
+          b = TYPED_BINDING(bindingExp,
                         bindingType,
                         b.variability,
                         b.eachType,

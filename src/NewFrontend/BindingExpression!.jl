@@ -424,7 +424,12 @@ function mapFoldShallowRef(@nospecialize(exp::Expression), @nospecialize(func::F
       end
     end
   end
-  outRefArg.x = arg
+  #=  Merge the value-based fold (arg) with the Ref-based tracking.
+      Some match arms (CALL_EXPRESSION, SUBSCRIPTED_EXP_EXPRESSION) use
+      mapFoldSO which discards the fold result, so arg can stay stale.
+      Callbacks update outRefArg.x directly via side effects.
+      Use && to preserve false from either source. =#
+  outRefArg.x = arg && outRefArg.x
   outExp
 end
 
@@ -510,6 +515,11 @@ function mapFoldCallShallowRef(@nospecialize(call::Call), @nospecialize(func::Fu
       end
     end
   end
-  outRefArg.x = foldArg
+  #=  Merge foldArg (value-based fold) with outRefArg (Ref-based tracking).
+      Some match arms (e.g. TYPED_CALL) use mapFoldSO which discards the fold
+      result, leaving foldArg stale at its initial value. The callbacks in
+      those arms update outRefArg directly via side effects. Use && to
+      preserve false from either source. =#
+  outRefArg.x = foldArg && outRefArg.x
   outCall
 end

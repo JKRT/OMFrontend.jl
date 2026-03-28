@@ -402,10 +402,10 @@ function expandBinaryVectorMatrix(@nospecialize(exp::Expression))::Tuple{Express
   @match BINARY_EXPRESSION(exp1 = exp1, exp2 = exp2) = exp
    (exp2, expanded) = expand(exp2)
   if expanded
-    @match ARRAY_EXPRESSION(TYPE_ARRAY(ty, list(m, _)), expl) =
+    @match ARRAY_EXPRESSION(TYPE_ARRAY(ty, _cons(m, _)), expl) =
       transposeArray(exp2)
     @assign ty = TYPE_ARRAY(ty, list(m))
-    if listEmpty(expl)
+    if isempty(expl)
       @assign outExp = makeZero(ty)
     else
        (exp1, expanded) = expand(exp1)
@@ -642,13 +642,13 @@ function expandSize(@nospecialize(exp::Expression))::Tuple{Expression, Bool}
       SIZE_EXPRESSION(exp = e, dimIndex = NONE()) => begin
         @assign ty = typeOf(e)
         @assign dims = dimensionCount(ty)
-        @assign expl = List(
+        local expl_vec = Expression[
           SIZE_EXPRESSION(e, SOME(INTEGER_EXPRESSION(i)))
           for i = 1:dims
-        )
+        ]
         makeArray(
           TYPE_ARRAY(ty, list(fromInteger(dims))),
-          expl,
+          expl_vec,
         )
       end
 
@@ -971,11 +971,15 @@ function expandCref4(
           expandCref4(rest, Cons{Subscript}(idx, comb), accum, restSubs, cref, crefType)
           for idx in slice
         ]
-        arr_ty = liftArrayLeft(
-          typeOf(Base.first(expl)),
-          fromExpList(expl),
-        )
-        makeArray(arr_ty, expl)
+        if isempty(expl)
+          makeEmptyArray(liftArrayLeft(crefType, DIMENSION_INTEGER(0, Variability.CONSTANT)))
+        else
+          arr_ty = liftArrayLeft(
+            typeOf(Base.first(expl)),
+            fromExpList(expl),
+          )
+          makeArray(arr_ty, expl)
+        end
       end
       _ => begin
         expandCref4(
@@ -1073,6 +1077,14 @@ Expands a component reference
           return(expandCref3(expandCref2(crefExp.cref),
                              crefExp.cref,
                              arrayElementType(crefExp.ty)),
+                 true)
+        elseif isArray(crefExp.cref.ty) && hasKnownSize(crefExp.cref.ty)
+          #= The outer CREF_EXPRESSION type may have unresolved DIMENSION_EXP
+             (e.g. "pipe2.n - 1") while the inner cref type has the resolved
+             DIMENSION_INTEGER. Try expansion using the cref's own type. =#
+          return(expandCref3(expandCref2(crefExp.cref),
+                             crefExp.cref,
+                             arrayElementType(crefExp.cref.ty)),
                  true)
         else
 

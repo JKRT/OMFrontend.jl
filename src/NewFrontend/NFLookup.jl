@@ -557,82 +557,77 @@ function lookupSimpleCref(crefName::String,
   local cref::ComponentRef
   local node::InstNode
   local is_import::Bool
+  #= First try the normal scope chain. Local declarations shadow builtins. =#
+  for i in 1:Global.recursionDepthLimit
+    try
+      @match foundScope begin
+        IMPLICIT_SCOPE(__)  => begin
+          node = lookupIteratorNoFail(crefName, foundScope.locals)
+          if node isa EMPTY_NODE
+            foundScope = parentScope(foundScope)
+            continue
+          end
+          is_import = false
+        end
+        CLASS_NODE(__)  => begin
+          c = getClass(foundScope)
+          @match ENTRY_INFO(node, is_import) = lookupElement(crefName, c)
+        end
+        COMPONENT_NODE(__)  => begin
+          @match ENTRY_INFO(node, is_import) = lookupElement(crefName, getClass(foundScope))
+        end
+        INNER_OUTER_NODE(__)  => begin
+          @match ENTRY_INFO(node, is_import) = lookupElement(crefName, getClass(foundScope.innerNode))
+        end
+        #= In this case we did not find the scope! =#
+        EMPTY_NODE(__) => begin
+          #= Scope chain exhausted. Try builtins as fallback. =#
+          res = lookupSimpleBuiltinCref(crefName, subs)
+          if res !== nothing
+            (node, cref, state) = res
+            stateRef.x = state
+            scopeRef.x = topScope(scope)
+            return (node, cref)
+          end
+          msg = ErrorTypes.MESSAGE(
+            555,
+            ErrorTypes.SCRIPTING(),
+            ErrorTypes.WARNING(),
+            Gettext.gettext("LookupSimpleCref: Reached empty node while looking for $crefName\n"),
+          )::ErrorTypes.Message
+          Error.addSourceMessageAndFail(msg, list(crefName),sourceInfo())
+        end
+      end
+      if is_import
+        foundScope = parent(node)
+      elseif isInnerOuterNode(node)
+        node = resolveInner(node)
+        foundScope = parent(node)
+      end
+      state = nodeState(node)
+      if state isa LOOKUP_STATE_ERROR
+        foundScope = parentScope(foundScope)
+        continue
+      end
+      cref = fromAbsyn(node, subs)
+      stateRef.x = state
+      scopeRef.x = foundScope
+      return (node, cref)
+    catch e
+      foundScope = parentScope(foundScope)
+      scopeRef.x = foundScope
+    end
+  end
+  #= Recursion depth reached. Try builtins as last resort. =#
   res = lookupSimpleBuiltinCref(crefName, subs)
   if res !== nothing
     (node, cref, state) = res
     stateRef.x = state
-    foundScope = topScope(foundScope)
-    scopeRef.x = foundScope
-  else
-    #@info "Searching for scope in lookupSimplecref.. with $(typeof(scope)). We are searching for $crefName"
-    #= Optimizing this should improve performance a bit... =#
-    for i in 1:Global.recursionDepthLimit
-      try
-        #@info "Searching for $(crefName)..."
-        @match foundScope begin
-          IMPLICIT_SCOPE(__)  => begin
-            node = lookupIteratorNoFail(crefName, foundScope.locals)
-            if node isa EMPTY_NODE
-              foundScope = parentScope(foundScope)
-              continue
-            end
-            is_import = false
-          end
-          CLASS_NODE(__)  => begin
-            #@info "Hit CLASS_NODE. Fetching class"
-            c = getClass(foundScope)
-            #@info "Class fetched. Looking up element"
-            @match ENTRY_INFO(node, is_import) = lookupElement(crefName, c)
-          end
-          COMPONENT_NODE(__)  => begin
-            @match ENTRY_INFO(node, is_import) = lookupElement(crefName, getClass(foundScope))
-          end
-          INNER_OUTER_NODE(__)  => begin
-            @match ENTRY_INFO(node, is_import) = lookupElement(crefName, getClass(foundScope.innerNode))
-          end
-          #= In this case we did not find the scope! =#
-          EMPTY_NODE(__) => begin
-            #print()
-            msg = ErrorTypes.MESSAGE(
-              555,
-              ErrorTypes.SCRIPTING(),
-              ErrorTypes.WARNING(),
-              Gettext.gettext("LookupSimpleCref: Reached empty node while looking for $crefName\n"),
-            )::ErrorTypes.Message
-            Error.addSourceMessageAndFail(msg, list(crefName),sourceInfo())
-          end
-        end
-        #@debug "Checking imports and other things.."
-        if is_import
-          foundScope = parent(node)
-        elseif isInnerOuterNode(node)
-          #@debug "Not a import checking inner"
-          node = resolveInner(node)
-          foundScope = parent(node)
-        end
-        #@debug "Not inner outer. Checking state"
-        state = nodeState(node)
-        if state isa LOOKUP_STATE_ERROR
-          foundScope = parentScope(foundScope)
-          continue
-        end
-        #@debug "State checked. Checking fromAbsyn"
-        cref = fromAbsyn(node, subs)
-        #@debug "After from absyn. Returning..."
-        stateRef.x = state
-        scopeRef.x = foundScope
-        return (node, cref)
-      catch e
-        foundScope = parentScope(foundScope)
-        scopeRef.x = foundSCope
-      end
-    end
-    Error.addMessage(Error.RECURSION_DEPTH_REACHED, list(String(Global.recursionDepthLimit), scopeName(foundScope)))
-    fail()
+    scopeRef.x = topScope(scope)
+    return (node, cref)
   end
-  stateRef.x = state
-  scopeRef.x = foundScope
-  (node, cref)
+  Error.addMessage(Error.RECURSION_DEPTH_REACHED, list(String(Global.recursionDepthLimit), scopeName(foundScope)))
+  fail()
 end
 
 """ #= This function look up a simple name as a cref in a given component, without
@@ -743,6 +738,7 @@ function lookupCrefInNode(cref::Absyn.ComponentRef #=modification-040321=#,
     end
     local wasExpandableConnectorClass = isExpandableConnectorClass(cls)
     if !wasExpandableConnectorClass
+      println(stderr, "[lookupCrefInNode FAIL] name='$name', cref=$(AbsynUtil.printComponentRefStr(cref)), node_name=$(node.name)")
       fail()
     end
     foundCref = fromAbsynCref(cref, foundCref)
@@ -757,8 +753,12 @@ function lookupCrefInNode(cref::Absyn.ComponentRef #=modification-040321=#,
     stateRef.x = state
     return foundCref
   end
+  local wasInnerOuter = isInnerOuterNode(n)
    (n, foundCref, foundScope) = resolveInnerCref(n, foundCref, foundScope)
-  state = next(n, state)
+  #= Inner/outer access bypasses protection checks. A protected outer
+     declaration resolves to its matching inner, which may also be
+     protected, but the access is always legal through the outer link. =#
+  state = next(n, state, !wasInnerOuter)
   (foundCref, foundScope, state) = begin
     @match cref begin
       Absyn.CREF_IDENT(__)  => begin
@@ -781,12 +781,12 @@ end
                      collapses the given cref so that it refers to the correct node. The scope a
                    cref is found in may also change if the inner is outside the scope found by
                      lookupCref. =#"""
-function resolveInnerCref(node::InstNode, cref::ComponentRef, foundScope::InstNode)
+function resolveInnerCref(nodeVar::InstNode, cref::ComponentRef, foundScope::InstNode)
   local prev_node::InstNode
   local scope::InstNode
-  if isInnerOuterNode(node)
-    node = resolveInner(node)
-    scope = parent(node)
+  if isInnerOuterNode(nodeVar)
+    nodeVar = resolveInner(nodeVar)
+    scope = parent(nodeVar)
     while ! isEmpty(cref)
       if referenceEq(node(cref), scope)
         break
@@ -798,7 +798,7 @@ function resolveInnerCref(node::InstNode, cref::ComponentRef, foundScope::InstNo
       foundScope = scope
     end
   end
-  (node, cref, foundScope)
+  (nodeVar, cref, foundScope)
 end
 
 """
@@ -821,6 +821,31 @@ function generateInner(outerNode::InstNode, topScope::InstNode)
           @match SOME(innerNode) = inner_node_opt
         else
           innerNode = makeInnerNode(outerNode)
+          #= Fully qualify the typespec path before reparenting.
+             The outer node's type path (e.g. Interfaces.CompositeStepState) is
+             relative to the outer's original scope (e.g. Modelica.StateGraph).
+             After setParent moves the node to the top-level model, this relative
+             path would be looked up in the wrong scope. =#
+          try
+            local origScope = parent(outerNode)
+            local comp = component(innerNode)
+            if comp isa COMPONENT_DEF
+              local def = comp.definition
+              if def isa SCode.COMPONENT && def.typeSpec isa Absyn.TPATH
+                local resolvedNode = lookupClassName(def.typeSpec.path, origScope, def.info, false)
+                local qualPath = scopePath(resolvedNode)
+                def = SCode.COMPONENT(def.name, def.prefixes, def.attributes,
+                  Absyn.TPATH(qualPath, def.typeSpec.arrayDim),
+                  def.modifications, def.comment, def.condition, def.info)
+                #= Use updateComponent! (mutates pointer in place) instead of
+                   replaceComponent (creates new node, does not mutate). =#
+                updateComponent!(COMPONENT_DEF(def, comp.modifier), innerNode)
+              end
+            end
+          catch e
+            #= If lookup fails, proceed with the original relative path.
+               The error will surface later during instComponent. =#
+          end
           innerNode = setParent(cache.rootClass, innerNode)
           local addedInner = NodeTree.add(cache.addedInner, nameStr, innerNode)
           cache = C_TOP_SCOPE(addedInner, cache.rootClass)

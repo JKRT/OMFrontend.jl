@@ -139,14 +139,39 @@ function typeComponentBindingRef2(
   if c.binding isa UNTYPED_BINDING
     nameStr = inComponent.name
     binding = c.binding
+
+    #= Type the condition first so we can skip matchBinding for disabled components. =#
+    cCond = if isBound(c.condition)
+      typeComponentCondition(c.condition, origin)
+    else
+      c.condition
+    end
+    c.condition = cCond
+
+    #= Check if the condition evaluates to false (component is disabled). =#
+    local componentDisabled = false
+    if isBound(cCond)
+      try
+        local condExp = getTypedExp(cCond)
+        condExp = evalExp(condExp, EVALTARGET_CONDITION(Binding_getInfo(cCond)))
+        condExp = stripBindingInfo(condExp)
+        if condExp isa BOOLEAN_EXPRESSION && !condExp.value
+          componentDisabled = true
+        end
+      catch
+      end
+    end
+
     #ErrorExt.setCheckpoint(getInstanceName())
     checkBindingEach(c.binding)
     local originFlag = setFlag(origin, ORIGIN_BINDING)
     local typedBinding::TYPED_BINDING = typeBinding(binding, originFlag, tyRef, varRef)::TYPED_BINDING
     handleBindingError(binding)
     #if !(Config.getGraphicsExpMode() && stringEq(nameStr, "graphics")) TODO
-    typedBinding = matchBinding(typedBinding, c.ty, nameStr, node)::TYPED_BINDING
-    handleBindingError(typedBinding)
+    if !componentDisabled
+      typedBinding = matchBinding(typedBinding, c.ty, nameStr, node)::TYPED_BINDING
+      handleBindingError(typedBinding)
+    end
     #end
     comp_var = checkComponentBindingVariability(nameStr, c, typedBinding, origin)
     if comp_var == 404
@@ -161,12 +186,6 @@ function typeComponentBindingRef2(
     #@debug "Typed binding 2: $str2"
     #        ErrorExt.delCheckpoint(getInstanceName()) TODO
 
-    cCond = if isBound(c.condition)
-      typeComponentCondition(c.condition, origin)
-    else
-      c.condition
-    end
-    c.condition =  cCond
     c.binding = typedBinding
     updateComponent!(c, node)
     if typeChildren

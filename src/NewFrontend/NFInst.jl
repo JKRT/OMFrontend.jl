@@ -24,8 +24,7 @@ function instClassInProgram(classPath::Absyn.Path, program::SCode.Program)
   catch e
     println("The compiler failed to process a model with the following message(s):")
     print(Error.printMessagesStr())
-    Error.clearMessages()
-    #=TODO: Add a @static flag later to supress this message. =#
+    #= Do not clear messages here so callers (e.g. OMLibraryTesting runner) can capture them =#
     println("Internal stack trace:")
     #@error e
     throw(e)
@@ -49,7 +48,14 @@ function instClassInProgramFM(classPath::Absyn.Path, program::SCode.Program)::Tu
     Error.clearMessages()
     #=TODO: Add a @static flag later to supress this message. =#
     println("Internal stack trace:")
-    throw(e)
+    bt = catch_backtrace()
+    for (i, frame) in enumerate(stacktrace(bt))
+      fname = string(frame.file)
+      if i <= 40 && (occursin("NF", fname) || occursin("OM", fname) || occursin("ListUtil", fname))
+        println("  [$i] $(frame.func) at $(frame.file):$(frame.line)")
+      end
+    end
+    rethrow()
   else
     print(Error.printMessagesStr(;
                                  #=
@@ -86,6 +92,7 @@ function instClassInProgramFM2(classPath::Absyn.Path, program::SCode.Program)::T
   cls = setNodeType(ROOT_CLASS(EMPTY_NODE()), cls)
   #=  Initialize the storage for automatically generated inner elements. =#
   top = setInnerOuterCache(top, C_TOP_SCOPE(NodeTree.new(), cls))
+  INST_CLASS_DEPTH[] = 0
   @EXECSTAT "instantiate" inst_cls = instantiateN1(cls, EMPTY_NODE())
   ExecStat.execStat("Instantiation")
   insertGeneratedInners(inst_cls, top)
@@ -94,6 +101,7 @@ function instClassInProgramFM2(classPath::Absyn.Path, program::SCode.Program)::T
   bindings, dimensions, etc). This is done as a separate step after
   instantiation to make sure that lookup is able to find the correct nodes.
   =#
+  INST_EXPR_DEPTH[] = 0
   @EXECSTAT "instExpressions" instExpressions(inst_cls)
   ExecStat.execStat("NFInst.instExpressions(" + name + ")")
   #=  Mark structural parameters. =#
@@ -757,11 +765,21 @@ function instDerivedAttributes(scodeAttr::SCode.Attributes) ::Attributes
 end
 
 function instClass(node::InstNode, modifier::Modifier, attributes::Attributes, attributeRef::Ref{Attributes}, useBinding::Bool = false, instLevel::Int = 0, parent = EMPTY_NODE())::CLASS_NODE
+  INST_CLASS_DEPTH[] += 1
+  if INST_CLASS_DEPTH[] > INST_CLASS_DEPTH_LIMIT
+    nodeName = try name(node) catch; "<unknown>" end
+    parentName = try name(parent) catch; "<unknown>" end
+    @warn "instClass recursion limit reached (depth=$(INST_CLASS_DEPTH[])): node=$(nodeName), parent=$(parentName)"
+    Error.addSourceMessage(
+      Error.INST_RECURSION_LIMIT_REACHED,
+      list("instClass depth > $(INST_CLASS_DEPTH_LIMIT): node=$(nodeName), parent=$(parentName)"),
+      InstNode_info(node))
+    fail()
+  end
+  try
   local cls::Class
   local outer_mod::Modifier
-  #@debug "INST CLASS CALLED. CALLING GETCLASS ON NODE."
    cls = getClass(node)
-  #@debug "OUR CLASS AFTER CALLING GETCLASS"
    outer_mod = getModifier(cls)
   #=  Give an error for modifiers such as (A = B), i.e. attempting to replace a =#
   #=  class without using redeclare. =#
@@ -770,6 +788,9 @@ function instClass(node::InstNode, modifier::Modifier, attributes::Attributes, a
     fail()
   end
   return instClassDef(cls, modifier, attributes, useBinding, node, parent, instLevel, attributeRef)::CLASS_NODE
+  finally
+    INST_CLASS_DEPTH[] -= 1
+  end
 end
 
 #= On failure call the generic function. =#
@@ -2042,9 +2063,26 @@ end
 
 const BUILTIN_PREFIX = "__OpenModelica_builtinType"
 
+const INST_EXPR_DEPTH = Ref(0)
+const INST_EXPR_DEPTH_LIMIT = 100
+const INST_CLASS_DEPTH = Ref(0)
+const INST_CLASS_DEPTH_LIMIT = 100
+
 function instExpressions(node::InstNode,
                          scope::InstNode = node,
                          sections::Sections = SECTIONS_EMPTY())
+  INST_EXPR_DEPTH[] += 1
+  if INST_EXPR_DEPTH[] > INST_EXPR_DEPTH_LIMIT
+    nodeName = try name(node) catch; "<unknown>" end
+    scopeName = try name(scope) catch; "<unknown>" end
+    @warn "instExpressions recursion limit reached (depth=$(INST_EXPR_DEPTH[])): node=$(nodeName), scope=$(scopeName)"
+    Error.addSourceMessage(
+      Error.INST_RECURSION_LIMIT_REACHED,
+      list("instExpressions depth > $(INST_EXPR_DEPTH_LIMIT): node=$(nodeName), scope=$(scopeName)"),
+      InstNode_info(node))
+    fail()
+  end
+  try
   local cls::Class = getClass(node)
   local inst_cls::Class
   local local_comps::Vector{InstNode}
@@ -2139,6 +2177,9 @@ function instExpressions(node::InstNode,
     end
   end
   sections
+  finally
+    INST_EXPR_DEPTH[] -= 1
+  end #= try/finally for instExpressions depth guard =#
 end
 
 function makeComplexType(restriction::Restriction, node::InstNode, cls::Class)::NFType
@@ -2566,7 +2607,7 @@ function instCrefFunction(cref::ComponentRef, info::SourceInfo) ::Expression
 
   local fn_ref::ComponentRef
 
-   fn_ref = instFunctionRef(cref, info)
+   (fn_ref, _, _) = instFunctionRef(cref, info)
    crefExp = CREF_EXPRESSION(TYPE_UNKNOWN(), fn_ref)
   crefExp
 end
@@ -2641,7 +2682,7 @@ function instPartEvalFunction(func::Absyn.ComponentRef, funcArgs::Absyn.Function
   local nargs::List{Absyn.NamedArg}
   local args::List{Expression}
   local arg_names::List{String}
-  @match Absyn.FunctionArgs.FUNCTIONARGS(argNames = nargs) = funcArgs
+  @match Absyn.FUNCTIONARGS(argNames = nargs) = funcArgs
   @assign outExp = instCref(func, scope, info)
   if ! listEmpty(nargs)
     @assign fn_ref = toCref(outExp)
@@ -3249,7 +3290,7 @@ function markStructuralParamsExp_traverser(@nospecialize(exp::Expression))::Noth
     CREF_EXPRESSION(cref = COMPONENT_REF_CREF(node = node, origin = Origin.CREF))  => begin
       if isComponent(node)
         comp = component(node)
-        if variability(comp) == Variability.PARAMETER
+        if variability(comp) == Variability.PARAMETER || variability(comp) == Variability.NON_STRUCTURAL_PARAMETER
           markStructuralParamsComp(comp, node)
         end
       end

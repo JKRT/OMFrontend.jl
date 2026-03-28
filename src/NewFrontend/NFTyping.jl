@@ -189,7 +189,17 @@ function typeComponents(cls::InstNode, origin::ORIGIN_Type)::Nothing
       end
       @match c.ty begin
         TYPE_COMPLEX(complexTy = COMPLEX_RECORD(constructor = con)) => begin
-          typeStructor(con)
+          try
+            typeStructor(con)
+          catch e
+            if e isa InterruptException
+              rethrow()
+            end
+            #= Constructor typing can fail for connector types derived from records
+               (e.g. ComplexInput = input Complex). The constructor output type is
+               the connector, which is not a valid function parameter type. This is
+               non-fatal; the constructor just will not be available. =#
+          end
         end
         _ => begin
         end
@@ -312,7 +322,8 @@ end
       ) where {(isComponent(instanceNode))} => begin
         #=  A component of function type, i.e. a functional input parameter.
         =#
-        @match _cons(fn, _) = typeNodeCache(clsNode)
+        fns = typeNodeCache(clsNode)
+        fn = fns[1]
         if !isPartial(fn)
           Error.addSourceMessage(
             Error.META_FUNCTION_NO_PARTIAL_PREFIX,
@@ -321,7 +332,7 @@ end
           )
           fail()
         end
-         ty = TYPE_FUNCTION(fn, FunctionTYPE_FUNCTIONAL_PARAMETER)
+         ty = TYPE_FUNCTION(fn, FunctionType.FUNCTIONAL_PARAMETER)
         cls.ty = ty
         updateClass(cls, clsNode)
         ty
@@ -1573,7 +1584,7 @@ function typeCrefDim(
   origin::ORIGIN_Type,
   info::SourceInfo,
   )
-  Base.inferencebarrier(typeCrefDim2(
+  return Base.inferencebarrier(typeCrefDim2(
     cref::ComponentRef,
     dimIndex::Int,
     origin::ORIGIN_Type,
@@ -1616,7 +1627,7 @@ function typeCrefDim2(@nospecialize(cref::ComponentRef),
   =#
   #=  error message.
   =#
-   crl = toListReverse(cref)
+   crl = toListReverse(cref; includeScope = false)
    index = dimIndex
   for cr in crl
       @match cr begin
@@ -1849,8 +1860,9 @@ end
     COMPONENT_REF_CREF(
       node = CLASS_NODE(__),
     ) where {(firstPart && isFunction(cref.node))} => begin
-      @match Cons{M_Function}(fn, _) = typeNodeCache(cref.node)
-      local crefTy = TYPE_FUNCTION(fn, FunctionTYPE_FUNCTION_REFERENCE)
+      fns = typeNodeCache(cref.node)
+      fn = fns[1]
+      local crefTy = TYPE_FUNCTION(fn, FunctionType.FUNCTION_REFERENCE)
       local crefRestCref = typeCref2(cref.restCref, origin, info, false)
       #cref = COMPONENT_REF_CREF(cref.node, cref.subscripts, crefTy, cref.origin, crefRestCref)
       cref.ty = crefTy
@@ -3682,6 +3694,14 @@ end
   end
   (e1, ty1) = typeExp(lhsExp, setFlag(origin, ORIGIN_LHS), info)
   (e2, ty2) = typeExp(rhsExp, setFlag(origin, ORIGIN_RHS), info)
+  #= Zero-size array equations are vacuously true (produce zero scalar equations).
+     Skip dimension matching to avoid spurious type errors in parameterized models
+     where array sizes can be zero (e.g. zero-order filters in MSL). =#
+  if isEmptyArray(ty1) || isEmptyArray(ty2)
+    ty = isEmptyArray(ty1) ? ty1 : ty2
+    eq = EQUATION_EQUALITY(e1, e2, ty, source)
+    return eq
+  end
   (e1, e2, ty, mk) = matchExpressions(e1, ty1, e2, ty2)
   if isIncompatibleMatch(mk)
     Error.addSourceMessage(
@@ -3764,21 +3784,46 @@ end
 
   for b in bl
     @match EQUATION_BRANCH(cond, var, eql) = b
-    ErrorExt.setCheckpoint(getInstanceName())
-    try
+    #= If condition is a structural parameter, evaluate it before typing the body.
+       False branches can be skipped entirely, avoiding spurious typing errors
+       in branches that will never execute (e.g. if-equations selecting between
+       filter types where non-matching branches have type mismatches).
+       True branches are typed directly (errors propagate as real errors).
+       Unknown branches use the EQUATION_INVALID_BRANCH mechanism. =#
+    local _condKnown = false
+    if var <= Variability.STRUCTURAL_PARAMETER
+      try
+        local _evalCond = evalExp(cond)
+        if isFalse(_evalCond)
+          continue
+        end
+        cond = _evalCond
+        _condKnown = isTrue(cond)
+      catch
+        #= If evaluation fails, fall through to normal branch typing =#
+      end
+    end
+    if _condKnown
+      #= True branch: type directly, let any errors propagate =#
       eql = Equation[typeEquation(e, next_origin) for e in eql]
       push!(bl2, makeBranch(cond, eql, var))
-    catch
-      local _msgs = ErrorExt.getCheckpointMessages()
-      bl2 = push!(
-        bl2,
-        EQUATION_INVALID_BRANCH(
-          makeBranch(cond, eql, var),
-          _msgs isa Nil ? Any[] : Any[m for m in _msgs],
-        ),
-      )
+    else
+      ErrorExt.setCheckpoint(getInstanceName())
+      try
+        eql = Equation[typeEquation(e, next_origin) for e in eql]
+        push!(bl2, makeBranch(cond, eql, var))
+      catch
+        local _msgs = ErrorExt.getCheckpointMessages()
+        bl2 = push!(
+          bl2,
+          EQUATION_INVALID_BRANCH(
+            makeBranch(cond, eql, var),
+            _msgs isa Nil ? Any[] : Any[m for m in _msgs],
+          ),
+        )
+      end
+      ErrorExt.delCheckpoint(getInstanceName())
     end
-    ErrorExt.delCheckpoint(getInstanceName())
   end
   #=  Do branch selection anyway if -d=-nfScalarize is set, otherwise turning of
     scalarization breaks currently.

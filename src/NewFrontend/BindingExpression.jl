@@ -2,7 +2,7 @@ function addBindingExpParent(@nospecialize(parent::InstNode),
                              @nospecialize(exp::Expression))
   local modifiedExp = if exp isa BINDING_EXP
     #= Check this. =#
-    BINDING_EXP(exp.exp, exp.expType, exp.bindingType, parents, exp.isEach)
+    BINDING_EXP(exp.exp, exp.expType, exp.bindingType, _cons(parent, exp.parents), exp.isEach)
   else
     exp
   end
@@ -620,11 +620,15 @@ end
       end
 
       ARRAY_EXPRESSION(__)  => begin
-        variabilityList(exp.elements)
+        variabilityVector(exp.elements)
       end
 
       MATRIX_EXPRESSION(__)  => begin
-        ListUtil.fold(exp.elements, variabilityList, Variability.CONSTANT)
+        local matVar = Variability.CONSTANT
+        for row in exp.elements
+          matVar = variabilityVector(row, matVar)
+        end
+        matVar
       end
 
       RANGE_EXPRESSION(__)  => begin
@@ -1128,7 +1132,8 @@ function makeOperatorRecordZero(recordNode::InstNode) ::Expression
   local fn::M_FUNCTION
   @match ENTRY_INFO(op_node, _) = lookupElement("'0'", getClass(recordNode))
   instFunctionNode(op_node)
-  @match list(fn) = typeNodeCache(op_node)
+  fns = typeNodeCache(op_node)
+  fn = fns[1]
   zeroExp = CALL_EXPRESSION(makeTypedCall(fn, Expression[], Variability.CONSTANT))
   zeroExp = evalExp(zeroExp)
   zeroExp
@@ -3657,8 +3662,8 @@ end
       end
 
       PARTIAL_FUNCTION_APPLICATION_EXPRESSION(__)  => begin
-        exp.args = list(func(e) for e in exp.args)
-        exp
+        newArgs = list(func(e) for e in exp.args)
+        PARTIAL_FUNCTION_APPLICATION_EXPRESSION(exp.fn, newArgs, exp.argNames, exp.ty)
       end
 
       BINDING_EXP(__)  => begin
@@ -4410,8 +4415,9 @@ end
       end
 
       PARTIAL_FUNCTION_APPLICATION_EXPRESSION(__)  => begin
-        @match Cons{M_Function}(fn, _) = typeRefCache(exp.fn)
-        DAE.PARTEVALFUNCTION(nameConsiderBuiltin(fn), list(toDAE(arg) for arg in exp.args), toDAE(exp.ty), toDAE(TYPE_FUNCTION(fn, FunctionTYPE_FUNCTIONAL_VARIABLE)))
+        fns = typeRefCache(exp.fn)
+        fn = fns[1]
+        DAE.PARTEVALFUNCTION(nameConsiderBuiltin(fn), list(toDAE(arg) for arg in exp.args), toDAE(exp.ty), toDAE(TYPE_FUNCTION(fn, FunctionType.FUNCTIONAL_VARIABLE)))
       end
 
       BINDING_EXP(__)  => begin
@@ -4812,7 +4818,7 @@ end
       end
 
       TUPLE_ELEMENT_EXPRESSION(__)  => begin
-        toFlatString(exp.tupleExp; inFunction = inFunction) + "[" + intString(exp.index; inFunction = inFunction) + "]"
+        toFlatString(exp.tupleExp; inFunction = inFunction) + "[" + intString(exp.index) + "]"
       end
 
       RECORD_ELEMENT_EXPRESSION(__)  => begin
@@ -4985,7 +4991,15 @@ end
       end
 
       PARTIAL_FUNCTION_APPLICATION_EXPRESSION(__)  => begin
-        "function " + toString(exp.fn) + "(" + stringDelimitList(List(@do_threaded_for n + " = " + toString(a) (a, n) (exp.args, exp.argNames)), ", ") + ")"
+        local argStrs = nil
+        local restArgs = exp.args
+        local restNames = exp.argNames
+        while !listEmpty(restArgs)
+          @match _cons(a, restArgs) = restArgs
+          @match _cons(n, restNames) = restNames
+          argStrs = _cons(n + " = " + toString(a), argStrs)
+        end
+        "function " + toString(exp.fn) + "(" + stringDelimitList(listReverseInPlace(argStrs), ", ") + ")"
       end
 
       BINDING_EXP(__)  => begin
@@ -5132,6 +5146,9 @@ end
         else
           exp
         end
+      end
+      CREF_EXPRESSION(__) => begin
+        exp
       end
       _  => begin
         exp
@@ -6104,7 +6121,7 @@ end
     local b::Bool
     local cr::ComponentRef
     local ty::M_Type
-    local expl::List{Expression}
+    local expl
     local e1::Expression
     local e2::Expression
     local e3::Expression
@@ -6187,7 +6204,7 @@ end
         @match RECORD_EXPRESSION(path = p, elements = expl) = exp2
                           comp = AbsynUtil.pathCompare(exp1.path, p)
         if comp == 0
-          compareList(exp1.elements, expl)
+          compareVector(exp1.elements, expl)
         else
           comp
         end
@@ -6448,7 +6465,7 @@ function isWildCref(@nospecialize(exp::Expression))
 
    wild = begin
     @match exp begin
-      CREF_EXPRESSION(cref = WILD(__))  => begin
+      CREF_EXPRESSION(cref = COMPONENT_REF_WILD(__))  => begin
         true
       end
 

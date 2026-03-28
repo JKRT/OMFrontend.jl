@@ -28,6 +28,8 @@ function evaluateVariable(var::Variable, constVariability::VariabilityType)::Var
   if !referenceEq(binding, var.binding)
     @assign var.binding = binding
   end
+  #= Evaluate dimensions of the variable type (e.g. Real[dim1[1], dim1[2]] -> Real[3, 2]) =#
+  @assign var.ty = mapDims(var.ty, evaluateDimension)
   @assign var.typeAttributes = [
     evaluateTypeAttribute(a, Variability.STRUCTURAL_PARAMETER) for a in var.typeAttributes
       ]
@@ -137,7 +139,7 @@ function evaluateDimension(dim::Dimension)::Dimension
     local e::Expression
     @match dim begin
       DIMENSION_EXP(__) => begin
-        e = evaluateExp(dim.exp, Variability.STRUCTURAL_PARAMETER)
+        e = evalExp(dim.exp, EVALTARGET_IGNORE_ERRORS())
         if referenceEq(e, dim.exp)
           dim
         else

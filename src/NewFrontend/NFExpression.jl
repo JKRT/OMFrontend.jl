@@ -170,6 +170,10 @@ struct ENUM_LITERAL_EXPRESSION{T0 <: NFType, T1 <: String, T2 <: Int} <: NFExpre
   name::String
   index::Int
 end
+#= Outer constructor so that ENUM_LITERAL_EXPRESSION(ty, name, idx) works
+   without explicit type parameters. =#
+ENUM_LITERAL_EXPRESSION(ty::T0, name::T1, index::T2) where {T0 <: NFType, T1 <: String, T2 <: Int} =
+  ENUM_LITERAL_EXPRESSION{T0, T1, T2}(ty, name, index)
 
 struct BOOLEAN_EXPRESSION{T0 <: Bool} <: NFExpression
   value::T0

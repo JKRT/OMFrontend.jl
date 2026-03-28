@@ -315,7 +315,7 @@ function toFlatStream(sections, scopeName::Absyn.Path, s::IOStream_M.IOSTREAM; i
                                  , SCode.MOD(SCode.NOT_FINAL()
                                              ,SCode.NOT_EACH()
                                              ,nil
-                                             ,SOME(Absyn.STRING("modelica://" + AbsynUtil.pathFirstIdent(scopeName) + "/Resources/Library")), Error.dummyInfo))), NONE(), Error.dummyInfo)
+                                             ,SOME(Absyn.STRING("modelica://" + AbsynUtil.pathFirstIdent(scopeName) + "/Resources/Library")), AbsynUtil.dummyInfo))), NONE(), AbsynUtil.dummyInfo)
           end
         end
         if SCodeUtil.isEmptyMod(modInc)
@@ -323,7 +323,7 @@ function toFlatStream(sections, scopeName::Absyn.Path, s::IOStream_M.IOSTREAM; i
         else
           modIncDir = SCodeUtil.filterSubMods(mod, (x) -> SCodeUtil.filterGivenSubModNames(x;namesToKeep=list("IncludeDirectory")))
           if SCodeUtil.isEmptyMod(modLibDir)
-            modLibDir = SCode.MOD(SCode.NOT_FINAL(), SCode.NOT_EACH(), list(SCode.NAMEMOD("IncludeDirectory", SCode.MOD(SCode.NOT_FINAL(), SCode.NOT_EACH(), list(), SOME(Absyn.STRING("modelica://" + AbsynUtil.pathFirstIdent(scopeName) + "/Resources/Include")), Error.dummyInfo))), NONE(), Error.dummyInfo)
+            modLibDir = SCode.MOD(SCode.NOT_FINAL(), SCode.NOT_EACH(), list(SCode.NAMEMOD("IncludeDirectory", SCode.MOD(SCode.NOT_FINAL(), SCode.NOT_EACH(), list(), SOME(Absyn.STRING("modelica://" + AbsynUtil.pathFirstIdent(scopeName) + "/Resources/Include")), AbsynUtil.dummyInfo))), NONE(), AbsynUtil.dummyInfo)
           end
         end
         @assign ann.modification = SCodeUtil.mergeSCodeMods(SCodeUtil.mergeSCodeMods(modLib, modLibDir), SCodeUtil.mergeSCodeMods(modInc, modIncDir))

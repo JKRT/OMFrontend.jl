@@ -475,11 +475,26 @@ function simplify(subscript::Subscript, dimension::Dimension)
   return outSubscript
 end
 
-#= TODO implement simplify slice / John 2024=#
+"""Check if an expression is the lower bound of an array index (i.e. 1)."""
+function expIsLowerBound(exp::Expression)::Bool
+  return @match exp begin
+    INTEGER_EXPRESSION(value = 1) => true
+    _ => false
+  end
+end
+
+"""Check if an expression equals the upper bound of a dimension."""
+function expIsUpperBound(exp::Expression, dim::Dimension)::Bool
+  return @match (exp, dim) begin
+    (INTEGER_EXPRESSION(__), DIMENSION_INTEGER(__)) => exp.value == dim.size
+    _ => false
+  end
+end
+
 function simplifySlice(slice::Expression, dimension::Dimension)
   exp = simplify(slice)
   outSubscript = @match exp begin
-    RANGE_EXPRESSION(__) where{isNone(exp.step) || isOne(Util.getOption(exp.step)) && expIsLowerBound(exp.start) && expIsUpperBound(exp.stop, dimension)} => begin
+    RANGE_EXPRESSION(__) where{(isNone(exp.step) || isOne(Util.getOption(exp.step))) && expIsLowerBound(exp.start) && expIsUpperBound(exp.stop, dimension)} => begin
       SUBSCRIPT_WHOLE()
     end
     _ => SUBSCRIPT_SLICE(exp)
@@ -528,10 +543,10 @@ function evalSubscript(
   return outSubscript
 end
 
-function toFlatStringList(subscripts::List{<:Subscript})::String
+function toFlatStringList(subscripts::List{<:Subscript}; inFunction = false)::String
   local string::String
-
-   string = ListUtil.toString(subscripts, toFlatString, "", "[", ",", "]", false)
+  local fn = sub -> toFlatString(sub; inFunction = inFunction)
+  string = ListUtil.toString(subscripts, fn, "", "[", ",", "]", false)
   return string
 end
 

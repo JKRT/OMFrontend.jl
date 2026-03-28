@@ -570,7 +570,6 @@ function lookupElement(name::String, classTree::ClassTree)
     return ENTRY_INFO(EMPTY_NODE(), false)
   end
   return resolveEntry(entry, classTree)
-  #@info "Entry lookup complete"
 end
 
 """

@@ -100,10 +100,13 @@ toListReverse(
 """
 function toListReverse(
   cref::COMPONENT_REF_CREF,
-  accum::List{<:ComponentRef} = nil)
+  accum::List{<:ComponentRef} = nil;
+  includeScope::Bool = true)
   local tmp = cref
   while tmp isa COMPONENT_REF_CREF
-    accum = Cons{ComponentRef}(tmp, accum)
+    if includeScope || tmp.origin == Origin.CREF
+      accum = Cons{ComponentRef}(tmp, accum)
+    end
     tmp = tmp.restCref
   end
   return accum
@@ -368,23 +371,23 @@ end
 
 const SPECIAL_SYMBOLS = Dict{String, String}("+" => "ADD", "*" => "MUL", "/" => "DIV", "-" => "SUB")
 
-function toFlatString_impl(cref::ComponentRef, strl::List{<:String})::List{String}
+function toFlatString_impl(cref::ComponentRef, strl::List{<:String}; inFunction = false)::List{String}
   strl = begin
     local str::String
     @match cref begin
       COMPONENT_REF_CREF(__) => begin
-        str = string(name(cref.node), toFlatStringList(cref.subscripts))
+        str = string(name(cref.node), toFlatStringList(cref.subscripts; inFunction = inFunction))
         if isRecord(cref.ty) && !listEmpty(strl)
           strl = _cons("'" + listHead(strl), listRest(strl))
           str = str + "'"
         end
-        toFlatString_impl(cref.restCref, _cons(str, strl))
+        toFlatString_impl(cref.restCref, _cons(str, strl); inFunction = inFunction)
       end
       COMPONENT_REF_WILD(__) => begin
         _cons("_", strl)
       end
       COMPONENT_REF_STRING(__) => begin
-        toFlatString_impl(cref.restCref, _cons(cref.name, strl))
+        toFlatString_impl(cref.restCref, _cons(cref.name, strl); inFunction = inFunction)
       end
       _ => begin
         strl
@@ -403,9 +406,13 @@ function toFlatString(cref::ComponentRef; inFunction = false)
   local cr::ComponentRef
   local subs::List{Subscript}
   local strl::List{String} = nil
+  #= Iterator variables (loop vars like i in 'for i in ...') must not be quoted =#
+  if isIterator(cref)
+    return stringDelimitList(toFlatString_impl(cref, nil; inFunction = inFunction), ".")
+  end
   subs2 = getSubscripts(cref)
   (cr, subs) = stripSubscripts(cref)
-  strl = toFlatString_impl(cr, strl)
+  strl = toFlatString_impl(cr, strl; inFunction = inFunction)
   #=
   Special Case. If we scalarize, we do not want to quote in the same way.
   Otherwise we will refer to components that do not exist in the flat model.
@@ -423,11 +430,11 @@ function toFlatString(cref::ComponentRef; inFunction = false)
       "'",
       stringDelimitList(strl, "."),
       "'",
-      toFlatStringList(subs)
+      toFlatStringList(subs; inFunction = inFunction)
     ))
   else
     str = stringAppendList(
-    list(stringDelimitList(strl, "."), toFlatStringList(subs)))
+    list(stringDelimitList(strl, "."), toFlatStringList(subs; inFunction = inFunction)))
     #= Since we are scalarizing here we assume the entire thing needs to be quoted. =#
     str = string("'", replace(str, "'" => ""), "'")
   end

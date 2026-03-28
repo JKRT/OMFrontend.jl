@@ -55,11 +55,10 @@ mutable struct TYPE_ATTRIBUTE{T0 <: M_Type, T1 <: Modifier} <: Component
 end
 
 mutable struct TYPED_COMPONENT{T0 <: InstNode,
-                               T1 <: M_Type,
                                T4 <: Attributes,
                                T5 <: SourceInfo} <: Component
   classInst::T0
-  ty::T1
+  ty::M_Type
   binding::Binding
   condition::Binding
   attributes::T4
@@ -777,13 +776,13 @@ function getCondition(component::Component)
   return cond
 end
 
-function hasBinding(component::Component, parent::InstNode = EMPTY_NODE())
+function hasBinding(comp::Component, parent::InstNode = EMPTY_NODE())
   local b::Bool
 
   local cls::Class
   local children::Vector{InstNode}
 
-  if isBound(getBinding(component))
+  if isBound(getBinding(comp))
      b = true
     return b
   end
@@ -793,7 +792,7 @@ function hasBinding(component::Component, parent::InstNode = EMPTY_NODE())
   =#
   #=  its own binding equation.
   =#
-   cls = getClass(classInstance(component))
+   cls = getClass(classInstance(comp))
   if !isRecord(restriction(cls))
      b = false
     return b

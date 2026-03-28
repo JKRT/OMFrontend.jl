@@ -1119,7 +1119,9 @@ function evaluateCallTypeDim(
         try
           exp = evalExp(exp, EVALTARGET_IGNORE_ERRORS())
         catch e
-          @error "DBG: ERROR in evaluateCallTypeDim" typeof(e)
+          if e isa InterruptException
+            rethrow()
+          end
         end
         ErrorExt.rollBack(getInstanceName())
         fromExp(exp, Variability.CONSTANT)
@@ -1332,13 +1334,12 @@ function checkMatchingFunctions(@nospecialize(call::Call), info::SourceInfo)
         info,
       )
     elseif numerr == 0 #Error.getNumErrorMessages() TODO
-      #ErrorExt.rollBack("NFCall:checkMatchingFunctions")
-      # Error.addSourceMessage(
-      #   Error.NO_MATCHING_FUNCTION_FOUND_NFINST,
-      #   list(typedString(call), candidateFuncListString(allfuncs)),
-      #   info,
-      # )
-      @error "No matching function found for $(typedString(call)). Candidates where" candidateFuncListString(allfuncs)
+      ErrorExt.rollBack("NFCall:checkMatchingFunctions")
+      Error.addSourceMessage(
+        Error.NO_MATCHING_FUNCTION_FOUND_NFINST,
+        list(typedString(call), candidateFuncListString(allfuncs)),
+        info,
+      )
     else
       ErrorExt.delCheckpoint("NFCall:checkMatchingFunctions")
     end
@@ -1449,7 +1450,8 @@ function reductionFoldExpression(
           @match TYPE_COMPLEX(cls = op_node) = reductionType
           @match ENTRY_INFO(op_node, _) = lookupElement("'+'", getClass(op_node))
           instFunctionNode(op_node)
-          @match list(fn) = typeNodeCache(op_node)
+          fns = typeNodeCache(op_node)
+          fn = fns[1]
           SOME(CALL_EXPRESSION(makeTypedCall(
             fn,
             Expression[
@@ -1821,7 +1823,6 @@ function instNormalCall(
       return callExp
     else
       @error "Failed with error instantiating $(name). The full trace is supressed. The error is related to $(e)"
-      showerror(stderr, e, backtrace()[1:10])
       fail()
     end
   end

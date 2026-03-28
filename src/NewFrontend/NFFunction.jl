@@ -243,8 +243,7 @@ function getLocalArguments(fn::M_FUNCTION)::List{Expression}
 end
 
 function isPartial(fn::M_FUNCTION)::Bool
-  local isPartial::Bool = isPartial(fn.node)
-  return isPartial
+  return isPartial(fn.node)
 end
 
 function foldExpParameter(node::InstNode, foldFn::FoldFunc, arg::ArgT) where {ArgT}
@@ -803,7 +802,7 @@ function applyPartialApplicationArg(
     if s.name == argName
        (argExp, _, mk) =
         matchTypes(argType, getType(i), argExp, true)
-      if TypeCheck.isIncompatibleMatch(mk)
+      if isIncompatibleMatch(mk)
         Error.addSourceMessage(
           Error.NAMED_ARG_TYPE_MISMATCH,
           list(
@@ -862,7 +861,8 @@ function typePartialApplication(
   ) = exp
   #=  TODO: Handle overloaded functions?
   =#
-  @match _cons(fn, _) = typeRefCache(fn_ref)
+  fns = typeRefCache(fn_ref)
+  fn = fns[1]
   @assign inputs = fn.inputs
   @assign slots = fn.slots
   @assign rest_names = arg_names
@@ -881,7 +881,7 @@ function typePartialApplication(
   end
   @assign fn.inputs = inputs
   @assign fn.slots = slots
-  @assign ty = TYPE_FUNCTION(fn, FunctionTYPE_FUNCTIONAL_VARIABLE)
+  @assign ty = TYPE_FUNCTION(fn, FunctionType.FUNCTIONAL_VARIABLE)
   @assign exp = PARTIAL_FUNCTION_APPLICATION_EXPRESSION(
     fn_ref,
     listReverseInPlace(ty_args),
@@ -1047,9 +1047,9 @@ function matchFunctionsSilent(
   vectorize::Bool = true,
   )
   local matchedFunctions::Vector{MatchedFunction}
-  #ErrorExt.setCheckpoint("NFFunction:matchFunctions")
+  ErrorExt.setCheckpoint("NFFunction:matchFunctions")
   matchedFunctions = matchFunctions(funcs, args, named_args, info, vectorize)
-  #ErrorExt.rollBack("NFFunction:matchFunctions")
+  ErrorExt.rollBack("NFFunction:matchFunctions")
   return matchedFunctions
 end
 

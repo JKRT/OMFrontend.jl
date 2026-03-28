@@ -298,7 +298,7 @@ function collectStatementFlatTypes(stmt::Statement, types::TypeTree)::TypeTree
       end
 
       ALG_WHEN(__) => begin
-         types = ListUtil.fold(stmt.branches, collectStmtBranchFlatTypes, types)
+         types = ArrayUtil.fold(stmt.branches, collectStmtBranchFlatTypes, types)
         ()
       end
 
@@ -321,7 +321,7 @@ function collectStatementFlatTypes(stmt::Statement, types::TypeTree)::TypeTree
 
       ALG_WHILE(__) => begin
          types = collectExpFlatTypes(stmt.condition, types)
-         types = ListUtil.fold(stmt.body, collectStatementFlatTypes, types)
+         types = ArrayUtil.fold(stmt.body, collectStatementFlatTypes, types)
         ()
       end
 
@@ -335,7 +335,7 @@ end
 
 function collectAlgorithmFlatTypes(alg::Algorithm, types::TypeTree)::TypeTree
 
-  @assign types = ListUtil.fold(alg.statements, collectStatementFlatTypes, types)
+  @assign types = ArrayUtil.fold(alg.statements, collectStatementFlatTypes, types)
   return types
 end
 
@@ -531,13 +531,13 @@ function toFlatStream(flatModel::FlatModel, functions::List, printBindingTypes::
     s = toFlatStreamList(flat_model.equations, "  ", s)
   end
   for alg in flat_model.initialAlgorithms
-    if !listEmpty(alg.statements)
+    if !isempty(alg.statements)
       s = IOStream_M.append(s, "initial algorithm\\n")
       s = toFlatStreamList(alg.statements, "  ", s)
     end
   end
   for alg in flat_model.algorithms
-    if !listEmpty(alg.statements)
+    if !isempty(alg.statements)
       s = IOStream_M.append(s, "algorithm\\n")
       s = toFlatStreamList(alg.statements, "  ", s)
     end
@@ -545,7 +545,228 @@ function toFlatStream(flatModel::FlatModel, functions::List, printBindingTypes::
   s = IOStream_M.append(s, "end '" + flat_model.name + "';\\n")
   str = IOStream_M.string(s)
   IOStream_M.delete(s)
+  str = fixTupleElementAccess(str)
   return (s, str)
+end
+
+"""
+Fix TUPLE_ELEMENT_EXPRESSION serialization in flat Modelica output.
+
+The pattern `'FuncName'(args)[N]` is not valid Modelica syntax.
+This function replaces such patterns with calls to auto-generated wrapper
+functions that call the original function and return only element N.
+"""
+function fixTupleElementAccess(str::String)::String
+  #= Find all )[N] patterns (unique to TUPLE_ELEMENT_EXPRESSION) =#
+  replacements = Tuple{Int, Int, String, String, Int}[]
+  i = 1
+  while i <= lastindex(str)
+    if str[i] == ')' && i < lastindex(str) && str[nextind(str, i)] == '['
+      bracketStart = nextind(str, i)
+      j = nextind(str, bracketStart)
+      while j <= lastindex(str) && isdigit(str[j])
+        j = nextind(str, j)
+      end
+      if j <= lastindex(str) && str[j] == ']' && j > nextind(str, bracketStart)
+        elemIdx = parse(Int, str[nextind(str, bracketStart):prevind(str, j)])
+        #= Find matching '(' by scanning backwards from ')' =#
+        depth = 1
+        k = prevind(str, i)
+        while k >= 1 && depth > 0
+          if str[k] == ')'
+            depth += 1
+          elseif str[k] == '('
+            depth -= 1
+          end
+          if depth > 0
+            k = prevind(str, k)
+          end
+        end
+        #= k now points to matching '(' =#
+        funcEnd = prevind(str, k)
+        if funcEnd >= 1 && str[funcEnd] == '\''
+          funcStart = findprev('\'', str, prevind(str, funcEnd))
+          if funcStart !== nothing
+            funcName = str[nextind(str, funcStart):prevind(str, funcEnd)]
+            argsStr = str[k:i]
+            wrapperName = funcName * "__tupleElem_" * string(elemIdx)
+            replacement = "'" * wrapperName * "'" * argsStr
+            push!(replacements, (funcStart, j, replacement, funcName, elemIdx))
+            i = nextind(str, j)
+            continue
+          end
+        end
+      end
+    end
+    i = nextind(str, i)
+  end
+
+  if isempty(replacements)
+    return str
+  end
+
+  #= Apply replacements in reverse order =#
+  result = str
+  for (s, e, rep, _, _) in sort(replacements, by = x -> x[1], rev = true)
+    result = result[1:prevind(result, s)] * rep * result[nextind(result, e):end]
+  end
+
+  #= Generate wrapper functions and insert them =#
+  wrapperDefs = generateTupleWrappers(replacements, str)
+  if !isempty(wrapperDefs)
+    #= Insert after first newline (after "model 'Name'") =#
+    firstNL = findfirst('\n', result)
+    if firstNL !== nothing
+      result = result[1:firstNL] * wrapperDefs * result[nextind(result, firstNL):end]
+    end
+  end
+
+  return result
+end
+
+"""
+Generate wrapper function definitions for tuple element access.
+For each (funcName, elemIdx), finds the original function in the flat model,
+parses its inputs/outputs, and generates a wrapper that returns only element N.
+"""
+function generateTupleWrappers(
+  replacements::Vector{Tuple{Int, Int, String, String, Int}},
+  originalStr::String,
+)::String
+  #= Collect unique (funcName, elemIdx) pairs =#
+  seen = Set{Tuple{String, Int}}()
+  wrappers = String[]
+  for (_, _, _, funcName, elemIdx) in replacements
+    key = (funcName, elemIdx)
+    if key in seen
+      continue
+    end
+    push!(seen, key)
+
+    #= Find the function definition in the original string =#
+    funcDef = extractFunctionDef(originalStr, funcName)
+    if funcDef === nothing
+      continue
+    end
+
+    #= Parse inputs and outputs =#
+    inputs, outputs = parseFunctionIO(funcDef)
+    if isempty(outputs) || elemIdx > length(outputs)
+      continue
+    end
+
+    #= Generate wrapper =#
+    wrapperName = funcName * "__tupleElem_" * string(elemIdx)
+    wrapper = generateSingleWrapper(wrapperName, funcName, inputs, outputs, elemIdx)
+    push!(wrappers, wrapper)
+  end
+
+  return Base.join(wrappers, "\n")
+end
+
+"""
+Extract a function definition block from the flat model string.
+Returns the text from 'function ...' to 'end ...;'
+"""
+function extractFunctionDef(str::String, funcName::String)::Union{String, Nothing}
+  target = "function '" * funcName * "'"
+  startIdx = findfirst(target, str)
+  if startIdx === nothing
+    return nothing
+  end
+  endTarget = "end '" * funcName * "';"
+  endIdx = findfirst(endTarget, str)
+  if endIdx === nothing
+    return nothing
+  end
+  return str[startIdx.start:endIdx.stop]
+end
+
+"""
+Parse input and output declarations from a function definition string.
+Returns (inputs, outputs) where each is a vector of (declaration_line, param_name).
+"""
+function parseFunctionIO(funcDef::String)
+  inputs = Tuple{String, String}[]
+  outputs = Tuple{String, String}[]
+  for line in Base.split(funcDef, '\n')
+    stripped = Base.lstrip(line)
+    if Base.startswith(stripped, "input ")
+      pname = extractParamName(String(stripped))
+      if pname !== nothing
+        push!(inputs, (String(stripped), pname))
+      end
+    elseif Base.startswith(stripped, "output ")
+      pname = extractParamName(String(stripped))
+      if pname !== nothing
+        push!(outputs, (String(stripped), pname))
+      end
+    end
+  end
+  return inputs, outputs
+end
+
+"""
+Extract the parameter name from an input/output declaration line.
+Handles both quoted ('name') and unquoted (name) forms.
+"""
+function extractParamName(line::String)::Union{String, Nothing}
+  #= Remove trailing semicolon and attributes =#
+  #= Pattern: "input/output Type[dims] 'name'(...) = ...;" or "input/output Type name;" =#
+  m = Base.match(r"(?:input|output)\s+\S+(?:\[.*?\])?\s+'([^']+)'", line)
+  if m !== nothing
+    return m.captures[1]
+  end
+  m = Base.match(r"(?:input|output)\s+\S+(?:\[.*?\])?\s+(\w+)", line)
+  if m !== nothing
+    return m.captures[1]
+  end
+  return nothing
+end
+
+"""
+Generate a single wrapper function that calls the original and returns element N.
+"""
+function generateSingleWrapper(
+  wrapperName::String,
+  origFuncName::String,
+  inputs::Vector{Tuple{String, String}},
+  outputs::Vector{Tuple{String, String}},
+  elemIdx::Int,
+)::String
+  buf = IOBuffer()
+  println(buf, "function '", wrapperName, "'")
+  #= Same inputs =#
+  for (decl, _) in inputs
+    println(buf, "  ", decl)
+  end
+  #= Only the selected output =#
+  println(buf, "  ", outputs[elemIdx][1])
+  #= Other outputs as protected locals =#
+  otherOutputs = Tuple{String, String}[]
+  for (oi, (decl, pname)) in enumerate(outputs)
+    if oi != elemIdx
+      #= Convert "output Type name" to just "Type name" =#
+      localDecl = Base.replace(decl, r"^\s*output\s+" => "")
+      push!(otherOutputs, (localDecl, pname))
+    end
+  end
+  if !isempty(otherOutputs)
+    println(buf, "protected")
+    for (decl, _) in otherOutputs
+      println(buf, "  ", decl)
+    end
+  end
+  #= Algorithm: call original with tuple decomposition =#
+  println(buf, "algorithm")
+  outNames = ["'" * o[2] * "'" for o in outputs]
+  inNames = ["'" * inp[2] * "'" for inp in inputs]
+  tupleStr = "(" * Base.join(outNames, ", ") * ")"
+  callStr = "'" * origFuncName * "'(" * Base.join(inNames, ", ") * ")"
+  println(buf, "  ", tupleStr, " := ", callStr, ";")
+  println(buf, "end '", wrapperName, "';")
+  println(buf)
+  return String(take!(buf))
 end
 
 function printFlatString(

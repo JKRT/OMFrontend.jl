@@ -375,7 +375,7 @@ function removeEmptyTupleElements(exp::Expression)
   rExp = @match exp begin
     TUPLE_EXPRESSION(ty = TYPE_TUPLE(types = tyl)) => begin
       local expElements = list(@do_threaded_for if isEmptyArray(t)
-                                 CREF_EXPRESSION(t, WILD())
+                                 CREF_EXPRESSION(t, COMPONENT_REF_WILD())
                                else
                                  e
                                end (e, t) (exp.elements, tyl))

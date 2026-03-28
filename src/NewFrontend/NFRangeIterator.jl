@@ -162,14 +162,14 @@ function fromDim(dim::Dimension)::RangeIterator
       end
 
       DIMENSION_BOOLEAN(__) => begin
-        ARRAY_RANGE(list(
+        RANGEITERATOR_ARRAY_RANGE(list(
           BOOLEAN_EXPRESSION(false),
           BOOLEAN_EXPRESSION(true),
         ))
       end
 
        DIMENSION_ENUM(enumType = ty && TYPE_ENUMERATION(__)) => begin
-        ARRAY_RANGE(makeEnumLiterals(ty))
+        RANGEITERATOR_ARRAY_RANGE(makeEnumLiterals(ty))
       end
 
       DIMENSION_EXP(__) => begin

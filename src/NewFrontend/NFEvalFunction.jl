@@ -85,12 +85,6 @@ function evaluate(fn::M_Function, args::Vector{Expression})::Expression
 end
 
 function evaluateNormal(fn::M_Function, args::Vector{Expression})::Expression
-  # @info "Function to evaluate"
-  # println(replace(toFlatString(fn), "\\n" => "\n"))
-  # println("*****************")
-  # @info "Arguments are"
-  # println(replace(toString(args), "\\n" => "\n"))
-  # println("*****************")
   local result::Expression
   local fn_body::Vector{Statement}
   local bindings::List{Binding}
@@ -127,7 +121,7 @@ function evaluateNormal(fn::M_Function, args::Vector{Expression})::Expression
     else
       fail()
     end
-  catch
+  catch e
     P_Pointer.update(call_counter, call_count - 1)
     fail()
   end
@@ -160,7 +154,7 @@ function evaluateExternal(fn::M_Function, args::Vector{Expression})::Expression
     #= TODO: evalfn does not exist yet. This path is for builtin external functions. =#
     error("evalfn not implemented for builtin external function: " * name)
   elseif isKnownExternalFunc(name, ann)
-    result = evaluateKnownExternal(name, args)
+    result = evaluateKnownExternal(name, list(args...))
   else
     try
       result = evaluateExternal2(name, fn, args, ext_args)
@@ -762,8 +756,8 @@ function assignArrayElement(
   local val::Expression
   local rest_subs::List{Subscript}
   local idx::Int
-  local subs::List{Expression}
-  local vals::List{Expression}
+  local subs
+  local vals
   result = begin
     @match (arrayExp, subscripts) begin
       (
@@ -781,26 +775,21 @@ function assignArrayElement(
       end
 
       (ARRAY_EXPRESSION(__), SUBSCRIPT_SLICE(sub) <| rest_subs) => begin
-        subs = arrayElements(sub)
-        vals = arrayElements(value)
+        local subsV = arrayElements(sub)
+        local valsV = arrayElements(value)
+        arrayExpElements = copy(arrayExp.elements)
         if listEmpty(rest_subs)
-          for s in subs
-            @match _cons(val, vals) = vals
+          for (i, s) in enumerate(subsV)
             idx = toInteger(s)
-            arrayExpElements = ListUtil.set(arrayExp.elements, idx, val)
+            arrayExpElements[idx] = valsV[i]
           end
         else
-          for s in subs
-            @match _cons(val, vals) = vals
+          for (i, s) in enumerate(subsV)
             idx = toInteger(s)
-            arrayExpElements = ListUtil.set(
-              arrayExp.elements,
-              idx,
-              assignArrayElement(listGet(arrayExp.elements, idx), rest_subs, val),
-            )
+            arrayExpElements[idx] = assignArrayElement(arrayExpElements[idx], rest_subs, valsV[i])
           end
         end
-        ARRAY_EXPRESSION(ty, arrayExpElements, arrayExp.literal)
+        ARRAY_EXPRESSION(arrayExp.ty, arrayExpElements, arrayExp.literal)
       end
 
       (ARRAY_EXPRESSION(__), SUBSCRIPT_WHOLE(__) <| rest_subs) =>
@@ -808,13 +797,10 @@ function assignArrayElement(
           if listEmpty(rest_subs)
             arrayExpElements = arrayElements(value)
           else
-            arrayExpElements =
-              list(@do_threaded_for assignArrayElement(e, rest_subs, v) (e, v) (
-                arrayExp.elements,
-                arrayElements(value),
-              ))
+            local valElems = arrayElements(value)
+            arrayExpElements = Expression[assignArrayElement(arrayExp.elements[i], rest_subs, valElems[i]) for i in 1:length(arrayExp.elements)]
           end
-          ARRAY_EXPRESSION(ty, arrayExpElements, arrayExp.literal)
+          ARRAY_EXPRESSION(arrayExp.ty, arrayExpElements, arrayExp.literal)
         end
 
       _ => begin
@@ -901,7 +887,7 @@ function evaluateFor(
   forBody::Vector{Statement},
   source::DAE.ElementSource,
 )::FlowControlType
-  local ctrl::FlowControlType
+  local ctrl::FlowControlType = FlowControl.NEXT
   local range_iter::RangeIterator
   local iter_exp::Pointer{Expression}
   local range_exp::Expression
@@ -949,7 +935,7 @@ function evaluateIf(
   local body::Vector{Statement}
   for branch in branches
     (cond, body) = branch
-    if isTrue(evalExp(cond, EVALTARGET_STATEMENT(DAE.emptyElementSource)))#source)))
+    if isTrue(evalExp(cond, EVALTARGET_STATEMENT(DAE.emptyElementSource)))
       ctrl = evaluateStatements(body)
       return ctrl
     end
@@ -1026,7 +1012,7 @@ end
 
 function evaluateWhile(
   condition::Expression,
-  body::List{<:Statement},
+  body::Vector{Statement},
   source::DAE.ElementSource,
 )::FlowControlType
   local ctrl::FlowControlType = FlowControl.NEXT
@@ -1155,7 +1141,6 @@ const COMPARE_LITERALS =
 
 function evaluateKnownExternal(name::String, args::List{<:Expression})::Expression
   local result::Expression
-
   @assign result = begin
     local s1::String
     local s2::String
@@ -1163,7 +1148,7 @@ function evaluateKnownExternal(name::String, args::List{<:Expression})::Expressi
     local i2::Int
     local b::Bool
     local r::AbstractFloat
-    local dims::Int[2]
+    local dims::Vector{Int}
     @match (name, args) begin
       ("ModelicaInternal_countLines", STRING_EXPRESSION(s1) <| nil()) =>
         begin
@@ -1290,7 +1275,7 @@ function evaluateKnownExternal(name::String, args::List{<:Expression})::Expressi
         "ModelicaIO_readMatrixSizes",
         STRING_EXPRESSION(s1) <| STRING_EXPRESSION(s2) <| nil(),
       ) => begin
-        @assign dims = ModelicaExternalC.ModelicaIO_readMatrixSizes(s1, s2)
+        dims = ModelicaExternalC.ModelicaIO_readMatrixSizes(s1, s2)
         ARRAY_EXPRESSION(
           TYPE_ARRAY(TYPE_INTEGER(), list(fromInteger(2))),
           list(
@@ -1388,9 +1373,7 @@ function evaluateModelicaIO_readRealMatrix(
 )::Expression
   local result::Expression
 
-  local matrix::AbstractFloat
-  local row::List{Expression}
-  local rows::List{Expression} = nil
+  local matrix::Matrix{Float64}
   local ty::M_Type
 
   @assign matrix = ModelicaExternalC.ModelicaIO_readRealMatrix(
@@ -1401,15 +1384,13 @@ function evaluateModelicaIO_readRealMatrix(
     verboseRead,
   )
   @assign ty = TYPE_ARRAY(TYPE_REAL(), list(fromInteger(ncol)))
+  local rowsV = Expression[]
   for r = 1:nrow
-    @assign row = nil
-    for c = 1:ncol
-      @assign row = _cons(REAL_EXPRESSION(matrix[r, c]), row)
-    end
-    @assign rows = _cons(ARRAY_EXPRESSION(ty, row, literal = true), rows)
+    local rowV = Expression[REAL_EXPRESSION(matrix[r, c]) for c in 1:ncol]
+    push!(rowsV, ARRAY_EXPRESSION(ty, rowV, literal = true))
   end
   @assign ty = liftArrayLeft(ty, fromInteger(nrow))
-  @assign result = ARRAY_EXPRESSION(ty, rows, literal = true)
+  @assign result = ARRAY_EXPRESSION(ty, rowsV, literal = true)
   return result
 end
 

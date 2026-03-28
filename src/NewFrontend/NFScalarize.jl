@@ -65,7 +65,11 @@ function scalarizeVariable(var::Variable, vars::Vector{Variable})
   local bind_var::VariabilityType
   local parentCr = rest(var.name)
   local parentIsRecordAndParam =  ! (parentCr isa COMPONENT_REF_EMPTY) && isRecord(rest(var.name).ty)# && (variability(var) <= Variability.PARAMETER)
-  if isArray(var.ty) && !parentIsRecordAndParam
+  if isArray(var.ty) && hasKnownSize(var.ty) && !parentIsRecordAndParam
+    #= Skip zero-size array variables entirely =#
+    if isEmptyArray(var.ty)
+      return vars
+    end
     try
       @match VARIABLE(
         name,
@@ -228,18 +232,29 @@ function scalarizeEquation(@nospecialize(eq::Equation), equations::Vector{Equati
         equations =
           push!(equations, EQUATION_ARRAY_EQUALITY(lhs, rhs, ty, src))
       else
-        #println("BEFORE " * toString(eq))
         lhs_iter = fromExpToExpressionIterator(lhs)
         rhs_iter = fromExpToExpressionIterator(rhs)
-        #println(toString(lhs_iter))
-        #println(toString(rhs_iter))
+        #= If the RHS cannot be expanded into elements (e.g. arithmetic over
+           array slices like 0.5*(rhos[1:1]+rhos[2:2])), keep the equation
+           as an array equality for the backend to handle. =#
+        if !hasNext(rhs_iter) && hasNext(lhs_iter)
+          equations = push!(equations, EQUATION_ARRAY_EQUALITY(eq.lhs, eq.rhs, eq.ty, src))
+          return equations
+        end
+        local rhs_is_scalar = !isArray(typeOf(eq.rhs))
+        local scalar_rhs::Expression = eq.rhs
         ty = arrayElementType(ty)
         while hasNext(lhs_iter)
           if !hasNext(rhs_iter)
-            local msg = string(" could not expand rhs " + toString(rhs) * " to match " * toString(lhs),
-                               " rhs type was: $(toString(ty)) & lhs type was: $(toString(ty))")
-            #println(toString(lhs_iter))
-            #println(toString(rhs_iter))
+            if rhs_is_scalar
+              #= Scalar RHS broadcast to all LHS elements =#
+              (lhs_iter, lhs) = next(lhs_iter)
+              equations = push!(equations, EQUATION_EQUALITY(lhs, scalar_rhs, ty, src))
+              continue
+            end
+            local msg = string(" could not expand rhs " + toString(eq.rhs) * " to match " * toString(eq.lhs),
+                               " rhs type was: $(toString(eq.ty)) & lhs type was: $(toString(eq.ty))")
+            @info "scalarizeEquation: RHS exhausted before LHS" toString(eq.lhs) toString(eq.rhs) toString(eq.ty)
             Error.addInternalError(
               getInstanceName() +
                 msg,
@@ -425,7 +440,7 @@ function scalarizeIfStatement(
   source::DAE.ElementSource,
   statements::Vector{Statement},
 )
-  local bl::List{Tuple{Expression, Vector{Statement}}} = Tuple{Expression, Vector{Statement}}[]
+  local bl::Vector{Tuple{Expression, Vector{Statement}}} = Tuple{Expression, Vector{Statement}}[]
   local cond::Expression
   local body::Vector{Statement}
   for b in branches

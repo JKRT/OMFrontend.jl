@@ -1,6 +1,6 @@
 struct MatchKindStruct{T <: Number}
   EXACT::T #= Exact match =#
-  CAST::T  #= Matched by casting, e.g. Integer to Real =#
+  CAST::T #= Matched by casting, e.g. Integer to Real =#
   UNKNOWN_EXPECTED::T #= The expected type was unknown =#
   UNKNOWN_ACTUAL::T #= The actual type was unknown =#
   GENERIC::T #= Matched with a generic type e.g. function F<T> input T i; end F; F(1) =#
@@ -104,7 +104,7 @@ function checkBinaryOperation(
            checkBinaryOperationEW(exp1, type1, exp2, type2, Op.MUL, info)
          end
          Op.DIV_EW => begin
-           checkBinaryOperationDiv(exp1, type1, exp2, type2, info, isElementWise = true)
+           checkBinaryOperationDiv(exp1, type1, exp2, type2, info, true)
          end
          Op.POW_EW => begin
            checkBinaryOperationPowEW(exp1, type1, exp2, type2, info)
@@ -420,16 +420,16 @@ function checkOverloadedBinaryArrayAddSub2(
     local ty2::M_Type
     local e::Expression
     local e2::Expression
-    local expl::List{Expression}
-    local expl1::List{Expression}
-    local expl2::List{Expression}
+    local expl::Vector{Expression}
+    local expl1::Vector{Expression}
+    local expl2::Vector{Expression}
     @match (exp1, exp2) begin
       (
         ARRAY_EXPRESSION(elements = expl1),
         ARRAY_EXPRESSION(elements = expl2),
       ) => begin
-        @assign expl = nil
-        if listEmpty(expl1)
+        expl = Expression[]
+        if isempty(expl1)
           @assign ty1 = arrayElementType(type1)
           @assign ty2 = arrayElementType(type2)
           try
@@ -455,8 +455,8 @@ function checkOverloadedBinaryArrayAddSub2(
         else
           @assign ty1 = unliftArray(type1)
           @assign ty2 = unliftArray(type2)
-          for e1 in expl1
-            @match Cons(e2, expl2) = expl2
+          for (idx, e1) in enumerate(expl1)
+            e2 = expl2[idx]
              (e, ty) = checkOverloadedBinaryArrayAddSub2(
               e1,
               ty1,
@@ -468,14 +468,13 @@ function checkOverloadedBinaryArrayAddSub2(
               candidates,
               info,
             )
-            @assign expl = _cons(e, expl)
+            push!(expl, e)
           end
-          expl = listReverseInPlace(expl)
         end
         #=  If the arrays are empty, match against the element types to get the expected return type.
         =#
         outType = setArrayElementType(type1, ty)
-        outExp = makeArray(outType, listArray(expl))
+        outExp = makeArray(outType, expl)
         (outExp, outType)
       end
 
@@ -526,7 +525,7 @@ function checkOverloadedBinaryArrayMul(
       (nil(), _ <| nil()) => begin
         #=  scalar * array = array
         =#
-        @assign outExp = checkOverloadedBinaryScalarArray(
+        @assign (outExp, _) = checkOverloadedBinaryScalarArray(
           exp1,
           type1,
           var1,
@@ -543,7 +542,7 @@ function checkOverloadedBinaryArrayMul(
       (_ <| nil(), nil()) => begin
         #=  array * scalar = array
         =#
-        @assign outExp = checkOverloadedBinaryArrayScalar(
+        @assign (outExp, _) = checkOverloadedBinaryArrayScalar(
           exp1,
           type1,
           var1,
@@ -609,12 +608,13 @@ function checkOverloadedBinaryScalarArray(
   local outType::M_Type
   local outExp::Expression
 
+   (exp2_expanded, _) = expand(exp2)
    (outExp, outType) = checkOverloadedBinaryScalarArray2(
     exp1,
     type1,
     var1,
     op,
-    expand(exp2),
+    exp2_expanded,
     type2,
     var2,
     candidates,
@@ -637,12 +637,12 @@ function checkOverloadedBinaryScalarArray2(
   local outType::M_Type
   local outExp::Expression
 
-  local expl::List{Expression}
+  local expl::Vector{Expression}
   local ty::M_Type
 
    (outExp, outType) = begin
     @match exp2 begin
-      ARRAY_EXPRESSION(elements = nil()) => begin
+      ARRAY_EXPRESSION(elements = expl) where isempty(expl) => begin
         try
           @assign ty = unliftArray(type2)
            (_, outType) = matchOverloadedBinaryOperator(
@@ -650,7 +650,7 @@ function checkOverloadedBinaryScalarArray2(
             type1,
             var1,
             op,
-            EMPTY(type2),
+            EMPTY_EXPRESSION(type2),
             ty,
             var2,
             candidates,
@@ -681,7 +681,7 @@ function checkOverloadedBinaryScalarArray2(
             var2,
             candidates,
             info,
-          ) for e in expl
+          )[1] for e in expl
         ]
         outType = setArrayElementType(
           exp2.ty,
@@ -722,8 +722,9 @@ function checkOverloadedBinaryArrayScalar(
   local outType::M_Type
   local outExp::Expression
 
+   (exp1_expanded, _) = expand(exp1)
    (outExp, outType) = checkOverloadedBinaryArrayScalar2(
-    expand(exp1),
+    exp1_expanded,
     type1,
     var1,
     op,
@@ -751,16 +752,16 @@ function checkOverloadedBinaryArrayScalar2(
   local outExp::Expression
 
   local e1::Expression
-  local expl::List{Expression}
+  local expl::Vector{Expression}
   local ty::M_Type
 
    (outExp, outType) = begin
     @match exp1 begin
-      ARRAY_EXPRESSION(elements = nil()) => begin
+      ARRAY_EXPRESSION(elements = expl) where isempty(expl) => begin
         try
           @assign ty = unliftArray(type1)
            (_, outType) = matchOverloadedBinaryOperator(
-            EMPTY(type1),
+            EMPTY_EXPRESSION(type1),
             ty,
             var1,
             op,
@@ -795,7 +796,7 @@ function checkOverloadedBinaryArrayScalar2(
             var2,
             candidates,
             info,
-          ) for e in expl
+          )[1] for e in expl
         ]
         outType = setArrayElementType(
           exp1.ty,
@@ -875,8 +876,8 @@ function checkOverloadedBinaryArrayEW(
   local e1::Expression
   local e2::Expression
   local mk::MatchKindType
-  local expl1::List{Expression}
-  local expl2::List{Expression}
+  local expl1::Vector{Expression}
+  local expl2::Vector{Expression}
   local ty::M_Type
 
   if isArray(type1) && isArray(type2)
@@ -919,9 +920,9 @@ function checkOverloadedBinaryArrayEW2(
   local outExp::Expression
 
   local e2::Expression
-  local expl::List{Expression}
-  local expl1::List{Expression}
-  local expl2::List{Expression}
+  local expl::Vector{Expression}
+  local expl1::Vector{Expression}
+  local expl2::Vector{Expression}
   local ty::M_Type
   local ty1::M_Type
   local ty2::M_Type
@@ -931,7 +932,7 @@ function checkOverloadedBinaryArrayEW2(
   @assign is_array1 = isArray(type1)
   @assign is_array2 = isArray(type2)
   if is_array1 || is_array2
-    @assign expl = nil
+    expl = Expression[]
     if isEmptyArray(exp1) ||
        isEmptyArray(exp2)
       @assign ty1 = arrayElementType(type1)
@@ -960,11 +961,11 @@ function checkOverloadedBinaryArrayEW2(
       @assign ty2 = unliftArray(type2)
       @assign expl1 = arrayElements(exp1)
       @assign expl2 = arrayElements(exp2)
-      for e in expl1
-        @match _cons(e2, expl2) = expl2
+      for (idx, e) in enumerate(expl1)
+        e2 = expl2[idx]
          (e, ty) =
           checkOverloadedBinaryArrayEW2(e, ty1, var1, op, e2, ty2, var2, candidates, info)
-        @assign expl = _cons(e, expl)
+        push!(expl, e)
       end
     elseif is_array1
       @assign ty1 = unliftArray(type1)
@@ -981,7 +982,7 @@ function checkOverloadedBinaryArrayEW2(
           candidates,
           info,
         )
-        @assign expl = _cons(e, expl)
+        push!(expl, e)
       end
     elseif is_array2
       @assign ty2 = unliftArray(type2)
@@ -998,11 +999,11 @@ function checkOverloadedBinaryArrayEW2(
           candidates,
           info,
         )
-        @assign expl = _cons(e, expl)
+        push!(expl, e)
       end
     end
     @assign outType = setArrayElementType(type1, ty)
-    @assign outExp = makeArray(outType, listReverseInPlace(expl))
+    @assign outExp = makeArray(outType, expl)
   else
      (outExp, outType) = matchOverloadedBinaryOperator(
       exp1,
@@ -1020,7 +1021,7 @@ function checkOverloadedBinaryArrayEW2(
 end
 
 function implicitConstructAndMatch(
-  candidates::Vector{Function},
+  candidates::Vector{M_Function},
   inExp1::Expression,
   inType1::M_Type,
   op::Operator,
@@ -1059,8 +1060,8 @@ function implicitConstructAndMatch(
     @match _cons(in1, _cons(in2, _)) = fn.inputs
     @assign arg1_ty = getType(in1)
     @assign arg2_ty = getType(in2)
-    @assign arg1_info = info(in1)
-    @assign arg2_info = info(in2)
+    @assign arg1_info = InstNode_info(in1)
+    @assign arg2_info = InstNode_info(in2)
      (matchedfuncs, matched) = implicitConstructAndMatch2(
       inExp1,
       inType1,
@@ -1096,7 +1097,7 @@ function implicitConstructAndMatch(
   #=  Try to implicitly construct a matching record from the second argument.
   =#
   if listLength(matchedfuncs) == 1
-    @match _cons((operfn, list(exp1, exp2), var), _) = matchedfuncs
+    @match (operfn, exp1 <| (exp2 <| _), var) <| _ = matchedfuncs
     @assign outType = returnType(operfn)
     @assign outExp = CALL_EXPRESSION(makeTypedCall(
       operfn,
@@ -1146,19 +1147,19 @@ function implicitConstructAndMatch2(
   #=  Default constructors are not considered.
   =#
   if mk == MatchKind.EXACT
-    @assign fn_ref =
+    (fn_ref, _, _) =
       instFunction(Absyn.CREF_IDENT("'constructor'", nil), scope, paramInfo2)
     @assign e2 =
-      CALL_EXPRESSION(NFCall.UNTYPED_CALL(fn_ref, list(exp2), nil, scope))
+      CALL_EXPRESSION(UNTYPED_CALL(fn_ref, list(exp2), nil, scope))
      (e2, ty, var) = typeCall(e2, 0, paramInfo1)
      (_, _, mk) = matchTypes(paramType2, ty, e2, false)
     if mk == MatchKind.EXACT
-      matchedFns = List{Tuple{M_Function, List{Expression}, VariabilityType}}(
+      matchedFns = Cons{Tuple{M_Function, List{Expression}, VariabilityType}}(
         (fn,
          if reverseArgs
-           Cons{Expression}(e2, e1)
+           list(e2, e1)
          else
-           Cons{Expression}(e1, e2)
+           list(e1, e2)
          end,
          var),
         matchedFns)
@@ -1685,27 +1686,27 @@ function checkOverloadedUnaryOperator(
   local fn_ref::ComponentRef
   local candidates::Vector{M_Function}
   local matched::Bool
-  local args::List{TypedArg}
+  local args::Vector{TypedArg}
   local matchKind::FunctionMatchKind
   local matchedFunc::MatchedFunction
-  local matchedFunctions::List{MatchedFunction} = nil
-  local exactMatches::List{MatchedFunction}
+  local matchedFunctions::Vector{MatchedFunction}
+  local exactMatches::Vector{MatchedFunction}
 
   @assign opstr = symbol(inOp, "'")
-  @assign candidates = OperatorOverloading.lookupOperatorFunctionsInType(opstr, inType1)
+  @assign candidates = lookupOperatorFunctionsInType(opstr, inType1)
   #= for fn in candidates loop
   =#
   #=   checkValidOperatorOverload(opstr, fn, node1);
   =#
   #= end for;
   =#
-  @assign args = list((inExp1, inType1, var))
+  @assign args = TypedArg[(inExp1, inType1, var)]
   @assign matchedFunctions =
-    matchFunctionsSilent(candidates, args, nil, info, vectorize = false)
+    matchFunctionsSilent(candidates, args, TypedNamedArg[], info)
   #=  We only allow exact matches for operator overloading. e.g. no casting or generic matches.
   =#
   @assign exactMatches = getExactMatches(matchedFunctions)
-  if listEmpty(exactMatches)
+  if isempty(exactMatches)
     printUnresolvableTypeError(
       UNARY_EXPRESSION(inOp, inExp1),
       list(inType1),
@@ -1713,8 +1714,8 @@ function checkOverloadedUnaryOperator(
     )
     fail()
   end
-  if listLength(exactMatches) == 1
-    @match Cons(matchedFunc, _) = exactMatches
+  if length(exactMatches) == 1
+    matchedFunc = exactMatches[1]
     outType = returnType(matchedFunc.func)
     outExp = CALL_EXPRESSION(makeTypedCall(
       matchedFunc.func,
@@ -2550,8 +2551,8 @@ function matchComplexTypes(
   local cty1::ComplexType
   local cty2::ComplexType
   local e::Expression
-  local elements::List{Expression}
-  local elementsV::List{Expression}
+  local elements::Vector{Expression}
+  local elementsV::Vector{Expression}
   local mk::MatchKindType
   local comp1::Component
   local comp2::Component
@@ -2566,6 +2567,22 @@ function matchComplexTypes(
   end
   cls1 = getClass(anode)
   cls2 = getClass(enode)
+  #= Handle connector types directly from type args (works for both INSTANCED_CLASS and TYPED_DERIVED) =#
+  if actualType.complexTy isa COMPLEX_CONNECTOR && expectedType.complexTy isa COMPLEX_CONNECTOR
+    cty1 = actualType.complexTy
+    cty2 = expectedType.complexTy
+    matchKind = matchComponentList(cty1.potentials, cty2.potentials, allowUnknown)
+    if matchKind != MatchKind.NOT_COMPATIBLE
+      matchKind = matchComponentList(cty1.flows, cty2.flows, allowUnknown)
+      if matchKind != MatchKind.NOT_COMPATIBLE
+        matchKind = matchComponentList(cty1.streams, cty2.streams, allowUnknown)
+      end
+    end
+    if matchKind != MatchKind.NOT_COMPATIBLE
+      matchKind = MatchKind.PLUG_COMPATIBLE
+    end
+    return (expression, compatibleType, matchKind)
+  end
   () = begin
     @match (cls1, cls2, expression) begin
       (
@@ -3660,10 +3677,10 @@ function printBindingTypeError(
      (_, _, mk) = matchTypes(
       arrayElementType(bindingType),
       arrayElementType(componentType),
-      EMPTY_BINDING(bindingType),
+      EMPTY_EXPRESSION(bindingType),
       true,
     )
-    if !Config.getGraphicsExpMode()
+    if true #= !Config.getGraphicsExpMode() - always true, graphics mode not supported =#
       if isValidAssignmentMatch(mk)
         Error.addMultiSourceMessage(
           Error.VARIABLE_BINDING_DIMS_MISMATCH,

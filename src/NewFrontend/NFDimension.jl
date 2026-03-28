@@ -177,7 +177,8 @@ function endExp(dim::Dimension, cref::ComponentRef, index::Int)::Expression
 end
 
 function toStringList(dims::List{<:Dimension})::String
-  local str::String = "[" + stringDelimitList(ListUtil.map(dims, toString), ", ") + "]"
+  local parts = String[toString(d) for d in dims]
+  local str::String = "[" * Base.join(parts, ", ") * "]"
   return str
 end
 
@@ -282,7 +283,7 @@ function isOne(dim::Dimension)::Bool
 
   @assign isOne = begin
     @match dim begin
-      INTEGER_EXPRESSION(__) => begin
+      DIMENSION_INTEGER(__) => begin
         dim.size == 1
       end
       DIMENSION_ENUM(__) => begin
@@ -301,7 +302,7 @@ function isZero(dim::Dimension)::Bool
   local isZ::Bool
   @assign isZ = begin
     @match dim begin
-      INTEGER_EXPRESSION(__) => begin
+      DIMENSION_INTEGER(__) => begin
         dim.size == 0
       end
       DIMENSION_ENUM(__) => begin
@@ -452,11 +453,11 @@ function add(a::Dimension, b::Dimension)::Dimension
         DIMENSION_UNKNOWN()
       end
 
-      (INTEGER_EXPRESSION(__), INTEGER_EXPRESSION(__)) => begin
-        INTEGER_EXPRESSION(a.size + b.size, variabilityMax(a.var, b.var))
+      (DIMENSION_INTEGER(__), DIMENSION_INTEGER(__)) => begin
+        DIMENSION_INTEGER(a.size + b.size, variabilityMax(a.var, b.var))
       end
 
-      (INTEGER_EXPRESSION(__), DIMENSION_EXP(__)) => begin
+      (DIMENSION_INTEGER(__), DIMENSION_EXP(__)) => begin
         DIMENSION_EXP(
           BINARY_EXPRESSION(
             b.exp,
@@ -467,7 +468,7 @@ function add(a::Dimension, b::Dimension)::Dimension
         )
       end
 
-      (DIMENSION_EXP(__), INTEGER_EXPRESSION(__)) => begin
+      (DIMENSION_EXP(__), DIMENSION_INTEGER(__)) => begin
         DIMENSION_EXP(
           BINARY_EXPRESSION(
             a.exp,

@@ -474,17 +474,17 @@ function generateStreamEquations(
     #=  Unconnected stream connector, do nothing.
     =#
     @match elements begin
-      Connector.CONNECTOR(face = Face.INSIDE) <| nil() => begin
+      CONNECTOR(face = Face.INSIDE) <| nil() => begin
         nil
       end
 
-      Connector.CONNECTOR(face = Face.INSIDE) <|
-      Connector.CONNECTOR(face = Face.INSIDE) <| nil() => begin
+      CONNECTOR(face = Face.INSIDE) <|
+      CONNECTOR(face = Face.INSIDE) <| nil() => begin
         nil
       end
 
-      Connector.CONNECTOR(name = cr1, face = Face.OUTSIDE, source = src1) <|
-      Connector.CONNECTOR(name = cr2, face = Face.OUTSIDE, source = src2) <|
+      CONNECTOR(name = cr1, face = Face.OUTSIDE, source = src1) <|
+      CONNECTOR(name = cr2, face = Face.OUTSIDE, source = src2) <|
       nil() => begin
         #=  Both inside, do nothing.
         =#
@@ -505,8 +505,8 @@ function generateStreamEquations(
         )
       end
 
-      Connector.CONNECTOR(name = cr1, source = src1) <|
-      Connector.CONNECTOR(name = cr2, source = src2) <| nil() => begin
+      CONNECTOR(name = cr1, source = src1) <|
+      CONNECTOR(name = cr2, source = src2) <| nil() => begin
         #=  One inside, one outside:
         =#
         #=  cr1 = cr2;
@@ -519,7 +519,7 @@ function generateStreamEquations(
         #=  The general case with N inside connectors and M outside:
         =#
          (outside, inside) =
-          ListUtil.splitOnTrue(elements, Connector.isOutside)
+          ListUtil.splitOnTrue(elements, isOutside)
         streamEquationGeneral(outside, inside, flowThreshold)
       end
     end
@@ -544,10 +544,7 @@ function streamEquationGeneral(
     @assign cref_exp = fromCref(e.name)
     @assign outside = removeStreamSetElement(e.name, outsideElements)
     @assign res = streamSumEquationExp(outside, insideElements, flowThreshold)
-    @assign src = ElementSource.addAdditionalComment(
-      e.source,
-      " equation generated from stream connection",
-    )
+    src = e.source
     @assign equations =
       _cons(EQUATION_EQUALITY(cref_exp, res, TYPE_REAL(), src), equations)
   end
@@ -648,7 +645,7 @@ function streamFlowExp(element::Connector)::Tuple{Expression, Expression}
 
   local stream_cr::ComponentRef
 
-  @assign stream_cr = Connector.name(element)
+  @assign stream_cr = name(element)
   @assign streamExp = fromCref(stream_cr)
   @assign flowExp = fromCref(associatedFlowCref(stream_cr))
   return (streamExp, flowExp)
@@ -660,7 +657,7 @@ function flowExp(element::Connector)::Expression
 
   local flow_cr::ComponentRef
 
-  @assign flow_cr = associatedFlowCref(Connector.name(element))
+  @assign flow_cr = associatedFlowCref(name(element))
   @assign flowExp = fromCref(flow_cr)
   return flowExp
 end
@@ -758,7 +755,7 @@ function makePositiveMaxCall(
   local flow_threshold::Expression
 
   @assign flow_node =
-    node(associatedFlowCref(Connector.name(
+    node(associatedFlowCref(name(
       element,
     )))
   @assign nominal_oexp =
@@ -777,7 +774,7 @@ function makePositiveMaxCall(
   @assign positiveMaxCall = CALL_EXPRESSION(makeTypedCall(
     NFBuiltinFuncs.POSITIVE_MAX_REAL,
     Expression[flowExp, flow_threshold],
-    Connector.variability(element),
+    variability(element),
   ))
   setGlobalRoot(Global.isInStream, SOME(true))
   return positiveMaxCall
@@ -895,7 +892,7 @@ function evaluateInStream(
   local sl::List{Connector}
   local set::Int
 
-  @assign c = Connector.CONNECTOR(
+  @assign c = CONNECTOR(
     cref,
     TYPE_UNKNOWN(),
     Face.INSIDE,
@@ -941,12 +938,12 @@ function generateInStreamExp(
   @assign reducedStreams = list(s for s in streams if !isZeroFlowMinMax(s, streamCref))
   @assign exp = begin
     @match reducedStreams begin
-      Connector.CONNECTOR(face = Face.INSIDE) <| nil() => begin
+      CONNECTOR(face = Face.INSIDE) <| nil() => begin
         fromCref(streamCref)
       end
 
-      Connector.CONNECTOR(face = Face.INSIDE) <|
-      Connector.CONNECTOR(face = Face.INSIDE) <| nil() => begin
+      CONNECTOR(face = Face.INSIDE) <|
+      CONNECTOR(face = Face.INSIDE) <| nil() => begin
         #=  Unconnected stream connector:
         =#
         #=    inStream(c) = c;
@@ -957,18 +954,18 @@ function generateInStreamExp(
         =#
         #=    inStream(c2) = c1;
         =#
-        @match list(Connector.CONNECTOR(name = cr)) =
+        @match list(CONNECTOR(name = cr)) =
           removeStreamSetElement(streamCref, reducedStreams)
         fromCref(cr)
       end
 
-      Connector.CONNECTOR(face = f1) <|
-      Connector.CONNECTOR(face = f2) <| nil() where {(f1 != f2)} => begin
+      CONNECTOR(face = f1) <|
+      CONNECTOR(face = f2) <| nil() where {(f1 != f2)} => begin
         #=  One inside, one outside connected stream connector:
         =#
         #=    inStream(c1) = inStream(c2);
         =#
-        @match list(Connector.CONNECTOR(name = cr)) =
+        @match list(CONNECTOR(name = cr)) =
           removeStreamSetElement(streamCref, reducedStreams)
         evaluateInStream(cr, sets, setsArray, ctable)
       end
@@ -977,7 +974,7 @@ function generateInStreamExp(
         #=  The general case:
         =#
          (outside, inside) =
-          ListUtil.splitOnTrue(reducedStreams, Connector.isOutside)
+          ListUtil.splitOnTrue(reducedStreams, isOutside)
         @assign inside = removeStreamSetElement(streamCref, inside)
         @assign exp = streamSumEquationExp(
           outside,
@@ -1000,7 +997,7 @@ function isZeroFlowMinMax(conn::Connector, streamCref::ComponentRef)::Bool
 
   if isEqual(streamCref, conn.name)
     @assign isZero = false
-  elseif Connector.isOutside(conn)
+  elseif isOutside(conn)
     @assign isZero = isZeroFlow(conn, "max")
   else
     @assign isZero = isZeroFlow(conn, "min")
@@ -1099,8 +1096,8 @@ function evaluateActualStreamMul(
   local cr::ComponentRef
   local flow_cr::ComponentRef
 
-  @match (@match CREF_EXPRESSION(cref = cr) = e1) =
-    evaluateOperators(crefExp, sets, setsArray, ctable)
+  e1 = evaluateOperators(crefExp, sets, setsArray, ctable)
+  @match CREF_EXPRESSION(cref = cr) = e1
   @assign e2 = evaluateActualStream(
     toCref(actualStreamArg),
     sets,
@@ -1202,7 +1199,7 @@ function makeSmoothCall(@nospecialize(arg::Expression), order::Int)::Expression
 
   @assign callExp = CALL_EXPRESSION(makeTypedCall(
     NFBuiltinFuncs.SMOOTH,
-    Expression[DAE.INTEGER_EXPRESSION(order), arg],
+    Expression[INTEGER_EXPRESSION(order), arg],
     variability(arg),
   ))
   return callExp
@@ -1214,7 +1211,7 @@ function removeStreamSetElement(
   elements::List{<:Connector},
 )::List{Connector}
 
-  @assign elements = ListUtil.deleteMemberOnTrue(cref, elements, compareCrefStreamSet)
+  (elements, _) = ListUtil.deleteMemberOnTrue(cref, elements, compareCrefStreamSet)
   return elements
 end
 
@@ -1238,10 +1235,10 @@ function associatedFlowCref(streamCref::ComponentRef)::ComponentRef
   local rest_cr::ComponentRef
   local flow_node::InstNode
 
-  @match CREF(ty = ty, restCref = rest_cr) = streamCref
+  @match COMPONENT_REF_CREF(ty = ty, restCref = rest_cr) = streamCref
   @assign flowCref = begin
     @match arrayElementType(ty) begin
-      TYPE_COMPLEX(complexTy = ComplexType.CONNECTOR(flows = flow_node <| nil())) => begin
+      TYPE_COMPLEX(complexTy = COMPLEX_CONNECTOR(flows = flow_node <| nil())) => begin
         prefixCref(
           flow_node,
           getType(flow_node),

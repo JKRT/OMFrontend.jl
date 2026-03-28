@@ -164,7 +164,7 @@ function toFlatStream(stmt::Statement, indent::String, s; inFunction = false)
         for b in stmt.branches
           s = IOStream_M.append(s, str)
           s =
-            IOStream_M.append(s, toFlatString(Util.tuple21(b)); inFunction = inFunction)
+            IOStream_M.append(s, toFlatString(Util.tuple21(b); inFunction = inFunction))
           s = IOStream_M.append(s, " then\\n")
           s = toFlatStreamList(Util.tuple22(b), indent + "  ", s; inFunction = inFunction)
           s = IOStream_M.append(s, indent)
@@ -177,7 +177,7 @@ function toFlatStream(stmt::Statement, indent::String, s; inFunction = false)
       ALG_ASSERT(__) => begin
         s = IOStream_M.append(s, "assert(")
         s =
-          IOStream_M.append(s, toFlatString(stmt.condition))
+          IOStream_M.append(s, toFlatString(stmt.condition; inFunction = inFunction))
         s = IOStream_M.append(s, ", ")
         s = IOStream_M.append(s, toFlatString(stmt.message; inFunction = inFunction))
         s = IOStream_M.append(s, ", ")
@@ -200,8 +200,8 @@ function toFlatStream(stmt::Statement, indent::String, s; inFunction = false)
       ALG_WHILE(__) => begin
         s = IOStream_M.append(s, "while ")
         s =
-          IOStream_M.append(s, toFlatString(stmt.condition))
-        s = IOStream_M.append(s, " then\\n")
+          IOStream_M.append(s, toFlatString(stmt.condition; inFunction = inFunction))
+        s = IOStream_M.append(s, " loop\\n")
         s = toFlatStreamList(stmt.body, indent + "  ", s; inFunction = inFunction)
         s = IOStream_M.append(s, indent)
         s = IOStream_M.append(s, "end while")
@@ -564,7 +564,7 @@ function map(stmt::Statement, func::MapFn)::Statement
         ()
       end
       ALG_WHILE(__) => begin
-        for (i, s) in stmt.body
+        for (i, s) in enumerate(stmt.body)
           @inbounds stmt.body[i] = map(s, func)
         end
         #@assign stmt.body = Statement[map(s, func) for s in stmt.body]

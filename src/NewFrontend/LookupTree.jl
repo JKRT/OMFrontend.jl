@@ -623,26 +623,22 @@ function map(inTree::Tree, inFunc::MapFunc)::Tree
     local new_branch::Tree
     @match outTree begin
       NODE(key = key, value = value) => begin
-        new_branch = map(outTree.left, inFunc)
-        if !referenceEq(new_branch, outTree.left)
-          outTree.left = new_branch
-        end
+        new_left = map(outTree.left, inFunc)
         new_value = inFunc(key, value)
-        if !referenceEq(value, new_value)
-          outTree.value = new_value
+        new_right = map(outTree.right, inFunc)
+        if referenceEq(new_left, outTree.left) && referenceEq(new_value, value) && referenceEq(new_right, outTree.right)
+          outTree
+        else
+          NODE(key, new_value, outTree.height, new_left, new_right)
         end
-        new_branch = map(outTree.right, inFunc)
-        if !referenceEq(new_branch, outTree.right)
-          outTree.right = new_branch
-        end
-        outTree
       end
       LEAF(key = key, value = value) => begin
         new_value = inFunc(key, value)
-        if !referenceEq(value, new_value)
-          outTree.value = new_value
+        if referenceEq(value, new_value)
+          outTree
+        else
+          LEAF(key, new_value)
         end
-        outTree
       end
       _ => begin
         inTree
@@ -748,27 +744,23 @@ function mapFold(inTree::Tree, inFunc::MapFunc, inStartValue::FT) where {FT}
     local new_branch::Tree
     @match outTree begin
       NODE(key = key, value = value) => begin
-        (new_branch, outResult) = mapFold(outTree.left, inFunc, outResult)
-        if !referenceEq(new_branch, outTree.left)
-          outTree.left = new_branch
-        end
+        (new_left, outResult) = mapFold(outTree.left, inFunc, outResult)
         (new_value, outResult) = inFunc(key, value, outResult)
-        if !referenceEq(value, new_value)
-          outTree.value = new_value
+        (new_right, outResult) = mapFold(outTree.right, inFunc, outResult)
+        if referenceEq(new_left, outTree.left) && referenceEq(new_value, value) && referenceEq(new_right, outTree.right)
+          outTree
+        else
+          NODE(key, new_value, outTree.height, new_left, new_right)
         end
-        (new_branch, outResult) = mapFold(outTree.right, inFunc, outResult)
-        if !referenceEq(new_branch, outTree.right)
-           outTree.right = new_branch
-        end
-        outTree
       end
 
       LEAF(key = key, value = value) => begin
         (new_value, outResult) = inFunc(key, value, outResult)
-        if !referenceEq(value, new_value)
-          outTree.value = new_value
+        if referenceEq(value, new_value)
+          outTree
+        else
+          LEAF(key, new_value)
         end
-        outTree
       end
 
       _ => begin

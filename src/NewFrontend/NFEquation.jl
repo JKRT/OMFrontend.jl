@@ -1006,6 +1006,15 @@ function toStream(branch::Equation_Branch, indent::String, s)
   return s
 end
 
+function toString(branch::Equation_Branch, indent::String = "")::String
+  local s
+  s = IOStream_M.create(getInstanceName(), IOStream_M.LIST())
+  s = toStream(branch, indent, s)
+  local str = IOStream_M.string(s)
+  IOStream_M.delete(s)
+  return str
+end
+
 function makeCrefEquality(lhsCref::ComponentRef,
                           rhsCref::ComponentRef,
                           scope::InstNode,

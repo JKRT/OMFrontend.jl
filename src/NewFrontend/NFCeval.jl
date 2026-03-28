@@ -334,7 +334,10 @@ function evalExpPartial(
   local eval1::Bool
   local eval2::Bool
   local outEvaluatedRef::Ref{Bool} = Ref{Bool}(true)
-  local f = @closure (expArg, boolArg) -> (evalExpPartialRef(expArg, outEvaluatedRef, target), boolArg)
+  local f = @closure (expArg, boolArg) -> begin
+    result = evalExpPartialRef(expArg, outEvaluatedRef, target)
+    (result, boolArg && outEvaluatedRef.x)
+  end
   e = mapFoldShallowRef(
     exp,
     f,
@@ -350,11 +353,18 @@ function evalExpPartial(
           outEvaluated = false
         else
           outExp = evalCref(e.cref, e, target, evalSubscripts = false)
+          #=  If evalCref could not resolve the cref (returned the original),
+              mark as not fully evaluated so parent expressions are not
+              incorrectly treated as constant. =#
+          if referenceEq(outExp, e)
+            outEvaluated = false
+          elseif outExp isa SUBSCRIPTED_EXP_EXPRESSION
+            #=  evalCref resolved the binding but could not apply subscripts
+                (e.g. iterator subscripts not yet replaced). Mark as not
+                fully evaluated so the parent is not prematurely evaluated. =#
+            outEvaluated = false
+          end
         end
-        #=  Don't evaluate iterators.
-        =#
-        #=  Crefs can be evaluated even if they have non-evaluated subscripts.
-        =#
         outExp
       end
 
@@ -392,7 +402,10 @@ function evalExpPartialRef(
   local e2::Expression
   local eval1::Bool
   local eval2::Bool
-  local f = @closure (expArg, z #=We ignore Z=#) -> (evalExpPartialRef(expArg, outEvaluatedRef, target), z)
+  local f = @closure (expArg, z) -> begin
+    result = evalExpPartialRef(expArg, outEvaluatedRef, target)
+    (result, z && outEvaluatedRef.x)
+  end
   e = mapFoldShallowRef(exp, f, true, outEvaluatedRef)
   outEvaluated = outEvaluatedRef.x
   local evaluated = true
@@ -404,6 +417,16 @@ function evalExpPartialRef(
           outEvaluated = false
         else
           outExp = evalCref(e.cref, e, target, evalSubscripts = false)
+          #=  If evalCref could not resolve the cref (returned the original),
+              mark as not fully evaluated. =#
+          if referenceEq(outExp, e)
+            outEvaluated = false
+          elseif outExp isa SUBSCRIPTED_EXP_EXPRESSION
+            #=  evalCref resolved the binding but could not apply subscripts
+                (e.g. iterator subscripts not yet replaced). Mark as not
+                fully evaluated so the parent is not prematurely evaluated. =#
+            outEvaluated = false
+          end
         end
         outExp
       end
@@ -442,6 +465,10 @@ function evalCref(@nospecialize(cref::ComponentRef),
         evalComponentBinding(c, cref, defaultExp, target, evalSubscripts)
       end
 
+      COMPONENT_REF_CREF(node = c && COMPONENT_NODE(__)) => begin
+        defaultExp
+      end
+
       _ => begin
         defaultExp
       end
@@ -473,7 +500,6 @@ function evalComponentBinding(
   comp = component(node)
   binding = getBinding(comp)
   parent_cr = rest(cref)
-  #println(toString(parent_cr))
   if isUnbound(binding)
     #=
     In some cases we need to construct a binding for the node, for example when
@@ -508,6 +534,10 @@ function evalComponentBinding(
             exp = evalExp_impl(binding.bindingExp, target)
           catch e
             @assign binding.evaluated = false
+            @debug "evalComponentBinding: failed to evaluate binding" toString(binding.bindingExp) toString(cref)
+            if target isa EVALTARGET_IGNORE_ERRORS
+              return defaultExp
+            end
             throw(e)
           end
           #= Update the binding and set is as evaluated =#
@@ -697,7 +727,7 @@ function evalComponentStartBinding(
   try
     @match ENTRY_INFO(start_node, isImport) = lookupElement("start", getClass(node))
   catch e
-    @error "DBG ERROR"
+    @debug "lookupElement(start) not found in class"
     return outExp
   end
   #=
@@ -1078,7 +1108,7 @@ end
 
 function printFailedEvalError(name::String, @nospecialize(exp::Expression), info::SourceInfo)
   return Error.addInternalError(
-    name + " failed to evaluate ‘" + toString(exp) + "‘",
+    name + " failed to evaluate ‘" + toString(exp) + "’",
     info,
   )
 end
@@ -1116,6 +1146,11 @@ function evalBinaryExp(@nospecialize(binaryExp::Expression), target::EvalTarget)
   local op::Operator
 
   @match BINARY_EXPRESSION(exp1 = e1, operator = op, exp2 = e2) = binaryExp
+  #= After bindingExpMap unwraps binding expressions, operands may still
+     contain unevaluated forms (e.g. SUBSCRIPTED_EXP). Evaluate them
+     before dispatching to the concrete arithmetic functions. =#
+   e1 = evalExp_impl(e1, target)
+   e2 = evalExp_impl(e2, target)
    result = evalBinaryOp_dispatch(e1, op, e2, target)
   return result
 end
@@ -2404,7 +2439,12 @@ end
     local args::List{Expression}
     @match c begin
       TYPED_CALL(__) => begin
-        cArgs = Expression[evalExp_impl(arg, target) for arg in c.arguments]
+        cArgs = try
+          Expression[evalExp_impl(arg, target) for arg in c.arguments]
+        catch e
+          @debug "evalCall: failed to evaluate arguments" AbsynUtil.pathString(name(c.fn)) [toString(a) for a in c.arguments]
+          rethrow()
+        end
         c = TYPED_CALL(c.fn, c.ty, c.var, cArgs, c.attributes)
         if isBuiltin(c.fn)
           res = bindingExpMap(
@@ -2566,7 +2606,7 @@ function ceval(
       end
 
       "promote" => begin
-        evalBuiltinPromote(listGet(args, 1), listGet(args, 2))
+        evalBuiltinPromote(args[1], args[2])
       end
 
       "rem" => begin
@@ -2594,7 +2634,7 @@ function ceval(
       end
 
       "smooth" => begin
-        listGet(args, 2)
+        args[2]
       end
 
       "sqrt" => begin
@@ -2707,9 +2747,7 @@ function evalNormalCallExp(@nospecialize(callExp::Expression))::Expression
 end
 
 function evalNormalCall(fn::M_Function, args::Vector{Expression})::Expression
-  #@info "Evaluating..."  string(toFlatString(fn))
   local result::Expression = evaluate(fn, args) #=TODO: Fix the interface here later.=#
-  #@info "Result was:" string(toFlatString(result))
   return result
 end
 
@@ -2765,12 +2803,12 @@ function evalBuiltinAcos(@nospecialize(arg::Expression), target::EvalTarget)::Ex
   return result
 end
 
-function evalBuiltinArray(args::List{Expression})::Expression
+function evalBuiltinArray(args::Union{List{Expression}, Vector{Expression}})::Expression
   local result::Expression
   local ty::M_Type
-   ty = typeOf(listHead(args))
-   ty = liftArrayLeft(ty, fromInteger(listLength(args)))
-   result = makeArray(ty, args, literal = true)
+  ty = typeOf(Base.first(args))
+  ty = liftArrayLeft(ty, fromInteger(length(args)))
+  result = makeArray(ty, args, literal = true)
   return result
 end
 
@@ -2804,24 +2842,17 @@ function evalBuiltinAsin(@nospecialize(arg::Expression), target::EvalTarget)::Ex
   return result
 end
 
-function evalBuiltinAtan2(args::List{Expression})::Expression
+function evalBuiltinAtan2(args::Union{List{Expression}, Vector{Expression}})::Expression
   local result::Expression
-
   local y::AbstractFloat
   local x::AbstractFloat
-
-   result = begin
-    @match args begin
-      REAL_EXPRESSION(value = y) <|
-      REAL_EXPRESSION(value = x) <| nil() => begin
-        REAL_EXPRESSION(atan2(y, x))
-      end
-
-      _ => begin
-        printWrongArgsError(getInstanceName(), args, sourceInfo())
-        fail()
-      end
-    end
+  if length(args) == 2
+    @match REAL_EXPRESSION(value = y) = Base.first(args)
+    @match REAL_EXPRESSION(value = x) = Base.last(args)
+    result = REAL_EXPRESSION(atan2(y, x))
+  else
+    printWrongArgsError(getInstanceName(), args, sourceInfo())
+    fail()
   end
   return result
 end
@@ -3094,7 +3125,7 @@ function evalBuiltinFill(args::Vector{Expression})::Expression
   return result
 end
 
-function evalBuiltinFill2(@nospecialize(fillValue::Expression), dims::Vector{Expression})::Expression
+function evalBuiltinFill2(@nospecialize(fillValue::Expression), dims::Union{Vector{Expression}, List{Expression}})::Expression
   local result::Expression = fillValue
   local dim_size::Int
   local arr::Vector{Expression}
@@ -3409,42 +3440,29 @@ function evalBuiltinMax2(@nospecialize(exp1::Expression), @nospecialize(exp2::Ex
   return result
 end
 
-function evalBuiltinMin(args::List{Expression}, fn::M_Function)::Expression
+function evalBuiltinMin(args::Union{List{Expression}, Vector{Expression}}, fn::M_Function)::Expression
   local result::Expression
-
   local e1::Expression
-  local e2::Expression
-  local expl::List{Expression}
   local ty::M_Type
+  local nArgs::Int = length(args)
 
-   result = begin
-    @match args begin
-      e1 <| e2 <| nil() => begin
-        evalBuiltinMin2(e1, e2)
-      end
-
-      e1 && ARRAY_EXPRESSION(ty = ty) <| nil() => begin
-         result = fold(
-          e1,
-          evalBuiltinMin2,
-          EMPTY(ty),
-        )
-        if isEmpty(result)
-           result = CALL_EXPRESSION(makeTypedCall(
-            fn,
-            Expression[makeEmptyArray(ty)],
-            Variability.CONSTANT,
-            arrayElementType(ty),
-          ))
-        end
-        result
-      end
-
-      _ => begin
-        printWrongArgsError(getInstanceName(), args, sourceInfo())
-        fail()
-      end
+  if nArgs == 2
+    result = evalBuiltinMin2(Base.first(args), Base.last(args))
+  elseif nArgs == 1
+    e1 = Base.first(args)
+    @match ARRAY_EXPRESSION(ty = ty) = e1
+    result = fold(e1, evalBuiltinMin2, EMPTY(ty))
+    if isEmpty(result)
+      result = CALL_EXPRESSION(makeTypedCall(
+        fn,
+        Expression[makeEmptyArray(ty)],
+        Variability.CONSTANT,
+        arrayElementType(ty),
+      ))
     end
+  else
+    printWrongArgsError(getInstanceName(), args, sourceInfo())
+    fail()
   end
   return result
 end
@@ -3550,10 +3568,9 @@ function evalBuiltinMod(args::Vector{Expression}, target::EvalTarget)::Expressio
   return result
 end
 
-function evalBuiltinOnes(args::List{Expression})::Expression
+function evalBuiltinOnes(args::Union{List{Expression}, Vector{Expression}})::Expression
   local result::Expression
-
-   result = evalBuiltinFill2(INTEGER_EXPRESSION(1), args)
+  result = evalBuiltinFill2(INTEGER_EXPRESSION(1), args)
   return result
 end
 
@@ -3651,13 +3668,14 @@ function evalBuiltinPromote(@nospecialize(arg::Expression), @nospecialize(argN::
   return result
 end
 
-function evalBuiltinRem(args::List{Expression}, target::EvalTarget)::Expression
+function evalBuiltinRem(args::Union{List{Expression}, Vector{Expression}}, target::EvalTarget)::Expression
   local result::Expression
 
   local x::Expression
   local y::Expression
 
-  @match list(x, y) = args
+  x = args[1]
+  y = args[2]
    result = begin
     @match (x, y) begin
       (INTEGER_EXPRESSION(__), INTEGER_EXPRESSION(__)) => begin
@@ -3697,9 +3715,9 @@ function evalBuiltinRem(args::List{Expression}, target::EvalTarget)::Expression
   return result
 end
 
-function evalBuiltinScalar(args::List{Expression})::Expression
+function evalBuiltinScalar(args::Union{List{Expression}, Vector{Expression}})::Expression
   local result::Expression
-  local exp::Expression = listHead(args)
+  local exp::Expression = Base.first(args)
   result = begin
     @match exp begin
       ARRAY_EXPRESSION(__) => begin
@@ -3854,81 +3872,61 @@ function evalBuiltinSqrt(@nospecialize(arg::Expression))::Expression
   return result
 end
 
-function evalBuiltinString(args::List{Expression})::Expression
+function evalBuiltinString(args::Union{List{Expression}, Vector{Expression}})::Expression
   local result::Expression
+  local arg::Expression
+  local min_len::Int
+  local str_len::Int
+  local significant_digits::Int
+  local left_justified::Bool
+  local str::String
+  local format::String
+  local r::AbstractFloat
+  local nArgs::Int = length(args)
 
-   result = begin
-    local arg::Expression
-    local min_len::Int
-    local str_len::Int
-    local significant_digits::Int
-    local idx::Int
-    local c::Int
-    local left_justified::Bool
-    local str::String
-    local format::String
-    local r::AbstractFloat
-    @match args begin
-      arg <|
-      INTEGER_EXPRESSION(min_len) <|
-      BOOLEAN_EXPRESSION(left_justified) <| nil() => begin
-         str = begin
-          @match arg begin
-            INTEGER_EXPRESSION(__) => begin
-              intString(arg.value)
-            end
-
-            BOOLEAN_EXPRESSION(__) => begin
-              boolString(arg.value)
-            end
-
-            ENUM_LITERAL_EXPRESSION(__) => begin
-              arg.name
-            end
-
-            _ => begin
-              printWrongArgsError(getInstanceName(), args, sourceInfo())
-              fail()
-            end
-          end
+  if nArgs == 3 && args[2] isa INTEGER_EXPRESSION && args[3] isa BOOLEAN_EXPRESSION
+    #= String(value, minimumLength, leftJustified) for Integer/Boolean/Enum =#
+    arg = args[1]
+    min_len = args[2].value
+    left_justified = args[3].value
+    str = begin
+      @match arg begin
+        INTEGER_EXPRESSION(__) => intString(arg.value)
+        BOOLEAN_EXPRESSION(__) => boolString(arg.value)
+        ENUM_LITERAL_EXPRESSION(__) => arg.name
+        _ => begin
+          printWrongArgsError(getInstanceName(), args, sourceInfo())
+          fail()
         end
-         str_len = stringLength(str)
-        if str_len < min_len
-          if left_justified
-             str = str + stringAppendList(ListUtil.fill(" ", min_len - str_len))
-          else
-             str = stringAppendList(ListUtil.fill(" ", min_len - str_len)) + str
-          end
-        end
-        STRING_EXPRESSION(str)
-      end
-
-      REAL_EXPRESSION(r) <|
-      INTEGER_EXPRESSION(significant_digits) <|
-      INTEGER_EXPRESSION(min_len) <|
-      BOOLEAN_EXPRESSION(left_justified) <| nil() => begin
-         format =
-          "%" +
-          (
-            if left_justified
-              "-"
-            else
-              ""
-            end
-          ) +
-          intString(min_len) +
-          "." +
-          intString(significant_digits) +
-          "g"
-         str = System.sprintff(format, r)
-        STRING_EXPRESSION(str)
-      end
-
-      REAL_EXPRESSION(r) <| STRING_EXPRESSION(format) <| nil() => begin
-         str = System.sprintff(format, r)
-        STRING_EXPRESSION(str)
       end
     end
+    str_len = stringLength(str)
+    if str_len < min_len
+      if left_justified
+        str = str + stringAppendList(ListUtil.fill(" ", min_len - str_len))
+      else
+        str = stringAppendList(ListUtil.fill(" ", min_len - str_len)) + str
+      end
+    end
+    result = STRING_EXPRESSION(str)
+  elseif nArgs == 4 && args[1] isa REAL_EXPRESSION && args[2] isa INTEGER_EXPRESSION && args[3] isa INTEGER_EXPRESSION && args[4] isa BOOLEAN_EXPRESSION
+    #= String(real, significantDigits, minimumLength, leftJustified) =#
+    r = args[1].value
+    significant_digits = args[2].value
+    min_len = args[3].value
+    left_justified = args[4].value
+    format = "%" + (if left_justified; "-"; else; ""; end) + intString(min_len) + "." + intString(significant_digits) + "g"
+    str = System.sprintff(format, r)
+    result = STRING_EXPRESSION(str)
+  elseif nArgs == 2 && args[1] isa REAL_EXPRESSION && args[2] isa STRING_EXPRESSION
+    #= String(real, format) =#
+    r = args[1].value
+    format = args[2].value
+    str = System.sprintff(format, r)
+    result = STRING_EXPRESSION(str)
+  else
+    printWrongArgsError(getInstanceName(), args, sourceInfo())
+    fail()
   end
   return result
 end
@@ -4143,16 +4141,15 @@ function evalBuiltinVector2(@nospecialize(exp::Expression), expl::List{Expressio
   return expl
 end
 
-function evalBuiltinZeros(args::List{Expression})::Expression
+function evalBuiltinZeros(args::Union{List{Expression}, Vector{Expression}})::Expression
   local result::Expression
-
-   result = evalBuiltinFill2(INTEGER_EXPRESSION(0), args)
+  result = evalBuiltinFill2(INTEGER_EXPRESSION(0), args)
   return result
 end
 
 function evalUriToFilename(
   fn::M_Function,
-  args::List{Expression},
+  args::Union{List{Expression}, Vector{<:Expression}},
   target::EvalTarget,
 )::Expression
   local result::Expression
@@ -4162,13 +4159,12 @@ function evalUriToFilename(
   local s::String
   local f::M_Function
 
-   arg = listHead(args)
+   arg = args[1]
    result = begin
     @match arg begin
       STRING_EXPRESSION(__) => begin
-         s = OpenModelica.Scripting.uriToFilename(arg.value)
-         e = STRING_EXPRESSION(s)
-        e
+         s = resolveModelicaUri(arg.value)
+         STRING_EXPRESSION(s)
       end
 
       _ => begin
@@ -4178,6 +4174,47 @@ function evalUriToFilename(
     end
   end
   return result
+end
+
+"""
+Resolve a modelica:// URI to an absolute file path.
+Handles URIs of the form modelica://PackageName/path/to/resource.
+Searches the OMFrontend lib directory and the openmodelica libraries cache.
+Falls back to returning the input unchanged for non-URI strings.
+"""
+function resolveModelicaUri(uri::String)::String
+  local prefix = "modelica://"
+  if !startswith(uri, prefix)
+    return uri
+  end
+  local rest = uri[length(prefix)+1:end]
+  local slashIdx = findfirst('/', rest)
+  if slashIdx === nothing
+    return uri
+  end
+  local packageName = rest[1:slashIdx-1]
+  local resourcePath = rest[slashIdx+1:end]
+  #= Search in OMFrontend bundled lib directory =#
+  local packagePath = dirname(dirname(realpath(Base.find_package("OMFrontend"))))
+  local libDir = joinpath(packagePath, "lib", packageName)
+  local resolved = joinpath(libDir, resourcePath)
+  if isfile(resolved)
+    return resolved
+  end
+  #= Search in openmodelica libraries cache =#
+  local omLibDir = joinpath(homedir(), ".openmodelica", "libraries")
+  if isdir(omLibDir)
+    for entry in readdir(omLibDir)
+      if startswith(entry, packageName)
+        local candidate = joinpath(omLibDir, entry, resourcePath)
+        if isfile(candidate)
+          return candidate
+        end
+      end
+    end
+  end
+  @warn "resolveModelicaUri: resource not found" uri
+  return resolved
 end
 
 function evalIntBitAnd(args::List{Expression})::Expression

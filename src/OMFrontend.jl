@@ -170,18 +170,27 @@ function Base.string(ft::Frontend.FunctionTreeImpl.Tree)
 end
 
 function toFlatModelica(fm, fLst::List; printBindingTypes = false)
-  return replace(Frontend.toFlatString(fm, fLst, printBindingTypes), "\\n" => "\n")
+  s = replace(Frontend.toFlatString(fm, fLst, printBindingTypes), "\\n" => "\n")
+  s = replace(s, "OMC_NO_CLOCK.sample" => "sample")
+  s = replace(s, "'AssertionLevel'" => "AssertionLevel")
+  return s
 end
 
 function toFlatModelica(fm, fLst::Frontend.FunctionTreeImpl.NODE; printBindingTypes = false)
-  return replace(Frontend.toFlatString(fm, cacheToFunctionList(fLst), printBindingTypes), "\\n" => "\n")
+  s = replace(Frontend.toFlatString(fm, cacheToFunctionList(fLst), printBindingTypes), "\\n" => "\n")
+  s = replace(s, "OMC_NO_CLOCK.sample" => "sample")
+  s = replace(s, "'AssertionLevel'" => "AssertionLevel")
+  return s
 end
 
 function toFlatModelica(flatModelicaAndFunctionTree::Tuple;
                         printBindingTypes = false)
   local fLst = cacheToFunctionList(last(flatModelicaAndFunctionTree))
   local fm = first(flatModelicaAndFunctionTree)
-  return replace(Frontend.toFlatString(fm, fLst, printBindingTypes), "\\n" => "\n")
+  s = replace(Frontend.toFlatString(fm, fLst, printBindingTypes), "\\n" => "\n")
+  s = replace(s, "OMC_NO_CLOCK.sample" => "sample")
+  s = replace(s, "'AssertionLevel'" => "AssertionLevel")
+  return s
 end
 
 function writeFlatModelicaToFile(fm, fLst;

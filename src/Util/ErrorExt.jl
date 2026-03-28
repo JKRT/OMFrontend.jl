@@ -41,6 +41,7 @@ function registerModelicaFormatError()
 end
 
 global SOURCE_MESSAGES = []
+global CHECKPOINT_STACK = Int[]
 
 function addSourceMessage(
   id::ErrorTypes.ErrorID,
@@ -224,30 +225,33 @@ end
 
 function clearMessages()
   global SOURCE_MESSAGES = []
+  global CHECKPOINT_STACK = Int[]
 end
 
 """ #= Used to rollback/delete checkpoints without considering the identifier. Used to reset the error messages after a stack overflow exception. =#"""
 function getNumCheckpoints()::Integer
-  local n::Integer
-
-  @warn "TODO: Defined in the runtime"
+  local n::Integer = length(CHECKPOINT_STACK)
   return n
 end
 
 """ #= Used to rollback/delete checkpoints without considering the identifier. Used to reset the error messages after a stack overflow exception. =#"""
 function rollbackNumCheckpoints(n::Integer)
-  return @warn "TODO: Defined in the runtime"
+  for _ in 1:n
+    rollBack("")
+  end
 end
 
 """ #= Used to rollback/delete checkpoints without considering the identifier. Used to reset the error messages after a stack overflow exception. =#"""
 function deleteNumCheckpoints(n::Integer)
-  return @warn "TODO: Defined in the runtime"
+  for _ in 1:n
+    delCheckpoint("")
+  end
 end
 
 """ #= sets a checkpoint for the error messages, so error messages can be rolled back (i.e. deleted) up to this point
 A unique identifier for this checkpoint must be provided. It is checked when doing rollback or deletion =#"""
 function setCheckpoint(id::String) #= uniqe identifier for the checkpoint (up to the programmer to guarantee uniqueness) =#
-  #@warn "TODO: setCheckpoint is not defined in the runtime"
+  push!(CHECKPOINT_STACK, length(SOURCE_MESSAGES))
 end
 
 """
@@ -256,8 +260,9 @@ removing the error messages issued since that checkpoint.
 If the checkpoint id doesn't match, the application exits with -1.
 """
 function delCheckpoint(id::String) #= unique identifier =#
-  #=TODO: Re-add this at some point if possible. This is mostly used to get good error messages=#
-  #return @warn "TODO: Defined in the runtime"
+  if !isempty(CHECKPOINT_STACK)
+    pop!(CHECKPOINT_STACK)
+  end
 end
 
 function printErrorsNoWarning()::String
@@ -270,7 +275,10 @@ end
 deleting all error messages added since that point in time. A unique identifier for the checkpoint must be provided
 The application will exit with return code -1 if this identifier does not match. =#"""
 function rollBack(id::String) #= unique identifier =#
-  #@warn "TODO: Defined in the runtime"
+  if !isempty(CHECKPOINT_STACK)
+    n = pop!(CHECKPOINT_STACK)
+    resize!(SOURCE_MESSAGES, n)
+  end
 end
 
 """ #= rolls back error messages until the latest checkpoint,

@@ -107,6 +107,7 @@ function workload()
     end
   end
 
+  #= MultiBody examples commented out to speed up precompilation (nullRotation is slow)
   precompile_prefix = "Modelica.Mechanics.MultiBody.Examples.Elementary"
   @info "Checking MSL Examples in $(precompile_prefix)"
   precompile_model_names = [
@@ -139,6 +140,7 @@ function workload()
       @warn "Precompilation workload failed for $(p)" exception=(e, catch_backtrace())
     end
   end
+  =#
   @info "Core compiler modules are successfully precompiled!"
   @info "Compiler modules are successfully precompiled!"
   #@info "Initializing initial memory buffers..."

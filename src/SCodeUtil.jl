@@ -3454,7 +3454,7 @@ function prependSubModToMod(subMod::SCode.SubMod, mod::SCode.Mod)
                   SCode.NOT_EACH(),
                   list(subMod),
                   NONE(),
-                  Error.dummyInfo)
+                  AbsynUtil.dummyInfo)
       end
       SCode.MOD(__)  => begin
         @assign mod.subModLst = _cons(subMod, mod.subModLst)

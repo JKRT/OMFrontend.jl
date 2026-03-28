@@ -183,6 +183,7 @@ include("./NewFrontend/NFBuiltin.jl")
 include("./NewFrontend/BindingExpression.jl")
 include("./NewFrontend/BindingExpression!.jl")
 
+include("./Util/ModelicaExternalC.jl")
 include("./NewFrontend/NFEvalFunction.jl")
 
 include("./NewFrontend/NFCall.jl")

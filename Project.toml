@@ -20,6 +20,7 @@ PrecompileTools = "aea7be01-6a6a-4083-8856-8a6e6704d82a"
 Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 #Used for experimental memory buffer like in the omc...
 ManualMemory="d125e4d3-2237-4719-b19c-fa641b8a4667"
+OMRuntimeExternalC="ada38df0-e20e-11ed-02f3-2b4b19c1ec8a"
 
 [compat]
 julia = "1.10"

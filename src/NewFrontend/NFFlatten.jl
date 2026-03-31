@@ -1178,8 +1178,7 @@ function flattenSections(
         ieq = flattenEquations(sections.initialEquations, prefix)
         alg = flattenAlgorithms(sections.algorithms, prefix)
         ialg = flattenAlgorithms(sections.initialAlgorithms, prefix)
-        accumSections =
-          prepend(eq, ieq, alg, ialg, accumSections)
+        accumSections = prepend(eq, ieq, alg, ialg, accumSections)
         ()
       end
       _ => begin

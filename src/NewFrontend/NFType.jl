@@ -676,7 +676,7 @@ end
       end
 
       TYPE_COMPLEX(__) => begin
-        AbsynUtil.pathString(scopePath(ty.cls))
+        "'" * AbsynUtil.pathString(scopePath(ty.cls)) * "'"
       end
 
       TYPE_FUNCTION(__) => begin

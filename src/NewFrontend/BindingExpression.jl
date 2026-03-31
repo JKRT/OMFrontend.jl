@@ -4725,35 +4725,17 @@ end
       end
 
       RECORD_EXPRESSION(__)  => begin
-        local absynCref = AbsynUtil.pathToCref(exp.path)
-        local cref = fromAbsynCref(absynCref)
-        #println(absynCref)
-        #println(typeof(exp.ty.cls))
-        local rewrite = if exp.ty isa TYPE_COMPLEX && exp.ty.cls isa CLASS_NODE
-          local originCref = getOriginCref(cref)
-           #println("***")
-           #println(toString(originCref))
-           #println(name(parent(exp.ty.cls)))
-           #println("***")
-          #=
-          True if the parents differ.
-          In this case one extra level has been generated for the records.
-          This special case probably need to be adjusted if the code is run without scalarization.
-          =#
-          toString(originCref) != name(parent(exp.ty.cls))
-          false
+        #= Use scopePath from the type's class node to get a consistent short path,
+           avoiding the root model prefix that may appear in exp.path due to
+           instFunctionRef caching order (toPath includes root, scopePath does not). =#
+        local recordPath = if exp.ty isa TYPE_COMPLEX && exp.ty.cls isa CLASS_NODE
+          scopePath(exp.ty.cls)
         else
-          false
+          exp.path
         end
         local flatStringCall = x -> toFlatString(x, inFunction = inFunction)
-        if rewrite
-          res = ListUtil.toString(arrayList(exp.elements), flatStringCall,
-                            "'" + AbsynUtil.pathString(exp.path.path) + "'", "(", ", ", ")", true)
-        else
-          res = ListUtil.toString(arrayList(exp.elements),flatStringCall,
-                            "'" + AbsynUtil.pathString(exp.path), "'(", ", ", ")", true)
-        end
-
+        res = ListUtil.toString(arrayList(exp.elements), flatStringCall,
+                          "'" + AbsynUtil.pathString(recordPath), "'(", ", ", ")", true)
       end
 
       CALL_EXPRESSION(__)  => begin
@@ -4818,7 +4800,13 @@ end
       end
 
       TUPLE_ELEMENT_EXPRESSION(__)  => begin
-        toFlatString(exp.tupleExp; inFunction = inFunction) + "[" + intString(exp.index) + "]"
+        #= In flat Modelica, assigning a scalar from a multi-output function call
+           uses simple assignment (first output), not [1] indexing. =#
+        if exp.index == 1
+          toFlatString(exp.tupleExp; inFunction = inFunction)
+        else
+          toFlatString(exp.tupleExp; inFunction = inFunction) + "[" + intString(exp.index) + "]"
+        end
       end
 
       RECORD_ELEMENT_EXPRESSION(__)  => begin

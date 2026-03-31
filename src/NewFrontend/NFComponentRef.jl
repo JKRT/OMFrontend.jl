@@ -377,9 +377,13 @@ function toFlatString_impl(cref::ComponentRef, strl::List{<:String}; inFunction 
     @match cref begin
       COMPONENT_REF_CREF(__) => begin
         str = string(name(cref.node), toFlatStringList(cref.subscripts; inFunction = inFunction))
-        if isRecord(cref.ty) && !listEmpty(strl)
-          strl = _cons("'" + listHead(strl), listRest(strl))
-          str = str + "'"
+        local _isRecordNode = isRecord(cref.ty) || (isArray(cref.ty) && isRecord(arrayElementType(cref.ty)))
+        #= Mark record boundaries by inserting quote markers.
+           For non-function crefs, this allows toFlatString to produce
+           'record.path'.field format (field name unquoted). =#
+        if !inFunction && _isRecordNode && !listEmpty(strl)
+          strl = _cons("'" * listHead(strl), listRest(strl))
+          str = str * "'"
         end
         toFlatString_impl(cref.restCref, _cons(str, strl); inFunction = inFunction)
       end
@@ -413,6 +417,15 @@ function toFlatString(cref::ComponentRef; inFunction = false)
   subs2 = getSubscripts(cref)
   (cr, subs) = stripSubscripts(cref)
   strl = toFlatString_impl(cr, strl; inFunction = inFunction)
+  #= Inside functions, crefs use plain dot notation without quotes.
+     Record field access is state.p, local vars are h, T, etc. =#
+  if inFunction
+    str = string(
+      stringDelimitList(strl, "."),
+      toFlatStringList(subs; inFunction = inFunction)
+    )
+    return str
+  end
   #=
   Special Case. If we scalarize, we do not want to quote in the same way.
   Otherwise we will refer to components that do not exist in the flat model.
@@ -420,25 +433,44 @@ function toFlatString(cref::ComponentRef; inFunction = false)
   local sc = if cref isa COMPONENT_REF_CREF
     local crOrigin = getOriginCref(cref)
     local parentCref = cref.restCref
-    local parentIsRecord = isRecord(getComponentType(parentCref))
+    local _ptyp = getComponentType(parentCref)
+    local parentIsRecord = isRecord(_ptyp) || (isArray(_ptyp) && isRecord(arrayElementType(_ptyp)))
     local crefIsRecord = isRecord(getComponentType(cref))
     local sourceIsRecord = isRecord(getComponentType(crOrigin))
-    inFunction || sourceIsRecord || crefIsRecord  || parentIsRecord
+    sourceIsRecord || crefIsRecord || parentIsRecord
   end
+  #= Helper: only quote names that need it (contain non-identifier chars) =#
+  local _needsQuote = (n::String) -> !occursin(r"^[a-zA-Z_][a-zA-Z0-9_]*$", n)
+  local _qn = (n::String) -> _needsQuote(n) ? string("'", n, "'") : n
   if !Flags.isSet(Flags.NF_SCALARIZE) || sc
-    str = stringAppendList(list(
-      "'",
-      stringDelimitList(strl, "."),
-      "'",
-      toFlatStringList(subs; inFunction = inFunction)
-    ))
+    local joinedName = stringDelimitList(strl, ".")
+    #= Record boundaries are marked with embedded quotes: boundary.state'.'p
+       Split on '.', wrap the record path in quotes, leave field names unquoted. =#
+    if occursin("'.'", joinedName)
+      local _parts = Base.split(joinedName, "'.'")
+      local _recPart = replace(string(_parts[1]), "'" => "")
+      local _fieldParts = [replace(string(p), "'" => "") for p in _parts[2:end]]
+      str = string("'", _recPart, "'.", Base.join(_fieldParts, "."),
+                   toFlatStringList(subs; inFunction = inFunction))
+    else
+      str = string(
+        _qn(joinedName),
+        toFlatStringList(subs; inFunction = inFunction)
+      )
+    end
   else
-    str = stringAppendList(
-    list(stringDelimitList(strl, "."), toFlatStringList(subs; inFunction = inFunction)))
-    #= Since we are scalarizing here we assume the entire thing needs to be quoted. =#
-    str = string("'", replace(str, "'" => ""), "'")
+    local baseName = replace(stringDelimitList(strl, "."), "'" => "")
+    local subsStr = toFlatStringList(subs; inFunction = inFunction)
+    #= For scalarized crefs: if subscripts are pure literal integers, include them
+       in the quoted name (e.g. 'x[1]'). If subscripts contain iterator variables
+       or expressions, put them outside the quotes (e.g. 'x'[i]). =#
+    if isempty(subsStr) || occursin(r"^\[[\d,\s]+\]$", subsStr)
+      str = _qn(string(baseName, subsStr))
+    else
+      str = string(_qn(baseName), subsStr)
+    end
   end
-  if str  == "'time'"
+  if str == "time"
     return "time"
   end
   return str

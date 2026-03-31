@@ -853,7 +853,7 @@ function expand(
       end
 
       "diagonal" => begin
-        expandBuiltinDiagonal(listHead(args))
+        expandBuiltinDiagonal(args[1])
       end
 
       "pre" => begin
@@ -873,7 +873,19 @@ function expand(
       end
 
       "transpose" => begin
-        expandBuiltinTranspose(listHead(args))
+        expandBuiltinTranspose(args[1])
+      end
+
+      "identity" => begin
+        expandBuiltinIdentity(args)
+      end
+
+      "zeros" => begin
+        expandBuiltinZeros(args)
+      end
+
+      "ones" => begin
+        expandBuiltinOnes(args)
       end
     end
   end
@@ -1220,4 +1232,19 @@ function expandBuiltinFill(args::Vector)
   local outExp
   outExp = fillArgsDimVec(Base.first(args), args[2:end]) #Can probably use view here.
   return (outExp, expanded)
+end
+
+function expandBuiltinIdentity(args::Vector)::Tuple{Expression, Bool}
+  local outExp = evalBuiltinIdentity(args[1])
+  return (outExp, true)
+end
+
+function expandBuiltinZeros(args::Vector)::Tuple{Expression, Bool}
+  local outExp = evalBuiltinZeros(args)
+  return (outExp, true)
+end
+
+function expandBuiltinOnes(args::Vector)::Tuple{Expression, Bool}
+  local outExp = evalBuiltinOnes(args)
+  return (outExp, true)
 end

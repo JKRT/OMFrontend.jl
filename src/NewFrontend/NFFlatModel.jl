@@ -106,7 +106,6 @@ function reconstructRecordInstanceForParameterRecord(
     comment(record_comp),
     InstNode_info(record_node),
   )
-  println("Record var:" * toString(recordVar))
   return recordVar
 end
 
@@ -124,6 +123,10 @@ function reconstructRecordInstance(
   record_node = node(recordName)
   record_comp = component(record_node)
   record_ty = nodeType(recordName)
+  #= For array-of-record elements, use element type. =#
+  if isArray(record_ty)
+    record_ty = arrayElementType(record_ty)
+  end
   field_exps = nil
   for v in variables
     #= Handling regular variables =#
@@ -161,6 +164,7 @@ end
 
 function reconstructRecordInstances(variables::Vector{Variable})
   local outVariables::Vector{Variable} = Variable[]
+  local bindingEquations::Vector{Equation} = Equation[]
   local rest_vars::List{Variable} = arrayList(variables)
   local record_vars::List{Variable}
   local var::Variable
@@ -171,7 +175,10 @@ function reconstructRecordInstances(variables::Vector{Variable})
     parent_cr = rest(var.name)
     if !isEmpty(parent_cr)
       parent_ty = nodeType(parent_cr)
-      if isRecord(parent_ty)
+      #= For array-of-record elements (e.g. states[1]), the node type is the
+         array type. Check the element type for records. =#
+      local _rec_ty = isArray(parent_ty) ? arrayElementType(parent_ty) : parent_ty
+      if isRecord(_rec_ty)
         #= Count consecutive siblings sharing the same parent CREF.
            After scalarization, array record fields expand to more variables
            than the raw field count from the record type definition. =#
@@ -188,16 +195,23 @@ function reconstructRecordInstances(variables::Vector{Variable})
         end
         (record_vars, rest_vars) = ListUtil.split(rest_vars, sibling_count)
         record_vars = _cons(var, record_vars)
-        if variability(var) <= Variability.PARAMETER && Flags.isSet(Flags.NF_SCALARIZE)
-          var = reconstructRecordInstance(parent_cr, record_vars)
-        else
-          var = reconstructRecordInstance(parent_cr, record_vars)
+        var = reconstructRecordInstance(parent_cr, record_vars)
+        #= When not all fields have bindings, the record gets EMPTY_BINDING,
+           losing existing field bindings. Convert those to explicit equations. =#
+        if !isBound(var.binding)
+          for fv in record_vars
+            if hasExp(fv.binding)
+              local _lhs = CREF_EXPRESSION(fv.ty, fv.name)
+              local _rhs = getExp(fv.binding)
+              push!(bindingEquations, EQUATION_EQUALITY(_lhs, _rhs, fv.ty, DAE.emptyElementSource))
+            end
+          end
         end
       end
     end
     outVariables = push!(outVariables, var)
   end
-  return outVariables
+  return (outVariables, bindingEquations)
 end
 
 function collectSubscriptedFlatType(
@@ -486,8 +500,7 @@ function toFlatStream(flatModel::FlatModel, functions::List, printBindingTypes::
   local str::String
   local flat_model::FlatModel = flatModel
   s = IOStream_M.append(s, "model '" + flat_model.name + "'\\n")
-  vars = reconstructRecordInstances(flat_model.variables)
-  #vars = flatModel.variables
+  (vars, bindingEqs) = reconstructRecordInstances(flat_model.variables)
   #=
   Sometimes, we get duplicate elements when we collect record elements.
   Make sure that we do not get duplicated record instances.
@@ -496,6 +509,11 @@ function toFlatStream(flatModel::FlatModel, functions::List, printBindingTypes::
     unique!((x) -> toString(x.name), vars)
   end
   @assign flat_model.variables = vars
+  #= Append binding equations from absorbed record field variables.
+     These bindings were lost when fields were merged into record-typed variables. =#
+  if !isempty(bindingEqs)
+    @assign flat_model.equations = vcat(flat_model.equations, bindingEqs)
+  end
   for fn in functions
     if !isDefaultRecordConstructor(fn)
       s = toFlatStream(fn, s)
@@ -790,6 +808,37 @@ function toFlatString(
   s = IOStream_M.create(getInstanceName(), IOStream_M.LIST())
   (s, str) = toFlatStream(flatModel, functions, printBindingTypes, s)
   str = IOStream_M.string(s)
+  #= Fix non-literal subscripts from inner CREF nodes that ended up inside quotes.
+     toFlatString_impl embeds all subscripts in node names, but iterator variables
+     must be outside quotes for valid flat Modelica.
+     e.g. 'pipe4.mediums[i + 1].state'.'p' -> 'pipe4.mediums'[i + 1].'state'.'p'
+     Match simple '...' pairs (no backtracking), fix contents if needed.
+     Iterate for nested subscripts (e.g. 'a[i].b[j]' needs 2 passes). =#
+  local _has_var_sub = r"\[[^\]]*[a-zA-Z_]"
+  local _split_sub = r"^([^\[]*)\[([^\]]*[a-zA-Z_][^\]]*)\](.*)"
+  local _prev_str = ""
+  while _prev_str != str
+    _prev_str = str
+    str = replace(str, r"'([^']*)'" => function(_m)
+      local _seg = _m[2:end-1]
+      if !occursin(_has_var_sub, _seg)
+        return _m
+      end
+      local _mt = Base.match(_split_sub, _seg)
+      if _mt === nothing
+        return _m
+      end
+      local _pre = _mt.captures[1]
+      local _sub = _mt.captures[2]
+      local _post = _mt.captures[3]
+      if isempty(_post)
+        return "'$(_pre)'[$(_sub)]"
+      else
+        local _cleanPost = lstrip(_post, ['.'])
+        return "'$(_pre)'[$(_sub)].'$(_cleanPost)'"
+      end
+    end)
+  end
   return str
 end
 

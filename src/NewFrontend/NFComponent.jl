@@ -315,17 +315,28 @@ function setDimensions(dims::List{<:Dimension}, component::Component)
   return component
 end
 
+"""
+  flatQuoteName(name) - Quote a name for flat Modelica output only if it
+  contains characters that are not valid in a simple Modelica identifier.
+"""
+function flatQuoteName(name::String)::String
+  if occursin(r"^[a-zA-Z_][a-zA-Z0-9_]*$", name)
+    return name
+  else
+    return string("'", name, "'")
+  end
+end
+
 function toFlatString(name::String, component::Component; inFunction = false)
   local str::String
+  local qname::String = flatQuoteName(name)
   str = begin
     local def::SCode.Element
     @match component begin
       TYPED_COMPONENT(__) => begin
-        toFlatString(component.attributes, component.ty) +
-          toFlatString(component.ty) +
-          " '" +
-          name +
-          "'" +
+        toFlatString(component.attributes, component.ty) *
+          toFlatString(component.ty) *
+          " " * qname *
           toFlatString(component.binding, " = "; inFunction = inFunction)
       end
 
@@ -333,14 +344,12 @@ function toFlatString(name::String, component::Component; inFunction = false)
         name + toFlatString(component.modifier, false)
       end
       ITERATOR_COMPONENT(__) => begin
-        string("'", name, "'")
+        flatQuoteName(name)
       end
       UNTYPED_COMPONENT(__) => begin
-        toFlatString(component.attributes, TYPE_UNKNOWN()) +
-          "Untyped" +
-          " '" +
-          name +
-          "'" +
+        toFlatString(component.attributes, TYPE_UNKNOWN()) *
+          "Untyped" *
+          " " * qname *
           toFlatString(component.binding, " = "; inFunction = inFunction)
       end
     end

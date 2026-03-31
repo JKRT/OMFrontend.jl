@@ -2085,7 +2085,7 @@ function instFunctionRef(
         if !isComponent(parent)
           parent = EMPTY_NODE()
         end
-        instFunction2(toPath(fn_ref), fn_node, info, parent)
+        instFunction2(scopePath(fn_node), fn_node, info, parent)
       end
     end
   end

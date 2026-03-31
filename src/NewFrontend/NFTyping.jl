@@ -159,7 +159,13 @@ function flagNotSet(origin::M_Type_Int, flag::M_Type_Int)::Bool
   return notSet
 end
 
+const TYPE_COMPONENT_DEPTH = Ref(0)
+const TYPE_COMPONENT_DEPTH_LIMIT = 60
+const TYPE_COMPONENT_MAX_DEPTH = Ref(0)
+
 function typeClass(cls::InstNode, name::String)
+  TYPE_COMPONENT_DEPTH[] = 0
+  TYPE_COMPONENT_MAX_DEPTH[] = 0
   typeClassType(cls, EMPTY_BINDING, ORIGIN_CLASS, cls)
   typeComponents(cls, ORIGIN_CLASS)
   #  execStat("NFtypeComponents(" + name + ")")
@@ -443,6 +449,22 @@ function makeRecordType(constructor::InstNode)::ComplexType
 end
 
 function typeComponent(inComponent::InstNode, origin::ORIGIN_Type)::NFType
+  TYPE_COMPONENT_DEPTH[] += 1
+  local currentDepth = TYPE_COMPONENT_DEPTH[]
+  if currentDepth > TYPE_COMPONENT_MAX_DEPTH[]
+    TYPE_COMPONENT_MAX_DEPTH[] = currentDepth
+  end
+  if currentDepth > TYPE_COMPONENT_DEPTH_LIMIT
+    nodeName = try name(inComponent) catch; "<unknown>" end
+    @warn "typeComponent depth limit reached" depth=currentDepth node=nodeName
+    TYPE_COMPONENT_DEPTH[] -= 1
+    Error.addSourceMessage(
+      Error.INST_RECURSION_LIMIT_REACHED,
+      list("typeComponent depth > $(TYPE_COMPONENT_DEPTH_LIMIT): node=$(nodeName)"),
+      InstNode_info(inComponent))
+    fail()
+  end
+  try
   local ty::NFType
   local node::InstNode = resolveOuter(inComponent)
   local c::Component = component(node)
@@ -482,6 +504,9 @@ function typeComponent(inComponent::InstNode, origin::ORIGIN_Type)::NFType
     end
   end
   return ty
+  finally
+    TYPE_COMPONENT_DEPTH[] -= 1
+  end
 end
 
 function checkComponentStreamAttribute(

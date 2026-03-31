@@ -63,9 +63,7 @@ function scalarizeVariable(var::Variable, vars::Vector{Variable})
   local ty_attr_names::Vector{String}
   local ty_attr_iters::Vector{ExpressionIterator}
   local bind_var::VariabilityType
-  local parentCr = rest(var.name)
-  local parentIsRecordAndParam =  ! (parentCr isa COMPONENT_REF_EMPTY) && isRecord(rest(var.name).ty)# && (variability(var) <= Variability.PARAMETER)
-  if isArray(var.ty) && hasKnownSize(var.ty) && !parentIsRecordAndParam
+  if isArray(var.ty) && hasKnownSize(var.ty)
     #= Skip zero-size array variables entirely =#
     if isEmptyArray(var.ty)
       return vars
@@ -211,6 +209,49 @@ function scalarizeEquations(eql::Vector{Equation})
 end
 
 function scalarizeEquation(@nospecialize(eq::Equation), equations::Vector{Equation})
+  #= Expand record-typed equations to field-level equations.
+     For CREF = CREF: expand both sides to their record fields.
+     For CREF = CALL (function returning record): keep as record-level. =#
+  if eq isa EQUATION_EQUALITY && isComplex(eq.ty)
+    local rec_lhs = eq.lhs
+    local rec_rhs = eq.rhs
+    local lhs_expandable = rec_lhs isa CREF_EXPRESSION || rec_lhs isa RECORD_EXPRESSION
+    local rhs_expandable = rec_rhs isa CREF_EXPRESSION || rec_rhs isa RECORD_EXPRESSION
+    if lhs_expandable && rhs_expandable
+      @match TYPE_COMPLEX(cls = rec_cls) = eq.ty
+      local rec_comps::Vector{InstNode} = getComponents(classTree(getClass(rec_cls)))
+      for i in 1:length(rec_comps)
+        local fty = getType(rec_comps[i])
+        local flhs = if rec_lhs isa CREF_EXPRESSION
+          CREF_EXPRESSION(fty, prefixCref(rec_comps[i], fty, nil, rec_lhs.cref))
+        else
+          rec_lhs.elements[i]
+        end
+        local frhs = if rec_rhs isa CREF_EXPRESSION
+          CREF_EXPRESSION(fty, prefixCref(rec_comps[i], fty, nil, rec_rhs.cref))
+        else
+          rec_rhs.elements[i]
+        end
+        local feq = EQUATION_EQUALITY(flhs, frhs, fty, eq.source)
+        equations = scalarizeEquation(feq, equations)
+      end
+      return equations
+    else
+      push!(equations, eq)
+      return equations
+    end
+  end
+  #= Pre-process: try to expand EQUATION_ARRAY_EQUALITY with TYPED_ARRAY_CONSTRUCTOR
+     before the @match block, since Revise cannot update @match cases. =#
+  if eq isa EQUATION_ARRAY_EQUALITY
+    local _expanded = tryExpandArrayEqualityToScalar(eq)
+    if _expanded !== nothing
+      for _eq in _expanded
+        equations = scalarizeEquation(_eq, equations)
+      end
+      return equations
+    end
+  end
   equations = begin
     local lhs_iter::ExpressionIterator
     local rhs_iter::ExpressionIterator
@@ -220,6 +261,7 @@ function scalarizeEquation(@nospecialize(eq::Equation), equations::Vector{Equati
     local src::DAE.ElementSource
     local info::SourceInfo
     @match eq begin
+
       EQUATION_EQUALITY(
         lhs,
         rhs,
@@ -229,8 +271,23 @@ function scalarizeEquation(@nospecialize(eq::Equation), equations::Vector{Equati
 
         local lhs = eq.lhs
       if hasArrayCall(lhs) || hasArrayCall(rhs)
-        equations =
-          push!(equations, EQUATION_ARRAY_EQUALITY(lhs, rhs, ty, src))
+        #= Try to expand array comprehensions/calls before giving up.
+           expand() handles TYPED_ARRAY_CONSTRUCTOR and broadcasts. =#
+        local _exp_ok = true
+        local _exp_lhs = lhs
+        local _exp_rhs = eq.rhs
+        try
+          (_exp_lhs, _) = expand(lhs)
+          (_exp_rhs, _) = expand(eq.rhs)
+        catch
+          _exp_ok = false
+        end
+        if !_exp_ok
+          equations = push!(equations, EQUATION_ARRAY_EQUALITY(lhs, eq.rhs, ty, src))
+          return equations
+        end
+        lhs_iter = fromExpToExpressionIterator(_exp_lhs)
+        rhs_iter = fromExpToExpressionIterator(_exp_rhs)
       else
         lhs_iter = fromExpToExpressionIterator(lhs)
         rhs_iter = fromExpToExpressionIterator(rhs)
@@ -241,33 +298,31 @@ function scalarizeEquation(@nospecialize(eq::Equation), equations::Vector{Equati
           equations = push!(equations, EQUATION_ARRAY_EQUALITY(eq.lhs, eq.rhs, eq.ty, src))
           return equations
         end
-        local rhs_is_scalar = !isArray(typeOf(eq.rhs))
-        local scalar_rhs::Expression = eq.rhs
-        ty = arrayElementType(ty)
-        while hasNext(lhs_iter)
-          if !hasNext(rhs_iter)
-            if rhs_is_scalar
-              #= Scalar RHS broadcast to all LHS elements =#
-              (lhs_iter, lhs) = next(lhs_iter)
-              equations = push!(equations, EQUATION_EQUALITY(lhs, scalar_rhs, ty, src))
-              continue
-            end
-            local msg = string(" could not expand rhs " + toString(eq.rhs) * " to match " * toString(eq.lhs),
-                               " rhs type was: $(toString(eq.ty)) & lhs type was: $(toString(eq.ty))")
-            @info "scalarizeEquation: RHS exhausted before LHS" toString(eq.lhs) toString(eq.rhs) toString(eq.ty)
-            Error.addInternalError(
-              getInstanceName() +
-                msg,
-              src.info,
-            )
-            fail()
+      end
+      local rhs_is_scalar = !isArray(typeOf(eq.rhs))
+      local scalar_rhs::Expression = eq.rhs
+      ty = arrayElementType(ty)
+      while hasNext(lhs_iter)
+        if !hasNext(rhs_iter)
+          if rhs_is_scalar
+            #= Scalar RHS broadcast to all LHS elements =#
+            (lhs_iter, lhs) = next(lhs_iter)
+            equations = scalarizeEquation(EQUATION_EQUALITY(lhs, scalar_rhs, ty, src), equations)
+            continue
           end
-          (lhs_iter, lhs) = next(lhs_iter)
-          (rhs_iter, rhs) = next(rhs_iter)
-          #println("After " * toString(lhs))
-          equations =
-            push!(equations, EQUATION_EQUALITY(lhs, rhs, ty, src))
+          local msg = string(" could not expand rhs " + toString(eq.rhs) * " to match " * toString(eq.lhs),
+                             " rhs type was: $(toString(eq.ty)) & lhs type was: $(toString(eq.ty))")
+          @info "scalarizeEquation: RHS exhausted before LHS" toString(eq.lhs) toString(eq.rhs) toString(eq.ty)
+          Error.addInternalError(
+            getInstanceName() +
+              msg,
+            src.info,
+          )
+          fail()
         end
+        (lhs_iter, lhs) = next(lhs_iter)
+        (rhs_iter, rhs) = next(rhs_iter)
+        equations = scalarizeEquation(EQUATION_EQUALITY(lhs, rhs, ty, src), equations)
       end
       equations
       end
@@ -311,8 +366,27 @@ function scalarizeEquation(@nospecialize(eq::Equation), equations::Vector{Equati
       end
 
       EQUATION_ARRAY_EQUALITY(__) => begin
-        local aeq = EQUATION_ARRAY_EQUALITY(eq.lhs, eq.rhs, eq.ty, eq.source)
-        push!(equations, aeq)
+        #= Try to expand/eval and scalarize before falling through. =#
+        try
+          local _aexp_lhs = tryEvalExp(eq.lhs)
+          local _aexp_rhs = tryEvalExp(eq.rhs)
+          (_aexp_lhs, _) = expand(_aexp_lhs)
+          (_aexp_rhs, _) = expand(_aexp_rhs)
+          local _a_lhs_iter = fromExpToExpressionIterator(_aexp_lhs)
+          local _a_rhs_iter = fromExpToExpressionIterator(_aexp_rhs)
+          if hasNext(_a_lhs_iter) && hasNext(_a_rhs_iter)
+            local _a_ty = arrayElementType(eq.ty)
+            while hasNext(_a_lhs_iter) && hasNext(_a_rhs_iter)
+              (_a_lhs_iter, lhs) = next(_a_lhs_iter)
+              (_a_rhs_iter, rhs) = next(_a_rhs_iter)
+              equations = scalarizeEquation(EQUATION_EQUALITY(lhs, rhs, _a_ty, eq.source), equations)
+            end
+            return equations
+          end
+        catch _aexp_err
+          #= Expansion failed; keep as array equality for toFlatStream. =#
+        end
+        push!(equations, EQUATION_ARRAY_EQUALITY(eq.lhs, eq.rhs, eq.ty, eq.source))
       end
 
       EQUATION_CONNECT(__) => begin
@@ -483,4 +557,154 @@ function scalarizeWhenStatement(
   end
   statements = push!(statements, ALG_WHEN(bl, source))
   return statements
+end
+
+"""
+Check whether both sides of a record equation can be expanded to field-level.
+Returns true if both LHS and RHS are component references or record expressions.
+Returns false if either side is a function call (which returns a record and
+cannot be trivially split into per-field calls).
+"""
+function canExpandRecordEquationSides(@nospecialize(lhs::Expression), @nospecialize(rhs::Expression))::Bool
+  lhs_ok = lhs isa CREF_EXPRESSION || lhs isa RECORD_EXPRESSION
+  rhs_ok = rhs isa CREF_EXPRESSION || rhs isa RECORD_EXPRESSION
+  return lhs_ok && rhs_ok
+end
+
+"""
+Expand a record equation into per-field scalar equations.
+For each field of the record type, creates a new EQUATION_EQUALITY
+with the field appended to both LHS and RHS crefs.
+The generated field equations are recursively scalarized to handle
+array-typed fields (e.g. X :: Real[2]).
+"""
+function expandRecordEquation(
+  @nospecialize(lhs::Expression),
+  @nospecialize(rhs::Expression),
+  ty::M_Type,
+  src::DAE.ElementSource,
+  equations::Vector{Equation},
+)::Vector{Equation}
+  @match TYPE_COMPLEX(cls = cls) = ty
+  local comps::Vector{InstNode} = getComponents(classTree(getClass(cls)))
+  for i in 1:length(comps)
+    local field_ty = getType(comps[i])
+    local field_lhs = expandRecordFieldExp(lhs, comps[i], field_ty, i)
+    local field_rhs = expandRecordFieldExp(rhs, comps[i], field_ty, i)
+    local field_eq = EQUATION_EQUALITY(field_lhs, field_rhs, field_ty, src)
+    equations = scalarizeEquation(field_eq, equations)
+  end
+  return equations
+end
+
+"""
+Create a field-level expression from a record-level expression.
+For CREF_EXPRESSION: appends the field component to get cref.field
+For RECORD_EXPRESSION: extracts the i-th element
+"""
+function expandRecordFieldExp(
+  @nospecialize(exp::Expression),
+  fieldNode::InstNode,
+  @nospecialize(field_ty::M_Type),
+  fieldIndex::Int,
+)::Expression
+  @match exp begin
+    CREF_EXPRESSION(__) => begin
+      local field_cr = prefixCref(fieldNode, field_ty, nil, exp.cref)
+      CREF_EXPRESSION(field_ty, field_cr)
+    end
+    RECORD_EXPRESSION(__) => begin
+      exp.elements[fieldIndex]
+    end
+    _ => begin
+      exp
+    end
+  end
+end
+
+"""
+Try to expand an EQUATION_ARRAY_EQUALITY into scalar equations.
+Handles cases where the RHS is a TYPED_ARRAY_CONSTRUCTOR (possibly wrapped
+in binary operations) and the LHS is an iterable array.
+Returns a vector of scalar equations, or nothing if expansion is not possible.
+"""
+function tryExpandArrayEqualityToScalar(eq::Equation)
+  local lhs_exp = eq.lhs
+  local rhs_exp = eq.rhs
+  #= Extract the TYPED_ARRAY_CONSTRUCTOR from the RHS, handling binary wrappers. =#
+  local constructor = nothing
+  local wrapper_op = nothing
+  local wrapper_scalar = nothing
+  local wrapper_is_lhs = false
+  if rhs_exp isa CALL_EXPRESSION && rhs_exp.call isa TYPED_ARRAY_CONSTRUCTOR
+    constructor = rhs_exp.call
+  elseif rhs_exp isa BINARY_EXPRESSION
+    local e1 = rhs_exp.exp1
+    local e2 = rhs_exp.exp2
+    if e1 isa CALL_EXPRESSION && e1.call isa TYPED_ARRAY_CONSTRUCTOR
+      constructor = e1.call
+      wrapper_op = rhs_exp.operator
+      wrapper_scalar = e2
+      wrapper_is_lhs = false
+    elseif e2 isa CALL_EXPRESSION && e2.call isa TYPED_ARRAY_CONSTRUCTOR
+      constructor = e2.call
+      wrapper_op = rhs_exp.operator
+      wrapper_scalar = e1
+      wrapper_is_lhs = true
+    end
+  end
+  if constructor === nothing
+    return nothing
+  end
+  #= Get LHS elements =#
+  local lhs_elements::Vector{Expression}
+  if lhs_exp isa ARRAY_EXPRESSION
+    lhs_elements = lhs_exp.elements
+  else
+    try
+      local (exp_lhs, _) = expand(lhs_exp)
+      if exp_lhs isa ARRAY_EXPRESSION
+        lhs_elements = exp_lhs.elements
+      else
+        return nothing
+      end
+    catch
+      return nothing
+    end
+  end
+  #= Iterate over the constructor's range and substitute =#
+  local body = constructor.exp
+  local iters = constructor.iters
+  if listLength(iters) != 1
+    return nothing
+  end
+  local (iter_node, range_exp) = listHead(iters)
+  local range_iter = fromExpToExpressionIterator(range_exp)
+  local result_eqs = Equation[]
+  local idx = 1
+  local elem_ty = arrayElementType(eq.ty)
+  while hasNext(range_iter)
+    if idx > length(lhs_elements)
+      return nothing
+    end
+    local value::Expression
+    (range_iter, value) = next(range_iter)
+    local substituted = simplify(replaceIterator(body, iter_node, value))
+    #= Re-apply the binary wrapper if present =#
+    local rhs_elem = if wrapper_op !== nothing
+      if wrapper_is_lhs
+        BINARY_EXPRESSION(wrapper_scalar, wrapper_op, substituted)
+      else
+        BINARY_EXPRESSION(substituted, wrapper_op, wrapper_scalar)
+      end
+    else
+      substituted
+    end
+    push!(result_eqs, EQUATION_EQUALITY(lhs_elements[idx], rhs_elem, elem_ty, eq.source))
+    idx += 1
+  end
+  if idx - 1 != length(lhs_elements)
+    return nothing
+  end
+  return result_eqs
 end

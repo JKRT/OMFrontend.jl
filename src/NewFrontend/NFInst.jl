@@ -83,6 +83,7 @@ function instClassInProgramFM2(classPath::Absyn.Path, program::SCode.Program)::T
   local funcs::FunctionTree
   #= Add the program currently being translated into the SCode cache. =#
   local currentProgram = listHead(program)
+  resetInstDiagnostics()
   setSettingForInst()
   #=  Create a root node from the given top-level classes. =#
   top = makeTopNode(program)
@@ -766,6 +767,18 @@ end
 
 function instClass(node::InstNode, modifier::Modifier, attributes::Attributes, attributeRef::Ref{Attributes}, useBinding::Bool = false, instLevel::Int = 0, parent = EMPTY_NODE())::CLASS_NODE
   INST_CLASS_DEPTH[] += 1
+  INST_CLASS_TOTAL_CALLS[] += 1
+  if INST_CLASS_TOTAL_CALLS[] > INST_CLASS_TOTAL_CALLS_LIMIT
+    nodeName = try name(node) catch; "<unknown>" end
+    parentName = try name(parent) catch; "<unknown>" end
+    top3 = sort(Base.collect(REINSTANTIATION_CLASSES), by=last, rev=true)[1:min(5, length(REINSTANTIATION_CLASSES))]
+    @warn "instClass total call limit reached" total=INST_CLASS_TOTAL_CALLS[] reinstantiations=REINSTANTIATION_COUNT[] top_classes=top3
+    Error.addSourceMessage(
+      Error.INST_RECURSION_LIMIT_REACHED,
+      list("instClass total calls > $(INST_CLASS_TOTAL_CALLS_LIMIT) (depth=$(INST_CLASS_DEPTH[]), reinstantiations=$(REINSTANTIATION_COUNT[])): node=$(nodeName), parent=$(parentName)"),
+      InstNode_info(node))
+    fail()
+  end
   if INST_CLASS_DEPTH[] > INST_CLASS_DEPTH_LIMIT
     nodeName = try name(node) catch; "<unknown>" end
     parentName = try name(parent) catch; "<unknown>" end
@@ -816,6 +829,14 @@ function instClassDef(cls::INSTANCED_CLASS,
   local res::Restriction
   local ty::M_Type
   local attrs::Attributes
+  #= Track re-instantiation for diagnostics =#
+  REINSTANTIATION_COUNT[] += 1
+  cn = try name(node) catch; "?" end
+  REINSTANTIATION_CLASSES[cn] = get(REINSTANTIATION_CLASSES, cn, 0) + 1
+  if REINSTANTIATION_COUNT[] % 5000 == 0
+    top5 = sort(Base.collect(REINSTANTIATION_CLASSES), by=last, rev=true)[1:min(5, length(REINSTANTIATION_CLASSES))]
+    @warn "Re-instantiation count: $(REINSTANTIATION_COUNT[]) (total instClass calls: $(INST_CLASS_TOTAL_CALLS[]))" top_classes=top5
+  end
   #=  If a class has an instance of a encapsulating class, then the encapsulating
   =#
   #=  class will have been fully instantiated to allow lookup in it. This is a
@@ -2068,6 +2089,20 @@ const INST_EXPR_DEPTH_LIMIT = 100
 const INST_CLASS_DEPTH = Ref(0)
 const INST_CLASS_DEPTH_LIMIT = 100
 
+#= Diagnostic counters for detecting exponential blowup (monotonically increasing) =#
+const INST_CLASS_TOTAL_CALLS = Ref(0)
+const INST_CLASS_TOTAL_CALLS_LIMIT = 200_000
+const REINSTANTIATION_COUNT = Ref(0)
+const REINSTANTIATION_CLASSES = Dict{String, Int}()
+
+function resetInstDiagnostics()
+  INST_CLASS_TOTAL_CALLS[] = 0
+  REINSTANTIATION_COUNT[] = 0
+  empty!(REINSTANTIATION_CLASSES)
+  INST_CLASS_DEPTH[] = 0
+  INST_EXPR_DEPTH[] = 0
+end
+
 function instExpressions(node::InstNode,
                          scope::InstNode = node,
                          sections::Sections = SECTIONS_EMPTY())
@@ -3198,9 +3233,18 @@ function isComponentBindingNotFixed(comp::Component, node::InstNode, requireFina
   isNotFixed
 end
 
+const EXPRESSION_NOT_FIXED_DEPTH = Ref(0)
+const EXPRESSION_NOT_FIXED_DEPTH_LIMIT = 256
+
 function isExpressionNotFixed(@nospecialize(exp::Expression); requireFinal::Bool = false, maxDepth::Int = 4) ::Bool
+  EXPRESSION_NOT_FIXED_DEPTH[] += 1
+  if EXPRESSION_NOT_FIXED_DEPTH[] > EXPRESSION_NOT_FIXED_DEPTH_LIMIT
+    EXPRESSION_NOT_FIXED_DEPTH[] -= 1
+    return true  # Conservatively assume not fixed to prevent stack overflow
+  end
   local isNotFixed::Bool
 
+  try
   @assign isNotFixed = begin
     local nodeVar::InstNode
     local c::Component
@@ -3248,7 +3292,10 @@ function isExpressionNotFixed(@nospecialize(exp::Expression); requireFinal::Bool
       end
     end
   end
-  isNotFixed
+  return isNotFixed
+  finally
+    EXPRESSION_NOT_FIXED_DEPTH[] -= 1
+  end
 end
 
 function getRecordFieldBinding(comp::Component, node::InstNode) ::Binding

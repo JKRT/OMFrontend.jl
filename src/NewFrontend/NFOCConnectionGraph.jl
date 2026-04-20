@@ -983,10 +983,10 @@ function printPotentialRootTuple(potentialRoot::PotentialRoot) ::String
   outStr
 end
 
-function setRootDistance(finalRoots::List{ComponentRef},
+function setRootDistance(finalRoots::List{<:ComponentRef},
                          table::NFHashTable3.HashTable,
                          distance::Int,
-                         nextLevel::List{ComponentRef},
+                         nextLevel::List{<:ComponentRef},
                          irooted::NFHashTable.HashTable)::NFHashTable.HashTable
   local orooted::NFHashTable.HashTable
   orooted = begin
@@ -1120,46 +1120,35 @@ end
 """
  Finds the root equations
 """
-function findRootEquations(inRoots::List{<:ComponentRef}, graph::NFOCConnectionGraph, inEquations::List{<:Equation})::Vector{Equation}
-  local outEquations::Vector{Equation}
-  outEquations = begin
-    local rootEqs = Equation[]
-    @matchcontinue (inRoots, graph, inEquations) begin
-      (_, _,  nil())  => begin
-        nil
-      end
-      _  => begin
-        table = NFHashTable3.emptyHashTable()
-        branches = getBranches(graph)
-        table = ListUtil.fold(branches, addBranches, table)
-        connections = getConnections(graph)
-        table = ListUtil.fold(connections, addConnectionsRooted, table)
-        rooted = setRootDistance(inRoots, table, 0, nil, NFHashTable.emptyHashTable())
-        tmp = Equation[]
-        for (i, eq) in enumerate(inEquations)
-          info = Equation_info(eq)
-          @match eq begin
-            EQUATION_IF(EQUATION_BRANCH(cond, condVar, body) <| nil, _) where isCall(cond) => begin
-              isRoot = identifyConnectionsOperator(name(cond.call.fn)) === ConnectionsOperator.IS_ROOT
-              neq = mapExp(eq, (x) -> evaluateOperators(x, rooted, inRoots, graph, info))
-              #= We know that this has only one branch. =#
-              @match BOOLEAN_EXPRESSION(isRootedEvalToTrue) = listHead(neq.branches).condition
-              @assert length(body) == 1 "Assuming the body is of length 1"
-              if isRootedEvalToTrue
-                push!(rootEqs, listHead(body))
-              end
-            end
-            _ => begin
-              continue
-            end
-          end
-          outEquations = arrayList(rootEqs)
+function findRootEquations(inRoots::List{<:ComponentRef}, graph::NFOCConnectionGraph, inEquations)::Vector{Equation}
+  local rootEqs = Equation[]
+  if isempty(inEquations)
+    return rootEqs
+  end
+  table = NFHashTable3.emptyHashTable()
+  branches = getBranches(graph)
+  table = ListUtil.fold(branches, addBranches, table)
+  connections = getConnections(graph)
+  table = ListUtil.fold(connections, addConnectionsRooted, table)
+  rooted = setRootDistance(inRoots, table, 0, nil, NFHashTable.emptyHashTable())
+  for (i, eq) in enumerate(inEquations)
+    info = Equation_info(eq)
+    @match eq begin
+      EQUATION_IF(EQUATION_BRANCH(cond, condVar, body) <| nil, _) where isCall(cond) => begin
+        neq = mapExp(eq, (x) -> evaluateOperators(x, rooted, inRoots, graph, info))
+        #= We know that this has only one branch. =#
+        @match BOOLEAN_EXPRESSION(isRootedEvalToTrue) = listHead(neq.branches).condition
+        @assert length(body) == 1 "Assuming the body is of length 1"
+        if isRootedEvalToTrue
+          push!(rootEqs, listHead(body))
         end
       end
+      _ => begin
+        continue
+      end
     end
-    outEquations
   end
-  return outEquations
+  return rootEqs
 end
 
 function evaluateOperators(exp::Expression

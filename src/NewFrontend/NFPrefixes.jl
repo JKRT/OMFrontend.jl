@@ -501,23 +501,23 @@ function variabilityToDAEConst(var)::DAE.Const
   @assign M_const = begin
     @match var begin
       Variability.CONSTANT => begin
-        DAE.Const.C_CONST()
+        DAE.C_CONST()
       end
 
       Variability.STRUCTURAL_PARAMETER => begin
-        DAE.Const.C_PARAM()
+        DAE.C_PARAM()
       end
 
       Variability.PARAMETER => begin
-        DAE.Const.C_PARAM()
+        DAE.C_PARAM()
       end
 
       Variability.NON_STRUCTURAL_PARAMETER => begin
-        DAE.Const.C_PARAM()
+        DAE.C_PARAM()
       end
 
       _ => begin
-        DAE.Const.C_VAR()
+        DAE.C_VAR()
       end
     end
   end

@@ -894,8 +894,9 @@ end
   lead to recompilation.
 """
 function recompilationDirectiveExists(@nospecialize(eqs::Vector{Equation}))::Bool
-  local hasRecompilationDirective = containsList(eqs, (eq) -> containsCallNamed(eq, "recompilation"))
-  return hasRecompilationDirective
+  local hasCallDirective = containsList(eqs, (eq) -> containsCallNamed(eq, "recompilation") || containsCallNamed(eq, "agentic_recompilation"))
+  local hasReconfigure = any(eq -> isa(eq, EQUATION_RECONFIGURE), eqs)
+  return hasCallDirective || hasReconfigure
 end
 
 

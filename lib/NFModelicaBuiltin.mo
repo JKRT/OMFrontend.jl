@@ -594,6 +594,11 @@ function recompilation "Defines a recompilation, the change depends on the param
   annotation(__OpenModelica_builtin=true, Documentation(info="Modelica Extension"));
 end recompilation;
 
+function agentic_recompilation "Agentic reconfiguration: new parameter values are determined at runtime by an external AI agent."
+  external "builtin"
+  annotation(__OpenModelica_builtin=true, Documentation(info="Modelica Agentic Extension"));
+end agentic_recompilation;
+
 function activeState "Return true if instance of a state machine is active, otherwise false"
   external "builtin";
   annotation(__OpenModelica_builtin=true, Documentation(info="<html>

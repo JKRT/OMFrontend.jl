@@ -6862,7 +6862,7 @@ function makeDAEBinding(@nospecialize(exp::Expression), var::VariabilityType)
    binding = DAE.EQBOUND(
     toDAE(exp),
     NONE(),
-    Variability.variabilityToDAEConst(var),
+    variabilityToDAEConst(var),
     DAE.BINDING_FROM_DEFAULT_VALUE(),
   )
   #=  TODO: revise this. =#

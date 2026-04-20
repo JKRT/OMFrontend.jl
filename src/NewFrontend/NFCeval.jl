@@ -4826,7 +4826,7 @@ end
   output: A mapping between the component references of the variables and the values of the initial equations
 (Where the lhs of the equation system is a variable)
 """
-function evalInitialEqMapping(ieq::List{Equation})
+function evalInitialEqMapping(ieq)
   local mapping::Dict = Dict()
   for eq in ieq
     var = Variable_fromCref(toCref(eq.lhs))

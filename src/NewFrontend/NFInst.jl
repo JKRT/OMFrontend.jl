@@ -131,10 +131,8 @@ function instClassInProgramFM2(classPath::Absyn.Path, program::SCode.Program)::T
 
       =#
       #= Remove the conditionals themselves from the flat model =#
-      local equationsWithoutDOCC = flat_model.equations
-      for eq in doccs
-        equationsWithoutDOCC = ListUtil.deleteMemberF(equationsWithoutDOCC, eq)
-      end
+      local doccSet = Set(doccs)
+      local equationsWithoutDOCC = filter(e -> !(e in doccSet), flat_model.equations)
       #=
       Check if the existing equations in the flat model should be extended.
       =#
@@ -149,8 +147,8 @@ function instClassInProgramFM2(classPath::Absyn.Path, program::SCode.Program)::T
           if in(varAsStr, keys(initialEqMapping))
             expr = initialEqMapping[varAsStr]
             #=
-            Evaluate the expression. It should be a boolean
-            Depending on the value we do two things.
+            Evaluate the expression. It should be a boolean.
+            Depending on the value we do two things:
             Either we remove equations from the starting model
             or we add them to the model.
             =#
@@ -158,10 +156,10 @@ function instClassInProgramFM2(classPath::Absyn.Path, program::SCode.Program)::T
             @assign flat_model.equations = if active
               #=
               Equations for this if equation active at the start.
-              mark as active on both branches. Index is assumed to match with each equation.
+              Mark as active on both branches. Index is assumed to match with each equation.
               =#
               push!(flat_model.active_DOCC_Equations, true)
-              listAppend(equationsWithoutDOCC, br.body)
+              vcat(equationsWithoutDOCC, br.body)
             else #= Otherwise these equations are active at some later stage =#
               push!(flat_model.active_DOCC_Equations, false)
               equationsWithoutDOCC
@@ -170,8 +168,8 @@ function instClassInProgramFM2(classPath::Absyn.Path, program::SCode.Program)::T
         end
         #= Add the special equations to the flat model =#
         @assign flat_model.DOCC_equations = arrayList(doccs)
-        #= Contains the equations of the system before the virtual connection graph is calculated  =#
-        @assign flat_model.unresolvedConnectEquations = equationsWithoutDOCC
+        #= Contains the equations of the system before the virtual connection graph is calculated =#
+        @assign flat_model.unresolvedConnectEquations = arrayList(equationsWithoutDOCC)
       end
       #=
       Remove the doccs equations from the set of equations in the flat model
@@ -181,17 +179,15 @@ function instClassInProgramFM2(classPath::Absyn.Path, program::SCode.Program)::T
     #= Resolve the connections of the current system. =#
     flat_model = resolveConnections(flat_model, name)
     dumpFlatModel(flat_model, string(name, "_", "afterResolveConnections"))
-    flat_model =  if ! recompilationEnabled
-      evaluate(flat_model)
-      dumpFlatModel(flat_model, name * "afterEval")
-    else
-      flat_model
+    if ! recompilationEnabled
+      flat_model = evaluate(flat_model)
+      dumpFlatModel(flat_model, string(name, "_", "afterEval"))
     end
   else #= Regular system without simulaton time reconfigurations =#
     @EXECSTAT "resolveConnections" flat_model = resolveConnections(flat_model, name)
     dumpFlatModel(flat_model, string(name, "_", "afterResolveConnections"))
     @EXECSTAT "evaluate" flat_model = evaluate(flat_model)
-    dumpFlatModel(flat_model, name * "afterEval")
+    dumpFlatModel(flat_model, string(name, "_", "afterEval"))
   end
   #= Do unit checking =#
   #TODO  @assign flat_model = UnitCheck.checkUnits(flat_model)
@@ -2944,6 +2940,27 @@ function instEEquation(@nospecialize(scodeEq::SCode.EEquation), @nospecialize(sc
         EQUATION_WHEN(branches, makeSource(scodeEq.comment, info))
       end
 
+      SCode.EQ_RECONFIGURE(info = info) => begin
+        local instConds = [instExp(clause.condition, scope, info)
+                           for clause in scodeEq.whenClauses]
+        local instCons = [begin
+            @match clause begin
+              Absyn.WHEN_CONDITIONAL(__) => SOME(instExp(clause.constraint, scope, info))
+              _ => NONE()
+            end
+          end
+          for clause in scodeEq.whenClauses]
+        local instPrompt = instExpOpt(scodeEq.prompt, scope, info)
+        EQUATION_RECONFIGURE(
+          scodeEq.variables,
+          instConds,
+          instCons,
+          instPrompt,
+          scodeEq.initialEquations,
+          makeSource(scodeEq.comment, info),
+        )
+      end
+
       SCode.EQ_ASSERT(info = info)  => begin
         exp1 = instExp(scodeEq.condition, scope, info)
         exp2 = instExp(scodeEq.message, scope, info)
@@ -3482,12 +3499,29 @@ function markImplicitWhenExp_traverser(@nospecialize(exp::Expression))
   end
 end
 
+#= Per-session session id and log root for OMFrontend dumps. Mirrors the helper
+   in OMBackend; duplicated because the two packages do not share code. All
+   frontend flat-model dumps go under a single OS-appropriate directory instead
+   of the current working directory. =#
+const OMFRONTEND_SESSION_ID = string(getpid(), "_", round(Int, time()))
+
+function logDir()
+  return get(ENV, "OMJL_LOG_DIR", joinpath(tempdir(), "OMJL", OMFRONTEND_SESSION_ID))
+end
+
+function logPath(stage::AbstractString, filename::AbstractString)
+  dir = joinpath(logDir(), stage)
+  isdir(dir) || mkpath(dir)
+  return joinpath(dir, filename)
+end
+
 """
   Dumps the flat model if the correct debug flag is activated.
 """
 function dumpFlatModel(flatModel, phaseAsStr::String)
   if Flags.isSet(Flags.NF_DUMP_FLAT)
-    @info "Dumping the system... at phase: $(phaseAsStr)"
-    write(string(phaseAsStr, ".mo"), replace(toFlatString(flatModel, nil), "\\n" => "\n"))
+    local outFile = logPath("frontend/flat", string(phaseAsStr, ".mo"))
+    @info "Dumping the system... at phase: $(phaseAsStr) -> $(outFile)"
+    write(outFile, replace(toFlatString(flatModel, nil), "\\n" => "\n"))
   end
 end

@@ -3264,6 +3264,33 @@ end
         EQUATION_NORETCALL(e1, eq.source)
       end
 
+      EQUATION_RECONFIGURE(__) => begin
+        local info = DAE.ElementSource_getInfo(eq.source)
+        local typedConds = [begin
+          (tcond, _, _) = typeCondition(cond, origin, eq.source,
+                                        Error.WHEN_CONDITION_TYPE_ERROR,
+                                        allowVector = true, allowClock = true)
+          tcond
+        end for cond in eq.whenConditions]
+        local typedCons = [begin
+          if isSome(mc)
+            @match SOME(c) = mc
+            (tc, _, _) = typeExp(c, origin, info)
+            SOME(tc)
+          else
+            NONE()
+          end
+        end for mc in eq.whenConstraints]
+        local typedPrompt = if isSome(eq.prompt)
+          @match SOME(p) = eq.prompt
+          (tp, _, _) = typeExp(p, origin, info)
+          SOME(tp)
+        else
+          NONE()
+        end
+        EQUATION_RECONFIGURE(eq.variables, typedConds, typedCons, typedPrompt, eq.initialEquations, eq.source)
+      end
+
       _ => begin
         eq
       end

@@ -33,6 +33,15 @@ struct EQUATION_WHEN{T0 <: DAE.ElementSource} <: NFEquation
   source::T0
 end
 
+struct EQUATION_RECONFIGURE{T0 <: DAE.ElementSource} <: NFEquation
+  variables        ::MetaModelica.List{Absyn.ElementItem}
+  whenConditions   ::Vector   #= Instantiated trigger conditions (NFExpression.Expression) =#
+  whenConstraints  ::Vector   #= Optional post-conditions, one per whenCondition (Option{Expression}) =#
+  prompt           ::Option   #= Instantiated natural-language prompt (Option{Expression}) =#
+  initialEquations ::Option   #= Raw Absyn constraint equations checked at recompilation =#
+  source           ::T0
+end
+
 struct EQUATION_IF{T1 <: DAE.ElementSource} <: NFEquation
   branches::Vector{Equation_Branch}
   source::T1
@@ -350,6 +359,31 @@ end
         end
          s = IOStream_M.append(s, indent)
          s = IOStream_M.append(s, "end when")
+        s
+      end
+
+      EQUATION_RECONFIGURE(__) => begin
+        s = IOStream_M.append(s, "reconfigure\n")
+        for item in eq.variables
+          @match Absyn.ELEMENTITEM(element = Absyn.ELEMENT(specification = Absyn.COMPONENTS(typeSpec = ts, components = comps))) = item
+          typeName = AbsynUtil.typeSpecPathString(ts)
+          @match Absyn.COMPONENTITEM(component = Absyn.COMPONENT(name = varName)) <| _ = comps
+          s = IOStream_M.append(s, indent * "  " * typeName * " " * varName * ";\n")
+        end
+        for (cond, cons) in zip(eq.whenConditions, eq.whenConstraints)
+          condStr = toString(cond)
+          if isSome(cons)
+            @match SOME(consExp) = cons
+            s = IOStream_M.append(s, indent * "  when " * condStr * " => " * toString(consExp) * ";\n")
+          else
+            s = IOStream_M.append(s, indent * "  when " * condStr * ";\n")
+          end
+        end
+        if isSome(eq.prompt)
+          @match SOME(promptExp) = eq.prompt
+          s = IOStream_M.append(s, indent * "  prompt(" * toString(promptExp) * ");\n")
+        end
+        s = IOStream_M.append(s, indent * "end reconfigure")
         s
       end
 

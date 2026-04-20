@@ -737,11 +737,11 @@ function convertStateSelectAttribute(binding::Binding)::Option{DAE.StateSelect}
   local stateSelect::Option{DAE.StateSelect}
 
   local node::InstNode
-  local name::String
+  local memberName::String
   local exp::Expression =
     getBindingExp(getTypedExp(binding))
 
-  @assign name = begin
+  @assign memberName = begin
     @match exp begin
       ENUM_LITERAL_EXPRESSION(__) => begin
         exp.name
@@ -752,18 +752,18 @@ function convertStateSelectAttribute(binding::Binding)::Option{DAE.StateSelect}
       end
 
       _ => begin
-        Error.assertion(
-          false,
-          getInstanceName() +
-          " got invalid StateSelect expression " +
-          toString(exp),
-          sourceInfo(),
-        )
-        fail()
+        @warn "convertStateSelectAttribute: unrecognised StateSelect expression $(typeof(exp)), ignoring"
+        return NONE()
       end
     end
   end
-  @assign stateSelect = SOME(lookupStateSelectMember(name))
+  #= If the resolved name is not a StateSelect enum literal (e.g. it is a
+     reference to an unevaluated parameter), skip conversion silently. =#
+  if !(memberName in ("never", "avoid", "default", "prefer", "always"))
+    @warn "convertStateSelectAttribute: \"$memberName\" is not a StateSelect enum literal (unevaluated parameter reference?), ignoring"
+    return NONE()
+  end
+  @assign stateSelect = SOME(lookupStateSelectMember(memberName))
   return stateSelect
 end
 
@@ -793,6 +793,7 @@ function lookupStateSelectMember(name::String)::DAE.StateSelect
       end
 
       _ => begin
+        @info "lookupStateSelectMember: unknown StateSelect literal: " * name
         Error.assertion(
           false,
           getInstanceName() + " got unknown StateSelect literal " + name,
@@ -876,6 +877,26 @@ function convertEquation(eq::Equation, elements::List{<:DAE.Element})::List{DAE.
 
       EQUATION_WHEN(__) => begin
         _cons(convertWhenEquation(eq.branches, eq.source), elements)
+      end
+
+      EQUATION_RECONFIGURE(__) => begin
+        local condition = toDAE(eq.whenConditions[1])
+        local constraint = if !isempty(eq.whenConstraints) && isSome(eq.whenConstraints[1])
+          @match SOME(c) = eq.whenConstraints[1]
+          SOME(toDAE(c))
+        else
+          NONE()
+        end
+        local prompt = if isSome(eq.prompt)
+          @match SOME(p) = eq.prompt
+          SOME(toDAE(p))
+        else
+          NONE()
+        end
+        _cons(
+          DAE.RECONFIGURE_EQUATION(eq.variables, condition, constraint, prompt, eq.initialEquations, eq.source),
+          elements,
+        )
       end
 
       EQUATION_ASSERT(__) => begin
@@ -1164,7 +1185,7 @@ function convertStatement(stmt::Statement)::DAE.Statement
       end
 
       ALG_NORETCALL(__) => begin
-        DAE.Statement.STMT_NORETCALL(
+        DAE.STMT_NORETCALL(
           toDAE(stmt.exp),
           stmt.source,
         )
@@ -1602,7 +1623,7 @@ function makeTypeVars(complexCls::InstNode)::List{DAE.Var}
       INSTANCED_CLASS(restriction = RESTRICTION_RECORD(__)) => begin
         list(makeTypeRecordVar(c) for c in getComponents(cls.elements))
       end
-      INSTANCED_CLASS(elements = FLAT_TREE(__)) => begin
+      INSTANCED_CLASS(elements = CLASS_TREE_FLAT_TREE(__)) => begin
         list(
           makeTypeVar(c)
           for

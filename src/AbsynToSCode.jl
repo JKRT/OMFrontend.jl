@@ -2262,10 +2262,10 @@ function translateEquation(
       end
 
       Absyn.EQ_WHEN_E(__) => begin
-         body = translateEEquations(inEquation.whenEquations, inIsInitial)
-         (conditions, bodies) =
+        body = translateEEquations(inEquation.whenEquations, inIsInitial)
+        (conditions, bodies) =
           ListUtil.map1_2(inEquation.elseWhenEquations, translateEqBranch, inIsInitial)
-         branches = list(@do_threaded_for (c, b) (c, b) (conditions, bodies))
+        branches = list(@do_threaded_for (c, b) (c, b) (conditions, bodies))
         SCode.EQ_WHEN(inEquation.whenExp, body, branches, inComment, inInfo)
       end
 
@@ -2342,6 +2342,17 @@ function translateEquation(
       Absyn.EQ_NORETCALL(__) => begin
         SCode.EQ_NORETCALL(
           Absyn.CALL(inEquation.functionName, inEquation.functionArgs, nil),
+          inComment,
+          inInfo,
+        )
+      end
+
+      Absyn.EQ_RECONFIGURE(__) => begin
+        SCode.EQ_RECONFIGURE(
+          inEquation.variables,
+          inEquation.whenClauses,
+          inEquation.prompt,
+          inEquation.initialEquations,
           inComment,
           inInfo,
         )

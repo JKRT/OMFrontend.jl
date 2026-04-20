@@ -91,10 +91,23 @@ end TestEvalCat_TestEvalCat1;
 More tests can be added like this.
 That is a tuple of the reference string, the model name and the path to the model to translate.
 =#
+simpleAgenticTestReference = "class SimpleAgenticTest
+  parameter Real y = 1.0;
+  Real x(start = 0.0);
+equation
+  der(x) = y;
+
+  when x > 5.0 then
+    agentic_recompilation(y);
+  end when;
+end SimpleAgenticTest;
+"
+
 arrayfancy = (arrayfancyReference, "ArrayFancy", "./Equations/ArrayFancy.mo")
 circle = (circleReference, "Circle", "./Equations/Circle.mo")
 ifEquationDer = (ifEquationDerReference, "IfEquationDer", "./Equations/IfEquationDer.mo")
 testArrayEq = (testArrayEqReference, "TestArrayEq", "./Equations/TestArrayEq.mo")
 testEvalCat1 = (testEvalCat1Reference, "TestEvalCat.TestEvalCat1", "./Equations/TestEvalCat.mo")
+simpleAgenticTest = (simpleAgenticTestReference, "SimpleAgenticTest", "./Equations/SimpleAgenticTest.mo")
 #= If you make a new test add it to this array. =#
-equationTests = [circle, arrayfancy, ifEquationDer, testArrayEq, testEvalCat1]
+equationTests = [circle, arrayfancy, ifEquationDer, testArrayEq, testEvalCat1, simpleAgenticTest]

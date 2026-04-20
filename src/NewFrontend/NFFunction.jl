@@ -747,6 +747,7 @@ function isSpecialBuiltin(fn::M_FUNCTION)::Bool
           "initialStructuralState" => true
           "structuralTransition" => true
           "recompilation" => true
+          "agentic_recompilation" => true
           _ => begin
             false
           end

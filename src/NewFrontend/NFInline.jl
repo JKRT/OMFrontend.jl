@@ -167,24 +167,29 @@ function inlineCall(call::Call)::Expression
 end
 
 function replaceCrefNode(exp::Expression, node::InstNode, value::Expression)::Expression
-  local cr_node::InstNode
-  local rest_cr::ComponentRef
-  local subs::List{Subscript}
   local ty::M_Type
   local repl_ty::M_Type
   @assign exp = begin
     @match exp begin
-      CREF_EXPRESSION(
-        cref = COMPONENT_REF_CREF(
-          node = cr_node,
-          subscripts = subs,
-          restCref = rest_cr,
-        ),
-      ) where {(
-        refEqual(node, cr_node) &&
-        !isFromCref(rest_cr)
-      )} => begin
-        applySubscripts(subs, value)
+      CREF_EXPRESSION(cref = cr && COMPONENT_REF_CREF(__)) => begin
+        #= Convert cref to reversed list: innermost (base) first, outermost last.
+           For c.re stored as re -> c -> EMPTY, toListReverse gives [c, re]. =#
+        local cref_parts = toListReverse(cr)
+        local basePart = listHead(cref_parts)
+        if refEqual(node, basePart.node)
+          #= The base of the cref matches the formal parameter node.
+             Replace with actual argument value, then apply any field accesses. =#
+          local result = applySubscripts(basePart.subscripts, value)
+          local fieldParts = listRest(cref_parts)
+          for fieldCr in fieldParts
+            result = makeImmutable(result)
+            result = recordElement(name(fieldCr.node), result)
+            result = applySubscripts(fieldCr.subscripts, result)
+          end
+          result
+        else
+          exp
+        end
       end
 
       _ => begin
@@ -192,12 +197,6 @@ function replaceCrefNode(exp::Expression, node::InstNode, value::Expression)::Ex
       end
     end
   end
-  #=  TODO: This only works for simple crefs, for complex crefs (i.e. records)
-  =#
-  #=        we need to somehow replace the rest of the cref with nodes from the
-  =#
-  #=        record.
-  =#
   #=  Replace expressions in dimensions too.
   =#
   ty = typeOf(exp)

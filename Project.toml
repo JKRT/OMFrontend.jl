@@ -22,5 +22,19 @@ Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 ManualMemory="d125e4d3-2237-4719-b19c-fa641b8a4667"
 OMRuntimeExternalC="ada38df0-e20e-11ed-02f3-2b4b19c1ec8a"
 
+# All OM.jl subpackages live in-tree as sibling directories. Point Pkg at the
+# local checkouts so resolve uses the working copies. OMRuntimeExternalC in
+# particular is not registered at all.
+[sources]
+Absyn = { path = "../Absyn.jl" }
+ArrayUtil = { path = "../ArrayUtil.jl" }
+DAE = { path = "../DAE.jl" }
+ImmutableList = { path = "../ImmutableList.jl" }
+ListUtil = { path = "../ListUtil.jl" }
+MetaModelica = { path = "../MetaModelica.jl" }
+OMParser = { path = "../OMParser.jl" }
+OMRuntimeExternalC = { path = "../OMRuntimeExternalC.jl" }
+SCode = { path = "../SCode.jl" }
+
 [compat]
-julia = "1.10"
+julia = "1.12"

@@ -82,6 +82,31 @@ include("./AbsynUtil.jl")
 include("./SCodeUtil.jl")
 include("./SCodeDump.jl")
 include("./AbsynToSCode.jl")
+#= Minimal Values stub (OMC legacy, needed by toDAEValue in BindingExpression.jl) =#
+module Values
+  using MetaModelica
+  import Absyn
+  abstract type Value end
+  struct INTEGER_EXPRESSION <: Value; value::Int; end
+  struct REAL_EXPRESSION <: Value; value::Float64; end
+  struct STRING_EXPRESSION <: Value; value::String; end
+  struct BOOL <: Value; value::Bool; end
+  struct ENUM_LITERAL <: Value; name::Absyn.Path; index::Int; end
+  struct RECORD <: Value; path::Absyn.Path; orderd::List; comp::List; index::Int; end
+  struct ARRAY <: Value; valueLst::List; dims::List; end
+end
+
+module ValuesUtil
+  import ..Values
+  using MetaModelica
+  function makeArray(vals::List)::Values.Value
+    Values.ARRAY(vals, list(listLength(vals)))
+  end
+  function makeReal(r::Float64)::Values.Value
+    Values.REAL_EXPRESSION(r)
+  end
+end
+
 #=Utility for frontend=#
 include("./FrontendUtil/Prefix.jl")
 #= Include interfaces and aliases New Frontend=#

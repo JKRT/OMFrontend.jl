@@ -196,6 +196,10 @@ end
         typeRecompilationCall(call, next_origin, info)
       end
 
+      "agentic_recompilation" => begin
+        typeAgenticRecompilationCall(call, next_origin, info)
+      end
+
       _  => begin
         #= /*
         case \"hold\" guard Config.synchronousFeaturesAllowed() then typeHoldCall(call, next_origin, info);
@@ -1426,6 +1430,36 @@ function typeInitialStructuralStateCall(@nospecialize(call::Call), origin::ORIGI
   local fn = Base.first(typeRefCache(fn_ref))
   local callExp = CALL_EXPRESSION(makeTypedCall(fn, Expression[arg], variabilityType, retType))
   return (callExp, retType, Variability.PARAMETER#=TODO should change this..=#)
+end
+
+"""
+Author: johti17
+Extension:
+  Type an agentic_recompilation call.
+  Takes one or more parameter references. The new values are determined at
+  runtime by an external agent that receives the model metamodel and current
+  simulation state. No second argument is required — the agent provides it.
+"""
+function typeAgenticRecompilationCall(@nospecialize(call::Call), origin::ORIGIN_Type, info::SourceInfo)
+  local variabilityType::VariabilityType = Variability.PARAMETER
+  @match UNTYPED_CALL(fn_ref, args, namedArgs) = call
+  if length(args) < 1
+    throw("Error typing! agentic_recompilation expects at least one argument")
+  end
+  typedArgs = Expression[]
+  for arg in args
+    @match CREF_EXPRESSION(_, argCref) = arg
+    newCref = COMPONENT_REF_CREF(argCref.node,
+                                  argCref.subscripts,
+                                  argCref.ty,
+                                  argCref.origin,
+                                  argCref.restCref)
+    push!(typedArgs, CREF_EXPRESSION(TYPE_ANY(), newCref))
+  end
+  local retType = TYPE_NORETCALL()
+  fn = Base.first(typeRefCache(fn_ref))
+  callExp = CALL_EXPRESSION(makeTypedCall(fn, typedArgs, variabilityType, retType))
+  return (callExp, retType, variabilityType)
 end
 
 """

@@ -46,6 +46,10 @@ jobs:
         uses: actions/checkout@v4
         with: { repository: JKRT/DAE.jl, ref: master, path: DAE.jl }
 
+      - name: Checkout DoubleEnded.jl
+        uses: actions/checkout@v4
+        with: { repository: OpenModelica/DoubleEnded.jl, ref: master, path: DoubleEnded.jl }
+
       - name: Checkout ImmutableList.jl
         uses: actions/checkout@v4
         with: { repository: OpenModelica/ImmutableList.jl, ref: master, path: ImmutableList.jl }

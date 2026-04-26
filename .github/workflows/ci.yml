@@ -6,6 +6,12 @@ on:
     branches:
       - master
     tags: '*'
+  workflow_dispatch:
+    inputs:
+      include_macos:
+        description: 'Also run the macOS job'
+        required: false
+        default: 'false'
 
 # Cancel superseded runs of the same ref, but keep master runs queued.
 concurrency:
@@ -21,15 +27,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version:
-          - '1.12'
+        # Listing every combination explicitly keeps the matrix predictable; the
+        # axis-plus-include form silently merges and only schedules one job.
+        # macOS is opt-in via workflow_dispatch (see the include_macos input).
         include:
           - os: ubuntu-latest
             arch: x64
+            version: '1.12'
           - os: windows-latest
             arch: x64
-          - os: macos-latest
-            arch: aarch64
+            version: '1.12'
 
     steps:
       - name: Checkout OMFrontend.jl
@@ -37,10 +44,9 @@ jobs:
         with:
           path: OMFrontend.jl
 
-      # The Project.toml [sources] block points at sibling working copies in
-      # ../<name>.jl. CI only checks out OMFrontend.jl by default, so we lay the
-      # siblings out alongside it before Pkg.resolve runs. Using actions/checkout
-      # for each sibling keeps the clones token-authenticated and shallow.
+      # Project.toml [sources] (and the transitive [sources] inside DoubleEnded
+      # / ListUtil) points at sibling working copies in ../<name>.jl. We lay
+      # the siblings out alongside the main checkout so Pkg.resolve finds them.
       - name: Checkout Absyn.jl
         uses: actions/checkout@v4
         with:
@@ -61,6 +67,13 @@ jobs:
           repository: JKRT/DAE.jl
           ref: master
           path: DAE.jl
+
+      - name: Checkout DoubleEnded.jl
+        uses: actions/checkout@v4
+        with:
+          repository: OpenModelica/DoubleEnded.jl
+          ref: master
+          path: DoubleEnded.jl
 
       - name: Checkout ImmutableList.jl
         uses: actions/checkout@v4
@@ -147,3 +160,117 @@ jobs:
           files: lcov.info
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
+
+  # Opt-in macOS job. Trigger via the Actions UI ("Run workflow" -> set
+  # include_macos = true). Disabled on push/PR by default while the macOS
+  # build is unstable.
+  test-macos:
+    name: Julia 1.12 - macos-latest - aarch64
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.include_macos == 'true' }}
+    runs-on: macos-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout OMFrontend.jl
+        uses: actions/checkout@v4
+        with:
+          path: OMFrontend.jl
+
+      - name: Checkout Absyn.jl
+        uses: actions/checkout@v4
+        with:
+          repository: OpenModelica/Absyn.jl
+          ref: master
+          path: Absyn.jl
+
+      - name: Checkout ArrayUtil.jl
+        uses: actions/checkout@v4
+        with:
+          repository: JKRT/ArrayUtil.jl
+          ref: master
+          path: ArrayUtil.jl
+
+      - name: Checkout DAE.jl
+        uses: actions/checkout@v4
+        with:
+          repository: JKRT/DAE.jl
+          ref: master
+          path: DAE.jl
+
+      - name: Checkout DoubleEnded.jl
+        uses: actions/checkout@v4
+        with:
+          repository: OpenModelica/DoubleEnded.jl
+          ref: master
+          path: DoubleEnded.jl
+
+      - name: Checkout ImmutableList.jl
+        uses: actions/checkout@v4
+        with:
+          repository: OpenModelica/ImmutableList.jl
+          ref: master
+          path: ImmutableList.jl
+
+      - name: Checkout ListUtil.jl
+        uses: actions/checkout@v4
+        with:
+          repository: JKRT/ListUtil.jl
+          ref: master
+          path: ListUtil.jl
+
+      - name: Checkout MetaModelica.jl
+        uses: actions/checkout@v4
+        with:
+          repository: OpenModelica/MetaModelica.jl
+          ref: master
+          path: MetaModelica.jl
+
+      - name: Checkout OMParser.jl
+        uses: actions/checkout@v4
+        with:
+          repository: OpenModelica/OMParser.jl
+          ref: master
+          path: OMParser.jl
+
+      - name: Checkout OMRuntimeExternalC.jl
+        uses: actions/checkout@v4
+        with:
+          repository: OpenModelica/OMRuntimeExternalC.jl
+          ref: master
+          path: OMRuntimeExternalC.jl
+
+      - name: Checkout SCode.jl
+        uses: actions/checkout@v4
+        with:
+          repository: OpenModelica/SCode.jl
+          ref: master
+          path: SCode.jl
+
+      - name: Setup Julia 1.12-aarch64
+        uses: julia-actions/setup-julia@v2
+        with:
+          version: '1.12'
+          arch: aarch64
+
+      - uses: julia-actions/cache@v2
+
+      - name: Build
+        shell: bash
+        working-directory: OMFrontend.jl
+        run: |
+          julia --compiled-modules=no --color=yes --project -e '
+            import Pkg
+            Pkg.Registry.add("General")
+            Pkg.Registry.add(Pkg.RegistrySpec(url = "https://github.com/JKRT/OpenModelicaRegistry.git"))
+            Pkg.build(; verbose = true)
+            Pkg.resolve()
+          '
+
+      - name: Test
+        shell: bash
+        working-directory: OMFrontend.jl
+        run: |
+          julia --compiled-modules=no --color=yes --project -e '
+            import Pkg
+            Pkg.test("OMFrontend")
+          '

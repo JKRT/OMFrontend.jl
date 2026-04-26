@@ -1,19 +1,7 @@
-module SCodeUtil
-
-using MetaModelica
-using ExportAll
-#= Forward declarations for uniontypes until Julia adds support for mutual recursion =#
-
-FilterFunc = Function
-
-FoldFunc = Function
-
-TraverseFunc = Function
-
 #= /*
 * This file is part of OpenModelica.
 *
-* Copyright (c) 1998-2014, Open Source Modelica Consortium (OSMC),
+* Copyright (c) 1998-CurrentYear, Open Source Modelica Consortium (OSMC),
 * c/o Linköpings universitet, Department of Computer and Information Science,
 * SE-58183 Linköping, Sweden.
 *
@@ -40,14 +28,25 @@ TraverseFunc = Function
 * See the full OSMC Public License conditions for more details.
 *
 */ =#
+
+module SCodeUtil
+
+using MetaModelica
+using ExportAll
+#= Forward declarations for uniontypes until Julia adds support for mutual recursion =#
+
+const FilterFunc = Function
+const FoldFunc = Function
+const TraverseFunc = Function
+
 import SCode
 import Absyn
 
-import ..Main.AbsynUtil
-import ..Main.Util
+import ..Frontend.AbsynUtil
+import ..Frontend.Util
 import ListUtil
 
-Argument = Any
+const Argument = Any
 const dummyInfo = SOURCEINFO("", false, 0, 0, 0, 0, 0.0)::SourceInfo
 
 """ #= Removes all submodifiers from the Mod. =#"""
@@ -100,23 +99,31 @@ function filterSubMods(mod::SCode.Mod, filter::FilterFunc)::SCode.Mod
   return mod
 end
 
-""" #= Return the Element with the name given as first argument from the Class. =#"""
+function filterGivenSubModNames(submod::SCode.SubMod; namesToKeep::List{String})
+  listMember(submod.ident, namesToKeep)
+end
+
+function removeGivenSubModNames(submod::SCode.SubMod; namesToRemove::List{String})
+  !(listMember(submod.ident, namesToRemove))
+end
+
+
+"""  Return the Element with the name given as first argument from the Class. """
 function getElementNamed(inIdent::SCode.Ident, inClass::SCode.Element)::SCode.Element
   local outElement::SCode.Element
-
-  @assign outElement = begin
+  outElement = begin
     local elt::SCode.Element
     local id::String
     local elts::List{SCode.Element}
     @match (inIdent, inClass) begin
       (id, SCode.CLASS(classDef = SCode.PARTS(elementLst = elts))) => begin
-        @assign elt = getElementNamedFromElts(id, elts)
+        elt = getElementNamedFromElts(id, elts)
         elt
       end
 
       (
         id,
-        SCode.CLASS(
+        SCode.CLASS(#= /* adrpo: handle also the case model extends X then X; */ =#
           classDef = SCode.CLASS_EXTENDS(composition = SCode.PARTS(elementLst = elts)),
         ),
       ) => begin
@@ -125,11 +132,12 @@ function getElementNamed(inIdent::SCode.Ident, inClass::SCode.Element)::SCode.El
       end
     end
   end
-  #= /* adrpo: handle also the case model extends X then X; */ =#
   return outElement
 end
 
-""" #= Helper function to getElementNamed. =#"""
+"""
+  Helper function to getElementNamed.
+"""
 function getElementNamedFromElts(
   inIdent::SCode.Ident,
   inElementLst::List{<:SCode.Element},
@@ -143,6 +151,7 @@ function getElementNamedFromElts(
     local id1::String
     local xs::List{SCode.Element}
     @matchcontinue (inIdent, inElementLst) begin
+      #= Case 1. Components. =#
       (id2, comp <| xs) => begin
         @match SCode.COMPONENT(name = id1) = comp
         @match true = stringEq(id1, id2)
@@ -151,39 +160,39 @@ function getElementNamedFromElts(
 
       (id2, SCode.COMPONENT(name = id1) <| xs) => begin
         @match false = stringEq(id1, id2)
-        @assign elt = getElementNamedFromElts(id2, xs)
+        elt = getElementNamedFromElts(id2, xs)
         elt
       end
 
       (id2, SCode.CLASS(name = id1) <| xs) => begin
         @match false = stringEq(id1, id2)
-        @assign elt = getElementNamedFromElts(id2, xs)
+        elt = getElementNamedFromElts(id2, xs)
         elt
       end
 
       (id2, SCode.EXTENDS(__) <| xs) => begin
-        @assign elt = getElementNamedFromElts(id2, xs)
+        elt = getElementNamedFromElts(id2, xs)
         elt
       end
 
-      (id2, cdef && SCode.CLASS(name = id1) <| xs) => begin
+      (id2, cdef <| xs && SCode.CLASS(name = id1) <| xs) => begin
         @match true = stringEq(id1, id2)
         cdef
       end
-
+      #=  Try next. =#
       (id2, h <| xs) => begin
-        @assign elt = getElementNamedFromElts(id2, xs)
+        elt = getElementNamedFromElts(id2, xs)
         elt
       end
     end
   end
-  #=  Try next. =#
   return outElement
 end
 
-""" #=
+"""
 Author BZ, 2009-01
-check if an element is of type EXTENDS or not. =#"""
+check if an element is of type EXTENDS or not.
+"""
 function isElementExtends(ele::SCode.Element)::Bool
   local isExtend::Bool
 
@@ -3437,6 +3446,25 @@ function getStatementInfo(inStatement::SCode.Statement)::SourceInfo
   return outInfo
 end
 
+function prependSubModToMod(subMod::SCode.SubMod, mod::SCode.Mod)
+  mod = begin
+    @match mod begin
+      SCode.NOMOD(__)  => begin
+        SCode.MOD(SCode.NOT_FINAL(),
+                  SCode.NOT_EACH(),
+                  list(subMod),
+                  NONE(),
+                  AbsynUtil.dummyInfo)
+      end
+      SCode.MOD(__)  => begin
+        @assign mod.subModLst = _cons(subMod, mod.subModLst)
+        mod
+      end
+    end
+  end
+  mod
+end
+
 """ #= Adds a given element to a class definition. Only implemented for PARTS. =#"""
 function addElementToClass(
   inElement::SCode.Element,
@@ -3553,38 +3581,15 @@ function visibilityEqual(
   return outEqual
 end
 
-function eachBool(inEach::SCode.Each)::Bool
-  local bEach::Bool
+eachBool(inEach::SCode.EACH) = true
+eachBool(inEach::SCode.NOT_EACH) = false
 
-  @assign bEach = begin
-    @match inEach begin
-      SCode.EACH(__) => begin
-        true
-      end
-
-      SCode.NOT_EACH(__) => begin
-        false
-      end
-    end
+function boolEach(inBoolEach::Bool)
+  if inBoolEach
+    return SCode.EACH()
+  else
+    return SCode.NOT_EACH()
   end
-  return bEach
-end
-
-function boolEach(inBoolEach::Bool)::SCode.Each
-  local outEach::SCode.Each
-
-  @assign outEach = begin
-    @match inBoolEach begin
-      true => begin
-        SCode.EACH()
-      end
-
-      false => begin
-        SCode.NOT_EACH()
-      end
-    end
-  end
-  return outEach
 end
 
 function prefixesRedeclare(inPrefixes::SCode.Prefixes)::SCode.Redeclare
@@ -4321,14 +4326,14 @@ function isNotBuiltinClass(inClass::SCode.Element)::Bool
   return b
 end
 
-""" #= Returns the annotation with the given name in the element, or fails if no
-   such annotation could be found. =#"""
+"""
+ Returns the annotation with the given name in the element, or fails if no
+ such annotation could be found.
+"""
 function getElementNamedAnnotation(element::SCode.Element, name::String)::Absyn.Exp
   local exp::Absyn.Exp
-
   local ann::SCode.Annotation
-
-  @assign ann = begin
+  ann = begin
     @match element begin
       SCode.EXTENDS(ann = SOME(ann)) => begin
         ann
@@ -4343,7 +4348,7 @@ function getElementNamedAnnotation(element::SCode.Element, name::String)::Absyn.
       end
     end
   end
-  @assign exp = getNamedAnnotation(ann, name)
+  (exp, _) = getNamedAnnotation(ann, name)
   return exp
 end
 
@@ -4398,7 +4403,7 @@ function lookupNamedAnnotation(ann::SCode.Annotation, name::String)::SCode.Mod
         for sm in submods
           @match SCode.NAMEMOD(id, mod) = sm
           if id == name
-            return
+            return mod
           end
         end
         SCode.NOMOD()
@@ -4855,18 +4860,19 @@ function isElementEncapsulated(inElement::SCode.Element)::Bool
   return outIsEncapsulated
 end
 
-""" #= replace the element in program at the specified path (includes the element name).
+"""
+ Replace the element in program at the specified path (includes the element name).
  if the element does not exist at that location then it fails.
  this function will fail if any of the path prefixes
- to the element are not found in the given program =#"""
+ to the element are not found in the given program
+"""
 function replaceOrAddElementInProgram(
   inProgram::SCode.Program,
   inElement::SCode.Element,
   inClassPath::Absyn.Path,
 )::SCode.Program
   local outProgram::SCode.Program
-
-  @assign outProgram = begin
+  outProgram = begin
     local sp::SCode.Program
     local c::SCode.Element
     local e::SCode.Element
@@ -4874,21 +4880,21 @@ function replaceOrAddElementInProgram(
     local i::Absyn.Ident
     @match (inProgram, inElement, inClassPath) begin
       (_, _, Absyn.QUALIFIED(i, p)) => begin
-        @assign e = getElementWithId(inProgram, i)
-        @assign sp = getElementsFromElement(inProgram, e)
-        @assign sp = replaceOrAddElementInProgram(sp, inElement, p)
-        @assign e = replaceElementsInElement(inProgram, e, sp)
-        @assign sp = replaceOrAddElementWithId(inProgram, e, i)
+        e = getElementWithId(inProgram, i)
+        sp = getElementsFromElement(inProgram, e)
+        sp = replaceOrAddElementInProgram(sp, inElement, p)
+        e = replaceElementsInElement(inProgram, e, sp)
+        sp = replaceOrAddElementWithId(inProgram, e, i)
         sp
       end
 
       (_, _, Absyn.IDENT(i)) => begin
-        @assign sp = replaceOrAddElementWithId(inProgram, inElement, i)
+        sp = replaceOrAddElementWithId(inProgram, inElement, i)
         sp
       end
 
       (_, _, Absyn.FULLYQUALIFIED(p)) => begin
-        @assign sp = replaceOrAddElementInProgram(inProgram, inElement, p)
+        sp = replaceOrAddElementInProgram(inProgram, inElement, p)
         sp
       end
     end
@@ -4991,7 +4997,7 @@ end
 function replaceElementsInElement(
   inProgram::SCode.Program,
   inElement::SCode.Element,
-  inElements::SCode.Program,
+  inElements::List,
 )::SCode.Element
   local outElement::SCode.Element
 
@@ -5051,9 +5057,11 @@ function replaceElementsInElement(
   return outElement
 end
 
-""" #= replaces the elements in class definition.
- if derived a SOME(element) is returned,
- otherwise the modified class def and NONE() =#"""
+"""
+  Replaces the elements in class definition.
+  if derived a SOME(element) is returned,
+  otherwise the modified class def and NONE()
+"""
 function replaceElementsInClassDef(
   inProgram::SCode.Program,
   classDef::SCode.ClassDef,
@@ -5110,16 +5118,16 @@ function getElementWithId(inProgram::SCode.Program, inId::String)::SCode.Element
     local i::Absyn.Ident
     local n::Absyn.Ident
     @match (inProgram, inId) begin
-      (e && SCode.CLASS(name = n) <| _, i) where {(stringEq(n, i))} => begin
+      (e <| _ && SCode.CLASS(name = n) <| _, i) where {(stringEq(n, i))} => begin
         e
       end
 
-      (e && SCode.COMPONENT(name = n) <| _, i) where {(stringEq(n, i))} => begin
+      (e <| _ && SCode.COMPONENT(name = n) <| _, i) where {(stringEq(n, i))} => begin
         e
       end
 
       (
-        e && SCode.EXTENDS(baseClassPath = p) <| _,
+        e <| _ && SCode.EXTENDS(baseClassPath = p) <| _,
         i,
       ) where {(stringEq(AbsynUtil.pathString(p), i))} => begin
         e
@@ -5167,7 +5175,10 @@ function getElementWithPath(inProgram::SCode.Program, inPath::Absyn.Path)::SCode
   return outElement
 end
 
-""" #=  =#"""
+"""
+Retrieves the name of a SCode element.
+Returns the name as a string.
+"""
 function getElementName(e::SCode.Element)::String
   local s::String
 
@@ -5403,8 +5414,10 @@ function getClassDef(inClass::SCode.Element)::SCode.ClassDef
   return outCdef
 end
 
-""" #= @author:
- returns true if equations contains reinit =#"""
+"""
+ @author: adrpo
+ returns true if equations contains reinit
+"""
 function equationsContainReinit(inEqs::List{<:SCode.EEquation})::Bool
   local hasReinit::Bool
 
@@ -5420,8 +5433,69 @@ function equationsContainReinit(inEqs::List{<:SCode.EEquation})::Bool
   return hasReinit
 end
 
-""" #= @author:
- returns true if equation contains reinit =#"""
+"""
+@author: johti17
+Returns true if the equations contains an Connections.branch call.
+"""
+function equationsContainConnectorsBranch(inEqs::List{<:SCode.EEquation})::Bool
+  local hasReinit::Bool
+  @assign hasReinit = begin
+    local b::Bool
+    @match inEqs begin
+      _ => begin
+        @assign b = ListUtil.applyAndFold(inEqs, boolOr, equationContainConnectorsBranch, false)
+        b
+      end
+    end
+  end
+  return hasReinit
+end
+
+
+"""
+  Returns true if the equation contains a Connectors.branch statement
+"""
+function equationContainConnectorsBranch(inEq::SCode.EEquation)::Bool
+  local hasBranch::Bool
+  @assign hasBranch = begin
+    local b::Bool
+    local eqs::List{SCode.EEquation}
+    local eqs_lst::List{List{SCode.EEquation}}
+    local tpl_el::List{Tuple{Absyn.Exp, List{SCode.EEquation}}}
+    @match inEq begin
+      SCode.EQ_NORETCALL(Absyn.CALL(
+        Absyn.CREF_QUAL("Connections", Nil{Any}(),
+                        Absyn.CREF_IDENT("branch", Nil{Any}())), _, _), _, _) => true
+      SCode.EQ_WHEN(eEquationLst = eqs, elseBranches = tpl_el) => begin
+        b = equationsContainConnectorsBranch(eqs)
+        eqs_lst = ListUtil.map(tpl_el, Util.tuple22)
+        b = ListUtil.applyAndFold(eqs_lst, boolOr, equationsContainConnectorsBranch, b)
+        b
+      end
+
+      SCode.EQ_IF(thenBranch = eqs_lst, elseBranch = eqs) => begin
+        b = equationsContainConnectorsBranch(eqs)
+        b = ListUtil.applyAndFold(eqs_lst, boolOr, equationsContainConnectorsBranch, b)
+        b
+      end
+
+      SCode.EQ_FOR(eEquationLst = eqs) => begin
+        b = equationsContainConnectorsBranch(eqs)
+        b
+      end
+
+      _ => begin
+        false
+      end
+    end
+  end
+  return hasBranch
+end
+
+"""
+@author: adrpo
+ returns true if equation contains reinit
+"""
 function equationContainReinit(inEq::SCode.EEquation)::Bool
   local hasReinit::Bool
 
@@ -7316,7 +7390,7 @@ function stripCommentsFromStatement(
         ()
       end
 
-      SCode.Statement.ALG_ASSERT(__) => begin
+      SCode.ALG_ASSERT(__) => begin
         @assign stmt.comment = stripCommentsFromComment(stmt.comment, stripAnn, stripCmt)
         ()
       end
@@ -7483,6 +7557,264 @@ function mergeSCodeMods(inModOuter::SCode.Mod, inModInner::SCode.Mod)::SCode.Mod
     end
   end
   return outMod
+end
+
+#= Functions needed by translated NFFrontEnd =#
+
+"""Check if the named annotation is present and has value false."""
+function optCommentHasBooleanNamedAnnotationFalse(
+  comm::Option,
+  annotationName::String,
+)::Bool
+  local outB::Bool
+  outB = begin
+    local ann::SCode.Annotation
+    local submods::List{SCode.SubMod}
+    @match comm begin
+      SOME(SCode.COMMENT(annotation_ = SOME(ann))) => begin
+        @match SCode.ANNOTATION(modification = SCode.MOD(subModLst = submods)) = ann
+        ListUtil.exist1(submods, hasBooleanNamedAnnotationFalse2, annotationName)
+      end
+      _ => false
+    end
+  end
+  return outB
+end
+
+function hasBooleanNamedAnnotationFalse2(inSubMod::SCode.SubMod, inName::String)::Bool
+  local outIsMatch::Bool
+  outIsMatch = begin
+    local id::String
+    @match inSubMod begin
+      SCode.NAMEMOD(ident = id, mod = SCode.MOD(binding = SOME(Absyn.BOOL(value = false)))) => begin
+        stringEq(id, inName)
+      end
+      _ => false
+    end
+  end
+  return outIsMatch
+end
+
+"""Look up an annotation by name, returning its modifier or NOMOD."""
+function lookupAnnotation(ann::SCode.Annotation, name::String)::SCode.Mod
+  local mod::SCode.Mod
+  mod = begin
+    local submods::List{SCode.SubMod}
+    @match ann begin
+      SCode.ANNOTATION(modification = SCode.MOD(subModLst = submods)) => begin
+        for sm in submods
+          @match SCode.NAMEMOD(ident = id, mod = m) = sm
+          if id == name
+            return m
+          end
+        end
+        SCode.NOMOD()
+      end
+      _ => SCode.NOMOD()
+    end
+  end
+  return mod
+end
+
+"""Look up all annotations with the given name, returning a list of modifiers."""
+function lookupAnnotations(ann::SCode.Annotation, name::String)::List{SCode.Mod}
+  local mods::List{SCode.Mod} = nil
+  @match SCode.ANNOTATION(modification = SCode.MOD(subModLst = submods)) = ann
+  for sm in submods
+    @match SCode.NAMEMOD(ident = id, mod = m) = sm
+    if id == name
+      mods = Cons(m, mods)
+    end
+  end
+  mods = listReverse(mods)
+  return mods
+end
+
+"""Look up an annotation on an SCode element (CLASS or COMPONENT)."""
+function lookupElementAnnotation(elem::SCode.Element, name::String)::SCode.Mod
+  local mod::SCode.Mod
+  mod = begin
+    local ann::SCode.Annotation
+    @match elem begin
+      SCode.CLASS(cmt = SCode.COMMENT(annotation_ = SOME(ann))) => lookupAnnotation(ann, name)
+      SCode.COMPONENT(comment = SCode.COMMENT(annotation_ = SOME(ann))) => lookupAnnotation(ann, name)
+      _ => SCode.NOMOD()
+    end
+  end
+  return mod
+end
+
+"""Look up the binding of an annotation on an SCode element."""
+function lookupElementAnnotationBinding(elem::SCode.Element, name::String)::Option{Absyn.Exp}
+  local binding::Option{Absyn.Exp}
+  local mod::SCode.Mod = lookupElementAnnotation(elem, name)
+  binding = @match mod begin
+    SCode.MOD(binding = b) => b
+    _ => nothing
+  end
+  return binding
+end
+
+"""Look up a boolean annotation modifier on an SCode element."""
+function lookupBooleanAnnotationMod(elem::SCode.Element, name::String)::Bool
+  local b::Bool
+  local mod::SCode.Mod = lookupElementAnnotation(elem, name)
+  b = @match mod begin
+    SCode.MOD(binding = SOME(Absyn.BOOL(value = v))) => v
+    _ => false
+  end
+  return b
+end
+
+"""Look up a sub-modifier by name inside a modifier."""
+function lookupModInMod(name::String, mod::SCode.Mod)::SCode.Mod
+  local outMod::SCode.Mod
+  outMod = begin
+    local submods::List{SCode.SubMod}
+    @match mod begin
+      SCode.MOD(subModLst = submods) => begin
+        for sm in submods
+          @match SCode.NAMEMOD(ident = id, mod = m) = sm
+          if id == name
+            return m
+          end
+        end
+        SCode.NOMOD()
+      end
+      _ => SCode.NOMOD()
+    end
+  end
+  return outMod
+end
+
+"""Check if a class definition has equation or algorithm sections."""
+function classDefHasSections(classDef::SCode.ClassDef)::Bool
+  local hasSections::Bool
+  hasSections = @match classDef begin
+    SCode.PARTS() => begin
+      !(listEmpty(classDef.normalEquationLst) &&
+        listEmpty(classDef.initialEquationLst) &&
+        listEmpty(classDef.normalAlgorithmLst) &&
+        listEmpty(classDef.initialAlgorithmLst))
+    end
+    _ => false
+  end
+  return hasSections
+end
+
+"""Get the class body (ClassDef) from a CLASS element."""
+function getClassBody(elem::SCode.Element)::SCode.ClassDef
+  local classDef::SCode.ClassDef
+  @match SCode.CLASS(classDef = classDef) = elem
+  return classDef
+end
+
+"""Check if an algorithm section is non-empty."""
+function isNonEmptyAlgorithm(alg::SCode.AlgorithmSection)::Bool
+  local nonEmpty::Bool
+  nonEmpty = @match alg begin
+    SCode.ALGORITHM(statements = stmts) => !listEmpty(stmts)
+    _ => false
+  end
+  return nonEmpty
+end
+
+"""Check if an element has a named external call."""
+function hasNamedExternalCall(elem::SCode.Element, name::String)::Bool
+  local found::Bool
+  found = begin
+    @match elem begin
+      SCode.CLASS(classDef = SCode.PARTS(externalDecl = SOME(SCode.EXTERNALDECL(funcName = SOME(fname))))) => begin
+        fname == name
+      end
+      _ => false
+    end
+  end
+  return found
+end
+
+"""Extract the annotation from an optional comment."""
+function optCommentAnnotation(comment::Option)::Option{SCode.Annotation}
+  local ann::Option{SCode.Annotation}
+  ann = @match comment begin
+    SOME(SCode.COMMENT(annotation_ = a)) => a
+    _ => nothing
+  end
+  return ann
+end
+
+"""Append an annotation to an optional comment."""
+function appendAnnotationToCommentOption(
+  inAnnotation::SCode.Annotation,
+  inComment::Option,
+)::Option{SCode.Comment}
+  local outComment::Option{SCode.Comment}
+  outComment = @match inComment begin
+    SOME(cmt) => SOME(appendAnnotationToComment(inAnnotation, cmt))
+    _ => SOME(SCode.COMMENT(SOME(inAnnotation), nothing))
+  end
+  return outComment
+end
+
+"""Extract SourceInfo from an SCode equation."""
+function getEquationInfo(eq::SCode.EEquation)::SourceInfo
+  local info::SourceInfo
+  info = @match eq begin
+    SCode.EQ_IF(info = i) => i
+    SCode.EQ_EQUALS(info = i) => i
+    SCode.EQ_PDE(info = i) => i
+    SCode.EQ_CONNECT(info = i) => i
+    SCode.EQ_FOR(info = i) => i
+    SCode.EQ_WHEN(info = i) => i
+    SCode.EQ_ASSERT(info = i) => i
+    SCode.EQ_TERMINATE(info = i) => i
+    SCode.EQ_REINIT(info = i) => i
+    SCode.EQ_NORETCALL(info = i) => i
+    _ => AbsynUtil.dummyInfo
+  end
+  return info
+end
+
+"""Map a function over the statements of an algorithm section."""
+function mapAlgorithmStatements(
+  alg::SCode.AlgorithmSection,
+  func,
+)::SCode.AlgorithmSection
+  local outAlg::SCode.AlgorithmSection
+  outAlg = @match alg begin
+    SCode.ALGORITHM(statements = stmts) => begin
+      SCode.ALGORITHM(list(func(s) for s in stmts))
+    end
+  end
+  return outAlg
+end
+
+"""Map a function over expressions in an equation list."""
+function mapEquationsList(
+  eqs::List{SCode.Equation},
+  func,
+)::List{SCode.Equation}
+  return list(mapEquation(eq, func) for eq in eqs)
+end
+
+function mapEquation(eq::SCode.Equation, func)::SCode.Equation
+  @match SCode.EQUATION(eEquation = eeq) = eq
+  return SCode.EQUATION(mapEEquation(eeq, func))
+end
+
+"""Map a function over expressions in an EEquation. Stub - returns unchanged."""
+function mapEEquation(eq::SCode.EEquation, func)::SCode.EEquation
+  return eq
+end
+
+"""Map a function over expressions in equations. Stub - returns unchanged."""
+function mapEquationExps(eq::SCode.EEquation, func)::SCode.EEquation
+  return eq
+end
+
+"""Map a function over expressions in statements. Stub - returns unchanged."""
+function mapStatementExps(stmt::SCode.Statement, func)::SCode.Statement
+  return stmt
 end
 
 @exportAll()

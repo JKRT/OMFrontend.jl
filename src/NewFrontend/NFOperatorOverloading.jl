@@ -29,29 +29,25 @@
 *
 */ =#
 import Absyn
-M_Type = NFType
-ComponentRef = NFComponentRef
-Expression = NFExpression
 
 function instConstructor(path::Absyn.Path, recordNode::InstNode, info::SourceInfo)::InstNode
   local ctor_ref::ComponentRef
   local ctor_path::Absyn.Path
   local ctor_overloaded::Bool
   local ctor_node::InstNode
-  #=  Check if the operator record has an overloaded constructor declared.
-  =#
+  #=  Check if the operator record has an overloaded constructor declared. =#
   try
-    @assign ctor_ref = lookupFunctionSimple("'constructor'", recordNode)
-    @assign ctor_overloaded = true
+    ctor_ref = lookupFunctionSimple("'constructor'", recordNode)
+    ctor_overloaded = true
   catch
-    @assign ctor_overloaded = false
+    ctor_overloaded = false
   end
   if ctor_overloaded
-    @assign (_, ctor_node) = instFunctionRef(ctor_ref, info)
-    @assign ctor_path = scopePath(ctor_node, includeRoot = true)
+     (_, ctor_node) = instFunctionRef(ctor_ref, info)
+    ctor_path = scopePath(ctor_node, includeRoot = true)
     for f in getCachedFuncs(ctor_node)
       checkOperatorConstructorOutput(f, lastBaseClass(recordNode), ctor_path, info)
-      @assign recordNode = cacheAddFunc(recordNode, f, false)
+      recordNode = cacheAddFunc(recordNode, f, false)
     end
   end
   #=  If it has an overloaded constructor, instantiate it and add the
@@ -71,25 +67,24 @@ function instOperatorFunctions(node::InstNode, info::SourceInfo)::InstNode
   local tree::ClassTree
   local mclss::Vector{InstNode}
   local path::Absyn.Path
-  local allfuncs::List{M_Function} = nil
-  local funcs::List{M_Function}
-
+  local allfuncs::Vector{M_FUNCTION} = M_FUNCTION[]
+  local funcs::Vector{M_FUNCTION}
   checkOperatorRestrictions(node)
   @assign tree = classTree(getClass(node))
-  @assign () = begin
+   () = begin
     @match tree begin
       CLASS_TREE_FLAT_TREE(classes = mclss) => begin
         for op in mclss
           instFunctionNode(op)
-          @assign funcs = getCachedFuncs(op)
-          @assign allfuncs = listAppend(funcs, allfuncs)
+          funcs = getCachedFuncs(op)
+          allfuncs = Base.append!(allfuncs, funcs)
         end
         #= path := InstNode.scopePath(op, includeRoot = true);
         =#
         #= Function.instFunction2(path, op, info);
         =#
         for f in allfuncs
-          @assign node = cacheAddFunc(node, f, false)
+          node = cacheAddFunc(node, f, false)
         end
         ()
       end
@@ -118,31 +113,30 @@ function checkOperatorRestrictions(operatorNode::InstNode)
   end
 end
 
-function lookupOperatorFunctionsInType(operatorName::String, ty::M_Type)::List{M_Function}
-  local functions::List{M_Function}
+function lookupOperatorFunctionsInType(operatorName::String, ty::M_Type)::Vector{M_FUNCTION}
+  local functions::Vector{M_Function}
   local node::InstNode
   local fn_ref::ComponentRef
   local is_defined::Bool
-  @assign functions = begin
+  functions = begin
     @match arrayElementType(ty) begin
       TYPE_COMPLEX(cls = node) => begin
         try
-          @assign fn_ref = lookupFunctionSimple(operatorName, node)
-          @assign is_defined = true
+          fn_ref = lookupFunctionSimple(operatorName, node)
+          is_defined = true
         catch e
-          @assign is_defined = false
+          is_defined = false
         end
         if is_defined
           (fn_ref, _, _) = instFunctionRef(fn_ref, InstNode_info(node))
-          @assign functions = typeRefCache(fn_ref)
+          functions = typeRefCache(fn_ref)
         else
-          @assign functions = nil
+          functions = M_FUNCTION[]
         end
         functions
       end
-
       _ => begin
-        nil
+        M_FUNCTION[]
       end
     end
   end
@@ -178,9 +172,9 @@ function patchOperatorRecordConstructorBinding(fn::M_Function)::M_Function
   end
   @assign output_binding = mapExp(
     output_binding,
-    (fn) -> patchOperatorRecordConstructorBinding_traverser(constructorFn = fn),
+    (e) -> patchOperatorRecordConstructorBinding_traverser(e, fn),
   )
-  @assign output_comp = P_Component.setBinding(output_binding, output_comp)
+  @assign output_comp = setBinding(output_binding, output_comp)
   @assign output_node = updateComponent!(output_comp, output_node)
   return fn
 end
@@ -232,9 +226,9 @@ function patchOperatorRecordConstructorBinding_traverser(
   @assign outExp = begin
     @match exp begin
       CALL_EXPRESSION(
-        call = P_Call.TYPED_CALL(fn = fn, ty = ty, arguments = args),
+        call = TYPED_CALL(fn = fn, ty = ty, arguments = args),
       ) where {(referenceEq(constructorFn.node, fn.node))} => begin
-        makeRecord(P_Function.name(constructorFn), ty, args)
+        makeRecord(name(constructorFn), ty, args)
       end
 
       _ => begin

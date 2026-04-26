@@ -50,9 +50,9 @@ keyEqual   - A comparison function between two keys, returns true if equal.
 
 import Absyn
 
-import Main.BaseHashTable
+import Frontend.BaseHashTable
 
-import Main.Util
+import Frontend.Util
 
 Key = String
 
@@ -62,7 +62,7 @@ HashTableCrefFunctionsType = Tuple
 
 HashTable = Tuple
 
-""" #= 
+""" #=
   Returns an empty HashTable.
   Using the default bucketsize..
  =#"""
@@ -73,7 +73,7 @@ function emptyHashTable()::HashTable
   return hashTable
 end
 
-""" #= 
+""" #=
   Returns an empty HashTable.
   Using the bucketsize size.
  =#"""

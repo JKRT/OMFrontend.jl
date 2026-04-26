@@ -48,15 +48,15 @@ keyEqual   - A comparison function between two keys, returns true if equal.
 */ =#
 #= /* HashTable instance specific code */ =#
 
-import Main.BaseHashTable
+import Frontend.BaseHashTable
 
 import DAE
 
-import Main.ComponentReference
+import Frontend.ComponentReference
 
-import Main.Expression
+import Frontend.Expression
 
-import Main.ExpressionDump
+import Frontend.ExpressionDump
 
 Key = DAE.Exp
 
@@ -66,7 +66,7 @@ HashTableCrefFunctionsType = Tuple
 
 HashTable = Tuple
 
-""" #= 
+""" #=
   Returns an empty HashTable.
   Using the default bucketsize..
  =#"""

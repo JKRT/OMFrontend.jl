@@ -1,34 +1,73 @@
-
 """
   Main module.
-  This module provides the entry to the translated code and associated tweaks and quirks. 
+  This module provides the entry to the translated code and associated tweaks and quirks.
 """
-module Main
+module Frontend
 
 #= Import the parser for precompilation=#
+#= We also use it at the top level(!) =#
 import OMParser
-
-#= We also use it at the top level =#
 using MetaModelica
 using ExportAll
-
 import Absyn
-import SCode
+import ArrayUtil
 import DAE
 import ListUtil
-import ArrayUtil
+import SCode
+import PrecompileTools
+import Base.@nospecializeinfer
+#= Import the execstat macro from the enclosing module..=#
+import ..@EXECSTAT
+
+using MetaModelica:FunctionWrappers
+
+#= Utility functions. =#
+function toString(vec::Vector{T}) where {T}
+  buffer = IOBuffer()
+  println(buffer, "[")
+  for v in vec
+    print(buffer, toString(v), ",")
+  end
+  println(buffer, "]")
+  String(take!(buffer))
+end
+
+function toString(vec::List{T}) where {T}
+  buffer = IOBuffer()
+  println(buffer, "{")
+  for v in vec
+    println(buffer, toString(v), " ,")
+  end
+  println(buffer, "}")
+  String(take!(buffer))
+end
+
+
+#= Top level functionality =#
+
+include("./Util/ElementSource.jl")
 include("./Util/Pointer.jl")
 include("./Util/System.jl")
 include("./Util/Corba.jl")
 include("./Util/Gettext.jl")
-include("./Util/Error.jl")
+include("./Util/ErrorTypes.jl")
 include("./Util/ErrorExt.jl")
+include("./Util/Error.jl")
 import .P_Pointer
 const Pointer = P_Pointer.Pointer
 include("./Util/Mutable.jl")
+include("./Util/UnorderedMap.jl")
+import .P_UnorderedMap
+const UnorderedMap = P_UnorderedMap
+include("./Util/UnorderedSet.jl")
+import .P_UnorderedSet
+const UnorderedSet = P_UnorderedSet
+#= Include various utility structures =#
 include("./Util/BaseAvlSet.jl")
 include("./Util/BaseAvlTree.jl")
 include("./Util/BaseHashTable.jl")
+include("./Util/BaseHashSet.jl")
+
 include("./Util/Global.jl")
 include("./Util/Settings.jl")
 include("./Util/Print.jl")
@@ -36,11 +75,38 @@ include("./Util/Util.jl")
 include("./Util/StringUtil.jl")
 include("./Util/Flags.jl")
 include("./Util/FlagsUtil.jl")
+include("./Util/ExecStat.jl")
 include("./Util/IOStreamExt.jl")
 include("./Util/IOStream.jl")
 include("./AbsynUtil.jl")
 include("./SCodeUtil.jl")
+include("./SCodeDump.jl")
 include("./AbsynToSCode.jl")
+#= Minimal Values stub (OMC legacy, needed by toDAEValue in BindingExpression.jl) =#
+module Values
+  using MetaModelica
+  import Absyn
+  abstract type Value end
+  struct INTEGER_EXPRESSION <: Value; value::Int; end
+  struct REAL_EXPRESSION <: Value; value::Float64; end
+  struct STRING_EXPRESSION <: Value; value::String; end
+  struct BOOL <: Value; value::Bool; end
+  struct ENUM_LITERAL <: Value; name::Absyn.Path; index::Int; end
+  struct RECORD <: Value; path::Absyn.Path; orderd::List; comp::List; index::Int; end
+  struct ARRAY <: Value; valueLst::List; dims::List; end
+end
+
+module ValuesUtil
+  import ..Values
+  using MetaModelica
+  function makeArray(vals::List)::Values.Value
+    Values.ARRAY(vals, list(listLength(vals)))
+  end
+  function makeReal(r::Float64)::Values.Value
+    Values.REAL_EXPRESSION(r)
+  end
+end
+
 #=Utility for frontend=#
 include("./FrontendUtil/Prefix.jl")
 #= Include interfaces and aliases New Frontend=#
@@ -52,23 +118,43 @@ include("./NewFrontend/NFType.jl")
 include("./NewFrontend/NFComplexType.jl")
 include("./NewFrontend/NFPrefixes.jl")
 include("./NewFrontend/NFComponent.jl")
+include("./NewFrontend/NFEquation.jl")
+
+#= Declare the signature for a M_Function early.. =#
+abstract type M_Function end
+struct M_FUNCTION <: M_Function
+  path::Absyn.Path
+  node::InstNode
+  inputs::List{InstNode}
+  outputs::List{InstNode}
+  locals::List{InstNode}
+  slots::List{Slot}
+  returnType::NFType
+  attributes::DAE.FunctionAttributes
+  derivatives::List{FunctionDerivative}
+  status::Pointer
+  callCounter::Pointer
+end
+
 include("./NewFrontend/NFInstNode.jl")
 include("./NewFrontend/NFSections.jl")
 include("./NewFrontend/NFRecord.jl")
 include("./NewFrontend/NFOperatorOverloading.jl")
 include("./NewFrontend/NFCeval.jl")
-include("./NewFrontend/NFEquation.jl")
 include("./NewFrontend/NFDimension.jl")
+include("./NewFrontend/NFComponentRef.jl")
+include("./NewFrontend/NFBinding.jl")
 include("./NewFrontend/NFTyping.jl")
 
 include("./NewFrontend/NFScalarize.jl")
 
+include("./NewFrontend/NFClass.jl")
 include("./NewFrontend/NFExpressionIterator.jl")
-
+include("./NewFrontend/NFInstUtil.jl")
+include("./NewFrontend/NFModifier.jl")
 include("./NewFrontend/NFInst.jl")
 include("./NewFrontend/NFAlgorithm.jl")
 include("./NewFrontend/NFStatement.jl")
-include("./NewFrontend/NFBinding.jl")
 include("./NewFrontend/NFVariable.jl")
 include("./NewFrontend/NFFlatModel.jl")
 include("./NewFrontend/NFConnector.jl")
@@ -93,11 +179,14 @@ include("./NewFrontend/NFConvertDAE.jl")
 
 include("./NewFrontend/NFRestriction.jl")
 
-include("./NewFrontend/NFClass.jl")
-
 include("./NewFrontend/NFImport.jl")
 
-include("./NewFrontend/NFModifier.jl")
+
+
+#= Add the trees =#
+include("./NewFrontend/LookupTree.jl")
+include("./NewFrontend/DuplicateTree.jl")
+include("./NewFrontend/JLookupTree.jl")
 
 include("./NewFrontend/NFClassTree.jl")
 
@@ -105,7 +194,6 @@ include("./NewFrontend/NFLookup.jl")
 
 include("./NewFrontend/NFLookupState.jl")
 
-include("./NewFrontend/NFComponentRef.jl")
 @exportAll
 #= For over constrained connectors =#
 include("./NewFrontend/NFHashTable.jl")
@@ -114,10 +202,13 @@ include("./NewFrontend/NFHashTableCG.jl")
 include("./NewFrontend/NFOCConnectionGraph.jl")
 #= End =#
 @exportAll
+include("./NewFrontend/NFBuiltinFuncs.jl")
 include("./NewFrontend/NFBuiltin.jl")
 #import ..NFBuiltin
 include("./NewFrontend/BindingExpression.jl")
+include("./NewFrontend/BindingExpression!.jl")
 
+include("./Util/ModelicaExternalC.jl")
 include("./NewFrontend/NFEvalFunction.jl")
 
 include("./NewFrontend/NFCall.jl")
@@ -146,41 +237,10 @@ include("./NewFrontend/NFPackage.jl")
 include("./NewFrontend/NFVerifyModel.jl")
 include("./NewFrontend/NFInline.jl")
 #=  Builtin functions =#
-include("./NewFrontend/NFBuiltinFuncs.jl")
 include("./NewFrontend/NFRangeIterator.jl")
 
-if ccall(:jl_generating_output, Cint, ()) == 1
-  begin    
-    #= Disable type inference for this module during precompilation =#    
-    #= Make sure that we load the bultin scode=#
-    packagePath = dirname(realpath(Base.find_package("OMFrontend")))
-    packagePath *= "/.."
-    pathToLib = packagePath * "/lib/NFModelicaBuiltin.mo"
-    #= The external C stuff can be a bit flaky.. =#
-    GC.enable(false) 
-    p = OMParser.parseFile(pathToLib, 2 #== MetaModelica ==#)
-    builtinSCode = AbsynToSCode.translateAbsyn2SCode(p)
-    GC.enable(true)
-    #= End preamble =#
-    #=
-    Instantiate the HelloWorld module
-    This will precompile a significant part of the frontend.
-    =#    
-    packagePath = dirname(realpath(Base.find_package("OMFrontend")))
-    packagePath *= "/.."
-    pathToTest = packagePath * "/test/Models/HelloWorld.mo"
-    p = OMParser.parseFile(pathToTest, 1)
-    s = AbsynToSCode.translateAbsyn2SCode(p)
-    @info "Compiling core modules. This might take awhile.."
-    Main.Global.initialize()
-    # make sure we have all the flags loaded!
-    #  Main.Flags.new(Flags.emptyFlags)
-    program = listAppend(builtinSCode, s)
-    path = AbsynUtil.stringPath("HelloWorld")
-    @info "Timings concerning compiling core modules for instantiation"
-    @time res1 = instClassInProgram(path, program)
-    @info "Core compiler modules are successfully precompiled!"
-    @info "Compiler modules are successfully precompiled!"    
-  end
-end
+
+#= Custom memory...=#
+include("./Util/Memory.jl")
+
 end

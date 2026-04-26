@@ -67,13 +67,13 @@ FuncTypeExp_ExpToBoolean = Function
 
 import DAE
 
-import Main.HashTable2
+import Frontend.HashTable2
 
-import Main.HashTable3
+import Frontend.HashTable3
 
-import Main.SCode
+import Frontend.SCode
 
-import Main.MetaModelica.Dangerous.listReverseInPlace
+import Frontend.MetaModelica.Dangerous.listReverseInPlace
 
 #= VariableReplacements consists of a mapping between variables and expressions, the first binary tree of this type.
 To eliminate a variable from an equation system a replacement rule varname->expression is added to this
@@ -91,21 +91,21 @@ end
 
 import Absyn
 
-import Main.BaseHashTable
+import Frontend.BaseHashTable
 
-import Main.ComponentReference
+import Frontend.ComponentReference
 #= protected import Debug;
 =#
 
-import Main.Expression
+import Frontend.Expression
 
-import Main.ExpressionDump
+import Frontend.ExpressionDump
 
-import Main.ExpressionSimplify
+import Frontend.ExpressionSimplify
 
 import ListUtil
 
-import Main.Util
+import Frontend.Util
 
 """ #= Apply a set of replacement rules on a DAE  =#"""
 function applyReplacementsDAE(
@@ -118,7 +118,7 @@ function applyReplacementsDAE(
   @assign outDae = begin
     local elts::List{DAE.Element}
     local funcs::DAE.FunctionTree
-    local funcLst::List{Tuple{DAE.AvlTreePathFunction.Key, DAE.AvlTreePathFunction.Value}}
+    local funcLst::List{Tuple{Absyn.Path, Function}}
     @match (dae, repl, condExpFunc) begin
       (DAE.DAE(elementLst = elts), _, _) => begin
         @assign elts = applyReplacementsDAEElts(elts, repl, condExpFunc)
@@ -599,7 +599,7 @@ function applyReplacementList(
   return ocrefs
 end
 
-""" #= 
+""" #=
 
 Similar to applyReplacements but for expressions instead of component references.
  =#"""
@@ -665,7 +665,7 @@ function emptyReplacementsArray2(n::Integer)::List{VariableReplacements}
   return replLst
 end
 
-""" #= 
+""" #=
   Returns an empty set of replacement rules
  =#"""
 function emptyReplacements()::VariableReplacements
@@ -685,7 +685,7 @@ function emptyReplacements()::VariableReplacements
   return outVariableReplacements
 end
 
-""" #= 
+""" #=
   Returns an empty set of replacement rules, giving a size of hashtables to allocate
  =#"""
 function emptyReplacementsSized(size::Integer)::VariableReplacements
@@ -705,7 +705,7 @@ function emptyReplacementsSized(size::Integer)::VariableReplacements
   return outVariableReplacements
 end
 
-""" #= 
+""" #=
   Helper function to replace_equations,
   Handles the replacement of DAE.Statement.
  =#"""
@@ -914,7 +914,7 @@ function replaceEquationsStmts(
   return (outAlgorithmStatementLst, replacementPerformed)
 end
 
-""" #= 
+""" #=
 Helper function for replaceEquationsStmts, replaces DAE.Else =#"""
 function replaceEquationsElse(
   inElse::DAE.Else,
@@ -956,7 +956,7 @@ function replaceEquationsElse(
   return (outElse, replacementPerformed)
 end
 
-""" #= 
+""" #=
 Helper function for replaceEquationsStmts, replaces optional statement =#"""
 function replaceOptEquationsStmts(
   optStmt::Option{<:DAE.Statement},
@@ -1011,7 +1011,7 @@ function dumpReplacements(inVariableReplacements::VariableReplacements)
   end
 end
 
-""" #= 
+""" #=
 Author BZ 2009-04
 Function for dumping replacements to string.
  =#"""
@@ -1049,7 +1049,7 @@ function dumpReplacementsStr(inVariableReplacements::VariableReplacements)::Stri
   return ostr
 end
 
-""" #= 
+""" #=
 Author BZ 2009-04
 Extract all crefs -> exp to two separate lists.
  =#"""
@@ -1156,7 +1156,7 @@ function addReplacementLst(
   return repl
 end
 
-""" #= 
+""" #=
   Adds a replacement rule to the set of replacement rules given as argument.
   If a replacement rule a->b already exists and we add a new rule b->c then
   the rule a->b is updated to a->c. This is done using the make_transitive
@@ -1238,7 +1238,7 @@ function addReplacementNoTransitive(
   return outRepl
 end
 
-""" #= 
+""" #=
   Helper function to addReplacement
   Adds the inverse rule of a replacement to the second binary tree
   of VariableReplacements.
@@ -1264,7 +1264,7 @@ function addReplacementInv(
   return outInvHt
 end
 
-""" #= 
+""" #=
   Helper function to addReplacementInv
   Adds the inverse rule for one of the variables of a replacement to the second binary tree
   of VariableReplacements.
@@ -1349,7 +1349,7 @@ function addReplacementIfNot(
   return outRepl
 end
 
-""" #= 
+""" #=
   This function takes a set of replacement rules and a new replacement rule
   in the form of two ComponentRef:s and makes sure the new replacement rule
   is replaced with the transitive value.
@@ -1390,7 +1390,7 @@ function makeTransitive(
   return (outRepl, outSrc, outDst)
 end
 
-""" #= 
+""" #=
   helper function to makeTransitive
  =#"""
 function makeTransitive1(
@@ -1463,7 +1463,7 @@ function makeTransitive12(
   return outRepl
 end
 
-""" #= 
+""" #=
   Helper function to makeTransitive
  =#"""
 function makeTransitive2(
@@ -1496,7 +1496,7 @@ function makeTransitive2(
   return (outRepl, outSrc, outDst)
 end
 
-""" #= 
+""" #=
   Retrives a replacement variable given a set of replacement rules and a
   source variable.
  =#"""
@@ -1545,7 +1545,7 @@ function replaceExpOpt(
   return outExp
 end
 
-""" #= 
+""" #=
 Author BZ 200X-XX modified 2008-06
 When adding replacement rules, we might not have the correct type availible at the moment.
 Then DAE.T_UNKNOWN_DEFAULT is used, so when replacing exp and finding DAE.T_UNKNOWN(_), we use the

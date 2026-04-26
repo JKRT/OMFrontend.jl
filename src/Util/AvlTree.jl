@@ -101,7 +101,7 @@
               end
          end
 
-        import .Main.Error
+        import .Frontend.Error
 
         """ #= return the name of the tree =#"""
         function name(tree::Tree{<:Key, Val}) ::String

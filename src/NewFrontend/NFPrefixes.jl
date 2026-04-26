@@ -1,31 +1,30 @@
 @UniontypeDecl Replaceable
 
-
 module ConnectorType
 
-import ..Main.NFType
+import ..Frontend.NFType
 
-const TYPE = Int
+const TYPE = Int8
 
 using MetaModelica
 using ExportAll
 
-const NON_CONNECTOR = 0::Int
-const POTENTIAL = intBitLShift(1, 0)::Int #= A connector element without a prefix. =#
-const FLOW = intBitLShift(1, 1)::Int #= A connector element with flow prefix. =#
-const STREAM = intBitLShift(1, 2)::Int #= A connector element with stream prefix. =#
-const POTENTIALLY_PRESENT = intBitLShift(1, 3)::Int #= An element declared inside an expandable connector. =#
-const VIRTUAL = intBitLShift(1, 4)::Int #= A virtual connector used in a connection. =#
-const CONNECTOR = intBitLShift(1, 5)::Int #= A non-expandable connector that contains elements. =#
-const EXPANDABLE = intBitLShift(1, 6)::Int #= An expandable connector. =#
+const NON_CONNECTOR::Int8 = 0
+const POTENTIAL::Int8 = intBitLShift(1, 0) #= A connector element without a prefix. =#
+const FLOW::Int8 = intBitLShift(1, 1) #= A connector element with flow prefix. =#
+const STREAM::Int8 = intBitLShift(1, 2) #= A connector element with stream prefix. =#
+const POTENTIALLY_PRESENT::Int8 = intBitLShift(1, 3) #= An element declared inside an expandable connector. =#
+const VIRTUAL::Int8 = intBitLShift(1, 4) #= A virtual connector used in a connection. =#
+const CONNECTOR::Int8 = intBitLShift(1, 5) #= A non-expandable connector that contains elements. =#
+const EXPANDABLE::Int8 = intBitLShift(1, 6) #= An expandable connector. =#
 #=  flow/stream =#
-const FLOW_STREAM_MASK = intBitOr(FLOW, STREAM)::Int
+const FLOW_STREAM_MASK::Int8 = intBitOr(FLOW, STREAM)
 #=  potential/flow/stream =#
-const PREFIX_MASK = intBitOr(POTENTIAL, FLOW_STREAM_MASK)::Int
+const PREFIX_MASK::Int8 = intBitOr(POTENTIAL, FLOW_STREAM_MASK)
 #=  Some kind of connector, where anything inside an expandable connector also counts. =#
-const CONNECTOR_MASK = intBitOr(CONNECTOR, intBitOr(EXPANDABLE, POTENTIALLY_PRESENT))::Int
+const CONNECTOR_MASK::Int8 = intBitOr(CONNECTOR, intBitOr(EXPANDABLE, POTENTIALLY_PRESENT))
 #=  An element in an expandable connector. =#
-const UNDECLARED_MASK = intBitOr(VIRTUAL, POTENTIALLY_PRESENT)::Int
+const UNDECLARED_MASK::Int8 = intBitOr(VIRTUAL, POTENTIALLY_PRESENT)
 @exportAll()
 end
 
@@ -40,7 +39,6 @@ function fromSCode(scodeCty::SCode.ConnectorType)::Int
         ConnectorType.FLOW
       end
       SCode.STREAM(__) => begin
-        throw("WRONG!")
         ConnectorType.STREAM
       end
     end
@@ -48,7 +46,7 @@ function fromSCode(scodeCty::SCode.ConnectorType)::Int
   return cty
 end
 
-function toDAE(cty::Int)::DAE.ConnectorType
+function toDAE(cty::T)::DAE.ConnectorType where {T <: Integer}
   local dcty::DAE.ConnectorType
   if intBitAnd(cty, ConnectorType.POTENTIAL) > 0
     dcty = DAE.POTENTIAL()
@@ -63,12 +61,12 @@ function toDAE(cty::Int)::DAE.ConnectorType
 end
 
 function merge(
-  outerCty::Int,
-  innerCty::Int,
+  outerCty::T,
+  innerCty::T,
   node::InstNode,
   isClass::Bool = false,
-)::Int
-  local cty::Int
+)::T where {T <: Integer}
+  local cty::T
   #=  If both the outer and the inner has flow or stream, give an error.=#
   if (intBitAnd(outerCty, ConnectorType.FLOW_STREAM_MASK) > 0) && (intBitAnd(innerCty, ConnectorType.FLOW_STREAM_MASK) > 0)
     printPrefixError(toString(outerCty), toString(innerCty), node)
@@ -77,35 +75,35 @@ function merge(
   return cty
 end
 
-function isPotential(cty::Int)::Bool
+function isPotential(cty::T)::Bool where {T <: Integer}
   b = intBitAnd(cty, ConnectorType.POTENTIAL) > 0
   return b
 end
 
-function setPotential(cty::Int)::Int
+function setPotential(cty::T)::T where {T <: Integer}
   cty = intBitOr(cty, ConnectorType.POTENTIAL)
   return cty
 end
 
-function isFlow(cty::Int)::Bool
+function isFlow(cty::T)::Bool where {T <: Integer}
   local b::Bool
   b = intBitAnd(cty, ConnectorType.FLOW) > 0
   return b
 end
 
-function isStream(cty::Int)::Bool
+function isStream(cty::T)::Bool where {T <: Integer}
   local b::Bool
   b = intBitAnd(cty, ConnectorType.STREAM) > 0
   return b
 end
 
-function isFlowOrStream(cty::Int)::Bool
+function isFlowOrStream(cty::T)::Bool where {T <: Integer}
   local isFlowOrStream::Bool
   isFlowOrStream = intBitAnd(cty, ConnectorType.FLOW_STREAM_MASK) > 0
   return isFlowOrStream
 end
 
-function unsetFlowStream(cty::Int)::Int
+function unsetFlowStream(cty::T)::T where {T <: Integer}
   cty = intBitAnd(cty, intBitNot(ConnectorType.FLOW_STREAM_MASK))
   return cty
 end
@@ -113,63 +111,61 @@ end
 """ #= Returns true if the connector type has the connector bit set, otherwise false. =#"""
 function isConnector(cty::Int)::Bool
   local isConnector::Bool
-
-  @assign isConnector = intBitAnd(cty, ConnectorType.CONNECTOR) > 0
+  isConnector = intBitAnd(cty::Int8, ConnectorType.CONNECTOR::Int8) > 0
   return isConnector
 end
 
-function setConnector(cty::Int)::Int
+function setConnector(cty::T)::T where {T <: Integer}
   cty = intBitOr(cty, ConnectorType.CONNECTOR)
   return cty
 end
 
-""" #= Returns treu if the connector type has the connector, expandable, or
-     potentially present bits set, otherwise false. =#"""
-function isConnectorType(cty::Int)::Bool
+"""  Returns true if the connector type has the connector, expandable, or
+     potentially present bits set, otherwise false. """
+function isConnectorType(cty::T)::Bool where {T <: Integer}
   local isConnector::Bool
-  @assign isConnector = intBitAnd(cty, ConnectorType.CONNECTOR_MASK) > 0
+  isConnector = cty & ConnectorType.CONNECTOR_MASK > 0
   return isConnector
 end
 
-function isExpandable(cty::Int)::Bool
+function isExpandable(cty::T)::Bool where {T <: Integer}
   local isExpandable::Bool
-  @assign isExpandable = intBitAnd(cty, ConnectorType.EXPANDABLE) > 0
+  isExpandable = intBitAnd(cty, ConnectorType.EXPANDABLE) > 0
   return isExpandable
 end
 
-function setExpandable(cty::Int)::Int
-  @assign cty = intBitOr(cty, EXPANDABLE)
+function setExpandable(cty::T)::T where {T <: Integer}
+  cty = intBitOr(cty, ConnectorType.EXPANDABLE)
   return cty
 end
 
 """ #= Returns true if the connector type has the potentially present or virtual
      bits set, otherwise false. =#"""
-function isUndeclared(cty::Int)::Bool
+function isUndeclared(cty::T)::Bool where {T <: Integer}
   local isExpandableElement::Bool
 
   @assign isExpandableElement = intBitAnd(cty, ConnectorType.UNDECLARED_MASK) > 0
   return isExpandableElement
 end
 
-function isVirtual(cty::Int)::Bool
-  local isVirtual::Bool
-
-  @assign isVirtual = intBitAnd(cty, VIRTUAL) > 0
-  return isVirtual
+function isVirtual(cty::T)::Bool where {T <: Integer}
+  local isV::Bool
+  isV = intBitAnd(cty, ConnectorType.VIRTUAL) > 0
+  return isV
 end
 
-function isPotentiallyPresent(cty::Int)::Bool
+function isPotentiallyPresent(cty::T)::Bool where {T <: Integer}
   local b::Bool
   b = intBitAnd(cty, ConnectorType.POTENTIALLY_PRESENT) > 0
   return b
 end
 
-function setPresent(cty::Int)::Int
-  @assign cty = intBitAnd(cty, intBitNot(ConnectorType.POTENTIALLY_PRESENT))
+function setPresent(cty::T)::T where {T <: Integer}
+  cty = intBitAnd(cty, intBitNot(ConnectorType.POTENTIALLY_PRESENT))
   return cty
 end
 
-function toString(cty::Int)::String
+function toString(cty::T)::String where {T <: Integer}
   local str::String
   if intBitAnd(cty, ConnectorType.FLOW) > 0
     @assign str = "flow string(cty)"
@@ -185,7 +181,7 @@ function toString(cty::Int)::String
   return str
 end
 
-function unparse(cty::Int)::String
+function unparse(cty::T)::String where {T <: Integer}
   local str::String
 
   if intBitAnd(cty, ConnectorType.FLOW) > 0
@@ -198,7 +194,7 @@ function unparse(cty::Int)::String
   return str
 end
 
-function toDebugString(cty::Int)::String
+function toDebugString(cty::T)::String where {T <: Integer}
   local str::String
   local strl::List{String} = nil
   suffix = "(Number:$cty)"
@@ -228,49 +224,64 @@ function toDebugString(cty::Int)::String
 end
 
 module Parallelism
-  const NON_PARALLEL = 1
-  const GLOBAL = 2
-  const LOCAL = 3
+  const NON_PARALLEL::Int8 = 1
+  const GLOBAL::Int8 = 2
+  const LOCAL::Int8 = 3
 end
 
-const ParallelismType = Int
+const ParallelismType = Int8
 
+const VariabilityType = Int8
 module Variability
-const CONSTANT = 1
-const STRUCTURAL_PARAMETER = 2
-const PARAMETER = 3
-const NON_STRUCTURAL_PARAMETER = 4
-const DISCRETE = 5
-const IMPLICITLY_DISCRETE = 6
-const CONTINUOUS = 7
+const VariabilityType = Int8
+const CONSTANT::VariabilityType = 1
+const STRUCTURAL_PARAMETER::VariabilityType = 2
+const PARAMETER::VariabilityType = 3
+const NON_STRUCTURAL_PARAMETER::VariabilityType = 4
+const DISCRETE::VariabilityType = 5
+const IMPLICITLY_DISCRETE::VariabilityType = 6
+const CONTINUOUS::VariabilityType = 7
+
+const variabilityStrings = ["CONSTANT",
+                            "STRUCTURAL_PARAMETER",
+                            "PARAMETER",
+                            "NON_STRUCTURAL_PARAMETER",
+                            "DISCRETE",
+                            "IMPLICITLY_DISCRETE",
+                            "CONTINUOUS",]
+
+function variabilityAsString(var::Int)
+  return variabilityStrings[var]
 end
 
-const VariabilityType = Int
-
-Direction = (() -> begin #= Enumeration =#
-             NONE = 1
-             INPUT = 2
-             OUTPUT = 3
-             () -> (NONE; INPUT; OUTPUT)
-             end)()
-const DirectionType = Int
-
-InnerOuter = (() -> begin #= Enumeration =#
-              NOT_INNER_OUTER = 1
-              INNER = 2
-              OUTER = 3
-              INNER_OUTER = 4
-              () -> (NOT_INNER_OUTER; INNER; OUTER; INNER_OUTER)
-              end)()
+end
 
 
-Visibility = (() -> begin #= Enumeration =#
-              PUBLIC = 1
-              PROTECTED = 2
-              () -> (PUBLIC; PROTECTED)
-              end)()
+const DirectionType = Int8
+struct DirectionStruct
+  NONE::DirectionType
+  INPUT::DirectionType
+  OUTPUT::DirectionType
+end
+const Direction = DirectionStruct(1, 2, 3)
 
-const VisibilityType = Int
+const InnerOuterType = Int8
+struct InnerOuterStruct
+  NOT_INNER_OUTER::InnerOuterType
+  INNER::InnerOuterType
+  OUTER::InnerOuterType
+  INNER_OUTER::InnerOuterType
+end
+
+const InnerOuter = InnerOuterStruct(1, 2, 3, 4)
+
+struct VisibilityStruct{T0 <: Int8}
+  PUBLIC::T0
+  PROTECTED::T0
+end
+
+const VisibilityType = Int8
+const Visibility = VisibilityStruct{Int8}(1, 2)
 
 @Uniontype Replaceable begin
   @Record REPLACEABLE begin
@@ -421,26 +432,26 @@ end
 function variabilityToSCode(var)::SCode.Variability
   local scodeVar::SCode.Variability
 
-  @assign scodeVar = begin
+  scodeVar = begin
     @match var begin
       Variability.CONSTANT => begin
-        SCode.Variability.CONST()
+        SCode.CONST()
       end
 
       Variability.STRUCTURAL_PARAMETER => begin
-        SCode.Variability.PARAM()
+        SCode.PARAM()
       end
 
       Variability.PARAMETER => begin
-        SCode.Variability.PARAM()
+        SCode.PARAM()
       end
 
       Variability.NON_STRUCTURAL_PARAMETER => begin
-        SCode.Variability.PARAM()
+        SCode.PARAM()
       end
 
       Variability.DISCRETE => begin
-        SCode.Variability.DISCRETE()
+        SCode.DISCRETE()
       end
 
       _ => begin
@@ -490,23 +501,23 @@ function variabilityToDAEConst(var)::DAE.Const
   @assign M_const = begin
     @match var begin
       Variability.CONSTANT => begin
-        DAE.Const.C_CONST()
+        DAE.C_CONST()
       end
 
       Variability.STRUCTURAL_PARAMETER => begin
-        DAE.Const.C_PARAM()
+        DAE.C_PARAM()
       end
 
       Variability.PARAMETER => begin
-        DAE.Const.C_PARAM()
+        DAE.C_PARAM()
       end
 
       Variability.NON_STRUCTURAL_PARAMETER => begin
-        DAE.Const.C_PARAM()
+        DAE.C_PARAM()
       end
 
       _ => begin
-        DAE.Const.C_VAR()
+        DAE.C_VAR()
       end
     end
   end
@@ -586,7 +597,7 @@ function unparseVariability(var::VariabilityType, ty::NFType)::String
   return str
 end
 
-function variabilityMax(var1, var2)
+function variabilityMax(var1::Int8, var2::Int8)::Int8
   local var = if var1 > var2
     var1
   else
@@ -595,7 +606,7 @@ function variabilityMax(var1, var2)
   return var
 end
 
-function variabilityMin(var1, var2)
+function variabilityMin(var1::Int8, var2::Int8)::Int8
   local var = if var1 > var2
     var2
   else
@@ -846,8 +857,7 @@ function unparseInnerOuter(io)::String
 end
 
 function visibilityFromSCode(scodeVis::SCode.Visibility)
-  local vis
-  @assign vis = begin
+  vis = begin
     @match scodeVis begin
       SCode.PUBLIC(__) => begin
         Visibility.PUBLIC

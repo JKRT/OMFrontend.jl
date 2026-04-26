@@ -34,8 +34,8 @@ using ExportAll
 *
 */ =#
 
-import Main.System
-import Main.Testsuite
+import Frontend.System
+import Frontend.Testsuite
 
 function unmangle(inSymbol::String)::String
   local outSymbol::String

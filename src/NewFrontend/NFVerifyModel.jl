@@ -5,23 +5,23 @@ function verify(flatModel::FlatModel)
 #  return execStat(getInstanceName())
 end
 
-function expandCrefSet(crefs::List{<:ComponentRef})::List{ComponentRef}
+function expandCrefSet(crefs::List{<:ComponentRef})
   local outCrefs::List{ComponentRef} = nil
   local exp::Expression
   local expl::List{Expression}
   for cref in crefs
-    @assign exp = fromCref(cref)
-    @assign exp = P_ExpandExp.ExpandExp.expandCref(exp)
+    exp = fromCref(cref)
+    exp = expandCref(exp)
     if isArray(exp)
-      @assign expl = arrayElements(exp)
-      @assign outCrefs =
+      expl = arrayElements(exp)
+      outCrefs =
         listAppend(list(toCref(e) for e in expl), outCrefs)
     else
-      @assign outCrefs = _cons(cref, outCrefs)
+      outCrefs = Cons{ComponentRef}(cref, outCrefs)
     end
   end
-  @assign outCrefs = ListUtil.sort(outCrefs, isGreater)
-  @assign outCrefs = ListUtil.sortedUnique(outCrefs, isEqual)
+  outCrefs = ListUtil.sort(outCrefs, isGreater)
+  outCrefs = ListUtil.sortedUnique(outCrefs, isEqual)
   return outCrefs
 end
 
@@ -84,7 +84,7 @@ function whenEquationEqualityCrefs(
   @assign crefs = begin
     @match lhsExp begin
       CREF_EXPRESSION(__) => begin
-        _cons(lhsExp.cref, crefs)
+        Cons{ComponentRef}(lhsExp.cref, crefs)
       end
 
       TUPLE_EXPRESSION(__) => begin
@@ -97,7 +97,7 @@ end
 
 """ #= Helper function to verifyWhenEquation, returns the set of crefs that the
      given list of equations contains on the lhs. =#"""
-function whenEquationBranchCrefs(eql::List{<:Equation})::List{ComponentRef}
+function whenEquationBranchCrefs(eql::Union{List{<:Equation}, Vector{<:Equation}})::List{ComponentRef}
   local crefs::List{ComponentRef} = nil
   for eq in eql
     @assign crefs = begin
@@ -106,7 +106,7 @@ function whenEquationBranchCrefs(eql::List{<:Equation})::List{ComponentRef}
           whenEquationEqualityCrefs(eq.lhs, crefs)
         end
         EQUATION_CREF_EQUALITY(__) => begin
-          _cons(eq.lhs, crefs)
+          Cons{ComponentRef}(eq.lhs, crefs)
         end
         EQUATION_ARRAY_EQUALITY(__) => begin
           whenEquationEqualityCrefs(eq.lhs, crefs)
@@ -124,12 +124,12 @@ function whenEquationBranchCrefs(eql::List{<:Equation})::List{ComponentRef}
       end
     end
   end
-  @assign crefs = ListUtil.sort(crefs, isGreater)
-  @assign crefs = ListUtil.sortedUnique(crefs, isEqual)
+  crefs = ListUtil.sort(crefs, isGreater)
+  crefs = ListUtil.sortedUnique(crefs, isEqual)
   return crefs
 end
 
-""" #= Checks that each branch in a when-equation has the same set of crefs on the lhs. =#"""
+""" Checks that each branch in a when-equation has the same set of crefs on the lhs. """
 function verifyWhenEquation(
   branches::List{<:Equation_Branch},
   source::DAE.ElementSource,
@@ -137,7 +137,7 @@ function verifyWhenEquation(
   local crefs1::List{ComponentRef}
   local crefs2::List{ComponentRef}
   local rest_branches::List{Equation_Branch}
-  local body::List{Equation}
+  local body::Vector{Equation}
   #=  Only when-equation with more than one branch needs to be checked. =#
   if ListUtil.hasOneElement(branches)
     return
@@ -158,10 +158,10 @@ function verifyWhenEquation(
 end
 
 function verifyEquation(eq::Equation)
-  return @assign () = begin
+  return  () = begin
     @match eq begin
       EQUATION_WHEN(__) => begin
-        verifyWhenEquation(eq.branches, eq.source)
+        verifyWhenEquation(arrayList(eq.branches), eq.source)
         ()
       end
       _ => begin

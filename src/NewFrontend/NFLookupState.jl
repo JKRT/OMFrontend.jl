@@ -54,8 +54,7 @@ end
 
 function firstIdent(name::LookupStateName)::String
   local id::String
-
-  @assign id = begin
+  id = begin
     @match name begin
       LOOKUP_STATE_NAME_PATH(__) => begin
         AbsynUtil.pathFirstIdent(name.path)
@@ -71,8 +70,7 @@ end
 
 function toString(name::LookupStateName)::String
   local str::String
-
-  @assign str = begin
+  str = begin
     @match name begin
       LOOKUP_STATE_NAME_PATH(__) => begin
         AbsynUtil.pathString(name.path)
@@ -110,9 +108,9 @@ end
     and components, e.g. Real, time, etc., which are handled as special cases in
     lookupName and bypasses this state machine.
      =#"""
-function next2(
-  elementState::LookupState,
-  currentState::LookupState,
+@nospecializeinfer function next2(
+  @nospecialize(elementState::LookupState),
+  @nospecialize(currentState::LookupState),
   node::InstNode,
 )::LookupState
   local nextState::LookupState
@@ -240,9 +238,11 @@ end
 function nodeState(node::InstNode)::LookupState
   local state::LookupState
   if isComponent(node) || isName(node)
-    @assign state = LOOKUP_STATE_COMP()
+    state = LOOKUP_STATE_COMP()
+  elseif node isa CLASS_NODE || node isa COMPONENT_NODE
+    state = elementState(definition(node))
   else
-    @assign state = elementState(definition(node))
+    state = LOOKUP_STATE_ERROR(LOOKUP_STATE_BEGIN()) #fail()
   end
   return state
 end
@@ -251,7 +251,7 @@ end
      the element was not the first part of a name while being protected.
      I.e. P.a is allowed if P is protected, but not e.g. a.P or a.P.b. =#"""
 function checkProtection(node::InstNode, currentState::LookupState)
-  return @assign () = begin
+  return  () = begin
     @match currentState begin
       LOOKUP_STATE_BEGIN(__) => begin
         ()
@@ -261,7 +261,7 @@ function checkProtection(node::InstNode, currentState::LookupState)
           Error.addSourceMessage(
             Error.PROTECTED_ACCESS,
             list(name(node)),
-            info(node),
+            InstNode_info(node),
           )
           fail()
         end
@@ -290,8 +290,10 @@ function next(
   return nextState
 end
 
-""" #= Helper function to assertState, prints out an error when the wrong kind
-     of element was found. =#"""
+"""
+Helper function to assertState, prints out an error when the wrong kind
+of element was found.
+"""
 function printFoundWrongTypeError(
   foundState::LookupState,
   expectedState::LookupState,
@@ -301,22 +303,21 @@ function printFoundWrongTypeError(
   local name_str::String
   local found_str::String
   local expected_str::String
-
-  @assign name_str = P_LookupStateName.toString(name)
-  @assign found_str = lookupStateString(foundState)
-  @assign expected_str = lookupStateString(expectedState)
-  return Error.addSourceMessage(
+  name_str = toString(name)
+  found_str = lookupStateString(foundState)
+  expected_str = lookupStateString(expectedState)
+  Error.addSourceMessage(
     Error.LOOKUP_FOUND_WRONG_TYPE,
     list(name_str, expected_str, found_str),
     info,
   )
+  fail()
 end
 
 """ #= Returns the string representation of a LookupState, with translation. =#"""
 function lookupStateString(state::LookupState)::String
   local str::String
-
-  @assign str = begin
+  str = begin
     @match state begin
       LOOKUP_STATE_BEGIN(__) => begin
         "<begin>"
@@ -356,6 +357,9 @@ function lookupStateString(state::LookupState)::String
       LOOKUP_STATE_PREDEF_CLASS(__) => begin
         System.gettext("class")
       end
+      _ => begin
+        System.gettext("error")
+      end
     end
   end
   return str
@@ -377,14 +381,14 @@ function isError(state::LookupState)::Bool
   return isError
 end
 
-function assertState(
-  endState::LookupState,
-  expectedState::LookupState,
+@nospecializeinfer function assertState(
+  @nospecialize(endState::LookupState),
+  @nospecialize(expectedState::LookupState),
   node::InstNode,
-  name::LookupStateName,
+  @nospecialize(lookupName::LookupStateName),
   info::SourceInfo,
 )
-  return @assign () = begin
+  return  () = begin
     local name_str::String
     local info2::SourceInfo
     #=  Found the expected kind of element.
@@ -430,7 +434,7 @@ function assertState(
         ()
       end
 
-      (LOOKUP_STATE_COMP_FUNC(__), FUNC(__)) => begin
+      (LOOKUP_STATE_COMP_FUNC(__), LOOKUP_STATE_FUNC(__)) => begin
         ()
       end
 
@@ -449,14 +453,14 @@ function assertState(
       (LOOKUP_STATE_COMP_CLASS(__), LOOKUP_STATE_FUNC(__)) => begin
         #=  Found a class via a component, but expected a function.
         =#
-        printFoundWrongTypeError(endState, expectedState, name, info)
+        printFoundWrongTypeError(endState, expectedState, lookupName, info)
         fail()
       end
 
       (LOOKUP_STATE_COMP_FUNC(__), _) => begin
         #=  Found a function via a component, but didn't expect a function.
         =#
-        @assign name_str = P_LookupStateName.toString(name)
+        @assign name_str = toString(lookupName)
         Error.addSourceMessage(Error.FOUND_FUNC_NAME_VIA_COMP_NONCALL, list(name_str), info)
         fail()
       end
@@ -468,7 +472,7 @@ function assertState(
         =#
         Error.addSourceMessage(
           Error.FOUND_CLASS_NAME_VIA_COMPONENT,
-          list(P_LookupStateName.toString(name)),
+          list(P_LookupStateName.toString(lookupName)),
           info,
         )
         fail()
@@ -491,7 +495,7 @@ function assertState(
         @assign name_str = name(node)
         Error.addSourceMessage(
           Error.CLASS_IN_COMPOSITE_COMP_NAME,
-          list(name_str, P_LookupStateName.toString(name)),
+          list(name_str, P_LookupStateName.toString(lookupName)),
           info,
         )
         fail()
@@ -503,7 +507,7 @@ function assertState(
         @assign name_str = name(node)
         Error.addSourceMessage(
           Error.LOOKUP_CLASS_VIA_COMP_COMP,
-          list(name_str, P_LookupStateName.toString(name)),
+          list(name_str, toString(lookupName)),
           info,
         )
         fail()
@@ -515,7 +519,7 @@ function assertState(
         @assign name_str = name(node)
         Error.addSourceMessage(
           Error.CLASS_IN_COMPOSITE_COMP_NAME,
-          list(name_str, P_LookupStateName.toString(name)),
+          list(name_str, toString(lookupName)),
           info,
         )
         fail()
@@ -527,7 +531,7 @@ function assertState(
         @assign name_str = name(node)
         Error.addSourceMessage(
           Error.LOOKUP_CLASS_VIA_COMP_COMP,
-          list(name_str, P_LookupStateName.toString(name)),
+          list(name_str, toString(lookupName)),
           info,
         )
         fail()
@@ -538,10 +542,9 @@ function assertState(
         =#
         #=  identifier, e.g. A.B.C where B or C are imported names.
         =#
-        @assign name_str = name(node)
+        name_str = name(node)
         Error.addSourceMessage(
-          Error.IMPORT_IN_COMPOSITE_NAME,
-          list(name_str, P_LookupStateName.toString(name)),
+          Error.IMPORT_IN_COMPOSITE_NAME, list(name_str, toString(lookupName)),
           info,
         )
         fail()
@@ -552,7 +555,7 @@ function assertState(
       end
 
       _ => begin
-        printFoundWrongTypeError(endState, expectedState, name, info)
+        printFoundWrongTypeError(endState, expectedState, lookupName, info)
         fail()
       end
     end
@@ -678,14 +681,14 @@ end
 function assertClass(
   endState::LookupState,
   node::InstNode,
-  name::Absyn.Path,
+  namePath::Absyn.Path,
   info::SourceInfo
 )
   return assertState(
     endState,
     LOOKUP_STATE_CLASS(),
     node,
-    LOOKUP_STATE_NAME_PATH(name),
+    LOOKUP_STATE_NAME_PATH(namePath),
     info
   )
 end

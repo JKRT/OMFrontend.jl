@@ -100,57 +100,60 @@ const CLOCK =
 @exportAll()
 end
 
-import ..Main.C_FUNCTION
-import ..Main.Visibility
-import ..Main.VisibilityType
+import ..Frontend.C_FUNCTION
+import ..Frontend.M_FUNCTION
+import ..Frontend.Visibility
+import ..Frontend.VisibilityType
 import ..P_Pointer
-import ..Main.DEFAULT_PREFIXES
-import ..Main.TYPE_POLYMORPHIC
-import ..Main.CLASS_TREE_EMPTY_TREE
-import ..Main.MODIFIER_NOMOD
-import ..Main.RESTRICTION_TYPE
-#import ..Main.EMPTY_NODE_CACHE
-import ..Main.EMPTY_NODE
-import ..Main.BUILTIN_CLASS
-import ..Main.PARTIAL_BUILTIN
-import ..Main.CLASS_NODE
-import ..Main.RESTRICTION_TYPE
+import ..Frontend.DEFAULT_PREFIXES
+import ..Frontend.TYPE_POLYMORPHIC
+import ..Frontend.CLASS_TREE_EMPTY_TREE
+import ..Frontend.MODIFIER_NOMOD
+import ..Frontend.RESTRICTION_TYPE
+#import ..Frontend.EMPTY_NODE_CACHE
+import ..Frontend.EMPTY_NODE
+import ..Frontend.BUILTIN_CLASS
+import ..Frontend.PARTIAL_BUILTIN
+import ..Frontend.CLASS_NODE
+import ..Frontend.RESTRICTION_TYPE
 
 #= Types =#
-import ..Main.TYPE_STRING
-import ..Main.TYPE_ATTRIBUTE
-import ..Main.TYPE_ENUMERATION
-import ..Main.TYPE_INTEGER
-import ..Main.TYPE_REAL
-import ..Main.TYPE_BOOLEAN
-#==#
-import ..LookupTree
-import ..InstNode
+import ..Frontend.TYPE_STRING
+import ..Frontend.TYPE_ATTRIBUTE
+import ..Frontend.TYPE_ENUMERATION
+import ..Frontend.TYPE_INTEGER
+import ..Frontend.TYPE_REAL
+import ..Frontend.TYPE_BOOLEAN
+import ..Frontend.CachedData
+import ..Frontend.InstNode
 
-import ..Main.NORMAL_COMP
-import ..Main.COMPONENT_NODE
-#import ..Main.STATESELECT_TYPE
+#= Modules =#
+import ..LookupTree
+
+import ..Frontend.NORMAL_COMP
+import ..Frontend.COMPONENT_NODE
+#import ..Frontend.STATESELECT_TYPE
 
 import ..DuplicateTree
 
-import ..Main.CLASS_TREE_FLAT_TREE
-import ..Main.ClassTree
+import ..Frontend.CLASS_TREE_FLAT_TREE
+import ..Frontend.ClassTree
 
-import ..Main.Origin
-import ..Main.COMPONENT_REF_EMPTY
-import ..Main.COMPONENT_REF_CREF
-import ..Main.ComponentRef
-import ..Main.TYPE_ENUMERATION_ANY
-import ..Main.RESTRICTION_ENUMERATION
-import ..Main.ENUM_LITERAL_EXPRESSION
-import ..Main.Expression
-import ..Main.TYPE_CLOCK
-import ..Main.RESTRICTION_CLOCK
-import ..Main.TYPED_COMPONENT
-import ..Main.EMPTY_BINDING
-import ..Main.INPUT_ATTR
+import ..Frontend.Origin
+import ..Frontend.COMPONENT_REF_EMPTY
+import ..Frontend.COMPONENT_REF_CREF
+import ..Frontend.ComponentRef
+import ..Frontend.TYPE_ENUMERATION_ANY
+import ..Frontend.RESTRICTION_ENUMERATION
+import ..Frontend.ENUM_LITERAL_EXPRESSION
+import ..Frontend.Expression
+import ..Frontend.TYPE_CLOCK
+import ..Frontend.RESTRICTION_CLOCK
+import ..Frontend.TYPED_COMPONENT
+import ..Frontend.EMPTY_BINDING
+import ..Frontend.INPUT_ATTR
 
-const EMPTY_NODE_CACHE = listArrayLiteral(list(C_FUNCTION(nil, true, true)))::Vector
+const EMPTY_NODE_CACHE::Vector{CachedData} = CachedData[C_FUNCTION(M_FUNCTION[], true, true)]
 #=  InstNodes for the builtin types. These have empty class trees to prevent
 =#
 #=  access to the attributes via dot notation (which is not needed for
@@ -239,7 +242,7 @@ const REAL_CLASS_TREE =
     REAL_LOOKUP_TREE,
     listArrayLiteral(nil),
     listArrayLiteral(list(
-      COMPONENT_NODE(
+      COMPONENT_NODE{String, Int8}(
         "quantity",
         Visibility.PUBLIC,
         P_Pointer.createImmutable(TYPE_ATTRIBUTE(
@@ -249,7 +252,7 @@ const REAL_CLASS_TREE =
         EMPTY_NODE(),
         NORMAL_COMP(),
       ),
-      COMPONENT_NODE(
+      COMPONENT_NODE{String, Int8}(
         "unit",
         Visibility.PUBLIC,
         P_Pointer.createImmutable(TYPE_ATTRIBUTE(
@@ -259,7 +262,7 @@ const REAL_CLASS_TREE =
         EMPTY_NODE(),
         NORMAL_COMP(),
       ),
-      COMPONENT_NODE(
+      COMPONENT_NODE{String, Int8}(
         "displayUnit",
         Visibility.PUBLIC,
         P_Pointer.createImmutable(TYPE_ATTRIBUTE(
@@ -269,7 +272,7 @@ const REAL_CLASS_TREE =
         EMPTY_NODE(),
         NORMAL_COMP(),
       ),
-      COMPONENT_NODE(
+      COMPONENT_NODE{String, Int8}(
         "min",
         Visibility.PUBLIC,
         P_Pointer.createImmutable(TYPE_ATTRIBUTE(
@@ -279,7 +282,7 @@ const REAL_CLASS_TREE =
         EMPTY_NODE(),
         NORMAL_COMP(),
       ),
-      COMPONENT_NODE(
+      COMPONENT_NODE{String, Int8}(
         "max",
         Visibility.PUBLIC,
         P_Pointer.createImmutable(TYPE_ATTRIBUTE(
@@ -289,7 +292,7 @@ const REAL_CLASS_TREE =
         EMPTY_NODE(),
         NORMAL_COMP(),
       ),
-      COMPONENT_NODE(
+      COMPONENT_NODE{String, Int8}(
         "start",
         Visibility.PUBLIC,
         P_Pointer.createImmutable(TYPE_ATTRIBUTE(
@@ -299,7 +302,7 @@ const REAL_CLASS_TREE =
         EMPTY_NODE(),
         NORMAL_COMP(),
       ),
-      COMPONENT_NODE(
+      COMPONENT_NODE{String, Int8}(
         "fixed",
         Visibility.PUBLIC,
         P_Pointer.createImmutable(TYPE_ATTRIBUTE(
@@ -309,7 +312,7 @@ const REAL_CLASS_TREE =
         EMPTY_NODE(),
         NORMAL_COMP(),
       ),
-      COMPONENT_NODE(
+      COMPONENT_NODE{String, Int8}(
         "nominal",
         Visibility.PUBLIC,
         P_Pointer.createImmutable(TYPE_ATTRIBUTE(
@@ -319,7 +322,7 @@ const REAL_CLASS_TREE =
         EMPTY_NODE(),
         NORMAL_COMP(),
       ),
-      COMPONENT_NODE(
+      COMPONENT_NODE{String, Int8}(
         "unbounded",
         Visibility.PUBLIC,
         P_Pointer.createImmutable(TYPE_ATTRIBUTE(
@@ -329,7 +332,7 @@ const REAL_CLASS_TREE =
         EMPTY_NODE(),
         NORMAL_COMP(),
       ),
-      COMPONENT_NODE(
+      COMPONENT_NODE{String, Int8}(
         "stateSelect",
         Visibility.PUBLIC,
         P_Pointer.createImmutable(TYPE_ATTRIBUTE(
@@ -343,8 +346,7 @@ const REAL_CLASS_TREE =
     listArray(nil),
     DuplicateTree.EMPTY(),
   )::ClassTree
-#=  TODO: #4895: This should be listArrayLiteral too, but causes compilation issues.
-=#
+#=  TODO: #4895: This should be listArrayLiteral too, but causes compilation issues. =#
 const REAL_NODE =
   CLASS_NODE(
     "Real",
@@ -394,7 +396,7 @@ const INTEGER_CLASS_TREE =
     INTEGER_LOOKUP_TREE,
     listArrayLiteral(nil),
     listArrayLiteral(list(
-      COMPONENT_NODE(
+      COMPONENT_NODE{String, Int8}(
         "quantity",
         Visibility.PUBLIC,
         P_Pointer.createImmutable(TYPE_ATTRIBUTE(
@@ -404,7 +406,7 @@ const INTEGER_CLASS_TREE =
         EMPTY_NODE(),
         NORMAL_COMP(),
       ),
-      COMPONENT_NODE(
+      COMPONENT_NODE{String, Int8}(
         "min",
         Visibility.PUBLIC,
         P_Pointer.createImmutable(TYPE_ATTRIBUTE(
@@ -414,7 +416,7 @@ const INTEGER_CLASS_TREE =
         EMPTY_NODE(),
         NORMAL_COMP(),
       ),
-      COMPONENT_NODE(
+      COMPONENT_NODE{String, Int8}(
         "max",
         Visibility.PUBLIC,
         P_Pointer.createImmutable(TYPE_ATTRIBUTE(
@@ -424,7 +426,7 @@ const INTEGER_CLASS_TREE =
         EMPTY_NODE(),
         NORMAL_COMP(),
       ),
-      COMPONENT_NODE(
+      COMPONENT_NODE{String, Int8}(
         "start",
         Visibility.PUBLIC,
         P_Pointer.createImmutable(TYPE_ATTRIBUTE(
@@ -434,7 +436,7 @@ const INTEGER_CLASS_TREE =
         EMPTY_NODE(),
         NORMAL_COMP(),
       ),
-      COMPONENT_NODE(
+      COMPONENT_NODE{String, Int8}(
         "fixed",
         Visibility.PUBLIC,
         P_Pointer.createImmutable(TYPE_ATTRIBUTE(
@@ -486,7 +488,7 @@ const BOOLEAN_CLASS_TREE =
     BOOLEAN_LOOKUP_TREE,
     listArrayLiteral(nil),
     listArrayLiteral(list(
-      COMPONENT_NODE(
+      COMPONENT_NODE{String, Int8}(
         "quantity",
         Visibility.PUBLIC,
         P_Pointer.createImmutable(TYPE_ATTRIBUTE(
@@ -496,7 +498,7 @@ const BOOLEAN_CLASS_TREE =
         EMPTY_NODE(),
         NORMAL_COMP(),
       ),
-      COMPONENT_NODE(
+      COMPONENT_NODE{String, Int8}(
         "start",
         Visibility.PUBLIC,
         P_Pointer.createImmutable(TYPE_ATTRIBUTE(
@@ -506,7 +508,7 @@ const BOOLEAN_CLASS_TREE =
         EMPTY_NODE(),
         NORMAL_COMP(),
       ),
-      COMPONENT_NODE(
+      COMPONENT_NODE{String, Int8}(
         "fixed",
         Visibility.PUBLIC,
         P_Pointer.createImmutable(TYPE_ATTRIBUTE(
@@ -570,7 +572,7 @@ const STRING_CLASS_TREE =
     STRING_LOOKUP_TREE,
     listArrayLiteral(nil),
     listArrayLiteral(list(
-      COMPONENT_NODE(
+      COMPONENT_NODE{String, Int8}(
         "quantity",
         Visibility.PUBLIC,
         P_Pointer.createImmutable(TYPE_ATTRIBUTE(
@@ -580,7 +582,7 @@ const STRING_CLASS_TREE =
         EMPTY_NODE(),
         NORMAL_COMP(),
       ),
-      COMPONENT_NODE(
+      COMPONENT_NODE{String, Int8}(
         "start",
         Visibility.PUBLIC,
         P_Pointer.createImmutable(TYPE_ATTRIBUTE(
@@ -590,7 +592,7 @@ const STRING_CLASS_TREE =
         EMPTY_NODE(),
         NORMAL_COMP(),
       ),
-      COMPONENT_NODE(
+      COMPONENT_NODE{String, Int8}(
         "fixed",
         Visibility.PUBLIC,
         P_Pointer.createImmutable(TYPE_ATTRIBUTE(
@@ -701,17 +703,16 @@ const ENUM_NODE =
 
 const ASSERTIONLEVEL_TYPE =
   TYPE_ENUMERATION(Absyn.IDENT("AssertionLevel"),
-                   list("error", "warning"))
+                   list("warning", "error"))
 
-const ASSERTIONLEVEL_ERROR =
-  ENUM_LITERAL_EXPRESSION(ASSERTIONLEVEL_TYPE
-                          , "error"
-                          , 1)::Expression
-
-const ASSERTIONLEVEL_WARNING =
-  ENUM_LITERAL_EXPRESSION(ASSERTIONLEVEL_TYPE
-                          , "error"
-                          , 2)::Expression
+const ASSERTIONLEVEL_WARNING::ENUM_LITERAL_EXPRESSION =
+  ENUM_LITERAL_EXPRESSION{TYPE_ENUMERATION, String, Int}(ASSERTIONLEVEL_TYPE
+                                                         ,"warning"
+                                                         ,1)
+const ASSERTIONLEVEL_ERROR::ENUM_LITERAL_EXPRESSION =
+  ENUM_LITERAL_EXPRESSION{TYPE_ENUMERATION, String, Int}(ASSERTIONLEVEL_TYPE
+                                                         , "error"
+                                                         , 2)
 
 const CLOCK_LOOKUP_TREE =
   LookupTree.NODE(
@@ -732,7 +733,7 @@ const CLOCK_CLASS_TREE =
     CLOCK_LOOKUP_TREE,
     listArrayLiteral(nil),
     listArrayLiteral(list(
-      COMPONENT_NODE(
+      COMPONENT_NODE{String, Int8}(
         "quantity",
         Visibility.PUBLIC,
         P_Pointer.createImmutable(TYPE_ATTRIBUTE(
@@ -742,7 +743,7 @@ const CLOCK_CLASS_TREE =
         EMPTY_NODE(),
         NORMAL_COMP(),
       ),
-      COMPONENT_NODE(
+      COMPONENT_NODE{String, Int8}(
         "start",
         Visibility.PUBLIC,
         P_Pointer.createImmutable(TYPE_ATTRIBUTE(
@@ -752,7 +753,7 @@ const CLOCK_CLASS_TREE =
         EMPTY_NODE(),
         NORMAL_COMP(),
       ),
-      COMPONENT_NODE(
+      COMPONENT_NODE{String, Int8}(
         "fixed",
         Visibility.PUBLIC,
         P_Pointer.createImmutable(TYPE_ATTRIBUTE(
@@ -766,8 +767,7 @@ const CLOCK_CLASS_TREE =
     listArray(nil),
     DuplicateTree.EMPTY(),
   )::ClassTree
-#=  TODO: #4895: This should be listArrayLiteral too, but causes compilation issues.
-=#
+#=  TODO: #4895: This should be listArrayLiteral too, but causes compilation issues. =#
 const CLOCK_NODE =
   CLASS_NODE(
     "Clock",
@@ -793,7 +793,7 @@ const CLOCK_CREF =
     COMPONENT_REF_EMPTY(),
   )::ComponentRef
 const TIME =
-  COMPONENT_NODE(
+  COMPONENT_NODE{String, Int8}(
     "time",
     Visibility.PUBLIC,
     P_Pointer.createImmutable(TYPED_COMPONENT(
@@ -828,19 +828,53 @@ function makeBuiltinLookupTree(
 ) #= Not used in the tree, only to identify the printout. =#
   local ltree::LookupTree.= LookupTree.new()
   local i::Int
-  @assign i = 1
+  i = 1
   for comp in components
-    @assign ltree = LookupTree.add(ltree, comp, LookupTree.COMPONENT(i))
-    @assign i = i + 1
+    ltree = LookupTree.add(ltree, comp, LookupTree.COMPONENT(i))
+    i = i + 1
   end
   for cls in classes
-    @assign ltree = LookupTree.add(ltree, cls, LookupTree.COMPONENT(i))
-    @assign i = i + 1
+    ltree = LookupTree.add(ltree, cls, LookupTree.COMPONENT(i))
+    i = i + 1
   end
   print("Lookup tree for " + name + ":\\n")
   print(anyString(ltree))
   return print("\\n")
 end
+
+"""
+Contains the builtin class nodes of the compiler.
+"""
+const BUILTIN_DICT = Dict{String, CLASS_NODE}(
+  "Real" => NFBuiltin.REAL_NODE,
+  "Integer" => NFBuiltin.INTEGER_NODE,
+  "Boolean" => NFBuiltin.BOOLEAN_NODE,
+  "String" => NFBuiltin.STRING_NODE,
+  "Clock" => NFBuiltin.CLOCK_NODE,
+  "polymorphic" => NFBuiltin.POLYMORPHIC_NODE)
+
+import ..LOOKUP_STATE_PREDEF_CLASS
+import ..LOOKUP_STATE_PREDEF_COMP
+import ..LOOKUP_STATE_FUNC
+
+import ..NFBuiltinFuncs
+
+const BUILTIN_CREF_DICT = Dict{String, Tuple}(
+  "time"  =>
+    (NFBuiltin.TIME, NFBuiltin.TIME_CREF, LOOKUP_STATE_PREDEF_COMP())
+  ,
+  "Boolean"  =>
+    (NFBuiltin.BOOLEAN_NODE, NFBuiltin.BOOLEAN_CREF, LOOKUP_STATE_PREDEF_CLASS())
+  ,
+  "Integer"  =>
+    (NFBuiltinFuncs.INTEGER_NODE, NFBuiltinFuncs.INTEGER_CREF, LOOKUP_STATE_FUNC())
+  ,
+  "String"  =>
+    (NFBuiltinFuncs.STRING_NODE, NFBuiltinFuncs.STRING_CREF, LOOKUP_STATE_FUNC())
+  ,
+  #=Shoulld have a check to see if synchronos features are to be available or not. =#
+  "Clock"   =>
+    (NFBuiltinFuncs.CLOCK_NODE, NFBuiltinFuncs.CLOCK_CREF, LOOKUP_STATE_FUNC()))
 
 @exportAll()
 end

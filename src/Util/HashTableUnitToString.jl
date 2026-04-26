@@ -48,9 +48,9 @@ keyEqual   - A comparison function between two keys, returns true if equal.
 */ =#
 #= /* HashTable instance specific code */ =#
 
-import Main.BaseHashTable
+import Frontend.BaseHashTable
 
-import Main.Unit
+import Frontend.Unit
 
 Key = Unit.Unit
 
@@ -60,7 +60,7 @@ HashTableCrefFunctionsType = Tuple
 
 HashTable = Tuple
 
-""" #= 
+""" #=
   Returns an empty HashTable.
   Using the default bucketsize..
  =#"""
@@ -78,7 +78,7 @@ function id(inStr::String)::String
   return outStr
 end
 
-""" #= 
+""" #=
   Returns an empty HashTable.
   Using the bucketsize size.
  =#"""

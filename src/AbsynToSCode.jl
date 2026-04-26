@@ -43,6 +43,8 @@ import ..SCodeUtil
 import ..Util
 import ..System
 
+using Distributed
+
 const ASSERTION_LEVEL_ERROR =
   Absyn.CREF(Absyn.CREF_FULLYQUALIFIED(Absyn.CREF_QUAL(
     "AssertionLevel",
@@ -50,13 +52,15 @@ const ASSERTION_LEVEL_ERROR =
     Absyn.CREF_IDENT("error", nil),
   )))::Absyn.Exp
 
-""" #= This function takes an Absyn.Program
+"""
+  This function takes an Absyn.Program
   and constructs a SCode.Program from it.
   This particular version of translate tries to fix any uniontypes
   in the inProgram before translating further. This should probably
   be moved into Parser.parse since you have to modify the tree every
-  single time you translate... =#"""
-function translateAbsyn2SCode(inProgram::Absyn.Program)::SCode.Program
+  single time you translate...
+"""
+function translateAbsyn2SCode(inProgram::Absyn.Program)
   local outProgram::SCode.Program
    outProgram = begin
     local spInitial::SCode.Program
@@ -71,15 +75,14 @@ function translateAbsyn2SCode(inProgram::Absyn.Program)::SCode.Program
         System.setHasExpandableConnectors(false)
         System.setHasOverconstrainedConnectors(false)
         System.setHasStreamConnectors(false)
-        @assign sp = list(translateClass(c) for c in inClasses)
-        sp
+        sp = list(translateClass(c) for c in inClasses)
       end
     end
   end
   return outProgram
 end
 
-function translateClass(inClass::Absyn.Class)::SCode.Element
+function translateClass(inClass::Absyn.Class)
   local outClass::SCode.Element
    outClass = translateClass2(inClass, 0)
   return outClass
@@ -142,7 +145,8 @@ function translateClass2(inClass::Absyn.Class, inNumMessages::Int)::SCode.Elemen
       end
 
       (Absyn.CLASS(name = n, info = file_info), _) => begin
-        #                    n = "AbsynToSCode.translateClass2 failed: " + n
+        n = "AbsynToSCode.translateClass2 failed: " + n
+        @error n
         fail()
       end
     end
@@ -519,7 +523,7 @@ function translateAttributes(
         sv = translateVariability(v)
         sp = translateParallelism(p)
         adim = listAppend(extraADim, adim)
-        @debug "Value of mode in translate Attributes" mo
+        #@debug "Value of mode in translate Attributes" mo
         SCode.ATTR(adim, ct, sp, sv, dir, fi, mo)
       end
     end
@@ -745,8 +749,7 @@ function translateAlternativeExternalAnnotation(
       end
     end
   end
-  #=  Else, merge
-  =#
+  #=  Else, merge =#
   return outDecl
 end
 
@@ -2259,10 +2262,10 @@ function translateEquation(
       end
 
       Absyn.EQ_WHEN_E(__) => begin
-         body = translateEEquations(inEquation.whenEquations, inIsInitial)
-         (conditions, bodies) =
+        body = translateEEquations(inEquation.whenEquations, inIsInitial)
+        (conditions, bodies) =
           ListUtil.map1_2(inEquation.elseWhenEquations, translateEqBranch, inIsInitial)
-         branches = list(@do_threaded_for (c, b) (c, b) (conditions, bodies))
+        branches = list(@do_threaded_for (c, b) (c, b) (conditions, bodies))
         SCode.EQ_WHEN(inEquation.whenExp, body, branches, inComment, inInfo)
       end
 
@@ -2339,6 +2342,17 @@ function translateEquation(
       Absyn.EQ_NORETCALL(__) => begin
         SCode.EQ_NORETCALL(
           Absyn.CALL(inEquation.functionName, inEquation.functionArgs, nil),
+          inComment,
+          inInfo,
+        )
+      end
+
+      Absyn.EQ_RECONFIGURE(__) => begin
+        SCode.EQ_RECONFIGURE(
+          inEquation.variables,
+          inEquation.whenClauses,
+          inEquation.prompt,
+          inEquation.initialEquations,
           inComment,
           inInfo,
         )

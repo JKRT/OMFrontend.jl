@@ -29,64 +29,68 @@
 *
 =#
 
-const VariabilityType = Int
+const VariabilityType = Int8
 
 @UniontypeDecl Binding
 
-@Uniontype Binding begin
-  @Record INVALID_BINDING begin
-    binding::Binding
-    errors::List
-  end
+abstract type Binding end
 
-  @Record CEVAL_BINDING begin
-    bindingExp::Expression
-  end
-
-  @Record FLAT_BINDING begin
-    bindingExp::Expression
-    variability::VariabilityType
-  end
-
-  @Record TYPED_BINDING begin
-    bindingExp::Expression
-    bindingType
-    variability::VariabilityType
-    eachType::Int
-    evaluated::Bool
-    isFlattened::Bool
-    info::SourceInfo
-  end
-
-  @Record UNTYPED_BINDING begin
-    bindingExp::Expression
-    isProcessing::Bool
-    scope::InstNode
-    isEach::Bool
-    info::SourceInfo
-  end
-
-  @Record RAW_BINDING begin
-    bindingExp::Absyn.Exp
-    scope::InstNode
-    parents::List{InstNode}
-    isEach::Bool
-    info::SourceInfo
-  end
-
-  @Record UNBOUND begin
-    parents::List{InstNode}
-    isEach::Bool
-    info::SourceInfo
-  end
+mutable struct INVALID_BINDING <: Binding
+  binding::Binding
+  errors::List
 end
 
-const EMPTY_BINDING = UNBOUND(nil, false, AbsynUtil.dummyInfo)::Binding
+mutable struct CEVAL_BINDING <: Binding
+  bindingExp::Expression
+end
 
-EachType = (() -> begin #= Enumeration =#
-  NOT_EACH = 1
-  EACH = 2
-  REPEAT = 3
-  () -> (NOT_EACH; EACH; REPEAT)
-end)()
+mutable struct FLAT_BINDING <: Binding
+  bindingExp::Expression
+  variability::VariabilityType
+end
+
+mutable struct TYPED_BINDING <: Binding
+  bindingExp::Expression
+  bindingType::NFType
+  variability::VariabilityType
+  eachType::Int
+  evaluated::Bool
+  isFlattened::Bool
+  info::SourceInfo
+end
+
+mutable struct UNTYPED_BINDING <: Binding
+  bindingExp::Expression
+  isProcessing::Bool
+  scope::InstNode
+  isEach::Bool
+  info::SourceInfo
+end
+
+mutable struct RAW_BINDING <: Binding
+  bindingExp::Absyn.Exp
+  scope::InstNode
+  parents::List{InstNode}
+  isEach::Bool
+  info::SourceInfo
+end
+
+mutable struct UNBOUND <: Binding
+  parents::List{InstNode}
+  isEach::Bool
+  info::SourceInfo
+end
+
+struct BINDING_ERROR <: Binding
+end
+
+const EMPTY_BINDING::UNBOUND = UNBOUND(nil, false, AbsynUtil.dummyInfo)
+
+struct EachTypeStruct{T <: Int}
+  NOT_EACH::T
+  EACH::T
+  REPEAT::T
+end
+
 const EachTypeType = Int
+const EachType::EachTypeStruct{Int} = EachTypeStruct{Int}(1,2,3)

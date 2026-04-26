@@ -2,6 +2,7 @@ module ModelicaExternalC
 
 using MetaModelica
 using ExportAll
+import OMRuntimeExternalC
 
 #= /*
 * This file is part of OpenModelica.
@@ -34,122 +35,84 @@ using ExportAll
 *
 */ =#
 
+#= Streams / File functions delegate to ModelicaInternal C implementations =#
+
 function Streams_print(string::String, fileName::String)
-  return @error "TODO: Defined in the runtime"
+  OMRuntimeExternalC.ModelicaInternal_print(string, fileName)
 end
 
-function Streams_readLine(fileName::String, lineNumber::Integer)::Tuple{String, Bool}
-  local endOfFile::Bool
-  local string::String
-
-  @error "TODO: Defined in the runtime"
-  return (string, endOfFile)
+function Streams_readLine(fileName::String, lineNumber::Int64)::Tuple{String, Bool}
+  return OMRuntimeExternalC.ModelicaInternal_readLine(fileName, lineNumber)
 end
 
-function Streams_countLines(fileName::String)::Integer
-  local numberOfLines::Integer
-
-  @error "TODO: Defined in the runtime"
-  return numberOfLines
+function Streams_countLines(fileName::String)::Int64
+  return OMRuntimeExternalC.ModelicaInternal_countLines(fileName)
 end
 
 function File_fullPathName(fileName::String)::String
-  local outName::String
-
-  @error "TODO: Defined in the runtime"
-  return outName
+  return OMRuntimeExternalC.ModelicaInternal_fullPathName(fileName)
 end
 
-function File_stat(name::String)::Integer
-  local fileType::Integer
-
-  @error "TODO: Defined in the runtime"
-  return fileType
+function File_stat(name::String)::Int64
+  return OMRuntimeExternalC.ModelicaInternal_stat(name)
 end
 
 function Streams_close(fileName::String)
-  return @error "TODO: Defined in the runtime"
+  OMRuntimeExternalC.ModelicaStreams_closeFile(fileName)
 end
 
-function Strings_compare(string1::String, string2::String, caseSensitive::Bool)::Integer
-  local result::Integer
+#= String functions delegate to ModelicaStrings C implementations =#
 
-  @error "TODO: Defined in the runtime"
-  return result
+function Strings_compare(string1::String, string2::String, caseSensitive::Bool)::Int64
+  return OMRuntimeExternalC.ModelicaStrings_compare(string1, string2, Int64(caseSensitive))
 end
 
 function Strings_scanReal(
   string::String,
-  startIndex::Integer,
+  startIndex::Int64,
   unsigned::Bool,
-)::Tuple{Integer, AbstractFloat}
-  local number::AbstractFloat
-  local nextIndex::Integer
-
-  @error "TODO: Defined in the runtime"
-  return (nextIndex, number)
+)::Tuple{Int64, Float64}
+  return OMRuntimeExternalC.ModelicaStrings_scanReal(string, startIndex, Int64(unsigned))
 end
 
 function Strings_scanInteger(
   string::String,
-  startIndex::Integer,
+  startIndex::Int64,
   unsigned::Bool,
-)::Tuple{Integer, Integer}
-  local number::Integer
-  local nextIndex::Integer
-
-  @error "TODO: Defined in the runtime"
-  return (nextIndex, number)
+)::Tuple{Int64, Int64}
+  return OMRuntimeExternalC.ModelicaStrings_scanInteger(string, startIndex, Int64(unsigned))
 end
 
-function Strings_scanString(string::String, startIndex::Integer)::Tuple{Integer, String}
-  local string2::String
-  local nextIndex::Integer
-
-  @error "TODO: Defined in the runtime"
-  return (nextIndex, string2)
+function Strings_scanString(string::String, startIndex::Int64)::Tuple{Int64, String}
+  return OMRuntimeExternalC.ModelicaStrings_scanString(string, startIndex)
 end
 
-function Strings_scanIdentifier(string::String, startIndex::Integer)::Tuple{Integer, String}
-  local identifier::String
-  local nextIndex::Integer
-
-  @error "TODO: Defined in the runtime"
-  return (nextIndex, identifier)
+function Strings_scanIdentifier(string::String, startIndex::Int64)::Tuple{Int64, String}
+  return OMRuntimeExternalC.ModelicaStrings_scanIdentifier(string, startIndex)
 end
 
-function Strings_skipWhiteSpace(string::String, startIndex::Integer(min = 1) = 1)::Integer
-  local nextIndex::Integer
-
-  @error "TODO: Defined in the runtime"
-  return nextIndex
+function Strings_skipWhiteSpace(string::String, startIndex::Int64 = Int64(1))::Int64
+  return OMRuntimeExternalC.ModelicaStrings_skipWhiteSpace(string, startIndex)
 end
 
-function Strings_hashString(string::String)::Integer
-  local hash::Integer
-
-  @error "TODO: Defined in the runtime"
-  return hash
+function Strings_hashString(string::String)::Int64
+  return OMRuntimeExternalC.ModelicaStrings_hashString(string)
 end
 
-function ModelicaIO_readMatrixSizes(fileName::String, matrixName::String)::Integer
-  local dim::Integer
+#= ModelicaIO functions delegate to OMRuntimeExternalC =#
 
-  @error "TODO: Defined in the runtime"
-  return dim
+function ModelicaIO_readMatrixSizes(fileName::String, matrixName::String)::Vector{Int64}
+  return OMRuntimeExternalC.ModelicaIO_readMatrixSizes(fileName, matrixName)
 end
 
 function ModelicaIO_readRealMatrix(
   fileName::String,
   matrixName::String,
-  nrow::Integer,
-  ncol::Integer,
+  nrow::Int64,
+  ncol::Int64,
   verboseRead::Bool = true,
-)::AbstractFloat
-  local matrix::AbstractFloat
-
-  @error "TODO: Defined in the runtime"
-  return matrix
+)::Matrix{Float64}
+  return OMRuntimeExternalC.ModelicaIO_readRealMatrix(fileName, matrixName, nrow, ncol, verboseRead)
 end
 
 @exportAll()

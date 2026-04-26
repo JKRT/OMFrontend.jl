@@ -1,9 +1,3 @@
-module Global
-
-using MetaModelica
-using ExportAll
-import ..System
-
 #= /*
 * This file is part of OpenModelica.
 *
@@ -34,6 +28,13 @@ import ..System
 * See the full OSMC Public License conditions for more details.
 *
 */ =#
+module Global
+
+using MetaModelica
+using ExportAll
+import ..System
+
+
 const recursionDepthLimit = 256::Integer
 const maxFunctionFileLength = 50::Integer
 #=  Thread-local roots
@@ -95,7 +96,7 @@ const classExtends_index = 25::Integer
 #=  ----------------------
 =#
 
-""" #= Called to initialize global roots (when needed) =#"""
+"""  Called to initialize global roots (when needed) """
 function initialize()
   setGlobalRoot(instOnlyForcedFunctions, NONE())
   setGlobalRoot(rewriteRulesIndex, NONE())
@@ -104,6 +105,7 @@ function initialize()
   setGlobalRoot(currentInstVar, NONE())
   setGlobalRoot(interactiveCache, NONE())
   setGlobalRoot(instNFInstCacheIndex, nil)
+  setGlobalRoot(tmpVariableIndex, 0)
   return setGlobalRoot(instNFNodeCacheIndex, nil)
 end
 

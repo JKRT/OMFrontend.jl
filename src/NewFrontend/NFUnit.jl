@@ -206,7 +206,7 @@
 
               @assign outKnownUnitsInverse = HashTableUnitToString.emptyHashTableSized(Util.nextPrime(4 * listLength(LU_COMPLEXUNITS)))
               for unit in LU_COMPLEXUNITS
-                @assign (s, ut) = unit
+                 (s, ut) = unit
                 if ! BaseHashTable.hasKey(ut, outKnownUnitsInverse)
                   @assign outKnownUnitsInverse = BaseHashTable.add((ut, s), outKnownUnitsInverse)
                 end
@@ -1047,7 +1047,7 @@
 
                   _  => begin
                         @assign s = stringGetStringChar(inS, 1)
-                        @assign (r, s) = getPrefix(s, inS)
+                         (r, s) = getPrefix(s, inS)
                         @assign ut = unitToken2unit(s, inHtS2U)
                         @assign ut = unitMulReal(ut, r)
                       ut
@@ -1061,7 +1061,7 @@
               local outUnit::String
               local outR::AbstractFloat
 
-              @assign (outR, outUnit) = begin
+               (outR, outUnit) = begin
                   local strRest::List{String}
                   local s::String
                 @matchcontinue (inS, inS2) begin
@@ -1263,7 +1263,7 @@
                   end
 
                   "+" <| charList  => begin
-                      @assign (charList, number) = popNumber(charList)
+                       (charList, number) = popNumber(charList)
                       @match false = number == ""
                       @assign tokenList = lexer(charList)
                       @assign i = stringInt(number)
@@ -1271,7 +1271,7 @@
                   end
 
                   "-" <| charList  => begin
-                      @assign (charList, number) = popNumber(charList)
+                       (charList, number) = popNumber(charList)
                       @match false = number == ""
                       @assign tokenList = lexer(charList)
                       @assign i = -stringInt(number)
@@ -1279,7 +1279,7 @@
                   end
 
                   charList  => begin
-                      @assign (charList, number) = popNumber(charList)
+                       (charList, number) = popNumber(charList)
                       @match false = number == ""
                       @assign tokenList = lexer(charList)
                       @assign i = stringInt(number)
@@ -1287,7 +1287,7 @@
                   end
 
                   charList  => begin
-                      @assign (charList, unit) = popUnit(charList)
+                       (charList, unit) = popUnit(charList)
                       @match false = unit == ""
                       @assign tokenList = lexer(charList)
                     _cons(T_UNIT(unit), tokenList)
@@ -1306,7 +1306,7 @@
               local outUnit::String
               local outCharList::List{String}
 
-              @assign (outCharList, outUnit) = begin
+               (outCharList, outUnit) = begin
                   local s1::String
                   local s2::String
                   local strRest::List{String}
@@ -1317,13 +1317,13 @@
 
                   s1 <| strRest  => begin
                       @match true = stringCompare(s1, "a") >= 0 && stringCompare(s1, "z") <= 0
-                      @assign (strRest, s2) = popUnit(strRest)
+                       (strRest, s2) = popUnit(strRest)
                     (strRest, s1 + s2)
                   end
 
                   s1 <| strRest  => begin
                       @match true = stringCompare(s1, "A") >= 0 && stringCompare(s1, "Z") <= 0
-                      @assign (strRest, s2) = popUnit(strRest)
+                       (strRest, s2) = popUnit(strRest)
                     (strRest, s1 + s2)
                   end
 
@@ -1339,7 +1339,7 @@
               local outNumber::String
               local outCharList::List{String}
 
-              @assign (outCharList, outNumber) = begin
+               (outCharList, outNumber) = begin
                   local s1::String
                   local s2::String
                   local strRest::List{String}
@@ -1352,7 +1352,7 @@
                   s1 <| strRest  => begin
                       @assign i = stringInt(s1)
                       @match true = intString(i) == s1
-                      @assign (strRest, s2) = popNumber(strRest)
+                       (strRest, s2) = popNumber(strRest)
                     (strRest, s1 + s2)
                   end
 

@@ -14,7 +14,7 @@ function elaborate(
   =#
   #=  virtual/potentially present connectors, or only normal connectors.
   =#
-  @assign (expandable_conns, undeclared_conns, conns) =
+   (expandable_conns, undeclared_conns, conns) =
     sortConnections(connections.connections)
   #=  Don't do anything if there aren't any expandable connectors in the model.
   =#
@@ -30,11 +30,11 @@ function elaborate(
   @assign csets =
     ConnectionSets.emptySets(listLength(expandable_conns) + listLength(undeclared_conns))
   @assign csets = addExpandableConnectorsToSets(expandable_conns, csets)
-  @assign (undeclared_conns, csets) =
+   (undeclared_conns, csets) =
     ListUtil.mapFold(undeclared_conns, addUndeclaredConnectorToSets, csets)
   #=  Extract the sets of connected connectors.
   =#
-  csets_array = ConnectionSets.extractSets(csets)
+  (csets_array, _) = ConnectionSets.extractSets(csets)
   #= for set in csets_array loop
   =#
   #=   print(\"Expandable connection set:\\n\");
@@ -49,14 +49,14 @@ function elaborate(
   =#
   #=  created variables to the flat model.
   =#
-  @assign vars = flatModel.variables
+  vars = arrayList(flatModel.variables) #TODO: Change the submodule so they are always vectors
   for set in csets_array
-    @assign vars = elaborateExpandableSet(set, vars)
+    vars = elaborateExpandableSet(set, vars)
   end
   #=  Update the connections and put them back in the list of connections.
   =#
-  @assign conns = ListUtil.fold(undeclared_conns, updateUndeclaredConnection, conns)
-  @assign conns = ListUtil.fold(expandable_conns, updateExpandableConnection, conns)
+  conns = ListUtil.fold(undeclared_conns, updateUndeclaredConnection, conns)
+  conns = ListUtil.fold(expandable_conns, updateExpandableConnection, conns)
   @assign connections.connections = conns
   #=  Update the attributes of potentially present variables so that they have
   =#
@@ -64,8 +64,8 @@ function elaborate(
   =#
   #=  if they've been marked as present.
   =#
-  @assign vars = list(updatePotentiallyPresentVariable(v) for v in vars)
-  @assign flatModel.variables = vars
+  vars = list(updatePotentiallyPresentVariable(v) for v in vars)
+  @assign flatModel.variables = listArray(vars)
   return (flatModel, connections)
 end
 
@@ -74,28 +74,32 @@ module ExpandableSet
 using MetaModelica
 using ExportAll
 
-import ..Main.NFConnector
+import ..Frontend.NFConnector
+import ..BaseHashSet
+import ..BaseHashSet.HashSet
+import ..isNodeNameEqual
+import ..toString
+import ..firstName
 
 const Value = Int
 const Key = NFConnector
 const Connector = NFConnector
 
-#= Modelica extend clause =#
+#= Modelica Extend Clause =#
 include("../Util/baseAvlTreeCode.jl")
 
 function emptySet(size::Int)::HashSet
-  local set::HashSet
-  @assign set = BaseHashSet.emptyHashSetWork(
+  local set::BaseHashSet.HashSet
+  set = BaseHashSet.emptyHashSetWork(
     size,
-    (hashConnector, Connector.isNodeNameEqual, Connector.toString),
+    (hashConnector, isNodeNameEqual, toString),
   )
   return set
 end
 
 function hashConnector(conn::Connector, mod::Int)::Int
   local res::Int
-
-  @assign res = stringHashDjb2Mod(firstName(conn.name), mod)
+  res = stringHashDjb2Mod(firstName(conn.name), mod)
   return res
 end
 
@@ -173,12 +177,10 @@ function addExpandableConnectorsToSets(
   conns::List{<:Connection},
   csets::ConnectionSets.Sets,
 )::ConnectionSets.Sets
-
   local c1::Connector
   local c2::Connector
-
   for conn in conns
-    @match P_Connection.Connection.CONNECTION(lhs = c1, rhs = c2) = conn
+    @match CONNECTION(lhs = c1, rhs = c2) = conn
     @assign csets = addConnectionToSets(c1, c2, csets)
     @assign csets = addNestedExpandableConnectorsToSets(c1, c2, csets)
   end
@@ -201,8 +203,8 @@ function addNestedExpandableConnectorsToSets(
     return csets
   end
   for ec1 in ecl1
-    @assign (ecl2, oec) =
-      ListUtil.deleteMemberOnTrue(ec1, ecl2, Connector.isNodeNameEqual)
+     (ecl2, oec) =
+      ListUtil.deleteMemberOnTrue(ec1, ecl2, isNodeNameEqual)
     if isSome(oec)
       @assign csets = addConnectionToSets(ec1, Util.getOption(oec), csets)
     end
@@ -218,12 +220,12 @@ function getExpandableConnectorsInConnector(c1::Connector)::List{Connector}
   local name::ComponentRef
   local ty::M_Type
 
-  @assign ecl = begin
+  ecl = begin
     @match c1 begin
-      Connector.CONNECTOR(
+      CONNECTOR(
         name = par_name,
         ty = TYPE_COMPLEX(
-          complexTy = ComplexType.EXPANDABLE_CONNECTOR(expandableConnectors = nodes),
+          complexTy = COMPLEX_EXPANDABLE_CONNECTOR(expandableConnectors = nodes),
         ),
       ) => begin
         @assign ecl = nil
@@ -231,10 +233,10 @@ function getExpandableConnectorsInConnector(c1::Connector)::List{Connector}
           @assign ty = getType(n)
           @assign name = prefixCref(n, ty, nil, par_name)
           @assign ecl = _cons(
-            Connector.fromCref(
+            fromCref(
               name,
               ty,
-              ElementSource_createElementSource(info(n)),
+              ElementSource.createElementSource(InstNode_info(n)),
             ),
             ecl,
           )
@@ -260,19 +262,19 @@ function addUndeclaredConnectorToSets(
   local c::Connector
   local ec::Connector
 
-  @match P_Connection.Connection.CONNECTION(lhs = c1, rhs = c2) = conn
+  @match CONNECTION(lhs = c1, rhs = c2) = conn
   #=  Figure out which connector to add, and create a virtual connector if necessary.
   =#
-  if ConnectorType.isUndeclared(c1.cty)
-    if ConnectorType.isVirtual(c1.cty)
+  if isUndeclared(c1.cty)
+    if isVirtual(c1.cty)
       @assign c1 = makeVirtualConnector(c1, c2)
-      @assign conn = P_Connection.Connection.CONNECTION(c1, c2)
+      @assign conn = CONNECTION(c1, c2)
     end
     @assign c = c1
   else
-    if ConnectorType.isVirtual(c2.cty)
+    if isVirtual(c2.cty)
       @assign c2 = makeVirtualConnector(c2, c1)
-      @assign conn = P_Connection.Connection.CONNECTION(c1, c2)
+      @assign conn = CONNECTION(c1, c2)
     end
     @assign c = c2
   end
@@ -280,7 +282,7 @@ function addUndeclaredConnectorToSets(
   =#
   #=  connector it should be added to. The type here is wrong, but it doesn't matter.
   =#
-  @assign ec = Connector.CONNECTOR(
+  @assign ec = CONNECTOR(
     rest(c.name),
     c.ty,
     c.face,
@@ -307,9 +309,9 @@ function addConnectionToSets(
   =#
   #=  we make sure the face of all the connectors we add is the same.
   =#
-  @assign csets = ConnectionSets.merge(
-    Connector.setOutside(c1),
-    Connector.setOutside(c2),
+  csets = ConnectionSets.merge(
+    setOutside(c1),
+    setOutside(c2),
     csets,
   )
   return csets
@@ -324,30 +326,28 @@ function makeVirtualConnector(
   local virtual_cref::ComponentRef
   local normal_cref::ComponentRef
   local ty::M_Type
-  local node::InstNode
+  local nodeV::InstNode
 
-  @assign virtual_cref = virtualConnector.name
-  @assign normal_cref = normalConnector.name
-  @assign ty = normalConnector.ty
-  #=  TODO: Update the virtual connector with the created node.
-  =#
-  @assign node = node(normal_cref)
-  @assign node = clone(node)
-  @assign node =
-    rename(firstName(virtual_cref), node)
-  @assign node = setParent(
+  virtual_cref = virtualConnector.name
+  normal_cref = normalConnector.name
+  ty = normalConnector.ty
+  #=  TODO: Update the virtual connector with the created node. =#
+  println("Heloo")
+  nodeV = node(normal_cref)
+  nodeV = clone(nodeV)
+  nodeV = rename(firstName(virtual_cref), nodeV)
+  nodeV = setParent(
     node(rest(virtual_cref)),
-    node,
+    nodeV,
   )
-  @assign virtual_cref = prefixCref(
-    node,
+  virtual_cref = prefixCref(
+    nodeV,
     ty,
     nil,
     rest(virtual_cref),
   )
-  #=  TODO: This needs more work, the new connector might be a complex connector.
-  =#
-  @assign newConnector = Connector.CONNECTOR(
+  #=  TODO: This needs more work, the new connector might be a complex connector.  =#
+  newConnector = CONNECTOR(
     virtual_cref,
     ty,
     virtualConnector.face,
@@ -361,23 +361,24 @@ function elaborateExpandableSet(
   set::List{<:Connector},
   vars::List{<:Variable},
 )::List{Variable}
-  throw("Not implemented/checked")
+  #throw("Not implemented/checked")
   local exp_set::ExpandableSet.HashSet
   local exp_conns::List{Connector} = nil
   local exp_set_lst::List{Connector}
-
-  @assign exp_set = ExpandableSet.emptySet(Util.nextPrime(listLength(set)))
+  local expandableSetCustom = IdSet{Connector}()
+  #exp_set = ExpandableSet.emptySet(Util.nextPrime(listLength(set)))
   for c in set
-    if ConnectorType.isExpandable(c.cty)
-      @assign exp_conns = _cons(c, exp_conns)
-    elseif ConnectorType.isUndeclared(c.cty)
-      @assign exp_set = BaseHashSet.add(c, exp_set)
-      markComponentPresent(node(Connector.name(c)))
+    if isExpandable(c.cty)
+      exp_conns = _cons(c, exp_conns)
+    elseif isUndeclared(c.cty)
+      #exp_set = BaseHashSet.add(c, exp_set)
+      push!(expandableSetCustom, c)
+      markComponentPresent(node(name(c)))
     end
   end
-  @assign exp_set_lst = BaseHashSet.hashSetList(exp_set)
+  exp_set_lst = arrayList(Base.collect(expandableSetCustom)) #BaseHashSet.hashSetList(exp_set)
   for ec in exp_conns
-    @assign vars = augmentExpandableConnector(ec, exp_set_lst, vars)
+    vars = augmentExpandableConnector(ec, exp_set_lst, vars)
   end
   return vars
 end
@@ -385,28 +386,28 @@ end
 function markComponentPresent(node::InstNode)
   local comp::Component
   local cty::ConnectorType.TYPE
-
-  @assign comp = component(node)
-  @assign cty = P_Component.connectorType(comp)
-  return if ConnectorType.isPotentiallyPresent(cty)
-    @assign cty = ConnectorType.setPresent(cty)
-    @assign comp = P_Component.setConnectorType(cty, comp)
+  comp = component(node)
+  cty = connectorType(comp)
+  if isPotentiallyPresent(cty)
+    cty = setPresent(cty)
+    comp = setConnectorType(cty, comp)
     updateComponent!(comp, node)
   end
+  return
 end
 
 function augmentExpandableConnector(
   conn::Connector,
   expandableSet::List{<:Connector},
   vars::List{<:Variable},
-)::List{Variable}
+  )::List{Variable}
 
   local exp_name::ComponentRef
   local elem_name::ComponentRef
   local exp_node::InstNode
   local comp_node::InstNode
   local cls_node::InstNode
-  local node::InstNode
+  local nodeElem::InstNode
   local cls::Class
   local cls_tree::ClassTree
   local comp::Component
@@ -415,8 +416,8 @@ function augmentExpandableConnector(
   local ty::M_Type
   local complex_ty::ComplexType
 
-  @assign exp_name = Connector.name(conn)
-  @assign exp_node = node(exp_name)
+  exp_name = name(conn)
+  exp_node = node(exp_name)
   if isName(exp_node)
     Error.addInternalError(
       "Augmenting a virtual element in an expandable connector is not yet supported.",
@@ -424,37 +425,24 @@ function augmentExpandableConnector(
     )
     fail()
   end
-  @assign cls_node = classScope(exp_node)
-  @assign cls = getClass(cls_node)
-  @assign cls_tree = classTree(cls)
+  cls_node = classScope(exp_node)
+  #cls_node = clone(cls_node); #Note change from upstream....
+  cls = getClass(cls_node)
+  cls_tree = classTree(cls)
   #=  Go through the union of elements the expandable connector should have.
   =#
   for c in expandableSet
-    @assign elem_name = Connector.name(c)
-    @assign node = node(elem_name)
-    try
-      @assign comp_node = lookupElement(name(node), cls_tree)
-    catch
-      @assign comp_node = EMPTY_NODE()
-    end
+    elem_name = name(c)
+    nodeElem = node(elem_name)
+    @match ENTRY_INFO(comp_node, isImport) = lookupElement(name(nodeElem), cls_tree)
     if isEmpty(comp_node)
-      @assign nodes = _cons(node, nodes)
-      @assign ty = c.ty
-      @assign elem_name = prefixCref(node, ty, nil, exp_name)
-      @assign var = VARIABLE(
-        elem_name,
-        ty,
-        EMPTY_BINDING,
-        Visibility.PUBLIC,
-        NFComponent.DEFAULT_ATTR,
-        nil,
-        SOME(SCode.COMMENT(NONE(), SOME("virtual variable in expandable connector"))),
-        ElementSource_getInfo(c.source),
-      )
-      @assign vars = _cons(var, vars)
+      nodes = _cons(nodeElem, nodes)
+      ty = c.ty
+      elem_name = prefixCref(nodeElem, ty, nil, exp_name)
+      vars = createVirtualVariables(elem_name, ty, Connector_getInfo(c), vars)
     else
-      @assign comp_node = lookupElement(name(node), cls_tree)
-      @assign comp_node = resolveInner(comp_node)
+      @match ENTRY_INFO(comp_node, _) = lookupElement(name(nodeElem), cls_tree)
+      comp_node = resolveInner(comp_node)
       if isComponent(comp_node)
         markComponentPresent(comp_node)
       else
@@ -476,17 +464,43 @@ function augmentExpandableConnector(
   #=  change it to be present.
   =#
   if !listEmpty(nodes)
-    @assign cls_tree = addElementsToFlatTree(nodes, cls_tree)
-    @assign cls = setClassTree(cls_tree, cls)
+    cls_tree = addElementsToFlatTree(nodes, cls_tree)
+    cls = setClassTree(cls_tree, cls)
   end
   #=  Create a normal non-expandable complex type for the augmented expandable connector.
   =#
-  @assign complex_ty = makeConnectorType(cls_tree, isExpandable = false)
-  @assign ty = TYPE_COMPLEX(cls_node, complex_ty)
-  @assign cls = setType(ty, cls)
+  complex_ty = makeConnectorType(cls_tree, false)
+  ty = TYPE_COMPLEX(cls_node, complex_ty)
+  ty = liftArrayLeftList(ty, arrayDims(getType(exp_node))) #Change from pstream
+  cls = setType(ty, cls)
   updateClass(cls, cls_node)
-  componentApply(exp_node, P_Component.setType, ty)
+  componentApply(exp_node, setType, ty)
   return vars
+end
+
+function createVirtualVariables(connectorName::ComponentRef, connectorType::Type, info::SourceInfo, vars::List{Variable})
+  local var::Variable
+  local comps::Vector{InstNode}
+  local name::ComponentRef
+  local ty::Type
+  if isComplex(connectorType)
+    for comp in complexComponents(connectorType)
+      ty = getType(comp)
+      name = prefixCref(comp, ty, nil, connectorName)
+      vars = createVirtualVariables(name, ty, info, vars)
+    end
+  else
+    var = VARIABLE(connectorName, connectorType,
+                   EMPTY_BINDING,
+                   Visibility.PUBLIC,
+                   DEFAULT_ATTR,# Should be augmented,
+                   [],
+                   SOME(SCode.COMMENT(NONE(),
+                                      SOME("virtual variable in expandable connector"))),
+                   info)
+    vars = _cons(var, vars)
+  end
+  vars
 end
 
 function updateUndeclaredConnection(
@@ -507,46 +521,44 @@ function updateExpandableConnection(
   local c2::Connector
   local ty1::M_Type
   local ty2::M_Type
-  local mk::MatchKind
+  local mk::MatchKindType
   local e1::Expression
   local e2::Expression
 
-  @match P_Connection.Connection.CONNECTION(lhs = c1, rhs = c2) = conn
-  @assign (c1, ty1) = updateExpandableConnector(c1)
-  @assign (c2, ty2) = updateExpandableConnector(c2)
+  @match CONNECTION(lhs = c1, rhs = c2) = conn
+   (c1, ty1) = updateExpandableConnector(c1)
+   (c2, ty2) = updateExpandableConnector(c2)
   #=  Check that the types match now that the connectors have been augmented.
   =#
-  @assign e1 = CREF_EXPRESSION(ty1, Connector.name(c1))
-  @assign e2 = CREF_EXPRESSION(ty2, Connector.name(c2))
-  @assign (_, _, _, mk) = TypeCheck.matchExpressions(e1, ty1, e2, ty2, allowUnknown = true)
-  if TypeCheck.isIncompatibleMatch(mk)
+  e1 = CREF_EXPRESSION(ty1, name(c1))
+  e2 = CREF_EXPRESSION(ty2, name(c2))
+   (_, _, _, mk) = matchExpressions(e1, ty1, e2, ty2, #=allowUnknown=# true)
+  if isIncompatibleMatch(mk)
     Error.addSourceMessageAndFail(
       Error.INVALID_CONNECTOR_VARIABLE,
       list(toString(e1), toString(e2)),
       Connector_getInfo(c1),
     )
   end
-  @assign conns = _cons(P_Connection.Connection.CONNECTION(c1, c2), conns)
+  conns = _cons(CONNECTION(c1, c2), conns)
   return conns
 end
 
 function updateExpandableConnector(conn::Connector)::Tuple{Connector, M_Type}
   local ty::M_Type
-
   local name::ComponentRef
-
-  @match Connector.CONNECTOR(name = name, ty = ty) = conn
-  @assign name = updateNodeType(name)
-  @assign ty = setArrayElementType(
+  @match CONNECTOR(name = name, ty = ty) = conn
+  name = updateNodeType(name)
+  ty = setArrayElementType(
     ty,
     arrayElementType(nodeType(name)),
   )
-  @assign conn = Connector.CONNECTOR(name, ty, conn.face, conn.cty, conn.source)
+  conn = CONNECTOR(name, ty, conn.face, conn.cty, conn.source)
   return (conn, ty)
 end
 
 function updatePotentiallyPresentVariable(var::Variable)::Variable
-  if ConnectorType.isPotentiallyPresent(var.attributes.connectorType)
+  if isPotentiallyPresent(var.attributes.connectorType)
     @assign var.attributes =
       getAttributes(component(node(var.name)))
   end

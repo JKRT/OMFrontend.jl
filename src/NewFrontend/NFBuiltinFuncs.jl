@@ -1,4 +1,3 @@
-
 #= /*
 * This file is part of OpenModelica.
 *
@@ -37,7 +36,7 @@ import Absyn
 import DAE
 import SCode
 
-using ..Main
+using ..Frontend
 using MetaModelica
 using ExportAll
 using MetaModelica.Dangerous
@@ -68,7 +67,7 @@ const INT_COMPONENT =
     AbsynUtil.dummyInfo,
   )::Component
 const INT_PARAM =
-  COMPONENT_NODE(
+  COMPONENT_NODE{String, Int8}(
     "i",
     Visibility.PUBLIC,
     P_Pointer.createImmutable(INT_COMPONENT),
@@ -89,7 +88,7 @@ const REAL_COMPONENT =
     AbsynUtil.dummyInfo,
   )::Component
 const REAL_PARAM =
-  COMPONENT_NODE(
+  COMPONENT_NODE{String, Int8}(
     "r",
     Visibility.PUBLIC,
     P_Pointer.createImmutable(REAL_COMPONENT),
@@ -110,7 +109,7 @@ const BOOL_COMPONENT =
     AbsynUtil.dummyInfo,
   )::Component
 const BOOL_PARAM =
-  COMPONENT_NODE(
+  COMPONENT_NODE{String, Int8}(
     "b",
     Visibility.PUBLIC,
     P_Pointer.createImmutable(BOOL_COMPONENT),
@@ -131,7 +130,7 @@ const STRING_COMPONENT =
     AbsynUtil.dummyInfo,
   )::Component
 const STRING_PARAM =
-  COMPONENT_NODE(
+  COMPONENT_NODE{String, Int8}(
     "s",
     Visibility.PUBLIC,
     P_Pointer.createImmutable(STRING_COMPONENT),
@@ -152,7 +151,7 @@ const ENUM_COMPONENT =
     AbsynUtil.dummyInfo,
   )::Component
 const ENUM_PARAM =
-  COMPONENT_NODE(
+  COMPONENT_NODE{String, Int8}(
     "e",
     Visibility.PUBLIC,
     P_Pointer.createImmutable(ENUM_COMPONENT),
@@ -211,7 +210,7 @@ const INTEGER_NODE =
       RESTRICTION_FUNCTION(),
     )),
     listArrayLiteral(list(
-      C_FUNCTION(list(INTEGER_FUNCTION), true, false),
+      C_FUNCTION(M_FUNCTION[INTEGER_FUNCTION], true, false),
       C_NO_CACHE(),
       C_NO_CACHE(),
     )),
@@ -455,7 +454,7 @@ const STRING_NODE =
     )),
     listArrayLiteral(list(
       C_FUNCTION(
-        list(STRING_ENUM, STRING_INT, STRING_BOOL, STRING_REAL, STRING_REAL_FORMAT),
+        M_FUNCTION[STRING_ENUM, STRING_INT, STRING_BOOL, STRING_REAL, STRING_REAL_FORMAT],
         true,
         true,
       ),
@@ -699,7 +698,7 @@ const CLOCK_COMPONENT =
     AbsynUtil.dummyInfo,
   )::Component
 const CLOCK_PARAM =
-  COMPONENT_NODE(
+  COMPONENT_NODE{String, Int8}(
     "s",
     Visibility.PUBLIC,
     P_Pointer.createImmutable(CLOCK_COMPONENT),
@@ -861,7 +860,7 @@ const CLOCK_NODE =
     )),
     listArrayLiteral(list(
       C_FUNCTION(
-        list(CLOCK_INFERED, CLOCK_INT, CLOCK_REAL, CLOCK_BOOL, CLOCK_SOLVER),
+        M_FUNCTION[CLOCK_INFERED, CLOCK_INT, CLOCK_REAL, CLOCK_BOOL, CLOCK_SOLVER],
         true,
         true,
       ),

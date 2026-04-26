@@ -1,4 +1,3 @@
-
 #= /*
 * This file is part of OpenModelica.
 *
@@ -30,28 +29,23 @@
 *
 */ =#
 
-#import ..ConnectionSets
-
 const potFunc = Function
-
 const EQ_ASSERT_STR = STRING_EXPRESSION("Connected constants/parameters must be equal")
 
-function generateEquations(sets::Vector{<:List{<:Connector}})::List{Equation}
-  local equations::List{Equation} = nil
-
+function generateEquations(sets::Vector{<:List{<:Connector}})
+  local equations::Vector{Equation} = Equation[]
   local set_eql::List{Equation}
   local potfunc::potFunc
   local flowThreshold::Expression
   local cty::ConnectorType.TYPE
-
   setGlobalRoot(Global.isInStream, NONE())
   #= potfunc := if Config.orderConnections() then
   =#
   #=   generatePotentialEquationsOrdered else generatePotentialEquations;
   =#
-  @assign potfunc = generatePotentialEquations
+  potfunc = generatePotentialEquations
   #@assign flowThreshold = REAL_EXPRESSION(Flags.getConfigReal(Flags.FLOW_THRESHOLD))
-  @assign flowThreshold = REAL_EXPRESSION(1e-7) #=TODO Should be like this.. I think - John. Fix flag memory issue=#
+  flowThreshold = REAL_EXPRESSION(1e-7) #=TODO Should be like this.. I think - John. Fix flag memory issue=#
   for set in sets
     cty = getSetType(set)
     if isPotential(cty)
@@ -64,39 +58,38 @@ function generateEquations(sets::Vector{<:List{<:Connector}})::List{Equation}
       Error.addInternalError(
         getInstanceName() +
         " got connection set with invalid type '" +
-        ConnectorType.toDebugString(cty) +
+        toDebugString(cty) +
         "': " +
-        ListUtil.toString(set, Connector.toString, "", "{", ", ", "}", true),
-        sourceInfo(),
+        ListUtil.toString(set, toString, "", "{", ", ", "}", true),
+        sourceInfo()
       )
-      fail()
     end
-    equations = listAppend(set_eql, equations)
+    equations = vcat(listArray(set_eql), equations)
   end
   return equations
 end
+
 const CardinalityTable = NFCardinalityTable
 function evaluateOperators(
-  exp::Expression,
-  sets::ConnectionSets.Sets,
+  @nospecialize(exp::Expression),
+  @nospecialize(sets::ConnectionSets.Sets),
   setsArray::Vector{<:List{<:Connector}},
   ctable::CardinalityTable.Table,
 )::Expression
   local evalExp::Expression
-
-  @assign evalExp = begin
+  evalExp = begin
     local call::Call
     local expanded::Bool
     @match exp begin
       CALL_EXPRESSION(call = call) => begin
         begin
           @match call begin
-            P_Call.TYPED_CALL(__) => begin
+            TYPED_CALL(__) => begin
               begin
-                @match P_Function.name(call.fn) begin
+                @match name(call.fn) begin
                   Absyn.IDENT("inStream") => begin
                     evaluateInStream(
-                      toCref(listHead(call.arguments)),
+                      toCref(Base.first(call.arguments)),
                       sets,
                       setsArray,
                       ctable,
@@ -105,7 +98,7 @@ function evaluateOperators(
 
                   Absyn.IDENT("actualStream") => begin
                     evaluateActualStream(
-                      toCref(listHead(call.arguments)),
+                      toCref(Base.first(call.arguments)),
                       sets,
                       setsArray,
                       ctable,
@@ -113,16 +106,17 @@ function evaluateOperators(
                   end
 
                   Absyn.IDENT("cardinality") => begin
-                    CardinalityTable.evaluateCardinality(listHead(call.arguments), ctable)
+                    CardinalityTable.evaluateCardinality(Base.first(call.arguments), ctable)
                   end
 
                   _ => begin
                     mapShallow(
                       exp,
-                      (sets, setsArray, ctable) -> evaluateOperators(
-                        sets = sets,
-                        setsArray = setsArray,
-                        ctable = ctable,
+                      (expArg) -> evaluateOperators(
+                        expArg,
+                        sets,
+                        setsArray,
+                        ctable,
                       ),
                     )
                   end
@@ -130,14 +124,14 @@ function evaluateOperators(
               end
             end
 
-            P_Call.TYPED_REDUCTION(
+            TYPED_REDUCTION(
               __,
             ) where {(contains(call.exp, isStreamCall))} =>
               begin
                 evaluateOperatorReductionExp(exp, sets, setsArray, ctable)
               end
 
-            P_Call.TYPED_ARRAY_CONSTRUCTOR(
+            TYPED_ARRAY_CONSTRUCTOR(
               __,
             ) where {(contains(call.exp, isStreamCall))} =>
               begin
@@ -147,10 +141,11 @@ function evaluateOperators(
             _ => begin
               mapShallow(
                 exp,
-                (sets, setsArray, ctable) -> evaluateOperators(
-                  sets = sets,
-                  setsArray = setsArray,
-                  ctable = ctable,
+                (expArg) -> evaluateOperators(
+                  expArg,
+                  sets,
+                  setsArray,
+                  ctable,
                 ),
               )
             end
@@ -161,12 +156,12 @@ function evaluateOperators(
       BINARY_EXPRESSION(
         exp1 = CREF_EXPRESSION(__),
         operator = OPERATOR(op = Op.MUL),
-        exp2 = CALL_EXPRESSION(call = call && P_Call.TYPED_CALL(__)),
-      ) where {(AbsynUtil.isNamedPathIdent(P_Function.name(call.fn), "actualStream"))} =>
+        exp2 = CALL_EXPRESSION(call = call && TYPED_CALL(__)),
+      ) where {(AbsynUtil.isNamedPathIdent(name(call.fn), "actualStream"))} =>
         begin
           evaluateActualStreamMul(
             exp.exp1,
-            listHead(call.arguments),
+            Base.first(call.arguments),
             exp.operator,
             sets,
             setsArray,
@@ -175,34 +170,31 @@ function evaluateOperators(
         end
 
       BINARY_EXPRESSION(
-        exp1 = CALL_EXPRESSION(call = call && P_Call.TYPED_CALL(__)),
+        exp1 = CALL_EXPRESSION(call = call && TYPED_CALL(__)),
         operator = OPERATOR(op = Op.MUL),
         exp2 = CREF_EXPRESSION(__),
-      ) where {(AbsynUtil.isNamedPathIdent(P_Function.name(call.fn), "actualStream"))} =>
+      ) where {(AbsynUtil.isNamedPathIdent(name(call.fn), "actualStream"))} =>
         begin
           evaluateActualStreamMul(
             exp.exp2,
-            listHead(call.arguments),
+            Base.first(call.arguments),
             exp.operator,
             sets,
             setsArray,
             ctable,
           )
         end
-
       _ => begin
         mapShallow(
           exp,
-          (sets, setsArray, ctable) ->
-            evaluateOperators(sets = sets, setsArray = setsArray, ctable = ctable),
+          (expArg) ->
+            evaluateOperators(expArg, sets, setsArray, ctable),
         )
       end
     end
   end
-  #=  inStream/actualStream can't handle non-literal subscripts, so reductions and array
-  =#
-  #=  constructors containing such calls needs to be expanded to get rid of the iterators.
-  =#
+  #=  inStream/actualStream can't handle non-literal subscripts, so reductions and array =#
+  #=  constructors containing such calls needs to be expanded to get rid of the iterators.=#
   return evalExp
 end
 
@@ -219,98 +211,21 @@ end
    will be X = Y.A and X = Z.B. =#"""
 function generatePotentialEquations(elements::List{<:Connector})::List{Equation}
   local equations::List{Equation}
-
   local c1::Connector
-
-  @assign c1 = listHead(elements)
+  c1 = listHead(elements)
   if variability(c1) > Variability.PARAMETER
-    @assign equations = list(
+    equations = list(
       makeEqualityEquation(c1.name, c1.source, c2.name, c2.source)
       for c2 in listRest(elements)
     )
   else
-    @assign equations = list(
+    equations = list(
       makeEqualityAssert(c1.name, c1.source, c2.name, c2.source)
       for c2 in listRest(elements)
     )
   end
   return equations
 end
-
-#= function generatePotentialEquationsOrdered
-=#
-#=   \"Like generatePotentialEquations, but orders the connectors with
-=#
-#=    shouldFlipPotentialEquation.\"
-=#
-#=   input list<Connector> elements;
-=#
-#=   output list<Equation> equations = {};
-=#
-#= protected
-=#
-#=   partial function eqFunc
-=#
-#=     input ComponentRef lhsCref;
-=#
-#=     input DAE.ElementSource lhsSource;
-=#
-#=     input ComponentRef rhsCref;
-=#
-#=     input DAE.ElementSource rhsSource;
-=#
-#=     output Equation eq;
-=#
-#=   end eqFunc;
-=#
-#=
-=#
-#=   Connector c1;
-=#
-#=   ComponentRef cr1, cr2;
-=#
-#=   DAE.ElementSource source;
-=#
-#=   eqFunc eqfunc;
-=#
-#= algorithm
-=#
-#=   if listEmpty(elements) then
-=#
-#=     return;
-=#
-#=   end if;
-=#
-#=
-=#
-#=   c1 := listHead(elements);
-=#
-#=   eqfunc := if Connector.variability(c1) > Variability.PARAMETER then
-=#
-#=     makeEqualityEquation else makeEqualityAssert;
-=#
-#=
-=#
-#=   cr1 := c1.name;
-=#
-#=
-=#
-#=   for c2 in listRest(elements) loop
-=#
-#=     cr2 := c2.name;
-=#
-#=     (cr1, cr2) := Util.swap(shouldFlipPotentialEquation(cr1, c1.source), cr1, cr2);
-=#
-#=     equations := eqfunc(cr1, c2.source, cr2, c2.source) :: equations;
-=#
-#=     c1 := c2;
-=#
-#=     cr1 := cr2;
-=#
-#=   end for;
-=#
-#= end generatePotentialEquationsOrdered;
-=#
 
 function makeEqualityEquation(
   lhsCref::ComponentRef,
@@ -321,11 +236,10 @@ function makeEqualityEquation(
   local equalityEq::Equation
 
   local source::DAE.ElementSource
-
-  @assign source = DAE.emptyElementSource #ElementSource.mergeSources(lhsSource, rhsSource) TODO
+  source = DAE.emptyElementSource #ElementSource.mergeSources(lhsSource, rhsSource) TODO
   #= source := ElementSource.addElementSourceConnect(source, (lhsCref, rhsCref));
   =#
-  @assign equalityEq = EQUATION_CREF_EQUALITY(lhsCref, rhsCref, source)
+  equalityEq = makeCrefEquality(lhsCref, rhsCref, EMPTY_NODE(), source)
   return equalityEq
 end
 
@@ -352,9 +266,9 @@ function makeEqualityAssert(
   if isReal(ty)
     @assign exp =
       BINARY_EXPRESSION(lhs_exp, makeSub(ty), rhs_exp)
-    @assign exp = CALL_EXPRESSION(P_Call.makeTypedCall(
+    @assign exp = CALL_EXPRESSION(makeTypedCall(
       NFBuiltinFuncs.ABS_REAL,
-      list(exp),
+      Expression[exp],
       variability(exp),
     ))
     @assign exp = RELATION_EXPRESSION(
@@ -373,7 +287,7 @@ function makeEqualityAssert(
   #=  For any other type, generate assertion for 'lhs == rhs'.
   =#
   @assign equalityAssert =
-    Equation.ASSERT(exp, EQ_ASSERT_STR, NFBuiltin.ASSERTIONLEVEL_ERROR, source)
+    EQUATION_ASSERT(exp, EQ_ASSERT_STR, NFBuiltin.ASSERTIONLEVEL_ERROR, source)
   return equalityAssert
 end
 
@@ -383,8 +297,16 @@ function generateFlowEquations(elements::List{<:Connector})::List{Equation}
   local c_rest::List{Connector}
   local src::DAE.ElementSource
   local sum::Expression
+  local iterators::List{InstNode} = nil
   @match _cons(c, c_rest) = elements
   src = c.source
+  #= Handle arrays =#
+  if isArray(c)
+    (iterators, ranges, subs) = makeIterators(c.name, arrayDims(c.ty))
+    subs = listReverseInPlace(subs)
+    @match c <| c_rest = list(addSubscripts(subs, e) for e in elements)
+  end
+
   if listEmpty(c_rest)
     sum = fromCref(c.name)
   else
@@ -398,15 +320,123 @@ function generateFlowEquations(elements::List{<:Connector})::List{Equation}
       src = DAE.emptyElementSource #ElementSource.mergeSources(src, e.source) TODO
     end
   end
-  equations = list(EQUATION_EQUALITY(sum, REAL_EXPRESSION(0.0), c.ty, src))
+  equations = list(EQUATION_EQUALITY(sum, REAL_EXPRESSION(0.0), arrayElementType(c.ty), src))
+  while ! listEmpty(iterators)
+    local forEq = EQUATION_FOR(listHead(iterators),
+                               SOME(listHead(ranges)),
+                               listArray(equations),
+                               #= TODO: Investigate EMPTY_NODE(), John 2024 march=#
+                               src)
+    #= Unroll the for loop using flattenEquation if we are scalarizing the model =#
+    equations = if Flags.isSet(Flags.NF_SCALARIZE)
+      arrayList(unrollFlowForLoop(forEq, COMPONENT_REF_EMPTY(), Equation[]))
+    else
+      list(forEq)
+    end
+    #equations = list(forEq)
+    iterators = listRest(iterators)
+    ranges = listRest(ranges)
+  end
+
   return equations
+end
+
+"""
+   Unrolls an equational for-loop for flow equations.
+   This is special since it forces the iterator replacements.
+   It differs from the normal unroll procedure in that it replaces all \$1 call with the correct value.
+"""
+function unrollFlowForLoop(forLoop::EQUATION_FOR,
+                           prefix::ComponentRef,
+                           equations::Vector{Equation})
+  local iter::InstNode
+  local body::Vector{Equation}
+  local unrolled_body::Vector{Equation}
+  local range::Expression
+  local range_iter::RangeIterator
+  local val::Expression
+  @match EQUATION_FOR(iterator = iter, range = SOME(range), body = body) = forLoop
+  range = flattenExp(range, prefix)
+  range = evalExp(range, EVALTARGET_RANGE(Equation_info(forLoop)))
+  range_iter = RangeIterator_fromExp(range)
+  while hasNext(range_iter)
+    (range_iter, val) = next(range_iter)
+    unrolled_body = Equation[]
+    for eq in body
+      teq = mapExp(eq, (exp) -> replaceFlowIterator(exp, forLoop.iterator, val))
+      push!(unrolled_body, teq)
+    end
+    equations = vcat(unrolled_body, equations)
+  end
+  return equations
+end
+
+
+"""
+Replaces flow iterators.
+Note, this assumes that the encompassing for loop is constructed in a certain way.
+@author johti17
+"""
+function replaceFlowIterator(@nospecialize(exp::Expression),
+                             iterator::InstNode,
+                             @nospecialize(iteratorValue::Expression))
+  local res = if exp isa CREF_EXPRESSION
+    exp = CREF_EXPRESSION(exp.ty, _replaceIteratorInCref(exp.cref, iterator, iteratorValue))
+    exp
+  elseif exp isa BINARY_EXPRESSION
+    expExp1 = replaceFlowIterator(exp.exp1,
+                                  iterator,
+                                  iteratorValue)
+    expExp2 = replaceFlowIterator(exp.exp2,
+                                  iterator,
+                                  iteratorValue)
+    BINARY_EXPRESSION(expExp1, exp.operator, expExp2)
+  elseif exp isa UNARY_EXPRESSION
+    expExp= replaceFlowIterator(exp.exp,
+                                iterator,
+                                iteratorValue)
+    UNARY_EXPRESSION(exp.operator, expExp)
+  else
+    exp
+  end
+  return res
+end
+
+
+
+"""
+Walk a COMPONENT_REF_CREF chain and replace any subscript that references
+the given iterator node with a concrete SUBSCRIPT_INDEX(iteratorValue).
+"""
+function _replaceIteratorInCref(cref::ComponentRef, iterator::InstNode,
+                                @nospecialize(iteratorValue::Expression))::ComponentRef
+  if !(cref isa COMPONENT_REF_CREF)
+    return cref
+  end
+  local newSubs = Subscript[]
+  local changed = false
+  for sub in cref.subscripts
+    if sub isa SUBSCRIPT_INDEX && sub.index isa CREF_EXPRESSION
+      subNode = sub.index.cref
+      if subNode isa COMPONENT_REF_CREF && subNode.node === iterator
+        push!(newSubs, SUBSCRIPT_INDEX(iteratorValue))
+        changed = true
+        continue
+      end
+    end
+    push!(newSubs, sub)
+  end
+  local newRestCref = _replaceIteratorInCref(cref.restCref, iterator, iteratorValue)
+  if changed || newRestCref !== cref.restCref
+    return COMPONENT_REF_CREF(cref.node, list(newSubs...), cref.ty, cref.origin, newRestCref)
+  end
+  return cref
 end
 
 """ #= Creates an expression from a connector element, which is the element itself
    if it's an inside connector, or the element negated if it's outside. =#"""
 function makeFlowExp(element::Connector)::Expression
   local exp::Expression
-
   local face::FaceType
 
   @assign exp = fromCref(element.name)
@@ -444,17 +474,17 @@ function generateStreamEquations(
     #=  Unconnected stream connector, do nothing.
     =#
     @match elements begin
-      Connector.CONNECTOR(face = Face.INSIDE) <| nil() => begin
+      CONNECTOR(face = Face.INSIDE) <| nil() => begin
         nil
       end
 
-      Connector.CONNECTOR(face = Face.INSIDE) <|
-      Connector.CONNECTOR(face = Face.INSIDE) <| nil() => begin
+      CONNECTOR(face = Face.INSIDE) <|
+      CONNECTOR(face = Face.INSIDE) <| nil() => begin
         nil
       end
 
-      Connector.CONNECTOR(name = cr1, face = Face.OUTSIDE, source = src1) <|
-      Connector.CONNECTOR(name = cr2, face = Face.OUTSIDE, source = src2) <|
+      CONNECTOR(name = cr1, face = Face.OUTSIDE, source = src1) <|
+      CONNECTOR(name = cr2, face = Face.OUTSIDE, source = src2) <|
       nil() => begin
         #=  Both inside, do nothing.
         =#
@@ -475,8 +505,8 @@ function generateStreamEquations(
         )
       end
 
-      Connector.CONNECTOR(name = cr1, source = src1) <|
-      Connector.CONNECTOR(name = cr2, source = src2) <| nil() => begin
+      CONNECTOR(name = cr1, source = src1) <|
+      CONNECTOR(name = cr2, source = src2) <| nil() => begin
         #=  One inside, one outside:
         =#
         #=  cr1 = cr2;
@@ -488,8 +518,8 @@ function generateStreamEquations(
       _ => begin
         #=  The general case with N inside connectors and M outside:
         =#
-        @assign (outside, inside) =
-          ListUtil.splitOnTrue(elements, Connector.isOutside)
+         (outside, inside) =
+          ListUtil.splitOnTrue(elements, isOutside)
         streamEquationGeneral(outside, inside, flowThreshold)
       end
     end
@@ -514,10 +544,7 @@ function streamEquationGeneral(
     @assign cref_exp = fromCref(e.name)
     @assign outside = removeStreamSetElement(e.name, outsideElements)
     @assign res = streamSumEquationExp(outside, insideElements, flowThreshold)
-    @assign src = ElementSource.addAdditionalComment(
-      e.source,
-      " equation generated from stream connection",
-    )
+    src = e.source
     @assign equations =
       _cons(EQUATION_EQUALITY(cref_exp, res, TYPE_REAL(), src), equations)
   end
@@ -618,7 +645,7 @@ function streamFlowExp(element::Connector)::Tuple{Expression, Expression}
 
   local stream_cr::ComponentRef
 
-  @assign stream_cr = Connector.name(element)
+  @assign stream_cr = name(element)
   @assign streamExp = fromCref(stream_cr)
   @assign flowExp = fromCref(associatedFlowCref(stream_cr))
   return (streamExp, flowExp)
@@ -630,7 +657,7 @@ function flowExp(element::Connector)::Expression
 
   local flow_cr::ComponentRef
 
-  @assign flow_cr = associatedFlowCref(Connector.name(element))
+  @assign flow_cr = associatedFlowCref(name(element))
   @assign flowExp = fromCref(flow_cr)
   return flowExp
 end
@@ -638,13 +665,13 @@ end
 """ #= Helper function to streamSumEquationExp. Returns the expression
     max(flow_exp, eps) * inStream(stream_exp)
    given a stream set element. =#"""
-function sumOutside1(element::Connector, flowThreshold::Expression)::Expression
+function sumOutside1(element::Connector, @nospecialize(flowThreshold::Expression))::Expression
   local exp::Expression
 
   local stream_exp::Expression
   local flow_exp::Expression
 
-  @assign (stream_exp, flow_exp) = streamFlowExp(element)
+   (stream_exp, flow_exp) = streamFlowExp(element)
   @assign exp = BINARY_EXPRESSION(
     makePositiveMaxCall(flow_exp, element, flowThreshold),
     makeMul(TYPE_REAL()),
@@ -656,14 +683,14 @@ end
 """ #= Helper function to streamSumEquationExp. Returns the expression
     max(-flow_exp, eps) * stream_exp
    given a stream set element. =#"""
-function sumInside1(element::Connector, flowThreshold::Expression)::Expression
+function sumInside1(element::Connector, @nospecialize(flowThreshold::Expression))::Expression
   local exp::Expression
 
   local stream_exp::Expression
   local flow_exp::Expression
   local flow_threshold::Expression
 
-  @assign (stream_exp, flow_exp) = streamFlowExp(element)
+   (stream_exp, flow_exp) = streamFlowExp(element)
   @assign flow_exp =
     UNARY_EXPRESSION(makeUMinus(TYPE_REAL()), flow_exp)
   @assign exp = BINARY_EXPRESSION(
@@ -677,7 +704,7 @@ end
 """ #= Helper function to streamSumEquationExp. Returns the expression
     max(flow_exp, eps)
    given a stream set element. =#"""
-function sumOutside2(element::Connector, flowThreshold::Expression)::Expression
+function sumOutside2(element::Connector, @nospecialize(flowThreshold::Expression))::Expression
   local exp::Expression
 
   local flow_exp::Expression
@@ -690,7 +717,7 @@ end
 """ #= Helper function to streamSumEquationExp. Returns the expression
     max(-flow_exp, eps)
    given a stream set element. =#"""
-function sumInside2(element::Connector, flowThreshold::Expression)::Expression
+function sumInside2(element::Connector, @nospecialize(flowThreshold::Expression))::Expression
   local exp::Expression
 
   local flow_exp::Expression
@@ -703,12 +730,12 @@ function sumInside2(element::Connector, flowThreshold::Expression)::Expression
 end
 
 """ #= Creates an inStream call expression. =#"""
-function makeInStreamCall(streamExp::Expression)::Expression
+function makeInStreamCall(@nospecialize(streamExp::Expression))::Expression
   local inStreamCall::Expression
 
-  @assign inStreamCall = CALL_EXPRESSION(P_Call.makeTypedCall(
+  @assign inStreamCall = CALL_EXPRESSION(makeTypedCall(
     NFBuiltinFuncs.IN_STREAM,
-    list(streamExp),
+    Expression[streamExp],
     variability(streamExp),
   ))
   return inStreamCall
@@ -728,7 +755,7 @@ function makePositiveMaxCall(
   local flow_threshold::Expression
 
   @assign flow_node =
-    node(associatedFlowCref(Connector.name(
+    node(associatedFlowCref(name(
       element,
     )))
   @assign nominal_oexp =
@@ -744,39 +771,34 @@ function makePositiveMaxCall(
   else
     @assign flow_threshold = flowThreshold
   end
-  @assign positiveMaxCall = CALL_EXPRESSION(P_Call.makeTypedCall(
+  @assign positiveMaxCall = CALL_EXPRESSION(makeTypedCall(
     NFBuiltinFuncs.POSITIVE_MAX_REAL,
-    list(flowExp, flow_threshold),
-    Connector.variability(element),
+    Expression[flowExp, flow_threshold],
+    variability(element),
   ))
   setGlobalRoot(Global.isInStream, SOME(true))
   return positiveMaxCall
 end
 
-function isStreamCall(exp::Expression)::Bool
+function isStreamCall(@nospecialize(exp::Expression))::Bool
   local streamCall::Bool
-
-  @assign streamCall = begin
-    local name::String
+  streamCall = begin
     @match exp begin
       CALL_EXPRESSION(__) => begin
         begin
-          @match P_Function.name(P_Call.typedFunction(exp.call)) begin
+          @match name(typedFunction(exp.call)) begin
             Absyn.IDENT("inStream") => begin
               true
             end
-
             Absyn.IDENT("actualStream") => begin
               true
             end
-
             _ => begin
               false
             end
           end
         end
       end
-
       _ => begin
         false
       end
@@ -803,16 +825,16 @@ function evaluateOperatorReductionExp(
 
   @assign evalExp = begin
     @match exp begin
-      CALL_EXPRESSION(call = call && P_Call.TYPED_REDUCTION(__)) => begin
+      CALL_EXPRESSION(call = call && TYPED_REDUCTION(__)) => begin
         @assign ty = typeOf(call.exp)
         for iter in call.iters
-          @assign (iter_node, iter_exp) = iter
+           (iter_node, iter_exp) = iter
           if variability(component(iter_node)) >
              Variability.PARAMETER
             print("Iteration range in reduction containing connector operator calls must be a parameter expression.")
             fail()
           end
-          @assign iter_exp = Ceval.evalExp(iter_exp)
+          @assign iter_exp = evalExp(iter_exp)
           @assign ty = liftArrayLeftList(
             ty,
             arrayDims(typeOf(iter_exp)),
@@ -820,10 +842,10 @@ function evaluateOperatorReductionExp(
           @assign iters = _cons((iter_node, iter_exp), iters)
         end
         @assign iters = listReverseInPlace(iters)
-        @assign arg = P_ExpandExp.ExpandExp.expandArrayConstructor(call.exp, ty, iters)
-        CALL_EXPRESSION(P_Call.makeTypedCall(
+        @assign arg = expandArrayConstructor(call.exp, ty, iters)
+        CALL_EXPRESSION(makeTypedCall(
           call.fn,
-          list(arg),
+          Expression[arg],
           call.var,
           call.ty,
         ))
@@ -844,7 +866,7 @@ function evaluateOperatorArrayConstructorExp(
 
   local expanded::Bool
 
-  @assign (evalExp, expanded) = P_ExpandExp.ExpandExp.expand(exp)
+   (evalExp, expanded) = expand(exp)
   if !expanded
     Error.addInternalError(
       getInstanceName() +
@@ -870,7 +892,7 @@ function evaluateInStream(
   local sl::List{Connector}
   local set::Int
 
-  @assign c = Connector.CONNECTOR(
+  @assign c = CONNECTOR(
     cref,
     TYPE_UNKNOWN(),
     Face.INSIDE,
@@ -916,12 +938,12 @@ function generateInStreamExp(
   @assign reducedStreams = list(s for s in streams if !isZeroFlowMinMax(s, streamCref))
   @assign exp = begin
     @match reducedStreams begin
-      Connector.CONNECTOR(face = Face.INSIDE) <| nil() => begin
+      CONNECTOR(face = Face.INSIDE) <| nil() => begin
         fromCref(streamCref)
       end
 
-      Connector.CONNECTOR(face = Face.INSIDE) <|
-      Connector.CONNECTOR(face = Face.INSIDE) <| nil() => begin
+      CONNECTOR(face = Face.INSIDE) <|
+      CONNECTOR(face = Face.INSIDE) <| nil() => begin
         #=  Unconnected stream connector:
         =#
         #=    inStream(c) = c;
@@ -932,18 +954,18 @@ function generateInStreamExp(
         =#
         #=    inStream(c2) = c1;
         =#
-        @match list(Connector.CONNECTOR(name = cr)) =
+        @match list(CONNECTOR(name = cr)) =
           removeStreamSetElement(streamCref, reducedStreams)
         fromCref(cr)
       end
 
-      Connector.CONNECTOR(face = f1) <|
-      Connector.CONNECTOR(face = f2) <| nil() where {(f1 != f2)} => begin
+      CONNECTOR(face = f1) <|
+      CONNECTOR(face = f2) <| nil() where {(f1 != f2)} => begin
         #=  One inside, one outside connected stream connector:
         =#
         #=    inStream(c1) = inStream(c2);
         =#
-        @match list(Connector.CONNECTOR(name = cr)) =
+        @match list(CONNECTOR(name = cr)) =
           removeStreamSetElement(streamCref, reducedStreams)
         evaluateInStream(cr, sets, setsArray, ctable)
       end
@@ -951,8 +973,8 @@ function generateInStreamExp(
       _ => begin
         #=  The general case:
         =#
-        @assign (outside, inside) =
-          ListUtil.splitOnTrue(reducedStreams, Connector.isOutside)
+         (outside, inside) =
+          ListUtil.splitOnTrue(reducedStreams, isOutside)
         @assign inside = removeStreamSetElement(streamCref, inside)
         @assign exp = streamSumEquationExp(
           outside,
@@ -975,7 +997,7 @@ function isZeroFlowMinMax(conn::Connector, streamCref::ComponentRef)::Bool
 
   if isEqual(streamCref, conn.name)
     @assign isZero = false
-  elseif Connector.isOutside(conn)
+  elseif isOutside(conn)
     @assign isZero = isZeroFlow(conn, "max")
   else
     @assign isZero = isZeroFlow(conn, "min")
@@ -1074,8 +1096,8 @@ function evaluateActualStreamMul(
   local cr::ComponentRef
   local flow_cr::ComponentRef
 
-  @match (@match CREF_EXPRESSION(cref = cr) = e1) =
-    evaluateOperators(crefExp, sets, setsArray, ctable)
+  e1 = evaluateOperators(crefExp, sets, setsArray, ctable)
+  @match CREF_EXPRESSION(cref = cr) = e1
   @assign e2 = evaluateActualStream(
     toCref(actualStreamArg),
     sets,
@@ -1171,30 +1193,32 @@ function evaluateFlowDirection(flowCref::ComponentRef)::Int
   return direction
 end
 
-""" #= Creates a smooth(order, arg) call. =#"""
-function makeSmoothCall(arg::Expression, order::Int)::Expression
+""" Creates a smooth(order, arg) call. """
+function makeSmoothCall(@nospecialize(arg::Expression), order::Int)::Expression
   local callExp::Expression
 
-  @assign callExp = CALL_EXPRESSION(P_Call.makeTypedCall(
+  @assign callExp = CALL_EXPRESSION(makeTypedCall(
     NFBuiltinFuncs.SMOOTH,
-    list(DAE.INTEGER_EXPRESSION(order), arg),
+    Expression[INTEGER_EXPRESSION(order), arg],
     variability(arg),
   ))
   return callExp
 end
 
-""" #= This function removes the given cref from a connection set. =#"""
+""" This function removes the given cref from a connection set. """
 function removeStreamSetElement(
   cref::ComponentRef,
   elements::List{<:Connector},
 )::List{Connector}
 
-  @assign elements = ListUtil.deleteMemberOnTrue(cref, elements, compareCrefStreamSet)
+  (elements, _) = ListUtil.deleteMemberOnTrue(cref, elements, compareCrefStreamSet)
   return elements
 end
 
-""" #= Helper function to removeStreamSetElement. Checks if the cref in a stream set
-  element matches the given cref. =#"""
+"""
+  Helper function to removeStreamSetElement. Checks if the cref in a stream set
+  element matches the given cref.
+"""
 function compareCrefStreamSet(cref::ComponentRef, element::Connector)::Bool
   local matches::Bool
 
@@ -1211,10 +1235,10 @@ function associatedFlowCref(streamCref::ComponentRef)::ComponentRef
   local rest_cr::ComponentRef
   local flow_node::InstNode
 
-  @match CREF(ty = ty, restCref = rest_cr) = streamCref
+  @match COMPONENT_REF_CREF(ty = ty, restCref = rest_cr) = streamCref
   @assign flowCref = begin
     @match arrayElementType(ty) begin
-      TYPE_COMPLEX(complexTy = ComplexType.CONNECTOR(flows = flow_node <| nil())) => begin
+      TYPE_COMPLEX(complexTy = COMPLEX_CONNECTOR(flows = flow_node <| nil())) => begin
         prefixCref(
           flow_node,
           getType(flow_node),

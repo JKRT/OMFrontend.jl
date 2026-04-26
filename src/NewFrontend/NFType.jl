@@ -1,87 +1,83 @@
-FunctionType = (() -> begin #= Enumeration =#
-  FUNCTIONAL_PARAMETER = 1  #= Function parameter of function type. =#
-  FUNCTION_REFERENCE = 2  #= Function name used to reference a function. =#
-  FUNCTIONAL_VARIABLE = 3  #= A variable that contains a function reference. =#
-  () -> (FUNCTIONAL_PARAMETER; FUNCTION_REFERENCE; FUNCTIONAL_VARIABLE)  #= A variable that contains a function reference. =#
-end)()
+struct FunctionTypeStruct
+  FUNCTIONAL_PARAMETER::Int
+  FUNCTION_REFERENCE::Int
+  FUNCTIONAL_VARIABLE::Int
+end
+const FunctionType = FunctionTypeStruct(1, 2, 3)
 
-@UniontypeDecl NFType
-@Uniontype NFType begin
-  @Record SUBSCRIPTED_TYPE begin
-    name::String
-    ty::M_Type
-    subs::List{M_Type}
-    subscriptedTy::M_Type
-  end
+abstract type NFType end
 
-  @Record TYPE_ANY begin
-  end
-
-  @Record TYPE_POLYMORPHIC begin
-    name::String
-  end
-
-  @Record TYPE_METABOXED begin
-    ty::M_Type
-  end
-
-  @Record TYPE_FUNCTION begin
-    fn::M_Function
-    fnType
-  end
-
-  @Record TYPE_COMPLEX begin
-    cls::InstNode
-    complexTy::ComplexType
-  end
-
-  @Record TYPE_UNKNOWN begin
-  end
-
-  @Record TYPE_NORETCALL begin
-  end
-
-  @Record TYPE_TUPLE begin
-    types::List{M_Type}
-    names::Option{List{String}}
-  end
-
-  @Record TYPE_ARRAY begin
-    elementType::M_Type
-    dimensions::List{Dimension}
-  end
-
-  @Record TYPE_ENUMERATION_ANY begin
-  end
-
-  @Record TYPE_ENUMERATION begin
-    typePath::Absyn.Path
-    literals::List{String}
-  end
-
-  @Record TYPE_CLOCK begin
-  end
-
-  @Record TYPE_BOOLEAN begin
-  end
-
-  @Record TYPE_STRING begin
-  end
-
-  @Record TYPE_REAL begin
-  end
-
-  @Record TYPE_INTEGER begin
-  end
+struct TYPE_SUBSCRIPTED  <: NFType
+  name::String
+  ty::M_Type
+  subs::List{M_Type}
+  subscriptedTy::M_Type
 end
 
+struct TYPE_ANY  <: NFType
+end
 
+struct TYPE_POLYMORPHIC  <: NFType
+  name::String
+end
 
-function subscriptedTypeName(expType::M_Type, subscriptTypes::List{<:M_Type})::String
+struct TYPE_METABOXED  <: NFType
+  ty::M_Type
+end
+
+mutable struct TYPE_FUNCTION  <: NFType
+  fn::M_Function
+  #= Specified by the function type struct. =#
+  fnType::Int
+end
+
+struct TYPE_COMPLEX  <: NFType
+  cls::InstNode
+  complexTy::ComplexType
+end
+
+struct TYPE_UNKNOWN  <: NFType
+end
+
+struct TYPE_NORETCALL  <: NFType
+end
+
+struct TYPE_TUPLE  <: NFType
+  types::List{M_Type}
+  names::Option{List{String}}
+end
+
+mutable struct TYPE_ARRAY  <: NFType
+  elementType::M_Type
+  dimensions::List{Dimension}
+end
+
+struct TYPE_ENUMERATION_ANY  <: NFType
+end
+
+mutable struct TYPE_ENUMERATION  <: NFType
+  typePath::Absyn.Path
+  literals::List{String}
+end
+
+struct TYPE_CLOCK  <: NFType
+end
+
+struct TYPE_BOOLEAN  <: NFType
+end
+
+struct TYPE_STRING  <: NFType
+end
+
+struct TYPE_REAL  <: NFType
+end
+
+struct TYPE_INTEGER  <: NFType
+end
+
+function subscriptedTypeName(@nospecialize(expType::M_Type), subscriptTypes::List{<:M_Type})::String
   local str::String
-
   local strl::List{String}
-
   @assign strl = list(toString(t) for t in subscriptTypes)
   @assign strl = _cons("_", strl)
   @assign strl = _cons(toString(expType), strl)
@@ -90,15 +86,15 @@ function subscriptedTypeName(expType::M_Type, subscriptTypes::List{<:M_Type})::S
   return str
 end
 
-function sizeType(arrayTy::M_Type)::M_Type
+function sizeType(@nospecialize(arrayTy::M_Type))::M_Type
   local sizeTy::M_Type
 
-  if Type.isUnknown(arrayTy)
+  if isUnknown(arrayTy)
     @assign sizeTy = TYPE_UNKNOWN()
   else
     @assign sizeTy = TYPE_ARRAY(
       TYPE_INTEGER(),
-      list(P_Dimension.Dimension.fromInteger(dimensionCount(arrayTy))),
+      list(fromInteger(dimensionCount(arrayTy))),
     )
   end
   #=  Return unknown type if the type is unknown, to avoid returning Array[0]
@@ -108,7 +104,7 @@ function sizeType(arrayTy::M_Type)::M_Type
   return sizeTy
 end
 
-function isBoxed(ty::M_Type)::Bool
+function isBoxed(@nospecialize(ty::M_Type))::Bool
   local isBoxed::Bool
 
   @assign isBoxed = begin
@@ -125,7 +121,7 @@ function isBoxed(ty::M_Type)::Bool
   return isBoxed
 end
 
-function unbox(ty::M_Type)::M_Type
+function unbox(@nospecialize(ty::M_Type))::M_Type
   local unboxedType::M_Type
 
   @assign unboxedType = begin
@@ -142,7 +138,7 @@ function unbox(ty::M_Type)::M_Type
   return unboxedType
 end
 
-function box(ty::M_Type)::M_Type
+function box(@nospecialize(ty::M_Type))::M_Type
   local boxedType::M_Type
 
   @assign boxedType = begin
@@ -159,24 +155,21 @@ function box(ty::M_Type)::M_Type
   return boxedType
 end
 
-function enumSize(ty::M_Type)::Int
+function enumSize(@nospecialize(ty::M_Type))::Int
   local size::Int
-
   local literals::List{String}
-
-  @match ENUMERATION(literals = literals) = ty
+  @match TYPE_ENUMERATION(literals = literals) = ty
   @assign size = listLength(literals)
   return size
 end
 
-function enumName(ty::M_Type)::Absyn.Path
+function enumName(@nospecialize(ty::M_Type))::Absyn.Path
   local name::Absyn.Path
-
-  @match ENUMERATION(typePath = name) = ty
+  @match TYPE_ENUMERATION(typePath = name) = ty
   return name
 end
 
-function setRecordFields(fields::List{<:Field}, recordType::M_Type)::M_Type
+function setRecordFields(fields::List{<:Field}, @nospecialize(recordType::M_Type))::M_Type
   @assign recordType = begin
     local rec_node::InstNode
     @match recordType begin
@@ -192,7 +185,7 @@ function setRecordFields(fields::List{<:Field}, recordType::M_Type)::M_Type
   return recordType
 end
 
-function recordFields(recordType::M_Type)::List{Field}
+function recordFields(@nospecialize(recordType::M_Type))::List{Field}
   local fields::List{Field}
 
   @assign fields = begin
@@ -209,13 +202,14 @@ function recordFields(recordType::M_Type)::List{Field}
   return fields
 end
 
-function lookupRecordFieldType(name::String, recordType::M_Type)::M_Type
+@nospecializeinfer function lookupRecordFieldType(name::String, @nospecialize(recordType::M_Type))::M_Type
   local fieldType::M_Type
 
   @assign fieldType = begin
     @match recordType begin
-      COMPLEX(__) => begin
-        getType(lookupElement(name, getClass(recordType.cls)))
+      TYPE_COMPLEX(__) => begin
+        entryInfo = lookupElement(name, getClass(recordType.cls))
+        getType(entryInfo.node)
       end
 
       TYPE_ARRAY(__) => begin
@@ -229,7 +223,7 @@ function lookupRecordFieldType(name::String, recordType::M_Type)::M_Type
   return fieldType
 end
 
-function isDiscrete(ty::M_Type)::Bool
+@nospecializeinfer function isDiscrete(@nospecialize(ty::M_Type))::Bool
   local b::Bool
   b = begin
     @match ty begin
@@ -264,7 +258,7 @@ function isDiscrete(ty::M_Type)::Bool
   return b
 end
 
-function isEqual(ty1::M_Type, ty2::M_Type)::Bool
+@nospecializeinfer function isEqual(@nospecialize(ty1::M_Type), @nospecialize(ty2::M_Type))::Bool
   local equal::Bool
 
   if referenceEq(ty1, ty2)
@@ -317,7 +311,7 @@ function isEqual(ty1::M_Type, ty2::M_Type)::Bool
 end
 
 """ #= Reduces a type's dimensions based on the given list of subscripts. =#"""
-function subscript(ty::M_Type, subs::List{<:Subscript})::M_Type
+function subscript(@nospecialize(ty::M_Type), subs::List{<:Subscript})::M_Type
 
   local dim::Dimension
   local dims::List{Dimension}
@@ -328,7 +322,7 @@ function subscript(ty::M_Type, subs::List{<:Subscript})::M_Type
   end
   @assign dims = arrayDims(ty)
   for sub in subs
-    @match _cons(dim, dims) = dims
+    @match Cons{Dimension}(dim, dims) = dims
     @assign subbed_dims = begin
       @match sub begin
         SUBSCRIPT_INDEX(__) => begin
@@ -336,11 +330,11 @@ function subscript(ty::M_Type, subs::List{<:Subscript})::M_Type
         end
 
         SUBSCRIPT_SLICE(__) => begin
-          _cons(toDimension(sub), subbed_dims)
+          Cons{Dimension}(toDimension(sub), subbed_dims)
         end
 
         SUBSCRIPT_WHOLE(__) => begin
-          _cons(dim, subbed_dims)
+          Cons{Dimension}(dim, subbed_dims)
         end
       end
     end
@@ -352,7 +346,7 @@ function subscript(ty::M_Type, subs::List{<:Subscript})::M_Type
   return ty
 end
 
-function toDAE(ty::NFType; makeTypeVars::Bool = true)::DAE.Type
+@nospecializeinfer function toDAE(@nospecialize(ty::NFType); makeTypeVars::Bool = true)::DAE.Type
   local daeTy::DAE.Type
   @assign daeTy = begin
     @match ty begin
@@ -393,19 +387,19 @@ function toDAE(ty::NFType; makeTypeVars::Bool = true)::DAE.Type
       TYPE_FUNCTION(__) => begin
         begin
           @match ty.fnType begin
-            FunctionTYPE_FUNCTIONAL_PARAMETER => begin
-              P_Function.makeDAEType(ty.fn)
+            FunctionType.FUNCTIONAL_PARAMETER => begin
+              makeDAEType(ty.fn)
             end
 
-            FunctionTYPE_FUNCTION_REFERENCE => begin
+            FunctionType.FUNCTION_REFERENCE => begin
               DAE.T_FUNCTION_REFERENCE_FUNC(
                 isBuiltin(ty.fn),
-                P_Function.makeDAEType(ty.fn),
+                makeDAEType(ty.fn),
               )
             end
 
-            FunctionTYPE_FUNCTIONAL_VARIABLE => begin
-              DAE.T_FUNCTION_REFERENCE_VAR(P_Function.makeDAEType(ty.fn, true))
+            FunctionType.FUNCTIONAL_VARIABLE => begin
+              DAE.T_FUNCTION_REFERENCE_VAR(makeDAEType(ty.fn, true))
             end
           end
         end
@@ -417,7 +411,7 @@ function toDAE(ty::NFType; makeTypeVars::Bool = true)::DAE.Type
 
       TYPE_UNKNOWN(__) => begin
         DAE.T_UNKNOWN_DEFAULT
-      end
+       end
 
       TYPE_COMPLEX(__) => begin
         if makeTypeVars
@@ -452,7 +446,7 @@ function toDAE(ty::NFType; makeTypeVars::Bool = true)::DAE.Type
   return daeTy
 end
 
-function typenameString(ty::M_Type)::String
+function typenameString(@nospecialize(ty::M_Type))::String
   local str::String
 
   @assign str = begin
@@ -470,7 +464,7 @@ function typenameString(ty::M_Type)::String
 end
 
 
-function toFlatString(ty::M_Type)::String
+@nospecializeinfer function toFlatString(@nospecialize(ty::M_Type))::String
   local str::String
 
   @assign str = begin
@@ -496,8 +490,7 @@ function toFlatString(ty::M_Type)::String
       end
 
       TYPE_ENUMERATION(__) => begin
-        "'" + AbsynUtil.pathString(ty.typePath)
-        +"'"
+        "'" * AbsynUtil.pathString(ty.typePath) * "'"
       end
 
       TYPE_ENUMERATION_ANY(__) => begin
@@ -508,14 +501,14 @@ function toFlatString(ty::M_Type)::String
         toString(ty.elementType) +
         "[" +
         stringDelimitList(
-          ListUtil.map(ty.dimensions, P_Dimension.Dimension.toString),
+          ListUtil.map(ty.dimensions, toFlatString, String),
           ", ",
         ) +
         "]"
       end
 
       TYPE_TUPLE(__) => begin
-        "(" + stringDelimitList(ListUtil.map(ty.types, toString), ", ")
+        "(" + stringDelimitList(ListUtil.map(ty.types, toString, String), ", ")
         +")"
       end
 
@@ -528,12 +521,11 @@ function toFlatString(ty::M_Type)::String
       end
 
       TYPE_COMPLEX(__) => begin
-        "'" + AbsynUtil.pathString(scopePath(ty.cls))
-        +"'"
+        "'" * AbsynUtil.pathString(scopePath(ty.cls)) * "'"
       end
 
       TYPE_FUNCTION(__) => begin
-        P_Function.typeString(ty.fn)
+        typeString(ty.fn)
       end
 
       TYPE_METABOXED(__) => begin
@@ -562,10 +554,75 @@ function toFlatString(ty::M_Type)::String
   return str
 end
 
-function toString(ty::M_Type)::String
-  local str::String
+function toFlatDeclarationStream(@nospecialize(ty::NFType), s::IOStream_M.IOSTREAM)
+  #println("Type " * toString(ty))
+  local index = 0
+  @match ty begin
+    TYPE_ENUMERATION(__) => begin
+      s = IOStream_M.append(s, "type '")
+      s = IOStream_M.append(s, AbsynUtil.pathString(ty.typePath))
+      s = IOStream_M.append(s, "' = enumeration(")
+      local tmpLits = ty.literals
+      if ! listEmpty(tmpLits)
+        s = IOStream_M.append(s, listHead(tmpLits))
+        for l in listRest(tmpLits)
+          s = IOStream_M.append(s, ", ")
+          s = IOStream_M.append(s, l)
+        end
+      end
+      s = IOStream_M.append(s, ")")
+    end
+    TYPE_COMPLEX(_, COMPLEX_RECORD(__)) =>  begin
+      toFlatStream(ty.cls, s)
+    end
+    TYPE_COMPLEX(complexTy = COMPLEX_EXTERNAL_OBJECT(__)) =>  begin
+      path = scopePath(ty.cls);
+      name = Util.makeQuotedIdentifier(AbsynUtil.pathString(path))
+      s = IOStream_M.append(s, "class ")
+      s = IOStream_M.append(s, name)
+      s = IOStream_M.append(s, "\n  extends ExternalObject;\n\n")
+      local f = typeNodeCache(ty.complexTy.constructor)[1]
+      s = toFlatStream(f, s, overrideName="constructor")
+      s = IOStream_M.append(s, ";\n\n")
+      f = typeNodeCache(ty.complexTy.destructor)[1]
+      s = toFlatStream(f, s, overrideName="destructor")
+      s = IOStream_M.append(s, ";\n\nend ")
+      s = IOStream_M.append(s, name)
+    end
+    TYPE_SUBSCRIPTED(__) => begin
+      s = IOStream_M.append(s, "function '")
+      s = IOStream_M.append(s, ty.name)
+      s = IOStream_M.append(s, "'\n")
+      s = IOStream_M.append(s, "input ")
+      s = IOStream_M.append(s, toString(ty.ty))
+      s = IOStream_M.append(s, " exp;\n")
+      index = 1
+      for sub in ty.subs
+        s = IOStream_M.append(s, "input ")
+        s = IOStream_M.append(s, toString(sub))
+        s = IOStream_M.append(s, " s")
+        s = IOStream_M.append(s, String(index))
+        s = IOStream_M.append(s, ";\n")
+        index = index + 1
+      end
+      s = IOStream_M.append(s, "output ")
+      s = IOStream_M.append(s, toString(ty.subscriptedTy))
+      s = IOStream_M.append(s, " result = exp[")
+      s = IOStream_M.append(s,
+                          stringDelimitList(list("s" + String(i) for i in 1:listLength(ty.subs)), ","))
+      s = IOStream_M.append(s, "];\n")
 
-  @assign str = begin
+      s = IOStream_M.append(s, "end '")
+      s = IOStream_M.append(s, ty.name)
+      s = IOStream_M.append(s, "'")
+    end
+    _ => s
+  end
+end
+
+@nospecializeinfer function toString(@nospecialize(ty::M_Type))::String
+  local str::String
+  str = begin
     @match ty begin
       TYPE_INTEGER(__) => begin
         "Integer"
@@ -588,8 +645,7 @@ function toString(ty::M_Type)::String
       end
 
       TYPE_ENUMERATION(__) => begin
-        "enumeration " + AbsynUtil.pathString(ty.typePath)
-        +"(" + stringDelimitList(ty.literals, ", ") + ")"
+        "enumeration " + AbsynUtil.pathString(ty.typePath) + "(" + stringDelimitList(ty.literals, ", ") + ")"
       end
 
       TYPE_ENUMERATION_ANY(__) => begin
@@ -600,14 +656,14 @@ function toString(ty::M_Type)::String
         toString(ty.elementType) +
         "[" +
         stringDelimitList(
-          ListUtil.map(ty.dimensions, toString),
+          ListUtil.map(ty.dimensions, toString, String),
           ", ",
         ) +
         "]"
       end
 
       TYPE_TUPLE(__) => begin
-        "(" + stringDelimitList(ListUtil.map(ty.types, toString), ", ")
+        "(" + stringDelimitList(ListUtil.map(ty.types, toString, String), ", ")
         +")"
       end
 
@@ -620,14 +676,14 @@ function toString(ty::M_Type)::String
       end
 
       TYPE_COMPLEX(__) => begin
-        AbsynUtil.pathString(scopePath(ty.cls))
+        "'" * AbsynUtil.pathString(scopePath(ty.cls)) * "'"
       end
 
       TYPE_FUNCTION(__) => begin
-        P_Function.typeString(ty.fn)
+        typeString(ty.fn)
       end
 
-      Type.METABOXED(__) => begin
+      TYPE_METABOXED(__) => begin
         "#" + toString(ty.ty)
       end
 
@@ -639,6 +695,8 @@ function toString(ty::M_Type)::String
       TYPE_ANY(__) => begin
         "ANY"
       end
+
+
 
       _ => begin
         Error.assertion(
@@ -654,7 +712,7 @@ function toString(ty::M_Type)::String
 end
 
 #=TODO: Modified by me. Should have a string =#
-function nthEnumLiteralAsString(ty::M_Type, index::Int)::String
+function nthEnumLiteralAsString(@nospecialize(ty::M_Type), index::Int)::String
   local literal::String
   local literals::List{String}
   @match ENUMERATION(literals = literals) = ty
@@ -662,7 +720,7 @@ function nthEnumLiteralAsString(ty::M_Type, index::Int)::String
   return literal
 end
 
-function foldDims(ty::M_Type, func::FuncT, arg::ArgT) where {ArgT}
+@nospecializeinfer function foldDims(@nospecialize(ty::M_Type), func::FuncT, arg::ArgT) where {ArgT}
 
   @assign arg = begin
     @match ty begin
@@ -671,7 +729,7 @@ function foldDims(ty::M_Type, func::FuncT, arg::ArgT) where {ArgT}
       end
 
       TUPLE(__) => begin
-        ListUtil.fold(ty.types, (func) -> foldDims(func = func), arg)
+        ListUtil.fold(ty.types, (t, acc) -> foldDims(t, func, acc), arg)
       end
 
       TYPE_FUNCTION(__) => begin
@@ -690,36 +748,33 @@ function foldDims(ty::M_Type, func::FuncT, arg::ArgT) where {ArgT}
   return arg
 end
 
-function mapDims(ty::M_Type, func::FuncT)::M_Type
-  @assign () = begin
-    local fn::M_Function
-    @match ty begin
-      TYPE_ARRAY(__) => begin
-        @assign ty.dimensions = list(func(d) for d in ty.dimensions)
-        ()
-      end
-      TYPE_TUPLE(__) => begin
-        @assign ty.types = list(mapDims(t, func) for t in ty.types)
-        ()
-      end
-      TYPE_FUNCTION(fn = fn) => begin
-        @assign ty.fn =
-          setReturnmapDims(mapDims(returnType(fn), func), fn)
-        ()
-      end
-      TYPE_METABOXED(__) => begin
-        @assign ty.ty = mapDims(ty.ty, func)
-        ()
-      end
-      _ => begin
-        ()
-      end
+@nospecializeinfer function mapDims(@nospecialize(ty::M_Type), func::FuncT)
+  local fn::M_Function
+  local retTy = @match ty begin
+    TYPE_ARRAY(__) => begin
+      local tyDimensions = list(func(d) for d in ty.dimensions)
+      TYPE_ARRAY(ty.elementType, tyDimensions)
+    end
+    TYPE_TUPLE(__) => begin
+      local tyTypes = list(mapDims(t, func) for t in ty.types)
+      TYPE_TUPLE(tyTypes, ty.names)
+    end
+    TYPE_FUNCTION(fn = fn) => begin
+      newFn = setReturnType(mapDims(returnType(fn), func), fn)
+      TYPE_FUNCTION(newFn, ty.fnType)
+    end
+    TYPE_METABOXED(__) => begin
+      tyTy = mapDims(ty.ty, func)
+      TYPE_METABOXED(tyTy)
+    end
+    _ => begin
+      ty
     end
   end
-  return ty
+  return retTy
 end
 
-function hasZeroDimension(ty::M_Type)::Bool
+function hasZeroDimension(@nospecialize(ty::M_Type))::Bool
   local hasZero::Bool
   @assign hasZero = begin
     @match ty begin
@@ -734,7 +789,7 @@ function hasZeroDimension(ty::M_Type)::Bool
   return hasZero
 end
 
-function hasKnownSize(ty::M_Type)::Bool
+@nospecializeinfer function hasKnownSize(@nospecialize(ty::M_Type))::Bool
   local known::Bool
 
   @assign known = begin
@@ -757,12 +812,12 @@ function hasKnownSize(ty::M_Type)::Bool
   return known
 end
 
-function dimensionDiff(ty1::M_Type, ty2::M_Type)::Int
+function dimensionDiff(@nospecialize(ty1::M_Type), @nospecialize(ty2::M_Type))::Int
   local diff::Int = dimensionCount(ty1) - dimensionCount(ty2)
   return diff
 end
 
-function dimensionCount(@nospecialize(ty::NFType))::Int
+@nospecializeinfer function dimensionCount(@nospecialize(ty::NFType))::Int
   local dimCount::Int
   @assign dimCount = begin
     @match ty begin
@@ -783,7 +838,7 @@ function dimensionCount(@nospecialize(ty::NFType))::Int
   return dimCount
 end
 
-function nthDimension(ty::M_Type, index::Int)::Dimension
+@nospecializeinfer function nthDimension(@nospecialize(ty::M_Type), index::Int)::Dimension
   local dim::Dimension
 
   @assign dim = begin
@@ -804,22 +859,22 @@ function nthDimension(ty::M_Type, index::Int)::Dimension
   return dim
 end
 
-""" #= Copies array dimensions from one type to another, discarding the existing
-     dimensions of the destination type but keeping its element type. =#"""
-function copyDims(srcType::M_Type, dstType::M_Type)::M_Type
+"""
+ Copies array dimensions from one type to another, discarding the existing
+ dimensions of the destination type but keeping its element type.
+"""
+function copyDims(@nospecialize(srcType::M_Type), @nospecialize(dstType::M_Type))::M_Type
   local ty::M_Type
-
   if listEmpty(arrayDims(srcType))
-    @assign ty = arrayElementType(dstType)
+    ty = arrayElementType(dstType)
   else
-    @assign ty = begin
+    ty = begin
       @match dstType begin
-        ARRAY(__) => begin
-          ARRAY(dstType.elementType, arrayDims(srcType))
+        TYPE_ARRAY(__) => begin
+          TYPE_ARRAY(dstType.elementType, arrayDims(srcType))
         end
-
         _ => begin
-          ARRAY(dstType, arrayDims(srcType))
+          TYPE_ARRAY(dstType, arrayDims(srcType))
         end
       end
     end
@@ -827,28 +882,24 @@ function copyDims(srcType::M_Type, dstType::M_Type)::M_Type
   return ty
 end
 
-function arrayDims(ty::NFType)::List{Dimension}
-  local dims::List{Dimension}
-  @assign dims = begin
-    @match ty begin
-      TYPE_ARRAY(__) => begin
-        ty.dimensions
-      end
-      TYPE_FUNCTION(__) => begin
-        arrayDims(returnType(ty.fn))
-      end
-      TYPE_METABOXED(__) => begin
-        arrayDims(ty.ty)
-      end
-      _ => begin
-        nil
-      end
+@nospecializeinfer function arrayDims(@nospecialize(ty::NFType))::List{Dimension}
+  @match ty begin
+    TYPE_ARRAY(__) => begin
+      ty.dimensions
+    end
+    TYPE_FUNCTION(__) => begin
+      arrayDims(returnType(ty.fn))
+    end
+    TYPE_METABOXED(__) => begin
+      arrayDims(ty.ty)
+    end
+    _ => begin
+      nil
     end
   end
-  return dims
 end
 
-function elementType(ty::NFType)::NFType
+@nospecializeinfer function elementType(@nospecialize(ty::NFType))::NFType
   local elementTy::NFType
   @assign elementTy = begin
     @match ty begin
@@ -866,11 +917,13 @@ function elementType(ty::NFType)::NFType
   return elementTy
 end
 
-""" #= Sets the common type of the elements in an array, if the type is an array
-     type. Otherwise it just returns the given element type. =#"""
-function setArrayElementType(arrayTy::M_Type, elementTy::NFType)::NFType
+"""
+Sets the common type of the elements in an array, if the type is an array
+type. Otherwise it just returns the given element type.
+"""
+function setArrayElementType(@nospecialize(arrayTy::M_Type), @nospecialize(elementTy::NFType))::NFType
   local ty::NFType
-  @assign ty = begin
+ ty = begin
     @match arrayTy begin
       TYPE_ARRAY(__) => begin
         liftArrayLeftList(elementTy, arrayTy.dimensions)
@@ -885,7 +938,7 @@ end
 
 """ #= Returns the common type of the elements in an array, or just the type
      itself if it's not an array type. =#"""
-function arrayElementType(ty::M_Type)::M_Type
+function arrayElementType(@nospecialize(ty::M_Type))::M_Type
   local elementTy::M_Type
 
   @assign elementTy = begin
@@ -902,19 +955,16 @@ function arrayElementType(ty::M_Type)::M_Type
   return elementTy
 end
 
-function nthTupleType(ty::M_Type, n::Int)::M_Type
+@nospecializeinfer function nthTupleType(@nospecialize(ty::M_Type), n::Int)::M_Type
   local outTy::M_Type
-
-  @assign outTy = begin
+  outTy = begin
     @match ty begin
-      TUPLE(__) => begin
+      TYPE_TUPLE(__) => begin
         listGet(ty.types, n)
       end
-
       TYPE_ARRAY(__) => begin
         TYPE_ARRAY(nthTupleType(ty.elementType, n), ty.dimensions)
       end
-
       _ => begin
         ty
       end
@@ -923,19 +973,16 @@ function nthTupleType(ty::M_Type, n::Int)::M_Type
   return outTy
 end
 
-function firstTupleType(ty::M_Type)::M_Type
+@nospecializeinfer function firstTupleType(@nospecialize(ty::M_Type))::M_Type
   local outTy::M_Type
-
-  @assign outTy = begin
+  outTy = begin
     @match ty begin
-      TUPLE(__) => begin
+      TYPE_TUPLE(__) => begin
         listHead(ty.types)
       end
-
       TYPE_ARRAY(__) => begin
         TYPE_ARRAY(firstTupleType(ty.elementType), ty.dimensions)
       end
-
       _ => begin
         ty
       end
@@ -944,7 +991,7 @@ function firstTupleType(ty::M_Type)::M_Type
   return outTy
 end
 
-function isPolymorphic(ty::NFType)::Bool
+function isPolymorphic(@nospecialize(ty::NFType))::Bool
   local isPolymorphic::Bool
   @assign isPolymorphic = begin
     @match ty begin
@@ -959,7 +1006,7 @@ function isPolymorphic(ty::NFType)::Bool
   return isPolymorphic
 end
 
-function isKnown(ty::NFType)::Bool
+function isKnown(@nospecialize(ty::NFType))::Bool
   local isKnown::Bool
   @assign isKnown = begin
     @match ty begin
@@ -975,7 +1022,7 @@ function isKnown(ty::NFType)::Bool
   return isKnown
 end
 
-function isUnknown(ty::M_Type)::Bool
+function isUnknown(@nospecialize(ty::M_Type))::Bool
   local isUnknown::Bool
   @assign isUnknown = begin
     @match ty begin
@@ -991,7 +1038,7 @@ function isUnknown(ty::M_Type)::Bool
   return isUnknown
 end
 
-function isTuple(ty::M_Type)::Bool
+function isTuple(@nospecialize(ty::M_Type))::Bool
   local isTuple::Bool
 
   @assign isTuple = begin
@@ -1008,7 +1055,7 @@ function isTuple(ty::M_Type)::Bool
 end
 
 """ #= Returns true for all the builtin scalar types such as Integer, Real, etc. =#"""
-function isScalarBuiltin(ty::M_Type)::Bool
+@nospecializeinfer function isScalarBuiltin(@nospecialize(ty::M_Type))::Bool
   local isScalarBuiltin::Bool
 
   @assign isScalarBuiltin = begin
@@ -1017,27 +1064,27 @@ function isScalarBuiltin(ty::M_Type)::Bool
         true
       end
 
-      REAL(__) => begin
+      TYPE_REAL(__) => begin
         true
       end
 
-      STRING(__) => begin
+      TYPE_STRING(__) => begin
         true
       end
 
-      BOOLEAN(__) => begin
+      TYPE_BOOLEAN(__) => begin
         true
       end
 
-      CLOCK(__) => begin
+      TYPE_CLOCK(__) => begin
         true
       end
 
-      ENUMERATION(__) => begin
+      TYPE_ENUMERATION(__) => begin
         true
       end
 
-      ENUMERATION_ANY(__) => begin
+      TYPE_ENUMERATION_ANY(__) => begin
         true
       end
 
@@ -1053,7 +1100,7 @@ function isScalarBuiltin(ty::M_Type)::Bool
   return isScalarBuiltin
 end
 
-function isNumeric(ty::M_Type)::Bool
+function isNumeric(@nospecialize(ty::M_Type))::Bool
   local isNumeric::Bool
 
   @assign isNumeric = begin
@@ -1070,7 +1117,7 @@ function isNumeric(ty::M_Type)::Bool
   return isNumeric
 end
 
-function isBasicNumeric(ty::M_Type)::Bool
+function isBasicNumeric(@nospecialize(ty::M_Type))::Bool
   local isNumeric::Bool
   @assign isNumeric = begin
     @match ty begin
@@ -1088,7 +1135,7 @@ function isBasicNumeric(ty::M_Type)::Bool
   return isNumeric
 end
 
-function isBasic(ty::M_Type)::Bool
+@nospecializeinfer function isBasic(@nospecialize(ty::M_Type))::Bool
   local isNumeric::Bool
   @assign isNumeric = begin
     @match ty begin
@@ -1099,19 +1146,19 @@ function isBasic(ty::M_Type)::Bool
         true
       end
 
-      BOOLEAN(__) => begin
+      TYPE_BOOLEAN(__) => begin
         true
       end
 
-      STRING(__) => begin
+      TYPE_STRING(__) => begin
         true
       end
 
-      ENUMERATION(__) => begin
+      TYPE_ENUMERATION(__) => begin
         true
       end
 
-      CLOCK(__) => begin
+      TYPE_CLOCK(__) => begin
         true
       end
 
@@ -1127,7 +1174,7 @@ function isBasic(ty::M_Type)::Bool
   return isNumeric
 end
 
-function isScalarArray(ty::M_Type)::Bool
+function isScalarArray(@nospecialize(ty::M_Type))::Bool
   local isScalar::Bool
 
   @assign isScalar = begin
@@ -1144,7 +1191,7 @@ function isScalarArray(ty::M_Type)::Bool
   return isScalar
 end
 
-function isRecord(ty::M_Type)::Bool
+function isRecord(@nospecialize(ty::M_Type))::Bool
   local isRecord::Bool
 
   @assign isRecord = begin
@@ -1161,7 +1208,7 @@ function isRecord(ty::M_Type)::Bool
   return isRecord
 end
 
-function isExternalObject(ty::M_Type)::Bool
+function isExternalObject(@nospecialize(ty::M_Type))::Bool
   local isEO::Bool
 
   @assign isEO = begin
@@ -1178,7 +1225,7 @@ function isExternalObject(ty::M_Type)::Bool
   return isEO
 end
 
-function isExpandableConnector(ty::M_Type)::Bool
+function isExpandableConnector(@nospecialize(ty::M_Type))::Bool
   local isExpandable::Bool
 
   @assign isExpandable = begin
@@ -1194,7 +1241,7 @@ function isExpandableConnector(ty::M_Type)::Bool
   return isExpandable
 end
 
-function isConnector(ty::M_Type)::Bool
+function isConnector(@nospecialize(ty::M_Type))::Bool
   local isaC::Bool
 
   @assign isaC = begin
@@ -1210,7 +1257,7 @@ function isConnector(ty::M_Type)::Bool
   return isaC
 end
 
-function isComplex(ty::M_Type)::Bool
+function isComplex(@nospecialize(ty::M_Type))::Bool
   local isComplex::Bool
   @assign isComplex = begin
     @match ty begin
@@ -1225,16 +1272,26 @@ function isComplex(ty::M_Type)::Bool
   return isComplex
 end
 
-function isEnumeration(ty::M_Type)::Bool
+function complexNode(ty)
+  local node::InstNode
+  @match TYPE_COMPLEX(cls = node) = ty
+  return node
+end
+
+function complexComponents(ty)
+  getComponents(classTree(getClass(complexNode(ty))))
+end
+
+function isEnumeration(@nospecialize(ty::M_Type))::Bool
   local isEnum::Bool
 
   @assign isEnum = begin
     @match ty begin
-      ENUMERATION(__) => begin
+      TYPE_ENUMERATION(__) => begin
         true
       end
 
-      ENUMERATION_ANY(__) => begin
+      TYPE_ENUMERATION_ANY(__) => begin
         true
       end
 
@@ -1246,16 +1303,14 @@ function isEnumeration(ty::M_Type)::Bool
   return isEnum
 end
 
-function isSingleElementArray(ty::M_Type)::Bool
+function isSingleElementArray(@nospecialize(ty::M_Type))::Bool
   local isSingleElement::Bool
-
   @assign isSingleElement = begin
     local d::Dimension
     @match ty begin
       TYPE_ARRAY(dimensions = d <| nil()) => begin
-        P_Dimension.Dimension.isKnown(d) && P_Dimension.Dimension.size(d) == 1
+        isKnown(d) && size(d) == 1
       end
-
       _ => begin
         false
       end
@@ -1264,15 +1319,13 @@ function isSingleElementArray(ty::M_Type)::Bool
   return isSingleElement
 end
 
-function isEmptyArray(ty::M_Type)::Bool
+function isEmptyArray(@nospecialize(ty::M_Type))::Bool
   local isEmpty::Bool
-
-  @assign isEmpty = begin
+  isEmpty = begin
     @match ty begin
       TYPE_ARRAY(__) => begin
         ListUtil.exist(ty.dimensions, isZero)
       end
-
       _ => begin
         false
       end
@@ -1281,7 +1334,7 @@ function isEmptyArray(ty::M_Type)::Bool
   return isEmpty
 end
 
-function isSquareMatrix(ty::M_Type)::Bool
+function isSquareMatrix(@nospecialize(ty::M_Type))::Bool
   local isSquareMatrix::Bool
 
   @assign isSquareMatrix = begin
@@ -1300,7 +1353,7 @@ function isSquareMatrix(ty::M_Type)::Bool
   return isSquareMatrix
 end
 
-function isMatrix(ty::M_Type)::Bool
+function isMatrix(@nospecialize(ty::M_Type))::Bool
   local isMatrix::Bool
 
   @assign isMatrix = begin
@@ -1318,7 +1371,7 @@ function isMatrix(ty::M_Type)::Bool
 end
 
 """ #= Return whether the type is a vector type or not, i.e. a 1-dimensional array. =#"""
-function isVector(ty::M_Type)::Bool
+function isVector(@nospecialize(ty::M_Type))::Bool
   local isVector::Bool
 
   @assign isVector = begin
@@ -1335,7 +1388,7 @@ function isVector(ty::M_Type)::Bool
   return isVector
 end
 
-function isArray(ty::M_Type)::Bool
+function isArray(@nospecialize(ty::M_Type))::Bool
   local isArray::Bool
 
   @assign isArray = begin
@@ -1352,7 +1405,7 @@ function isArray(ty::M_Type)::Bool
   return isArray
 end
 
-function isScalar(ty::M_Type)::Bool
+function isScalar(@nospecialize(ty::M_Type))::Bool
   local isScalar::Bool
 
   @assign isScalar = begin
@@ -1369,7 +1422,7 @@ function isScalar(ty::M_Type)::Bool
   return isScalar
 end
 
-function isClock(ty::NFType)::Bool
+function isClock(@nospecialize(ty::NFType))::Bool
   local isClock::Bool
   @assign isClock = begin
     @match ty begin
@@ -1384,12 +1437,12 @@ function isClock(ty::NFType)::Bool
   return isClock
 end
 
-function isString(ty::M_Type)::Bool
+function isString(@nospecialize(ty::M_Type))::Bool
   local isString::Bool
 
   @assign isString = begin
     @match ty begin
-      STRING(__) => begin
+      TYPE_STRING(__) => begin
         true
       end
 
@@ -1401,7 +1454,7 @@ function isString(ty::M_Type)::Bool
   return isString
 end
 
-function isBoolean(ty::NFType)::Bool
+function isBoolean(@nospecialize(ty::NFType))::Bool
   local isBool::Bool
   @assign isBool = begin
     @match ty begin
@@ -1416,7 +1469,7 @@ function isBoolean(ty::NFType)::Bool
   return isBool
 end
 
-function isReal(ty::M_Type)::Bool
+function isReal(@nospecialize(ty::M_Type))::Bool
   local isReal::Bool
 
   @assign isReal = begin
@@ -1433,7 +1486,7 @@ function isReal(ty::M_Type)::Bool
   return isReal
 end
 
-function isInteger(ty::M_Type)::Bool
+function isInteger(@nospecialize(ty::M_Type))::Bool
   local isInteger::Bool
 
   @assign isInteger = begin
@@ -1450,29 +1503,29 @@ function isInteger(ty::M_Type)::Bool
   return isInteger
 end
 
-function unliftArrayN(N::Int, ty::M_Type)::M_Type
+function unliftArrayN(N::Int, @nospecialize(ty::M_Type))::M_Type
 
   local el_ty::M_Type
   local dims::List{Dimension}
 
   @match TYPE_ARRAY(el_ty, dims) = ty
   for i = 1:N
-    @assign dims = listRest(dims)
+    dims = listRest(dims)
   end
   if listEmpty(dims)
-    @assign ty = el_ty
+    ty = el_ty
   else
-    @assign ty = TYPE_ARRAY(el_ty, dims)
+    ty = TYPE_ARRAY(el_ty, dims)
   end
   return ty
 end
 
-function unliftArray(ty::M_Type)::M_Type
+function unliftArray(@nospecialize(ty::M_Type))::M_Type
 
   local el_ty::M_Type
   local dims::List{Dimension}
 
-  @match TYPE_ARRAY(el_ty, _cons(_, dims)) = ty
+  @match TYPE_ARRAY(el_ty, Cons{Dimension}(_, dims)) = ty
   if listEmpty(dims)
     @assign ty = el_ty
   else
@@ -1483,7 +1536,7 @@ end
 
 """ #= Adds array dimensions to a type on the left side, e.g.
        listArrayLeft(Real[2, 3], [4, 5]) => Real[2, 3, 4, 5]. =#"""
-function liftArrayRightList(ty::NFType, dims::List{<:Dimension})::NFType
+function liftArrayRightList(@nospecialize(ty::NFType), dims::List{<:Dimension})::NFType
 
   if listEmpty(dims)
     return ty
@@ -1502,14 +1555,14 @@ function liftArrayRightList(ty::NFType, dims::List{<:Dimension})::NFType
   return ty
 end
 
-""" #= Adds array dimensions to a type on the left side, e.g.
-       listArrayLeft(Real[2, 3], [4, 5]) => Real[4, 5, 2, 3]. =#"""
-function liftArrayLeftList(ty::NFType, dims::List{<:Dimension})::NFType
-
+"""  Adds array dimensions to a type on the left side, e.g.
+     listArrayLeft(Real[2, 3], [4, 5]) => Real[4, 5, 2, 3].
+"""
+function liftArrayLeftList(@nospecialize(ty::NFType), dims::List{<:Dimension})::NFType
   if listEmpty(dims)
     return ty
   end
-  @assign ty = begin
+  ty = begin
     @match ty begin
       TYPE_ARRAY(__) => begin
         TYPE_ARRAY(ty.elementType, listAppend(dims, ty.dimensions))
@@ -1522,19 +1575,17 @@ function liftArrayLeftList(ty::NFType, dims::List{<:Dimension})::NFType
   return ty
 end
 
-""" #= Adds an array dimension to a type on the left side, e.g.
-       listArrayLeft(Real[2, 3], [4]) => Real[4, 2, 3]. =#"""
-function liftArrayLeft(ty::M_Type, dim::Dimension)::M_Type
-
-  @assign ty = begin
-    @match ty begin
-      TYPE_ARRAY(__) => begin
-        TYPE_ARRAY(ty.elementType, _cons(dim, ty.dimensions))
-      end
-      _ => begin
-        TYPE_ARRAY(ty, list(dim))
-      end
+"""
+  Adds an array dimension to a type on the left side, e.g.
+  listArrayLeft(Real[2, 3], [4]) => Real[4, 2, 3].
+"""
+function liftArrayLeft(@nospecialize(ty::M_Type), dim::Dimension)::TYPE_ARRAY
+  @match ty begin
+    TYPE_ARRAY(__) => begin
+      return TYPE_ARRAY(ty.elementType, Cons{Dimension}(dim, ty.dimensions))
+    end
+    _ => begin
+      return TYPE_ARRAY(ty, list(dim))
     end
   end
-  return ty
 end

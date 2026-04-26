@@ -51,11 +51,11 @@ using ExportAll
 
 import ListUtil
 
-import Main.GraphMLDumpTpl
+import Frontend.GraphMLDumpTpl
 
-import Main.Tpl
+import Frontend.Tpl
 
-import Main.Util
+import Frontend.Util
 #= TODO: Use HashTable for nodes to prevent duplicates
 =#
 #=  -------------------------

@@ -1,6 +1,305 @@
+using Revise
 import OMFrontend
+
+OMFrontend.Frontend.FlagsUtil.set(OMFrontend.Frontend.Flags.NF_SCALARIZE, true)
 #import OM
-#println(OM.toString(OMFrontend.flattenModelInMSL("Modelica.Blocks.Examples.PID_Controller")[1]))
-@time p = OMFrontend.parseFile("../test/Models/TestEnum.mo")
-@time scodeProgram = OMFrontend.translateToSCode(p)
-@time (dae, cache) = OMFrontend.instantiateSCodeToDAE("TestEnum", scodeProgram)
+#using OMFrontend
+using BenchmarkTools
+begin
+  packagePath = dirname(realpath(Base.find_package("OMFrontend")))
+  packagePath *= "/.."
+  pathToTest = packagePath * "/test/Models/HelloWorld.mo"
+  p = OMParser.parseFile(pathToTest, 1)
+  s = OMFrontend.Frontend.AbsynToSCode.translateAbsyn2SCode(p)
+
+  packagePath = dirname(realpath(Base.find_package("OMFrontend")))
+  packagePath *= "/.."
+  pathToLib = packagePath * "/lib/NFModelicaBuiltin.mo"
+  #= The external C stuff can be a bit flaky.. =#
+  GC.enable(false)
+  p = OMParser.parseFile(pathToLib, 2 #== MetaModelica ==#)
+  builtinSCode = OMFrontend.Frontend.AbsynToSCode.translateAbsyn2SCode(p)
+
+  program = listAppend(builtinSCode, s)
+  path = OMFrontend.Frontend.AbsynUtil.stringPath("HelloWorld")
+  @info "Timings concerning compiling core modules for instantiation:"
+  @time res1 = OMFrontend.Frontend.instClassInProgram(path, program)
+  GC.enable(true)
+end;
+
+function flattenModelInMSL_TST(modelName::String; MSL_V = "MSL_4_0_0", scalarize = true)
+  local mslSCode
+  if !haskey(OMFrontend.LIBRARY_CACHE, MSL_V)
+    mslSCode = OMFrontend.initLoadMSL(MSL_Version= MSL_V)
+    return (FM, cache) = OMFrontend.instantiateSCodeToFM(modelName, mslSCode; scalarize = scalarize)
+  end
+  local mslSCode = OMFrontend.LIBRARY_CACHE[MSL_V]
+  return (FM, cache) = OMFrontend.instantiateSCodeToFM(modelName, mslSCode; scalarize=scalarize)
+end
+
+
+
+# precompile_prefix = "Modelica.Electrical.Analog.Examples"
+# precompile_model_names = [
+#     "IdealTriacCircuit",
+#   "NandGate",
+#   "AmplifierWithOpAmpDetailed",
+#   "SimpleTriacCircuit"
+# ]
+
+# @info "Precompiling...."
+# for p in precompile_model_names
+#     @info "Translating: $(p)"
+#     @time flattenModelInMSL_TST(string(precompile_prefix, ".", p); MSL_V = "MSL_4_0_0")
+#     @info "Done!"
+#   end
+# @info "Done"
+# precompile_prefix = "Modelica.Mechanics.Rotational.Examples"
+# precompile_model_names = [
+#   "RollingWheel",
+#   "OneWayClutch",
+#   "SimpleGearShift"
+# ]
+# @info "Precompiling...."
+# for p in precompile_model_names
+#     @info "Translating: $(p)"
+#     @time flattenModelInMSL_TST(string(precompile_prefix, ".", p); MSL_V = "MSL_4_0_0")
+#     @info "Done!"
+#   end
+# @info "Done"
+
+
+# precompile_prefix = "Modelica.Mechanics.Rotational.Components"
+# precompile_model_names = [
+#     "Spring",
+#     "Fixed",
+#     "Inertia",
+#     "Disc",
+#     "Damper",
+#     "SpringDamper",
+#     "ElastoBacklash",
+#     "ElastoBacklash2",
+#     "BearingFriction",
+#     "Brake",
+#     "Clutch",
+#     "OneWayClutch",
+#     "IdealGear",
+#     "LossyGear",
+#     "IdealPlanetary",
+#     "Gearbox",
+#     "IdealGearR2T",
+#     "IdealRollingWheel"
+# ]
+# @info "Precompiling...."
+# for p in precompile_model_names
+#     @info "Translating: $(p)"
+#     @time flattenModelInMSL_TST(string(precompile_prefix, ".", p); MSL_V = "MSL_4_0_0")
+#     @info "Done!"
+#   end
+# @info "Done"
+
+precompile_prefix = "Modelica.Mechanics.MultiBody.Examples.Elementary"
+precompile_model_names = [
+  "Pendulum",
+  "DoublePendulum",
+  # "DoublePendulumInitTip",
+  # "ForceAndTorque",
+  # "FreeBody",
+  # "InitSpringConstant",
+  # "LineForceWithTwoMasses",
+  # "PendulumWithSpringDamper",
+  # "PointGravity",
+  # "PointGravityWithPointMasses",
+  # "PointGravityWithPointMasses2",
+  # "SpringDamperSystem",
+  # "SpringMassSystem",
+  # "SpringWithMass",
+  # "ThreeSprings",
+  # "RollingWheel",
+  #  "RollingWheelSetDriving",
+  # "RollingWheelSetPulling",
+  # "HeatLosses",
+  # "UserDefinedGravityField",
+  # "Surfaces"
+]
+
+@info "Precompiling...."
+for p in precompile_model_names
+  @info "Translating: $(p)"
+  #@time OMFrontend.Frontend.MemoryUtil.initialize(400000)
+  @info "Running"
+  @time flattenModelInMSL_TST(string(precompile_prefix, ".", p); MSL_V = "MSL_4_0_0")
+  @info "Done!"
+  end
+@info "Done"
+
+
+
+@info "Precompiling...."
+precompile_prefix = "Modelica.Mechanics.MultiBody.Examples.Loops"
+precompile_model_names = [
+  "Engine1a",
+  "Engine1b",
+  "Engine1b_analytic",
+#  "EngineV6"
+]
+for p in precompile_model_names
+  @info "Translating: $(p)"
+  name = string(precompile_prefix, ".", p)
+  #@time OMFrontend.Frontend.MemoryUtil.initialize(400000)
+  GC.gc()
+  @time flattenModelInMSL_TST(name; MSL_V = "MSL_4_0_0")
+  @info "Done!"
+end
+@info "Done"
+
+#OMFrontend.Frontend.MemoryUtil.initialize(400000)
+
+import Profile
+using Profile, PProf
+using StatProfilerHTML
+
+function profileMemV6()
+  precompile_model_names = [
+    #"Engine1a",
+    #"Engine1b",
+    #"Engine1b_analytic",
+    "EngineV6"
+  ]
+  precompile_prefix = "Modelica.Mechanics.MultiBody.Examples.Loops"
+  p = "EngineV6"
+  @info "Prerunning the engine for some data..."
+  @time flattenModelInMSL_TST(string(precompile_prefix, ".", p); MSL_V = "MSL_4_0_0")
+  @profilehtml begin
+    for p in precompile_model_names
+      @info "Translating: $(p)"
+      flattenModelInMSL_TST(string(precompile_prefix, ".", p); MSL_V = "MSL_4_0_0")
+      @info "Done!"
+    end
+  end
+  Profile.Allocs.clear()
+  Profile.init(1000001, 0.1)
+  #PProf.Allocs.pprof()
+  for p in precompile_model_names
+    @info "Translating: $(p)"
+    Profile.Allocs.@profile sample_rate=0.01 flattenModelInMSL_TST(string(precompile_prefix, ".", p); MSL_V = "MSL_4_0_0")
+    @info "Done!"
+  end
+  PProf.Allocs.pprof()
+end
+
+function runPendulum()
+  precompile_prefix = "Modelica.Mechanics.MultiBody.Examples.Elementary"
+  precompile_model_names = [
+    "DoublePendulum"
+  ]
+
+  for p in precompile_model_names
+    @info "Translating: $(p)"
+    @time flattenModelInMSL_TST(string(precompile_prefix, ".", p); MSL_V = "MSL_4_0_0")
+    @info "Done!"
+  end
+end
+
+function profileMemPendulum()
+  precompile_prefix = "Modelica.Mechanics.MultiBody.Examples.Elementary"
+  precompile_model_names = [
+    "DoublePendulum"
+  ]
+
+  for p in precompile_model_names
+    @info "Translating: $(p)"
+    flattenModelInMSL_TST(string(precompile_prefix, ".", p); MSL_V = "MSL_4_0_0")
+    @info "Done!"
+  end
+
+  Profile.Allocs.clear()
+  Profile.init(10000001, 0.0001)
+  #PProf.Allocs.pprof()
+  @info "Running profile HTML"
+  @profilehtml begin
+    for p in precompile_model_names
+      @info "Translating: $(p)"
+      Profile.Allocs.@profile sample_rate=0.01 flattenModelInMSL_TST(string(precompile_prefix, ".", p); MSL_V = "MSL_4_0_0")
+      @info "Done!"
+    end
+    PProf.Allocs.pprof()
+  end
+end
+
+function runEngine()
+  precompile_prefix = "Modelica.Mechanics.MultiBody.Examples.Loops"
+  precompile_model_names = [
+    "Engine1a"
+  ]
+  for p in precompile_model_names
+    @info "Translating: $(p)"
+    @time flattenModelInMSL_TST(string(precompile_prefix, ".", p); MSL_V = "MSL_4_0_0")
+    @info "Done!"
+  end
+end
+
+function profileMemEngine()
+  precompile_prefix = "Modelica.Mechanics.MultiBody.Examples.Loops"
+  precompile_model_names = [
+    "Engine1a"
+  ]
+  for p in precompile_model_names
+    @info "Translating: $(p)"
+    flattenModelInMSL_TST(string(precompile_prefix, ".", p); MSL_V = "MSL_4_0_0")
+    @info "Done!"
+  end
+    precompile_prefix = "Modelica.Mechanics.MultiBody.Examples.Loops"
+  precompile_model_names = [
+    "Engine1a"
+  ]
+  for p in precompile_model_names
+    @info "Translating: $(p)"
+    @time flattenModelInMSL_TST(string(precompile_prefix, ".", p); MSL_V = "MSL_4_0_0")
+    @info "Done!"
+  end
+
+  Profile.Allocs.clear()
+  Profile.init(10000001, 0.001)
+  @profilehtml begin
+    for p in precompile_model_names
+      @info "Translating: $(p)"
+      @time flattenModelInMSL_TST(string(precompile_prefix, ".", p); MSL_V = "MSL_4_0_0")
+      @info "Done!"
+    end
+  end
+
+  Profile.Allocs.clear()
+  Profile.init(10000001, 0.0001)
+  #PProf.Allocs.pprof()
+  @info "Profiling memory..."
+  for p in precompile_model_names
+    @info "Translating: $(p)"
+    Profile.Allocs.@profile sample_rate=0.1 flattenModelInMSL_TST(string(precompile_prefix, ".", p); MSL_V = "MSL_4_0_0")
+    @info "Done!"
+  end
+  PProf.Allocs.pprof()
+end
+
+
+function profile2()
+  precompile_model_names = [
+    #"Engine1a",
+    #"Engine1b",
+    #"Engine1b_analytic",
+    "EngineV6"
+  ]
+  Profile.clear()
+  Profile.init(1000001, 0.1)
+  @info "Running profile HTML"
+  #Profile.init(100, 0.0001)
+  @info "Setting profile settings..."
+  @profilehtml begin
+    for p in precompile_model_names
+      @info "Translating: $(p)"
+      flattenModelInMSL_TST(string(precompile_prefix, ".", p); MSL_V = "MSL_4_0_0")
+      @info "Done!"
+    end
+  end
+end
+include("testProduceEngine.jl")

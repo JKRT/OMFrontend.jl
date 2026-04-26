@@ -34,12 +34,12 @@ using ExportAll
 *
 */ =#
 
-import Main.Values
+import Frontend.Values
 
-import Main.Autoconf
-import Main.GraphStreamExt
-import Main.System
-import Main.Settings
+import Frontend.Autoconf
+import Frontend.GraphStreamExt
+import Frontend.System
+import Frontend.Settings
 
 function startExternalViewer(host::String, port::Integer)::Integer
   local status::Integer

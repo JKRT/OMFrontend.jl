@@ -1,12 +1,11 @@
 @UniontypeDecl NFFunctionDerivative
-FunctionDerivative = NFFunctionDerivative
 
 Condition = (() -> begin #= Enumeration =#
   ZERO_DERIVATIVE = 1
   NO_DERIVATIVE = 2
   () -> (ZERO_DERIVATIVE; NO_DERIVATIVE)
              end)()
-ConditionType = Int
+const ConditionType = Int
 
 
 @Uniontype NFFunctionDerivative begin
@@ -14,7 +13,7 @@ ConditionType = Int
     derivativeFn::InstNode
     derivedFn::InstNode
     order::Expression
-    conditions::List{Tuple{Int, ConditionType}}
+    conditions::List{Tuple{Int, String, ConditionType}}
     lowerOrderDerivatives::List{InstNode}
   end
 end
@@ -23,22 +22,20 @@ end
 #import ..SCodeDump
 
 function conditionToDAE(
-  cond::Tuple{<:Int, ConditionType},
+  cond::Tuple{<:Int, String, ConditionType},
 )::Tuple{Int, DAE.derivativeCond}
   local daeCond::Tuple{Int, DAE.derivativeCond}
-
   local idx::Int
   local c::ConditionType
-
-  @assign (idx, c) = cond
+  (idx, _, c) = cond
   @assign daeCond = begin
     @match c begin
       Condition.ZERO_DERIVATIVE => begin
-        (idx, DAE.derivativeCond.ZERO_DERIVATIVE())
+        (idx, DAE.ZERO_DERIVATIVE())
       end
 
       Condition.NO_DERIVATIVE => begin
-        (idx, DAE.derivativeCond.NO_DERIVATIVE(DAE.Exp.ICONST(99)))
+        (idx, DAE.NO_DERIVATIVE(DAE.ICONST(99)))
       end
     end
   end
@@ -51,14 +48,14 @@ function toDAE(fnDer::FunctionDerivative)::DAE.FunctionDefinition
   local order::Int
 
   @match INTEGER_EXPRESSION(order) = fnDer.order
-  @assign derDef = DAE.FunctionDefinition.FUNCTION_DER_MAPPER(
-    P_Function.name(listHead(getCachedFuncs(fnDer.derivedFn))),
-    P_Function.name(listHead(getCachedFuncs(fnDer.derivativeFn))),
+  @assign derDef = DAE.FUNCTION_DER_MAPPER(
+    name(listHead(getCachedFuncs(fnDer.derivedFn))),
+    name(listHead(getCachedFuncs(fnDer.derivativeFn))),
     order,
     list(conditionToDAE(c) for c in fnDer.conditions),
     NONE(),
     list(
-      P_Function.name(listHead(getCachedFuncs(fn)))
+      name(listHead(getCachedFuncs(fn)))
       for fn in fnDer.lowerOrderDerivatives
     ),
   )
@@ -67,26 +64,26 @@ function toDAE(fnDer::FunctionDerivative)::DAE.FunctionDefinition
 end
 
 function typeDerivative(fnDer::FunctionDerivative)
-  local mk::MatchKind
+  local mk::MatchKindType
   local order::Expression
   local order_ty::M_Type
   local var::VariabilityType
-  local info::SourceInfo
+  local infoVar::SourceInfo
 
-  P_Function.typeNodeCache(fnDer.derivativeFn)
-  @assign info = info(fnDer.derivedFn)
-  @assign (order, order_ty, var) = typeExp(fnDer.order, ORIGIN_FUNCTION, info)
-  @assign (order, _, mk) = TypeCheck.matchTypes(order_ty, TYPE_INTEGER(), order)
-  if TypeCheck.isIncompatibleMatch(mk)
+  typeNodeCache(fnDer.derivativeFn)
+  infoVar = sourceInfo() #info(fnDer.derivedFn)
+  (order, order_ty, var) = typeExp(fnDer.order, ORIGIN_FUNCTION, infoVar)
+  (order, _, mk) = matchTypes(order_ty, TYPE_INTEGER(), order)
+  if isIncompatibleMatch(mk)
     Error.addSourceMessage(
       Error.VARIABLE_BINDING_TYPE_MISMATCH,
       list(
         "order",
         toString(order),
         "Int",
-        Type.toString(order_ty),
+        toString(order_ty),
       ),
-      info,
+      infoVar,
     )
     fail()
   end
@@ -95,45 +92,55 @@ function typeDerivative(fnDer::FunctionDerivative)
       Error.HIGHER_VARIABILITY_BINDING,
       list(
         "order",
-        P_Prefixes.variabilityString(Variability.CONSTANT),
+        variabilityString(Variability.CONSTANT),
         toString(order),
-        P_Prefixes.variabilityString(var),
+        variabilityString(var),
       ),
-      info,
+      infoVar,
     )
     fail()
   end
-  return @assign order = Ceval.evalExp(order, P_EvalTarget.GENERIC(info))
+  order = evalExp(order, EVALTARGET_GENERIC(infoVar))
+  return order
 end
 
 function instDerivatives(fnNode::InstNode, fn::M_Function)::List{FunctionDerivative}
   local ders::List{FunctionDerivative} = nil
-
   local der_mods::List{SCode.Mod}
   local scope::InstNode
-
-  @assign der_mods = getDerivativeAnnotations(definition(fnNode))
-  @assign scope = parent(fnNode)
+  der_mods = getDerivativeAnnotations(definition(fnNode))
+  scope = parent(fnNode)
   for m in der_mods
-    @assign ders = instDerivativeMod(m, fnNode, fn, scope, ders)
+    ders = instDerivativeMod(m, fnNode, fn, scope, ders)
   end
   return ders
 end
 
-function addLowerOrderDerivative2(fn::M_Function, lowerDerNode::InstNode)::M_Function
-
-  @assign fn.derivatives = list(
+function addLowerOrderDerivative2(fn::M_Function, lowerDerNode::InstNode)
+  fnDerivatives = list(
     begin
-      @match fn_der begin
-        FUNCTION_DER(__) => begin
-          @assign fn_der.lowerOrderDerivatives =
-            _cons(lowerDerNode, fn_der.lowerOrderDerivatives)
-          fn_der
-        end
+      if fn_der isa FUNCTION_DER
+        fn_derLowerOrderDerivatives = _cons(lowerDerNode, fn_der.lowerOrderDerivatives)
+        FUNCTION_DER(fn_der.derivativeFn,
+                     fn_der.derivedFn,
+                     fn_der.order,
+                     fn_der.conditions,
+                     fn_derLowerOrderDerivatives)
       end
-    end for fn_der in fn.derivatives
-  )
-  return fn
+    end
+    for fn_der in fn.derivatives)
+  local f = M_FUNCTION(fn.path,
+                       fn.node,
+                       fn.inputs,
+                       fn.outputs,
+                       fn.locals,
+                       fn.slots,
+                       fn.returnType,
+                       fn.attributes,
+                       fnDerivatives,
+                       fn.status,
+                       fn.callCounter)
+  return f
 end
 
 function addLowerOrderDerivative(fnNode::InstNode, lowerDerNode::InstNode)
@@ -154,7 +161,7 @@ function getInputIndex(nameArg::String, fn::M_Function, info::SourceInfo)::Int
   end
   Error.addSourceMessage(
     Error.INVALID_FUNCTION_DERIVATIVE_INPUT,
-    list(name, AbsynUtil.pathString(P_Function.name(fn))),
+    list(name, AbsynUtil.pathString(name(fn))),
     info,
   )
   fail()
@@ -166,8 +173,8 @@ function getDerivativeAttributes(
   fn::M_Function,
   scope::InstNode,
   info::SourceInfo,
-)::Tuple{Expression, List{Tuple{Int, ConditionType}}}
-  local conditions::List{Tuple{Int, ConditionType}} = nil
+)::Tuple{Expression, List{Tuple{Int, String, ConditionType}}}
+  local conditions::List{Tuple{Int, String, ConditionType}} = nil
   local order::Expression = EMPTY_EXPRESSION(TYPE_UNKNOWN())
 
   local id::String
@@ -178,7 +185,7 @@ function getDerivativeAttributes(
 
   for attr in attrs
     @match SCode.NAMEMOD(id, mod) = attr
-    @assign () = begin
+     () = begin
       @match (id, mod) begin
         ("order", SCode.MOD(binding = SOME(aexp))) => begin
           if !isEmpty(order)
@@ -188,7 +195,7 @@ function getDerivativeAttributes(
               info,
             )
           end
-          @assign order = Inst.instExp(aexp, scope, info)
+          order = instExp(aexp, scope, info)
           ()
         end
 
@@ -199,7 +206,7 @@ function getDerivativeAttributes(
           ),
         ) => begin
           @assign index = getInputIndex(id, fn, info)
-          @assign conditions = _cons((index, Condition.NO_DERIVATIVE), conditions)
+          @assign conditions = _cons((index, id, Condition.NO_DERIVATIVE), conditions)
           ()
         end
 
@@ -210,7 +217,7 @@ function getDerivativeAttributes(
           ),
         ) => begin
           @assign index = getInputIndex(id, fn, info)
-          @assign conditions = _cons((index, Condition.ZERO_DERIVATIVE), conditions)
+          @assign conditions = _cons((index, id, Condition.ZERO_DERIVATIVE), conditions)
           ()
         end
 
@@ -250,10 +257,10 @@ function instDerivativeMod(
     local acref::Absyn.ComponentRef
     local der_node::InstNode
     local order::Expression
-    local conds::List{Tuple{Int, ConditionType}}
+    local conds::List{Tuple{Int, String, ConditionType}}
     @match mod begin
       SCode.MOD(subModLst = attrs, binding = SOME(Absyn.CREF(acref))) => begin
-        @assign (_, der_node) = instFunction(acref, scope, mod.info)
+         (_, der_node, _) = instFunction(acref, scope, mod.info)
         addLowerOrderDerivative(der_node, fnNode)
         (order, conds) = getDerivativeAttributes(attrs, fn, fnNode, mod.info)
         _cons(FUNCTION_DER(der_node, fnNode, order, conds, nil), fnDers)
@@ -264,7 +271,7 @@ function instDerivativeMod(
         =#
         Error.addStrictMessage(
           Error.MISSING_FUNCTION_DERIVATIVE_NAME,
-          list(AbsynUtil.pathString(P_Function.name(fn))),
+          list(AbsynUtil.pathString(name(fn))),
           mod.info,
         )
         fnDers
@@ -285,7 +292,6 @@ end
 
 function getDerivativeAnnotations(definition::SCode.Element)::List{SCode.Mod}
   local derMods::List{SCode.Mod}
-
   @assign derMods = begin
     local ann::SCode.Annotation
     @match definition begin
@@ -307,4 +313,52 @@ function getDerivativeAnnotations(definition::SCode.Element)::List{SCode.Mod}
     end
   end
   return derMods
+end
+
+
+function toSubMod(fnDer::FunctionDerivative) ::SCode.SubMod
+  local subMod::SCode.SubMod
+  local tpl::Tuple{Integer, String, ConditionType}
+  local condition::ConditionType
+  local id::String
+  local mod::SCode.Mod
+  local orderMod::SCode.SubMod
+  local subMods::List{SCode.SubMod}
+  local order::Integer
+  local info::SourceInfo
+  info = InstNode_info(fnDer.derivedFn)
+  @match INTEGER_EXPRESSION(order) = fnDer.order
+  orderMod = SCode.NAMEMOD("order", SCode.MOD(SCode.NOT_FINAL(),
+                                              SCode.NOT_EACH(),
+                                              nil,
+                                              SOME(Absyn.INTEGER(order)), info))
+  subMods = nil
+  for tpl in fnDer.conditions
+    (_, id, condition) = tpl
+    subMods = _cons(SCode.NAMEMOD(conditionToString(condition),
+                                  SCode.MOD(SCode.NOT_FINAL(), SCode.NOT_EACH(),
+                                            nil, SOME(Absyn.CREF(Absyn.CREF_IDENT(id, nil))), info)), subMods)
+  end
+  mod = SCode.MOD(SCode.NOT_FINAL(), SCode.NOT_EACH(), _cons(orderMod, subMods),
+                  SOME(Absyn.CREF(Absyn.CREF_IDENT(AbsynUtil.pathString(scopePath(fnDer.derivativeFn)), nil))), info)
+  subMod = SCode.NAMEMOD("derivative", mod)
+  subMod
+end
+
+function conditionToString(condition::ConditionType)
+  local str::String
+  str = begin
+    @match condition begin
+      Condition.NO_DERIVATIVE  => begin
+        "noDerivative"
+      end
+      Condition.ZERO_DERIVATIVE  => begin
+        "zeroDerivative"
+      end
+      _  => begin
+        String(condition)
+      end
+    end
+  end
+  str
 end

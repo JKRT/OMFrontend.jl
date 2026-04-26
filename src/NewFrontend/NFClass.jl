@@ -9,62 +9,62 @@ using MetaModelica.Dangerous
   end
 end
 
-@Uniontype Class begin
-  @Record DAE_TYPE begin
-    ty::DAE.Type
-  end
-
-  @Record TYPED_DERIVED begin
-    ty::NFType
-    baseClass::InstNode
-    restriction::Restriction
-  end
-
-  @Record INSTANCED_BUILTIN begin
-    ty::NFType
-    elements::ClassTree
-    restriction::Restriction
-  end
-
-  @Record INSTANCED_CLASS begin
-    ty::NFType
-    elements::ClassTree
-    sections::Sections
-    restriction::Restriction
-  end
-
-  @Record EXPANDED_DERIVED begin
-    baseClass::InstNode
-    modifier::Modifier
-    dims::Vector{Dimension}
-    prefixes::Prefixes
-    attributes::Attributes
-    restriction::Restriction
-  end
-
-  @Record EXPANDED_CLASS begin
-    elements::ClassTree
-    modifier::Modifier
-    prefixes::Prefixes
-    restriction::Restriction
-  end
-
-  @Record PARTIAL_BUILTIN begin
-    ty::NFType
-    elements::ClassTree
-    modifier::Modifier
-    prefixes::Prefixes
-    restriction::Restriction
-  end
-  @Record PARTIAL_CLASS begin
-    elements::ClassTree
-    modifier::Modifier
-    prefixes
-  end
-  @Record NOT_INSTANTIATED begin
-  end
+abstract type Class end
+struct DAE_TYPE <: Class
+  ty::DAE.Type
 end
 
+struct TYPED_DERIVED{T0 <: NFType, T1 <: InstNode, T2 <: Restriction} <: Class
+  ty::T0
+  baseClass::T1
+  restriction::T2
+end
+
+mutable struct INSTANCED_BUILTIN <: Class
+  ty::NFType
+  elements::ClassTree
+  restriction::Restriction
+end
+
+mutable struct INSTANCED_CLASS <: Class
+  ty::NFType
+  elements::ClassTree
+  sections::Sections
+  restriction::Restriction
+end
+
+mutable struct EXPANDED_DERIVED <: Class
+  baseClass::InstNode
+  modifier::Modifier
+  dims::Vector{Dimension}
+  prefixes::Prefixes
+  attributes::Attributes
+  restriction::Restriction
+end
+
+mutable struct EXPANDED_CLASS <: Class
+  elements::ClassTree
+  modifier::Modifier
+  prefixes::Prefixes
+  restriction::Restriction
+end
+
+mutable struct PARTIAL_BUILTIN <: Class
+  ty::NFType
+  elements::ClassTree
+  modifier::Modifier
+  prefixes::Prefixes
+  restriction::Restriction
+end
+
+mutable struct PARTIAL_CLASS <: Class
+  elements::ClassTree
+  modifier::Modifier
+  prefixes
+end
+
+struct NOT_INSTANTIATED <: Class
+end
 
 const DEFAULT_PREFIXES =
   PREFIXES(
@@ -75,59 +75,60 @@ const DEFAULT_PREFIXES =
     SCode.NOT_REPLACEABLE()
   )
 
-
-@UniontypeDecl Class
-
 function toFlatString(cls::Class, clsNode::InstNode)::String
   local str::String
   local s
-  @assign s = IOStream_M.create(getInstanceName(), IOStream_M.IOStreamType.LIST())
-  @assign s = toFlatStream(cls, clsNode, s)
-  @assign str = IOStream_M.string(s)
+  s = IOStream_M.create(getInstanceName(), IOStream_M.JULIA_BUFFER())
+  s = toFlatStream(cls, clsNode, s)
+  str = IOStream_M.string(s)
   IOStream_M.delete(s)
   return str
 end
 
-function toFlatStream(
-  cls::Class,
-  clsNode::InstNode,
-  s,
-)
+function toFlatStream(cls::Class, clsNode::InstNode, s)
   local name::String
-  @assign name = AbsynUtil.pathString(scopePath(clsNode))
-  @assign s = begin
+  name = AbsynUtil.pathString(scopePath(clsNode))
+  s = begin
     @match cls begin
       INSTANCED_CLASS(__) => begin
-        @assign s = IOStream_M.append(s, toString(cls.restriction))
-        @assign s = IOStream_M.append(s, " '")
-        @assign s = IOStream_M.append(s, name)
-        @assign s = IOStream_M.append(s, "'\\n")
+        s = IOStream_M.append(s, toString(cls.restriction))
+        s = IOStream_M.append(s, " '")
+        s = IOStream_M.append(s, name)
+        s = IOStream_M.append(s, "'\\n")
         for comp in getComponents(cls.elements)
-          @assign s = IOStream_M.append(s, "  ")
-          @assign s = IOStream_M.append(s, toFlatString(comp))
-          @assign s = IOStream_M.append(s, ";\\n")
+          if cls.restriction isa RESTRICTION_RECORD
+            #= No input allowed in comp. They are added by mistake I think earlier in the print process =#
+            compComp = component(comp)
+            if compComp.attributes.direction != Direction.NONE
+              @assign compComp.attributes.direction = Direction.NONE
+              updateComponent!(compComp, comp)
+            end
+          end
+          s = IOStream_M.append(s, "  ")
+          s = IOStream_M.append(s, toFlatString(comp))
+          s = IOStream_M.append(s, ";\\n")
         end
-        @assign s = IOStream_M.append(s, "end '")
-        @assign s = IOStream_M.append(s, name)
-        @assign s = IOStream_M.append(s, "'")
+        s = IOStream_M.append(s, "end '")
+        s = IOStream_M.append(s, name)
+        s = IOStream_M.append(s, "'")
         s
       end
 
       INSTANCED_BUILTIN(__) => begin
-        @assign s = IOStream_M.append(s, "INSTANCED_BUILTIN(")
-        @assign s = IOStream_M.append(s, name)
-        @assign s = IOStream_M.append(s, ")")
+        s = IOStream_M.append(s, "INSTANCED_BUILTIN(")
+        s = IOStream_M.append(s, name)
+        s = IOStream_M.append(s, ")")
         s
       end
 
       TYPED_DERIVED(__) => begin
-        @assign s = IOStream_M.append(s, toString(cls.restriction))
-        @assign s = IOStream_M.append(s, " '")
-        @assign s = IOStream_M.append(s, name)
-        @assign s = IOStream_M.append(s, "' = '")
-        @assign s =
+        s = IOStream_M.append(s, toString(cls.restriction))
+        s = IOStream_M.append(s, " '")
+        s = IOStream_M.append(s, name)
+        s = IOStream_M.append(s, "' = '")
+        s =
           IOStream_M.append(s, AbsynUtil.pathString(scopePath(cls.baseClass)))
-        @assign s = IOStream_M.append(s, "'")
+        s = IOStream_M.append(s, "'")
         s
       end
 
@@ -151,7 +152,7 @@ function makeRecordExp(clsNode::InstNode)::Expression
     getType(cls, clsNode)
   @assign fields = getComponents(classTree(cls))
   @assign args = List(
-    getExp(P_Component.getImplicitBinding(component(f)))
+    getExp(getImplicitBinding(component(f)))
     for f in fields
   )
   @assign exp = makeRecord(scopePath(ty_node), ty, args)
@@ -163,21 +164,20 @@ function hasOperator(name::String, cls::Class)::Bool
   local op_node::InstNode
   local op_cls::Class
   if isOperatorRecord(restriction(cls))
-    try
-      @assign op_node = lookupElement(name, cls)
-      @assign hasOperator = SCodeUtil.isOperator(definition(op_node))
-    catch
-      @assign hasOperator = false
+    @match ENTRY_INFO(op_node, _) = lookupElement(name, cls)
+    if op_node isa EMPTY_NODE
+      hasOperator = false
+    else
+      hasOperator = SCodeUtil.isOperator(definition(op_node))
     end
   else
-    @assign hasOperator = false
+    hasOperator = false
   end
   return hasOperator
 end
 
 function getDerivedComments(cls::Class, cmts::List{<:SCode.Comment})::List{SCode.Comment}
-
-  @assign cmts = begin
+  cmts = begin
     @match cls begin
       EXPANDED_DERIVED(__) => begin
         getComments(cls.baseClass, cmts)
@@ -196,10 +196,8 @@ function getDerivedComments(cls::Class, cmts::List{<:SCode.Comment})::List{SCode
 end
 
 function lastBaseClass(node::InstNode)::InstNode
-
   local cls::Class = getClass(node)
-
-  @assign node = begin
+  node = begin
     @match cls begin
       EXPANDED_DERIVED(__) => begin
         lastBaseClass(cls.baseClass)
@@ -219,21 +217,17 @@ end
 
 function isEncapsulated(cls::Class)::Bool
   local isEncapsulated::Bool
-
-  @assign isEncapsulated = begin
+  isEncapsulated = begin
     @match cls begin
       PARTIAL_CLASS(__) => begin
         SCodeUtil.encapsulatedBool(cls.prefixes.encapsulatedPrefix)
       end
-
       EXPANDED_CLASS(__) => begin
         SCodeUtil.encapsulatedBool(cls.prefixes.encapsulatedPrefix)
       end
-
       EXPANDED_DERIVED(__) => begin
         SCodeUtil.encapsulatedBool(cls.prefixes.encapsulatedPrefix)
       end
-
       _ => begin
         false
       end
@@ -242,41 +236,34 @@ function isEncapsulated(cls::Class)::Bool
   return isEncapsulated
 end
 
-function setPrefixes(prefs::Prefixes, cls::Class)::Class
+function setPrefixes(prefs::Prefixes, cls::Class)
+  @match cls begin
+    EXPANDED_CLASS(__) => begin
+      cls.prefixes = prefs
+      ()
+    end
 
-  @assign () = begin
-    @match cls begin
-      EXPANDED_CLASS(__) => begin
-        @assign cls.prefixes = prefs
-        ()
-      end
-
-      EXPANDED_DERIVED(__) => begin
-        @assign cls.prefixes = prefs
-        ()
-      end
+    EXPANDED_DERIVED(__) => begin
+      cls.prefixes = prefs
+      ()
     end
   end
   return cls
 end
 
-function getPrefixes(cls::Class)::Prefixes
+function getPrefixes(cls::Class)
   local prefs::Prefixes
-
-  @assign prefs = begin
+  prefs = begin
     @match cls begin
       PARTIAL_CLASS(__) => begin
         cls.prefixes
       end
-
       PARTIAL_BUILTIN(__) => begin
         cls.prefixes
       end
-
       EXPANDED_CLASS(__) => begin
         cls.prefixes
       end
-
       EXPANDED_DERIVED(__) => begin
         cls.prefixes
       end
@@ -287,23 +274,20 @@ end
 
 function isOverdetermined(cls::Class)::Bool
   local isOverdetermined::Bool
-
-  try
-    lookupElement("equalityConstraint", cls)
+  local res = lookupElement("equalityConstraint", cls)
+  if res.node !== EMPTY_NODE()
     System.setHasOverconstrainedConnectors(true)
-    @assign isOverdetermined = true
-  catch
-    @assign isOverdetermined = false
+    isOverdetermined = true
+  else
+    isOverdetermined = false
   end
-  #=  set the external flag that signals the presence of expandable connectors in the model
-  =#
+  #=  set the external flag that signals the presence of expandable connectors in the model =#
   return isOverdetermined
 end
 
 function isExternalFunction(cls::Class)::Bool
   local isExtFunc::Bool
-
-  @assign isExtFunc = begin
+  isExtFunc = begin
     local lang::String
     @match cls begin
       EXPANDED_DERIVED(__) => begin
@@ -353,33 +337,31 @@ function isConnectorClass(cls::Class)::Bool
 end
 
 function setRestriction(res::Restriction, cls::Class)::Class
-
-  @assign () = begin
+   () = begin
     @match cls begin
       EXPANDED_CLASS(__) => begin
-        #=  PARTIAL_BUILTIN is only used for predefined builtin types and not needed here.
-        =#
-        @assign cls.restriction = res
+        #=  PARTIAL_BUILTIN is only used for predefined builtin types and not needed here. =#
+        cls.restriction = res
         ()
       end
 
       EXPANDED_DERIVED(__) => begin
-        @assign cls.restriction = res
+        cls.restriction = res
         ()
       end
 
       INSTANCED_CLASS(__) => begin
-        @assign cls.restriction = res
+        cls.restriction = res
         ()
       end
 
       INSTANCED_BUILTIN(__) => begin
-        @assign cls.restriction = res
+        cls.restriction = res
         ()
       end
 
       TYPED_DERIVED(__) => begin
-        @assign cls.restriction = res
+        cls.restriction = res
         ()
       end
     end
@@ -424,12 +406,11 @@ function restriction(cls::Class)::Restriction
   return res
 end
 
-function setType(ty::M_Type, cls::Class)::Class
-
-  @assign () = begin
+function setType(@nospecialize(ty::M_Type), @nospecialize(cls::Class))
+   () = begin
     @match cls begin
       PARTIAL_BUILTIN(__) => begin
-        @assign cls.ty = ty
+        cls.ty = ty
         ()
       end
 
@@ -439,17 +420,17 @@ function setType(ty::M_Type, cls::Class)::Class
       end
 
       INSTANCED_CLASS(__) => begin
-        @assign cls.ty = ty
+        cls.ty = ty
         ()
       end
 
       INSTANCED_BUILTIN(__) => begin
-        @assign cls.ty = ty
+        cls.ty = ty
         ()
       end
 
       TYPED_DERIVED(__) => begin
-        @assign cls.ty = ty
+        cls.ty = ty
         ()
       end
 
@@ -502,25 +483,19 @@ end
 
 function getTypeAttributes(cls::Class)::List{Modifier}
   local attributes::List{Modifier} = nil
-
   local comps::Vector{InstNode}
   local mod::Modifier
-
-  try
-    @assign comps = getComponents(classTree(cls))
-    for c in comps
-      @assign mod = getModifier(component(c))
-      if !isEmpty(mod)
-        @assign attributes = _cons(mod, attributes)
-      end
+  comps = getComponents(classTree(cls))
+  for c in comps
+    mod = getModifier(component(c))
+    if !isEmpty(mod)
+      attributes = _cons(mod, attributes)
     end
-  catch e
-    @error "Error: $e"
   end
   return attributes
 end
 
-function getAttributes(cls::Class)::Attributes
+function getAttributes(cls::Class)
   local attr::Attributes
   attr = begin
     @match cls begin
@@ -609,30 +584,52 @@ function isIdentical(cls1::Class, cls2::Class)::Bool
   return identical
 end
 
-function mergeModifier(modifier::Modifier, cls::Class)::Class
+function mergeModifier(@nospecialize(modifier::Modifier), @nospecialize(cls::Class))
+  local mod
+  local resClass = @match cls begin
+    PARTIAL_CLASS(__) => begin
+      mod = merge(modifier, cls.modifier)
+      PARTIAL_CLASS(cls.elements, mod, cls.prefixes)
+    end
+    EXPANDED_CLASS(__) => begin
+      mod = merge(modifier, cls.modifier)
+      EXPANDED_CLASS(cls.elements, mod, cls.prefixes, cls.restriction)
+    end
+    EXPANDED_DERIVED(__) => begin
+      mod = merge(modifier, cls.modifier)
+      EXPANDED_DERIVED(cls.baseClass, mod, cls.dims, cls.prefixes, cls.attributes, cls.restriction)
+    end
+    PARTIAL_BUILTIN(__) => begin
+      mod = merge(modifier, cls.modifier)
+      PARTIAL_BUILTIN(cls.ty, cls.elements, mod, cls.prefixes, cls.restriction)
+    end
+  end
+  return resClass
+end
 
-  @assign () = begin
+function setModifier(@nospecialize(modifier::Modifier),
+                     @nospecialize(cls::Class))
+   () = begin
     @match cls begin
       PARTIAL_CLASS(__) => begin
-        @assign cls.modifier = merge(modifier, cls.modifier)
+        cls.modifier = modifier
         ()
       end
 
       EXPANDED_CLASS(__) => begin
-        @assign cls.modifier = merge(modifier, cls.modifier)
+        cls.modifier = modifier
         ()
       end
 
       EXPANDED_DERIVED(__) => begin
-        @assign cls.modifier = merge(modifier, cls.modifier)
+        cls.modifier = modifier
         ()
       end
 
       PARTIAL_BUILTIN(__) => begin
-        @assign cls.modifier = merge(modifier, cls.modifier)
+        cls.modifier = modifier
         ()
       end
-
       _ => begin
         Error.assertion(false, getInstanceName() + " got non-modifiable class", sourceInfo())
         fail()
@@ -642,142 +639,76 @@ function mergeModifier(modifier::Modifier, cls::Class)::Class
   return cls
 end
 
-function setModifier(modifier::Modifier, cls::Class)::Class
+function getModifier(cls::Union{PARTIAL_CLASS, EXPANDED_CLASS, EXPANDED_DERIVED, PARTIAL_BUILTIN})
+  return cls.modifier
+end
 
-  @assign () = begin
-    @match cls begin
-      PARTIAL_CLASS(__) => begin
-        @assign cls.modifier = modifier
-        ()
-      end
+getModifier(cls::Class) = MODIFIER_NOMOD()
 
-      EXPANDED_CLASS(__) => begin
-        @assign cls.modifier = modifier
-        ()
-      end
+classTreeApply(cls::Class, func::FuncType) = cls
 
-      EXPANDED_DERIVED(__) => begin
-        @assign cls.modifier = modifier
-        ()
-      end
+function classTreeApply(cls::INSTANCED_BUILTIN, func::FuncType)
+  local elements = func(cls.elements)
+  local tmpCls = INSTANCED_BUILTIN(cls.ty, elements, cls.restriction)
+  return tmpCls
+end
 
-      PARTIAL_BUILTIN(__) => begin
-        @assign cls.modifier = modifier
-        ()
-      end
+function classTreeApply(cls::INSTANCED_CLASS, func::FuncType)
+  local elements = func(cls.elements)
+  local tmpCls = INSTANCED_CLASS(cls.ty, elements, cls.sections, cls.restriction)
+  return tmpCls
+end
 
-      _ => begin
-        Error.assertion(false, getInstanceName() + " got non-modifiable class", sourceInfo())
-        fail()
-      end
-    end
-  end
+function classTreeApply(cls::EXPANDED_CLASS, func::FuncType)
+  local elements = func(cls.elements)
+  local tmpCls = EXPANDED_CLASS(elements, cls.modifier, cls.prefixes, cls.restriction)
+  return tmpCls
+end
+
+function classTreeApply(cls::PARTIAL_BUILTIN, func::FuncType)
+  local elements = func(cls.elements)
+  local tmpCls = PARTIAL_BUILTIN(cls.ty, elements, cls.modifier, cls.prefixes, cls.restriction)
+  return tmpCls
+end
+
+function classTreeApply(cls::PARTIAL_CLASS, func::FuncType)
+  local elements = func(cls.elements)
+  local tmpCls = PARTIAL_CLASS(elements, cls.modifier, cls.prefixes)
+  return tmpCls
+end
+
+function setClassTree(tree::ClassTree, cls::Class)
   return cls
 end
 
-function getModifier(cls::Class)::Modifier
-  local modifier::Modifier
-
-  @assign modifier = begin
-    @match cls begin
-      PARTIAL_CLASS(__) => begin
-        cls.modifier
-      end
-
-      EXPANDED_CLASS(__) => begin
-        cls.modifier
-      end
-
-      EXPANDED_DERIVED(__) => begin
-        cls.modifier
-      end
-
-      PARTIAL_BUILTIN(__) => begin
-        cls.modifier
-      end
-
-      _ => begin
-        MODIFIER_NOMOD()
-      end
-    end
-  end
-  return modifier
+function setClassTree(tree::ClassTree, cls::INSTANCED_BUILTIN)
+  local tmpCls = INSTANCED_BUILTIN(cls.ty, tree, cls.restriction)
+  return tmpCls
 end
 
-function classTreeApply(cls::Class, func::FuncType)::Class
-
-  @assign () = begin
-    @match cls begin
-      PARTIAL_CLASS(__) => begin
-        @assign cls.elements = func(cls.elements)
-        ()
-      end
-
-      EXPANDED_CLASS(__) => begin
-        @assign cls.elements = func(cls.elements)
-        ()
-      end
-
-      PARTIAL_BUILTIN(__) => begin
-        @assign cls.elements = func(cls.elements)
-        ()
-      end
-
-      INSTANCED_CLASS(__) => begin
-        @assign cls.elements = func(cls.elements)
-        ()
-      end
-
-      INSTANCED_BUILTIN(__) => begin
-        @assign cls.elements = func(cls.elements)
-        ()
-      end
-
-      _ => begin
-        ()
-      end
-    end
-  end
-  return cls
+function setClassTree(tree::ClassTree, cls::INSTANCED_CLASS)
+  local tmpCls = INSTANCED_CLASS(cls.ty, tree, cls.sections, cls.restriction)
+  return tmpCls
 end
 
-function setClassTree(tree::ClassTree, cls::Class)::Class
+function setClassTree(tree::ClassTree, cls::EXPANDED_CLASS)
+  local tmpCls = EXPANDED_CLASS(tree, cls.modifier, cls.prefixes, cls.restriction)
+  return tmpCls
+end
 
-  @assign () = begin
-    @match cls begin
-      PARTIAL_CLASS(__) => begin
-        @assign cls.elements = tree
-        ()
-      end
+function setClassTree(tree::ClassTree, cls::PARTIAL_BUILTIN)
+  local tmpCls = PARTIAL_BUILTIN(cls.ty, tree, cls.modifier, cls.prefixes, cls.restriction)
+  return tmpCls
+end
 
-      EXPANDED_CLASS(__) => begin
-        @assign cls.elements = tree
-        ()
-      end
-
-      PARTIAL_BUILTIN(__) => begin
-        @assign cls.elements = tree
-        ()
-      end
-
-      INSTANCED_CLASS(__) => begin
-        @assign cls.elements = tree
-        ()
-      end
-
-      INSTANCED_BUILTIN(__) => begin
-        @assign cls.elements = tree
-        ()
-      end
-    end
-  end
-  return cls
+function setClassTree(tree::ClassTree, cls::PARTIAL_CLASS)
+  local tmpCls = PARTIAL_CLASS(tree, cls.modifier, cls.prefixes)
+  return tmpCls
 end
 
 function classTree(cls::Class)::ClassTree
   local tree::ClassTree
-
-  @assign tree = begin
+  tree = begin
     @match cls begin
       PARTIAL_CLASS(__) => begin
         cls.elements
@@ -807,20 +738,19 @@ function classTree(cls::Class)::ClassTree
         classTree(getClass(cls.baseClass))
       end
       _ => begin
-        EMPTY_TREE()
+        CLASS_TREE_EMPTY_TREE() #EMPTY_TREE()
       end
     end
   end
-  @debug "Our resulting tree in class tree"
-#  str = LookupTree.printTreeStr(lookupTree(tree))
-  @debug "Value of str"
+  #@debug "Our resulting tree in class tree"
+  #  str = LookupTree.printTreeStr(lookupTree(tree))
+  #@debug "Value of str"
   return tree
 end
 
 function isBuiltin(cls::Class)::Bool
   local b::Bool
-
-  @assign b = begin
+  b = begin
     @match cls begin
       PARTIAL_BUILTIN(__) => begin
         true
@@ -853,42 +783,37 @@ end
 
 function lookupAttributeBinding(name::String, cls::Class)::Binding
   local binding::Binding
-
   local attr_node::InstNode
-
   try
-    @assign attr_node = lookupElement(name, classTree(cls))
-    @assign binding = getBinding(component(attr_node))
+    @match ENTRY_INFO(attr_node, isImport) = lookupElement(name, classTree(cls))
+    binding = getBinding(component(attr_node))
   catch
-    @assign binding = EMPTY_BINDING
+    binding = EMPTY_BINDING
   end
   return binding
 end
 
 function nthComponent(index::Int, cls::Class)::InstNode
   local component::InstNode
-
-  @assign component = nthComponent(index, classTree(cls))
+  component = nthComponent(index, classTree(cls))
   return component
 end
 
 function lookupComponentIndex(name::String, cls::Class)::Int
   local index::Int
-
-  @assign index = lookupComponentIndex(name, classTree(cls))
+  index = lookupComponentIndex(name, classTree(cls))
   return index
 end
 
-function lookupElement(name::String, cls::Class)::Tuple{InstNode, Bool}
+function lookupElement(name::String, cls::Class)
   local isImport::Bool
   local node::InstNode
-
-  @assign (node, isImport) = lookupElement(name, classTree(cls))
-  return (node, isImport)
+  local entryInfo = lookupElement(name, classTree(cls))
+  return entryInfo
 end
 
 function setSections(sections::Sections, cls::Class)::Class
-  @assign cls = begin
+  cls = begin
     @match cls begin
       INSTANCED_CLASS(__) => begin
         INSTANCED_CLASS(cls.ty, cls.elements, sections, cls.restriction)
@@ -900,17 +825,14 @@ end
 
 function getSections(cls::Class)::Sections
   local sections::Sections
-
-  @assign sections = begin
+  sections = begin
     @match cls begin
       INSTANCED_CLASS(__) => begin
         cls.sections
       end
-
       TYPED_DERIVED(__) => begin
         getSections(getClass(cls.baseClass))
       end
-
       _ => begin
         SECTIONS_EMPTY()
       end
@@ -920,7 +842,7 @@ function getSections(cls::Class)::Sections
 end
 
 function initExpandedClass(cls::Class)::Class
-  @assign cls = begin
+  cls = begin
     @match cls begin
       PARTIAL_CLASS(__) => begin
         EXPANDED_CLASS(
@@ -935,11 +857,9 @@ function initExpandedClass(cls::Class)::Class
   return cls
 end
 
-function makeRecordConstructor(fields::List{<:InstNode}, out::InstNode)::Class
+function makeRecordConstructor(fields::List{<:InstNode}, out::InstNode)
   local cls::Class
-
   local tree::ClassTree
-
   tree = fromRecordConstructor(fields, out)
   cls = INSTANCED_CLASS(
     TYPE_UNKNOWN(),
@@ -954,14 +874,11 @@ function fromEnumeration(
   literals::List{<:SCode.Enum},
   enumType::M_Type,
   prefixes::Prefixes,
-  enumClass::InstNode,
-)::Class
+  enumClass::InstNode)
   local cls::Class
-
   local tree::ClassTree
-
-  @assign tree = fromEnumeration(literals, enumType, enumClass)
-  @assign cls = PARTIAL_BUILTIN(
+  tree = fromEnumeration(literals, enumType, enumClass)
+  cls = PARTIAL_BUILTIN(
     enumType,
     tree,
     MODIFIER_NOMOD(),
@@ -975,12 +892,11 @@ function fromSCode(
   elements::List{<:SCode.Element},
   isClassExtends::Bool,
   scope::InstNode,
-  prefixes::Prefixes,
-)::Class
+  prefixes::Prefixes)
   local cls::Class
   local tree::ClassTree
-  @assign tree = fromSCode(elements, isClassExtends, scope)
-  @assign cls = PARTIAL_CLASS(tree, MODIFIER_NOMOD(), prefixes)
+  tree = fromSCode(elements, isClassExtends, scope)
+  cls = PARTIAL_CLASS(tree, MODIFIER_NOMOD(), prefixes)
   return cls
 end
 

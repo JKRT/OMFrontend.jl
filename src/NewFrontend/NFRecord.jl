@@ -47,14 +47,14 @@ function instDefaultConstructor(
   local locals::List{InstNode}
   local all_params::List{InstNode}
   local attr::DAE.FunctionAttributes
-  local status::Pointer{Signed} #= TODO: An issue if int is used.=#
+  local status::Pointer #= TODO: An issue if int is used.=#
   local ctor_node::InstNode
   local out_rec::InstNode
   local out_comp::Component
   local ctor_cls::Class
   local ty_node::InstNode
   try
-    (ctor_node, _) = lookupLocalSimpleName(
+    @match ENTRY_INFO(ctor_node, _) = lookupLocalSimpleName(
       name(node),
       classScope(parent(node)),
     )
@@ -65,32 +65,29 @@ function instDefaultConstructor(
   #= Backported from the original code. =#
   setNodeType(ROOT_CLASS(parent(node)), ctor_node)
   #= End=#
-  ctor_node = instantiateN1(ctor_node, parent(ctor_node))
+  ctor_node = instantiateN1(ctor_node) #, parent(ctor_node))
   instExpressions(ctor_node)
-#  @info "Record fields"
   #=  Collect the record fields.=#
   (inputs, locals, all_params) = collectRecordParams(ctor_node)
   #=  Create the output record element, using the instance created above as both parent and type. =#
-  @assign out_comp = UNTYPED_COMPONENT(
+  out_comp = UNTYPED_COMPONENT(
     ctor_node,
     listArray(nil),
     EMPTY_BINDING,
     EMPTY_BINDING,
     OUTPUT_ATTR,
     NONE(),
-    false,
+    true, #= Not sure if this change should be made.... Maybe set to true =#
     AbsynUtil.dummyInfo,
   )
-  @assign out_rec =
-    fromComponent("out" + name(ctor_node), out_comp, ctor_node)
-  #=  Make a record constructor class and create a node for the constructor.
-  =#
-  @assign ctor_cls = makeRecordConstructor(all_params, out_rec)
-  @assign ctor_node = replaceClass(ctor_cls, ctor_node)
+  out_rec = fromComponent("out" + name(ctor_node), out_comp, ctor_node)
+  #=  Make a record constructor class and create a node for the constructor. =#
+  ctor_cls = makeRecordConstructor(all_params, out_rec)
+  ctor_node = replaceClass(ctor_cls, ctor_node)
   classApply(ctor_node, setType, TYPE_COMPLEX(ctor_node, COMPLEX_CLASS()))
   #=  Create the constructor function and add it to the function cache. =#
-  @assign attr = DAE.FUNCTION_ATTRIBUTES_DEFAULT
-  @assign status = P_Pointer.create(FunctionStatus.INITIAL)
+  attr = DAE.FUNCTION_ATTRIBUTES_DEFAULT
+  status = P_Pointer.create(FunctionStatus.INITIAL)
   cacheAddFunc(
     node,
     M_FUNCTION(
@@ -108,7 +105,7 @@ function instDefaultConstructor(
     ),
     false,
   )
-  return node
+  @assign node = node
 end
 
 function collectRecordParams(
@@ -122,13 +119,13 @@ function collectRecordParams(
   local pcomps::Vector{Pointer{InstNode}}
   local tree::ClassTree
   @assign tree = classTree(getClass(recNode))
-  @assign () = begin
+   () = begin
     @match tree begin
       CLASS_TREE_FLAT_TREE(components = comps) => begin
         for i = arrayLength(comps):(-1):1
           comp = comps[i]
           (inputs, locals) = collectRecordParam(comp, inputs, locals)
-          allParams = _cons(comp, allParams)
+          allParams = Cons{InstNode}(comp, allParams)
         end
         ()
       end
@@ -136,7 +133,7 @@ function collectRecordParams(
         for i = arrayLength(pcomps):(-1):1
           comp = P_Pointer.access(pcomps[i])
           (inputs, locals) = collectRecordParam(comp, inputs, locals)
-          allParams = _cons(comp, allParams)
+          allParams = Cons{InstNode}(comp, allParams)
         end
         ()
       end
@@ -202,7 +199,7 @@ end
 function fieldsToDAE(fields::List{<:Field})::List{String}
   local fieldNames::List{String} = nil
   for field in fields
-    @assign () = begin
+     () = begin
       @match field begin
         INPUT(__) => begin
           @assign fieldNames = _cons(field.name, fieldNames)
@@ -227,7 +224,7 @@ function foldInputFields(
   local rest_args::List{T} = args
   for field in fields
     @match _cons(arg, rest_args) = rest_args
-    if P_Field.isInput(field)
+    if isInput(field)
       @assign foldArg = func(arg, foldArg)
     end
   end

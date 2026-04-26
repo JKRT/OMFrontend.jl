@@ -47,17 +47,17 @@ hashFunc   - A function that maps a key to a positive integer.
 keyEqual   - A comparison function between two keys, returns true if equal.
 */ =#
 #= /* HashTable instance specific code */ =#
-import Main.BaseHashTable
-import Main.SimCode
+import Frontend.BaseHashTable
+import Frontend.SimCode
 
-import Main.SimCodeUtil
+import Frontend.SimCodeUtil
 
 Key = SimCode.SimEqSystem
 Value = Integer
 HashTableCrefFunctionsType = Tuple
 HashTable = Tuple
 
-""" #= 
+""" #=
   Returns an empty HashTable.
   Using the default bucketsize..
  =#"""
@@ -68,7 +68,7 @@ function emptyHashTable()::HashTable
   return hashTable
 end
 
-""" #= 
+""" #=
   Returns an empty HashTable.
   Using the bucketsize size.
  =#"""

@@ -34,12 +34,12 @@ using ExportAll
 *
 */ =#
 
-import Main.Values
+import Frontend.Values
 
-import Main.Error
-import Main.StackOverflow
+import Frontend.Error
+import Frontend.StackOverflow
 
-""" #= 
+""" #=
 Executes a function given a handle (from System.lookupFunction) and a list
 of values. =#"""
 function executeFunction(

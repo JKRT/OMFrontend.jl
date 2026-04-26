@@ -1,4 +1,3 @@
-
 module ConstantsSetImpl
 import ..NFComponentRef
 using MetaModelica
@@ -14,32 +13,29 @@ end
 Constants = ConstantsSetImpl.Tree
 
 function collectConstants(flatModel::FlatModel, functions::FunctionTree)::FlatModel
-
-  local vars::List{Variable} = nil
+  local vars::Vector{Variable} = Variable[]
   local binding::Binding
   local constants::Constants
-
-  @assign constants = ConstantsSetImpl.new()
-  @assign constants =
-    ListUtil.fold(flatModel.variables, collectVariableConstants, constants)
-  @assign constants =
+  constants = ConstantsSetImpl.new()
+  constants =
+    ArrayUtil.fold(flatModel.variables, collectVariableConstants, constants)
+  constants =
     foldExpList(flatModel.equations, collectExpConstants, constants)
-  @assign constants = foldExpList(
+  constants = foldExpList(
     flatModel.initialEquations,
     collectExpConstants,
     constants,
   )
-  @assign constants =
+  constants =
     foldExpList(flatModel.algorithms, collectExpConstants, constants)
-  @assign constants = foldExpList(
+  constants = foldExpList(
     flatModel.initialAlgorithms,
     collectExpConstants,
     constants,
   )
-  @assign constants = FunctionTreeImpl.fold(functions, collectFuncConstants, constants)
-  @assign vars =
-    listReverse(list(Variable_fromCref(c) for c in ConstantsSetImpl.listKeys(constants)))
-  @assign flatModel.variables = listAppend(vars, flatModel.variables)
+  constants = FunctionTreeImpl.fold(functions, collectFuncConstants, constants)
+  vars = Variable[Variable_fromCref(c) for c in ConstantsSetImpl.listKeys(constants)]
+  @assign flatModel.variables = vcat(vars, flatModel.variables)
 #  execStat(getInstanceName()) TODO
   return flatModel
 end
@@ -48,9 +44,8 @@ function replaceConstants(
   flatModel::FlatModel,
   functions::FunctionTree,
 )::Tuple{FlatModel, FunctionTree}
-
   @assign flatModel.variables =
-    list(replaceVariableConstants(c) for c in flatModel.variables)
+    Variable[replaceVariableConstants(c) for c in flatModel.variables]
   @assign flatModel.equations =
     mapExpList(flatModel.equations, replaceExpConstants)
   @assign flatModel.initialEquations =
@@ -88,15 +83,17 @@ end
 
 function collectExpConstants_traverser(@nospecialize(exp::Expression), @nospecialize(constants::Constants))::Constants
   local cref::ComponentRef
-  @assign () = begin
+   () = begin
     @match exp begin
-      CREF_EXPRESSION(cref = cref && CREF_EXPRESSION(__)) =>
+      CREF_EXPRESSION(cref = cref && COMPONENT_REF_CREF(__)) =>
         begin
           if isPackageConstant(cref)
             typeComponentBinding(cref.node, ORIGIN_CLASS)
-            @assign constants = Constants.add(
+            @assign constants = ConstantsSetImpl.add(
               constants,
               stripSubscriptsAll(cref),
+              0,
+              ConstantsSetImpl.addConflictKeep,
             )
             @assign constants = collectBindingConstants(
               getBinding(component(node(
@@ -126,7 +123,7 @@ function collectFuncConstants(
   local sections::Sections
 
   @assign cls = getClass(func.node)
-  @assign () = begin
+   () = begin
     @match cls begin
       INSTANCED_CLASS(
         elements = CLASS_TREE_FLAT_TREE(components = comps),
@@ -138,7 +135,7 @@ function collectFuncConstants(
             constants,
           )
         end
-        @assign () = begin
+         () = begin
           @match sections begin
             SECTIONS(__) => begin
               @assign constants = foldExpList(
@@ -173,11 +170,9 @@ function collectFuncConstants(
 end
 
 function replaceVariableConstants(var::Variable)::Variable
-
   local cref::ComponentRef
   local binding::Binding
-
-  @assign binding = replaceBindingConstants(var.binding)
+  binding = replaceBindingConstants(var.binding)
   if !referenceEq(binding, var.binding)
     @assign var.binding = binding
   end
@@ -185,8 +180,7 @@ function replaceVariableConstants(var::Variable)::Variable
 end
 
 function replaceBindingConstants(binding::Binding)::Binding
-
-  @assign () = begin
+   () = begin
     @match binding begin
       TYPED_BINDING(__) => begin
         @assign binding.bindingExp = replaceExpConstants(binding.bindingExp)
@@ -216,7 +210,7 @@ function replaceExpConstants_traverser(exp::Expression)::Expression
       CREF_EXPRESSION(cref = cref && CREF(__)) =>
         begin
           if isPackageConstant(cref)
-            Ceval.evalExp(exp, Ceval.EVALTARGET_IGNORE_ERRORS())
+            evalExp(exp, EVALTARGET_IGNORE_ERRORS())
           else
             exp
           end
@@ -240,7 +234,7 @@ function replaceFuncConstants(name::Absyn.Path, func::M_Function)::M_Function
   local eval_binding::Binding
 
   @assign cls = getClass(func.node)
-  @assign () = begin
+   () = begin
     @match cls begin
       INSTANCED_CLASS(
         elements = CLASS_TREE_FLAT_TREE(components = comps),
@@ -251,11 +245,11 @@ function replaceFuncConstants(name::Absyn.Path, func::M_Function)::M_Function
           @assign binding = getBinding(comp)
           @assign eval_binding = replaceBindingConstants(binding)
           if !referenceEq(binding, eval_binding)
-            @assign comp = P_Component.setBinding(eval_binding, comp)
+            @assign comp = setBinding(eval_binding, comp)
             updateComponent!(comp, c)
           end
         end
-        @assign () = begin
+         () = begin
           @match sections begin
             P_Sections.Sections.SECTIONS(__) => begin
               @assign sections.algorithms = list(

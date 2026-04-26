@@ -6,45 +6,42 @@ const EquationFn = Function
 const AlgorithmFn = Function
 const EquationFn = Function
 const AlgorithmFn = Function
-
-@UniontypeDecl NFSections
 #=Necessary redefinitions=#
 const Sections = NFSections
 const Equation = NFEquation
 const Algorithm = NFAlgorithm
 
-@Uniontype NFSections begin
-  @Record SECTIONS_EMPTY begin
-  end
-  @Record SECTIONS_EXTERNAL begin
-    name::String
-    args::List{Expression}
-    outputRef::ComponentRef
-    language::String
-    ann::Option{SCode.Annotation}
-    explicit::Bool
-  end
-  @Record SECTIONS begin
-    equations::List{Equation}
-    initialEquations::List{Equation}
-    algorithms::List{Algorithm}
-    initialAlgorithms::List{Algorithm}
-  end
+abstract type NFSections
 end
 
-function isEmpty(sections::Sections)::Bool
-  local isEmpty::Bool
-  @assign isEmpty = begin
-    @match sections begin
-      EMPTY(__) => begin
-        true
-      end
-      _ => begin
-        false
-      end
+struct SECTIONS_EMPTY <: NFSections
+end
+
+mutable struct SECTIONS_EXTERNAL <: NFSections
+  name::String
+  args::List{Expression}
+  outputRef::ComponentRef
+  language::String
+  ann::Option{SCode.Annotation}
+  explicit::Bool
+end
+
+mutable struct SECTIONS <: NFSections
+  equations::Vector{Equation}
+  initialEquations::Vector{Equation}
+  algorithms::Vector{Algorithm}
+  initialAlgorithms::Vector{Algorithm}
+end
+
+function isEmpty(sections::Sections)
+  @match sections begin
+    SECTIONS_EMPTY(__) => begin
+      true
+    end
+    _ => begin
+      false
     end
   end
-  return isEmpty
 end
 
 function apply(
@@ -53,27 +50,25 @@ function apply(
   algFn::AlgorithmFn,
   ieqFn::EquationFn = eqFn,
   ialgFn::AlgorithmFn = algFn,
-)
-  return @assign () = begin
-    @match sections begin
-      SECTIONS(__) => begin
-        for eq in sections.equations
-          eqFn(eq)
-        end
-        for ieq in sections.initialEquations
-          ieqFn(ieq)
-        end
-        for alg in sections.algorithms
-          algFn(alg)
-        end
-        for ialg in sections.initialAlgorithms
-          ialgFn(ialg)
-        end
-        ()
+  )::Nothing
+  @match sections begin
+    SECTIONS(__) => begin
+      for eq in sections.equations
+        eqFn(eq)
       end
-      _ => begin
-        ()
+      for ieq in sections.initialEquations
+        ieqFn(ieq)
       end
+      for alg in sections.algorithms
+        algFn(alg)
+      end
+      for ialg in sections.initialAlgorithms
+        ialgFn(ialg)
+      end
+      nothing
+    end
+    _ => begin
+      nothing
     end
   end
 end
@@ -82,12 +77,10 @@ function foldExp(sections::Sections, foldFn::FoldFn, arg::ArgT) where {ArgT}
   @assign arg = begin
     @match sections begin
       SECTIONS(__) => begin
-        @assign arg = foldExpList(sections.equations, foldFn, arg)
-        @assign arg =
-          foldExpList(sections.initialEquations, foldFn, arg)
-        @assign arg = foldExpList(sections.algorithms, foldFn, arg)
-        @assign arg =
-          foldExpList(sections.initialAlgorithms, foldFn, arg)
+        arg = foldExpList(sections.equations, foldFn, arg)
+        arg = foldExpList(sections.initialEquations, foldFn, arg)
+        arg = foldExpList(sections.algorithms, foldFn, arg)
+        arg = foldExpList(sections.initialAlgorithms, foldFn, arg)
         arg
       end
       SECTIONS_EXTERNAL(__) => begin
@@ -101,12 +94,15 @@ function foldExp(sections::Sections, foldFn::FoldFn, arg::ArgT) where {ArgT}
   return arg
 end
 
+"""
+  Maps a Sections object using a map function.
+"""
 function mapExp(sections::Sections, mapFn::MapFn)::Sections
-  local eq::List{Equation}
-  local ieq::List{Equation}
-  local alg::List{Algorithm}
-  local ialg::List{Algorithm}
-  @assign sections = begin
+  local eq::Vector{Equation}
+  local ieq::Vector{Equation}
+  local alg::Vector{Algorithm}
+  local ialg::Vector{Algorithm}
+  sections = begin
     @match sections begin
       SECTIONS(__) => begin
         eq = mapExpList(sections.equations, mapFn)
@@ -116,7 +112,7 @@ function mapExp(sections::Sections, mapFn::MapFn)::Sections
         SECTIONS(eq, ieq, alg, ialg)
       end
       SECTIONS_EXTERNAL(__) => begin
-        @assign sections.args = list(mapFn(e) for e in sections.args)
+        sections.args = list(mapFn(e) for e in sections.args)
         sections
       end
       _ => begin
@@ -135,20 +131,18 @@ function map1(
   ieqFn::EquationFn = eqFn,
   ialgFn::AlgorithmFn = algFn,
 ) where {ArgT}
-
   local eq::List{Equation}
   local ieq::List{Equation}
-  local alg::List{Algorithm}
-  local ialg::List{Algorithm}
-
-  @assign () = begin
+  local alg::Vector{Algorithm}
+  local ialg::Vector{Algorithm}
+  () = begin
     @match sections begin
       SECTIONS(__) => begin
-        @assign eq = list(eqFn(e, arg) for e in sections.equations)
-        @assign ieq = list(ieqFn(e, arg) for e in sections.initialEquations)
-        @assign alg = list(algFn(a, arg) for a in sections.algorithms)
-        @assign ialg = list(ialgFn(a, arg) for a in sections.initialAlgorithms)
-        @assign sections = SECTIONS(eq, ieq, alg, ialg)
+        eq = list(eqFn(e, arg) for e in sections.equations)
+        ieq = list(ieqFn(e, arg) for e in sections.initialEquations)
+        alg = [algFn(a, arg) for a in sections.algorithms]
+        ialg = [ialgFn(a, arg) for a in sections.initialAlgorithms]
+        sections = SECTIONS(eq, ieq, alg, ialg)
         ()
       end
       _ => begin
@@ -165,19 +159,19 @@ function map(
   algFn::AlgorithmFn,
   ieqFn::EquationFn = eqFn,
   ialgFn::AlgorithmFn = algFn,
-)::Sections
-  local eq::List{Equation}
-  local ieq::List{Equation}
-  local alg::List{Algorithm}
-  local ialg::List{Algorithm}
-  @assign () = begin
+)
+  local eq::Vector{Equation}
+  local ieq::Vector{Equation}
+  local alg::Vector{Algorithm}
+  local ialg::Vector{Algorithm}
+  () = begin
     @match sections begin
       SECTIONS(__) => begin
-        @assign eq = list(eqFn(e) for e in sections.equations)
-        @assign ieq = list(ieqFn(e) for e in sections.initialEquations)
-        @assign alg = list(algFn(a) for a in sections.algorithms)
-        @assign ialg = list(ialgFn(a) for a in sections.initialAlgorithms)
-        @assign sections = SECTIONS(eq, ieq, alg, ialg)
+        eq = Equation[eqFn(e) for e in sections.equations]
+        ieq = Equation[ieqFn(e) for e in sections.initialEquations]
+        alg = Algorithm[algFn(a) for a in sections.algorithms]
+        ialg = Algorithm[ialgFn(a) for a in sections.initialAlgorithms]
+        sections = SECTIONS(eq, ieq, alg, ialg)
         ()
       end
       _ => begin
@@ -190,8 +184,7 @@ end
 
 function join(sections1::Sections, sections2::Sections)::Sections
   local sections::Sections
-
-  @assign sections = begin
+  sections = begin
     @match (sections1, sections2) begin
       (SECTIONS_EMPTY(__), _) => begin
         sections2
@@ -203,10 +196,10 @@ function join(sections1::Sections, sections2::Sections)::Sections
 
       (SECTIONS(__), SECTIONS(__)) => begin
         SECTIONS(
-          listAppend(sections1.equations, sections2.equations),
-          listAppend(sections1.initialEquations, sections2.initialEquations),
-          listAppend(sections1.algorithms, sections2.algorithms),
-          listAppend(sections1.initialAlgorithms, sections2.initialAlgorithms),
+          vcat(sections1.equations, sections2.equations),
+          vcat(sections1.initialEquations, sections2.initialEquations),
+          vcat(sections1.algorithms, sections2.algorithms),
+          vcat(sections1.initialAlgorithms, sections2.initialAlgorithms),
         )
       end
     end
@@ -215,21 +208,20 @@ function join(sections1::Sections, sections2::Sections)::Sections
 end
 
 function append(
-  equations::List{<:Equation},
-  initialEquations::List{<:Equation},
-  algorithms::List{<:Algorithm},
-  initialAlgorithms::List{<:Algorithm},
+  equations::Vector{Equation},
+  initialEquations::Vector{Equation},
+  algorithms::Vector{Algorithm},
+  initialAlgorithms::Vector{Algorithm},
   sections::Sections,
-)::Sections
-
-  @assign sections = begin
+)
+  sections = begin
     @match sections begin
       SECTIONS(__) => begin
         SECTIONS(
-          listAppend(sections.equations, equations),
-          listAppend(sections.initialEquations, initialEquations),
-          listAppend(sections.algorithms, algorithms),
-          listAppend(sections.initialAlgorithms, initialAlgorithms),
+          vcat(sections.equations, equations),
+          vcat(sections.initialEquations, initialEquations),
+          vcat(sections.algorithms, algorithms),
+          vcat(sections.initialAlgorithms, initialAlgorithms),
         )
       end
 
@@ -251,9 +243,9 @@ function prependAlgorithm(
     @match sections begin
       SECTIONS(__) => begin
         if isInitial
-          @assign sections.initialAlgorithms = _cons(alg, sections.initialAlgorithms)
+          sections.initialAlgorithms = _cons(alg, sections.initialAlgorithms)
         else
-          @assign sections.algorithms = _cons(alg, sections.algorithms)
+          sections.algorithms = _cons(alg, sections.algorithms)
         end
         sections
       end
@@ -279,28 +271,93 @@ function prependAlgorithm(
   return sections
 end
 
+function toFlatStream(sections, scopeName::Absyn.Path, s::IOStream_M.IOSTREAM; inFunction = false)
+  local ann::SCode.Annotation;
+  local mod::SCode.Mod, modLib::SCode.Mod
+  local modInc::SCode.Mod, modLibDir::SCode.Mod, modIncDir::SCode.Mod
+  @match sections begin
+    SECTIONS() => begin
+      for alg in sections.algorithms
+        s = IOStream_M.append(s, "algorithm\n")
+        s = toFlatStreamList(alg.statements, "  ", s; inFunction = inFunction)
+      end
+      s
+    end
+    SECTIONS_EXTERNAL() => begin
+      s = IOStream_M.append(s, "external \"")
+      s = IOStream_M.append(s, sections.language)
+      s = IOStream_M.append(s, "\"")
+      if sections.explicit
+        if ! isEmpty(sections.outputRef)
+          s = IOStream_M.append(s, " ")
+          s = IOStream_M.append(s, toFlatString(sections.outputRef))
+          s = IOStream_M.append(s, " =")
+        end
+        s = IOStream_M.append(s, " ")
+        s = IOStream_M.append(s, sections.name)
+        s = IOStream_M.append(s, "(")
+        s = IOStream_M.append(s, stringDelimitList(list(toFlatString(e) for e in sections.args), ", "))
+        s = IOStream_M.append(s, ")")
+      end
+      if isSome(sections.ann)
+        @match SOME(ann) = sections.ann
+        mod = ann.modification
+        modLib = SCodeUtil.filterSubMods(mod, (x) -> SCodeUtil.filterGivenSubModNames(x;namesToKeep=list("Library")))
+        modInc = SCodeUtil.filterSubMods(mod, (x) -> SCodeUtil.filterGivenSubModNames(x;namesToKeep=list("Include")))
+        if SCodeUtil.isEmptyMod(modLib)
+          modLibDir = SCode.NOMOD()
+        else
+          modLibDir = SCodeUtil.filterSubMods(mod, (x) -> SCodeUtil.filterGivenSubModNames(x;namesToKeep=list("LibraryDirectory")))
+          if SCodeUtil.isEmptyMod(modLibDir)
+            modLibDir = SCode.MOD(SCode.NOT_FINAL()
+                                  , SCode.NOT_EACH()
+            , list(SCode.NAMEMOD("LibraryDirectory"
+                                 , SCode.MOD(SCode.NOT_FINAL()
+                                             ,SCode.NOT_EACH()
+                                             ,nil
+                                             ,SOME(Absyn.STRING("modelica://" + AbsynUtil.pathFirstIdent(scopeName) + "/Resources/Library")), AbsynUtil.dummyInfo))), NONE(), AbsynUtil.dummyInfo)
+          end
+        end
+        if SCodeUtil.isEmptyMod(modInc)
+          modIncDir = SCode.NOMOD()
+        else
+          modIncDir = SCodeUtil.filterSubMods(mod, (x) -> SCodeUtil.filterGivenSubModNames(x;namesToKeep=list("IncludeDirectory")))
+          if SCodeUtil.isEmptyMod(modLibDir)
+            modLibDir = SCode.MOD(SCode.NOT_FINAL(), SCode.NOT_EACH(), list(SCode.NAMEMOD("IncludeDirectory", SCode.MOD(SCode.NOT_FINAL(), SCode.NOT_EACH(), list(), SOME(Absyn.STRING("modelica://" + AbsynUtil.pathFirstIdent(scopeName) + "/Resources/Include")), AbsynUtil.dummyInfo))), NONE(), AbsynUtil.dummyInfo)
+          end
+        end
+        @assign ann.modification = SCodeUtil.mergeSCodeMods(SCodeUtil.mergeSCodeMods(modLib, modLibDir), SCodeUtil.mergeSCodeMods(modInc, modIncDir))
+        s = IOStream_M.append(s, SCodeDump.printAnnotationStr(SCode.COMMENT(SOME(ann), NONE())))
+      end
+      s = IOStream_M.append(s, ";\n")
+    end
+    _ #=NOP=# => s
+  end #match
+end
+
 function prependEquation(
   eq::Equation,
   sections::Sections,
   isInitial::Bool = false,
 )::Sections
-
-  @assign sections = begin
+  sections = begin
     @match sections begin
       SECTIONS(__) => begin
-        if isInitial
-          @assign sections.initialEquations = _cons(eq, sections.initialEquations)
+        if isInitial #I think I can avoid the assignment here.. since we modify the reference.
+          #@assign sections.initialEquations = push!(sections.initialEquations, eq)
+          push!(sections.initialEquations, eq)
         else
-          @assign sections.equations = _cons(eq, sections.equations)
+          #@assign sections.equations = push!(sections.equations, eq)
+          push!(sections.equations, eq)
         end
         sections
       end
 
-      EMPTY(__) => begin
+      SECTIONS_EMPTY(__) => begin
         if isInitial
-          SECTIONS(nil, list(eq), nil, nil)
+          SECTIONS(Equation[], Equation[eq], Algorithm[], Algorithm[])
         else
-          SECTIONS(list(eq), nil, nil, nil)
+          SECTIONS([eq], Equation[], Algorithm[], Algorithm[])
         end
       end
 
@@ -318,24 +375,22 @@ function prependEquation(
 end
 
 function prepend(
-  equations::List{<:Equation},
-  initialEquations::List{<:Equation},
-  algorithms::List{<:Algorithm},
-  initialAlgorithms::List{<:Algorithm},
+  equations::Vector{Equation},
+  initialEquations::Vector{Equation},
+  algorithms::Vector{Algorithm},
+  initialAlgorithms::Vector{Algorithm},
   sections::Sections,
-)::Sections
-
-  @assign sections = begin
+)
+  sections = begin
     @match sections begin
       SECTIONS(__) => begin
         SECTIONS(
-          listAppend(equations, sections.equations),
-          listAppend(initialEquations, sections.initialEquations),
-          listAppend(algorithms, sections.algorithms),
-          listAppend(initialAlgorithms, sections.initialAlgorithms),
+          vcat(equations, sections.equations),
+          vcat(initialEquations, sections.initialEquations),
+          vcat(algorithms, sections.algorithms),
+          vcat(initialAlgorithms, sections.initialAlgorithms),
         )
       end
-
       _ => begin
         SECTIONS(equations, initialEquations, algorithms, initialAlgorithms)
       end
@@ -345,20 +400,19 @@ function prepend(
 end
 
 function new(
-  equations::List{<:Equation},
-  initialEquations::List{<:Equation},
-  algorithms::List{<:Algorithm},
-  initialAlgorithms::List{<:Algorithm},
-)::Sections
+  equations::Vector{Equation},
+  initialEquations::Vector{Equation},
+  algorithms::Vector{Algorithm},
+  initialAlgorithms::Vector{Algorithm},
+  )
   local sections::Sections
-
-  if listEmpty(equations) &&
-     listEmpty(initialEquations) &&
-     listEmpty(algorithms) &&
-     listEmpty(initialAlgorithms)
-    @assign sections = SECTIONS_EMPTY()
+  if isempty(equations) &&
+     isempty(initialEquations) &&
+     isempty(algorithms) &&
+     isempty(initialAlgorithms)
+    sections = SECTIONS_EMPTY()
   else
-    @assign sections = SECTIONS(equations, initialEquations, algorithms, initialAlgorithms)
+    sections = SECTIONS(equations, initialEquations, algorithms, initialAlgorithms)
   end
   return sections
 end

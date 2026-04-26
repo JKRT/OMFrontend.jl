@@ -58,7 +58,7 @@ function mapExp(dim::Dimension, func::MapFunc)::Dimension
     local e2::Expression
     @match dim begin
       DIMENSION_UNTYPED(dimension = e1) => begin
-        @assign e2 = map(e1, func)
+        e2 = map(e1, func)
         if referenceEq(e1, e2)
           dim
         else
@@ -71,7 +71,7 @@ function mapExp(dim::Dimension, func::MapFunc)::Dimension
         if referenceEq(e1, e2)
           dim
         else
-          DIMENSION_EXP(e2, dim.var)
+          fromExp(e2, dim.var)
         end
       end
 
@@ -177,7 +177,8 @@ function endExp(dim::Dimension, cref::ComponentRef, index::Int)::Expression
 end
 
 function toStringList(dims::List{<:Dimension})::String
-  local str::String = "[" + stringDelimitList(ListUtil.map(dims, toString), ", ") + "]"
+  local parts = String[toString(d) for d in dims]
+  local str::String = "[" * Base.join(parts, ", ") * "]"
   return str
 end
 
@@ -201,6 +202,43 @@ function toString(dim::Dimension)::String
 
       DIMENSION_EXP(__) => begin
         toString(dim.exp)
+      end
+
+      DIMENSION_UNKNOWN(__) => begin
+        ":"
+      end
+
+      DIMENSION_UNTYPED(__) => begin
+        toString(dim.dimension)
+      end
+    end
+  end
+  return str
+end
+
+"""
+Same as toString for now
+"""
+function toFlatString(dim::Dimension)::String
+  local str::String
+
+  @assign str = begin
+    local ty::M_Type
+    @match dim begin
+      DIMENSION_INTEGER(__) => begin
+        string(dim.size)
+      end
+
+      DIMENSION_BOOLEAN(__) => begin
+        "Boolean"
+      end
+
+      DIMENSION_ENUM(enumType = ty && TYPE_ENUMERATION(__)) => begin
+        AbsynUtil.pathString(ty.typePath)
+      end
+
+      DIMENSION_EXP(__) => begin
+        toFlatString(dim.exp)
       end
 
       DIMENSION_UNKNOWN(__) => begin
@@ -245,11 +283,11 @@ function isOne(dim::Dimension)::Bool
 
   @assign isOne = begin
     @match dim begin
-      INTEGER_EXPRESSION(__) => begin
+      DIMENSION_INTEGER(__) => begin
         dim.size == 1
       end
       DIMENSION_ENUM(__) => begin
-        Type.enumSize(dim.enumType) == 1
+        enumSize(dim.enumType) == 1
       end
 
       _ => begin
@@ -264,11 +302,11 @@ function isZero(dim::Dimension)::Bool
   local isZ::Bool
   @assign isZ = begin
     @match dim begin
-      INTEGER_EXPRESSION(__) => begin
+      DIMENSION_INTEGER(__) => begin
         dim.size == 0
       end
       DIMENSION_ENUM(__) => begin
-        Type.enumSize(dim.enumType) == 0
+        enumSize(dim.enumType) == 0
       end
       _ => begin
         false
@@ -349,7 +387,7 @@ function isEqualKnown(dim1::Dimension, dim2::Dimension)::Bool
       end
 
       _ => begin
-        P_Dimension.Dimension.size(dim1) == P_Dimension.Dimension.size(dim2)
+        size(dim1) == size(dim2)
       end
     end
   end
@@ -415,26 +453,26 @@ function add(a::Dimension, b::Dimension)::Dimension
         DIMENSION_UNKNOWN()
       end
 
-      (INTEGER_EXPRESSION(__), INTEGER_EXPRESSION(__)) => begin
-        INTEGER_EXPRESSION(a.size + b.size, variabilityMax(a.var, b.var))
+      (DIMENSION_INTEGER(__), DIMENSION_INTEGER(__)) => begin
+        DIMENSION_INTEGER(a.size + b.size, variabilityMax(a.var, b.var))
       end
 
-      (INTEGER_EXPRESSION(__), DIMENSION_EXP(__)) => begin
+      (DIMENSION_INTEGER(__), DIMENSION_EXP(__)) => begin
         DIMENSION_EXP(
           BINARY_EXPRESSION(
             b.exp,
-            OPERATOR(TYPE_INTEGER(), P_NFOperator.Op.ADD),
+            OPERATOR(TYPE_INTEGER(), Op.ADD),
             INTEGER_EXPRESSION(a.size),
           ),
           b.var,
         )
       end
 
-      (DIMENSION_EXP(__), INTEGER_EXPRESSION(__)) => begin
+      (DIMENSION_EXP(__), DIMENSION_INTEGER(__)) => begin
         DIMENSION_EXP(
           BINARY_EXPRESSION(
             a.exp,
-            OPERATOR(TYPE_INTEGER(), P_NFOperator.Op.ADD),
+            OPERATOR(TYPE_INTEGER(), Op.ADD),
             INTEGER_EXPRESSION(b.size),
           ),
           a.var,
@@ -445,7 +483,7 @@ function add(a::Dimension, b::Dimension)::Dimension
         DIMENSION_EXP(
           BINARY_EXPRESSION(
             a.exp,
-            OPERATOR(TYPE_INTEGER(), P_NFOperator.Op.ADD),
+            OPERATOR(TYPE_INTEGER(), Op.ADD),
             b.exp,
           ),
           variabilityMax(a.var, b.var),
@@ -486,8 +524,8 @@ function toDAE(dim::Dimension)::DAE.Dimension
   return daeDim
 end
 
-function fromExpList(expl::List{<:Expression})::Dimension
-  local dim::Dimension = DIMENSION_INTEGER(listLength(expl), Variability.CONSTANT)
+function fromExpList(expl::Union{Vector{Expression}, List{<:Expression}})::Dimension
+  local dim::Dimension = DIMENSION_INTEGER(length(expl), Variability.CONSTANT)
   return dim
 end
 
@@ -496,7 +534,7 @@ function fromInteger(n::Int, var::VariabilityType = Variability.CONSTANT)::Dimen
   return dim
 end
 
-function fromExp(exp::Expression, var::VariabilityType)::Dimension
+function fromExp(@nospecialize(exp::Expression), var::VariabilityType)::Dimension
   local dim::Dimension
   @assign dim = begin
     local cls::Class
@@ -510,10 +548,10 @@ function fromExp(exp::Expression, var::VariabilityType)::Dimension
         begin
           @match ty begin
             TYPE_BOOLEAN(__) => begin
-              BOOLEAN()
+              DIMENSION_BOOLEAN()
             end
             TYPE_ENUMERATION(__) => begin
-              ENUM(ty)
+              DIMENSION_ENUM(ty)
             end
             _ => begin
               Error.assertion(
@@ -533,3 +571,5 @@ function fromExp(exp::Expression, var::VariabilityType)::Dimension
   end
   return dim
 end
+
+#= Backported =#

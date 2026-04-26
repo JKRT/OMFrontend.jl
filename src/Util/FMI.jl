@@ -42,7 +42,7 @@ using ExportAll
 *
 */ =#
 
-import Main.Flags
+import Frontend.Flags
 
 import ListUtil
 

@@ -1,8 +1,6 @@
 #=
   Author: John Tinnerholm johti17@liu.se
 =#
-
-
 import Pkg
 
 Pkg.resolve()
@@ -17,8 +15,11 @@ import OMFrontend
 
 #= Utility functions =#
 function flatten(modelName::String, modelFile::String)
+  @info "Parsing..."
   @time p = OMFrontend.parseFile(modelFile)
+  @info "SCode Translation of $(modelName)..."
   @time scodeProgram = OMFrontend.translateToSCode(p)
+  @info "Generating the DAE for $(modelName)..."
   @time (dae, cache) = OMFrontend.instantiateSCodeToDAE(modelName, scodeProgram)
 end
 
@@ -28,13 +29,13 @@ function parseAndLowerToScode(modelName::String, modelFile::String)
 end
 
 """
-  Flattens to flat Modelica. 
+  Flattens to flat Modelica.
   Note that, the full path specification of the file is expected.
 """
 function flattenFM(model, file)
   local sp = OMFrontend.parseFile(file)
   local scode = OMFrontend.translateToSCode(sp)
-  local (x,y,z) = OMFrontend.instantiateSCodeToFM(model, scode)
+  local (x, y) = OMFrontend.instantiateSCodeToFM(model, scode)
   return (x, y)
 end
 
@@ -46,6 +47,10 @@ end
     @testset "SCode -> DAE Sanity test" begin
       include("daeTests.jl")
     end
+  end
+
+  @testset "GUI_API tests" begin
+    include("gui_api_tests.jl")
   end
 
   # #= Check that we get the correct flat Modelica=#
@@ -65,7 +70,7 @@ end
     include("useOfMSLTests.jl")
   end
 
-  @testset "Testing OCC connectors" begin
+  @testset "Testing OC-Connectors" begin
     include("dynamicOverconstrainedConnectorTests.jl")
   end
 

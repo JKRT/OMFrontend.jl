@@ -1,25 +1,29 @@
-@Uniontype NFRangeIterator begin
-  @Record RANGEITERATOR_INVALID_RANGE begin
-    exp::Expression
-  end
-  @Record RANGEITERATOR_ARRAY_RANGE begin
-    values::List{Expression}
-  end
-  @Record RANGEITERATOR_REAL_RANGE begin
-    start::AbstractFloat
-    stepsize::AbstractFloat
-    current::Int
-    steps::Int
-  end
-  @Record RANGEITERATOR_INT_STEP_RANGE begin
-    current::Int
-    stepsize::Int
-    last::Int
-  end
-  @Record RANGEITERATOR_INT_RANGE begin
-    current::Int
-    last::Int
-  end
+abstract type NFRangeIterator end
+
+struct RANGEITERATOR_INVALID_RANGE{T0 <: Expression} <: NFRangeIterator
+  exp::T0
+end
+
+struct RANGEITERATOR_ARRAY_RANGE <: NFRangeIterator
+  values::List{Expression}
+end
+
+struct RANGEITERATOR_REAL_RANGE{T0 <: AbstractFloat, T1 <: Integer} <: NFRangeIterator
+  start::T0
+  stepsize::T0
+  current::T1
+  steps::T1
+end
+
+struct RANGEITERATOR_INT_STEP_RANGE{T0 <: Integer} <: NFRangeIterator
+  current::T0
+  stepsize::T0
+  last::T0
+end
+
+struct RANGEITERATOR_INT_RANGE{T0 <: Integer} <: NFRangeIterator
+  current::T0
+  last::T0
 end
 
 const RangeIterator = NFRangeIterator
@@ -35,28 +39,29 @@ function fold(iterator::RangeIterator, func::FuncT, arg::ArgT) where {ArgT}
 end
 
 function map(iterator::RangeIterator, func::FuncT)
-  local lst::List = nil
-
+  local lst::List{Subscript} = nil
   local iter::RangeIterator = iterator
   local exp::Expression
-
   while hasNext(iter)
-    @assign (iter, exp) = next(iter)
-    @assign lst = _cons(func(exp), lst)
+    (iter, exp) = next(iter)
+    lst = Cons{Subscript}(func(exp), lst)
   end
-  @assign lst = listReverse(lst)
+  tmp = lst
+  lst = nil
+  while tmp !== nil
+    @match Cons{Subscript}(s, tmp) = tmp
+    lst = Cons{Subscript}(s, lst)
+  end
   return lst
 end
 
 function toListReverse(iterator::RangeIterator)::List{Expression}
   local expl::List{Expression} = nil
-
   local iter::RangeIterator = iterator
   local exp::Expression
-
   while hasNext(iter)
-    @assign (iter, exp) = next(iter)
-    @assign expl = _cons(exp, expl)
+     (iter, exp) = next(iter)
+    expl = _cons(exp, expl)
   end
   return expl
 end
@@ -68,30 +73,25 @@ end
 
 function hasNext(iterator::RangeIterator)::Bool
   local hasNext::Bool
-
-  @assign hasNext = begin
+  hasNext = begin
     @match iterator begin
       RANGEITERATOR_INT_RANGE(__) => begin
         iterator.current <= iterator.last
       end
-
-      INT_STEP_RANGE(__) => begin
+      RANGEITERATOR_INT_STEP_RANGE(__) => begin
         if iterator.stepsize > 0
           iterator.current <= iterator.last
         else
           iterator.current >= iterator.last
         end
       end
-
-      REAL_RANGE(__) => begin
+      RANGEITERATOR_REAL_RANGE(__) => begin
         iterator.current < iterator.steps
       end
-
-      ARRAY_RANGE(__) => begin
+      RANGEITERATOR_ARRAY_RANGE(__) => begin
         !listEmpty(iterator.values)
       end
-
-      INVALID_RANGE(__) => begin
+      RANGEITERATOR_INVALID_RANGE(__) => begin
         Error.assertion(
           false,
           getInstanceName() +
@@ -108,31 +108,30 @@ end
 
 function next(iterator::RangeIterator)::Tuple{RangeIterator, Expression}
   local nextExp::Expression
-
-  @assign nextExp = begin
+  nextExp = begin
     @match iterator begin
       RANGEITERATOR_INT_RANGE(__) => begin
-        @assign nextExp = INTEGER_EXPRESSION(iterator.current)
+        nextExp = INTEGER_EXPRESSION(iterator.current)
         @assign iterator.current = iterator.current + 1
         nextExp
       end
 
-      INT_STEP_RANGE(__) => begin
-        @assign nextExp = INTEGER_EXPRESSION(iterator.current)
+      RANGEITERATOR_INT_STEP_RANGE(__) => begin
+        nextExp = INTEGER_EXPRESSION(iterator.current)
         @assign iterator.current = iterator.current + iterator.stepsize
         nextExp
       end
 
-      REAL_RANGE(__) => begin
-        @assign nextExp = REAL_EXPRESSION(
+      RANGEITERATOR_REAL_RANGE(__) => begin
+        nextExp = REAL_EXPRESSION(
           iterator.start + iterator.stepsize * iterator.current,
         )
         @assign iterator.current = iterator.current + 1
         nextExp
       end
 
-      ARRAY_RANGE(__) => begin
-        @assign nextExp = listHead(iterator.values)
+      RANGEITERATOR_ARRAY_RANGE(__) => begin
+        nextExp = listHead(iterator.values)
         @assign iterator.values = listRest(iterator.values)
         nextExp
       end
@@ -154,8 +153,7 @@ end
 
 function fromDim(dim::Dimension)::RangeIterator
   local iterator::RangeIterator
-
-  @assign iterator = begin
+  iterator = begin
     local ty::M_Type
     local expl::List{Expression}
     @match dim begin
@@ -164,14 +162,14 @@ function fromDim(dim::Dimension)::RangeIterator
       end
 
       DIMENSION_BOOLEAN(__) => begin
-        ARRAY_RANGE(list(
+        RANGEITERATOR_ARRAY_RANGE(list(
           BOOLEAN_EXPRESSION(false),
           BOOLEAN_EXPRESSION(true),
         ))
       end
 
        DIMENSION_ENUM(enumType = ty && TYPE_ENUMERATION(__)) => begin
-        ARRAY_RANGE(makeEnumLiterals(ty))
+        RANGEITERATOR_ARRAY_RANGE(makeEnumLiterals(ty))
       end
 
       DIMENSION_EXP(__) => begin
@@ -187,13 +185,14 @@ function fromDim(dim::Dimension)::RangeIterator
   return iterator
 end
 
-""" #= Returns a RangeIterator created from the given expression. If the
-     expression isn't an expression that can be expanded into elements an
-     invalid range will be returned that will trigger an assertion when used.
-     The valididity of the returned iterator can be checked with isValid. =#"""
+"""
+Returns a RangeIterator created from the given expression. If the
+expression isn't an expression that can be expanded into elements an
+invalid range will be returned that will trigger an assertion when used.
+The valididity of the returned iterator can be checked with isValid.
+"""
 function RangeIterator_fromExp(exp::Expression)::RangeIterator
   local iterator::RangeIterator
-
   @assign iterator = begin
     local istart::Int
     local istep::Int
@@ -207,7 +206,7 @@ function RangeIterator_fromExp(exp::Expression)::RangeIterator
     local values::List{Expression}
     @match exp begin
       ARRAY_EXPRESSION(__) => begin
-        RANGEITERATOR_ARRAY_RANGE(exp.elements)
+        RANGEITERATOR_ARRAY_RANGE(arrayList(exp.elements))
       end
 
       RANGE_EXPRESSION(
@@ -248,19 +247,19 @@ function RangeIterator_fromExp(exp::Expression)::RangeIterator
         stop = ENUM_LITERAL_EXPRESSION(index = istop),
       ) => begin
         @match TYPE_ENUMERATION(typePath = _, literals = literals) = ty
-        @assign values = nil
+        values = nil
         if istart <= istop
           for i = 2:istart
-            @assign literals = listRest(literals)
+            literals = listRest(literals)
           end
           for i = istart:istop
-            @assign values = _cons(
+            values = _cons(
               ENUM_LITERAL_EXPRESSION(ty, listHead(literals), i),
               values,
             )
-            @assign literals = listRest(literals)
+            literals = listRest(literals)
           end
-          @assign values = listReverse(values)
+          values = listReverse(values)
         end
         RANGEITERATOR_ARRAY_RANGE(values)
       end
@@ -270,11 +269,11 @@ function RangeIterator_fromExp(exp::Expression)::RangeIterator
       ) => begin
         #=  enumeration type based range
         =#
-        @assign values = nil
-        @assign istep = 0
+        values = nil
+        istep = 0
         for l in literals
-          @assign istep = istep + 1
-          @assign values =
+          istep = istep + 1
+          values =
             _cons(ENUM_LITERAL_EXPRESSION(ty, l, istep), values)
         end
         RANGEITERATOR_ARRAY_RANGE(values)
@@ -289,18 +288,16 @@ function RangeIterator_fromExp(exp::Expression)::RangeIterator
 end
 
 function isValid(iterator::RangeIterator)::Bool
-  local isValid::Bool
-
-  @assign isValid = begin
+  local valid::Bool
+  valid = begin
     @match iterator begin
-      INVALID_RANGE(__) => begin
+      RANGEITERATOR_INVALID_RANGE(__) => begin
         false
       end
-
       _ => begin
         true
       end
     end
   end
-  return isValid
+  return valid
 end

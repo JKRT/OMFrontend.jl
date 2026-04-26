@@ -34,8 +34,8 @@ using ExportAll
 *
 */ =#
 import Absyn
-import .Main.AbsynUtil
-import .Main.BaseAvlSet
+import .Frontend.AbsynUtil
+import .Frontend.BaseAvlSet
 using BaseAvlSet #= Modelica extend clause =#
 
 Key = Absyn.Path

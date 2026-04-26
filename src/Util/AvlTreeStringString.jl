@@ -3,7 +3,7 @@ module AvlTreeStringString
 using MetaModelica
 using ExportAll
 
-import .Main.BaseAvlTree
+import .Frontend.BaseAvlTree
 using BaseAvlTree #= Modelica extend clause =#
 
 Key = String

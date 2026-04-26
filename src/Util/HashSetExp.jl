@@ -46,13 +46,13 @@ keyEqual   - A comparison function between two keys, returns true if equal.
 */ =#
 #= /* HashSetExp instance specific code */ =#
 
-import Main.BaseHashSet
+import Frontend.BaseHashSet
 
 import DAE
 
-import Main.Expression
+import Frontend.Expression
 
-import Main.ExpressionDump
+import Frontend.ExpressionDump
 
 Key = DAE.Exp
 
@@ -60,7 +60,7 @@ HashSetCrefFunctionsType = Tuple
 
 HashSet = Tuple
 
-""" #= 
+""" #=
   Returns an empty HashSet.
   Using the default bucketsize..
  =#"""

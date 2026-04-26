@@ -1,5 +1,4 @@
-
-package Modelica 
+package Modelica
 
 package SIunits
     type Time = Real(final quantity = "Time", final unit = "s");

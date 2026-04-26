@@ -1,4 +1,3 @@
-
 #= /*
 * This file is part of OpenModelica.
 *
@@ -33,15 +32,16 @@
 using MetaModelica
 using ExportAll
 
-
 module ReplTree
 
 using MetaModelica
 using ExportAll
 
-import ..Main.NFExpression
-import ..Main.InstNode
-import ..Main.refCompare
+import ..Frontend.NFExpression
+import ..Frontend.InstNode
+import ..Frontend.refCompare
+import ..Frontend.toString
+import ..Frontend.Util
 
 const Expression = NFExpression
 const Key = InstNode
@@ -49,105 +49,99 @@ const Value = Expression
 
 include("../Util/baseAvlTreeCode.jl")
 
-# function keyStr(inKey)
-#   name(inKey)
-# end
+function keyStr(inKey)
+  toString(inKey)
+end
 
-# function valueStr(inValue)
-#   toString(inValue);
-# end
+function valueStr(inValue)
+  toString(inValue);
+end
 
-# function keyCompare(inKey1::InstNode, inKey2::InstNode)
-#   refCompare(inKey1, inKey2)
-# end
+keyCompare = (inKey1::InstNode, inKey2::InstNode) -> begin
+  refCompare(inKey1, inKey2)
+end
 
 @exportAll()
 end
 
-FlowControl = (() -> begin #= Enumeration =#
-  NEXT = 1
-  CONTINUE = 2
-  BREAK = 3
-  RETURN = 4
-  ASSERTION = 5
-  () -> (NEXT; CONTINUE; BREAK; RETURN; ASSERTION)
-end)()
+const FlowControlType = Int
+struct FlowControlStruct{T}
+  NEXT::T
+  CONTINUE::T
+  BREAK::T
+  RETURN::T
+  ASSERTION::T
+end
+const FlowControl = FlowControlStruct{Int}(1,2,3,4,5)
 
-function evaluate(fn::M_Function, args::List{<:Expression})::Expression
+function evaluate(fn::M_Function, args::Vector{Expression})::Expression
   local result::Expression
-
-  if P_Function.isExternal(fn)
-    @assign result = evaluateExternal(fn, args)
+  if isExternal(fn)
+    result = evaluateExternal(fn, args)
   else
-    @assign result = evaluateNormal(fn, args)
+    result = evaluateNormal(fn, args)
   end
   return result
 end
 
-function evaluateNormal(fn::M_Function, args::List{<:Expression})::Expression
+function evaluateNormal(fn::M_Function, args::Vector{Expression})::Expression
   local result::Expression
-
-  local fn_body::List{Statement}
+  local fn_body::Vector{Statement}
   local bindings::List{Binding}
   local repl::ReplTree.Tree
   local call_count::Int
   local limit::Int
-  local call_counter::Pointer{Int} = fn.callCounter
-  local ctrl::FlowControl
-
-  #=  Functions contain a mutable call counter that's increased by one at the
+  local call_counter::Pointer = fn.callCounter
+  local ctrl::FlowControlType
+  #=
+  Functions contain a mutable call counter that's increased by one at the
+  start of each evaluation, and decreased by one when the evalution is
+  finished. This is used to limit the number of recursive functions calls.
   =#
-  #=  start of each evaluation, and decreased by one when the evalution is
-  =#
-  #=  finished. This is used to limit the number of recursive functions calls.
-  =#
-  @assign call_count = Pointer.access(call_counter) + 1
-  @assign limit = Flags.getConfigInt(Flags.EVAL_RECURSION_LIMIT)
+  call_count = P_Pointer.access(call_counter) + 1
+  limit = Flags.getConfigInt(Flags.EVAL_RECURSION_LIMIT)
   if call_count > limit
     Pointer.update(call_counter, 0)
     Error.addSourceMessage(
       Error.EVAL_RECURSION_LIMIT_REACHED,
-      list(String(limit), AbsynUtil.pathString(P_Function.name(fn))),
+      list(String(limit), AbsynUtil.pathString(name(fn))),
       info(fn.node),
     )
     fail()
   end
-  Pointer.update(call_counter, call_count)
+  P_Pointer.update(call_counter, call_count)
   try
-    @assign fn_body = P_Function.getBody(fn)
-    @assign repl = createReplacements(fn, args)
-    @assign fn_body = applyReplacements(repl, fn_body)
-    @assign fn_body = optimizeBody(fn_body)
-    @assign ctrl = evaluateStatements(fn_body)
+    fn_body = getBody(fn)
+    repl = createReplacements(fn, args)
+    fn_body = applyReplacements(repl, fn_body)
+    fn_body = optimizeBody(fn_body)
+    ctrl = evaluateStatements(fn_body)
     if ctrl != FlowControl.ASSERTION
       @assign result = createResult(repl, fn.outputs)
     else
       fail()
     end
-  catch
-    Pointer.update(call_counter, call_count - 1)
+  catch e
+    P_Pointer.update(call_counter, call_count - 1)
     fail()
   end
   #=  TODO: Also apply replacements to the replacements themselves, i.e. the
+          bindings of the function parameters. But they probably need to be
+         sorted by dependencies first.
+  Make sure we always decrease the call counter even if the evaluation fails.
   =#
-  #=        bindings of the function parameters. But they probably need to be
-  =#
-  #=        sorted by dependencies first.
-  =#
-  #=  Make sure we always decrease the call counter even if the evaluation fails.
-  =#
-  Pointer.update(call_counter, call_count - 1)
+  P_Pointer.update(call_counter, call_count - 1)
   return result
 end
 
-function evaluateExternal(fn::M_Function, args::List{<:Expression})::Expression
+function evaluateExternal(fn::M_Function, args::Vector{Expression})::Expression
   local result::Expression
 
   local name::String
   local lang::String
   local output_ref::ComponentRef
   local ann::Option{SCode.Annotation}
-  local ext_args::List{Expression}
+  local ext_args::Vector{Expression}
 
   @match SECTIONS_EXTERNAL(
     name = name,
@@ -157,12 +151,13 @@ function evaluateExternal(fn::M_Function, args::List{<:Expression})::Expression
     ann = ann,
   ) = getSections(getClass(fn.node))
   if lang == "builtin"
-    @assign result = Ceval.evalfn( args, EVALTARGET_IGNORE_ERRORS())
+    #= TODO: evalfn does not exist yet. This path is for builtin external functions. =#
+    error("evalfn not implemented for builtin external function: " * name)
   elseif isKnownExternalFunc(name, ann)
-    @assign result = evaluateKnownExternal(name, args)
+    result = evaluateKnownExternal(name, list(args...))
   else
     try
-      @assign result = evaluateExternal2(name, fn, args, ext_args)
+      result = evaluateExternal2(name, fn, args, ext_args)
     catch
       Error.assertion(
         false,
@@ -202,7 +197,7 @@ end
 function evaluateRecordConstructor(
   fn::M_Function,
   ty::M_Type,
-  args::List{<:Expression};
+  args::Vector{Expression};
   evaluate::Bool = true,
 )::Expression
   local result::Expression
@@ -210,78 +205,77 @@ function evaluateRecordConstructor(
   local arg::Expression
   local repl_exp::Expression
   local fields::List{Field}
-  local rest_args::List{Expression} = args
-  local expl::List{Expression} = nil
+  local rest_args::Vector{Expression} = args
   local inputs::List{InstNode} = fn.inputs
   local locals::List{InstNode} = fn.locals
   local node::InstNode
-
   repl = ReplTree.new()
   fields = recordFields(ty)
-  #=  Add the inputs and local variables to the replacement tree with their =#
-  #=  respective bindings. =#
-  for i in inputs
-    @match _cons(arg, rest_args) = rest_args
+  #=
+  Add the inputs and local variables to the replacement tree with their
+  respective bindings.
+  =#
+  for (j,i) in enumerate(inputs)
+    arg = rest_args[j]
     repl = ReplTree.add(repl, i, arg)
   end
   for l in locals
     repl = ReplTree.add(repl, l, getBindingExp(l, repl))
   end
   #=  Apply the replacements to all the variables. =#
-  @assign repl = ReplTree.map(repl, (nodeArg, expArg) -> applyBindingReplacement(nodeArg, expArg, repl))
-  #=  Fetch the new binding expressions for all the variables, both inputs and
+  repl = ReplTree.map(repl, (nodeArg, expArg) -> applyBindingReplacement(nodeArg, expArg, repl))
+  #=
+  Fetch the new binding expressions for all the variables, both inputs and
+  locals.
   =#
-  #=  locals.
-  =#
-  for f in fields
-    println("Looping")
+  local expl::Vector{Expression} = Vector(undef, length(fields))
+  for (i,f) in enumerate(fields)
     if isInput(f)
       @match node <| inputs = inputs
     else
       @match node <| locals = locals
     end
-    println("After match")
     e = ReplTree.get(repl, node)
-    expl = _cons(e, expl)    
+    expl[i] = e
   end
-  #=  Create a new record expression from the list of arguments.
-  =#
-  result =
-    makeRecord(name(fn), ty, listReverseInPlace(expl))
-  #=  Constant evaluate the expression if requested.
-  =#
+  #=  Create a new record expression from the list of arguments. =#
+  result = makeRecord(name(fn), ty, expl)
+  #=  Constant evaluate the expression if requested. =#
   if evaluate
-    @assign result = Ceval.evalExp(result)
+    result = evalExp(result)
   end
   return result
 end
 
-function createReplacements(fn::M_Function, args::List{<:Expression})::ReplTree.Tree
+function createReplacements(fn::M_Function, args::Vector{Expression})::ReplTree.Tree
   local repl::ReplTree.Tree
 
   local arg::Expression
-  local rest_args::List{Expression} = args
+  local rest_args::Vector{Expression} = args
 
-  @assign repl = ReplTree.new()
+  repl = ReplTree.new()
   #=  Add inputs to the replacement tree. Since they can't be assigned to the
+    replacements don't need to be mutable.
   =#
-  #=  replacements don't need to be mutable.
-  =#
-  for i in fn.inputs
-    @match _cons(arg, rest_args) = rest_args
-    @assign repl = addInputReplacement(i, arg, repl)
+  for (j,i) in enumerate(fn.inputs)
+    arg = rest_args[j]
+    repl = addInputReplacement(i, arg, repl)
   end
-  #=  Add outputs and local variables to the replacement tree. These do need to
+  #=
+  Add outputs and local variables to the replacement tree. These do need to
+  be mutable to allow assigning to them.
   =#
-  #=  be mutable to allow assigning to them.
-  =#
-  @assign repl = ListUtil.fold(fn.outputs, addMutableReplacement, repl)
-  @assign repl = ListUtil.fold(fn.locals, addMutableReplacement, repl)
+  #@info "Outputs was..." typeof(fn.outputs)
+  #@info "REPL TREE BEFORE:" ReplTree.printTreeStr(repl)
+  repl = ListUtil.fold(fn.outputs, addMutableReplacement, repl)
+  #@info "Done..."
+  #@info "REPL TREE:" ReplTree.printTreeStr(repl)
+  repl = ListUtil.fold(fn.locals, addMutableReplacement, repl)
   #=  Apply the replacements to the replacements themselves. This is done after
   =#
   #=  building the tree to make sure all the replacements are available.
   =#
-  @assign repl = ReplTree.map(repl, (nodeArg, expArg) -> applyBindingReplacement(nodeArg, expArg, repl))
+  repl = ReplTree.map(repl, (nodeArg, expArg) -> applyBindingReplacement(nodeArg, expArg, repl))
   return repl
 end
 
@@ -298,9 +292,7 @@ end
 
 function getBindingExp(node::InstNode, repl::ReplTree.Tree)::Expression
   local bindingExp::Expression
-
   local binding::Binding
-
   @assign binding = getBinding(component(node))
   if isBound(binding)
     @assign bindingExp = getBindingExp(getExp(binding))
@@ -312,46 +304,45 @@ end
 
 function buildBinding(node::InstNode, repl::ReplTree.Tree)::Expression
   local result::Expression
-
   local ty::M_Type
-
-  @assign ty = getType(node)
-  @assign ty = mapDims(ty, (repl) -> applyReplacementsDim(repl = repl))
-  @assign result = begin
+  ty = getType(node)
+  ty = mapDims(ty, (expArg) -> applyReplacementsDim(repl, expArg))
+  #@info "Our node is a " toString(ty) typeof(ty)
+  result = begin
     @match ty begin
-      TYPE_ARRAY(__) where {(Type.hasKnownSize(ty))} => begin
+      TYPE_ARRAY(__) where {(hasKnownSize(ty))} => begin
+        #@info "Filling it beause it is an array"
         fillType(
           ty,
-          EMPTY(arrayElementType(ty)),
+          EMPTY_EXPRESSION(arrayElementType(ty)),
         )
       end
-
       TYPE_COMPLEX(__) => begin
+        #@info "It is a complex. Make a record"
         buildRecordBinding(node, repl)
       end
-
       _ => begin
-        EMPTY(ty)
+        #@info "Is empty..."
+        EMPTY_EXPRESSION(ty)
       end
     end
   end
+  #@info "Done buildbinding..." string(dump(result; maxdepth=5))
   return result
 end
 
 function applyReplacementsDim(repl::ReplTree.Tree, dim::Dimension)::Dimension
-
-  @assign dim = begin
+  dim = begin
     local exp::Expression
     @match dim begin
       DIMENSION_EXP(__) => begin
-        @assign exp = map(
+        exp = map(
           dim.exp,
-          (repl) -> applyReplacements2(repl = repl),
+          (expArg) -> applyReplacements2(repl, expArg),
         )
-        @assign exp = Ceval.evalExp(exp)
+        exp = evalExp(exp)
         fromExp(exp, Variability.CONSTANT)
       end
-
       _ => begin
         dim
       end
@@ -372,12 +363,11 @@ function buildRecordBinding(recordNode::InstNode, repl::ReplTree.Tree)::Expressi
   local bindings::List{Expression}
   local exp::Expression
   local local_repl::ReplTree.Tree
-
-  @assign result = begin
+  result = begin
     @match cls begin
       INSTANCED_CLASS(elements = CLASS_TREE_FLAT_TREE(components = comps)) =>
         begin
-          @assign bindings = nil
+          bindings = nil
           #=  Create a replacement tree for just the record instance. This is
           =#
           #=  needed for records that contain local references such as:
@@ -394,11 +384,11 @@ function buildRecordBinding(recordNode::InstNode, repl::ReplTree.Tree)::Expressi
           =#
           #=  the binding expression of 'x'.
           =#
-          @assign local_repl = ReplTree.new()
+          local_repl = ReplTree.new()
           for i = arrayLength(comps):(-1):1
-            @assign exp = makeMutable(getBindingExp(comps[i], repl))
-            @assign local_repl = ReplTree.add(local_repl, comps[i], exp)
-            @assign bindings = _cons(exp, bindings)
+            exp = makeMutable(getBindingExp(comps[i], repl))
+            local_repl = ReplTree.add(local_repl, comps[i], exp)
+            bindings = Cons{Expression}(exp, bindings)
           end
           #=  Add the expression to both the replacement tree and the list of bindings.
           =#
@@ -408,12 +398,12 @@ function buildRecordBinding(recordNode::InstNode, repl::ReplTree.Tree)::Expressi
           =#
           ReplTree.map(
             local_repl,
-            (local_repl) -> applyBindingReplacement(repl = local_repl),
+            (nodeArg, expArg) -> applyBindingReplacement(nodeArg, expArg, local_repl),
           )
           makeRecord(
             scopePath(cls_node),
             cls.ty,
-            bindings,
+            listArray(bindings),
           )
         end
 
@@ -446,23 +436,20 @@ function applyBindingReplacement(
   return outExp
 end
 
-function applyReplacements(repl::ReplTree.Tree, fnBody::List{<:Statement})::List{Statement}
-
-  @assign fnBody = P_Statement.Statement.mapExpList(
+function applyReplacements(repl::ReplTree.Tree, fnBody::Vector{Statement})
+  fnBody = mapExpList(
     fnBody,
-    () -> map(func = (repl) -> applyReplacements2(repl = repl)),
+    (x) -> map(x, (expArg) -> applyReplacements2(repl, expArg)),
   )#= AbsyntoJulia.dumpPattern: UNHANDLED Abyn.Exp  =#
   return fnBody
 end
 
-function applyReplacements2(repl::ReplTree.Tree, exp::Expression)::Expression
-
-  @assign exp = begin
+function applyReplacements2(repl::ReplTree.Tree, @nospecialize(exp::Expression))::Expression
+  exp = begin
     @match exp begin
       CREF_EXPRESSION(__) => begin
         applyReplacementCref(repl, exp.cref, exp)
       end
-
       _ => begin
         exp
       end
@@ -477,14 +464,11 @@ function applyReplacementCref(
   exp::Expression,
 )::Expression
   local outExp::Expression
-
   local cref_parts::List{ComponentRef}
   local repl_exp::Option{Expression}
   local parent::InstNode
   local nodeVar::InstNode
-
-  #=  Explode the cref into a list of parts in reverse order.
-  =#
+  #=  Explode the cref into a list of parts in reverse order. =#
   @assign cref_parts = toListReverse(cref)
   #=  If the list is empty it's probably an iterator or _, which shouldn't be replaced.
   =#
@@ -526,8 +510,8 @@ function applyReplacementCref(
         )
       end
     end
-    @assign outExp =
-      map(outExp, (repl) -> applyReplacements2(repl = repl))
+    outExp =
+      map(outExp, (expArg) -> applyReplacements2(repl, expArg))
   end
   #=  Look up the replacement for the first part in the replacement tree.
   =#
@@ -538,38 +522,25 @@ function applyReplacementCref(
   return outExp
 end
 
-function optimizeBody(body::List{<:Statement})::List{Statement}
-  body = list(map(s, optimizeStatement) for s in body)
+function optimizeBody(body::Vector{Statement})
+  body = Statement[map(s, optimizeStatement) for s in body]
   return body
 end
 
 function optimizeStatement(stmt::Statement)::Statement
-
-  @assign () = begin
+  () = begin
     local iter_exp::Expression
-    #=  Replace iterators in for loops with mutable expressions, so we don't need
-    =#
-    #=  to do it each time we enter a for loop during evaluation.
+    #=
+    Replace iterators in for loops with mutable expressions, so we don't need
+    to do it each time we enter a for loop during evaluation.
     =#
     @match stmt begin
-      P_Statement.Statement.FOR(__) => begin
-        #=  Make a mutable expression with a placeholder value.
-        =#
-        @assign iter_exp =
-          makeMutable(EMPTY(TYPE_UNKNOWN()))
-        #=  Replace the iterator with the expression in the body of the for loop.
-        =#
-        @assign stmt.body = list(
-          P_Statement.Statement.mapExp(
-            s,
-            (iteratorArg, iter_expArg) -> replaceIterator(
-              iterator = iteratorArg,
-              iteratorValue = iter_expArg,
-            ),
-          ) for s in stmt.body
-        )
-        #=  Replace the iterator node with the mutable expression too.
-        =#
+      ALG_FOR(__) => begin
+        #=  Make a mutable expression with a placeholder value. =#
+        iter_exp = makeMutable(EMPTY_EXPRESSION(TYPE_UNKNOWN()))
+        #=  Replace the iterator with the expression in the body of the for loop. =#
+        @assign stmt.body = replaceIteratorList(stmt.body, stmt.iterator, iter_exp)
+        #=  Replace the iterator node with the mutable expression too. =#
         @assign stmt.iterator = EXP_NODE(iter_exp)
         ()
       end
@@ -584,33 +555,31 @@ end
 
 function createResult(repl::ReplTree.Tree, outputs::List{<:InstNode})::Expression
   local exp::Expression
-
   local expl::List{Expression}
   local types::List{M_Type}
   local e::Expression
-
   if listLength(outputs) == 1
-    @assign exp = Ceval.evalExp(ReplTree.get(repl, listHead(outputs)))
+    exp = evalExp(ReplTree.get(repl, listHead(outputs)))
     assertAssignedOutput(listHead(outputs), exp)
   else
-    @assign expl = nil
-    @assign types = nil
+    expl = nil
+    types = nil
     for o in outputs
-      @assign e = Ceval.evalExp(ReplTree.get(repl, o))
+      e = evalExp(ReplTree.get(repl, o))
       assertAssignedOutput(o, e)
-      @assign expl = _cons(e, expl)
+      expl = Cons{Expression}(e, expl)
     end
-    @assign expl = listReverseInPlace(expl)
-    @assign types = list(typeOf(e) for e in expl)
-    @assign exp = TUPLE_EXPRESSION(TYPE_TUPLE(types, NONE()), expl)
+    expl = listReverseInPlace(expl)
+    types = list(typeOf(e) for e in expl)
+    exp = TUPLE_EXPRESSION(TYPE_TUPLE(types, NONE()), expl)
   end
   return exp
 end
 
-function assertAssignedOutput(outputNode::InstNode, value::Expression)
-  return @assign () = begin
+function assertAssignedOutput(outputNode::InstNode, @nospecialize(value::Expression))
+  return  () = begin
     @match value begin
-      EMPTY(__) => begin
+      EMPTY_EXPRESSION(__) => begin
         Error.addSourceMessage(
           Error.UNASSIGNED_FUNCTION_OUTPUT,
           list(name(outputNode)),
@@ -626,14 +595,13 @@ function assertAssignedOutput(outputNode::InstNode, value::Expression)
   end
 end
 
-function evaluateStatements(stmts::List{<:Statement})::FlowControl
-  local ctrl::FlowControl = FlowControl.NEXT
-
+function evaluateStatements(stmts::Vector{Statement})
+  local ctrl::FlowControlType = FlowControl.NEXT
   for s in stmts
-    @assign ctrl = evaluateStatement(s)
+    ctrl = evaluateStatement(s)
     if ctrl != FlowControl.NEXT
       if ctrl == FlowControl.CONTINUE
-        @assign ctrl = FlowControl.NEXT
+        ctrl = FlowControl.NEXT
       end
       break
     end
@@ -641,9 +609,8 @@ function evaluateStatements(stmts::List{<:Statement})::FlowControl
   return ctrl
 end
 
-function evaluateStatement(stmt::Statement)::FlowControl
-  local ctrl::FlowControl
-
+function evaluateStatement(stmt::Statement)::FlowControlType
+  local ctrl::FlowControlType
   #=  adrpo: we really need some error handling here to detect which statement cannot be evaluated
   =#
   #=  try
@@ -654,31 +621,31 @@ function evaluateStatement(stmt::Statement)::FlowControl
         evaluateAssignment(stmt.lhs, stmt.rhs, stmt.source)
       end
 
-      P_Statement.Statement.FOR(__) => begin
+      ALG_FOR(__) => begin
         evaluateFor(stmt.iterator, stmt.range, stmt.body, stmt.source)
       end
 
-      P_Statement.Statement.IF(__) => begin
+      ALG_IF(__) => begin
         evaluateIf(stmt.branches, stmt.source)
       end
 
-      P_Statement.Statement.ASSERT(__) => begin
+      ALG_ASSERT(__) => begin
         evaluateAssert(stmt.condition, stmt)
       end
 
-      P_Statement.Statement.NORETCALL(__) => begin
+      ALG_NORETCALL(__) => begin
         evaluateNoRetCall(stmt.exp, stmt.source)
       end
 
-      P_Statement.Statement.WHILE(__) => begin
+      ALG_WHILE(__) => begin
         evaluateWhile(stmt.condition, stmt.body, stmt.source)
       end
 
-      P_Statement.Statement.RETURN(__) => begin
+      ALG_RETURN(__) => begin
         FlowControl.RETURN
       end
 
-      P_Statement.Statement.BREAK(__) => begin
+      ALG_BREAK(__) => begin
         FlowControl.BREAK
       end
 
@@ -707,30 +674,26 @@ function evaluateAssignment(
   lhsExp::Expression,
   rhsExp::Expression,
   source::DAE.ElementSource,
-)::FlowControl
-  local ctrl::FlowControl = FlowControl.NEXT
-
-  assignVariable(lhsExp, Ceval.evalExp(rhsExp, P_EvalTarget.STATEMENT(source)))
+)::FlowControlType
+  local ctrl::FlowControlType = FlowControl.NEXT
+  assignVariable(lhsExp, evalExp(rhsExp, EVALTARGET_STATEMENT(source)))
   return ctrl
 end
 
-function assignVariable(variable::Expression, value::Expression)
-  return @assign () = begin
+function assignVariable(@nospecialize(variable::Expression), @nospecialize(value::Expression))
+  return  () = begin
     local var::Expression
     local val::Expression
     local vals::List{Expression}
     local var_ptr::Pointer{Expression}
-    #=  variable := value
-    =#
+    #=  variable := value =#
     @match (variable, value) begin
       (MUTABLE_EXPRESSION(exp = var_ptr), _) => begin
         P_Pointer.update(var_ptr, assignExp(P_Pointer.access(var_ptr), value))
         ()
       end
-
+      #=  (var1, var2, ...) := (value1, value2, ...) =#
       (TUPLE_EXPRESSION(__), TUPLE_EXPRESSION(elements = vals)) => begin
-        #=  (var1, var2, ...) := (value1, value2, ...)
-        =#
         for var in variable.elements
           @match _cons(val, vals) = vals
           assignVariable(var, val)
@@ -744,8 +707,7 @@ function assignVariable(variable::Expression, value::Expression)
         ),
         _,
       ) => begin
-        #=  variable[subscript1, subscript2, ...] := value
-        =#
+        #=  variable[subscript1, subscript2, ...] := value =#
         assignSubscriptedVariable(var_ptr, variable.subscripts, value)
         ()
       end
@@ -780,7 +742,7 @@ function assignSubscriptedVariable(
 )
   local subs::List{Subscript}
 
-  @assign subs = list(eval(s) for s in subscripts)
+  @assign subs = list(evalSubscript(s) for s in subscripts)
   return P_Pointer.update(variable, assignArrayElement(P_Pointer.access(variable), subs, value))
 end
 
@@ -789,69 +751,56 @@ function assignArrayElement(
   subscripts::List{<:Subscript},
   value::Expression,
 )::Expression
-  local result::Expression
-
+  local result::ARRAY_EXPRESSION
   local sub::Expression
   local val::Expression
   local rest_subs::List{Subscript}
   local idx::Int
-  local subs::List{Expression}
-  local vals::List{Expression}
-
-  @assign result = begin
+  local subs
+  local vals
+  result = begin
     @match (arrayExp, subscripts) begin
       (
         ARRAY_EXPRESSION(__),
         SUBSCRIPT_INDEX(sub) <| rest_subs,
       ) where {(isScalarLiteral(sub))} => begin
-        @assign idx = toInteger(sub)
+        idx = toInteger(sub)
+        arrayExpElements = arrayExp.elements
         if listEmpty(rest_subs)
-          @assign arrayExp.elements = ListUtil.set(arrayExp.elements, idx, value)
+          arrayExpElements[idx] = value # arrayExp.elements[idx] = value #ListUtil.set(arrayExp.elements, idx, value)
         else
-          @assign arrayExp.elements = ListUtil.set(
-            arrayExp.elements,
-            idx,
-            assignArrayElement(listGet(arrayExp.elements, idx), rest_subs, value),
-          )
+          arrayExpElements[idx] = assignArrayElement(arrayExp.elements[idx], rest_subs, value) #Recheck this John
         end
-        arrayExp
+        ARRAY_EXPRESSION(arrayExp.ty, arrayExpElements, arrayExp.literal)
       end
 
       (ARRAY_EXPRESSION(__), SUBSCRIPT_SLICE(sub) <| rest_subs) => begin
-        @assign subs = arrayElements(sub)
-        @assign vals = arrayElements(value)
+        local subsV = arrayElements(sub)
+        local valsV = arrayElements(value)
+        arrayExpElements = copy(arrayExp.elements)
         if listEmpty(rest_subs)
-          for s in subs
-            @match _cons(val, vals) = vals
-            @assign idx = toInteger(s)
-            @assign arrayExp.elements = ListUtil.set(arrayExp.elements, idx, val)
+          for (i, s) in enumerate(subsV)
+            idx = toInteger(s)
+            arrayExpElements[idx] = valsV[i]
           end
         else
-          for s in subs
-            @match _cons(val, vals) = vals
-            @assign idx = toInteger(s)
-            @assign arrayExp.elements = ListUtil.set(
-              arrayExp.elements,
-              idx,
-              assignArrayElement(listGet(arrayExp.elements, idx), rest_subs, val),
-            )
+          for (i, s) in enumerate(subsV)
+            idx = toInteger(s)
+            arrayExpElements[idx] = assignArrayElement(arrayExpElements[idx], rest_subs, valsV[i])
           end
         end
-        arrayExp
+        ARRAY_EXPRESSION(arrayExp.ty, arrayExpElements, arrayExp.literal)
       end
 
       (ARRAY_EXPRESSION(__), SUBSCRIPT_WHOLE(__) <| rest_subs) =>
         begin
           if listEmpty(rest_subs)
-            @assign arrayExp.elements = arrayElements(value)
+            arrayExpElements = arrayElements(value)
           else
-            @assign arrayExp.elements =
-              list(@do_threaded_for assignArrayElement(e, rest_subs, v) (e, v) (
-                arrayExp.elements,
-                arrayElements(value),
-              ))
+            local valElems = arrayElements(value)
+            arrayExpElements = Expression[assignArrayElement(arrayExp.elements[i], rest_subs, valElems[i]) for i in 1:length(arrayExp.elements)]
           end
-          arrayExp
+          ARRAY_EXPRESSION(arrayExp.ty, arrayExpElements, arrayExp.literal)
         end
 
       _ => begin
@@ -872,12 +821,11 @@ function assignArrayElement(
   return result
 end
 
-function assignExp(lhs::Expression, rhs::Expression)::Expression
+function assignExp(@nospecialize(lhs::Expression), @nospecialize(rhs::Expression))::Expression
   local result::Expression
-
-  @assign result = begin
+  result = begin
     @match lhs begin
-RECORD_EXPRESSION(__) => begin
+      RECORD_EXPRESSION(__) => begin
         assignRecord(lhs, rhs)
       end
 
@@ -891,11 +839,10 @@ RECORD_EXPRESSION(__) => begin
   return result
 end
 
-function assignRecord(lhs::Expression, rhs::Expression)::Expression
+function assignRecord(@nospecialize(lhs::Expression), @nospecialize(rhs::Expression))::Expression
   local result::Expression
-
-  @assign result = begin
-    local elems::List{Expression}
+  result = begin
+    local elems::Vector{Expression}
     local e::Expression
     local val::Expression
     local cls_tree::ClassTree
@@ -903,24 +850,22 @@ function assignRecord(lhs::Expression, rhs::Expression)::Expression
     local binding_exp::Option{Expression}
     local ty::M_Type
     @match rhs begin
-RECORD_EXPRESSION(__) => begin
-        @match RECORD(elements = elems) = lhs
-        for v in rhs.elements
-          @match _cons(e, elems) = elems
-          assignVariable(e, v)
+      RECORD_EXPRESSION(__) => begin
+        @match RECORD_EXPRESSION(elements = elems) = lhs
+        for (i, v) in enumerate(rhs.elements)
+          assignVariable(elems[i], v)
         end
         lhs
       end
-
       CREF_EXPRESSION(__) => begin
-        @match RECORD(elements = elems) = lhs
-        @assign cls_tree =
+        @match RECORD_EXPRESSION(elements = elems) = lhs
+        cls_tree =
           classTree(getClass(node(rhs.cref)))
-        @assign comps = getComponents(cls_tree)
-        for c in comps
-          @match _cons(e, elems) = elems
-          @assign ty = getType(c)
-          @assign val = CREF_EXPRESSION(
+        comps = getComponents(cls_tree)
+        for (i, c) in enumerate(comps)
+          e = elems[i]
+          ty = getType(c)
+          val = CREF_EXPRESSION(
             liftArrayLeftList(ty, arrayDims(rhs.ty)),
             prefixCref(c, ty, nil, rhs.cref),
           )
@@ -928,7 +873,6 @@ RECORD_EXPRESSION(__) => begin
         end
         lhs
       end
-
       _ => begin
         rhs
       end
@@ -939,36 +883,36 @@ end
 
 function evaluateFor(
   iterator::InstNode,
-  range::Option{<:Expression},
-  forBody::List{<:Statement},
+  range::Option{Expression},
+  forBody::Vector{Statement},
   source::DAE.ElementSource,
-)::FlowControl
-  local ctrl::FlowControl
-
+)::FlowControlType
+  local ctrl::FlowControlType = FlowControl.NEXT
   local range_iter::RangeIterator
   local iter_exp::Pointer{Expression}
   local range_exp::Expression
   local value::Expression
-  local body::List{Statement} = forBody
+  local body::Vector{Statement} = forBody
   local i::Int = 0
   local limit::Int = Flags.getConfigInt(Flags.EVAL_LOOP_LIMIT)
-
-  @assign range_exp = Ceval.evalExp(Util.getOption(range), P_EvalTarget.STATEMENT(source))
-  @assign range_iter = P_RangeIterator.RangeIterator.fromExp(range_exp)
-  if P_RangeIterator.RangeIterator.hasNext(range_iter)
+  range_exp = evalExp(Util.getOption(range), EVALTARGET_STATEMENT(source))
+  range_iter = RangeIterator_fromExp(range_exp)
+    #=  Loop through each value in the iteration range. =#
+  if hasNext(range_iter)
     @match EXP_NODE(exp = MUTABLE_EXPRESSION(exp = iter_exp)) =
       iterator
-    while P_RangeIterator.RangeIterator.hasNext(range_iter)
-      @assign (range_iter, value) = P_RangeIterator.RangeIterator.next(range_iter)
+    while hasNext(range_iter)
+      (range_iter, value) = next(range_iter)
+      #=  Update the mutable expression with the iteration value and evaluate the statement. =#
       P_Pointer.update(iter_exp, value)
-      @assign ctrl = evaluateStatements(body)
+      ctrl = evaluateStatements(body)
       if ctrl != FlowControl.NEXT
         if ctrl == FlowControl.BREAK
-          @assign ctrl = FlowControl.NEXT
+          ctrl = FlowControl.NEXT
         end
         break
       end
-      @assign i = i + 1
+      i = i + 1
       if i > limit
         Error.addSourceMessage(
           Error.EVAL_LOOP_LIMIT_REACHED,
@@ -979,49 +923,42 @@ function evaluateFor(
       end
     end
   end
-  #=  Loop through each value in the iteration range.
-  =#
-  #=  Update the mutable expression with the iteration value and evaluate the statement.
-  =#
   return ctrl
 end
 
 function evaluateIf(
-  branches::List{<:Tuple{<:Expression, List{<:Statement}}},
+  branches::Vector{Tuple{Expression, Vector{Statement}}},
   source::DAE.ElementSource,
-)::FlowControl
-  local ctrl::FlowControl
-
+)::FlowControlType
+  local ctrl::FlowControlType
   local cond::Expression
-  local body::List{Statement}
-
+  local body::Vector{Statement}
   for branch in branches
-    @assign (cond, body) = branch
-    if isTrue(Ceval.evalExp(cond, P_EvalTarget.STATEMENT(source)))
-      @assign ctrl = evaluateStatements(body)
+    (cond, body) = branch
+    if isTrue(evalExp(cond, EVALTARGET_STATEMENT(DAE.emptyElementSource)))
+      ctrl = evaluateStatements(body)
       return ctrl
     end
   end
-  @assign ctrl = FlowControl.NEXT
+  ctrl = FlowControl.NEXT
   return ctrl
 end
 
-function evaluateAssert(condition::Expression, assertStmt::Statement)::FlowControl
-  local ctrl::FlowControl = FlowControl.NEXT
-
+"""
+Evaluates assert statments
+"""
+function evaluateAssert(@nospecialize(condition::Expression), assertStmt::Statement)::FlowControlType
+  local ctrl::FlowControlType = FlowControl.NEXT
   local cond::Expression
   local msg::Expression
   local lvl::Expression
   local source::DAE.ElementSource
-  local target::EvalTarget =
-    P_EvalTarget.STATEMENT(P_Statement.Statement.source(assertStmt))
-
-  if isFalse(Ceval.evalExp(condition, target))
-    @match P_Statement.Statement.ASSERT(message = msg, level = lvl, source = source) =
-      assertStmt
-    @assign msg = Ceval.evalExp(msg, target)
-    @assign lvl = Ceval.evalExp(lvl, target)
-    @assign () = begin
+  local target::EvalTarget = EVALTARGET_STATEMENT(DAE.emptyElementSource)#source(assertStmt))
+  if isFalse(evalExp(condition, target))
+    @match ALG_ASSERT(message = msg, level = lvl, source = source) =assertStmt
+    msg = evalExp(msg, target)
+    lvl = evalExp(lvl, target)
+    () = begin
       @match (msg, lvl) begin
         (
           STRING_EXPRESSION(__),
@@ -1044,10 +981,9 @@ function evaluateAssert(condition::Expression, assertStmt::Statement)::FlowContr
             list(msg.value),
             ElementSource_getInfo(source),
           )
-          @assign ctrl = FlowControl.ASSERTION
+          ctrl = FlowControl.ASSERTION
           ()
         end
-
         _ => begin
           Error.assertion(
             false,
@@ -1067,25 +1003,25 @@ function evaluateAssert(condition::Expression, assertStmt::Statement)::FlowContr
   return ctrl
 end
 
-function evaluateNoRetCall(callExp::Expression, source::DAE.ElementSource)::FlowControl
-  local ctrl::FlowControl = FlowControl.NEXT
+function evaluateNoRetCall(@nospecialize(callExp::Expression), source::DAE.ElementSource)::FlowControlType
+  local ctrl::FlowControlType = FlowControl.NEXT
 
-  Ceval.evalExp(callExp, P_EvalTarget.STATEMENT(source))
+  evalExp(callExp, EVALTARGET_STATEMENT(source))
   return ctrl
 end
 
 function evaluateWhile(
   condition::Expression,
-  body::List{<:Statement},
+  body::Vector{Statement},
   source::DAE.ElementSource,
-)::FlowControl
-  local ctrl::FlowControl = FlowControl.NEXT
+)::FlowControlType
+  local ctrl::FlowControlType = FlowControl.NEXT
 
   local i::Int = 0
   local limit::Int = Flags.getConfigInt(Flags.EVAL_LOOP_LIMIT)
-  local target::EvalTarget = P_EvalTarget.STATEMENT(source)
+  local target::EvalTarget = EVALTARGET_STATEMENT(source)
 
-  while isTrue(Ceval.evalExp(condition, target))
+  while isTrue(evalExp(condition, target))
     @assign ctrl = evaluateStatements(body)
     if ctrl != FlowControl.NEXT
       if ctrl == FlowControl.BREAK
@@ -1181,10 +1117,10 @@ const FILE_TYPE_PATH =
 const FILE_TYPE_TYPE = TYPE_ENUMERATION(FILE_TYPE_PATH, FILE_TYPE_NAMES)::M_Type
 const FILE_TYPE_LITERALS =
   list(
-    ENUM_LITERAL_EXPRESSION(FILE_TYPE_TYPE, "NoFile", 1),
-    ENUM_LITERAL_EXPRESSION(FILE_TYPE_TYPE, "RegularFile", 2),
-    ENUM_LITERAL_EXPRESSION(FILE_TYPE_TYPE, "Directory", 3),
-    ENUM_LITERAL_EXPRESSION(FILE_TYPE_TYPE, "SpecialFile", 4),
+    ENUM_LITERAL_EXPRESSION{TYPE_ENUMERATION, String, Int64}(FILE_TYPE_TYPE, "NoFile", 1),
+    ENUM_LITERAL_EXPRESSION{TYPE_ENUMERATION, String, Int64}(FILE_TYPE_TYPE, "RegularFile", 2),
+    ENUM_LITERAL_EXPRESSION{TYPE_ENUMERATION, String, Int64}(FILE_TYPE_TYPE, "Directory", 3),
+    ENUM_LITERAL_EXPRESSION{TYPE_ENUMERATION, String, Int64}(FILE_TYPE_TYPE, "SpecialFile", 4),
   )::List
 const COMPARE_NAMES = list("Less", "Equal", "Greater")::List
 const COMPARE_PATH =
@@ -1198,14 +1134,13 @@ const COMPARE_PATH =
 const COMPARE_TYPE = TYPE_ENUMERATION(COMPARE_PATH, COMPARE_NAMES)::M_Type
 const COMPARE_LITERALS =
   list(
-    ENUM_LITERAL_EXPRESSION(COMPARE_TYPE, "Less", 1),
-    ENUM_LITERAL_EXPRESSION(COMPARE_TYPE, "Equal", 2),
-    ENUM_LITERAL_EXPRESSION(COMPARE_TYPE, "Greater", 3),
+    ENUM_LITERAL_EXPRESSION{TYPE_ENUMERATION, String, Int64}(COMPARE_TYPE, "Less", 1),
+    ENUM_LITERAL_EXPRESSION{TYPE_ENUMERATION, String, Int64}(COMPARE_TYPE, "Equal", 2),
+    ENUM_LITERAL_EXPRESSION{TYPE_ENUMERATION, String, Int64}(COMPARE_TYPE, "Greater", 3),
   )::List
 
 function evaluateKnownExternal(name::String, args::List{<:Expression})::Expression
   local result::Expression
-
   @assign result = begin
     local s1::String
     local s2::String
@@ -1213,7 +1148,7 @@ function evaluateKnownExternal(name::String, args::List{<:Expression})::Expressi
     local i2::Int
     local b::Bool
     local r::AbstractFloat
-    local dims::Int[2]
+    local dims::Vector{Int}
     @match (name, args) begin
       ("ModelicaInternal_countLines", STRING_EXPRESSION(s1) <| nil()) =>
         begin
@@ -1237,7 +1172,7 @@ function evaluateKnownExternal(name::String, args::List{<:Expression})::Expressi
         "ModelicaInternal_readLine",
         STRING_EXPRESSION(s1) <| INTEGER_EXPRESSION(i) <| nil(),
       ) => begin
-        @assign (s1, b) = ModelicaExternalC.Streams_readLine(s1, i)
+         (s1, b) = ModelicaExternalC.Streams_readLine(s1, i)
         TUPLE_EXPRESSION(
           TYPE_TUPLE(list(TYPE_STRING(), TYPE_BOOLEAN()), NONE()),
           list(STRING_EXPRESSION(s1), BOOLEAN_EXPRESSION(b)),
@@ -1272,7 +1207,7 @@ function evaluateKnownExternal(name::String, args::List{<:Expression})::Expressi
         STRING_EXPRESSION(s1) <|
         INTEGER_EXPRESSION(i) <| BOOLEAN_EXPRESSION(b) <| nil(),
       ) => begin
-        @assign (i, r) = ModelicaExternalC.Strings_scanReal(s1, i, b)
+         (i, r) = ModelicaExternalC.Strings_scanReal(s1, i, b)
         TUPLE_EXPRESSION(
           TYPE_TUPLE(list(TYPE_INTEGER(), TYPE_REAL()), NONE()),
           list(INTEGER_EXPRESSION(i), REAL_EXPRESSION(r)),
@@ -1284,7 +1219,7 @@ function evaluateKnownExternal(name::String, args::List{<:Expression})::Expressi
         STRING_EXPRESSION(s1) <|
         INTEGER_EXPRESSION(i) <| BOOLEAN_EXPRESSION(b) <| nil(),
       ) => begin
-        @assign (i, i2) = ModelicaExternalC.Strings_scanInteger(s1, i, b)
+         (i, i2) = ModelicaExternalC.Strings_scanInteger(s1, i, b)
         TUPLE_EXPRESSION(
           TYPE_TUPLE(list(TYPE_INTEGER(), TYPE_INTEGER()), NONE()),
           list(INTEGER_EXPRESSION(i), INTEGER_EXPRESSION(i2)),
@@ -1295,7 +1230,7 @@ function evaluateKnownExternal(name::String, args::List{<:Expression})::Expressi
         "ModelicaStrings_scanString",
         STRING_EXPRESSION(s1) <| INTEGER_EXPRESSION(i) <| nil(),
       ) => begin
-        @assign (i, s2) = ModelicaExternalC.Strings_scanString(s1, i)
+         (i, s2) = ModelicaExternalC.Strings_scanString(s1, i)
         TUPLE_EXPRESSION(
           TYPE_TUPLE(list(TYPE_INTEGER(), TYPE_STRING()), NONE()),
           list(INTEGER_EXPRESSION(i), STRING_EXPRESSION(s2)),
@@ -1306,7 +1241,7 @@ function evaluateKnownExternal(name::String, args::List{<:Expression})::Expressi
         "ModelicaStrings_scanIdentifier",
         STRING_EXPRESSION(s1) <| INTEGER_EXPRESSION(i) <| nil(),
       ) => begin
-        @assign (i, s2) = ModelicaExternalC.Strings_scanIdentifier(s1, i)
+         (i, s2) = ModelicaExternalC.Strings_scanIdentifier(s1, i)
         TUPLE_EXPRESSION(
           TYPE_TUPLE(list(TYPE_INTEGER(), TYPE_STRING()), NONE()),
           list(INTEGER_EXPRESSION(i), STRING_EXPRESSION(s2)),
@@ -1340,9 +1275,9 @@ function evaluateKnownExternal(name::String, args::List{<:Expression})::Expressi
         "ModelicaIO_readMatrixSizes",
         STRING_EXPRESSION(s1) <| STRING_EXPRESSION(s2) <| nil(),
       ) => begin
-        @assign dims = ModelicaExternalC.ModelicaIO_readMatrixSizes(s1, s2)
+        dims = ModelicaExternalC.ModelicaIO_readMatrixSizes(s1, s2)
         ARRAY_EXPRESSION(
-          TYPE_ARRAY(TYPE_INTEGER(), list(P_Dimension.Dimension.fromInteger(2))),
+          TYPE_ARRAY(TYPE_INTEGER(), list(fromInteger(2))),
           list(
             INTEGER_EXPRESSION(dims[1]),
             INTEGER_EXPRESSION(dims[2]),
@@ -1395,11 +1330,11 @@ function evaluateOpenModelicaRegex(args::List{<:Expression})::Expression
       INTEGER_EXPRESSION(i) <|
       BOOLEAN_EXPRESSION(extended) <|
       BOOLEAN_EXPRESSION(insensitive) <| nil() => begin
-        @assign (n, strs) = System.regex(str, re, i, extended, insensitive)
+         (n, strs) = System.regex(str, re, i, extended, insensitive)
         @assign expl = list(STRING_EXPRESSION(s) for s in strs)
         @assign strs_ty =
-          TYPE_ARRAY(TYPE_STRING(), list(P_Dimension.Dimension.fromInteger(i)))
-        @assign strs_exp = makeArray(strs_ty, expl, true)
+          TYPE_ARRAY(TYPE_STRING(), list(fromInteger(i)))
+        @assign strs_exp = makeArray(strs_ty, expl; literal=true)
         TUPLE_EXPRESSION(
           TYPE_TUPLE(list(TYPE_INTEGER(), strs_ty), NONE()),
           list(INTEGER_EXPRESSION(n), strs_exp),
@@ -1438,9 +1373,7 @@ function evaluateModelicaIO_readRealMatrix(
 )::Expression
   local result::Expression
 
-  local matrix::AbstractFloat
-  local row::List{Expression}
-  local rows::List{Expression} = nil
+  local matrix::Matrix{Float64}
   local ty::M_Type
 
   @assign matrix = ModelicaExternalC.ModelicaIO_readRealMatrix(
@@ -1450,16 +1383,14 @@ function evaluateModelicaIO_readRealMatrix(
     ncol,
     verboseRead,
   )
-  @assign ty = TYPE_ARRAY(TYPE_REAL(), list(P_Dimension.Dimension.fromInteger(ncol)))
+  @assign ty = TYPE_ARRAY(TYPE_REAL(), list(fromInteger(ncol)))
+  local rowsV = Expression[]
   for r = 1:nrow
-    @assign row = nil
-    for c = 1:ncol
-      @assign row = _cons(REAL_EXPRESSION(matrix[r, c]), row)
-    end
-    @assign rows = _cons(ARRAY_EXPRESSION(ty, row, literal = true), rows)
+    local rowV = Expression[REAL_EXPRESSION(matrix[r, c]) for c in 1:ncol]
+    push!(rowsV, ARRAY_EXPRESSION(ty, rowV, literal = true))
   end
-  @assign ty = liftArrayLeft(ty, P_Dimension.Dimension.fromInteger(nrow))
-  @assign result = ARRAY_EXPRESSION(ty, rows, literal = true)
+  @assign ty = liftArrayLeft(ty, fromInteger(nrow))
+  @assign result = ARRAY_EXPRESSION(ty, rowsV, literal = true)
   return result
 end
 
@@ -1476,7 +1407,7 @@ function evaluateExternal2(
 
   @assign repl = createReplacements(fn, args)
   @assign ext_args = list(
-    map(e, (repl) -> applyReplacements2(repl = repl))
+    map(e, (subexp) -> applyReplacements2(repl, subexp))
     for e in extArgs
   )
   evaluateExternal3(name, ext_args)
@@ -1485,7 +1416,7 @@ function evaluateExternal2(
 end
 
 function evaluateExternal3(name::String, args::List{<:Expression})
-  return @assign () = begin
+  return  () = begin
     @match name begin
       "dgeev" => begin
         EvalFunctionExt.Lapack_dgeev(args)

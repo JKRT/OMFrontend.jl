@@ -28,7 +28,7 @@
 * See the full OSMC Public License conditions for more details.
 *
 =#
-@Uniontype NFExpressionIterator begin
+@Mutable_Uniontype NFExpressionIterator begin
   @Record EXPRESSION_REPEAT_ITERATOR begin
     current::List{Expression}
     all::List{Expression}
@@ -82,18 +82,18 @@ function next(iterator::ExpressionIterator)::Tuple{ExpressionIterator, Expressio
     local next::Expression
     @match iterator begin
       EXPRESSION_ARRAY_ITERATOR(__) => begin
-        @match _cons(next, rest) = iterator.slice
+        @match Cons{Expression}(next, rest) = iterator.slice
         if listEmpty(rest)
           (arr, rest) = nextArraySlice(iterator.array)
           iterator = EXPRESSION_ARRAY_ITERATOR(arr, rest)
         else
-          @assign iterator.slice = rest
+          iterator.slice = rest
         end
         (iterator, next)
       end
 
       EXPRESSION_SCALAR_ITERATOR(__) => begin
-        (NONE_ITERATOR(), iterator.exp)
+        (EXPRESSION_NONE_ITERATOR(), iterator.exp)
       end
 
       EXPRESSION_EACH_ITERATOR(__) => begin
@@ -106,7 +106,7 @@ function next(iterator::ExpressionIterator)::Tuple{ExpressionIterator, Expressio
         else
           @match _cons(next, rest) = arr
         end
-        (REPEAT_ITERATOR(rest, arr), next)
+        (EXPRESSION_REPEAT_ITERATOR(rest, arr), next)
       end
     end
   end
@@ -115,8 +115,7 @@ end
 
 function hasNext(iterator::ExpressionIterator)::Bool
   local hasNext::Bool
-
-  @assign hasNext = begin
+  hasNext = begin
     @match iterator begin
       EXPRESSION_ARRAY_ITERATOR(__) => begin
         !listEmpty(iterator.slice)
@@ -189,16 +188,16 @@ function fromExpOpt(optExp::Option{<:Expression})::ExpressionIterator
   return iterator
 end
 
-function fromExpToExpressionIterator(exp::Expression)::ExpressionIterator
+function fromExpToExpressionIterator(exp::Expression)
   local iterator::ExpressionIterator
-  @assign iterator = begin
+  iterator = begin
     local arr::List{Expression}
     local slice::List{Expression}
     local e::Expression
     local expanded::Bool
     @match exp begin
       ARRAY_EXPRESSION(__) => begin
-        @match (ARRAY_EXPRESSION(elements = arr), expanded) = expand(exp)
+        (e, expanded) = expand(exp)
         if !expanded
           Error.assertion(
             false,
@@ -209,18 +208,17 @@ function fromExpToExpressionIterator(exp::Expression)::ExpressionIterator
             sourceInfo(),
           )
         end
-        @assign (arr, slice) = nextArraySlice(arr)
+        (arr, slice) = nextArraySlice(arrayList(e.elements))
         EXPRESSION_ARRAY_ITERATOR(arr, slice)
+        #makeArrayIterator(e)
       end
-
       CREF_EXPRESSION(__) => begin
-        @assign e = P_ExpandExp.ExpandExp.expandCref(exp)
-        @assign iterator = begin
+        (e, _) = expandCref(exp)
+        iterator = begin
           @match e begin
             ARRAY_EXPRESSION(__) => begin
               fromExpToExpressionIterator(e)
             end
-
             _ => begin
               EXPRESSION_SCALAR_ITERATOR(e)
             end
@@ -228,13 +226,16 @@ function fromExpToExpressionIterator(exp::Expression)::ExpressionIterator
         end
         iterator
       end
-
       _ => begin
-        (e,_) = expand(exp)
-        if referenceEq(e, exp)
-          EXPRESSION_SCALAR_ITERATOR(exp)
+        (e, expanded) = expand(exp)
+        if expanded
+          if referenceEq(e, exp)
+            EXPRESSION_SCALAR_ITERATOR(exp)
+          else
+            fromExpToExpressionIterator(e)
+          end
         else
-          fromExpToExpressionIterator(e)
+          EXPRESSION_NONE_ITERATOR()
         end
       end
     end
@@ -242,34 +243,105 @@ function fromExpToExpressionIterator(exp::Expression)::ExpressionIterator
   return iterator
 end
 
+"""
+John March 2024
+"""
+function makeArrayIterator(exp::Expression)
+  arrays = flattenArray(exp, nil)
+  if listEmpty(arrays)
+    iterator = EXPRESSION_ARRAY_ITERATOR(nil, 1, arrays)
+  else
+    iterator = EXPRESSION_ARRAY_ITERATOR(arrays, 1, listRest(arrays))
+  end
+end
+
+"""
+  John March 2024
+"""
+function flattenArray(exp::Expression, arrays::List{List})
+  arrays = flattenArray_impl(exp, nil)
+  arrays = listReverseInPlace(arrays)
+  while ! (listEmpty(arrays) && isempty(listHead(arrays)))
+    arrays = listRest(arrays)
+  end
+  return arrays
+end
+
+function flattenArray_impl(exp::Expression, arrays::List{List})
+  if isVector(exp.ty)
+    arrays = arrayElements(exp) <| arrays
+  else
+    for e in arrayElements(exp)
+      arrays = flattenArray_impl(e, arrays)
+    end
+  end
+  return arrays
+end
+
+"""
+Fetches the next slice of arrays.
+TODO: John Jan 2024. Can be optimized I think
+"""
 function nextArraySlice(
-  Array::List{<:Expression},
-)::Tuple{List{Expression}, List{Expression}}
+  arrayArg::List{<:Expression},
+  )::Tuple{List{Expression}, List{Expression}}
   local slice::List{Expression}
   local e::Expression
   local arr::List{Expression}
-  if listEmpty(Array)
-    @assign slice = nil
+  if listEmpty(arrayArg)
+    slice = nil
   else
-    @assign e = listHead(Array)
-    @assign (Array, slice) = begin
+    e = listHead(arrayArg)
+    (arrayArg, slice) = begin
       @match e begin
         ARRAY_EXPRESSION(__) => begin
-          @assign (arr, slice) = nextArraySlice(e.elements)
+          (arr, slice) = nextArraySlice(arrayList(e.elements))
           if listEmpty(arr)
-            @assign Array = listRest(Array)
+            arrayArg = listRest(arrayArg)
           else
-            @assign e.elements = arr
-            @assign Array = _cons(e, listRest(Array))
+            local eElements = arr
+            e = ARRAY_EXPRESSION(e.ty, listArray(eElements), e.literal)
+            arrayArg = Cons{Expression}(e, listRest(arrayArg))
           end
-          (Array, slice)
+          (arrayArg, slice)
         end
 
         _ => begin
-          (nil, Array)
+          (nil, arrayArg)
         end
       end
     end
   end
-  return (Array, slice)
+  return (arrayArg, slice)
+end
+
+
+function toString(@nospecialize(iterator::NFExpressionIterator))
+  local buffer = IOBuffer()
+  println(buffer, "$(typeof(iterator)):")
+  @match iterator begin
+    EXPRESSION_ARRAY_ITERATOR(__) => begin
+      println(buffer, toString(iterator.array))
+      println(buffer, toString(iterator.slice))
+    end
+
+    EXPRESSION_SCALAR_ITERATOR(__) => begin
+      println(buffer, toString(iterator.exp))
+    end
+
+    EXPRESSION_EACH_ITERATOR(__) => begin
+      println(buffer, toString(iterator.exp))
+    end
+
+    EXPRESSION_NONE_ITERATOR(__) => begin
+      println(buffer, "NONE_ITERATOR")
+    end
+
+    EXPRESSION_REPEAT_ITERATOR(__) => begin
+      println(buffer, toString(iterator.current))
+      println(buffer, toString(iterator.all))
+    end
+  end
+  println(buffer, "end typeof(iterator):")
+  return String(take!(buffer))
 end

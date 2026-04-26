@@ -37,7 +37,7 @@ using ExportAll
 *
 */ =#
 
-import Main.SimCode
+import Frontend.SimCode
 
 #= /* protected */ =#
 #= /* TODO: Hide when RML is killed */ =#

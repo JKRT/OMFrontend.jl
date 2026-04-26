@@ -1,1 +1,0 @@
-#= All types in NF=#

@@ -1,4 +1,4 @@
-Face = (() -> begin #= Enumeration =#
+const Face = (() -> begin #= Enumeration =#
   INSIDE = 1
   OUTSIDE = 2
   () -> (INSIDE; OUTSIDE)
@@ -14,9 +14,9 @@ const FaceType = Int
     source::DAE.ElementSource
   end
 end
-Connector = NFConnector
+const Connector = NFConnector
 
-ScalarizeSetting = (() -> begin #= Enumeration =#
+const ScalarizeSetting = (() -> begin #= Enumeration =#
                     NONE = 1  #= a[2].b[2] => {a[2].b[2]} =#
                     PREFIX = 2  #= a[2].b[2] => {a[1].b[2], a[2].b[2]} =#
                     ALL = 3  #= a[2].b[2] => {a[1].b[1], a[1].b[2], a[2].b[1], a[2].b[2]} =#
@@ -24,6 +24,9 @@ ScalarizeSetting = (() -> begin #= Enumeration =#
                     end)()
 
 const ScalarizeSettingType = Int
+
+#= Wrapper to avoid shadowing by the `scalarize` parameter of ScalarizeSettingType =#
+scalarizeCref(cref::ComponentRef)::List{ComponentRef} = scalarize(cref)
 
 """ #= Splits a connector into its primitive components. =#"""
 function split(
@@ -40,13 +43,12 @@ function split(
   return connl
 end
 
-""" #= Splits a connector into its primitive components. Scalarize everything! =#"""
+""" Splits a connector into its primitive components. Scalarize everything! """
 function split(conn::CONNECTOR)::List{Connector}
   local connl::List{Connector}
   @assign connl = splitImpl(conn.name, conn.ty, conn.face, conn.source, conn.cty, ScalarizeSetting.NONE)
   return connl
 end
-
 
 function hash(conn::Connector, mod::Int)::Int
   local hash::Int = hash(conn.name, mod)
@@ -80,9 +82,8 @@ function isDeleted(conn::Connector)::Bool
 end
 
 function setOutside(conn::Connector)::Connector
-
   if conn.face != Face.OUTSIDE
-    @assign conn.face = Face.OUTSIDE
+    conn = CONNECTOR(conn.name, conn.ty, Face.OUTSIDE, conn.cty, conn.source)
   end
   return conn
 end
@@ -149,20 +150,18 @@ function fromExp(
   source::DAE.ElementSource,
   conns::List{<:Connector} = nil
 )::List{Connector}
-
-  @assign conns = begin
+  conns = begin
     @match exp begin
       CREF_EXPRESSION(__) => begin
-        _cons(fromCref(exp.cref, exp.ty, source), conns)
+        Cons{Connector}(fromCref(exp.cref, exp.ty, source), conns)
       end
-
       ARRAY_EXPRESSION(__) => begin
-        for e in listReverse(exp.elements)
-          @assign conns = fromExp(e, source, conns)
+        #= Lets do it in reverse order to keep the test output the same. =#
+        for i in reverse(1:length(exp.elements))
+          conns = fromExp(exp.elements[i], source, conns)
         end
         conns
       end
-
       _ => begin
         Error.assertion(
           false,
@@ -238,6 +237,12 @@ function splitImpl2(
   return conns
 end
 
+function addSubscripts(subscripts::List{Subscript}, conn::Connector)
+  @assign conn.name = mergeSubscripts(subscripts, conn.name; applyToScope = true)
+  @assign conn.ty = subscript(conn.ty, subscripts)
+  return conn
+end
+
 function splitImpl(
   name::ComponentRef,
   ty::NFType,
@@ -261,7 +266,7 @@ function splitImpl(
       end
 
       TYPE_COMPLEX(complexTy = COMPLEX_EXTERNAL_OBJECT(__)) => begin
-        _cons(CONNECTOR(name, liftArrayLeftList(ty, dims), face, cty, source), conns)
+        Cons{Connector}(CONNECTOR(name, liftArrayLeftList(ty, dims), face, cty, source), conns)
       end
 
       TYPE_COMPLEX(__) => begin
@@ -281,7 +286,7 @@ function splitImpl(
       TYPE_ARRAY(
         elementType = ety && TYPE_COMPLEX(__),
       ) where {(scalarize >= ScalarizeSetting.PREFIX)} => begin
-        for c in scalarize(name)
+        for c in scalarizeCref(name)
           @assign conns = splitImpl(c, ety, face, source, cty, scalarize, conns, dims)
         end
         conns
@@ -289,7 +294,7 @@ function splitImpl(
 
       TYPE_ARRAY(elementType = ety) => begin
         if scalarize == ScalarizeSetting.ALL
-          for c in scalarize(name)
+          for c in scalarizeCref(name)
             @assign conns = splitImpl(c, ety, face, source, cty, scalarize, conns, dims)
           end
         else
@@ -310,7 +315,7 @@ function splitImpl(
       end
 
       _ => begin
-        _cons(CONNECTOR(name, liftArrayLeftList(ty, dims), face, cty, source), conns)
+        Cons{Connector}(CONNECTOR(name, liftArrayLeftList(ty, dims), face, cty, source), conns)
       end
     end
   end
@@ -344,4 +349,8 @@ function crefFace(cref::ComponentRef)::FaceType
   #=  Otherwise, check first part of the cref.
   =#
   return face
+end
+
+function isArray(conn::Connector)
+  return isArray(conn.ty)
 end

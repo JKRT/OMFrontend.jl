@@ -1,13 +1,13 @@
-
 #=
-Frontend verification tests. 
+Frontend verification tests.
 Author: johti17@liu.se
 =#
 
-include("connect.jl")
-import ..ConnectTests
 #= Include tests for equations =#
 include("equationTests.jl")
+include("connect.jl")
+include("arrayTests.jl")
+import ..ConnectTests
 
 #= The set of basic connect tests=#
 ctst1 = (ConnectTests.Connect1, "Connect1", "./Connectors/Connect1.mo")
@@ -52,35 +52,57 @@ connectTsts = [ctst1,
 #               ctst13, The output of this test is "wrong" or is it?. Please investigate if you see this Adrian:)
 #               ctst14,
                ctst15,
-#               ctst16, #ails when running omc Connect16.mo as well? 
+#               ctst16, #Fails when running omc Connect16.mo as well?
                ctst17,
                ctst18]
 #= Tests that should throw errors =#
 incorrectTsts = [ctst3, ctst10, ctst11]
 #= Add new tests here=#
-tst = [tank, heattank, heatTankExpanded, multipleinheritanceconnect, resistorCircuit0, resistorCircuit1, simpleCircuit]
-equationTests = [circle, arrayfancy, ifEquationDer]
+tst = [tank,
+       heattank,
+       heatTankExpanded,
+       multipleinheritanceconnect,
+       resistorCircuit0,
+       resistorCircuit1,
+       simpleCircuit]
 
-function runConnectTests(tests)
-  @testset "Connector test. Testing the handling of connectors" begin
+equationTests = [circle,
+                 arrayfancy,
+                 ifEquationDer,
+                 testArrayEq]
+
+function runTestsDefinedInVector(tests::Vector, testSetDesc)
+  @testset "$testSetDesc" begin
     for mf in tests
       try
         #= Get the flat model =#
+        @info "Testing $(mf[2])"
         res = flattenFM(mf[2], mf[3])
         #= Convert the flat model to a string =#
         res = OMFrontend.toString(first(res))
-        @test res == mf[1]
+        comp = res == mf[1]
+        if comp
+          @test true == comp
+          @info "Success!"
+          println()
+        else
+          @error "Reference file mismatch for test: $(mf[2])"
+          @info "The result was:"
+          println(res)
+          @info "The reference string was:"
+          println(mf[1])
+          @test true == comp
+        end
       catch e
-        @error "An exception was thrown: $(e) for test: $(mf[2])"
-        throw(e)
+        @error "An exception was thrown for test: $(mf[2])"
+        throw("")
       end
     end
   end
 end
 
-runConnectTests(connectTsts)
-runConnectTests(tst)
-runConnectTests(equationTests)
-
-
+runTestsDefinedInVector(connectTsts, "Connector test. Testing the handling of connectors")
+runTestsDefinedInVector(tst, "Trying simple Modelica models using connectors")
+runTestsDefinedInVector(equationTests, "Trying slightly more advanced models, containing equational loops etc.")
+runTestsDefinedInVector(arrayTests0, "Testing scalarization of equational loops and vector of records..")
 #= End Connector tests =#

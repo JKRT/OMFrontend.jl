@@ -1,26 +1,37 @@
-"
-  An experimental Julia frontend for the Modelica language
-"
+"""
+  A  Modelica frontend in Julia.
+"""
 module OMFrontend
+
 
 using MetaModelica
 
 import Absyn
 import SCode
 import OMParser
+import PrecompileTools
+import Distributed
 
+#= This file defines additional utility macros.. =#
+include("util.jl")
+
+#=
+TODO:
+  Investigate why flags have to be loaded several times.
+  both in __init__() and in main.jl
+=#
 
 #= Cache for NFModelicaBuiltin. We only use the result once! =#
 """
-Cache for NFModelicaBuiltin.
-This cache is initialized when the module is loaded.
+  Cache for NFModelicaBuiltin.
+  This cache is initialized when the module is loaded.
 """
 const NFModelicaBuiltinCache = Dict()
 
 """
-This cache contains various instantiated libraries for later use.
+  This cache contains libraries for later use.
 """
-const LIBRARY_CACHE = Dict()
+const LIBRARY_CACHE = Dict{String, SCode.Program}()
 
 """
   This function "precompiles" some of the runtime Modelica libraries.
@@ -33,35 +44,45 @@ by a lot.
 function __init__()
   packagePath = dirname(realpath(Base.find_package("OMFrontend")))
   packagePath *= "/.."
+  # Load builtin library if not already in cache (e.g. when precompile workload is disabled)
+  if !haskey(NFModelicaBuiltinCache, "NFModelicaBuiltin")
+    pathToLib = packagePath * "/lib/NFModelicaBuiltin.mo"
+    builtinProg = OMParser.parseFile(pathToLib, 2)
+    builtinSCode = Frontend.AbsynToSCode.translateAbsyn2SCode(builtinProg)
+    NFModelicaBuiltinCache["NFModelicaBuiltin"] = builtinSCode
+  end
   pathToTest = packagePath * "/test/Models/HelloWorld.mo"
   p = OMParser.parseFile(pathToTest, 1)
-  s = Main.AbsynToSCode.translateAbsyn2SCode(p)
-  Main.Global.initialize()
+  s = Frontend.AbsynToSCode.translateAbsyn2SCode(p)
+  Frontend.Global.initialize()
   # make sure we have all the flags loaded!
-  #  Main.Flags.new(Flags.emptyFlags)
+  Frontend.FlagsUtil.loadFlags()
   builtinSCode = NFModelicaBuiltinCache["NFModelicaBuiltin"]
   program = listAppend(builtinSCode, s)
-  path = Main.AbsynUtil.stringPath("HelloWorld")
-  res1 = Main.instClassInProgram(path, program)
+  path = Frontend.AbsynUtil.stringPath("HelloWorld")
+  res1 = Frontend.instClassInProgram(path, program)
   return nothing
 end
 
 include("main.jl")
+#=Internal modules=#
+import .Frontend.Flags
+import .Frontend.FlagsUtil
 
+
+"""
+Parse a file, returns the syntax tree.
+"""
 function parseFile(file::String, acceptedGram::Int64 = 1)::Absyn.Program
   return OMParser.parseFile(file, acceptedGram)
 end
 
+"""
+  Translate the Syntax tree to the SCode intermediate representation
+"""
 function translateToSCode(inProgram::Absyn.Program)::SCode.Program
-  return Main.AbsynToSCode.translateAbsyn2SCode(inProgram)
+  return Frontend.AbsynToSCode.translateAbsyn2SCode(inProgram)
 end
-
-"""
-  Instantiates a SCode program.
-"""
-function instSCode(inProgram::SCode.Program)
-end
-
 
 """
   Instantiates and translates to DAE.
@@ -70,13 +91,13 @@ end
 """
 function instantiateSCodeToDAE(elementToInstantiate::String, inProgram::SCode.Program)
   # initialize globals
-  Main.Global.initialize()
+  Frontend.Global.initialize()
   # make sure we have all the flags loaded!
-  #Main.Flags.new(Flags.emptyFlags)
+  #Frontend.Flags.new(Flags.emptyFlags)
   local builtinSCode = NFModelicaBuiltinCache["NFModelicaBuiltin"]
   local program = listAppend(builtinSCode, inProgram)
-  local path = Main.AbsynUtil.stringPath(elementToInstantiate)
-  Main.instClassInProgram(path, program)
+  local path = Frontend.AbsynUtil.stringPath(elementToInstantiate)
+  Frontend.instClassInProgram(path, program)
 end
 
 """
@@ -84,37 +105,24 @@ end
   The element to instantiate should be provided in the following format:
   <component>.<component_1>.<component_2>...
 """
-function instantiateSCodeToFM(elementToInstantiate::String, inProgram::SCode.Program)
+function instantiateSCodeToFM(elementToInstantiate::String,
+                              inProgram::SCode.Program; scalarize = true)
   # initialize globals
-  Main.Global.initialize()
+  Frontend.Global.initialize()
   # make sure we have all the flags loaded!
-#  Main.Flags.new(Flags.emptyFlags)
+  #  Frontend.Flags.new(Flags.emptyFlags)
+  Frontend.FlagsUtil.set(Frontend.Flags.NF_SCALARIZE, scalarize)
   local builtinSCode = NFModelicaBuiltinCache["NFModelicaBuiltin"]
   local program = listReverse(listAppend(builtinSCode, inProgram))
-  local path = Main.AbsynUtil.stringPath(elementToInstantiate)
-  Main.instClassInProgramFM(path, program)
+  local path = Frontend.AbsynUtil.stringPath(elementToInstantiate)
+  (flat_model, funcs, inst_cls) = Frontend.instClassInProgramFM(path, program)
+  return (flat_model, funcs)
 end
 
 """
-  @author: johti17
-  Loads the Modelica Standard Library (MSL).
-  Adds the Modelica standard library to the library cache.
-"""
-function loadMSL()
-  if ! haskey(LIBRARY_CACHE, "MSL")
-    Main.Global.initialize()
-    #= Find the MSL =#
-    local packagePath = dirname(realpath(Base.find_package("OMFrontend")))
-    local packagePath *= "/.."
-    local pathToLib = packagePath * "/lib/Modelica/msl.mo"
-    local p = parseFile(pathToLib)
-    #= Translate it to SCode =#
-    local scodeMSL = OMFrontend.translateToSCode(p)
-    LIBRARY_CACHE["MSL"] = scodeMSL
-  end
-end
-
-"""
+```
+  exportDAERepresentationToFile(fileName::String, contents::String)
+```
   Prints the DAE representation to a file
 """
 function exportDAERepresentationToFile(fileName::String, contents::String)
@@ -127,75 +135,584 @@ end
   ```toString(model::FlatModel)```
     Converts the flat model representation to a Julia String, the extra \\n are replaced with \n
 """
-function toString(model::Main.FlatModel)
-  local res = Main.toString(model)
+function toString(model::Frontend.FlatModel)
+  local res = Frontend.toString(model)
   local res = replace(res, "\\n" => "\n")
   return res
 end
 
+function toString(fmFuncs::Tuple)
+  local model = first(fmFuncs)
+  local funcs = last(fmFuncs)
+  local res = Frontend.toString(model)
+  res *= string(funcs)
+  res = replace(res, "\\n" => "\n")
+  return res
+end
+
+"""
+  Overload the Julia to string function
+"""
+function Base.string(model::Frontend.FlatModel)
+  return toString(model::Frontend.FlatModel)
+end
+
+"""
+  Converts a function tree to a string
+"""
+function Base.string(ft::Frontend.FunctionTreeImpl.Tree)
+  local fLst = OMFrontend.Frontend.FunctionTreeImpl.toList(ft)
+  local buffer = IOBuffer()
+  for (_, v) in fLst
+    println(buffer, OMFrontend.Frontend.toFlatString(v))
+  end
+  return replace(String(take!(buffer)), "\\n" => "\n")
+end
+
+function toFlatModelica(fm, fLst::List; printBindingTypes = false)
+  s = replace(Frontend.toFlatString(fm, fLst, printBindingTypes), "\\n" => "\n")
+  s = replace(s, "OMC_NO_CLOCK.sample" => "sample")
+  s = replace(s, "'AssertionLevel'" => "AssertionLevel")
+  return s
+end
+
+function toFlatModelica(fm, fLst::Frontend.FunctionTreeImpl.NODE; printBindingTypes = false)
+  s = replace(Frontend.toFlatString(fm, cacheToFunctionList(fLst), printBindingTypes), "\\n" => "\n")
+  s = replace(s, "OMC_NO_CLOCK.sample" => "sample")
+  s = replace(s, "'AssertionLevel'" => "AssertionLevel")
+  return s
+end
+
+function toFlatModelica(flatModelicaAndFunctionTree::Tuple;
+                        printBindingTypes = false)
+  local fLst = cacheToFunctionList(last(flatModelicaAndFunctionTree))
+  local fm = first(flatModelicaAndFunctionTree)
+  s = replace(Frontend.toFlatString(fm, fLst, printBindingTypes), "\\n" => "\n")
+  s = replace(s, "OMC_NO_CLOCK.sample" => "sample")
+  s = replace(s, "'AssertionLevel'" => "AssertionLevel")
+  return s
+end
+
+function writeFlatModelicaToFile(fm, fLst;
+                                 printBindingtypes = false,
+                                 fileName,
+                                 removeQuotes::Bool)
+  local fmStr = toFlatModelica(fm,
+                               fLst;
+                               printBindingTypes = printBindingtypes,)
+  fmStr = if removeQuotes
+    removeQuotesFromFlatModelica(fmStr)
+  else
+    fmStr
+  end
+  f = write(fileName, fmStr)
+  #close(f)
+end
+
+"""
+  Converts the function cache represented as a tree where the path is the key into a list of functions
+"""
+function cacheToFunctionList(cache)
+  fLst = OMFrontend.Frontend.FunctionTreeImpl.toList(cache)
+  fv = map(fLst) do kv
+    last(kv)
+  end
+  arrayList(fv)
+end
+
+"""
+  Dumps the SCode representation of a Modelica model to a file.
+"""
 function exportSCodeRepresentationToFile(fileName::String, contents::List{SCode.CLASS})
   local fdesc = open(fileName, "w")
   local processedContents = replace(string(contents), "," => ",\n")
   write(fdesc, processedContents)
   close(fdesc)
 end
-#=
-  This is done during precompilation of the package
-  to cache precompile versions of many methods.
-=#
-if ccall(:jl_generating_output, Cint, ()) == 1
-  let
-    #= Step one. Load the built in library =#
-    @info "Precompiling builtin libraries..."
-    if ! haskey(NFModelicaBuiltinCache, "NFModelicaBuiltin")
-      #= Locate the external libraries =#
-      packagePath = dirname(realpath(Base.find_package("OMFrontend")))
-      packagePath *= "/.."
-      pathToLib = packagePath * "/lib/NFModelicaBuiltin.mo"
-      #= The external C stuff can be a bit flaky.. =#
-      GC.enable(false) 
-      p = parseFile(pathToLib, 2 #== MetaModelica ==#)
-      s = translateToSCode(p)
-      NFModelicaBuiltinCache["NFModelicaBuiltin"] = s
-      #=Enable GC again.=#
-      GC.enable(true)
-    end
-    @info "Builtin libraries successfully precompiled!"
-    @info "Initial compiler module interfaces are compiled!"
-  end
-end
 
-function initLoadMSL()
-  @info "Loading the MSL"
-  @time loadMSL()
-  @info "Loaded MSL successfully"
+function initLoadMSL(;MSL_Version = "MSL:3.2.3")
+  # For printing
+  @info "Loading MSL\n\t Version: $(MSL_Version)"
+  MSL_Version = replace(MSL_Version, "." => "_")
+  MSL_Version = replace(MSL_Version, ":" => "_")
+  @time return loadMSL(MSL_Version = MSL_Version)
+  @info "MSL successfully Loaded"
 end
 
 """
-  This function loads the MSL s.t it can be used for models.
-"""
-function flattenModelInMSL(modelName::String)
-  if !haskey(LIBRARY_CACHE, "MSL")
-    initLoadMSL()
-  end
-  local libraryAsScoded = LIBRARY_CACHE["MSL"]
-  (FM, cache) = instantiateSCodeToFM(modelName, libraryAsScoded)
-end
+`function flattenModelWithMSL(modelName::String, fileName::String; MSL_Version = "MSL:3.2.3")`
 
+Returns the flat representation of a modelica model along with the functions used and define by the model.
+See the keyword argument for specifying MSL version.
+Valid versions are 3.2.3 and 4.0.0.
 """
-  This function flattens a model with the MSL.
-"""
-function flattenModelWithMSL(modelName::String, fileName::String)
-  if !haskey(LIBRARY_CACHE, "MSL")
-    initLoadMSL()
+function flattenModelWithMSL(modelName::String,
+                             fileName::String;
+                             MSL_Version = "MSL:3.2.3",
+                             scalarize = true)
+  if !haskey(LIBRARY_CACHE, MSL_Version)
+    initLoadMSL(MSL_Version = MSL_Version)
   end
-  local lib = LIBRARY_CACHE["MSL"]
+  MSL_Version = replace(MSL_Version, "." => "_")
+  MSL_Version = replace(MSL_Version, ":" => "_")
+  local lib = LIBRARY_CACHE[MSL_Version]
   local absynProgram = parseFile(fileName)
   local sCodeProgram = translateToSCode(absynProgram)
+  #= Add builtin function to the program (model) and instantiate it =#
   builtin = NFModelicaBuiltinCache["NFModelicaBuiltin"]
-  program = listReverse(listAppend(builtin, sCodeProgram))
-  program = listReverse(listAppend(lib, sCodeProgram))
-  (FM, cache) = instantiateSCodeToFM(modelName, program)
+  #program = listReverse(listAppend(sCodeProgram, builtin))
+  program = listAppend(sCodeProgram, lib)
+  #println("Attempting to instantiate..." * modelName)
+  (FM, cache) = instantiateSCodeToFM(modelName, program; scalarize = scalarize)
 end
 
-end # module
+"""
+`function flattenModelWithMSL(modelName::String; MSL_Version = "MSL:3.2.3", scalarize = true)`
+
+Flatten an MSL model by name.
+"""
+function flattenModelWithMSL(modelName::String;
+                             MSL_Version = "MSL:3.2.3",
+                             scalarize = true)
+  if !haskey(LIBRARY_CACHE, MSL_Version)
+    initLoadMSL(MSL_Version = MSL_Version)
+  end
+  MSL_Version = replace(MSL_Version, "." => "_")
+  MSL_Version = replace(MSL_Version, ":" => "_")
+  local lib = LIBRARY_CACHE[MSL_Version]
+  (FM, cache) = instantiateSCodeToFM(modelName, lib; scalarize = scalarize)
+end
+
+"""
+`flattenModel(modelName::String, fileName::String)`
+
+Returns the flat representation of a modelica model along with the functions used and define by the model.
+"""
+function flattenModel(modelName::String, fileName::String; scalarize = true)
+  local absynProgram = parseFile(fileName)
+  local sCodeProgram = translateToSCode(absynProgram)
+  (FM, cache) = instantiateSCodeToFM(modelName, sCodeProgram; scalarize = scalarize)
+end
+
+"""
+  @author: johti17
+  Loads the Modelica Standard Library (MSL).
+  Adds the Modelica standard library to the library cache.
+Currently 3.2.3 is the default version.
+
+Available versions are:
+4.0.0
+3.2.3
+"""
+function loadMSL(; MSL_Version)
+  MSL_Version = replace(MSL_Version, "." => "_")
+  MSL_Version = replace(MSL_Version, ":" => "_")
+  if ! haskey(LIBRARY_CACHE, MSL_Version)
+    #= Initialize various global variables =#
+    Frontend.Global.initialize()
+    #= Find the MSL =#
+    try
+      @info "Loading MSL.."
+      local packagePath = dirname(realpath(Base.find_package("OMFrontend")))
+      local packagePath *= "/.."
+      local pathToLib = packagePath * string("/lib/Modelica/", MSL_Version, ".mo")
+      @info "Initial parsing of the MSL..."
+      @time local p = parseFile(pathToLib)
+      #= Translate it to SCode =#
+      local scodeMSL = OMFrontend.translateToSCode(p)
+      global LIBRARY_CACHE[MSL_Version] = scodeMSL
+      return scodeMSL
+    catch e
+      @info "Failed loading the Modelica Standard Library. Valid versions are 3.2.3 and 4.0.0"
+      @info "Continue instantiating the model until the next error."
+    end
+  end
+end
+
+"""
+    loadLibrary(libraryPath::String; name::Union{String, Nothing} = nothing)
+
+Load an arbitrary Modelica library from a single `.mo` file into the library
+cache. Returns the cache key (a string) that can be passed to `translate` or
+`simulate` via the `libraries` keyword argument.
+
+If `name` is not provided, the cache key is derived from the top-level class
+name in the parsed file.
+
+# Example
+```julia
+key = OMFrontend.loadLibrary("/path/to/MyLib.mo")
+# key == "MyLib"
+```
+"""
+function loadLibrary(libraryPath::String; name::Union{String, Nothing} = nothing)
+  Frontend.Global.initialize()
+  @info "Loading library from $libraryPath..."
+  local p = parseFile(libraryPath)
+  local scodeProg = translateToSCode(p)
+  local cacheKey = if name !== nothing
+    name
+  else
+    local firstClass = listHead(scodeProg)
+    firstClass.name
+  end
+  LIBRARY_CACHE[cacheKey] = scodeProg
+  @info "Loaded library '$cacheKey' from $libraryPath"
+  return cacheKey
+end
+
+"""
+    loadPackageDirectory(dirPath::String; name=nothing) -> String
+
+Load a Modelica library organized as a directory tree with `package.mo` files.
+Each `.mo` file is parsed individually and merged into a single SCode program
+based on its `within` clause.
+
+Returns the cache key (a string) for use in `translate`/`simulate` via the
+`libraries` keyword argument.
+
+# Directory structure
+```
+MyLibrary/
+  package.mo          # top-level package declaration
+  package.order       # optional: class ordering (one name per line)
+  SomeModel.mo        # "within MyLibrary; model SomeModel ..."
+  SubPackage/
+    package.mo        # "within MyLibrary; package SubPackage ..."
+    AnotherModel.mo   # "within MyLibrary.SubPackage; model AnotherModel ..."
+```
+
+# Example
+```julia
+key = OMFrontend.loadPackageDirectory("/path/to/MyLibrary")
+# key == "MyLibrary"
+```
+"""
+function loadPackageDirectory(dirPath::String; name::Union{String, Nothing} = nothing)
+  Frontend.Global.initialize()
+  dirPath = String(rstrip(dirPath, '/'))
+  local rootFile = joinpath(dirPath, "package.mo")
+  if !isfile(rootFile)
+    error("No package.mo found in '$dirPath'. Not a valid Modelica package directory.")
+  end
+  @info "Loading directory-based package from $dirPath..."
+
+  #= Step 1: Parse root package.mo =#
+  local rootAbsyn = parseFile(rootFile)
+  local rootSCode = translateToSCode(rootAbsyn)
+  local rootClass = listHead(rootSCode)
+
+  #= Step 2: Collect all child .mo files (excluding root package.mo) =#
+  local childFiles = _collectMoFiles(dirPath)
+  @info "Found $(length(childFiles)) child file(s) in package"
+
+  #= Step 3: Parse each child, extract within path and SCode class =#
+  local children = Tuple{String, SCode.Element}[]
+  for moFile in childFiles
+    local absynProg = parseFile(moFile)
+    local withinPath = _extractWithinPath(absynProg)
+    local scodeProg = translateToSCode(absynProg)
+    for cls in scodeProg
+      push!(children, (withinPath, cls))
+    end
+  end
+
+  #= Step 4: Insert all children into the root package tree =#
+  local mergedClass = rootClass
+  local rootName = rootClass.name
+  for (withinPath, child) in children
+    mergedClass = _insertIntoPackage(mergedClass, child, withinPath, rootName)
+  end
+
+  #= Step 5: Cache the result =#
+  local cacheKey = name !== nothing ? name : rootName
+  LIBRARY_CACHE[cacheKey] = list(mergedClass)
+  @info "Loaded directory package '$cacheKey' from $dirPath ($(length(children)) classes)"
+  return cacheKey
+end
+
+"""
+    _collectMoFiles(dirPath) -> Vector{String}
+
+Recursively collect `.mo` files in a package directory, respecting `package.order`.
+Sub-package `package.mo` files are included before their children.
+The root `package.mo` is excluded (handled separately by the caller).
+"""
+function _collectMoFiles(dirPath::AbstractString)::Vector{String}
+  local files = String[]
+  local order = _readPackageOrder(dirPath)
+  local entries = readdir(dirPath; join=false)
+
+  #= Determine processing order =#
+  local ordered::Vector{String}
+  if order !== nothing
+    #= Use package.order: process listed entries first, then any unlisted ones =#
+    local remaining = filter(n -> !(n in order), entries)
+    sort!(remaining)
+    ordered = vcat(order, remaining)
+  else
+    ordered = sort(entries)
+  end
+
+  for entry in ordered
+    local fullPath = joinpath(dirPath, entry)
+    if isdir(fullPath) && isfile(joinpath(fullPath, "package.mo"))
+      #= Sub-package: add its package.mo first, then recurse =#
+      push!(files, joinpath(fullPath, "package.mo"))
+      append!(files, _collectMoFiles(fullPath))
+    elseif isfile(fullPath) && endswith(entry, ".mo") && entry != "package.mo"
+      push!(files, fullPath)
+    end
+  end
+  return files
+end
+
+"""
+    _readPackageOrder(dirPath) -> Union{Vector{String}, Nothing}
+
+Read the `package.order` file if it exists. Returns a list of class/entry names
+(one per line, comments and blank lines stripped), or nothing if no file exists.
+"""
+function _readPackageOrder(dirPath::AbstractString)::Union{Vector{String}, Nothing}
+  local orderFile = joinpath(dirPath, "package.order")
+  if !isfile(orderFile)
+    return nothing
+  end
+  local rawLines = readlines(orderFile)
+  local lines = String[]
+  for line in rawLines
+    local stripped = strip(line)
+    if !isempty(stripped) && !startswith(stripped, "//")
+      push!(lines, String(stripped))
+    end
+  end
+  return lines
+end
+
+"""
+    _extractWithinPath(prog::Absyn.Program) -> String
+
+Extract the `within` clause from an Absyn.Program and convert to a dot-separated
+path string. Returns "" for top-level (no within clause).
+"""
+function _extractWithinPath(prog::Absyn.Program)::String
+  @match Absyn.PROGRAM(within_ = w) = prog
+  return begin
+    @match w begin
+      Absyn.TOP() => ""
+      Absyn.WITHIN(path) => _absynPathToString(path)
+    end
+  end
+end
+
+function _absynPathToString(path::Absyn.Path)::String
+  @match path begin
+    Absyn.IDENT(name) => name
+    Absyn.QUALIFIED(name, rest) => string(name, ".", _absynPathToString(rest))
+    Absyn.FULLYQUALIFIED(p) => _absynPathToString(p)
+  end
+end
+
+"""
+    _insertIntoPackage(pkg, child, withinPath, currentPath) -> SCode.Element
+
+Insert a child SCode.Element into the correct location in the package tree.
+`withinPath` is the dot-separated path from the child's `within` clause.
+`currentPath` is the dot-separated path of the current package being examined.
+"""
+function _insertIntoPackage(pkg::SCode.Element, child::SCode.Element,
+                            withinPath::String, currentPath::String)::SCode.Element
+  #= Does this child belong directly in this package? =#
+  if withinPath == currentPath
+    @match SCode.CLASS(classDef = SCode.PARTS(elementLst = els)) = pkg
+    local newEls = listAppend(els, list(child))
+    return _rebuildClassWithElements(pkg, newEls)
+  end
+
+  #= Otherwise, find the sub-package to recurse into =#
+  local prefix = currentPath * "."
+  if !startswith(withinPath, prefix)
+    @warn "Cannot insert class: within path '$withinPath' does not match current path '$currentPath'"
+    return pkg
+  end
+  local suffix = withinPath[length(prefix)+1:end]
+  local nextSegment = String(split(suffix, ".")[1])
+
+  #= Find and update the sub-package in elementLst =#
+  @match SCode.CLASS(classDef = SCode.PARTS(elementLst = els)) = pkg
+  local newEls = nil
+  local found = false
+  for el in els
+    if isa(el, SCode.CLASS) && el.name == nextSegment
+      local updatedSub = _insertIntoPackage(el, child, withinPath,
+                                            string(currentPath, ".", nextSegment))
+      newEls = Cons(updatedSub, newEls)
+      found = true
+    else
+      newEls = Cons(el, newEls)
+    end
+  end
+  newEls = listReverse(newEls)
+  if !found
+    @warn "Sub-package '$nextSegment' not found in '$currentPath' for within path '$withinPath'"
+  end
+  return _rebuildClassWithElements(pkg, newEls)
+end
+
+"""
+    _rebuildClassWithElements(cls, newEls) -> SCode.Element
+
+Reconstruct an SCode.CLASS with a new elementLst, preserving all other fields.
+"""
+function _rebuildClassWithElements(cls::SCode.Element, newEls)::SCode.Element
+  @match SCode.CLASS(name, prefixes, encap, partial_, restriction,
+                     SCode.PARTS(_, normalEqs, initEqs, normalAlgs,
+                                 initAlgs, constraints, clsattrs, extDecl),
+                     cmt, info) = cls
+  local newDef = SCode.PARTS(newEls, normalEqs, initEqs, normalAlgs,
+                             initAlgs, constraints, clsattrs, extDecl)
+  return SCode.CLASS(name, prefixes, encap, partial_, restriction, newDef, cmt, info)
+end
+
+"""
+    flattenModelWithLibraries(modelName, fileName; libraries, MSL, MSL_Version, scalarize)
+
+Flatten a Modelica model combining it with one or more pre-loaded libraries.
+Libraries are looked up in `LIBRARY_CACHE` by their cache keys. If MSL is
+requested, it is appended last (lowest priority for name resolution).
+
+Ordering in the combined program (leftmost = highest priority):
+1. User model code
+2. User libraries (in order of `libraries` vector)
+3. MSL (if `MSL=true`)
+"""
+function flattenModelWithLibraries(modelName::String,
+                                   fileName::String;
+                                   libraries::Vector{String} = String[],
+                                   MSL::Bool = false,
+                                   MSL_Version::String = "MSL:3.2.3",
+                                   scalarize::Bool = true)
+  local absynProgram = parseFile(fileName)
+  local combined = translateToSCode(absynProgram)
+  for libKey in libraries
+    if !haskey(LIBRARY_CACHE, libKey)
+      error("Library '$libKey' not loaded. Call OM.loadLibrary first.")
+    end
+    combined = listAppend(combined, LIBRARY_CACHE[libKey])
+  end
+  if MSL
+    if !haskey(LIBRARY_CACHE, MSL_Version)
+      initLoadMSL(MSL_Version = MSL_Version)
+    end
+    local mslKey = replace(replace(MSL_Version, "." => "_"), ":" => "_")
+    combined = listAppend(combined, LIBRARY_CACHE[mslKey])
+  end
+  (FM, cache) = instantiateSCodeToFM(modelName, combined; scalarize = scalarize)
+end
+
+
+"""
+```
+enableDumpDebug()
+```
+Enable staged dumping of the flat model between different compiler phases.
+NOTE this will generate files on your local drive if enabled.
+
+To disable see ```disableDumpDebug()```
+"""
+function enableDumpDebug()
+  status = FlagsUtil.enableDebug(Flags.NF_DUMP_FLAT)
+  @info "Enabled Flags.NF_DUMP_FLAT. Old status was $(status)"
+end
+
+"""
+```
+disableDumpDebug()
+```
+Disables staged dumping of the flat  model between different compiler phases.
+
+"""
+function disableDumpDebug()
+  status = FlagsUtil.disableDebug(Flags.NF_DUMP_FLAT)
+  @info "Disabled Flags.NF_DUMP_FLAT. Old status was $(status)"
+end
+
+Base.show(io::IO, ::MIME"text/plain", fm::OMFrontend.Frontend.FLAT_MODEL) = begin
+  print(io, "Flat Model:\n", string(fm))
+end
+
+Base.show(io::IO, ::MIME"text/plain", t::Tuple{OMFrontend.Frontend.FLAT_MODEL, OMFrontend.Frontend.FunctionTreeImpl.EMPTY}) = begin
+  print(io, "Flat Model:\n", string(first(t)))
+  print(io, "\n(No Functions)\n")
+end
+
+Base.show(io::IO, ::MIME"text/plain", t::Tuple{OMFrontend.Frontend.FLAT_MODEL, OMFrontend.Frontend.FunctionTreeImpl.LEAF}) = begin
+  print(io, "Flat Model:\n", string(first(t)))
+  print(io, "\nFunctions:\n", string(last(t)))
+end
+
+Base.show(io::IO, ::MIME"text/plain", t::Tuple{OMFrontend.Frontend.FLAT_MODEL, OMFrontend.Frontend.FunctionTreeImpl.NODE}) = begin
+  print(io, "Flat Model:\n", string(first(t)))
+  print(io, "\nFunctions:\n", string(last(t)))
+end
+
+"""
+```
+removeQuotesFromFlatModelica(flatModelicaStr::String)
+```
+This function postprocesses a flat modelica model represented as a string.
+It does so by removing quoted variables and expressions where possible.
+This function should be used on models that has ascii characters only.
+This can be useful if you wish to remove redundant clutter from flat models.
+
+  NOTE: Not exhaustively tested for all models.
+"""
+function removeQuotesFromFlatModelica(fmStr::String)
+
+  local specialSymbols = ["'+'", "'*'", "'/'", "'-'", "'constructor'"]
+
+  function shouldBeQuoted(matchedString)
+    local reg = r"\["
+    local reg2 = r"\*|\+|-"
+    contains(matchedString.match, reg) || contains(matchedString.match, reg2)
+  end
+
+  local buffer::IOBuffer = IOBuffer()
+  if ! isascii(fmStr)
+    @info "The model contains characters not in the ascii character encoding format.\nThe string was not modified."
+    return fmStr
+  end
+  local strs = split(fmStr, "\n")
+  for str in strs
+    local matchedStr::Option{RegexMatch}
+    local replaced = false
+    local mstr = str
+    if (contains(mstr, "'"))
+      local reg = r"'[^']*'"
+      matchedStrings = eachmatch(reg,  mstr)
+
+      for matchedString in matchedStrings
+        local underscoresReplaced = replace(matchedString.match, "." => "_")
+        if ! (contains(matchedString.match, r"\[")  || contains(matchedString.match, r"\+|\*|\-"))
+          strWithQuotesAndUnderscoresReplaced = replace(underscoresReplaced, "'" => "")
+          mstr = replace(mstr, matchedString.match => strWithQuotesAndUnderscoresReplaced)
+        else
+          #= Bad code...=#
+          for ss in specialSymbols
+            mstr = replace(mstr, ss => replace(ss, "'"=> ""))
+          end
+        end
+      end
+      println(buffer, mstr)
+    else
+      println(buffer, mstr)
+    end
+  end
+
+  return String(take!(buffer))
+end
+
+include("GUI_API.jl")
+include("precompilation.jl")
+
+end #OMFrontend

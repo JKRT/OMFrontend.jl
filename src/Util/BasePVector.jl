@@ -54,7 +54,7 @@ T = Integer
 =#
 import ListUtil
 
-import Main.MetaModelica.Dangerous
+import Frontend.MetaModelica.Dangerous
 
 @Uniontype Vector begin
   @Record VECTOR begin

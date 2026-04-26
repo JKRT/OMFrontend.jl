@@ -1,4 +1,3 @@
-
 #= /*
 * This file is part of OpenModelica.
 *
@@ -34,7 +33,7 @@ module System
 
 using MetaModelica
 using ExportAll
-  #= Forward declarations for uniontypes until Julia adds support for mutual recursion =#  
+  #= Forward declarations for uniontypes until Julia adds support for mutual recursion =#
   const ForkFunction = Function
 
 
@@ -615,43 +614,44 @@ function tmpTick() ::Integer
   tickNo
 end
 
-""" #= resets the tick so it restarts on start =#"""
+"""
+Resets the tick so it restarts on start
+"""
 function tmpTickReset(start::Integer)
-  @error "TODO: Defined in the runtime"
+  setGlobalRoot(Global.tmpTickIndex, start)
 end
 
-""" #= returns a tick that can be reset. TODO: remove me when bootstrapped (default argument index=0) =#"""
-function tmpTickIndex(index::Integer) ::Integer
-  local tickNo::Integer
-  @error "TODO: Defined in the runtime"
-  tickNo
+"""
+Returns a tick that can be reset.
+"""
+function tmpTickIndex(index::Int)::Int
+  local tickNo::Int = getGlobalRoot(index)
+  setGlobalRoot(index, tickNo + 1)
+  return tickNo
 end
 
 """ #= returns a tick that can be reset and reserves N values in it.
              TODO: remove me when bootstrapped (default argument index=0) =#"""
 function tmpTickIndexReserve(index::Integer, reserve::Integer #= current tick + reserve =#) ::Integer
-  local tickNo::Integer
-
-  @error "TODO: Defined in the runtime"
-  tickNo
+  local tickNo::Integer = getGlobalRoot(index)
+  setGlobalRoot(index, tickNo + reserve)
+  return tickNo
 end
 
 """ #= resets the tick so it restarts on start. TODO: remove me when bootstrapped (default argument index=0) =#"""
 function tmpTickResetIndex(start::Integer, index::Integer)
-  @error "TODO: Defined in the runtime"
+  setGlobalRoot(index, start)
 end
 
 """ #= sets the index, like tmpTickResetIndex, but does not reset the maximum counter =#"""
 function tmpTickSetIndex(start::Integer, index::Integer)
-  @error "TODO: Defined in the runtime"
+  setGlobalRoot(index, start)
 end
 
 """ #= returns the max tick since the last reset =#"""
 function tmpTickMaximum(index::Integer) ::Integer
-  local maxIndex::Integer
-
-  @error "TODO: Defined in the runtime"
-  maxIndex
+  local maxIndex::Integer = getGlobalRoot(index)
+  return maxIndex
 end
 
 """ #= Returns true if the current user is root.
@@ -991,10 +991,9 @@ end
 
 """ #= sprintf format string that takes one double as argument =#"""
 function snprintff(format::String, maxlen::Integer, val::AbstractFloat) ::String
-  local str::String
-
-  @error "TODO: Defined in the runtime"
-  str
+  local buf = zeros(UInt8, maxlen)
+  local n = ccall(:snprintf, Cint, (Ptr{UInt8}, Csize_t, Cstring, Cdouble), buf, maxlen, format, val)
+  return unsafe_string(pointer(buf), min(n, maxlen - 1))
 end
 
 """ #= sprintf format string that takes one double as argument, but unlike snprintff
@@ -1005,10 +1004,9 @@ end
                    for most cases, and if that fails it resizes the buffer to the size
                    snprintf said it needed and calls snprintf again. =#"""
 function sprintff(format::String, val::AbstractFloat) ::String
-  local str::String
-
-  @error "TODO: Defined in the runtime"
-  str
+  local buf = zeros(UInt8, 256)
+  local n = ccall(:snprintf, Cint, (Ptr{UInt8}, Csize_t, Cstring, Cdouble), buf, 256, format, val)
+  return unsafe_string(pointer(buf), min(n, 255))
 end
 
 """ #= Returns a value in the intervals (0,1] =#"""
@@ -1051,10 +1049,9 @@ end
 
 """ #= Translate a string from msgid to msgstr using the language of the chosen locale =#"""
 function gettext(msgid::String) ::String
-  local msgstr::String
-
-  @error "TODO: Defined in the runtime"
-  msgstr
+  local msgstr::String = msgid
+  @error "TODO: gettext Defined in the runtime"
+  return msgstr
 end
 
 """ #= Takes any boxed input =#"""
@@ -1121,8 +1118,11 @@ function numProcessors() ::Integer
   result
 end
 
-""" #= Takes a list of inputs and produces a list of Boolean (true if the function call was successful). The function is called by not using forks (experimental version using threads because fork doesn't play nice). Only returns if all functions return. =#"""
-function launchParallelTasks(numThreads::Integer, inData::List{TI}, func::ForkFunction)  where {TI, TO}
+"""
+  Takes a list of inputs and produces a list of Boolean (true if the function call was successful).
+  The function is called by not using forks (experimental version using threads because fork doesn't play nice). Only returns if all functions return.
+"""
+function launchParallelTasks(numThreads::Integer, inData::List{TI}, func::ForkFunction)  where {TI}
   local result::List{TO}
 
   @error "TODO: Defined in the runtime"
@@ -1146,7 +1146,7 @@ function getMemorySize() ::AbstractFloat
   memory
 end
 
-""" #= this needs to be called first in Main.mo =#"""
+""" #= this needs to be called first in Frontend.mo =#"""
 function initGarbageCollector()
   @error "TODO: Defined in the runtime"
 end
@@ -1185,13 +1185,11 @@ function dladdr(symbol::T #= Function pointer =#)  where {T}
   local name::String
   local file::String
   local info::String
-
-  @assign (file, name) = _dladdr(symbol)
-  @assign info = file + ": " + name
+  (file, name) = _dladdr(symbol)
+  info = file + ": " + name
   function _dladdr(symbol::T #= Function pointer =#)  where {T}
     local name::String
     local file::String
-
     @error "TODO: Defined in the runtime"
     (file, name)
   end

@@ -394,8 +394,10 @@ function applyLocalComponents(tree::Union{CLASS_TREE_PARTIAL_TREE,CLASS_TREE_EXP
   return nothing
 end
 
-""" #= Applies a mutating function to each extends node in the class tree.
-       A given argument is also folded and returned. =#"""
+"""
+  Applies a mutating function to each extends node in the class tree.
+  A given argument is also folded and returned.
+"""
 function mapFoldExtends(tree::ClassTree, func::Function, arg::ArgT) where {ArgT}
   local exts::Vector{InstNode} = getExtends(tree)
   local ext::InstNode
@@ -603,10 +605,12 @@ function flattenLookupTree2(
   return outEntry
 end
 
-""" #= Traverses a lookup tree and shifts the index of each component entry by
-       using the given offset array, such that the lookup tree can be used to
-       look up components when any duplicates have been removed from the
-       component array. =#"""
+"""
+  Traverses a lookup tree and shifts the index of each component entry by
+  using the given offset array, such that the lookup tree can be used to
+  look up components when any duplicates have been removed from the
+  component array.
+"""
 function flattenLookupTree(
   tree::LookupTree.Tree,
   offsets::Vector{<:Int},
@@ -615,12 +619,13 @@ function flattenLookupTree(
   return tree
 end
 
-""" #= Creates an array of offsets given an element count and a sorted list of
-       duplicate indices. The offsets indicate how many positions each element
-       is shifted when removing the duplicate elements. The duplicates are
-       marked with -1 in the array. For example:
-         createFlatOffsets(7, {2, 4, 5}) => {0, -1, 1, -1, -1, 3, 3}
-       =#"""
+"""
+  Creates an array of offsets given an element count and a sorted list of
+  duplicate indices. The offsets indicate how many positions each element
+  is shifted when removing the duplicate elements. The duplicates are
+  marked with -1 in the array. For example:
+  createFlatOffsets(7, {2, 4, 5}) => {0, -1, 1, -1, -1, 3, 3}
+"""
 function createFlatOffsets(
   elementCount::Int,
   duplicates::List{<:Int},
@@ -668,8 +673,10 @@ function flattenElementsWithOffset(
   end
 end
 
-""" #= Copies elements from one array to another while removing the Mutable
-       container for each element. =#"""
+"""
+  Copies elements from one array to another while removing the Mutable
+  container for each element.
+"""
 function flattenElements(
   elements::Vector,
   flatElements::Vector{<:InstNode},
@@ -683,9 +690,11 @@ function flattenElements(
   end
 end
 
-""" #= Flattens a class tree by creating new arrays for the classes and
-       components with any duplicates removed and with the elements no longer
-       being mutable references. =#"""
+"""
+  Flattens a class tree by creating new arrays for the classes and
+  components with any duplicates removed and with the elements no longer
+  being mutable references.
+"""
 function flatten(tree::ClassTree)::ClassTree
 
   tree = begin
@@ -872,15 +881,17 @@ function fromRecordConstructor(fields::List{<:InstNode}, out::InstNode)::ClassTr
   return tree
 end
 
-""" #= This function instantiates an expanded tree. clsNode is the class to
-       be instantiated, while instance is the instance the clsNode belongs to.
-       instance is usually the component which has the class as its type. In
-       some cases the class itself is the instance, like for the top-level
-       model that's being instantiated or packages used for lookup. Because the
-       actual instance of clsNode will then be the cloned clsNode created by
-       this function it's not possible to send in the correct instance in that
-       case, so setting the instance to an empty node is interpreted by this
-       function to mean that the instance should be set to the cloned clsNode. =#"""
+"""
+  This function instantiates an expanded tree. clsNode is the class to
+  be instantiated, while instance is the instance the clsNode belongs to.
+  instance is usually the component which has the class as its type. In
+  some cases the class itself is the instance, like for the top-level
+  model that's being instantiated or packages used for lookup. Because the
+  actual instance of clsNode will then be the cloned clsNode created by
+  this function it's not possible to send in the correct instance in that
+  case, so setting the instance to an empty node is interpreted by this
+  function to mean that the instance should be set to the cloned clsNode.
+"""
 function instantiate(
   clsNode::CLASS_NODE,
   instance::InstNode,
@@ -1099,10 +1110,12 @@ function instantiate(
   return (clsNode, instance, classCount, compCount)
 end
 
-""" #= This function adds all local and inherited class and component names to
-       the lookup tree. Note that only their names are added, the elements
-       themselves are added to their respective arrays by the instantiation
-       function below. =#"""
+"""
+  This function adds all local and inherited class and component names to
+  the lookup tree. Note that only their names are added, the elements
+  themselves are added to their respective arrays by the instantiation
+  function below.
+"""
 function expand(tree::ClassTree)::ClassTree
   local ltree::LookupTree.Tree
   local lentry::LookupTree.Entry
@@ -1171,10 +1184,12 @@ function expand(tree::ClassTree)::ClassTree
   return tree
 end
 
-""" #= Adds a list of class and/or component nodes as elements to a flat class
-       tree, in the same order as they are listed. Name conflicts will result in
-       an duplicate element error, and trying to add nodes that are not pure
-       class or component nodes will result in undefined behaviour. =#"""
+"""
+  Adds a list of class and/or component nodes as elements to a flat class
+  tree, in the same order as they are listed. Name conflicts will result in
+  an duplicate element error, and trying to add nodes that are not pure
+  class or component nodes will result in undefined behaviour.
+"""
 function addElementsToFlatTree(elements::List{<:InstNode}, tree::ClassTree)::ClassTree
   local ltree::LookupTree.Tree
   local cls_arr::Vector{InstNode}
@@ -1209,7 +1224,7 @@ function addElementsToFlatTree(elements::List{<:InstNode}, tree::ClassTree)::Cla
   return tree
 end
 
-""" #= Creates a class tree for an enumeration type. =#"""
+"""Creates a class tree for an enumeration type."""
 function fromEnumeration(
   literals::List{<:SCode.Enum},
   enumType::M_Type,
@@ -1293,7 +1308,7 @@ function fromEnumeration(
   return tree
 end
 
-""" #= Creates a new class tree from a list of SCode elements. =#"""
+"""Creates a new class tree from a list of SCode elements."""
 function fromSCode(
   elements::List{<:SCode.Element},
   isClassExtends::Bool,
@@ -1449,8 +1464,10 @@ function fromSCode(
   return tree
 end
 
-""" #= Checks that a class used as outer is valid, i.e. is a short class
-       definition with no modifier. =#"""
+"""
+  Checks that a class used as outer is valid, i.e. is a short class
+  definition with no modifier.
+"""
 function checkOuterClass(outerCls::InstNode)
   local def::SCode.ClassDef
 
@@ -1490,8 +1507,10 @@ function checkOuterClass(outerCls::InstNode)
   end
 end
 
-""" #= Looks up the corresponding inner node for the given outer node,
-       and returns an INNER_OUTER_NODE containing them both. =#"""
+"""
+  Looks up the corresponding inner node for the given outer node,
+  and returns an INNER_OUTER_NODE containing them both.
+"""
 function linkInnerOuter(outerNode::InstNode, scope::InstNode)::InstNode
   local innerOuterNode::InstNode
 
@@ -1667,8 +1686,10 @@ function enumerateDuplicates2(
   return (classes, components)
 end
 
-""" #= Returns the indices of the duplicate classes and components,
-       not including the ones that should be kept. =#"""
+"""
+  Returns the indices of the duplicate classes and components,
+  not including the ones that should be kept.
+"""
 function enumerateDuplicates(
   duplicates::DuplicateTree.Tree,
 )::Tuple{List{Int}, List{Int}}
@@ -1687,7 +1708,7 @@ function enumerateDuplicates(
   return (classes, components)
 end
 
-""" #= Joins two duplicate tree entries together. =#"""
+"""Joins two duplicate tree entries together."""
 function joinDuplicates(
   newEntry::DuplicateTree.Entry,
   oldEntry::DuplicateTree.Entry,
@@ -1977,8 +1998,10 @@ function countInheritedElements(
   return (classCount, componentCount)
 end
 
-""" #= Counts the number of classes, components and extends clauses in a list of
-       SCode elements. =#"""
+"""
+  Counts the number of classes, components and extends clauses in a list of
+  SCode elements.
+"""
 function countElements(elements::List{<:SCode.Element})::Tuple{Int, Int, Int}
   local extCount::Int = 0
   local compCount::Int = 0
@@ -2095,7 +2118,7 @@ struct ENTRY_INFO{T0 <: InstNode, T1 <: Bool}
   isImport::T1
 end
 
-""" #= Resolves a lookup tree entry to an inst node. =#"""
+"""Resolves a lookup tree entry to an inst node."""
 function resolveEntry(entry::LookupTree.Entry, tree::ClassTree)
   local isImported::Bool = false
   local element::InstNode
@@ -2138,7 +2161,7 @@ function addDuplicateConflict(
   return entry
 end
 
-""" #= Adds an entry to the duplicates tree. =#"""
+"""Adds an entry to the duplicates tree."""
 function addDuplicate(
   name::String,
   duplicateEntry::LookupTree.Entry,
@@ -2244,7 +2267,7 @@ function addImport(
   return tree
 end
 
-""" #= Conflict handler for fromEnumeration. =#"""
+"""Conflict handler for fromEnumeration."""
 function addEnumConflict(
   newEntry::LookupTree.Entry,
   oldEntry::LookupTree.Entry,
@@ -2261,8 +2284,10 @@ function addEnumConflict(
   return entry
 end
 
-""" #= Helper function to addLocalElementConflict. Looks up an entry in a
-       partial class tree. =#"""
+"""
+  Helper function to addLocalElementConflict. Looks up an entry in a
+  partial class tree.
+"""
 function findLocalConflictElement(entry::LookupTree.Entry, classTree::ClassTree)::InstNode
   local node::InstNode
 

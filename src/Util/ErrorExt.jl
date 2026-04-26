@@ -207,7 +207,7 @@ function getNumWarningMessages()::Integer
   return num
 end
 
-""" #= Returns all error messages and pops them from the message queue. =#"""
+"""Returns all error messages and pops them from the message queue."""
 function getMessages()::List{ErrorTypes.TotalMessage}
   local res::List{ErrorTypes.TotalMessage} = nil
   for m in SOURCE_MESSAGES
@@ -216,7 +216,7 @@ function getMessages()::List{ErrorTypes.TotalMessage}
   return res
 end
 
-""" #= Returns all error messages since the last checkpoint and pops them from the message queue. =#"""
+"""Returns all error messages since the last checkpoint and pops them from the message queue."""
 function getCheckpointMessages()::List{ErrorTypes.TotalMessage}
   local res::List{ErrorTypes.TotalMessage} = nil
   @warn "TODO: getCheckpointMessages not defined in the runtime"
@@ -228,28 +228,30 @@ function clearMessages()
   global CHECKPOINT_STACK = Int[]
 end
 
-""" #= Used to rollback/delete checkpoints without considering the identifier. Used to reset the error messages after a stack overflow exception. =#"""
+"""Used to rollback/delete checkpoints without considering the identifier. Used to reset the error messages after a stack overflow exception."""
 function getNumCheckpoints()::Integer
   local n::Integer = length(CHECKPOINT_STACK)
   return n
 end
 
-""" #= Used to rollback/delete checkpoints without considering the identifier. Used to reset the error messages after a stack overflow exception. =#"""
+"""Used to rollback/delete checkpoints without considering the identifier. Used to reset the error messages after a stack overflow exception."""
 function rollbackNumCheckpoints(n::Integer)
   for _ in 1:n
     rollBack("")
   end
 end
 
-""" #= Used to rollback/delete checkpoints without considering the identifier. Used to reset the error messages after a stack overflow exception. =#"""
+"""Used to rollback/delete checkpoints without considering the identifier. Used to reset the error messages after a stack overflow exception."""
 function deleteNumCheckpoints(n::Integer)
   for _ in 1:n
     delCheckpoint("")
   end
 end
 
-""" #= sets a checkpoint for the error messages, so error messages can be rolled back (i.e. deleted) up to this point
-A unique identifier for this checkpoint must be provided. It is checked when doing rollback or deletion =#"""
+"""
+  sets a checkpoint for the error messages, so error messages can be rolled back (i.e. deleted) up to this point
+  A unique identifier for this checkpoint must be provided. It is checked when doing rollback or deletion
+"""
 function setCheckpoint(id::String) #= uniqe identifier for the checkpoint (up to the programmer to guarantee uniqueness) =#
   push!(CHECKPOINT_STACK, length(SOURCE_MESSAGES))
 end
@@ -271,9 +273,11 @@ function printErrorsNoWarning()::String
   return outString
 end
 
-""" #= rolls back error messages until the latest checkpoint,
-deleting all error messages added since that point in time. A unique identifier for the checkpoint must be provided
-The application will exit with return code -1 if this identifier does not match. =#"""
+"""
+  rolls back error messages until the latest checkpoint,
+  deleting all error messages added since that point in time. A unique identifier for the checkpoint must be provided
+  The application will exit with return code -1 if this identifier does not match.
+"""
 function rollBack(id::String) #= unique identifier =#
   if !isempty(CHECKPOINT_STACK)
     n = pop!(CHECKPOINT_STACK)
@@ -281,9 +285,11 @@ function rollBack(id::String) #= unique identifier =#
   end
 end
 
-""" #= rolls back error messages until the latest checkpoint,
-returning all error messages added since that point in time. A unique identifier for the checkpoint must be provided
-The application will exit with return code -1 if this identifier does not match. =#"""
+"""
+  rolls back error messages until the latest checkpoint,
+  returning all error messages added since that point in time. A unique identifier for the checkpoint must be provided
+  The application will exit with return code -1 if this identifier does not match.
+"""
 function popCheckPoint(id::String)::List{Integer} #= unique identifier =#
   local handles::List{Integer} #= opaque pointers; you MUST pass them back or memory is leaked =#
 
@@ -291,20 +297,22 @@ function popCheckPoint(id::String)::List{Integer} #= unique identifier =#
   return handles #= opaque pointers; you MUST pass them back or memory is leaked =#
 end
 
-""" #= Pushes stored pointers back to the error stack. =#"""
+"""Pushes stored pointers back to the error stack."""
 function pushMessages(handles::List{<:Integer}) #= opaque pointers from popCheckPoint =#
   return @warn "TODO: Defined in the runtime"
 end
 
-""" #= Pushes stored pointers back to the error stack. =#"""
+"""Pushes stored pointers back to the error stack."""
 function freeMessages(handles::List{<:Integer}) #= opaque pointers from popCheckPoint =#
   return @warn "TODO: Defined in the runtime"
 end
 
-""" #= @author: adrpo
+"""
+  @author: adrpo
   This function checks if the specified checkpoint exists AT THE TOP OF THE STACK!.
   You can use it to rollBack/delete a checkpoint, but you're
-  not sure that it exists (due to MetaModelica backtracking). =#"""
+  not sure that it exists (due to MetaModelica backtracking).
+"""
 function isTopCheckpoint(id::String)::Bool #= unique identifier =#
   local isThere::Bool #= tells us if the checkpoint exists (true) or doesn't (false) =#
 
@@ -320,7 +328,7 @@ function moveMessagesToParentThread()
   return @warn "TODO: Defined in the runtime"
 end
 
-""" #= Makes assert() and other runtime assertions print to the error buffer =#"""
+"""Makes assert() and other runtime assertions print to the error buffer"""
 function initAssertionFunctions()
   return @warn "TODO: Defined in the runtime"
 end

@@ -1,10 +1,9 @@
 using PrecompileTools
-#=
-Some routine to cache more native code for this package.
-Not meant to be used by users.
-The functionality of this file is called during the precompilation phase.
-=#
-
+"""
+  Some routine to cache more native code for this package.
+  Not meant to be used by users.
+  The functionality of this file is called during the precompilation phase.
+"""
 function workload()
   @info "Precompiling builtin libraries..."
   @info "NOTE: This version of OMFrontend only supports Julia versions greater than 1.10"

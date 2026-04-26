@@ -40,7 +40,7 @@ import Pkg
 #=The directory path. Can be modified=#
 INSTALLATION_DIRECTORY_PATH = realpath(Base.find_package("OMFrontend"))
 
-#= Returns the version number of this release =#
+"""Returns the version number of this release"""
 function getVersionNr() ::String 
  "TODO"       
 end

@@ -34,9 +34,11 @@ using ExportAll
 *
 */ =#
 
-""" #= @author: adrpo
- this function will serialize anything you give it in JSON format
- and will filter out any with the names given in the filter =#"""
+"""
+  @author: adrpo
+  this function will serialize anything you give it in JSON format
+  and will filter out any with the names given in the filter
+"""
 function serialize(any::T, filter::List{String}) where {T}
   local s::String = ""
 

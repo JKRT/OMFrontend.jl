@@ -76,7 +76,7 @@ const hugeBucketSize = 536870879::Integer #= 2^29 - 33 is prime :) =#
 const defaultBucketSize = avgBucketSize::Integer
 
 
-""" #= calculate the values array size based on the bucket size =#"""
+"""calculate the values array size based on the bucket size"""
 function bucketToValuesSize(szBucket::Integer)::Integer
   local szArr::Integer
 
@@ -109,8 +109,10 @@ function emptyHashTableWork(szBucket::Integer, fntpl::FuncsTuple)::HashTable
   return hashTable
 end
 
-""" #= Add a Key-Value tuple to hashtable.
-   If the Key-Value tuple already exists, the function updates the Value. =#"""
+"""
+  Add a Key-Value tuple to hashtable.
+  If the Key-Value tuple already exists, the function updates the Value.
+"""
 function add(entry::HashEntry, hashTable::HashTable)::HashTable
   local outHashTable::HashTable
 
@@ -147,9 +149,10 @@ function add(entry::HashEntry, hashTable::HashTable)::HashTable
   return outHashTable
 end
 
-""" #=
-author: PA.
-dump statistics on how many entries per hash value. Useful to see how hash function behaves =#"""
+"""
+  author: PA.
+  dump statistics on how many entries per hash value. Useful to see how hash function behaves
+"""
 function dumpHashTableStatistics(hashTable::HashTable)
   return @assign _ = begin
     local hvec::HashVector
@@ -173,9 +176,11 @@ function dumpHashTableStatistics(hashTable::HashTable)
   end
 end
 
-""" #= Add a Key-Value tuple to hashtable, without checking if it already exists.
-   This function is thus more efficient than add if you already know that the
-   Key-Value tuple doesn't already exist in the hashtable. =#"""
+"""
+  Add a Key-Value tuple to hashtable, without checking if it already exists.
+  This function is thus more efficient than add if you already know that the
+  Key-Value tuple doesn't already exist in the hashtable.
+"""
 function addNoUpdCheck(entry::HashEntry, hashTable::HashTable)::HashTable
   local outHashTable::HashTable
 
@@ -212,7 +217,7 @@ function addNoUpdCheck(entry::HashEntry, hashTable::HashTable)::HashTable
   return outHashTable
 end
 
-""" #= Add a Key-Value tuple to hashtable. If the Key is already used it fails. =#"""
+"""Add a Key-Value tuple to hashtable. If the Key is already used it fails."""
 function addUnique(entry::HashEntry, hashTable::HashTable)::HashTable
   local outHashTable::HashTable
 
@@ -239,8 +244,10 @@ function addUnique(entry::HashEntry, hashTable::HashTable)::HashTable
   return outHashTable
 end
 
-""" #= Updates an already existing value in the hashtable. Fails if the entry does
-   not exist. =#"""
+"""
+  Updates an already existing value in the hashtable. Fails if the entry does
+  not exist.
+"""
 function update(entry::HashEntry, hashTable::HashTable)
   local varr::ValueArray
   local index::Integer
@@ -253,10 +260,12 @@ function update(entry::HashEntry, hashTable::HashTable)
   return valueArraySet(varr, index, entry)
 end
 
-""" #= Deletes the Value associatied with Key from the HashTable.
-   Note: This function does not delete from the index table, only from the
-   ValueArray. This means that a lot of deletions will not make the HashTable
-   more compact, it will still contain a lot of incices information. =#"""
+"""
+  Deletes the Value associatied with Key from the HashTable.
+  Note: This function does not delete from the index table, only from the
+  ValueArray. This means that a lot of deletions will not make the HashTable
+  more compact, it will still contain a lot of incices information.
+"""
 function delete(key::Key, hashTable::HashTable)
   local indx::Integer
   local varr::ValueArray
@@ -270,7 +279,7 @@ function delete(key::Key, hashTable::HashTable)
   return valueArrayClear(varr, indx)
 end
 
-""" #= checks if the given key is in the hashTable =#"""
+"""checks if the given key is in the hashTable"""
 function hasKey(key::Key, hashTable::HashTable)::Bool
   local b::Bool
 
@@ -281,7 +290,7 @@ function hasKey(key::Key, hashTable::HashTable)::Bool
   return b
 end
 
-""" #= Returns true if any of the keys are present in the hashtable. Stops and returns true upon first occurence =#"""
+"""Returns true if any of the keys are present in the hashtable. Stops and returns true upon first occurence"""
 function anyKeyInHashTable(keys::List{<:Key}, ht::HashTable)::Bool
   local res::Bool
 
@@ -295,7 +304,7 @@ function anyKeyInHashTable(keys::List{<:Key}, ht::HashTable)::Bool
   return res
 end
 
-""" #= Returns a Value given a Key and a HashTable. =#"""
+"""Returns a Value given a Key and a HashTable."""
 function get(key::Key, hashTable::HashTable)::Value
   local value::Value
 
@@ -309,7 +318,7 @@ function get(key::Key, hashTable::HashTable)::Value
   return value
 end
 
-""" #= help function to get and hasKey =#"""
+"""help function to get and hasKey"""
 function hasKeyIndex(key::Key, hashTable::HashTable)::Integer
   local indx::Integer
 
@@ -327,7 +336,7 @@ function hasKeyIndex(key::Key, hashTable::HashTable)::Integer
   return indx
 end
 
-""" #= Helper function to get =#"""
+"""Helper function to get"""
 function hasKeyIndex2(key::Key, keyIndices::HashNode, keyEqual::FuncEq)::Integer
   local index::Integer #= Returns -1 on failure =#
 
@@ -423,7 +432,7 @@ function dumpTuple(
   return str
 end
 
-""" #= Returns the Value entries as a list of Values. =#"""
+"""Returns the Value entries as a list of Values."""
 function hashTableValueList(hashTable::HashTable)::List{Value}
   local valLst::List{Value}
 
@@ -431,7 +440,7 @@ function hashTableValueList(hashTable::HashTable)::List{Value}
   return valLst
 end
 
-""" #= Returns the Key entries as a list of Keys. =#"""
+"""Returns the Key entries as a list of Keys."""
 function hashTableKeyList(hashTable::HashTable)::List{Key}
   local valLst::List{Key}
 
@@ -439,7 +448,7 @@ function hashTableKeyList(hashTable::HashTable)::List{Key}
   return valLst
 end
 
-""" #= Returns the entries in the hashTable as a list of HashEntries. =#"""
+"""Returns the entries in the hashTable as a list of HashEntries."""
 function hashTableList(hashTable::HashTable)::List{HashEntry}
   local outEntries::List{HashEntry}
 
@@ -450,8 +459,10 @@ function hashTableList(hashTable::HashTable)::List{HashEntry}
   return outEntries
 end
 
-""" #= Returns the entries in the hashTable as a list of HashEntries, in reverse
-   order. =#"""
+"""
+  Returns the entries in the hashTable as a list of HashEntries, in reverse
+  order.
+"""
 function hashTableListReversed(hashTable::HashTable)::List{HashEntry}
   local entries::List{HashEntry}
 
@@ -462,7 +473,7 @@ function hashTableListReversed(hashTable::HashTable)::List{HashEntry}
   return entries
 end
 
-""" #= Transforms a ValueArray to a HashEntry list. =#"""
+"""Transforms a ValueArray to a HashEntry list."""
 function valueArrayList(valueArray::ValueArray)::List{HashEntry}
   local outEntries::List{HashEntry}
 
@@ -474,8 +485,10 @@ function valueArrayList(valueArray::ValueArray)::List{HashEntry}
   return outEntries
 end
 
-""" #= Transforms a ValueArray to a HashEntry list, in reverse order compared to
-   valueArrayList. =#"""
+"""
+  Transforms a ValueArray to a HashEntry list, in reverse order compared to
+  valueArrayList.
+"""
 function valueArrayListReversed(valueArray::ValueArray)::List{HashEntry}
   local entries::List{HashEntry}
 
@@ -486,7 +499,7 @@ function valueArrayListReversed(valueArray::ValueArray)::List{HashEntry}
   return entries
 end
 
-""" #= Returns the number of elements inserted into the table =#"""
+"""Returns the number of elements inserted into the table"""
 function hashTableCurrentSize(hashTable::HashTable)::Integer
   local sz::Integer
 
@@ -497,7 +510,7 @@ function hashTableCurrentSize(hashTable::HashTable)::Integer
   return sz
 end
 
-""" #= Returns the number of elements in the ValueArray =#"""
+"""Returns the number of elements in the ValueArray"""
 function valueArrayLength(valueArray::ValueArray)::Integer
   local sz::Integer
 
@@ -505,8 +518,10 @@ function valueArrayLength(valueArray::ValueArray)::Integer
   return sz
 end
 
-""" #= Adds an entry last to the ValueArray, increasing array size if no space left
-   by factor 1.4 =#"""
+"""
+  Adds an entry last to the ValueArray, increasing array size if no space left
+  by factor 1.4
+"""
 function valueArrayAdd(valueArray::ValueArray, entry::HashEntry)::Tuple{ValueArray, Integer}
   local newpos::Integer
   local outValueArray::ValueArray
@@ -553,7 +568,7 @@ function valueArrayAdd(valueArray::ValueArray, entry::HashEntry)::Tuple{ValueArr
   return (outValueArray, newpos)
 end
 
-""" #= Set the n:th variable in the ValueArray to value. =#"""
+"""Set the n:th variable in the ValueArray to value."""
 function valueArraySet(valueArray::ValueArray, pos::Integer, entry::HashEntry)::ValueArray
   local outValueArray::ValueArray
 
@@ -586,7 +601,7 @@ function valueArraySet(valueArray::ValueArray, pos::Integer, entry::HashEntry)::
   return outValueArray
 end
 
-""" #= Clears the n:th variable in the ValueArray (set to NONE()). =#"""
+"""Clears the n:th variable in the ValueArray (set to NONE())."""
 function valueArrayClear(valueArray::ValueArray, pos::Integer)
   local arr::Array{Option{HashEntry}}
   local size::Integer
@@ -598,7 +613,7 @@ function valueArrayClear(valueArray::ValueArray, pos::Integer)
   return arrayUpdate(arr, pos, NONE())
 end
 
-""" #= Retrieve the n:th Value from ValueArray, index from 1..n. =#"""
+"""Retrieve the n:th Value from ValueArray, index from 1..n."""
 function getValueArray(valueArray::ValueArray, pos::Integer)::Tuple{Key, Value}
   local value::Value
   local key::Key
@@ -614,7 +629,7 @@ function getValueArray(valueArray::ValueArray, pos::Integer)::Tuple{Key, Value}
   return (key, value)
 end
 
-""" #= Checks if the given index exists in the value array =#"""
+"""Checks if the given index exists in the value array"""
 function valueArrayKeyIndexExists(valueArray::ValueArray, pos::Integer)::Bool
   local b::Bool
 
@@ -640,7 +655,7 @@ function valueArrayKeyIndexExists(valueArray::ValueArray, pos::Integer)::Bool
   return b
 end
 
-""" #= Makes a copy of a hashtable. =#"""
+"""Makes a copy of a hashtable."""
 function copy(inHashTable::HashTable)::HashTable
   local outCopy::HashTable
 
@@ -659,7 +674,7 @@ function copy(inHashTable::HashTable)::HashTable
   return outCopy
 end
 
-""" #= Clears the hashtable. =#"""
+"""Clears the hashtable."""
 function clear(ht::HashTable)::HashTable
 
   local hv::HashVector
@@ -694,7 +709,7 @@ function clear(ht::HashTable)::HashTable
   return ht
 end
 
-""" #= Clears a HashTable that has not been properly stored, but was known to never delete an element (making the values sequential SOME() for as long as there are elements). NOTE: Does not handle arrays that were expanded? =#"""
+"""Clears a HashTable that has not been properly stored, but was known to never delete an element (making the values sequential SOME() for as long as there are elements). NOTE: Does not handle arrays that were expanded?"""
 function clearAssumeNoDelete(ht::HashTable)
   local hv::HashVector
   local bs::Integer
@@ -751,10 +766,10 @@ function clearAssumeNoDelete(ht::HashTable)
   end
 end
 
-""" #=
+"""
   Returns an empty HashTable.
   Using the default bucketsize..
- =#"""
+"""
 function emptyHashTable()::HashTable
   local hashTable::HashTable
   hashTable = emptyHashTableSized(BaseHashTable.defaultBucketSize)

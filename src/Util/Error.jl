@@ -4403,9 +4403,11 @@ function clearCurrentComponent()
   return updateCurrentComponent(0, "", dummyInfo, dummy)
 end
 
-""" #= Function: updateCurrentComponent
-This function takes a String and set the global var to
-which the current variable the compiler is working with. =#"""
+"""
+  Function: updateCurrentComponent
+  This function takes a String and set the global var to
+  which the current variable the compiler is working with.
+"""
 function updateCurrentComponent(
   cpre::T,
   component::String,
@@ -4442,7 +4444,7 @@ function updateCurrentComponent(
   end
 end
 
-""" #= Gets the current component as a string. =#"""
+"""Gets the current component as a string."""
 function getCurrentComponent()
   local filename::String = ""
   local read_only::Bool = false
@@ -4524,7 +4526,7 @@ function addStrictMessage(
 )
 end
 
-""" #= Same as addSourceMessage, but fails after adding the error. =#"""
+"""Same as addSourceMessage, but fails after adding the error."""
 function addSourceMessageAndFail(
   inErrorMsg::ErrorTypes.Message,
   inMessageTokens::ErrorTypes.MessageTokens,
@@ -4534,9 +4536,11 @@ function addSourceMessageAndFail(
   return fail()
 end
 
-""" #= Adds an error message given the message, token and a list of file info. The
-   the last file info in the list is used for the message itself, the rest of the
-   file infos are used to print a trace of where the error came from. =#"""
+"""
+  Adds an error message given the message, token and a list of file info. The
+  the last file info in the list is used for the message itself, the rest of the
+  file infos are used to print a trace of where the error came from.
+"""
 function addMultiSourceMessage(inErrorMsg::ErrorTypes.Message,
                                inMessageTokens::ErrorTypes.MessageTokens,
                                inInfo::List{<:SourceInfo})
@@ -4567,10 +4571,12 @@ function addMultiSourceMessage(inErrorMsg::ErrorTypes.Message,
   #=  No infos given, print a sourceless error. =#
 end
 
-""" #= @author:adrpo
+"""
+  @author:adrpo
   Adds a message or a source message depending on the OPTIONAL source file info.
   If the source file info is not present a normal message is added.
-  If the source file info is present a source message is added =#"""
+  If the source file info is present a source message is added
+"""
 function addMessageOrSourceMessage(
   inErrorMsg::ErrorTypes.Message,
   inMessageTokens::ErrorTypes.MessageTokens,
@@ -4620,9 +4626,7 @@ function printMessagesStr(warningsAsErrors::Bool = false; printErrors = true)::S
   return res
 end
 
-""" #=
-  Prints errors only to a string.
- =#"""
+"""Prints errors only to a string."""
 function printErrorsNoWarning()::String
   local res::String
 
@@ -4630,7 +4634,7 @@ function printErrorsNoWarning()::String
   return res
 end
 
-""" #= Returns all messages as a list of strings, one for each message. =#"""
+"""Returns all messages as a list of strings, one for each message."""
 function printMessagesStrLst()::List{String}
   local outStringLst::List{String}
 
@@ -4644,8 +4648,10 @@ function printMessagesStrLst()::List{String}
   return outStringLst
 end
 
-""" #=  Returns all messages as a list of strings, one for each message.
-   Filters out messages of certain type. =#"""
+"""
+  Returns all messages as a list of strings, one for each message.
+  Filters out messages of certain type.
+"""
 function printMessagesStrLstType(inMessageType::ErrorTypes.MessageType)::List{String}
   local outStringLst::List{String}
 
@@ -4659,8 +4665,10 @@ function printMessagesStrLstType(inMessageType::ErrorTypes.MessageType)::List{St
   return outStringLst
 end
 
-""" #= Returns all messages as a list of strings, one for each message.
-  Filters out messages of certain severity =#"""
+"""
+  Returns all messages as a list of strings, one for each message.
+  Filters out messages of certain severity
+"""
 function printMessagesStrLstSeverity(inSeverity::ErrorTypes.Severity)::List{String}
   local outStringLst::List{String}
 
@@ -4674,12 +4682,12 @@ function printMessagesStrLstSeverity(inSeverity::ErrorTypes.Severity)::List{Stri
   return outStringLst
 end
 
-""" #= clears the message buffer =#"""
+"""clears the message buffer"""
 function clearMessages()
   ErrorExt.clearMessages()
 end
 
-""" #= Returns the number of messages in the message queue =#"""
+"""Returns the number of messages in the message queue"""
 function getNumMessages()::Integer
   local num::Integer
 
@@ -4687,29 +4695,31 @@ function getNumMessages()::Integer
   return num
 end
 
-""" #= Returns the number of messages with severity 'Error' in the message queue  =#"""
+"""Returns the number of messages with severity 'Error' in the message queue"""
 function getNumErrorMessages()::Integer
   local num::Integer
   num = ErrorExt.getNumErrorMessages()
   return num
 end
 
-""" #=
+"""
   Relations for interactive comm. These returns the messages as an array
   of strings, suitable for sending to clients like model editor, MDT, etc.
 
   Return all messages in a matrix format, vector of strings for each
-  message, written out as a string. =#"""
+  message, written out as a string.
+"""
 function getMessages()::List{ErrorTypes.TotalMessage}
   local res::List{ErrorTypes.TotalMessage}
   @assign res = ErrorExt.getMessages()
   return res
 end
 
-""" #=
+"""
   Return all messages in a matrix format, vector of strings for each
   message, written out as a string.
-  Filtered by a specific MessageType. =#"""
+  Filtered by a specific MessageType.
+"""
 function getMessagesStrType(inMessageType::ErrorTypes.MessageType)::String
   local outString::String
 
@@ -4717,10 +4727,11 @@ function getMessagesStrType(inMessageType::ErrorTypes.MessageType)::String
   return outString
 end
 
-""" #=
+"""
   Return all messages in a matrix format, vector of strings for each
   message, written out as a string.
-  Filtered by a specific MessageType. =#"""
+  Filtered by a specific MessageType.
+"""
 function getMessagesStrSeverity(inSeverity::ErrorTypes.Severity)::String
   local outString::String
   @assign outString = "not impl yet."
@@ -4782,20 +4793,17 @@ function failOnErrorMsg(inMessage::ErrorTypes.Message)
   end
 end
 
-""" #=
-  Used to make a compiler warning =#"""
+"""Used to make a compiler warning"""
 function addCompilerError(message::String)
   return addMessage(COMPILER_ERROR, list(message))
 end
 
-""" #=
-  Used to make a compiler warning =#"""
+"""Used to make a compiler warning"""
 function addCompilerWarning(message::String)
   return addMessage(COMPILER_WARNING, list(message))
 end
 
-""" #=
-  Used to make a compiler notification =#"""
+"""Used to make a compiler notification"""
 function addCompilerNotification(message::String)
   return addMessage(COMPILER_NOTIFICATION, list(message))
 end

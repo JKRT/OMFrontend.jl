@@ -384,7 +384,7 @@ function hasUnboxArgsAnnotation(cmt::SCode.Comment)::Bool
   return res
 end
 
-""" #= Returns true if the function has the __OpenModelica_UnboxArguments annotation, otherwise false. =#"""
+"""Returns true if the function has the __OpenModelica_UnboxArguments annotation, otherwise false."""
 function hasUnboxArgs(fn::M_FUNCTION)::Bool
   local res::Bool
 
@@ -900,8 +900,10 @@ function boxFunctionParameter(compNode::InstNode)
   return updateComponent!(comp, compNode)
 end
 
-""" #= Types the body of a function, along with any bindings of local variables
-     and outputs. =#"""
+"""
+  Types the body of a function, along with any bindings of local variables
+  and outputs.
+"""
 function typeFunctionBody(fn::M_FUNCTION)::M_FUNCTION
   #=  Type the bindings of the outputs and local variables. =#
   for c in fn.outputs
@@ -920,7 +922,7 @@ function typeFunctionBody(fn::M_FUNCTION)::M_FUNCTION
   return fn
 end
 
-""" #= Types a function's parameters, local components and default arguments. =#"""
+"""Types a function's parameters, local components and default arguments."""
 function typeFunctionSignature(fn::M_FUNCTION)
   local attr::DAE.FunctionAttributes
   local node::InstNode = fn.node
@@ -1435,8 +1437,10 @@ function collectArgs(slots::Vector{<:Slot}, info::SourceInfo)::Tuple{Vector{Type
   return (args, matching)
 end
 
-""" #= Looks up a slot with the given name and tries to fill it with the given
-     argument expression. =#"""
+"""
+  Looks up a slot with the given name and tries to fill it with the given
+  argument expression.
+"""
 function fillNamedArg(
   inArg::TypedNamedArg,
   slots::Vector{<:Slot},
@@ -1696,7 +1700,7 @@ function typeString(fn::M_FUNCTION)::String
   return str
 end
 
-""" #= Constructs a string representing a call, for use in error messages. =#"""
+"""Constructs a string representing a call, for use in error messages."""
 function callString(
   fn::M_FUNCTION,
   posArgs::List{<:Expression},
@@ -1733,7 +1737,7 @@ function candidateFuncListString(fns::Vector{M_Function})
   return s
 end
 
-""" #= Constructs a signature string for a function, e.g. Real func(Real x, Real y) =#"""
+"""Constructs a signature string for a function, e.g. Real func(Real x, Real y)"""
 function signatureString(fn::M_FUNCTION, printTypes::Bool = true)::String
   local str::String
 
@@ -1799,7 +1803,7 @@ function signatureString(fn::M_FUNCTION, printTypes::Bool = true)::String
   return str
 end
 
-""" #= Handles the DAE.mo structure where builtin calls are replaced by their simpler name =#"""
+"""Handles the DAE.mo structure where builtin calls are replaced by their simpler name"""
 function nameConsiderBuiltin(fn::M_FUNCTION)::Absyn.Path
   local path::Absyn.Path
 
@@ -1832,7 +1836,7 @@ function name(fn::M_FUNCTION)::Absyn.Path
   return path
 end
 
-""" #= Marks this function as collected for addition to the function tree. =#"""
+"""Marks this function as collected for addition to the function tree."""
 function collect(fn::M_FUNCTION)
   #=  The pointer might be immutable, check before assigning to it.
   =#
@@ -1841,8 +1845,10 @@ function collect(fn::M_FUNCTION)
   end
 end
 
-""" #= Returns true if this function has already been added to the function tree
-     (or shouldn't be added, e.g. if it's builtin), otherwise false. =#"""
+"""
+  Returns true if this function has already been added to the function tree
+  (or shouldn't be added, e.g. if it's builtin), otherwise false.
+"""
 function isCollected(fn::M_FUNCTION)::Bool
   local collected::Bool
   @assign collected = begin
@@ -2040,7 +2046,7 @@ function instFunction2(
   return (fnNode, specialBuiltin)
 end
 
-""" #= Instantiates the given InstNode as a function. =#"""
+"""Instantiates the given InstNode as a function."""
 function instFunctionNode(node::InstNode)::InstNode
   local cache::CachedData
   @assign cache = getFuncCache(node)
@@ -2286,8 +2292,10 @@ function checkParamTypes2(params::List{<:InstNode})
   end
 end
 
-""" #= Checks that all the function parameters have types which are allowed in a
-     function. =#"""
+"""
+  Checks that all the function parameters have types which are allowed in a
+  function.
+"""
 function checkParamTypes(fn::M_FUNCTION)
   checkParamTypes2(fn.inputs)
   checkParamTypes2(fn.outputs)
@@ -2428,7 +2436,7 @@ function commentIsInlineFunc(cmt::SCode.Comment)
   return DAE.NO_INLINE()
 end
 
-""" #= Merges the function's comments from inherited classes. =#"""
+"""Merges the function's comments from inherited classes."""
 function mergeFunctionAnnotations(comments::List{<:SCode.Comment})::SCode.Comment
   local outComment::SCode.Comment
 

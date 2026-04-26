@@ -56,10 +56,10 @@ HashSetCrefFunctionsType = Tuple
 
 HashSet = Tuple
 
-""" #=
+"""
   Returns an empty HashSet.
   Using the default bucketsize..
- =#"""
+"""
 function emptyHashSet()::HashSet
   local hashSet::HashSet
 
@@ -67,8 +67,10 @@ function emptyHashSet()::HashSet
   return hashSet
 end
 
-""" #= Returns an empty HashSet.
- Using the bucketsize size =#"""
+"""
+  Returns an empty HashSet.
+  Using the bucketsize size
+"""
 function emptyHashSetSized(size::Integer)::HashSet
   local hashSet::HashSet
 

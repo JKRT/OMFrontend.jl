@@ -91,13 +91,13 @@ end
 const EMPTY_NODE = NODE(arrayCreate(32, EMPTY()))::Node
 const EMPTY_VEC = VECTOR(EMPTY_NODE, arrayCreate(0, EMPTY()), 0, 5)::Vector
 
-""" #= Returns a new empty Vector. =#"""
+"""Returns a new empty Vector."""
 function new()::Vector
   local outVector::Vector = EMPTY_VEC
   return outVector
 end
 
-""" #= Appends a value to the end of the Vector. =#"""
+"""Appends a value to the end of the Vector."""
 function add(inVector::Vector, inValue::T)::Vector
   local outVector::Vector = inVector
 
@@ -131,9 +131,11 @@ function add(inVector::Vector, inValue::T)::Vector
   return outVector
 end
 
-""" #= Appends a list of values to the end of the Vector. This function is more
-   efficient than calling add multiple times, since it doesn't need to create a
-   new Vector for each added element. =#"""
+"""
+  Appends a list of values to the end of the Vector. This function is more
+  efficient than calling add multiple times, since it doesn't need to create a
+  new Vector for each added element.
+"""
 function addList(inVector::Vector, inList::List{<:T})::Vector
   local outVector::Vector = inVector
 
@@ -203,7 +205,7 @@ function addList(inVector::Vector, inList::List{<:T})::Vector
   return outVector
 end
 
-""" #= Returns the element at the given index. Fails if the index is out of bounds. =#"""
+"""Returns the element at the given index. Fails if the index is out of bounds."""
 function get(inVector::Vector, inIndex::Integer)::T
   local outValue::T
 
@@ -224,8 +226,10 @@ function get(inVector::Vector, inIndex::Integer)::T
   return outValue
 end
 
-""" #= Sets the element at the given index to the given value. Fails if the index is
-   out of bounds. =#"""
+"""
+  Sets the element at the given index to the given value. Fails if the index is
+  out of bounds.
+"""
 function set(inVector::Vector, inIndex::Integer, inValue::T)::Vector
   local outVector::Vector = inVector
 
@@ -253,7 +257,7 @@ function set(inVector::Vector, inIndex::Integer, inValue::T)::Vector
   return outVector
 end
 
-""" #= Returns the last value in the Vector. Fails if the Vector is empty. =#"""
+"""Returns the last value in the Vector. Fails if the Vector is empty."""
 function last(inVector::Vector)::T
   local outValue::T
 
@@ -264,7 +268,7 @@ function last(inVector::Vector)::T
   return outValue
 end
 
-""" #= Removes the last value in the Vector. Fails if the Vector is empty. =#"""
+"""Removes the last value in the Vector. Fails if the Vector is empty."""
 function pop(inVector::Vector)::Vector
   local outVector::Vector = inVector
 
@@ -325,8 +329,10 @@ function pop(inVector::Vector)::Vector
   return outVector
 end
 
-""" #= Returns a new Vector where the given function has been applied to each
-   element in sequential order. =#"""
+"""
+  Returns a new Vector where the given function has been applied to each
+  element in sequential order.
+"""
 function map(inVector::Vector, inFunc::MapFunc)::Vector
   local outVector::Vector = inVector
 
@@ -342,8 +348,10 @@ function map(inVector::Vector, inFunc::MapFunc)::Vector
   return outVector
 end
 
-""" #= Applies the given function to each element in the Vector, updating the given
-   argument as it goes along. =#"""
+"""
+  Applies the given function to each element in the Vector, updating the given
+  argument as it goes along.
+"""
 function fold(inVector::Vector, inFunc::FoldFunc, inStartValue::FT) where {FT}
   local outResult::FT
 
@@ -356,7 +364,7 @@ function fold(inVector::Vector, inFunc::FoldFunc, inStartValue::FT) where {FT}
   return outResult
 end
 
-""" #= Returns the number of elements in the Vector. =#"""
+"""Returns the number of elements in the Vector."""
 function size(inVector::Vector)::Integer
   local outSize::Integer
 
@@ -370,7 +378,7 @@ end
 =#
 @ExtendedFunction length size()
 
-""" #= Returns true if the Vector is empty, otherwise false. =#"""
+"""Returns true if the Vector is empty, otherwise false."""
 function isEmpty(inVector::Vector)::Bool
   local outIsEmpty::Bool
 
@@ -381,13 +389,13 @@ function isEmpty(inVector::Vector)::Bool
   return outIsEmpty
 end
 
-""" #= Creates a Vector from a list. =#"""
+"""Creates a Vector from a list."""
 function fromList(inList::List{<:T})::Vector
   local outVector::Vector = addList(EMPTY_VEC, inList)
   return outVector
 end
 
-""" #= Creates a list from a Vector. =#"""
+"""Creates a list from a Vector."""
 function toList(inVector::Vector)::List{T}
   local outList::List{T} = listReverse(toReversedList(inVector))
   return outList
@@ -398,13 +406,13 @@ function toReversedList(inVector::Vector)::List{T}
   return outList
 end
 
-""" #= Creates a Vector from an array. =#"""
+"""Creates a Vector from an array."""
 function fromArray(inArray::Array{<:T})::Vector
   local outVector::Vector = addList(EMPTY_VEC, arrayList(inArray))
   return outVector
 end
 
-""" #= Creates an array from a Vector. =#"""
+"""Creates an array from a Vector."""
 function toArray(inVector::Vector)::Array{T}
   local outArray::Array{T} = listArray(toList(inVector))
   return outArray
@@ -452,7 +460,7 @@ function printDebugNode(inNode::Node, inIndent::String)
   end
 end
 
-""" #= Helper function to set. =#"""
+"""Helper function to set."""
 function nodeSet(inNode::Node, inIndex::Integer, inValue::Node, inLevel::Integer)::Node
   local outNode::Node
 
@@ -475,7 +483,7 @@ function nodeSet(inNode::Node, inIndex::Integer, inValue::Node, inLevel::Integer
   return outNode
 end
 
-""" #= Helper function to add. Adds a node to the end of the tail. =#"""
+"""Helper function to add. Adds a node to the end of the tail."""
 function tailAdd(inTail::Array{<:Node}, inNode::Node)::Array{Node}
   local outTail::Array{Node}
 
@@ -489,7 +497,7 @@ function tailAdd(inTail::Array{<:Node}, inNode::Node)::Array{Node}
   return outTail
 end
 
-""" #= Helper function to add. Pushed a tail into the tree as a new node. =#"""
+"""Helper function to add. Pushed a tail into the tree as a new node."""
 function pushTail(
   inRoot::Node,
   inTail::Array{<:Node},
@@ -523,7 +531,7 @@ function pushTail(
   return (outRoot, outShift)
 end
 
-""" #= Helper function to pushTail. Does the actual pushing. =#"""
+"""Helper function to pushTail. Does the actual pushing."""
 function pushTail2(inNode::Node, inLevel::Integer, inSize::Integer, inTail::Node)::Node
   local outNode::Node
 
@@ -556,7 +564,7 @@ function pushTail2(inNode::Node, inLevel::Integer, inSize::Integer, inTail::Node
   return outNode
 end
 
-""" #= Returns a new tail array with the last element removed. =#"""
+"""Returns a new tail array with the last element removed."""
 function tailPop(inTail::Array{<:Node})::Array{Node}
   local outTail::Array{Node}
 
@@ -569,7 +577,7 @@ function tailPop(inTail::Array{<:Node})::Array{Node}
   return outTail
 end
 
-""" #= Removes the last tail added to the given node. =#"""
+"""Removes the last tail added to the given node."""
 function popTail(inNode::Node, inLevel::Integer, inSize::Integer)::Node
   local outNode::Node
 
@@ -610,7 +618,7 @@ function popTail(inNode::Node, inLevel::Integer, inSize::Integer)::Node
   return outNode
 end
 
-""" #= Returns the parent to the node with the given index. =#"""
+"""Returns the parent to the node with the given index."""
 function nodeParent(inVector::Vector, inIndex::Integer)::Node
   local outNode::Node
 
@@ -626,8 +634,10 @@ function nodeParent(inVector::Vector, inIndex::Integer)::Node
   return outNode
 end
 
-""" #= Returns the tail offset, i.e. the number of elements in the vector - the
-   number of elements in the tail. =#"""
+"""
+  Returns the tail offset, i.e. the number of elements in the vector - the
+  number of elements in the tail.
+"""
 function tailOffset(inSize::Integer)::Integer
   local outOffset::Integer = if inSize < 32
     0
@@ -637,7 +647,7 @@ function tailOffset(inSize::Integer)::Integer
   return outOffset
 end
 
-""" #= Creates a new node and sets the given node as the first child in the new node. =#"""
+"""Creates a new node and sets the given node as the first child in the new node."""
 function liftNode(inNode::Node)::Node
   local outNode::Node
 
@@ -649,7 +659,7 @@ function liftNode(inNode::Node)::Node
   return outNode
 end
 
-""" #= Creates a new path of a given length with the given node as leaf. =#"""
+"""Creates a new path of a given length with the given node as leaf."""
 function newPath(inNode::Node, inLevel::Integer)::Node
   local outNode::Node
 
@@ -661,7 +671,7 @@ function newPath(inNode::Node, inLevel::Integer)::Node
   return outNode
 end
 
-""" #= Returns true if the given node is empty, otherwise false. =#"""
+"""Returns true if the given node is empty, otherwise false."""
 function isEmptyNode(inNode::Node)::Bool
   local outIsEmpty::Bool
 
@@ -679,7 +689,7 @@ function isEmptyNode(inNode::Node)::Bool
   return outIsEmpty
 end
 
-""" #= Helper function to map, maps over a single node. =#"""
+"""Helper function to map, maps over a single node."""
 function mapNode(inNode::Node, inFunc::MapFunc)::Node
   local outNode::Node
 
@@ -701,7 +711,7 @@ function mapNode(inNode::Node, inFunc::MapFunc)::Node
   return outNode
 end
 
-""" #= Helper function to map, maps over an array of nodes. =#"""
+"""Helper function to map, maps over an array of nodes."""
 function mapNodeArray(inNodes::Array{<:Node}, inFunc::MapFunc)::Array{Node}
   local outNodes::Array{Node}
 
@@ -716,7 +726,7 @@ function mapNodeArray(inNodes::Array{<:Node}, inFunc::MapFunc)::Array{Node}
   return outNodes
 end
 
-""" #= Helper function to fold, folds over a single node. =#"""
+"""Helper function to fold, folds over a single node."""
 function foldNode(inNode::Node, inFunc::FoldFunc, inStartValue::FT) where {FT}
   local outResult::FT
 
@@ -738,7 +748,7 @@ function foldNode(inNode::Node, inFunc::FoldFunc, inStartValue::FT) where {FT}
   return outResult
 end
 
-""" #= Helper function to fold, folds over an array of nodes. =#"""
+"""Helper function to fold, folds over an array of nodes."""
 function foldNodeArray(inNodes::Array{Node}, inFunc::FoldFunc, inStartValue::FT) where {FT}
   local outResult::FT = inStartValue
 

@@ -944,8 +944,10 @@ end
 end
 
 
-""" #= Tries to fetch the binding for a given record field by using the binding of
-   the record instance. =#"""
+"""
+  Tries to fetch the binding for a given record field by using the binding of
+  the record instance.
+"""
 function getRecordElementBinding(componentVar::InstNode)::Tuple{Binding, Int}
   local parentDims::Int = 0
   local binding::Binding
@@ -1716,8 +1718,10 @@ function typeCrefDim2(@nospecialize(cref::ComponentRef),
   return (dim, error)
 end
 
-""" #= Returns the requested dimension from the given type, along with a TypingError
-   indicating whether the index was valid or not. =#"""
+"""
+  Returns the requested dimension from the given type, along with a TypingError
+  indicating whether the index was valid or not.
+"""
 function nthDimensionBoundsChecked(
   ty::NFType,
   dimIndex::Int,
@@ -3069,10 +3073,12 @@ end
   return outArg
 end
 
-""" #= Constructs a default external call for an external function. If only one
-   output exists a call 'output = func(input1, input2, ...)' is generated,
-   otherwise a call 'func(param1, param2, ...)' is generated from the function's
-   formal parameters and local variables. =#"""
+"""
+  Constructs a default external call for an external function. If only one
+  output exists a call 'output = func(input1, input2, ...)' is generated,
+  otherwise a call 'func(param1, param2, ...)' is generated from the function's
+  formal parameters and local variables.
+"""
 function makeDefaultExternalCall(extDecl::Sections, fnNode::InstNode)::Sections
    extDecl = begin
     local args::List{Expression}
@@ -3465,8 +3471,10 @@ end
   end
 end
 
-""" #= Helper function for checkConnector. Checks that a connector cref uses the
-     correct form, i.e. either c1.c2...cn or m.c. =#"""
+"""
+  Helper function for checkConnector. Checks that a connector cref uses the
+  correct form, i.e. either c1.c2...cn or m.c.
+"""
 function checkConnectorForm(cref::ComponentRef, isConnectorBool::Bool = true)::Bool
   local valid::Bool
   valid = begin

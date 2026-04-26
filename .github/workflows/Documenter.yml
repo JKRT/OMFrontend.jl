@@ -1,0 +1,108 @@
+name: Documenter
+
+on:
+  push:
+    branches:
+      - master
+    tags: '*'
+  pull_request:
+
+# Cancel in-flight doc builds when a new commit lands on the same ref.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+jobs:
+  docs:
+    name: Build and deploy documentation
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    permissions:
+      # Required to push to gh-pages.
+      contents: write
+      # Required for PR previews.
+      pull-requests: write
+      statuses: write
+
+    steps:
+      - name: Checkout OMFrontend.jl
+        uses: actions/checkout@v4
+        with:
+          path: OMFrontend.jl
+
+      # OMFrontend.jl/Project.toml uses [sources] to point at sibling working
+      # copies. We mirror the CI workflow and lay the siblings out alongside the
+      # main checkout.
+      - name: Checkout Absyn.jl
+        uses: actions/checkout@v4
+        with: { repository: OpenModelica/Absyn.jl, ref: master, path: Absyn.jl }
+
+      - name: Checkout ArrayUtil.jl
+        uses: actions/checkout@v4
+        with: { repository: JKRT/ArrayUtil.jl, ref: master, path: ArrayUtil.jl }
+
+      - name: Checkout DAE.jl
+        uses: actions/checkout@v4
+        with: { repository: JKRT/DAE.jl, ref: master, path: DAE.jl }
+
+      - name: Checkout ImmutableList.jl
+        uses: actions/checkout@v4
+        with: { repository: OpenModelica/ImmutableList.jl, ref: master, path: ImmutableList.jl }
+
+      - name: Checkout ListUtil.jl
+        uses: actions/checkout@v4
+        with: { repository: JKRT/ListUtil.jl, ref: master, path: ListUtil.jl }
+
+      - name: Checkout MetaModelica.jl
+        uses: actions/checkout@v4
+        with: { repository: OpenModelica/MetaModelica.jl, ref: master, path: MetaModelica.jl }
+
+      - name: Checkout OMParser.jl
+        uses: actions/checkout@v4
+        with: { repository: OpenModelica/OMParser.jl, ref: master, path: OMParser.jl }
+
+      - name: Checkout OMRuntimeExternalC.jl
+        uses: actions/checkout@v4
+        with: { repository: OpenModelica/OMRuntimeExternalC.jl, ref: master, path: OMRuntimeExternalC.jl }
+
+      - name: Checkout SCode.jl
+        uses: actions/checkout@v4
+        with: { repository: OpenModelica/SCode.jl, ref: master, path: SCode.jl }
+
+      - name: Setup Julia
+        uses: julia-actions/setup-julia@v2
+        with:
+          version: '1.12'
+
+      - uses: julia-actions/cache@v2
+
+      - name: Instantiate package environment
+        shell: bash
+        working-directory: OMFrontend.jl
+        run: |
+          julia --project -e '
+            import Pkg
+            Pkg.Registry.add("General")
+            Pkg.Registry.add(Pkg.RegistrySpec(url = "https://github.com/JKRT/OpenModelicaRegistry.git"))
+            Pkg.build(; verbose = true)
+            Pkg.resolve()
+          '
+
+      - name: Instantiate docs environment
+        shell: bash
+        working-directory: OMFrontend.jl
+        run: |
+          julia --project=docs -e '
+            import Pkg
+            Pkg.develop(Pkg.PackageSpec(path = pwd()))
+            Pkg.instantiate()
+          '
+
+      - name: Build (and deploy) docs
+        shell: bash
+        working-directory: OMFrontend.jl
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}
+        run: julia --project=docs --color=yes docs/make.jl

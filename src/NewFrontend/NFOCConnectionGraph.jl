@@ -589,8 +589,10 @@ function connectComponents(inPartition::NFHashTableCG.HashTable, inFlatEdge::Fla
   (outPartition, outConnectedConnections, outBrokenConnections)
 end
 
-""" #= Tries to connect two components whose canonical elements are given.
-           Helper function for connectionComponents. =#"""
+"""
+  Tries to connect two components whose canonical elements are given.
+  Helper function for connectionComponents.
+"""
 function connectCanonicalComponents(inPartition::NFHashTableCG.HashTable, inRef1::ComponentRef, inRef2::ComponentRef) ::Tuple{NFHashTableCG.HashTable, Bool}
   local outReallyConnected::Bool
   local outPartition::NFHashTableCG.HashTable
@@ -618,7 +620,7 @@ function connectCanonicalComponents(inPartition::NFHashTableCG.HashTable, inRef1
   (outPartition, outReallyConnected)
 end
 
-""" #= Adds a root the the graph. This is implemented by connecting the root to inFirstRoot element. =#"""
+"""Adds a root the the graph. This is implemented by connecting the root to inFirstRoot element."""
 function addRootsToTable(inTable::NFHashTableCG.HashTable, inRoots::List{<:ComponentRef}, inFirstRoot::ComponentRef) ::NFHashTableCG.HashTable
   local outTable::NFHashTableCG.HashTable
 
@@ -642,7 +644,7 @@ function addRootsToTable(inTable::NFHashTableCG.HashTable, inRoots::List{<:Compo
   outTable
 end
 
-""" #= Creates an initial graph with given definite roots. =#"""
+"""Creates an initial graph with given definite roots."""
 function resultGraphWithRoots(roots::List{<:ComponentRef}) ::NFHashTableCG.HashTable
   local outTable::NFHashTableCG.HashTable
 
@@ -655,7 +657,7 @@ function resultGraphWithRoots(roots::List{<:ComponentRef}) ::NFHashTableCG.HashT
   outTable
 end
 
-""" #= Adds all branches to the graph. =#"""
+"""Adds all branches to the graph."""
 function addBranchesToTable(inTable::NFHashTableCG.HashTable, inBranches::Edges) ::NFHashTableCG.HashTable
   local outTable::NFHashTableCG.HashTable
 
@@ -747,7 +749,7 @@ function addPotentialRootsToTable(inTable::NFHashTableCG.HashTable, inPotentialR
   (outTable, outRoots)
 end
 
-""" #= Adds all connections to graph. =#"""
+"""Adds all connections to graph."""
 function addConnections(inTable::NFHashTableCG.HashTable, inConnections::FlatEdges)#::Tuple{NFHashTableCG.HashTable, FlatEdges, FlatEdges}
   local outBrokenConnections::FlatEdges
   local outConnectedConnections::FlatEdges
@@ -1322,7 +1324,7 @@ function getRooted(cref1::ComponentRef, cref2::ComponentRef, rooted::NFHashTable
   result
 end
 
-""" #= return the Edge partner of a edge, fails if not found =#"""
+"""return the Edge partner of a edge, fails if not found"""
 function getEdge(cr::ComponentRef, edges::Edges) ::ComponentRef
   local ocr::ComponentRef
   ocr = begin
@@ -1343,7 +1345,7 @@ function getEdge(cr::ComponentRef, edges::Edges) ::ComponentRef
   ocr
 end
 
-""" #= return the Edge partner of a edge, fails if not found =#"""
+"""return the Edge partner of a edge, fails if not found"""
 function getEdge1(cr::ComponentRef, cref1::ComponentRef, cref2::ComponentRef) ::ComponentRef
   local ocr::ComponentRef
   ocr = begin
@@ -1361,7 +1363,7 @@ function getEdge1(cr::ComponentRef, cref1::ComponentRef, cref2::ComponentRef) ::
   ocr
 end
 
-""" #= prints the connection str =#"""
+"""prints the connection str"""
 function printConnectionStr(connectTuple::FlatEdge, ty::String) ::String
   local outStr::String
 
@@ -1427,7 +1429,7 @@ function printFlatEdges(inEdges::FlatEdges)
   end
 end
 
-""" #= Prints the content of NFOCConnectionGraph structure. =#"""
+"""Prints the content of NFOCConnectionGraph structure."""
 function printNFOCConnectionGraph(inGraph::NFOCConnectionGraph)
   @assign _ = begin
     local connections::FlatEdges
@@ -1444,7 +1446,7 @@ function printNFOCConnectionGraph(inGraph::NFOCConnectionGraph)
   end
 end
 
-""" #= Accessor for NFOCConnectionGraph.definiteRoots. =#"""
+"""Accessor for NFOCConnectionGraph.definiteRoots."""
 function getDefiniteRoots(inGraph::NFOCConnectionGraph) ::DefiniteRoots
   local outResult::DefiniteRoots
 
@@ -1459,7 +1461,7 @@ function getDefiniteRoots(inGraph::NFOCConnectionGraph) ::DefiniteRoots
   outResult
 end
 
-""" #= Accessor for NFOCConnectionGraph.uniqueRoots. =#"""
+"""Accessor for NFOCConnectionGraph.uniqueRoots."""
 function getUniqueRoots(inGraph::NFOCConnectionGraph) ::UniqueRoots
   local outResult::UniqueRoots
 
@@ -1474,7 +1476,7 @@ function getUniqueRoots(inGraph::NFOCConnectionGraph) ::UniqueRoots
   outResult
 end
 
-""" #= Accessor for NFOCConnectionGraph.potentialRoots. =#"""
+"""Accessor for NFOCConnectionGraph.potentialRoots."""
 function getPotentialRoots(inGraph::NFOCConnectionGraph) ::PotentialRoots
   local outResult::PotentialRoots
 
@@ -1489,7 +1491,7 @@ function getPotentialRoots(inGraph::NFOCConnectionGraph) ::PotentialRoots
   outResult
 end
 
-""" #= Accessor for NFOCConnectionGraph.branches. =#"""
+"""Accessor for NFOCConnectionGraph.branches."""
 function getBranches(inGraph::NFOCConnectionGraph) ::Edges
   local outResult::Edges
 
@@ -1504,7 +1506,7 @@ function getBranches(inGraph::NFOCConnectionGraph) ::Edges
   outResult
 end
 
-""" #= Accessor for NFOCConnectionGraph.connections. =#"""
+"""Accessor for NFOCConnectionGraph.connections."""
 function getConnections(inGraph::NFOCConnectionGraph) ::FlatEdges
   local outResult::FlatEdges
 
@@ -1519,7 +1521,7 @@ function getConnections(inGraph::NFOCConnectionGraph) ::FlatEdges
   outResult
 end
 
-""" #= merge two NFOCConnectionGraphs =#"""
+"""merge two NFOCConnectionGraphs"""
 function merge(inGraph1::NFOCConnectionGraph, inGraph2::NFOCConnectionGraph) ::NFOCConnectionGraph
   local outGraph::NFOCConnectionGraph
 
@@ -1582,8 +1584,7 @@ end
 
 #= /***********************************************************************************************************************/ =#
 #= /******************************************* GraphViz generation *******************************************************/ =#
-#= /***********************************************************************************************************************/ =#
-
+"""/***********************************************************************************************************************/"""
 function graphVizEdge(inEdge::Edge) ::String
   local out::String
 

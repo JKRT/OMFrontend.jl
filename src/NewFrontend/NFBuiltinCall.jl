@@ -1655,7 +1655,7 @@ function typeRootedCall(@nospecialize(call::Call), origin::ORIGIN_Type, info::So
   return (callExp, ty, var)
 end
 
-""" #= see also typeUniqueRootIndicesCall =#"""
+"""see also typeUniqueRootIndicesCall"""
 function typeUniqueRootCall(@nospecialize(call::Call), origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
   local var::VariabilityType = Variability.PARAMETER
   local ty::M_Type
@@ -1705,13 +1705,15 @@ function typeUniqueRootCall(@nospecialize(call::Call), origin::ORIGIN_Type, info
   (callExp, ty, var)
 end
 
-""" #= See Modelica_StateGraph2:
-              https:github.com/modelica/Modelica_StateGraph2
-              and
-              https:trac.modelica.org/Modelica/ticket/984
-              and
-              http:www.ep.liu.se/ecp/043/041/ecp09430108.pdf
-              for a specification of this operator =#"""
+                """
+                  See Modelica_StateGraph2:
+                  https:github.com/modelica/Modelica_StateGraph2
+                  and
+                  https:trac.modelica.org/Modelica/ticket/984
+                  and
+                  http:www.ep.liu.se/ecp/043/041/ecp09430108.pdf
+                  for a specification of this operator
+                """
                 function typeUniqueRootIndicesCall(@nospecialize(call::Call), origin::ORIGIN_Type, info::SourceInfo) ::Tuple{Expression, M_Type, VariabilityType}
                   local var::VariabilityType = Variability.PARAMETER
                   local ty::M_Type

@@ -67,7 +67,7 @@ function emptySets(setCount)
   return Sets(nodes, elements, 0)
 end
 
-""" #= Creates a new DisjointSets from a list of connection and flow variables. =#"""
+"""Creates a new DisjointSets from a list of connection and flow variables."""
 function fromConnections(connections)
   #ENV["JULIA_DEBUG"] = "" #Activate debug
 #  #@debug "fromConnections: Our connections" connections
@@ -92,7 +92,7 @@ function fromConnections(connections)
   return sets
 end
 
-""" #= Adds a single connector to the connection sets. =#"""
+"""Adds a single connector to the connection sets."""
 function addScalarConnector(conn, sets)
   sets = add(sets, conn)
   return sets
@@ -113,9 +113,7 @@ function addConnection(connection, broken, sets)
     sets = merge(conn.lhs, conn.rhs, sets);
   end
   return sets
-end #=addConnection=#
-
-
+"""end #=addConnection"""
 function addConnector(conn, sets)
   sets = addList(split(conn), sets)
   #@debug "After addConnector $(string(sets))"
@@ -130,7 +128,7 @@ function addSingleConnector(conn, sets)
   return sets
 end
 
-#= What is the definition here? =#
+"""What is the definition here?"""
 function isBroken(c1, c2, broken)::Bool
   local cr1 = name(c1)
   local cr2 = name(c2)

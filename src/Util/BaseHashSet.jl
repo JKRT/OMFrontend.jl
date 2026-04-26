@@ -97,7 +97,7 @@ const HashVector = Array
 const ValueArray = Tuple
 const FuncsTuple = Tuple
 
-""" #= calculate the values array size based on the bucket size =#"""
+"""calculate the values array size based on the bucket size"""
 function bucketToValuesSize(szBucket::Integer)::Integer
   local szArr::Integer
 
@@ -123,10 +123,10 @@ function emptyHashSetWork(szBucket::Integer, fntpl::FuncsTuple)::HashSet
   return hashSet
 end
 
-""" #=
+"""
   Add a Key to hashset.
   If the Key already exists, nothing happen.
- =#"""
+"""
 function add(entry::Key, hashSet::HashSet)::HashSet
   local outHashSet::HashSet
 
@@ -180,9 +180,11 @@ function add(entry::Key, hashSet::HashSet)::HashSet
   return outHashSet
 end
 
-""" #= Add a Key to hashset, without checking if it already exists.
-   This function is thus more efficient than add if you already know that the
-   Key doesn't already exist in the hashset. =#"""
+"""
+  Add a Key to hashset, without checking if it already exists.
+  This function is thus more efficient than add if you already know that the
+  Key doesn't already exist in the hashset.
+"""
 function addNoUpdCheck(entry::Key, hashSet::HashSet)::HashSet
   local outHashSet::HashSet
 
@@ -225,7 +227,7 @@ function addNoUpdCheck(entry::Key, hashSet::HashSet)::HashSet
   return outHashSet
 end
 
-""" #= Add a Key to hashset. If the Key is already used it fails. =#"""
+"""Add a Key to hashset. If the Key is already used it fails."""
 function addUnique(key::Key, hashSet::HashSet)::HashSet
   local outHashSet::HashSet
 
@@ -264,12 +266,12 @@ function addUnique(key::Key, hashSet::HashSet)::HashSet
   return outHashSet
 end
 
-""" #=
+"""
   delete the Key from the HashSet.
   Note: This function does not delete from the index table, only from the tuple<Integer,Integer,array<Option<Key>>>.
   This means that a lot of deletions will not make the HashSet more compact, it will still contain
   a lot of incices information.
- =#"""
+"""
 function delete(key::Key, hashSet::HashSet)::HashSet
   local outHashSet::HashSet
 
@@ -299,7 +301,7 @@ function delete(key::Key, hashSet::HashSet)::HashSet
   return outHashSet
 end
 
-""" #= Returns true if Key is in the HashSet. =#"""
+"""Returns true if Key is in the HashSet."""
 function has(key::Key, hashSet::HashSet)::Bool
   local b::Bool
 
@@ -321,7 +323,7 @@ function has(key::Key, hashSet::HashSet)::Bool
   return b
 end
 
-""" #= Returns true if all keys are in the HashSet. =#"""
+"""Returns true if all keys are in the HashSet."""
 function hasAll(keys::List{<:Key}, hashSet::HashSet)::Bool
   local b::Bool = true
 
@@ -334,7 +336,7 @@ function hasAll(keys::List{<:Key}, hashSet::HashSet)::Bool
   return b
 end
 
-""" #= Returns Key from the HashSet. Returns NONE() if not present =#"""
+"""Returns Key from the HashSet. Returns NONE() if not present"""
 function get(key::Key, hashSet::HashSet)::Option{Key}
   local okey::Option{Key}
 
@@ -342,7 +344,7 @@ function get(key::Key, hashSet::HashSet)::Option{Key}
   return okey
 end
 
-""" #= help function to get =#"""
+"""help function to get"""
 function get1(key::Key, hashSet::HashSet)::Tuple{Option{Key}, Integer}
   local indx::Integer
   local okey::Option{Key}
@@ -374,7 +376,7 @@ function get1(key::Key, hashSet::HashSet)::Tuple{Option{Key}, Integer}
   return (okey, indx)
 end
 
-""" #= Helper function to get =#"""
+"""Helper function to get"""
 function get2(
   key::Key,
   keyIndices::List{<:Tuple{<:Key, Integer}},
@@ -393,7 +395,6 @@ function get2(
   return (index, found)
 end
 
-""" #=  =#"""
 function printHashSet(hashSet::HashSet)
   local printKey::FuncKeyString
 
@@ -401,14 +402,13 @@ function printHashSet(hashSet::HashSet)
   return print(stringDelimitList(list(printKey(e) for e in hashSetList(hashSet)), "\\n"))
 end
 
-""" #=  =#"""
 function dumpHashSet(hashSet::HashSet)
   print("HashSet:\\n")
   printHashSet(hashSet)
   return print("\\n")
 end
 
-""" #= returns the entries in the hashSet as a list of Key =#"""
+"""returns the entries in the hashSet as a list of Key"""
 function hashSetList(hashSet::HashSet)::List{Key}
   local lst::List{Key}
 
@@ -423,7 +423,7 @@ function hashSetList(hashSet::HashSet)::List{Key}
   return lst
 end
 
-""" #= Transforms a ValueArray to a Key list =#"""
+"""Transforms a ValueArray to a Key list"""
 function valueArrayList(inValueArray::ValueArray)::List{Key}
   local outList::List{Key} = nil
 
@@ -442,7 +442,7 @@ function valueArrayList(inValueArray::ValueArray)::List{Key}
   return outList
 end
 
-""" #= Returns the number of elements inserted into the table =#"""
+"""Returns the number of elements inserted into the table"""
 function currentSize(hashSet::HashSet)::Integer
   local sz::Integer
 
@@ -453,7 +453,7 @@ function currentSize(hashSet::HashSet)::Integer
   return sz
 end
 
-""" #= Returns the number of elements in the ValueArray =#"""
+"""Returns the number of elements in the ValueArray"""
 function valueArrayLength(valueArray::ValueArray)::Integer
   local sz::Integer
 
@@ -461,8 +461,10 @@ function valueArrayLength(valueArray::ValueArray)::Integer
   return sz
 end
 
-""" #= Adds an entry last to the ValueArray, increasing array size if no space left
-by factor 1.4 =#"""
+"""
+  Adds an entry last to the ValueArray, increasing array size if no space left
+  by factor 1.4
+"""
 function valueArrayAdd(valueArray::ValueArray, entry::Key)::ValueArray
   local outValueArray::ValueArray
 
@@ -512,7 +514,7 @@ function valueArrayAdd(valueArray::ValueArray, entry::Key)::ValueArray
   return outValueArray
 end
 
-""" #= Set the n:th variable in the ValueArray to value. =#"""
+"""Set the n:th variable in the ValueArray to value."""
 function valueArraySetnth(valueArray::ValueArray, pos::Integer, entry::Key)::ValueArray
   local outValueArray::ValueArray
 
@@ -539,7 +541,7 @@ function valueArraySetnth(valueArray::ValueArray, pos::Integer, entry::Key)::Val
   return outValueArray
 end
 
-""" #= Clears the n:th variable in the ValueArray (set to NONE()). =#"""
+"""Clears the n:th variable in the ValueArray (set to NONE())."""
 function valueArrayClearnth(valueArray::ValueArray, pos::Integer)::ValueArray
   local outValueArray::ValueArray
 
@@ -566,7 +568,7 @@ function valueArrayClearnth(valueArray::ValueArray, pos::Integer)::ValueArray
   return outValueArray
 end
 
-""" #= Retrieve the n:th Value from ValueArray, index from 0..n-1. =#"""
+"""Retrieve the n:th Value from ValueArray, index from 0..n-1."""
 function valueArrayNth(valueArray::ValueArray, pos::Integer)::Key
   local key::Key
 
@@ -589,7 +591,7 @@ function valueArrayNth(valueArray::ValueArray, pos::Integer)::Key
   return key
 end
 
-""" #= Retrieve the n:th Value from ValueArray, index from 0..n-1. =#"""
+"""Retrieve the n:th Value from ValueArray, index from 0..n-1."""
 function valueArrayNthT(valueArray::ValueArray, pos::Integer)::Option{Key}
   local key::Option{Key}
 

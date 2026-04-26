@@ -93,9 +93,11 @@ function fixTypenameState(n::InstNode, state::LookupState)
   state
 end
 
-""" #= Looks up a component in the local scope, without searching in any enclosing
-                 scopes. The found scope is returned since it can be different from the given
-                 scope in the case where the cref refers to an outer component. =#"""
+"""
+  Looks up a component in the local scope, without searching in any enclosing
+  scopes. The found scope is returned since it can be different from the given
+  scope in the case where the cref refers to an outer component.
+"""
 function lookupLocalComponent(cref::Absyn.ComponentRef, scope::InstNode #= The scope to look in. =#, info::SourceInfo)
   local foundScope::InstNode #= The scope the cref was found in. =#
   local foundCref::ComponentRef
@@ -258,7 +260,7 @@ function lookupCref(cref::Absyn.ComponentRef,
   return foundCref
 end
 
-""" #= Looks up a cref in the local scope without going into any enclosing scopes. =#"""
+"""Looks up a cref in the local scope without going into any enclosing scopes."""
 function lookupLocalCref(cref::Absyn.ComponentRef, scope::InstNode #= The scope to look in. =#, info::SourceInfo)
   local state::LookupState
   local foundScope::InstNode #= The scope where the first part of the cref was found. =#
@@ -292,7 +294,7 @@ function lookupLocalCref(cref::Absyn.ComponentRef, scope::InstNode #= The scope 
   (foundCref, foundScope #= The scope where the first part of the cref was found. =#, state)
 end
 
-""" #= Looks up the corresponding inner node given an outer node. =#"""
+"""Looks up the corresponding inner node given an outer node."""
 function lookupInner(outerNode::InstNode, scope::InstNode)
   local innerNode::InstNode
 
@@ -483,8 +485,10 @@ function lookupLocalName(name::Absyn.Path, node::InstNode, state::LookupState, l
   node
 end
 
-""" #= Looks up a path in the given scope, without continuing the search in any
-                 enclosing scopes if the path isn't found. =#"""
+"""
+  Looks up a path in the given scope, without continuing the search in any
+  enclosing scopes if the path isn't found.
+"""
 function lookupLocalNames(name::Absyn.Path, scope::InstNode, nodes::List{InstNode}, state::LookupState, lookupStateRef::Ref{LookupState}, selfReference::Bool = false)
   local node::InstNode = scope
   if ! isClass(scope)
@@ -546,7 +550,7 @@ function lookupSimpleBuiltinCref(name::String, subs::List{T}) where {T}
   (node, cref, state)
 end
 
-""" #= This function look up a simple name as a cref in a given component. =#"""
+"""This function look up a simple name as a cref in a given component."""
 function lookupSimpleCref(crefName::String,
                           subs::List{<:Absyn.Subscript},
                           scope::InstNode,
@@ -630,8 +634,10 @@ function lookupSimpleCref(crefName::String,
   fail()
 end
 
-""" #= This function look up a simple name as a cref in a given component, without
-                 searching in any enclosing scope. =#"""
+"""
+  This function look up a simple name as a cref in a given component, without
+  searching in any enclosing scope.
+"""
 function lookupLocalSimpleCref(name::String, scope::InstNode)
   local foundScope::InstNode = scope
   local node::InstNode
@@ -689,7 +695,7 @@ function lookupIteratorNoFail(iteratorName::String, iterators::Vector{<:InstNode
   return EMPTY_NODE()
 end
 
-#= 5-arg convenience overload: wraps Ref pattern and returns tuple =#
+"""5-arg convenience overload: wraps Ref pattern and returns tuple"""
 function lookupCrefInNode(cref::Absyn.ComponentRef,
                           node::InstNode,
                           foundCref::ComponentRef,
@@ -777,10 +783,12 @@ function lookupCrefInNode(cref::Absyn.ComponentRef #=modification-040321=#,
   return foundCref
 end
 
-""" #= If given an outer node, resolves it to the corresponding inner node and
-                     collapses the given cref so that it refers to the correct node. The scope a
-                   cref is found in may also change if the inner is outside the scope found by
-                     lookupCref. =#"""
+"""
+  If given an outer node, resolves it to the corresponding inner node and
+  collapses the given cref so that it refers to the correct node. The scope a
+  cref is found in may also change if the inner is outside the scope found by
+  lookupCref.
+"""
 function resolveInnerCref(nodeVar::InstNode, cref::ComponentRef, foundScope::InstNode)
   local prev_node::InstNode
   local scope::InstNode

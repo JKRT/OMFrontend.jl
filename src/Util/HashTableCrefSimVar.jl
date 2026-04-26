@@ -59,10 +59,10 @@ import Frontend.ComponentReference
 HashTableCrefFunctionsType = Tuple
 HashTable = Tuple
 
-""" #=
+"""
   Returns an empty HashTable.
   Using the default bucketsize..
- =#"""
+"""
 function emptyHashTable()::HashTable
   local hashTable::HashTable
 
@@ -70,8 +70,10 @@ function emptyHashTable()::HashTable
   return hashTable
 end
 
-""" #= Returns an empty HashTable.
- Using the bucketsize size. =#"""
+"""
+  Returns an empty HashTable.
+  Using the bucketsize size.
+"""
 function emptyHashTableSized(size::Integer)::HashTable
   local hashTable::HashTable
 
@@ -99,7 +101,7 @@ function opaqueStr(var::SimCodeVar.SimVar)::String
   return str
 end
 
-""" #= adds SimVar to hash table inHT and returns extended hash table =#"""
+"""adds SimVar to hash table inHT and returns extended hash table"""
 function addSimVarToHashTable(simvarIn::SimCodeVar.SimVar, inHT::HashTable)::HashTable
   local outHT::HashTable
 

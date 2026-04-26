@@ -103,7 +103,7 @@
 
         import .Frontend.Error
 
-        """ #= return the name of the tree =#"""
+        """return the name of the tree"""
         function name(tree::Tree{<:Key, Val}) ::String
               local name::String
 
@@ -111,7 +111,7 @@
           name
         end
 
-        """ #= Return an empty tree with the given printing functions attached =#"""
+        """Return an empty tree with the given printing functions attached"""
         function create(name::String #= a name for this tree so you know which one it is if you have more =#, inKeyCompareFunc::FuncTypeKeyCompare, inKeyStrFuncOpt::Option{<:FuncTypeKeyToStr}, inValStrFuncOpt::Option{<:FuncTypeValToStr}, inUpdateCheckFuncOpt::Option{<:FuncTypeItemUpdateCheck}) ::Tree{Key, Val}
               local tree::Tree{Key, Val}
 
@@ -119,7 +119,7 @@
           tree
         end
 
-        """ #= returns true if you have set printing functions =#"""
+        """returns true if you have set printing functions"""
         function hasPrintingFunctions(tree::Tree{<:Key, Val}) ::Bool
               local hasPrinting::Bool
 
@@ -131,7 +131,7 @@
           hasPrinting
         end
 
-        """ #= returns true if you have set printing functions =#"""
+        """returns true if you have set printing functions"""
         function hasUpdateCheckFunction(tree::Tree{<:Key, Val}) ::Bool
               local hasUpdateCheck::Bool
 
@@ -142,7 +142,7 @@
           hasUpdateCheck
         end
 
-        """ #= return the printing function pointer for the key, fails if you haven't set any =#"""
+        """return the printing function pointer for the key, fails if you haven't set any"""
         function getUpdateCheckFunc(tree::Tree{<:Key, Val}) ::FuncTypeItemUpdateCheck
               local outUpdateCheckFunc::FuncTypeItemUpdateCheck
 
@@ -150,7 +150,7 @@
           outUpdateCheckFunc
         end
 
-        """ #= return the printing function pointer for the key, fails if you haven't set any =#"""
+        """return the printing function pointer for the key, fails if you haven't set any"""
         function getKeyCompareFunc(tree::Tree{<:Key, Val}) ::FuncTypeKeyCompare
               local outKeyCompareFunc::FuncTypeKeyCompare
 
@@ -158,7 +158,7 @@
           outKeyCompareFunc
         end
 
-        """ #= return the printing function pointer for the key, fails if you haven't set any =#"""
+        """return the printing function pointer for the key, fails if you haven't set any"""
         function getKeyToStrFunc(tree::Tree{<:Key, Val}) ::FuncTypeKeyToStr
               local outKey2StrFunc::FuncTypeKeyToStr
 
@@ -166,7 +166,7 @@
           outKey2StrFunc
         end
 
-        """ #= return the printing function pointer for the val, fails if you haven't set any =#"""
+        """return the printing function pointer for the val, fails if you haven't set any"""
         function getValToStrFunc(tree::Tree{<:Key, Val}) ::FuncTypeValToStr
               local outVal2StrFunc::FuncTypeValToStr
 
@@ -181,7 +181,7 @@
           outNode
         end
 
-        """ #= inserts a new item into the tree. =#"""
+        """inserts a new item into the tree."""
         function add(inTree::Tree{<:Key, Val}, inKey::Key, inVal::Val) ::Tree{Key, Val}
               local outTree::Tree{Key, Val}
 
@@ -216,7 +216,7 @@
           outTree
         end
 
-        """ #= Inserts a new item into the tree root node =#"""
+        """Inserts a new item into the tree root node"""
         function addNode(inTree::Tree{<:Key, Val} #= sent down so we can use the update check function =#, inNode::Node{<:Key, Val} #= the node to add item to =#, inKey::Key, inVal::Val) ::Node{Key, Val}
               local outNode::Node{Key, Val}
 
@@ -260,7 +260,7 @@
           outNode
         end
 
-        """ #= Helper function to addNode. =#"""
+        """Helper function to addNode."""
         function addNode_dispatch(inTree::Tree{<:Key, Val} #= sent down so we can use the update check function =#, inNode::Node{<:Key, Val}, inKeyComp::Integer, inKey::Key, inVal::Val) ::Node{Key, Val}
               local outNode::Node{Key, Val}
 
@@ -329,7 +329,7 @@
           outNode
         end
 
-        """ #= Get a Val from the binary tree given a key. =#"""
+        """Get a Val from the binary tree given a key."""
         function get(inTree::Tree{<:Key, Val}, inKey::Key) ::Val
               local outVal::Val
 
@@ -342,7 +342,7 @@
           outVal
         end
 
-        """ #= Get a Val from the binary tree node given a key. =#"""
+        """Get a Val from the binary tree node given a key."""
         function getNode(inTree::Tree{<:Key, Val}, inNode::Node{<:Key, Val}, inKey::Key) ::Val
               local outVal::Val
 
@@ -357,7 +357,7 @@
           outVal
         end
 
-        """ #= Helper function to getNode. =#"""
+        """Helper function to getNode."""
         function getNode_dispatch(inTree::Tree{<:Key, Val}, inNode::Node{<:Key, Val}, inKeyComp::Integer, inKey::Key) ::Val
               local outVal::Val
 
@@ -389,8 +389,10 @@
           outVal
         end
 
-        """ #= Replaces the item of an already existing node in the tree with a new item.
-         Note that the update check function is not used if replace is called! =#"""
+        """
+          Replaces the item of an already existing node in the tree with a new item.
+          Note that the update check function is not used if replace is called!
+        """
         function replace(inTree::Tree{<:Key, Val}, inKey::Key, inVal::Val) ::Tree{Key, Val}
               local outTree::Tree{Key, Val}
 
@@ -422,7 +424,7 @@
           outTree
         end
 
-        """ #= Replaces the item of an already existing node in the tree with a new value. =#"""
+        """Replaces the item of an already existing node in the tree with a new value."""
         function replaceNode(inTree::Tree{<:Key, Val} #= send down for comparison function =#, inNode::Node{<:Key, Val}, inKey::Key, inVal::Val) ::Node{Key, Val}
               local outNode::Node{Key, Val}
 
@@ -444,7 +446,7 @@
           outNode
         end
 
-        """ #= Helper function to replaceNode. =#"""
+        """Helper function to replaceNode."""
         function replaceNode_dispatch(inTree::Tree{<:Key, Val} #= send down for comparison function =#, inNode::Node{<:Key, Val}, inKeyComp::Integer, inKey::Key, inVal::Val) ::Node{Key, Val}
               local outNode::Node{Key, Val}
 
@@ -484,7 +486,7 @@
           outNode
         end
 
-        """ #= creates an empty node if the node is NO_NODE =#"""
+        """creates an empty node if the node is NO_NODE"""
         function emptyNodeIfNoNode(inNode::Node{<:Key, Val}) ::Node{Key, Val}
               local outNode::Node{Key, Val}
 
@@ -502,7 +504,7 @@
           outNode
         end
 
-        """ #= Balances an Node<Key,Val> =#"""
+        """Balances an Node<Key,Val>"""
         function balance(inNode::Node{<:Key, Val}) ::Node{Key, Val}
               local outNode::Node{Key, Val}
 
@@ -513,7 +515,7 @@
           outNode
         end
 
-        """ #= Performs balance if difference is > 1 or < -1 =#"""
+        """Performs balance if difference is > 1 or < -1"""
         function doBalance(difference::Integer, inNode::Node{<:Key, Val}) ::Node{Key, Val}
               local outNode::Node{Key, Val}
 
@@ -541,7 +543,7 @@
           outNode
         end
 
-        """ #= Help function to doBalance =#"""
+        """Help function to doBalance"""
         function doBalance2(inDiffIsNegative::Bool, inNode::Node{<:Key, Val}) ::Node{Key, Val}
               local outNode::Node{Key, Val}
 
@@ -564,7 +566,7 @@
           outNode
         end
 
-        """ #= help function to doBalance2 =#"""
+        """help function to doBalance2"""
         function doBalance3(inNode::Node{<:Key, Val}) ::Node{Key, Val}
               local outNode::Node{Key, Val}
 
@@ -589,7 +591,7 @@
           outNode
         end
 
-        """ #= Help function to doBalance2 =#"""
+        """Help function to doBalance2"""
         function doBalance4(inNode::Node{<:Key, Val}) ::Node{Key, Val}
               local outNode::Node{Key, Val}
 
@@ -614,7 +616,7 @@
           outNode
         end
 
-        """ #= set right treenode =#"""
+        """set right treenode"""
         function setRight(node::Node{<:Key, Val}, right::Node{<:Key, Val}) ::Node{Key, Val}
               local outNode::Node{Key, Val}
 
@@ -627,7 +629,7 @@
           outNode
         end
 
-        """ #= set left node =#"""
+        """set left node"""
         function setLeft(node::Node{<:Key, Val}, left::Node{<:Key, Val}) ::Node{Key, Val}
               local outNode::Node{Key, Val}
 
@@ -640,7 +642,7 @@
           outNode
         end
 
-        """ #= Retrieve the left subnode =#"""
+        """Retrieve the left subnode"""
         function leftNode(node::Node{<:Key, Val}) ::Node{Key, Val}
               local subNode::Node{Key, Val}
 
@@ -648,7 +650,7 @@
           subNode
         end
 
-        """ #= Retrieve the right subnode =#"""
+        """Retrieve the right subnode"""
         function rightNode(node::Node{<:Key, Val}) ::Node{Key, Val}
               local subNode::Node{Key, Val}
 
@@ -656,7 +658,7 @@
           subNode
         end
 
-        """ #= help function to balance =#"""
+        """help function to balance"""
         function exchangeLeft(inNode::Node{<:Key, Val}, inParent::Node{<:Key, Val}) ::Node{Key, Val}
               local outParent::Node{Key, Val} #= updated parent =#
 
@@ -670,7 +672,7 @@
           outParent #= updated parent =#
         end
 
-        """ #= help function to balance =#"""
+        """help function to balance"""
         function exchangeRight(inNode::Node{<:Key, Val}, inParent::Node{<:Key, Val}) ::Node{Key, Val}
               local outParent::Node{Key, Val} #= updated parent =#
 
@@ -684,7 +686,7 @@
           outParent #= updated parent =#
         end
 
-        """ #= help function to balance =#"""
+        """help function to balance"""
         function rotateLeft(node::Node{<:Key, Val}) ::Node{Key, Val}
               local outNode::Node{Key, Val} #= updated node =#
 
@@ -692,7 +694,7 @@
           outNode #= updated node =#
         end
 
-        """ #= help function to balance =#"""
+        """help function to balance"""
         function rotateRight(node::Node{<:Key, Val}) ::Node{Key, Val}
               local outNode::Node{Key, Val} #= updated node =#
 
@@ -700,8 +702,10 @@
           outNode #= updated node =#
         end
 
-        """ #= help function to balance, calculates the difference in height between left
-          and right child =#"""
+        """
+          help function to balance, calculates the difference in height between left
+          and right child
+        """
         function differenceInHeight(node::Node{<:Key, Val}) ::Integer
               local diff::Integer
 
@@ -713,7 +717,7 @@
           diff
         end
 
-        """ #= compute the heigth of the Tree and store in the node info =#"""
+        """compute the heigth of the Tree and store in the node info"""
         function computeHeight(inNode::Node{<:Key, Val}) ::Node{Key, Val}
               local outNode::Node{Key, Val}
 
@@ -733,7 +737,7 @@
           outNode
         end
 
-        """ #= Retrieve the height of a node =#"""
+        """Retrieve the height of a node"""
         function getHeight(bt::Node{<:Key, Val}) ::Integer
               local height::Integer
 
@@ -886,9 +890,11 @@
           outString
         end
 
-        """ #= search for a key that has val as value, fails if it cannot find it;
-         if there are multiple keys pointing to the same value only the first
-         one encountered is returned =#"""
+        """
+          search for a key that has val as value, fails if it cannot find it;
+          if there are multiple keys pointing to the same value only the first
+          one encountered is returned
+        """
         function getKeyOfVal(inTree::Tree{<:Key, Val}, inVal::Val) ::Key
               local outKey::Key
 
@@ -935,10 +941,12 @@
           outKey
         end
 
-        """ #= inserts a new item into the tree if is not there
-         and returns the new item.
-         if the key is there then it returns the already
-         exiting item and doe not update the tree. =#"""
+        """
+          inserts a new item into the tree if is not there
+          and returns the new item.
+          if the key is there then it returns the already
+          exiting item and doe not update the tree.
+        """
         function addUnique(inTree::Tree{<:Key, Val}, inKey::Key, inVal::Val) ::Tuple{Tree{Key, Val}, Item{Key, Val}}
               local outItem::Item{Key, Val}
               local outTree::Tree{Key, Val}
@@ -975,8 +983,10 @@
           (outTree, outItem)
         end
 
-        """ #= Inserts a new item into the tree root node if is not there and returns the new item.
-         if is there it returns the existing item. =#"""
+        """
+          Inserts a new item into the tree root node if is not there and returns the new item.
+          if is there it returns the existing item.
+        """
         function addNodeUnique(inTree::Tree{<:Key, Val} #= sent down so we can use the update check function =#, inNode::Node{<:Key, Val} #= the node to add item to =#, inKey::Key, inVal::Val) ::Tuple{Node{Key, Val}, Item{Key, Val}}
               local outItem::Item{Key, Val}
               local outNode::Node{Key, Val}
@@ -1024,7 +1034,7 @@
           (outNode, outItem)
         end
 
-        """ #= Helper function to addNode. =#"""
+        """Helper function to addNode."""
         function addNodeUnique_dispatch(inTree::Tree{<:Key, Val} #= sent down so we can use the update check function =#, inNode::Node{<:Key, Val}, inKeyComp::Integer, inKey::Key, inVal::Val) ::Tuple{Node{Key, Val}, Item{Key, Val}}
               local outItem::Item{Key, Val}
               local outNode::Node{Key, Val}

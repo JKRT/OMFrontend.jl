@@ -21,7 +21,7 @@ import ..@EXECSTAT
 
 using MetaModelica:FunctionWrappers
 
-#= Utility functions. =#
+"""Utility functions."""
 function toString(vec::Vector{T}) where {T}
   buffer = IOBuffer()
   println(buffer, "[")

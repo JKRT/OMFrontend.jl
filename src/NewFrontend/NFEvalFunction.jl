@@ -182,18 +182,19 @@ function evaluateExternal(fn::M_Function, args::Vector{Expression})::Expression
   return result
 end
 
-""" #= Evaluates a default record constructor call by replacing any field references
-   with the given arguments, optionally constant evaluating the resulting expression.
+"""
+  Evaluates a default record constructor call by replacing any field references
+  with the given arguments, optionally constant evaluating the resulting expression.
 
-   Example:
-     record R
-       Real x;
-       constant Real y = x / 2.0;
-       Real z;
-     end R;
+  Example:
+  record R
+  Real x;
+  constant Real y = x / 2.0;
+  Real z;
+  end R;
 
-     CALL(R, {1.0, 2.0}) => RECORD(R, {1.0, 0.5, 2.0});
-    =#"""
+  CALL(R, {1.0, 2.0}) => RECORD(R, {1.0, 0.5, 2.0});
+"""
 function evaluateRecordConstructor(
   fn::M_Function,
   ty::M_Type,
@@ -351,9 +352,11 @@ function applyReplacementsDim(repl::ReplTree.Tree, dim::Dimension)::Dimension
   return dim
 end
 
-""" #= Builds a binding for a record instance that doesn't have an explicit binding.
-   Binding expressions will be taken from the record fields when available, and
-   filled with empty expressions when not. =#"""
+"""
+  Builds a binding for a record instance that doesn't have an explicit binding.
+  Binding expressions will be taken from the record fields when available, and
+  filled with empty expressions when not.
+"""
 function buildRecordBinding(recordNode::InstNode, repl::ReplTree.Tree)::Expression
   local result::Expression
 

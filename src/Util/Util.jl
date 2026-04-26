@@ -72,19 +72,19 @@ const dummyInfo = SOURCEINFO("", false, 0, 0, 0, 0, 0.0)::SourceInfo
 
 const derivativeNamePrefix = "DER"::String
 
-""" #= Author: BZ =#"""
+"""Author: BZ"""
 function isIntGreater(lhs::Int, rhs::Int)::Bool
   local b::Bool = lhs > rhs
   return b
 end
 
-""" #= Author: BZ =#"""
+"""Author: BZ"""
 function isRealGreater(lhs::AbstractFloat, rhs::AbstractFloat)::Bool
   local b::Bool = lhs > rhs
   return b
 end
 
-""" #= If operating system is Linux/Unix, return a './', otherwise return empty string =#"""
+"""If operating system is Linux/Unix, return a './', otherwise return empty string"""
 function linuxDotSlash()::String
   local str::String
 
@@ -97,9 +97,11 @@ function linuxDotSlash()::String
   return str
 end
 
-""" #= author: x02lucpo
+"""
+  author: x02lucpo
   Extracts the flagvalue from an argument list:
-  flagValue('-s',{'-d','hej','-s','file'}) => 'file' =#"""
+  flagValue('-s',{'-d','hej','-s','file'}) => 'file'
+"""
 function flagValue(flag::String, arguments::List{<:String})::String
   local flagVal::String
 
@@ -120,8 +122,10 @@ function flagValue(flag::String, arguments::List{<:String})::String
   return flagVal
 end
 
-""" #= Selects the first non-empty string from a list of strings.
-   Returns an empty string if no such string exists. =#"""
+"""
+  Selects the first non-empty string from a list of strings.
+  Returns an empty string if no such string exists.
+"""
 function selectFirstNonEmptyString(inStrings::List{<:String})::String
   local outResult::String
 
@@ -135,9 +139,10 @@ function selectFirstNonEmptyString(inStrings::List{<:String})::String
   return outResult
 end
 
-""" #=   Function could used with List.sort to sort a
+"""
+  Function could used with List.sort to sort a
   List as list< tuple<Integer, Type_a> > by first argument.
-   =#"""
+"""
 function compareTupleIntGt(inTplA::Tuple{Integer, T}, inTplB::Tuple{Integer, T}) where {T}
   local res::Bool
 
@@ -150,9 +155,10 @@ function compareTupleIntGt(inTplA::Tuple{Integer, T}, inTplB::Tuple{Integer, T})
   return res
 end
 
-""" #=   Function could used with List.sort to sort a
+"""
+  Function could used with List.sort to sort a
   List as list< tuple<Integer, Type_a> > by first argument.
-   =#"""
+"""
 function compareTupleIntLt(inTplA::Tuple{Integer, T}, inTplB::Tuple{Integer, T}) where {T}
   local res::Bool
 
@@ -165,9 +171,10 @@ function compareTupleIntLt(inTplA::Tuple{Integer, T}, inTplB::Tuple{Integer, T})
   return res
 end
 
-""" #=   Function could used with List.sort to sort a
+"""
+  Function could used with List.sort to sort a
   List as list< tuple<Type_a,Integer> > by second argument.
-   =#"""
+"""
 function compareTuple2IntGt(inTplA::Tuple{T, Integer}, inTplB::Tuple{T, Integer}) where {T}
   local res::Bool
 
@@ -180,9 +187,10 @@ function compareTuple2IntGt(inTplA::Tuple{T, Integer}, inTplB::Tuple{T, Integer}
   return res
 end
 
-""" #=   Function could used with List.sort to sort a
+"""
+  Function could used with List.sort to sort a
   List as list< tuple<Type_a,Integer> > by second argument.
-   =#"""
+"""
 function compareTuple2IntLt(inTplA::Tuple{T, Integer}, inTplB::Tuple{T, Integer}) where {T}
   local res::Bool
 
@@ -195,8 +203,10 @@ function compareTuple2IntLt(inTplA::Tuple{T, Integer}, inTplB::Tuple{T, Integer}
   return res
 end
 
-""" #= Takes a tuple of two values and returns the first value.
-   Example: tuple21(('a', 1)) => 'a' =#"""
+"""
+  Takes a tuple of two values and returns the first value.
+  Example: tuple21(('a', 1)) => 'a'
+"""
 function tuple21(inTuple::Tuple{T1, T2}) where {T1, T2}
   local outValue::T1
 
@@ -204,8 +214,10 @@ function tuple21(inTuple::Tuple{T1, T2}) where {T1, T2}
   return outValue
 end
 
-""" #= Takes a tuple of two values and returns the second value.
-   Example: tuple22(('a',1)) => 1 =#"""
+"""
+  Takes a tuple of two values and returns the second value.
+  Example: tuple22(('a',1)) => 1
+"""
 function tuple22(inTuple::Tuple{T1, T2}) where {T1, T2}
   local outValue::T2
 
@@ -213,8 +225,10 @@ function tuple22(inTuple::Tuple{T1, T2}) where {T1, T2}
   return outValue
 end
 
-""" #= Takes an option tuple of two values and returns the second value.
-   Example: optTuple22(SOME('a',1)) => 1 =#"""
+"""
+  Takes an option tuple of two values and returns the second value.
+  Example: optTuple22(SOME('a',1)) => 1
+"""
 function optTuple22(inTuple::Option{Tuple{T1, T2}}) where {T1, T2}
   local outValue::T2
 
@@ -222,8 +236,10 @@ function optTuple22(inTuple::Option{Tuple{T1, T2}}) where {T1, T2}
   return outValue
 end
 
-""" #= Takes a tuple of three values and returns the tuple of the two first values.
-   Example: tuple312(('a',1,2)) => ('a',1) =#"""
+"""
+  Takes a tuple of three values and returns the tuple of the two first values.
+  Example: tuple312(('a',1,2)) => ('a',1)
+"""
 function tuple312(inTuple::Tuple{T1, T2, T3}) where {T1, T2, T3}
   local outTuple::Tuple{T1, T2}
 
@@ -235,8 +251,10 @@ function tuple312(inTuple::Tuple{T1, T2, T3}) where {T1, T2, T3}
   return outTuple
 end
 
-""" #= Takes a tuple of three values and returns the first value.
-   Example: tuple31(('a',1,2)) => 'a' =#"""
+"""
+  Takes a tuple of three values and returns the first value.
+  Example: tuple31(('a',1,2)) => 'a'
+"""
 function tuple31(inValue::Tuple{T1, T2, T3}) where {T1, T2, T3}
   local outValue::T1
 
@@ -244,8 +262,10 @@ function tuple31(inValue::Tuple{T1, T2, T3}) where {T1, T2, T3}
   return outValue
 end
 
-""" #= Takes a tuple of three values and returns the second value.
-   Example: tuple32(('a',1,2)) => 1 =#"""
+"""
+  Takes a tuple of three values and returns the second value.
+  Example: tuple32(('a',1,2)) => 1
+"""
 function tuple32(inValue::Tuple{T1, T2, T3}) where {T1, T2, T3}
   local outValue::T2
 
@@ -253,8 +273,10 @@ function tuple32(inValue::Tuple{T1, T2, T3}) where {T1, T2, T3}
   return outValue
 end
 
-""" #= Takes a tuple of three values and returns the first value.
-   Example: tuple33(('a',1,2)) => 2 =#"""
+"""
+  Takes a tuple of three values and returns the first value.
+  Example: tuple33(('a',1,2)) => 2
+"""
 function tuple33(inValue::Tuple{T1, T2, T3}) where {T1, T2, T3}
   local outValue::T3
 
@@ -339,7 +361,7 @@ function tuple62(inTuple::Tuple{T1, T2, T3, T4, T5, T6}) where {T1, T2, T3, T4, 
   return outValue
 end
 
-""" #= Returns true if a string contains a specified character =#"""
+"""Returns true if a string contains a specified character"""
 function stringContainsChar(str::String, char::String)::Bool
   local res::Bool
 
@@ -358,11 +380,11 @@ function stringContainsChar(str::String, char::String)::Bool
   return res
 end
 
-""" #=
-Author: BZ, 2009-11
-Same functionality as stringDelimitListPrint, but writes to print buffer instead of string variable.
-Usefull for heavy string operations(causes malloc error on some models when generating init file).
- =#"""
+"""
+  Author: BZ, 2009-11
+  Same functionality as stringDelimitListPrint, but writes to print buffer instead of string variable.
+  Usefull for heavy string operations(causes malloc error on some models when generating init file).
+"""
 function stringDelimitListPrintBuf(inStringLst::List{<:String}, inDelimiter::String)
   return  _ = begin
     local f::String
@@ -391,16 +413,18 @@ function stringDelimitListPrintBuf(inStringLst::List{<:String}, inDelimiter::Str
   end
 end
 
-""" #= Like print. However, adds a linebreak to the output. =#"""
+"""Like print. However, adds a linebreak to the output."""
 function println(str::String)
   return print(str + "\\n")
 end
 
-""" #= author: PA
+"""
+  author: PA
   This function is similar to stringDelimitList, i.e it inserts string delimiters between
   consecutive strings in a list. But it also count the lists and inserts a second string delimiter
   when the counter is reached. This can be used when for instance outputting large lists of values
-  and a newline is needed after ten or so items. =#"""
+  and a newline is needed after ten or so items.
+"""
 function stringDelimitListAndSeparate(
   str::List{<:String},
   sep1::String,
@@ -418,8 +442,10 @@ function stringDelimitListAndSeparate(
   return res
 end
 
-""" #= author: PA
-  Helper function to stringDelimitListAndSeparate =#"""
+"""
+  author: PA
+  Helper function to stringDelimitListAndSeparate
+"""
 function stringDelimitListAndSeparate2(
   inStringLst1::List{<:String},
   inString2::String,
@@ -482,8 +508,10 @@ function stringDelimitListAndSeparate2(
   #= /* iterator */ =#
 end
 
-""" #= the string delimiter inserted between those elements that are not empty.
-  Example: stringDelimitListNonEmptyElts({\\\"x\\\",\\\"\\\",\\\"z\\\"}, \\\", \\\") => \\\"x, z\\\" =#"""
+"""
+  the string delimiter inserted between those elements that are not empty.
+  Example: stringDelimitListNonEmptyElts({\\\"x\\\",\\\"\\\",\\\"z\\\"}, \\\", \\\") => \\\"x, z\\\"
+"""
 function stringDelimitListNonEmptyElts(lst::List{<:String}, delim::String)::String
   local str::String
 
@@ -494,8 +522,7 @@ function stringDelimitListNonEmptyElts(lst::List{<:String}, delim::String)::Stri
   return str
 end
 
-""" #=  splits the input string at the delimiter string in list of strings and converts to integer list which is then summarized
-   =#"""
+"""splits the input string at the delimiter string in list of strings and converts to integer list which is then summarized"""
 function mulStringDelimit2Int(inString::String, delim::String)::Int
   local i::Int
 
@@ -512,12 +539,13 @@ function mulStringDelimit2Int(inString::String, delim::String)::Int
   return i
 end
 
-""" #= Takes a string and two chars and replaces the first char with the second char:
+"""
+  Takes a string and two chars and replaces the first char with the second char:
   Example: string_replace_char(\\\"hej.b.c\\\",\\\".\\\",\\\"_\\\") => \\\"hej_b_c\\\"
   2007-11-26 BZ: Now it is possible to replace chars with emptychar, and
-                 replace a char with a string
+  replace a char with a string
   Example: string_replace_char(\\\"hej.b.c\\\",\\\".\\\",\\\"_dot_\\\") => \\\"hej_dot_b_dot_c\\\"
-   =#"""
+"""
 function stringReplaceChar(inString1::String, inString2::String, inString3::String)::String
   local outString::String
 
@@ -525,8 +553,10 @@ function stringReplaceChar(inString1::String, inString2::String, inString3::Stri
   return outString
 end
 
-""" #= Takes a string and a char and split the string at the char returning the list of components.
-  Example: stringSplitAtChar(\\\"hej.b.c\\\",\\\".\\\") => {\\\"hej,\\\"b\\\",\\\"c\\\"} =#"""
+"""
+  Takes a string and a char and split the string at the char returning the list of components.
+  Example: stringSplitAtChar(\\\"hej.b.c\\\",\\\".\\\") => {\\\"hej,\\\"b\\\",\\\"c\\\"}
+"""
 function stringSplitAtChar(string::String, token::String)::List{String}
   local strings::List{String} = nil
 
@@ -548,9 +578,11 @@ function stringSplitAtChar(string::String, token::String)::List{String}
   return strings
 end
 
-""" #= Example:
-    boolOrList({true,false,false})  => true
-    boolOrList({false,false,false}) => false =#"""
+"""
+  Example:
+  boolOrList({true,false,false})  => true
+  boolOrList({false,false,false}) => false
+"""
 function boolOrList(inBooleanLst::List{<:Bool})::Bool
   local outBoolean::Bool = false
 
@@ -563,11 +595,13 @@ function boolOrList(inBooleanLst::List{<:Bool})::Bool
   return outBoolean
 end
 
-""" #= Takes a list of boolean values and applies the boolean AND operator on the elements
+"""
+  Takes a list of boolean values and applies the boolean AND operator on the elements
   Example:
   boolAndList({}) => true
   boolAndList({true, true}) => true
-  boolAndList({false,false,true}) => false =#"""
+  boolAndList({false,false,true}) => false
+"""
 function boolAndList(inBooleanLst::List{<:Bool})::Bool
   local outBoolean::Bool = true
 
@@ -580,13 +614,14 @@ function boolAndList(inBooleanLst::List{<:Bool})::Bool
   return outBoolean
 end
 
-""" #= Takes an option value and a function over the value. It returns in another
-   option value, resulting from the application of the function on the value.
+"""
+  Takes an option value and a function over the value. It returns in another
+  option value, resulting from the application of the function on the value.
 
-   Example:
-     applyOption(SOME(1), intString) => SOME(\\\"1\\\")
-     applyOption(NONE(),  intString) => NONE()
-   =#"""
+  Example:
+  applyOption(SOME(1), intString) => SOME(\\\"1\\\")
+  applyOption(NONE(),  intString) => NONE()
+"""
 function applyOption(inOption::Option{TI}, inFunc::FuncType) where {TI}
   local outOption::Option
 
@@ -606,7 +641,7 @@ function applyOption(inOption::Option{TI}, inFunc::FuncType) where {TI}
   return outOption
 end
 
-""" #= Like applyOption but takes an additional argument =#"""
+"""Like applyOption but takes an additional argument"""
 function applyOption1(
   inOption::Option{TI},
   inFunc::FuncType,
@@ -628,9 +663,11 @@ function applyOption1(
   return outOption
 end
 
-""" #= Takes an optional value, a function and an extra value. If the optional value
-   is SOME, applies the function on that value and returns the result.
-   Otherwise returns the extra value. =#"""
+"""
+  Takes an optional value, a function and an extra value. If the optional value
+  is SOME, applies the function on that value and returns the result.
+  Otherwise returns the extra value.
+"""
 function applyOptionOrDefault(
   inValue::Option{TI},
   inFunc::FuncType,
@@ -654,9 +691,11 @@ function applyOptionOrDefault(
   return outValue
 end
 
-""" #= Takes an optional value, a function, an extra argument and an extra value.
-   If the optional value is SOME, applies the function on that value and the
-   extra argument and returns the result. Otherwise returns the extra value. =#"""
+"""
+  Takes an optional value, a function, an extra argument and an extra value.
+  If the optional value is SOME, applies the function on that value and the
+  extra argument and returns the result. Otherwise returns the extra value.
+"""
 function applyOptionOrDefault1(
   inValue::Option{TI},
   inFunc::FuncType,
@@ -681,9 +720,11 @@ function applyOptionOrDefault1(
   return outValue
 end
 
-""" #= Takes an optional value, a function, two extra arguments and an extra value.
-   If the optional value is SOME, applies the function on that value and the
-   extra argument and returns the result. Otherwise returns the extra value. =#"""
+"""
+  Takes an optional value, a function, two extra arguments and an extra value.
+  If the optional value is SOME, applies the function on that value and the
+  extra argument and returns the result. Otherwise returns the extra value.
+"""
 function applyOptionOrDefault2(
   inValue::Option{TI},
   inFunc::FuncType,
@@ -730,7 +771,7 @@ function applyOption_2(inValue1::Option{T}, inValue2::Option{T}, inFunc::FuncTyp
   return outValue
 end
 
-""" #= Makes a value into value option, using SOME(value) =#"""
+"""Makes a value into value option, using SOME(value)"""
 function makeOption(inValue::T) where {T}
   local outOption::Option{T} = SOME(inValue)
   return outOption
@@ -754,8 +795,10 @@ function makeQuotedIdentifier(str::String)
   qi = string("'", qi, "'")
 end
 
-""" #= author: PA
-  Returns string value or empty string from string option. =#"""
+"""
+  author: PA
+  Returns string value or empty string from string option.
+"""
 function stringOption(inStringOption::Option{<:String})::String
   local outString::String
 
@@ -781,7 +824,7 @@ function getOption(inOption::Option{T}) where {T}
   return outValue
 end
 
-""" #= Returns an option value if SOME, otherwise the default =#"""
+"""Returns an option value if SOME, otherwise the default"""
 function getOptionOrDefault(inOption::Option{T}, inDefault::T) where {T}
   local outValue::T
 
@@ -800,19 +843,19 @@ function getOptionOrDefault(inOption::Option{T}, inDefault::T) where {T}
   return outValue
 end
 
-""" #= Returns true if integer value is greater zero (> 0) =#"""
+"""Returns true if integer value is greater zero (> 0)"""
 function intGreaterZero(v::Int)::Bool
   local res::Bool = v > 0
   return res
 end
 
-""" #= Returns true if integer value is positive (>= 0) =#"""
+"""Returns true if integer value is positive (>= 0)"""
 function intPositive(v::Int)::Bool
   local res::Bool = v >= 0
   return res
 end
 
-""" #= Returns true if integer value is negative (< 0) =#"""
+"""Returns true if integer value is negative (< 0)"""
 function intNegative(v::Int)::Bool
   local res::Bool = v < 0
   return res
@@ -829,8 +872,10 @@ function intSign(i::Int)::Int
   return o
 end
 
-""" #= Compares two integers and return -1 if the first is smallest, 1 if the second
-   is smallest, or 0 if they are equal. =#"""
+"""
+  Compares two integers and return -1 if the first is smallest, 1 if the second
+  is smallest, or 0 if they are equal.
+"""
 function intCompare(inN::Int, inM::Int)::Int
   local outResult::Int =
     if inN == inM
@@ -843,7 +888,7 @@ function intCompare(inN::Int, inM::Int)::Int
   return outResult
 end
 
-""" #= Performs integer exponentiation. =#"""
+"""Performs integer exponentiation."""
 function intPow(base::Int, exponent::Int)::Int
   local result::Int = 1
 
@@ -857,8 +902,10 @@ function intPow(base::Int, exponent::Int)::Int
   return result
 end
 
-""" #= Compares two reals and return -1 if the first is smallest, 1 if the second
-   is smallest, or 0 if they are equal. =#"""
+"""
+  Compares two reals and return -1 if the first is smallest, 1 if the second
+  is smallest, or 0 if they are equal.
+"""
 function realCompare(inN::AbstractFloat, inM::AbstractFloat)::Int
   local outResult::Int = if inN == inM
     0
@@ -870,8 +917,10 @@ function realCompare(inN::AbstractFloat, inM::AbstractFloat)::Int
   return outResult
 end
 
-""" #= Compares two booleans and return -1 if the first is smallest, 1 if the second
-   is smallest, or 0 if they are equal. =#"""
+"""
+  Compares two booleans and return -1 if the first is smallest, 1 if the second
+  is smallest, or 0 if they are equal.
+"""
 function boolCompare(inN::Bool, inM::Bool)::Int
   local outResult::Int = if inN == inM
     0
@@ -883,14 +932,16 @@ function boolCompare(inN::Bool, inM::Bool)::Int
   return outResult
 end
 
-""" #= Returns true if string is not the empty string. =#"""
+"""Returns true if string is not the empty string."""
 function isNotEmptyString(inString::String)::Bool
   local outIsNotEmpty::Bool = stringLength(inString) > 0
   return outIsNotEmpty
 end
 
-""" #= This function tries to write to a file and if it fails then it
-  outputs \\\"# Cannot write to file: <filename>.\\\" to errorBuf =#"""
+"""
+  This function tries to write to a file and if it fails then it
+  outputs \\\"# Cannot write to file: <filename>.\\\" to errorBuf
+"""
 function writeFileOrErrorMsg(inFilename::String, inString::String)
   return try
     System.writeFile(inFilename, inString)
@@ -906,8 +957,10 @@ function stringStartsWith(inString1::String, inString2::String)::Bool
   return outEqual
 end
 
-""" #= Compare two strings up to the nth character
-  Returns true if they are equal. =#"""
+"""
+  Compare two strings up to the nth character
+  Returns true if they are equal.
+"""
 function strncmp(inString1::String, inString2::String, inLength::Int)::Bool
   local outEqual::Bool
 
@@ -915,8 +968,10 @@ function strncmp(inString1::String, inString2::String, inLength::Int)::Bool
   return outEqual
 end
 
-""" #= Compares two strings up to the nth character. Returns true if they are not
-  equal. =#"""
+"""
+  Compares two strings up to the nth character. Returns true if they are not
+  equal.
+"""
 function notStrncmp(inString1::String, inString2::String, inLength::Int)::Bool
   local outEqual::Bool
 
@@ -924,15 +979,19 @@ function notStrncmp(inString1::String, inString2::String, inLength::Int)::Bool
   return outEqual
 end
 
-""" #= author: PA
-  Returns tick as a string, i.e. an unique number. =#"""
+"""
+  author: PA
+  Returns tick as a string, i.e. an unique number.
+"""
 function tickStr()::String
   local s::String = intString(tick())
   return s
 end
 
-""" #= @author: adrpo
- replace \\\\ with path delimiter only in Windows! =#"""
+"""
+  @author: adrpo
+  replace \\\\ with path delimiter only in Windows!
+"""
 function replaceWindowsBackSlashWithPathDelimiter(inPath::String)::String
   local outPath::String
 
@@ -944,10 +1003,12 @@ function replaceWindowsBackSlashWithPathDelimiter(inPath::String)::String
   return outPath
 end
 
-""" #= author: x02lucpo
+"""
+  author: x02lucpo
   splits the filepath in directory and filename
   (\\\"c:\\\\programs\\\\file.mo\\\") => (\\\"c:\\\\programs\\\",\\\"file.mo\\\")
-  (\\\"..\\\\work\\\\file.mo\\\") => (\\\"c:\\\\openmodelica123\\\\work\\\", \\\"file.mo\\\") =#"""
+  (\\\"..\\\\work\\\\file.mo\\\") => (\\\"c:\\\\openmodelica123\\\\work\\\", \\\"file.mo\\\")
+"""
 function getAbsoluteDirectoryAndFile(filename::String)::Tuple{String, String}
   local basename::String
   local dirname::String
@@ -961,8 +1022,10 @@ function getAbsoluteDirectoryAndFile(filename::String)::Tuple{String, String}
   return (dirname, basename)
 end
 
-""" #= author: x02lucpo
-  replace the double-backslash with backslash =#"""
+"""
+  author: x02lucpo
+  replace the double-backslash with backslash
+"""
 function rawStringToInputString(inString::String)::String
   local outString::String
 
@@ -1055,24 +1118,24 @@ end
 
 const StatefulBoolean = Array  #= A single boolean value that can be updated (a destructive operation). NOTE: Use Mutable<Boolean> instead. This implementation is kept since Susan cannot use that type. =#
 
-""" #= Create a boolean with state (that is, it is mutable) =#"""
+"""Create a boolean with state (that is, it is mutable)"""
 function makeStatefulBoolean(b::Bool)::StatefulBoolean
   local sb::StatefulBoolean = arrayCreate(1, b)
   return sb
 end
 
-""" #= Create a boolean with state (that is, it is mutable) =#"""
+"""Create a boolean with state (that is, it is mutable)"""
 function getStatefulBoolean(sb::StatefulBoolean)::Bool
   local b::Bool = sb[1]
   return b
 end
 
-""" #= Update the state of a mutable boolean =#"""
+"""Update the state of a mutable boolean"""
 function setStatefulBoolean(sb::StatefulBoolean, b::Bool)
   return arrayUpdate(sb, 1, b)
 end
 
-""" #= Takes two options and a function to compare the type. =#"""
+"""Takes two options and a function to compare the type."""
 function optionEqual(
   inOption1::Option{T1},
   inOption2::Option{T2},
@@ -1100,7 +1163,7 @@ function optionEqual(
   return outEqual
 end
 
-""" #= Returns the value if the function call succeeds, otherwise the default =#"""
+"""Returns the value if the function call succeeds, otherwise the default"""
 function makeValueOrDefault(inFunc::FuncType, inArg::TI, inDefaultValue::TO) where {TI, TO}
   local outValue::TO
 
@@ -1112,7 +1175,7 @@ function makeValueOrDefault(inFunc::FuncType, inArg::TI, inDefaultValue::TO) whe
   return outValue
 end
 
-""" #= Escapes a String so that it can be used in xml =#"""
+"""Escapes a String so that it can be used in xml"""
 function xmlEscape(s1::String)::String
   local s2::String
 
@@ -1123,14 +1186,16 @@ function xmlEscape(s1::String)::String
   return s2
 end
 
-""" #= As strcmp, but has Boolean output as is expected by the sort function =#"""
+"""As strcmp, but has Boolean output as is expected by the sort function"""
 function strcmpBool(s1::String, s2::String)::Bool
   local b::Bool = stringCompare(s1, s2) > 0
   return b
 end
 
-""" #= @author: adrpo
-  This function will append the first string to the second string =#"""
+"""
+  @author: adrpo
+  This function will append the first string to the second string
+"""
 function stringAppendReverse(str1::String, str2::String)::String
   local str::String = stringAppend(str2, str1)
   return str
@@ -1190,8 +1255,10 @@ function id(inValue::T) where {T}
   return outValue
 end
 
-""" #= Takes two lists of the same type and builds a string like x = val1, y = val2, ....
-  Example: listThread({1,2,3},{4,5,6},'=',',') => 1=4, 2=5, 3=6 =#"""
+"""
+  Takes two lists of the same type and builds a string like x = val1, y = val2, ....
+  Example: listThread({1,2,3},{4,5,6},'=',',') => 1=4, 2=5, 3=6
+"""
 function buildMapStr(
   inLst1::List{<:String},
   inLst2::List{<:String},
@@ -1228,10 +1295,12 @@ function buildMapStr(
   return outStr
 end
 
-""" #= assoc(key,lst) => value, where lst is a tuple of (key,value) pairs.
+"""
+  assoc(key,lst) => value, where lst is a tuple of (key,value) pairs.
   Does linear search using equality(). This means it is slow for large
   inputs (many elements or large elements); if you have large inputs, you
-  should use a hash-table instead. =#"""
+  should use a hash-table instead.
+"""
 function assoc(inKey::Key, inList::List{Tuple{Key, Val}}) where {Key, Val}
   local outValue::Val
 
@@ -1247,7 +1316,7 @@ function assoc(inKey::Key, inList::List{Tuple{Key, Val}}) where {Key, Val}
   return outValue
 end
 
-""" #= Returns 1 if the given boolean is true, otherwise 0. =#"""
+"""Returns 1 if the given boolean is true, otherwise 0."""
 function boolInt(inBoolean::Bool)::Int
   local outInteger::Int = if inBoolean
     1
@@ -1257,14 +1326,16 @@ function boolInt(inBoolean::Bool)::Int
   return outInteger
 end
 
-""" #= Returns true if the given integer is larger than 0, otherwise false. =#"""
+"""Returns true if the given integer is larger than 0, otherwise false."""
 function intBool(inInteger::Int)::Bool
   local outBoolean::Bool = inInteger > 0
   return outBoolean
 end
 
-""" #= Converts a string to a boolean value. true and yes is converted to true,
-  false and no is converted to false. The function is case-insensitive. =#"""
+"""
+  Converts a string to a boolean value. true and yes is converted to true,
+  false and no is converted to false. The function is case-insensitive.
+"""
 function stringBool(inString::String)::Bool
   local outBoolean::Bool
 
@@ -1272,7 +1343,7 @@ function stringBool(inString::String)::Bool
   return outBoolean
 end
 
-""" #= Helper function to stringBool. =#"""
+"""Helper function to stringBool."""
 function stringBool2(inString::String)::Bool
   local outBoolean::Bool
 
@@ -1305,8 +1376,10 @@ function stringEqCaseInsensitive(str1::String, str2::String)::Bool
   return eq
 end
 
-""" #= SOME(a) => {a}
-   NONE()  => {} =#"""
+"""
+  SOME(a) => {a}
+  NONE()  => {}
+"""
 function optionList(inOption::Option{T}) where {T}
   local outList::List{T}
 
@@ -1325,9 +1398,11 @@ function optionList(inOption::Option{T}) where {T}
   return outList
 end
 
-""" #=  @author johti17:
-    {SOME(1), NONE, SOME(2)} => {1, 2}
-    {NONE} => {} =#"""
+"""
+  @author johti17:
+  {SOME(1), NONE, SOME(2)} => {1, 2}
+  {NONE} => {}
+"""
 function listOfOptionToList(inOptLst::List{Option{T}}) where {T}
   local outLst::List{T}
 
@@ -1335,9 +1410,11 @@ function listOfOptionToList(inOptLst::List{Option{T}}) where {T}
   return outLst
 end
 
-""" #= Pads a string with the given padding so that the resulting string is as long
-   as the given width. If the string is already longer nothing is done to it.
-   Note that the length of the padding is assumed to be one, i.e. a single char. =#"""
+"""
+  Pads a string with the given padding so that the resulting string is as long
+  as the given width. If the string is already longer nothing is done to it.
+  Note that the length of the padding is assumed to be one, i.e. a single char.
+"""
 function stringPadRight(inString::String, inPadWidth::Int, inPadString::String)::String
   local outString::String
 
@@ -1354,9 +1431,11 @@ function stringPadRight(inString::String, inPadWidth::Int, inPadString::String):
   return outString
 end
 
-""" #= Pads a string with the given padding so that the resulting string is as long
-   as the given width. If the string is already longer nothing is done to it.
-   Note that the length of the padding is assumed to be one, i.e. a single char. =#"""
+"""
+  Pads a string with the given padding so that the resulting string is as long
+  as the given width. If the string is already longer nothing is done to it.
+  Note that the length of the padding is assumed to be one, i.e. a single char.
+"""
 function stringPadLeft(inString::String, inPadWidth::Int, inPadString::String)::String
   local outString::String
 
@@ -1373,7 +1452,7 @@ function stringPadLeft(inString::String, inPadWidth::Int, inPadString::String)::
   return outString
 end
 
-""" #= Returns all but the first character of a string. =#"""
+"""Returns all but the first character of a string."""
 function stringRest(inString::String)::String
   local outRest::String
 
@@ -1389,12 +1468,14 @@ function intProduct(lst::List{<:Integer})::Int
   return i
 end
 
-""" #= Given a positive integer, returns the closest prime number that is equal or
-   larger. This algorithm checks every odd number larger than the given number
-   until it finds a prime, but since the distance between primes is relatively
-   small (the largest gap between primes up to 32 bit is only around 300) it's
-   still reasonably fast. It's useful for e.g. determining a good size for a
-   hash table with a known number of elements. =#"""
+"""
+  Given a positive integer, returns the closest prime number that is equal or
+  larger. This algorithm checks every odd number larger than the given number
+  until it finds a prime, but since the distance between primes is relatively
+  small (the largest gap between primes up to 32 bit is only around 300) it's
+  still reasonably fast. It's useful for e.g. determining a good size for a
+  hash table with a known number of elements.
+"""
 function nextPrime(inN::Int)::Int
   local outNextPrime::Int
 
@@ -1406,8 +1487,10 @@ function nextPrime(inN::Int)::Int
   return outNextPrime
 end
 
-""" #= Helper function to nextPrime2, does the actual work of finding the next
-   prime. =#"""
+"""
+  Helper function to nextPrime2, does the actual work of finding the next
+  prime.
+"""
 function nextPrime2(inN::Int)::Int
   local outNextPrime::Int
 
@@ -1419,9 +1502,11 @@ function nextPrime2(inN::Int)::Int
   return outNextPrime
 end
 
-""" #= Helper function to nextPrime2, checks if a given number is a prime or not.
-   Note that this function is not a general prime checker, it only works for
-   positive odd numbers. =#"""
+"""
+  Helper function to nextPrime2, checks if a given number is a prime or not.
+  Note that this function is not a general prime checker, it only works for
+  positive odd numbers.
+"""
 function nextPrime_isPrime(inN::Int)::Bool
   local outIsPrime::Bool
 
@@ -1446,7 +1531,7 @@ function nextPrime_isPrime(inN::Int)::Bool
   return outIsPrime
 end
 
-""" #= Useful if you do not want to write an unparser =#"""
+"""Useful if you do not want to write an unparser"""
 function anyToEmptyString(a::T) where {T}
   local empty::String = ""
   return empty
@@ -1501,7 +1586,7 @@ function replace(replaced::T, arg::T) where {T}
   return outArg
 end
 
-""" #= Calculates the size of a Real range given the start, step and stop values. =#"""
+"""Calculates the size of a Real range given the start, step and stop values."""
 function realRangeSize(
   inStart::AbstractFloat,
   inStep::AbstractFloat,
@@ -1561,7 +1646,7 @@ function createDirectoryTree(inString::String)::Bool
   return outBool
 end
 
-""" #= Rounds up to the nearest power of 2 =#"""
+"""Rounds up to the nearest power of 2"""
 function nextPowerOf2(i::Int)::Int
   local v::Int
 
@@ -1618,9 +1703,11 @@ function isIntegerString(str::String)::Bool
   return b
 end
 
-""" #= @author:adrpo
- if the string is bigger than len keep only until len
- if not, return the same string =#"""
+"""
+  @author:adrpo
+  if the string is bigger than len keep only until len
+  if not, return the same string
+"""
 function stringTrunc(str::String, len::Int)::String
   local truncatedStr::String
 
@@ -1632,7 +1719,7 @@ function stringTrunc(str::String, len::Int)::String
   return truncatedStr
 end
 
-""" #= Create an iterator or the like with a unique name =#"""
+"""Create an iterator or the like with a unique name"""
 function getTempVariableIndex()::String
   local name::String
   name = stringAppend("tmpVar", intString(System.tmpTickIndex(Global.tmpVariableIndex)))
@@ -1644,8 +1731,10 @@ function anyReturnTrue(a::T) where {T}
   return b
 end
 
-""" #= @author: adrpo
- returns the given path if it exists if not it considers it relative and returns that =#"""
+"""
+  @author: adrpo
+  returns the given path if it exists if not it considers it relative and returns that
+"""
 function absoluteOrRelative(inFileName::String)::String
   local outFileName::String
 
@@ -1669,7 +1758,7 @@ function intLstString(lst::List{<:Integer})::String
   return s
 end
 
-""" #= Returns whether the given SourceInfo is empty or not. =#"""
+"""Returns whether the given SourceInfo is empty or not."""
 function sourceInfoIsEmpty(inInfo::SourceInfo)::Bool
   local outIsEmpty::Bool
 
@@ -1687,7 +1776,7 @@ function sourceInfoIsEmpty(inInfo::SourceInfo)::Bool
   return outIsEmpty
 end
 
-""" #= Returns whether two SourceInfo are equal or not. =#"""
+"""Returns whether two SourceInfo are equal or not."""
 function sourceInfoIsEqual(inInfo1::SourceInfo, inInfo2::SourceInfo)::Bool
   local outIsEqual::Bool
 
@@ -1710,10 +1799,11 @@ function sourceInfoIsEqual(inInfo1::SourceInfo, inInfo2::SourceInfo)::Bool
   return outIsEqual
 end
 
-#= /*************************************************
-* profiler stuff
-************************************************/ =#
-
+"""
+  /*************************************************
+  * profiler stuff
+  ************************************************/
+"""
 function profilerinit()
   setGlobalRoot(Global.profilerTime1Index, 0.0)
   setGlobalRoot(Global.profilerTime2Index, 0.0)

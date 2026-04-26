@@ -66,7 +66,7 @@ HashTableCrefFunctionsType = Tuple
 
 HashTable = Tuple
 
-""" #= Calculates a hash value for Key =#"""
+"""Calculates a hash value for Key"""
 function hashFunc(key::Key, mod::Integer)::Integer
   local res::Integer
 
@@ -115,10 +115,10 @@ function printKey(tpl::Key)::String
   return res
 end
 
-""" #=
+"""
   Returns an empty HashTable.
   Using the default bucketsize..
- =#"""
+"""
 function emptyHashTable()::HashTable
   local hashTable::HashTable
 
@@ -126,10 +126,10 @@ function emptyHashTable()::HashTable
   return hashTable
 end
 
-""" #=
+"""
   Returns an empty HashTable.
   Using the bucketsize size.
- =#"""
+"""
 function emptyHashTableSized(size::Integer)::HashTable
   local hashTable::HashTable
 

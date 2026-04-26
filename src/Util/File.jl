@@ -38,7 +38,7 @@ module FileHandler
 
 using ExternalObject #= Modelica extend clause =#
 
-""" #= File constructor. =#"""
+"""File constructor."""
 function constructor(fromID::Option{Integer} = noReference()) where {T} #= Never pass this an actual Option<Integer>. Only use File.getReference(file) or File.noReference(). Determines if we should restore from another File object or create a new File. =#
   local file::FileHandler
 
@@ -113,7 +113,7 @@ function getFilename(file::Option{<:Integer})::String
   return fileName
 end
 
-""" #= Returns NULL (an opaque pointer; not actually Option<Integer>) =#"""
+"""Returns NULL (an opaque pointer; not actually Option<Integer>)"""
 function noReference()::Option{Integer}
   local reference::Option{Integer}
 
@@ -121,7 +121,7 @@ function noReference()::Option{Integer}
   return reference
 end
 
-""" #= Returns an opaque pointer (not actually Option<Integer>) =#"""
+"""Returns an opaque pointer (not actually Option<Integer>)"""
 function getReference(file::FileHandler)::Option{Integer}
   local reference::Option{Integer}
 

@@ -226,7 +226,7 @@ function simplifySubscripts(cref::ComponentRef; trim = false)::ComponentRef
   return cref
 end
 
-""" #= Strips all subscripts from a cref. =#"""
+"""Strips all subscripts from a cref."""
 function stripSubscriptsAll(cref::ComponentRef)::ComponentRef
   local strippedCref::ComponentRef
    strippedCref = begin
@@ -243,7 +243,7 @@ function stripSubscriptsAll(cref::ComponentRef)::ComponentRef
   return strippedCref
 end
 
-""" #= Strips the subscripts from the last name in a cref, e.g. a[2].b[3] => a[2].b =#"""
+"""Strips the subscripts from the last name in a cref, e.g. a[2].b[3] => a[2].b"""
 function stripSubscripts(cref::ComponentRef)::Tuple{ComponentRef, List{Subscript}}
   local subs::List{Subscript}
   local strippedCref::ComponentRef
@@ -750,7 +750,7 @@ function transferSubscripts(srcCref::ComponentRef, dstCref::ComponentRef)::Compo
   return cref
 end
 
-""" #= Returns the subscripts of the N first parts of a cref in reverse order. =#"""
+"""Returns the subscripts of the N first parts of a cref in reverse order."""
 function subscriptsN(cref::ComponentRef, n::Int)::List{List{Subscript}}
   local subscripts::List{List{Subscript}} = nil
   local subs::List{Subscript}
@@ -765,15 +765,19 @@ function subscriptsN(cref::ComponentRef, n::Int)::List{List{Subscript}}
   return subscripts
 end
 
-""" #= Returns all subscripts of a cref as a flat list in the correct order.
-     Ex: a[1, 2].b[4].c[6, 3] => {1, 2, 4, 6, 3} =#"""
+"""
+  Returns all subscripts of a cref as a flat list in the correct order.
+  Ex: a[1, 2].b[4].c[6, 3] => {1, 2, 4, 6, 3}
+"""
 function subscriptsAllFlat(cref::ComponentRef)::List{Subscript}
   local subscripts::List{Subscript} = ListUtil.flattenReverse(subscriptsAll(cref))
   return subscripts
 end
 
-""" #= Returns all subscripts of a cref in reverse order.
-     Ex: a[1, 2].b[4].c[6, 3] => {{6,3}, {4}, {1,2}} =#"""
+"""
+  Returns all subscripts of a cref in reverse order.
+  Ex: a[1, 2].b[4].c[6, 3] => {{6,3}, {4}, {1,2}}
+"""
 function subscriptsAll(
   cref::ComponentRef,
   accumSubs::Union{Cons{List{Subscript}}, Nil}= nil,
@@ -920,8 +924,10 @@ function addSubscript(subscript::Subscript, cref::ComponentRef)::ComponentRef
   return rCref
 end
 
-""" #= Returns the variability of the cref, with the variability of the subscripts
-     taken into account. =#"""
+"""
+  Returns the variability of the cref, with the variability of the subscripts
+  taken into account.
+"""
 function variability(cref::ComponentRef)::VariabilityType
   local var::VariabilityType =
     variabilityMax(nodeVariability(cref), subscriptsVariability(cref))
@@ -985,7 +991,7 @@ function getSubscriptedType2(restCref::ComponentRef, accumTy::NFType)::NFType
   return ty
 end
 
-""" #= Returns the type of a cref, with the subscripts taken into account. =#"""
+"""Returns the type of a cref, with the subscripts taken into account."""
 function getSubscriptedType(cref::ComponentRef)::NFType
   local ty::NFType
    ty = begin
@@ -1001,8 +1007,10 @@ function getSubscriptedType(cref::ComponentRef)::NFType
   return ty
 end
 
-""" #= Returns the type of the component the given cref refers to, without taking
-     subscripts into account. =#"""
+"""
+  Returns the type of the component the given cref refers to, without taking
+  subscripts into account.
+"""
 function getComponentType(cref::ComponentRef)::M_Type
   local ty::M_Type
 

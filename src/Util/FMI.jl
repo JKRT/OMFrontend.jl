@@ -265,7 +265,7 @@ function getFMIVersion(inFMIInfo::Info)::String
   return fmiVersion
 end
 
-""" #= Checks if the FMU version is supported. =#"""
+"""Checks if the FMU version is supported."""
 function checkFMIVersion(inFMIVersion::String)::Bool
   local success::Bool
 
@@ -287,7 +287,7 @@ function checkFMIVersion(inFMIVersion::String)::Bool
   return success
 end
 
-""" #= Checks if the FMI version is 1.0. =#"""
+"""Checks if the FMI version is 1.0."""
 function isFMIVersion10(inFMUVersion::String)::Bool
   local success::Bool
 
@@ -305,7 +305,7 @@ function isFMIVersion10(inFMUVersion::String)::Bool
   return success
 end
 
-""" #= Checks if the FMI version is 2.0. =#"""
+"""Checks if the FMI version is 2.0."""
 function isFMIVersion20(inFMUVersion::String = getFMIVersionString())::Bool
   local success::Bool
 
@@ -323,13 +323,13 @@ function isFMIVersion20(inFMUVersion::String = getFMIVersionString())::Bool
   return success
 end
 
-""" #= Returns the FMI version string. =#"""
+"""Returns the FMI version string."""
 function getFMIVersionString()::String
   local version::String = Flags.getConfigString(Flags.FMI_VERSION)
   return version
 end
 
-""" #= Checks if the FMU type is supported. =#"""
+"""Checks if the FMU type is supported."""
 function checkFMIType(inFMIType::String)::Bool
   local success::Bool
 
@@ -384,7 +384,7 @@ function canExportFMU(inFMUVersion::String, inFMIType::String)::Bool
   return success
 end
 
-""" #= Checks if FMU type is model exchange =#"""
+"""Checks if FMU type is model exchange"""
 function isFMIMEType(inFMIType::String)::Bool
   local success::Bool
 
@@ -406,7 +406,7 @@ function isFMIMEType(inFMIType::String)::Bool
   return success
 end
 
-""" #= Checks if FMU type is co-simulation =#"""
+"""Checks if FMU type is co-simulation"""
 function isFMICSType(inFMIType::String)::Bool
   local success::Bool
 

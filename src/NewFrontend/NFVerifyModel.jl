@@ -53,8 +53,10 @@ function checkCrefSetEquality(
   return fail()
 end
 
-""" #= Checks that the left-hand sides of the given if-equation branches consists
-     of the same set of crefs, and adds that set to the given set of crefs. =#"""
+"""
+  Checks that the left-hand sides of the given if-equation branches consists
+  of the same set of crefs, and adds that set to the given set of crefs.
+"""
 function whenEquationIfCrefs(
   branches::List{<:Equation},
   source::DAE.ElementSource,
@@ -95,8 +97,10 @@ function whenEquationEqualityCrefs(
   return crefs
 end
 
-""" #= Helper function to verifyWhenEquation, returns the set of crefs that the
-     given list of equations contains on the lhs. =#"""
+"""
+  Helper function to verifyWhenEquation, returns the set of crefs that the
+  given list of equations contains on the lhs.
+"""
 function whenEquationBranchCrefs(eql::Union{List{<:Equation}, Vector{<:Equation}})::List{ComponentRef}
   local crefs::List{ComponentRef} = nil
   for eq in eql

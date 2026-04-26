@@ -39,9 +39,10 @@ import Frontend.Values
 import Frontend.Error
 import Frontend.StackOverflow
 
-""" #=
-Executes a function given a handle (from System.lookupFunction) and a list
-of values. =#"""
+"""
+  Executes a function given a handle (from System.lookupFunction) and a list
+  of values.
+"""
 function executeFunction(
   handle::Integer,
   values::List{<:Values.Value},

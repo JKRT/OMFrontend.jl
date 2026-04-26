@@ -173,8 +173,10 @@ function addComponentTypeToSource(
   return source
 end
 
-""" #= Returns the given direction if the cref refers to a top-level component or to
-   a component in a top-level connector, otherwise returns Direction.NONE. =#"""
+"""
+  Returns the given direction if the cref refers to a top-level component or to
+  a component in a top-level connector, otherwise returns Direction.NONE.
+"""
 function getComponentDirection(dir::DirectionType, cref::ComponentRef)::DirectionType
   local rest_cref::ComponentRef = rest(cref)
   dir = begin

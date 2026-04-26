@@ -14,13 +14,13 @@ function printNodeStr(inNode::Tree)::String
   return outString
 end
 
-""" #= Return an empty tree =#"""
+"""Return an empty tree"""
 function new()::Tree
   local outTree::Tree = EMPTY()
   return outTree
 end
 
-""" #= Inserts a new node in the tree. =#"""
+"""Inserts a new node in the tree."""
 function add(inTree::Tree, inKey::Key)::Tree
   local tree::Tree = inTree
 
@@ -75,7 +75,7 @@ function add(inTree::Tree, inKey::Key)::Tree
   return tree
 end
 
-""" #= Adds a list of key-value pairs to the tree. =#"""
+"""Adds a list of key-value pairs to the tree."""
 function addList(tree::Tree, inValues::List{<:Key})::Tree
 
   for key in inValues
@@ -84,7 +84,7 @@ function addList(tree::Tree, inValues::List{<:Key})::Tree
   return tree
 end
 
-""" #= Gets a value from the tree given a key. =#"""
+"""Gets a value from the tree given a key."""
 function hasKey(inTree::Tree, inKey::Key)::Bool
   local comp::Bool = false
 
@@ -146,7 +146,7 @@ function isEmpty(tree::Tree)::Bool
   return isEmpty
 end
 
-""" #= Converts the tree to a flat list of keys (in order). =#"""
+"""Converts the tree to a flat list of keys (in order)."""
 function listKeys(inTree::Tree, lst::List{<:Key} = nil)::List{Key}
 
   @assign lst = begin
@@ -170,7 +170,7 @@ function listKeys(inTree::Tree, lst::List{<:Key} = nil)::List{Key}
   return lst
 end
 
-""" #= Converts the tree to a flat list of keys (in order). =#"""
+"""Converts the tree to a flat list of keys (in order)."""
 function listKeysReverse(inTree::Tree, lst::List{<:Key} = nil)::List{Key}
 
   @assign lst = begin
@@ -194,7 +194,7 @@ function listKeysReverse(inTree::Tree, lst::List{<:Key} = nil)::List{Key}
   return lst
 end
 
-""" #= Joins two trees by adding the second one to the first. =#"""
+"""Joins two trees by adding the second one to the first."""
 function join(tree::Tree, treeToJoin::Tree)::Tree
   tree = begin
     @match treeToJoin begin
@@ -217,8 +217,10 @@ function join(tree::Tree, treeToJoin::Tree)::Tree
   return tree
 end
 
-""" #= Prints the tree to a string using UTF-8 box-drawing characters to construct a
-   graphical view of the tree. =#"""
+"""
+  Prints the tree to a string using UTF-8 box-drawing characters to construct a
+  graphical view of the tree.
+"""
 function printTreeStr(inTree::Tree)::String
   local outString::String
   local left::Tree
@@ -275,8 +277,10 @@ function setTreeLeftRight(orig::Tree; left::Tree = EMPTY(), right::Tree = EMPTY(
   return res
 end
 
-""" #= Takes two sets and returns the intersection as well as the remainder
-  of both sets after removing the duplicates in both sets. =#"""
+"""
+  Takes two sets and returns the intersection as well as the remainder
+  of both sets after removing the duplicates in both sets.
+"""
 function intersection(tree1::Tree, tree2::Tree)::Tree
   local intersect::Tree = Tree.EMPTY()
   local rest1::Tree = Tree.EMPTY()
@@ -359,7 +363,7 @@ function referenceEqOrEmpty(t1::Tree, t2::Tree)::Bool
   return b
 end
 
-""" #= Balances a Tree =#"""
+"""Balances a Tree"""
 function balance(inTree::Tree)
   local outTree::Tree = inTree
   outTree = begin
@@ -448,7 +452,7 @@ function calculateBalance(inNode::Tree)::Integer
   return outBalance
 end
 
-""" #= Performs an AVL left rotation on the given tree. =#"""
+"""Performs an AVL left rotation on the given tree."""
 function rotateLeft(inNode::Tree)::Tree
   local outNode::Tree = inNode
 
@@ -474,7 +478,7 @@ function rotateLeft(inNode::Tree)::Tree
   return outNode
 end
 
-""" #= Performs an AVL right rotation on the given tree. =#"""
+"""Performs an AVL right rotation on the given tree."""
 function rotateRight(inNode::Tree)::Tree
   local outNode::Tree = inNode
 
@@ -499,7 +503,7 @@ function rotateRight(inNode::Tree)::Tree
   return outNode
 end
 
-""" #= Helper function to printTreeStr. =#"""
+"""Helper function to printTreeStr."""
 function printTreeStr2(inTree::Tree, isLeft::Bool, inIndent::String)::String
   local outString::String
   local val_node::Option{ValueNode}

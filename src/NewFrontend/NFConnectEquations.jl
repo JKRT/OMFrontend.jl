@@ -205,10 +205,12 @@ function getSetType(set::List{<:Connector})::ConnectorType.TYPE
   return cty
 end
 
-""" #= Generating the equations for a set of potential variables means equating all
-   the components. For n components, this will give n-1 equations. For example,
-   if the set contains the components X, Y.A and Z.B, the equations generated
-   will be X = Y.A and X = Z.B. =#"""
+"""
+  Generating the equations for a set of potential variables means equating all
+  the components. For n components, this will give n-1 equations. For example,
+  if the set contains the components X, Y.A and Z.B, the equations generated
+  will be X = Y.A and X = Z.B.
+"""
 function generatePotentialEquations(elements::List{<:Connector})::List{Equation}
   local equations::List{Equation}
   local c1::Connector
@@ -433,8 +435,10 @@ function _replaceIteratorInCref(cref::ComponentRef, iterator::InstNode,
   return cref
 end
 
-""" #= Creates an expression from a connector element, which is the element itself
-   if it's an inside connector, or the element negated if it's outside. =#"""
+"""
+  Creates an expression from a connector element, which is the element itself
+  if it's an inside connector, or the element negated if it's outside.
+"""
 function makeFlowExp(element::Connector)::Expression
   local exp::Expression
   local face::FaceType
@@ -450,7 +454,7 @@ function makeFlowExp(element::Connector)::Expression
   return exp
 end
 
-""" #= Generates the equations for a stream connection set. =#"""
+"""Generates the equations for a stream connection set."""
 function generateStreamEquations(
   elements::List{<:Connector},
   flowThreshold::Expression,
@@ -527,7 +531,7 @@ function generateStreamEquations(
   return equations
 end
 
-""" #= Generates an equation for an outside stream connector element. =#"""
+"""Generates an equation for an outside stream connector element."""
 function streamEquationGeneral(
   outsideElements::List{<:Connector},
   insideElements::List{<:Connector},
@@ -551,16 +555,17 @@ function streamEquationGeneral(
   return equations
 end
 
-""" #= Generates the sum expression used by stream connector equations, given M
+"""
+  Generates the sum expression used by stream connector equations, given M
   outside connectors and N inside connectors:
 
-    (sum(max(-flow_exp[i], eps) * stream_exp[i] for i in N) +
-     sum(max( flow_exp[i], eps) * inStream(stream_exp[i]) for i in M)) /
-    (sum(max(-flow_exp[i], eps) for i in N) +
-     sum(max( flow_exp[i], eps) for i in M))
+  (sum(max(-flow_exp[i], eps) * stream_exp[i] for i in N) +
+  sum(max( flow_exp[i], eps) * inStream(stream_exp[i]) for i in M)) /
+  (sum(max(-flow_exp[i], eps) for i in N) +
+  sum(max( flow_exp[i], eps) for i in M))
 
   where eps = inFlowThreshold.
-   =#"""
+"""
 function streamSumEquationExp(
   outsideElements::List{<:Connector},
   insideElements::List{<:Connector},
@@ -618,8 +623,10 @@ function streamSumEquationExp(
   return sumExp
 end
 
-""" #= Creates a sum expression by applying the given function on the list of
-  elements and summing up the resulting expressions. =#"""
+"""
+  Creates a sum expression by applying the given function on the list of
+  elements and summing up the resulting expressions.
+"""
 function sumMap(
   elements::List{<:Connector},
   func::FuncType,
@@ -638,7 +645,7 @@ function sumMap(
   return exp
 end
 
-""" #= Returns the stream and flow component in a stream set element as expressions. =#"""
+"""Returns the stream and flow component in a stream set element as expressions."""
 function streamFlowExp(element::Connector)::Tuple{Expression, Expression}
   local flowExp::Expression
   local streamExp::Expression
@@ -651,7 +658,7 @@ function streamFlowExp(element::Connector)::Tuple{Expression, Expression}
   return (streamExp, flowExp)
 end
 
-""" #= Returns the flow component in a stream set element as an expression. =#"""
+"""Returns the flow component in a stream set element as an expression."""
 function flowExp(element::Connector)::Expression
   local flowExp::Expression
 
@@ -662,9 +669,11 @@ function flowExp(element::Connector)::Expression
   return flowExp
 end
 
-""" #= Helper function to streamSumEquationExp. Returns the expression
-    max(flow_exp, eps) * inStream(stream_exp)
-   given a stream set element. =#"""
+"""
+  Helper function to streamSumEquationExp. Returns the expression
+  max(flow_exp, eps) * inStream(stream_exp)
+  given a stream set element.
+"""
 function sumOutside1(element::Connector, @nospecialize(flowThreshold::Expression))::Expression
   local exp::Expression
 
@@ -680,9 +689,11 @@ function sumOutside1(element::Connector, @nospecialize(flowThreshold::Expression
   return exp
 end
 
-""" #= Helper function to streamSumEquationExp. Returns the expression
-    max(-flow_exp, eps) * stream_exp
-   given a stream set element. =#"""
+"""
+  Helper function to streamSumEquationExp. Returns the expression
+  max(-flow_exp, eps) * stream_exp
+  given a stream set element.
+"""
 function sumInside1(element::Connector, @nospecialize(flowThreshold::Expression))::Expression
   local exp::Expression
 
@@ -701,9 +712,11 @@ function sumInside1(element::Connector, @nospecialize(flowThreshold::Expression)
   return exp
 end
 
-""" #= Helper function to streamSumEquationExp. Returns the expression
-    max(flow_exp, eps)
-   given a stream set element. =#"""
+"""
+  Helper function to streamSumEquationExp. Returns the expression
+  max(flow_exp, eps)
+  given a stream set element.
+"""
 function sumOutside2(element::Connector, @nospecialize(flowThreshold::Expression))::Expression
   local exp::Expression
 
@@ -714,9 +727,11 @@ function sumOutside2(element::Connector, @nospecialize(flowThreshold::Expression
   return exp
 end
 
-""" #= Helper function to streamSumEquationExp. Returns the expression
-    max(-flow_exp, eps)
-   given a stream set element. =#"""
+"""
+  Helper function to streamSumEquationExp. Returns the expression
+  max(-flow_exp, eps)
+  given a stream set element.
+"""
 function sumInside2(element::Connector, @nospecialize(flowThreshold::Expression))::Expression
   local exp::Expression
 
@@ -729,7 +744,7 @@ function sumInside2(element::Connector, @nospecialize(flowThreshold::Expression)
   return exp
 end
 
-""" #= Creates an inStream call expression. =#"""
+"""Creates an inStream call expression."""
 function makeInStreamCall(@nospecialize(streamExp::Expression))::Expression
   local inStreamCall::Expression
 
@@ -741,7 +756,7 @@ function makeInStreamCall(@nospecialize(streamExp::Expression))::Expression
   return inStreamCall
 end
 
-""" #= Generates a max(flow_exp, eps) call. =#"""
+"""Generates a max(flow_exp, eps) call."""
 function makePositiveMaxCall(
   flowExp::Expression,
   element::Connector,
@@ -879,7 +894,7 @@ function evaluateOperatorArrayConstructorExp(
   return evalExp
 end
 
-""" #= Evaluates the inStream operator with the given cref as argument. =#"""
+"""Evaluates the inStream operator with the given cref as argument."""
 function evaluateInStream(
   cref::ComponentRef,
   sets::ConnectionSets.Sets,
@@ -916,8 +931,10 @@ function evaluateInStream(
   return exp
 end
 
-""" #= Helper function to evaluateInStream. Generates an expression for inStream
-   given a connection set. =#"""
+"""
+  Helper function to evaluateInStream. Generates an expression for inStream
+  given a connection set.
+"""
 function generateInStreamExp(
   streamCref::ComponentRef,
   streams::List{<:Connector},
@@ -991,7 +1008,7 @@ function generateInStreamExp(
   return exp
 end
 
-""" #= Returns true if the given flow attribute of a connector is zero. =#"""
+"""Returns true if the given flow attribute of a connector is zero."""
 function isZeroFlowMinMax(conn::Connector, streamCref::ComponentRef)::Bool
   local isZero::Bool
 
@@ -1005,7 +1022,7 @@ function isZeroFlowMinMax(conn::Connector, streamCref::ComponentRef)::Bool
   return isZero
 end
 
-""" #= Returns true if the given flow attribute of a connector is zero. =#"""
+"""Returns true if the given flow attribute of a connector is zero."""
 function isZeroFlow(element::Connector, attr::String)::Bool
   local isZero::Bool
 
@@ -1028,8 +1045,10 @@ function isZeroFlow(element::Connector, attr::String)::Bool
   return isZero
 end
 
-""" #= This function evaluates the actualStream operator for a component reference,
-   given the connection sets. =#"""
+"""
+  This function evaluates the actualStream operator for a component reference,
+  given the connection sets.
+"""
 function evaluateActualStream(
   streamCref::ComponentRef,
   sets::ConnectionSets.Sets,
@@ -1079,8 +1098,10 @@ function evaluateActualStream(
   return exp
 end
 
-""" #= Handles expressions on the form flowCref * actualStream(streamCref) where
-   flowCref is associated with streamCref. =#"""
+"""
+  Handles expressions on the form flowCref * actualStream(streamCref) where
+  flowCref is associated with streamCref.
+"""
 function evaluateActualStreamMul(
   crefExp::Expression,
   actualStreamArg::Expression,
@@ -1226,8 +1247,10 @@ function compareCrefStreamSet(cref::ComponentRef, element::Connector)::Bool
   return matches
 end
 
-""" #= Returns the flow cref that's declared in the same connector as the given
-   stream cref. =#"""
+"""
+  Returns the flow cref that's declared in the same connector as the given
+  stream cref.
+"""
 function associatedFlowCref(streamCref::ComponentRef)::ComponentRef
   local flowCref::ComponentRef
 

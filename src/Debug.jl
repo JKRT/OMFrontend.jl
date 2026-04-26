@@ -36,12 +36,12 @@ using ExportAll
 
 import .Frontend.Print
 
-""" #= used for debug printing. =#"""
+"""used for debug printing."""
 function trace(s::String)
   return Print.printErrorBuf(s)
 end
 
-""" #= printing with newline. =#"""
+"""printing with newline."""
 function traceln(str::String)
   Print.printErrorBuf(str)
   return Print.printErrorBuf("\\n")

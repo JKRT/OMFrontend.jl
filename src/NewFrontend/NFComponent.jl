@@ -838,9 +838,11 @@ function setBinding(@nospecialize(binding::Binding), @nospecialize(component::Co
   return component
 end
 
-""" #= Returns the component's binding. If the component does not have a binding
-     and is a record instance it will try to create a binding from the
-     component's children. =#"""
+"""
+  Returns the component's binding. If the component does not have a binding
+  and is a record instance it will try to create a binding from the
+  component's children.
+"""
 function getImplicitBinding(component::Component)
   local binding::Binding
 
@@ -1087,8 +1089,10 @@ function classInstance(component::Component)
   return component.classInst
 end
 
-""" #= This function shouldn't be used! Use InstNode.info instead, so that e.g.
-     enumeration literals can be handled correctly. =#"""
+"""
+  This function shouldn't be used! Use InstNode.info instead, so that e.g.
+  enumeration literals can be handled correctly.
+"""
 function Component_info(component::Component)
   local info::SourceInfo
 

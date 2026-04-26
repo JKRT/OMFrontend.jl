@@ -106,9 +106,11 @@ end
 @exportAll()
 end
 
-""" #= Sorts the connections into different categories of connectors based on
-   whether they involve expandable connectors, virtual/potentially present
-   connector, or only normal connectors. =#"""
+"""
+  Sorts the connections into different categories of connectors based on
+  whether they involve expandable connectors, virtual/potentially present
+  connector, or only normal connectors.
+"""
 function sortConnections(
   conns::List{<:Connection},
 )::Tuple{List{Connection}, List{Connection}, List{Connection}}

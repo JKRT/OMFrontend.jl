@@ -49,7 +49,7 @@ import ListUtil
 const Argument = Any
 const dummyInfo = SOURCEINFO("", false, 0, 0, 0, 0, 0.0)::SourceInfo
 
-""" #= Removes all submodifiers from the Mod. =#"""
+"""Removes all submodifiers from the Mod."""
 function stripSubmod(inMod::SCode.Mod)::SCode.Mod
   local outMod::SCode.Mod
 
@@ -71,7 +71,7 @@ function stripSubmod(inMod::SCode.Mod)::SCode.Mod
   return outMod
 end
 
-""" #= Removes submods from a modifier based on a filter function. =#"""
+"""Removes submods from a modifier based on a filter function."""
 function filterSubMods(mod::SCode.Mod, filter::FilterFunc)::SCode.Mod
 
   @assign mod = begin
@@ -210,7 +210,7 @@ function isElementExtends(ele::SCode.Element)::Bool
   return isExtend
 end
 
-""" #= Check if an element extends another class. =#"""
+"""Check if an element extends another class."""
 function isElementExtendsOrClassExtends(ele::SCode.Element)::Bool
   local isExtend::Bool
 
@@ -228,8 +228,7 @@ function isElementExtendsOrClassExtends(ele::SCode.Element)::Bool
   return isExtend
 end
 
-""" #=
-check if an element is not of type CLASS_EXTENDS. =#"""
+"""check if an element is not of type CLASS_EXTENDS."""
 function isNotElementClassExtends(ele::SCode.Element)::Bool
   local isExtend::Bool
 
@@ -247,7 +246,7 @@ function isNotElementClassExtends(ele::SCode.Element)::Bool
   return isExtend
 end
 
-""" #= Returns true if Variability indicates a parameter or constant. =#"""
+"""Returns true if Variability indicates a parameter or constant."""
 function isParameterOrConst(inVariability::SCode.Variability)::Bool
   local outBoolean::Bool
 
@@ -269,7 +268,7 @@ function isParameterOrConst(inVariability::SCode.Variability)::Bool
   return outBoolean
 end
 
-""" #= Returns true if Variability is constant, otherwise false =#"""
+"""Returns true if Variability is constant, otherwise false"""
 function isConstant(inVariability::SCode.Variability)::Bool
   local outBoolean::Bool
 
@@ -287,7 +286,7 @@ function isConstant(inVariability::SCode.Variability)::Bool
   return outBoolean
 end
 
-""" #= Counts the number of ClassParts of a Class. =#"""
+"""Counts the number of ClassParts of a Class."""
 function countParts(inClass::SCode.Element)::Integer
   local outInteger::Integer
 
@@ -316,7 +315,7 @@ function countParts(inClass::SCode.Element)::Integer
   return outInteger
 end
 
-""" #= Return a string list of all component names of a class. =#"""
+"""Return a string list of all component names of a class."""
 function componentNames(inClass::SCode.Element)::List{String}
   local outStringLst::List{String}
 
@@ -345,7 +344,7 @@ function componentNames(inClass::SCode.Element)::List{String}
   return outStringLst
 end
 
-""" #= Helper function to componentNames. =#"""
+"""Helper function to componentNames."""
 function componentNamesFromElts(inElements::List{<:SCode.Element})::List{String}
   local outComponentNames::List{String}
 
@@ -360,7 +359,7 @@ function componentName(inComponent::SCode.Element)::String
   return outName
 end
 
-""" #= retrieves the element info =#"""
+"""retrieves the element info"""
 function elementInfo(e::SCode.Element)::SourceInfo
   local info::SourceInfo
 
@@ -391,7 +390,6 @@ function elementInfo(e::SCode.Element)::SourceInfo
   return info
 end
 
-""" #=  =#"""
 function elementName(e::SCode.Element)::String
   local s::String
 
@@ -429,7 +427,7 @@ function elementNameInfo(inElement::SCode.Element)::Tuple{String, SourceInfo}
   return (outName, outInfo)
 end
 
-""" #= Gets all elements that have an element name from the list =#"""
+"""Gets all elements that have an element name from the list"""
 function elementNames(elts::List{<:SCode.Element})::List{String}
   local names::List{String}
 
@@ -437,7 +435,7 @@ function elementNames(elts::List{<:SCode.Element})::List{String}
   return names
 end
 
-""" #= Gets all elements that have an element name from the list =#"""
+"""Gets all elements that have an element name from the list"""
 function elementNamesWork(e::SCode.Element, acc::List{<:String})::List{String}
   local out::List{String}
 
@@ -521,7 +519,6 @@ function elementNameEqual(inElement1::SCode.Element, inElement2::SCode.Element):
   return outEqual
 end
 
-""" #=  =#"""
 function enumName(e::SCode.Enum)::String
   local s::String
 
@@ -535,7 +532,7 @@ function enumName(e::SCode.Enum)::String
   return s
 end
 
-""" #= Return true if Class is a record. =#"""
+"""Return true if Class is a record."""
 function isRecord(inClass::SCode.Element)::Bool
   local outBoolean::Bool
 
@@ -553,7 +550,7 @@ function isRecord(inClass::SCode.Element)::Bool
   return outBoolean
 end
 
-""" #= Return true if Class is a type =#"""
+"""Return true if Class is a type"""
 function isTypeVar(inClass::SCode.Element)::Bool
   local outBoolean::Bool
 
@@ -571,7 +568,7 @@ function isTypeVar(inClass::SCode.Element)::Bool
   return outBoolean
 end
 
-""" #= Return true if Class is a operator record. =#"""
+"""Return true if Class is a operator record."""
 function isOperatorRecord(inClass::SCode.Element)::Bool
   local outBoolean::Bool
 
@@ -589,7 +586,7 @@ function isOperatorRecord(inClass::SCode.Element)::Bool
   return outBoolean
 end
 
-""" #= Return true if Class is a function. =#"""
+"""Return true if Class is a function."""
 function isFunction(inClass::SCode.Element)::Bool
   local outBoolean::Bool
 
@@ -607,7 +604,7 @@ function isFunction(inClass::SCode.Element)::Bool
   return outBoolean
 end
 
-""" #= Return true if restriction is a function. =#"""
+"""Return true if restriction is a function."""
 function isFunctionRestriction(inRestriction::SCode.Restriction)::Bool
   local outBoolean::Bool
 
@@ -625,8 +622,10 @@ function isFunctionRestriction(inRestriction::SCode.Restriction)::Bool
   return outBoolean
 end
 
-""" #= restriction is function or external function.
-  Otherwise false is returned. =#"""
+"""
+  restriction is function or external function.
+  Otherwise false is returned.
+"""
 function isFunctionOrExtFunctionRestriction(r::SCode.Restriction)::Bool
   local res::Bool
 
@@ -648,8 +647,10 @@ function isFunctionOrExtFunctionRestriction(r::SCode.Restriction)::Bool
   return res
 end
 
-""" #= restriction is operator or operator function.
-  Otherwise false is returned. =#"""
+"""
+  restriction is operator or operator function.
+  Otherwise false is returned.
+"""
 function isOperator(el::SCode.Element)::Bool
   local res::Bool
 
@@ -671,7 +672,7 @@ function isOperator(el::SCode.Element)::Bool
   return res
 end
 
-""" #= Returns the class name of a Class. =#"""
+"""Returns the class name of a Class."""
 function className(inClass::SCode.Element)::String
   local outName::String
 
@@ -679,8 +680,10 @@ function className(inClass::SCode.Element)::String
   return outName
 end
 
-""" #= author: PA
-  Sets the partial attribute of a Class =#"""
+"""
+  author: PA
+  Sets the partial attribute of a Class
+"""
 function classSetPartial(inClass::SCode.Element, inPartial::SCode.Partial)::SCode.Element
   local outClass::SCode.Element
 
@@ -713,9 +716,11 @@ function classSetPartial(inClass::SCode.Element, inPartial::SCode.Partial)::SCod
   return outClass
 end
 
-""" #= returns true if two elements are equal,
+"""
+  returns true if two elements are equal,
   i.e. for a component have the same type,
-  name, and attributes, etc. =#"""
+  name, and attributes, etc.
+"""
 function elementEqual(element1::SCode.Element, element2::SCode.Element)::Bool
   local equal::Bool
 
@@ -807,7 +812,7 @@ end
 #=  stefan
 =#
 
-""" #= returns true if 2 annotations are equal =#"""
+"""returns true if 2 annotations are equal"""
 function annotationEqual(annotation1::SCode.Annotation, annotation2::SCode.Annotation)::Bool
   local equal::Bool
 
@@ -820,7 +825,7 @@ function annotationEqual(annotation1::SCode.Annotation, annotation2::SCode.Annot
   return equal
 end
 
-""" #= Returns true if two Restriction's are equal. =#"""
+"""Returns true if two Restriction's are equal."""
 function restrictionEqual(restr1::SCode.Restriction, restr2::SCode.Restriction)::Bool
   local equal::Bool
 
@@ -987,7 +992,7 @@ function enumEqual(e1::SCode.Enum, e2::SCode.Enum)::Bool
   return isEqual
 end
 
-""" #= Returns true if Two ClassDef's are equal =#"""
+"""Returns true if Two ClassDef's are equal"""
 function classDefEqual(cdef1::SCode.ClassDef, cdef2::SCode.ClassDef)::Bool
   local equal::Bool
 
@@ -1086,7 +1091,7 @@ function classDefEqual(cdef1::SCode.ClassDef, cdef2::SCode.ClassDef)::Bool
   return equal
 end
 
-""" #= Returns true if two Option<ArrayDim> are equal =#"""
+"""Returns true if two Option<ArrayDim> are equal"""
 function arraydimOptEqual(
   adopt1::Option{<:Absyn.ArrayDim},
   adopt2::Option{<:Absyn.ArrayDim},
@@ -1117,7 +1122,7 @@ function arraydimOptEqual(
   return equal
 end
 
-""" #= Returns true if two Absyn.Subscript are equal =#"""
+"""Returns true if two Absyn.Subscript are equal"""
 function subscriptEqual(sub1::Absyn.Subscript, sub2::Absyn.Subscript)::Bool
   local equal::Bool
 
@@ -1137,7 +1142,7 @@ function subscriptEqual(sub1::Absyn.Subscript, sub2::Absyn.Subscript)::Bool
   return equal
 end
 
-""" #= Returns true if two Algorithm's are equal. =#"""
+"""Returns true if two Algorithm's are equal."""
 function algorithmEqual(alg1::SCode.AlgorithmSection, alg2::SCode.AlgorithmSection)::Bool
   local equal::Bool
 
@@ -1160,7 +1165,7 @@ function algorithmEqual(alg1::SCode.AlgorithmSection, alg2::SCode.AlgorithmSecti
   return equal
 end
 
-""" #= Returns true if two Absyn.Algorithm are equal. =#"""
+"""Returns true if two Absyn.Algorithm are equal."""
 function algorithmEqual2(ai1::SCode.Statement, ai2::SCode.Statement)::Bool
   local equal::Bool
 
@@ -1231,7 +1236,7 @@ function algorithmEqual2(ai1::SCode.Statement, ai2::SCode.Statement)::Bool
   return equal
 end
 
-""" #= Returns true if two equations are equal. =#"""
+"""Returns true if two equations are equal."""
 function equationEqual(eqn1::SCode.Equation, eqn2::SCode.Equation)::Bool
   local equal::Bool
 
@@ -1244,7 +1249,7 @@ function equationEqual(eqn1::SCode.Equation, eqn2::SCode.Equation)::Bool
   return equal
 end
 
-""" #= Helper function to equationEqual =#"""
+"""Helper function to equationEqual"""
 function equationEqual2(eq1::SCode.EEquation, eq2::SCode.EEquation)::Bool
   local equal::Bool
 
@@ -1380,8 +1385,10 @@ function equationEqual2(eq1::SCode.EEquation, eq2::SCode.EEquation)::Bool
   return equal
 end
 
-""" #= Author BZ
- Helper function for equationEqual2, does compare list<list<equation>> (else ifs in ifequations.) =#"""
+"""
+  Author BZ
+  Helper function for equationEqual2, does compare list<list<equation>> (else ifs in ifequations.)
+"""
 function equationEqual22(
   inTb1::List{<:List{<:SCode.EEquation}},
   inTb2::List{<:List{<:SCode.EEquation}},
@@ -1420,7 +1427,7 @@ function equationEqual22(
   return bOut
 end
 
-""" #= Return true if two Mod:s are equal =#"""
+"""Return true if two Mod:s are equal"""
 function modEqual(mod1::SCode.Mod, mod2::SCode.Mod)::Bool
   local equal::Bool
 
@@ -1476,7 +1483,7 @@ function modEqual(mod1::SCode.Mod, mod2::SCode.Mod)::Bool
   return equal
 end
 
-""" #= Return true if two subModifier lists are equal =#"""
+"""Return true if two subModifier lists are equal"""
 function subModsEqual(
   inSubModLst1::List{<:SCode.SubMod},
   inSubModLst2::List{<:SCode.SubMod},
@@ -1513,7 +1520,7 @@ function subModsEqual(
   return equal
 end
 
-""" #= Returns true if two subscript lists are equal =#"""
+"""Returns true if two subscript lists are equal"""
 function subscriptsEqual(
   inSs1::List{<:SCode.Subscript},
   inSs2::List{<:SCode.Subscript},
@@ -1548,7 +1555,7 @@ function subscriptsEqual(
   return equal
 end
 
-""" #= Returns true if two Atributes are equal =#"""
+"""Returns true if two Atributes are equal"""
 function attributesEqual(attr1::SCode.Attributes, attr2::SCode.Attributes)::Bool
   local equal::Bool
 
@@ -1587,7 +1594,7 @@ function attributesEqual(attr1::SCode.Attributes, attr2::SCode.Attributes)::Bool
   return equal
 end
 
-""" #= Returns true if two Parallelism prefixes are equal =#"""
+"""Returns true if two Parallelism prefixes are equal"""
 function parallelismEqual(prl1::SCode.Parallelism, prl2::SCode.Parallelism)::Bool
   local equal::Bool
 
@@ -1613,7 +1620,7 @@ function parallelismEqual(prl1::SCode.Parallelism, prl2::SCode.Parallelism)::Boo
   return equal
 end
 
-""" #= Returns true if two Variablity prefixes are equal =#"""
+"""Returns true if two Variablity prefixes are equal"""
 function variabilityEqual(var1::SCode.Variability, var2::SCode.Variability)::Bool
   local equal::Bool
 
@@ -1643,7 +1650,7 @@ function variabilityEqual(var1::SCode.Variability, var2::SCode.Variability)::Boo
   return equal
 end
 
-""" #= Return true if two arraydims are equal =#"""
+"""Return true if two arraydims are equal"""
 function arrayDimEqual(iad1::Absyn.ArrayDim, iad2::Absyn.ArrayDim)::Bool
   local equal::Bool
 
@@ -1676,7 +1683,7 @@ function arrayDimEqual(iad1::Absyn.ArrayDim, iad2::Absyn.ArrayDim)::Bool
   return equal
 end
 
-""" #= Sets the restriction of a SCode Class =#"""
+"""Sets the restriction of a SCode Class"""
 function setClassRestriction(r::SCode.Restriction, cl::SCode.Element)::SCode.Element
   local outCl::SCode.Element
 
@@ -1707,7 +1714,7 @@ function setClassRestriction(r::SCode.Restriction, cl::SCode.Element)::SCode.Ele
   return outCl
 end
 
-""" #= Sets the name of a SCode Class =#"""
+"""Sets the name of a SCode Class"""
 function setClassName(name::SCode.Ident, cl::SCode.Element)::SCode.Element
   local outCl::SCode.Element
 
@@ -1756,7 +1763,7 @@ function makeClassPartial(inClass::SCode.Element)::SCode.Element
   return outClass
 end
 
-""" #= Sets the partial prefix of a SCode Class =#"""
+"""Sets the partial prefix of a SCode Class"""
 function setClassPartialPrefix(
   partialPrefix::SCode.Partial,
   cl::SCode.Element,
@@ -1844,7 +1851,7 @@ function findIteratorIndexedCrefsInStatement(
   return outCrefs
 end
 
-""" #= Filters out the components from the given list of elements, as well as their names. =#"""
+"""Filters out the components from the given list of elements, as well as their names."""
 function filterComponents(
   inElements::List{<:SCode.Element},
 )::Tuple{List{SCode.Element}, List{String}}
@@ -1864,7 +1871,7 @@ function filterComponents2(inElement::SCode.Element)::Tuple{SCode.Element, Strin
   return (outComponent, outName)
 end
 
-""" #= This function returns the components from a class =#"""
+"""This function returns the components from a class"""
 function getClassComponents(cl::SCode.Element)::Tuple{List{SCode.Element}, List{String}}
   local compNames::List{String}
   local compElts::List{SCode.Element}
@@ -1889,7 +1896,7 @@ function getClassComponents(cl::SCode.Element)::Tuple{List{SCode.Element}, List{
   return (compElts, compNames)
 end
 
-""" #= This function returns the components from a class =#"""
+"""This function returns the components from a class"""
 function getClassElements(cl::SCode.Element)::List{SCode.Element}
   local elts::List{SCode.Element}
 
@@ -1913,8 +1920,10 @@ function getClassElements(cl::SCode.Element)::List{SCode.Element}
   return elts
 end
 
-""" #= Creates an EnumType element from an enumeration literal and an optional
-  comment. =#"""
+"""
+  Creates an EnumType element from an enumeration literal and an optional
+  comment.
+"""
 function makeEnumType(inEnum::SCode.Enum, inInfo::SourceInfo)::SCode.Element
   local outEnumType::SCode.Element
 
@@ -1936,9 +1945,11 @@ function makeEnumType(inEnum::SCode.Enum, inInfo::SourceInfo)::SCode.Element
   return outEnumType
 end
 
-""" #= Returns the more constant of two Variabilities
-   (considers VAR() < DISCRETE() < PARAM() < CONST()),
-   similarly to Types.constOr. =#"""
+"""
+  Returns the more constant of two Variabilities
+  (considers VAR() < DISCRETE() < PARAM() < CONST()),
+  similarly to Types.constOr.
+"""
 function variabilityOr(
   inConst1::SCode.Variability,
   inConst2::SCode.Variability,
@@ -1979,8 +1990,10 @@ function variabilityOr(
   return outConst
 end
 
-""" #= Transforms SCode.Statement back to Absyn.AlgorithmItem. Discards the comment.
-Only to be used to unparse statements again. =#"""
+"""
+  Transforms SCode.Statement back to Absyn.AlgorithmItem. Discards the comment.
+  Only to be used to unparse statements again.
+"""
 function statementToAlgorithmItem(stmt::SCode.Statement)::Absyn.AlgorithmItem
   local algi::Absyn.AlgorithmItem
 
@@ -2162,7 +2175,7 @@ function equationFileInfo(eq::SCode.EEquation)::SourceInfo
   return info
 end
 
-""" #= Checks if a Mod is empty (or only an equality binding is present) =#"""
+"""Checks if a Mod is empty (or only an equality binding is present)"""
 function emptyModOrEquality(mod::SCode.Mod)::Bool
   local b::Bool
 
@@ -2270,8 +2283,10 @@ function isClass(inElement::SCode.Element)::Bool
   return outIsClass
 end
 
-""" #= Calls the given function on the equation and all its subequations, and
-   updates the argument for each call. =#"""
+"""
+  Calls the given function on the equation and all its subequations, and
+  updates the argument for each call.
+"""
 function foldEEquations(
   inEquation::SCode.EEquation,
   inFunc::FoldFunc,
@@ -2307,8 +2322,10 @@ function foldEEquations(
   return outArg
 end
 
-""" #= Calls the given function on all expressions inside the equation, and updates
-   the argument for each call. =#"""
+"""
+  Calls the given function on all expressions inside the equation, and updates
+  the argument for each call.
+"""
 function foldEEquationsExps(
   inEquation::SCode.EEquation,
   inFunc::FoldFunc,
@@ -2389,8 +2406,10 @@ function foldEEquationsExps(
   return outArg
 end
 
-""" #= Calls the given function on all expressions inside the statement, and updates
-   the argument for each call. =#"""
+"""
+  Calls the given function on all expressions inside the statement, and updates
+  the argument for each call.
+"""
 function foldStatementsExps(
   inStatement::SCode.Statement,
   inFunc::FoldFunc,
@@ -2498,8 +2517,10 @@ function foldStatementsExps(
   return outArg
 end
 
-""" #= Traverses a list of SCode.EEquations, calling traverseEEquations on each SCode.EEquation
-  in the list. =#"""
+"""
+  Traverses a list of SCode.EEquations, calling traverseEEquations on each SCode.EEquation
+  in the list.
+"""
 function traverseEEquationsList(
   inEEquations::List{<:SCode.EEquation},
   inTuple::Tuple{<:TraverseFunc, Argument},
@@ -2512,8 +2533,10 @@ function traverseEEquationsList(
   return (outEEquations, outTuple)
 end
 
-""" #= Traverses an SCode.EEquation. For each SCode.EEquation it finds it calls the given
-  function with the SCode.EEquation and an extra argument which is passed along. =#"""
+"""
+  Traverses an SCode.EEquation. For each SCode.EEquation it finds it calls the given
+  function with the SCode.EEquation and an extra argument which is passed along.
+"""
 function traverseEEquations(
   inEEquation::SCode.EEquation,
   inTuple::Tuple{<:TraverseFunc, Argument},
@@ -2531,7 +2554,7 @@ function traverseEEquations(
   return (outEEquation, outTuple)
 end
 
-""" #= Helper function to traverseEEquations, does the actual traversing. =#"""
+"""Helper function to traverseEEquations, does the actual traversing."""
 function traverseEEquations2(
   inEEquation::SCode.EEquation,
   inTuple::Tuple{<:TraverseFunc, Argument},
@@ -2579,8 +2602,10 @@ function traverseEEquations2(
   return (outEEquation, outTuple)
 end
 
-""" #= Traverses all SCode.EEquations in an else when branch, calling the given function
-  on each SCode.EEquation. =#"""
+"""
+  Traverses all SCode.EEquations in an else when branch, calling the given function
+  on each SCode.EEquation.
+"""
 function traverseElseWhenEEquations(
   inElseWhen::Tuple{<:Absyn.Exp, List{<:SCode.EEquation}},
   inTuple::Tuple{<:TraverseFunc, Argument},
@@ -2597,8 +2622,10 @@ function traverseElseWhenEEquations(
   return (outElseWhen, outTuple)
 end
 
-""" #= Traverses a list of SCode.EEquations, calling the given function on each Absyn.Exp
-  it encounters. =#"""
+"""
+  Traverses a list of SCode.EEquations, calling the given function on each Absyn.Exp
+  it encounters.
+"""
 function traverseEEquationListExps(
   inEEquations::List{<:SCode.EEquation},
   traverser::TraverseFunc,
@@ -2612,9 +2639,11 @@ function traverseEEquationListExps(
   return (outEEquations, outArg)
 end
 
-""" #= Traverses an SCode.EEquation, calling the given function on each Absyn.Exp it
+"""
+  Traverses an SCode.EEquation, calling the given function on each Absyn.Exp it
   encounters. This funcion is intended to be used together with
-  traverseEEquations, and does NOT descend into sub-EEquations. =#"""
+  traverseEEquations, and does NOT descend into sub-EEquations.
+"""
 function traverseEEquationExps(
   inEEquation::SCode.EEquation,
   inFunc::TraverseFunc,
@@ -2709,8 +2738,10 @@ function traverseEEquationExps(
   return (outEEquation, outArg)
 end
 
-""" #= Traverses the subscripts of a component reference and calls the given
-  function on the subscript expressions. =#"""
+"""
+  Traverses the subscripts of a component reference and calls the given
+  function on the subscript expressions.
+"""
 function traverseComponentRefExps(
   inCref::Absyn.ComponentRef,
   inFunc::TraverseFunc,
@@ -2749,7 +2780,7 @@ function traverseComponentRefExps(
   return (outCref, outArg)
 end
 
-""" #= Calls the given function on the subscript expression. =#"""
+"""Calls the given function on the subscript expression."""
 function traverseSubscriptExps(
   inSubscript::Absyn.Subscript,
   inFunc::TraverseFunc,
@@ -2776,8 +2807,10 @@ function traverseSubscriptExps(
   return (outSubscript, outArg)
 end
 
-""" #= Traverses the expressions in an else when branch, and calls the given
-  function on the expressions. =#"""
+"""
+  Traverses the expressions in an else when branch, and calls the given
+  function on the expressions.
+"""
 function traverseElseWhenExps(
   inElseWhen::Tuple{<:Absyn.Exp, List{<:SCode.EEquation}},
   traverser::TraverseFunc,
@@ -2795,8 +2828,10 @@ function traverseElseWhenExps(
   return (outElseWhen, outArg)
 end
 
-""" #= Calls the given function on the value expression associated with a named
-  function argument. =#"""
+"""
+  Calls the given function on the value expression associated with a named
+  function argument.
+"""
 function traverseNamedArgExps(
   inArg::Absyn.NamedArg,
   inTuple::Tuple{<:TraverseFunc, Argument},
@@ -2817,7 +2852,7 @@ function traverseNamedArgExps(
   return (outArg, outTuple)
 end
 
-""" #= Calls the given function on the expression associated with a for iterator. =#"""
+"""Calls the given function on the expression associated with a for iterator."""
 function traverseForIteratorExps(
   inIterator::Absyn.ForIterator,
   inFunc::TraverseFunc,
@@ -2857,7 +2892,7 @@ function traverseForIteratorExps(
   return (outIterator, outArg)
 end
 
-""" #= Calls traverseStatement on each statement in the given list. =#"""
+"""Calls traverseStatement on each statement in the given list."""
 function traverseStatementsList(
   inStatements::List{<:SCode.Statement},
   inTuple::Tuple{<:TraverseFunc, Argument},
@@ -2870,9 +2905,11 @@ function traverseStatementsList(
   return (outStatements, outTuple)
 end
 
-""" #= Traverses all statements in the given statement in a top-down approach where
+"""
+  Traverses all statements in the given statement in a top-down approach where
   the given function is applied to each statement found, beginning with the given
-  statement. =#"""
+  statement.
+"""
 function traverseStatements(
   inStatement::SCode.Statement,
   inTuple::Tuple{<:TraverseFunc, Argument},
@@ -2890,8 +2927,10 @@ function traverseStatements(
   return (outStatement, outTuple)
 end
 
-""" #= Helper function to traverseStatements. Goes through each statement contained
-  in the given statement and calls traverseStatements on them. =#"""
+"""
+  Helper function to traverseStatements. Goes through each statement contained
+  in the given statement and calls traverseStatements on them.
+"""
 function traverseStatements2(
   inStatement::SCode.Statement,
   inTuple::Tuple{<:TraverseFunc, Argument},
@@ -2953,8 +2992,10 @@ function traverseStatements2(
   return (outStatement, outTuple)
 end
 
-""" #= Helper function to traverseStatements2. Calls traverseStatement each
-  statement in a given branch. =#"""
+"""
+  Helper function to traverseStatements2. Calls traverseStatement each
+  statement in a given branch.
+"""
 function traverseBranchStatements(
   inBranch::Tuple{<:Absyn.Exp, List{<:SCode.Statement}},
   inTuple::Tuple{<:TraverseFunc, Argument},
@@ -2971,8 +3012,10 @@ function traverseBranchStatements(
   return (outBranch, outTuple)
 end
 
-""" #= Traverses a list of statements and calls the given function on each
-  expression found. =#"""
+"""
+  Traverses a list of statements and calls the given function on each
+  expression found.
+"""
 function traverseStatementListExps(
   inStatements::List{<:SCode.Statement},
   inFunc::TraverseFunc,
@@ -2986,9 +3029,11 @@ function traverseStatementListExps(
   return (outStatements, outArg)
 end
 
-""" #= Applies the given function to each expression in the given statement. This
+"""
+  Applies the given function to each expression in the given statement. This
   function is intended to be used together with traverseStatements, and does NOT
-  descend into sub-statements. =#"""
+  descend into sub-statements.
+"""
 function traverseStatementExps(
   inStatement::SCode.Statement,
   inFunc::TraverseFunc,
@@ -3078,7 +3123,7 @@ function traverseStatementExps(
   return (outStatement, outArg)
 end
 
-""" #= Calls the given function on each expression found in an if or when branch. =#"""
+"""Calls the given function on each expression found in an if or when branch."""
 function traverseBranchExps(
   inBranch::Tuple{<:Absyn.Exp, List{<:SCode.Statement}},
   traverser::TraverseFunc,
@@ -3320,7 +3365,7 @@ function isBuiltinFunction(
   return name
 end
 
-""" #= Extracts the SourceInfo from an SCode.EEquation. =#"""
+"""Extracts the SourceInfo from an SCode.EEquation."""
 function getEEquationInfo(inEEquation::SCode.EEquation)::SourceInfo
   local outInfo::SourceInfo
 
@@ -3371,7 +3416,7 @@ function getEEquationInfo(inEEquation::SCode.EEquation)::SourceInfo
   return outInfo
 end
 
-""" #= Extracts the SourceInfo from a Statement. =#"""
+"""Extracts the SourceInfo from a Statement."""
 function getStatementInfo(inStatement::SCode.Statement)::SourceInfo
   local outInfo::SourceInfo
 
@@ -3465,7 +3510,7 @@ function prependSubModToMod(subMod::SCode.SubMod, mod::SCode.Mod)
   mod
 end
 
-""" #= Adds a given element to a class definition. Only implemented for PARTS. =#"""
+"""Adds a given element to a class definition. Only implemented for PARTS."""
 function addElementToClass(
   inElement::SCode.Element,
   inClassDef::SCode.Element,
@@ -3480,7 +3525,7 @@ function addElementToClass(
   return outClassDef
 end
 
-""" #= Adds a given element to a PARTS class definition. =#"""
+"""Adds a given element to a PARTS class definition."""
 function addElementToCompositeClassDef(
   inElement::SCode.Element,
   inClassDef::SCode.ClassDef,
@@ -3521,7 +3566,7 @@ function setElementClassDefinition(
   return outElement
 end
 
-""" #= returns true for PUBLIC and false for PROTECTED =#"""
+"""returns true for PUBLIC and false for PROTECTED"""
 function visibilityBool(inVisibility::SCode.Visibility)::Bool
   local bVisibility::Bool
 
@@ -3539,7 +3584,7 @@ function visibilityBool(inVisibility::SCode.Visibility)::Bool
   return bVisibility
 end
 
-""" #= returns for PUBLIC true and for PROTECTED false =#"""
+"""returns for PUBLIC true and for PROTECTED false"""
 function boolVisibility(inBoolVisibility::Bool)::SCode.Visibility
   local outVisibility::SCode.Visibility
 
@@ -3983,9 +4028,11 @@ function mergeAttributesFromClass(
   return outAttributes
 end
 
-""" #= @author: adrpo
- Function that is used with Derived classes,
- merge the derived Attributes with the optional Attributes returned from ~instClass~. =#"""
+"""
+  @author: adrpo
+  Function that is used with Derived classes,
+  merge the derived Attributes with the optional Attributes returned from ~instClass~.
+"""
 function mergeAttributes(
   ele::SCode.Attributes,
   oEle::Option{<:SCode.Attributes},
@@ -4058,7 +4105,7 @@ function prefixesSetVisibility(
   return outPrefixes
 end
 
-""" #= Returns true if two each attributes are equal =#"""
+"""Returns true if two each attributes are equal"""
 function eachEqual(each1::SCode.Each, each2::SCode.Each)::Bool
   local equal::Bool
 
@@ -4080,7 +4127,7 @@ function eachEqual(each1::SCode.Each, each2::SCode.Each)::Bool
   return equal
 end
 
-""" #= Returns true if two replaceable attributes are equal =#"""
+"""Returns true if two replaceable attributes are equal"""
 function replaceableEqual(r1::SCode.Replaceable, r2::SCode.Replaceable)::Bool
   local equal::Bool
 
@@ -4121,7 +4168,7 @@ function replaceableEqual(r1::SCode.Replaceable, r2::SCode.Replaceable)::Bool
   return equal
 end
 
-""" #= Returns true if two prefixes are equal =#"""
+"""Returns true if two prefixes are equal"""
 function prefixesEqual(prefixes1::SCode.Prefixes, prefixes2::SCode.Prefixes)::Bool
   local equal::Bool
 
@@ -4155,7 +4202,7 @@ function prefixesEqual(prefixes1::SCode.Prefixes, prefixes2::SCode.Prefixes)::Bo
   return equal
 end
 
-""" #= Returns the replaceable part =#"""
+"""Returns the replaceable part"""
 function prefixesReplaceable(prefixes::SCode.Prefixes)::SCode.Replaceable
   local repl::SCode.Replaceable
 
@@ -4240,7 +4287,7 @@ function setAttributesDirection(
   return attributes
 end
 
-""" #= Return the variability attribute from Attributes =#"""
+"""Return the variability attribute from Attributes"""
 function attrVariability(attr::SCode.Attributes)::SCode.Variability
   local var::SCode.Variability
 
@@ -4352,8 +4399,10 @@ function getElementNamedAnnotation(element::SCode.Element, name::String)::Absyn.
   return exp
 end
 
-""" #= Checks if the given annotation contains an entry with the given name with the
-   value true. =#"""
+"""
+  Checks if the given annotation contains an entry with the given name with the
+  value true.
+"""
 function getNamedAnnotation(
   inAnnotation::SCode.Annotation,
   inName::String,
@@ -4369,8 +4418,10 @@ function getNamedAnnotation(
   return (exp, info)
 end
 
-""" #= Checks if a submod has the same name as the given name, and if its binding
-   in that case is true. =#"""
+"""
+  Checks if a submod has the same name as the given name, and if its binding
+  in that case is true.
+"""
 function hasNamedAnnotation(inSubMod::SCode.SubMod, inName::String)::Bool
   local outIsMatch::Bool
 
@@ -4389,8 +4440,10 @@ function hasNamedAnnotation(inSubMod::SCode.SubMod, inName::String)::Bool
   return outIsMatch
 end
 
-""" #= Returns the modifier with the given name if it can be found in the
-   annotation, otherwise an empty modifier. =#"""
+"""
+  Returns the modifier with the given name if it can be found in the
+  annotation, otherwise an empty modifier.
+"""
 function lookupNamedAnnotation(ann::SCode.Annotation, name::String)::SCode.Mod
   local mod::SCode.Mod
 
@@ -4417,7 +4470,7 @@ function lookupNamedAnnotation(ann::SCode.Annotation, name::String)::SCode.Mod
   return mod
 end
 
-""" #= Returns a list of modifiers with the given name found in the annotation. =#"""
+"""Returns a list of modifiers with the given name found in the annotation."""
 function lookupNamedAnnotations(ann::SCode.Annotation, name::String)::List{SCode.Mod}
   local mods::List{SCode.Mod} = nil
 
@@ -4487,7 +4540,7 @@ function hasBooleanNamedAnnotationInComponent(
   return hasAnn
 end
 
-""" #= check if the named annotation is present and has value true =#"""
+"""check if the named annotation is present and has value true"""
 function optCommentHasBooleanNamedAnnotation(
   comm::Option{<:SCode.Comment},
   annotationName::String,
@@ -4509,7 +4562,7 @@ function optCommentHasBooleanNamedAnnotation(
   return outB
 end
 
-""" #= check if the named annotation is present and has value true =#"""
+"""check if the named annotation is present and has value true"""
 function commentHasBooleanNamedAnnotation(comm::SCode.Comment, annotationName::String)::Bool
   local outB::Bool
 
@@ -4528,8 +4581,10 @@ function commentHasBooleanNamedAnnotation(comm::SCode.Comment, annotationName::S
   return outB
 end
 
-""" #= Checks if the given annotation contains an entry with the given name with the
-   value true. =#"""
+"""
+  Checks if the given annotation contains an entry with the given name with the
+  value true.
+"""
 function hasBooleanNamedAnnotation(inAnnotation::SCode.Annotation, inName::String)::Bool
   local outHasEntry::Bool
 
@@ -4540,8 +4595,10 @@ function hasBooleanNamedAnnotation(inAnnotation::SCode.Annotation, inName::Strin
   return outHasEntry
 end
 
-""" #= Checks if a submod has the same name as the given name, and if its binding
-   in that case is true. =#"""
+"""
+  Checks if a submod has the same name as the given name, and if its binding
+  in that case is true.
+"""
 function hasBooleanNamedAnnotation2(inSubMod::SCode.SubMod, inName::String)::Bool
   local outIsMatch::Bool
 
@@ -4560,9 +4617,11 @@ function hasBooleanNamedAnnotation2(inSubMod::SCode.SubMod, inName::String)::Boo
   return outIsMatch
 end
 
-""" #= @author: adrpo
- returns true if annotation(Evaluate = true) is present,
- otherwise false =#"""
+"""
+  @author: adrpo
+  returns true if annotation(Evaluate = true) is present,
+  otherwise false
+"""
 function getEvaluateAnnotation(inCommentOpt::Option{<:SCode.Comment})::Bool
   local evalIsTrue::Bool
 
@@ -4748,8 +4807,10 @@ function removeComponentCondition(inElement::SCode.Element)::SCode.Element
   return outElement
 end
 
-""" #= Returns true if the given element is an element with the inner prefix,
-   otherwise false. =#"""
+"""
+  Returns true if the given element is an element with the inner prefix,
+  otherwise false.
+"""
 function isInnerComponent(inElement::SCode.Element)::Bool
   local outIsInner::Bool
 
@@ -4902,8 +4963,10 @@ function replaceOrAddElementInProgram(
   return outProgram
 end
 
-""" #= replace the class in program at the specified id.
- if the class does not exist at that location then is is added =#"""
+"""
+  replace the class in program at the specified id.
+  if the class does not exist at that location then is is added
+"""
 function replaceOrAddElementWithId(
   inProgram::SCode.Program,
   inElement::SCode.Element,
@@ -4993,7 +5056,7 @@ function getElementsFromElement(
   return outProgram
 end
 
-""" #= replaces elements in element, it will search for elements pointed by derived =#"""
+"""replaces elements in element, it will search for elements pointed by derived"""
 function replaceElementsInElement(
   inProgram::SCode.Program,
   inElement::SCode.Element,
@@ -5104,8 +5167,10 @@ function replaceElementsInClassDef(
   return (classDef, outElementOpt)
 end
 
-""" #= returns the element from the program having the name as the id.
- if the element does not exist it fails =#"""
+"""
+  returns the element from the program having the name as the id.
+  if the element does not exist it fails
+"""
 function getElementWithId(inProgram::SCode.Program, inId::String)::SCode.Element
   local outElement::SCode.Element
 
@@ -5141,8 +5206,10 @@ function getElementWithId(inProgram::SCode.Program, inId::String)::SCode.Element
   return outElement
 end
 
-""" #= returns the element from the program having the name as the id.
- if the element does not exist it fails =#"""
+"""
+  returns the element from the program having the name as the id.
+  if the element does not exist it fails
+"""
 function getElementWithPath(inProgram::SCode.Program, inPath::Absyn.Path)::SCode.Element
   local outElement::SCode.Element
 
@@ -5201,8 +5268,10 @@ function getElementName(e::SCode.Element)::String
   return s
 end
 
-""" #= @auhtor: adrpo
- set the base class path in extends =#"""
+"""
+  @auhtor: adrpo
+  set the base class path in extends
+"""
 function setBaseClassPath(inE::SCode.Element, inBcPath::Absyn.Path)::SCode.Element
   local outE::SCode.Element
 
@@ -5217,8 +5286,10 @@ function setBaseClassPath(inE::SCode.Element, inBcPath::Absyn.Path)::SCode.Eleme
   return outE
 end
 
-""" #= @auhtor: adrpo
- return the base class path in extends =#"""
+"""
+  @auhtor: adrpo
+  return the base class path in extends
+"""
 function getBaseClassPath(inE::SCode.Element)::Absyn.Path
   local outBcPath::Absyn.Path
 
@@ -5232,8 +5303,10 @@ function getBaseClassPath(inE::SCode.Element)::Absyn.Path
   return outBcPath
 end
 
-""" #= @auhtor: adrpo
- set the typespec path in component =#"""
+"""
+  @auhtor: adrpo
+  set the typespec path in component
+"""
 function setComponentTypeSpec(inE::SCode.Element, inTypeSpec::Absyn.TypeSpec)::SCode.Element
   local outE::SCode.Element
 
@@ -5254,8 +5327,10 @@ function setComponentTypeSpec(inE::SCode.Element, inTypeSpec::Absyn.TypeSpec)::S
   return outE
 end
 
-""" #= @auhtor: adrpo
- get the typespec path in component =#"""
+"""
+  @auhtor: adrpo
+  get the typespec path in component
+"""
 function getComponentTypeSpec(inE::SCode.Element)::Absyn.TypeSpec
   local outTypeSpec::Absyn.TypeSpec
 
@@ -5263,8 +5338,10 @@ function getComponentTypeSpec(inE::SCode.Element)::Absyn.TypeSpec
   return outTypeSpec
 end
 
-""" #= @auhtor: adrpo
- set the modification in component =#"""
+"""
+  @auhtor: adrpo
+  set the modification in component
+"""
 function setComponentMod(inE::SCode.Element, inMod::SCode.Mod)::SCode.Element
   local outE::SCode.Element
 
@@ -5285,8 +5362,10 @@ function setComponentMod(inE::SCode.Element, inMod::SCode.Mod)::SCode.Element
   return outE
 end
 
-""" #= @auhtor: adrpo
- get the modification in component =#"""
+"""
+  @auhtor: adrpo
+  get the modification in component
+"""
 function getComponentMod(inE::SCode.Element)::SCode.Mod
   local outMod::SCode.Mod
 
@@ -5328,8 +5407,10 @@ function isClassExtends(cls::SCode.Element)::Bool
   return isCE
 end
 
-""" #= @auhtor: adrpo
- set the base class path in extends =#"""
+"""
+  @auhtor: adrpo
+  set the base class path in extends
+"""
 function setDerivedTypeSpec(inE::SCode.Element, inTypeSpec::Absyn.TypeSpec)::SCode.Element
   local outE::SCode.Element
 
@@ -5353,8 +5434,10 @@ function setDerivedTypeSpec(inE::SCode.Element, inTypeSpec::Absyn.TypeSpec)::SCo
   return outE
 end
 
-""" #= @auhtor: adrpo
- set the base class path in extends =#"""
+"""
+  @auhtor: adrpo
+  set the base class path in extends
+"""
 function getDerivedTypeSpec(inE::SCode.Element)::Absyn.TypeSpec
   local outTypeSpec::Absyn.TypeSpec
 
@@ -5362,8 +5445,10 @@ function getDerivedTypeSpec(inE::SCode.Element)::Absyn.TypeSpec
   return outTypeSpec
 end
 
-""" #= @auhtor: adrpo
- set the base class path in extends =#"""
+"""
+  @auhtor: adrpo
+  set the base class path in extends
+"""
 function getDerivedMod(inE::SCode.Element)::SCode.Mod
   local outMod::SCode.Mod
 
@@ -5535,8 +5620,10 @@ function equationContainReinit(inEq::SCode.EEquation)::Bool
   return hasReinit
 end
 
-""" #= @author:
- returns true if statements contains reinit =#"""
+"""
+  @author:
+  returns true if statements contains reinit
+"""
 function algorithmsContainReinit(inAlgs::List{<:SCode.Statement})::Bool
   local hasReinit::Bool
 
@@ -5552,8 +5639,10 @@ function algorithmsContainReinit(inAlgs::List{<:SCode.Statement})::Bool
   return hasReinit
 end
 
-""" #= @author:
- returns true if statement contains reinit =#"""
+"""
+  @author:
+  returns true if statement contains reinit
+"""
 function algorithmContainReinit(inAlg::SCode.Statement)::Bool
   local hasReinit::Bool
 
@@ -5683,8 +5772,10 @@ function elementMod(inElement::SCode.Element)::SCode.Mod
   return outMod
 end
 
-""" #= Sets the modifier of an element, or fails if the element is not capable of
-   having a modifier. =#"""
+"""
+  Sets the modifier of an element, or fails if the element is not capable of
+  having a modifier.
+"""
 function setElementMod(inElement::SCode.Element, inMod::SCode.Mod)::SCode.Element
   local outElement::SCode.Element
 
@@ -5979,7 +6070,7 @@ function setElementVisibility(
   return outElement
 end
 
-""" #= Returns true if the given element is a class with the given name, otherwise false. =#"""
+"""Returns true if the given element is a class with the given name, otherwise false."""
 function isClassNamed(inName::SCode.Ident, inClass::SCode.Element)::Bool
   local outIsNamed::Bool
 
@@ -5998,7 +6089,7 @@ function isClassNamed(inName::SCode.Ident, inClass::SCode.Element)::Bool
   return outIsNamed
 end
 
-""" #= Returns the comment of an element. =#"""
+"""Returns the comment of an element."""
 function getElementComment(inElement::SCode.Element)::Option{SCode.Comment}
   local outComment::Option{SCode.Comment}
 
@@ -6022,7 +6113,7 @@ function getElementComment(inElement::SCode.Element)::Option{SCode.Comment}
   return outComment
 end
 
-""" #= Removes the annotation from a comment. =#"""
+"""Removes the annotation from a comment."""
 function stripAnnotationFromComment(
   inComment::Option{<:SCode.Comment},
 )::Option{SCode.Comment}
@@ -6061,14 +6152,16 @@ function isOverloadedFunction(inElement::SCode.Element)::Bool
   return isOverloaded
 end
 
-""" #= @author: adrpo
- this function merges the original declaration with the redeclared declaration, see 7.3.2 in Spec.
- - modifiers from the constraining class on derived classes are merged into the new declaration
- - modifiers from the original derived classes are merged into the new declaration
- - if the original declaration has no constraining type the derived declaration is used
- - prefixes and attributes are merged
- same with components
- TODO! how about non-short class definitions with constrained by with modifications? =#"""
+"""
+  @author: adrpo
+  this function merges the original declaration with the redeclared declaration, see 7.3.2 in Spec.
+  - modifiers from the constraining class on derived classes are merged into the new declaration
+  - modifiers from the original derived classes are merged into the new declaration
+  - if the original declaration has no constraining type the derived declaration is used
+  - prefixes and attributes are merged
+  same with components
+  TODO! how about non-short class definitions with constrained by with modifications?
+"""
 function mergeWithOriginal(inNew::SCode.Element, inOld::SCode.Element)::SCode.Element
   local outNew::SCode.Element
 
@@ -6155,8 +6248,10 @@ function getConstrainedByModifiers(inPrefixes::SCode.Prefixes)::SCode.Mod
   return outMod
 end
 
-""" #= @author: adrpo
- see mergeWithOriginal =#"""
+"""
+  @author: adrpo
+  see mergeWithOriginal
+"""
 function mergeClassDef(
   inNew::SCode.ClassDef,
   inOld::SCode.ClassDef,
@@ -6612,7 +6707,7 @@ function propagatePrefixInnerOuter(
   return outIO
 end
 
-""" #= Return true if Class is a partial. =#"""
+"""Return true if Class is a partial."""
 function isPackage(inClass::SCode.Element)::Bool
   local outBoolean::Bool
 
@@ -6630,7 +6725,7 @@ function isPackage(inClass::SCode.Element)::Bool
   return outBoolean
 end
 
-""" #= Return true if Class is a partial. =#"""
+"""Return true if Class is a partial."""
 function isPartial(inClass::SCode.Element)::Bool
   local outBoolean::Bool
 
@@ -6648,8 +6743,10 @@ function isPartial(inClass::SCode.Element)::Bool
   return outBoolean
 end
 
-""" #= Return true if the given element is allowed in a package, i.e. if it's a
-   constant or non-component element. Otherwise returns false. =#"""
+"""
+  Return true if the given element is allowed in a package, i.e. if it's a
+  constant or non-component element. Otherwise returns false.
+"""
 function isValidPackageElement(inElement::SCode.Element)::Bool
   local outIsValid::Bool
 
@@ -6671,7 +6768,7 @@ function isValidPackageElement(inElement::SCode.Element)::Bool
   return outIsValid
 end
 
-""" #= returns true if a Class fulfills the requirements of an external object =#"""
+"""returns true if a Class fulfills the requirements of an external object"""
 function classIsExternalObject(cl::SCode.Element)::Bool
   local res::Bool
 
@@ -6690,9 +6787,11 @@ function classIsExternalObject(cl::SCode.Element)::Bool
   return res
 end
 
-""" #= Returns true if the element list fulfills the condition of an External Object.
-An external object extends the builtinClass ExternalObject, and has two local
-functions, destructor and constructor.  =#"""
+"""
+  Returns true if the element list fulfills the condition of an External Object.
+  An external object extends the builtinClass ExternalObject, and has two local
+  functions, destructor and constructor.
+"""
 function isExternalObject(els::List{<:SCode.Element})::Bool
   local res::Bool
 
@@ -6714,7 +6813,7 @@ function isExternalObject(els::List{<:SCode.Element})::Bool
   return res
 end
 
-""" #= returns true if element list contains 'extends ExternalObject;' =#"""
+"""returns true if element list contains 'extends ExternalObject;'"""
 function hasExtendsOfExternalObject(inEls::List{<:SCode.Element})::Bool
   local res::Bool
 
@@ -6740,7 +6839,7 @@ function hasExtendsOfExternalObject(inEls::List{<:SCode.Element})::Bool
   return res
 end
 
-""" #= returns true if element list contains 'function destructor .. end destructor' =#"""
+"""returns true if element list contains 'function destructor .. end destructor'"""
 function hasExternalObjectDestructor(inEls::List{<:SCode.Element})::Bool
   local res::Bool
 
@@ -6763,7 +6862,7 @@ function hasExternalObjectDestructor(inEls::List{<:SCode.Element})::Bool
   return res
 end
 
-""" #= returns true if element list contains 'function constructor ... end constructor' =#"""
+"""returns true if element list contains 'function constructor ... end constructor'"""
 function hasExternalObjectConstructor(inEls::List{<:SCode.Element})::Bool
   local res::Bool
 
@@ -6786,7 +6885,7 @@ function hasExternalObjectConstructor(inEls::List{<:SCode.Element})::Bool
   return res
 end
 
-""" #= returns the class 'function destructor .. end destructor' from element list =#"""
+"""returns the class 'function destructor .. end destructor' from element list"""
 function getExternalObjectDestructor(inEls::List{<:SCode.Element})::SCode.Element
   local cl::SCode.Element
 
@@ -6805,7 +6904,7 @@ function getExternalObjectDestructor(inEls::List{<:SCode.Element})::SCode.Elemen
   return cl
 end
 
-""" #= returns the class 'function constructor ... end constructor' from element list =#"""
+"""returns the class 'function constructor ... end constructor' from element list"""
 function getExternalObjectConstructor(inEls::List{<:SCode.Element})::SCode.Element
   local cl::SCode.Element
 
@@ -6882,7 +6981,7 @@ function isInitial(inInitial::SCode.Initial)::Bool
   return isIn
 end
 
-""" #= check if the restrictions are the same for redeclared classes =#"""
+"""check if the restrictions are the same for redeclared classes"""
 function checkSameRestriction(
   inResNew::SCode.Restriction,
   inResOrig::SCode.Restriction,
@@ -6904,8 +7003,10 @@ function checkSameRestriction(
   return (outRes, outInfo)
 end
 
-""" #= @auhtor: adrpo
- set the name of the component =#"""
+"""
+  @auhtor: adrpo
+  set the name of the component
+"""
 function setComponentName(inE::SCode.Element, inName::SCode.Ident)::SCode.Element
   local outE::SCode.Element
 
@@ -7031,7 +7132,7 @@ function isEmptyClassDef(cdef::SCode.ClassDef)::Bool
   return isEmpty
 end
 
-""" #= Strips all annotations and/or comments from a program. =#"""
+"""Strips all annotations and/or comments from a program."""
 function stripCommentsFromProgram(
   program::SCode.Program,
   stripAnnotations::Bool,
@@ -7465,7 +7566,7 @@ function checkValidEnumLiteral(inLiteral::String, inInfo::SourceInfo)
   end
 end
 
-""" #= get the redeclare-as-element elements =#"""
+"""get the redeclare-as-element elements"""
 function isRedeclareElement(element::SCode.Element)::Bool
   local isElement::Bool
 

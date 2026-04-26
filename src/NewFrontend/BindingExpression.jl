@@ -97,7 +97,7 @@ function bindingExpMap2(@nospecialize(exp::Expression), evalFunc::EvalFunc, most
   result
 end
 
-""" #= Calls the given function on each element of a binding expression. =#"""
+"""Calls the given function on each element of a binding expression."""
 function bindingExpMap(@nospecialize(exp::Expression), evalFunc::EvalFunc)
   local result::Expression
   local max_prop_exp::Expression
@@ -145,8 +145,10 @@ function vectorize(@nospecialize(exp::Expression), dims::List{<:Dimension}, func
   outExp
 end
 
-""" #= Calculates the expression type and binding type of an expression given the
-               number of dimensions it's been propagated through. =#"""
+"""
+  Calculates the expression type and binding type of an expression given the
+  number of dimensions it's been propagated through.
+"""
 function bindingExpType(@nospecialize(exp::Expression), propagatedDimCount::Int)
   local bindingType::M_Type
   local expType::M_Type
@@ -159,8 +161,10 @@ function bindingExpType(@nospecialize(exp::Expression), propagatedDimCount::Int)
   (expType, bindingType)
 end
 
-""" #= Returns the number of dimensions a binding expression has been propagated
-               through. =#"""
+"""
+  Returns the number of dimensions a binding expression has been propagated
+  through.
+"""
 function propagatedDimCount(@nospecialize(exp::Expression)) ::Int
   local dimCount::Int
   dimCount = begin
@@ -184,8 +188,10 @@ function propagatedDimCount(@nospecialize(exp::Expression)) ::Int
   dimCount
 end
 
-""" #= Replaces all binding expressions in the given expression with the
-                 expressions they contain. =#"""
+"""
+  Replaces all binding expressions in the given expression with the
+  expressions they contain.
+"""
 function stripBindingInfo(@nospecialize(exp::Expression)) ::Expression
   local outExp::Expression
   outExp = map(exp, getBindingExp)
@@ -337,8 +343,10 @@ function splitRecordCref(@nospecialize(exp::Expression)) ::Expression
   outExp
 end
 
-""" #= Returns the nth field of a record expression. If the expression is an array
-               it will return an array with the nth field in each array element. =#"""
+"""
+  Returns the nth field of a record expression. If the expression is an array
+  it will return an array with the nth field in each array element.
+"""
 function nthRecordElement(index::Int, @nospecialize(recordExp::Expression)) ::Expression
   local outExp::Expression
 
@@ -903,8 +911,10 @@ function hasArrayCall2(@nospecialize(exp::Expression)) ::Bool
   hasArrayCall
 end
 
-""" #= Returns true if the given expression contains a function call that returns
-               an array, otherwise false. =#"""
+"""
+  Returns true if the given expression contains a function call that returns
+  an array, otherwise false.
+"""
 function hasArrayCall(@nospecialize(exp::Expression)) ::Bool
   local hasArrayCall::Bool
   hasArrayCall = contains(exp, hasArrayCall2)
@@ -1164,9 +1174,11 @@ function makeZero(@nospecialize(ty::M_Type)) ::Expression
   zeroExp
 end
 
-""" #= Creates an array from the given list of dimensions, where each element is
-               the given expression. Example:
-                 liftArrayList([2, 3], 1) => {{1, 1, 1}, {1, 1, 1}} =#"""
+"""
+  Creates an array from the given list of dimensions, where each element is
+  the given expression. Example:
+  liftArrayList([2, 3], 1) => {{1, 1, 1}, {1, 1, 1}}
+"""
 function liftArrayList(dims::List{<:Dimension}, @nospecialize(exp::Expression)) ::Tuple{Expression, M_Type}
   local arrayType::M_Type = typeOf(exp)
   local expl::List{Expression}
@@ -1189,8 +1201,10 @@ function liftArrayList(dims::List{<:Dimension}, @nospecialize(exp::Expression)) 
   (exp, arrayType)
 end
 
-""" #= Creates an array with the given dimension, where each element is the given
-               expression. Example: liftArray([3], 1) => {1, 1, 1} =#"""
+"""
+  Creates an array with the given dimension, where each element is the given
+  expression. Example: liftArray([3], 1) => {1, 1, 1}
+"""
 function liftArray(dim::Dimension, @nospecialize(exp::Expression)) ::Tuple{Expression, M_Type}
   local arrayType::M_Type = typeOf(exp)
   local expl::Vector{Expression} = Vector[]
@@ -1203,8 +1217,10 @@ function liftArray(dim::Dimension, @nospecialize(exp::Expression)) ::Tuple{Expre
   (exp, arrayType)
 end
 
-""" #= Creates an array with the given type, filling it with the given scalar
-               expression. =#"""
+"""
+  Creates an array with the given type, filling it with the given scalar
+  expression.
+"""
 function fillType(@nospecialize(ty::M_Type), @nospecialize(fillExp::Expression)) ::Expression
   local exp::Expression = fillExp
   local dims::List{Dimension} = arrayDims(ty)
@@ -1534,7 +1550,7 @@ function arrayAllEqual2(@nospecialize(arrayExp::Expression), @nospecialize(eleme
   allEqual
 end
 
-""" #= Checks if all scalar elements in an array are equal to each other. =#"""
+"""Checks if all scalar elements in an array are equal to each other."""
 function arrayAllEqual(@nospecialize(arrayExp::Expression)) ::Bool
   local allEqual::Bool
 
@@ -4101,7 +4117,7 @@ one expression.
   outExp
 end
 
-#= Adding an alias for map. For some reason Julia struggles to find it in certain situations. =#
+"""Adding an alias for map. For some reason Julia struggles to find it in certain situations."""
 function mapExpAlias(@nospecialize(exp::Expression), func::Function)
   return map(exp, func)
 end
@@ -4579,7 +4595,7 @@ function operandFlatString(@nospecialize(operand::Expression), @nospecialize(ope
   str
 end
 
-""" #= Helper function to toString, prints an operator and adds parentheses as needed. =#"""
+"""Helper function to toString, prints an operator and adds parentheses as needed."""
 function operandString(@nospecialize(operand::Expression), @nospecialize(operator::Expression), lhs::Bool) ::String
   local str::String
 
@@ -5705,13 +5721,15 @@ function realValue(@nospecialize(exp::Expression))
   value
 end
 
-""" #= Converts an expression to the given type. Dimensions of array types can be
-               omitted, and are ignored by this function, since arrays can't be cast to a
-               different size. Only the element type of the type is used, so for example:
-                 typeCast({1, 2, 3}, TYPE_REAL()) => {1.0, 2.0, 3.0}
+ """
+   Converts an expression to the given type. Dimensions of array types can be
+   omitted, and are ignored by this function, since arrays can't be cast to a
+   different size. Only the element type of the type is used, so for example:
+   typeCast({1, 2, 3}, TYPE_REAL()) => {1.0, 2.0, 3.0}
 
-               The function does not check that the cast is valid, and expressions that
-               can't be converted outright will be wrapped as a CAST expression. =#"""
+   The function does not check that the cast is valid, and expressions that
+   can't be converted outright will be wrapped as a CAST expression.
+ """
  function typeCast(@nospecialize(exp::Expression), @nospecialize(ty::NFType)) ::Expression
    local t::NFType
    local t2::NFType
@@ -6375,7 +6393,7 @@ end
   comp
 end
 
-""" #= Returns true if the two expressions are equal, otherwise false. =#"""
+"""Returns true if the two expressions are equal, otherwise false."""
 function isEqual(@nospecialize(exp1::Expression), @nospecialize(exp2::Expression)) ::Bool
   local isEqual::Bool
   isEqual = 0 == compare(exp1, exp2)

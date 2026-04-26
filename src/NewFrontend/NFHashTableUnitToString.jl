@@ -60,10 +60,10 @@ const HashTableCrefFunctionsType = Tuple
 
 const HashTable = Tuple
 
-""" #= 
+"""
   Returns an empty HashTable.
   Using the default bucketsize..
- =#"""
+"""
 function emptyHashTable()::HashTable
   local hashTable::HashTable
 
@@ -78,10 +78,10 @@ function id(inStr::String)::String
   return outStr
 end
 
-""" #= 
+"""
   Returns an empty HashTable.
   Using the bucketsize size.
- =#"""
+"""
 function emptyHashTableSized(size::Int)::HashTable
   local hashTable::HashTable
 

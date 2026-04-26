@@ -819,8 +819,10 @@ const TIME_CREF =
     COMPONENT_REF_EMPTY(),
   )::ComponentRef
 
-""" #= This function takes lists of component and class names and prints out a lookup tree.
-   Useful in case any attributes needs to be added to any of the builtin type. =#"""
+"""
+  This function takes lists of component and class names and prints out a lookup tree.
+  Useful in case any attributes needs to be added to any of the builtin type.
+"""
 function makeBuiltinLookupTree(
   name::String,
   components::List{<:String},

@@ -18,8 +18,7 @@ using ExportAll
 
 module SimpleBuffer
 
-using ExternalObject #= Modelica extend clause =#
-
+"""using ExternalObject #= Modelica extend clause"""
 function constructor()::SimpleBuffer
   local buf::SimpleBuffer
 
@@ -48,8 +47,7 @@ end
 
 module Packer
 
-using ExternalObject #= Modelica extend clause =#
-
+"""using ExternalObject #= Modelica extend clause"""
 function constructor(buf::SimpleBuffer.SimpleBuffer)::Packer
   local packer::Packer
 
@@ -139,8 +137,7 @@ using ExportAll
 
 module Deserializer
 
-using ExternalObject #= Modelica extend clause =#
-
+"""using ExternalObject #= Modelica extend clause"""
 function constructor(file::String)::Deserializer
   local deserializer::Deserializer
 
@@ -213,8 +210,7 @@ using ExportAll
 
 module Stream
 
-using ExternalObject #= Modelica extend clause =#
-
+"""using ExternalObject #= Modelica extend clause"""
 function constructor(file::String = "")::Stream #= Output file or \\\"\\\" for an in-memory string accessible using get() =#
   local ss::Stream
 
@@ -227,7 +223,7 @@ function destructor(ss::Stream)
 end
 end
 
-""" #= Only works for in-memory streams =#"""
+"""Only works for in-memory streams"""
 function get(ss::Stream)::String
   local str::String
 

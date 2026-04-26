@@ -3435,7 +3435,7 @@ function getFlags(initialize::Bool = true)::Flag
   return flags
 end
 
-""" #= Checks if a debug flag is set. =#"""
+"""Checks if a debug flag is set."""
 function isSet(inFlag::DebugFlag)::Bool
   local outValue::Bool
   local debug_flags::Array{Bool}
@@ -3448,7 +3448,7 @@ function isSet(inFlag::DebugFlag)::Bool
   return outValue
 end
 
-""" #= Returns the value of a configuration flag. =#"""
+"""Returns the value of a configuration flag."""
 function getConfigValue(inFlag::ConfigFlag)::FlagData
   local outValue::FlagData
 
@@ -3464,7 +3464,7 @@ function getConfigValue(inFlag::ConfigFlag)::FlagData
   return outValue
 end
 
-""" #= Returns the value of a boolean configuration flag. =#"""
+"""Returns the value of a boolean configuration flag."""
 function getConfigBool(inFlag::ConfigFlag)::Bool
   local outValue::Bool
 
@@ -3472,7 +3472,7 @@ function getConfigBool(inFlag::ConfigFlag)::Bool
   return outValue
 end
 
-""" #= Returns the value of an integer configuration flag. =#"""
+"""Returns the value of an integer configuration flag."""
 function getConfigInt(inFlag::ConfigFlag)::Integer
   local outValue::Integer
 
@@ -3480,7 +3480,7 @@ function getConfigInt(inFlag::ConfigFlag)::Integer
   return outValue
 end
 
-""" #= Returns the value of an integer configuration flag. =#"""
+"""Returns the value of an integer configuration flag."""
 function getConfigIntList(inFlag::ConfigFlag)::List{Integer}
   local outValue::List{Integer}
 
@@ -3488,7 +3488,7 @@ function getConfigIntList(inFlag::ConfigFlag)::List{Integer}
   return outValue
 end
 
-""" #= Returns the value of a real configuration flag. =#"""
+"""Returns the value of a real configuration flag."""
 function getConfigReal(inFlag::ConfigFlag)::AbstractFloat
   local outValue::AbstractFloat
 
@@ -3496,7 +3496,7 @@ function getConfigReal(inFlag::ConfigFlag)::AbstractFloat
   return outValue
 end
 
-""" #= Returns the value of a string configuration flag. =#"""
+"""Returns the value of a string configuration flag."""
 function getConfigString(inFlag::ConfigFlag)::String
   local outValue::String
 
@@ -3504,7 +3504,7 @@ function getConfigString(inFlag::ConfigFlag)::String
   return outValue
 end
 
-""" #= Returns the value of a multiple-string configuration flag. =#"""
+"""Returns the value of a multiple-string configuration flag."""
 function getConfigStringList(inFlag::ConfigFlag)::List{String}
   local outValue::List{String}
 
@@ -3512,7 +3512,7 @@ function getConfigStringList(inFlag::ConfigFlag)::List{String}
   return outValue
 end
 
-""" #= Returns the value of an enumeration configuration flag. =#"""
+"""Returns the value of an enumeration configuration flag."""
 function getConfigEnum(inFlag::ConfigFlag)::Integer
   local outValue::Integer
 

@@ -35,8 +35,7 @@ import OMRuntimeExternalC
 *
 */ =#
 
-#= Streams / File functions delegate to ModelicaInternal C implementations =#
-
+"""Streams / File functions delegate to ModelicaInternal C implementations"""
 function Streams_print(string::String, fileName::String)
   OMRuntimeExternalC.ModelicaInternal_print(string, fileName)
 end
@@ -61,8 +60,7 @@ function Streams_close(fileName::String)
   OMRuntimeExternalC.ModelicaStreams_closeFile(fileName)
 end
 
-#= String functions delegate to ModelicaStrings C implementations =#
-
+"""String functions delegate to ModelicaStrings C implementations"""
 function Strings_compare(string1::String, string2::String, caseSensitive::Bool)::Int64
   return OMRuntimeExternalC.ModelicaStrings_compare(string1, string2, Int64(caseSensitive))
 end
@@ -99,8 +97,7 @@ function Strings_hashString(string::String)::Int64
   return OMRuntimeExternalC.ModelicaStrings_hashString(string)
 end
 
-#= ModelicaIO functions delegate to OMRuntimeExternalC =#
-
+"""ModelicaIO functions delegate to OMRuntimeExternalC"""
 function ModelicaIO_readMatrixSizes(fileName::String, matrixName::String)::Vector{Int64}
   return OMRuntimeExternalC.ModelicaIO_readMatrixSizes(fileName, matrixName)
 end

@@ -368,7 +368,7 @@ function simplifyTupleElement(
   return statements
 end
 
-""" #= Replaces tuple elements that has one or more zero dimension with _. =#"""
+"""Replaces tuple elements that has one or more zero dimension with _."""
 function removeEmptyTupleElements(exp::Expression)
   local tyl::List{M_Type}
   local rExp

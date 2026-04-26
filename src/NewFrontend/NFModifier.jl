@@ -680,9 +680,11 @@ function create(mod::SCode.MOD,
   MODIFIER_MODIFIER(name, mod.finalPrefix, mod.eachPrefix, binding, submod_table, mod.info)
 end
 
-""" #= Merges two modifiers in the same scope, i.e. like a(x(y = 1), x(z = 2)).
-     This is allowed as long as the two modifiers doesn't modify the same
-     element, otherwise it's an error. =#"""
+"""
+  Merges two modifiers in the same scope, i.e. like a(x(y = 1), x(z = 2)).
+  This is allowed as long as the two modifiers doesn't modify the same
+  element, otherwise it's an error.
+"""
 function mergeLocal(
   mod1::Modifier,
   mod2::Modifier,

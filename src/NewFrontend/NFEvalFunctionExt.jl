@@ -794,11 +794,13 @@ function evaluateExtRealMatrixArg(@nospecialize(arg::Expression))::List{List{Abs
   return value
 end
 
-""" #= Some external functions doesn't differentiate between vector and matrices, so
-   we might get back a Nx1 matrix when expecting a vector. In that case it needs
-   to be converted back into a vector before assigning the variable. Otherwise
-   this function just calls assignVariable, so it's only needed for matrix
-   arguments. =#"""
+"""
+  Some external functions doesn't differentiate between vector and matrices, so
+  we might get back a Nx1 matrix when expecting a vector. In that case it needs
+  to be converted back into a vector before assigning the variable. Otherwise
+  this function just calls assignVariable, so it's only needed for matrix
+  arguments.
+"""
 function assignVariableExt(@nospecialize(variable::Expression), @nospecialize(value::Expression))
   local exp::Expression
 

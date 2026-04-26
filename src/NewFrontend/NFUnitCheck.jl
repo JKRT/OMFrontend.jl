@@ -79,7 +79,7 @@ function checkUnits(flatModel::FlatModel)::FlatModel
   return flatModel
 end
 
-""" #= Updates all variables without units with their calculated units. =#"""
+"""Updates all variables without units with their calculated units."""
 function updateModel(
   flatModel::FlatModel,
   htCr2U::HashTableCrToUnit.HashTable,
@@ -91,7 +91,7 @@ function updateModel(
   return flatModel
 end
 
-""" #= Updates a variable without unit with its calculated unit. =#"""
+"""Updates a variable without unit with its calculated unit."""
 function updateVariable(
   var::Variable,
   htCr2U::HashTableCrToUnit.HashTable,
@@ -141,7 +141,7 @@ function updateVariable(
   return var
 end
 
-""" #= dumps the calculated units =#"""
+"""dumps the calculated units"""
 function notification(
   inHtCr2U1::HashTableCrToUnit.HashTable,
   inHtCr2U2::HashTableCrToUnit.HashTable,
@@ -157,7 +157,7 @@ function notification(
   end
 end
 
-""" #= help-function =#"""
+"""help-function"""
 function notification2(
   inLt1::List{<:Tuple{<:ComponentRef, Unit.Unit}},
   inHtCr2U2::HashTableCrToUnit.HashTable,
@@ -277,7 +277,7 @@ function foldBindingExp(
   return (htCr2U, htS2U, htU2S, fnCache)
 end
 
-""" #= Folds the equation or returns the error message of inconsistent equations. =#"""
+"""Folds the equation or returns the error message of inconsistent equations."""
 function foldEquation(
   eq::Equation,
   htCr2U::HashTableCrToUnit.HashTable,
@@ -302,7 +302,7 @@ function foldEquation(
   return (htCr2U, htS2U, htU2S, fnCache)
 end
 
-""" #= help function to foldEquation =#"""
+"""help function to foldEquation"""
 function foldEquation2(
   eq::Equation,
   dumpEqInitStruct::Bool,
@@ -456,7 +456,7 @@ function makeNewCref(paramName::String, fnName::String)::Expression
   return outExp
 end
 
-""" #= Inserts the units in the equation and checks if the equation is consistent or not. =#"""
+"""Inserts the units in the equation and checks if the equation is consistent or not."""
 function insertUnitInEquation(
   eq::Expression,
   unit::Unit.Unit,
@@ -892,7 +892,7 @@ function insertUnitInEquation(
   return (unit, htCr2U, htS2U, htU2S, fnCache, inconsistentUnits)
 end
 
-""" #= Inserts the units in the equation and checks if the equation is consistent or not. =#"""
+"""Inserts the units in the equation and checks if the equation is consistent or not."""
 function insertUnitInEquationCall(
   call::Call,
   unit::Unit.Unit,
@@ -1066,7 +1066,7 @@ function parseFunctionUnits(funcName::String, func::M_Function)::Functionargs
   return outArgs
 end
 
-""" #= Checks equality of two units. =#"""
+"""Checks equality of two units."""
 function unitTypesEqual(
   unit1::Unit.Unit,
   unit2::Unit.Unit,
@@ -1150,7 +1150,7 @@ function updateHtCr2U(
   return htCr2U
 end
 
-""" #= returns the inconsistent Equation with sub-expression =#"""
+"""returns the inconsistent Equation with sub-expression"""
 function Errorfunction(
   inexpList::List{<:Tuple{<:Expression, Unit.Unit}},
   inEq::Equation,
@@ -1189,7 +1189,7 @@ function Errorfunction(
            \"The units of following sub-expressions need to be equal:\\n\" + s1 );*/ =#
 end
 
-""" #= help-function =#"""
+"""help-function"""
 function Errorfunction2(
   inexpList::List{<:Tuple{<:Expression, Unit.Unit}},
   inHtU2S::HashTableUnitToString.HashTable,
@@ -1223,7 +1223,7 @@ function Errorfunction2(
   return outS
 end
 
-""" #= help-function for CALL case in function insertUnitInEquation =#"""
+"""help-function for CALL case in function insertUnitInEquation"""
 function foldCallArg(
   args::List{<:Expression},
   htCr2U::HashTableCrToUnit.HashTable,
@@ -1250,7 +1250,7 @@ function foldCallArg(
   return (htCr2U, htS2U, htU2S, fnCache, inconsistentUnits)
 end
 
-""" #= Help function for CALL case in userdefinde top level function insertUnitInEquation =#"""
+"""Help function for CALL case in userdefinde top level function insertUnitInEquation"""
 function foldCallArg1(
   args::List{<:Expression},
   htCr2U::HashTableCrToUnit.HashTable,
@@ -1326,7 +1326,7 @@ function addUnit2HtU2S(
   return htU2S
 end
 
-""" #= converts String to unit =#"""
+"""converts String to unit"""
 function convertUnitString2unit(
   var::Variable,
   htCr2U::HashTableCrToUnit.HashTable,
@@ -1366,7 +1366,7 @@ function convertUnitString2unit(
   return (htCr2U, htS2U, htU2S)
 end
 
-""" #= author: lochel =#"""
+"""author: lochel"""
 function parse(
   unitString::String,
   cref::ComponentRef,

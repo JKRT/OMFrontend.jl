@@ -373,8 +373,10 @@ end
 #=  -------------------------
 =#
 
-""" #= author: marcusw
-  Creates a new and empty graphInfo. =#"""
+"""
+  author: marcusw
+  Creates a new and empty graphInfo.
+"""
 function createGraphInfo()::GraphInfo
   local oGraphInfo::GraphInfo
 
@@ -382,8 +384,10 @@ function createGraphInfo()::GraphInfo
   return oGraphInfo
 end
 
-""" #= author: marcusw
-  Adds a new graph to the given graphInfo. =#"""
+"""
+  author: marcusw
+  Adds a new graph to the given graphInfo.
+"""
 function addGraph(
   id::String,
   directed::Bool,
@@ -438,8 +442,10 @@ function addGraph(
   return (oGraphInfo, oGraph)
 end
 
-""" #= author: marcusw
-  Adds a new node to the given graph which is part of the given graphInfo. =#"""
+"""
+  author: marcusw
+  Adds a new node to the given graph which is part of the given graphInfo.
+"""
 function addNode(
   id::String,
   backgroundColor::String,
@@ -515,8 +521,10 @@ function addNode(
   return (oGraphInfo, oNode)
 end
 
-""" #= author: marcusw
-  Adds a new group node to the given graphInfo. The created node contains a new graph which is returned as second output-argument. =#"""
+"""
+  author: marcusw
+  Adds a new group node to the given graphInfo. The created node contains a new graph which is returned as second output-argument.
+"""
 function addGroupNode(
   id::String,
   iGraphIdx::Integer,
@@ -610,8 +618,10 @@ function addGroupNode(
   return (oGraphInfo, oNode, oGraph)
 end
 
-""" #= author: marcusw
-  Adds a new edge to the graphInfo-structure. Edges are always added to the top-level graph. =#"""
+"""
+  author: marcusw
+  Adds a new edge to the graphInfo-structure. Edges are always added to the top-level graph.
+"""
 function addEdge(
   id::String,
   target::String,
@@ -677,9 +687,11 @@ function addEdge(
   return (oGraphInfo, oEdge)
 end
 
-""" #= author: marcusw
+"""
+  author: marcusw
   Adds a new attribute to the given graphInfo.
-  These attributes can be used by graphs, nodes and edges to display some additional informations. =#"""
+  These attributes can be used by graphs, nodes and edges to display some additional informations.
+"""
 function addAttribute(
   defaultValue::String,
   name::String,
@@ -739,8 +751,10 @@ function addAttribute(
   return (oGraphInfo, oAttribute)
 end
 
-""" #= author: marcusw
-  Adds a new value for a given attribute to the graph. =#"""
+"""
+  author: marcusw
+  Adds a new value for a given attribute to the graph.
+"""
 function addGraphAttributeValue(
   iValue::Tuple{<:Integer, String},
   iGraphIdx::Integer,
@@ -815,9 +829,11 @@ end
 #=  -------------------------
 =#
 
-""" #= author: marcusw
+"""
+  author: marcusw
   This function will return the top-level graph (usually with index 1) if there is one in the graphInfo-structure.
-  Otherwise it will return NONE(). =#"""
+  Otherwise it will return NONE().
+"""
 function getMainGraph(iGraphInfo::GraphInfo)::Option{Tuple{Integer, Graph}}
   local oGraph::Option{Tuple{Integer, Graph}}
 
@@ -947,8 +963,10 @@ end
 #=  -------------------------
 =#
 
-""" #= author: marcusw
-  Dumps the graph into a *.graphml-file. =#"""
+"""
+  author: marcusw
+  Dumps the graph into a *.graphml-file.
+"""
 function dumpGraph(iGraphInfo::GraphInfo, iFileName::String)
   local iGraphInfoArr::GraphInfo
 
@@ -956,8 +974,10 @@ function dumpGraph(iGraphInfo::GraphInfo, iFileName::String)
   return Tpl.tplNoret2(GraphMLDumpTpl.dumpGraphInfo, iGraphInfoArr, iFileName)
 end
 
-""" #= author: marcusw
-  Converts the given GRAPHINFO-object into a GRAPHINFOARR-object. =#"""
+"""
+  author: marcusw
+  Converts the given GRAPHINFO-object into a GRAPHINFOARR-object.
+"""
 function convertToGraphInfoArr(iGraphInfo::GraphInfo)::GraphInfo
   local oGraphInfo::GraphInfo
 
@@ -1005,9 +1025,7 @@ end
 =#
 #=  debug prints
 =#
-#=  -------------------------
-=#
-
+"""-------------------------"""
 function printGraphInfo(iGraphInfo::GraphInfo)
   local graphs::List{Graph}
   local graphCount::Integer

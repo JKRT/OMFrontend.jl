@@ -1,10 +1,9 @@
-#=
-Defines function available in the OpenModelica Scripting environment
-The functions defined here work slightly different compared to the functions defined in the main API.
-Here, most manipulate global variables which is not the case when using functions such as translate model etc
-in the main API.
-=#
-
+"""
+  Defines function available in the OpenModelica Scripting environment
+  The functions defined here work slightly different compared to the functions defined in the main API.
+  Here, most manipulate global variables which is not the case when using functions such as translate model etc
+  in the main API.
+"""
 function loadFile(filename::String)
   try
 

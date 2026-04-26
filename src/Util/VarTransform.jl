@@ -107,7 +107,7 @@ import ListUtil
 
 import Frontend.Util
 
-""" #= Apply a set of replacement rules on a DAE  =#"""
+"""Apply a set of replacement rules on a DAE"""
 function applyReplacementsDAE(
   dae::DAE.DAElist,
   repl::VariableReplacements,
@@ -129,7 +129,7 @@ function applyReplacementsDAE(
   return outDae
 end
 
-""" #= Help function to applyReplacementsDAE, goes though the element list =#"""
+"""Help function to applyReplacementsDAE, goes though the element list"""
 function applyReplacementsDAEElts(
   inDae::List{<:DAE.Element},
   repl::VariableReplacements,
@@ -404,7 +404,7 @@ function applyReplacementsDAEElts(
   return outDae
 end
 
-""" #= Help function to applyReplacementsDAEElts =#"""
+"""Help function to applyReplacementsDAEElts"""
 function applyReplacementsVarAttr(
   attr::Option{<:DAE.VariableAttributes},
   repl::VariableReplacements,
@@ -542,9 +542,10 @@ function applyReplacementsVarAttr(
   return outAttr
 end
 
-""" #= This function takes a VariableReplacements and two component references.
+"""
+  This function takes a VariableReplacements and two component references.
   It applies the replacements to each component reference.
- =#"""
+"""
 function applyReplacements(
   inVariableReplacements1::VariableReplacements,
   inComponentRef2::DAE.ComponentRef,
@@ -570,11 +571,12 @@ function applyReplacements(
   return (outComponentRef1, outComponentRef2)
 end
 
-""" #=  Author: BZ, 2008-11
+"""
+  Author: BZ, 2008-11
 
   This function takes a VariableReplacements and a list of component references.
   It applies the replacements to each component reference.
- =#"""
+"""
 function applyReplacementList(
   repl::VariableReplacements,
   increfs::List{<:DAE.ComponentRef},
@@ -599,10 +601,7 @@ function applyReplacementList(
   return ocrefs
 end
 
-""" #=
-
-Similar to applyReplacements but for expressions instead of component references.
- =#"""
+"""Similar to applyReplacements but for expressions instead of component references."""
 function applyReplacementsExp(
   repl::VariableReplacements,
   inExp1::DAE.Exp,
@@ -629,7 +628,7 @@ function applyReplacementsExp(
   return (outExp1, outExp2)
 end
 
-""" #= create an array of n empty replacements =#"""
+"""create an array of n empty replacements"""
 function emptyReplacementsArray(n::Integer)::Array{VariableReplacements}
   local repl::Array{VariableReplacements}
 
@@ -637,7 +636,7 @@ function emptyReplacementsArray(n::Integer)::Array{VariableReplacements}
   return repl
 end
 
-""" #= help function =#"""
+"""help function"""
 function emptyReplacementsArray2(n::Integer)::List{VariableReplacements}
   local replLst::List{VariableReplacements}
 
@@ -665,9 +664,7 @@ function emptyReplacementsArray2(n::Integer)::List{VariableReplacements}
   return replLst
 end
 
-""" #=
-  Returns an empty set of replacement rules
- =#"""
+"""Returns an empty set of replacement rules"""
 function emptyReplacements()::VariableReplacements
   local outVariableReplacements::VariableReplacements
 
@@ -685,9 +682,7 @@ function emptyReplacements()::VariableReplacements
   return outVariableReplacements
 end
 
-""" #=
-  Returns an empty set of replacement rules, giving a size of hashtables to allocate
- =#"""
+"""Returns an empty set of replacement rules, giving a size of hashtables to allocate"""
 function emptyReplacementsSized(size::Integer)::VariableReplacements
   local outVariableReplacements::VariableReplacements
 
@@ -705,10 +700,10 @@ function emptyReplacementsSized(size::Integer)::VariableReplacements
   return outVariableReplacements
 end
 
-""" #=
+"""
   Helper function to replace_equations,
   Handles the replacement of DAE.Statement.
- =#"""
+"""
 function replaceEquationsStmts(
   inAlgorithmStatementLst::List{<:DAE.Statement},
   repl::VariableReplacements,
@@ -914,8 +909,7 @@ function replaceEquationsStmts(
   return (outAlgorithmStatementLst, replacementPerformed)
 end
 
-""" #=
-Helper function for replaceEquationsStmts, replaces DAE.Else =#"""
+"""Helper function for replaceEquationsStmts, replaces DAE.Else"""
 function replaceEquationsElse(
   inElse::DAE.Else,
   repl::VariableReplacements,
@@ -956,8 +950,7 @@ function replaceEquationsElse(
   return (outElse, replacementPerformed)
 end
 
-""" #=
-Helper function for replaceEquationsStmts, replaces optional statement =#"""
+"""Helper function for replaceEquationsStmts, replaces optional statement"""
 function replaceOptEquationsStmts(
   optStmt::Option{<:DAE.Statement},
   inVariableReplacements::VariableReplacements,
@@ -984,7 +977,7 @@ function replaceOptEquationsStmts(
   return (outAlgorithmStatementLst, replacementPerformed)
 end
 
-""" #= Prints the variable replacements on form var1 -> var2 =#"""
+"""Prints the variable replacements on form var1 -> var2"""
 function dumpReplacements(inVariableReplacements::VariableReplacements)
   return @assign _ = begin
     local str::String
@@ -1011,10 +1004,10 @@ function dumpReplacements(inVariableReplacements::VariableReplacements)
   end
 end
 
-""" #=
-Author BZ 2009-04
-Function for dumping replacements to string.
- =#"""
+"""
+  Author BZ 2009-04
+  Function for dumping replacements to string.
+"""
 function dumpReplacementsStr(inVariableReplacements::VariableReplacements)::String
   local ostr::String
 
@@ -1049,10 +1042,10 @@ function dumpReplacementsStr(inVariableReplacements::VariableReplacements)::Stri
   return ostr
 end
 
-""" #=
-Author BZ 2009-04
-Extract all crefs -> exp to two separate lists.
- =#"""
+"""
+  Author BZ 2009-04
+  Extract all crefs -> exp to two separate lists.
+"""
 function getAllReplacements(
   inVariableReplacements::VariableReplacements,
 )::Tuple{List{DAE.ComponentRef}, List{DAE.Exp}}
@@ -1074,7 +1067,7 @@ function getAllReplacements(
   return (crefs, dsts)
 end
 
-""" #= help function to dumpReplacements =#"""
+"""help function to dumpReplacements"""
 function printReplacementTupleStr(tpl::Tuple{<:DAE.ComponentRef, DAE.Exp})::String
   local str::String
 
@@ -1091,7 +1084,7 @@ function printReplacementTupleStr(tpl::Tuple{<:DAE.ComponentRef, DAE.Exp})::Stri
   return str
 end
 
-""" #= Returns all sources of the replacement rules =#"""
+"""Returns all sources of the replacement rules"""
 function replacementSources(repl::VariableReplacements)::List{DAE.ComponentRef}
   local sources::List{DAE.ComponentRef}
 
@@ -1108,7 +1101,7 @@ function replacementSources(repl::VariableReplacements)::List{DAE.ComponentRef}
   return sources
 end
 
-""" #= Returns all targets of the replacement rules =#"""
+"""Returns all targets of the replacement rules"""
 function replacementTargets(repl::VariableReplacements)::List{DAE.ComponentRef}
   local sources::List{DAE.ComponentRef}
 
@@ -1128,7 +1121,7 @@ function replacementTargets(repl::VariableReplacements)::List{DAE.ComponentRef}
   return sources
 end
 
-""" #=  adds several replacements given by list of crefs and list of expressions by repeatedly calling addReplacement =#"""
+"""adds several replacements given by list of crefs and list of expressions by repeatedly calling addReplacement"""
 function addReplacementLst(
   inRepl::VariableReplacements,
   crs::List{<:DAE.ComponentRef},
@@ -1156,12 +1149,12 @@ function addReplacementLst(
   return repl
 end
 
-""" #=
+"""
   Adds a replacement rule to the set of replacement rules given as argument.
   If a replacement rule a->b already exists and we add a new rule b->c then
   the rule a->b is updated to a->c. This is done using the make_transitive
   function.
- =#"""
+"""
 function addReplacement(
   repl::VariableReplacements,
   inSrc::DAE.ComponentRef,
@@ -1218,9 +1211,10 @@ function addReplacement(
   return outRepl
 end
 
-""" #= Similar to addReplacement but
-does not make transitive replacement rules.
- =#"""
+"""
+  Similar to addReplacement but
+  does not make transitive replacement rules.
+"""
 function addReplacementNoTransitive(
   repl::VariableReplacements,
   src::DAE.ComponentRef,
@@ -1238,11 +1232,11 @@ function addReplacementNoTransitive(
   return outRepl
 end
 
-""" #=
+"""
   Helper function to addReplacement
   Adds the inverse rule of a replacement to the second binary tree
   of VariableReplacements.
- =#"""
+"""
 function addReplacementInv(
   invHt::HashTable3.HashTable,
   src::DAE.ComponentRef,
@@ -1264,14 +1258,14 @@ function addReplacementInv(
   return outInvHt
 end
 
-""" #=
+"""
   Helper function to addReplacementInv
   Adds the inverse rule for one of the variables of a replacement to the second binary tree
   of VariableReplacements.
   Since a replacement is on the form var -> expression of vars(v1,v2,...,vn) the inverse binary tree
   contains rules for v1 -> var, v2 -> var, ...., vn -> var so that any of the variables of the expression
   will update the rule.
- =#"""
+"""
 function addReplacementInv2(
   invHt::HashTable3.HashTable,
   dst::DAE.ComponentRef,
@@ -1297,7 +1291,7 @@ function addReplacementInv2(
   return outInvHt
 end
 
-""" #= performs listUnion but in an 'amortized' way, by only doing it occasionally =#"""
+"""performs listUnion but in an 'amortized' way, by only doing it occasionally"""
 function amortizeUnion(inCrefs::List{<:DAE.ComponentRef})::List{DAE.ComponentRef}
   local crefs::List{DAE.ComponentRef}
 
@@ -1317,11 +1311,12 @@ function amortizeUnion(inCrefs::List{<:DAE.ComponentRef})::List{DAE.ComponentRef
   return crefs
 end
 
-""" #= Calls addReplacement() if condition (first argument) is false,
+"""
+  Calls addReplacement() if condition (first argument) is false,
   otherwise does nothing.
 
   Author: asodja, 2010-03-03
- =#"""
+"""
 function addReplacementIfNot(
   condition::Bool,
   repl::VariableReplacements,
@@ -1349,7 +1344,7 @@ function addReplacementIfNot(
   return outRepl
 end
 
-""" #=
+"""
   This function takes a set of replacement rules and a new replacement rule
   in the form of two ComponentRef:s and makes sure the new replacement rule
   is replaced with the transitive value.
@@ -1360,7 +1355,7 @@ end
   it is changed to c-> expr(a1,expr(b1,...,bn),..,an).
   And similary for a rule ax -> expr(b1,bx,..,bn) and a new rule bx->expr(c1,..,cn) then old rule is changed to
   ax -> expr(b1,expr(c1,..,cn),..,bn).
- =#"""
+"""
 function makeTransitive(
   repl::VariableReplacements,
   src::DAE.ComponentRef,
@@ -1390,9 +1385,7 @@ function makeTransitive(
   return (outRepl, outSrc, outDst)
 end
 
-""" #=
-  helper function to makeTransitive
- =#"""
+"""helper function to makeTransitive"""
 function makeTransitive1(
   repl::VariableReplacements,
   src::DAE.ComponentRef,
@@ -1429,9 +1422,11 @@ function makeTransitive1(
   return (outRepl, outSrc, outDst)
 end
 
-""" #= Helper function to makeTransitive1
-For each old rule a->expr(b1,..,bn) update dest by applying the new rule passed as argument
-in singleRepl. =#"""
+"""
+  Helper function to makeTransitive1
+  For each old rule a->expr(b1,..,bn) update dest by applying the new rule passed as argument
+  in singleRepl.
+"""
 function makeTransitive12(
   lst::List{<:DAE.ComponentRef},
   repl::VariableReplacements,
@@ -1463,9 +1458,7 @@ function makeTransitive12(
   return outRepl
 end
 
-""" #=
-  Helper function to makeTransitive
- =#"""
+"""Helper function to makeTransitive"""
 function makeTransitive2(
   repl::VariableReplacements,
   src::DAE.ComponentRef,
@@ -1496,10 +1489,10 @@ function makeTransitive2(
   return (outRepl, outSrc, outDst)
 end
 
-""" #=
+"""
   Retrives a replacement variable given a set of replacement rules and a
   source variable.
- =#"""
+"""
 function getReplacement(
   inVariableReplacements::VariableReplacements,
   inComponentRef::DAE.ComponentRef,
@@ -1520,7 +1513,7 @@ function getReplacement(
   return outComponentRef
 end
 
-""" #= Similar to replaceExp but takes Option<Exp> instead of Exp =#"""
+"""Similar to replaceExp but takes Option<Exp> instead of Exp"""
 function replaceExpOpt(
   inExp::Option{<:DAE.Exp},
   repl::VariableReplacements,
@@ -1545,13 +1538,14 @@ function replaceExpOpt(
   return outExp
 end
 
-""" #=
-Author BZ 200X-XX modified 2008-06
-When adding replacement rules, we might not have the correct type availible at the moment.
-Then DAE.T_UNKNOWN_DEFAULT is used, so when replacing exp and finding DAE.T_UNKNOWN(_), we use the
-type of the expression to be replaced instead.
-TODO: find out why array residual functions containing arrays as xloc[] does not work,
-      doing that will allow us to use this function for all crefs. =#"""
+"""
+  Author BZ 200X-XX modified 2008-06
+  When adding replacement rules, we might not have the correct type availible at the moment.
+  Then DAE.T_UNKNOWN_DEFAULT is used, so when replacing exp and finding DAE.T_UNKNOWN(_), we use the
+  type of the expression to be replaced instead.
+  TODO: find out why array residual functions containing arrays as xloc[] does not work,
+  doing that will allow us to use this function for all crefs.
+"""
 function avoidDoubleHashLookup(inExp::DAE.Exp, inType::DAE.Type)::DAE.Exp
   local outExp::DAE.Exp
 
@@ -1570,8 +1564,10 @@ function avoidDoubleHashLookup(inExp::DAE.Exp, inType::DAE.Type)::DAE.Exp
   return outExp
 end
 
-""" #= similar to replaceExp but repeats the replacements until expression no longer changes.
-Note: This is only required/useful if replacements are built with addReplacementNoTransitive. =#"""
+"""
+  similar to replaceExp but repeats the replacements until expression no longer changes.
+  Note: This is only required/useful if replacements are built with addReplacementNoTransitive.
+"""
 function replaceExpRepeated(
   e::DAE.Exp,
   repl::VariableReplacements,
@@ -1584,7 +1580,7 @@ function replaceExpRepeated(
   return outExp
 end
 
-""" #= help function to replaceExpRepeated =#"""
+"""help function to replaceExpRepeated"""
 function replaceExpRepeated2(
   e::DAE.Exp,
   repl::VariableReplacements,
@@ -1701,11 +1697,12 @@ function replaceExpList(
   return (outExpl, replacementPerformed)
 end
 
-""" #= function replaceExpCond(cond,e) => true &
+"""
+  function replaceExpCond(cond,e) => true &
 
   Helper function to replace_Expression. Evaluates a condition function if
   SOME otherwise returns true.
- =#"""
+"""
 function replaceExpCond(
   inFuncTypeExpExpToBooleanOption::Option{<:FuncTypeExp_ExpToBoolean},
   inExp::DAE.Exp,
@@ -1731,8 +1728,10 @@ function replaceExpCond(
   return outBoolean
 end
 
-""" #= author: PA
-  Helper function to replaceExp, traverses Matrix expression list. =#"""
+"""
+  author: PA
+  Helper function to replaceExp, traverses Matrix expression list.
+"""
 function replaceExpMatrix(
   inTplExpExpBooleanLstLst::List{<:List{<:DAE.Exp}},
   inVariableReplacements::VariableReplacements,

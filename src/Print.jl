@@ -34,7 +34,7 @@ using ExportAll
 *
 */ =#
 
-""" #= saves and clears content of buffer and return a handle to the saved buffer so it can be restored by restorBuf later on =#"""
+"""saves and clears content of buffer and return a handle to the saved buffer so it can be restored by restorBuf later on"""
 function saveAndClearBuf()::Integer
   local handle::Integer
 
@@ -69,7 +69,7 @@ function clearBuf()
   @error "TODO: Defined in the runtime"
 end
 
-""" #= Does not clear the buffer =#"""
+"""Does not clear the buffer"""
 function getString()::String
   local outString::String
 
@@ -77,17 +77,17 @@ function getString()::String
   return outString
 end
 
-""" #= Writes the buffer to a file =#"""
+"""Writes the buffer to a file"""
 function writeBuf(filename::String)
   @error "TODO: Defined in the runtime"
 end
 
-""" #= Writes the print buffer to the filename, with /*#modelicaLine...*/ directives converted to #line C preprocessor macros =#"""
+"""Writes the print buffer to the filename, with /*#modelicaLine...*/ directives converted to #line C preprocessor macros"""
 function writeBufConvertLines(filename::String)
   @error "TODO: Defined in the runtime"
 end
 
-""" #= Gets the actual length of the filled space in the print buffer. =#"""
+"""Gets the actual length of the filled space in the print buffer."""
 function getBufLength()::Integer
   local outBufFilledLength::Integer
 
@@ -95,18 +95,20 @@ function getBufLength()::Integer
   return outBufFilledLength
 end
 
-""" #= Prints the given number of spaces to the print buffer. =#"""
+"""Prints the given number of spaces to the print buffer."""
 function printBufSpace(inNumOfSpaces::Integer)
   @error "TODO: Defined in the runtime"
 end
 
-""" #= Prints one new line character to the print buffer. =#"""
+"""Prints one new line character to the print buffer."""
 function printBufNewLine()
   @error "TODO: Defined in the runtime"
 end
 
-""" #= Tests if the last outputted character in the print buffer is a new line.
- It is a (temporary) workaround to stringLength()'s O(n) cost. =#"""
+"""
+  Tests if the last outputted character in the print buffer is a new line.
+  It is a (temporary) workaround to stringLength()'s O(n) cost.
+"""
 function hasBufNewLineAtEnd()::Bool
   local outHasNewLineAtEnd::Bool
 

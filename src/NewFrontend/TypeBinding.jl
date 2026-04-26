@@ -1,5 +1,4 @@
-7#= This file contains all the code related to type binding =#
-
+"""This file contains all the code related to type binding"""
 function typeBindings(cls::InstNode,
                       component::InstNode,
                       origin::ORIGIN_Type)

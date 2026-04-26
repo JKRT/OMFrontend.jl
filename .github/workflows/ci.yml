@@ -1,62 +1,149 @@
 name: CI
+
 on:
   pull_request:
   push:
     branches:
       - master
     tags: '*'
+
+# Cancel superseded runs of the same ref, but keep master runs queued.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
 jobs:
   test:
-    name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
+    name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }}
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
 
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
+        version:
+          - '1.12'
         include:
-          - os: windows-latest
-            arch: 'x64'
-            version: '1.10'
           - os: ubuntu-latest
-            arch: 'x64'
-            version: '1.10'
+            arch: x64
+          - os: windows-latest
+            arch: x64
           - os: macos-latest
-            arch: 'x64'
-            version: '1.10'
+            arch: aarch64
+
     steps:
+      - name: Checkout OMFrontend.jl
+        uses: actions/checkout@v4
+        with:
+          path: OMFrontend.jl
 
-      - name: Checkout repository
-        uses: actions/checkout@v2
+      # The Project.toml [sources] block points at sibling working copies in
+      # ../<name>.jl. CI only checks out OMFrontend.jl by default, so we lay the
+      # siblings out alongside it before Pkg.resolve runs. Using actions/checkout
+      # for each sibling keeps the clones token-authenticated and shallow.
+      - name: Checkout Absyn.jl
+        uses: actions/checkout@v4
+        with:
+          repository: OpenModelica/Absyn.jl
+          ref: master
+          path: Absyn.jl
 
-      - name: Setup Julia ${{matrix.version}}-${{matrix.arch}}
-        uses: julia-actions/setup-julia@v1
+      - name: Checkout ArrayUtil.jl
+        uses: actions/checkout@v4
+        with:
+          repository: JKRT/ArrayUtil.jl
+          ref: master
+          path: ArrayUtil.jl
+
+      - name: Checkout DAE.jl
+        uses: actions/checkout@v4
+        with:
+          repository: JKRT/DAE.jl
+          ref: master
+          path: DAE.jl
+
+      - name: Checkout ImmutableList.jl
+        uses: actions/checkout@v4
+        with:
+          repository: OpenModelica/ImmutableList.jl
+          ref: master
+          path: ImmutableList.jl
+
+      - name: Checkout ListUtil.jl
+        uses: actions/checkout@v4
+        with:
+          repository: JKRT/ListUtil.jl
+          ref: master
+          path: ListUtil.jl
+
+      - name: Checkout MetaModelica.jl
+        uses: actions/checkout@v4
+        with:
+          repository: OpenModelica/MetaModelica.jl
+          ref: master
+          path: MetaModelica.jl
+
+      - name: Checkout OMParser.jl
+        uses: actions/checkout@v4
+        with:
+          repository: OpenModelica/OMParser.jl
+          ref: master
+          path: OMParser.jl
+
+      - name: Checkout OMRuntimeExternalC.jl
+        uses: actions/checkout@v4
+        with:
+          repository: OpenModelica/OMRuntimeExternalC.jl
+          ref: master
+          path: OMRuntimeExternalC.jl
+
+      - name: Checkout SCode.jl
+        uses: actions/checkout@v4
+        with:
+          repository: OpenModelica/SCode.jl
+          ref: master
+          path: SCode.jl
+
+      - name: Setup Julia ${{ matrix.version }}-${{ matrix.arch }}
+        uses: julia-actions/setup-julia@v2
         with:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
 
-      - uses: actions/cache@v1
-        env:
-          cache-name: cache-artifacts
+      - uses: julia-actions/cache@v2
         with:
-          path: ~/.julia/artifacts
-          key: ${{ runner.os }}-test-${{ env.cache-name }}-v${{ hashFiles('**/Project.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-test-${{ env.cache-name }}-
-            ${{ runner.os }}-test-
-            ${{ runner.os }}-
+          cache-registries: 'true'
 
       - name: Build
-        # Use bash always to avoid having to escape quotes for Windows
-        # We avoid compiled modules for the CI to speed it up a bit...
+        # bash on every runner so we do not have to escape quotes for PowerShell.
+        # --compiled-modules=no keeps CI fast by skipping native code caching.
         shell: bash
-        run: julia --compiled-modules=no --color=yes --project -e 'import Pkg; Pkg.Registry.add("General"); Pkg.Registry.add(Pkg.RegistrySpec(url="https://github.com/JKRT/OpenModelicaRegistry.git")); Pkg.build(;verbose = true); Pkg.resolve()'
+        working-directory: OMFrontend.jl
+        run: |
+          julia --compiled-modules=no --color=yes --project -e '
+            import Pkg
+            Pkg.Registry.add("General")
+            Pkg.Registry.add(Pkg.RegistrySpec(url = "https://github.com/JKRT/OpenModelicaRegistry.git"))
+            Pkg.build(; verbose = true)
+            Pkg.resolve()
+          '
 
       - name: Test
-        run: julia --compiled-modules=no --color=yes --project -e 'import Pkg; Pkg.add(Pkg.PackageSpec(url="https://github.com/OpenModelica/Absyn.jl.git", rev="master")); Pkg.add(Pkg.PackageSpec(url="https://github.com/OpenModelica/SCode.jl.git", rev="master")); Pkg.resolve(); Pkg.test("Absyn"); Pkg.test("OMParser"); Pkg.test("OMFrontend")'
+        shell: bash
+        working-directory: OMFrontend.jl
+        run: |
+          julia --compiled-modules=no --color=yes --project -e '
+            import Pkg
+            Pkg.test("OMFrontend"; coverage = true)
+          '
 
       - uses: julia-actions/julia-processcoverage@v1
-
-      - name: Coverage report
-        uses: codecov/codecov-action@v1
         with:
-          file: lcov.info
+          directories: OMFrontend.jl/src
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: lcov.info
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false

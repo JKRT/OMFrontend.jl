@@ -108,7 +108,7 @@ function unsetFlowStream(cty::T)::T where {T <: Integer}
   return cty
 end
 
-""" #= Returns true if the connector type has the connector bit set, otherwise false. =#"""
+"""Returns true if the connector type has the connector bit set, otherwise false."""
 function isConnector(cty::Int)::Bool
   local isConnector::Bool
   isConnector = intBitAnd(cty::Int8, ConnectorType.CONNECTOR::Int8) > 0
@@ -139,8 +139,10 @@ function setExpandable(cty::T)::T where {T <: Integer}
   return cty
 end
 
-""" #= Returns true if the connector type has the potentially present or virtual
-     bits set, otherwise false. =#"""
+"""
+  Returns true if the connector type has the potentially present or virtual
+  bits set, otherwise false.
+"""
 function isUndeclared(cty::T)::Bool where {T <: Integer}
   local isExpandableElement::Bool
 

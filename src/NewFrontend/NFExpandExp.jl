@@ -329,7 +329,7 @@ function makeScalarProduct(@nospecialize(exp1::Expression), @nospecialize(exp2::
   return exp
 end
 
-""" #= Expands a vector*vector expression, c = a[n] * b[n]. =#"""
+"""Expands a vector*vector expression, c = a[n] * b[n]."""
 function expandBinaryDotProduct(@nospecialize(exp::Expression))::Tuple{Expression, Bool}
   local expanded::Bool
   local outExp::Expression
@@ -388,7 +388,7 @@ function expandBinaryMatrixVector(@nospecialize(exp::Expression))::Tuple{Express
   return (outExp, expanded)
 end
 
-""" #= Expands a vector*matrix expression, c[m] = a[n] * b[n, m]. =#"""
+"""Expands a vector*matrix expression, c[m] = a[n] * b[n, m]."""
 function expandBinaryVectorMatrix(@nospecialize(exp::Expression))::Tuple{Expression, Bool}
   local expanded::Bool
   local outExp::Expression

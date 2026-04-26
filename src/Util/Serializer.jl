@@ -36,14 +36,12 @@ using ExportAll
 #=  Note: Reading back the data does not work as of 2018-02-19
 =#
 
-""" #= 
-Prints the structure of the object. =#"""
+"""Prints the structure of the object."""
 function outputFile(object::T, filename::String) where {T}
   return @error "TODO: Defined in the runtime"
 end
 
-""" #= 
-Serializes the object and reads it back. This function is used for testing purposes. =#"""
+"""Serializes the object and reads it back. This function is used for testing purposes."""
 function bypass(object::T) where {T}
   local out_object::T
 

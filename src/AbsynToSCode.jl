@@ -88,7 +88,7 @@ function translateClass(inClass::Absyn.Class)
   return outClass
 end
 
-""" #= This functions converts an Absyn.Class to a SCode.Class. =#"""
+"""This functions converts an Absyn.Class to a SCode.Class."""
 function translateClass2(inClass::Absyn.Class, inNumMessages::Int)::SCode.Element
   local outClass::SCode.Element
    outClass = begin
@@ -156,9 +156,7 @@ end
 
 #= mahge: FIX HERE. Check for proper input and output
 =#
-#= declarations in operators according to the specifications.
-=#
-
+"""declarations in operators according to the specifications."""
 function translateOperatorDef(
   inClassDef::Absyn.ClassDef,
   operatorName::Absyn.Ident,
@@ -287,7 +285,7 @@ end
 #=  Changed to public! krsta
 =#
 
-""" #= Convert a class restriction. =#"""
+"""Convert a class restriction."""
 function translateRestriction(
   inClass::Absyn.Class,
   inRestriction::Absyn.Restriction,
@@ -423,7 +421,7 @@ function translateRestriction(
   return outRestriction
 end
 
-""" #= Returns true if the Absyn.Class contains an external function declaration. =#"""
+"""Returns true if the Absyn.Class contains an external function declaration."""
 function containsExternalFuncDecl(inClass::Absyn.Class)::Bool
   local outBoolean::Bool
 
@@ -557,12 +555,14 @@ function translateConnectorType(inFlow::Bool, inStream::Bool)::SCode.ConnectorTy
   return outType
 end
 
-""" #= This function converts an Absyn.ClassDef to a SCode.ClassDef.
+"""
+  This function converts an Absyn.ClassDef to a SCode.ClassDef.
   For the DERIVED case, the conversion is fairly trivial, but for
   the PARTS case more work is needed.
   The result contains separate lists for:
-   elements, equations and algorithms, which are mixed in the input.
-  LS: Divided the translateClassdef into separate functions for collecting the different parts =#"""
+  elements, equations and algorithms, which are mixed in the input.
+  LS: Divided the translateClassdef into separate functions for collecting the different parts
+"""
 function translateClassdef(
   inClassDef::Absyn.ClassDef,
   info::SourceInfo,
@@ -715,10 +715,12 @@ function translateClassdef(
   return (outClassDef, outComment)
 end
 
-""" #= first class annotation instead, since it is very common that an element
+"""
+  first class annotation instead, since it is very common that an element
   annotation is used for this purpose.
   For instance, instead of external \\\"C\\\" annotation(Library=\\\"foo.lib\\\";
-  it says external \\\"C\\\" ; annotation(Library=\\\"foo.lib\\\"; =#"""
+  it says external \\\"C\\\" ; annotation(Library=\\\"foo.lib\\\";
+"""
 function translateAlternativeExternalAnnotation(
   decl::Option{<:SCode.ExternalDecl},
   comment::SCode.Comment,
@@ -786,8 +788,10 @@ function mergeSCodeAnnotationsFromParts(
   return outMod
 end
 
-""" #= Convert an EnumLiteral list to an Ident list.
-  Comments are lost. =#"""
+"""
+  Convert an EnumLiteral list to an Ident list.
+  Comments are lost.
+"""
 function translateEnumlist(
   inAbsynEnumLiteralLst::List{<:Absyn.EnumLiteral},
 )::List{SCode.Enum}
@@ -814,7 +818,7 @@ function translateEnumlist(
   return outEnumLst
 end
 
-""" #= Convert an Absyn.ClassPart list to an Element list. =#"""
+"""Convert an Absyn.ClassPart list to an Element list."""
 function translateClassdefElements(
   inAbsynClassPartLst::List{<:Absyn.ClassPart},
 )::List{SCode.Element}
@@ -854,7 +858,7 @@ function translateClassdefElements(
   return outElementLst
 end
 
-""" #= Convert an Absyn.ClassPart list to an Equation list. =#"""
+"""Convert an Absyn.ClassPart list to an Equation list."""
 function translateClassdefEquations(
   inAbsynClassPartLst::List{<:Absyn.ClassPart},
 )::List{SCode.Equation}
@@ -888,7 +892,7 @@ function translateClassdefEquations(
   return outEquationLst
 end
 
-""" #= Convert an Absyn.ClassPart list to an initial Equation list. =#"""
+"""Convert an Absyn.ClassPart list to an initial Equation list."""
 function translateClassdefInitialequations(
   inAbsynClassPartLst::List{<:Absyn.ClassPart},
 )::List{SCode.Equation}
@@ -922,7 +926,7 @@ function translateClassdefInitialequations(
   return outEquationLst
 end
 
-""" #= Convert an Absyn.ClassPart list to an Algorithm list. =#"""
+"""Convert an Absyn.ClassPart list to an Algorithm list."""
 function translateClassdefAlgorithms(
   inAbsynClassPartLst::List{<:Absyn.ClassPart},
 )::List{SCode.AlgorithmSection}
@@ -961,7 +965,7 @@ function translateClassdefAlgorithms(
   return outAlgorithmLst
 end
 
-""" #= Convert an Absyn.ClassPart list to an Constraint list. =#"""
+"""Convert an Absyn.ClassPart list to an Constraint list."""
 function translateClassdefConstraints(
   inAbsynClassPartLst::List{<:Absyn.ClassPart},
 )::List{SCode.ConstraintSection}
@@ -998,7 +1002,7 @@ function translateClassdefConstraints(
   return outConstraintLst
 end
 
-""" #= Convert an Absyn.ClassPart list to an initial Algorithm list. =#"""
+"""Convert an Absyn.ClassPart list to an initial Algorithm list."""
 function translateClassdefInitialalgorithms(
   inAbsynClassPartLst::List{<:Absyn.ClassPart},
 )::List{SCode.AlgorithmSection}
@@ -1044,7 +1048,7 @@ function translateClassdefAlgorithmitems(
   return outStatements
 end
 
-""" #= Translates an Absyn algorithm (statement) into SCode statement. =#"""
+"""Translates an Absyn algorithm (statement) into SCode statement."""
 function translateClassdefAlgorithmItem(inAlgorithm::Absyn.AlgorithmItem)::SCode.Statement
   local outStatement::SCode.Statement
 
@@ -1191,7 +1195,7 @@ function translateClassdefAlgorithmItem(inAlgorithm::Absyn.AlgorithmItem)::SCode
   return outStatement
 end
 
-""" #= Translates the elseif or elsewhen branches from Absyn to SCode form. =#"""
+"""Translates the elseif or elsewhen branches from Absyn to SCode form."""
 function translateAlgBranches(
   inBranches::List{<:Tuple{<:Absyn.Exp, List{<:Absyn.AlgorithmItem}}},
 )::List{Tuple{Absyn.Exp, List{SCode.Statement}}}
@@ -1212,8 +1216,10 @@ function translateAlgBranches(
   return outBranches
 end
 
-""" #= Converts an Absyn.ClassPart list to an SCode.ExternalDecl option.
-  The list should only contain one external declaration, so pick the first one. =#"""
+"""
+  Converts an Absyn.ClassPart list to an SCode.ExternalDecl option.
+  The list should only contain one external declaration, so pick the first one.
+"""
 function translateClassdefExternaldecls(
   inAbsynClassPartLst::List{<:Absyn.ClassPart},
 )::Option{SCode.ExternalDecl}
@@ -1247,9 +1253,11 @@ function translateClassdefExternaldecls(
   return outAbsynExternalDeclOption
 end
 
-""" #= This function converts a list of Absyn.ElementItem to a list of SCode.Element.
+"""
+  This function converts a list of Absyn.ElementItem to a list of SCode.Element.
   The boolean argument flags whether the elements are protected.
-  Annotations are not translated, i.e. they are removed when converting to SCode. =#"""
+  Annotations are not translated, i.e. they are removed when converting to SCode.
+"""
 function translateEitemlist(
   inAbsynElementItemLst::List{<:Absyn.ElementItem},
   inVisibility::SCode.Visibility,
@@ -1286,7 +1294,7 @@ end
 #=  stefan
 =#
 
-""" #= translates an Absyn.Annotation into an SCode.Annotation =#"""
+"""translates an Absyn.Annotation into an SCode.Annotation"""
 function translateAnnotation(inAnnotation::Absyn.Annotation)::Option{SCode.Annotation}
   local outAnnotation::Option{SCode.Annotation}
 
@@ -1336,9 +1344,11 @@ function translateAnnotationOpt(
   return scodeAnnotation
 end
 
-""" #= This function converts an Absyn.Element to a list of SCode.Element.
+"""
+  This function converts an Absyn.Element to a list of SCode.Element.
   The original element may declare several components at once, and
-  those are separated to several declarations in the result. =#"""
+  those are separated to several declarations in the result.
+"""
 function translateElement(
   inElement::Absyn.Element,
   inVisibility::SCode.Visibility,
@@ -1385,7 +1395,7 @@ function translateElement(
   return outElementLst
 end
 
-""" #=  help function to translateElement =#"""
+"""help function to translateElement"""
 function translateDefineunitParam(
   inArgs::List{<:Absyn.NamedArg},
   inArg::String,
@@ -1414,7 +1424,7 @@ function translateDefineunitParam(
   return expOpt
 end
 
-""" #=  help function to translateElement =#"""
+"""help function to translateElement"""
 function translateDefineunitParam2(
   inArgs::List{<:Absyn.NamedArg},
   inArg::String,
@@ -1761,7 +1771,7 @@ function translateElementspec(
   return outElementLst
 end
 
-""" #= Used to handle group imports, i.e. A.B.C.{x=a,b} =#"""
+"""Used to handle group imports, i.e. A.B.C.{x=a,b}"""
 function translateImports(
   imp::Absyn.Import,
   visibility::SCode.Visibility,
@@ -1799,7 +1809,7 @@ function translateImports(
   return elts
 end
 
-""" #= Used to handle group imports, i.e. A.B.C.{x=a,b} =#"""
+"""Used to handle group imports, i.e. A.B.C.{x=a,b}"""
 function translateGroupImport(
   gimp::Absyn.GroupImport,
   prefix::Absyn.Path,
@@ -1828,9 +1838,11 @@ function translateGroupImport(
   return elt
 end
 
-""" #= @author: adrpo
- This function will set the external flag that signals
- that a model has inner/outer component definitions =#"""
+"""
+  @author: adrpo
+  This function will set the external flag that signals
+  that a model has inner/outer component definitions
+"""
 function setHasInnerOuterDefinitionsHandler(io::Absyn.InnerOuter)
    _ = begin
     @match io begin
@@ -1873,8 +1885,10 @@ function setHasStreamConnectorsHandler(streamPrefix::Bool)
   =#
 end
 
-""" #= author: PA
-  For now, translate to bool, replaceable. =#"""
+"""
+  author: PA
+  For now, translate to bool, replaceable.
+"""
 function translateRedeclarekeywords(
   inRedeclKeywords::Option{<:Absyn.RedeclareKeywords},
 )::Tuple{Bool, Bool}
@@ -1939,7 +1953,7 @@ function translateConstrainClass(
   return outConstrainClass
 end
 
-""" #= Converts an Absyn.Parallelism to SCode.Parallelism. =#"""
+"""Converts an Absyn.Parallelism to SCode.Parallelism."""
 function translateParallelism(inParallelism::Absyn.Parallelism)::SCode.Parallelism
   local outParallelism::SCode.Parallelism
 
@@ -1961,7 +1975,7 @@ function translateParallelism(inParallelism::Absyn.Parallelism)::SCode.Paralleli
   return outParallelism
 end
 
-""" #= Converts an Absyn.Variability to SCode.Variability. =#"""
+"""Converts an Absyn.Variability to SCode.Variability."""
 function translateVariability(inVariability::Absyn.Variability)::SCode.Variability
   local outVariability::SCode.Variability
 
@@ -1987,9 +2001,11 @@ function translateVariability(inVariability::Absyn.Variability)::SCode.Variabili
   return outVariability
 end
 
-""" #= This function transforms a list of Absyn.Equation to a list of
+"""
+  This function transforms a list of Absyn.Equation to a list of
   SCode.Equation, by applying the translateEquation function to each
-  equation. =#"""
+  equation.
+"""
 function translateEquations(
   inAbsynEquationItemLst::List{<:Absyn.EquationItem},
   inIsInitial::Bool,
@@ -2021,7 +2037,7 @@ function translateEquations(
   return outEquationLst
 end
 
-""" #= Helper function to translateEquations =#"""
+"""Helper function to translateEquations"""
 function translateEEquations(
   inAbsynEquationItemLst::List{<:Absyn.EquationItem},
   inIsInitial::Bool,
@@ -2058,7 +2074,7 @@ function translateEEquations(
   return outEEquationLst
 end
 
-""" #= turns an Absyn.Comment into an SCode.Comment =#"""
+"""turns an Absyn.Comment into an SCode.Comment"""
 function translateCommentWithLineInfoChanges(
   inComment::Option{<:Absyn.Comment},
   inInfo::SourceInfo,
@@ -2071,7 +2087,7 @@ function translateCommentWithLineInfoChanges(
   return (outComment, outInfo)
 end
 
-""" #= Replaces the file info if there is an annotation __OpenModelica_FileInfo=(\\\"fileName\\\",line). Should be improved. =#"""
+"""Replaces the file info if there is an annotation __OpenModelica_FileInfo=(\\\"fileName\\\",line). Should be improved."""
 function getInfoAnnotationOrDefault(comment::SCode.Comment, default::SourceInfo)::SourceInfo
   local info::SourceInfo
 
@@ -2132,7 +2148,7 @@ function getInfoAnnotationOrDefault2(
   return info
 end
 
-""" #= turns an Absyn.Comment into an SCode.Comment =#"""
+"""turns an Absyn.Comment into an SCode.Comment"""
 function translateComment(inComment::Option{<:Absyn.Comment})::SCode.Comment
   local outComment::SCode.Comment
 
@@ -2155,7 +2171,7 @@ function translateComment(inComment::Option{<:Absyn.Comment})::SCode.Comment
   return outComment
 end
 
-""" #= turns an Absyn.Comment into an SCode.Comment =#"""
+"""turns an Absyn.Comment into an SCode.Comment"""
 function translateCommentList(
   inAnns::List{<:Absyn.Annotation},
   inString::Option{<:String},
@@ -2189,7 +2205,7 @@ function translateCommentList(
   return outComment
 end
 
-""" #= turns an Absyn.Comment into an SCode.Annotation + string =#"""
+"""turns an Absyn.Comment into an SCode.Annotation + string"""
 function translateCommentSeparate(
   inComment::Option{<:Absyn.Comment},
 )::Tuple{Option{SCode.Annotation}, Option{String}}
@@ -2391,7 +2407,7 @@ function translateIterator(
   return (outName, outRange)
 end
 
-""" #= function: translateElementAddinfo =#"""
+"""function: translateElementAddinfo"""
 function translateElementAddinfo(elem::SCode.Element, nfo::SourceInfo)::SCode.Element
   local oelem::SCode.Element
 
@@ -2424,7 +2440,7 @@ end
 
 #= /* Modification management */ =#
 
-""" #= Builds an SCode.Mod from an Absyn.Modification. =#"""
+"""Builds an SCode.Mod from an Absyn.Modification."""
 function translateMod(
   inMod::Option{<:Absyn.Modification},
   finalPrefix::SCode.Final,
@@ -2530,8 +2546,10 @@ function translateArgs(args::List{<:Absyn.ElementArg})::List{SCode.SubMod}
   return subMods
 end
 
-""" #= This function converts a Absyn.ComponentRef plus a list
-  of modifications into a number of nested SCode.SUBMOD. =#"""
+"""
+  This function converts a Absyn.ComponentRef plus a list
+  of modifications into a number of nested SCode.SUBMOD.
+"""
 function translateSub(inPath::Absyn.Path, inMod::SCode.Mod, info::SourceInfo)::SCode.SubMod
   local outSubMod::SCode.SubMod
 

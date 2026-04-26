@@ -97,13 +97,15 @@ NodeType = Any
 
 ArgType = Any
 
-""" #= This function will build a graph given a list of nodes, an edge function, and
+"""
+  This function will build a graph given a list of nodes, an edge function, and
   an extra argument to the edge function. The edge function should generate a
   list of edges for any given node in the list. From this information a graph
   represented by an adjacency list will be built.
 
   NOTE: There is no check that there is only unique edges for each node.
-  This module assumes that you do not build a graph with duplicate edges! =#"""
+  This module assumes that you do not build a graph with duplicate edges!
+"""
 function buildGraph(
   inNodes::List{<:NodeType},
   inEdgeFunc::EdgeFunc,
@@ -116,7 +118,7 @@ function buildGraph(
   return outGraph
 end
 
-""" #= This function will build an empty graph given a list of nodes. =#"""
+"""This function will build an empty graph given a list of nodes."""
 function emptyGraph(inNodes::List{<:NodeType})::List{Tuple{NodeType, List{NodeType}}}
   local outGraph::List{Tuple{NodeType, List{NodeType}}}
 
@@ -131,7 +133,8 @@ function emptyGraphHelper(nt::NodeType)::Tuple{NodeType, List{NodeType}}
   return out
 end
 
-""" #= This function will sort a graph topologically. It takes a graph represented
+"""
+  This function will sort a graph topologically. It takes a graph represented
   by an adjacency list and a node equality function, and returns a list of the
   nodes ordered by dependencies (a node x is dependent on y if there is an edge
   from x to y). This function assumes that all edges in the graph are unique.
@@ -139,7 +142,8 @@ end
   It is of course only possible to sort an acyclic graph topologically. If the
   graph contains cycles this function will return the nodes that it could sort
   as the first return value, and the remaining graph that contains cycles as the
-  second value. =#"""
+  second value.
+"""
 function topologicalSort(
   inGraph::List{<:Tuple{<:NodeType, List{<:NodeType}}},
   inEqualFunc::EqualFunc,
@@ -156,9 +160,11 @@ function topologicalSort(
   return (outNodes, outRemainingGraph)
 end
 
-""" #= Helper function to topologicalSort, does most of the actual work.
+"""
+  Helper function to topologicalSort, does most of the actual work.
   inStartNodes is a list of start nodes that have no outgoing edges, i.e. no
-  dependencies. inRestNodes is the rest of the nodes in the graph. =#"""
+  dependencies. inRestNodes is the rest of the nodes in the graph.
+"""
 function topologicalSort2(
   inStartNodes::List{<:Tuple{<:NodeType, List{<:NodeType}}},
   inRestNodes::List{<:Tuple{<:NodeType, List{<:NodeType}}},
@@ -227,7 +233,7 @@ function topologicalSort2(
   return (outNodes, outRemainingGraph)
 end
 
-""" #= Returns true if the given node has no outgoing edges, otherwise false. =#"""
+"""Returns true if the given node has no outgoing edges, otherwise false."""
 function hasOutgoingEdges(inNode::Tuple{<:NodeType, List{<:NodeType}})::Bool
   local outHasOutEdges::Bool
 
@@ -245,8 +251,10 @@ function hasOutgoingEdges(inNode::Tuple{<:NodeType, List{<:NodeType}})::Bool
   return outHasOutEdges
 end
 
-""" #= Takes a node with it's edges and a node that's been removed from the graph,
-  and removes the edge if it exists in the edge list. =#"""
+"""
+  Takes a node with it's edges and a node that's been removed from the graph,
+  and removes the edge if it exists in the edge list.
+"""
 function removeEdge(
   inNode::Tuple{<:NodeType, List{<:NodeType}},
   inRemovedNode::NodeType,
@@ -263,14 +271,16 @@ function removeEdge(
   return outNode
 end
 
-""" #= Returns the cycles in a given graph. It will check each node, and if that
+"""
+  Returns the cycles in a given graph. It will check each node, and if that
   node is part of a cycle it will return the cycle. It will also remove the
   other nodes in the cycle from the list of remaining nodes to check, so the
   result will be a list of unique cycles.
 
   This function is not very efficient, so it shouldn't be used for any
   performance critical tasks.  It's meant to be used together with
-  topologicalSort to print an error message if any cycles are detected. =#"""
+  topologicalSort to print an error message if any cycles are detected.
+"""
 function findCycles(
   inGraph::List{<:Tuple{<:NodeType, List{<:NodeType}}},
   inEqualFunc::EqualFunc,
@@ -281,7 +291,7 @@ function findCycles(
   return outCycles
 end
 
-""" #= Helper function to findCycles. =#"""
+"""Helper function to findCycles."""
 function findCycles2(
   inNodes::List{<:Tuple{<:NodeType, List{<:NodeType}}},
   inGraph::List{<:Tuple{<:NodeType, List{<:NodeType}}},
@@ -321,13 +331,15 @@ function findCycles2(
   return outCycles
 end
 
-""" #= Tries to find a cycle in the graph starting from a given node. This function
+"""
+  Tries to find a cycle in the graph starting from a given node. This function
   returns an optional cycle, because it's possible that it will encounter a
   cycle in which the given node is not a part. This makes it possible to
   continue searching for another cycle. This function will therefore return some
   cycle if one was found, or fail or return NONE() if no cycle could be found. A
   given node might be part of several cycles, but this function will stop as
-  soon as it finds one cycle. =#"""
+  soon as it finds one cycle.
+"""
 function findCycleForNode(
   inNode::Tuple{<:NodeType, List{<:NodeType}},
   inGraph::List{<:Tuple{<:NodeType, List{<:NodeType}}},
@@ -379,8 +391,10 @@ function findCycleForNode(
   return outCycle
 end
 
-""" #= Helper function to findCycleForNode. Calls findNodeInGraph on each node in
-  the given list. =#"""
+"""
+  Helper function to findCycleForNode. Calls findNodeInGraph on each node in
+  the given list.
+"""
 function findCycleForNode2(
   inNodes::List{<:NodeType},
   inGraph::List{<:Tuple{<:NodeType, List{<:NodeType}}},
@@ -415,8 +429,10 @@ function findCycleForNode2(
   return outCycle
 end
 
-""" #= Returns a node and its edges from a graph given a node to search for, or
-  fails if no such node exists in the graph. =#"""
+"""
+  Returns a node and its edges from a graph given a node to search for, or
+  fails if no such node exists in the graph.
+"""
 function findNodeInGraph(
   inNode::NodeType,
   inGraph::List{<:Tuple{<:NodeType, List{<:NodeType}}},
@@ -442,8 +458,10 @@ function findNodeInGraph(
   return outNode
 end
 
-""" #= Returns the index in the list of the node  from a graph given a node to search for, or
-  fails if no such node exists in the graph. =#"""
+"""
+  Returns the index in the list of the node  from a graph given a node to search for, or
+  fails if no such node exists in the graph.
+"""
 function findIndexofNodeInGraph(
   inNode::NodeType,
   inGraph::List{<:Tuple{<:NodeType, List{<:NodeType}}},
@@ -470,8 +488,10 @@ function findIndexofNodeInGraph(
   return outIndex
 end
 
-""" #= Removed a list of nodes from the graph. Note that only the nodes are removed
-  and not any edges pointing at the nodes. =#"""
+"""
+  Removed a list of nodes from the graph. Note that only the nodes are removed
+  and not any edges pointing at the nodes.
+"""
 function removeNodesFromGraph(
   inNodes::List{<:NodeType},
   inGraph::List{<:Tuple{<:NodeType, List{<:NodeType}}},
@@ -508,9 +528,10 @@ function removeNodesFromGraph(
   return outGraph
 end
 
-""" #= This function transposes a graph by given a graph and vertex list.
-To call this, use transposeGraph(emptyGraphOnlyNodes,graph,eqFunction).
- =#"""
+"""
+  This function transposes a graph by given a graph and vertex list.
+  To call this, use transposeGraph(emptyGraphOnlyNodes,graph,eqFunction).
+"""
 function transposeGraph(
   intmpGraph::List{<:Tuple{<:NodeType, List{<:NodeType}}},
   inGraph::List{<:Tuple{<:NodeType, List{<:NodeType}}},
@@ -549,9 +570,10 @@ function transposeGraph(
   return outGraph
 end
 
-""" #=  This function takes nodes and a vertex and inserts
+"""
+  This function takes nodes and a vertex and inserts
   the vertex to list of nodes of the graph.
- =#"""
+"""
 function insertNodetoGraph(
   inNode::NodeType,
   inVertex::NodeType,
@@ -586,8 +608,10 @@ function insertNodetoGraph(
   return outGraph
 end
 
-""" #= This function searches for a starting node in M
- all reachable nodes. Call with start node in M: allReachableNodes((start,{}),graph,eqFn). =#"""
+"""
+  This function searches for a starting node in M
+  all reachable nodes. Call with start node in M: allReachableNodes((start,{}),graph,eqFn).
+"""
 function allReachableNodes(
   intmpstorage::Tuple{<:List{<:NodeType}, List{<:NodeType}},
   inGraph::List{<:Tuple{<:NodeType, List{<:NodeType}}},
@@ -599,8 +623,10 @@ function allReachableNodes(
   return reachableNodes #= Is NONE() on error to prevent recursion =#
 end
 
-""" #= This function searches for a starting node in M
- all reachable nodes. Call with start node in M: allReachableNodes((start,{}),graph,eqFn). =#"""
+"""
+  This function searches for a starting node in M
+  all reachable nodes. Call with start node in M: allReachableNodes((start,{}),graph,eqFn).
+"""
 function allReachableNodesWork(
   intmpstorage::Tuple{<:List{<:NodeType}, List{<:NodeType}},
   inGraph::List{<:Tuple{<:NodeType, List{<:NodeType}}},
@@ -654,16 +680,17 @@ function allReachableNodesWork(
   return reachableNodes #= Is NONE() on error to prevent recursion =#
 end
 
-""" #= A greedy partial distance-2 coloring algorithm.
-procedure G REEDY PARTIAL D2C OLORING(Gb = (V1 ,V2 , E))
-Let u1 , u2 , . . ., un be a given ordering of V2 , where n = |V2 |
-Initialize forbiddenColors with some value a in V2
-for i = 1 to n do
-for each vertex w such that (ui , w) in E do
-for each colored vertex x such that (w, x) in E do
-forbiddenColors[color[x]] <- ui
-color[ui ] <- min{c > 0 : forbiddenColors[c] = ui }
- =#"""
+"""
+  A greedy partial distance-2 coloring algorithm.
+  procedure G REEDY PARTIAL D2C OLORING(Gb = (V1 ,V2 , E))
+  Let u1 , u2 , . . ., un be a given ordering of V2 , where n = |V2 |
+  Initialize forbiddenColors with some value a in V2
+  for i = 1 to n do
+  for each vertex w such that (ui , w) in E do
+  for each colored vertex x such that (w, x) in E do
+  forbiddenColors[color[x]] <- ui
+  color[ui ] <- min{c > 0 : forbiddenColors[c] = ui }
+"""
 function partialDistance2color(
   toColorNodes::List{<:NodeType},
   inforbiddenColor::Array{<:Option{<:List{<:NodeType}}},
@@ -942,8 +969,10 @@ end
 
 #= /* Functions for Integer graphs */ =#
 
-""" #= This function prints an Integer Graph.
- Useful for debuging. =#"""
+"""
+  This function prints an Integer Graph.
+  Useful for debuging.
+"""
 function printGraphInt(inGraph::List{<:Tuple{<:Integer, List{<:Integer}}})
   return @assign _ = begin
     local node::Integer
@@ -968,8 +997,10 @@ function printGraphInt(inGraph::List{<:Tuple{<:Integer, List{<:Integer}}})
   end
 end
 
-""" #= This function prints an Integer List Nodes.
- Useful for debuging. =#"""
+"""
+  This function prints an Integer List Nodes.
+  Useful for debuging.
+"""
 function printNodesInt(inListNodes::List{<:Integer}, inName::String)
   return @assign _ = begin
     local strNodes::List{String}
@@ -991,9 +1022,11 @@ function printNodesInt(inListNodes::List{<:Integer}, inName::String)
   end
 end
 
-""" #= This function searches for a starting node in M
- all reachabel nodes. Call with start nodes in M. The
- result is collected in L. =#"""
+"""
+  This function searches for a starting node in M
+  all reachabel nodes. Call with start nodes in M. The
+  result is collected in L.
+"""
 function allReachableNodesInt(
   intmpstorage::Tuple{<:List{<:Integer}, List{<:Integer}},
   inGraph::Array{<:Tuple{<:Integer, List{<:Integer}}},
@@ -1045,16 +1078,17 @@ function allReachableNodesInt(
   return reachableNodes
 end
 
-""" #= A greedy partial distance-2 coloring algorithm.
-procedure GREEDY PARTIAL D2COLORING(Gb = (V1 ,V2 , E))
-Let u1 , u2 , . . ., un be a given ordering of V2 , where n = |V2 |
-Initialize forbiddenColors with some value a in V2
-for i = 1 to n do
-for each vertex w such that (ui , w) in E do
-for each colored vertex x such that (w, x) in E do
-forbiddenColors[color[x]] <- ui
-color[ui ] <- min{c > 0 : forbiddenColors[c] = ui }
- =#"""
+"""
+  A greedy partial distance-2 coloring algorithm.
+  procedure GREEDY PARTIAL D2COLORING(Gb = (V1 ,V2 , E))
+  Let u1 , u2 , . . ., un be a given ordering of V2 , where n = |V2 |
+  Initialize forbiddenColors with some value a in V2
+  for i = 1 to n do
+  for each vertex w such that (ui , w) in E do
+  for each colored vertex x such that (w, x) in E do
+  forbiddenColors[color[x]] <- ui
+  color[ui ] <- min{c > 0 : forbiddenColors[c] = ui }
+"""
 function partialDistance2colorInt(
   inGraphT::List{<:Tuple{<:Integer, List{<:Integer}}},
   inforbiddenColor::Array{<:Integer},
@@ -1141,8 +1175,10 @@ function arrayFindMinColorIndexInt(
   return outColor
 end
 
-""" #= Removes any node for which the given function evaluates to false, as well as
-   any edge pointing at that node. =#"""
+"""
+  Removes any node for which the given function evaluates to false, as well as
+  any edge pointing at that node.
+"""
 function filterGraph(
   inGraph::List{<:Tuple{<:NodeType, List{<:NodeType}}},
   inCondFunc::CondFunc,
@@ -1153,7 +1189,7 @@ function filterGraph(
   return outGraph
 end
 
-""" #= Helper function to filterGraph. =#"""
+"""Helper function to filterGraph."""
 function filterGraph2(
   inNode::Tuple{<:NodeType, List{<:NodeType}},
   inCondFunc::CondFunc,
@@ -1179,7 +1215,7 @@ function filterGraph2(
   return outNode
 end
 
-""" #= Merges the nodes of two different graphs. Needs an ordering function in order to be efficient. =#"""
+"""Merges the nodes of two different graphs. Needs an ordering function in order to be efficient."""
 function merge(
   graph1::List{<:Tuple{<:NodeType, List{<:NodeType}}},
   graph2::List{<:Tuple{<:NodeType, List{<:NodeType}}},

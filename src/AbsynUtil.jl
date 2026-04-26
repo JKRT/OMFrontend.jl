@@ -69,8 +69,10 @@ Arg = Any
 #=  stefan
 =#
 
-""" #= Traverses all subequations of an equation.
-   Takes a function and an extra argument passed through the traversal =#"""
+"""
+  Traverses all subequations of an equation.
+  Takes a function and an extra argument passed through the traversal
+"""
 function traverseEquation(
   inEquation::Equation,
   inFunc::FuncTplToTpl,
@@ -141,7 +143,7 @@ end
 #=  stefan
 =#
 
-""" #= Traverses the equation inside an equationitem =#"""
+"""Traverses the equation inside an equationitem"""
 function traverseEquationItem(
   inEquationItem::EquationItem,
   inFunc::FuncTplToTpl,
@@ -175,7 +177,7 @@ end
 #=  stefan
 =#
 
-""" #= calls traverseEquationItem on every element of the given list =#"""
+"""calls traverseEquationItem on every element of the given list"""
 function traverseEquationItemList(
   inEquationItemList::List{<:EquationItem},
   inFunc::FuncTplToTpl,
@@ -206,8 +208,10 @@ end
 #=  stefan
 =#
 
-""" #= traverses a list of Exp * EquationItem list tuples
-  mostly used for else-if blocks =#"""
+"""
+  traverses a list of Exp * EquationItem list tuples
+  mostly used for else-if blocks
+"""
 function traverseExpEqItemTupleList(
   inList::List{<:Tuple{<:Exp, List{<:EquationItem}}},
   inFunc::FuncTplToTpl,
@@ -239,8 +243,10 @@ end
 #=  stefan
 =#
 
-""" #= Traverses all subalgorithms of an algorithm
-  Takes a function and an extra argument passed through the traversal =#"""
+"""
+  Traverses all subalgorithms of an algorithm
+  Takes a function and an extra argument passed through the traversal
+"""
 function traverseAlgorithm(
   inAlgorithm::Algorithm,
   inFunc::FuncTplToTpl,
@@ -320,8 +326,10 @@ end
 #=  stefan
 =#
 
-""" #= traverses the Algorithm contained in an AlgorithmItem, if any
-  see traverseAlgorithm =#"""
+"""
+  traverses the Algorithm contained in an AlgorithmItem, if any
+  see traverseAlgorithm
+"""
 function traverseAlgorithmItem(
   inAlgorithmItem::AlgorithmItem,
   inFunc::FuncTplToTpl,
@@ -355,7 +363,7 @@ end
 #=  stefan
 =#
 
-""" #= calls traverseAlgorithmItem on each item in a list of AlgorithmItems =#"""
+"""calls traverseAlgorithmItem on each item in a list of AlgorithmItems"""
 function traverseAlgorithmItemList(
   inAlgorithmItemList::List{<:AlgorithmItem},
   inFunc::FuncTplToTpl,
@@ -390,8 +398,10 @@ end
 #=  stefan
 =#
 
-""" #= traverses a list of Exp * AlgorithmItem list tuples
-  mostly used for else-if blocks =#"""
+"""
+  traverses a list of Exp * AlgorithmItem list tuples
+  mostly used for else-if blocks
+"""
 function traverseExpAlgItemTupleList(
   inList::List{<:Tuple{<:Exp, List{<:AlgorithmItem}}},
   inFunc::FuncTplToTpl,
@@ -424,9 +434,11 @@ function traverseExpAlgItemTupleList(
   return outTpl
 end
 
-""" #=  Traverses all subexpressions of an Exp expression.
+"""
+  Traverses all subexpressions of an Exp expression.
   Takes a function and an extra argument passed through the traversal.
-  NOTE:This function was copied from Expression.traverseExpression. =#"""
+  NOTE:This function was copied from Expression.traverseExpression.
+"""
 function traverseExp(inExp::Exp, inFunc::FuncType, inArg::Type_a)::Tuple{Exp, Type_a}
   local outArg::Type_a
   local outExp::Exp
@@ -435,8 +447,10 @@ function traverseExp(inExp::Exp, inFunc::FuncType, inArg::Type_a)::Tuple{Exp, Ty
   return (outExp, outArg)
 end
 
-""" #=  Traverses all subexpressions of an Exp expression.
-  Takes a function and an extra argument passed through the traversal. =#"""
+"""
+  Traverses all subexpressions of an Exp expression.
+  Takes a function and an extra argument passed through the traversal.
+"""
 function traverseExpTopDown(inExp::Exp, inFunc::FuncType, inArg::Type_a)::Tuple{Exp, Type_a}
   local outArg::Type_a
   local outExp::Exp
@@ -445,7 +459,7 @@ function traverseExpTopDown(inExp::Exp, inFunc::FuncType, inArg::Type_a)::Tuple{
   return (outExp, outArg)
 end
 
-""" #= calls traverseExp on each element in the given list =#"""
+"""calls traverseExp on each element in the given list"""
 function traverseExpList(
   inExpList::List{<:Exp},
   inFunc::FuncTplToTpl,
@@ -459,8 +473,10 @@ function traverseExpList(
   return (outExpList, outArg)
 end
 
-""" #= Traverses a list of expressions, calling traverseExpBidir on each
-  expression. =#"""
+"""
+  Traverses a list of expressions, calling traverseExpBidir on each
+  expression.
+"""
 function traverseExpListBidir(
   inExpl::List{<:Exp},
   enterFunc::FuncType,
@@ -475,13 +491,15 @@ function traverseExpListBidir(
   return (outExpl, outArg)
 end
 
-""" #= This function takes an expression and a tuple with an enter function, an exit
+"""
+  This function takes an expression and a tuple with an enter function, an exit
   function, and an extra argument. For each expression it encounters it calls
   the enter function with the expression and the extra argument. It then
   traverses all subexpressions in the expression and calls traverseExpBidir on
   them with the updated argument. Finally it calls the exit function, again with
   the updated argument. This means that this function is bidirectional, and can
-  be used to emulate both top-down and bottom-up traversal. =#"""
+  be used to emulate both top-down and bottom-up traversal.
+"""
 function traverseExpBidir(
   inExp::Exp,
   enterFunc::FuncType,
@@ -497,9 +515,11 @@ function traverseExpBidir(
   return (e, arg)
 end
 
-""" #= Same as traverseExpBidir, but with an optional expression. Calls
+"""
+  Same as traverseExpBidir, but with an optional expression. Calls
   traverseExpBidir if the option is SOME(), or just returns the input if it's
-  NONE() =#"""
+  NONE()
+"""
 function traverseExpOptBidir(
   inExp::Option{<:Exp},
   enterFunc::FuncType,
@@ -531,8 +551,10 @@ function traverseExpOptBidir(
   return (outExp, arg)
 end
 
-""" #= Helper function to traverseExpBidir. Traverses the subexpressions of an
-  expression and calls traverseExpBidir on them. =#"""
+"""
+  Helper function to traverseExpBidir. Traverses the subexpressions of an
+  expression and calls traverseExpBidir on them.
+"""
 function traverseExpBidirSubExps(
   inExp::Exp,
   enterFunc::FuncType,
@@ -820,8 +842,10 @@ function traverseExpBidirSubExps(
   return (e, arg)
 end
 
-""" #= Helper function to traverseExpBidirSubExps. Traverses any expressions in a
-  component reference (i.e. in it's subscripts). =#"""
+"""
+  Helper function to traverseExpBidirSubExps. Traverses any expressions in a
+  component reference (i.e. in it's subscripts).
+"""
 function traverseExpBidirCref(
   inCref::ComponentRef,
   enterFunc::FuncType,
@@ -891,8 +915,10 @@ function traverseExpBidirCref(
   return (outCref, arg)
 end
 
-""" #= Helper function to traverseExpBidirCref. Traverses expressions in a
-  subscript. =#"""
+"""
+  Helper function to traverseExpBidirCref. Traverses expressions in a
+  subscript.
+"""
 function traverseExpBidirSubs(
   inSubscript::Subscript,
   enterFunc::FuncType,
@@ -923,8 +949,10 @@ function traverseExpBidirSubs(
   return (outSubscript, arg)
 end
 
-""" #= Helper function to traverseExpBidirSubExps. Traverses the expressions in an
-  elseif branch. =#"""
+"""
+  Helper function to traverseExpBidirSubExps. Traverses the expressions in an
+  elseif branch.
+"""
 function traverseExpBidirElseIf(
   inElseIf::Tuple{<:Exp, Exp},
   enterFunc::FuncType,
@@ -945,8 +973,10 @@ function traverseExpBidirElseIf(
   return (outElseIf, arg)
 end
 
-""" #= Helper function to traverseExpBidirSubExps. Traverses the expressions in a
-  list of function argument. =#"""
+"""
+  Helper function to traverseExpBidirSubExps. Traverses the expressions in a
+  list of function argument.
+"""
 function traverseExpBidirFunctionArgs(
   inArgs::FunctionArgs,
   enterFunc::FuncType,
@@ -1004,8 +1034,10 @@ function traverseExpBidirFunctionArgs(
   return (outArgs, outArg)
 end
 
-""" #= Helper function to traverseExpBidirFunctionArgs. Traverses the expressions in
-  a named function argument. =#"""
+"""
+  Helper function to traverseExpBidirFunctionArgs. Traverses the expressions in
+  a named function argument.
+"""
 function traverseExpBidirNamedArg(
   inArg::NamedArg,
   enterFunc::FuncType,
@@ -1029,8 +1061,10 @@ function traverseExpBidirNamedArg(
   return (outArg, outExtra)
 end
 
-""" #= Helper function to traverseExpBidirFunctionArgs. Traverses the expressions in
-  an iterator. =#"""
+"""
+  Helper function to traverseExpBidirFunctionArgs. Traverses the expressions in
+  an iterator.
+"""
 function traverseExpBidirIterator(
   inIterator::ForIterator,
   enterFunc::FuncType,
@@ -1539,7 +1573,7 @@ function makeQualifiedPathFromStrings(s1::String, s2::String)::Path
   return p
 end
 
-""" #= returns the class name of a Class as a Path =#"""
+"""returns the class name of a Class as a Path"""
 function className(cl::Class)::Path
   local name::Path
 
@@ -1567,8 +1601,10 @@ function isClassNamed(inName::String, inClass::Class)::Bool
   return outIsNamed
 end
 
-""" #= The ElementSpec type contains the name of the element, and this function
-   extracts this name. =#"""
+"""
+  The ElementSpec type contains the name of the element, and this function
+  extracts this name.
+"""
 function elementSpecName(inElementSpec::ElementSpec)::Ident
   local outIdent::Ident
 
@@ -1622,7 +1658,7 @@ function elementSpecificationIsClassDef(es::ElementSpec)::Bool
   return b
 end
 
-""" #= This function takes a Import and prints it as a flat-string. =#"""
+"""This function takes a Import and prints it as a flat-string."""
 function printImportString(imp::Import)::String
   local ostring::String
   @assign ostring = begin
@@ -1647,7 +1683,7 @@ function printImportString(imp::Import)::String
   return ostring
 end
 
-""" #= returns the string of an expression if it is a string constant. =#"""
+"""returns the string of an expression if it is a string constant."""
 function expString(exp::Exp)::String
   local str::String
 
@@ -1655,7 +1691,7 @@ function expString(exp::Exp)::String
   return str
 end
 
-""" #= returns the componentRef of an expression if matches. =#"""
+"""returns the componentRef of an expression if matches."""
 function expCref(exp::Exp)::ComponentRef
   local cr::ComponentRef
 
@@ -1663,7 +1699,7 @@ function expCref(exp::Exp)::ComponentRef
   return cr
 end
 
-""" #= returns the componentRef of an expression if matches. =#"""
+"""returns the componentRef of an expression if matches."""
 function crefExp(cr::ComponentRef)::Exp
   local exp::Exp
 
@@ -1714,7 +1750,7 @@ function printComponentRefStr(cr::ComponentRef)::String
   return ostring
 end
 
-""" #= Returns true if two paths are equal. =#"""
+"""Returns true if two paths are equal."""
 function pathEqual(inPath1::Path, inPath2::Path)::Bool
   local outBoolean::Bool
 
@@ -1764,8 +1800,10 @@ function pathEqual(inPath1::Path, inPath2::Path)::Bool
   return outBoolean
 end
 
-""" #= Author BZ 2009-01
-   Check whether two type specs are equal or not. =#"""
+"""
+  Author BZ 2009-01
+  Check whether two type specs are equal or not.
+"""
 function typeSpecEqual(a::TypeSpec, b::TypeSpec)::Bool
   local ob::Bool
 
@@ -1804,8 +1842,10 @@ function typeSpecEqual(a::TypeSpec, b::TypeSpec)::Bool
   return ob
 end
 
-""" #= Author BZ
-   helper function for typeSpecEqual =#"""
+"""
+  Author BZ
+  helper function for typeSpecEqual
+"""
 function optArrayDimEqual(oad1::Option{<:ArrayDim}, oad2::Option{<:ArrayDim})::Bool
   local b::Bool
 
@@ -1830,7 +1870,7 @@ function optArrayDimEqual(oad1::Option{<:ArrayDim}, oad2::Option{<:ArrayDim})::B
   return b
 end
 
-""" #= This function simply converts a Path to a string. =#"""
+"""This function simply converts a Path to a string."""
 function typeSpecPathString(tp::TypeSpec)::String
   local s::String
 
@@ -1849,7 +1889,7 @@ function typeSpecPathString(tp::TypeSpec)::String
   return s
 end
 
-""" #= Converts a TypeSpec to Path =#"""
+"""Converts a TypeSpec to Path"""
 function typeSpecPath(tp::TypeSpec)::Path
   local op::Path
 
@@ -1868,7 +1908,7 @@ function typeSpecPath(tp::TypeSpec)::Path
   return op
 end
 
-""" #= Returns the dimensions of a TypeSpec. =#"""
+"""Returns the dimensions of a TypeSpec."""
 function typeSpecDimensions(inTypeSpec::TypeSpec)::ArrayDim
   local outDimensions::ArrayDim
 
@@ -1891,7 +1931,7 @@ function typeSpecDimensions(inTypeSpec::TypeSpec)::ArrayDim
   return outDimensions
 end
 
-""" #= This function simply converts a Path to a string. =#"""
+"""This function simply converts a Path to a string."""
 function pathString(
   path::Path,
   delimiter::String = ".",
@@ -2131,7 +2171,7 @@ function pathCompareNoQual(ip1::Path, ip2::Path)::Integer
   return o
 end
 
-""" #= Hashes a path. =#"""
+"""Hashes a path."""
 function pathHashMod(path::Path, mod::Integer)::Integer
   local hash::Integer
 
@@ -2147,7 +2187,7 @@ function pathHashMod(path::Path, mod::Integer)::Integer
   return hash
 end
 
-""" #= Hashes a path. =#"""
+"""Hashes a path."""
 function pathHashModWork(path::Path, acc::Integer)::Integer
   local hash::Integer
 
@@ -2178,7 +2218,7 @@ function pathHashModWork(path::Path, acc::Integer)::Integer
   return hash
 end
 
-""" #= Returns a path converted to string or an empty string if nothing exist =#"""
+"""Returns a path converted to string or an empty string if nothing exist"""
 function optPathString(inPathOption::Option{<:Path})::String
   local outString::String
 
@@ -2199,11 +2239,12 @@ function optPathString(inPathOption::Option{<:Path})::String
   return outString
 end
 
-""" #=  Changes a path to string. Uses the input string as separator.
+"""
+  Changes a path to string. Uses the input string as separator.
   If the separtor exists in the string then it is doubled (sep _ then
   a_b changes to a__b) before delimiting
   (Replaces dots with that separator). And also unquotes each ident.
- =#"""
+"""
 function pathStringUnquoteReplaceDot(inPath::Path, repStr::String)::String
   local outString::String
 
@@ -2218,7 +2259,7 @@ function pathStringUnquoteReplaceDot(inPath::Path, repStr::String)::String
   return outString
 end
 
-""" #= Converts a string into a qualified path. =#"""
+"""Converts a string into a qualified path."""
 function stringPath(str::String)::Path
   local qualifiedPath::Path
   local paths::List{String}
@@ -2227,7 +2268,7 @@ function stringPath(str::String)::Path
   return qualifiedPath
 end
 
-""" #= Converts a list of strings into a qualified path. =#"""
+"""Converts a list of strings into a qualified path."""
 function stringListPath(paths::List{<:String})::Path
   local qualifiedPath::Path
 
@@ -2253,8 +2294,10 @@ function stringListPath(paths::List{<:String})::Path
   return qualifiedPath
 end
 
-""" #= Converts a list of strings into a qualified path, in reverse order.
-   Ex: {'a', 'b', 'c'} => c.b.a =#"""
+"""
+  Converts a list of strings into a qualified path, in reverse order.
+  Ex: {'a', 'b', 'c'} => c.b.a
+"""
 function stringListPathReversed(inStrings::List{<:String})::Path
   local outPath::Path
 
@@ -2289,7 +2332,7 @@ function stringListPathReversed2(inStrings::List{<:String}, inAccumPath::Path)::
   return outPath
 end
 
-""" #= Returns the two last idents of a path =#"""
+"""Returns the two last idents of a path"""
 function pathTwoLastIdents(inPath::Path)::Path
   local outTwoLast::Path
 
@@ -2312,7 +2355,7 @@ function pathTwoLastIdents(inPath::Path)::Path
   return outTwoLast
 end
 
-""" #= Returns the last ident (after last dot) in a path =#"""
+"""Returns the last ident (after last dot) in a path"""
 function pathLastIdent(inPath::Path)::String
   local outIdent::String
 
@@ -2336,7 +2379,7 @@ function pathLastIdent(inPath::Path)::String
   return outIdent
 end
 
-""" #= Returns the last ident (after last dot) in a path =#"""
+"""Returns the last ident (after last dot) in a path"""
 function pathLast(path::Path)::Path
 
   @assign path = begin
@@ -2358,7 +2401,7 @@ function pathLast(path::Path)::Path
   return path
 end
 
-""" #= Returns the first ident (before first dot) in a path =#"""
+"""Returns the first ident (before first dot) in a path"""
 function pathFirstIdent(inPath::Path)::Ident
   local outIdent::Ident
 
@@ -2444,7 +2487,7 @@ function pathRest(inPath::Path)::Path
   return outPath
 end
 
-""" #= strips the same prefix paths and returns the stripped path. e.g pathStripSamePrefix(P.M.A, P.M.B) => A =#"""
+"""strips the same prefix paths and returns the stripped path. e.g pathStripSamePrefix(P.M.A, P.M.B) => A"""
 function pathStripSamePrefix(inPath1::Absyn.Path, inPath2::Absyn.Path)::Absyn.Path
   local outPath::Absyn.Path
 
@@ -2471,7 +2514,7 @@ function pathStripSamePrefix(inPath1::Absyn.Path, inPath2::Absyn.Path)::Absyn.Pa
   return outPath
 end
 
-""" #= Returns the prefix of a path, i.e. this.is.a.path => this.is.a =#"""
+"""Returns the prefix of a path, i.e. this.is.a.path => this.is.a"""
 function pathPrefix(path::Path)::Path
   local prefix::Path
 
@@ -2496,7 +2539,7 @@ function pathPrefix(path::Path)::Path
   return prefix
 end
 
-""" #= Prefixes a path with an identifier. =#"""
+"""Prefixes a path with an identifier."""
 function prefixPath(prefix::Ident, path::Path)::Path
   local outPath::Path
 
@@ -2504,7 +2547,7 @@ function prefixPath(prefix::Ident, path::Path)::Path
   return outPath
 end
 
-""" #= Prefixes an optional path with an identifier. =#"""
+"""Prefixes an optional path with an identifier."""
 function prefixOptPath(prefix::Ident, optPath::Option{<:Path})::Option{Path}
   local outPath::Option{Path}
 
@@ -2523,8 +2566,10 @@ function prefixOptPath(prefix::Ident, optPath::Option{<:Path})::Option{Path}
   return outPath
 end
 
-""" #= Adds a suffix to a path. Ex:
-     suffixPath(a.b.c, 'd') => a.b.c.d =#"""
+"""
+  Adds a suffix to a path. Ex:
+  suffixPath(a.b.c, 'd') => a.b.c.d
+"""
 function suffixPath(inPath::Path, inSuffix::Ident)::Path
   local outPath::Path
 
@@ -2550,7 +2595,7 @@ function suffixPath(inPath::Path, inSuffix::Ident)::Path
   return outPath
 end
 
-""" #= returns true if suffix_path is a suffix of path =#"""
+"""returns true if suffix_path is a suffix of path"""
 function pathSuffixOf(suffix_path::Path, path::Path)::Bool
   local res::Bool
 
@@ -2578,7 +2623,7 @@ function pathSuffixOf(suffix_path::Path, path::Path)::Bool
   return res
 end
 
-""" #= returns true if suffix_path is a suffix of path =#"""
+"""returns true if suffix_path is a suffix of path"""
 function pathSuffixOfr(path::Path, suffix_path::Path)::Bool
   local res::Bool
 
@@ -2617,11 +2662,11 @@ function pathToStringListWork(path::Path, acc::List{<:String})::List{String}
   return outPaths
 end
 
-""" #=
+"""
   Replaces the first part of a path with a replacement path:
   (a.b.c, d.e) => d.e.b.c
   (a, b.c.d) => b.c.d
- =#"""
+"""
 function pathReplaceFirstIdent(path::Path, replPath::Path)::Path
   local outPath::Path
 
@@ -2642,7 +2687,7 @@ function pathReplaceFirstIdent(path::Path, replPath::Path)::Path
   return outPath
 end
 
-""" #= Function for appending subscripts at end of last ident =#"""
+"""Function for appending subscripts at end of last ident"""
 function addSubscriptsLast(icr::ComponentRef, i::List{<:Subscript})::ComponentRef
   local ocr::ComponentRef
 
@@ -2669,11 +2714,11 @@ function addSubscriptsLast(icr::ComponentRef, i::List{<:Subscript})::ComponentRe
   return ocr
 end
 
-""" #=
+"""
   Replaces the first part of a cref with a replacement path:
   (a[4].b.c[3], d.e) => d.e[4].b.c[3]
   (a[3], b.c.d) => b.c.d[3]
- =#"""
+"""
 function crefReplaceFirstIdent(icref::ComponentRef, replPath::Path)::ComponentRef
   local outCref::ComponentRef
 
@@ -2703,7 +2748,7 @@ function crefReplaceFirstIdent(icref::ComponentRef, replPath::Path)::ComponentRe
   return outCref
 end
 
-""" #= Returns true if prefixPath is a prefix of path, false otherwise. =#"""
+"""Returns true if prefixPath is a prefix of path, false otherwise."""
 function pathPrefixOf(prefixPath::Path, path::Path)::Bool
   local isPrefix::Bool
 
@@ -2743,11 +2788,13 @@ function pathPrefixOf(prefixPath::Path, path::Path)::Bool
   return isPrefix
 end
 
-""" #= Alternative names: crefIsPrefixOf, isPrefixOf, prefixOf
+"""
+  Alternative names: crefIsPrefixOf, isPrefixOf, prefixOf
   Author: DH 2010-03
 
   Returns true if prefixCr is a prefix of cr, i.e., false otherwise.
-  Subscripts are NOT checked. =#"""
+  Subscripts are NOT checked.
+"""
 function crefPrefixOf(prefixCr::ComponentRef, cr::ComponentRef)::Bool
   local out::Bool
 
@@ -2770,7 +2817,7 @@ function crefPrefixOf(prefixCr::ComponentRef, cr::ComponentRef)::Bool
   return out
 end
 
-""" #= removes the prefix_path from path, and returns the rest of path =#"""
+"""removes the prefix_path from path, and returns the rest of path"""
 function removePrefix(prefix_path::Path, path::Path)::Path
   local newPath::Path
 
@@ -2804,11 +2851,12 @@ function removePrefix(prefix_path::Path, path::Path)::Path
   return newPath
 end
 
-""" #= Tries to remove a given prefix from a path with removePrefix. If it fails it
+"""
+  Tries to remove a given prefix from a path with removePrefix. If it fails it
   removes the first identifier in the prefix and tries again, until it either
   succeeds or reaches the end of the prefix. Ex:
-    removePartialPrefix(A.B.C, B.C.D.E) => D.E
-   =#"""
+  removePartialPrefix(A.B.C, B.C.D.E) => D.E
+"""
 function removePartialPrefix(inPrefix::Path, inPath::Path)::Path
   local outPath::Path
 
@@ -2838,14 +2886,14 @@ function removePartialPrefix(inPrefix::Path, inPath::Path)::Path
   return outPath
 end
 
-""" #=
+"""
   function: crefRemovePrefix
   Alternative names: removePrefix
   Author: DH 2010-03
 
   If prefixCr is a prefix of cr, removes prefixCr from cr and returns the remaining reference,
   otherwise fails. Subscripts are NOT checked.
- =#"""
+"""
 function crefRemovePrefix(prefixCr::ComponentRef, cr::ComponentRef)::ComponentRef
   local out::ComponentRef
 
@@ -2893,8 +2941,10 @@ function crefRemovePrefix(prefixCr::ComponentRef, cr::ComponentRef)::ComponentRe
   return out
 end
 
-""" #= Author BZ,
-   checks if one IDENT(..) is contained in path. =#"""
+"""
+  Author BZ,
+  checks if one IDENT(..) is contained in path.
+"""
 function pathContains(fullPath::Path, pathId::Path)::Bool
   local b::Bool
 
@@ -2924,8 +2974,10 @@ function pathContains(fullPath::Path, pathId::Path)::Bool
   return b
 end
 
-""" #= Author OT,
-   checks if Path contains the given string. =#"""
+"""
+  Author OT,
+  checks if Path contains the given string.
+"""
 function pathContainsString(p1::Path, str::String)::Bool
   local b::Bool
 
@@ -2957,13 +3009,15 @@ function pathContainsString(p1::Path, str::String)::Bool
   return b
 end
 
-""" #= This function checks if subPath is contained in path.
-   If it is the complete path is returned. Otherwise the function fails.
-   For example,
-     pathContainedIn( C.D, A.B.C) => A.B.C.D
-     pathContainedIn(C.D, A.B.C.D) => A.B.C.D
-     pathContainedIn(A.B.C.D, A.B.C.D) => A.B.C.D
-     pathContainedIn(B.C,A.B) => A.B.C =#"""
+"""
+  This function checks if subPath is contained in path.
+  If it is the complete path is returned. Otherwise the function fails.
+  For example,
+  pathContainedIn( C.D, A.B.C) => A.B.C.D
+  pathContainedIn(C.D, A.B.C.D) => A.B.C.D
+  pathContainedIn(A.B.C.D, A.B.C.D) => A.B.C.D
+  pathContainedIn(B.C,A.B) => A.B.C
+"""
 function pathContainedIn(subPath::Path, path::Path)::Path
   local completePath::Path
 
@@ -3001,8 +3055,10 @@ function pathContainedIn(subPath::Path, path::Path)::Path
   return completePath
 end
 
-""" #= Author BZ 2009-08
-   Function for getting ComponentRefs out from Subscripts =#"""
+"""
+  Author BZ 2009-08
+  Function for getting ComponentRefs out from Subscripts
+"""
 function getCrefsFromSubs(
   isubs::List{<:Subscript},
   includeSubs::Bool,
@@ -3033,8 +3089,10 @@ function getCrefsFromSubs(
   return crefs
 end
 
-""" #= Returns a flattened list of the
-   component references in an expression =#"""
+"""
+  Returns a flattened list of the
+  component references in an expression
+"""
 function getCrefFromExp(
   inExp::Exp,
   includeSubs::Bool,
@@ -3239,8 +3297,10 @@ function getCrefFromExp(
   return outComponentRefLst
 end
 
-""" #= Returns the flattened list of all component references
-  present in a list of function arguments. =#"""
+"""
+  Returns the flattened list of all component references
+  present in a list of function arguments.
+"""
 function getCrefFromFarg(
   inFunctionArgs::FunctionArgs,
   includeSubs::Bool,
@@ -3317,7 +3377,7 @@ end
 #=  stefan
 =#
 
-""" #= returns the names from a list of NamedArgs as a string list =#"""
+"""returns the names from a list of NamedArgs as a string list"""
 function getNamedFuncArgNamesAndValues(
   inNamedArgList::List{<:NamedArg},
 )::Tuple{List{String}, List{Exp}}
@@ -3344,8 +3404,10 @@ function getNamedFuncArgNamesAndValues(
   return (outStringList, outExpList)
 end
 
-""" #= Returns the flattened list of all component references
-  present in a list of named function arguments. =#"""
+"""
+  Returns the flattened list of all component references
+  present in a list of named function arguments.
+"""
 function getCrefFromNarg(
   inNamedArg::NamedArg,
   includeSubs::Bool,
@@ -3366,7 +3428,7 @@ function getCrefFromNarg(
   return outComponentRefLst
 end
 
-""" #= This function joins two paths =#"""
+"""This function joins two paths"""
 function joinPaths(inPath1::Path, inPath2::Path)::Path
   local outPath::Path
 
@@ -3397,7 +3459,7 @@ function joinPaths(inPath1::Path, inPath2::Path)::Path
   return outPath
 end
 
-""" #= This function joins two paths when the first one might be NONE =#"""
+"""This function joins two paths when the first one might be NONE"""
 function joinPathsOpt(inPath1::Option{<:Path}, inPath2::Path)::Path
   local outPath::Path
 
@@ -3434,8 +3496,10 @@ function joinPathsOptSuffix(inPath1::Path, inPath2::Option{<:Path})::Path
   return outPath
 end
 
-""" #= This function selects the second path when the first one
-  is NONE() otherwise it will select the first one. =#"""
+"""
+  This function selects the second path when the first one
+  is NONE() otherwise it will select the first one.
+"""
 function selectPathsOpt(inPath1::Option{<:Path}, inPath2::Path)::Path
   local outPath::Path
 
@@ -3454,8 +3518,10 @@ function selectPathsOpt(inPath1::Option{<:Path}, inPath2::Path)::Path
   return outPath
 end
 
-""" #= author Lucian
-  This function joins a path list =#"""
+"""
+  author Lucian
+  This function joins a path list
+"""
 function pathAppendList(inPathLst::List{<:Path})::Path
   local outPath::Path
 
@@ -3483,8 +3549,10 @@ function pathAppendList(inPathLst::List{<:Path})::Path
   return outPath
 end
 
-""" #= Returns the path given as argument to
-  the function minus the last ident. =#"""
+"""
+  Returns the path given as argument to
+  the function minus the last ident.
+"""
 function stripLast(inPath::Path)::Path
   local outPath::Path
 
@@ -3529,8 +3597,10 @@ function stripLastOpt(inPath::Path)::Option{Path}
   return outPath
 end
 
-""" #= Returns the path given as argument to
-  the function minus the last ident. =#"""
+"""
+  Returns the path given as argument to
+  the function minus the last ident.
+"""
 function crefStripLast(inCref::ComponentRef)::ComponentRef
   local outCref::ComponentRef
 
@@ -3562,11 +3632,11 @@ function crefStripLast(inCref::ComponentRef)::ComponentRef
   return outCref
 end
 
-""" #=
-Author BZ 2008-04
-Function for splitting Absynpath into two parts,
-qualified part, and ident part (all_but_last, last);
- =#"""
+"""
+  Author BZ 2008-04
+  Function for splitting Absynpath into two parts,
+  qualified part, and ident part (all_but_last, last);
+"""
 function splitQualAndIdentPath(inPath::Path)::Tuple{Path, Path}
   local outPath2::Path
   local outPath1::Path
@@ -3596,8 +3666,10 @@ function splitQualAndIdentPath(inPath::Path)::Tuple{Path, Path}
   return (outPath1, outPath2)
 end
 
-""" #= Returns the path given as argument
-  to the function minus the first ident. =#"""
+"""
+  Returns the path given as argument
+  to the function minus the first ident.
+"""
 function stripFirst(inPath::Path)::Path
   local outPath::Path
 
@@ -3616,8 +3688,10 @@ function stripFirst(inPath::Path)::Path
   return outPath
 end
 
-""" #= This function converts a ComponentRef to a Path, if possible.
-  If the component reference contains subscripts, it will silently fail. =#"""
+"""
+  This function converts a ComponentRef to a Path, if possible.
+  If the component reference contains subscripts, it will silently fail.
+"""
 function crefToPath(inComponentRef::ComponentRef)::Path
   local outPath::Path
 
@@ -3644,8 +3718,10 @@ function crefToPath(inComponentRef::ComponentRef)::Path
   return outPath
 end
 
-""" #= This function converts a ElementSpec to a Path, if possible.
-  If the ElementSpec is not EXTENDS, it will silently fail. =#"""
+"""
+  This function converts a ElementSpec to a Path, if possible.
+  If the ElementSpec is not EXTENDS, it will silently fail.
+"""
 function elementSpecToPath(inElementSpec::ElementSpec)::Path
   local outPath::Path
 
@@ -3660,7 +3736,7 @@ function elementSpecToPath(inElementSpec::ElementSpec)::Path
   return outPath
 end
 
-""" #= Converts a ComponentRef to a Path, ignoring any subscripts. =#"""
+"""Converts a ComponentRef to a Path, ignoring any subscripts."""
 function crefToPathIgnoreSubs(inComponentRef::ComponentRef)::Path
   local outPath::Path
 
@@ -3687,7 +3763,7 @@ function crefToPathIgnoreSubs(inComponentRef::ComponentRef)::Path
   return outPath
 end
 
-""" #= This function converts a Path to a ComponentRef. =#"""
+"""This function converts a Path to a ComponentRef."""
 function pathToCref(inPath::Path)::ComponentRef
   local outComponentRef::ComponentRef
 
@@ -3714,8 +3790,10 @@ function pathToCref(inPath::Path)::ComponentRef
   return outComponentRef
 end
 
-""" #= This function converts a Path to a ComponentRef, and applies the given
-  subscripts to the last identifier. =#"""
+"""
+  This function converts a Path to a ComponentRef, and applies the given
+  subscripts to the last identifier.
+"""
 function pathToCrefWithSubs(inPath::Path, inSubs::List{<:Subscript})::ComponentRef
   local outComponentRef::ComponentRef
 
@@ -3742,7 +3820,7 @@ function pathToCrefWithSubs(inPath::Path, inSubs::List{<:Subscript})::ComponentR
   return outComponentRef
 end
 
-""" #= Returns the last identifier in a component reference. =#"""
+"""Returns the last identifier in a component reference."""
 function crefLastIdent(inComponentRef::ComponentRef)::Ident
   local outIdent::Ident
 
@@ -3766,8 +3844,10 @@ function crefLastIdent(inComponentRef::ComponentRef)::Ident
   return outIdent
 end
 
-""" #= Returns the basename of the component reference, but fails if it encounters
-  any subscripts. =#"""
+"""
+  Returns the basename of the component reference, but fails if it encounters
+  any subscripts.
+"""
 function crefFirstIdentNoSubs(inCref::ComponentRef)::Ident
   local outIdent::Ident
 
@@ -3791,7 +3871,7 @@ function crefFirstIdentNoSubs(inCref::ComponentRef)::Ident
   return outIdent
 end
 
-""" #= Returns true if the component reference is a simple identifier, otherwise false. =#"""
+"""Returns true if the component reference is a simple identifier, otherwise false."""
 function crefIsIdent(inComponentRef::ComponentRef)::Bool
   local outIsIdent::Bool
 
@@ -3809,7 +3889,7 @@ function crefIsIdent(inComponentRef::ComponentRef)::Bool
   return outIsIdent
 end
 
-""" #= Returns true if the component reference is a qualified identifier, otherwise false. =#"""
+"""Returns true if the component reference is a qualified identifier, otherwise false."""
 function crefIsQual(inComponentRef::ComponentRef)::Bool
   local outIsQual::Bool
 
@@ -3831,7 +3911,7 @@ function crefIsQual(inComponentRef::ComponentRef)::Bool
   return outIsQual
 end
 
-""" #= Return the last subscripts of an ComponentRef =#"""
+"""Return the last subscripts of an ComponentRef"""
 function crefLastSubs(inComponentRef::ComponentRef)::List{Subscript}
   local outSubscriptLst::List{Subscript}
 
@@ -3886,7 +3966,7 @@ function crefSetLastSubs(
   return outCref
 end
 
-""" #= This function finds if a cref has subscripts =#"""
+"""This function finds if a cref has subscripts"""
 function crefHasSubscripts(cref::ComponentRef)::Bool
   local hasSubscripts::Bool
 
@@ -3920,9 +4000,10 @@ function crefHasSubscripts(cref::ComponentRef)::Bool
   return hasSubscripts
 end
 
-""" #=
-Author: BZ, 2009-09
- Extract subscripts of crefs. =#"""
+"""
+  Author: BZ, 2009-09
+  Extract subscripts of crefs.
+"""
 function getSubsFromCref(
   cr::ComponentRef,
   includeSubs::Bool,
@@ -3956,7 +4037,7 @@ end
 #=  stefan
 =#
 
-""" #= Gets the last ident in a ComponentRef =#"""
+"""Gets the last ident in a ComponentRef"""
 function crefGetLastIdent(inComponentRef::ComponentRef)::ComponentRef
   local outComponentRef::ComponentRef
 
@@ -3984,7 +4065,7 @@ function crefGetLastIdent(inComponentRef::ComponentRef)::ComponentRef
   return outComponentRef
 end
 
-""" #= Strips the last subscripts of a ComponentRef =#"""
+"""Strips the last subscripts of a ComponentRef"""
 function crefStripLastSubs(inComponentRef::ComponentRef)::ComponentRef
   local outComponentRef::ComponentRef
 
@@ -4013,7 +4094,7 @@ function crefStripLastSubs(inComponentRef::ComponentRef)::ComponentRef
   return outComponentRef
 end
 
-""" #= This function joins two ComponentRefs. =#"""
+"""This function joins two ComponentRefs."""
 function joinCrefs(
   inComponentRef1::ComponentRef,
   inComponentRef2::ComponentRef,
@@ -4046,7 +4127,7 @@ function joinCrefs(
   return outComponentRef
 end
 
-""" #= Returns first ident from a ComponentRef =#"""
+"""Returns first ident from a ComponentRef"""
 function crefFirstIdent(inCref::ComponentRef)::Ident
   local outIdent::Ident
 
@@ -4085,7 +4166,7 @@ function crefSecondIdent(cref::ComponentRef)::Ident
   return ident
 end
 
-""" #= Returns the first part of a cref. =#"""
+"""Returns the first part of a cref."""
 function crefFirstCref(inCref::ComponentRef)::ComponentRef
   local outCref::ComponentRef
 
@@ -4107,7 +4188,7 @@ function crefFirstCref(inCref::ComponentRef)::ComponentRef
   return outCref
 end
 
-""" #= Strip the first ident from a ComponentRef =#"""
+"""Strip the first ident from a ComponentRef"""
 function crefStripFirst(inComponentRef::ComponentRef)::ComponentRef
   local outComponentRef::ComponentRef
 
@@ -4143,7 +4224,7 @@ function crefIsFullyQualified(inCref::ComponentRef)::Bool
   return outIsFullyQualified
 end
 
-""" #= Makes a component reference fully qualified unless it already is. =#"""
+"""Makes a component reference fully qualified unless it already is."""
 function crefMakeFullyQualified(inComponentRef::ComponentRef)::ComponentRef
   local outComponentRef::ComponentRef
 
@@ -4161,7 +4242,7 @@ function crefMakeFullyQualified(inComponentRef::ComponentRef)::ComponentRef
   return outComponentRef
 end
 
-""" #= Maps a class restriction to the corresponding string for printing =#"""
+"""Maps a class restriction to the corresponding string for printing"""
 function restrString(inRestriction::Restriction)::String
   local outString::String
 
@@ -4254,7 +4335,7 @@ function restrString(inRestriction::Restriction)::String
   return outString
 end
 
-""" #= Returns the path (=name) of the last class in a program =#"""
+"""Returns the path (=name) of the last class in a program"""
 function lastClassname(inProgram::Program)::Path
   local outPath::Path
 
@@ -4267,7 +4348,7 @@ function lastClassname(inProgram::Program)::Path
   return outPath
 end
 
-""" #= Retrieves the filename where the class is stored. =#"""
+"""Retrieves the filename where the class is stored."""
 function classFilename(inClass::Class)::String
   local outFilename::String
 
@@ -4275,7 +4356,7 @@ function classFilename(inClass::Class)::String
   return outFilename
 end
 
-""" #= Sets the filename where the class is stored. =#"""
+"""Sets the filename where the class is stored."""
 function setClassFilename(inClass::Class, fileName::String)::Class
   local outClass::Class
 
@@ -4293,8 +4374,10 @@ function setClassFilename(inClass::Class, fileName::String)::Class
   return outClass
 end
 
-""" #= author: BZ
-  Sets the name of the class =#"""
+"""
+  author: BZ
+  Sets the name of the class
+"""
 function setClassName(inClass::Class, newName::String)::Class
   local outClass::Class = inClass
 
@@ -4323,9 +4406,11 @@ function setClassBody(inClass::Class, inBody::ClassDef)::Class
   return outClass
 end
 
-""" #=  Checks if the name of a ComponentRef is
- equal to the name of another ComponentRef, including subscripts.
- See also crefEqualNoSubs. =#"""
+"""
+  Checks if the name of a ComponentRef is
+  equal to the name of another ComponentRef, including subscripts.
+  See also crefEqualNoSubs.
+"""
 function crefEqual(iCr1::ComponentRef, iCr2::ComponentRef)::Bool
   local outBoolean::Bool
 
@@ -4365,9 +4450,11 @@ function crefEqual(iCr1::ComponentRef, iCr2::ComponentRef)::Bool
   return outBoolean
 end
 
-""" #= @author: adrpo
-   a.b, a -> true
-   b.c, a -> false =#"""
+"""
+  @author: adrpo
+  a.b, a -> true
+  b.c, a -> false
+"""
 function crefFirstEqual(iCr1::ComponentRef, iCr2::ComponentRef)::Bool
   local outBoolean::Bool
 
@@ -4398,7 +4485,7 @@ function subscriptEqual(inSubscript1::Subscript, inSubscript2::Subscript)::Bool
   return outIsEqual
 end
 
-""" #= Checks if two subscript lists are equal. =#"""
+"""Checks if two subscript lists are equal."""
 function subscriptsEqual(inSubList1::List{<:Subscript}, inSubList2::List{<:Subscript})::Bool
   local outIsEqual::Bool
 
@@ -4406,9 +4493,11 @@ function subscriptsEqual(inSubList1::List{<:Subscript}, inSubList2::List{<:Subsc
   return outIsEqual
 end
 
-""" #= Checks if the name of a ComponentRef is equal to the name
-   of another ComponentRef without checking subscripts.
-   See also crefEqual. =#"""
+"""
+  Checks if the name of a ComponentRef is equal to the name
+  of another ComponentRef without checking subscripts.
+  See also crefEqual.
+"""
 function crefEqualNoSubs(cr1::ComponentRef, cr2::ComponentRef)::Bool
   local outBoolean::Bool
 
@@ -4447,7 +4536,7 @@ function crefEqualNoSubs(cr1::ComponentRef, cr2::ComponentRef)::Bool
   return outBoolean
 end
 
-""" #= checks if the provided parameter is a package or not =#"""
+"""checks if the provided parameter is a package or not"""
 function isPackageRestriction(inRestriction::Restriction)::Bool
   local outIsPackage::Bool
 
@@ -4465,7 +4554,7 @@ function isPackageRestriction(inRestriction::Restriction)::Bool
   return outIsPackage
 end
 
-""" #= checks if restriction is a function or not =#"""
+"""checks if restriction is a function or not"""
 function isFunctionRestriction(inRestriction::Restriction)::Bool
   local outIsFunction::Bool
 
@@ -4483,7 +4572,7 @@ function isFunctionRestriction(inRestriction::Restriction)::Bool
   return outIsFunction
 end
 
-""" #= Returns true if two expressions are equal =#"""
+"""Returns true if two expressions are equal"""
 function expEqual(exp1::Exp, exp2::Exp)::Bool
   local equal::Bool
 
@@ -4516,7 +4605,7 @@ function expEqual(exp1::Exp, exp2::Exp)::Bool
   return equal
 end
 
-""" #= Returns true if two each attributes are equal =#"""
+"""Returns true if two each attributes are equal"""
 function eachEqual(each1::Each, each2::Each)::Bool
   local equal::Bool
 
@@ -4538,7 +4627,7 @@ function eachEqual(each1::Each, each2::Each)::Bool
   return equal
 end
 
-""" #= Returns true if two FunctionArgs are equal =#"""
+"""Returns true if two FunctionArgs are equal"""
 function functionArgsEqual(args1::FunctionArgs, args2::FunctionArgs)::Bool
   local equal::Bool
 
@@ -4558,8 +4647,10 @@ function functionArgsEqual(args1::FunctionArgs, args2::FunctionArgs)::Bool
   return equal
 end
 
-""" #= author: adrpo
-  gets the name of the class. =#"""
+"""
+  author: adrpo
+  gets the name of the class.
+"""
 function getClassName(inClass::Class)::String
   local outName::String
 
@@ -4569,9 +4660,11 @@ end
 
 IteratorIndexedCref = Tuple
 
-""" #= Find all crefs in an expression which are subscripted with the given
-   iterator, and return a list of cref-Integer tuples, where the cref is the
-   index of the subscript. =#"""
+"""
+  Find all crefs in an expression which are subscripted with the given
+  iterator, and return a list of cref-Integer tuples, where the cref is the
+  index of the subscript.
+"""
 function findIteratorIndexedCrefs(
   inExp::Exp,
   inIterator::String,
@@ -4593,8 +4686,10 @@ function findIteratorIndexedCrefs(
   return outCrefs
 end
 
-""" #= Traversal function used by deduceReductionIterationRange. Used to find crefs
-   which are subscripted by a given iterator. =#"""
+"""
+  Traversal function used by deduceReductionIterationRange. Used to find crefs
+  which are subscripted by a given iterator.
+"""
 function findIteratorIndexedCrefs_traverser(
   inExp::Exp,
   inCrefs::List{<:IteratorIndexedCref},
@@ -4618,7 +4713,7 @@ function findIteratorIndexedCrefs_traverser(
   return (outExp, outCrefs)
 end
 
-""" #= Checks whether two cref-index pairs are equal. =#"""
+"""Checks whether two cref-index pairs are equal."""
 function iteratorIndexedCrefsEqual(
   inCref1::IteratorIndexedCref,
   inCref2::IteratorIndexedCref,
@@ -4636,12 +4731,14 @@ function iteratorIndexedCrefsEqual(
   return outEqual
 end
 
-""" #= Checks if the given component reference is subscripted by the given iterator.
-   Only cases where a subscript consists of only the iterator is considered.
-   If so it adds a cref-index pair to the list, where the cref is the subscripted
-   cref without subscripts, and the index is the subscripted dimension. E.g. for
-   iterator i:
-     a[i] => (a, 1), b[1, i] => (b, 2), c[i+1] => (), d[2].e[i] => (d[2].e, 1) =#"""
+"""
+  Checks if the given component reference is subscripted by the given iterator.
+  Only cases where a subscript consists of only the iterator is considered.
+  If so it adds a cref-index pair to the list, where the cref is the subscripted
+  cref without subscripts, and the index is the subscripted dimension. E.g. for
+  iterator i:
+  a[i] => (a, 1), b[1, i] => (b, 2), c[i+1] => (), d[2].e[i] => (d[2].e, 1)
+"""
 function getIteratorIndexedCrefs(
   inCref::ComponentRef,
   inIterator::String,
@@ -4753,9 +4850,11 @@ function getFileNameFromInfo(inInfo::SourceInfo)::String
   return inFileName
 end
 
-""" #= @author: adrpo
+"""
+  @author: adrpo
   this function returns true if the given InnerOuter
-  is one of INNER_OUTER() or OUTER() =#"""
+  is one of INNER_OUTER() or OUTER()
+"""
 function isOuter(io::InnerOuter)::Bool
   local isItAnOuter::Bool
 
@@ -4777,9 +4876,11 @@ function isOuter(io::InnerOuter)::Bool
   return isItAnOuter
 end
 
-""" #= @author: adrpo
+"""
+  @author: adrpo
   this function returns true if the given InnerOuter
-  is one of INNER_OUTER() or INNER() =#"""
+  is one of INNER_OUTER() or INNER()
+"""
 function isInner(io::InnerOuter)::Bool
   local isItAnInner::Bool
 
@@ -4801,7 +4902,7 @@ function isInner(io::InnerOuter)::Bool
   return isItAnInner
 end
 
-""" #= Returns true if the InnerOuter is INNER, false otherwise. =#"""
+"""Returns true if the InnerOuter is INNER, false otherwise."""
 function isOnlyInner(inIO::InnerOuter)::Bool
   local outOnlyInner::Bool
 
@@ -4819,7 +4920,7 @@ function isOnlyInner(inIO::InnerOuter)::Bool
   return outOnlyInner
 end
 
-""" #= Returns true if the InnerOuter is OUTER, false otherwise. =#"""
+"""Returns true if the InnerOuter is OUTER, false otherwise."""
 function isOnlyOuter(inIO::InnerOuter)::Bool
   local outOnlyOuter::Bool
 
@@ -4871,7 +4972,7 @@ function isNotInnerOuter(inIO::InnerOuter)::Bool
   return outIsNotInnerOuter
 end
 
-""" #= Returns true if two InnerOuter's are equal =#"""
+"""Returns true if two InnerOuter's are equal"""
 function innerOuterEqual(io1::InnerOuter, io2::InnerOuter)::Bool
   local res::Bool
 
@@ -4901,7 +5002,7 @@ function innerOuterEqual(io1::InnerOuter, io2::InnerOuter)::Bool
   return res
 end
 
-""" #= Makes a path fully qualified unless it already is. =#"""
+"""Makes a path fully qualified unless it already is."""
 function makeFullyQualified(inPath::Path)::Path
   local outPath::Path
 
@@ -4919,7 +5020,7 @@ function makeFullyQualified(inPath::Path)::Path
   return outPath
 end
 
-""" #= Makes a path not fully qualified unless it already is. =#"""
+"""Makes a path not fully qualified unless it already is."""
 function makeNotFullyQualified(inPath::Path)::Path
   local outPath::Path
 
@@ -4938,7 +5039,7 @@ function makeNotFullyQualified(inPath::Path)::Path
   return outPath
 end
 
-""" #= Compares two import elements.  =#"""
+"""Compares two import elements."""
 function importEqual(im1::Import, im2::Import)::Bool
   local outBoolean::Bool
 
@@ -4972,7 +5073,7 @@ function importEqual(im1::Import, im2::Import)::Bool
   return outBoolean
 end
 
-""" #= Transforms an if-expression to canonical form (without else-if branches) =#"""
+"""Transforms an if-expression to canonical form (without else-if branches)"""
 function canonIfExp(inExp::Exp)::Exp
   local outExp::Exp
 
@@ -5003,8 +5104,10 @@ function canonIfExp(inExp::Exp)::Exp
   return outExp
 end
 
-""" #= @author: adrpo
-  This function checks if a modification only contains literal expressions =#"""
+"""
+  @author: adrpo
+  This function checks if a modification only contains literal expressions
+"""
 function onlyLiteralsInAnnotationMod(inMod::List{<:ElementArg})::Bool
   local onlyLiterals::Bool
 
@@ -5053,8 +5156,10 @@ function onlyLiteralsInAnnotationMod(inMod::List{<:ElementArg})::Bool
   return onlyLiterals
 end
 
-""" #= @author: adrpo
-  This function checks if an optional expression only contains literal expressions =#"""
+"""
+  @author: adrpo
+  This function checks if an optional expression only contains literal expressions
+"""
 function onlyLiteralsInEqMod(eqMod::EqMod)::Bool
   local onlyLiterals::Bool
 
@@ -5084,9 +5189,11 @@ function onlyLiteralsInEqMod(eqMod::EqMod)::Bool
   return onlyLiterals
 end
 
-""" #= @author: adrpo
- Visitor function for checking if Exp contains only literals, NO CREFS!
- It returns an empty list if it doesn't contain any crefs! =#"""
+"""
+  @author: adrpo
+  Visitor function for checking if Exp contains only literals, NO CREFS!
+  It returns an empty list if it doesn't contain any crefs!
+"""
 function onlyLiteralsInExpEnter(
   inExp::Exp,
   inLst::List{<:List{<:Exp}},
@@ -5140,9 +5247,11 @@ function onlyLiteralsInExpEnter(
   return (outExp, outLst)
 end
 
-""" #= @author: adrpo
- Visitor function for checking if Exp contains only literals, NO CREFS!
- It returns an empty list if it doesn't contain any crefs! =#"""
+"""
+  @author: adrpo
+  Visitor function for checking if Exp contains only literals, NO CREFS!
+  It returns an empty list if it doesn't contain any crefs!
+"""
 function onlyLiteralsInExpExit(
   inExp::Exp,
   inLst::List{<:List{<:Exp}},
@@ -5191,8 +5300,10 @@ function unqotePathIdents(inPath::Path)::Path
   return path
 end
 
-""" #= If the given component reference is fully qualified this function removes the
-  fully qualified qualifier, otherwise does nothing. =#"""
+"""
+  If the given component reference is fully qualified this function removes the
+  fully qualified qualifier, otherwise does nothing.
+"""
 function unqualifyCref(inCref::ComponentRef)::ComponentRef
   local outCref::ComponentRef
 
@@ -5391,7 +5502,7 @@ function crefInsertSubscriptLstLst(
   return (outExp, outLst)
 end
 
-""" #= Helper function to crefInsertSubscriptLstLst =#"""
+"""Helper function to crefInsertSubscriptLstLst"""
 function crefInsertSubscriptLstLst2(
   inCref::ComponentRef,
   inSubs::List{<:List{<:Subscript}},
@@ -5461,8 +5572,10 @@ function isTuple(exp::Exp)::Bool
   return b
 end
 
-""" #= @author: johti
-   Returns true if all fields are crefs =#"""
+"""
+  @author: johti
+  Returns true if all fields are crefs
+"""
 function allFieldsAreCrefs(expLst::List{<:Exp})::Bool
   local b::Bool
 
@@ -5470,9 +5583,11 @@ function allFieldsAreCrefs(expLst::List{<:Exp})::Bool
   return b
 end
 
-""" #=  @author: johti
-    Returns true if everything contained
-    in the tuple or a cons cell is a constant reference. =#"""
+"""
+  @author: johti
+  Returns true if everything contained
+  in the tuple or a cons cell is a constant reference.
+"""
 function complexIsCref(inExp::Exp)::Bool
   local b::Bool
 
@@ -5515,9 +5630,11 @@ function isDerCrefFail(exp::Exp)
   return @match CALL(CREF_IDENT("der", nil), FUNCTIONARGS(list(CREF()), nil)) = exp
 end
 
-""" #= author: adrpo
+"""
+  author: adrpo
   returns all the expressions from array dimension as a list
-  also returns if we have unknown dimensions in the array dimension =#"""
+  also returns if we have unknown dimensions in the array dimension
+"""
 function getExpsFromArrayDim(inAd::ArrayDim)::Tuple{Bool, List{Exp}}
   local outExps::List{Exp}
   local hasUnknownDimensions::Bool
@@ -5526,9 +5643,11 @@ function getExpsFromArrayDim(inAd::ArrayDim)::Tuple{Bool, List{Exp}}
   return (hasUnknownDimensions, outExps)
 end
 
-""" #= author: adrpo
+"""
+  author: adrpo
   returns all the expressions from array dimension as a list
-  also returns if we have unknown dimensions in the array dimension =#"""
+  also returns if we have unknown dimensions in the array dimension
+"""
 function getExpsFromArrayDimOpt(inAdO::Option{<:ArrayDim})::Tuple{Bool, List{Exp}}
   local outExps::List{Exp}
   local hasUnknownDimensions::Bool
@@ -5549,9 +5668,11 @@ function getExpsFromArrayDimOpt(inAdO::Option{<:ArrayDim})::Tuple{Bool, List{Exp
   return (hasUnknownDimensions, outExps)
 end
 
-""" #= author: adrpo
+"""
+  author: adrpo
   returns all the expressions from array dimension as a list
-  also returns if we have unknown dimensions in the array dimension =#"""
+  also returns if we have unknown dimensions in the array dimension
+"""
 function getExpsFromArrayDim_tail(
   inAd::ArrayDim,
   inAccumulator::List{<:Exp},
@@ -5590,8 +5711,10 @@ function getExpsFromArrayDim_tail(
   return (hasUnknownDimensions, outExps)
 end
 
-""" #= @author: adrpo
- returns true if the given direction is input or output =#"""
+"""
+  @author: adrpo
+  returns true if the given direction is input or output
+"""
 function isInputOrOutput(direction::Direction)::Bool
   local isIorO::Bool #= input or output only =#
 
@@ -5723,7 +5846,7 @@ function pathGe(path1::Path, path2::Path)::Bool
   return ge
 end
 
-""" #= Strips out long class definitions =#"""
+"""Strips out long class definitions"""
 function getShortClass(cl::Class)::Class
   local o::Class
 
@@ -5753,7 +5876,7 @@ function getShortClass(cl::Class)::Class
   return o
 end
 
-""" #= Strips out class definition comments. =#"""
+"""Strips out class definition comments."""
 function stripClassDefComment(cl::ClassDef)::ClassDef
   local o::ClassDef
 
@@ -5804,7 +5927,7 @@ function stripClassDefComment(cl::ClassDef)::ClassDef
   return o
 end
 
-""" #= Strips out the parts of a function definition that are not needed for the interface =#"""
+"""Strips out the parts of a function definition that are not needed for the interface"""
 function getFunctionInterface(cl::Class)::Class
   local o::Class
 
@@ -5886,7 +6009,7 @@ function filterAnnotationItem(elt::ElementItem)::Bool
   return outB
 end
 
-""" #= Filter outs the nested classes from the class if any. =#"""
+"""Filter outs the nested classes from the class if any."""
 function filterNestedClasses(cl::Class)::Class
   local o::Class
 
@@ -5933,7 +6056,7 @@ function filterNestedClasses(cl::Class)::Class
   return o
 end
 
-""" #= Helper function for filterNestedClasses =#"""
+"""Helper function for filterNestedClasses"""
 function filterNestedClassesParts(
   classPart::ClassPart,
   inClassParts::List{<:ClassPart},
@@ -5962,9 +6085,11 @@ function filterNestedClassesParts(
   return outClassPart
 end
 
-""" #= @author: adrpo
-   returns the EXTERNAL form parts if there is any.
-   if there is none, it fails! =#"""
+"""
+  @author: adrpo
+  returns the EXTERNAL form parts if there is any.
+  if there is none, it fails!
+"""
 function getExternalDecl(inCls::Class)::ClassPart
   local outExternal::ClassPart
 
@@ -6010,7 +6135,7 @@ function isParts(cl::ClassDef)::Bool
   return b
 end
 
-""" #= Makes a class into an ElementItem =#"""
+"""Makes a class into an ElementItem"""
 function makeClassElement(cl::Class)::ElementItem
   local el::ElementItem
 
@@ -6055,8 +6180,10 @@ function pathSetLastIdent(inPath::Path, inLastIdent::Path)::Path
   return outPath
 end
 
-""" #= @author:
-  returns true if expression contains initial() =#"""
+"""
+  @author:
+  returns true if expression contains initial()
+"""
 function expContainsInitial(inExp::Exp)::Bool
   local hasInitial::Bool
 
@@ -6076,8 +6203,10 @@ function expContainsInitial(inExp::Exp)::Bool
   return hasInitial
 end
 
-""" #= @author:
-  returns true if expression is initial() =#"""
+"""
+  @author:
+  returns true if expression is initial()
+"""
 function isInitialTraverseHelper(inExp::Exp, inBool::Bool)::Tuple{Exp, Bool}
   local outBool::Bool
   local outExp::Exp
@@ -6107,8 +6236,10 @@ function isInitialTraverseHelper(inExp::Exp, inBool::Bool)::Tuple{Exp, Bool}
   return (outExp, outBool)
 end
 
-""" #= @author:
-  returns true if expression is initial() =#"""
+"""
+  @author:
+  returns true if expression is initial()
+"""
 function isInitial(inExp::Exp)::Bool
   local hasReinit::Bool
 
@@ -6130,7 +6261,7 @@ function isInitial(inExp::Exp)::Bool
   return hasReinit
 end
 
-""" #= Return the path of the given import. =#"""
+"""Return the path of the given import."""
 function importPath(inImport::Import)::Path
   local outPath::Path
 
@@ -6157,7 +6288,7 @@ function importPath(inImport::Import)::Path
   return outPath
 end
 
-""" #= Returns the import name of a named or qualified import. =#"""
+"""Returns the import name of a named or qualified import."""
 function importName(inImport::Import)::Ident
   local outName::Ident
 
@@ -6181,12 +6312,14 @@ function importName(inImport::Import)::Ident
   return outName
 end
 
-""" #=  This function takes an old annotation as first argument and a new
-   annotation as  second argument and merges the two.
-   Annotation \\\"parts\\\" that exist in both the old and the new annotation
-   will be changed according to the new definition. For instance,
-   merge_annotations(annotation(x=1,y=2),annotation(x=3))
-   => annotation(x=3,y=2) =#"""
+"""
+  This function takes an old annotation as first argument and a new
+  annotation as  second argument and merges the two.
+  Annotation \\\"parts\\\" that exist in both the old and the new annotation
+  will be changed according to the new definition. For instance,
+  merge_annotations(annotation(x=1,y=2),annotation(x=3))
+  => annotation(x=3,y=2)
+"""
 function mergeAnnotations(inAnnotation1::Annotation, inAnnotation2::Annotation)::Annotation
   local outAnnotation::Annotation
 
@@ -6234,7 +6367,7 @@ function mergeAnnotations2(
   return res
 end
 
-""" #= Merges an annotation into a Comment option. =#"""
+"""Merges an annotation into a Comment option."""
 function mergeCommentAnnotation(
   inAnnotation::Annotation,
   inComment::Option{<:Comment},
@@ -6267,7 +6400,7 @@ function mergeCommentAnnotation(
   return outComment
 end
 
-""" #= returns true or false if the given path is in the list of modifications =#"""
+"""returns true or false if the given path is in the list of modifications"""
 function isModificationOfPath(mod::ElementArg, path::Path)::Bool
   local yes::Bool
 
@@ -6416,9 +6549,11 @@ function importString(inImp::Import)::String
   return outStr
 end
 
-""" #= @author: adrpo
- full Ref -> string
- cref/path full qualified, type dims, subscripts in crefs =#"""
+"""
+  @author: adrpo
+  full Ref -> string
+  cref/path full qualified, type dims, subscripts in crefs
+"""
 function refString(inRef::Ref)::String
   local outStr::String
 
@@ -6443,9 +6578,11 @@ function refString(inRef::Ref)::String
   return outStr
 end
 
-""" #= @author: adrpo
- brief Ref -> string
- no cref/path full qualified, no type dims, no subscripts in crefs =#"""
+"""
+  @author: adrpo
+  brief Ref -> string
+  no cref/path full qualified, no type dims, no subscripts in crefs
+"""
 function refStringBrief(inRef::Ref)::String
   local outStr::String
 
@@ -6488,7 +6625,7 @@ function getArrayDimOptAsList(inArrayDim::Option{<:ArrayDim})::ArrayDim
   return outArrayDim
 end
 
-""" #= Removes a variable from a variable list =#"""
+"""Removes a variable from a variable list"""
 function removeCrefFromCrefs(
   inAbsynComponentRefLst::List{<:ComponentRef},
   inComponentRef::ComponentRef,
@@ -6534,7 +6671,7 @@ function removeCrefFromCrefs(
   return outAbsynComponentRefLst
 end
 
-""" #= Retrieve e.g. the documentation annotation as a string from the class passed as argument. =#"""
+"""Retrieve e.g. the documentation annotation as a string from the class passed as argument."""
 function getNamedAnnotationInClass(inClass::Class, id::Path, f::ModFunc)::Option{TypeA}
   local outString::Option{TypeA}
 
@@ -6588,7 +6725,7 @@ function getNamedAnnotationInClass(inClass::Class, id::Path, f::ModFunc)::Option
   return outString
 end
 
-""" #= Helper function to getNamedAnnotationInElementitemlist. =#"""
+"""Helper function to getNamedAnnotationInElementitemlist."""
 function getNamedAnnotationStr(
   inAbsynElementArgLst::List{<:ElementArg},
   id::Path,
@@ -6632,11 +6769,13 @@ function getNamedAnnotationStr(
   return outString
 end
 
-""" #= This function splits each part of a cref into CREF_IDENTs and applies the
-   given function to each part. If the given cref is a qualified cref then the
-   map function is expected to also return CREF_IDENT, so that the split cref
-   can be reconstructed. Otherwise the map function is free to return whatever
-   it wants. =#"""
+"""
+  This function splits each part of a cref into CREF_IDENTs and applies the
+  given function to each part. If the given cref is a qualified cref then the
+  map function is expected to also return CREF_IDENT, so that the split cref
+  can be reconstructed. Otherwise the map function is free to return whatever
+  it wants.
+"""
 function mapCrefParts(inCref::ComponentRef, inMapFunc::MapFunc)::ComponentRef
   local outCref::ComponentRef
 
@@ -6724,7 +6863,7 @@ function dummyTraverseExp(inExp::Exp, inArg::Arg)::Tuple{Exp, Arg}
   return (outExp, outArg)
 end
 
-""" #= retrives defineunit definitions in elements =#"""
+"""retrives defineunit definitions in elements"""
 function getDefineUnitsInElements(elts::List{<:ElementItem})::List{Element}
   local outElts::List{Element}
 
@@ -6749,7 +6888,7 @@ function getDefineUnitsInElements(elts::List{<:ElementItem})::List{Element}
   return outElts
 end
 
-""" #= Returns the public and protected elements in a class. =#"""
+"""Returns the public and protected elements in a class."""
 function getElementItemsInClass(inClass::Class)::List{ElementItem}
   local outElements::List{ElementItem}
 
@@ -6772,7 +6911,7 @@ function getElementItemsInClass(inClass::Class)::List{ElementItem}
   return outElements
 end
 
-""" #= Returns the public and protected elements in a class part. =#"""
+"""Returns the public and protected elements in a class part."""
 function getElementItemsInClassPart(inClassPart::ClassPart)::List{ElementItem}
   local outElements::List{ElementItem}
 
@@ -7101,7 +7240,7 @@ function elementArgEqualName(inArg1::ElementArg, inArg2::ElementArg)::Bool
   return outEqual
 end
 
-""" #= Creates a Msg based on a boolean value. =#"""
+"""Creates a Msg based on a boolean value."""
 function optMsg(inShowMessage::Bool, inInfo::SourceInfo)::Msg
   local outMsg::Msg
 
@@ -7120,7 +7259,7 @@ function makeSubscript(inExp::Exp)::Subscript
   return outSubscript
 end
 
-""" #= Splits a cref into parts. =#"""
+"""Splits a cref into parts."""
 function crefExplode(
   inCref::ComponentRef,
   inAccum::List{<:ComponentRef} = nil,
@@ -7145,8 +7284,10 @@ function crefExplode(
   return outCrefParts
 end
 
-""" #= Calls the given function on each subexpression (non-recursively) of the given
-   expression, sending in the extra argument to each call. =#"""
+"""
+  Calls the given function on each subexpression (non-recursively) of the given
+  expression, sending in the extra argument to each call.
+"""
 function traverseExpShallow(inExp::Exp, inArg::ArgT, inFunc::FuncT) where {ArgT}
   local outExp::Exp = inExp
 
@@ -7412,7 +7553,7 @@ function isEmptyClassPart(inClassPart::ClassPart)::Bool
   return outIsEmpty
 end
 
-""" #= For use with traverseExp =#"""
+"""For use with traverseExp"""
 function isInvariantExpNoTraverse(e::Absyn.Exp, b::Bool)::Tuple{Absyn.Exp, Bool}
 
   if !b
@@ -7498,7 +7639,7 @@ function isInvariantExpNoTraverse(e::Absyn.Exp, b::Bool)::Tuple{Absyn.Exp, Bool}
   return (e, b)
 end
 
-""" #= Returns the number of parts a path consists of, e.g. A.B.C gives 3. =#"""
+"""Returns the number of parts a path consists of, e.g. A.B.C gives 3."""
 function pathPartCount(path::Path, partsAccum::Integer = 0)::Integer
   local parts::Integer
 
@@ -7569,9 +7710,11 @@ function getAnnotationsFromItems(
   return outLst
 end
 
-""" #=  This function strips out the `graphics\\' modification from an ElementArg
-   list and return two lists, one with the other modifications and the
-   second with the `graphics\\' modification =#"""
+"""
+  This function strips out the `graphics\\' modification from an ElementArg
+  list and return two lists, one with the other modifications and the
+  second with the `graphics\\' modification
+"""
 function stripGraphicsAndInteractionModification(
   inAbsynElementArgLst::List{<:Absyn.ElementArg},
 )::Tuple{List{Absyn.ElementArg}, List{Absyn.ElementArg}}
@@ -7624,17 +7767,19 @@ function stripGraphicsAndInteractionModification(
   return (outAbsynElementArgLst1, outAbsynElementArgLst2)
 end
 
-""" #=  This function traverses all classes of a program and applies a function
-   to each class. The function takes the Absyn.Class, Absyn.Path option
-   and an additional argument and returns an updated class and the
-   additional values. The Absyn.Path option contains the path to the class
-   that is traversed.
-   inputs:  (Absyn.Program,
-               Absyn.Path option,
-               ((Absyn.Class  Absyn.Path option  \\'a) => (Absyn.Class  Absyn.Path option  \\'a)),  /* rel-ation to apply */
-            \\'a, /* extra value passed to re-lation */
-            bool) /* true = traverse protected elements */
-   outputs: (Absyn.Program   Absyn.Path option  \\'a) =#"""
+"""
+  This function traverses all classes of a program and applies a function
+  to each class. The function takes the Absyn.Class, Absyn.Path option
+  and an additional argument and returns an updated class and the
+  additional values. The Absyn.Path option contains the path to the class
+  that is traversed.
+  inputs:  (Absyn.Program,
+  Absyn.Path option,
+  ((Absyn.Class  Absyn.Path option  \\'a) => (Absyn.Class  Absyn.Path option  \\'a)),  /* rel-ation to apply */
+  \\'a, /* extra value passed to re-lation */
+  bool) /* true = traverse protected elements */
+  outputs: (Absyn.Program   Absyn.Path option  \\'a)
+"""
 function traverseClasses(
   inProgram::Absyn.Program,
   inPath::Option{<:Absyn.Path},
@@ -7666,7 +7811,7 @@ function traverseClasses(
   return outTpl
 end
 
-""" #=  Helperfunction to traverseClasses. =#"""
+"""Helperfunction to traverseClasses."""
 function traverseClasses2(
   inClasses::List{<:Absyn.Class},
   inPath::Option{<:Absyn.Path},
@@ -7735,7 +7880,7 @@ function traverseClasses2(
   return outTpl
 end
 
-""" #= Returns true if class contains a local class =#"""
+"""Returns true if class contains a local class"""
 function classHasLocalClasses(cl::Absyn.Class)::Bool
   local res::Bool
 
@@ -7760,7 +7905,7 @@ function classHasLocalClasses(cl::Absyn.Class)::Bool
   return res
 end
 
-""" #= Help function to classHasLocalClass =#"""
+"""Help function to classHasLocalClass"""
 function partsHasLocalClass(inParts::List{<:Absyn.ClassPart})::Bool
   local res::Bool
 
@@ -7788,7 +7933,7 @@ function partsHasLocalClass(inParts::List{<:Absyn.ClassPart})::Bool
   return res
 end
 
-""" #= help function to partsHasLocalClass =#"""
+"""help function to partsHasLocalClass"""
 function eltsHasLocalClass(inElts::List{<:Absyn.ElementItem})::Bool
   local res::Bool
 
@@ -7811,7 +7956,7 @@ function eltsHasLocalClass(inElts::List{<:Absyn.ElementItem})::Bool
   return res
 end
 
-""" #= Returns true if class contains a local class with a supplied restriction =#"""
+"""Returns true if class contains a local class with a supplied restriction"""
 function classHasLocalClassOfType(cl::Absyn.Class, inRestriction::Absyn.Restriction)::Bool
   local res::Bool
 
@@ -7834,7 +7979,7 @@ function classHasLocalClassOfType(cl::Absyn.Class, inRestriction::Absyn.Restrict
   return res
 end
 
-""" #= Help function to classHasLocalClassOfType =#"""
+"""Help function to classHasLocalClassOfType"""
 function partsHasLocalClassOfType(
   inParts::List{<:Absyn.ClassPart},
   inRestriction::Absyn.Restriction,
@@ -7865,8 +8010,10 @@ function partsHasLocalClassOfType(
   return res
 end
 
-""" #= Returns true if there exists a local class which is restricted to the supplied restriction.
-Otherwise fails =#"""
+"""
+  Returns true if there exists a local class which is restricted to the supplied restriction.
+  Otherwise fails
+"""
 function eltsHasLocalClassOfType(
   inElts::List{<:Absyn.ElementItem},
   inRestriction::Absyn.Restriction,
@@ -7901,7 +8048,7 @@ function eltsHasLocalClassOfType(
   return res
 end
 
-""" #=  Helperfunction to traverseClasses2. This function traverses all inner classes of a class. =#"""
+"""Helperfunction to traverseClasses2. This function traverses all inner classes of a class."""
 function traverseInnerClass(
   inClass::Absyn.Class,
   inPath::Option{<:Absyn.Path},
@@ -8181,7 +8328,7 @@ function traverseInnerClass(
   return outTpl
 end
 
-""" #= Helper function to traverseInnerClass =#"""
+"""Helper function to traverseInnerClass"""
 function traverseInnerClassParts(
   inClassParts::List{<:Absyn.ClassPart},
   inPath::Option{<:Absyn.Path},
@@ -8236,7 +8383,7 @@ function traverseInnerClassParts(
   return outTpl
 end
 
-""" #= Helper function to traverseInnerClassParts =#"""
+"""Helper function to traverseInnerClassParts"""
 function traverseInnerClassElements(
   inElements::List{<:Absyn.ElementItem},
   inPath::Option{<:Absyn.Path},
@@ -8363,7 +8510,7 @@ function traverseInnerClassElements(
   return outTpl
 end
 
-""" #=  Helperfunction to traverseInnerClassElements =#"""
+"""Helperfunction to traverseInnerClassElements"""
 function traverseInnerClassElementspec(
   inElementSpec::Absyn.ElementSpec,
   inPath::Option{<:Absyn.Path},
@@ -8411,8 +8558,10 @@ function traverseInnerClassElementspec(
   return outTpl
 end
 
-""" #= @auhtor: johti
- Get the typespec path in an ElementItem if it has one =#"""
+"""
+  @auhtor: johti
+  Get the typespec path in an ElementItem if it has one
+"""
 function getTypeSpecFromElementItemOpt(
   inElementItem::Absyn.ElementItem,
 )::Option{Absyn.TypeSpec}
@@ -8446,8 +8595,10 @@ function getTypeSpecFromElementItemOpt(
   return outTypeSpec
 end
 
-""" #= @auhtor: johti
-     Get a ComponentItem from an ElementItem if it has one =#"""
+"""
+  @auhtor: johti
+  Get a ComponentItem from an ElementItem if it has one
+"""
 function getElementSpecificationFromElementItemOpt(
   inElementItem::Absyn.ElementItem,
 )::Option{Absyn.ElementSpec}
@@ -8475,8 +8626,10 @@ function getElementSpecificationFromElementItemOpt(
   return outSpec
 end
 
-""" #= @auhtor: johti
- Get the componentItems from a given elemSpec otherwise returns an empty list =#"""
+"""
+  @auhtor: johti
+  Get the componentItems from a given elemSpec otherwise returns an empty list
+"""
 function getComponentItemsFromElementSpec(
   elemSpec::Absyn.ElementSpec,
 )::List{Absyn.ComponentItem}
@@ -8500,8 +8653,10 @@ function getComponentItemsFromElementSpec(
   return componentItems
 end
 
-""" #= @author: johti
- Get the componentItems from a given elementItem =#"""
+"""
+  @author: johti
+  Get the componentItems from a given elementItem
+"""
 function getComponentItemsFromElementItem(
   inElementItem::Absyn.ElementItem,
 )::List{Absyn.ComponentItem}
@@ -8524,8 +8679,10 @@ function getComponentItemsFromElementItem(
   return componentItems
 end
 
-""" #= @author johti
-  Get the direction if one exists otherwise returns BIDIR() =#"""
+"""
+  @author johti
+  Get the direction if one exists otherwise returns BIDIR()
+"""
 function getDirection(elementItem::Absyn.ElementItem)::Direction
   local oDirection::Direction
 
@@ -8582,7 +8739,7 @@ function isNamedPathIdent(path::Absyn.Path, name::String)::Bool
   return res
 end
 
-""" #= @author johti17: Returns true if the class restriction is uniontype =#"""
+"""@author johti17: Returns true if the class restriction is uniontype"""
 function isUniontype(cls::Absyn.Class)::Bool
   local b::Bool
 
@@ -8600,7 +8757,7 @@ function isUniontype(cls::Absyn.Class)::Bool
   return b
 end
 
-""" #= Returns true if the class restriction is a record =#"""
+"""Returns true if the class restriction is a record"""
 function classRestrictionisRecord(cls::Absyn.Class)::Bool
   local restrictionIsRecord::Bool = false
 
@@ -8618,7 +8775,7 @@ function classRestrictionisRecord(cls::Absyn.Class)::Bool
   return restrictionIsRecord
 end
 
-""" #= Returns true if the class restriction is not a record =#"""
+"""Returns true if the class restriction is not a record"""
 function classRestrictionisNotRecord(cls::Absyn.Class)::Bool
   local restrictionIsNotRecord::Bool = false
 
@@ -8626,7 +8783,7 @@ function classRestrictionisNotRecord(cls::Absyn.Class)::Bool
   return restrictionIsNotRecord
 end
 
-""" #= @Author johti17: Returns true if the given restriction is a record =#"""
+"""@Author johti17: Returns true if the given restriction is a record"""
 function restrictionIsRecord(restriction::Absyn.Restriction)::Bool
   local isRecord::Bool
 
@@ -8644,8 +8801,10 @@ function restrictionIsRecord(restriction::Absyn.Restriction)::Bool
   return isRecord
 end
 
-""" #= @Author johti17:
-    Returns all first level parts in a given class which are not records. =#"""
+"""
+  @Author johti17:
+  Returns all first level parts in a given class which are not records.
+"""
 function splitRecordsAndOtherElements(
   cls::Absyn.Class,
 )::Tuple{List{Absyn.ClassPart}, List{Absyn.ClassPart}}
@@ -8699,8 +8858,10 @@ function makeElementItemFromElementSpec(spec::Absyn.ElementSpec)::Absyn.ElementI
   return ei
 end
 
-""" #= Returns the class from an element spec iff the elementspec is a CLASSDEF.
- Otherwise returns NONE. =#"""
+"""
+  Returns the class from an element spec iff the elementspec is a CLASSDEF.
+  Otherwise returns NONE.
+"""
 function getClassFromElementSpecOpt(es::ElementSpec)::Option{Absyn.Class}
   local outClass::Option{Absyn.Class}
 
@@ -8718,9 +8879,11 @@ function getClassFromElementSpecOpt(es::ElementSpec)::Option{Absyn.Class}
   return outClass
 end
 
-""" #= @Author johti17:
-Returns true if those local classes are functions.
-N.B!: Only checks the first level of nesting. =#"""
+"""
+  @Author johti17:
+  Returns true if those local classes are functions.
+  N.B!: Only checks the first level of nesting.
+"""
 function classHasLocalClassesThatAreFunctions(cls::Absyn.Class)::Bool
   local b::Bool
 
@@ -8743,9 +8906,11 @@ function classHasLocalClassesThatAreFunctions(cls::Absyn.Class)::Bool
   return b
 end
 
-""" #= @Author johti17:
- Returns true if any of those local classes are a uniontype
-N.B!: Only checks the first level of nesting. =#"""
+"""
+  @Author johti17:
+  Returns true if any of those local classes are a uniontype
+  N.B!: Only checks the first level of nesting.
+"""
 function classHasLocalClassesThatAreUniontypes(cls::Absyn.Class)::Bool
   local b::Bool
 
@@ -8796,7 +8961,7 @@ function elementSpecIsComponents(es::ElementSpec)::Bool
   return isComponents
 end
 
-#= Custom IMPL John Apr 2023=#
+"""Custom IMPL John Apr 2023"""
 function printExpLst(expLst::List{Exp})
   local buffer = IOBuffer()
   local l = length(expLst)

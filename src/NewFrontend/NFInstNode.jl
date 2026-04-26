@@ -337,7 +337,7 @@ function getComments(node::InstNode, accumCmts::List{<:SCode.Comment} = nil)
   cmts
 end
 
-#= !NB should be assign here! =#
+"""!NB should be assign here!"""
 function clone(@nospecialize(node::InstNode))
   local cls::Class
   local clonedNode::InstNode
@@ -430,7 +430,7 @@ function stripDAETypeVars(ty::DAE.Type)
   end
 end
 
-""" #= Returns the DAE type for a class, without the list of variables filled in. =#"""
+"""Returns the DAE type for a class, without the list of variables filled in."""
 function toPartialDAEType(clsNode::InstNode)
   local outType::DAE.Type
 
@@ -743,8 +743,10 @@ function refCompare(node1::InstNode, node2::InstNode)
   res
 end
 
-""" #= Returns true if two nodes references the same class or component,
-                     otherwise false. =#"""
+"""
+  Returns true if two nodes references the same class or component,
+  otherwise false.
+"""
 function refEqual(node1::InstNode, node2::InstNode)
   local refEqualIs::Bool
   refEqualIs = begin
@@ -776,8 +778,10 @@ function addIterator(iterator::InstNode, scope::InstNode)
   scope
 end
 
-""" #= Returns the first parent of the node that's not an implicit scope, or the
-                     node itself if it's not an implicit scope. =#"""
+"""
+  Returns the first parent of the node that's not an implicit scope, or the
+  node itself if it's not an implicit scope.
+"""
 function explicitScope(node::InstNode)
   local scope::InstNode
   scope = begin
@@ -1509,7 +1513,7 @@ function nodeType(node::InstNode)
   nodeType
 end
 
-#= TODO: Investigate how to integrate these... =#
+"""TODO: Investigate how to integrate these..."""
 function replaceClass(cls::Class, node::CLASS_NODE)
   local classPtr::Pointer{Class} = Pointer{Class}(cls)
   replacedClass =
@@ -1844,7 +1848,7 @@ function rename(name::String, node::InstNode)
   node
 end
 
-""" #= Returns the type of node the given node is as a string. =#"""
+"""Returns the type of node the given node is as a string."""
 function typeName(node::InstNode)
   local name::String
    name = begin

@@ -143,14 +143,16 @@ function lookupOperatorFunctionsInType(operatorName::String, ty::M_Type)::Vector
   return functions
 end
 
-""" #= Patches operator record constructors to avoid recursive binding.
+"""
+  Patches operator record constructors to avoid recursive binding.
 
-     They often have outputs declared as:
-       output RecordType result = RecordType(args)
+  They often have outputs declared as:
+  output RecordType result = RecordType(args)
 
-     The binding in such cases causes a recursive definition of the constructor,
-     so to avoid that we rewrite any calls to the constructor in the binding as
-     record expressions. =#"""
+  The binding in such cases causes a recursive definition of the constructor,
+  so to avoid that we rewrite any calls to the constructor in the binding as
+  record expressions.
+"""
 function patchOperatorRecordConstructorBinding(fn::M_Function)::M_Function
 
   local output_node::InstNode

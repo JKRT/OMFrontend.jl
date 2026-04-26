@@ -37,7 +37,7 @@ using ExportAll
   const ForkFunction = Function
 
 
-""" #= removes chars in charsToRemove from begin and end of inString =#"""
+"""removes chars in charsToRemove from begin and end of inString"""
 function trim(inString::String, charsToRemove::String = " \\f\\n\\r\\t\\v") ::String
   local outString::String
 
@@ -45,7 +45,7 @@ function trim(inString::String, charsToRemove::String = " \\f\\n\\r\\t\\v") ::St
   outString
 end
 
-""" #= removes chars in ' \\f\\n\\r\\t\\v' from begin and end of inString =#"""
+"""removes chars in ' \\f\\n\\r\\t\\v' from begin and end of inString"""
 function trimWhitespace(inString::String) ::String
   local outString::String
 
@@ -60,14 +60,16 @@ function trimChar(inString1::String, inString2::String) ::String
   outString
 end
 
-""" #= This function returns:
-            0 if inString1 == inString2
-            1 if inString1 >  inString2
-           -1 if inString1 <  inString2
-           This is different from what C strcmp
-           returns (negative values if <, positive values if >).
-           We fix negative values to -1 and positive to +1 so
-           we can pattern match on them directly in MetaModelica! =#"""
+"""
+  This function returns:
+  0 if inString1 == inString2
+  1 if inString1 >  inString2
+  -1 if inString1 <  inString2
+  This is different from what C strcmp
+  returns (negative values if <, positive values if >).
+  We fix negative values to -1 and positive to +1 so
+  we can pattern match on them directly in MetaModelica!
+"""
 function strcmp(inString1::String, inString2::String) ::Integer
   local outInteger::Integer
 
@@ -75,7 +77,7 @@ function strcmp(inString1::String, inString2::String) ::Integer
   outInteger
 end
 
-""" #= Like strcmp, but also takes offset and lengths of the strings in order to avoid building them through substring =#"""
+"""Like strcmp, but also takes offset and lengths of the strings in order to avoid building them through substring"""
 function strcmp_offset(string1::String, offset1::Integer, length1::Integer, string2::String, offset2::Integer, length2::Integer) ::Integer
   local outInteger::Integer
 
@@ -83,7 +85,7 @@ function strcmp_offset(string1::String, offset1::Integer, length1::Integer, stri
   outInteger
 end
 
-""" #= locates substring searchStr in str. If succeeds return position (starting from 0), otherwise return -1 =#"""
+"""locates substring searchStr in str. If succeeds return position (starting from 0), otherwise return -1"""
 function stringFind(str::String, searchStr::String) ::Integer
   local outInteger::Integer
 
@@ -91,7 +93,7 @@ function stringFind(str::String, searchStr::String) ::Integer
   outInteger
 end
 
-""" #= locates substring searchStr in str. If succeeds return the string, otherwise fail =#"""
+"""locates substring searchStr in str. If succeeds return the string, otherwise fail"""
 function stringFindString(str::String, searchStr::String) ::String
   local outString::String
 
@@ -99,16 +101,17 @@ function stringFindString(str::String, searchStr::String) ::String
   outString
 end
 
-""" #= Fails and sets Error.mo if the regex does not compile.
+"""
+  Fails and sets Error.mo if the regex does not compile.
 
-            The returned result is the same as POSIX regex():
-            The first value is the complete matched string
-            The rest are the substrings that you wanted.
-            For example:
-            regex(lorem,\\\" \\\\([A-Za-z]*\\\\) \\\\([A-Za-z]*\\\\) \\\",maxMatches=3)
-            => {\\\" ipsum dolor \\\",\\\"ipsum\\\",\\\"dolor\\\"}
-            This means if you have n groups, you want maxMatches=n+1
-           =#"""
+  The returned result is the same as POSIX regex():
+  The first value is the complete matched string
+  The rest are the substrings that you wanted.
+  For example:
+  regex(lorem,\\\" \\\\([A-Za-z]*\\\\) \\\\([A-Za-z]*\\\\) \\\",maxMatches=3)
+  => {\\\" ipsum dolor \\\",\\\"ipsum\\\",\\\"dolor\\\"}
+  This means if you have n groups, you want maxMatches=n+1
+"""
 function regex(str::String, re::String, maxMatches::Integer #= The maximum number of matches that will be returned =#, extended::Bool = false #= Use POSIX extended or regular syntax =#, ignoreCase::Bool = false) ::Tuple{Integer, List{String}}
   local strs::List{String} #= This list has length = maxMatches. Substrings that did not match are filled with the empty string =#
   local numMatches::Integer #= 0 means no match, else returns a number 1..maxMatches (1 if maxMatches<0) =#
@@ -157,9 +160,11 @@ function strtok(string::String, token::String) ::List{String}
   strings
 end
 
-""" #= as strtok but also includes *all* delimiters
-           split the string at delimiters into a list of strings including *all* delimiters
-           stringSplitInTokens(*a**b*, *) => {*, a, *, *, b, *} =#"""
+"""
+  as strtok but also includes *all* delimiters
+  split the string at delimiters into a list of strings including *all* delimiters
+  stringSplitInTokens(*a**b*, *) => {*, a, *, *, b, *}
+"""
 function strtokIncludingDelimiters(string::String, token::String) ::List{String}
   local strings::List{String}
 
@@ -260,7 +265,7 @@ function appendFile(file::String, data::String)
   @error "TODO: Defined in the runtime"
 end
 
-""" #= Does not fail. Returns strings describing the error instead. =#"""
+"""Does not fail. Returns strings describing the error instead."""
 function readFile(inString::String) ::String
   local outString::String
 
@@ -275,7 +280,7 @@ function systemCall(command::String, outFile::String = "" #= empty file means no
   outInteger
 end
 
-""" #= Run the command and return the stdout as a string =#"""
+"""Run the command and return the stdout as a string"""
 function popen(command::String) ::Tuple{String, Integer}
   local status::Integer
   local contents::String
@@ -337,7 +342,7 @@ function pwd() ::String
   outString
 end
 
-""" #= Reads the environment variable given as string, fails if variable not found =#"""
+"""Reads the environment variable given as string, fails if variable not found"""
 function readEnv(inString::String) ::String
   local outString::String
 
@@ -345,7 +350,6 @@ function readEnv(inString::String) ::String
   outString
 end
 
-""" #=  =#"""
 function setEnv(varName::String, value::String, overwrite::Bool #= is always true on Windows, so recommended to always call it using true =#) ::Integer
   local outInteger::Integer
 
@@ -397,7 +401,7 @@ function regularFileExists(inString::String) ::Bool
   outBool
 end
 
-""" #= Removes a file, returns 0 if suceeds, implemented using remove() in stdio.h =#"""
+"""Removes a file, returns 0 if suceeds, implemented using remove() in stdio.h"""
 function removeFile(fileName::String) ::Integer
   local res::Integer
 
@@ -460,13 +464,14 @@ function getVariableValue(timeStamp::AbstractFloat, timeValues::List{<:AbstractF
   outValue
 end
 
-""" #= @author adrpo
-           this system function returns the modification time of a file as a
-           SOME(Real) which represents the time elapsed since the
-           Epoch (00:00:00 UTC, January 1, 1970).
-           If the file does not exist or if there is an error the returned value
-           will be NONE.
-           =#"""
+"""
+  @author adrpo
+  this system function returns the modification time of a file as a
+  SOME(Real) which represents the time elapsed since the
+  Epoch (00:00:00 UTC, January 1, 1970).
+  If the file does not exist or if there is an error the returned value
+  will be NONE.
+"""
 function getFileModificationTime(fileName::String) ::Option{AbstractFloat}
   local outValue::Option{AbstractFloat}
 
@@ -474,9 +479,11 @@ function getFileModificationTime(fileName::String) ::Option{AbstractFloat}
   outValue
 end
 
-""" #= @author adrpo
-           this system function returns current time elapsed
-           since the Epoch (00:00:00 UTC, January 1, 1970). =#"""
+"""
+  @author adrpo
+  this system function returns current time elapsed
+  since the Epoch (00:00:00 UTC, January 1, 1970).
+"""
 function getCurrentTime() ::AbstractFloat
   local outValue::AbstractFloat
 
@@ -484,9 +491,11 @@ function getCurrentTime() ::AbstractFloat
   outValue
 end
 
-""" #= @author Frenkel TUD
-           this system function returns current time elapsed
-           since the Epoch (00:00:00 UTC, January 1, 1970). =#"""
+"""
+  @author Frenkel TUD
+  this system function returns current time elapsed
+  since the Epoch (00:00:00 UTC, January 1, 1970).
+"""
 function getCurrentDateTime() ::Tuple{Integer, Integer, Integer, Integer, Integer, Integer}
   local year::Integer
   local mon::Integer
@@ -499,10 +508,10 @@ function getCurrentDateTime() ::Tuple{Integer, Integer, Integer, Integer, Intege
   (sec, min, hour, mday, mon, year)
 end
 
-""" #=
-          returns current time in format Www Mmm dd hh:mm:ss yyyy
-          using the asctime() function in time.h (libc)
-           =#"""
+"""
+  returns current time in format Www Mmm dd hh:mm:ss yyyy
+  using the asctime() function in time.h (libc)
+"""
 function getCurrentTimeStr() ::String
   local timeStr::String
 
@@ -520,93 +529,113 @@ end
 #= TODO temporary structure introduced by Adrian=#
 global GLOBAL_MEMORY = Vector{Any}(missing, 1024)
 #= I put it as a constant for now! - John =#
-""" #= @author: adrpo
-           sets the external flag that signals the
-           presence of expandable connectors in a model =#"""
+"""
+  @author: adrpo
+  sets the external flag that signals the
+  presence of expandable connectors in a model
+"""
 function setHasExpandableConnectors(hasExpandable::Bool)
   GLOBAL_MEMORY[1] = hasExpandable
 end
 
-""" #= @author: adrpo
-           retrieves the external flag that signals the
-           presence of expandable connectors in a model =#"""
+"""
+  @author: adrpo
+  retrieves the external flag that signals the
+  presence of expandable connectors in a model
+"""
 function getHasExpandableConnectors() ::Bool
   local hasExpandable::Bool = GLOBAL_MEMORY[1]
   hasExpandable
 end
 
-""" #= @author: adrpo
-           sets the external flag that signals the
-           presence of overconstrained connectors in a model =#"""
+"""
+  @author: adrpo
+  sets the external flag that signals the
+  presence of overconstrained connectors in a model
+"""
 function setHasOverconstrainedConnectors(hasOverconstrained::Bool)
   GLOBAL_MEMORY[2] = hasOverconstrained
 end
 
-""" #= @author: adrpo
-           retrieves the external flag that signals the
-           presence of overconstrained connectors in a model =#"""
+"""
+  @author: adrpo
+  retrieves the external flag that signals the
+  presence of overconstrained connectors in a model
+"""
 function getHasOverconstrainedConnectors() ::Bool
   local hasOverconstrained::Bool = GLOBAL_MEMORY[2]
   hasOverconstrained
 end
 
-""" #= @author: adrpo
-           sets the external flag that signals the
-           presence of expandable connectors in a model =#"""
+"""
+  @author: adrpo
+  sets the external flag that signals the
+  presence of expandable connectors in a model
+"""
 function setPartialInstantiation(isPartialInstantiation::Bool)
   GLOBAL_MEMORY[3] = isPartialInstantiation
 end
 
-""" #= @author: adrpo
-           retrieves the external flag that signals the
-           presence of expandable connectors in a model =#"""
+"""
+  @author: adrpo
+  retrieves the external flag that signals the
+  presence of expandable connectors in a model
+"""
 function getPartialInstantiation() ::Bool
   local isPartialInstantiation::Bool = GLOBAL_MEMORY[3]
   isPartialInstantiation
 end
 
-""" #= @author: adrpo
-           sets the external flag that signals the
-           presence of stream connectors in a model =#"""
+"""
+  @author: adrpo
+  sets the external flag that signals the
+  presence of stream connectors in a model
+"""
 function setHasStreamConnectors(hasStream::Bool)
   GLOBAL_MEMORY[4] = hasStream
 end
 
-""" #= @author: adrpo
-           retrieves the external flag that signals the
-           presence of stream connectors in a model =#"""
+"""
+  @author: adrpo
+  retrieves the external flag that signals the
+  presence of stream connectors in a model
+"""
 function getHasStreamConnectors() ::Bool
   local hasStream::Bool = GLOBAL_MEMORY[4]
   hasStream
 end
 
-""" #= Sets the external flag that signals the use of the cardinality operator. =#"""
+"""Sets the external flag that signals the use of the cardinality operator."""
 function setUsesCardinality(inUses::Bool)
   GLOBAL_MEMORY[5] = inUses
 end
 
-""" #= Retrieves the external flag that signals the use of the cardinality operator. =#"""
+"""Retrieves the external flag that signals the use of the cardinality operator."""
 function getUsesCardinality() ::Bool
   local outUses::Bool = GLOBAL_MEMORY[5]
   outUses
 end
 
-""" #= @author: adrpo
-           sets the external flag that signals the presence
-           of inner/outer comoponent definitions in a model =#"""
+"""
+  @author: adrpo
+  sets the external flag that signals the presence
+  of inner/outer comoponent definitions in a model
+"""
 function setHasInnerOuterDefinitions(hasInnerOuterDefinitions::Bool)
   GLOBAL_MEMORY[6] = hasInnerOuterDefinitions
 end
 
-""" #= @author: adrpo
-           retrieves the external flag that signals the presence
-           of inner/outer comoponent definitions in a model =#"""
+"""
+  @author: adrpo
+  retrieves the external flag that signals the presence
+  of inner/outer comoponent definitions in a model
+"""
 function getHasInnerOuterDefinitions() ::Bool
   local hasInnerOuterDefinitions::Bool = GLOBAL_MEMORY[6]
   hasInnerOuterDefinitions
 end
 
-""" #= returns a tick that can be reset =#"""
+"""returns a tick that can be reset"""
 function tmpTick() ::Integer
   local tickNo::Integer
 
@@ -630,33 +659,37 @@ function tmpTickIndex(index::Int)::Int
   return tickNo
 end
 
-""" #= returns a tick that can be reset and reserves N values in it.
-             TODO: remove me when bootstrapped (default argument index=0) =#"""
+"""
+  returns a tick that can be reset and reserves N values in it.
+  TODO: remove me when bootstrapped (default argument index=0)
+"""
 function tmpTickIndexReserve(index::Integer, reserve::Integer #= current tick + reserve =#) ::Integer
   local tickNo::Integer = getGlobalRoot(index)
   setGlobalRoot(index, tickNo + reserve)
   return tickNo
 end
 
-""" #= resets the tick so it restarts on start. TODO: remove me when bootstrapped (default argument index=0) =#"""
+"""resets the tick so it restarts on start. TODO: remove me when bootstrapped (default argument index=0)"""
 function tmpTickResetIndex(start::Integer, index::Integer)
   setGlobalRoot(index, start)
 end
 
-""" #= sets the index, like tmpTickResetIndex, but does not reset the maximum counter =#"""
+"""sets the index, like tmpTickResetIndex, but does not reset the maximum counter"""
 function tmpTickSetIndex(start::Integer, index::Integer)
   setGlobalRoot(index, start)
 end
 
-""" #= returns the max tick since the last reset =#"""
+"""returns the max tick since the last reset"""
 function tmpTickMaximum(index::Integer) ::Integer
   local maxIndex::Integer = getGlobalRoot(index)
   return maxIndex
 end
 
-""" #= Returns true if the current user is root.
-          Used by main to disable running omc as root as it is very dangerous.
-          Consider opening a socket and letting anyone run system() commands without authentication. As root. =#"""
+"""
+  Returns true if the current user is root.
+  Used by main to disable running omc as root as it is very dangerous.
+  Consider opening a socket and letting anyone run system() commands without authentication. As root.
+"""
 function userIsRoot() ::Bool
   local isRoot::Bool
 
@@ -671,14 +704,18 @@ function getuid() ::Integer
   uid
 end
 
-""" #= Tock returns the time since the last tock; undefined if tick was never called.
-          The clock index is 0-31. The function fails if the number is out of range. =#"""
+"""
+  Tock returns the time since the last tock; undefined if tick was never called.
+  The clock index is 0-31. The function fails if the number is out of range.
+"""
 function realtimeTick(clockIndex::Integer)
   @error "TODO: Defined in the runtime"
 end
 
-""" #= Tock returns the time since the last tock, undefined if tick was never called.
-          The clock index is 0-31. The function fails if the number is out of range. =#"""
+"""
+  Tock returns the time since the last tock, undefined if tick was never called.
+  The clock index is 0-31. The function fails if the number is out of range.
+"""
 function realtimeTock(clockIndex::Integer) ::AbstractFloat
   local outTime::AbstractFloat
 
@@ -686,14 +723,18 @@ function realtimeTock(clockIndex::Integer) ::AbstractFloat
   outTime
 end
 
-""" #= Clears the timer.
-          The clock index is 0-31. The function fails if the number is out of range. =#"""
+"""
+  Clears the timer.
+  The clock index is 0-31. The function fails if the number is out of range.
+"""
 function realtimeClear(clockIndex::Integer)
   @error "TODO: Defined in the runtime"
 end
 
-""" #= Returns the number of ticks since last clear.
-          The clock index is 0-31. The function fails if the number is out of range. =#"""
+"""
+  Returns the number of ticks since last clear.
+  The clock index is 0-31. The function fails if the number is out of range.
+"""
 function realtimeNtick(clockIndex::Integer) ::Integer
   local n::Integer
 
@@ -701,38 +742,46 @@ function realtimeNtick(clockIndex::Integer) ::Integer
   n
 end
 
-""" #= @autor: adrpo
-            this function will reset the timer to 0. =#"""
+"""
+  @autor: adrpo
+  this function will reset the timer to 0.
+"""
 function resetTimer()
   @error "TODO: Defined in the runtime"
 end
 
-""" #= @autor: adrpo
-            this function will start counting the time
-            that should be aggregated. =#"""
+"""
+  @autor: adrpo
+  this function will start counting the time
+  that should be aggregated.
+"""
 function startTimer()
   @error "TODO: Defined in the runtime"
 end
 
-""" #= @autor: adrpo
-            this function will stop counting the time
-            that should be aggregated. =#"""
+"""
+  @autor: adrpo
+  this function will stop counting the time
+  that should be aggregated.
+"""
 function stopTimer()
   @error "TODO: Defined in the runtime"
 end
 
-""" #= @autor: adrpo
-            this function will return the time that
-            passed between the last [startTimer,stopTimer] interval.
-            Notice that if start/stop are called recursively this
-            function will return the time passed between the
-            corresponding intervals.
-            Example:
-            (start1,
-              (start2,
-                (start3, stop3) call getTimerIntervalTime -> (stop3-start3)
-               stop2) call getTimerIntervalTime -> (stop2-start2)
-             stop1)  call getTimerIntervalTime -> (stop1-start1) =#"""
+"""
+  @autor: adrpo
+  this function will return the time that
+  passed between the last [startTimer,stopTimer] interval.
+  Notice that if start/stop are called recursively this
+  function will return the time passed between the
+  corresponding intervals.
+  Example:
+  (start1,
+  (start2,
+  (start3, stop3) call getTimerIntervalTime -> (stop3-start3)
+  stop2) call getTimerIntervalTime -> (stop2-start2)
+  stop1)  call getTimerIntervalTime -> (stop1-start1)
+"""
 function getTimerIntervalTime() ::AbstractFloat
   local timerIntervalTime::AbstractFloat
 
@@ -740,20 +789,22 @@ function getTimerIntervalTime() ::AbstractFloat
   timerIntervalTime
 end
 
-""" #= @autor: adrpo
-            this function will return the cummulated time
-            by adding all the interval times [startTimer,stopTimer].
-            Note that if you have recursive calls to start/stop
-            this function will not return the *correct* time.
-            Example:
-             Recursive:
-               (start1, (start2, (start3, stop3) stop2) stop1)
-               getTimerCummulatedTime =
-                 stop3-start3 + stop2-start2 + stop1-start1.
-             Serial:
-               (start1, stop1) (start2, stop2) (start3, stop3)
-               getTimerCummulatedTime =
-                 stop3-start3 + stop2-start2 + stop1-start1. =#"""
+"""
+  @autor: adrpo
+  this function will return the cummulated time
+  by adding all the interval times [startTimer,stopTimer].
+  Note that if you have recursive calls to start/stop
+  this function will not return the *correct* time.
+  Example:
+  Recursive:
+  (start1, (start2, (start3, stop3) stop2) stop1)
+  getTimerCummulatedTime =
+  stop3-start3 + stop2-start2 + stop1-start1.
+  Serial:
+  (start1, stop1) (start2, stop2) (start3, stop3)
+  getTimerCummulatedTime =
+  stop3-start3 + stop2-start2 + stop1-start1.
+"""
 function getTimerCummulatedTime() ::AbstractFloat
   local timerCummulatedTime::AbstractFloat
 
@@ -761,12 +812,14 @@ function getTimerCummulatedTime() ::AbstractFloat
   timerCummulatedTime
 end
 
-""" #= @autor: adrpo
-            this function will return the time
-            passed since the first call to startTimeer
-            Example:
-              (start1, (start2, (start3, stop3), stop2) ...
-              getTimerSinceFirstStartTime = timeNow-start1. =#"""
+"""
+  @autor: adrpo
+  this function will return the time
+  passed since the first call to startTimeer
+  Example:
+  (start1, (start2, (start3, stop3), stop2) ...
+  getTimerSinceFirstStartTime = timeNow-start1.
+"""
 function getTimerElapsedTime() ::AbstractFloat
   local timerElapsedTime::AbstractFloat
 
@@ -774,18 +827,20 @@ function getTimerElapsedTime() ::AbstractFloat
   timerElapsedTime
 end
 
-""" #= @autor: adrpo
-            this function will return number of
-            times start/stop was called recursively.
-            You can use this function for pretty printing.
-            Example:
-               index 0
-              (start1, index 1
-                 (start2, index 2
-                    (start3, index 3
-                     stop3), index 2
-                  stop2) index 1
-               stop1) index 0 =#"""
+"""
+  @autor: adrpo
+  this function will return number of
+  times start/stop was called recursively.
+  You can use this function for pretty printing.
+  Example:
+  index 0
+  (start1, index 1
+  (start2, index 2
+  (start3, index 3
+  stop3), index 2
+  stop2) index 1
+  stop1) index 0
+"""
 function getTimerStackIndex() ::Integer
   local stackIndex::Integer
 
@@ -793,7 +848,7 @@ function getTimerStackIndex() ::Integer
   stackIndex
 end
 
-""" #= creates the Globally Unique IDentifier and return it as String =#"""
+"""creates the Globally Unique IDentifier and return it as String"""
 function getUUIDStr() ::String
   local uuidStr::String
 
@@ -801,8 +856,10 @@ function getUUIDStr() ::String
   uuidStr
 end
 
-""" #= Returns the name of the file without any leading directory path.
-          See man 3 basename. =#"""
+"""
+  Returns the name of the file without any leading directory path.
+  See man 3 basename.
+"""
 function basename(filename::String) ::String
   local base::String
 
@@ -810,8 +867,10 @@ function basename(filename::String) ::String
   base
 end
 
-""" #= Returns the name of the file without any leading directory path.
-          See man 3 dirname. =#"""
+"""
+  Returns the name of the file without any leading directory path.
+  See man 3 dirname.
+"""
 function dirname(filename::String) ::String
   local base::String
 
@@ -819,8 +878,10 @@ function dirname(filename::String) ::String
   base
 end
 
-""" #= Because list() requires escape-sequences to be in the AST, we need to be
-          able to unescape them in some places of the code. =#"""
+"""
+  Because list() requires escape-sequences to be in the AST, we need to be
+  able to unescape them in some places of the code.
+"""
 function escapedString(unescapedString::String, unescapeNewline::Bool) ::String
   local escapedString::String
 
@@ -828,15 +889,19 @@ function escapedString(unescapedString::String, unescapeNewline::Bool) ::String
   escapedString
 end
 
-""" #= Because list() requires escape-sequences to be in the AST, we need to be
-          able to unescape them in some places of the code. =#"""
+"""
+  Because list() requires escape-sequences to be in the AST, we need to be
+  able to unescape them in some places of the code.
+"""
 function unescapedString(escapedString::String) ::String
   local unescapedString::String = escapedString
   unescapedString
 end
 
-""" #= Calculates the C string length of the input, if the input was used as a string
-          literal in C. For example unescapedStringLength('\\\"')=1, unescapedStringLength('ab')=2. =#"""
+"""
+  Calculates the C string length of the input, if the input was used as a string
+  literal in C. For example unescapedStringLength('\\\"')=1, unescapedStringLength('ab')=2.
+"""
 function unescapedStringLength(unescapedString::String) ::Integer
   local length::Integer
 
@@ -844,10 +909,12 @@ function unescapedStringLength(unescapedString::String) ::Integer
   length
 end
 
-""" #= Quoted identifiers which can use Modelica's allowed Q-CHARs need to be translated into canonical (valid c89 identifier) form
-             using ascii representations; for example,
-              '+' ->  QQ_2B_QQ
-              'xyz@d!' -> QQ_xyz40d21_QQ  =#"""
+"""
+  Quoted identifiers which can use Modelica's allowed Q-CHARs need to be translated into canonical (valid c89 identifier) form
+  using ascii representations; for example,
+  '+' ->  QQ_2B_QQ
+  'xyz@d!' -> QQ_xyz40d21_QQ
+"""
 function unquoteIdentifier(str::String) ::String
   local outStr::String
 
@@ -855,7 +922,7 @@ function unquoteIdentifier(str::String) ::String
   outStr
 end
 
-""" #= Returns the maximum integer that can be represent using this version of the compiler =#"""
+"""Returns the maximum integer that can be represent using this version of the compiler"""
 function intMaxLit() ::Integer
   local outInt::Integer
 
@@ -863,7 +930,7 @@ function intMaxLit() ::Integer
   outInt
 end
 
-""" #= Returns the maximum integer that can be represent using this version of the compiler =#"""
+"""Returns the maximum integer that can be represent using this version of the compiler"""
 function realMaxLit() ::AbstractFloat
   local outReal::AbstractFloat
 
@@ -871,8 +938,10 @@ function realMaxLit() ::AbstractFloat
   outReal
 end
 
-""" #= Handles modelica: and file: URI's. The result is an absolute path on the local system.
-            The result depends on the current MODELICAPATH. Sets the error buffer on failure. =#"""
+"""
+  Handles modelica: and file: URI's. The result is an absolute path on the local system.
+  The result depends on the current MODELICAPATH. Sets the error buffer on failure.
+"""
 function uriToClassAndPath(uri::String) ::Tuple{String, String, String}
   local pathname::String
   local classname::String #= empty if file: is used =#
@@ -882,13 +951,14 @@ function uriToClassAndPath(uri::String) ::Tuple{String, String, String}
   (scheme #= file: or modelica:, in lower-case =#, classname #= empty if file: is used =#, pathname)
 end
 
-""" #= Returns the standardized platform name according to the Modelica specification:
-            win32 [Microsoft Windows 32 bit]
-            win64 [Microsoft Windows 64 bit]
-            i386-pc-linux [Linux Intel 32 bit]
-            x64_86-linux  [Linux Intel 64 bit]
-            Else, the openModelicaPlatform() is returned
-             =#"""
+"""
+  Returns the standardized platform name according to the Modelica specification:
+  win32 [Microsoft Windows 32 bit]
+  win64 [Microsoft Windows 64 bit]
+  i386-pc-linux [Linux Intel 32 bit]
+  x64_86-linux  [Linux Intel 64 bit]
+  Else, the openModelicaPlatform() is returned
+"""
 function modelicaPlatform() ::String
   local platform::String
 
@@ -896,10 +966,10 @@ function modelicaPlatform() ::String
   platform
 end
 
-""" #=
-            Returns uname -sm (with spaces replaced by dashes and only lower-case letters) on Unix platforms
-            mingw32 or mingw64 is returned for OMDev mingw
-             =#"""
+"""
+  Returns uname -sm (with spaces replaced by dashes and only lower-case letters) on Unix platforms
+  mingw32 or mingw64 is returned for OMDev mingw
+"""
 function openModelicaPlatform() ::String
   local platform::String
 
@@ -907,9 +977,7 @@ function openModelicaPlatform() ::String
   platform
 end
 
-""" #=
-            Returns gcc -dumpmachine
-             =#"""
+"""Returns gcc -dumpmachine"""
 function gccDumpMachine() ::String
   local machine::String
 
@@ -917,9 +985,7 @@ function gccDumpMachine() ::String
   machine
 end
 
-""" #=
-            Returns gcc --version
-             =#"""
+"""Returns gcc --version"""
 function gccVersion() ::String
   local version::String
 
@@ -927,31 +993,32 @@ function gccVersion() ::String
   version
 end
 
-""" #= # dgesv from LAPACK
+"""
+  # dgesv from LAPACK
 
-            ## Purpose
-            DGESV computes the solution to a real system of linear equations
-              A * X = B,
-            where A is an N-by-N matrix and X and B are N-by-NRHS matrices.
+  ## Purpose
+  DGESV computes the solution to a real system of linear equations
+  A * X = B,
+  where A is an N-by-N matrix and X and B are N-by-NRHS matrices.
 
-            The LU decomposition with partial pivoting and row interchanges is
-            used to factor A as
-              A = P * L * U,
-            where P is a permutation matrix, L is unit lower triangular, and U is
-            upper triangular. The factored form of A is then used to solve the
-            system of equations A * X = B.
+  The LU decomposition with partial pivoting and row interchanges is
+  used to factor A as
+  A = P * L * U,
+  where P is a permutation matrix, L is unit lower triangular, and U is
+  upper triangular. The factored form of A is then used to solve the
+  system of equations A * X = B.
 
-            ## Return values
-            ### output list<Real> X
-            On exit, if info = 0, the N-by-NRHS solution matrix X.
+  ## Return values
+  ### output list<Real> X
+  On exit, if info = 0, the N-by-NRHS solution matrix X.
 
-            ### output Integer info
-            = 0:  successful exit
-            < 0:  if INFO = -i, the i-th argument had an illegal value
-            > 0:  if INFO = i, U(i,i) is exactly zero. The factorization
-                  has been completed, but the factor U is exactly
-                  singular, so the solution could not be computed.
-             =#"""
+  ### output Integer info
+  = 0:  successful exit
+  < 0:  if INFO = -i, the i-th argument had an illegal value
+  > 0:  if INFO = i, U(i,i) is exactly zero. The factorization
+  has been completed, but the factor U is exactly
+  singular, so the solution could not be computed.
+"""
 function dgesv(A::List{<:List{<:AbstractFloat}}, B::List{<:AbstractFloat}) ::Tuple{List{AbstractFloat}, Integer}
   local info::Integer
   local X::List{AbstractFloat}
@@ -960,7 +1027,7 @@ function dgesv(A::List{<:List{<:AbstractFloat}}, B::List{<:AbstractFloat}) ::Tup
   (X, info)
 end
 
-""" #= lpsolve55 =#"""
+"""lpsolve55"""
 function lpsolve55(A::List{<:List{<:AbstractFloat}}, B::List{<:AbstractFloat}, intIndices::List{<:Integer}) ::Tuple{List{AbstractFloat}, Integer}
   local info::Integer
   local X::List{AbstractFloat}
@@ -976,10 +1043,11 @@ function reopenStandardStream(_stream::Integer #= stdin,stdout,stderr =#, filena
   success
 end
 
-""" #= The iconv() function converts one multibyte characters from one character
-            set to another.
-            See man (3) iconv for more information.
-           =#"""
+"""
+  The iconv() function converts one multibyte characters from one character
+  set to another.
+  See man (3) iconv for more information.
+"""
 function iconv(string::String, from::String, to::String) ::String
   local result::String
 
@@ -989,27 +1057,29 @@ end
 
 #= /* Print errors */ =#
 
-""" #= sprintf format string that takes one double as argument =#"""
+"""sprintf format string that takes one double as argument"""
 function snprintff(format::String, maxlen::Integer, val::AbstractFloat) ::String
   local buf = zeros(UInt8, maxlen)
   local n = ccall(:snprintf, Cint, (Ptr{UInt8}, Csize_t, Cstring, Cdouble), buf, maxlen, format, val)
   return unsafe_string(pointer(buf), min(n, maxlen - 1))
 end
 
-""" #= sprintf format string that takes one double as argument, but unlike snprintff
-             it takes no buffer size as argument.
+"""
+  sprintf format string that takes one double as argument, but unlike snprintff
+  it takes no buffer size as argument.
 
-             NOTE: This function doesn't actually call sprintf, since that would be unsafe.
-                   It instead calls snprintf with a fixed buffer size that should be enough
-                   for most cases, and if that fails it resizes the buffer to the size
-                   snprintf said it needed and calls snprintf again. =#"""
+  NOTE: This function doesn't actually call sprintf, since that would be unsafe.
+  It instead calls snprintf with a fixed buffer size that should be enough
+  for most cases, and if that fails it resizes the buffer to the size
+  snprintf said it needed and calls snprintf again.
+"""
 function sprintff(format::String, val::AbstractFloat) ::String
   local buf = zeros(UInt8, 256)
   local n = ccall(:snprintf, Cint, (Ptr{UInt8}, Csize_t, Cstring, Cdouble), buf, 256, format, val)
   return unsafe_string(pointer(buf), min(n, 255))
 end
 
-""" #= Returns a value in the intervals (0,1] =#"""
+"""Returns a value in the intervals (0,1]"""
 function realRand() ::AbstractFloat
   local r::AbstractFloat
 
@@ -1017,8 +1087,10 @@ function realRand() ::AbstractFloat
   r
 end
 
-""" #= Returns a integer value in the interval (0,n].
-            The number of possible values is n, the maximum value n-1. =#"""
+"""
+  Returns a integer value in the interval (0,n].
+  The number of possible values is n, the maximum value n-1.
+"""
 function intRand(n::Integer) ::Integer
   local i::Integer
 
@@ -1026,7 +1098,7 @@ function intRand(n::Integer) ::Integer
   i
 end
 
-""" #= Returns a value in the interval [0,n) =#"""
+"""Returns a value in the interval [0,n)"""
 function intRandom(n::Integer) ::Integer
   local ret::Integer
 
@@ -1034,7 +1106,7 @@ function intRandom(n::Integer) ::Integer
   ret
 end
 
-""" #= Returns a value in the intervals [0,RAND_MAX) using the C method rand(). =#"""
+"""Returns a value in the intervals [0,RAND_MAX) using the C method rand()."""
 function intRandom0() ::Integer
   local ret::Integer
 
@@ -1042,19 +1114,19 @@ function intRandom0() ::Integer
   ret
 end
 
-""" #= Choose a locale for subsequent gettext calls. Prints warnings on failures. =#"""
+"""Choose a locale for subsequent gettext calls. Prints warnings on failures."""
 function gettextInit(locale::String = "" #= Empty string choses automatically from the environment =#)
   @error "TODO: Defined in the runtime"
 end
 
-""" #= Translate a string from msgid to msgstr using the language of the chosen locale =#"""
+"""Translate a string from msgid to msgstr using the language of the chosen locale"""
 function gettext(msgid::String) ::String
   local msgstr::String = msgid
   @error "TODO: gettext Defined in the runtime"
   return msgstr
 end
 
-""" #= Takes any boxed input =#"""
+"""Takes any boxed input"""
 function anyStringCode(any::Any) ::String
   local str::String
 
@@ -1129,12 +1201,12 @@ function launchParallelTasks(numThreads::Integer, inData::List{TI}, func::ForkFu
   result
 end
 
-""" #= Exits the compiler at this point with the given exit status. =#"""
+"""Exits the compiler at this point with the given exit status."""
 function exit(status::Integer)
   @error "TODO: Defined in the runtime"
 end
 
-""" #= Exits the current thread with a failure. =#"""
+"""Exits the current thread with a failure."""
 function threadWorkFailed()
   @error "TODO: Defined in the runtime"
 end
@@ -1146,7 +1218,7 @@ function getMemorySize() ::AbstractFloat
   memory
 end
 
-""" #= this needs to be called first in Frontend.mo =#"""
+"""this needs to be called first in Frontend.mo"""
 function initGarbageCollector()
   @error "TODO: Defined in the runtime"
 end

@@ -52,7 +52,7 @@
            ()->(V1_x ;V2_x ;V3_0 ;V3_1 ;V3_2 ;V3_3 ;V_latest )
           end)()
 
-        """ #= +t =#"""
+        """+t"""
         function typeinfo() ::Bool
               local outBoolean::Bool
 
@@ -119,9 +119,11 @@
           outBoolean
         end
 
-        """ #= @author: adrpo
-         returns: 'gcc' or 'msvc'
-         usage: omc [+target=gcc|msvc], default to 'gcc'. =#"""
+        """
+          @author: adrpo
+          returns: 'gcc' or 'msvc'
+          usage: omc [+target=gcc|msvc], default to 'gcc'.
+        """
         function simulationCodeTarget() ::String
               local outCodeTarget::String
 
@@ -157,9 +159,11 @@
           outBoolean
         end
 
-        """ #= returns: the flag number representing the accepted grammer. Instead of using
-         booleans. This way more extensions can be added easily.
-         usage: omc [-g=Modelica|MetaModelica|ParModelica|Optimica], default to 'Modelica'. =#"""
+        """
+          returns: the flag number representing the accepted grammer. Instead of using
+          booleans. This way more extensions can be added easily.
+          usage: omc [-g=Modelica|MetaModelica|ParModelica|Optimica], default to 'Modelica'.
+        """
         function acceptedGrammar() ::Integer
               local outGrammer::Integer
 
@@ -167,8 +171,10 @@
           outGrammer
         end
 
-        """ #= returns: true if MetaModelica grammar is accepted or false otherwise
-         usage: omc [-g=Modelica|MetaModelica|ParModelica|Optimica], default to 'Modelica'. =#"""
+        """
+          returns: true if MetaModelica grammar is accepted or false otherwise
+          usage: omc [-g=Modelica|MetaModelica|ParModelica|Optimica], default to 'Modelica'.
+        """
         function acceptMetaModelicaGrammar() ::Bool
               local outBoolean::Bool
 
@@ -176,8 +182,10 @@
           outBoolean
         end
 
-        """ #= returns: true if ParModelica grammar is accepted or false otherwise
-         usage: omc [-g=Modelica|MetaModelica|ParModelica|Optimica], default to 'Modelica'. =#"""
+        """
+          returns: true if ParModelica grammar is accepted or false otherwise
+          usage: omc [-g=Modelica|MetaModelica|ParModelica|Optimica], default to 'Modelica'.
+        """
         function acceptParModelicaGrammar() ::Bool
               local outBoolean::Bool
 
@@ -185,8 +193,10 @@
           outBoolean
         end
 
-        """ #= returns: true if Optimica grammar is accepted or false otherwise
-         usage: omc [-g=Modelica|MetaModelica|ParModelica|Optimica], default to 'Modelica'. =#"""
+        """
+          returns: true if Optimica grammar is accepted or false otherwise
+          usage: omc [-g=Modelica|MetaModelica|ParModelica|Optimica], default to 'Modelica'.
+        """
         function acceptOptimicaGrammar() ::Bool
               local outBoolean::Bool
 
@@ -194,8 +204,10 @@
           outBoolean
         end
 
-        """ #= returns: true if Optimica grammar is accepted or false otherwise
-         usage: omc [-g=Modelica|MetaModelica|ParModelica|Optimica], default to 'Modelica'. =#"""
+        """
+          returns: true if Optimica grammar is accepted or false otherwise
+          usage: omc [-g=Modelica|MetaModelica|ParModelica|Optimica], default to 'Modelica'.
+        """
         function acceptPDEModelicaGrammar() ::Bool
               local outBoolean::Bool
 
@@ -203,11 +215,13 @@
           outBoolean
         end
 
-        """ #= returns what flag was given at start
-             omc [+annotationVersion=3.x]
-           or via the API
-             setAnnotationVersion(\\\"3.x\\\");
-           for annotations: 1.x or 2.x or 3.x =#"""
+        """
+          returns what flag was given at start
+          omc [+annotationVersion=3.x]
+          or via the API
+          setAnnotationVersion(\\\"3.x\\\");
+          for annotations: 1.x or 2.x or 3.x
+        """
         function getAnnotationVersion() ::String
               local annotationVersion::String
 
@@ -215,16 +229,20 @@
           annotationVersion
         end
 
-        """ #= setAnnotationVersion(\\\"3.x\\\");
-           for annotations: 1.x or 2.x or 3.x =#"""
+        """
+          setAnnotationVersion(\\\"3.x\\\");
+          for annotations: 1.x or 2.x or 3.x
+        """
         function setAnnotationVersion(annotationVersion::String)
               FlagsUtil.setConfigString(Flags.ANNOTATION_VERSION, annotationVersion)
         end
 
-        """ #= returns what flag was given at start
-           omc [+noSimplify]
-         or via the API
-           setNoSimplify(true|false); =#"""
+        """
+          returns what flag was given at start
+          omc [+noSimplify]
+          or via the API
+          setNoSimplify(true|false);
+        """
         function getNoSimplify() ::Bool
               local noSimplify::Bool
 
@@ -236,8 +254,10 @@
               FlagsUtil.setConfigBool(Flags.NO_SIMPLIFY, noSimplify)
         end
 
-        """ #= Returns the vectorization limit that is used to determine how large an array
-          can be before it no longer is expanded by Static.crefVectorize. =#"""
+        """
+          Returns the vectorization limit that is used to determine how large an array
+          can be before it no longer is expanded by Static.crefVectorize.
+        """
         function vectorizationLimit() ::Integer
               local limit::Integer
 
@@ -245,12 +265,12 @@
           limit
         end
 
-        """ #= Sets the vectorization limit, see vectorizationLimit above. =#"""
+        """Sets the vectorization limit, see vectorizationLimit above."""
         function setVectorizationLimit(limit::Integer)
               FlagsUtil.setConfigInt(Flags.VECTORIZATION_LIMIT, limit)
         end
 
-        """ #= Returns the id for the default OpenCL device to be used. =#"""
+        """Returns the id for the default OpenCL device to be used."""
         function getDefaultOpenCLDevice() ::Integer
               local defdevid::Integer
 
@@ -258,7 +278,7 @@
           defdevid
         end
 
-        """ #= Sets the default OpenCL device to be used. =#"""
+        """Sets the default OpenCL device to be used."""
         function setDefaultOpenCLDevice(defdevid::Integer)
               FlagsUtil.setConfigInt(Flags.DEFAULT_OPENCL_DEVICE, defdevid)
         end
@@ -288,8 +308,10 @@
           show
         end
 
-        """ #= @author: adrpo
-          flag to tell us if we should evaluate parameters in annotations =#"""
+        """
+          @author: adrpo
+          flag to tell us if we should evaluate parameters in annotations
+        """
         function getEvaluateParametersInAnnotations() ::Bool
               local shouldEvaluate::Bool
 
@@ -297,13 +319,15 @@
           shouldEvaluate
         end
 
-        """ #= @author: adrpo
-          flag to tell us if we should evaluate parameters in annotations =#"""
+        """
+          @author: adrpo
+          flag to tell us if we should evaluate parameters in annotations
+        """
         function setEvaluateParametersInAnnotations(shouldEvaluate::Bool)
               FlagsUtil.setConfigBool(Flags.EVAL_PARAMS_IN_ANNOTATIONS, shouldEvaluate)
         end
 
-        """ #= flag to tell us if we should ignore some errors (when evaluating icons) =#"""
+        """flag to tell us if we should ignore some errors (when evaluating icons)"""
         function getGraphicsExpMode() ::Bool
               local graphicsExpMode::Bool
 
@@ -311,7 +335,7 @@
           graphicsExpMode
         end
 
-        """ #= flag to tell us if we should ignore some errors (when evaluating icons) =#"""
+        """flag to tell us if we should ignore some errors (when evaluating icons)"""
         function setGraphicsExpMode(graphicsExpMode::Bool)
               FlagsUtil.setConfigBool(Flags.GRAPHICS_EXP_MODE, graphicsExpMode)
         end
@@ -418,7 +442,7 @@
               FlagsUtil.setConfigString(Flags.TEARING_HEURISTIC, inString)
         end
 
-        """ #= Default is set by +simCodeTarget=C =#"""
+        """Default is set by +simCodeTarget=C"""
         function simCodeTarget() ::String
               local target::String
 
@@ -734,8 +758,10 @@
           outBoolean
         end
 
-        """ #= @autor: adrpo
-         checks returns true if language standard is above or equal to Modelica 3.3 =#"""
+        """
+          @autor: adrpo
+          checks returns true if language standard is above or equal to Modelica 3.3
+        """
         function synchronousFeaturesAllowed() ::Bool
               local outRes::Bool
 

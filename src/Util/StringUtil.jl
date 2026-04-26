@@ -44,10 +44,12 @@ const CHAR_SPACE = 32::Integer
 const CHAR_DASH = 45::Integer
 const CHAR_DOT = 46::Integer
 
-""" #= Searches for a given character in the given string, returning the index of
-   the character if found. If not found returns NO_POS. The start and end
-   position determines the section of the string to search in, and if not
-   specified they are set to the start and end of the string. =#"""
+"""
+  Searches for a given character in the given string, returning the index of
+  the character if found. If not found returns NO_POS. The start and end
+  position determines the section of the string to search in, and if not
+  specified they are set to the start and end of the string.
+"""
 function findChar(
   inString::String,
   inChar::Integer,
@@ -75,10 +77,12 @@ function findChar(
   return outIndex
 end
 
-""" #= Searches backwards for a given character in the given string, returning the
-   index of the character if found. If not found returns NO_POS. The start and
-   end position determines the section of the string to search in, and if not
-   specified they are set to the start and end of the string. =#"""
+"""
+  Searches backwards for a given character in the given string, returning the
+  index of the character if found. If not found returns NO_POS. The start and
+  end position determines the section of the string to search in, and if not
+  specified they are set to the start and end of the string.
+"""
 function rfindChar(
   inString::String,
   inChar::Integer,
@@ -106,11 +110,13 @@ function rfindChar(
   return outIndex
 end
 
-""" #= Searches for a character not matching the given character in the given
-   string, returning the index of the character if found. If not found returns
-   NO_POS. The start and end position determines the section of the string to
-   search in, and if not specified they are set to the start and end of the
-   string. =#"""
+"""
+  Searches for a character not matching the given character in the given
+  string, returning the index of the character if found. If not found returns
+  NO_POS. The start and end position determines the section of the string to
+  search in, and if not specified they are set to the start and end of the
+  string.
+"""
 function findCharNot(
   inString::String,
   inChar::Integer,
@@ -138,11 +144,13 @@ function findCharNot(
   return outIndex
 end
 
-""" #= Searches backwards for a character not matching the given character in the
-   given string, returning the index of the character if found. If not found
-   returns NO_POS. The start and end position determines the section of the
-   string to search in, and if not specified they are set to the start and end
-   of the string. =#"""
+"""
+  Searches backwards for a character not matching the given character in the
+  given string, returning the index of the character if found. If not found
+  returns NO_POS. The start and end position determines the section of the
+  string to search in, and if not specified they are set to the start and end
+  of the string.
+"""
 function rfindCharNot(
   inString::String,
   inChar::Integer,
@@ -170,33 +178,37 @@ function rfindCharNot(
   return outIndex
 end
 
-""" #= Returns true if the given character represented by it's ASCII decimal number
-   is an alphabetic character. =#"""
+"""
+  Returns true if the given character represented by it's ASCII decimal number
+  is an alphabetic character.
+"""
 function isAlpha(inChar::Integer)::Bool
   local outIsAlpha::Bool = inChar >= 65 && inChar <= 90 || inChar >= 97 && inChar <= 122
   return outIsAlpha
 end
 
-""" #= Breaks the given string into lines which are no longer than the given wrap
-   length. The function tries to break lines at word boundaries, i.e. at spaces,
-   so that words are not split. It also wraps the string at any newline
-   characters it finds. The function also takes two optional parameters to set
-   the delimiter and raggedness.
+"""
+  Breaks the given string into lines which are no longer than the given wrap
+  length. The function tries to break lines at word boundaries, i.e. at spaces,
+  so that words are not split. It also wraps the string at any newline
+  characters it finds. The function also takes two optional parameters to set
+  the delimiter and raggedness.
 
-   inDelimiter sets the delimiter which is prefixed to all lines except for the
-   first one. The length of this delimiter is taken into account when wrapping
-   the string, so it must be shorter than the wrap length. Otherwise the string
-   will be returned unwrapped. The default is an empty string.
+  inDelimiter sets the delimiter which is prefixed to all lines except for the
+  first one. The length of this delimiter is taken into account when wrapping
+  the string, so it must be shorter than the wrap length. Otherwise the string
+  will be returned unwrapped. The default is an empty string.
 
-   inRaggedness determines the allowed raggedness of the lines, given as a ratio
-   between 0 and 1. A raggedness of e.g. 0.2 means that each segment may be at
-   most 20% smaller than the max line length. If a line would be shorter than
-   this, due to a long word, then the function instead hyphenates the last word.
-   This is not done according to any grammatical rules, the words are just
-   broken so that the line is as long as allowed. The default is 0.3.
+  inRaggedness determines the allowed raggedness of the lines, given as a ratio
+  between 0 and 1. A raggedness of e.g. 0.2 means that each segment may be at
+  most 20% smaller than the max line length. If a line would be shorter than
+  this, due to a long word, then the function instead hyphenates the last word.
+  This is not done according to any grammatical rules, the words are just
+  broken so that the line is as long as allowed. The default is 0.3.
 
-   This function operates on ASCII strings, and does not handle UTF-8 strings
-   correctly. =#"""
+  This function operates on ASCII strings, and does not handle UTF-8 strings
+  correctly.
+"""
 function wordWrap(
   inString::String,
   inWrapLength::Integer,
@@ -312,7 +324,7 @@ function wordWrap(
   return outStrings
 end
 
-""" #= Repeat str n times =#"""
+"""Repeat str n times"""
 function repeat(str::String, n::Integer)::String
   local res::String = ""
 
@@ -326,7 +338,7 @@ function repeat(str::String, n::Integer)::String
   return res
 end
 
-""" #= Adds quotation marks to the beginning and end of a string. =#"""
+"""Adds quotation marks to the beginning and end of a string."""
 function M_quote(inString::String)::String
   local outString::String = stringAppendList(list("\\", inString, "\\"))
   return outString

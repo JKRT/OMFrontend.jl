@@ -165,7 +165,7 @@ function getProfStats()::ProfStats
   local bytes_reclaimed_since_gc::Integer
   local reclaimed_bytes_before_gc::Integer
 
-  """ #= Inner, dummy function to preserve the full integer sizes =#"""
+  """Inner, dummy function to preserve the full integer sizes"""
   function GC_get_prof_stats_modelica()::Tuple{
     Integer,
     Integer,

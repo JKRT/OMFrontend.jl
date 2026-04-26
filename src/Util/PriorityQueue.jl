@@ -44,8 +44,7 @@ import Frontend.SimCode
 #= /* This specific version... */ =#
 Priority = Integer
 Data = List
-#= /* Replaceable types */ =#
-
+"""/* Replaceable types */"""
 function compareElement(el1::Element, el2::Element)::Bool
   local b::Bool
 
@@ -61,10 +60,11 @@ end
 Element = Tuple
 T = List
 const empty = nil::T
-#= /*
-function isEmpty = listEmpty;
-*/ =#
-
+"""
+  /*
+  function isEmpty = listEmpty;
+  */
+"""
 function isEmpty(ts::T)::Bool
   local isEmpty::Bool
 

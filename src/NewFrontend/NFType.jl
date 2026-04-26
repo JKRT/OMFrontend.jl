@@ -310,7 +310,7 @@ end
   return equal
 end
 
-""" #= Reduces a type's dimensions based on the given list of subscripts. =#"""
+"""Reduces a type's dimensions based on the given list of subscripts."""
 function subscript(@nospecialize(ty::M_Type), subs::List{<:Subscript})::M_Type
 
   local dim::Dimension
@@ -711,7 +711,7 @@ end
   return str
 end
 
-#=TODO: Modified by me. Should have a string =#
+"""TODO: Modified by me. Should have a string"""
 function nthEnumLiteralAsString(@nospecialize(ty::M_Type), index::Int)::String
   local literal::String
   local literals::List{String}
@@ -936,8 +936,10 @@ function setArrayElementType(@nospecialize(arrayTy::M_Type), @nospecialize(eleme
   return ty
 end
 
-""" #= Returns the common type of the elements in an array, or just the type
-     itself if it's not an array type. =#"""
+"""
+  Returns the common type of the elements in an array, or just the type
+  itself if it's not an array type.
+"""
 function arrayElementType(@nospecialize(ty::M_Type))::M_Type
   local elementTy::M_Type
 
@@ -1370,7 +1372,7 @@ function isMatrix(@nospecialize(ty::M_Type))::Bool
   return isMatrix
 end
 
-""" #= Return whether the type is a vector type or not, i.e. a 1-dimensional array. =#"""
+"""Return whether the type is a vector type or not, i.e. a 1-dimensional array."""
 function isVector(@nospecialize(ty::M_Type))::Bool
   local isVector::Bool
 
@@ -1534,8 +1536,10 @@ function unliftArray(@nospecialize(ty::M_Type))::M_Type
   return ty
 end
 
-""" #= Adds array dimensions to a type on the left side, e.g.
-       listArrayLeft(Real[2, 3], [4, 5]) => Real[2, 3, 4, 5]. =#"""
+"""
+  Adds array dimensions to a type on the left side, e.g.
+  listArrayLeft(Real[2, 3], [4, 5]) => Real[2, 3, 4, 5].
+"""
 function liftArrayRightList(@nospecialize(ty::NFType), dims::List{<:Dimension})::NFType
 
   if listEmpty(dims)

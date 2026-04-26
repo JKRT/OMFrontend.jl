@@ -211,7 +211,7 @@ end
   return nextState
 end
 
-""" #= Returns the lookup state of a given element. =#"""
+"""Returns the lookup state of a given element."""
 function elementState(element::SCode.Element)::LookupState
   local state::LookupState
   @assign state = begin
@@ -247,9 +247,11 @@ function nodeState(node::InstNode)::LookupState
   return state
 end
 
-""" #= Checks if a found element is protected during lookup, and prints an error if
-     the element was not the first part of a name while being protected.
-     I.e. P.a is allowed if P is protected, but not e.g. a.P or a.P.b. =#"""
+"""
+  Checks if a found element is protected during lookup, and prints an error if
+  the element was not the first part of a name while being protected.
+  I.e. P.a is allowed if P is protected, but not e.g. a.P or a.P.b.
+"""
 function checkProtection(node::InstNode, currentState::LookupState)
   return  () = begin
     @match currentState begin
@@ -271,9 +273,11 @@ function checkProtection(node::InstNode, currentState::LookupState)
   end
 end
 
-""" #= Checks that the found name is allowed to be looked up given the current state
-     of the name lookup, and returns the new state if it is. Otherwise it will
-     print a (hopefully relevant) error message and fail. =#"""
+"""
+  Checks that the found name is allowed to be looked up given the current state
+  of the name lookup, and returns the new state if it is. Otherwise it will
+  print a (hopefully relevant) error message and fail.
+"""
 function next(
   node::InstNode,
   currentState::LookupState,
@@ -314,7 +318,7 @@ function printFoundWrongTypeError(
   fail()
 end
 
-""" #= Returns the string representation of a LookupState, with translation. =#"""
+"""Returns the string representation of a LookupState, with translation."""
 function lookupStateString(state::LookupState)::String
   local str::String
   str = begin

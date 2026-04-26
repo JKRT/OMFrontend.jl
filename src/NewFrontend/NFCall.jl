@@ -9,7 +9,7 @@ import ..Frontend.toString
 const Key = String
 const Value = Expression
 
-#= Define the printing functions. =#
+"""Define the printing functions."""
 function keyStr(key)
   return key
 end
@@ -271,7 +271,7 @@ function toDAE(@nospecialize(call::Call))
   return daeCall
 end
 
-""" #= Like toString, but prefixes each argument with its type as a comment. =#"""
+"""Like toString, but prefixes each argument with its type as a comment."""
 function typedString(@nospecialize(call::Call))::String
   local str::String
 
@@ -1163,9 +1163,11 @@ function evaluateCallType(
   return (ty, ptree)
 end
 
-""" #= Transforms a vectorized call into a non-vectorized one. This function is
-     used as a helper to output valid flat Modelica, and should probably not
-     be used where e.g. correct types are required. =#"""
+"""
+  Transforms a vectorized call into a non-vectorized one. This function is
+  used as a helper to output valid flat Modelica, and should probably not
+  be used where e.g. correct types are required.
+"""
 function devectorizeCall(@nospecialize(call::Call))::Call
   local outCall::Call
   local exp::Expression
@@ -1855,8 +1857,7 @@ function instNormalCall(
   return callExp
 end
 
-#= New code below =#
-
+"""New code below"""
 function mapFoldExp(@nospecialize(call::Call), func::MapFunc, foldArg::ArgT)  where {ArgT}
   local outCall::Call
   outCall = begin

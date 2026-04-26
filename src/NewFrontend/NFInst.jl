@@ -279,7 +279,7 @@ function expand(node::InstNode) ::InstNode
   node
 end
 
-""" #= Creates an instance node from the given list of top-level classes. =#"""
+"""Creates an instance node from the given list of top-level classes."""
 function makeTopNode(topClasses::List{<:SCode.Element}) ::InstNode
   local topNode::InstNode
   local cls_elem::SCode.Element
@@ -527,8 +527,10 @@ function expandExtends(ext::InstNode, builtinExt::InstNode = EMPTY_NODE()) ::Tup
   (ext, builtinExt)
 end
 
-""" #= Gives an error if a base node is in the process of being expanded itself,
-             since that means we have an extends loop in the model. =#"""
+"""
+  Gives an error if a base node is in the process of being expanded itself,
+  since that means we have an extends loop in the model.
+"""
 function checkExtendsLoop(node::InstNode, path::Absyn.Path, info::SourceInfo)
    () = begin
     @match getClass(node) begin
@@ -550,8 +552,10 @@ function checkExtendsLoop(node::InstNode, path::Absyn.Path, info::SourceInfo)
   end
 end
 
-""" #= Checks that all parts of a name used as a base class are transitively
-             non-replaceable. =#"""
+"""
+  Checks that all parts of a name used as a base class are transitively
+  non-replaceable.
+"""
 function checkReplaceableBaseClass(baseClasses::List{<:InstNode}, basePath::Absyn.Path, info::SourceInfo)
   local i::Int = 0
   local pos::Int
@@ -626,8 +630,10 @@ function checkBuiltinTypeExtends(builtinExtends::InstNode, tree::ClassTree, node
   =#
 end
 
-""" #= Constructs a ComplexType for an external object, and also checks that the
-             external object declaration is valid. =#"""
+"""
+  Constructs a ComplexType for an external object, and also checks that the
+  external object declaration is valid.
+"""
 function makeExternalObjectType(tree::ClassTree, node::InstNode) ::ComplexType
   local ty::ComplexType
 
@@ -802,7 +808,7 @@ function instClass(node::InstNode, modifier::Modifier, attributes::Attributes, a
   end
 end
 
-#= On failure call the generic function. =#
+"""On failure call the generic function."""
 function instClassDef(cls::Class)
   @error "Unknown class during instantiation"
   fail()
@@ -972,7 +978,7 @@ function instClassDef(cls::EXPANDED_CLASS,
   return node
 end
 
-""" #= Sets the class instance of a component node. =#"""
+"""Sets the class instance of a component node."""
 function updateComponentType(component::T0, cls::T1)::T0 where {T0, T1}
   if isComponent(component)
     component = componentApply(component, setClassInstance, cls)
@@ -989,7 +995,7 @@ function updateClassConnectorType(res::Restriction, attrs::Attributes) ::Attribu
   attrs
 end
 
-""" #= Instantiates the constructor and destructor for an ExternalObject class. =#"""
+"""Instantiates the constructor and destructor for an ExternalObject class."""
 function instExternalObjectStructors(@nospecialize(ty::M_Type), parentNode::InstNode)
   local constructor::InstNode
   local destructor::InstNode
@@ -1656,8 +1662,10 @@ function redeclareComponent(redeclareNode::InstNode, originalNode::InstNode, out
   updateComponent!(new_comp, redeclaredNode)
 end
 
-""" #= Prints an error message and fails if it gets an outer component and a
-             non-empty modifier. =#"""
+"""
+  Prints an error message and fails if it gets an outer component and a
+  non-empty modifier.
+"""
 function checkOuterComponentMod(mod::Modifier, component::SCode.Element, node::InstNode)
   if ! isEmpty(mod) && AbsynUtil.isOnlyOuter(SCodeUtil.prefixesInnerOuter(SCodeUtil.elementPrefixes(component)))
     Error.addSourceMessage(Error.OUTER_ELEMENT_MOD, list(toString(mod, false), name(node)), InstNode_info(node))
@@ -2021,11 +2029,13 @@ function instTypeSpec(typeSpec::Absyn.TCOMPLEX,
 end
 
 
-""" #= Prints an error if a component causes a loop in the instance tree, for
-             example because it has the same type as one of its parents. If the depth
-             limit of the instance tree is reached, indicated by limitReached = true, then
-             some error is always given. Otherwise an error is only given if an actual
-             issue can be detected. =#"""
+"""
+  Prints an error if a component causes a loop in the instance tree, for
+  example because it has the same type as one of its parents. If the depth
+  limit of the instance tree is reached, indicated by limitReached = true, then
+  some error is always given. Otherwise an error is only given if an actual
+  issue can be detected.
+"""
 function checkRecursiveDefinition(componentType::InstNode, component::InstNode, limitReached::Bool)
   local parentVar::InstNode = parent(component)
   local parent_type::InstNode

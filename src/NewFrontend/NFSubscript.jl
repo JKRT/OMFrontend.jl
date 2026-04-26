@@ -131,12 +131,14 @@ function first(dim::Dimension)::Subscript
   return sub
 end
 
-""" #= Merges a list of subscripts with a list of 'existing' subscripts.
-     This is done by e.g. subscripting existing slice and : subscripts,
-     such that e.g. mergeList({1, :}, {3:5, 1:3, 4}) => {3, 1:3, 4}.
-     The function will ensure that the output list contains at most as
-     many subscripts as the given number of dimensions, and also returns
-     the list of remaining subscripts that couldn't be added. =#"""
+"""
+  Merges a list of subscripts with a list of 'existing' subscripts.
+  This is done by e.g. subscripting existing slice and : subscripts,
+  such that e.g. mergeList({1, :}, {3:5, 1:3, 4}) => {3, 1:3, 4}.
+  The function will ensure that the output list contains at most as
+  many subscripts as the given number of dimensions, and also returns
+  the list of remaining subscripts that couldn't be added.
+"""
 function mergeList(
   newSubs::List{<:Subscript},
   oldSubs::List{<:Subscript},

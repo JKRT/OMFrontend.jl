@@ -186,8 +186,7 @@
          =#
          #= (\"degC\",       UNIT(1e0, 0, 0, 0, 0, 0, 1, 0, 273.15))};°Celsius
          =#
-         #= /*                 fac, mol, cd, m, s, A, K, g*/ =#
-
+        """/*                 fac, mol, cd, m, s, A, K, g*/"""
         function getKnownUnits() ::HashTableStringToUnit.HashTable
               local outKnownUnits::HashTableStringToUnit.HashTable
 
@@ -651,7 +650,7 @@
           outUnit
         end
 
-        """ #= Unit to Modelica unit string =#"""
+        """Unit to Modelica unit string"""
         function unitString(inUnit::Unit, inHtU2S::HashTableUnitToString.HashTable = getKnownUnitsInverse()) ::String
               local outString::String
 
@@ -901,8 +900,10 @@
           outPrefix
         end
 
-        """ #= author: lochel
-          The second argument is optional. =#"""
+        """
+          author: lochel
+          The second argument is optional.
+        """
         function parseUnitString(inUnitString::String, inKnownUnits::HashTableStringToUnit.HashTable = getKnownUnits()) ::Unit
               local outUnit::Unit
 
@@ -1226,8 +1227,10 @@
           (outR, outUnit)
         end
 
-        """ #= author: lochel
-          Tokenizer: charList to tokenList =#"""
+        """
+          author: lochel
+          Tokenizer: charList to tokenList
+        """
         function lexer(inCharList::List{<:String}) ::List{Token}
               local outTokenList::List{Token}
 

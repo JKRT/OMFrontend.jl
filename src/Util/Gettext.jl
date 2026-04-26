@@ -46,7 +46,7 @@ import ..System
   end
 end
 
-#= Translate content to a string =#
+"""Translate content to a string"""
 function translateContent(msg::TranslatableContent) ::String 
   local str::String
   str = begin

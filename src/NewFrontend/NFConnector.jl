@@ -28,7 +28,7 @@ const ScalarizeSettingType = Int
 #= Wrapper to avoid shadowing by the `scalarize` parameter of ScalarizeSettingType =#
 scalarizeCref(cref::ComponentRef)::List{ComponentRef} = scalarize(cref)
 
-""" #= Splits a connector into its primitive components. =#"""
+"""Splits a connector into its primitive components."""
 function split(
   conn::Connector,
   scalarize::ScalarizeSettingType = if Flags.isSet(Flags.NF_SCALARIZE)
@@ -144,7 +144,7 @@ function getType(conn::Connector)::M_Type
   return ty
 end
 
-""" #= Constructs a list of Connectors from a cref or an array of crefs. =#"""
+"""Constructs a list of Connectors from a cref or an array of crefs."""
 function fromExp(
   exp::Expression,
   source::DAE.ElementSource,
@@ -322,9 +322,11 @@ function splitImpl(
   return conns
 end
 
-""" #= Determines whether a cref refers to an inside or outside connector, where
-     an outside connector is a connector where the first part of the cref is a
-     connector, and an inside connector all other crefs. =#"""
+"""
+  Determines whether a cref refers to an inside or outside connector, where
+  an outside connector is a connector where the first part of the cref is a
+  connector, and an inside connector all other crefs.
+"""
 function crefFace(cref::ComponentRef)::FaceType
   local face::FaceType
   @assign face = begin

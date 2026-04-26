@@ -103,14 +103,14 @@ function equationStr(
   return outString
 end
 
-""" #= Prints SCode.Mod to a string. =#"""
+"""Prints SCode.Mod to a string."""
 function printModStr(inMod::SCode.Mod, options::SCodeDumpOptions = defaultOptions)::String
   local outString::String
   @assign outString = Tpl.tplString2(SCodeDumpTpl.dumpModifier, inMod, options)
   return outString
 end
 
-""" #= Prints SCode.Comment to a string. =#"""
+"""Prints SCode.Comment to a string."""
 function printCommentAndAnnotationStr(
   inComment::SCode.Comment,
   options::SCodeDumpOptions = defaultOptions,
@@ -121,7 +121,7 @@ function printCommentAndAnnotationStr(
   return outString
 end
 
-""" #= Prints SCode.Comment.comment to a string. =#"""
+"""Prints SCode.Comment.comment to a string."""
 function printCommentStr(
   inComment::SCode.Comment,
   options::SCodeDumpOptions = defaultOptions,
@@ -241,7 +241,7 @@ function dumpModifier(mod::SCode.Mod, options)
 end
 
 
-""" #= Prints SCode.Restriction to a string. =#"""
+"""Prints SCode.Restriction to a string."""
 function restrString(inRestriction::SCode.Restriction)::String
   local outString::String
 
@@ -367,7 +367,7 @@ function restrString(inRestriction::SCode.Restriction)::String
   return outString
 end
 
-""" #= Translates a SCode.Restriction to a String. =#"""
+"""Translates a SCode.Restriction to a String."""
 function restrictionStringPP(inRestriction::SCode.Restriction)::String
   local outString::String
 
@@ -377,7 +377,7 @@ end
 
 const noEachStr = ""::String
 
-""" #= Print SCode.Element to a string. =#"""
+"""Print SCode.Element to a string."""
 function unparseElementStr(
   inElement::SCode.Element,
   options::SCodeDumpOptions = defaultOptions,
@@ -389,7 +389,7 @@ function unparseElementStr(
   return outString
 end
 
-""" #= Print SCode.Element to a string. =#"""
+"""Print SCode.Element to a string."""
 function shortElementStr(inElement::SCode.Element)::String
   local outString::String
 
@@ -502,7 +502,7 @@ function printEnumStr(en::SCode.Enum)::String
   return str
 end
 
-""" #= Print Variability to a string. =#"""
+"""Print Variability to a string."""
 function variabilityString(inVariability::SCode.Variability)::String
   local outString::String
 
@@ -528,7 +528,7 @@ function variabilityString(inVariability::SCode.Variability)::String
   return outString
 end
 
-""" #= Print parallelism to a string. =#"""
+"""Print parallelism to a string."""
 function parallelismString(inParallelism::SCode.Parallelism)::String
   local outString::String
 
@@ -550,7 +550,7 @@ function parallelismString(inParallelism::SCode.Parallelism)::String
   return outString
 end
 
-""" #= Print a inner outer info to a string. =#"""
+"""Print a inner outer info to a string."""
 function innerouterString(innerOuter::Absyn.InnerOuter)::String
   local outString::String
 
@@ -576,7 +576,7 @@ function innerouterString(innerOuter::Absyn.InnerOuter)::String
   return outString
 end
 
-""" #= Print Variability to a string. =#"""
+"""Print Variability to a string."""
 function unparseVariability(inVariability::SCode.Variability)::String
   local outString::String
 
@@ -602,7 +602,7 @@ function unparseVariability(inVariability::SCode.Variability)::String
   return outString
 end
 
-""" #= Takes a SCode.Equation rather then SCode.EEquation as equationStr does. =#"""
+"""Takes a SCode.Equation rather then SCode.EEquation as equationStr does."""
 function equationStr2(eqns::SCode.Equation, options::SCodeDumpOptions)::String
   local s::String
 
@@ -617,7 +617,7 @@ function equationStr2(eqns::SCode.Equation, options::SCodeDumpOptions)::String
   return s
 end
 
-""" #= prints SCode.Initial to a string =#"""
+"""prints SCode.Initial to a string"""
 function printInitialStr(initial_::SCode.Initial)::String
   local str::String
 
@@ -813,7 +813,7 @@ function replaceableConstrainClassStr(inReplaceable::SCode.Replaceable)::String
   return strReplaceable
 end
 
-""" #= Returns prefixes as string =#"""
+"""Returns prefixes as string"""
 function prefixesStr(prefixes::SCode.Prefixes)::String
   local str::String
 

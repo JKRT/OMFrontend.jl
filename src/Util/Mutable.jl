@@ -1,5 +1,5 @@
 mutable struct Mutable{T}
-  data::T #=Can be anything really..=#
+  """data::T #=Can be anything really.."""
   function access(m)
     return data
   end

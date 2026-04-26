@@ -587,8 +587,10 @@ function flattenBindingExp(@nospecialize(exp::Expression))::Expression
   return outExp
 end
 
-""" #= Takes subscripts from the given component reference and applies them to an
-   evaluated expression. =#"""
+"""
+  Takes subscripts from the given component reference and applies them to an
+  evaluated expression.
+"""
 function subscriptEvaluatedBinding(
   exp::Expression,
   cref::ComponentRef,

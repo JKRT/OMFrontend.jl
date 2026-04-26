@@ -50,7 +50,7 @@ end
 struct EMPTY <: Tree
 end
 
-""" #= Gets a value from the tree given a key. =#"""
+"""Gets a value from the tree given a key."""
 function hasKey(inTree::Tree, inKey::Key)::Bool
   local comp::Bool = false
 
@@ -130,7 +130,7 @@ function referenceEqOrEmpty(t1::Tree, t2::Tree)
   return b
 end
 
-""" #= Balances a Tree =#"""
+"""Balances a Tree"""
 function balance(inTree::Tree)
   local outTree::Tree = inTree
   outTree = begin
@@ -219,7 +219,7 @@ function calculateBalance(inNode::Tree)::Int
   return outBalance
 end
 
-""" #= Helper function to printTreeStr. =#"""
+"""Helper function to printTreeStr."""
 function printTreeStr2(inTree::Tree, isLeft::Bool, inIndent::String)::String
   local outString::String
   local val_node::Option{ValueNode}
@@ -286,26 +286,26 @@ end
 =#
 
 #= Default conflict resolving function for add. =#
- """ #= Conflict resolving function for add which fails on conflict. =#"""
+"""Conflict resolving function for add which fails on conflict."""
 function addConflictFail(newValue::Value, oldValue::Value, key::Key)
   fail()
 end
 
 addConflictDefault::Function = addConflictFail
 
-""" #= Conflict resolving function for add which replaces the old value with the new. =#"""
+"""Conflict resolving function for add which replaces the old value with the new."""
 function addConflictReplace(newValue::Value, oldValue::Value, key::Key)::Value
   local value::Value = newValue
   return value
 end
 
-""" #= Conflict resolving function for add which keeps the old value. =#"""
+"""Conflict resolving function for add which keeps the old value."""
 function addConflictKeep(newValue::Value, oldValue::Value, key::Key)::Value
   local value::Value = oldValue
   return value
 end
 
-""" #= Inserts a new node in the tree. =#"""
+"""Inserts a new node in the tree."""
 function add(
   inTree::Tree,
   inKey::Key,
@@ -366,7 +366,7 @@ function add(
   return tree
 end
 
-""" #= Adds a list of key-value pairs to the tree. =#"""
+"""Adds a list of key-value pairs to the tree."""
 function addList(
   tree::Tree,
   inValues::List{<:Tuple{<:Key, Value}},
@@ -381,7 +381,7 @@ function addList(
   return tree
 end
 
-""" #= Alias for add that replaces the node in case of conflict. =#"""
+"""Alias for add that replaces the node in case of conflict."""
 function update(tree::Tree, key::Key, value::Value)::Tree
   local outTree::Tree = add(tree, key, value, addConflictReplace)
   return outTree
@@ -420,8 +420,10 @@ Get on empty is always fail
   return FAILURE
 end
 
-""" #= Fetches a value from the tree given a key, or returns NONE if no value is
-   associated with the key. =#"""
+"""
+  Fetches a value from the tree given a key, or returns NONE if no value is
+  associated with the key.
+"""
 function getOpt(tree::Tree, key::Key)::Option{Value}
   local value::Option{Value}
 
@@ -468,7 +470,7 @@ function getOpt(tree::Tree, key::Key)::Option{Value}
   return value
 end
 
-""" #= Creates a new tree from a list of key-value pairs. =#"""
+"""Creates a new tree from a list of key-value pairs."""
 function fromList(
   inValues::List{<:Tuple{<:Key, Value}},
   conflictFunc::ConflictFunc = addConflictDefault,
@@ -485,7 +487,7 @@ function fromList(
   return tree
 end
 
-""" #= Converts the tree to a flat list of key-value tuples. =#"""
+"""Converts the tree to a flat list of key-value tuples."""
 function toList(
   inTree::Tree,
   lst::List{<:Tuple{<:Key, Value}} = nil,
@@ -533,7 +535,7 @@ function toVector(inTree::Tree)
   return vec
 end
 
-""" #= Constructs a list of all the values in the tree. =#"""
+"""Constructs a list of all the values in the tree."""
 function listValues(tree::Tree, lst::List{<:Value} = nil)
   lst = begin
     local value::Value
@@ -555,7 +557,7 @@ function listValues(tree::Tree, lst::List{<:Value} = nil)
   return lst
 end
 
-""" #= Joins two trees by adding the second one to the first. =#"""
+"""Joins two trees by adding the second one to the first."""
 function join(
   tree::Tree,
   treeToJoin::Tree,
@@ -583,8 +585,10 @@ function join(
   return tree
 end
 
-""" #= Traverses the tree in depth-first pre-order and applies the given function to
-   each node, but without constructing a new tree like with map. =#"""
+"""
+  Traverses the tree in depth-first pre-order and applies the given function to
+  each node, but without constructing a new tree like with map.
+"""
 function forEach(tree::Tree, func::EachFunc)
   return @assign _ = begin
     @match tree begin
@@ -611,8 +615,10 @@ function intersection()
   return fail()
 end
 
-""" #= Traverses the tree in depth-first pre-order and applies the given function to
-   each node, constructing a new tree with the resulting nodes. =#"""
+"""
+  Traverses the tree in depth-first pre-order and applies the given function to
+  each node, constructing a new tree with the resulting nodes.
+"""
 function map(inTree::Tree, inFunc::MapFunc)::Tree
   local outTree::Tree = inTree
    outTree = begin
@@ -648,8 +654,10 @@ function map(inTree::Tree, inFunc::MapFunc)::Tree
   return outTree
 end
 
-""" #= Traverses the tree in depth-first pre-order and applies the given function to
-   each node, in the process updating the given argument. =#"""
+"""
+  Traverses the tree in depth-first pre-order and applies the given function to
+  each node, in the process updating the given argument.
+"""
 function fold(inTree::Tree, inFunc::FoldFunc, inStartValue::FT) where {FT}
   local outResult = inStartValue
   outResult = begin
@@ -674,7 +682,7 @@ function fold(inTree::Tree, inFunc::FoldFunc, inStartValue::FT) where {FT}
   return outResult
 end
 
-""" #= Like fold, but takes two fold arguments. =#"""
+"""Like fold, but takes two fold arguments."""
 function fold_2(
   tree::Tree,
   foldFunc::FoldFunc,
@@ -701,8 +709,10 @@ function fold_2(
   return (foldArg1, foldArg2)
 end
 
-""" #= Like fold, but if the fold function returns false it will not continue down
-   into the tree (but will still continue with other branches). =#"""
+"""
+  Like fold, but if the fold function returns false it will not continue down
+  into the tree (but will still continue with other branches).
+"""
 function foldCond(tree::Tree, foldFunc::FoldFunc, value::FT) where {FT}
 
   value = begin
@@ -730,9 +740,11 @@ function foldCond(tree::Tree, foldFunc::FoldFunc, value::FT) where {FT}
   return value
 end
 
-""" #= Traverses the tree in depth-first pre-order and applies the given function to
-   each node, constructing a new tree with the resulting nodes. mapFold also
-   takes an extra argument which is updated on each call to the given function. =#"""
+"""
+  Traverses the tree in depth-first pre-order and applies the given function to
+  each node, constructing a new tree with the resulting nodes. mapFold also
+  takes an extra argument which is updated on each call to the given function.
+"""
 function mapFold(inTree::Tree, inFunc::MapFunc, inStartValue::FT) where {FT}
   local outResult::FT = inStartValue
   local outTree::Tree = inTree
@@ -810,7 +822,7 @@ function printNodeStr(inNode::Tree)::String
   return outString
 end
 
-""" #= Return an empty tree =#"""
+"""Return an empty tree"""
 function new()::Tree
   local outTree::Tree = EMPTY()
   return outTree
@@ -831,7 +843,7 @@ function isEmpty(tree::Tree)::Bool
   return isEmpty
 end
 
-""" #= Converts the tree to a flat list of keys (in order). =#"""
+"""Converts the tree to a flat list of keys (in order)."""
 function listKeysReverse(inTree::Tree, lst::List{<:Key} = nil)::List{Key}
    lst = begin
     @match inTree begin
@@ -855,8 +867,10 @@ function listKeysReverse(inTree::Tree, lst::List{<:Key} = nil)::List{Key}
 end
 
 
-""" #= Prints the tree to a string using UTF-8 box-drawing characters to construct a
-   graphical view of the tree. =#"""
+"""
+  Prints the tree to a string using UTF-8 box-drawing characters to construct a
+  graphical view of the tree.
+"""
 function printTreeStr(inTree::Tree)::String
   local outString::String
   local left::Tree
@@ -882,8 +896,10 @@ function printTreeStr(inTree::Tree)::String
 end
 
 
-""" #= Takes two sets and returns the intersection as well as the remainder
-  of both sets after removing the duplicates in both sets. =#"""
+"""
+  Takes two sets and returns the intersection as well as the remainder
+  of both sets after removing the duplicates in both sets.
+"""
 function intersection(tree1::Tree, tree2::Tree)::Tree
   local intersect::Tree = Tree.EMPTY()
   local rest1::Tree = Tree.EMPTY()
@@ -951,7 +967,7 @@ function intersection(tree1::Tree, tree2::Tree)::Tree
   return intersect, rest1, rest2
 end
 
-""" #= Performs an AVL left rotation on the given tree. =#"""
+"""Performs an AVL left rotation on the given tree."""
 function rotateLeft(inNode::Tree)::Tree
   local outNode::Tree = inNode
 
@@ -977,7 +993,7 @@ function rotateLeft(inNode::Tree)::Tree
   return outNode
 end
 
-""" #= Performs an AVL right rotation on the given tree. =#"""
+"""Performs an AVL right rotation on the given tree."""
 function rotateRight(inNode::Tree)::Tree
   local outNode::Tree = inNode
    outNode = begin

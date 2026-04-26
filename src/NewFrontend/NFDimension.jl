@@ -112,7 +112,7 @@ function variability(dim::Dimension)::VariabilityType
   return var
 end
 
-""" #= Returns the size of a dimension as an Expression. =#"""
+"""Returns the size of a dimension as an Expression."""
 function sizeExp(dim::Dimension)::Expression
   local sizeExp::Expression
 
@@ -139,7 +139,7 @@ function sizeExp(dim::Dimension)::Expression
   return sizeExp
 end
 
-""" #= Returns an expression for the last index in a dimension. =#"""
+"""Returns an expression for the last index in a dimension."""
 function endExp(dim::Dimension, cref::ComponentRef, index::Int)::Expression
   local sizeExp::Expression
 
@@ -253,7 +253,7 @@ function toFlatString(dim::Dimension)::String
   return str
 end
 
-""" #= Returns the expected type of a subscript for the given dimension. =#"""
+"""Returns the expected type of a subscript for the given dimension."""
 function subscriptType(dim::Dimension)::M_Type
   local ty::M_Type
   ty = begin

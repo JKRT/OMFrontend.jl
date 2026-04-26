@@ -1126,7 +1126,7 @@ function typeTypeAttribute(
       #=  Modifier with no binding, e.g. Real x(final start).
       =#
       checkBindingEach(attribute.binding)
-      finalAttribute = NFModifier.NOMOD()
+      finalAttribute = MODIFIER_NOMOD()
     end
 
     MODIFIER_MODIFIER(name = name, binding = binding) => begin

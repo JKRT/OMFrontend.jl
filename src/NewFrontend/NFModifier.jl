@@ -85,13 +85,13 @@ function fromElement(element::SCode.Element)
   local scope::ModifierScope
   @assign scope = begin
     @match element begin
-      SCode.Element.COMPONENT(__) => begin
+      SCode.COMPONENT(__) => begin
         COMPONENT(element.name)
       end
       SCode.CLASS(__) => begin
         CLASS(element.name)
       end
-      SCode.Element.EXTENDS(__) => begin
+      SCode.EXTENDS(__) => begin
         EXTENDS(element.baseClassPath)
       end
     end
@@ -629,7 +629,7 @@ create(mod::SCode.NOMOD,
 
 
 
-function create(mod::SCode.SCode.REDECL,
+function create(mod::SCode.REDECL,
                 name::String,
                 modScope::ModifierScope,
                 parents::List{<:InstNode},

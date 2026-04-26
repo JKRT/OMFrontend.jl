@@ -608,7 +608,7 @@ function inlineType(@nospecialize(call::Call))::DAE.InlineType
         inlineTy
       end
       _ => begin
-        DAE.InlineType.NO_INLINE()
+        DAE.NO_INLINE()
       end
     end
   end

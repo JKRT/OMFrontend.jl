@@ -118,7 +118,7 @@ function applyReplacementsDAE(
   @assign outDae = begin
     local elts::List{DAE.Element}
     local funcs::DAE.FunctionTree
-    local funcLst::List{Tuple{DAE.AvlTreePathFunction.Key, DAE.AvlTreePathFunction.Value}}
+    local funcLst::List{Tuple{Absyn.Path, Function}}
     @match (dae, repl, condExpFunc) begin
       (DAE.DAE(elementLst = elts), _, _) => begin
         @assign elts = applyReplacementsDAEElts(elts, repl, condExpFunc)

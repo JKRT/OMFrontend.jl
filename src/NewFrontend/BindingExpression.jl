@@ -4713,7 +4713,7 @@ end
       RANGE_EXPRESSION(__)  => begin
         res = string(operandFlatString(exp.start, exp, false; inFunction = inFunction),
                      (if isSome(exp.step)
-                        ":" + operandFlatString(Util.getOption(exp.step), exp, false; inFunction = inFuntion)
+                        ":" + operandFlatString(Util.getOption(exp.step), exp, false; inFunction = inFunction)
                       else
                         ""
                       end) + ":" + operandFlatString(exp.stop, exp, false; inFunction = inFunction))

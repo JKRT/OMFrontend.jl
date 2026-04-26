@@ -135,13 +135,13 @@ function makeDAEVar(
         DAE.VAR(
           dcref,
           DAE.VARIABLE(),
-          DAE.VarDirection.BIDIR(),
+          DAE.BIDIR(),
           DAE.NON_PARALLEL(),
           visibilityToDAE(vis),
           dty,
           binding,
           ddims,
-          DAE.ConnectorType.NON_CONNECTOR(),
+          DAE.NON_CONNECTOR(),
           source,
           vattr,
           comment,
@@ -836,7 +836,7 @@ function convertEquation(eq::Equation, elements::List{<:DAE.Element})::List{DAE.
           if isComplex(eq.ty)
             DAE.COMPLEX_EQUATION(e1, e2, eq.source)
           elseif (isArray(eq.ty))
-            DAE.Element.ARRAY_EQUATION(
+            DAE.ARRAY_EQUATION(
               list(toDAE(d) for d in arrayDims(eq.ty)),
               e1,
               e2,
@@ -908,7 +908,7 @@ function convertEquation(eq::Equation, elements::List{<:DAE.Element})::List{DAE.
 
       EQUATION_TERMINATE(__) => begin
         _cons(
-          DAE.Element.TERMINATE(toDAE(eq.message), eq.source),
+          DAE.TERMINATE(toDAE(eq.message), eq.source),
           elements,
         )
       end
@@ -953,7 +953,7 @@ function convertForEquation(forEquation::Equation)::DAE.Element
   ) = forEquation
   @assign dbody = convertEquations(body)
   @match ITERATOR_COMPONENT(ty = ty) = component(iterator)
-  @assign forDAE = DAE.Element.FOR_EQUATION(
+  @assign forDAE = DAE.FOR_EQUATION(
     toDAE(ty),
     isArray(ty),
     name(iterator),
@@ -1086,12 +1086,12 @@ function convertInitialEquation(
         @assign e1 = toDAE(eq.condition)
         @assign e2 = toDAE(eq.message)
         @assign e3 = toDAE(eq.level)
-        _cons(DAE.Element.INITIAL_ASSERT(e1, e2, e3, eq.source), elements)
+        _cons(DAE.INITIAL_ASSERT(e1, e2, e3, eq.source), elements)
       end
 
       EQUATION_TERMINATE(__) => begin
         _cons(
-          DAE.Element.INITIAL_TERMINATE(
+          DAE.INITIAL_TERMINATE(
             toDAE(eq.message),
             eq.source,
           ),
@@ -1101,7 +1101,7 @@ function convertInitialEquation(
 
       EQUATION_NORETCALL(__) => begin
         _cons(
-          DAE.Element.INITIAL_NORETCALL(toDAE(eq.exp), eq.source),
+          DAE.INITIAL_NORETCALL(toDAE(eq.exp), eq.source),
           elements,
         )
       end
@@ -1407,11 +1407,18 @@ function convertFunctionTree(funcs::FunctionTree)::DAE.FunctionTree
         @assign fn = convertFunction(funcs.value)
         @assign left = convertFunctionTree(funcs.left)
         @assign right = convertFunctionTree(funcs.right)
-        DAE.FunctionTree.NODE(funcs.key, SOME(fn), funcs.height, left, right)
+        #= DAE.FunctionTree is a `Dict` in the port; build a flat dict
+           by merging subtrees + current node. =#
+        local tree = DAE.FunctionTree()
+        merge!(tree, left, right)
+        tree[funcs.key] = fn
+        tree
       end
       NFFunctionTree.LEAF(__) => begin
         @assign fn = convertFunction(funcs.value)
-        DAE.FunctionTree.LEAF(funcs.key, SOME(fn))
+        local tree = DAE.FunctionTree()
+        tree[funcs.key] = fn
+        tree
       end
       NFFunctionTree.EMPTY(__) => begin
         Dict()
@@ -1442,7 +1449,7 @@ function convertFunction(func::M_Function)::DAE.Function
             SECTIONS(__) => begin
               #=  A function with an algorithm section. =#
               @assign elems = convertAlgorithms(sections.algorithms, elems)
-              DAE.FunctionDefinition.FUNCTION_DEF(listReverse(elems))
+              DAE.FUNCTION_DEF(listReverse(elems))
             end
             SECTIONS_EXTERNAL(__) => begin
               convertExternalDecl(sections, listReverse(elems))
@@ -1538,14 +1545,14 @@ function convertExternalDecl(
       SECTIONS_EXTERNAL(__) => begin
         @assign args = list(convertExternalDeclArg(e) for e in extDecl.args)
         @assign ret_arg = convertExternalDeclOutput(extDecl.outputRef)
-        @assign decl = DAE.ExternalDecl.EXTERNALDECL(
+        @assign decl = DAE.EXTERNALDECL(
           extDecl.name,
           args,
           ret_arg,
           extDecl.language,
           extDecl.ann,
         )
-        DAE.FunctionDefinition.FUNCTION_EXT(parameters, decl)
+        DAE.FUNCTION_EXT(parameters, decl)
       end
     end
   end
@@ -1563,7 +1570,7 @@ function convertExternalDeclArg(@nospecialize(exp::Expression))::DAE.ExtArg
         begin
           @assign dir =
             directionToAbsyn(direction(component(cref.node)))
-          DAE.ExtArg.EXTARG(
+          DAE.EXTARG(
             toDAE(cref),
             dir,
             toDAE(exp.ty),
@@ -1576,7 +1583,7 @@ function convertExternalDeclArg(@nospecialize(exp::Expression))::DAE.ExtArg
         ),
         dimIndex = SOME(e),
       ) => begin
-        DAE.ExtArg.EXTARGSIZE(
+        DAE.EXTARGSIZE(
           toDAE(cref),
           toDAE(cref.ty),
           toDAE(e),
@@ -1584,7 +1591,7 @@ function convertExternalDeclArg(@nospecialize(exp::Expression))::DAE.ExtArg
       end
 
       _ => begin
-        DAE.ExtArg.EXTARGEXP(
+        DAE.EXTARGEXP(
           toDAE(exp),
           toDAE(typeOf(exp)),
         )
@@ -1602,11 +1609,11 @@ function convertExternalDeclOutput(cref::ComponentRef)::DAE.ExtArg
       CREF(__) => begin
         @assign dir =
           directionToAbsyn(direction(component(cref.node)))
-        DAE.ExtArg.EXTARG(toDAE(cref), dir, toDAE(cref.ty))
+        DAE.EXTARG(toDAE(cref), dir, toDAE(cref.ty))
       end
 
       _ => begin
-        DAE.ExtArg.NOEXTARG()
+        DAE.NOEXTARG()
       end
     end
   end
@@ -1650,7 +1657,7 @@ function makeTypeVar(compNode::InstNode)::DAE.Var
     toDAE(attr, visibility(compNode)),
     toDAE(getType(comp)),
     toDAE(getBinding(comp)),
-    false,
+    #bind_from_outside,
     NONE(),
   )
   return typeVar

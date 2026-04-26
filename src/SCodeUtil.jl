@@ -7390,7 +7390,7 @@ function stripCommentsFromStatement(
         ()
       end
 
-      SCode.Statement.ALG_ASSERT(__) => begin
+      SCode.ALG_ASSERT(__) => begin
         @assign stmt.comment = stripCommentsFromComment(stmt.comment, stripAnn, stripCmt)
         ()
       end

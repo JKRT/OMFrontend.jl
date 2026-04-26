@@ -712,6 +712,7 @@ function removeQuotesFromFlatModelica(fmStr::String)
   return String(take!(buffer))
 end
 
+include("GUI_API.jl")
 include("precompilation.jl")
 
 end #OMFrontend

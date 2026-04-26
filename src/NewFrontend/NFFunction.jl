@@ -435,7 +435,7 @@ function makeDAEType(fn::M_FUNCTION, boxTypes::Bool = false)::DAE.Type
       toDAE,
     )
     @assign params =
-      _cons(DAE.FuncArg.FUNCARG(pname, ptype, pconst, ppar, pdefault), params)
+      _cons(DAE.FUNCARG(pname, ptype, pconst, ppar, pdefault), params)
   end
   @assign params = listReverse(params)
   @assign ty = if boxTypes

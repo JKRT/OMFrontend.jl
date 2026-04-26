@@ -31,11 +31,11 @@ function conditionToDAE(
   @assign daeCond = begin
     @match c begin
       Condition.ZERO_DERIVATIVE => begin
-        (idx, DAE.derivativeCond.ZERO_DERIVATIVE())
+        (idx, DAE.ZERO_DERIVATIVE())
       end
 
       Condition.NO_DERIVATIVE => begin
-        (idx, DAE.derivativeCond.NO_DERIVATIVE(DAE.Exp.ICONST(99)))
+        (idx, DAE.NO_DERIVATIVE(DAE.ICONST(99)))
       end
     end
   end
@@ -48,7 +48,7 @@ function toDAE(fnDer::FunctionDerivative)::DAE.FunctionDefinition
   local order::Int
 
   @match INTEGER_EXPRESSION(order) = fnDer.order
-  @assign derDef = DAE.FunctionDefinition.FUNCTION_DER_MAPPER(
+  @assign derDef = DAE.FUNCTION_DER_MAPPER(
     name(listHead(getCachedFuncs(fnDer.derivedFn))),
     name(listHead(getCachedFuncs(fnDer.derivativeFn))),
     order,

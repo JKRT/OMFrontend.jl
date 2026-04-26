@@ -1458,11 +1458,11 @@ function checkOuterClass(outerCls::InstNode)
     def = SCodeUtil.getClassDef(definition(outerCls))
     () = begin
       @match def begin
-        SCode.ClassDef.DERIVED(modifications = SCode.Mod.NOMOD(__)) => begin
+        SCode.DERIVED(modifications = SCode.NOMOD(__)) => begin
           ()
         end
 
-        SCode.ClassDef.DERIVED(__) => begin
+        SCode.DERIVED(__) => begin
           #=  Outer short class definition without mod is ok.
           =#
           #=  Outer short class definition with mod is an error.

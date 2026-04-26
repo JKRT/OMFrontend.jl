@@ -1928,15 +1928,15 @@ function mergeRedeclaredClassPrefixes(origPrefs::Prefixes, redeclPrefs::Prefixes
           io
         end
 
-        (Absyn.INNER(__), Absyn.InnerOuter.INNER(__))  => begin
+        (Absyn.INNER(__), Absyn.INNER(__))  => begin
           io
         end
 
-        (Absyn.OUTER(__), Absyn.InnerOuter.OUTER(__))  => begin
+        (Absyn.OUTER(__), Absyn.OUTER(__))  => begin
           io
         end
 
-        (Absyn.INNER_OUTER(__), Absyn.InnerOuter.INNER_OUTER(__))  => begin
+        (Absyn.INNER_OUTER(__), Absyn.INNER_OUTER(__))  => begin
           io
         end
 

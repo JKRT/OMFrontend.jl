@@ -129,7 +129,9 @@ jobs:
 
       - name: Build
         # bash on every runner so we do not have to escape quotes for PowerShell.
-        # --compiled-modules=no keeps CI fast by skipping native code caching.
+        # Compiled modules are enabled (Julia default) so CI exercises the
+        # PrecompileTools @compile_workload that ships with OMFrontend; this
+        # mirrors what end users hit on first `using OMFrontend`.
         # We Pkg.develop every sibling because Project.toml [sources] only
         # applies to direct deps; DoubleEnded is a transitive dep (via ListUtil)
         # and otherwise falls back to the registry version, which has [compat]
@@ -137,7 +139,7 @@ jobs:
         shell: bash
         working-directory: OMFrontend.jl
         run: |
-          julia --compiled-modules=no --color=yes --project -e '
+          julia --color=yes --project -e '
             import Pkg
             Pkg.Registry.add("General")
             Pkg.Registry.add(Pkg.RegistrySpec(url = "https://github.com/OpenModelica/OpenModelicaRegistry.git"))
@@ -162,7 +164,7 @@ jobs:
         shell: bash
         working-directory: OMFrontend.jl
         run: |
-          julia --compiled-modules=no --color=yes --project -e '
+          julia --color=yes --project -e '
             import Pkg
             Pkg.test("OMFrontend"; coverage = true)
           '
@@ -275,7 +277,7 @@ jobs:
         shell: bash
         working-directory: OMFrontend.jl
         run: |
-          julia --compiled-modules=no --color=yes --project -e '
+          julia --color=yes --project -e '
             import Pkg
             Pkg.Registry.add("General")
             Pkg.Registry.add(Pkg.RegistrySpec(url = "https://github.com/OpenModelica/OpenModelicaRegistry.git"))
@@ -300,7 +302,7 @@ jobs:
         shell: bash
         working-directory: OMFrontend.jl
         run: |
-          julia --compiled-modules=no --color=yes --project -e '
+          julia --color=yes --project -e '
             import Pkg
             Pkg.test("OMFrontend")
           '

@@ -14,8 +14,8 @@ deliberately low-level; for higher-level use cases, prefer OM.jl.
 
 ## Release Status
 
-This package is in alpha. Interfaces may change without notice, and breaking
-changes should be expected between releases.
+This package is under active development. Interfaces may change without
+notice, and breaking changes should be expected between releases.
 
 ## Example Use
 

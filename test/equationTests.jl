@@ -29,7 +29,16 @@ arrayfancyReference="class ArrayFancy
   Real x[9](start = 9.0);
   Real x[10](start = 10.0);
 equation
-  {x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8], x[9], x[10]} = {der(x[i]) for i in 1:10};
+  x[1] = der(x[1]);
+  x[2] = der(x[2]);
+  x[3] = der(x[3]);
+  x[4] = der(x[4]);
+  x[5] = der(x[5]);
+  x[6] = der(x[6]);
+  x[7] = der(x[7]);
+  x[8] = der(x[8]);
+  x[9] = der(x[9]);
+  x[10] = der(x[10]);
 end ArrayFancy;
 "
 

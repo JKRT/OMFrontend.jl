@@ -1,27 +1,31 @@
 #= /*
 * This file is part of OpenModelica.
 *
-* Copyright (c) 1998-CurrentYear, Open Source Modelica Consortium (OSMC),
+* Copyright (c) 1998-2026, Open Source Modelica Consortium (OSMC),
 * c/o Linköpings universitet, Department of Computer and Information Science,
 * SE-58183 Linköping, Sweden.
 *
 * All rights reserved.
 *
-* THIS PROGRAM IS PROVIDED UNDER THE TERMS OF GPL VERSION 3 LICENSE OR
-* THIS OSMC PUBLIC LICENSE (OSMC-PL) VERSION 1.2.
+* THIS PROGRAM IS PROVIDED UNDER THE TERMS OF AGPL VERSION 3 LICENSE OR
+* THIS OSMC PUBLIC LICENSE (OSMC-PL) VERSION 1.8.
 * ANY USE, REPRODUCTION OR DISTRIBUTION OF THIS PROGRAM CONSTITUTES
-* RECIPIENT'S ACCEPTANCE OF THE OSMC PUBLIC LICENSE OR THE GPL VERSION 3,
-* ACCORDING TO RECIPIENTS CHOICE.
+* RECIPIENT'S ACCEPTANCE OF THE OSMC PUBLIC LICENSE OR THE GNU AGPL
+* VERSION 3, ACCORDING TO RECIPIENTS CHOICE.
 *
-* The OpenModelica software and the Open Source Modelica
-* Consortium (OSMC) Public License (OSMC-PL) are obtained
-* from OSMC, either from the above address,
-* from the URLs: http:www.ida.liu.se/projects/OpenModelica or
-* http:www.openmodelica.org, and in the OpenModelica distribution.
-* GNU version 3 is obtained from: http:www.gnu.org/copyleft/gpl.html.
+* The OpenModelica software and the OSMC (Open Source Modelica Consortium)
+* Public License (OSMC-PL) are obtained from OSMC, either from the above
+* address, from the URLs:
+* http://www.openmodelica.org or
+* https://github.com/OpenModelica/ or
+* http://www.ida.liu.se/projects/OpenModelica,
+* and in the OpenModelica distribution.
+*
+* GNU AGPL version 3 is obtained from:
+* https://www.gnu.org/licenses/licenses.html#GPL
 *
 * This program is distributed WITHOUT ANY WARRANTY; without
-* even the implied warranty of  MERCHANTABILITY or FITNESS
+* even the implied warranty of MERCHANTABILITY or FITNESS
 * FOR A PARTICULAR PURPOSE, EXCEPT AS EXPRESSLY SET FORTH
 * IN THE BY RECIPIENT SELECTED SUBSIDIARY LICENSE CONDITIONS OF OSMC-PL.
 *
@@ -1549,10 +1553,29 @@ function replaceComponent(component::Component, node::COMPONENT_NODE{String, Int
   return node
 end
 
+#=
+  Per-pointer write counters used by `OMFRONTEND_INST_PROFILE`. They are
+  populated by `updateClass` and `updateComponent!` below. The dispatcher
+  in `instClassInProgramFM2` resets them at entry and dumps a summary
+  at exit (see `dumpInstDiagnostics` in NFInst.jl).
+=#
+const CLASS_PTR_WRITES = Dict{UInt64, Tuple{String, Int}}()
+const COMPONENT_PTR_WRITES = Dict{UInt64, Tuple{String, Int}}()
+
+function _profileEnabled()
+  return get(ENV, "OMFRONTEND_INST_PROFILE", "false") == "true"
+end
+
 function updateComponent!(component::Component, node::InstNode)
    node = begin
     @match node begin
       COMPONENT_NODE(__)  => begin
+        if _profileEnabled()
+          local k = objectid(node.component)
+          local nm = try string(node.name) catch; "?" end
+          local prev = get(COMPONENT_PTR_WRITES, k, (nm, 0))
+          COMPONENT_PTR_WRITES[k] = (prev[1], prev[2] + 1)
+        end
         P_Pointer.update(node.component, component)
         node
       end
@@ -1577,6 +1600,12 @@ function updateClass(cls::Class, node::InstNode)
    node = begin
     @match node begin
       CLASS_NODE(__)  => begin
+        if _profileEnabled()
+          local k = objectid(node.cls)
+          local nm = try string(node.name) catch; "?" end
+          local prev = get(CLASS_PTR_WRITES, k, (nm, 0))
+          CLASS_PTR_WRITES[k] = (prev[1], prev[2] + 1)
+        end
         P_Pointer.update(node.cls, cls)
         node
       end
@@ -2056,10 +2085,12 @@ function isEmpty(node::InstNode)
 end
 
 function isReplaceable(node::InstNode)
-  local elem;
   repl = @match node begin
-    CLASS_NODE(__) =>  SCodeUtil.isElementReplaceable(node.definition)
-    COMPONENT_NODE(definition = SOME(elem)) =>  SCodeUtil.isElementReplaceable(elem)
+    CLASS_NODE(__) => SCodeUtil.isElementReplaceable(node.definition)
+    COMPONENT_NODE(__) => begin
+      local comp = P_Pointer.access(node.component)
+      isDefinition(comp) && SCodeUtil.isElementReplaceable(definition(comp))
+    end
     _ => false
   end
   return repl

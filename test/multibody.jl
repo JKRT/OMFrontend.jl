@@ -8,8 +8,8 @@ Test for the multibody components
   @test typeof(flattenModelInMSL_TST("$(prefix).FixedTranslation")[1]) == OMFrontend.Frontend.FLAT_MODEL
   @test typeof(flattenModelInMSL_TST("$(prefix).Body")[1]) == OMFrontend.Frontend.FLAT_MODEL
   @test typeof(flattenModelInMSL_TST("$(prefix).BodyShape")[1]) == OMFrontend.Frontend.FLAT_MODEL
-  @test_broken typeof(flattenModelInMSL_TST("$(prefix).BodyBox")[1]) == OMFrontend.Frontend.FLAT_MODEL
-  @test_broken typeof(flattenModelInMSL_TST("$(prefix).BodyCylinder")[1]) == OMFrontend.Frontend.FLAT_MODEL
+  @test typeof(flattenModelInMSL_TST("$(prefix).BodyBox")[1]) == OMFrontend.Frontend.FLAT_MODEL
+  @test typeof(flattenModelInMSL_TST("$(prefix).BodyCylinder")[1]) == OMFrontend.Frontend.FLAT_MODEL
   @test typeof(flattenModelInMSL_TST("$(prefix).PointMass")[1]) == OMFrontend.Frontend.FLAT_MODEL
   @test typeof(flattenModelInMSL_TST("$(prefix).Mounting1D")[1]) == OMFrontend.Frontend.FLAT_MODEL
 end

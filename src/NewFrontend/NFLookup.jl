@@ -1,3 +1,38 @@
+#= /*
+* This file is part of OpenModelica.
+*
+* Copyright (c) 1998-2026, Open Source Modelica Consortium (OSMC),
+* c/o Linköpings universitet, Department of Computer and Information Science,
+* SE-58183 Linköping, Sweden.
+*
+* All rights reserved.
+*
+* THIS PROGRAM IS PROVIDED UNDER THE TERMS OF AGPL VERSION 3 LICENSE OR
+* THIS OSMC PUBLIC LICENSE (OSMC-PL) VERSION 1.8.
+* ANY USE, REPRODUCTION OR DISTRIBUTION OF THIS PROGRAM CONSTITUTES
+* RECIPIENT'S ACCEPTANCE OF THE OSMC PUBLIC LICENSE OR THE GNU AGPL
+* VERSION 3, ACCORDING TO RECIPIENTS CHOICE.
+*
+* The OpenModelica software and the OSMC (Open Source Modelica Consortium)
+* Public License (OSMC-PL) are obtained from OSMC, either from the above
+* address, from the URLs:
+* http://www.openmodelica.org or
+* https://github.com/OpenModelica/ or
+* http://www.ida.liu.se/projects/OpenModelica,
+* and in the OpenModelica distribution.
+*
+* GNU AGPL version 3 is obtained from:
+* https://www.gnu.org/licenses/licenses.html#GPL
+*
+* This program is distributed WITHOUT ANY WARRANTY; without
+* even the implied warranty of MERCHANTABILITY or FITNESS
+* FOR A PARTICULAR PURPOSE, EXCEPT AS EXPRESSLY SET FORTH
+* IN THE BY RECIPIENT SELECTED SUBSIDIARY LICENSE CONDITIONS OF OSMC-PL.
+*
+* See the full OSMC Public License conditions for more details.
+*
+*/ =#
+
 struct MatchTypeStruct{T0 <: Integer}
   FOUND::T0
   NOT_FOUND::T0
@@ -7,10 +42,56 @@ end
 const MatchType = MatchTypeStruct(1, 2, 3)
 const MatchTypeTy = Int
 
+#=
+  Variant A of the `lookupClassName` cache. Key is
+  `(objectid(name), objectid(scope), checkAccessViolations)` — no
+  stringification, no allocation per call. Enabled by env var
+  `OMFRONTEND_LOOKUP_CACHE=true`. Default off so behavior is unchanged.
+
+  Hit rate depends on whether `Absyn.Path` objects are reused across calls:
+  parser-built paths in the SCode tree are reused, runtime-constructed paths
+  may not be. With `objectid` keys, two equivalent paths from different
+  allocations miss the cache, but hits are nanosecond-cheap.
+
+  Reset at translation entry via `resetLookupCache` from `resetInstDiagnostics`.
+  Hit/miss counters surface in `dumpInstDiagnostics` when
+  `OMFRONTEND_INST_PROFILE=true`.
+=#
+const LOOKUP_CLASS_CACHE = Dict{Tuple{UInt64, UInt64, Bool}, InstNode}()
+const LOOKUP_CLASS_HITS  = Ref(0)
+const LOOKUP_CLASS_MISSES = Ref(0)
+
+function _lookupCacheEnabled()
+  return get(ENV, "OMFRONTEND_LOOKUP_CACHE", "false") == "true"
+end
+
+function resetLookupCache()
+  empty!(LOOKUP_CLASS_CACHE)
+  LOOKUP_CLASS_HITS[] = 0
+  LOOKUP_CLASS_MISSES[] = 0
+  return nothing
+end
+
 function lookupClassName(name::Absyn.Path, scope::InstNode, info::SourceInfo, checkAccessViolations::Bool = true)
   local node::InstNode
   local state::LookupState
-  local LS_REF = Ref{LookupState}(LOOKUP_STATE_BEGIN())
+  local LS_REF::Ref{LookupState}
+  if _lookupCacheEnabled()
+    local key = (objectid(name), objectid(scope), checkAccessViolations)
+    local cached = get(LOOKUP_CLASS_CACHE, key, nothing)
+    if cached !== nothing
+      LOOKUP_CLASS_HITS[] += 1
+      return cached::InstNode
+    end
+    LS_REF = Ref{LookupState}(LOOKUP_STATE_BEGIN())
+    node = lookupNameWithError(name, scope, info, "error", LS_REF, checkAccessViolations)
+    state = LS_REF.x
+    assertClass(state, node, name, info)
+    LOOKUP_CLASS_CACHE[key] = node
+    LOOKUP_CLASS_MISSES[] += 1
+    return node
+  end
+  LS_REF = Ref{LookupState}(LOOKUP_STATE_BEGIN())
   node = lookupNameWithError(name, scope, info, "error", LS_REF, checkAccessViolations)
   state = LS_REF.x
   assertClass(state, node, name, info)

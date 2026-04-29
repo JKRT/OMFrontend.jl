@@ -6,6 +6,7 @@ on:
     branches:
       - master
     tags: '*'
+  workflow_dispatch:
 
 # Cancel superseded runs of the same ref, but keep master runs queued.
 concurrency:
@@ -21,15 +22,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version:
-          - '1.12'
+        # Listing every combination explicitly keeps the matrix predictable.
         include:
           - os: ubuntu-latest
             arch: x64
+            version: '1.12'
           - os: windows-latest
             arch: x64
+            version: '1.12'
           - os: macos-latest
             arch: aarch64
+            version: '1.12'
 
     steps:
       - name: Checkout OMFrontend.jl
@@ -37,10 +40,9 @@ jobs:
         with:
           path: OMFrontend.jl
 
-      # The Project.toml [sources] block points at sibling working copies in
-      # ../<name>.jl. CI only checks out OMFrontend.jl by default, so we lay the
-      # siblings out alongside it before Pkg.resolve runs. Using actions/checkout
-      # for each sibling keeps the clones token-authenticated and shallow.
+      # Project.toml [sources] (and the transitive [sources] inside DoubleEnded
+      # / ListUtil) points at sibling working copies in ../<name>.jl. We lay
+      # the siblings out alongside the main checkout so Pkg.resolve finds them.
       - name: Checkout Absyn.jl
         uses: actions/checkout@v4
         with:
@@ -61,6 +63,13 @@ jobs:
           repository: JKRT/DAE.jl
           ref: master
           path: DAE.jl
+
+      - name: Checkout DoubleEnded.jl
+        uses: actions/checkout@v4
+        with:
+          repository: OpenModelica/DoubleEnded.jl
+          ref: master
+          path: DoubleEnded.jl
 
       - name: Checkout ImmutableList.jl
         uses: actions/checkout@v4
@@ -116,25 +125,52 @@ jobs:
 
       - name: Build
         # bash on every runner so we do not have to escape quotes for PowerShell.
-        # --compiled-modules=no keeps CI fast by skipping native code caching.
+        # Compiled modules are enabled (Julia default) so CI exercises the
+        # PrecompileTools @compile_workload that ships with OMFrontend; this
+        # mirrors what end users hit on first `using OMFrontend`.
+        # We Pkg.develop every sibling because Project.toml [sources] only
+        # applies to direct deps; DoubleEnded is a transitive dep (via ListUtil)
+        # and otherwise falls back to the registry version, which has [compat]
+        # incompatible with the local ImmutableList 0.3.0.
         shell: bash
         working-directory: OMFrontend.jl
         run: |
-          julia --compiled-modules=no --color=yes --project -e '
+          julia --color=yes --project -e '
             import Pkg
             Pkg.Registry.add("General")
-            Pkg.Registry.add(Pkg.RegistrySpec(url = "https://github.com/JKRT/OpenModelicaRegistry.git"))
+            Pkg.Registry.add(Pkg.RegistrySpec(url = "https://github.com/OpenModelica/OpenModelicaRegistry.git"))
+            siblings = [
+              "../Absyn.jl",
+              "../ArrayUtil.jl",
+              "../DAE.jl",
+              "../DoubleEnded.jl",
+              "../ImmutableList.jl",
+              "../ListUtil.jl",
+              "../MetaModelica.jl",
+              "../OMParser.jl",
+              "../OMRuntimeExternalC.jl",
+              "../SCode.jl",
+            ]
+            Pkg.develop([Pkg.PackageSpec(path = p) for p in siblings])
             Pkg.build(; verbose = true)
             Pkg.resolve()
           '
 
       - name: Test
+        # Drive runtests.jl directly (rather than via Pkg.test) so we reuse
+        # the precompile cache from the Build step. Pkg.test would create a
+        # sandboxed test environment with a different manifest hash and
+        # re-precompile the entire dep graph from scratch -- including the
+        # OMFrontend @compile_workload, which loads MSL_4_0_0 and is the
+        # most expensive part of the build. Test is already in [deps] so
+        # no [extras] merging is needed.
+        # --code-coverage=user emits .cov files next to user source for the
+        # downstream julia-processcoverage step.
         shell: bash
         working-directory: OMFrontend.jl
         run: |
-          julia --compiled-modules=no --color=yes --project -e '
-            import Pkg
-            Pkg.test("OMFrontend"; coverage = true)
+          julia --color=yes --code-coverage=user --project=. -e '
+            include("test/runtests.jl")
           '
 
       - uses: julia-actions/julia-processcoverage@v1

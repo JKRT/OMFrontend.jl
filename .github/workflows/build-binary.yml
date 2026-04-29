@@ -1,0 +1,233 @@
+name: Build Binary
+
+# Manual-only workflow: builds OMFrontend with PackageCompiler. Two targets
+# are supported, selected by the `target` input:
+#
+#   sysimage  Per-platform Julia sysimage (.so / .dylib / .dll). End users
+#             start it with `julia --sysimage=<file> --project=<env>`.
+#   app       Self-contained executable directory built via create_app.
+#             Entry point is OMFrontend.julia_main (a small CLI defined in
+#             src/cli.jl). Run as `bin/OMFrontend [command] [options]`.
+#   both      Build both artifacts in the same job.
+#
+# Trigger from the Actions UI ("Run workflow").
+
+on:
+  workflow_dispatch:
+    inputs:
+      julia-version:
+        description: 'Julia version to use for the build'
+        required: false
+        default: '1.12'
+      target:
+        description: 'What to build: sysimage, app, or both'
+        required: false
+        default: 'app'
+        type: choice
+        options:
+          - sysimage
+          - app
+          - both
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ${{ inputs.target }} - ${{ matrix.label }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            arch: x64
+            ext: so
+            label: linux-x64
+          - os: macos-latest
+            arch: aarch64
+            ext: dylib
+            label: macos-aarch64
+          - os: windows-latest
+            arch: x64
+            ext: dll
+            label: windows-x64
+
+    steps:
+      - name: Checkout OMFrontend.jl
+        uses: actions/checkout@v4
+        with:
+          path: OMFrontend.jl
+
+      # Same sibling layout as ci.yml: Project.toml [sources] points at
+      # ../<name>.jl working copies, so we Pkg.develop them from disk.
+      - name: Checkout Absyn.jl
+        uses: actions/checkout@v4
+        with: { repository: OpenModelica/Absyn.jl, ref: master, path: Absyn.jl }
+
+      - name: Checkout ArrayUtil.jl
+        uses: actions/checkout@v4
+        with: { repository: JKRT/ArrayUtil.jl, ref: master, path: ArrayUtil.jl }
+
+      - name: Checkout DAE.jl
+        uses: actions/checkout@v4
+        with: { repository: JKRT/DAE.jl, ref: master, path: DAE.jl }
+
+      - name: Checkout DoubleEnded.jl
+        uses: actions/checkout@v4
+        with: { repository: OpenModelica/DoubleEnded.jl, ref: master, path: DoubleEnded.jl }
+
+      - name: Checkout ImmutableList.jl
+        uses: actions/checkout@v4
+        with: { repository: OpenModelica/ImmutableList.jl, ref: master, path: ImmutableList.jl }
+
+      - name: Checkout ListUtil.jl
+        uses: actions/checkout@v4
+        with: { repository: JKRT/ListUtil.jl, ref: master, path: ListUtil.jl }
+
+      - name: Checkout MetaModelica.jl
+        uses: actions/checkout@v4
+        with: { repository: OpenModelica/MetaModelica.jl, ref: master, path: MetaModelica.jl }
+
+      - name: Checkout OMParser.jl
+        uses: actions/checkout@v4
+        with: { repository: OpenModelica/OMParser.jl, ref: master, path: OMParser.jl }
+
+      - name: Checkout OMRuntimeExternalC.jl
+        uses: actions/checkout@v4
+        with: { repository: OpenModelica/OMRuntimeExternalC.jl, ref: master, path: OMRuntimeExternalC.jl }
+
+      - name: Checkout SCode.jl
+        uses: actions/checkout@v4
+        with: { repository: OpenModelica/SCode.jl, ref: master, path: SCode.jl }
+
+      - name: Setup Julia ${{ inputs.julia-version }}-${{ matrix.arch }}
+        uses: julia-actions/setup-julia@v2
+        with:
+          version: ${{ inputs.julia-version }}
+          arch: ${{ matrix.arch }}
+
+      - uses: julia-actions/cache@v2
+        with:
+          cache-registries: 'true'
+
+      - name: Resolve project (develop siblings)
+        shell: bash
+        working-directory: OMFrontend.jl
+        run: |
+          julia --color=yes --project -e '
+            import Pkg
+            Pkg.Registry.add("General")
+            Pkg.Registry.add(Pkg.RegistrySpec(url = "https://github.com/OpenModelica/OpenModelicaRegistry.git"))
+            siblings = [
+              "../Absyn.jl",
+              "../ArrayUtil.jl",
+              "../DAE.jl",
+              "../DoubleEnded.jl",
+              "../ImmutableList.jl",
+              "../ListUtil.jl",
+              "../MetaModelica.jl",
+              "../OMParser.jl",
+              "../OMRuntimeExternalC.jl",
+              "../SCode.jl",
+            ]
+            Pkg.develop([Pkg.PackageSpec(path = p) for p in siblings])
+            Pkg.build(; verbose = true)
+            Pkg.resolve()
+            Pkg.instantiate()
+          '
+
+      - name: Install PackageCompiler in the default environment
+        # The stacked default @v#.# environment is on LOAD_PATH alongside the
+        # active project, so PackageCompiler is importable from inside
+        # `julia --project=OMFrontend.jl` without polluting OMFrontend's
+        # Project.toml or Manifest.toml.
+        shell: bash
+        run: |
+          julia --color=yes -e 'import Pkg; Pkg.add("PackageCompiler")'
+
+      - name: Build sysimage
+        if: ${{ inputs.target == 'sysimage' || inputs.target == 'both' }}
+        shell: bash
+        working-directory: OMFrontend.jl
+        env:
+          OMFRONTEND_SYSIMAGE_EXT: ${{ matrix.ext }}
+        run: |
+          julia --color=yes --project bin/build_sysimage.jl
+
+      - name: Smoke-test sysimage
+        if: ${{ inputs.target == 'sysimage' || inputs.target == 'both' }}
+        shell: bash
+        working-directory: OMFrontend.jl
+        run: |
+          julia --color=yes --project --sysimage=OMFrontend-sysimage.${{ matrix.ext }} -e '
+            using OMFrontend
+            pkgRoot = dirname(dirname(realpath(Base.find_package("OMFrontend"))))
+            mo = joinpath(pkgRoot, "test", "Models", "HelloWorld.mo")
+            p = OMFrontend.parseFile(mo, 1)
+            s = OMFrontend.translateToSCode(p)
+            OMFrontend.instantiateSCodeToDAE("HelloWorld", s)
+            println("Sysimage smoke test OK")
+          '
+
+      - name: Upload sysimage artifact
+        if: ${{ inputs.target == 'sysimage' || inputs.target == 'both' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: OMFrontend-sysimage-${{ matrix.label }}
+          path: OMFrontend.jl/OMFrontend-sysimage.${{ matrix.ext }}
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Build app
+        if: ${{ inputs.target == 'app' || inputs.target == 'both' }}
+        shell: bash
+        working-directory: OMFrontend.jl
+        run: |
+          julia --color=yes --project bin/build_app.jl
+
+      - name: Smoke-test app (--help / --version / parse)
+        if: ${{ inputs.target == 'app' || inputs.target == 'both' }}
+        shell: bash
+        working-directory: OMFrontend.jl
+        run: |
+          set -euxo pipefail
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            BIN=OMFrontend-app/bin/OMFrontend.exe
+          else
+            BIN=OMFrontend-app/bin/OMFrontend
+          fi
+          "$BIN" --version
+          "$BIN" help
+          "$BIN" help flatten
+          "$BIN" parse test/Models/HelloWorld.mo
+          echo "App smoke test OK"
+
+      - name: Package app for upload
+        if: ${{ inputs.target == 'app' || inputs.target == 'both' }}
+        shell: bash
+        working-directory: OMFrontend.jl
+        run: |
+          # Compress the app directory so symlinks and exec bits survive.
+          # actions/upload-artifact@v4 uses zip internally, which loses both
+          # on POSIX runners; we tar.gz on Linux/macOS and zip on Windows.
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            powershell -NoProfile -Command \
+              "Compress-Archive -Path OMFrontend-app -DestinationPath OMFrontend-app-${{ matrix.label }}.zip -Force"
+          else
+            tar -czf OMFrontend-app-${{ matrix.label }}.tar.gz OMFrontend-app
+          fi
+
+      - name: Upload app artifact
+        if: ${{ inputs.target == 'app' || inputs.target == 'both' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: OMFrontend-app-${{ matrix.label }}
+          path: |
+            OMFrontend.jl/OMFrontend-app-${{ matrix.label }}.tar.gz
+            OMFrontend.jl/OMFrontend-app-${{ matrix.label }}.zip
+          if-no-files-found: error
+          retention-days: 14

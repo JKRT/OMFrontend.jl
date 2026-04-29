@@ -1,5 +1,5 @@
 [![Github Action CI](https://github.com/JKRT/OMFrontend.jl/workflows/CI/badge.svg)](https://github.com/JKRT/OMFrontend.jl/actions/workflows/ci.yml)
-[![Documentation](https://img.shields.io/badge/docs-stable-blue.svg)](https://JKRT.github.io/OMFrontend.jl/)
+[![Documentation](https://img.shields.io/badge/docs-dev-blue.svg)](https://JKRT.github.io/OMFrontend.jl/dev/)
 [![License: OSMC-PL](https://img.shields.io/badge/license-OSMC--PL-lightgrey.svg)](OSMC-License.txt)
 
 # OMFrontend.jl

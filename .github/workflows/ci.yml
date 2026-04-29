@@ -6,6 +6,7 @@ on:
     branches:
       - master
     tags: '*'
+  workflow_call:
   workflow_dispatch:
 
 # Cancel superseded runs of the same ref, but keep master runs queued.

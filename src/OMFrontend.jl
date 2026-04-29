@@ -204,6 +204,12 @@ function Base.string(ft::Frontend.FunctionTreeImpl.Tree)
   return replace(String(take!(buffer)), "\\n" => "\n")
 end
 
+"""
+    toFlatModelica(fm, fLst; printBindingTypes = false)
+    toFlatModelica((fm, fLst); printBindingTypes = false)
+
+Render a flat model and its function tree as textual flat Modelica.
+"""
 function toFlatModelica(fm, fLst::List; printBindingTypes = false)
   s = replace(Frontend.toFlatString(fm, fLst, printBindingTypes), "\\n" => "\n")
   s = replace(s, "OMC_NO_CLOCK.sample" => "sample")

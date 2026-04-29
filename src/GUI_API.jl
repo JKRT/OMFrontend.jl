@@ -68,6 +68,11 @@ const Point2D = Tuple{Float64, Float64}
 const Extent2D = Tuple{Point2D, Point2D}
 const Color3 = Tuple{Int, Int, Int}
 
+"""
+    SourceSpan
+
+Byte offsets and one-based line/column positions for a source range.
+"""
 struct SourceSpan
   startOffset::Int
   endOffset::Int
@@ -77,28 +82,53 @@ struct SourceSpan
   endColumn::Int
 end
 
+"""
+    TextPatch
+
+Replacement text for a source range, expressed in byte offsets.
+"""
 struct TextPatch
   startOffset::Int
   endOffset::Int
   replacement::String
 end
 
+"""
+    ValidationResult
+
+Result of validating a loaded Modelica session.
+"""
 struct ValidationResult
   ok::Bool
   message::String
 end
 
+"""
+    OperationResult
+
+Result of a mutating diagram/model operation.
+"""
 struct OperationResult
   ok::Bool
   message::String
   resourceId::Union{Nothing, String}
 end
 
+"""
+    SaveResult
+
+Path and byte count returned after saving a model session.
+"""
 struct SaveResult
   path::String
   bytesWritten::Int
 end
 
+"""
+    DiagramNode
+
+Diagram or icon placement data for one component declaration.
+"""
 struct DiagramNode
   componentPath::String
   classPath::String
@@ -111,6 +141,11 @@ struct DiagramNode
   rawAnnotation::Union{Nothing, String}
 end
 
+"""
+    DiagramConnection
+
+Diagram connection data extracted from a `connect(...)` equation.
+"""
 struct DiagramConnection
   id::String
   classPath::String
@@ -122,6 +157,11 @@ struct DiagramConnection
   rawAnnotation::Union{Nothing, String}
 end
 
+"""
+    DiagramModel
+
+Coordinate system, component nodes, and connections for one class view.
+"""
 struct DiagramModel
   classPath::String
   view::Symbol
@@ -151,6 +191,11 @@ struct ConnectionIndex
   lineAnnotation::Dict{String, Any}
 end
 
+"""
+    ModelSession
+
+Parsed Modelica source plus indexes used by the GUI editing API.
+"""
 mutable struct ModelSession
   path::String
   sourceText::String
@@ -169,6 +214,12 @@ const COMPILE_DELEGATE = Ref{Any}(nothing)
 const SIMULATE_DELEGATE = Ref{Any}(nothing)
 const EXPORT_FM_DELEGATE = Ref{Any}(nothing)
 
+"""
+    setExecutionDelegates!(; compileModel = nothing, simulateModel = nothing, exportFlatModelica = nothing)
+
+Register callbacks used by `compileModel`, `simulateModel`, and
+`exportFlatModelica`. Each callback receives `(classPath, tempPath; kwargs...)`.
+"""
 function setExecutionDelegates!(;
                                 compileModel = nothing,
                                 simulateModel = nothing,
@@ -185,11 +236,21 @@ function setExecutionDelegates!(;
   return nothing
 end
 
+"""
+    loadModel(path::String) -> ModelSession
+
+Load, parse, and index a Modelica source file for GUI inspection and editing.
+"""
 function loadModel(path::String)::ModelSession
   sourceText = read(path, String)
   return _buildSession(path, sourceText)
 end
 
+"""
+    validateModel(session::ModelSession, classPath::String) -> ValidationResult
+
+Return the current validation result for `classPath` in a loaded session.
+"""
 function validateModel(session::ModelSession, classPath::String)::ValidationResult
   if !haskey(session.classNodes, classPath)
     return ValidationResult(false, "Class '$classPath' was not found in the loaded session.")
@@ -197,6 +258,12 @@ function validateModel(session::ModelSession, classPath::String)::ValidationResu
   return session.lastValidation
 end
 
+"""
+    getDiagram(session::ModelSession, classPath::String; view = :Diagram) -> DiagramModel
+
+Extract component placements and connections for the requested class view.
+Use `view = :Icon` to read icon placements instead of diagram placements.
+"""
 function getDiagram(session::ModelSession,
                     classPath::String;
                     view::Symbol = :Diagram)::DiagramModel
@@ -247,6 +314,12 @@ function getDiagram(session::ModelSession,
   return DiagramModel(classPath, view, coordinateSystem, nodes, connections)
 end
 
+"""
+    updateComponentPlacement(session::ModelSession, componentPath::String, placementPatch) -> OperationResult
+
+Merge `placementPatch` into a component's `Placement` annotation and update the
+session source text.
+"""
 function updateComponentPlacement(session::ModelSession,
                                   componentPath::String,
                                   placementPatch)::OperationResult
@@ -270,6 +343,12 @@ function updateComponentPlacement(session::ModelSession,
                      "Updated placement for '$resolvedPath'.")
 end
 
+"""
+    createConnection(session::ModelSession, fromConnector::String, toConnector::String; classPath = nothing, linePatch = nothing) -> OperationResult
+
+Insert a `connect(...)` equation and optional `Line` annotation into the owning
+class.
+"""
 function createConnection(session::ModelSession,
                           fromConnector::String,
                           toConnector::String;
@@ -299,6 +378,11 @@ function createConnection(session::ModelSession,
   return result
 end
 
+"""
+    updateConnectionAnnotation(session::ModelSession, connectionId::String, linePatch) -> OperationResult
+
+Merge `linePatch` into an existing connection's `Line` annotation.
+"""
 function updateConnectionAnnotation(session::ModelSession,
                                     connectionId::String,
                                     linePatch)::OperationResult
@@ -318,6 +402,11 @@ function updateConnectionAnnotation(session::ModelSession,
                      connectionId)
 end
 
+"""
+    deleteConnection(session::ModelSession, connectionId::String) -> OperationResult
+
+Remove a connection equation from the loaded session.
+"""
 function deleteConnection(session::ModelSession, connectionId::String)::OperationResult
   if !haskey(session.connectionIndex, connectionId)
     return OperationResult(false, "Connection '$connectionId' was not found.", nothing)
@@ -332,20 +421,40 @@ function deleteConnection(session::ModelSession, connectionId::String)::Operatio
                      "Deleted connection '$connectionId'.")
 end
 
+"""
+    saveModel(session::ModelSession; targetPath = nothing) -> SaveResult
+
+Write the current session source text to disk.
+"""
 function saveModel(session::ModelSession; targetPath::Union{Nothing, String} = nothing)::SaveResult
   path = targetPath === nothing ? session.path : targetPath
   write(path, session.sourceText)
   return SaveResult(path, sizeof(session.sourceText))
 end
 
+"""
+    compileModel(session::ModelSession, classPath::String; kwargs...)
+
+Call the registered compile delegate for `classPath`.
+"""
 function compileModel(session::ModelSession, classPath::String; kwargs...)
   return _invokeExecutionDelegate(COMPILE_DELEGATE[], session, classPath; kwargs...)
 end
 
+"""
+    simulateModel(session::ModelSession, classPath::String; kwargs...)
+
+Call the registered simulate delegate for `classPath`.
+"""
 function simulateModel(session::ModelSession, classPath::String; kwargs...)
   return _invokeExecutionDelegate(SIMULATE_DELEGATE[], session, classPath; kwargs...)
 end
 
+"""
+    exportFlatModelica(session::ModelSession, classPath::String; kwargs...)
+
+Call the registered flat-Modelica export delegate for `classPath`.
+"""
 function exportFlatModelica(session::ModelSession, classPath::String; kwargs...)
   return _invokeExecutionDelegate(EXPORT_FM_DELEGATE[], session, classPath; kwargs...)
 end

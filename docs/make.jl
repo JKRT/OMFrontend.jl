@@ -2,13 +2,18 @@ using Documenter
 using OMFrontend
 
 # Documenter pulls docstrings from loaded modules. Loading OMFrontend brings in
-# its public API plus the Util/NewFrontend submodules that the API pages
-# reference via @docs blocks.
+# its public API plus the GUI API that the API page references via @docs blocks.
 DocMeta.setdocmeta!(OMFrontend, :DocTestSetup, :(using OMFrontend); recursive = true)
+DocMeta.setdocmeta!(
+    OMFrontend.GUI_API,
+    :DocTestSetup,
+    :(using OMFrontend; using OMFrontend.GUI_API);
+    recursive = true,
+)
 
 makedocs(
     sitename = "OMFrontend.jl",
-    modules = [OMFrontend],
+    modules = [OMFrontend, OMFrontend.GUI_API],
     authors = "John Tinnerholm <johti17@liu.se>, Martin Sjölund <martin.sjolund@liu.se>, Adrian Pop <adrian.pop@liu.se>",
     repo = Documenter.Remotes.GitHub("JKRT", "OMFrontend.jl"),
     format = Documenter.HTML(;

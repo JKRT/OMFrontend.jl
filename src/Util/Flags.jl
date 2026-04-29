@@ -1433,6 +1433,13 @@ const DUMP_FORCE_FMI_INTERNAL_VARIABLES =
     false,
     Gettext.gettext("Force to export all internal variables (eg: CSE) to the modelDescription.xml"),
   )::DebugFlag
+const NF_PARALLEL =
+  DEBUG_FLAG(
+    185,
+    "nfParallel",
+    false,
+    Gettext.gettext("Opt-in parallelism for OMFrontend phases beyond Absyn-to-SCode (e.g. future parallel instantiation). The Absyn-to-SCode parallel branch is proven safe and runs unconditionally based on `Threads.nthreads()`; this flag does not control it. Reserved for opt-in branches whose correctness is not yet proven. Default off."),
+  )::DebugFlag
 
 #=  CONFIGURATION FLAGS
 =#

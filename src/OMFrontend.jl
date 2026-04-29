@@ -230,32 +230,47 @@ function exportSCodeRepresentationToFile(fileName::String, contents::List{SCode.
   close(fdesc)
 end
 
-function initLoadMSL(;MSL_Version = "MSL:3.2.3")
+function initLoadMSL(;MSL_Version = "MSL:3.2.3", forceReload::Bool = false)
   # For printing
   @info "Loading MSL\n\t Version: $(MSL_Version)"
   MSL_Version = replace(MSL_Version, "." => "_")
   MSL_Version = replace(MSL_Version, ":" => "_")
+  if forceReload
+    delete!(LIBRARY_CACHE, MSL_Version)
+  end
   @time return loadMSL(MSL_Version = MSL_Version)
   @info "MSL successfully Loaded"
 end
 
 """
-`function flattenModelWithMSL(modelName::String, fileName::String; MSL_Version = "MSL:3.2.3")`
+`function flattenModelWithMSL(modelName::String, fileName::String; MSL_Version = "MSL:3.2.3", forceReload = false)`
 
 Returns the flat representation of a modelica model along with the functions used and define by the model.
 See the keyword argument for specifying MSL version.
 Valid versions are 3.2.3 and 4.0.0.
+
+When `forceReload` is true, any cached MSL under this version key is dropped
+and the standard library is reparsed and re-translated from disk. This is useful
+when the on-disk MSL has changed during the session, or to force a clean
+benchmark of the MSL load path.
 """
 function flattenModelWithMSL(modelName::String,
                              fileName::String;
                              MSL_Version = "MSL:3.2.3",
-                             scalarize = true)
-  if !haskey(LIBRARY_CACHE, MSL_Version)
+                             scalarize = true,
+                             forceReload::Bool = false)
+  # `loadMSL` stores the cache entry under the normalized key (no `.` or `:`),
+  # so we must normalize before consulting `LIBRARY_CACHE`. Otherwise the
+  # haskey check always misses for the conventional `"MSL:3.2.3"` form and
+  # MSL is reloaded on every call.
+  local mslKey = replace(replace(MSL_Version, "." => "_"), ":" => "_")
+  if forceReload
+    delete!(LIBRARY_CACHE, mslKey)
+  end
+  if !haskey(LIBRARY_CACHE, mslKey)
     initLoadMSL(MSL_Version = MSL_Version)
   end
-  MSL_Version = replace(MSL_Version, "." => "_")
-  MSL_Version = replace(MSL_Version, ":" => "_")
-  local lib = LIBRARY_CACHE[MSL_Version]
+  local lib = LIBRARY_CACHE[mslKey]
   local absynProgram = parseFile(fileName)
   local sCodeProgram = translateToSCode(absynProgram)
   #= Add builtin function to the program (model) and instantiate it =#
@@ -267,19 +282,26 @@ function flattenModelWithMSL(modelName::String,
 end
 
 """
-`function flattenModelWithMSL(modelName::String; MSL_Version = "MSL:3.2.3", scalarize = true)`
+`function flattenModelWithMSL(modelName::String; MSL_Version = "MSL:3.2.3", scalarize = true, forceReload = false)`
 
-Flatten an MSL model by name.
+Flatten an MSL model by name. When `forceReload` is true, the cached MSL
+under this version key is dropped and the standard library is reparsed and
+re-translated from disk before the model is instantiated.
 """
 function flattenModelWithMSL(modelName::String;
                              MSL_Version = "MSL:3.2.3",
-                             scalarize = true)
-  if !haskey(LIBRARY_CACHE, MSL_Version)
+                             scalarize = true,
+                             forceReload::Bool = false)
+  # See note on the other `flattenModelWithMSL` overload: normalize the key
+  # before the cache lookup so the cache is actually consulted.
+  local mslKey = replace(replace(MSL_Version, "." => "_"), ":" => "_")
+  if forceReload
+    delete!(LIBRARY_CACHE, mslKey)
+  end
+  if !haskey(LIBRARY_CACHE, mslKey)
     initLoadMSL(MSL_Version = MSL_Version)
   end
-  MSL_Version = replace(MSL_Version, "." => "_")
-  MSL_Version = replace(MSL_Version, ":" => "_")
-  local lib = LIBRARY_CACHE[MSL_Version]
+  local lib = LIBRARY_CACHE[mslKey]
   (FM, cache) = instantiateSCodeToFM(modelName, lib; scalarize = scalarize)
 end
 
@@ -575,7 +597,7 @@ function _rebuildClassWithElements(cls::SCode.Element, newEls)::SCode.Element
 end
 
 """
-    flattenModelWithLibraries(modelName, fileName; libraries, MSL, MSL_Version, scalarize)
+    flattenModelWithLibraries(modelName, fileName; libraries, MSL, MSL_Version, scalarize, forceReload)
 
 Flatten a Modelica model combining it with one or more pre-loaded libraries.
 Libraries are looked up in `LIBRARY_CACHE` by their cache keys. If MSL is
@@ -585,13 +607,18 @@ Ordering in the combined program (leftmost = highest priority):
 1. User model code
 2. User libraries (in order of `libraries` vector)
 3. MSL (if `MSL=true`)
+
+When `forceReload=true` and `MSL=true`, the cached MSL under the requested
+version key is dropped before instantiation. User libraries in `libraries`
+are not affected by this flag; reload them via `loadLibrary` if needed.
 """
 function flattenModelWithLibraries(modelName::String,
                                    fileName::String;
                                    libraries::Vector{String} = String[],
                                    MSL::Bool = false,
                                    MSL_Version::String = "MSL:3.2.3",
-                                   scalarize::Bool = true)
+                                   scalarize::Bool = true,
+                                   forceReload::Bool = false)
   local absynProgram = parseFile(fileName)
   local combined = translateToSCode(absynProgram)
   for libKey in libraries
@@ -601,10 +628,13 @@ function flattenModelWithLibraries(modelName::String,
     combined = listAppend(combined, LIBRARY_CACHE[libKey])
   end
   if MSL
-    if !haskey(LIBRARY_CACHE, MSL_Version)
+    local mslKey = replace(replace(MSL_Version, "." => "_"), ":" => "_")
+    if forceReload
+      delete!(LIBRARY_CACHE, mslKey)
+    end
+    if !haskey(LIBRARY_CACHE, mslKey)
       initLoadMSL(MSL_Version = MSL_Version)
     end
-    local mslKey = replace(replace(MSL_Version, "." => "_"), ":" => "_")
     combined = listAppend(combined, LIBRARY_CACHE[mslKey])
   end
   (FM, cache) = instantiateSCodeToFM(modelName, combined; scalarize = scalarize)

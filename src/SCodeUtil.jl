@@ -6062,8 +6062,8 @@ function setElementVisibility(
         SCode.IMPORT(imp, inVisibility, info)
       end
 
-      (SCode.DEFINEUNIT(name, _, unit, weight, info), _) => begin
-        SCode.DEFINEUNIT(name, inVisibility, unit, weight, info)
+      (SCode.DEFINEUNIT(name, _, unit, weight), _) => begin
+        SCode.DEFINEUNIT(name, inVisibility, unit, weight)
       end
     end
   end

@@ -858,7 +858,7 @@ function vectorizeAlgorithm(
             end
           end
         end
-        @match list(INTEGER_EXPRESSION(size = stop)) = dimensions
+        @match list(INTEGER_EXPRESSION(value = stop)) = dimensions
         @assign range = RANGE_EXPRESSION(
           TYPE_ARRAY(TYPE_INTEGER(), dimensions),
           INTEGER_EXPRESSION(1),

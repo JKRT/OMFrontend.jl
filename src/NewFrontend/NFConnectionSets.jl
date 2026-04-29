@@ -113,7 +113,8 @@ function addConnection(connection, broken, sets)
     sets = merge(conn.lhs, conn.rhs, sets);
   end
   return sets
-"""end #=addConnection"""
+end #=addConnection=#
+
 function addConnector(conn, sets)
   sets = addList(split(conn), sets)
   #@debug "After addConnector $(string(sets))"

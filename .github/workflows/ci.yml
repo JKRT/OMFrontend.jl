@@ -130,13 +130,30 @@ jobs:
       - name: Build
         # bash on every runner so we do not have to escape quotes for PowerShell.
         # --compiled-modules=no keeps CI fast by skipping native code caching.
+        # We Pkg.develop every sibling because Project.toml [sources] only
+        # applies to direct deps; DoubleEnded is a transitive dep (via ListUtil)
+        # and otherwise falls back to the registry version, which has [compat]
+        # incompatible with the local ImmutableList 0.3.0.
         shell: bash
         working-directory: OMFrontend.jl
         run: |
           julia --compiled-modules=no --color=yes --project -e '
             import Pkg
             Pkg.Registry.add("General")
-            Pkg.Registry.add(Pkg.RegistrySpec(url = "https://github.com/JKRT/OpenModelicaRegistry.git"))
+            Pkg.Registry.add(Pkg.RegistrySpec(url = "https://github.com/OpenModelica/OpenModelicaRegistry.git"))
+            siblings = [
+              "../Absyn.jl",
+              "../ArrayUtil.jl",
+              "../DAE.jl",
+              "../DoubleEnded.jl",
+              "../ImmutableList.jl",
+              "../ListUtil.jl",
+              "../MetaModelica.jl",
+              "../OMParser.jl",
+              "../OMRuntimeExternalC.jl",
+              "../SCode.jl",
+            ]
+            Pkg.develop([Pkg.PackageSpec(path = p) for p in siblings])
             Pkg.build(; verbose = true)
             Pkg.resolve()
           '
@@ -261,7 +278,20 @@ jobs:
           julia --compiled-modules=no --color=yes --project -e '
             import Pkg
             Pkg.Registry.add("General")
-            Pkg.Registry.add(Pkg.RegistrySpec(url = "https://github.com/JKRT/OpenModelicaRegistry.git"))
+            Pkg.Registry.add(Pkg.RegistrySpec(url = "https://github.com/OpenModelica/OpenModelicaRegistry.git"))
+            siblings = [
+              "../Absyn.jl",
+              "../ArrayUtil.jl",
+              "../DAE.jl",
+              "../DoubleEnded.jl",
+              "../ImmutableList.jl",
+              "../ListUtil.jl",
+              "../MetaModelica.jl",
+              "../OMParser.jl",
+              "../OMRuntimeExternalC.jl",
+              "../SCode.jl",
+            ]
+            Pkg.develop([Pkg.PackageSpec(path = p) for p in siblings])
             Pkg.build(; verbose = true)
             Pkg.resolve()
           '

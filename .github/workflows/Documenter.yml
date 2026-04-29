@@ -88,7 +88,7 @@ jobs:
           julia --project -e '
             import Pkg
             Pkg.Registry.add("General")
-            Pkg.Registry.add(Pkg.RegistrySpec(url = "https://github.com/JKRT/OpenModelicaRegistry.git"))
+            Pkg.Registry.add(Pkg.RegistrySpec(url = "https://github.com/OpenModelica/OpenModelicaRegistry.git"))
             Pkg.build(; verbose = true)
             Pkg.resolve()
           '

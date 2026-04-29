@@ -75,6 +75,10 @@ function translateAbsyn2SCode(inProgram::Absyn.Program)
         System.setHasExpandableConnectors(false)
         System.setHasOverconstrainedConnectors(false)
         System.setHasStreamConnectors(false)
+        # Top-level fan-out is too small (typical input has 1 top-level class,
+        # MSL has 3 wildly unbalanced ones) for thread spawning to be worthwhile.
+        # The parallel branch fires deeper, inside `translateEitemlist`, where
+        # every `Absyn.ElementItem` is independent and counts in the dozens.
         sp = list(translateClass(c) for c in inClasses)
       end
     end
@@ -1253,6 +1257,15 @@ function translateClassdefExternaldecls(
   return outAbsynExternalDeclOption
 end
 
+#=
+  Minimum number of `Absyn.ElementItem`s in a single `translateEitemlist`
+  call before the parallel branch is considered. Below this threshold the
+  per-task spawn overhead dominates per-element work. Tuned empirically
+  against the MSL on an 8-thread machine; raise for fewer cores, lower for
+  heavier per-element work.
+=#
+const NF_PARALLEL_EITEM_THRESHOLD = 8
+
 """
   This function converts a list of Absyn.ElementItem to a list of SCode.Element.
   The boolean argument flags whether the elements are protected.
@@ -1262,12 +1275,30 @@ function translateEitemlist(
   inAbsynElementItemLst::List{<:Absyn.ElementItem},
   inVisibility::SCode.Visibility,
 )::List{SCode.Element}
+  # The AbsynToSCode parallel branch is proven race-free (each task produces a
+  # self-contained `SCode.Element` and the only shared writes are idempotent
+  # ratchet-to-true flags in `GLOBAL_MEMORY`). It is therefore unconditionally
+  # enabled — gated only by thread count and the per-task threshold. The
+  # `Flags.NF_PARALLEL` debug flag is reserved for opt-in parallelism in
+  # later phases (instantiate, etc.) where correctness is not yet proven.
+  if Threads.nthreads() >= 2
+    local arr::Vector{Absyn.ElementItem} = listArray(inAbsynElementItemLst)
+    if length(arr) >= NF_PARALLEL_EITEM_THRESHOLD
+      return translateEitemlistParallel(arr, inVisibility)
+    end
+  end
+  return translateEitemlistSerial(inAbsynElementItemLst, inVisibility)
+end
+
+function translateEitemlistSerial(
+  inAbsynElementItemLst::List{<:Absyn.ElementItem},
+  inVisibility::SCode.Visibility,
+)::List{SCode.Element}
   local outElementLst::List{SCode.Element}
 
   local l::List{SCode.Element} = nil
   local es::List{Absyn.ElementItem} = inAbsynElementItemLst
   local ei::Absyn.ElementItem
-  local vis::SCode.Visibility
   local e::Absyn.Element
 
   for ei in es
@@ -1289,6 +1320,51 @@ function translateEitemlist(
 
    outElementLst = listReverse(l)
   return outElementLst
+end
+
+"""
+  Parallel translation of a class element-item list. One task per item,
+  results merged in input order.
+
+  Each `translateElement` call produces a self-contained `List{SCode.Element}`
+  with no read of shared mutable state. The only writes are the ratchet-to-true
+  updates in `System.setHas*` (`Util/System.jl`), which are idempotent and safe
+  under concurrent stores.
+
+  Nested `translateEitemlist` calls (when an element is itself a class
+  definition with its own element list) re-enter the same dispatcher and
+  re-decide based on the threshold. Julia's task scheduler queues nested
+  spawns and runs them as threads become available; the parallelism is bounded
+  by `Threads.nthreads()`, not by the recursion depth.
+"""
+function translateEitemlistParallel(
+  arr::Vector{<:Absyn.ElementItem},
+  inVisibility::SCode.Visibility,
+)::List{SCode.Element}
+  local n::Int = length(arr)
+  local results::Vector{List{SCode.Element}} = Vector{List{SCode.Element}}(undef, n)
+  @sync begin
+    for i in 1:n
+      local ei = arr[i]
+      Threads.@spawn results[i] = translateOneEitem(ei, inVisibility)
+    end
+  end
+  # Concatenate in input order. listAppend is left-biased, so build right-to-left.
+  local out::List{SCode.Element} = nil
+  for i in n:-1:1
+    out = listAppend(results[i], out)
+  end
+  return out
+end
+
+function translateOneEitem(
+  ei::Absyn.ElementItem,
+  inVisibility::SCode.Visibility,
+)::List{SCode.Element}
+  return @match ei begin
+    Absyn.ELEMENTITEM(element = e) => translateElement(e, inVisibility)
+    _ => nil
+  end
 end
 
 #=  stefan

@@ -7,10 +7,56 @@ end
 const MatchType = MatchTypeStruct(1, 2, 3)
 const MatchTypeTy = Int
 
+#=
+  Variant A of the `lookupClassName` cache. Key is
+  `(objectid(name), objectid(scope), checkAccessViolations)` — no
+  stringification, no allocation per call. Enabled by env var
+  `OMFRONTEND_LOOKUP_CACHE=true`. Default off so behavior is unchanged.
+
+  Hit rate depends on whether `Absyn.Path` objects are reused across calls:
+  parser-built paths in the SCode tree are reused, runtime-constructed paths
+  may not be. With `objectid` keys, two equivalent paths from different
+  allocations miss the cache, but hits are nanosecond-cheap.
+
+  Reset at translation entry via `resetLookupCache` from `resetInstDiagnostics`.
+  Hit/miss counters surface in `dumpInstDiagnostics` when
+  `OMFRONTEND_INST_PROFILE=true`.
+=#
+const LOOKUP_CLASS_CACHE = Dict{Tuple{UInt64, UInt64, Bool}, InstNode}()
+const LOOKUP_CLASS_HITS  = Ref(0)
+const LOOKUP_CLASS_MISSES = Ref(0)
+
+function _lookupCacheEnabled()
+  return get(ENV, "OMFRONTEND_LOOKUP_CACHE", "false") == "true"
+end
+
+function resetLookupCache()
+  empty!(LOOKUP_CLASS_CACHE)
+  LOOKUP_CLASS_HITS[] = 0
+  LOOKUP_CLASS_MISSES[] = 0
+  return nothing
+end
+
 function lookupClassName(name::Absyn.Path, scope::InstNode, info::SourceInfo, checkAccessViolations::Bool = true)
   local node::InstNode
   local state::LookupState
-  local LS_REF = Ref{LookupState}(LOOKUP_STATE_BEGIN())
+  local LS_REF::Ref{LookupState}
+  if _lookupCacheEnabled()
+    local key = (objectid(name), objectid(scope), checkAccessViolations)
+    local cached = get(LOOKUP_CLASS_CACHE, key, nothing)
+    if cached !== nothing
+      LOOKUP_CLASS_HITS[] += 1
+      return cached::InstNode
+    end
+    LS_REF = Ref{LookupState}(LOOKUP_STATE_BEGIN())
+    node = lookupNameWithError(name, scope, info, "error", LS_REF, checkAccessViolations)
+    state = LS_REF.x
+    assertClass(state, node, name, info)
+    LOOKUP_CLASS_CACHE[key] = node
+    LOOKUP_CLASS_MISSES[] += 1
+    return node
+  end
+  LS_REF = Ref{LookupState}(LOOKUP_STATE_BEGIN())
   node = lookupNameWithError(name, scope, info, "error", LS_REF, checkAccessViolations)
   state = LS_REF.x
   assertClass(state, node, name, info)

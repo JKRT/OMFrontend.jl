@@ -85,6 +85,11 @@ function instClassInProgramFM2(classPath::Absyn.Path, program::SCode.Program)::T
   local currentProgram = listHead(program)
   resetInstDiagnostics()
   setSettingForInst()
+  # Reset the execstat wall-time baseline so the first `ExecStat.execStat` call
+  # in this translation reports elapsed-since-now, not elapsed-since-module-load.
+  if Flags.isSet(Flags.EXEC_STAT)
+    ExecStat.execStatResetTimer()
+  end
   #=  Create a root node from the given top-level classes. =#
   top = makeTopNode(program)
   name = AbsynUtil.pathString(classPath)
@@ -219,6 +224,7 @@ function instClassInProgramFM2(classPath::Absyn.Path, program::SCode.Program)::T
   dumpFlatModel(flat_model, string(name, "_", "afterVerify"))
   #= TODO: Expand sliced crefs=#
   #= TODO: Combine subscripts =#
+  dumpInstDiagnostics(name)
   return (flat_model, funcs, inst_cls)
 end
 
@@ -2107,6 +2113,84 @@ function resetInstDiagnostics()
   empty!(REINSTANTIATION_CLASSES)
   INST_CLASS_DEPTH[] = 0
   INST_EXPR_DEPTH[] = 0
+  empty!(CLASS_PTR_WRITES)
+  empty!(COMPONENT_PTR_WRITES)
+  resetLookupCache()
+end
+
+"""
+  Dumps the per-class re-instantiation breakdown for one translation. Useful
+  to decide whether sibling parallelism in `applyLocalComponents` is safe
+  unguarded (most siblings hit different class pointers) or needs locking
+  (a few classes account for most of the work).
+
+  Gated on env var `OMFRONTEND_INST_PROFILE=true`. Reads the env at call time
+  so toggling does not require a Julia restart.
+
+  Output: total `instClass` calls, total re-instantiations, concentration ratio
+  (top-5 share of total), and the top-`topN` most re-instantiated classes.
+"""
+function dumpInstDiagnostics(modelName::String; topN::Int = 20)
+  if get(ENV, "OMFRONTEND_INST_PROFILE", "false") != "true"
+    return
+  end
+  local total = INST_CLASS_TOTAL_CALLS[]
+  local reinst = REINSTANTIATION_COUNT[]
+  local uniq = length(REINSTANTIATION_CLASSES)
+  local sorted = sort(Base.collect(REINSTANTIATION_CLASSES), by = last, rev = true)
+  local top5sum = sum(c for (_, c) in sorted[1:min(5, length(sorted))]; init = 0)
+  local conc = total > 0 ? round(100 * top5sum / total; digits = 1) : 0.0
+  println()
+  println("==== Inst diagnostics for ", modelName, " ====")
+  println("  total instClass calls : ", total)
+  println("  reinstantiations      : ", reinst)
+  println("  unique class names    : ", uniq)
+  println("  top-5 share of total  : ", conc, " %")
+  println("  top-", min(topN, length(sorted)), " classes by reinstantiation count:")
+  for (i, (cn, count)) in enumerate(sorted[1:min(topN, length(sorted))])
+    println("    ", lpad(i, 4), "  ", lpad(count, 8), "  ", cn)
+  end
+  # Pointer-write counters (broader signal: every updateClass / updateComponent! call is recorded).
+  local classWrites = Base.collect(values(CLASS_PTR_WRITES))
+  local compWrites  = Base.collect(values(COMPONENT_PTR_WRITES))
+  local classTotal = sum(c for (_, c) in classWrites; init = 0)
+  local compTotal  = sum(c for (_, c) in compWrites;  init = 0)
+  local classMulti = count(x -> x[2] > 1, classWrites)
+  local compMulti  = count(x -> x[2] > 1, compWrites)
+  local classMax   = isempty(classWrites) ? 0 : maximum(c for (_, c) in classWrites)
+  local compMax    = isempty(compWrites)  ? 0 : maximum(c for (_, c) in compWrites)
+  println("  Pointer-write summary:")
+  println("    class pointers      : ", length(classWrites), " unique, ", classTotal, " writes total, ",
+          classMulti, " written more than once, max ", classMax, " writes on a single pointer")
+  println("    component pointers  : ", length(compWrites), " unique, ", compTotal, " writes total, ",
+          compMulti, " written more than once, max ", compMax, " writes on a single pointer")
+  local lookupHits = LOOKUP_CLASS_HITS[]
+  local lookupMisses = LOOKUP_CLASS_MISSES[]
+  local lookupTotal = lookupHits + lookupMisses
+  if lookupTotal > 0
+    local hitRate = round(100 * lookupHits / lookupTotal; digits = 1)
+    println("  lookupClassName cache : ", lookupHits, " hits, ", lookupMisses, " misses (",
+            hitRate, " % hit rate, cache size ", length(LOOKUP_CLASS_CACHE), ")")
+  else
+    println("  lookupClassName cache : disabled (set OMFRONTEND_LOOKUP_CACHE=true to enable)")
+  end
+  if classMulti > 0
+    local sortedClass = sort(Base.collect(CLASS_PTR_WRITES), by = e -> last(last(e)), rev = true)
+    println("  top-", min(topN, length(sortedClass)), " class pointers by write count:")
+    for (i, (_, (nm, count))) in enumerate(sortedClass[1:min(topN, length(sortedClass))])
+      count > 1 || break
+      println("    ", lpad(i, 4), "  ", lpad(count, 8), "  ", nm)
+    end
+  end
+  if compMulti > 0
+    local sortedComp = sort(Base.collect(COMPONENT_PTR_WRITES), by = e -> last(last(e)), rev = true)
+    println("  top-", min(topN, length(sortedComp)), " component pointers by write count:")
+    for (i, (_, (nm, count))) in enumerate(sortedComp[1:min(topN, length(sortedComp))])
+      count > 1 || break
+      println("    ", lpad(i, 4), "  ", lpad(count, 8), "  ", nm)
+    end
+  end
+  println()
 end
 
 function instExpressions(node::InstNode,

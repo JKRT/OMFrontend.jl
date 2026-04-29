@@ -1,6 +1,14 @@
 #=
   Author: John Tinnerholm johti17@liu.se
 =#
+# The test files reference Modelica models via relative paths
+# ("./Models/HelloWorld.mo", "./Equations/...", etc.) and assume cwd is
+# OMFrontend.jl/test/. Pkg.test always cd's there, but when this file is
+# driven directly via `julia -e 'include("test/runtests.jl")'` (as the CI
+# Test step does to reuse the warm precompile cache), cwd stays at the
+# project root. Anchor cwd here so both invocations work.
+cd(@__DIR__)
+
 import Pkg
 
 Pkg.resolve()

@@ -82,6 +82,10 @@ jobs:
       - uses: julia-actions/cache@v2
 
       - name: Instantiate package environment
+        # Same sibling-develop dance as ci.yml: Project.toml [sources] only
+        # applies to direct deps, so transitive deps (e.g. DoubleEnded via
+        # ListUtil) and stale registry versions (e.g. an Absyn without
+        # MetaModelica in its Project.toml) otherwise sneak in.
         shell: bash
         working-directory: OMFrontend.jl
         run: |
@@ -89,16 +93,46 @@ jobs:
             import Pkg
             Pkg.Registry.add("General")
             Pkg.Registry.add(Pkg.RegistrySpec(url = "https://github.com/OpenModelica/OpenModelicaRegistry.git"))
+            siblings = [
+              "../Absyn.jl",
+              "../ArrayUtil.jl",
+              "../DAE.jl",
+              "../DoubleEnded.jl",
+              "../ImmutableList.jl",
+              "../ListUtil.jl",
+              "../MetaModelica.jl",
+              "../OMParser.jl",
+              "../OMRuntimeExternalC.jl",
+              "../SCode.jl",
+            ]
+            Pkg.develop([Pkg.PackageSpec(path = p) for p in siblings])
             Pkg.build(; verbose = true)
             Pkg.resolve()
           '
 
       - name: Instantiate docs environment
+        # The docs environment lives under docs/. Its [sources] entry for
+        # OMFrontend points at "..", but the transitive sibling deps still
+        # need to be developed against the local checkouts to avoid pulling
+        # stale registry versions.
         shell: bash
         working-directory: OMFrontend.jl
         run: |
           julia --project=docs -e '
             import Pkg
+            siblings = [
+              "../Absyn.jl",
+              "../ArrayUtil.jl",
+              "../DAE.jl",
+              "../DoubleEnded.jl",
+              "../ImmutableList.jl",
+              "../ListUtil.jl",
+              "../MetaModelica.jl",
+              "../OMParser.jl",
+              "../OMRuntimeExternalC.jl",
+              "../SCode.jl",
+            ]
+            Pkg.develop([Pkg.PackageSpec(path = p) for p in siblings])
             Pkg.develop(Pkg.PackageSpec(path = pwd()))
             Pkg.instantiate()
           '

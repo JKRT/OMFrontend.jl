@@ -2090,7 +2090,7 @@ end
 
       ARG_TYPED_CALL(__)  => begin
         targs = Vector{TypedArg}(undef, length(call.arguments))
-        tnargs = Vector{TypedNamedArg}(undef, length(tnargs))
+        tnargs = Vector{TypedNamedArg}(undef, length(call.named_args))
         for (i, arg) in enumerate(call.arguments)
            (e, t, v) = arg
            (e, foldArg) = func(e, foldArg)
@@ -3820,7 +3820,7 @@ end
     @match call begin
       UNTYPED_CALL(__)  => begin
         args = Expression[map(arg, func) for arg in call.arguments] #TODO: Can maybe be done inline
-        nargs = Vector{NamedArgs}(undef, length(call.named_args))
+        nargs = Vector{NamedArg}(undef, length(call.named_args))
         for (i,arg) in enumerate(call.named_args)
           (s, e) = arg
           e = map(e, func)
@@ -5716,13 +5716,6 @@ function updateArray!(arrayExpr::ARRAY_EXPRESSION;
   arrayExpr
 end
 
-
-function stringValue(@nospecialize(exp::Expression))
-  fail() #TODO. Double check this -johti17
-  local value::String
-  @match STRING_EXPRESSION(value = value) = ARRAY_EXPRESSION(ty, nil, literal)
-  value
-end
 
 function makeInteger(value::Int)
   local exp::Expression = INTEGER_EXPRESSION(value)

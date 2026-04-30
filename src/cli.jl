@@ -44,9 +44,50 @@
 
   No external argument-parsing dependency is used. The hand-rolled scanner
   in `_parseOpts` keeps the closure of OMFrontend's deps unchanged.
+
+  All terminal output goes through ccall(:write, fd, ...) helpers rather
+  than print/println(stderr, ...). Julia's Base.stderr / Base.stdout are
+  typed as the abstract IO supertype, which juliac --trim=safe cannot
+  resolve to a concrete dispatch. The fd writes are type-stable, work
+  identically in cooked and trimmed binaries, and are sufficient for plain
+  UTF-8 text emission. Use _stdoutPrint(ln) / _stderrPrint(ln) below
+  instead of touching stderr / stdout directly.
 =#
 
 const CLI_PROGRAM = "OMFrontend"
+
+const _STDOUT_FD = Cint(1)
+const _STDERR_FD = Cint(2)
+
+@inline function _writeFD(fd::Cint, msg::String)::Nothing
+    ccall(:write, Cssize_t, (Cint, Ptr{UInt8}, Csize_t),
+          fd, msg, sizeof(msg))
+    return nothing
+end
+
+@inline _stdoutPrint(msg::String)::Nothing   = _writeFD(_STDOUT_FD, msg)
+@inline _stdoutPrintln(msg::String)::Nothing = (_writeFD(_STDOUT_FD, msg); _writeFD(_STDOUT_FD, "\n"))
+@inline _stderrPrint(msg::String)::Nothing   = _writeFD(_STDERR_FD, msg)
+@inline _stderrPrintln(msg::String)::Nothing = (_writeFD(_STDERR_FD, msg); _writeFD(_STDERR_FD, "\n"))
+
+# Read the package version from Project.toml at module load. @__DIR__ is
+# baked at compile time, so this works in both regular and juliac binaries
+# without calling Base.find_package (whose Project.toml-parsing path is
+# itself unresolvable under --trim=safe).
+const _PACKAGE_VERSION = let
+    pfile = joinpath(@__DIR__, "..", "Project.toml")
+    ver = "unknown"
+    if isfile(pfile)
+        for line in eachline(pfile)
+            m = match(r"^version\s*=\s*\"([^\"]+)\"", line)
+            if m !== nothing
+                ver = String(m.captures[1])
+                break
+            end
+        end
+    end
+    ver
+end
 
 const CLI_HELP = """
 Usage: $(CLI_PROGRAM) <command> [options]
@@ -142,13 +183,13 @@ function _cmd_flatten(args::AbstractVector{<:AbstractString})::Cint
     pos, opts = _parseOpts(args, flags, valued)
 
     if _wantsHelp(opts)
-        print(CLI_HELP_FLATTEN)
+        _stdoutPrint(CLI_HELP_FLATTEN)
         return 0
     end
 
     if length(pos) != 1
-        println(stderr, "flatten: expected exactly one model name (got $(length(pos)))")
-        print(stderr, CLI_HELP_FLATTEN)
+        _stderrPrintln("flatten: expected exactly one model name (got $(length(pos)))")
+        _stderrPrint(CLI_HELP_FLATTEN)
         return 2
     end
     modelName = pos[1]
@@ -160,7 +201,7 @@ function _cmd_flatten(args::AbstractVector{<:AbstractString})::Cint
     keepQuotes = haskey(opts, "--keep-quotes")
 
     if file === nothing && mslVersion === nothing
-        println(stderr, "flatten: at least one of --file or --msl is required")
+        _stderrPrintln("flatten: at least one of --file or --msl is required")
         return 2
     end
 
@@ -176,11 +217,11 @@ function _cmd_flatten(args::AbstractVector{<:AbstractString})::Cint
     end
 
     if outPath === nothing
-        print(rendered)
-        endswith(rendered, "\n") || println()
+        _stdoutPrint(rendered)
+        endswith(rendered, "\n") || _stdoutPrint("\n")
     else
         write(outPath, rendered)
-        println(stderr, "Wrote flat Modelica to $(outPath)")
+        _stderrPrintln("Wrote flat Modelica to $(outPath)")
     end
     return 0
 end
@@ -191,13 +232,13 @@ function _cmd_parse(args::AbstractVector{<:AbstractString})::Cint
     pos, opts = _parseOpts(args, flags, valued)
 
     if _wantsHelp(opts)
-        print(CLI_HELP_PARSE)
+        _stdoutPrint(CLI_HELP_PARSE)
         return 0
     end
 
     if length(pos) != 1
-        println(stderr, "parse: expected exactly one path (got $(length(pos)))")
-        print(stderr, CLI_HELP_PARSE)
+        _stderrPrintln("parse: expected exactly one path (got $(length(pos)))")
+        _stderrPrint(CLI_HELP_PARSE)
         return 2
     end
     path    = pos[1]
@@ -207,10 +248,10 @@ function _cmd_parse(args::AbstractVector{<:AbstractString})::Cint
     program = parseFile(path, Int64(grammar))
     msg = "Parsed $(path) successfully (grammar = $(grammar))."
     if outPath === nothing
-        println(msg)
+        _stdoutPrintln(msg)
     else
         write(outPath, string(program))
-        println(stderr, msg, " Dump written to $(outPath).")
+        _stderrPrintln("$(msg) Dump written to $(outPath).")
     end
     return 0
 end
@@ -221,13 +262,13 @@ function _cmd_scode(args::AbstractVector{<:AbstractString})::Cint
     pos, opts = _parseOpts(args, flags, valued)
 
     if _wantsHelp(opts)
-        print(CLI_HELP_SCODE)
+        _stdoutPrint(CLI_HELP_SCODE)
         return 0
     end
 
     if length(pos) != 1
-        println(stderr, "scode: expected exactly one path (got $(length(pos)))")
-        print(stderr, CLI_HELP_SCODE)
+        _stderrPrintln("scode: expected exactly one path (got $(length(pos)))")
+        _stderrPrint(CLI_HELP_SCODE)
         return 2
     end
     path    = pos[1]
@@ -237,31 +278,19 @@ function _cmd_scode(args::AbstractVector{<:AbstractString})::Cint
     scode   = translateToSCode(program)
 
     if outPath === nothing
-        println(string(scode))
+        _stdoutPrintln(string(scode))
     else
         exportSCodeRepresentationToFile(outPath, scode)
-        println(stderr, "Wrote SCode to $(outPath)")
+        _stderrPrintln("Wrote SCode to $(outPath)")
     end
     return 0
 end
 
-function _versionString()::String
-    try
-        project = joinpath(dirname(dirname(realpath(Base.find_package("OMFrontend")))),
-                           "Project.toml")
-        for line in eachline(project)
-            m = match(r"^version\s*=\s*\"([^\"]+)\"", line)
-            m === nothing && continue
-            return m.captures[1]
-        end
-    catch
-    end
-    return "unknown"
-end
+@inline _versionString()::String = _PACKAGE_VERSION
 
 function _cmd_help(args::AbstractVector{<:AbstractString})::Cint
     if isempty(args)
-        print(CLI_HELP)
+        _stdoutPrint(CLI_HELP)
         return 0
     end
     cmd = args[1]
@@ -274,17 +303,17 @@ function _cmd_help(args::AbstractVector{<:AbstractString})::Cint
     elseif cmd in ("help", "version")
         CLI_HELP
     else
-        println(stderr, "help: unknown command \"$(cmd)\"")
-        print(stderr, CLI_HELP)
+        _stderrPrintln("help: unknown command \"$(cmd)\"")
+        _stderrPrint(CLI_HELP)
         return 2
     end
-    print(text)
+    _stdoutPrint(text)
     return 0
 end
 
 function _runCLI(args::AbstractVector{<:AbstractString})::Cint
     if isempty(args)
-        print(CLI_HELP)
+        _stdoutPrint(CLI_HELP)
         return 0
     end
 
@@ -294,7 +323,7 @@ function _runCLI(args::AbstractVector{<:AbstractString})::Cint
     if cmd in ("-h", "--help", "help")
         return _cmd_help(rest)
     elseif cmd in ("-V", "--version", "version")
-        println("$(CLI_PROGRAM) $(_versionString())")
+        _stdoutPrintln("$(CLI_PROGRAM) $(_versionString())")
         return 0
     elseif cmd == "flatten"
         return _cmd_flatten(rest)
@@ -303,8 +332,8 @@ function _runCLI(args::AbstractVector{<:AbstractString})::Cint
     elseif cmd == "scode"
         return _cmd_scode(rest)
     else
-        println(stderr, "Unknown command: $(cmd)")
-        print(stderr, CLI_HELP)
+        _stderrPrintln("Unknown command: $(cmd)")
+        _stderrPrint(CLI_HELP)
         return 2
     end
 end
@@ -319,8 +348,12 @@ code (0 on success, 1 on uncaught error, 2 on usage error).
 function julia_main()::Cint
     try
         return _runCLI(Base.ARGS)
-    catch e
-        println(stderr, "OMFrontend CLI error: ", sprint(showerror, e))
+    catch
+        # Avoid `sprint(showerror, ::Any)` here: the dispatch on Any would
+        # leave juliac --trim=safe with an unresolved call. The default
+        # uncaught-throw handler will still print the exception type and
+        # backtrace, which is all the user needs to file a bug.
+        _stderrPrintln("OMFrontend CLI error: see uncaught throw above.")
         return 1
     end
 end

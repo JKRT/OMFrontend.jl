@@ -498,7 +498,7 @@ function mapFoldCallShallowRef(@nospecialize(call::Call), @nospecialize(func::Fu
 
       ARG_TYPED_CALL(__)  => begin
         targs = Vector{TypedArg}(undef, length(call.arguments))
-        tnargs = Vector{TypedNamedArg}(undef, length(tnargs))
+        tnargs = Vector{TypedNamedArg}(undef, length(call.named_args))
         for (i, arg) in enumerate(call.arguments)
            (e, t, v) = arg
            (e, foldArg) = func(e, foldArg)

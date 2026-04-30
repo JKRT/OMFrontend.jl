@@ -77,8 +77,12 @@ Improving the speed of precompilation would improve the feel of this package
 by a lot.
 """
 function __init__()
-  packagePath = dirname(realpath(Base.find_package("OMFrontend")))
-  packagePath *= "/.."
+  # Base.find_package returns nothing when OMFrontend is baked into a
+  # PackageCompiler sysimage; fall back to the source dir captured at build time.
+  pkg = Base.find_package("OMFrontend")
+  packagePath = pkg === nothing ?
+      abspath(joinpath(@__DIR__, "..")) :
+      dirname(realpath(pkg)) * "/.."
   # Load builtin library if not already in cache (e.g. when precompile workload is disabled)
   if !haskey(NFModelicaBuiltinCache, "NFModelicaBuiltin")
     pathToLib = packagePath * "/lib/NFModelicaBuiltin.mo"

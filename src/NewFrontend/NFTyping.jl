@@ -2217,7 +2217,7 @@ function typeMatrixRef(
   local res::Vector{Expression} = Vector{Expression}(undef, length(elements))
   local var::VariabilityType
   local ty::NFType = TYPE_UNKNOWN()
-  local tys::Vector{NFType} = Vector{Expression}(undef, length(elements))
+  local tys::Vector{NFType} = Vector{NFType}(undef, length(elements))
   #local resTys::Vector{NFType} = NFType[]
   local n::Int = 2
   local next_origin::ORIGIN_Type = setFlag(origin, ORIGIN_SUBEXPRESSION)
@@ -2278,7 +2278,7 @@ function typeMatrix(
   local res::Vector{Expression} = Vector{Expression}(undef, length(elements))
   local var::VariabilityType
   local ty::NFType = TYPE_UNKNOWN()
-  local tys::Vector{NFType} = Vector{Expression}(undef, length(elements))
+  local tys::Vector{NFType} = Vector{NFType}(undef, length(elements))
   #local resTys::Vector{NFType} = NFType[]
   local n::Int = 2
   local next_origin::ORIGIN_Type = setFlag(origin, ORIGIN_SUBEXPRESSION)

@@ -1,0 +1,37 @@
+name: Nightly
+
+on:
+  schedule:
+    # GitHub schedules use UTC. These two slots cover 22:00 Swedish time
+    # across CET/CEST; the guard job below lets only the matching slot run CI.
+    - cron: '0 20 * * *'
+    - cron: '0 21 * * *'
+  workflow_dispatch:
+
+# Repository watchers receive Actions results according to their GitHub
+# notification settings.
+jobs:
+  swedish-time:
+    name: Check Swedish time
+    runs-on: ubuntu-latest
+    outputs:
+      run-ci: ${{ steps.clock.outputs.run-ci }}
+    steps:
+      - name: Check whether it is 22:00 in Sweden
+        id: clock
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "run-ci=true" >> "$GITHUB_OUTPUT"
+          elif [[ "$(TZ=Europe/Stockholm date +%H)" == "22" ]]; then
+            echo "run-ci=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run-ci=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  ci:
+    name: Project CI
+    needs: swedish-time
+    if: ${{ needs.swedish-time.outputs.run-ci == 'true' }}
+    uses: ./.github/workflows/ci.yml
+    secrets: inherit

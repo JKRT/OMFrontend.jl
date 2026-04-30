@@ -82,7 +82,7 @@ end
   end
 
   @Record INT_FLAG begin
-    data::Integer
+    data::Int
   end
 
   @Record INT_LIST_FLAG begin
@@ -3484,8 +3484,8 @@ function getConfigBool(inFlag::ConfigFlag)::Bool
 end
 
 """Returns the value of an integer configuration flag."""
-function getConfigInt(inFlag::ConfigFlag)::Integer
-  local outValue::Integer
+function getConfigInt(inFlag::ConfigFlag)::Int
+  local outValue::Int
 
   @match INT_FLAG(data = outValue) = getConfigValue(inFlag)
   return outValue

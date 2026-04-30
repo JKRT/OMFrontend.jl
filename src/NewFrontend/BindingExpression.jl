@@ -3739,15 +3739,32 @@ function mapCref(cref::ComponentRef, @nospecialize(func::Function)) ::ComponentR
     local rest::ComponentRef
     @match cref begin
       COMPONENT_REF_CREF(origin = Origin.CREF)  => begin
-        subs = cref.subscripts #list(mapExp(s, func) for s in cref.subscripts)
-        tmp = listReverse(subs)
-        nSubs::List{Subscript} = nil
-        while tmp !== nil
-          @match Cons{Subscript}(s, tmp) = tmp
-          nSubs = Cons{Subscript}(mapExp(s, func), nSubs)
-        end
         rest = mapCref(cref.restCref, func)
-        COMPONENT_REF_CREF(cref.node, nSubs, cref.ty, cref.origin, rest)
+        subs = cref.subscripts
+        if listEmpty(subs)
+          if referenceEq(rest, cref.restCref)
+            cref
+          else
+            COMPONENT_REF_CREF(cref.node, subs, cref.ty, cref.origin, rest)
+          end
+        else
+          tmp = listReverse(subs)
+          nSubs::List{Subscript} = nil
+          anySubChanged = false
+          while tmp !== nil
+            @match Cons{Subscript}(s, tmp) = tmp
+            ms = mapExp(s, func)
+            if !referenceEq(s, ms)
+              anySubChanged = true
+            end
+            nSubs = Cons{Subscript}(ms, nSubs)
+          end
+          if !anySubChanged && referenceEq(rest, cref.restCref)
+            cref
+          else
+            COMPONENT_REF_CREF(cref.node, anySubChanged ? nSubs : subs, cref.ty, cref.origin, rest)
+          end
+        end
       end
       _  => begin
         cref
@@ -3845,8 +3862,22 @@ end
       end
 
       TYPED_CALL(__)  => begin
-        args = Expression[map(arg, func) for arg in call.arguments]
-        TYPED_CALL(call.fn, call.ty, call.var, args, call.attributes)
+        local origArgs = call.arguments
+        local n = length(origArgs)
+        local args = Vector{Expression}(undef, n)
+        local anyChanged = false
+        for i = 1:n
+          local mapped = map(origArgs[i], func)
+          if !referenceEq(origArgs[i], mapped)
+            anyChanged = true
+          end
+          args[i] = mapped
+        end
+        if anyChanged
+          TYPED_CALL(call.fn, call.ty, call.var, args, call.attributes)
+        else
+          call
+        end
       end
 
       UNTYPED_ARRAY_CONSTRUCTOR(__)  => begin
@@ -3953,11 +3984,31 @@ one expression.
         end
       end
       CREF_EXPRESSION(__)  => begin
-        CREF_EXPRESSION(exp.ty, mapCref(exp.cref, func))
+        local newCref = mapCref(exp.cref, func)
+        if referenceEq(newCref, exp.cref)
+          exp
+        else
+          CREF_EXPRESSION(exp.ty, newCref)
+        end
       end
 
       ARRAY_EXPRESSION(__)  => begin
-        ARRAY_EXPRESSION(exp.ty, Expression[map(e, func) for e in exp.elements], exp.literal)
+        local origElements = exp.elements
+        local n = length(origElements)
+        local newElements = Vector{Expression}(undef, n)
+        local anyChanged = false
+        for i = 1:n
+          local mapped = map(origElements[i], func)
+          if !referenceEq(origElements[i], mapped)
+            anyChanged = true
+          end
+          newElements[i] = mapped
+        end
+        if anyChanged
+          ARRAY_EXPRESSION(exp.ty, newElements, exp.literal)
+        else
+          exp
+        end
       end
 
       MATRIX_EXPRESSION(__)  => begin

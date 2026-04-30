@@ -83,10 +83,10 @@ end
 
 function string(s::Sets)
   str = "Nodes:" * toString(s.nodes) * "\n"
-  str *= "Node Count:" * string(s.nodeCount) * "\n"
+  str *= "Node Count:$(s.nodeCount)\n"
   str *= "Elements:\n"
   for e in s.elements
-    str *= toString(e[1]) * "| node_index:" * string(e[2]) * "\n"
+    str *= "$(toString(e[1]))| node_index:$(e[2])\n"
   end
   return str
 end

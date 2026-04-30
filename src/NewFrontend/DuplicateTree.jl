@@ -703,8 +703,8 @@ function fromVector(
   local tree::Tree = EMPTY()
   local key::Key
   local value::Value
-  for i in 1:length(inValues)
-     tree = add(tree, inKeys[i], inValues[i], conflictFunc)
+  for (key, val) in zip(inKeys, inValues)
+     tree = add(tree, key, val, conflictFunc)
   end
   return tree
 end

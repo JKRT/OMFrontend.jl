@@ -805,7 +805,7 @@ function assignArrayElement(
             arrayExpElements = arrayElements(value)
           else
             local valElems = arrayElements(value)
-            arrayExpElements = Expression[assignArrayElement(arrayExp.elements[i], rest_subs, valElems[i]) for i in 1:length(arrayExp.elements)]
+            arrayExpElements = Expression[assignArrayElement(e, rest_subs, valElems[i]) for (i, e) in enumerate(arrayExp.elements)]
           end
           ARRAY_EXPRESSION(arrayExp.ty, arrayExpElements, arrayExp.literal)
         end

@@ -3535,8 +3535,7 @@ end
 
       ARRAY_EXPRESSION(__)  => begin
         local elems = exp.elements::Vector{Expression}
-        for i in 1:length(elems)
-          local e = elems[i]
+        for (i, e) in enumerate(elems)
           elems[i] = func(e)::Expression
         end
         #ARRAY_EXPRESSION(exp.ty, Expression[func(e) for e in exp.elements], exp.literal)

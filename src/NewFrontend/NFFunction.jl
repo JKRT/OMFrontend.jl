@@ -1024,14 +1024,14 @@ function typeNodeCache(@nospecialize(functionNode::InstNode))::Vector{M_FUNCTION
   #=  Type the function(s) if not already done. =#
   if !typed
     #functions = M_FUNCTION[typeFunctionSignature(f) for f in functions]
-    for i in 1:length(functions)
-      functions[i] = typeFunctionSignature(functions[i]) #TODO Investigate if this approch works
+    for (i, f) in enumerate(functions)
+      functions[i] = typeFunctionSignature(f) #TODO Investigate if this approch works
     end
     #@time local cache = C_FUNCTION(functions, true, special)
     cache.typed = true
     setFuncCache(fn_node, cache)
-    for i in 1:length(functions)
-      cache.funcs[i] = typeFunctionBody(functions[i])
+    for (i, f) in enumerate(functions)
+      cache.funcs[i] = typeFunctionBody(f)
     end
     setFuncCache(fn_node, cache)
   end

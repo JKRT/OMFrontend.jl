@@ -147,6 +147,7 @@ include("./FrontendUtil/Prefix.jl")
 #= Include interfaces and aliases New Frontend=#
 include("./FrontendInterfaces/NFInterfaces.jl")
 include("./FrontendInterfaces/NFAlias.jl")
+include("./NewFrontend/NFPerfHelpers.jl")
 #= Other modules =#
 include("./NewFrontend/NFExpression.jl")
 include("./NewFrontend/NFType.jl")

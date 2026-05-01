@@ -1610,8 +1610,10 @@ function evalBinaryScalarProduct(@nospecialize(exp1::Expression), @nospecialize(
         ARRAY_EXPRESSION(__),
       ) where {(length(exp1.elements) == length(exp2.elements))} => begin
          exp = makeZero(elem_ty)
-        for (e1, e2) in zip(exp1.elements, exp2.elements)
-           exp = evalBinaryAdd(exp, evalBinaryMul(e1, e2))
+         local elems1 = exp1.elements
+         local elems2 = exp2.elements
+        for i in eachindex(elems1)
+           exp = evalBinaryAdd(exp, evalBinaryMul(elems1[i], elems2[i]))
         end
         exp
       end
@@ -2445,13 +2447,15 @@ end
     local args::List{Expression}
     @match c begin
       TYPED_CALL(__) => begin
-        cArgs = try
-          Expression[evalExp_impl(arg, target) for arg in c.arguments]
+        local cArgs = try
+          mapPreservingEq(c.arguments, arg -> evalExp_impl(arg, target))
         catch e
           @debug "evalCall: failed to evaluate arguments" AbsynUtil.pathString(name(c.fn)) [toString(a) for a in c.arguments]
           rethrow()
         end
-        c = TYPED_CALL(c.fn, c.ty, c.var, cArgs, c.attributes)
+        if cArgs !== c.arguments
+          c = TYPED_CALL(c.fn, c.ty, c.var, cArgs, c.attributes)
+        end
         if isBuiltin(c.fn)
           res = bindingExpMap(
             CALL_EXPRESSION(c),

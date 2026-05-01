@@ -2041,6 +2041,9 @@ function mapFoldCrefShallow(cref::ComponentRef, @nospecialize(func::Function), a
 end
 
 @nospecializeinfer function mapFoldCallIteratorsShallow(iters::List{Tuple{InstNode, Expression}}, @nospecialize(func::Function), arg::ArgT)  where {ArgT}
+  if listEmpty(iters)
+    return (iters, arg)
+  end
 
   local outIters::List{Tuple{InstNode, Expression}} = nil
 
@@ -2252,11 +2255,7 @@ end
       end
       CREF_EXPRESSION(__)  => begin
          (cr, arg) = mapFoldCrefShallow(exp.cref, func, arg)
-        if referenceEq(exp.cref, cr)
-          exp
-        else
-          CREF_EXPRESSION(exp.ty, cr)
-        end
+        reuseIfRefEqual(exp, exp.cref, cr, c -> CREF_EXPRESSION(exp.ty, c))
       end
       ARRAY_EXPRESSION(__)  => begin
         (expV, arg) = ArrayUtil.mapFold(exp.elements, func, arg)
@@ -2286,11 +2285,7 @@ end
 
       CALL_EXPRESSION(__)  => begin
          (call, arg) = mapFoldCallShallow(exp.call, func, arg)
-        if referenceEq(exp.call, call)
-          exp
-        else
-          CALL_EXPRESSION(call)
-        end
+        reuseIfRefEqual(exp, exp.call, call, c -> CALL_EXPRESSION(c))
       end
 
       SIZE_EXPRESSION(__)  => begin
@@ -2315,11 +2310,7 @@ end
 
       UNARY_EXPRESSION(__)  => begin
          (e1, arg) = func(exp.exp, arg)
-        if referenceEq(exp.exp, e1)
-          exp
-        else
-          UNARY_EXPRESSION(exp.operator, e1)
-        end
+        reuseIfRefEqual(exp, exp.exp, e1, e -> UNARY_EXPRESSION(exp.operator, e))
       end
 
       LBINARY_EXPRESSION(__)  => begin
@@ -2334,11 +2325,7 @@ end
 
       LUNARY_EXPRESSION(__)  => begin
          (e1, arg) = func(exp.exp, arg)
-        if referenceEq(exp.exp, e1)
-          exp
-        else
-          LUNARY_EXPRESSION(exp.operator, e1)
-        end
+        reuseIfRefEqual(exp, exp.exp, e1, e -> LUNARY_EXPRESSION(exp.operator, e))
       end
 
       RELATION_EXPRESSION(__)  => begin
@@ -2456,6 +2443,9 @@ function mapFoldCref(cref::ComponentRef, @nospecialize(func::Function), arg::Arg
 end
 
 @nospecializeinfer function mapFoldCallIterators(iters::List{Tuple{InstNode, Expression}}, @nospecialize(func::Function), arg::ArgT)  where {ArgT}
+  if listEmpty(iters)
+    return (iters, arg)
+  end
 
   local outIters::List{Tuple{InstNode, Expression}} = nil
 
@@ -2633,11 +2623,7 @@ end
 
       CREF_EXPRESSION(__)  => begin
         (cr, arg) = mapFoldCref(exp.cref, func, arg)
-        if referenceEq(exp.cref, cr)
-          exp
-        else
-          CREF_EXPRESSION(exp.ty, cr)
-        end
+        reuseIfRefEqual(exp, exp.cref, cr, c -> CREF_EXPRESSION(exp.ty, c))
       end
 
       ARRAY_EXPRESSION(__)  => begin
@@ -2678,11 +2664,7 @@ end
 
       CALL_EXPRESSION(__)  => begin
         (call, arg) = mapFoldCall(exp.call, func, arg)
-        if referenceEq(exp.call, call)
-          exp
-        else
-          CALL_EXPRESSION(call)
-        end
+        reuseIfRefEqual(exp, exp.call, call, c -> CALL_EXPRESSION(c))
       end
 
       SIZE_EXPRESSION(dimIndex = SOME(e2))  => begin
@@ -2716,11 +2698,7 @@ end
 
       UNARY_EXPRESSION(__)  => begin
         (e1, arg) = mapFold(exp.exp, func, arg)
-        if referenceEq(exp.exp, e1)
-          exp
-        else
-          UNARY_EXPRESSION(exp.operator, e1)
-        end
+        reuseIfRefEqual(exp, exp.exp, e1, e -> UNARY_EXPRESSION(exp.operator, e))
       end
 
       LBINARY_EXPRESSION(__)  => begin
@@ -2735,11 +2713,7 @@ end
 
       LUNARY(__)  => begin
         (e1, arg) = mapFold(exp.exp, func, arg)
-        if referenceEq(exp.exp, e1)
-          exp
-        else
-          LUNARY(exp.operator, e1)
-        end
+        reuseIfRefEqual(exp, exp.exp, e1, e -> LUNARY(exp.operator, e))
       end
 
       RELATION_EXPRESSION(__)  => begin
@@ -2765,11 +2739,7 @@ end
 
       CAST_EXPRESSION(__)  => begin
         (e1, arg) = mapFold(exp.exp, func, arg)
-        if referenceEq(exp.exp, e1)
-          exp
-        else
-          CAST_EXPRESSION(exp.ty, e1)
-        end
+        reuseIfRefEqual(exp, exp.exp, e1, e -> CAST_EXPRESSION(exp.ty, e))
       end
 
       UNBOX_EXPRESSION(__)  => begin
@@ -3331,6 +3301,21 @@ function mapArrayElements(@nospecialize(exp::Expression), @nospecialize(func::Fu
 end
 
 @nospecializeinfer function mapCallShallowIterators(iters::List{<:Tuple{<:InstNode, Expression}}, @nospecialize(func::Function)) ::List{Tuple{InstNode, Expression}}
+  if listEmpty(iters)
+    return iters
+  end
+  local anyChanged = false
+  for i in iters
+    (_, exp) = i
+    new_exp = func(exp)
+    if !referenceEq(new_exp, exp)
+      anyChanged = true
+      break
+    end
+  end
+  if !anyChanged
+    return iters
+  end
   local outIters::List{Tuple{InstNode, Expression}} = nil
   local node::InstNode
   local exp::Expression
@@ -3364,9 +3349,24 @@ end
     local fold_exp::Tuple{Option{Expression}, String, String}
     @match call begin
       UNTYPED_CALL(__)  => begin
-        args = Expression[func(arg) for arg in call.arguments]
-        nargs = NamedArg[(i, func(j)) for (i,j) in call.named_args]
-        UNTYPED_CALL(call.ref, args, nargs, call.call_scope)
+        local newArgs = mapPreservingEq(call.arguments, func)
+        local origNargs = call.named_args
+        local newNargs = origNargs
+        for i in eachindex(origNargs)
+          local (s, e) = origNargs[i]
+          local new_e = func(e)
+          if !referenceEq(e, new_e)
+            if newNargs === origNargs
+              newNargs = copy(origNargs)
+            end
+            newNargs[i] = (s, new_e)
+          end
+        end
+        if newArgs === call.arguments && newNargs === origNargs
+          call
+        else
+          UNTYPED_CALL(call.ref, newArgs, newNargs, call.call_scope)
+        end
       end
 
       ARG_TYPED_CALL(__)  => begin
@@ -3376,23 +3376,24 @@ end
       end
 
       TYPED_CALL(__)  => begin
-        vecArgs = Expression[func(arg) for arg in call.arguments] #TODO: Can also maybe be inlined
-        TYPED_CALL(call.fn, call.ty, call.var, vecArgs, call.attributes)
+        local newArgs = mapPreservingEq(call.arguments, func)
+        if newArgs === call.arguments
+          call
+        else
+          TYPED_CALL(call.fn, call.ty, call.var, newArgs, call.attributes)
+        end
       end
 
       UNTYPED_ARRAY_CONSTRUCTOR(__)  => begin
-        e = func(call.exp)
-        UNTYPED_ARRAY_CONSTRUCTOR(e, call.iters)
+        reuseIfRefEqual(call, call.exp, func(call.exp), e -> UNTYPED_ARRAY_CONSTRUCTOR(e, call.iters))
       end
 
       TYPED_ARRAY_CONSTRUCTOR(__)  => begin
-        e = func(call.exp)
-        TYPED_ARRAY_CONSTRUCTOR(call.ty, call.var, e, call.iters)
+        reuseIfRefEqual(call, call.exp, func(call.exp), e -> TYPED_ARRAY_CONSTRUCTOR(call.ty, call.var, e, call.iters))
       end
 
       UNTYPED_REDUCTION(__)  => begin
-        e = func(call.exp)
-        UNTYPED_REDUCTION(call.ref, e, call.iters)
+        reuseIfRefEqual(call, call.exp, func(call.exp), e -> UNTYPED_REDUCTION(call.ref, e, call.iters))
       end
 
       TYPED_REDUCTION(__)  => begin
@@ -3572,11 +3573,16 @@ end
       end
 
       RECORD_EXPRESSION(__)  => begin
-        RECORD_EXPRESSION(exp.path, exp.ty, Expression[func(e) for e in exp.elements])
+        local newElements = mapPreservingEq(exp.elements, func)
+        if newElements === exp.elements
+          exp
+        else
+          RECORD_EXPRESSION(exp.path, exp.ty, newElements)
+        end
       end
 
       CALL_EXPRESSION(__)  => begin
-        CALL_EXPRESSION(mapCallShallow(exp.call, func))
+        reuseIfRefEqual(exp, exp.call, mapCallShallow(exp.call, func), c -> CALL_EXPRESSION(c))
       end
 
       SIZE_EXPRESSION(dimIndex = SOME(e2))  => begin
@@ -3800,12 +3806,25 @@ function mapCref!(cref::COMPONENT_REF_CREF, @nospecialize(func::Function)) ::Com
 end
 
 function mapCallIterators(iters::List{<:Tuple{<:InstNode, Expression}}, @nospecialize(func::Function)) ::List{Tuple{InstNode, Expression}}
+  if listEmpty(iters)
+    return iters
+  end
+  local anyChanged = false
+  for i in iters
+    (_, exp) = i
+    new_exp = map(exp, func)
+    if !referenceEq(new_exp, exp)
+      anyChanged = true
+      break
+    end
+  end
+  if !anyChanged
+    return iters
+  end
   local outIters::List{Tuple{InstNode, Expression}} = nil
-
   local node::InstNode
   local exp::Expression
   local new_exp::Expression
-
   for i in iters
      (node, exp) = i
      new_exp = map(exp, func)
@@ -3835,14 +3854,35 @@ end
     local fold_exp::Tuple{Option{Expression}, String, String}
     @match call begin
       UNTYPED_CALL(__)  => begin
-        args = Expression[map(arg, func) for arg in call.arguments] #TODO: Can maybe be done inline
-        nargs = Vector{NamedArg}(undef, length(call.named_args))
-        for (i,arg) in enumerate(call.named_args)
-          (s, e) = arg
-          e = map(e, func)
-          nargs[i] = (s, e)
+        local origArgs = call.arguments
+        local newArgs = origArgs
+        for i in eachindex(origArgs)
+          local orig = origArgs[i]
+          local mapped = map(orig, func)
+          if !referenceEq(orig, mapped)
+            if newArgs === origArgs
+              newArgs = copy(origArgs)
+            end
+            newArgs[i] = mapped
+          end
         end
-        UNTYPED_CALL(call.ref, args, nargs, call.call_scope)
+        local origNargs = call.named_args
+        local newNargs = origNargs
+        for i in eachindex(origNargs)
+          local (s, e) = origNargs[i]
+          local new_e = map(e, func)
+          if !referenceEq(e, new_e)
+            if newNargs === origNargs
+              newNargs = copy(origNargs)
+            end
+            newNargs[i] = (s, new_e)
+          end
+        end
+        if newArgs === origArgs && newNargs === origNargs
+          call
+        else
+          UNTYPED_CALL(call.ref, newArgs, newNargs, call.call_scope)
+        end
       end
 
       ARG_TYPED_CALL(__)  => begin
@@ -3862,40 +3902,42 @@ end
       end
 
       TYPED_CALL(__)  => begin
-        local origArgs = call.arguments
-        local n = length(origArgs)
-        local args = Vector{Expression}(undef, n)
-        local anyChanged = false
-        for i = 1:n
-          local mapped = map(origArgs[i], func)
-          if !referenceEq(origArgs[i], mapped)
-            anyChanged = true
-          end
-          args[i] = mapped
-        end
-        if anyChanged
-          TYPED_CALL(call.fn, call.ty, call.var, args, call.attributes)
-        else
+        local newArgs = mapPreservingEq(call.arguments, e -> map(e, func))
+        if newArgs === call.arguments
           call
+        else
+          TYPED_CALL(call.fn, call.ty, call.var, newArgs, call.attributes)
         end
       end
 
       UNTYPED_ARRAY_CONSTRUCTOR(__)  => begin
         e = map(call.exp, func)
         iters = mapCallIterators(call.iters, func)
-        UNTYPED_ARRAY_CONSTRUCTOR(e, iters)
+        if referenceEq(e, call.exp) && referenceEq(iters, call.iters)
+          call
+        else
+          UNTYPED_ARRAY_CONSTRUCTOR(e, iters)
+        end
       end
 
       TYPED_ARRAY_CONSTRUCTOR(__)  => begin
         e = map(call.exp, func)
         iters = mapCallIterators(call.iters, func)
-        TYPED_ARRAY_CONSTRUCTOR(call.ty, call.var, e, iters)
+        if referenceEq(e, call.exp) && referenceEq(iters, call.iters)
+          call
+        else
+          TYPED_ARRAY_CONSTRUCTOR(call.ty, call.var, e, iters)
+        end
       end
 
       UNTYPED_REDUCTION(__)  => begin
         e = map(call.exp, func)
         iters = mapCallIterators(call.iters, func)
-        UNTYPED_REDUCTION(call.ref, e, iters)
+        if referenceEq(e, call.exp) && referenceEq(iters, call.iters)
+          call
+        else
+          UNTYPED_REDUCTION(call.ref, e, iters)
+        end
       end
 
       TYPED_REDUCTION(__)  => begin
@@ -3984,30 +4026,15 @@ one expression.
         end
       end
       CREF_EXPRESSION(__)  => begin
-        local newCref = mapCref(exp.cref, func)
-        if referenceEq(newCref, exp.cref)
-          exp
-        else
-          CREF_EXPRESSION(exp.ty, newCref)
-        end
+        reuseIfRefEqual(exp, exp.cref, mapCref(exp.cref, func), c -> CREF_EXPRESSION(exp.ty, c))
       end
 
       ARRAY_EXPRESSION(__)  => begin
-        local origElements = exp.elements
-        local n = length(origElements)
-        local newElements = Vector{Expression}(undef, n)
-        local anyChanged = false
-        for i = 1:n
-          local mapped = map(origElements[i], func)
-          if !referenceEq(origElements[i], mapped)
-            anyChanged = true
-          end
-          newElements[i] = mapped
-        end
-        if anyChanged
-          ARRAY_EXPRESSION(exp.ty, newElements, exp.literal)
-        else
+        local newElements = mapPreservingEq(exp.elements, e -> map(e, func))
+        if newElements === exp.elements
           exp
+        else
+          ARRAY_EXPRESSION(exp.ty, newElements, exp.literal)
         end
       end
 
@@ -4041,11 +4068,16 @@ one expression.
       end
 
       RECORD_EXPRESSION(__)  => begin
-        RECORD_EXPRESSION(exp.path, exp.ty, Expression[map(e, func) for e in exp.elements])
+        local newElements = mapPreservingEq(exp.elements, e -> map(e, func))
+        if newElements === exp.elements
+          exp
+        else
+          RECORD_EXPRESSION(exp.path, exp.ty, newElements)
+        end
       end
 
       CALL_EXPRESSION(__)  => begin
-        CALL_EXPRESSION(mapCall(exp.call, func))
+        reuseIfRefEqual(exp, exp.call, mapCall(exp.call, func), c -> CALL_EXPRESSION(c))
       end
 
       SIZE_EXPRESSION(dimIndex = SOME(e2))  => begin

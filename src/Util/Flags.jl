@@ -53,7 +53,7 @@ import ..Global
 
 @Uniontype DebugFlag begin
   @Record DEBUG_FLAG begin
-    index::Integer #= Unique index. =#
+    index::Int #= Unique index. =#
     name::String #= The name of the flag used by -d =#
     default::Bool #= Default enabled or not =#
     description::Gettext.TranslatableContent #= A description of the flag. =#
@@ -62,7 +62,7 @@ end
 
 @Uniontype ConfigFlag begin
   @Record CONFIG_FLAG begin
-    index::Integer #= Unique index. =#
+    index::Int #= Unique index. =#
     name::String #= The whole name of the flag. =#
     shortname::Option{String} #= A short name one-character name for the flag. =#
     visibility::FlagVisibility #= Whether the flag is visible to the user or not. =#
@@ -3451,7 +3451,7 @@ function isSet(inFlag::DebugFlag)::Bool
   local outValue::Bool
   local debug_flags::Array{Bool}
   local flags::Flag
-  local index::Integer
+  local index::Int
   @match DEBUG_FLAG(index = index) = inFlag
   flags = getFlags()
   @match FLAGS(debugFlags = debug_flags) = flags
@@ -3464,7 +3464,7 @@ function getConfigValue(inFlag::ConfigFlag)::FlagData
   local outValue::FlagData
 
   local config_flags::Array{FlagData}
-  local index::Integer
+  local index::Int
   local flags::Flag
   local name::String
 

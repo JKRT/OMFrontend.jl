@@ -1066,13 +1066,11 @@ function instantiate(
           @match c begin
             COMPONENT_NODE(__) => begin
               #=  Set the component's parent and create a unique instance for it. =#
-              node = setParent(instance, c)
-              comp = component(node)
-              node = replaceComponent(comp, node)
+              node = setParentAndReplaceComponent(instance, c)
               #=
               If the component is outer, link it with the corresponding inner component.
               =#
-              if isOuter(comp)
+              if isOuter(component(node))
                 node = linkInnerOuter(node, inst_scope)
               end
               #=  Add the node to the component array. =#
@@ -1128,9 +1126,7 @@ function instantiate(
         end
         old_comps = arrayCopy(old_comps)
         for i = 1:arrayLength(old_comps)
-          node = old_comps[i]
-          node = setParent(instance, node)
-          old_comps[i] = replaceComponent(component(node), node)
+          old_comps[i] = setParentAndReplaceComponent(instance, old_comps[i])
         end
         tree = CLASS_TREE_FLAT_TREE(tree.tree, tree.classes, old_comps, tree.imports, tree.duplicates)
         cls = PARTIAL_BUILTIN(cls.ty, tree, cls.modifier, cls.prefixes, cls.restriction)

@@ -1628,7 +1628,7 @@ function typeCrefDim2(@nospecialize(cref::ComponentRef),
                       @nospecialize(info::SourceInfo))::Tuple{Dimension, TypingError}
   local error::TypingError = NO_ERROR()
   local dim::Dimension
-  local crl::List{ComponentRef}
+  local crl::Vector{ComponentRef}
   local subs::List{Subscript}
   local index::Int
   local dim_count::Int
@@ -1657,7 +1657,7 @@ function typeCrefDim2(@nospecialize(cref::ComponentRef),
   =#
   #=  error message.
   =#
-   crl = toListReverse(cref; includeScope = false)
+   crl = toVectorReverse(cref; includeScope = false)
    index = dimIndex
   for cr in crl
       @match cr begin

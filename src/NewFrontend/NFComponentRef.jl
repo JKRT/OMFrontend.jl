@@ -60,7 +60,7 @@ mutable struct COMPONENT_REF_CREF <: NFComponentRef
   node::InstNode
   subscripts::List{Subscript}
   ty::NFType #= The type of the node, without taking subscripts into account. =#
-  origin::Integer
+  origin::Int
   restCref::ComponentRef
 end
 
@@ -148,6 +148,28 @@ function toListReverse(
 end
 toListReverse(cref::ComponentRef, accum::List{<:ComponentRef} = nil) = accum
 
+"""
+Vector-returning sibling of `toListReverse`. Walks the cref chain via
+`restCref` and returns a `Vector{ComponentRef}` ordered with the outermost
+component first (same element order as `toListReverse` produces, but in a
+contiguous Vector instead of a chain of `Cons` cells). Saves N Cons-cell
+allocations per call versus `toListReverse`.
+"""
+function toVectorReverse(cref::ComponentRef; includeScope::Bool = true)::Vector{ComponentRef}
+  result = ComponentRef[]
+  if !(cref isa COMPONENT_REF_CREF)
+    return result
+  end
+  tmp = cref
+  while tmp isa COMPONENT_REF_CREF
+    if includeScope || tmp.origin == Origin.CREF
+      push!(result, tmp)
+    end
+    tmp = tmp.restCref
+  end
+  reverse!(result)
+end
+
 
 """
 ```
@@ -158,12 +180,14 @@ Hence if the component reference is A.B.C.it will return A.
 @author: johti17
 """
 function getOriginCref(cref::ComponentRef)
-  local res = toListReverse(cref, nil)
-  if res isa Nil
-    return res
-  else
-    return listHead(res)
+  if !(cref isa COMPONENT_REF_CREF)
+    return cref
   end
+  local current::COMPONENT_REF_CREF = cref
+  while current.restCref isa COMPONENT_REF_CREF
+    current = current.restCref
+  end
+  return current
 end
 
 function toString(crefLst::List{ComponentRef})

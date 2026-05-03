@@ -98,7 +98,7 @@ Ignore the set count as per Adrians comment.
 function emptySets(setCount)
   sz = max(setCount, 3)
   nodes = arrayCreate(sz, -1)
-  elements = Dict() #Lets just have a Julia dict
+  elements = Dict{Entry, Int}()
   return Sets(nodes, elements, 0)
 end
 

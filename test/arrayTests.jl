@@ -158,3 +158,52 @@ arrayTests0 = Tuple[LoopUnrolling0TST,
                     LoopUnrolling3TST,
                     LoopUnrolling4TST,
                     LoopUnrolling5TST]
+
+#= Regression: constant array indexed by runtime CREFs should stay
+   symbolic (`Table[in1, in2]`), currently folded to first element. =#
+const constTableLookupFile = "./Arrays/TestConstantTableLookup.mo"
+
+RealConstTableLookup = "class TestConstantTableLookup.RealConstTableLookup
+  constant Real Table[1, 1] = 10.0;
+  constant Real Table[1, 2] = 11.0;
+  constant Real Table[1, 3] = 12.0;
+  constant Real Table[2, 1] = 20.0;
+  constant Real Table[2, 2] = 21.0;
+  constant Real Table[2, 3] = 22.0;
+  constant Real Table[3, 1] = 30.0;
+  constant Real Table[3, 2] = 31.0;
+  constant Real Table[3, 3] = 32.0;
+  Integer in1;
+  Integer in2;
+  Real auxiliary;
+  Real t(start = 0.0);
+equation
+  in1 = 1;
+  in2 = 2;
+  auxiliary = Table[in1, in2];
+  der(t) = 1.0;
+end TestConstantTableLookup.RealConstTableLookup;
+"
+
+EnumConstTableLookup = "class TestConstantTableLookup.EnumConstTableLookup
+  constant enumeration TestConstantTableLookup.EnumConstTableLookup.Logic('U', 'X', '0', '1') AndTable[TestConstantTableLookup.EnumConstTableLookup.Logic.'U', TestConstantTableLookup.EnumConstTableLookup.Logic.'U'] = TestConstantTableLookup.EnumConstTableLookup.Logic.'U';
+  constant enumeration TestConstantTableLookup.EnumConstTableLookup.Logic('U', 'X', '0', '1') AndTable[TestConstantTableLookup.EnumConstTableLookup.Logic.'U', TestConstantTableLookup.EnumConstTableLookup.Logic.'X'] = TestConstantTableLookup.EnumConstTableLookup.Logic.'U';
+  ...truncated/template — see TestConstantTableLookup.mo for the full table...
+  enumeration TestConstantTableLookup.EnumConstTableLookup.Logic('U', 'X', '0', '1') in1;
+  enumeration TestConstantTableLookup.EnumConstTableLookup.Logic('U', 'X', '0', '1') in2;
+  enumeration TestConstantTableLookup.EnumConstTableLookup.Logic('U', 'X', '0', '1') auxiliary;
+  Real t(start = 0.0);
+equation
+  in1 = TestConstantTableLookup.EnumConstTableLookup.Logic.'1';
+  in2 = TestConstantTableLookup.EnumConstTableLookup.Logic.'1';
+  auxiliary = AndTable[in1, in2];
+  der(t) = 1.0;
+end TestConstantTableLookup.EnumConstTableLookup;
+"
+
+RealConstTableLookupTST = (RealConstTableLookup, "TestConstantTableLookup.RealConstTableLookup", constTableLookupFile)
+EnumConstTableLookupTST = (EnumConstTableLookup, "TestConstantTableLookup.EnumConstTableLookup", constTableLookupFile)
+
+#= NOT in arrayTests0 — both broken on current frontend. =#
+constantTableLookupTests = Tuple[RealConstTableLookupTST,
+                                  EnumConstTableLookupTST]

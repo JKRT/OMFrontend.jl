@@ -1628,7 +1628,7 @@ function typeCrefDim2(@nospecialize(cref::ComponentRef),
                       @nospecialize(info::SourceInfo))::Tuple{Dimension, TypingError}
   local error::TypingError = NO_ERROR()
   local dim::Dimension
-  local crl::List{ComponentRef}
+  local crl::Vector{ComponentRef}
   local subs::List{Subscript}
   local index::Int
   local dim_count::Int
@@ -1657,7 +1657,7 @@ function typeCrefDim2(@nospecialize(cref::ComponentRef),
   =#
   #=  error message.
   =#
-   crl = toListReverse(cref; includeScope = false)
+   crl = toVectorReverse(cref; includeScope = false)
    index = dimIndex
   for cr in crl
       @match cr begin
@@ -2217,7 +2217,7 @@ function typeMatrixRef(
   local res::Vector{Expression} = Vector{Expression}(undef, length(elements))
   local var::VariabilityType
   local ty::NFType = TYPE_UNKNOWN()
-  local tys::Vector{NFType} = Vector{Expression}(undef, length(elements))
+  local tys::Vector{NFType} = Vector{NFType}(undef, length(elements))
   #local resTys::Vector{NFType} = NFType[]
   local n::Int = 2
   local next_origin::ORIGIN_Type = setFlag(origin, ORIGIN_SUBEXPRESSION)
@@ -2278,7 +2278,7 @@ function typeMatrix(
   local res::Vector{Expression} = Vector{Expression}(undef, length(elements))
   local var::VariabilityType
   local ty::NFType = TYPE_UNKNOWN()
-  local tys::Vector{NFType} = Vector{Expression}(undef, length(elements))
+  local tys::Vector{NFType} = Vector{NFType}(undef, length(elements))
   #local resTys::Vector{NFType} = NFType[]
   local n::Int = 2
   local next_origin::ORIGIN_Type = setFlag(origin, ORIGIN_SUBEXPRESSION)

@@ -642,8 +642,8 @@ function fixTupleElementAccess(str::String)::String
           if funcStart !== nothing
             funcName = str[nextind(str, funcStart):prevind(str, funcEnd)]
             argsStr = str[k:i]
-            wrapperName = funcName * "__tupleElem_" * string(elemIdx)
-            replacement = "'" * wrapperName * "'" * argsStr
+            wrapperName = "$(funcName)__tupleElem_$(elemIdx)"
+            replacement = "'$(wrapperName)'$(argsStr)"
             push!(replacements, (funcStart, j, replacement, funcName, elemIdx))
             i = nextind(str, j)
             continue
@@ -709,7 +709,7 @@ function generateTupleWrappers(
     end
 
     #= Generate wrapper =#
-    wrapperName = funcName * "__tupleElem_" * string(elemIdx)
+    wrapperName = "$(funcName)__tupleElem_$(elemIdx)"
     wrapper = generateSingleWrapper(wrapperName, funcName, inputs, outputs, elemIdx)
     push!(wrappers, wrapper)
   end

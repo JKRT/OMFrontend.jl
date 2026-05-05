@@ -214,8 +214,8 @@ function fromLists(keysList, valsList, hashFn, eqFn)
   m = new(hashFn, eqFn)
   ks = collect(keysList)
   vs = collect(valsList)
-  for i in 1:length(ks)
-    m.data[ks[i]] = vs[i]
+  for (k, v) in zip(ks, vs)
+    m.data[k] = v
   end
   return m
 end

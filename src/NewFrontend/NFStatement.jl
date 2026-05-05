@@ -542,21 +542,11 @@ function mapExp(stmt::Statement, func::MapFunc)::Statement
       end
 
       ALG_TERMINATE(__) => begin
-        e1 = func(stmt.message)
-        if referenceEq(e1, stmt.message)
-          stmt
-        else
-          ALG_TERMINATE(e1, stmt.source)
-        end
+        reuseIfRefEqual(stmt, stmt.message, func(stmt.message), m -> ALG_TERMINATE(m, stmt.source))
       end
 
       ALG_NORETCALL(__) => begin
-        e1 = func(stmt.exp)
-        if referenceEq(e1, stmt.exp)
-          stmt
-        else
-          ALG_NORETCALL(e1, stmt.source)
-        end
+        reuseIfRefEqual(stmt, stmt.exp, func(stmt.exp), e -> ALG_NORETCALL(e, stmt.source))
       end
 
       ALG_WHILE(__) => begin

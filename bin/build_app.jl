@@ -25,12 +25,16 @@
 
 using PackageCompiler
 
-const REPO_ROOT = abspath(joinpath(@__DIR__, ".."))
-const APP_DIR   = get(ENV, "OMFRONTEND_APP_DIR", joinpath(REPO_ROOT, "OMFrontend-app"))
-const PROJECT   = REPO_ROOT
-const PRECOMP   = abspath(joinpath(@__DIR__, "precompile_workload.jl"))
+const REPO_ROOT   = abspath(joinpath(@__DIR__, ".."))
+const APP_DIR     = get(ENV, "OMFRONTEND_APP_DIR", joinpath(REPO_ROOT, "OMFrontend-app"))
+const PROJECT     = REPO_ROOT
+const PRECOMP     = abspath(joinpath(@__DIR__, "precompile_workload.jl"))
+# OMFRONTEND_INCREMENTAL=true cuts build time from ~30 min to a few minutes by
+# layering on the local Julia sysimage. The resulting binary embeds bits of the
+# build-machine's Julia install and is not portable; use only for local iteration.
+const INCREMENTAL = parse(Bool, get(ENV, "OMFRONTEND_INCREMENTAL", "false"))
 
-@info "Building OMFrontend app" project = PROJECT app_dir = APP_DIR precompile_execution = PRECOMP
+@info "Building OMFrontend app" project = PROJECT app_dir = APP_DIR precompile_execution = PRECOMP incremental = INCREMENTAL
 
 # `force = true` lets us re-run without first removing the previous build.
 create_app(
@@ -39,6 +43,7 @@ create_app(
     executables                = ["OMFrontend" => "julia_main"],
     precompile_execution_file  = PRECOMP,
     force                      = true,
+    incremental                = INCREMENTAL,
     include_lazy_artifacts     = true,
 )
 

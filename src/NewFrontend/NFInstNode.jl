@@ -1540,17 +1540,28 @@ Creates a new component that contains a pointer to the supplied component.
 """
 function replaceComponent(component::Component, node::COMPONENT_NODE{String, Int8})::COMPONENT_NODE{String, VisibilityType}
   local componentPointer = Pointer{Component}(component)
-  # return COMPONENT_NODE{String, Int}(node.name,
-  #                                    node.visibility,
-  #                                    componentPointer,
-  #                                    node.parent,
-  #                                    node.nodeType)
   node = newComponent(node.name,
                       node.visibility,
                       componentPointer,
                       node.parent,
                       node.nodeType)
   return node
+end
+
+"""
+Combined setParent + replaceComponent in a single allocation: returns a new
+COMPONENT_NODE with `parent` set and a fresh `Pointer{Component}` wrapping
+the existing component value (de-aliased per instance). Equivalent to
+`replaceComponent(component(setParent(parent, node)), setParent(parent, node))`
+but does one COMPONENT_NODE allocation instead of two.
+"""
+@inline function setParentAndReplaceComponent(parent::InstNode, node::COMPONENT_NODE{String, Int8})::COMPONENT_NODE{String, VisibilityType}
+  local componentPointer = Pointer{Component}(P_Pointer.access(node.component))
+  newComponent(node.name,
+               node.visibility,
+               componentPointer,
+               parent,
+               node.nodeType)
 end
 
 #=

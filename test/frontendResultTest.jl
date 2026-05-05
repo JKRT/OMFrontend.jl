@@ -105,4 +105,13 @@ runTestsDefinedInVector(connectTsts, "Connector test. Testing the handling of co
 runTestsDefinedInVector(tst, "Trying simple Modelica models using connectors")
 runTestsDefinedInVector(equationTests, "Trying slightly more advanced models, containing equational loops etc.")
 runTestsDefinedInVector(arrayTests0, "Testing scalarization of equational loops and vector of records..")
+
+#= Auto-generated connector regression tests — covers the previously unused
+   .mo files in test/Connectors/. References are OUR OMFrontend output captured
+   on 2026-05-03; differences from OMC's // Result: blocks were reviewed (see
+   .claude or commit message). The MSL-needing case (CGraphBug) is held back
+   until the helper supports flattenModelWithMSL. =#
+include("connectGenerated.jl")
+runTestsDefinedInVector(generatedConnectorTests,
+                        "Connector regression tests (auto-generated from unused .mo files)")
 #= End Connector tests =#

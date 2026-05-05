@@ -192,7 +192,7 @@ function fromExp(
       end
       ARRAY_EXPRESSION(__) => begin
         #= Lets do it in reverse order to keep the test output the same. =#
-        for i in reverse(1:length(exp.elements))
+        for i in reverse(eachindex(exp.elements))
           conns = fromExp(exp.elements[i], source, conns)
         end
         conns

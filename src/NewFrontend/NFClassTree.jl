@@ -803,9 +803,11 @@ function appendComponentsToInstTree(
     CLASS_TREE_INSTANTIATED_TREE(__) => begin
       comp_idx = arrayLength(tree.components)
       local tmpComponents = ArrayUtil.appendList(tree.components, components)
-      local_comps = tree.localComponents
-      for i = (comp_idx + 1):(comp_idx + listLength(components))
-        local_comps = prepend!([i], local_comps)
+      local n_new = listLength(components)
+      local_comps = copy(tree.localComponents)
+      sizehint!(local_comps, length(local_comps) + n_new)
+      for i = (comp_idx + 1):(comp_idx + n_new)
+        push!(local_comps, i)
       end
       localComponentsTmp = local_comps
       return CLASS_TREE_INSTANTIATED_TREE(tree.tree,
@@ -1059,22 +1061,21 @@ function instantiate(
       end
       #=  Copy both local and inherited components into the new array. =#
       local local_comps::Vector{Int} = Int[]
+      sizehint!(local_comps, compCount)
       for c in old_comps
           @match c begin
             COMPONENT_NODE(__) => begin
               #=  Set the component's parent and create a unique instance for it. =#
-              node = setParent(instance, c)
-              comp = component(node)
-              node = replaceComponent(comp, node)
+              node = setParentAndReplaceComponent(instance, c)
               #=
               If the component is outer, link it with the corresponding inner component.
               =#
-              if isOuter(comp)
+              if isOuter(component(node))
                 node = linkInnerOuter(node, inst_scope)
               end
               #=  Add the node to the component array. =#
               comps[comp_idx] = P_Pointer.create(node, InstNode)
-              local_comps = pushfirst!(local_comps, comp_idx)
+              push!(local_comps, comp_idx)
               comp_idx = comp_idx + 1
             end
             REF_NODE(__) => begin
@@ -1082,6 +1083,7 @@ function instantiate(
             end
           end
       end
+      reverse!(local_comps)
       #=  Sanity check.
       =#
       if comp_idx != compCount + 1
@@ -1124,9 +1126,7 @@ function instantiate(
         end
         old_comps = arrayCopy(old_comps)
         for i = 1:arrayLength(old_comps)
-          node = old_comps[i]
-          node = setParent(instance, node)
-          old_comps[i] = replaceComponent(component(node), node)
+          old_comps[i] = setParentAndReplaceComponent(instance, old_comps[i])
         end
         tree = CLASS_TREE_FLAT_TREE(tree.tree, tree.classes, old_comps, tree.imports, tree.duplicates)
         cls = PARTIAL_BUILTIN(cls.ty, tree, cls.modifier, cls.prefixes, cls.restriction)

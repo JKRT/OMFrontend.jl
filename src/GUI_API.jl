@@ -1072,7 +1072,7 @@ function _renderExtent(extent::Extent2D)::String
 end
 
 function _renderColor(color::Color3)::String
-  return "{" * string(color[1]) * ", " * string(color[2]) * ", " * string(color[3]) * "}"
+  return "{$(color[1]), $(color[2]), $(color[3])}"
 end
 
 function _renderFloat(value::Real)::String

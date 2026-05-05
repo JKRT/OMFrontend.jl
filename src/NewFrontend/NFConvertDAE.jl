@@ -1410,6 +1410,23 @@ function convertWhenStatement(
   return whenStatement
 end
 
+function convertWhenStatement(
+  whenBranches::Vector{<:Tuple{<:Expression, <:Union{Vector{<:Statement}, List{<:Statement}}}},
+  source::DAE.ElementSource,
+)::DAE.Statement
+  local cond::DAE.Exp
+  local stmts::List{DAE.Statement}
+  local when_stmt::Option{DAE.Statement} = NONE()
+  for b in reverse(whenBranches)
+    cond = toDAE(b[1])
+    stmts = b[2] isa Vector ? convertStatements(b[2]) : convertStatements(listArray(b[2]))
+    when_stmt = SOME(DAE.STMT_WHEN(cond, nil, false, stmts, when_stmt, source))
+  end
+  local whenStatement::DAE.Statement
+  @match SOME(whenStatement) = when_stmt
+  return whenStatement
+end
+
 function convertInitialAlgorithms(
   algorithms::Vector{Algorithm},
   elements::List{<:DAE.Element},

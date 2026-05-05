@@ -78,6 +78,16 @@ struct FlowControlStruct{T}
 end
 const FlowControl = FlowControlStruct{Int}(1,2,3,4,5)
 
+const _EVAL_RECURSION_LIMIT_CACHE = Ref{Int}(-1)
+@inline function _evalRecursionLimit()::Int
+  local v::Int = _EVAL_RECURSION_LIMIT_CACHE[]
+  if v < 0
+    v = Int(Flags.getConfigInt(Flags.EVAL_RECURSION_LIMIT))
+    _EVAL_RECURSION_LIMIT_CACHE[] = v
+  end
+  return v
+end
+
 function evaluate(fn::M_Function, args::Vector{Expression})::Expression
   local result::Expression
   if isExternal(fn)
@@ -103,7 +113,7 @@ function evaluateNormal(fn::M_Function, args::Vector{Expression})::Expression
   finished. This is used to limit the number of recursive functions calls.
   =#
   call_count = P_Pointer.access(call_counter) + 1
-  limit = Flags.getConfigInt(Flags.EVAL_RECURSION_LIMIT)
+  limit = _evalRecursionLimit()
   if call_count > limit
     Pointer.update(call_counter, 0)
     Error.addSourceMessage(
@@ -805,7 +815,7 @@ function assignArrayElement(
             arrayExpElements = arrayElements(value)
           else
             local valElems = arrayElements(value)
-            arrayExpElements = Expression[assignArrayElement(arrayExp.elements[i], rest_subs, valElems[i]) for i in 1:length(arrayExp.elements)]
+            arrayExpElements = Expression[assignArrayElement(e, rest_subs, valElems[i]) for (i, e) in enumerate(arrayExp.elements)]
           end
           ARRAY_EXPRESSION(arrayExp.ty, arrayExpElements, arrayExp.literal)
         end

@@ -224,15 +224,15 @@ function scalarizeEquation(@nospecialize(eq::Equation), equations::Vector{Equati
     if lhs_expandable && rhs_expandable
       @match TYPE_COMPLEX(cls = rec_cls) = eq.ty
       local rec_comps::Vector{InstNode} = getComponents(classTree(getClass(rec_cls)))
-      for i in 1:length(rec_comps)
-        local fty = getType(rec_comps[i])
+      for (i, comp) in enumerate(rec_comps)
+        local fty = getType(comp)
         local flhs = if rec_lhs isa CREF_EXPRESSION
-          CREF_EXPRESSION(fty, prefixCref(rec_comps[i], fty, nil, rec_lhs.cref))
+          CREF_EXPRESSION(fty, prefixCref(comp, fty, nil, rec_lhs.cref))
         else
           rec_lhs.elements[i]
         end
         local frhs = if rec_rhs isa CREF_EXPRESSION
-          CREF_EXPRESSION(fty, prefixCref(rec_comps[i], fty, nil, rec_rhs.cref))
+          CREF_EXPRESSION(fty, prefixCref(comp, fty, nil, rec_rhs.cref))
         else
           rec_rhs.elements[i]
         end
@@ -591,10 +591,10 @@ function expandRecordEquation(
 )::Vector{Equation}
   @match TYPE_COMPLEX(cls = cls) = ty
   local comps::Vector{InstNode} = getComponents(classTree(getClass(cls)))
-  for i in 1:length(comps)
-    local field_ty = getType(comps[i])
-    local field_lhs = expandRecordFieldExp(lhs, comps[i], field_ty, i)
-    local field_rhs = expandRecordFieldExp(rhs, comps[i], field_ty, i)
+  for (i, comp) in enumerate(comps)
+    local field_ty = getType(comp)
+    local field_lhs = expandRecordFieldExp(lhs, comp, field_ty, i)
+    local field_rhs = expandRecordFieldExp(rhs, comp, field_ty, i)
     local field_eq = EQUATION_EQUALITY(field_lhs, field_rhs, field_ty, src)
     equations = scalarizeEquation(field_eq, equations)
   end

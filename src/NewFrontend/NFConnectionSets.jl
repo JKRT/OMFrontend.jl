@@ -83,10 +83,10 @@ end
 
 function string(s::Sets)
   str = "Nodes:" * toString(s.nodes) * "\n"
-  str *= "Node Count:" * string(s.nodeCount) * "\n"
+  str *= "Node Count:$(s.nodeCount)\n"
   str *= "Elements:\n"
   for e in s.elements
-    str *= toString(e[1]) * "| node_index:" * string(e[2]) * "\n"
+    str *= "$(toString(e[1]))| node_index:$(e[2])\n"
   end
   return str
 end
@@ -98,7 +98,7 @@ Ignore the set count as per Adrians comment.
 function emptySets(setCount)
   sz = max(setCount, 3)
   nodes = arrayCreate(sz, -1)
-  elements = Dict() #Lets just have a Julia dict
+  elements = Dict{Entry, Int}()
   return Sets(nodes, elements, 0)
 end
 

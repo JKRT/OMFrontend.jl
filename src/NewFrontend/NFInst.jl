@@ -252,7 +252,7 @@ function simplifyAndCollect(flat_model::FlatModel, name::String, top = nothing):
   @EXECSTAT "collectFunctions" funcs = collectFunctions(flat_model, name)
   #=  Collect package constants that couldn't be substituted with their values =#
   #=  (e.g. because they where used with non-constant subscripts), and add them to the model. =#
-  @EXECSTAT "collectConstants" flat_model = collectConstants(flat_model, funcs)
+  @EXECSTAT "collectConstants" (flat_model, funcs) = collectConstants(flat_model, funcs)
   return (flat_model, funcs)
 end
 

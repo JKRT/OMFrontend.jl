@@ -1379,7 +1379,10 @@ function typeTypeAttribute(
       if isBound(binding)
         binding = typeBinding(binding, origin)
         binding = matchBinding(binding, ty, name, component)
-        if variability(binding) > Variability.PARAMETER
+        #= The builtin attributes have parameter variability: a discrete or continuous binding is an error outside a
+           function (omc's NFTyping.typeTypeAttribute); a non-structural parameter's is not (a parameter bound to an
+           external call: Real x(start = s), s = f(a)). =#
+        if variability(binding) >= Variability.DISCRETE && flagNotSet(origin, ORIGIN_FUNCTION)
           Error.addSourceMessage(
             Error.HIGHER_VARIABILITY_BINDING,
             list(
